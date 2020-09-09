@@ -17,6 +17,10 @@
         "unittest-release-inst": {
             "buildOptions": ["unittests", "optimize", "inline"],
             "dflags-ldc": ["-mattr=+sse3"]
-        }
+        },
+        "unittest-arm64": {
+            "buildOptions": ["debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm64-macos-unknown"]
+        },
     }
 }

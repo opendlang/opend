@@ -52,7 +52,6 @@ matrix:
    - d: dmd-2.079.1   # codegen issues with optimizations
    - d: dmd-2.078.2   # codegen issues with optimizations
 
-# Note: 32-bit x86 isn't tested anymore
 script:
   - dub test --compiler=${DC}
   - dub test -b unittest-release --compiler=${DC}

@@ -54,23 +54,13 @@ unittest
     assert( _mm_addsub_ps(v1,v2).array == _mm_setr_ps(0.0f, 4.0f, 0.0f, 8.0f).array );
 }
 
-version(LDC)
+static if (LDC_with_SSE3)
 {
     /// Horizontally add adjacent pairs of double-precision (64-bit) 
     /// floating-point elements in `a` and `b`.
     __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @safe
     {
-        static if (__traits(targetHasFeature, "sse3"))
-        {
-            return __builtin_ia32_haddpd(a, b);
-        }
-        else
-        {
-            __m128d res;
-            res[0] = a[1] + a[0];
-            res[1] = b[1] + b[0];
-            return res;
-        }
+        return __builtin_ia32_haddpd(a, b);
     }
 }
 else
@@ -93,25 +83,14 @@ unittest
     assert( _mm_hadd_pd(A, B).array ==_mm_setr_pd(3.5, 3.0).array );
 }
 
-version(LDC)
+static if (LDC_with_SSE3)
 {
     /// Horizontally add adjacent pairs of single-precision (32-bit) 
     /// floating-point elements in `a` and `b`.
     __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @safe
     {
-        static if (__traits(targetHasFeature, "sse3"))
-        {
-            return __builtin_ia32_haddps(a, b);
-        }
-        else
-        {
-            __m128 res;
-            res[0] = a[1] + a[0];
-            res[1] = a[3] + a[2];
-            res[2] = b[1] + b[0];
-            res[3] = b[3] + b[2];
-            return res;
-        }
+    
+        return __builtin_ia32_haddps(a, b);
     }
 }
 else
@@ -137,23 +116,13 @@ unittest
     assert( _mm_hadd_ps(A, B).array == _mm_setr_ps(3.0f, 8.0f, 3.5f, 7.5f).array );
 }
 
-version(LDC)
+static if (LDC_with_SSE3)
 {
     /// Horizontally subtract adjacent pairs of double-precision (64-bit) 
     /// floating-point elements in `a` and `b`.
     __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @safe
     {
-        static if (__traits(targetHasFeature, "sse3"))
-        {
-            return __builtin_ia32_hsubpd(a, b);
-        }
-        else
-        {
-            __m128d res;
-            res[0] = a[0] - a[1];
-            res[1] = b[0] - b[1];
-            return res;
-        }
+        return __builtin_ia32_hsubpd(a, b);
     }
 }
 else
@@ -176,25 +145,13 @@ unittest
     assert( _mm_hsub_pd(A, B).array ==_mm_setr_pd(-0.5, -1.0).array );
 }
 
-version(LDC)
+static if (LDC_with_SSE3)
 {
     /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
     /// floating-point elements in `a` and `b`.
     __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @safe
     {
-        static if (__traits(targetHasFeature, "sse3"))
-        {
-            return __builtin_ia32_hsubps(a, b);
-        }
-        else
-        {
-            __m128 res;
-            res[0] = a[0] - a[1];
-            res[1] = a[2] - a[3];
-            res[2] = b[0] - b[1];
-            res[3] = b[2] - b[3];
-            return res;
-        }
+        return __builtin_ia32_hsubps(a, b);
     }
 }
 else

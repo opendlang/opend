@@ -23,6 +23,9 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = false;
     }
     else version (X86_64)
     {
@@ -42,6 +45,9 @@ version(GNU)
         enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = false;
     }
     else
     {
@@ -50,6 +56,9 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = false;
     }
 }
 else version(LDC)
@@ -82,6 +91,25 @@ else version(LDC)
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
     }
+
+    version(ARM)
+    {
+        enum LDC_with_ARM32 = true;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = false;
+    }
+    else version(AArch64)
+    {
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = true;
+        enum LDC_with_SSE3 = false;
+    }
+    else
+    {
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
+    }
 }
 else version(DigitalMars)
 {
@@ -92,12 +120,17 @@ else version(DigitalMars)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_SSE3 = false;
     }
 }
 else
 {
     static assert(false, "Unknown compiler");
 }
+
+enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
 
 version(DigitalMars)
 {
@@ -120,8 +153,6 @@ else
 }
 
 
-
-
 package:
 nothrow @nogc:
 
@@ -135,6 +166,12 @@ nothrow @nogc:
 //  LDC and DMD. It's important that DMD uses what is in MXCST to round.
 //
 
+static if (LDC_with_ARM)
+{
+
+}
+else
+{
 
 int convertFloatToInt32UsingMXCSR(float value) pure @safe
 {
@@ -381,6 +418,7 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
         static assert(false);
 }
 
+}
 
 //
 //  </ROUNDING>
