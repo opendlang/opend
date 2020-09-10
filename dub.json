@@ -22,5 +22,9 @@
             "buildOptions": ["debugMode", "debugInfo"],
             "dflags-ldc": ["-mtriple=arm64-macos-unknown"]
         },
+        "unittest-arm32": {
+            "buildOptions": ["debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm-macos-unknown"]
+        },
     }
 }

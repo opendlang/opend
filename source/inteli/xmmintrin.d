@@ -288,8 +288,7 @@ unittest
     assert(a.array == [42f, 0, 0, 0]);
 }
 
-// Note: is just another name for _mm_cvtss_si32
-alias _mm_cvt_ss2si = _mm_cvtss_si32;
+
 
 
 __m128 _mm_cvtpi16_ps (__m64 a) pure @safe
@@ -454,7 +453,7 @@ float _mm_cvtss_f32(__m128 a) pure @safe
     return a.array[0];
 }
 
-version(LDC)
+static if (LDC_with_SSE1)
 {
     alias _mm_cvtss_si32 = __builtin_ia32_cvtss2si;
 }
@@ -512,7 +511,7 @@ unittest
 }
 
 
-version(LDC)
+static if(LDC_with_SSE1)
 {
     alias _mm_cvtt_ss2si = __builtin_ia32_cvttss2si;
 }
@@ -795,7 +794,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
 }
@@ -831,7 +830,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
@@ -869,7 +868,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
 }
@@ -905,7 +904,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_min_ss = __builtin_ia32_minss;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_min_ss = __builtin_ia32_minss;
 }
@@ -913,6 +912,7 @@ else
 {
     __m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
     {
+        // Generates minss since LDC 1.3 -O1
         __m128 r = a;
         r[0] = (a[0] < b[0]) ? a[0] : b[0];
         return r;
@@ -967,7 +967,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
 }
@@ -1190,7 +1190,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
@@ -1210,7 +1210,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
@@ -1227,7 +1227,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
@@ -1247,7 +1247,7 @@ static if (GDC_with_SSE)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
@@ -1458,7 +1458,7 @@ version(GNU)
             static assert(false);
         }
 }
-else version(LDC)
+else static if (LDC_with_SSE1)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
@@ -1835,3 +1835,8 @@ unittest
     assert(nullAlloc != null);
     _mm_free(nullAlloc);
 }
+
+// For some reason, order of declaration is important for this one... 4
+// so it is misplaced.
+// Note: is just another name for _mm_cvtss_si32
+alias _mm_cvt_ss2si = _mm_cvtss_si32;

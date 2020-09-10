@@ -1495,28 +1495,25 @@ unittest
     assert(1 == _mm_cvttss_si64(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
+{
+    alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
+}
+else static if (GDC_with_SSE2)
 {
     alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
 }
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
     {
-        alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
-    }
-    else
-    {
-        __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
-        {
-            // Note: doesn't generate cvttpd2dq as of LDC 1.13
-            __m128i r;
-            r.array[0] = cast(int)a.array[0];
-            r.array[1] = cast(int)a.array[1];
-            r.array[2] = 0;
-            r.array[3] = 0;
-            return r;
-        }
+        // Note: doesn't generate cvttpd2dq as of LDC 1.13
+        __m128i r;
+        r.array[0] = cast(int)a.array[0];
+        r.array[1] = cast(int)a.array[1];
+        r.array[2] = 0;
+        r.array[3] = 0;
+        return r;
     }
 }
 unittest
@@ -1654,7 +1651,7 @@ version(GNU)
             static assert(false);
     }
 }
-else version(LDC)
+else static if (LDC_with_SSE2)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
@@ -1784,7 +1781,7 @@ static if (GDC_with_SSE2)
     /// and pack the results in destination.
     alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
 }
-else version(LDC)
+else static if (LDC_with_SSE2)
 {
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
@@ -1818,7 +1815,7 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
     /// (elements are not stored when the highest bit is not set in the corresponding element)
@@ -1964,7 +1961,7 @@ version(GNU)
             static assert(false);
     }
 }
-else version(LDC)
+else static if (LDC_with_SSE2)
 {
     alias _mm_mfence = __builtin_ia32_mfence;
 }
@@ -2109,31 +2106,28 @@ unittest
     assert(C.array == correct);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    /// Create mask from the most significant bit of each 8-bit element in `v`.
+    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
+}
+else static if (LDC_with_SSE2)
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Create mask from the most significant bit of each 8-bit element in `v`.
+    int _mm_movemask_epi8(__m128i v) pure @safe
     {
-        /// Create mask from the most significant bit of each 8-bit element in `v`.
-        alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
-    }
-    else
-    {
-        /// Create mask from the most significant bit of each 8-bit element in `v`.
-        int _mm_movemask_epi8(__m128i v) pure @safe
+        byte16 ai = cast(byte16)v;
+        int r = 0;
+        foreach(bit; 0..16)
         {
-            byte16 ai = cast(byte16)v;
-            int r = 0;
-            foreach(bit; 0..16)
-            {
-                if (ai.array[bit] < 0) r += (1 << bit);
-            }
-            return r;
+            if (ai.array[bit] < 0) r += (1 << bit);
         }
+        return r;
     }
 }
 unittest
@@ -2141,7 +2135,13 @@ unittest
     assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 0, 0, -1, -1, -1, 0, 0, 0, 0, -1, -1, 0, -1, -1, 0)));
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+    /// packed double-precision (64-bit) floating-point element in `v`.
+    alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+}
+else static if (LDC_with_SSE2)
 {
     /// Set each bit of mask `dst` based on the most significant bit of the corresponding
     /// packed double-precision (64-bit) floating-point element in `v`.
@@ -2149,24 +2149,15 @@ version(LDC)
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+    /// packed double-precision (64-bit) floating-point element in `v`.
+    int _mm_movemask_pd(__m128d v) pure @safe
     {
-        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-        /// packed double-precision (64-bit) floating-point element in `v`.
-        alias _mm_movemask_pd = __builtin_ia32_movmskpd;
-    }
-    else
-    {
-        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-        /// packed double-precision (64-bit) floating-point element in `v`.
-        int _mm_movemask_pd(__m128d v) pure @safe
-        {
-            long2 lv = cast(long2)v;
-            int r = 0;
-            if (lv.array[0] < 0) r += 1;
-            if (lv.array[1] < 0) r += 2;
-            return r;
-        }
+        long2 lv = cast(long2)v;
+        int r = 0;
+        if (lv.array[0] < 0) r += 1;
+        if (lv.array[1] < 0) r += 2;
+        return r;
     }
 }
 unittest
@@ -2297,33 +2288,30 @@ unittest
     assert(C.array[0] == 0xDEADBEEFuL * 0xCAFEBABEuL);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
 }
 else
-{
-    static if (GDC_with_SSE2)
+{    
+    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
-    }
-    else
-    {
-        __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            short8 r = void;
-            r.array[0] = (sa.array[0] * sb.array[0]) >> 16;
-            r.array[1] = (sa.array[1] * sb.array[1]) >> 16;
-            r.array[2] = (sa.array[2] * sb.array[2]) >> 16;
-            r.array[3] = (sa.array[3] * sb.array[3]) >> 16;
-            r.array[4] = (sa.array[4] * sb.array[4]) >> 16;
-            r.array[5] = (sa.array[5] * sb.array[5]) >> 16;
-            r.array[6] = (sa.array[6] * sb.array[6]) >> 16;
-            r.array[7] = (sa.array[7] * sb.array[7]) >> 16;
-            return cast(__m128i)r;
-        }
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r = void;
+        r.ptr[0] = (sa.array[0] * sb.array[0]) >> 16;
+        r.ptr[1] = (sa.array[1] * sb.array[1]) >> 16;
+        r.ptr[2] = (sa.array[2] * sb.array[2]) >> 16;
+        r.ptr[3] = (sa.array[3] * sb.array[3]) >> 16;
+        r.ptr[4] = (sa.array[4] * sb.array[4]) >> 16;
+        r.ptr[5] = (sa.array[5] * sb.array[5]) >> 16;
+        r.ptr[6] = (sa.array[6] * sb.array[6]) >> 16;
+        r.ptr[7] = (sa.array[7] * sb.array[7]) >> 16;
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -2335,33 +2323,30 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
 }
 else
-{
-    static if (GDC_with_SSE2)
+{   
+    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
-    }
-    else
-    {
-        __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            short8 r = void;
-            r.array[0] = cast(short)( (cast(ushort)sa.array[0] * cast(ushort)sb.array[0]) >> 16 );
-            r.array[1] = cast(short)( (cast(ushort)sa.array[1] * cast(ushort)sb.array[1]) >> 16 );
-            r.array[2] = cast(short)( (cast(ushort)sa.array[2] * cast(ushort)sb.array[2]) >> 16 );
-            r.array[3] = cast(short)( (cast(ushort)sa.array[3] * cast(ushort)sb.array[3]) >> 16 );
-            r.array[4] = cast(short)( (cast(ushort)sa.array[4] * cast(ushort)sb.array[4]) >> 16 );
-            r.array[5] = cast(short)( (cast(ushort)sa.array[5] * cast(ushort)sb.array[5]) >> 16 );
-            r.array[6] = cast(short)( (cast(ushort)sa.array[6] * cast(ushort)sb.array[6]) >> 16 );
-            r.array[7] = cast(short)( (cast(ushort)sa.array[7] * cast(ushort)sb.array[7]) >> 16 );
-            return cast(__m128i)r;
-        }
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r = void;
+        r.ptr[0] = cast(short)( (cast(ushort)sa.array[0] * cast(ushort)sb.array[0]) >> 16 );
+        r.ptr[1] = cast(short)( (cast(ushort)sa.array[1] * cast(ushort)sb.array[1]) >> 16 );
+        r.ptr[2] = cast(short)( (cast(ushort)sa.array[2] * cast(ushort)sb.array[2]) >> 16 );
+        r.ptr[3] = cast(short)( (cast(ushort)sa.array[3] * cast(ushort)sb.array[3]) >> 16 );
+        r.ptr[4] = cast(short)( (cast(ushort)sa.array[4] * cast(ushort)sb.array[4]) >> 16 );
+        r.ptr[5] = cast(short)( (cast(ushort)sa.array[5] * cast(ushort)sb.array[5]) >> 16 );
+        r.ptr[6] = cast(short)( (cast(ushort)sa.array[6] * cast(ushort)sb.array[6]) >> 16 );
+        r.ptr[7] = cast(short)( (cast(ushort)sa.array[7] * cast(ushort)sb.array[7]) >> 16 );
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -2396,31 +2381,28 @@ __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
     return a | b;
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
 }
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
-    }
-    else
-    {
-        __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @safe
-        {
-            short8 r;
-            r.array[0] = saturateSignedIntToSignedShort(a.array[0]);
-            r.array[1] = saturateSignedIntToSignedShort(a.array[1]);
-            r.array[2] = saturateSignedIntToSignedShort(a.array[2]);
-            r.array[3] = saturateSignedIntToSignedShort(a.array[3]);
-            r.array[4] = saturateSignedIntToSignedShort(b.array[0]);
-            r.array[5] = saturateSignedIntToSignedShort(b.array[1]);
-            r.array[6] = saturateSignedIntToSignedShort(b.array[2]);
-            r.array[7] = saturateSignedIntToSignedShort(b.array[3]);
-            return cast(__m128i)r;
-        }
+        short8 r;
+        r.ptr[0] = saturateSignedIntToSignedShort(a.array[0]);
+        r.ptr[1] = saturateSignedIntToSignedShort(a.array[1]);
+        r.ptr[2] = saturateSignedIntToSignedShort(a.array[2]);
+        r.ptr[3] = saturateSignedIntToSignedShort(a.array[3]);
+        r.ptr[4] = saturateSignedIntToSignedShort(b.array[0]);
+        r.ptr[5] = saturateSignedIntToSignedShort(b.array[1]);
+        r.ptr[6] = saturateSignedIntToSignedShort(b.array[2]);
+        r.ptr[7] = saturateSignedIntToSignedShort(b.array[3]);
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -2431,29 +2413,26 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
 }
 else
-{
-    static if (GDC_with_SSE2)
+{   
+    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
-    }
-    else
-    {
-        __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @safe
-        {
-            byte16 r;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                r.array[i] = saturateSignedWordToSignedByte(sa.array[i]);
-            foreach(i; 0..8)
-                r.array[i+8] = saturateSignedWordToSignedByte(sb.array[i]);
-            return cast(__m128i)r;
-        }
+        byte16 r;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            r.ptr[i] = saturateSignedWordToSignedByte(sa.array[i]);
+        foreach(i; 0..8)
+            r.ptr[i+8] = saturateSignedWordToSignedByte(sb.array[i]);
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -2465,37 +2444,34 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
 }
 else
-{
-    static if (GDC_with_SSE2)
+{   
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
-    }
-    else
-    {
-        __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        ubyte[16] result = void;
+        for (int i = 0; i < 8; ++i)
         {
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            ubyte[16] result = void;
-            for (int i = 0; i < 8; ++i)
-            {
-                short s = sa[i];
-                if (s < 0) s = 0;
-                if (s > 255) s = 255;
-                result[i] = cast(ubyte)s;
+            short s = sa[i];
+            if (s < 0) s = 0;
+            if (s > 255) s = 255;
+            result[i] = cast(ubyte)s;
 
-                s = sb[i];
-                if (s < 0) s = 0;
-                if (s > 255) s = 255;
-                result[i+8] = cast(ubyte)s;
-            }
-            return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
+            s = sb[i];
+            if (s < 0) s = 0;
+            if (s > 255) s = 255;
+            result[i+8] = cast(ubyte)s;
         }
+        return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
     }
 }
 unittest
@@ -2528,7 +2504,7 @@ version(GNU)
             static assert(false);
     }
 }
-else version(LDC)
+else static if (LDC_with_SSE2)
 {
     alias _mm_pause = __builtin_ia32_pause;
 }
@@ -2549,35 +2525,31 @@ unittest
     _mm_pause();
 }
 
-
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+}
+else static if (LDC_with_SSE2)
 {
     alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
 }
 else
-{
-    static if (GDC_with_SSE2)
+{   
+    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
-    }
-    else
-    {
-        __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @safe
+        byte16 ab = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        ubyte[16] t;
+        foreach(i; 0..16)
         {
-            byte16 ab = cast(byte16)a;
-            byte16 bb = cast(byte16)b;
-            ubyte[16] t;
-            foreach(i; 0..16)
-            {
-                int diff = cast(ubyte)(ab.array[i]) - cast(ubyte)(bb.array[i]);
-                if (diff < 0) diff = -diff;
-                t[i] = cast(ubyte)(diff);
-            }
-            int4 r = _mm_setzero_si128();
-            r.array[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
-            r.array[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
-            return r;
+            int diff = cast(ubyte)(ab.array[i]) - cast(ubyte)(bb.array[i]);
+            if (diff < 0) diff = -diff;
+            t[i] = cast(ubyte)(diff);
         }
+        int4 r = _mm_setzero_si128();
+        r.ptr[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
+        r.ptr[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
+        return r;
     }
 }
 unittest
@@ -2862,7 +2834,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 }
@@ -2905,7 +2877,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_sll_epi64  = __builtin_ia32_psllq128;
 }
@@ -2948,7 +2920,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 }
@@ -2991,7 +2963,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
 }
@@ -3020,7 +2992,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_slli_epi64  = __builtin_ia32_psllqi128;
 }
@@ -3050,7 +3022,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
 }
@@ -3201,7 +3173,7 @@ else
 }
 
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_sra_epi16 = __builtin_ia32_psraw128;
 }
@@ -3233,7 +3205,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_sra_epi32  = __builtin_ia32_psrad128;
 }
@@ -3265,7 +3237,7 @@ unittest
 }
 
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
 }
@@ -3295,7 +3267,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srai_epi32  = __builtin_ia32_psradi128;
 }
@@ -3324,7 +3296,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 }
@@ -3356,7 +3328,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi32  = __builtin_ia32_psrld128;
 }
@@ -3387,7 +3359,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
 }
@@ -3419,7 +3391,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
 }
@@ -3449,7 +3421,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
 }
@@ -3478,7 +3450,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+static if (LDC_with_SSE2)
 {
     alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
 }
