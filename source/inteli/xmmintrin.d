@@ -1472,6 +1472,13 @@ else static if (DMD_with_asm)
         }
     }
 }
+else version(LDC)
+{
+    void _mm_sfence() pure @safe
+    {
+        llvm_memory_fence(); // PERF: generates mfence
+    }
+}
 else
     static assert(false);
 unittest

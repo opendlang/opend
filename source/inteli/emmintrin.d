@@ -482,7 +482,7 @@ void _mm_clflush (const(void)* p) @trusted
     {
         __builtin_ia32_clflush(p);
     }
-    else version(LDC)
+    else static if (LDC_with_SSE2)
     {
         __builtin_ia32_clflush(cast(void*)p);
     }
@@ -505,7 +505,7 @@ void _mm_clflush (const(void)* p) @trusted
     else 
     {
         // Do nothing. Invalidating cacheline does
-        // not affect correctness.            
+        // not affect correctness.
     }
 }
 unittest
@@ -1161,7 +1161,7 @@ unittest
 /// in `a` to packed 32-bit integers.
 __m128i _mm_cvtpd_epi32 (__m128d a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_SSE2)
     {
         // Like in clang, implemented with a magic intrinsic right now
         return __builtin_ia32_cvtpd2dq(a);
@@ -1211,7 +1211,7 @@ unittest
 /// in `a` to packed single-precision (32-bit) floating-point elements.
 __m128 _mm_cvtpd_ps (__m128d a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_SSE2)
     {
         return __builtin_ia32_cvtpd2ps(a); // can't be done with IR unfortunately
     }
@@ -1337,7 +1337,7 @@ double _mm_cvtsd_f64 (__m128d a) pure @safe
 /// in `a` to a 32-bit integer.
 int _mm_cvtsd_si32 (__m128d a) pure @safe
 {
-    version(LDC)
+    static if (LDC_with_SSE2)
     {
         return __builtin_ia32_cvtsd2si(a);
     }
@@ -1665,6 +1665,13 @@ else static if (DMD_with_asm)
         }
     }
 }
+else version(LDC)
+{
+    void _mm_lfence() pure @safe
+    {
+        llvm_memory_fence(); // Note: actually generates mfence
+    }
+}
 else
     static assert(false);
 unittest
@@ -1973,6 +1980,13 @@ else static if (DMD_with_asm)
         {
             mfence;
         }
+    }
+}
+else version(LDC)
+{
+    void _mm_mfence() pure @safe
+    {
+        llvm_memory_fence();
     }
 }
 else
@@ -2516,6 +2530,13 @@ else static if (DMD_with_asm)
         {
             rep; nop; // F3 90 =  pause
         }
+    }
+}
+else version (LDC)
+{
+    void _mm_pause() pure @safe
+    {
+        // PERF: Do nothing currently , could be the "yield" intruction on ARM.
     }
 }
 else

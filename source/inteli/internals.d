@@ -181,261 +181,265 @@ nothrow @nogc:
 //  So we devised these rounding function to help having consistent rouding between 
 //  LDC and DMD. It's important that DMD uses what is in MXCST to round.
 //
+//  Note: There is no MXCSR in ARM. But there is fpscr that implements similar 
+//  functionality the same.
+//  https://developer.arm.com/documentation/dui0068/b/vector-floating-point-programming/vfp-system-registers/fpscr--the-floating-point-status-and-control-register
 
-static if (LDC_with_ARM)
+
+int convertFloatToInt32UsingMXCSR(float value) pure @safe
 {
-    // There is no MXCSR in ARM. But there is fpscr that implements similar functionality the same.
-    // https://developer.arm.com/documentation/dui0068/b/vector-floating-point-programming/vfp-system-registers/fpscr--the-floating-point-status-and-control-register
-
+    int result;
+    version(GNU)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            "cvtss2si %1, %0\n": "=r"(result) : "x" (value);
+        }
+    }
+    else static if (LDC_with_ARM)
+    {
+        static assert(false);
+        // TODO
+    }
+    else
+    {        
+        asm pure nothrow @nogc @trusted
+        {
+            cvtss2si EAX, value;
+            mov result, EAX;
+        }
+    }
+    return result;
 }
-else
+
+int convertDoubleToInt32UsingMXCSR(double value) pure @safe
 {
-
-    int convertFloatToInt32UsingMXCSR(float value) pure @safe
+    int result;
+    version(GNU)
     {
-        int result;
-        version(GNU)
+        asm pure nothrow @nogc @trusted
+        {
+            "cvtsd2si %1, %0\n": "=r"(result) : "x" (value);
+        }
+    }
+    else static if (LDC_with_ARM)
+    {
+        static assert(false);
+        // TODO
+    }
+    else
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            cvtsd2si EAX, value;
+            mov result, EAX;
+        }
+    }
+    return result;
+}
+
+long convertFloatToInt64UsingMXCSR(float value) pure @safe
+{
+    // 64-bit can use an SSE instruction
+    version(D_InlineAsm_X86_64)
+    {
+        long result;
+        version(LDC) // work-around for " Data definition directives inside inline asm are not supported yet."
         {
             asm pure nothrow @nogc @trusted
             {
-                "cvtss2si %1, %0\n": "=r"(result) : "x" (value);
+                movss XMM0, value;
+                cvtss2si RAX, XMM0;
+                mov result, RAX;
             }
         }
         else
-        {        
+        {
             asm pure nothrow @nogc @trusted
             {
-                cvtss2si EAX, value;
-                mov result, EAX;
+                movss XMM0, value;
+                db 0xf3; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtss2si RAX, XMM0 (DMD refuses to emit)
+                mov result, RAX;
             }
         }
         return result;
     }
-
-    int convertDoubleToInt32UsingMXCSR(double value) pure @safe
+    else version(D_InlineAsm_X86)
     {
-        int result;
-        version(GNU)
+        // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        // This leads to an unfortunate FPU sequence in every C++ compiler.
+        // See: https://godbolt.org/z/vZym77
+
+        // Get current MXCSR rounding
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
+        asm pure nothrow @nogc @trusted
         {
-            asm pure nothrow @nogc @trusted
-            {
-                "cvtsd2si %1, %0\n": "=r"(result) : "x" (value);
-            }
-        }
-        else
-        {        
-            asm pure nothrow @nogc @trusted
-            {
-                cvtsd2si EAX, value;
-                mov result, EAX;
-            }
+            stmxcsr sseRounding;
+            fld value;
+            fnstcw savedFPUCW;
+            mov AX, savedFPUCW;
+            and AX, 0xf3ff;          // clear FPU rounding bits
+            movzx ECX, word ptr sseRounding;
+            and ECX, 0x6000;         // only keep SSE rounding bits
+            shr ECX, 3;
+            or AX, CX;               // make a new control word for FPU with SSE bits
+            mov newFPUCW, AX;
+            fldcw newFPUCW;
+            fistp qword ptr result;            // convert, respecting MXCSR (but not other control word things)
+            fldcw savedFPUCW;
         }
         return result;
     }
-
-    long convertFloatToInt64UsingMXCSR(float value) pure @safe
+    else static if (GDC_with_x86)
     {
-        // 64-bit can use an SSE instruction
-        version(D_InlineAsm_X86_64)
+        version(X86_64) // 64-bit can just use the right instruction
         {
-            long result;
-            version(LDC) // work-around for " Data definition directives inside inline asm are not supported yet."
-            {
-                asm pure nothrow @nogc @trusted
-                {
-                    movss XMM0, value;
-                    cvtss2si RAX, XMM0;
-                    mov result, RAX;
-                }
-            }
-            else
-            {
-                asm pure nothrow @nogc @trusted
-                {
-                    movss XMM0, value;
-                    db 0xf3; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtss2si RAX, XMM0 (DMD refuses to emit)
-                    mov result, RAX;
-                }
-            }
-            return result;
+            static assert(GDC_with_SSE);
+            __m128 A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtss2si64 (A);
         }
-        else version(D_InlineAsm_X86)
+        else version(X86) // 32-bit
         {
-            // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
-            // This leads to an unfortunate FPU sequence in every C++ compiler.
-            // See: https://godbolt.org/z/vZym77
-
-            // Get current MXCSR rounding
+            // This is untested!
             uint sseRounding;
             ushort savedFPUCW;
             ushort newFPUCW;
             long result;
             asm pure nothrow @nogc @trusted
             {
-                stmxcsr sseRounding;
-                fld value;
-                fnstcw savedFPUCW;
-                mov AX, savedFPUCW;
-                and AX, 0xf3ff;          // clear FPU rounding bits
-                movzx ECX, word ptr sseRounding;
-                and ECX, 0x6000;         // only keep SSE rounding bits
-                shr ECX, 3;
-                or AX, CX;               // make a new control word for FPU with SSE bits
-                mov newFPUCW, AX;
-                fldcw newFPUCW;
-                fistp qword ptr result;            // convert, respecting MXCSR (but not other control word things)
-                fldcw savedFPUCW;
+                "stmxcsr %1;\n" ~
+                "fld %2;\n" ~
+                "fnstcw %3;\n" ~
+                "movw %3, %%ax;\n" ~
+                "andw $0xf3ff, %%ax;\n" ~
+                "movzwl %1, %%ecx;\n" ~
+                "andl $0x6000, %%ecx;\n" ~
+                "shrl $3, %%ecx;\n" ~
+                "orw %%cx, %%ax\n" ~
+                "movw %%ax, %4;\n" ~
+                "fldcw %4;\n" ~
+                "fistpll %0;\n" ~
+                "fldcw %3;\n" 
+                  : "=m"(result)    // %0
+                  : "m" (sseRounding),
+                    "f" (value),
+                    "m" (savedFPUCW),
+                    "m" (newFPUCW) 
+                  : "eax", "ecx", "st";
             }
             return result;
-        }
-        else static if (GDC_with_x86)
-        {
-            version(X86_64) // 64-bit can just use the right instruction
-            {
-                static assert(GDC_with_SSE);
-                __m128 A;
-                A.ptr[0] = value;
-                return __builtin_ia32_cvtss2si64 (A);
-            }
-            else version(X86) // 32-bit
-            {
-                // This is untested!
-                uint sseRounding;
-                ushort savedFPUCW;
-                ushort newFPUCW;
-                long result;
-                asm pure nothrow @nogc @trusted
-                {
-                    "stmxcsr %1;\n" ~
-                    "fld %2;\n" ~
-                    "fnstcw %3;\n" ~
-                    "movw %3, %%ax;\n" ~
-                    "andw $0xf3ff, %%ax;\n" ~
-                    "movzwl %1, %%ecx;\n" ~
-                    "andl $0x6000, %%ecx;\n" ~
-                    "shrl $3, %%ecx;\n" ~
-                    "orw %%cx, %%ax\n" ~
-                    "movw %%ax, %4;\n" ~
-                    "fldcw %4;\n" ~
-                    "fistpll %0;\n" ~
-                    "fldcw %3;\n" 
-                      : "=m"(result)    // %0
-                      : "m" (sseRounding),
-                        "f" (value),
-                        "m" (savedFPUCW),
-                        "m" (newFPUCW) 
-                      : "eax", "ecx", "st";
-                }
-                return result;
-            }
-            else
-                static assert(false);
         }
         else
             static assert(false);
     }
+    else
+        static assert(false);
+}
 
 
-    ///ditto
-    long convertDoubleToInt64UsingMXCSR(double value) pure @safe
+///ditto
+long convertDoubleToInt64UsingMXCSR(double value) pure @safe
+{
+    // 64-bit can use an SSE instruction
+    version(D_InlineAsm_X86_64)
     {
-        // 64-bit can use an SSE instruction
-        version(D_InlineAsm_X86_64)
+        long result;
+        version(LDC) // work-around for "Data definition directives inside inline asm are not supported yet."
         {
-            long result;
-            version(LDC) // work-around for "Data definition directives inside inline asm are not supported yet."
+            asm pure nothrow @nogc @trusted
             {
-                asm pure nothrow @nogc @trusted
-                {
-                    movsd XMM0, value;
-                    cvtsd2si RAX, XMM0;
-                    mov result, RAX;
-                }
+                movsd XMM0, value;
+                cvtsd2si RAX, XMM0;
+                mov result, RAX;
             }
-            else
-            {
-                asm pure nothrow @nogc @trusted
-                {
-                    movsd XMM0, value;
-                    db 0xf2; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtsd2si RAX, XMM0 (DMD refuses to emit)
-                    mov result, RAX;
-                }
-            }
-            return result;
         }
-        else version(D_InlineAsm_X86)
+        else
         {
-            // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
-            // This leads to an unfortunate FPU sequence in every C++ compiler.
-            // See: https://godbolt.org/z/vZym77
+            asm pure nothrow @nogc @trusted
+            {
+                movsd XMM0, value;
+                db 0xf2; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtsd2si RAX, XMM0 (DMD refuses to emit)
+                mov result, RAX;
+            }
+        }
+        return result;
+    }
+    else version(D_InlineAsm_X86)
+    {
+        // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        // This leads to an unfortunate FPU sequence in every C++ compiler.
+        // See: https://godbolt.org/z/vZym77
 
-            // Get current MXCSR rounding
+        // Get current MXCSR rounding
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            stmxcsr sseRounding;
+            fld value;
+            fnstcw savedFPUCW;
+            mov AX, savedFPUCW;
+            and AX, 0xf3ff;
+            movzx ECX, word ptr sseRounding;
+            and ECX, 0x6000;
+            shr ECX, 3;
+            or AX, CX;
+            mov newFPUCW, AX;
+            fldcw newFPUCW;
+            fistp result;
+            fldcw savedFPUCW;
+        }
+        return result;
+    }
+    else static if (GDC_with_x86)
+    {
+        version(X86_64)
+        {
+            static assert(GDC_with_SSE2);
+            __m128d A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtsd2si64 (A);
+        }
+        else
+        {
+            // This is untested!
             uint sseRounding;
             ushort savedFPUCW;
             ushort newFPUCW;
             long result;
             asm pure nothrow @nogc @trusted
             {
-                stmxcsr sseRounding;
-                fld value;
-                fnstcw savedFPUCW;
-                mov AX, savedFPUCW;
-                and AX, 0xf3ff;
-                movzx ECX, word ptr sseRounding;
-                and ECX, 0x6000;
-                shr ECX, 3;
-                or AX, CX;
-                mov newFPUCW, AX;
-                fldcw newFPUCW;
-                fistp result;
-                fldcw savedFPUCW;
+                "stmxcsr %1;\n" ~
+                "fld %2;\n" ~
+                "fnstcw %3;\n" ~
+                "movw %3, %%ax;\n" ~
+                "andw $0xf3ff, %%ax;\n" ~
+                "movzwl %1, %%ecx;\n" ~
+                "andl $0x6000, %%ecx;\n" ~
+                "shrl $3, %%ecx;\n" ~
+                "orw %%cx, %%ax\n" ~
+                "movw %%ax, %4;\n" ~
+                "fldcw %4;\n" ~
+                "fistpll %0;\n" ~
+                "fldcw %3;\n"         
+                  : "=m"(result)    // %0
+                  : "m" (sseRounding),
+                    "t" (value),
+                    "m" (savedFPUCW),
+                    "m" (newFPUCW) 
+                  : "eax", "ecx", "st";
             }
             return result;
         }
-        else static if (GDC_with_x86)
-        {
-            version(X86_64)
-            {
-                static assert(GDC_with_SSE2);
-                __m128d A;
-                A.ptr[0] = value;
-                return __builtin_ia32_cvtsd2si64 (A);
-            }
-            else
-            {
-                // This is untested!
-                uint sseRounding;
-                ushort savedFPUCW;
-                ushort newFPUCW;
-                long result;
-                asm pure nothrow @nogc @trusted
-                {
-                    "stmxcsr %1;\n" ~
-                    "fld %2;\n" ~
-                    "fnstcw %3;\n" ~
-                    "movw %3, %%ax;\n" ~
-                    "andw $0xf3ff, %%ax;\n" ~
-                    "movzwl %1, %%ecx;\n" ~
-                    "andl $0x6000, %%ecx;\n" ~
-                    "shrl $3, %%ecx;\n" ~
-                    "orw %%cx, %%ax\n" ~
-                    "movw %%ax, %4;\n" ~
-                    "fldcw %4;\n" ~
-                    "fistpll %0;\n" ~
-                    "fldcw %3;\n"         
-                      : "=m"(result)    // %0
-                      : "m" (sseRounding),
-                        "t" (value),
-                        "m" (savedFPUCW),
-                        "m" (newFPUCW) 
-                      : "eax", "ecx", "st";
-                }
-                return result;
-            }
-        }
-        else
-            static assert(false);
     }
+    else
+        static assert(false);
 }
 
 //
