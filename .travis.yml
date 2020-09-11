@@ -4,6 +4,10 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -y ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y gcc-multilib ; fi
 
+arch:
+  - amd64
+  - arm64 
+
 os:
   - osx
   - linux
