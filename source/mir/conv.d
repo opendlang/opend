@@ -10,6 +10,26 @@ public import core.lifetime: emplace;
 
 import std.traits;
 
+private template isMirString(T)
+{
+    static if (isSomeString!T)
+    {
+        enum isMirString = true;
+    }
+    else
+    {
+        static if (__traits(compiles, {import mir.small_string;}))
+        {
+            import mir.small_string;
+            enum isMirString = is(T : SmallString!size, size_t size);
+        }
+        else
+        {
+            enum isMirString = false;
+        }
+    }
+}
+
 /++
 The `to` template converts a value from one type _to another.
 The source type is deduced and the target type must be specified, for example the
@@ -23,28 +43,31 @@ template to(T)
     auto ref T to(A...)(auto ref A args)
         if (A.length > 0)
     {
+        import mir.functional: forward;
         static if (A.length == 1 && isImplicitlyConvertible!(A[0], T))
             return args[0];
         else
-        static if (is(T == class) && is(typeof(new T(args))))
-            return new T(args);
+        static if (is(T == class) && is(typeof(new T(forward!args))))
+            return new T(forward!args);
         else
         static if (is(typeof(T(args))))
-            return T(args);
+            return T(forward!args);
         else
         static if (A.length == 1)
         {
-            static if (is(typeof(cast(T) args[0])))
-                return cast(T) args[0];
+            alias I = A[0];
+            alias arg = args[0];
+            static if (is(typeof(cast(T) arg)) && !(isDynamicArray!T && isDynamicArray!I) && !isSomeString!T)
+                return cast(T) forward!arg;
             else
-            static if (is(A[0] : const(char)[]) && !is(T : const(char)[]) && is(T == enum))
+            static if (isSomeString!I && !isSomeString!T && is(T == enum))
             {
-                S: switch (args[0])
+                S: switch (arg)
                 {
-                    static foreach(member; __traits(allMembers, T))
+                    static foreach(i, member; EnumMembers!T)
                     {
-                        case member:
-                            return __traits(getMember, T, member);
+                        case __traits(identifier, EnumMembers!T[i]):
+                            return member;
                     }
                 default:
                     static immutable msg = "Can not convert string to the enum " ~ T.stringof;
@@ -58,6 +81,106 @@ template to(T)
                         assert(0, msg);
                     }
                 }
+            }
+            else
+            static if (isSomeString!T && is(I == enum))
+            {
+                final switch (arg)
+                {
+                    static foreach(i, member; EnumMembers!(I))
+                    {
+                        case member:
+                            return __traits(identifier, EnumMembers!(I)[i]);
+                    }
+                }
+            }
+            else
+            static if (isMirString!I && !isSomeString!T)
+            {
+                static assert (__traits(compiles, { import mir.parse: fromString; }));
+                import mir.parse: fromString;
+                return fromString!(Unqual!T)(arg[]);
+            }
+            else
+            static if (!isSomeString!I && isMirString!T)
+            {
+                // static if (is(Unqual!I == typeof(null)))
+                // {
+                //     enum immutable(T) ret = "null";
+                //     static if (isImplicitlyConvertible!(immutable T, T))
+                //         return ret;
+                //     else
+                //         return .to!T(ret[]);
+                // }
+                // else
+                static if (is(Unqual!I == bool))
+                {
+                    enum immutable(T) t = "true";
+                    enum immutable(T) f = "false";
+                    auto ret = arg ? t : f;
+                    static if (isImplicitlyConvertible!(immutable T, T))
+                        return ret;
+                    else
+                        return .to!T(ret[]);
+                }
+                else
+                {
+                    static if (isImplicitlyConvertible!(T, string) && __traits(compiles, {const(char)[] s =  arg.toString;}))
+                    {
+                        auto ret = arg.toString;
+                        static if (is(typeof(ret) : string))
+                            return ret;
+                        else
+                            return ret.idup;
+                    }
+                    else
+                    {
+                        static assert (__traits(compiles, { import mir.format: print; }));
+                        import mir.format: print;
+                        static if (isSomeString!T)
+                        {
+                            static if (isNumeric!I)
+                            {
+                                import mir.appender: UnsafeArrayBuffer;
+                                alias C = Unqual!(ForeachType!T);
+                                C[32] array = '\0';
+                                auto buffer = UnsafeArrayBuffer!C(array);
+                            }
+                            else
+                            {
+                                import mir.appender: ScopedBuffer;
+                                ScopedBuffer!(Unqual!(ForeachType!T)) buffer;
+                            }
+                            buffer.print(arg);
+                            static if (isMutable!(ForeachType!(T)))
+                                return buffer.data.dup;
+                            else
+                                return buffer.data.idup;
+                        }
+                        else
+                        {
+                            Unqual!T buffer;
+                            buffer.print(arg);
+                            return buffer;
+                        }
+                    }
+                }
+            }
+            else
+            static if (is(I : const(C)[], C) && is(T : immutable(C)[]))
+            {
+                static if (is(I : immutable(C)[]))
+                    return arg;
+                else
+                    return idup(arg);
+            }
+            else
+            static if (is(I : const(C)[], C) && is(T : C[]))
+            {
+                static if (is(I : C[]))
+                    return arg;
+                else
+                    return dup(arg);
             }
             else
                 static assert(0);
@@ -80,6 +203,10 @@ unittest
     }
 
     assert(to!Foo("B") == Foo.B);
+    assert(to!string(Foo.B) == "B");
+    assert(to!string(null) is null);
+    assert(to!string(true) == "true");
+    assert(to!string(false) == "false");
 }
 
 /++
