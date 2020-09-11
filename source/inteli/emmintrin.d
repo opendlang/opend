@@ -1252,7 +1252,7 @@ unittest
 /// in `a` to packed 32-bit integers,
 __m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_SSE2)
     {
         // Disabled, since it fail with optimizations unfortunately
         //alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;

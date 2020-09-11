@@ -629,7 +629,11 @@ uint _MM_GET_ROUNDING_MODE() pure @safe
 
 uint _mm_getcsr() pure @safe
 {
-    version(GNU)
+    static if (LDC_with_ARM)
+    {
+        return 0;
+    }
+    else version(GNU)
     {
         static if (GDC_with_SSE)
         {
@@ -1384,7 +1388,11 @@ unittest
 
 void _mm_setcsr(uint controlWord) pure @safe
 {
-    version(GNU)
+    static if (LDC_with_ARM)
+    {
+        // TODO
+    }
+    else version(GNU)
     {
         static if (GDC_with_SSE)
         {

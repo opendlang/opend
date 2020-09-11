@@ -198,8 +198,8 @@ int convertFloatToInt32UsingMXCSR(float value) pure @safe
     }
     else static if (LDC_with_ARM)
     {
-        static assert(false);
         // TODO
+        result = cast(int)value;
     }
     else
     {        
@@ -224,8 +224,8 @@ int convertDoubleToInt32UsingMXCSR(double value) pure @safe
     }
     else static if (LDC_with_ARM)
     {
-        static assert(false);
         // TODO
+        result = cast(int)value;
     }
     else
     {
@@ -240,8 +240,13 @@ int convertDoubleToInt32UsingMXCSR(double value) pure @safe
 
 long convertFloatToInt64UsingMXCSR(float value) pure @safe
 {
+	static if (LDC_with_ARM)
+    {
+        // TODO
+        return cast(long)value;
+    }
     // 64-bit can use an SSE instruction
-    version(D_InlineAsm_X86_64)
+    else version(D_InlineAsm_X86_64)
     {
         long result;
         version(LDC) // work-around for " Data definition directives inside inline asm are not supported yet."
@@ -344,8 +349,13 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
 ///ditto
 long convertDoubleToInt64UsingMXCSR(double value) pure @safe
 {
+	static if (LDC_with_ARM)
+    {
+        // TODO
+        return cast(long)value;
+    }
     // 64-bit can use an SSE instruction
-    version(D_InlineAsm_X86_64)
+    else version(D_InlineAsm_X86_64)
     {
         long result;
         version(LDC) // work-around for "Data definition directives inside inline asm are not supported yet."
