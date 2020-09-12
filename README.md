@@ -13,6 +13,7 @@ Main advantages:
 1. It inherit @nogc and @safe properties from key and value types (but opIndex can throw exception so it is not @nogc in any case - use fetch or get with default value)
 1. Provide stable iteration over container (you can modify/delete items from table while iterating over it)
 
+You cah find HashMap API docs [here](https://ikod-containers.dpldocs.info/ikod.containers.hashmap.HashMap.html)
 ### code sample ###
 
 ```d
@@ -43,3 +44,4 @@ void main()
     assert(counter.byValue.sum == words.length); // sum of counters must equals to number of words
 }
 ```
+
