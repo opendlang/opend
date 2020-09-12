@@ -4,7 +4,6 @@
 	],
 	"copyright": "Copyright © 2019, Igor Khasilev",
 	"dependencies": {
-		"unit-threaded": "~>0",
 		"automem": "~>0.6"
 	},
 	"description": "containers library",
