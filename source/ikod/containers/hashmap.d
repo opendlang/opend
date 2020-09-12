@@ -2085,7 +2085,7 @@ unittest {
     assert(map2.length == 0);
 }
 
-@("L" ~ to!string(__LINE__) ~ ".iterator correctness after resize")
+@("L" ~ to!string(__LINE__) ~ ".iterator correctness after mutation")
 @safe
 unittest
 {
