@@ -99,7 +99,7 @@ else version(LDC)
 
     version(ARM)
     {
-        public import ldc.gccbuiltins_arm;
+        //public import ldc.gccbuiltins_arm;
         enum LDC_with_ARM32 = true;
         enum LDC_with_ARM64 = false;
         enum LDC_with_SSE1 = false;
@@ -108,7 +108,7 @@ else version(LDC)
     }
     else version(AArch64)
     {
-        public import ldc.gccbuiltins_arm;
+        //public import ldc.gccbuiltins_arm;
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = true;
         enum LDC_with_SSE1 = false;
@@ -146,7 +146,20 @@ else
     static assert(false, "Unknown compiler");
 }
 
-enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
+enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64; // ARM32 is largely unsupported though
+
+static if (LDC_with_ARM)
+{
+    package uint arm_get_fpscr() pure nothrow @nogc @trusted
+    {
+        return __asm!uint("mrs $0, fpcr", "=r");
+    }
+
+    package void arm_set_fpscr(uint cw) nothrow @nogc @trusted
+    {
+        __asm!void("ldr w2, $0 \n msr fpcr, x2", "m", cw);
+    }
+}
 
 version(DigitalMars)
 {
@@ -209,7 +222,7 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
     else static if (LDC_with_ARM)
     {
         // Get current rounding mode.
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -255,7 +268,7 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
     else static if (LDC_with_ARM)
     {
         // Get current rounding mode.
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -292,7 +305,7 @@ long convertFloatToInt64UsingMXCSR(float value) @trusted
 {
     static if (LDC_with_ARM)
     {
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -417,7 +430,7 @@ long convertDoubleToInt64UsingMXCSR(double value) @trusted
     static if (LDC_with_ARM)
     {
         // Get current rounding mode.
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {

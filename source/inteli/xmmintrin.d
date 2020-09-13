@@ -497,6 +497,8 @@ unittest
     assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.5f)));
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+    //import core.stdc.stdio;
+    //printf("%lld\n",  _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
     assert(-86187 == _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
@@ -633,7 +635,7 @@ uint _mm_getcsr() @trusted
         // However, only rounding mode and flush to zero are actually set.
         // The returned control word will have all exceptions masked, and no exception detected.
 
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
 
         uint cw = 0; // No exception detected
         if (fpscr & _MM_FLUSH_ZERO_MASK_ARM)
@@ -1425,7 +1427,7 @@ void _mm_setcsr(uint controlWord) @trusted
 
         // "To alter some bits of a VFP system register without 
         // affecting other bits, use a read-modify-write procedure"
-        uint fpscr = __builtin_arm_get_fpscr();
+        uint fpscr = arm_get_fpscr();
         
         // Bits 23 to 22 are rounding modes, however not used in NEON
         fpscr = fpscr & ~_MM_ROUND_MASK_ARM;
@@ -1440,7 +1442,7 @@ void _mm_setcsr(uint controlWord) @trusted
         fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK;
         if (controlWord & _MM_FLUSH_ZERO_MASK)
             fpscr |= _MM_FLUSH_ZERO_MASK_ARM;
-        __builtin_arm_set_fpscr(controlWord);
+        arm_set_fpscr(controlWord);
     }
     else version(GNU)
     {
