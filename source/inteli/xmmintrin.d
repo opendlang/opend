@@ -48,9 +48,18 @@ enum int _MM_ROUND_UP          = 0x4000;
 enum int _MM_ROUND_TOWARD_ZERO = 0x6000;
 enum int _MM_ROUND_MASK        = 0x6000;
 
+enum uint _MM_ROUND_NEAREST_ARM     = 0x00000000;
+enum uint _MM_ROUND_DOWN_ARM        = 0x00800000;
+enum uint _MM_ROUND_UP_ARM          = 0x00400000;
+enum uint _MM_ROUND_TOWARD_ZERO_ARM = 0x00C00000;
+enum uint _MM_ROUND_MASK_ARM        = 0x00C00000;
+
 enum int _MM_FLUSH_ZERO_MASK   = 0x8000;
 enum int _MM_FLUSH_ZERO_ON     = 0x8000;
 enum int _MM_FLUSH_ZERO_OFF    = 0x0000;
+
+enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
+
 
 __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
@@ -607,31 +616,57 @@ void _mm_free(void * mem_addr) @trusted
     free(*rawLocation);
 }
 
-uint _MM_GET_EXCEPTION_MASK() pure @safe
+uint _MM_GET_EXCEPTION_MASK() @safe
 {
     return _mm_getcsr() & _MM_MASK_MASK;
 }
 
-uint _MM_GET_EXCEPTION_STATE() pure @safe
+uint _MM_GET_EXCEPTION_STATE() @safe
 {
     return _mm_getcsr() & _MM_EXCEPT_MASK;
 }
 
-uint _MM_GET_FLUSH_ZERO_MODE() pure @safe
+uint _MM_GET_FLUSH_ZERO_MODE() @safe
 {
     return _mm_getcsr() & _MM_FLUSH_ZERO_MASK;
 }
 
-uint _MM_GET_ROUNDING_MODE() pure @safe
+uint _MM_GET_ROUNDING_MODE() @safe
 {
     return _mm_getcsr() & _MM_ROUND_MASK;
 }
 
-uint _mm_getcsr() pure @safe
+uint _mm_getcsr() @trusted
 {
     static if (LDC_with_ARM)
     {
-        return 0;
+        // Note: we convert the ARM FPSCR into a x86 SSE control word.
+        // However, only rounding mode and flush to zero are actually set.
+        // The returned control word will have all exceptions masked, and no exception detected.
+
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        uint cw = 0; // No exception detected
+        if (fpscr & _MM_FLUSH_ZERO_MASK_ARM)
+        {
+            // ARM has one single flag for ARM.
+            // It does both x86 bits.
+            // https://developer.arm.com/documentation/dui0473/c/neon-and-vfp-programming/the-effects-of-using-flush-to-zero-mode
+            cw |= _MM_FLUSH_ZERO_ON;
+            cw |= 0x40; // set "denormals are zeros"
+        } 
+        cw |= _MM_MASK_MASK; // All exception maske
+
+        // Rounding mode
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     cw |= _MM_ROUND_NEAREST;     break;
+            case _MM_ROUND_DOWN_ARM:        cw |= _MM_ROUND_DOWN;        break;
+            case _MM_ROUND_UP_ARM:          cw |= _MM_ROUND_UP;          break;
+            case _MM_ROUND_TOWARD_ZERO_ARM: cw |= _MM_ROUND_TOWARD_ZERO; break;
+        }
+        return cw;
     }
     else version(GNU)
     {
@@ -1316,17 +1351,19 @@ __m64 _mm_sad_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_sad_epu8(to_m128i(a), to_m128i(b)));
 }
 
-void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
+void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) @safe
 {
+    // TODO: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | _MM_MASK_xxxx);
 }
 
-void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) pure @safe
+void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) @safe
 {
+    // TODO: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_EXCEPT_MASK) | _MM_EXCEPT_xxxx);
 }
 
-void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) pure @safe
+void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_xxxx);
 }
@@ -1351,7 +1388,7 @@ unittest
 
 alias _mm_set_ps1 = _mm_set1_ps;
 
-void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) pure @safe
+void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
 }
@@ -1385,12 +1422,31 @@ unittest
     assert(A.array == correct);
 }
 
-
-void _mm_setcsr(uint controlWord) pure @safe
+void _mm_setcsr(uint controlWord) @trusted
 {
     static if (LDC_with_ARM)
     {
-        // TODO
+        // Convert from SSE to ARM control word. This is done _partially_
+        // and only support rounding mode changes.
+
+        // "To alter some bits of a VFP system register without 
+        // affecting other bits, use a read-modify-write procedure"
+        uint fpscr = __builtin_arm_get_fpscr();
+        
+        // Bits 23 to 22 are rounding modes, however not used in NEON
+        fpscr = fpscr & ~_MM_ROUND_MASK_ARM;
+        switch(controlWord & _MM_ROUND_MASK)
+        {
+            default:
+            case _MM_ROUND_NEAREST:     fpscr |= _MM_ROUND_NEAREST_ARM;     break;
+            case _MM_ROUND_DOWN:        fpscr |= _MM_ROUND_DOWN_ARM;        break;
+            case _MM_ROUND_UP:          fpscr |= _MM_ROUND_UP_ARM;          break;
+            case _MM_ROUND_TOWARD_ZERO: fpscr |= _MM_ROUND_TOWARD_ZERO_ARM; break;
+        }
+        fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK;
+        if (controlWord & _MM_FLUSH_ZERO_MASK)
+            fpscr |= _MM_FLUSH_ZERO_MASK_ARM;
+        __builtin_arm_set_fpscr(controlWord);
     }
     else version(GNU)
     {
@@ -1408,6 +1464,8 @@ void _mm_setcsr(uint controlWord) pure @safe
                   : ;
             }
         }
+        else
+            static assert(false);
     }
     else version (InlineX86Asm)
     {
