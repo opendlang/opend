@@ -173,6 +173,15 @@ package:
 nothrow @nogc:
 
 
+// For internal use only, since public API deals with a x86 semantic emulation
+enum uint _MM_ROUND_NEAREST_ARM     = 0x00000000;
+enum uint _MM_ROUND_DOWN_ARM        = 0x00800000;
+enum uint _MM_ROUND_UP_ARM          = 0x00400000;
+enum uint _MM_ROUND_TOWARD_ZERO_ARM = 0x00C00000;
+enum uint _MM_ROUND_MASK_ARM        = 0x00C00000;
+enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
+
+
 //
 //  <ROUNDING>
 //
@@ -184,9 +193,10 @@ nothrow @nogc:
 //  Note: There is no MXCSR in ARM. But there is fpscr that implements similar 
 //  functionality the same.
 //  https://developer.arm.com/documentation/dui0068/b/vector-floating-point-programming/vfp-system-registers/fpscr--the-floating-point-status-and-control-register
+//  There is no
+//  We use fpscr since it's thread-local, so we can emulate those x86 conversion albeit slowly.
 
-
-int convertFloatToInt32UsingMXCSR(float value) pure @safe
+int convertFloatToInt32UsingMXCSR(float value) @trusted
 {
     int result;
     version(GNU)
@@ -198,8 +208,28 @@ int convertFloatToInt32UsingMXCSR(float value) pure @safe
     }
     else static if (LDC_with_ARM)
     {
-        // TODO
-        result = cast(int)value;
+        // Get current rounding mode.
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:
+                result = __asm!int(`ldr s2, $1
+                                    fcvtns $0,s2`, "=r,m", value);
+                break;
+            case _MM_ROUND_DOWN_ARM:
+                result = __asm!int(`ldr s2, $1
+                                    fcvtms $0,s2`, "=r,m", value);
+                break;
+            case _MM_ROUND_UP_ARM:
+                result = __asm!int(`ldr s2, $1
+                                    fcvtps $0,s2`, "=r,m", value);
+                break;
+            case _MM_ROUND_TOWARD_ZERO_ARM:
+                result = cast(int)value;
+                break;
+        }
     }
     else
     {        
@@ -212,7 +242,7 @@ int convertFloatToInt32UsingMXCSR(float value) pure @safe
     return result;
 }
 
-int convertDoubleToInt32UsingMXCSR(double value) pure @safe
+int convertDoubleToInt32UsingMXCSR(double value) @trusted
 {
     int result;
     version(GNU)
@@ -224,8 +254,28 @@ int convertDoubleToInt32UsingMXCSR(double value) pure @safe
     }
     else static if (LDC_with_ARM)
     {
-        // TODO
-        result = cast(int)value;
+        // Get current rounding mode.
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:
+                result = __asm!int(`ldr d2, $1
+                                    fcvtns $0,d2`, "=r,m", value);
+                break;
+            case _MM_ROUND_DOWN_ARM:
+                result = __asm!int(`ldr d2, $1
+                                    fcvtms $0,d2`, "=r,m", value);
+                break;
+            case _MM_ROUND_UP_ARM:
+                result = __asm!int(`ldr d2, $1
+                                    fcvtps $0,d2`, "=r,m", value);
+                break;
+            case _MM_ROUND_TOWARD_ZERO_ARM:
+                result = cast(int)value;
+                break;
+        }
     }
     else
     {
@@ -238,12 +288,27 @@ int convertDoubleToInt32UsingMXCSR(double value) pure @safe
     return result;
 }
 
-long convertFloatToInt64UsingMXCSR(float value) pure @safe
+long convertFloatToInt64UsingMXCSR(float value) @trusted
 {
-	static if (LDC_with_ARM)
+    static if (LDC_with_ARM)
     {
-        // TODO
-        return cast(long)value;
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:
+                return __asm!long(`ldr s2, $1
+                                   fcvtns $0,s2`, "=r,m", value);
+            case _MM_ROUND_DOWN_ARM:
+                return __asm!long(`ldr s2, $1
+                                   fcvtms $0,s2`, "=r,m", value);
+            case _MM_ROUND_UP_ARM:
+                return __asm!long(`ldr s2, $1
+                                   fcvtps $0,s2`, "=r,m", value);
+            case _MM_ROUND_TOWARD_ZERO_ARM:
+                return cast(long)value;
+        }
     }
     // 64-bit can use an SSE instruction
     else version(D_InlineAsm_X86_64)
@@ -347,12 +412,28 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
 
 
 ///ditto
-long convertDoubleToInt64UsingMXCSR(double value) pure @safe
+long convertDoubleToInt64UsingMXCSR(double value) @trusted
 {
-	static if (LDC_with_ARM)
+    static if (LDC_with_ARM)
     {
-        // TODO
-        return cast(long)value;
+        // Get current rounding mode.
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:
+                return __asm!long(`ldr d2, $1
+                                   fcvtns $0,d2`, "=r,m", value);
+            case _MM_ROUND_DOWN_ARM:
+                return __asm!long(`ldr d2, $1
+                                   fcvtms $0,d2`, "=r,m", value);
+            case _MM_ROUND_UP_ARM:
+                return __asm!long(`ldr d2, $1
+                                   fcvtps $0,d2`, "=r,m", value);
+            case _MM_ROUND_TOWARD_ZERO_ARM:
+                return cast(long)value;
+        }
     }
     // 64-bit can use an SSE instruction
     else version(D_InlineAsm_X86_64)

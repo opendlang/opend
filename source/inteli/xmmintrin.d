@@ -272,7 +272,7 @@ int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 
 alias _mm_cvt_pi2ps = _mm_cvtpi32_ps;
 
-__m64 _mm_cvt_ps2pi (__m128 a) pure @safe
+__m64 _mm_cvt_ps2pi (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
 }
@@ -287,8 +287,6 @@ unittest
     __m128 a = _mm_cvt_si2ss(_mm_set1_ps(0.0f), 42);
     assert(a.array == [42f, 0, 0, 0]);
 }
-
-
 
 
 __m128 _mm_cvtpi16_ps (__m64 a) pure @safe
@@ -349,7 +347,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi16 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi16 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw
     // Which means the 16-bit integers should be saturated
@@ -365,7 +363,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi32 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi32 (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
 }
@@ -377,7 +375,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi8 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi8 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw + packsswb
     // Which means the 8-bit integers should be saturated
@@ -459,7 +457,7 @@ static if (LDC_with_SSE1)
 }
 else
 {
-    int _mm_cvtss_si32 (__m128 a) pure @safe
+    int _mm_cvtss_si32 (__m128 a) @safe
     {
         return convertFloatToInt32UsingMXCSR(a.array[0]);
     }
@@ -476,7 +474,7 @@ version(LDC)
     else
     {
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
-        long _mm_cvtss_si64 (__m128 a) pure @safe
+        long _mm_cvtss_si64 (__m128 a) @safe
         {
             return convertFloatToInt64UsingMXCSR(a.array[0]);
         }
@@ -484,7 +482,7 @@ version(LDC)
 }
 else
 {
-    long _mm_cvtss_si64 (__m128 a) pure @safe
+    long _mm_cvtss_si64 (__m128 a) @safe
     {
         return convertFloatToInt64UsingMXCSR(a.array[0]);
     }
@@ -607,31 +605,57 @@ void _mm_free(void * mem_addr) @trusted
     free(*rawLocation);
 }
 
-uint _MM_GET_EXCEPTION_MASK() pure @safe
+uint _MM_GET_EXCEPTION_MASK() @safe
 {
     return _mm_getcsr() & _MM_MASK_MASK;
 }
 
-uint _MM_GET_EXCEPTION_STATE() pure @safe
+uint _MM_GET_EXCEPTION_STATE() @safe
 {
     return _mm_getcsr() & _MM_EXCEPT_MASK;
 }
 
-uint _MM_GET_FLUSH_ZERO_MODE() pure @safe
+uint _MM_GET_FLUSH_ZERO_MODE() @safe
 {
     return _mm_getcsr() & _MM_FLUSH_ZERO_MASK;
 }
 
-uint _MM_GET_ROUNDING_MODE() pure @safe
+uint _MM_GET_ROUNDING_MODE() @safe
 {
     return _mm_getcsr() & _MM_ROUND_MASK;
 }
 
-uint _mm_getcsr() pure @safe
+uint _mm_getcsr() @trusted
 {
     static if (LDC_with_ARM)
     {
-        return 0;
+        // Note: we convert the ARM FPSCR into a x86 SSE control word.
+        // However, only rounding mode and flush to zero are actually set.
+        // The returned control word will have all exceptions masked, and no exception detected.
+
+        uint fpscr = __builtin_arm_get_fpscr();
+
+        uint cw = 0; // No exception detected
+        if (fpscr & _MM_FLUSH_ZERO_MASK_ARM)
+        {
+            // ARM has one single flag for ARM.
+            // It does both x86 bits.
+            // https://developer.arm.com/documentation/dui0473/c/neon-and-vfp-programming/the-effects-of-using-flush-to-zero-mode
+            cw |= _MM_FLUSH_ZERO_ON;
+            cw |= 0x40; // set "denormals are zeros"
+        } 
+        cw |= _MM_MASK_MASK; // All exception maske
+
+        // Rounding mode
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     cw |= _MM_ROUND_NEAREST;     break;
+            case _MM_ROUND_DOWN_ARM:        cw |= _MM_ROUND_DOWN;        break;
+            case _MM_ROUND_UP_ARM:          cw |= _MM_ROUND_UP;          break;
+            case _MM_ROUND_TOWARD_ZERO_ARM: cw |= _MM_ROUND_TOWARD_ZERO; break;
+        }
+        return cw;
     }
     else version(GNU)
     {
@@ -806,6 +830,7 @@ else
 {
     __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
     {
+        // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
         r[0] = (a[0] > b[0]) ? a[0] : b[0];
         r[1] = (a[1] > b[1]) ? a[1] : b[1];
@@ -880,6 +905,7 @@ else
 {
     __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
     {
+        // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
         r[0] = (a[0] < b[0]) ? a[0] : b[0];
         r[1] = (a[1] < b[1]) ? a[1] : b[1];
@@ -977,6 +1003,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM
     int _mm_movemask_ps (__m128 a) pure @safe
     {
         int4 ai = cast(int4)a;
@@ -1237,6 +1264,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ps (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1257,6 +1285,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ss (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1316,17 +1345,19 @@ __m64 _mm_sad_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_sad_epu8(to_m128i(a), to_m128i(b)));
 }
 
-void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
+void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) @safe
 {
+    // TODO: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | _MM_MASK_xxxx);
 }
 
-void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) pure @safe
+void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) @safe
 {
+    // TODO: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_EXCEPT_MASK) | _MM_EXCEPT_xxxx);
 }
 
-void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) pure @safe
+void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_xxxx);
 }
@@ -1351,7 +1382,7 @@ unittest
 
 alias _mm_set_ps1 = _mm_set1_ps;
 
-void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) pure @safe
+void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
 }
@@ -1385,12 +1416,31 @@ unittest
     assert(A.array == correct);
 }
 
-
-void _mm_setcsr(uint controlWord) pure @safe
+void _mm_setcsr(uint controlWord) @trusted
 {
     static if (LDC_with_ARM)
     {
-        // TODO
+        // Convert from SSE to ARM control word. This is done _partially_
+        // and only support rounding mode changes.
+
+        // "To alter some bits of a VFP system register without 
+        // affecting other bits, use a read-modify-write procedure"
+        uint fpscr = __builtin_arm_get_fpscr();
+        
+        // Bits 23 to 22 are rounding modes, however not used in NEON
+        fpscr = fpscr & ~_MM_ROUND_MASK_ARM;
+        switch(controlWord & _MM_ROUND_MASK)
+        {
+            default:
+            case _MM_ROUND_NEAREST:     fpscr |= _MM_ROUND_NEAREST_ARM;     break;
+            case _MM_ROUND_DOWN:        fpscr |= _MM_ROUND_DOWN_ARM;        break;
+            case _MM_ROUND_UP:          fpscr |= _MM_ROUND_UP_ARM;          break;
+            case _MM_ROUND_TOWARD_ZERO: fpscr |= _MM_ROUND_TOWARD_ZERO_ARM; break;
+        }
+        fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK;
+        if (controlWord & _MM_FLUSH_ZERO_MASK)
+            fpscr |= _MM_FLUSH_ZERO_MASK_ARM;
+        __builtin_arm_set_fpscr(controlWord);
     }
     else version(GNU)
     {
@@ -1408,6 +1458,8 @@ void _mm_setcsr(uint controlWord) pure @safe
                   : ;
             }
         }
+        else
+            static assert(false);
     }
     else version (InlineX86Asm)
     {
@@ -1427,7 +1479,7 @@ unittest
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e3, e2, e1, e0];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
 }
 unittest
 {
@@ -1444,7 +1496,7 @@ __m128 _mm_setzero_ps() pure @trusted
 {
     // Compiles to xorps without problems
     float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
 }
 
 version(GNU)
@@ -1464,7 +1516,7 @@ version(GNU)
         }
         else
             static assert(false);
-        }
+    }
 }
 else static if (LDC_with_SSE1)
 {

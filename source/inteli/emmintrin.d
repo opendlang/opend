@@ -331,6 +331,7 @@ unittest
 }
 
 /// Average packed unsigned 16-bit integers in `a` and `b`.
+/// TODO: #ARM
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -1159,7 +1160,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
-__m128i _mm_cvtpd_epi32 (__m128d a) pure @trusted
+__m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
     {
@@ -1197,7 +1198,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements in `v`
 /// to packed 32-bit integers
-__m64 _mm_cvtpd_pi32 (__m128d v) pure @safe
+__m64 _mm_cvtpd_pi32 (__m128d v) @safe
 {
     return to_m64(_mm_cvtpd_epi32(v));
 }
@@ -1250,7 +1251,7 @@ unittest
 
 /// Convert packed single-precision (32-bit) floating-point elements 
 /// in `a` to packed 32-bit integers,
-__m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
+__m128i _mm_cvtps_epi32 (__m128 a) @trusted
 {
     static if (LDC_with_SSE2)
     {
@@ -1335,7 +1336,7 @@ double _mm_cvtsd_f64 (__m128d a) pure @safe
 
 /// Convert the lower double-precision (64-bit) floating-point element
 /// in `a` to a 32-bit integer.
-int _mm_cvtsd_si32 (__m128d a) pure @safe
+int _mm_cvtsd_si32 (__m128d a) @safe
 {
     static if (LDC_with_SSE2)
     {
@@ -1362,7 +1363,7 @@ version(LDC)
         alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
     else
     {
-        long _mm_cvtsd_si64 (__m128d a) pure @safe
+        long _mm_cvtsd_si64 (__m128d a) @safe
         {
             return convertDoubleToInt64UsingMXCSR(a[0]);
         }
@@ -1370,7 +1371,7 @@ version(LDC)
 }
 else
 {
-    long _mm_cvtsd_si64 (__m128d a) pure @safe
+    long _mm_cvtsd_si64 (__m128d a) @safe
     {
         return convertDoubleToInt64UsingMXCSR(a.array[0]);
     }
