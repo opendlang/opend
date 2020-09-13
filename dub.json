@@ -8,7 +8,7 @@
 
     "buildTypes": {
         "unittest-inst": {
-            "buildOptions": ["debugMode", "debugInfo"],
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
             "dflags-ldc": ["-mattr=+sse3"]
         },
         "unittest-release": {
@@ -19,12 +19,8 @@
             "dflags-ldc": ["-mattr=+sse3"]
         },
         "unittest-arm64": {
-            "buildOptions": ["debugMode", "debugInfo"],
-            "dflags-ldc": ["-mtriple=arm64-macos-unknown"]
-        },
-        "unittest-arm32": {
-            "buildOptions": ["debugMode", "debugInfo"],
-            "dflags-ldc": ["-mtriple=arm-macos-unknown"]
-        },
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm64-apple-macos"]
+        }
     }
 }
