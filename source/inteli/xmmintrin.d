@@ -48,18 +48,9 @@ enum int _MM_ROUND_UP          = 0x4000;
 enum int _MM_ROUND_TOWARD_ZERO = 0x6000;
 enum int _MM_ROUND_MASK        = 0x6000;
 
-enum uint _MM_ROUND_NEAREST_ARM     = 0x00000000;
-enum uint _MM_ROUND_DOWN_ARM        = 0x00800000;
-enum uint _MM_ROUND_UP_ARM          = 0x00400000;
-enum uint _MM_ROUND_TOWARD_ZERO_ARM = 0x00C00000;
-enum uint _MM_ROUND_MASK_ARM        = 0x00C00000;
-
 enum int _MM_FLUSH_ZERO_MASK   = 0x8000;
 enum int _MM_FLUSH_ZERO_ON     = 0x8000;
 enum int _MM_FLUSH_ZERO_OFF    = 0x0000;
-
-enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
-
 
 __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
@@ -281,7 +272,7 @@ int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 
 alias _mm_cvt_pi2ps = _mm_cvtpi32_ps;
 
-__m64 _mm_cvt_ps2pi (__m128 a) pure @safe
+__m64 _mm_cvt_ps2pi (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
 }
@@ -358,7 +349,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi16 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi16 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw
     // Which means the 16-bit integers should be saturated
@@ -374,7 +365,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi32 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi32 (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
 }
@@ -386,7 +377,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_cvtps_pi8 (__m128 a) pure @safe
+__m64 _mm_cvtps_pi8 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw + packsswb
     // Which means the 8-bit integers should be saturated
@@ -468,7 +459,7 @@ static if (LDC_with_SSE1)
 }
 else
 {
-    int _mm_cvtss_si32 (__m128 a) pure @safe
+    int _mm_cvtss_si32 (__m128 a) @safe
     {
         return convertFloatToInt32UsingMXCSR(a.array[0]);
     }
@@ -485,7 +476,7 @@ version(LDC)
     else
     {
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
-        long _mm_cvtss_si64 (__m128 a) pure @safe
+        long _mm_cvtss_si64 (__m128 a) @safe
         {
             return convertFloatToInt64UsingMXCSR(a.array[0]);
         }
@@ -493,7 +484,7 @@ version(LDC)
 }
 else
 {
-    long _mm_cvtss_si64 (__m128 a) pure @safe
+    long _mm_cvtss_si64 (__m128 a) @safe
     {
         return convertFloatToInt64UsingMXCSR(a.array[0]);
     }
@@ -1522,7 +1513,7 @@ version(GNU)
         }
         else
             static assert(false);
-        }
+    }
 }
 else static if (LDC_with_SSE1)
 {
