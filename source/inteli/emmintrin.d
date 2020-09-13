@@ -331,6 +331,7 @@ unittest
 }
 
 /// Average packed unsigned 16-bit integers in `a` and `b`.
+/// TODO: #ARM
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)

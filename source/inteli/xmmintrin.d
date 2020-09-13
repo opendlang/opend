@@ -289,8 +289,6 @@ unittest
 }
 
 
-
-
 __m128 _mm_cvtpi16_ps (__m64 a) pure @safe
 {
     __m128i ma = to_m128i(a);
@@ -832,6 +830,7 @@ else
 {
     __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
     {
+        // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
         r[0] = (a[0] > b[0]) ? a[0] : b[0];
         r[1] = (a[1] > b[1]) ? a[1] : b[1];
@@ -906,6 +905,7 @@ else
 {
     __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
     {
+        // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
         r[0] = (a[0] < b[0]) ? a[0] : b[0];
         r[1] = (a[1] < b[1]) ? a[1] : b[1];
@@ -1003,6 +1003,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM
     int _mm_movemask_ps (__m128 a) pure @safe
     {
         int4 ai = cast(int4)a;
@@ -1263,6 +1264,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ps (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1283,6 +1285,7 @@ else static if (LDC_with_SSE1)
 }
 else
 {
+    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ss (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1476,7 +1479,7 @@ unittest
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e3, e2, e1, e0];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
 }
 unittest
 {
@@ -1493,7 +1496,7 @@ __m128 _mm_setzero_ps() pure @trusted
 {
     // Compiles to xorps without problems
     float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
 }
 
 version(GNU)
