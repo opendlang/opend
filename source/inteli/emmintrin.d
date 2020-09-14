@@ -126,7 +126,8 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
-            // Generates PADDSW since LDC 1.15 -O0
+            // x86: Generates PADDSW since LDC 1.15 -O0
+            // ARM: Generates sqadd.8h since LDC 1.21 -O1, really bad in <= 1.20            
             enum prefix = `declare <8 x i16> @llvm.sadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.sadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
@@ -165,7 +166,8 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
-            // Generates PADDSB since LDC 1.15 -O0
+            // x86: Generates PADDSB since LDC 1.15 -O0
+            // ARM: Generates sqadd.16b since LDC 1.21 -O1, really bad in <= 1.20
             enum prefix = `declare <16 x i8> @llvm.sadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.sadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
@@ -195,13 +197,15 @@ unittest
 }
 
 /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+// PERF: #GDC version?
 __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
-            // Generates PADDUSB since LDC 1.15 -O0
+            // x86: Generates PADDUSB since LDC 1.15 -O0
+            // ARM: Generates uqadd.16b since LDC 1.21 -O1
             enum prefix = `declare <16 x i8> @llvm.uadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.uadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
@@ -230,13 +234,15 @@ unittest
 }
 
 /// Add packed unsigned 16-bit integers in `a` and `b` using unsigned saturation.
+// PERF: #GDC version?
 __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
-            // Generates PADDUSW since LDC 1.15 -O0
+            // x86: Generates PADDUSW since LDC 1.15 -O0
+            // ARM: Generates uqadd.8h since LDC 1.21 -O1
             enum prefix = `declare <8 x i16> @llvm.uadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.uadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
@@ -373,6 +379,7 @@ unittest
 }
 
 /// Average packed unsigned 8-bit integers in `a` and `b`.
+// TODO: #ARM
 __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -1143,7 +1150,8 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
     }
     else
     {
-        // Generates cvtdq2ps since LDC 1.0.0 -O1
+        // x86: Generates cvtdq2ps since LDC 1.0.0 -O1
+        // ARM: Generats scvtf.4s since LDC 1.8.0 -02        
         __m128 res;
         res.ptr[0] = cast(float)a.array[0];
         res.ptr[1] = cast(float)a.array[1];
@@ -1160,6 +1168,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
+// TODO #ARM
 __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -1250,7 +1259,8 @@ unittest
 }
 
 /// Convert packed single-precision (32-bit) floating-point elements 
-/// in `a` to packed 32-bit integers,
+/// in `a` to packed 32-bit integers
+// TODO #ARM
 __m128i _mm_cvtps_epi32 (__m128 a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -1606,6 +1616,7 @@ unittest
 }
 
 /// Extract a 16-bit integer from `v`, selected with `index`
+// PERF: ARM version has array bound check
 int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
     short8 r = cast(short8)v;
@@ -1801,6 +1812,7 @@ else
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
     /// and pack the results in destination.
+    // TODO: #ARM
     __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
     {
         short8 sa = cast(short8)a;

@@ -1035,7 +1035,8 @@ unittest
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) pure @trusted
 {
-    // Generate punpckldq as far back as LDC 1.0.0 -O1
+    // x86: Generate punpckldq as far back as LDC 1.0.0 -O1
+    // ARM: Generate zip as far back as LDC 1.8.0 -O1
     int2 ia = cast(int2)a;
     int2 ib = cast(int2)b;
     int2 r;

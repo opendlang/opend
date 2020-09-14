@@ -24,6 +24,7 @@ __m128d _mm_addsub_pd (__m128d a, __m128d b) pure @trusted
 {
     // Note: generates addsubpd since LDC 1.3.0 with -O1
     // PERF: for GDC, detect SSE3 and use the relevant builtin, because it doesn't generates addsubpd
+    // ARM: well optimized starting with LDC 1.18.0 -O2
     a.ptr[0] = a.array[0] - b.array[0];
     a.ptr[1] = a.array[1] + b.array[1];
     return a;
@@ -101,6 +102,7 @@ else
     /// floating-point elements in `a` and `b`.
     __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
     {
+        // TODO: quite bad on #ARM
         __m128 res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = a.array[3] + a.array[2];
@@ -161,6 +163,7 @@ else
     __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
     {
         // PERF: GDC doesn't generate the right instruction, do something
+        // TODO: quite bad on #ARM
         __m128 res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = a.array[2] - a.array[3];
