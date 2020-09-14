@@ -497,8 +497,6 @@ unittest
     assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.5f)));
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
-    //import core.stdc.stdio;
-    //printf("%lld\n",  _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
     assert(-86187 == _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
@@ -1439,10 +1437,10 @@ void _mm_setcsr(uint controlWord) @trusted
             case _MM_ROUND_UP:          fpscr |= _MM_ROUND_UP_ARM;          break;
             case _MM_ROUND_TOWARD_ZERO: fpscr |= _MM_ROUND_TOWARD_ZERO_ARM; break;
         }
-        fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK;
+        fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK_ARM;
         if (controlWord & _MM_FLUSH_ZERO_MASK)
             fpscr |= _MM_FLUSH_ZERO_MASK_ARM;
-        arm_set_fpscr(controlWord);
+        arm_set_fpscr(fpscr);
     }
     else version(GNU)
     {
