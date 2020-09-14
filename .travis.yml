@@ -2,7 +2,7 @@ language: d
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -y ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ] && [ "$TRAVIS_CPU_ARCH" == "amd64" ]]; then sudo apt-get install -y gcc-multilib ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then sudo apt-get install -y gcc-multilib ; fi
 
 arch:
   - amd64
@@ -62,7 +62,7 @@ script:
   - dub test -b unittest-release --compiler=${DC}
   - dub test -b unittest-inst --compiler=${DC}
   - dub test -b unittest-release-inst --compiler=${DC}
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ] && [ "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} -a x86 ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ] && [ "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ] && [ "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} -a x86 ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ] && [ "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} -a x86 ; fi  
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} -a x86 ; fi
