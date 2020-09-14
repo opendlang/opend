@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/libmir/mir-core.svg?branch=master)](https://travis-ci.org/libmir/mir-core)
+
 Mir Core
 ==============
 
