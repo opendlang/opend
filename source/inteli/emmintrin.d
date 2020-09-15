@@ -3756,6 +3756,19 @@ version(LDC)
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
     }
+    else static if (LDC_with_ARM)
+    {
+        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
+        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        {
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
+    }
     else
         alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
 }
