@@ -21,21 +21,23 @@ import std.range;
 import std.algorithm;
 import ikod.containers.hashmap;
 
-void main()
-{
-    HashMap!(string, int) counter;
-    string[] words = [
+static string[] words =
+[
         "hello", "this", "simple", "example", "should", "succeed", "or", "it",
         "should", "fail"
-    ];
+];
+
+void main() @safe @nogc
+{
+    HashMap!(string, int) counter;
     // count words, simplest and fastest way
     foreach (word; words) {
         counter[word] = counter.getOrAdd(word, 0) + 1; // getOrAdd() return value from table or add it to table
     }
     assert(counter.fetch("hello").ok);          // fetch() is replacement to "in": you get "ok" if key in table
-    assert(counter.fetch("hello").value == 1);  // and value itself 
-    assert(counter["hello"] == 1);
-    assert(counter["should"] == 2);
+    assert(counter.fetch("hello").value == 1);  // and value itself
+    debug assert(counter["hello"] == 1);        // opIndex is not @nogc
+    debug assert(counter["should"] == 2);       // opIndex is not @nogc
     assert(counter.contains("hello"));          // contains check presence
     assert(counter.length == words.length - 1); // because "should" counts only once
     // iterators
