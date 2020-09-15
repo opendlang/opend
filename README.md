@@ -6,6 +6,7 @@
 The DUB package `intel-intrinsics` implements Intel intrinsics for D.
 
 `intel-intrinsics` lets you use x86 SIMD in D with support for LDC / DMD / GDC with a single syntax and API.
+It can target AArch64 for full-speed with Apple Silicon.
 
 ```json
 "dependencies":
@@ -18,14 +19,14 @@ The DUB package `intel-intrinsics` implements Intel intrinsics for D.
 
 ### SIMD intrinsics with `_mm_` prefix
 
-|       | DMD          | LDC                    | GDC                  |
+|       | DMD          | LDC x86                | LDC AArch64          | GDC                  |
 |-------|--------------|------------------------|----------------------|
-| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
-| SSE   | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
-| SSE2  | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
-| SSE3  | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| SSSE3 | No           | No                     | No                   |
-| ...   | No           | No                     | No                   |
+| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE2  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE3  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| SSSE3 | No           | No                     | No                   | No                   
+| ...   | No           | No                     | No                   | No                   
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
@@ -87,6 +88,7 @@ int elem = A.array[0];
 
 - **Portability** 
   It just works the same for DMD, LDC, and GDC.
+  When using LDC, `intel-intrinsics` allows to target AArch64 with the same semantics.
 
 - **Capabilities**
   Some instructions just aren't accessible using `core.simd` and `ldc.simd` capabilities. For example: `pmaddwd` which is so important in digital video. Some instructions need an almost exact sequence of LLVM IR to get generated. `ldc.intrinsics` is a moving target and you need a layer on top of it.
@@ -102,6 +104,15 @@ https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 Without this Intel documentation, it's much more difficult to write sizeable SIMD code.
 
 
+### Notable difference between x86 and AArch64 target
+
+AArch64 respects floating-point rounding through MXCSR emulation.
+This works using FPCR as thread-local store for rounding mode.
+
+Some features of MXCSR are absent:
+- Getting floating-point exception status
+- Setting floating-point exception masks
+- Separate control for denormals-are-zero and flush-to-zero (ARM has one bit for both)
 
 
 
