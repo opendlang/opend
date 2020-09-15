@@ -4,14 +4,14 @@
 ## HashMap ##
 
 Main differences from language AA:
-1. HashMap itself is value(not reference), so any `assign` from one map to another copy all data. If you need performance - use reference or pointer.
-1. HashMap have no "in" operator.
-1. Any `get` get method returns value stored in table, and never - pointer. This is safe. AA can return pointer as it allocates on each insertion.
+1. HashMap itself is struct and value (not reference), so any assign `map2 = map1` will copy all data from map1 to map2.
+1. HashMap have deprecated "in" operator. Pointer to value in the table is highly unsafe (as stored value location can change on any table mutation). Use [`fetch`]() to test presence and fetch value in single API call intead of `in`.
+1. Any method from `get` family returns value stored in table, and never - pointer. This is safe.
 
 Main advantages:
 1. It is fast, as it do not allocate on every insert and has optimized storage layout.
-1. It inherit @nogc and @safe properties from key and value types (but opIndex can throw exception so it is not @nogc in any case - use fetch or get with default value)
-1. Provide stable iteration over container (you can modify/delete items from table while iterating over it)
+1. It inherit `@nogc` and `@safe` properties from key and value types, so it can be used in `@safe` and `@nogc` code. Note: `opIndex` can throw exception so it is not @nogc in any case (use fetch or get with default value if you need @nogc)
+1. Provide stable iteration over container (you can modify/delete table items while iterating over it).
 
 You cah find HashMap API docs [here](https://ikod-containers.dpldocs.info/ikod.containers.hashmap.HashMap.html)
 ### code sample ###

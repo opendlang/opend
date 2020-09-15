@@ -439,6 +439,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     /// key in table
     /// Returns: pointer to stored value (if key in table) or null 
     ///
+    deprecated("very unsafe, use fetch instead")
     auto opBinaryRight(string op, K)(K k) @system if (op == "in") {
 
         immutable lookup_index = getLookupIndex(k);
@@ -456,6 +457,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     }
 
     /// "in" is unsafe as it can point to arbitrary address after resize
+    deprecated("very unsafe, use fetch instead")
     auto opBinaryRight(string op, K)(K k) const @system if (op == "in") {
 
         immutable lookup_index = getLookupIndex(k);
@@ -477,17 +479,19 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     }
     ///
     /// fetch is safe(do not return pointer) and nogc (do not throw exception)
-    /// variant of "in" but in exchange of the cost of returning value instead of pointer
-    /// we return ok = true and value if key in map, ok = false otherwise
+    /// variant of "in" but retuns tuple("ok", "value").
+    /// You can check if result.ok == true. It this case you'll find value in "value"
     ///
-    auto fetch(K)(K k) {
+    auto fetch(K)(K k) 
+    {
         immutable lookup_index = getLookupIndex(k);
         if (lookup_index == hash_t.max) {
             return tuple!("ok", "value")(false, V.init);
         }
         return tuple!("ok", "value")(true, _buckets.bs[lookup_index].value);
     }
-    auto fetch(K)(K k) const {
+    auto fetch(K)(K k) const
+    {
         immutable lookup_index = getLookupIndex(k);
         if (lookup_index == hash_t.max) {
             return tuple!("ok", "value")(false, cast(const V)V.init);
