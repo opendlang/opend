@@ -7,6 +7,10 @@
 *.dylib
 *.dll
 
+# IDE
+*.sublime-project
+*.sublime-workspace
+
 # Compiled Static libraries
 *.a
 *.lib
