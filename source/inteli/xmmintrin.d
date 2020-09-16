@@ -1001,9 +1001,19 @@ else static if (LDC_with_SSE1)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
 }
+else static if (LDC_with_ARM)
+{
+    int _mm_movemask_ps (__m128 a) pure @safe
+    {
+        int4 ai = cast(int4)a;
+        int4 shift = [31, 30, 39, 28];
+        ai = ai >>> shift; // Only efficient on ARM.
+        int r = ai.array[0] + (ai.array[1]) + (ai.array[2]) + (ai.array[3]);
+        return r;
+    }
+}
 else
 {
-    // TODO: #ARM
     int _mm_movemask_ps (__m128 a) pure @safe
     {
         int4 ai = cast(int4)a;

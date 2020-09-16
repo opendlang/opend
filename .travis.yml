@@ -59,11 +59,12 @@ matrix:
 
 # Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
 # Note: run 32-bit tests on Linux x86 only
+# Note: need '' escaping because of fricking YAML
 script:
-  - if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} ; fi
-  - if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} ; fi
-  - if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} ; fi
-  - if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} ; fi
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} ; fi'
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} -a x86 ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} -a x86 ; fi
