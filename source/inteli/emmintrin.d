@@ -1175,17 +1175,6 @@ __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
     {
         // Like in clang, implemented with a magic intrinsic right now
         return __builtin_ia32_cvtpd2dq(a);
-
-    /* Unfortunately this generates a cvttpd2dq instruction
-        __m128i _mm_cvtpd_epi32 (__m128d a) pure  @safe
-        {
-            enum ir = `
-                %i = fptosi <2 x double> %0 to <2 x i32>
-                %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
-                ret <4 x i32> %r`;
-
-            return cast(__m128i) inlineIR!(ir, __m128i, __m128d)(a);
-        } */
     }
     else static if (GDC_with_SSE2)
     {
