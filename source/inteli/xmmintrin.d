@@ -1272,9 +1272,19 @@ else static if (LDC_with_SSE1)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
+else version(LDC)
+{
+    __m128 _mm_rsqrt_ps (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / llvm_sqrt(a[0]);
+        a[1] = 1.0f / llvm_sqrt(a[1]);
+        a[2] = 1.0f / llvm_sqrt(a[2]);
+        a[3] = 1.0f / llvm_sqrt(a[3]);
+        return a;
+    }
+}
 else
 {
-    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ps (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1293,9 +1303,16 @@ else static if (LDC_with_SSE1)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
+else version(LDC)
+{
+    __m128 _mm_rsqrt_ss (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / llvm_sqrt(a[0]);
+        return a;
+    }
+}
 else
 {
-    // TODO: #ARM with llvm_sqrt
     __m128 _mm_rsqrt_ss (__m128 a) pure @safe
     {
         a[0] = 1.0f / sqrt(a[0]);
@@ -1489,7 +1506,7 @@ unittest
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e3, e2, e1, e0];
-    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
+    return loadUnaligned!(float4)(result.ptr);
 }
 unittest
 {
@@ -1506,7 +1523,7 @@ __m128 _mm_setzero_ps() pure @trusted
 {
     // Compiles to xorps without problems
     float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr); // #ARM  PERF: useless template here
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 version(GNU)
