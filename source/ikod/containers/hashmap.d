@@ -20,33 +20,38 @@ private import std.experimental.allocator.gc_allocator;
 private import ikod.containers.internal;
 public  import ikod.containers.hash;
 
+///
 class KeyNotFound : Exception {
+    ///
     this(string msg = "key not found") @safe {
         super(msg);
     }
 }
-
+///
 class KeyRemoved : Exception {
+    ///
     this(string msg = "key not found") @safe {
         super(msg);
     }
 }
 
-static if (hash_t.sizeof == 8) {
-    enum EMPTY_HASH = 0x00_00_00_00_00_00_00_00;
-    enum DELETED_HASH = 0x10_00_00_00_00_00_00_00;
-    enum ALLOCATED_HASH = 0x20_00_00_00_00_00_00_00;
-    enum TYPE_MASK = 0xF0_00_00_00_00_00_00_00;
-    enum HASH_MASK = 0x0F_FF_FF_FF_FF_FF_FF_FF;
+private
+{
+    static if (hash_t.sizeof == 8) {
+            enum EMPTY_HASH = 0x00_00_00_00_00_00_00_00;
+            enum DELETED_HASH = 0x10_00_00_00_00_00_00_00;
+            enum ALLOCATED_HASH = 0x20_00_00_00_00_00_00_00;
+            enum TYPE_MASK = 0xF0_00_00_00_00_00_00_00;
+            enum HASH_MASK = 0x0F_FF_FF_FF_FF_FF_FF_FF;
+    }
+    else static if (hash_t.sizeof == 4) {
+            enum EMPTY_HASH = 0x00_00_00_00;
+            enum DELETED_HASH = 0x10_00_00_00;
+            enum ALLOCATED_HASH = 0x20_00_00_00;
+            enum TYPE_MASK = 0xF0_00_00_00;
+            enum HASH_MASK = 0x0F_FF_FF_FF;
+    }
 }
-else static if (hash_t.sizeof == 4) {
-    enum EMPTY_HASH = 0x00_00_00_00;
-    enum DELETED_HASH = 0x10_00_00_00;
-    enum ALLOCATED_HASH = 0x20_00_00_00;
-    enum TYPE_MASK = 0xF0_00_00_00;
-    enum HASH_MASK = 0x0F_FF_FF_FF;
-}
-
 
 private bool keyEquals(K)(K a, K b) {
     static if (is(K == class)) {
@@ -201,19 +206,23 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     }
 
     string toString() {
-        import std.algorithm, std.array;
+        import std.algorithm: map;
+        import std.array: array, join;
 
         auto pairs = byPair;
         return "[%s]".format(pairs.map!(p => "%s:%s".format(p.key, p.value)).array.join(", "));
     }
 
+    /// dump HashMap content to string
+    /// (for debugging)
     string dump()
     {
-        import std.array;
+        import std.array: join;
         string[] str;
         for(int i=0; i<_buckets_num;i++)
         {
-            str ~= "[%5.5d][0x%16.16x][%s][%s]".format(i, _buckets.bs[i].hash, _buckets.bs[i].key, _buckets.bs[i].value);
+            str ~= "[%5.5d][0x%16.16x][%s][%s]".format
+                    (i,     _buckets.bs[i].hash, _buckets.bs[i].key, _buckets.bs[i].value);
         }
         return str.join("\n");
     }
@@ -647,9 +656,10 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     ///
     /// put pair (k,v) into hash.
     ///
-    /// it must be @safe, it inherits @nogc properties from K and V
+    /// inherits @safe and @nogc properties from K and V
     /// It can resize table if table is overloaded or has too much deleted entries.
-    /// Returns: pointer to placed value (pointer is valid until next resize).
+    /// Returns: Nullable with old value if value was updated, or empty Nullable
+    /// if we just stored new value.
     ///
     auto put(K)(K k, V v)
     do {
@@ -667,7 +677,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
             doResize(_grow_factor * _buckets_num);
         }
 
-        if (_buckets.cow_required)
+        if (_buckets.cow_required) // <- we have iterator over buckets, make copy on write
         {
             auto new_bs = BucketStorage(_buckets_num);
             copy(_buckets.bs, new_bs.bs);
@@ -684,11 +694,6 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         debug (cachetools)
             safe_tracef("start_index: %d, placement_index: %d", start_index, placement_index);
 
-        //
-        // Each switch case contains same part of code, so that
-        // any exception in key or value assignment will not
-        // leave table in inconsistent state.
-        //
         if (h < ALLOCATED_HASH) {
             bucket.value = v;
             bucket.key = k;
@@ -725,7 +730,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
             return false;
         }
 
-        if (_buckets.cow_required)
+        if (_buckets.cow_required) // <- we have iterator over buckets, make copy on write
         {
             auto new_bs = BucketStorage(_buckets_num);
             copy(_buckets.bs, new_bs.bs);
