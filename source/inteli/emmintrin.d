@@ -1856,6 +1856,7 @@ else
     else
     {
         ///ditto
+        // TODO: #ARM, absolutely catastrophic
         void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
         {
             byte16 b = cast(byte16)a;
@@ -1999,6 +2000,7 @@ else version(LDC)
 {
     void _mm_mfence() pure @safe
     {
+        // Note: will generate the DMB instruction on ARM
         llvm_memory_fence();
     }
 }
@@ -2146,6 +2148,7 @@ else static if (LDC_with_SSE2)
 else
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
+    // TODO: #ARM
     int _mm_movemask_epi8(__m128i v) pure @safe
     {
         byte16 ai = cast(byte16)v;
@@ -2766,12 +2769,14 @@ unittest
 
 __m128d _mm_setzero_pd () pure @trusted
 {
+    // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     double[2] result = [0.0, 0.0];
     return loadUnaligned!(double2)(result.ptr);
 }
 
 __m128i _mm_setzero_si128() pure @trusted
 {
+    // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     int[4] result = [0, 0, 0, 0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
@@ -2892,7 +2897,7 @@ else static if (DMD_with_32bit_asm)
 }
 else
 {
-
+    // TODO: #ARM
     __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
     {
         int4 r = void;
@@ -2937,6 +2942,8 @@ else
 {
     __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
     {
+        // TODO ARM: good since LDC 1.12 -O2
+        // ~but -O0 version is catastrophic
         long2 r = void;
         long2 sa = cast(long2)a;
         long2 lc = cast(long2)count;
@@ -2978,6 +2985,7 @@ else static if (DMD_with_32bit_asm)
 }
 else
 {
+    // TODO #ARM, absolutely catastrophic codegen
     __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
     {
         short8 sa = cast(short8)a;
@@ -3009,6 +3017,7 @@ else
     }
     else
     {
+        // TODO #ARM, not fantastic again
         __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
         {
             int4 r = void;
@@ -3038,6 +3047,7 @@ else
     }
     else
     {
+        // PERF #ARM: unroll that loop
         __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
         {
             long2 r = void;
@@ -3068,6 +3078,7 @@ else
     }
     else
     {
+        // TODO #ARM
         __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
         {
             short8 sa = cast(short8)a;
@@ -3219,6 +3230,7 @@ else
     }
     else
     {
+        // TODO: #ARM
         __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
         {
             short8 sa = cast(short8)a;
@@ -3243,23 +3255,22 @@ static if (LDC_with_SSE2)
 {
     alias _mm_sra_epi32  = __builtin_ia32_psrad128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_sra_epi32  = __builtin_ia32_psrad128;
-    }
-    else
-    {
-        __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
-        {
-            int4 r = void;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            foreach(i; 0..4)
-                r.array[i] = (a.array[i] >> bits);
-            return r;
-        }
+        int4 r = void;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        r.array[0] = (a.array[0] >> bits);
+        r.array[1] = (a.array[1] >> bits);
+        r.array[2] = (a.array[2] >> bits);
+        r.array[3] = (a.array[3] >> bits);
+        return r;
     }
 }
 unittest
@@ -3283,6 +3294,7 @@ else
     }
     else
     {
+        // TODO: ARM
         __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @safe
         {
             short8 sa = cast(short8)a;
@@ -3305,21 +3317,20 @@ static if (LDC_with_SSE2)
 {
     alias _mm_srai_epi32  = __builtin_ia32_psradi128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_srai_epi32  = __builtin_ia32_psradi128;
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
     {
-        alias _mm_srai_epi32  = __builtin_ia32_psradi128;
-    }
-    else
-    {
-        __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
-        {
-            int4 r = void;
-            foreach(i; 0..4)
-                r.array[i] = (a.array[i] >> imm8);
-            return r;
-        }
+        int4 r = void;
+        r.array[0] = (a.array[0] >> imm8);
+        r.array[1] = (a.array[1] >> imm8);
+        r.array[2] = (a.array[2] >> imm8);
+        r.array[3] = (a.array[3] >> imm8);
+        return r;
     }
 }
 unittest
@@ -3334,24 +3345,22 @@ static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+}
 else
 {
-    static if (GDC_with_SSE2)
+    // TODO: #ARM
+    __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
-    }
-    else
-    {
-        __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> bits);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        short8 r = void;
+        foreach(i; 0..8)
+            r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> bits);
+        return cast(int4)r;
     }
 }
 unittest
@@ -3366,23 +3375,22 @@ static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi32  = __builtin_ia32_psrld128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_srl_epi32  = __builtin_ia32_psrld128;
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_srl_epi32  = __builtin_ia32_psrld128;
-    }
-    else
-    {
-        __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
-        {
-            int4 r = void;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            foreach(i; 0..4)
-                r.array[i] = cast(uint)(a.array[i]) >> bits;
-            return r;
-        }
+        int4 r = void;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        r.array[0] = cast(uint)(a.array[0]) >> bits;
+        r.array[1] = cast(uint)(a.array[1]) >> bits;
+        r.array[2] = cast(uint)(a.array[2]) >> bits;
+        r.array[3] = cast(uint)(a.array[3]) >> bits;
+        return r;
     }
 }
 unittest
@@ -3397,24 +3405,21 @@ static if (LDC_with_SSE2)
 {
     alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
-    }
-    else
-    {
-        __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
-        {
-            long2 r = void;
-            long2 sa = cast(long2)a;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            foreach(i; 0..2)
-                r.array[i] = cast(ulong)(sa.array[i]) >> bits;
-            return cast(__m128i)r;
-        }
+        long2 r = void;
+        long2 sa = cast(long2)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        r.array[0] = cast(ulong)(sa.array[0]) >> bits;
+        r.array[1] = cast(ulong)(sa.array[1]) >> bits;
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -3437,6 +3442,7 @@ else
     }
     else
     {
+        // TODO #ARM
         __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
         {
             short8 sa = cast(short8)a;
@@ -3467,11 +3473,13 @@ else
     }
     else
     {
-        __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @safe
+        __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
         {
             int4 r = void;
-            foreach(i; 0..4)
-                r.array[i] = cast(uint)(a.array[i]) >> imm8;
+            r.ptr[0] = cast(uint)(a.array[0]) >> imm8;
+            r.ptr[1] = cast(uint)(a.array[1]) >> imm8;
+            r.ptr[2] = cast(uint)(a.array[2]) >> imm8;
+            r.ptr[3] = cast(uint)(a.array[3]) >> imm8;
             return r;
         }
     }
@@ -3496,12 +3504,12 @@ else
     }
     else
     {
-        __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @safe
+        __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
         {
             long2 r = void;
             long2 sa = cast(long2)a;
-            foreach(i; 0..2)
-                r.array[i] = cast(ulong)(sa.array[i]) >> imm8;
+            r.ptr[0] = cast(ulong)(sa.array[0]) >> imm8;
+            r.ptr[1] = cast(ulong)(sa.array[1]) >> imm8;
             return cast(__m128i)r;
         }
     }
@@ -3804,7 +3812,8 @@ version(LDC)
 {
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
-        // Generates PSUBSB since LDC 1.15 -O0
+        // x86: Generates PSUBSB since LDC 1.15 -O0
+        // ARM: Generates sqsub.16b since LDC 1.21 -O0
         /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
         {
@@ -3850,7 +3859,8 @@ version(LDC)
 {
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
-        // Generates PSUBUSW since LDC 1.15 -O0
+        // x86: Generates PSUBUSW since LDC 1.15 -O0
+        // ARM: Generates uqsub.8h since LDC 1.21 -O0
         /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         {
@@ -3900,6 +3910,7 @@ version(LDC)
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
         // Generates PSUBUSB since LDC 1.15 -O0
+        // Generates uqsub.16b since LDC 1.21 -O0
         /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
         {
