@@ -49,6 +49,8 @@ matrix:
      arch: arm64
    - d: dmd-2.087.1
      arch: arm64
+   - d: gdc
+     arch: arm64
 
 # Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
 # Note: run 32-bit tests on Linux x86 only

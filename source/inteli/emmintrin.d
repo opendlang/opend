@@ -2134,7 +2134,7 @@ else static if (LDC_with_SSE2)
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 }
-// TODO: doesn't work
+// TODO #ARM: doesn't work
 /*
 else static if (LDC_with_ARM)
 {
