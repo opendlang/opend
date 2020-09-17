@@ -2134,6 +2134,8 @@ else static if (LDC_with_SSE2)
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 }
+// TODO: doesn't work
+/*
 else static if (LDC_with_ARM)
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
@@ -2143,7 +2145,7 @@ else static if (LDC_with_ARM)
         byte16 ai = cast(byte16)a;
         byte16 shift7 = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]; 
         ai = ai >>> shift7;
-        byte16 shift = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]; 
+        byte16 shift  = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]; 
         ai = ai << shift; // 4-way shift, only efficient on ARM.
         short8 lo = cast(short8) _mm_unpacklo_epi8(ai, _mm_setzero_si128());
         short8 hi = cast(short8) _mm_unpackhi_epi8(ai, _mm_setzero_si128());
@@ -2152,8 +2154,8 @@ else static if (LDC_with_ARM)
         return lo.array[0] + lo.array[1] + lo.array[2] + lo.array[3]
              + lo.array[4] + lo.array[5] + lo.array[6] + lo.array[7];
     }
-}
-else
+} */
+else 
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     int _mm_movemask_epi8(__m128i v) pure @safe
@@ -2169,7 +2171,7 @@ else
 }
 unittest
 {
-    assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 0, 0, -1, -1, -1, 0, 0, 0, 0, -1, -1, 0, -1, -1, 0)));
+    assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 1, 2, -3, -1, -1, 4, 8, 127, 0, -1, -1, 0, -1, -1, 0)));
 }
 
 static if (GDC_with_SSE2)
