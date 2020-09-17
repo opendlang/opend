@@ -20,15 +20,6 @@ d:
  - ldc-1.19.0
  - ldc-1.18.0
  - ldc-1.17.0
- - ldc-1.16.0
- - ldc-1.15.0
- - ldc-1.14.0
- - ldc-1.13.0
- - ldc-1.12.0
- - ldc-1.11.0
- - ldc-1.10.0
- - ldc-1.9.0
- - ldc-1.8.0
  - dmd-beta
  - dmd-2.093.0
  - dmd-2.092.1
@@ -37,24 +28,12 @@ d:
  - dmd-2.089.1
  - dmd-2.088.1
  - dmd-2.087.1
- - dmd-2.086.1
- - dmd-2.085.1
- - dmd-2.084.1
- - dmd-2.083.1
- - dmd-2.082.1
- - dmd-2.081.2
- - dmd-2.080.1
- - dmd-2.079.1
- - dmd-2.078.2
  - gdc
 
 matrix:
   allow_failures:
    - d: gdc
      os: osx          # no GDC for OSX
-   - d: dmd-2.080.1   # backend bug with optimizations
-   - d: dmd-2.079.1   # codegen issues with optimizations
-   - d: dmd-2.078.2   # codegen issues with optimizations
    - d: dmd-2.089.1   # weird travis crash on Linux only, did not investigate
    - d: dmd-beta
      arch: arm64
@@ -69,18 +48,6 @@ matrix:
    - d: dmd-2.088.1
      arch: arm64
    - d: dmd-2.087.1
-     arch: arm64
-   - d: dmd-2.086.1
-     arch: arm64
-   - d: dmd-2.085.1
-     arch: arm64
-   - d: dmd-2.084.1
-     arch: arm64
-   - d: dmd-2.083.1
-     arch: arm64
-   - d: dmd-2.082.1
-     arch: arm64
-   - d: dmd-2.081.2
      arch: arm64
 
 # Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
