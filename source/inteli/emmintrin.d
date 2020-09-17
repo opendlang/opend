@@ -1845,7 +1845,7 @@ else
     else
     {
         ///ditto
-        // TODO: #ARM, absolutely catastrophic
+        // PERF: on ARM, is absolutely catastrophic, however needing this intrinsics is rare.
         void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
         {
             byte16 b = cast(byte16)a;
@@ -2134,10 +2134,28 @@ else static if (LDC_with_SSE2)
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 }
+else static if (LDC_with_ARM)
+{
+    /// Create mask from the most significant bit of each 8-bit element in `v`.
+    int _mm_movemask_epi8 (__m128i a) pure @safe
+    {
+        // PERF: looks worse than the one in simde
+        byte16 ai = cast(byte16)a;
+        byte16 shift7 = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]; 
+        ai = ai >>> shift7;
+        byte16 shift = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]; 
+        ai = ai << shift; // 4-way shift, only efficient on ARM.
+        short8 lo = cast(short8) _mm_unpacklo_epi8(ai, _mm_setzero_si128());
+        short8 hi = cast(short8) _mm_unpackhi_epi8(ai, _mm_setzero_si128());
+        short8 shift8 = [8, 8, 8, 8, 8, 8, 8, 8];
+        lo |= (hi << shift8);
+        return lo.array[0] + lo.array[1] + lo.array[2] + lo.array[3]
+             + lo.array[4] + lo.array[5] + lo.array[6] + lo.array[7];
+    }
+}
 else
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
-    // TODO: #ARM
     int _mm_movemask_epi8(__m128i v) pure @safe
     {
         byte16 ai = cast(byte16)v;
