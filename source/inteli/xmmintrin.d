@@ -1006,8 +1006,9 @@ else static if (LDC_with_ARM)
     int _mm_movemask_ps (__m128 a) pure @safe
     {
         int4 ai = cast(int4)a;
-        int4 shift = [31, 30, 29, 28];
-        ai = ai >>> shift; // Only efficient on ARM.
+        ai = ai >>> 31;
+        int4 shift = [0, 1, 2, 3]; 
+        ai = ai << shift; // 4-way shift, only efficient on ARM.
         int r = ai.array[0] + (ai.array[1]) + (ai.array[2]) + (ai.array[3]);
         return r;
     }
