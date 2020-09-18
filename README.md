@@ -21,10 +21,10 @@ It can target AArch64 for full-speed with Apple Silicon.
 
 |       | DMD          | LDC x86                | LDC AArch64          | GDC                  |
 |-------|--------------|------------------------|----------------------|----------------------
-| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE2  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE3  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but some slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE2  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
+| SSE3  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | SSSE3 | No           | No                     | No                   | No                   |             
 | ...   | No           | No                     | No                   | No                   |
 
