@@ -1,0 +1,13 @@
+{
+    "name": "bench",
+    "authors": [
+        "Igor Khasilev"
+    ],
+    "dependencies": {
+        "ikod-containers": "*",
+        "emsi_containers": "*"
+    },
+    "description": "Performance tests for containers",
+    "copyright": "Copyright © 2018, Igor Khasilev",
+    "license": "MIT"
+}

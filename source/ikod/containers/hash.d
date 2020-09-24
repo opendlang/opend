@@ -26,7 +26,7 @@ if ( UseToHashMethod!T )
 public hash_t hash_function(T)(in T v) @nogc @trusted
 if ( !UseToHashMethod!T )
 {
-    static if (is(T==int) || is(T==uint) || is(T==byte) || is(T==ubyte))
+    static if (is(T==byte) || is(T==ubyte))
     {
         return v;
     }

@@ -92,7 +92,9 @@ private bool keyEquals(K)(K a, K b) {
     assert(keyEquals(1, 1));
 }
 ///
-struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
+struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true)
+if ( !isDynamicArray!(K) || isSomeString!(K) ) // dynamic arrays not allowed
+{
 
     private enum initial_buckets_num = 32;
 
