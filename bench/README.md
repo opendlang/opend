@@ -7,8 +7,8 @@ Results description:
 
 Hash table - four options:
 * std - dlang AA
-* i.c - this package (cachetools) implementation (using Mallocator),
-* i.c+GC - this package (cachetools) implementation(using GCAllocator),
+* i.c - ikod.containers (using Mallocator),
+* i.c+GC - ikod.containers (using GCAllocator),
 * emsi - emsi_containers hash map.
 
 Lists:
