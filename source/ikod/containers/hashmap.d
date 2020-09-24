@@ -93,9 +93,11 @@ private bool keyEquals(K)(K a, K b) {
 }
 ///
 struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true)
-if ( !isDynamicArray!(K) || isSomeString!(K) ) // dynamic arrays not allowed
 {
-
+    static if (hasAliasing!K)
+    {
+        pragma(msg, "type %s has aliasing and is unsafe as hashmap key".format(K.stringof));
+    }
     private enum initial_buckets_num = 32;
 
     alias StoredKeyType = StoredType!K;
