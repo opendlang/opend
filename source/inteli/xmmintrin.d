@@ -627,11 +627,7 @@ uint _MM_GET_ROUNDING_MODE() @safe
 
 uint _mm_getcsr() @trusted
 {
-    static if (LDC_with_ARM32)
-    {
-        assert(false); // TODO
-    }
-    else static if (LDC_with_ARM64)
+    static if (LDC_with_ARM)
     {
         // Note: we convert the ARM FPSCR into a x86 SSE control word.
         // However, only rounding mode and flush to zero are actually set.
@@ -1380,13 +1376,13 @@ __m64 _mm_sad_pu8 (__m64 a, __m64 b) pure @safe
 
 void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) @safe
 {
-    // TODO: unsupported on ARM
+    // Note: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | _MM_MASK_xxxx);
 }
 
 void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) @safe
 {
-    // TODO: unsupported on ARM
+    // Note: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_EXCEPT_MASK) | _MM_EXCEPT_xxxx);
 }
 
@@ -1451,11 +1447,7 @@ unittest
 
 void _mm_setcsr(uint controlWord) @trusted
 {
-    static if (LDC_with_ARM32)
-    {
-        assert(false); // TODO
-    }
-    else static if (LDC_with_ARM64)
+    static if (LDC_with_ARM)
     {
         // Convert from SSE to ARM control word. This is done _partially_
         // and only support rounding mode changes.

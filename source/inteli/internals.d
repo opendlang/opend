@@ -150,12 +150,12 @@ enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64; // ARM32 is largely unsuppo
 
 static if (LDC_with_ARM32)
 {
-    package uint arm_get_fpscr() nothrow @nogc @trusted
+    package uint arm_get_fpcr() nothrow @nogc @trusted
     {
         return __builtin_arm_get_fpscr();
     }
 
-    package void arm_set_fpscr(uint cw) nothrow @nogc @trusted
+    package void arm_set_fpcr(uint cw) nothrow @nogc @trusted
     {
         __builtin_arm_set_fpscr(cw);
     }
@@ -234,8 +234,9 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
-        // TODO
-        assert(false);
+        result = __asm!int(`vldr s2, $1
+                            vcvtr.s32.f32 s2, s2
+                            vmov $0, s2`, "=r,m", value);
     }
     else static if (LDC_with_ARM64)
     {
@@ -285,8 +286,9 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
-        // TODO
-        assert(false);
+        result = __asm!int(`vldr d2, $1
+                            vcvtr.s32.f64 s2, d2
+                            vmov $0, s2`, "=r,m", value);
     }
     else static if (LDC_with_ARM64)
     {
@@ -328,8 +330,22 @@ long convertFloatToInt64UsingMXCSR(float value) @trusted
 {
     static if (LDC_with_ARM32)
     {
-        // TODO
-        assert(false);
+        // We have to resort to libc since 32-bit ARM 
+        // doesn't seem to have 64-bit registers.
+        
+        uint fpscr = arm_get_fpcr(); // Get current rounding mode.
+
+        // Note: converting to double precision else rounding could be different for large integers
+        double asDouble = value; 
+
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     return cast(long)(llvm_round(asDouble));
+            case _MM_ROUND_DOWN_ARM:        return cast(long)(llvm_floor(asDouble));
+            case _MM_ROUND_UP_ARM:          return cast(long)(llvm_ceil(asDouble));
+            case _MM_ROUND_TOWARD_ZERO_ARM: return cast(long)(asDouble);
+        }
     }
     else static if (LDC_with_ARM64)
     {
@@ -457,8 +473,17 @@ long convertDoubleToInt64UsingMXCSR(double value) @trusted
 {
     static if (LDC_with_ARM32)
     {
-        // TODO
-        assert(false);
+        // We have to resort to libc since 32-bit ARM 
+        // doesn't seem to have 64-bit registers.
+        uint fpscr = arm_get_fpcr(); // Get current rounding mode.
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     return cast(long)(llvm_round(value));
+            case _MM_ROUND_DOWN_ARM:        return cast(long)(llvm_floor(value));
+            case _MM_ROUND_UP_ARM:          return cast(long)(llvm_ceil(value));
+            case _MM_ROUND_TOWARD_ZERO_ARM: return cast(long)(value);
+        }
     }
     else static if (LDC_with_ARM64)
     {
