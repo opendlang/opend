@@ -494,7 +494,7 @@ unittest
     uint savedRounding = _MM_GET_ROUNDING_MODE();
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
-    assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.5f)));
+    assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.49f)));
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
     assert(-86187 == _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
