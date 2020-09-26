@@ -134,6 +134,16 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
         else
             return __builtin_ia32_paddsw128(a, b);
     }
@@ -174,6 +184,16 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            byte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
         else
             return __builtin_ia32_paddsb128(a, b);
     }
@@ -212,6 +232,16 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            ubyte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) + cast(ubyte)(sb.array[i]));
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
         else
             return __builtin_ia32_paddusb128(a, b);
     }
@@ -248,6 +278,16 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
                 %r = call <8 x i16> @llvm.uadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
+        }
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            ushort[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                res[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]));
+            return _mm_loadu_si128(cast(int4*)res.ptr);
         }
         else
             return __builtin_ia32_paddusw128(a, b);
@@ -3773,11 +3813,12 @@ version(LDC)
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
     }
-    else static if (LDC_with_ARM)
+    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
     {
         /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
         {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             short[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -3833,6 +3874,20 @@ version(LDC)
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
     }
+    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+    {
+        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
+        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            byte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
+    }
     else
         alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
 }
@@ -3880,6 +3935,23 @@ version(LDC)
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
     }
+    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+    {
+        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
+        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+            {
+                int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
+                res[i] = saturateSignedIntToUnsignedShort(sum);
+            }
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
+    }
     else
         alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
 }
@@ -3918,8 +3990,8 @@ version(LDC)
 {
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
-        // Generates PSUBUSB since LDC 1.15 -O0
-        // Generates uqsub.16b since LDC 1.21 -O0
+        // x86: Generates PSUBUSB since LDC 1.15 -O0
+        // ARM: Generates uqsub.16b since LDC 1.21 -O0
         /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
         {
@@ -3928,6 +4000,20 @@ version(LDC)
                 %r = call <16 x i8> @llvm.usub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+        }
+    }
+    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
+    {
+         /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+        {
+            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
+            ubyte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+            return _mm_loadu_si128(cast(int4*)res.ptr);
         }
     }
     else    
