@@ -18,6 +18,10 @@
             "buildOptions": ["unittests", "optimize", "inline"],
             "dflags-ldc": ["-mattr=+sse3"]
         },
+        "unittest-arm32": {
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm-linux-gnueabihf"]
+        },
         "unittest-arm64": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
             "dflags-ldc": ["-mtriple=arm64-apple-macos"]

@@ -99,7 +99,7 @@ else version(LDC)
 
     version(ARM)
     {
-        //public import ldc.gccbuiltins_arm;
+        public import ldc.gccbuiltins_arm;
         enum LDC_with_ARM32 = true;
         enum LDC_with_ARM64 = false;
         enum LDC_with_SSE1 = false;
@@ -148,14 +148,27 @@ else
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64; // ARM32 is largely unsupported though
 
-static if (LDC_with_ARM)
+static if (LDC_with_ARM32)
 {
-    package uint arm_get_fpscr() pure nothrow @nogc @trusted
+    package uint arm_get_fpscr() nothrow @nogc @trusted
+    {
+        return __builtin_arm_get_fpscr();
+    }
+
+    package void arm_set_fpscr(uint cw) nothrow @nogc @trusted
+    {
+        __builtin_arm_set_fpscr(cw);
+    }
+}
+
+static if (LDC_with_ARM64)
+{
+    package uint arm_get_fpcr() pure nothrow @nogc @trusted
     {
         return __asm!uint("mrs $0, fpcr", "=r");
     }
 
-    package void arm_set_fpscr(uint cw) nothrow @nogc @trusted
+    package void arm_set_fpcr(uint cw) nothrow @nogc @trusted
     {
         __asm!void("ldr w2, $0 \n msr fpcr, x2", "m", cw);
     }
@@ -219,10 +232,15 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
             "cvtss2si %1, %0\n": "=r"(result) : "x" (value);
         }
     }
-    else static if (LDC_with_ARM)
+    else static if (LDC_with_ARM32)
+    {
+        // TODO
+        assert(false);
+    }
+    else static if (LDC_with_ARM64)
     {
         // Get current rounding mode.
-        uint fpscr = arm_get_fpscr();
+        uint fpscr = arm_get_fpcr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -265,10 +283,15 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
             "cvtsd2si %1, %0\n": "=r"(result) : "x" (value);
         }
     }
-    else static if (LDC_with_ARM)
+    else static if (LDC_with_ARM32)
+    {
+        // TODO
+        assert(false);
+    }
+    else static if (LDC_with_ARM64)
     {
         // Get current rounding mode.
-        uint fpscr = arm_get_fpscr();
+        uint fpscr = arm_get_fpcr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -303,9 +326,14 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
 
 long convertFloatToInt64UsingMXCSR(float value) @trusted
 {
-    static if (LDC_with_ARM)
+    static if (LDC_with_ARM32)
     {
-        uint fpscr = arm_get_fpscr();
+        // TODO
+        assert(false);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        uint fpscr = arm_get_fpcr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
@@ -427,10 +455,15 @@ long convertFloatToInt64UsingMXCSR(float value) @trusted
 ///ditto
 long convertDoubleToInt64UsingMXCSR(double value) @trusted
 {
-    static if (LDC_with_ARM)
+    static if (LDC_with_ARM32)
+    {
+        // TODO
+        assert(false);
+    }
+    else static if (LDC_with_ARM64)
     {
         // Get current rounding mode.
-        uint fpscr = arm_get_fpscr();
+        uint fpscr = arm_get_fpcr();
 
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {

@@ -627,13 +627,17 @@ uint _MM_GET_ROUNDING_MODE() @safe
 
 uint _mm_getcsr() @trusted
 {
-    static if (LDC_with_ARM)
+    static if (LDC_with_ARM32)
+    {
+        assert(false); // TODO
+    }
+    else static if (LDC_with_ARM64)
     {
         // Note: we convert the ARM FPSCR into a x86 SSE control word.
         // However, only rounding mode and flush to zero are actually set.
         // The returned control word will have all exceptions masked, and no exception detected.
 
-        uint fpscr = arm_get_fpscr();
+        uint fpscr = arm_get_fpcr();
 
         uint cw = 0; // No exception detected
         if (fpscr & _MM_FLUSH_ZERO_MASK_ARM)
@@ -1447,14 +1451,18 @@ unittest
 
 void _mm_setcsr(uint controlWord) @trusted
 {
-    static if (LDC_with_ARM)
+    static if (LDC_with_ARM32)
+    {
+        assert(false); // TODO
+    }
+    else static if (LDC_with_ARM64)
     {
         // Convert from SSE to ARM control word. This is done _partially_
         // and only support rounding mode changes.
 
         // "To alter some bits of a VFP system register without 
         // affecting other bits, use a read-modify-write procedure"
-        uint fpscr = arm_get_fpscr();
+        uint fpscr = arm_get_fpcr();
         
         // Bits 23 to 22 are rounding modes, however not used in NEON
         fpscr = fpscr & ~_MM_ROUND_MASK_ARM;
@@ -1469,7 +1477,7 @@ void _mm_setcsr(uint controlWord) @trusted
         fpscr = fpscr & ~_MM_FLUSH_ZERO_MASK_ARM;
         if (controlWord & _MM_FLUSH_ZERO_MASK)
             fpscr |= _MM_FLUSH_ZERO_MASK_ARM;
-        arm_set_fpscr(fpscr);
+        arm_set_fpcr(fpscr);
     }
     else version(GNU)
     {
