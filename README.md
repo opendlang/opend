@@ -6,7 +6,7 @@
 The DUB package `intel-intrinsics` implements Intel intrinsics for D.
 
 `intel-intrinsics` lets you use x86 SIMD in D with support for LDC / DMD / GDC with a single syntax and API.
-It can target AArch64 for full-speed with Apple Silicon.
+It can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for the Raspberry Pi.
 
 ```json
 "dependencies":
@@ -19,7 +19,7 @@ It can target AArch64 for full-speed with Apple Silicon.
 
 ### SIMD intrinsics with `_mm_` prefix
 
-|       | DMD          | LDC x86                | LDC AArch64          | GDC                  |
+|       | DMD          | LDC x86                | LDC ARM          | GDC                  |
 |-------|--------------|------------------------|----------------------|----------------------
 | MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
 | SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
@@ -104,15 +104,17 @@ https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 Without this Intel documentation, it's much more difficult to write sizeable SIMD code.
 
 
-### Notable difference between x86 and AArch64 target
+### Notable difference between x86 and ARM targets
 
-AArch64 respects floating-point rounding through MXCSR emulation.
-This works using FPCR as thread-local store for rounding mode.
+- AArch64 and 32-bit ARM respects floating-point rounding through MXCSR emulation.
+  This works using FPCR as thread-local store for rounding mode.
 
-Some features of MXCSR are absent:
-- Getting floating-point exception status
-- Setting floating-point exception masks
-- Separate control for denormals-are-zero and flush-to-zero (ARM has one bit for both)
+  Some features of MXCSR are absent:
+  - Getting floating-point exception status
+  - Setting floating-point exception masks
+  - Separate control for denormals-are-zero and flush-to-zero (ARM has one bit for both)
+
+- 32-bit ARM has a different nearest rounding mode as compared to AArch64 and x86. Numbers with a 0.5 fractional part (such as `-4.5`) may not round in the same direction. This shouldn't affect you.
 
 
 
