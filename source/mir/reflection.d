@@ -164,7 +164,7 @@ unittest
     static assert(hasUDA!(S.a, reflectIgnore!"c++"));
 }
 
-/// Attribute to rename methods, types and functions
+/// Attribute for documentation and unittests
 struct ReflectDoc(string target)
 {
     ///
