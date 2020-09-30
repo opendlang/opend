@@ -192,7 +192,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true)
     }
 
     void opAssign(ref typeof(this) rhs) {
-        auto kv = rhs.byPair; // this will keep current copy of _buckets[]
+        //auto kv = rhs.byPair; // this will keep current copy of _buckets[]
         //
         // keep old _buckets_num(to avoid resizes) and _mask;
         //
