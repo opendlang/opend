@@ -2924,15 +2924,15 @@ unittest
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_sll_epi32 = __builtin_ia32_pslld128;
+    deprecated("Use _mm_slli_epi32 instead.") alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_sll_epi32 = __builtin_ia32_pslld128;
+    deprecated("Use _mm_slli_epi32 instead.") alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 }
 else static if (DMD_with_32bit_asm)
 {
-    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_slli_epi32 instead.") __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
     {
         asm pure nothrow @nogc @trusted
         {
@@ -2946,8 +2946,7 @@ else static if (DMD_with_32bit_asm)
 }
 else
 {
-    // TODO: #ARM
-    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_slli_epi32 instead.") __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
     {
         int4 r = void;
         long2 lc = cast(long2)count;
@@ -2957,25 +2956,18 @@ else
         return r;
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
-    __m128i B = _mm_sll_epi32(A, _mm_cvtsi32_si128(1));
-    int[4] expectedB = [ 0, 4, 6, -8];
-    assert(B.array == expectedB);
-}
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+    deprecated("Use _mm_slli_epi64 instead.") alias _mm_sll_epi64  = __builtin_ia32_psllq128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+    deprecated("Use _mm_slli_epi64 instead.") alias _mm_sll_epi64  = __builtin_ia32_psllq128;
 }
 else static if (DMD_with_32bit_asm)
 {
-    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
     {
         asm pure nothrow @nogc @trusted
         {
@@ -2989,9 +2981,9 @@ else static if (DMD_with_32bit_asm)
 }
 else
 {
-    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
     {
-        // TODO ARM: good since LDC 1.12 -O2
+        // ARM: good since LDC 1.12 -O2
         // ~but -O0 version is catastrophic
         long2 r = void;
         long2 sa = cast(long2)a;
@@ -3002,25 +2994,18 @@ else
         return cast(__m128i)r;
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi64(8, -4);
-    long2 B = cast(long2) _mm_sll_epi64(A, _mm_cvtsi32_si128(1));
-    long[2] expectedB = [ 16, -8];
-    assert(B.array == expectedB);
-}
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+    deprecated("Use _mm_slli_epi16 instead.") alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+    deprecated("Use _mm_slli_epi16 instead.") alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 }
 else static if (DMD_with_32bit_asm)
 {
-    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
     {
         asm pure nothrow @nogc
         {
@@ -3034,8 +3019,7 @@ else static if (DMD_with_32bit_asm)
 }
 else
 {
-    // TODO #ARM, absolutely catastrophic codegen
-    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
     {
         short8 sa = cast(short8)a;
         long2 lc = cast(long2)count;
@@ -3045,13 +3029,6 @@ else
             r.ptr[i] = cast(short)(cast(ushort)(sa.array[i]) << bits);
         return cast(int4)r;
     }
-}
-unittest
-{
-    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
-    short8 B = cast(short8)( _mm_sll_epi16(A, _mm_cvtsi32_si128(1)) );
-    short[8] expectedB =     [ 0, 2, 4, 6, -8, -10, 12, 14 ];
-    assert(B.array == expectedB);
 }
 
 static if (LDC_with_SSE2)
@@ -3269,18 +3246,17 @@ else
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_sra_epi16 = __builtin_ia32_psraw128;
+    deprecated("Use _mm_srai_epi16 instead.") alias _mm_sra_epi16 = __builtin_ia32_psraw128;
 }
 else
 {
     static if (GDC_with_SSE2)
     {
-        alias _mm_sra_epi16 = __builtin_ia32_psraw128;
+        deprecated("Use _mm_srai_epi16 instead.") alias _mm_sra_epi16 = __builtin_ia32_psraw128;
     }
     else
     {
-        // TODO: #ARM
-        __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+        deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
         {
             short8 sa = cast(short8)a;
             long2 lc = cast(long2)count;
@@ -3292,25 +3268,18 @@ else
         }
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
-    short8 B = cast(short8)( _mm_sra_epi16(A, _mm_cvtsi32_si128(1)) );
-    short[8] expectedB = [ 0, 0, 1, 1, -2, -3, 3, 3 ];
-    assert(B.array == expectedB);
-}
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+    deprecated("Use _mm_srai_epi32 instead.") alias _mm_sra_epi32  = __builtin_ia32_psrad128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+    deprecated("Use _mm_srai_epi32 instead.") alias _mm_sra_epi32  = __builtin_ia32_psrad128;
 }
 else
 {
-    __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_srai_epi32 instead.") __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
     {
         int4 r = void;
         long2 lc = cast(long2)count;
@@ -3322,14 +3291,6 @@ else
         return r;
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
-    __m128i B = _mm_sra_epi32(A, _mm_cvtsi32_si128(1));
-    int[4] expectedB = [ 0, 1, 1, -2];
-    assert(B.array == expectedB);
-}
-
 
 static if (LDC_with_SSE2)
 {
@@ -3392,16 +3353,15 @@ unittest
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+    deprecated("Use _mm_srli_epi16 instead.") alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+    deprecated("Use _mm_srli_epi16 instead.") alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 }
 else
 {
-    // TODO: #ARM
-    __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
     {
         short8 sa = cast(short8)a;
         long2 lc = cast(long2)count;
@@ -3412,25 +3372,18 @@ else
         return cast(int4)r;
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
-    short8 B = cast(short8)( _mm_srl_epi16(A, _mm_cvtsi32_si128(1)) );
-    short[8] expectedB = [ 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3 ];
-    assert(B.array == expectedB);
-}
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_srl_epi32  = __builtin_ia32_psrld128;
+    deprecated("Use _mm_srli_epi32 instead.") alias _mm_srl_epi32  = __builtin_ia32_psrld128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_srl_epi32  = __builtin_ia32_psrld128;
+    deprecated("Use _mm_srli_epi32 instead.") alias _mm_srl_epi32  = __builtin_ia32_psrld128;
 }
 else
 {
-    __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_srli_epi32 instead.") __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
     {
         int4 r = void;
         long2 lc = cast(long2)count;
@@ -3442,25 +3395,18 @@ else
         return r;
     }
 }
-unittest
-{
-    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
-    __m128i B = _mm_srl_epi32(A, _mm_cvtsi32_si128(1));
-    int[4] expectedB = [ 0, 1, 1, 0x7FFFFFFE];
-    assert(B.array == expectedB);
-}
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+    deprecated("Use _mm_srli_epi64 instead.") alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+    deprecated("Use _mm_srli_epi64 instead.") alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
 }
 else
 {
-    __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
     {
         long2 r = void;
         long2 sa = cast(long2)a;
@@ -3470,13 +3416,6 @@ else
         r.array[1] = cast(ulong)(sa.array[1]) >> bits;
         return cast(__m128i)r;
     }
-}
-unittest
-{
-    __m128i A = _mm_setr_epi64(8, -4);
-    long2 B = cast(long2) _mm_srl_epi64(A, _mm_cvtsi32_si128(1));
-    long[2] expectedB = [ 4, 0x7FFFFFFFFFFFFFFE];
-    assert(B.array == expectedB);
 }
 
 static if (LDC_with_SSE2)
