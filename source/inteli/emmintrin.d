@@ -3096,6 +3096,16 @@ static if (LDC_with_SSE2)
 {
     alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
 }
+else version(LDC)
+{
+     __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 shift = short8(cast(ubyte)imm8);
+        sa = sa << shift;
+        return cast(int4)sa;
+    }
+}
 else
 {
     static if (GDC_with_SSE2)
@@ -3104,7 +3114,6 @@ else
     }
     else
     {
-        // TODO #ARM
         __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
         {
             short8 sa = cast(short8)a;
@@ -3336,7 +3345,7 @@ else
     __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
     {
         int4 r = void;
-        r.array[0] = (a.array[0] >> imm8);
+        r.array[0] = (a.array[0] >> imm8); // TODO: wrong semantic
         r.array[1] = (a.array[1] >> imm8);
         r.array[2] = (a.array[2] >> imm8);
         r.array[3] = (a.array[3] >> imm8);
@@ -3349,6 +3358,10 @@ unittest
     __m128i B = _mm_srai_epi32(A, 1);
     int[4] expectedB = [ 0, 1, 1, -2];
     assert(B.array == expectedB);
+
+    __m128i C = _mm_srai_epi32(A, 32);
+    int[4] expectedC = [ 0, 0, 0, -1];
+    assert(C.array == expectedC);
 }
 
 static if (LDC_with_SSE2)
@@ -3478,6 +3491,10 @@ unittest
     __m128i B = _mm_srli_epi32(A, 1);
     int[4] expectedB = [ 0, 1, 1, 0x7FFFFFFE];
     assert(B.array == expectedB);
+ 
+    __m128i C = _mm_srli_epi32(A, 32);
+    int[4] expectedC = [ 0, 0, 0, 0 ];
+    assert(C.array == expectedC);
 }
 
 static if (LDC_with_SSE2)
