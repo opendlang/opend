@@ -19,7 +19,7 @@ struct UnrolledList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 private:
     alias allocator = Allocator.instance;
     alias StoredT = StoredType!T;
-    enum ItemsPerNode = 32; // can be variable maybe
+    enum  ItemsPerNode = 32; // can be variable maybe
 
     int     _count;
     Node*   _first_node, _last_node;
@@ -127,7 +127,25 @@ private:
     }
 
 public:
-    @disable this(ref typeof(this));
+    this(this)
+    {
+        auto n = _first_node;
+        _first_node = _last_node = null;
+        _count = 0;
+        while(n)
+        {
+            auto nn = n._next_node;
+            for(auto i=0; i<ItemsPerNode; i++)
+            {
+                if ( n.test_bit(i) )
+                {
+                    pushBack(n._items[i]);
+                }
+            }
+            n = nn;
+        }
+    }
+
     ~this()
     {
         auto n = _first_node;
@@ -224,6 +242,22 @@ public:
             throw new RangeError("index %d out of range".format(i));
         }
         return v.value;
+    }
+    void opAssign(ref typeof(this) other)
+    {
+        auto n = other._first_node;
+        while(n)
+        {
+            auto nn = n._next_node;
+            for(auto i=0; i<ItemsPerNode; i++)
+            {
+                if ( n.test_bit(i) )
+                {
+                    pushBack(n._items[i]);
+                }
+            }
+            n = nn;
+        }
     }
     // O(N)
     void opIndexAssign(T v, size_t i)
