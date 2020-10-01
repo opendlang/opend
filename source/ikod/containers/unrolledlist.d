@@ -437,8 +437,8 @@ public:
             //| (((1<<(pos)) - 1)^uint.max);
         int hi_mask = (node._bitmap >> pos);
             //| (((1<<(int.sizeof*8-pos)) - 1)^uint.max);
-        uint lo_shift = bsf(lo_mask ^ uint.max);
-        uint hi_shift = bsf(hi_mask ^ uint.max);
+        uint lo_shift = lo_mask == 0 ? uint.max : bsf(lo_mask ^ uint.max);
+        uint hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
         auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
         auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
 
