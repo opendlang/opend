@@ -243,8 +243,14 @@ public:
         }
         return v.value;
     }
+    // O(N)
     void opAssign(ref typeof(this) other)
     {
+        if (other is this)
+        {
+            return;
+        }
+        clear();
         auto n = other._first_node;
         while(n)
         {
@@ -272,6 +278,7 @@ public:
         assert(n.test_bit(pos));
         n._items[pos] = v;
     }
+    // O(1)
     bool empty()
     {
         return _count == 0;
@@ -762,6 +769,37 @@ unittest
     assert(l.length == 2);
     assert(l.front.ok == true && l.front.value == 3);
     assert(l.back.ok == true && l.back.value == 2);
+}
+@("ul0")
+@("ul2")
+@safe @nogc unittest
+{
+    UnrolledList!int l0, l1;
+    foreach(i;0..1_000)
+    {
+        l0.pushBack(i);
+    }
+    l1 = l0;
+    foreach(i;0..1_000)
+    {
+        immutable v = l1.get(i);
+        assert(v.ok);
+        assert(v.value == i);
+    }
+    l1 = l0;
+    foreach(i;0..1_000)
+    {
+        immutable v = l1.get(i);
+        assert(v.ok);
+        assert(v.value == i);
+    }
+    auto l2 = l1;
+    foreach(i;0..1_000)
+    {
+        immutable v = l2.get(i);
+        assert(v.ok);
+        assert(v.value == i);
+    }
 }
 
 @("ul2")
