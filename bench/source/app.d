@@ -675,12 +675,12 @@ void main()
 */
     void test_clist_cachetools() @safe
     {
-        import ikod.containers.compressedlist;
+        import ikod.containers.unrolledlist;
         gcstart = () @trusted {return GC.stats;}();
-        CompressedList!int intList;
+        ikod.containers.unrolledlist.UnrolledList!int intList;
         foreach(i; randw)
         {
-            intList.insertFront(i);
+            intList.pushBack(i);
             if (i < iterations/10)
             {
                 intList.popFront();
@@ -691,12 +691,12 @@ void main()
 
     void test_clist_cachetoolsGC() @safe
     {
-        import ikod.containers.compressedlist;
+        import ikod.containers.unrolledlist;
         gcstart = () @trusted {return GC.stats;}();
-        CompressedList!(int, GCAllocator) intList;
+        ikod.containers.unrolledlist.UnrolledList!(int, GCAllocator) intList;
         foreach(i; randw)
         {
-            intList.insertFront(i);
+            intList.pushBack(i);
             if (i < iterations/10)
             {
                 intList.popFront();
@@ -736,7 +736,8 @@ void main()
         gcstop = () @trusted {return GC.stats;}();
     }
 
-    // --
+*/
+
     void test_dlist_std_LARGE()
     {
         import std.container.dlist;
@@ -755,12 +756,12 @@ void main()
 
     void test_dlist_cachetools_LARGE() @safe
     {
-        import cachetools.containers.lists;
+        import ikod.containers.unrolledlist;
         gcstart = () @trusted {return GC.stats;}();
-        DList!LARGE list;
+        ikod.containers.unrolledlist.UnrolledList!LARGE list;
         foreach(i; randw)
         {
-            list.insert_last(LARGE(i));
+            list.pushBack(LARGE(i));
             if (i < iterations/10)
             {
                 list.popFront();
@@ -771,12 +772,12 @@ void main()
 
     void test_dlist_cachetools_LARGE_GC() @safe
     {
-        import cachetools.containers.lists;
+        import ikod.containers.unrolledlist;
         gcstart = () @trusted {return GC.stats;}();
-        DList!(LARGE, GCAllocator) list;
+        ikod.containers.unrolledlist.UnrolledList!(LARGE, GCAllocator) list;
         foreach(i; randw)
         {
-            list.insert_last(LARGE(i));
+            list.pushBack(LARGE(i));
             if (i < iterations/10)
             {
                 list.popFront();
@@ -785,38 +786,38 @@ void main()
         gcstop = () @trusted {return GC.stats;}();
     }
 
-    void test_clist_cachetools_LARGE() @safe
-    {
-        import cachetools.containers.lists;
-        gcstart = () @trusted {return GC.stats;}();
-        CompressedList!(LARGE) list;
-        foreach(i; randw)
-        {
-            list.insertBack(LARGE(i));
-            if (i < iterations/10)
-            {
-                list.popFront();
-            }
-        }
-        gcstop = () @trusted {return GC.stats;}();
-    }
+    // void test_clist_cachetools_LARGE() @safe
+    // {
+    //     import cachetools.containers.lists;
+    //     gcstart = () @trusted {return GC.stats;}();
+    //     CompressedList!(LARGE) list;
+    //     foreach(i; randw)
+    //     {
+    //         list.insertBack(LARGE(i));
+    //         if (i < iterations/10)
+    //         {
+    //             list.popFront();
+    //         }
+    //     }
+    //     gcstop = () @trusted {return GC.stats;}();
+    // }
 
-    void test_clist_cachetools_LARGE_GC() @safe
-    {
-        import cachetools.containers.lists;
-        gcstart = () @trusted {return GC.stats;}();
-        CompressedList!(LARGE, GCAllocator) list;
-        foreach(i; randw)
-        {
-            list.insertBack(LARGE(i));
-            if (i < iterations/10)
-            {
-                list.popFront();
-            }
-        }
-        gcstop = () @trusted {return GC.stats;}();
-    }
-
+    // void test_clist_cachetools_LARGE_GC() @safe
+    // {
+    //     import cachetools.containers.lists;
+    //     gcstart = () @trusted {return GC.stats;}();
+    //     CompressedList!(LARGE, GCAllocator) list;
+    //     foreach(i; randw)
+    //     {
+    //         list.insertBack(LARGE(i));
+    //         if (i < iterations/10)
+    //         {
+    //             list.popFront();
+    //         }
+    //     }
+    //     gcstop = () @trusted {return GC.stats;}();
+    // }
+/*
     void test_dlist_emsi_LARGE()
     {
         import containers.unrolledlist;
@@ -1279,23 +1280,23 @@ void main()
 //    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
 
-//    writeln("\n", center(" Test double-linked list of structs ", 50, ' '));
-//    writeln(      center(" ================================== ", 50, ' '));
+   writeln("\n", center(" Test double-linked list of structs ", 50, ' '));
+   writeln(      center(" ================================== ", 50, ' '));
 
-//    GC.collect();GC.minimize();
-//    test = "std";
-//    r = benchmark!(test_dlist_std_LARGE)(trials);
-//    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+   GC.collect();GC.minimize();
+   test = "std";
+   r = benchmark!(test_dlist_std_LARGE)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
-//    GC.collect();GC.minimize();
-//    test = "i.c.";
-//    r = benchmark!(test_dlist_cachetools_LARGE)(trials);
-//    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+   GC.collect();GC.minimize();
+   test = "i.c.";
+   r = benchmark!(test_dlist_cachetools_LARGE)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
-//    GC.collect();GC.minimize();
-//    test = "i.c.+GC";
-//    r = benchmark!(test_dlist_cachetools_LARGE_GC)(trials);
-//    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+   GC.collect();GC.minimize();
+   test = "i.c.+GC";
+   r = benchmark!(test_dlist_cachetools_LARGE_GC)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
 //    GC.collect();GC.minimize();
 //    test = "i.c.unr";

@@ -1,6 +1,10 @@
 module ikod.containers.compressedlist;
 
+/* deprecated */
+
 private import core.memory;
+private import core.bitop;
+private import core.exception;
 
 private import std.experimental.allocator;
 private import std.experimental.allocator.mallocator : Mallocator;
@@ -8,8 +12,9 @@ private import std.experimental.allocator.gc_allocator;
 private import std.experimental.logger;
 private import std.format;
 private import std.algorithm;
+private import std.typecons;
 
-
+private import automem: RefCounted, refCounted;
 
 private import ikod.containers.internal;
 
@@ -57,7 +62,7 @@ private ubyte countBusy(ubyte[] m) @safe @nogc nothrow
     }
     return s;
 }
-@safe unittest
+@safe version(None) unittest
 {
     globalLogLevel = LogLevel.info;
     import std.algorithm.comparison: equal;
@@ -87,8 +92,12 @@ private ubyte countBusy(ubyte[] m) @safe @nogc nothrow
 }
 
 ///
-/// Unrolled list
+/// unrolled list with support only for:
+/// 1. insert/delete front     O(1)
+/// 2. insert/delete back      O(1)
+/// 3. access/remove by index  O(n/m), m - nodes per page
 ///
+deprecated("use unrolled list")
 struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 {
     alias allocator = Allocator.instance;
@@ -101,20 +110,11 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 
     enum BitMapLength = NodesPerPage % 8 ? NodesPerPage/8+1 : NodesPerPage/8;
 
-    ///
-    /// unrolled list with support only for:
-    /// 1. insert/delete front
-    /// 2. insert/delete back
-    /// 3. keep unstable "pointer" to arbitrary element
-    /// 4. remove element by pointer
 
     struct Page {
         ///
         /// Page is fixed-length array of list Nodes
         /// with batteries
-        ///
-        //uint                _magic = MAGIC;
-        //uint                _epoque;    // increment each time we move to freelist
         ubyte[BitMapLength] _freeMap;
         Page*               _prevPage;
         Page*               _nextPage;
@@ -129,32 +129,6 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         byte    p; // prev index
         byte    n; // next index
     }
-
-    // struct NodePointer {
-    //     private
-    //     {
-    //         Page*   _page;
-    //         byte    _index;
-    //     }
-    //     this(Page* page, byte index)
-    //     {
-    //         //_epoque = page._epoque;
-    //         _page = page;
-    //         _index = index;
-    //     }
-    //     ///
-    //     /// This is unsafe as you may refer to deleted node.
-    //     /// You are free to wrap it in @trusted code if you know what are you doing.
-    //     ///
-    //     T opUnary(string s)() @system if (s == "*")
-    //     {
-    //         assert(_page !is null);
-    //         //assert(_page._magic == MAGIC, "Pointer resolution to freed or damaged page");
-    //         //assert(_page._epoque == _epoque, "Page were freed");
-    //         assert(!isFreePosition(_page._freeMap, _index), "you tried to access already free list element");
-    //         return _page._nodes[_index].v;
-    //     }
-    // }
 
     struct Range {
         private Page* page;
@@ -547,7 +521,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 }
 
 ///
-@safe unittest
+@safe version(None_Deprecated) unittest
 {
     import std.experimental.logger;
     import std.algorithm;
@@ -643,7 +617,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 }
 
 // unittest for unsafe types
-unittest {
+version(None_Deprecated) unittest {
     import std.variant;
     alias T = Algebraic!(int, string);
     auto v = T(1);
@@ -655,7 +629,7 @@ unittest {
     cl.popBack;
 }
 
-@safe @nogc unittest {
+@safe @nogc version(None_Deprecated) unittest {
     import std.range, std.algorithm;
     CompressedList!int a, b;
     iota(0,100).each!(e => a.insertBack(e));
@@ -663,3 +637,12 @@ unittest {
     b = a;
     assert(equal(a, b));
 }
+
+@("range")
+@safe @nogc version(None_Deprecated) unittest {
+    import std.range, std.algorithm;
+    CompressedList!int a;
+    iota(0,100).each!(e => a.insertBack(e));
+    assert(equal(a.range(), iota(0,100)));
+}
+
