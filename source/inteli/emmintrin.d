@@ -3086,35 +3086,60 @@ unittest
     assert(D.array == expectedD);
 }
 
+static if (GDC_with_SSE2)
+{
+    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psllqi128(a, cast(ubyte)imm8);
+    }
+}
 static if (LDC_with_SSE2)
 {
-    alias _mm_slli_epi64  = __builtin_ia32_psllqi128;
+    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psllqi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    // PERF #ARM: unroll that loop
+    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @trusted
     {
-        alias _mm_slli_epi64  = __builtin_ia32_psllqi128;
-    }
-    else
-    {
-        // PERF #ARM: unroll that loop
-        __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
-        {
-            long2 r = void;
-            long2 sa = cast(long2)a;
-            foreach(i; 0..2)
-                r.array[i] = cast(ulong)(sa.array[i]) << imm8;
+        long2 sa = cast(long2)a;
+
+        // Note: the intrinsics guarantee imm8[0..7] is taken, however
+        //       D says "It's illegal to shift by the same or more bits 
+        //       than the size of the quantity being shifted"
+        //       and it's UB instead.
+        long2 r = cast(long2) _mm_setzero_si128();
+        ubyte count = cast(ubyte) imm8;
+        if (count > 63)
             return cast(__m128i)r;
-        }
+
+        foreach(i; 0..2)
+            r.ptr[i] = cast(ulong)(sa.array[i]) << count;
+        return cast(__m128i)r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi64(8, -4);
     long2 B = cast(long2) _mm_slli_epi64(A, 1);
+    long2 B2 = cast(long2) _mm_slli_epi64(A, 1 + 1024);
     long[2] expectedB = [ 16, -8];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    long2 C = cast(long2) _mm_slli_epi64(A, 0);
+    long[2] expectedC = [ 8, -4];
+    assert(C.array == expectedC);
+
+    long2 D = cast(long2) _mm_slli_epi64(A, 64);
+    long[2] expectedD = [ 0, -0];
+    assert(D.array == expectedD);
 }
 
 static if (LDC_with_SSE2)
@@ -3210,6 +3235,10 @@ unittest
     short8 R = cast(short8) _mm_slli_si128!8(A); // shift 8 bytes to the left
     short[8] correct = [ 0, 0, 0, 0, 0, 1, 2, 3 ];
     assert(R.array == correct);
+
+    __m128i B = _mm_srli_si128!16(_mm_set1_epi32(-1));
+    int[4] expectedB = [0, 0, 0, 0];
+    assert(B.array == expectedB);
 }
 
 version(LDC)
@@ -3696,6 +3725,10 @@ unittest
     __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1));
     int[4] correct = [2, 3, 4, 0];
     assert(R.array == correct);
+
+    __m128i A = _mm_srli_si128!16(_mm_set1_epi32(-1));
+    int[4] expectedA = [0, 0, 0, 0];
+    assert(A.array == expectedA);
 }
 
 /// Shift `v` right by `bytes` bytes while shifting in zeros.
