@@ -3064,7 +3064,7 @@ else
             return r;
         
         foreach(i; 0..4)
-            r.array[i] = cast(uint)(a.array[i]) << imm8;
+            r.array[i] = cast(uint)(a.array[i]) << count;
         return r;
     }
 }
@@ -3326,35 +3326,56 @@ else
     }
 }
 
+
+static if (GDC_with_SSE2)
+{
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrawi128(a, cast(ubyte)imm8);
+    }
+}
 static if (LDC_with_SSE2)
 {
-    alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrawi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    // TODO: ARM
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
     {
-        alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
-    }
-    else
-    {
-        // TODO: ARM
-        __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(sa.array[i] >> imm8);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        short8 r = void;
+
+        // Note: the intrinsics guarantee imm8[0..7] is taken, however
+        //       D says "It's illegal to shift by the same or more bits 
+        //       than the size of the quantity being shifted"
+        //       and it's UB instead.
+        ubyte count = cast(ubyte)imm8;
+        if (count > 15) 
+            count = 15;
+        foreach(i; 0..8)
+            r.ptr[i] = cast(short)(sa.array[i] >> count);
+        return cast(int4)r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
     short8 B = cast(short8)( _mm_srai_epi16(A, 1) );
+    short8 B2 = cast(short8)( _mm_srai_epi16(A, 1 + 256) );
     short[8] expectedB = [ 0, 0, 1, 1, -2, -3, 3, 3 ];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    short8 C = cast(short8)( _mm_srai_epi16(A, 18) );
+    short[8] expectedC = [ 0, 0, 0, 0, -1, -1, 0, 0 ];
+    assert(C.array == expectedC);
 }
 
 static if (LDC_with_SSE2)
