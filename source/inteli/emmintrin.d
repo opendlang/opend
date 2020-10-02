@@ -3502,35 +3502,58 @@ else
     }
 }
 
+
+static if (GDC_with_SSE2)
+{
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psrlwi128(a, cast(ubyte)imm8);
+    }
+}
+
 static if (LDC_with_SSE2)
 {
-    alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psrlwi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    // TODO #ARM
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
     {
-        alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
-    }
-    else
-    {
-        // TODO #ARM
-        __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> imm8);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        ubyte count = cast(ubyte)imm8;
+
+        short8 r = cast(short8) _mm_setzero_si128();
+        if (count >= 16)
+            return cast(__m128i)r;
+
+        foreach(i; 0..8)
+            r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> count);
+        return cast(__m128i)r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
     short8 B = cast(short8)( _mm_srli_epi16(A, 1) );
+    short8 B2 = cast(short8)( _mm_srli_epi16(A, 1 + 256) );
     short[8] expectedB = [ 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3 ];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    short8 C = cast(short8)( _mm_srli_epi16(A, 16) );
+    short[8] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(C.array == expectedC);
+
+    short8 D = cast(short8)( _mm_srli_epi16(A, 0) );
+    short[8] expectedD = [ 0, 1, 2, 3, -4, -5, 6, 7 ];
+    assert(D.array == expectedD);
 }
 
 
