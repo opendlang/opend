@@ -3609,35 +3609,52 @@ unittest
     assert(C.array == expectedC);
 }
 
+static if (GDC_with_SSE2)
+{
+    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrlqi128(a, cast(ubyte)imm8);
+    }
+}
 static if (LDC_with_SSE2)
 {
-    alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
+    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrlqi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
+    // TODO ARM
+    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
     {
-        alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
-    }
-    else
-    {
-        __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
-        {
-            long2 r = void;
-            long2 sa = cast(long2)a;
-            ubyte count = cast(ubyte) imm8;
-            r.ptr[0] = cast(ulong)(sa.array[0]) >> count;
-            r.ptr[1] = cast(ulong)(sa.array[1]) >> count;
+        long2 r = cast(long2) _mm_setzero_si128();
+        long2 sa = cast(long2)a;
+
+        ubyte count = cast(ubyte) imm8;
+        if (count >= 64)
             return cast(__m128i)r;
-        }
+
+        r.ptr[0] = sa.array[0] >>> count;
+        r.ptr[1] = sa.array[1] >>> count;
+        return cast(__m128i)r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi64(8, -4);
     long2 B = cast(long2) _mm_srli_epi64(A, 1);
+    long2 B2 = cast(long2) _mm_srli_epi64(A, 1 + 512);
     long[2] expectedB = [ 4, 0x7FFFFFFFFFFFFFFE];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    long2 C = cast(long2) _mm_srli_epi64(A, 64);
+    long[2] expectedC = [ 0, 0 ];
+    assert(C.array == expectedC);
 }
 
 /// Shift `v` right by `bytes` bytes while shifting in zeros.
