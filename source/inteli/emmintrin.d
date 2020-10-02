@@ -3031,34 +3031,59 @@ else
     }
 }
 
-static if (LDC_with_SSE2)
+static if (GDC_with_SSE2)
 {
-    alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
+    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_pslldi128(a, cast(ubyte)imm8);
+    }
+}
+else static if (LDC_with_SSE2)
+{
+    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_pslldi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    // TODO #ARM, not fantastic again
+    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
     {
-        alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
-    }
-    else
-    {
-        // TODO #ARM, not fantastic again
-        __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
-        {
-            int4 r = void;
-            foreach(i; 0..4)
-                r.array[i] = cast(uint)(a.array[i]) << imm8;
+        // Note: the intrinsics guarantee imm8[0..7] is taken, however
+        //       D says "It's illegal to shift by the same or more bits 
+        //       than the size of the quantity being shifted"
+        //       and it's UB instead.
+        int4 r = _mm_setzero_si128();
+
+        ubyte count = cast(ubyte) imm8;
+        if (count > 31)
             return r;
-        }
+        
+        foreach(i; 0..4)
+            r.array[i] = cast(uint)(a.array[i]) << imm8;
+        return r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi32(0, 2, 3, -4);
     __m128i B = _mm_slli_epi32(A, 1);
+    __m128i B2 = _mm_slli_epi32(A, 1 + 256);
     int[4] expectedB = [ 0, 4, 6, -8];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    __m128i C = _mm_slli_epi32(A, 0);
+    int[4] expectedC = [ 0, 2, 3, -4];
+    assert(C.array == expectedC);
+
+    __m128i D = _mm_slli_epi32(A, 65);
+    int[4] expectedD = [ 0, 0, 0, 0];
+    assert(D.array == expectedD);
 }
 
 static if (LDC_with_SSE2)
@@ -3351,6 +3376,7 @@ else static if (GDC_with_SSE2)
 else
 {
     /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+    // TODO ARM
     __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
     {
         int4 r = void;
@@ -3490,7 +3516,6 @@ unittest
 static if (GDC_with_SSE2)
 {
     /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
-    alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
     __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
     {
         return __builtin_ia32_psrldi128(a, cast(ubyte)imm8);
@@ -3506,6 +3531,7 @@ else static if (LDC_with_SSE2)
 }
 else
 {
+    // TODO ARM
     /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
     {
