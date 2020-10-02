@@ -3334,21 +3334,39 @@ unittest
 
 static if (LDC_with_SSE2)
 {
-    alias _mm_srai_epi32  = __builtin_ia32_psradi128;
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psradi128(a, cast(ubyte)imm8);
+    }
 }
 else static if (GDC_with_SSE2)
 {
-    alias _mm_srai_epi32  = __builtin_ia32_psradi128;
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    {
+        return __builtin_ia32_psradi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
     {
         int4 r = void;
-        r.array[0] = (a.array[0] >> imm8); // TODO: wrong semantic
-        r.array[1] = (a.array[1] >> imm8);
-        r.array[2] = (a.array[2] >> imm8);
-        r.array[3] = (a.array[3] >> imm8);
+
+        // Note: the intrinsics guarantee imm8[0..7] is taken, however
+        //       D says "It's illegal to shift by the same or more bits 
+        //       than the size of the quantity being shifted"
+        //       and it's UB instead.
+        ubyte count = cast(ubyte) imm8;
+        if (count > 31)
+            count = 31;
+
+        r.ptr[0] = (a.array[0] >> count);
+        r.ptr[1] = (a.array[1] >> count);
+        r.ptr[2] = (a.array[2] >> count);
+        r.ptr[3] = (a.array[3] >> count);
         return r;
     }
 }
@@ -3356,12 +3374,18 @@ unittest
 {
     __m128i A = _mm_setr_epi32(0, 2, 3, -4);
     __m128i B = _mm_srai_epi32(A, 1);
+    __m128i B2 = _mm_srai_epi32(A, 1 + 256);
     int[4] expectedB = [ 0, 1, 1, -2];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
 
     __m128i C = _mm_srai_epi32(A, 32);
     int[4] expectedC = [ 0, 0, 0, -1];
     assert(C.array == expectedC);
+
+    __m128i D = _mm_srai_epi32(A, 0);
+    int[4] expectedD = [ 0, 2, 3, -4];
+    assert(D.array == expectedD);
 }
 
 static if (LDC_with_SSE2)
@@ -3462,37 +3486,55 @@ unittest
     assert(B.array == expectedB);
 }
 
-static if (LDC_with_SSE2)
+
+static if (GDC_with_SSE2)
 {
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
     alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
+    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrldi128(a, cast(ubyte)imm8);
+    }
+}
+else static if (LDC_with_SSE2)
+{
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psrldi128(a, cast(ubyte)imm8);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
+    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
     {
-        alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
-    }
-    else
-    {
-        __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
-        {
-            int4 r = void;
-            r.ptr[0] = cast(uint)(a.array[0]) >> imm8;
-            r.ptr[1] = cast(uint)(a.array[1]) >> imm8;
-            r.ptr[2] = cast(uint)(a.array[2]) >> imm8;
-            r.ptr[3] = cast(uint)(a.array[3]) >> imm8;
+        ubyte count = cast(ubyte) imm8;
+
+        // Note: the intrinsics guarantee imm8[0..7] is taken, however
+        //       D says "It's illegal to shift by the same or more bits 
+        //       than the size of the quantity being shifted"
+        //       and it's UB instead.
+        int4 r = _mm_setzero_si128();
+        if (count >= 32)
             return r;
-        }
+        r.ptr[0] = a.array[0] >>> count;
+        r.ptr[1] = a.array[1] >>> count;
+        r.ptr[2] = a.array[2] >>> count;
+        r.ptr[3] = a.array[3] >>> count;
+        return r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi32(0, 2, 3, -4);
     __m128i B = _mm_srli_epi32(A, 1);
+    __m128i B2 = _mm_srli_epi32(A, 1 + 256);
     int[4] expectedB = [ 0, 1, 1, 0x7FFFFFFE];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
  
-    __m128i C = _mm_srli_epi32(A, 32);
+    __m128i C = _mm_srli_epi32(A, 255);
     int[4] expectedC = [ 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 }
@@ -3513,8 +3555,9 @@ else
         {
             long2 r = void;
             long2 sa = cast(long2)a;
-            r.ptr[0] = cast(ulong)(sa.array[0]) >> imm8;
-            r.ptr[1] = cast(ulong)(sa.array[1]) >> imm8;
+            ubyte count = cast(ubyte) imm8;
+            r.ptr[0] = cast(ulong)(sa.array[0]) >> count;
+            r.ptr[1] = cast(ulong)(sa.array[1]) >> count;
             return cast(__m128i)r;
         }
     }
