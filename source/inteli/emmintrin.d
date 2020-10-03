@@ -377,7 +377,7 @@ unittest
 }
 
 /// Average packed unsigned 16-bit integers in `a` and `b`.
-/// TODO: #ARM
+/// PERF: #ARM, there an A64 instruction for this but I don't manage to call it within LLVM intrinsics
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -387,6 +387,7 @@ __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
     else version(LDC)
     {
         // Generates pavgw even in LDC 1.0, even in -O0
+        // But not in ARM
         enum ir = `
             %ia = zext <8 x i16> %0 to <8 x i32>
             %ib = zext <8 x i16> %1 to <8 x i32>
@@ -419,7 +420,7 @@ unittest
 }
 
 /// Average packed unsigned 8-bit integers in `a` and `b`.
-// TODO: #ARM
+// PERF: #ARM, there an A64 instruction for this but I don't manage to call it within LLVM intrinsics
 __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -429,6 +430,7 @@ __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
     else version(LDC)
     {
         // Generates pavgb even in LDC 1.0, even in -O0
+        // But not in ARM
         enum ir = `
             %ia = zext <16 x i8> %0 to <16 x i16>
             %ib = zext <16 x i8> %1 to <16 x i16>
@@ -1208,7 +1210,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
-// TODO #ARM
+// PERF #ARM
 __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -1578,7 +1580,8 @@ unittest
 
 __m128i _mm_cvttps_epi32 (__m128 a) pure @trusted
 {
-    // Note: Generates cvttps2dq since LDC 1.3 -O2
+    // x86: Generates cvttps2dq since LDC 1.3 -O2
+    // ARM64: generates fcvtze since LDC 1.8 -O2
     __m128i r;
     r.ptr[0] = cast(int)a.array[0];
     r.ptr[1] = cast(int)a.array[1];
@@ -3109,7 +3112,6 @@ else static if (LDC_with_SSE2)
 }
 else
 {
-    // TODO #ARM, not fantastic again
     /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
     {
@@ -3440,9 +3442,21 @@ else static if (LDC_with_SSE2)
         return cast(__m128i) __builtin_ia32_psrawi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
+else static if (LDC_with_ARM64)
+{
+    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    {
+        short8 sa = cast(short8)a;
+        ubyte count = cast(ubyte)imm8;
+        if (count > 15) 
+            count = 15;
+        short8 r = sa >> short8(count);
+        return cast(__m128i)r;
+    }
+}
 else
 {
-    // TODO: ARM
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
     __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
     {
