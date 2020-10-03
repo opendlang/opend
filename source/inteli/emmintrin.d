@@ -3142,44 +3142,49 @@ unittest
     assert(D.array == expectedD);
 }
 
-static if (LDC_with_SSE2)
+static if (GDC_with_SSE2)
 {
-    alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
-}
-else version(LDC)
-{
-     __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
+    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
     {
-        short8 sa = cast(short8)a;
-        short8 shift = short8(cast(ubyte)imm8);
-        sa = sa << shift;
-        return cast(int4)sa;
+        return __builtin_ia32_psllwi128(a, cast(ubyte)imm8);
+    }
+}
+else static if (LDC_with_SSE2)
+{
+    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
+    {
+        return __builtin_ia32_psllwi128(a, cast(ubyte)imm8);
     }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @trusted
     {
-        alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
-    }
-    else
-    {
-        __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) << imm8);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        short8 r = cast(short8)_mm_setzero_si128();
+        ubyte count = cast(ubyte) imm8;
+        if (count > 15)
+            return cast(__m128i)r;
+        foreach(i; 0..8)
+            r.ptr[i] = cast(short)(sa.array[i] << count);
+        return cast(__m128i)r;
     }
 }
 unittest
 {
     __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
     short8 B = cast(short8)( _mm_slli_epi16(A, 1) );
+    short8 B2 = cast(short8)( _mm_slli_epi16(A, 1 + 256) );
     short[8] expectedB = [ 0, 2, 4, 6, -8, -10, 12, 14 ];
     assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    short8 C = cast(short8)( _mm_slli_epi16(A, 16) );
+    short[8] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
+    assert(C.array == expectedC);
 }
 
 
