@@ -3094,7 +3094,7 @@ static if (GDC_with_SSE2)
         return __builtin_ia32_psllqi128(a, cast(ubyte)imm8);
     }
 }
-static if (LDC_with_SSE2)
+else static if (LDC_with_SSE2)
 {
     /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
@@ -3369,7 +3369,7 @@ static if (GDC_with_SSE2)
         return __builtin_ia32_psrawi128(a, cast(ubyte)imm8);
     }
 }
-static if (LDC_with_SSE2)
+else static if (LDC_with_SSE2)
 {
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
     __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
@@ -3545,8 +3545,7 @@ static if (GDC_with_SSE2)
         return __builtin_ia32_psrlwi128(a, cast(ubyte)imm8);
     }
 }
-
-static if (LDC_with_SSE2)
+else static if (LDC_with_SSE2)
 {
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
@@ -3651,7 +3650,7 @@ static if (GDC_with_SSE2)
         return __builtin_ia32_psrlqi128(a, cast(ubyte)imm8);
     }
 }
-static if (LDC_with_SSE2)
+else static if (LDC_with_SSE2)
 {
     /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
