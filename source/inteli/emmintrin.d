@@ -1827,14 +1827,20 @@ static if (GDC_with_SSE2)
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
     /// and pack the results in destination.
-    alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
     /// and pack the results in destination.
-    alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
+    }
 }
 else
 {
@@ -1870,14 +1876,17 @@ static if (LDC_with_SSE2)
     /// (elements are not stored when the highest bit is not set in the corresponding element)
     /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
     /// boundary.
-    alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu; // can't do it with pure IR
+    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
+    {
+        return __builtin_ia32_maskmovdqu(cast(byte16)a, cast(byte16)mask, cast(char*)mem_addr);
+    }
 }
 else
 {
     static if (GDC_with_SSE2)
     {
         ///ditto
-        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
+        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
         {
             return __builtin_ia32_maskmovdqu(cast(ubyte16)a, cast(ubyte16)mask, cast(char*)mem_addr);
         }
@@ -1886,7 +1895,7 @@ else
     {
         ///ditto
         // PERF: on ARM, is absolutely catastrophic, however needing this intrinsics is rare.
-        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
+        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
         {
             byte16 b = cast(byte16)a;
             byte16 m = cast(byte16)mask;
@@ -2172,7 +2181,10 @@ static if (GDC_with_SSE2)
 else static if (LDC_with_SSE2)
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
-    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
+    int _mm_movemask_epi8(__m128i v) pure @safe
+    {
+        return __builtin_ia32_pmovmskb128(cast(byte16)v);
+    }
 }
 // TODO #ARM: doesn't work
 /*
@@ -2369,11 +2381,17 @@ unittest
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_pmulhw128(cast(short8)a, cast(short8)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_pmulhw128(cast(short8)a, cast(short8)b);
+    }
 }
 else
 {    
@@ -2404,11 +2422,17 @@ unittest
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_pmulhuw128(cast(short8)a, cast(short8)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_pmulhuw128(cast(short8)a, cast(short8)b);
+    }
 }
 else
 {   
@@ -2462,11 +2486,17 @@ __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
+    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packssdw128(a, b);
+    }    
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
+    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packssdw128(a, b);
+    }
 }
 else
 {
@@ -2494,11 +2524,17 @@ unittest
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
+    }
 }
 else
 {   
@@ -2525,11 +2561,17 @@ unittest
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
+    }
 }
 else
 {   
@@ -2613,11 +2655,17 @@ unittest
 
 static if (GDC_with_SSE2)
 {
-    alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_psadbw128(cast(byte16)a, cast(byte16)b);
+    }
 }
 else static if (LDC_with_SSE2)
 {
-    alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
+    {
+        return cast(__m128i) __builtin_ia32_psadbw128(cast(byte16)a, cast(byte16)b);
+    }
 }
 else
 {   
@@ -2959,11 +3007,17 @@ else
 
 static if (LDC_with_SSE2)
 {
-    deprecated("Use _mm_slli_epi64 instead.") alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psllq128(cast(long2)a, cast(long2)count);
+    }
 }
 else static if (GDC_with_SSE2)
 {
-    deprecated("Use _mm_slli_epi64 instead.") alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psllq128(cast(long2)a, cast(long2)count);
+    }
 }
 else static if (DMD_with_32bit_asm)
 {
@@ -2997,11 +3051,17 @@ else
 
 static if (LDC_with_SSE2)
 {
-    deprecated("Use _mm_slli_epi16 instead.") alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    {
+        return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
+    }
 }
 else static if (GDC_with_SSE2)
 {
-    deprecated("Use _mm_slli_epi16 instead.") alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    {
+        return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
+    }
 }
 else static if (DMD_with_32bit_asm)
 {
@@ -3091,7 +3151,7 @@ static if (GDC_with_SSE2)
     /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
     {
-        return __builtin_ia32_psllqi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psllqi128(cast(long2)a, cast(ubyte)imm8);
     }
 }
 else static if (LDC_with_SSE2)
@@ -3099,7 +3159,7 @@ else static if (LDC_with_SSE2)
     /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
     {
-        return __builtin_ia32_psllqi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psllqi128(cast(long2)a, cast(ubyte)imm8);
     }
 }
 else
@@ -3147,7 +3207,7 @@ static if (GDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psllwi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psllwi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else static if (LDC_with_SSE2)
@@ -3155,7 +3215,7 @@ else static if (LDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psllwi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psllwi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else
@@ -3312,28 +3372,31 @@ else
 }
 
 
-static if (LDC_with_SSE2)
+static if (GDC_with_SSE2)
 {
-    deprecated("Use _mm_srai_epi16 instead.") alias _mm_sra_epi16 = __builtin_ia32_psraw128;
+    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psraw128(cast(short8)a, cast(short8)count);
+    }
+}
+else static if (LDC_with_SSE2)
+{
+    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psraw128(cast(short8)a, cast(short8)count);
+    }
 }
 else
 {
-    static if (GDC_with_SSE2)
+    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
     {
-        deprecated("Use _mm_srai_epi16 instead.") alias _mm_sra_epi16 = __builtin_ia32_psraw128;
-    }
-    else
-    {
-        deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(sa.array[i] >> bits);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        short8 r = void;
+        foreach(i; 0..8)
+            r.array[i] = cast(short)(sa.array[i] >> bits);
+        return cast(int4)r;
     }
 }
 
@@ -3366,7 +3429,7 @@ static if (GDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
     __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psrawi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrawi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else static if (LDC_with_SSE2)
@@ -3374,7 +3437,7 @@ else static if (LDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
     __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psrawi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrawi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else
@@ -3471,11 +3534,17 @@ unittest
 
 static if (LDC_with_SSE2)
 {
-    deprecated("Use _mm_srli_epi16 instead.") alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psrlw128(cast(short8)a, cast(short8)count);
+    }
 }
 else static if (GDC_with_SSE2)
 {
-    deprecated("Use _mm_srli_epi16 instead.") alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psrlw128(cast(short8)a, cast(short8)count);
+    }
 }
 else
 {
@@ -3516,11 +3585,17 @@ else
 
 static if (LDC_with_SSE2)
 {
-    deprecated("Use _mm_srli_epi64 instead.") alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psrlq128(cast(long2)a, cast(long2)count);
+    }
 }
 else static if (GDC_with_SSE2)
 {
-    deprecated("Use _mm_srli_epi64 instead.") alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        return cast(__m128i) __builtin_ia32_psrlq128(cast(long2)a, cast(long2)count);
+    }
 }
 else
 {
@@ -3542,7 +3617,7 @@ static if (GDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
     {
-        return __builtin_ia32_psrlwi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrlwi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else static if (LDC_with_SSE2)
@@ -3550,7 +3625,7 @@ else static if (LDC_with_SSE2)
     /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
     {
-        return __builtin_ia32_psrlwi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrlwi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
 else
@@ -3647,7 +3722,7 @@ static if (GDC_with_SSE2)
     /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psrlqi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrlqi128(cast(long2)a, cast(ubyte)imm8);
     }
 }
 else static if (LDC_with_SSE2)
@@ -3655,7 +3730,7 @@ else static if (LDC_with_SSE2)
     /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
     {
-        return __builtin_ia32_psrlqi128(a, cast(ubyte)imm8);
+        return cast(__m128i) __builtin_ia32_psrlqi128(cast(long2)a, cast(ubyte)imm8);
     }
 }
 else
