@@ -642,10 +642,10 @@ deprecated("Use _mm_slli_si64 instead.") __m64 _mm_sll_si64 (__m64 a, __m64 bits
     return to_m64(_mm_sll_epi64(to_m128i(a), to_m128i(bits)));
 }
 
-/// Shift packed 16-bit integers in `a` left by `bits` while shifting in zeros.
-__m64 _mm_slli_pi16 (__m64 a, int bits) pure @safe
+/// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+__m64 _mm_slli_pi16 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_slli_epi16(to_m128i(a), bits));
+    return to_m64(_mm_slli_epi16(to_m128i(a), imm8));
 }
 unittest
 {
@@ -655,10 +655,10 @@ unittest
     assert(B.array == correct);
 }
 
-/// Shift packed 32-bit integers in `a` left by `bits` while shifting in zeros.
-__m64 _mm_slli_pi32 (__m64 a, int bits) pure @safe
+/// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+__m64 _mm_slli_pi32 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_slli_epi32(to_m128i(a), bits));
+    return to_m64(_mm_slli_epi32(to_m128i(a), imm8));
 }
 unittest
 {
@@ -668,10 +668,10 @@ unittest
     assert(B.array == correct);
 }
 
-/// Shift 64-bit integer `a` left by `bits` while shifting in zeros.
-__m64 _mm_slli_si64 (__m64 a, int bits) pure @safe
+/// Shift 64-bit integer `a` left by `imm8` while shifting in zeros.
+__m64 _mm_slli_si64 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_slli_epi64(to_m128i(a), bits));
+    return to_m64(_mm_slli_epi64(to_m128i(a), imm8));
 }
 unittest
 {
@@ -693,10 +693,10 @@ deprecated("Use _mm_srai_pi32 instead.") __m64 _mm_sra_pi32 (__m64 a, __m64 bits
     return to_m64(_mm_sra_epi32(to_m128i(a), to_m128i(bits)));
 }
 
-/// Shift packed 16-bit integers in `a` right by `bits` while shifting in sign bits.
-__m64 _mm_srai_pi16 (__m64 a, int bits) pure @safe
+/// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m64 _mm_srai_pi16 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_srai_epi16(to_m128i(a), bits));
+    return to_m64(_mm_srai_epi16(to_m128i(a), imm8));
 }
 unittest
 {
@@ -706,10 +706,10 @@ unittest
     assert(B.array == correct);
 }
 
-/// Shift packed 32-bit integers in `a` right by `bits` while shifting in sign bits.
-__m64 _mm_srai_pi32 (__m64 a, int bits) pure @safe
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m64 _mm_srai_pi32 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_srai_epi32(to_m128i(a), bits));
+    return to_m64(_mm_srai_epi32(to_m128i(a), imm8));
 }
 unittest
 {
@@ -737,10 +737,10 @@ deprecated("Use _mm_srli_si64 instead.") __m64 _mm_srl_si64 (__m64 a, __m64 bits
     return to_m64(_mm_srl_epi64(to_m128i(a), to_m128i(bits)));
 }
 
-/// Shift packed 16-bit integers in `a` right by `bits` while shifting in zeros.
-__m64 _mm_srli_pi16 (__m64 a, int bits) pure @safe
+/// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+__m64 _mm_srli_pi16 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_srli_epi16(to_m128i(a), bits));
+    return to_m64(_mm_srli_epi16(to_m128i(a), imm8));
 }
 unittest
 {
@@ -750,10 +750,10 @@ unittest
     assert(B.array == correct);
 }
 
-/// Shift packed 32-bit integers in `a` right by `bits` while shifting in zeros.
-__m64 _mm_srli_pi32 (__m64 a, int bits) pure @safe
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
+__m64 _mm_srli_pi32 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_srli_epi32(to_m128i(a), bits));
+    return to_m64(_mm_srli_epi32(to_m128i(a), imm8));
 }
 unittest
 {
@@ -763,10 +763,10 @@ unittest
     assert(B.array == correct);
 }
 
-/// Shift 64-bit integer `a` right by `bits` while shifting in zeros.
-__m64 _mm_srli_si64 (__m64 a, int bits) pure @safe
+/// Shift 64-bit integer `a` right by `imm8` while shifting in zeros.
+__m64 _mm_srli_si64 (__m64 a, int imm8) pure @safe
 {
-    return to_m64(_mm_srli_epi64(to_m128i(a), bits));
+    return to_m64(_mm_srli_epi64(to_m128i(a), imm8));
 }
 unittest
 {
