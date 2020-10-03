@@ -18,6 +18,70 @@ import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 //  - verify that static methods are handled properly
 
 
+/** Converts a given `TaggedUnion` to a `TaggedAlgebraic`.
+
+	This allows to access members or operators of a `TaggedUnion` with a concise
+	syntax.
+*/
+auto algebraic(TU)(TU tagged_union)
+	if (isInstanceOf!(TaggedUnion, TU))
+{
+	TaggedAlgebraic!(TU.FieldDefinitionType) ret;
+	ret.m_union = tagged_union;
+	return ret;
+}
+
+///
+unittest {
+	import taggedalgebraic.visit : visit;
+
+	struct Button {
+		string caption;
+		int callbackID;
+	}
+
+	struct Label {
+		string caption;
+	}
+
+	union U {
+		Button button;
+		Label label;
+	}
+
+	alias Control = TaggedUnion!U;
+
+	// define a generic list of controls
+	Control[] controls = [
+		Control(Button("Hello", -1)),
+		Control(Label("World"))
+	];
+
+	// just a dummy for the sake of the example
+	void print(string message) {}
+
+	// short syntax using `algebraic`
+	foreach (c; controls)
+		print(algebraic(c).caption);
+
+	// slightly longer and noisier alternative using `visit`
+	foreach (c; controls)
+		print(c.visit!(ct => ct.caption));
+
+	// low level alternative
+	foreach (c; controls) {
+		final switch (c.kind) {
+			case Control.Kind.button:
+				print(c.buttonValue.caption);
+				break;
+			case Control.Kind.label:
+				print(c.labelValue.caption);
+				break;
+		}
+	}
+}
+
+
 /** Implements a generic algebraic type using an enum to identify the stored type.
 
 	This struct takes a `union` or `struct` declaration as an input and builds
