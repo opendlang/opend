@@ -3219,6 +3219,20 @@ else static if (LDC_with_SSE2)
         return cast(__m128i) __builtin_ia32_psllwi128(cast(short8)a, cast(ubyte)imm8);
     }
 }
+else static if (LDC_with_ARM64)
+{
+    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+    __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @trusted
+    {
+        short8 sa = cast(short8)a;
+        short8 r = cast(short8)_mm_setzero_si128();
+        ubyte count = cast(ubyte) imm8;
+        if (count > 15)
+            return cast(__m128i)r;
+        r = sa << short8(count);
+        return cast(__m128i)r;
+    }
+}
 else
 {
     /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
@@ -3507,7 +3521,6 @@ else static if (GDC_with_SSE2)
 else
 {
     /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
-    // TODO ARM
     __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
     {
         int4 r = void;
@@ -3653,7 +3666,7 @@ else static if (LDC_with_ARM64)
         if (count >= 16)
             return cast(__m128i)r;
 
-        short8 r = sa >> short8(count); // This facility offered with LDC, but not DMD.
+        r = sa >> short8(count); // This facility offered with LDC, but not DMD.
         return cast(__m128i)r;
     }
 }
@@ -3711,7 +3724,6 @@ else static if (LDC_with_SSE2)
 }
 else
 {
-    // TODO ARM
     /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
     __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
     {
@@ -3764,7 +3776,6 @@ else static if (LDC_with_SSE2)
 else
 {
     /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
-    // TODO ARM
     __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
     {
         long2 r = cast(long2) _mm_setzero_si128();
