@@ -3166,7 +3166,6 @@ else static if (LDC_with_SSE2)
 }
 else
 {
-    // PERF #ARM: unroll that loop
     /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
     __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @trusted
     {
@@ -3181,8 +3180,8 @@ else
         if (count > 63)
             return cast(__m128i)r;
 
-        foreach(i; 0..2)
-            r.ptr[i] = cast(ulong)(sa.array[i]) << count;
+        r.ptr[0] = cast(ulong)(sa.array[0]) << count;
+        r.ptr[1] = cast(ulong)(sa.array[1]) << count;
         return cast(__m128i)r;
     }
 }
