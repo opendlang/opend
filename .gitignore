@@ -23,6 +23,7 @@ docs.json
 out/
 /tests_extractor.d
 build/
+builddir/
 files
 mir-algorithm.lib
 mir-algorithm-test-default
