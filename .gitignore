@@ -31,3 +31,4 @@ cpuid-report.exe
 mir-cpuid-test-library.exe
 mir-cpuid.lib
 subprojects/*/
+builddir

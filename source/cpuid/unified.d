@@ -40,7 +40,7 @@ version(X86)
 version(X86_64)
     version = X86_Any;
 
-version(X86_Any)
+version(all)
 {
     enum uint _dCache_max_length = 1;
     enum uint _iCache_max_length = 1;
