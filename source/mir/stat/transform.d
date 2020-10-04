@@ -355,7 +355,7 @@ unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
-    import mir.math.stat: gmean, hmean, median;
+    import mir.math.stat: mean, gmean, hmean, median, standardDeviation;
     import mir.ndslice.slice: sliced;
 
     auto x = [1.0, 2, 3, 4, 5, 6].sliced;
@@ -443,6 +443,7 @@ unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
+    import mir.math.stat: mean, standardDeviation;
     import mir.ndslice.slice: sliced;
 
     //Set sum algorithm
