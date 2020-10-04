@@ -4,6 +4,10 @@ description = 'Mir Ion - Ion/Json Serialization library'
 
 subprojects = ['mir-core', 'mir-algorithm', 'mir-cpuid']
 
+if (target_machine.cpu_family() == 'x86' or target_machine.cpu_family() == 'x86_64')
+    subprojects += 'mir-cpuid'
+endif
+
 has_cpp_headers = false
 
 sources_list = [

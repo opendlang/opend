@@ -49,3 +49,4 @@ mir-ion-test-library
 .VSCodeCounter
 subprojects/*/
 builddir
+mir-ion-test-x86_any
