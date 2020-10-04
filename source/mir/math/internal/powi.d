@@ -6,7 +6,7 @@ Authors: John Michael Hall
 Copyright: 2020 Mir Stat Authors.
 +/
 
-module mir.math.func.powi;
+module mir.math.internal.powi;
 
 import mir.internal.utility: isFloatingPoint;
 import std.traits: isSigned, isUnsigned, Unqual;

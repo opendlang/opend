@@ -4022,7 +4022,6 @@ unittest
 ///
 struct EntropyAccumulator(T, Summation summation)
 {
-    import mir.math.func.xlogy;
     import mir.primitives: hasShape;
     import std.traits: isIterable;
 
@@ -4040,15 +4039,15 @@ struct EntropyAccumulator(T, Summation summation)
     {
         static if (hasShape!Range)
         {
-            import mir.ndslice.topology: map;
+            import mir.ndslice.topology: as, map;
 
-            summator.put(r.map!(a => xlogy(cast(T) a, cast(T) a)));
+            summator.put(r.as!T.map!xlog);
         }
         else
         {
             foreach(x; r)
             {
-                summator.put(xlogy(cast(T) x, cast(T) x));
+                summator.put(xlog(cast(T)x));
             }
         }
     }
@@ -4056,7 +4055,7 @@ struct EntropyAccumulator(T, Summation summation)
     ///
     void put()(T x)
     {
-        summator.put(xlogy(x, x));
+        summator.put(xlog(x));
     }
 
     ///
@@ -4064,6 +4063,23 @@ struct EntropyAccumulator(T, Summation summation)
     {
         summator.put(e.summator.sum);
     }
+}
+
+import mir.internal.utility: isFloatingPoint;
+
+/++
+Returns x * log(y)
+
+Returns:
+    x * log(y)
++/
+private F xlog(F)(const F x)
+    if (isFloatingPoint!F)
+{
+    import mir.math.common: log;
+
+    assert(x >= 0, "xlog: x must be greater than or equal to zero");
+    return x * log(x);
 }
 
 /// test basic functionality
@@ -4725,7 +4741,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
-        import mir.math.func.powi: powi;
+        import mir.math.internal.powi: powi;
         import mir.primitives: hasShape;
 
         static if (hasShape!Range)
@@ -4749,7 +4765,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
     void put(Range)(Range r, T m)
         if (isIterable!Range)
     {
-        import mir.math.func.powi: powi;
+        import mir.math.internal.powi: powi;
         import mir.primitives: hasShape;
 
         static if (hasShape!Range)
@@ -4789,7 +4805,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
     void put(Range)(Range r, T m, T s)
         if (isIterable!Range)
     {
-        import mir.math.func.powi: powi;
+        import mir.math.internal.powi: powi;
         import mir.primitives: hasShape;
 
         static if (hasShape!Range)
@@ -4833,7 +4849,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
     ///
     void put()(T x)
     {
-        import mir.math.func.powi;
+        import mir.math.internal.powi;
 
         count++;
         summator.put(x.powi(N));

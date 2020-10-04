@@ -4,9 +4,10 @@ description = 'Dlang Statistical Package'
 
 subprojects = ['mir-core', 'mir-algorithm']
 
+has_cpp_headers = false
+
 sources_list = [
-    'mir/math/func/xlogy',
-    'mir/math/func/powi',
+    'mir/math/internal/powi',
     'mir/stat/descriptive',
     'mir/stat/package',
     'mir/stat/transform',
@@ -30,6 +31,10 @@ endforeach
 
 directories = ['source']
 
+if has_cpp_headers
+    directories += 'include'
+endif
+
 directories = include_directories(directories)
 
 this_lib = library(meson.project_name(),
@@ -46,7 +51,14 @@ this_dep = declare_dependency(
     dependencies: required_deps,
 )
 
-test_versions = ['mir_stat_test']
+test_versions = ['mir_ion_test']
+
+if has_cpp_headers
+    install_subdir('include/',
+        strip_directory :true,
+        install_dir: 'include/',
+    )
+endif
 
 install_subdir('source/',
     strip_directory : true,
@@ -58,5 +70,4 @@ import('pkgconfig').generate(this_lib,
     subdirs: 'd/' + meson.project_name(),
 )
 
-mir_stat_dep = this_dep
-mir_stat_lib = this_lib
+test_subdirs = []
