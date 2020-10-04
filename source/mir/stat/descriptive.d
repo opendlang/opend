@@ -46,8 +46,8 @@ These algorithms match the same provided in R's (as of version 3.6.2) `quantile`
 function. In turn, these were discussed in Hyndman and Fan (1996). 
 
 All sample quantiles are defined as weighted averages of consecutive order
-statistics. For each QuantileAlgo, the sample quantile is given by (using R's
-1-based indexing notation):
+statistics. For each QuantileAlgo, the sample quantile is given by
+(using R's 1-based indexing notation):
 
 -------
 (1 - gamma) * x_{j} + gamma * x_{j + 1}
@@ -62,6 +62,7 @@ $(TR $(TH Type) $(TH m) $(TH gamma))
 $(T2 type1, 0, 0 if `g = 0` and 1 otherwise.)
 $(T2 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
 $(T2 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+)
 
 $(H4 Continuous sample quantile),
 $(TR $(TH Type) $(TH m) $(TH gamma))
