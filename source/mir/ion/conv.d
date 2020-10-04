@@ -6,6 +6,7 @@ import mir.ion.value;
 import mir.ion.type_code;
 
 /++
+WIP
 +/
 IonErrorCode ionGetFlexible(IonDescribedValue value, scope ref bool result)
     @safe pure nothrow @nogc

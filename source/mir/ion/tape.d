@@ -13,6 +13,8 @@ import mir.ion.type_code;
 import mir.utility: _expect;
 import std.traits;
 
+/++
++/
 size_t ionPutVarUInt(T)(scope ubyte* ptr, const T num)
     if (isUnsigned!T)
 {
@@ -27,6 +29,7 @@ size_t ionPutVarUInt(T)(scope ubyte* ptr, const T num)
     return len;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -109,12 +112,16 @@ version(mir_ion_test) unittest
     assert(data[9] == 0xFF);
 }
 
+/++
++/
 size_t ionPutVarInt(T)(scope ubyte* ptr, const T num)
     if (isSigned!T)
 {
     return .ionPutVarInt!(Unsigned!T)(ptr, num < 0 ? cast(Unsigned!T)(0-num) : num, num < 0);
 }
 
+/++
++/
 size_t ionPutVarInt(T)(scope ubyte* ptr, const T num, bool sign)
     if (isUnsigned!T)
 {
@@ -138,6 +145,7 @@ size_t ionPutVarInt(T)(scope ubyte* ptr, const T num, bool sign)
     return len;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -295,6 +303,8 @@ version(mir_ion_test) unittest
     assert(data[9] == 0xFF);
 }
 
+/++
++/
 size_t ionPutUIntField(W, WordEndian endian)(
     scope ubyte* ptr,
     BigUIntView!(const W, endian) value,
@@ -325,6 +335,8 @@ size_t ionPutUIntField(W, WordEndian endian)(
     return ret;
 }
 
+/++
++/
 size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     if (isUnsigned!T && T.sizeof >= 4)
 {
@@ -341,6 +353,8 @@ size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     return T.sizeof - c;
 }
 
+/++
++/
 size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     if (is(T == ubyte))
 {
@@ -348,12 +362,15 @@ size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     return num != 0;
 }
 
+/++
++/
 size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     if (is(T == ushort))
 {
     return ionPutUIntField!uint(ptr, num);
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -442,6 +459,8 @@ version(mir_ion_test) unittest
     assert(data[7] == 0xFF);
 }
 
+/++
++/
 size_t ionPutIntField(W, WordEndian endian)(
     scope ubyte* ptr,
     BigIntView!(const W, endian) value,
@@ -467,6 +486,8 @@ size_t ionPutIntField(W, WordEndian endian)(
     return ret;
 }
 
+/++
++/
 size_t ionPutIntField(T)(scope ubyte* ptr, const T num)
     if (isSigned!T && isIntegral!T)
 {
@@ -477,6 +498,8 @@ size_t ionPutIntField(T)(scope ubyte* ptr, const T num)
     return ionPutIntField!(Unsigned!T)(ptr, value, sign);
 }
 
+/++
++/
 size_t ionPutIntField(T)(scope ubyte* ptr, const T num, bool sign)
     if (isUnsigned!T)
 {
@@ -505,6 +528,7 @@ size_t ionPutIntField(T)(scope ubyte* ptr, const T num, bool sign)
     }
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -611,12 +635,15 @@ version(mir_ion_test) unittest
     assert(data[8] == 0xFF);
 }
 
+/++
++/
 size_t ionPut(T : typeof(null))(scope ubyte* ptr, const T)
 {
     *ptr++ = 0x0F;
     return 1;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -625,12 +652,15 @@ version(mir_ion_test) unittest
     assert(data[0] == 0x0F);
 }
 
+/++
++/
 size_t ionPut(T : bool)(scope ubyte* ptr, const T value)
 {
     *ptr++ = 0x10 | value;
     return 1;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -641,6 +671,8 @@ version(mir_ion_test) unittest
     assert(data[0] == 0x10);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value, bool sign = false)
     if (isUnsigned!T)
 {
@@ -656,6 +688,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value, bool sign = false)
     }
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -683,6 +716,8 @@ version(mir_ion_test) unittest
     assert(data[8] == 0xFF);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (isSigned!T && isIntegral!T)
 {
@@ -693,6 +728,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return ionPut!(Unsigned!T)(ptr, num, sign);
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -707,6 +743,8 @@ version(mir_ion_test) unittest
     assert(data[2] == 0x02);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == float))
 {
@@ -722,6 +760,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return 1 + s;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -744,6 +783,8 @@ version(mir_ion_test) unittest
     assert(data[4] == 0x00);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == double))
 {
@@ -759,6 +800,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return 1 + s;
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -789,12 +831,15 @@ version(mir_ion_test) unittest
     assert(data[8] == 0x00);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == real))
 {
     return ionPut!double(ptr, value);
 }
 
+///
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
@@ -825,6 +870,8 @@ version(mir_ion_test) unittest
     assert(data[8] == 0x00);
 }
 
+/++
++/
 size_t ionPut(W, WordEndian endian)(
     scope ubyte* ptr,
     BigUIntView!(const W, endian) value,
@@ -834,6 +881,7 @@ size_t ionPut(W, WordEndian endian)(
     return ionPut(ptr, value.signed);
 }
 
+///
 pure
 version(mir_ion_test) unittest
 {
@@ -845,6 +893,8 @@ version(mir_ion_test) unittest
     assert(data[2 .. 32] == BigUIntView!(ubyte, WordEndian.big).fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219").coefficients);
 }
 
+/++
++/
 size_t ionPut(W, WordEndian endian)(
     scope ubyte* ptr,
     BigIntView!(const W, endian) value,
@@ -869,6 +919,7 @@ size_t ionPut(W, WordEndian endian)(
     }
 }
 
+///
 pure
 version(mir_ion_test) unittest
 {
@@ -880,6 +931,8 @@ version(mir_ion_test) unittest
     assert(data[2] == 0xbe);
 }
 
+/++
++/
 size_t ionPut(W, WordEndian endian)(
     scope ubyte* ptr,
     DecimalView!(const W, endian) value,
@@ -908,6 +961,7 @@ size_t ionPut(W, WordEndian endian)(
     }
 }
 
+///
 pure
 version(mir_ion_test) unittest
 {
@@ -963,6 +1017,8 @@ version(mir_ion_test) unittest
     // assert(data[0] == 0x50);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == IonTimestamp))
 {
@@ -1006,8 +1062,11 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     }
 }
 
+///
 version(mir_ion_test) unittest
 {
+    import mir.ion.timestamp;
+
     ubyte[20] data;
 
     ubyte[] result = [0x68, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84];
@@ -1023,6 +1082,8 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == Date))
 {
@@ -1037,8 +1098,11 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return ret;
 }
 
+///
 version(mir_ion_test) unittest
 {
+    import mir.date;
+
     ubyte[13] data;
 
     ubyte[] result = [0x65, 0x80, 0x0F, 0xD0, 0x87, 0x88];
@@ -1046,6 +1110,8 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 }
 
+/++
++/
 size_t ionPutSymbolId(T)(scope ubyte* ptr, const T value)
     if (isUnsigned!T)
 {
@@ -1054,6 +1120,7 @@ size_t ionPutSymbolId(T)(scope ubyte* ptr, const T value)
     return length + 1;
 }
 
+///
 version(mir_ion_test) unittest
 {
     ubyte[8] data;
@@ -1063,6 +1130,8 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPutSymbolId(data.ptr, id)] == result);
 }
 
+/++
++/
 size_t ionPut()(scope ubyte* ptr, const(char)[] value)
 {
     size_t ret = 1;
@@ -1079,6 +1148,7 @@ size_t ionPut()(scope ubyte* ptr, const(char)[] value)
     return ret + value.length;
 }
 
+///
 version(mir_ion_test) unittest
 {
     ubyte[18] data;
@@ -1092,6 +1162,8 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPut(data.ptr, str)] == result);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == IonClob))
 {
@@ -1109,6 +1181,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return ret + value.data.length;
 }
 
+///
 version(mir_ion_test) unittest
 {
     import mir.ion.lob;
@@ -1124,6 +1197,8 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPut(data.ptr, str)] == result);
 }
 
+/++
++/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == IonBlob))
 {
@@ -1141,6 +1216,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     return ret + value.data.length;
 }
 
+///
 version(mir_ion_test) unittest
 {
     import mir.ion.lob;
@@ -1156,11 +1232,15 @@ version(mir_ion_test) unittest
     assert(data[0 .. ionPut(data.ptr, payload)] == result);
 }
 
+/++
++/
 size_t ionPutStartLength()()
 {
     return 3;
 }
 
+/++
++/
 size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
 {
     assert (tc == IonTypeCode.string || tc == IonTypeCode.list || tc == IonTypeCode.sexp || tc == IonTypeCode.struct_ || tc == IonTypeCode.annotations);
@@ -1208,8 +1288,11 @@ size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
     }
 }
 
+///
 version(mir_ion_test) unittest
 {
+    import mir.ion.type_code;
+
     ubyte[1024] data;
     auto pos = ionPutStartLength();
 
@@ -1242,12 +1325,16 @@ Running ./mir-ion-test-library`;
     assert(data[0 .. ionPutEnd(data.ptr, IonTypeCode.list, len)] == result);
 }
 
+/++
++/
 size_t ionPutStartLength()(ubyte* startPtr, IonTypeCode tc)
 {
     *startPtr = cast(ubyte)(tc << 4);
     return ionPutStartLength;
 }
 
+/++
++/
 size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
 {
     if (totalElementLength < 0x80)
@@ -1295,11 +1382,15 @@ size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
     }
 }
 
+/++
++/
 size_t ionPutAnnotationsListStartLength()()
 {
     return 1;
 }
 
+/++
++/
 size_t ionPutAnnotationsListEnd()(ubyte* startPtr, size_t totalElementLength)
 {
     if (_expect(totalElementLength < 0x80, true))
@@ -1317,8 +1408,11 @@ size_t ionPutAnnotationsListEnd()(ubyte* startPtr, size_t totalElementLength)
     }
 }
 
+///
 version(mir_ion_test) unittest
 {
+    import mir.ion.type_code;
+
     ubyte[1024] data;
     auto pos = ionPutStartLength(data.ptr, IonTypeCode.list);
 

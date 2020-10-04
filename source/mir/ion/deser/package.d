@@ -1,4 +1,6 @@
 /++
+$(H4 High level deserialization API)
+
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
@@ -21,7 +23,7 @@ import std.traits:
     isAggregateType,
     Unqual;
 
-enum isUserAggregate(T) = isAggregateType!T
+private enum isUserAggregate(T) = isAggregateType!T
     && !is(T : BigInt!maxSize64, size_t maxSize64)
     && !is(T : Decimal!maxW64bitSize, size_t maxW64bitSize)
     && !is(T : SmallArray!(E, maxLength), E, size_t maxLength)
