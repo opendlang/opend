@@ -16,13 +16,26 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
 module mir.stat.descriptive;
 
-public import mir.math.stat: statType, MeanAccumulator, mean, meanType, hmean,
-    GMeanAccumulator, gmean, median, VarianceAlgo, VarianceAccumulator,
-    variance, stdevType, standardDeviation;
+public import mir.math.stat:
+    gmean,
+    GMeanAccumulator,
+    hmean,
+    mean,
+    MeanAccumulator,
+    meanType,
+    median,
+    standardDeviation,
+    statType,
+    stdevType,
+    variance,
+    VarianceAccumulator,
+    VarianceAlgo;
+
+public import mir.math.sum: Summation;
 
 import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
-import mir.math.sum: Summation, Summator, ResolveSummationType;
+import mir.math.sum: Summator, ResolveSummationType;
 import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
 import std.traits: isMutable;
 
