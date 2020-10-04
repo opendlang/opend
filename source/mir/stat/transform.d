@@ -14,7 +14,6 @@ MATHREF = $(REF_ALTTEXT $(TT $2), $2, mir, math, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
-
 module mir.stat.transform;
 
 public import mir.math.stat: center;
@@ -237,7 +236,7 @@ unittest
     assert(x.sweep!(a => g!3.5(a), "+").all!approxEqual([4.5, 5.5, 6.5, 7.5, 8.5, 9.5]));
 }
 
-// Sweep withAsSlice
+/// Sweep withAsSlice
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
