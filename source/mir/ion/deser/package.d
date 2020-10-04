@@ -1,6 +1,7 @@
 /++
 $(H4 High level deserialization API)
 
+Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
