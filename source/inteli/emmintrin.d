@@ -3666,7 +3666,7 @@ else static if (LDC_with_ARM64)
         if (count >= 16)
             return cast(__m128i)r;
 
-        r = sa >> short8(count); // This facility offered with LDC, but not DMD.
+        r = sa >>> short8(count); // This facility offered with LDC, but not DMD.
         return cast(__m128i)r;
     }
 }
