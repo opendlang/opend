@@ -1,0 +1,6 @@
+{"colors": ["red"]}
+{"a":"b", "colors": [4, "red", "string"]}
+{"a":"b", "colors": [4, 244, 2324, "string"]}
+{"a":"b", "colors": [4, "green", "string"]}
+{"a":"b", "colors": [4, "blue", true, false, "string"]}
+{"colors": "green"}

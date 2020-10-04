@@ -1,0 +1,4 @@
+[wrap-git]
+directory=mir-cpuid
+url=https://github.com/libmir/mir-cpuid.git
+revision=head

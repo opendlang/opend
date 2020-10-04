@@ -1,0 +1,8 @@
+null
+{"colors": ["red"]}
+{"a":"b", "colors": [4, "red", "string"]}
+{"colors":["red"],
+	"comment" : "this is broken (multiline) object"}
+{"colors": "green"}
+{"colors": "red"]}}
+[]
