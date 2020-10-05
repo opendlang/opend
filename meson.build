@@ -51,7 +51,7 @@ this_dep = declare_dependency(
     dependencies: required_deps,
 )
 
-test_versions = ['mir_ion_test']
+test_versions = ['mir_stat_test']
 
 if has_cpp_headers
     install_subdir('include/',

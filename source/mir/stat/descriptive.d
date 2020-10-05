@@ -4081,10 +4081,10 @@ struct EntropyAccumulator(T, Summation summation)
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Returns x * log(y)
+Returns x * log(x)
 
 Returns:
-    x * log(y)
+    x * log(x)
 +/
 private F xlog(F)(const F x)
     if (isFloatingPoint!F)
@@ -4092,7 +4092,7 @@ private F xlog(F)(const F x)
     import mir.math.common: log;
 
     assert(x >= 0, "xlog: x must be greater than or equal to zero");
-    return x * log(x);
+    return x ? x * log(x) : F(0);
 }
 
 /// test basic functionality
