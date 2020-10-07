@@ -6,6 +6,8 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
 
+public import mir.serde;
+
 import mir.bignum.decimal: Decimal;
 import mir.bignum.integer: BigInt;
 import mir.ion.deser.low_level;
@@ -13,7 +15,6 @@ import mir.ion.exception;
 import mir.ion.symbol_table;
 import mir.ion.type_code;
 import mir.ion.value;
-import mir.serde;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
@@ -66,24 +67,48 @@ SerdeException deserializeValue_(T)(IonDescribedValue data, ref T value)
 T deserializeJson(T)(scope const(char)[] text)
 {
     T value;    
-    if (auto exception = deserializeValueFromJson(text, value))
-        throw exception;
+    if (auto exc = deserializeValueFromJson(text, value))
+        throw exc;
     return value;
 }
 
-///
-// @safe pure @nogc
-version(mir_ion_test) unittest
+/// Test @nogc deserialization
+@safe pure @nogc
+unittest
 {
+    import mir.bignum.decimal;
+    import mir.rc.array;
+    import mir.small_array;
+    import mir.small_string;
+
     static struct Book
     {
         SmallString!64 title;
         bool wouldRecommend;
-        const(char)[] description;
+        SmallString!128 description; // common `string` and array can be used as well (with GC)
         uint numberOfNovellas;
         Decimal!1 price;
         double weight;
-        SmallArray!(SmallString!16, 10) tags;
+
+        // nogc small-array tags
+        SmallArray!(SmallString!16, 10) smallArrayTags;
+
+        // nogc rc-array tags
+        RCArray!(SmallString!16) rcArrayTags;
+
+        // nogc scope array tags
+        // when used with `@property` and `@serdeScoped`
+        @serdeIgnore bool tagsSet; // control flag for test
+
+        @serdeScoped
+        void tags(scope SmallString!16[] tags) @property @safe pure nothrow @nogc
+        {
+            assert(tags.length == 3);
+            assert(tags[0] == "one");
+            assert(tags[1] == "two");
+            assert(tags[2] == "three");
+            tagsSet = true;
+        }
     }
 
     auto book = q{{
@@ -94,9 +119,19 @@ version(mir_ion_test) unittest
         "price": 7.99,
         "weight": 6.88,
         "tags": [
+            "one",
+            "two",
+            "three"
+        ],
+        "rcArrayTags": [
             "russian",
             "novel",
             "19th century"
+        ],
+        "smallArrayTags": [
+            "4",
+            "5",
+            "6"
         ]
         }}
         .deserializeJson!Book;
@@ -106,13 +141,37 @@ version(mir_ion_test) unittest
     assert(book.description.length == 0);
     assert(book.numberOfNovellas == 5);
     assert(book.price.to!double == 7.99);
-    assert(book.tags.length == 3);
-    assert(book.tags[0] == "russian");
-    assert(book.tags[1] == "novel");
-    assert(book.tags[2] == "19th century");
+    assert(book.tagsSet);
+    assert(book.rcArrayTags.length == 3);
+    assert(book.rcArrayTags[0] == "russian");
+    assert(book.rcArrayTags[1] == "novel");
+    assert(book.rcArrayTags[2] == "19th century");
+    assert(book.smallArrayTags.length == 3);
+    assert(book.smallArrayTags[0] == "4");
+    assert(book.smallArrayTags[1] == "5");
+    assert(book.smallArrayTags[2] == "6");
     assert(book.title == "A Hero of Our Time");
     assert(book.weight == 6.88);
     assert(book.wouldRecommend);
+}
+
+template deserializeListToScopedBuffer(alias impl)
+{
+    import mir.appender: ScopedBuffer;
+    private SerdeException deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
+    {
+        foreach (error, ionElem; data.trustedGet!IonList)
+        {
+            if (_expect(error, false))
+                return error.ionException;
+            E value;
+            if (auto exc = impl(ionElem, value))
+                return exc;
+            import core.lifetime: move;
+            buffer.put(move(value));
+        }
+        return null;
+    }
 }
 
 /++
@@ -156,6 +215,8 @@ template deserializeValue(string[] symbolTable)
     SerdeException deserializeValue(T)(IonDescribedValue data, ref T value)
         if (!isFirstOrderSerdeType!T)
     {
+        import mir.rc.array: RCArray;
+
         static if (__traits(hasMember, value, "deserializeFromIon"))
         {
             return __traits(getMember, value, "deserializeFromIon")(data);
@@ -172,8 +233,8 @@ template deserializeValue(string[] symbolTable)
                     if (value._length == maxLength)
                         return IonErrorCode.smallArrayOverflow.ionException;
                     E elem;
-                    if (auto exception = .deserializeValue!symbolTable(ionElem, elem))
-                        return exception;
+                    if (auto exc = .deserializeValue!symbolTable(ionElem, elem))
+                        return exc;
                     import core.lifetime: move;
                     value.trustedAppend(move(elem));
                 }
@@ -192,24 +253,45 @@ template deserializeValue(string[] symbolTable)
             alias E = Unqual!D;
             if (data.descriptor.type == IonTypeCode.list)
             {
-                import mir.appender;
+                import mir.appender: ScopedBuffer;
                 ScopedBuffer!E buffer;
-                foreach (error, ionElem; data.trustedGet!IonList)
-                {
-                    if (_expect(error, false))
-                        return error.ionException;
-                    E elem;
-                    if (auto exception = .deserializeValue!symbolTable(ionElem, elem))
-                        return exception;
-                    import core.lifetime: move;
-                    buffer.put(move(elem));
-                }
+                if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable)(data, buffer))
+                    return exc;
 
                 import std.array: uninitializedArray;
                 (()@trusted {
                     auto ar = uninitializedArray!(E[])(buffer.length);
                     buffer.moveDataAndEmplaceTo(ar);
                     value = cast(T) ar;
+                })();
+                return null;
+            }
+            else
+            if (data.descriptor.type == IonTypeCode.null_)
+            {
+                value = null;
+                return null;
+            }
+            return IonErrorCode.expectedListValue.ionException;
+        }
+        else
+        static if (is(T == RCArray!D, D))
+        {
+            alias E = Unqual!D;
+            if (data.descriptor.type == IonTypeCode.list)
+            {
+                import mir.appender: ScopedBuffer;
+                ScopedBuffer!E buffer;
+                if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable)(data, buffer))
+                    return exc;
+
+                (()@trusted @nogc {
+                    auto ar = RCArray!E(buffer.length, false);
+                    buffer.moveDataAndEmplaceTo(ar[]);
+                    static if (__traits(compiles, value = ar))
+                        value = ar;
+                    else
+                        value = ar.opCast!T;
                 })();
                 return null;
             }
@@ -243,8 +325,8 @@ template deserializeValue(string[] symbolTable)
             import mir.conv: to;
             import core.lifetime: move;
             serdeGetProxy!T temporal;
-            static if (hasUDA!(value, serdeScoped))
-                static if (__traits(compiles, { .deserializeScoped!symbolTable(data, temporal); }))
+            static if (hasUDA!(T, serdeScoped))
+                static if (__traits(compiles, .deserializeScoped(data, temporal)))
                     alias impl = .deserializeScoped;
                 else
                     alias impl = .deserializeValue!symbolTable;
@@ -316,7 +398,7 @@ template deserializeValue(string[] symbolTable)
             }
             else
             {
-                alias impl = deserializeValueMemberImpl!(.deserializeValue!symbolTable, deserializeScoped);
+                alias impl = deserializeValueMember!(.deserializeValue!symbolTable, deserializeScoped);
 
                 static immutable exc(string member) = new SerdeException("mir.ion.deser: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.");
                 
@@ -407,19 +489,157 @@ template deserializeValue(string[] symbolTable)
     alias deserializeValue = .deserializeValue_;
 }
 
+private template deserializeValueMember(alias deserializeValue, alias deserializeScoped)
+{
+    ///
+    SerdeException deserializeValueMember(string member, Data, T, Context...)(Data data, ref T value, ref SerdeFlags!T requiredFlags, ref Context context)
+    {
+        import core.lifetime: move;
+        import mir.conv: to;
+        import mir.reflection: isField;
+
+        enum likeList = hasUDA!(__traits(getMember, value, member), serdeLikeList);
+        enum likeStruct  = hasUDA!(__traits(getMember, value, member), serdeLikeStruct);
+        enum hasProxy = hasUDA!(__traits(getMember, value, member), serdeProxy);
+        enum hasScoped = hasUDA!(__traits(getMember, value, member), serdeScoped);
+        enum hasTransform = hasUDA!(__traits(getMember, value, member), serdeTransformIn);
+
+        static if (hasTransform)
+            alias transform = serdeGetTransformIn!(__traits(getMember, value, member));
+
+        static assert (likeList + likeStruct <= 1, T.stringof ~ "." ~ member ~ " can't have both @serdeLikeStruct and @serdeLikeList attributes");
+        static assert (hasProxy >= likeStruct, T.stringof ~ "." ~ member ~ " should have a Proxy type for deserialization");
+        static assert (hasProxy >= likeList, T.stringof ~ "." ~ member ~ " should have a Proxy type for deserialization");
+
+        alias Member = serdeDeserializationMemberType!(T, member);
+
+        static if (hasProxy)
+            alias Temporal = serdeGetProxy!(__traits(getMember, value, member));
+        else
+            alias Temporal = Member;
+
+        static if (hasScoped)
+            static if (__traits(compiles, { Temporal temporal; deserializeScoped(data, temporal); }))
+                alias impl = deserializeScoped;
+            else
+                alias impl = deserializeValue;
+        else
+            alias impl = deserializeValue;
+
+        static immutable excm(string member) = new SerdeException("mir.serde: multiple keys for member '" ~ member ~ "' in " ~ T.stringof ~ " are not allowed.");
+
+        static if (!hasUDA!(__traits(getMember, value, member), serdeAllowMultiple))
+            if (__traits(getMember, requiredFlags, member))
+                return excm!member;
+
+        __traits(getMember, requiredFlags, member) = true;
+
+        static if (likeList)
+        {
+            foreach(elem; data.byElement(context))
+            {
+                Temporal temporal;
+                if (auto exc = impl(elem, temporal, context))
+                    return exc;
+                __traits(getMember, value, member).put(move(temporal));
+            }
+            static if (isField!(T, member))
+            {
+                transform(__traits(getMember, value, member));
+            }
+            else
+            {
+                auto temporal = __traits(getMember, value, member);
+                transform(temporal);
+                __traits(getMember, value, member) = move(temporal);
+            }
+        }
+        else
+        static if (likeStruct)
+        {
+            foreach(v; data.byKeyValue(context))
+            {
+                Temporal temporal;
+                if (auto exc = impl(v.value, temporal, context))
+                    return exc;
+                __traits(getMember, value, member)[v.key.idup] = move(temporal);
+            }
+            static if (hasTransform)
+            {
+                static if (isField!(T, member))
+                {
+                    transform(__traits(getMember, value, member));
+                }
+                else
+                {
+                    auto temporal2 = __traits(getMember, value, member);
+                    transform(temporal2);
+                    __traits(getMember, value, member) = move(temporal2);
+                }
+            }
+        }
+        else
+        static if (hasProxy)
+        {
+            Temporal proxy;
+            if (auto exc = impl(data, proxy, context))
+                return exc;
+            auto temporal = to!(serdeDeserializationMemberType!(T, member))(move(proxy));
+            static if (hasTransform)
+                transform(temporal);
+            __traits(getMember, value, member) = move(temporal);
+        }
+        else
+        static if (isField!(T, member))
+        {
+            if (auto exc = impl(data, __traits(getMember, value, member), context))
+                return exc;
+            static if (hasTransform)
+                transform(__traits(getMember, value, member));
+        }
+        else
+        {
+            static if (hasScoped && is(Member == D[], D))
+            {
+                import mir.appender: ScopedBuffer;
+                alias E = Unqual!D;
+                ScopedBuffer!E buffer;
+                if (auto exc = deserializeListToScopedBuffer!deserializeValue(data, buffer))
+                    return exc;
+                auto temporal = (()@trusted => cast(Member)buffer.data)();
+            }
+            else
+            {
+                Member temporal;
+                if (auto exc = impl(data, temporal, context))
+                    return exc;
+            }
+            static if (hasTransform)
+                transform(temporal);
+            __traits(getMember, value, member) = move(temporal);
+        }
+
+        return null;
+    }
+}
+
 ///
-@safe pure @nogc
+@safe pure
 version(mir_ion_test) unittest
 {
+    import mir.small_array;
+    import mir.small_string;
+    import mir.bignum.decimal;
+
     static struct Book
     {
-        SmallString!64 title;
+        string title;
         bool wouldRecommend;
-        SmallString!64 description;
+        string description;
         uint numberOfNovellas;
-        Decimal!1 price;
-        double weight;
-        SmallArray!(SmallString!16, 10) tags;
+        double price;
+        float weight;
+        string[] tags;
     }
 
     static immutable symbolTable = ["title", "wouldRecommend", "description", "numberOfNovellas", "price", "weight", "tags"];
@@ -431,17 +651,15 @@ version(mir_ion_test) unittest
     if (auto serdeException = deserializeValue!(IonSystemSymbolTable_v1 ~ symbolTable)(data, book))
         throw serdeException;
 
-    import mir.conv: to;
-
     assert(book.description.length == 0);
     assert(book.numberOfNovellas == 5);
-    assert(book.price.to!double == 7.99);
+    assert(book.price == 7.99);
     assert(book.tags.length == 3);
     assert(book.tags[0] == "russian");
     assert(book.tags[1] == "novel");
     assert(book.tags[2] == "19th century");
     assert(book.title == "A Hero of Our Time");
-    assert(book.weight == 6.88);
+    assert(book.weight == 6.88f);
     assert(book.wouldRecommend);
 }
 

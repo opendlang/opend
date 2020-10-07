@@ -455,12 +455,9 @@ version(mir_ion_test) unittest
     assert(value == 'b');
 }
 
-///
-IonErrorCode deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
+private IonErrorCode deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
 {
-    IonList ionValue;
-    if (auto error = data.get(ionValue))
-        return error;
+    auto ionValue = data.trustedGet!IonList;
     foreach (error, ionElem; ionValue)
     {
         if (_expect(error, false))

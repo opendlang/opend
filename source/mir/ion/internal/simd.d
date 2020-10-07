@@ -41,6 +41,7 @@ version (ARM_Any)
 {
     version (LDC)
     {
+        import ldc.simd: equalMask;
         alias __builtin_vceqq_u8 = equalMask!(__vector(ubyte[16]));
     }
 

@@ -85,10 +85,10 @@ private template stage1_impl(string arch)
 
         version (ARM_Any)
         {
-            const ubyte16 quoteMask = quote;
-            const ubyte16 escapeMask = escape;
-            const ubyte16[2] stringMasks = [quoteMask, escapeMask];
-            const ubyte16 mask = [
+            const __vector(ubyte[16]) quoteMask = quote;
+            const __vector(ubyte[16]) escapeMask = escape;
+            const __vector(ubyte[16])[2] stringMasks = [quoteMask, escapeMask];
+            const __vector(ubyte[16]) mask = [
                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
             ];
         }
@@ -107,11 +107,11 @@ private template stage1_impl(string arch)
         {
             version (ARM_Any)
             {
-                auto v = *cast(ubyte16[4]*)vector++;
-                ubyte16[4][2] d;
+                auto v = *cast(__vector(ubyte[16])[4]*)vector++;
+                __vector(ubyte[16])[4][2] d;
                 static foreach (i; 0 .. 2)
                 static foreach (j; 0 .. 4)
-                    d[i][j] = cast(ubyte16) __builtin_vceqq_u8(v[j], stringMasks[i]);
+                    d[i][j] = cast(__vector(ubyte[16])) __builtin_vceqq_u8(v[j], stringMasks[i]);
                 static foreach (i; 0 .. 2)
                 static foreach (j; 0 .. 4)
                     d[i][j] &= mask;
@@ -122,10 +122,10 @@ private template stage1_impl(string arch)
                     static foreach (j; 0 .. 4)
                         d[i][j] = __builtin_vpadd_u32(d[i][j], d[i][j]);
 
-                    ushort8 result;
+                    __vector(ushort[8]) result;
                     static foreach (i; 0 .. 2)
                     static foreach (j; 0 .. 4)
-                        result[i * 4 + j] = extractelement!(ushort8, i * 4 + j)(cast(ushort8) d[i][j]);
+                        result[i * 4 + j] = extractelement!(__vector(ushort[8]), i * 4 + j)(cast(__vector(ushort[8])) d[i][j]);
                 }
                 else
                 {
@@ -137,8 +137,8 @@ private template stage1_impl(string arch)
                             .__builtin_vpaddlq_u8
                             .__builtin_vpaddlq_u16
                             .__builtin_vpaddlq_u32;
-                        result[i * 8 + j * 2 + 0] = extractelement!(ubyte16, 0)(d[i][j]);
-                        result[i * 8 + j * 2 + 1] = extractelement!(ubyte16, 8)(d[i][j]);
+                        result[i * 8 + j * 2 + 0] = extractelement!(__vector(ubyte[16]), 0)(d[i][j]);
+                        result[i * 8 + j * 2 + 1] = extractelement!(__vector(ubyte[16]), 8)(d[i][j]);
                     }
                 }
                 ulong[2] maskPair = cast(ulong[2]) result;
