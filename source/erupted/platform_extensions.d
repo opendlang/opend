@@ -18,6 +18,7 @@ enum KHR_external_memory_win32;
 enum KHR_win32_keyed_mutex;
 enum KHR_external_semaphore_win32;
 enum KHR_external_fence_win32;
+enum KHR_portability_subset;
 enum KHR_deferred_host_operations;
 enum KHR_pipeline_library;
 enum GGP_stream_descriptor_surface;
@@ -43,7 +44,7 @@ alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
 alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive );
-alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_deferred_host_operations, KHR_pipeline_library, KHR_ray_tracing );
+alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_portability_subset, KHR_deferred_host_operations, KHR_pipeline_library, KHR_ray_tracing );
 alias USE_PLATFORM_GGP             = AliasSeq!( GGP_stream_descriptor_surface, GGP_frame_token );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
@@ -323,6 +324,41 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias PFN_vkImportFenceWin32HandleKHR                                       = VkResult  function( VkDevice device, const( VkImportFenceWin32HandleInfoKHR )* pImportFenceWin32HandleInfo );
             alias PFN_vkGetFenceWin32HandleKHR                                          = VkResult  function( VkDevice device, const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+        }
+
+        // VK_KHR_portability_subset : types and function pointer type aliases
+        else static if( __traits( isSame, extension, KHR_portability_subset )) {
+            enum VK_KHR_portability_subset = 1;
+
+            enum VK_KHR_PORTABILITY_SUBSET_SPEC_VERSION = 1;
+            enum VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME = "VK_KHR_portability_subset";
+            
+            struct VkPhysicalDevicePortabilitySubsetFeaturesKHR {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+                void*            pNext;
+                VkBool32         constantAlphaColorBlendFactors;
+                VkBool32         events;
+                VkBool32         imageViewFormatReinterpretation;
+                VkBool32         imageViewFormatSwizzle;
+                VkBool32         imageView2DOn3DImage;
+                VkBool32         multisampleArrayImage;
+                VkBool32         mutableComparisonSamplers;
+                VkBool32         pointPolygons;
+                VkBool32         samplerMipLodBias;
+                VkBool32         separateStencilMaskRef;
+                VkBool32         shaderSampleRateInterpolationFunctions;
+                VkBool32         tessellationIsolines;
+                VkBool32         tessellationPointMode;
+                VkBool32         triangleFans;
+                VkBool32         vertexAttributeAccessBeyondStride;
+            }
+            
+            struct VkPhysicalDevicePortabilitySubsetPropertiesKHR {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
+                void*            pNext;
+                uint32_t         minVertexInputBindingStrideAlignment;
+            }
+            
         }
 
         // VK_KHR_deferred_host_operations : types and function pointer type aliases

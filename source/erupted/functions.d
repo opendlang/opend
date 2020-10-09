@@ -269,6 +269,14 @@ extern( System ) {
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
     alias PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations );
 
+    // VK_KHR_copy_commands2
+    alias PFN_vkCmdCopyBuffer2KHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkCopyBufferInfo2KHR )* pCopyBufferInfo );
+    alias PFN_vkCmdCopyImage2KHR                                                = void      function( VkCommandBuffer commandBuffer, const( VkCopyImageInfo2KHR )* pCopyImageInfo );
+    alias PFN_vkCmdCopyBufferToImage2KHR                                        = void      function( VkCommandBuffer commandBuffer, const( VkCopyBufferToImageInfo2KHR )* pCopyBufferToImageInfo );
+    alias PFN_vkCmdCopyImageToBuffer2KHR                                        = void      function( VkCommandBuffer commandBuffer, const( VkCopyImageToBufferInfo2KHR )* pCopyImageToBufferInfo );
+    alias PFN_vkCmdBlitImage2KHR                                                = void      function( VkCommandBuffer commandBuffer, const( VkBlitImageInfo2KHR )* pBlitImageInfo );
+    alias PFN_vkCmdResolveImage2KHR                                             = void      function( VkCommandBuffer commandBuffer, const( VkResolveImageInfo2KHR )* pResolveImageInfo );
+
     // VK_EXT_debug_report
     alias PFN_vkCreateDebugReportCallbackEXT                                    = VkResult  function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
     alias PFN_vkDestroyDebugReportCallbackEXT                                   = void      function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -710,6 +718,14 @@ __gshared {
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_copy_commands2
+    PFN_vkCmdCopyBuffer2KHR                                               vkCmdCopyBuffer2KHR;
+    PFN_vkCmdCopyImage2KHR                                                vkCmdCopyImage2KHR;
+    PFN_vkCmdCopyBufferToImage2KHR                                        vkCmdCopyBufferToImage2KHR;
+    PFN_vkCmdCopyImageToBuffer2KHR                                        vkCmdCopyImageToBuffer2KHR;
+    PFN_vkCmdBlitImage2KHR                                                vkCmdBlitImage2KHR;
+    PFN_vkCmdResolveImage2KHR                                             vkCmdResolveImage2KHR;
 
     // VK_EXT_debug_report
     PFN_vkCreateDebugReportCallbackEXT                                    vkCreateDebugReportCallbackEXT;
@@ -1303,6 +1319,14 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+    // VK_KHR_copy_commands2
+    vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetInstanceProcAddr( instance, "vkCmdCopyBuffer2KHR" );
+    vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetInstanceProcAddr( instance, "vkCmdCopyImage2KHR" );
+    vkCmdCopyBufferToImage2KHR                        = cast( PFN_vkCmdCopyBufferToImage2KHR                        ) vkGetInstanceProcAddr( instance, "vkCmdCopyBufferToImage2KHR" );
+    vkCmdCopyImageToBuffer2KHR                        = cast( PFN_vkCmdCopyImageToBuffer2KHR                        ) vkGetInstanceProcAddr( instance, "vkCmdCopyImageToBuffer2KHR" );
+    vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetInstanceProcAddr( instance, "vkCmdBlitImage2KHR" );
+    vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetInstanceProcAddr( instance, "vkCmdResolveImage2KHR" );
+
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
     vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -1659,6 +1683,14 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
+
+    // VK_KHR_copy_commands2
+    vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2KHR" );
+    vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdCopyImage2KHR" );
+    vkCmdCopyBufferToImage2KHR                        = cast( PFN_vkCmdCopyBufferToImage2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage2KHR" );
+    vkCmdCopyImageToBuffer2KHR                        = cast( PFN_vkCmdCopyImageToBuffer2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer2KHR" );
+    vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2KHR" );
+    vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2KHR" );
 
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );

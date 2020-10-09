@@ -255,6 +255,14 @@ struct DispatchDevice {
         vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
         vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+        // VK_KHR_copy_commands2
+        vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2KHR" );
+        vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdCopyImage2KHR" );
+        vkCmdCopyBufferToImage2KHR                        = cast( PFN_vkCmdCopyBufferToImage2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage2KHR" );
+        vkCmdCopyImageToBuffer2KHR                        = cast( PFN_vkCmdCopyImageToBuffer2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer2KHR" );
+        vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2KHR" );
+        vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2KHR" );
+
         // VK_EXT_debug_marker
         vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
         vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -616,6 +624,14 @@ struct DispatchDevice {
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
     VkResult  GetPipelineExecutableStatisticsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics ) { return vkGetPipelineExecutableStatisticsKHR( vkDevice, pExecutableInfo, pStatisticCount, pStatistics ); }
     VkResult  GetPipelineExecutableInternalRepresentationsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations ) { return vkGetPipelineExecutableInternalRepresentationsKHR( vkDevice, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations ); }
+
+    // VK_KHR_copy_commands2
+    void      CmdCopyBuffer2KHR( const( VkCopyBufferInfo2KHR )* pCopyBufferInfo ) { vkCmdCopyBuffer2KHR( commandBuffer, pCopyBufferInfo ); }
+    void      CmdCopyImage2KHR( const( VkCopyImageInfo2KHR )* pCopyImageInfo ) { vkCmdCopyImage2KHR( commandBuffer, pCopyImageInfo ); }
+    void      CmdCopyBufferToImage2KHR( const( VkCopyBufferToImageInfo2KHR )* pCopyBufferToImageInfo ) { vkCmdCopyBufferToImage2KHR( commandBuffer, pCopyBufferToImageInfo ); }
+    void      CmdCopyImageToBuffer2KHR( const( VkCopyImageToBufferInfo2KHR )* pCopyImageToBufferInfo ) { vkCmdCopyImageToBuffer2KHR( commandBuffer, pCopyImageToBufferInfo ); }
+    void      CmdBlitImage2KHR( const( VkBlitImageInfo2KHR )* pBlitImageInfo ) { vkCmdBlitImage2KHR( commandBuffer, pBlitImageInfo ); }
+    void      CmdResolveImage2KHR( const( VkResolveImageInfo2KHR )* pResolveImageInfo ) { vkCmdResolveImage2KHR( commandBuffer, pResolveImageInfo ); }
 
     // VK_EXT_debug_marker
     VkResult  DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) { return vkDebugMarkerSetObjectTagEXT( vkDevice, pTagInfo ); }
@@ -1027,6 +1043,14 @@ struct DispatchDevice {
     PFN_vkGetPipelineExecutablePropertiesKHR              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR              vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_copy_commands2
+    PFN_vkCmdCopyBuffer2KHR                               vkCmdCopyBuffer2KHR;
+    PFN_vkCmdCopyImage2KHR                                vkCmdCopyImage2KHR;
+    PFN_vkCmdCopyBufferToImage2KHR                        vkCmdCopyBufferToImage2KHR;
+    PFN_vkCmdCopyImageToBuffer2KHR                        vkCmdCopyImageToBuffer2KHR;
+    PFN_vkCmdBlitImage2KHR                                vkCmdBlitImage2KHR;
+    PFN_vkCmdResolveImage2KHR                             vkCmdResolveImage2KHR;
 
     // VK_EXT_debug_marker
     PFN_vkDebugMarkerSetObjectTagEXT                      vkDebugMarkerSetObjectTagEXT;

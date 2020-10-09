@@ -35,7 +35,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 150;
+enum VK_HEADER_VERSION = 155;
 
 enum VK_NULL_HANDLE = null;
 
@@ -525,6 +525,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT                           = 1000158005,
     VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT                                   = 1000160000,
     VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT                     = 1000160001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR                    = 1000163000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR                  = 1000163001,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV          = 1000164000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV                     = 1000164001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV                   = 1000164002,
@@ -585,6 +587,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT                 = 1000225002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD                       = 1000227000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD                       = 1000229000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT             = 1000234000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                       = 1000237000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                       = 1000238000,
     VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                  = 1000238001,
@@ -647,6 +650,17 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT                = 1000332000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT              = 1000332001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT                      = 1000335000,
+    VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR                                             = 1000337000,
+    VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR                                              = 1000337001,
+    VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR                                    = 1000337002,
+    VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR                                    = 1000337003,
+    VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR                                              = 1000337004,
+    VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR                                           = 1000337005,
+    VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR                                                  = 1000337006,
+    VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR                                                   = 1000337007,
+    VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR                                                   = 1000337008,
+    VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR                                            = 1000337009,
+    VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR                                                = 1000337010,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT                          = 1000340000,
     VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT                                   = 1000346000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES                          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
@@ -1090,6 +1104,8 @@ enum VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT       
 enum VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT                                  = VkStructureType.VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT                    = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
 enum VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV         = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV                    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV;
@@ -1150,6 +1166,7 @@ enum VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
@@ -1212,6 +1229,17 @@ enum VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV                 
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT                     = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR                                            = VkStructureType.VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR                                             = VkStructureType.VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR                                   = VkStructureType.VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR                                   = VkStructureType.VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR                                             = VkStructureType.VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR                                          = VkStructureType.VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR                                                 = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR;
+enum VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR                                                  = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR;
+enum VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR                                                  = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR;
+enum VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR                                           = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR;
+enum VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR                                               = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT                                  = VkStructureType.VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
@@ -7895,6 +7923,124 @@ enum VK_KHR_SHADER_NON_SEMANTIC_INFO_SPEC_VERSION = 1;
 enum VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME = "VK_KHR_shader_non_semantic_info";
 
 
+// - VK_KHR_copy_commands2 -
+enum VK_KHR_copy_commands2 = 1;
+
+enum VK_KHR_COPY_COMMANDS_2_SPEC_VERSION = 1;
+enum VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME = "VK_KHR_copy_commands2";
+
+struct VkBufferCopy2KHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR;
+    const( void )*   pNext;
+    VkDeviceSize     srcOffset;
+    VkDeviceSize     dstOffset;
+    VkDeviceSize     size;
+}
+
+struct VkCopyBufferInfo2KHR {
+    VkStructureType             sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR;
+    const( void )*              pNext;
+    VkBuffer                    srcBuffer;
+    VkBuffer                    dstBuffer;
+    uint32_t                    regionCount;
+    const( VkBufferCopy2KHR )*  pRegions;
+}
+
+struct VkImageCopy2KHR {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR;
+    const( void )*            pNext;
+    VkImageSubresourceLayers  srcSubresource;
+    VkOffset3D                srcOffset;
+    VkImageSubresourceLayers  dstSubresource;
+    VkOffset3D                dstOffset;
+    VkExtent3D                extent;
+}
+
+struct VkCopyImageInfo2KHR {
+    VkStructureType            sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR;
+    const( void )*             pNext;
+    VkImage                    srcImage;
+    VkImageLayout              srcImageLayout;
+    VkImage                    dstImage;
+    VkImageLayout              dstImageLayout;
+    uint32_t                   regionCount;
+    const( VkImageCopy2KHR )*  pRegions;
+}
+
+struct VkBufferImageCopy2KHR {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR;
+    const( void )*            pNext;
+    VkDeviceSize              bufferOffset;
+    uint32_t                  bufferRowLength;
+    uint32_t                  bufferImageHeight;
+    VkImageSubresourceLayers  imageSubresource;
+    VkOffset3D                imageOffset;
+    VkExtent3D                imageExtent;
+}
+
+struct VkCopyBufferToImageInfo2KHR {
+    VkStructureType                  sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR;
+    const( void )*                   pNext;
+    VkBuffer                         srcBuffer;
+    VkImage                          dstImage;
+    VkImageLayout                    dstImageLayout;
+    uint32_t                         regionCount;
+    const( VkBufferImageCopy2KHR )*  pRegions;
+}
+
+struct VkCopyImageToBufferInfo2KHR {
+    VkStructureType                  sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR;
+    const( void )*                   pNext;
+    VkImage                          srcImage;
+    VkImageLayout                    srcImageLayout;
+    VkBuffer                         dstBuffer;
+    uint32_t                         regionCount;
+    const( VkBufferImageCopy2KHR )*  pRegions;
+}
+
+struct VkImageBlit2KHR {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR;
+    const( void )*            pNext;
+    VkImageSubresourceLayers  srcSubresource;
+    VkOffset3D[2]             srcOffsets;
+    VkImageSubresourceLayers  dstSubresource;
+    VkOffset3D[2]             dstOffsets;
+}
+
+struct VkBlitImageInfo2KHR {
+    VkStructureType            sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR;
+    const( void )*             pNext;
+    VkImage                    srcImage;
+    VkImageLayout              srcImageLayout;
+    VkImage                    dstImage;
+    VkImageLayout              dstImageLayout;
+    uint32_t                   regionCount;
+    const( VkImageBlit2KHR )*  pRegions;
+    VkFilter                   filter;
+}
+
+struct VkImageResolve2KHR {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR;
+    const( void )*            pNext;
+    VkImageSubresourceLayers  srcSubresource;
+    VkOffset3D                srcOffset;
+    VkImageSubresourceLayers  dstSubresource;
+    VkOffset3D                dstOffset;
+    VkExtent3D                extent;
+}
+
+struct VkResolveImageInfo2KHR {
+    VkStructureType               sType = VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
+    const( void )*                pNext;
+    VkImage                       srcImage;
+    VkImageLayout                 srcImageLayout;
+    VkImage                       dstImage;
+    VkImageLayout                 dstImageLayout;
+    uint32_t                      regionCount;
+    const( VkImageResolve2KHR )*  pRegions;
+}
+
+
 // - VK_EXT_debug_report -
 enum VK_EXT_debug_report = 1;
 
@@ -10578,6 +10724,20 @@ struct VkPhysicalDeviceCoherentMemoryFeaturesAMD {
     VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
     void*            pNext;
     VkBool32         deviceCoherentMemory;
+}
+
+
+// - VK_EXT_shader_image_atomic_int64 -
+enum VK_EXT_shader_image_atomic_int64 = 1;
+
+enum VK_EXT_SHADER_IMAGE_ATOMIC_INT64_SPEC_VERSION = 1;
+enum VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME = "VK_EXT_shader_image_atomic_int64";
+
+struct VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         shaderImageInt64Atomics;
+    VkBool32         sparseImageInt64Atomics;
 }
 
 
