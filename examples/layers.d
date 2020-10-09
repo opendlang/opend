@@ -1,7 +1,6 @@
 
 import std.stdio;
 import std.range;
-import std.array;
 import std.algorithm;
 import std.exception;
 import std.conv;

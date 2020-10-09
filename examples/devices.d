@@ -1,7 +1,6 @@
 
 import std.stdio;
 import std.range;
-import std.array;
 import std.algorithm;
 import std.exception;
 import std.conv;
@@ -46,7 +45,7 @@ int main() {
 
 	// enumerate physical devices
 	uint numPhysDevices;
-	writeln("Before vkEnumeratePhysicalDevices");
+	writeln("\nBefore vkEnumeratePhysicalDevices");
 	enforceVK(vkEnumeratePhysicalDevices(instance, &numPhysDevices, null));
 	if (numPhysDevices == 0) {
 		stderr.writeln("No physical devices available.");
