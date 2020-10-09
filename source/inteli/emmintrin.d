@@ -1864,6 +1864,20 @@ else static if (LDC_with_SSE2)
         return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
     }
 }
+else static if (LDC_with_ARM64)
+{
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
+    /// and pack the results in destination.
+    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        int4 pl = vmull_s16(vget_low_s16(cast(short8)a), vget_low_s16(cast(short8)b));
+        int4 ph = vmull_s16(vget_high_s16(cast(short8)a), vget_high_s16(cast(short8)b));
+        int2 rl = vpadd_s32(vget_low_s32(pl), vget_high_s32(pl));
+        int2 rh = vpadd_s32(vget_low_s32(ph), vget_high_s32(ph));
+        return vcombine_s32(rl, rh);
+    }
+}
 else
 {
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate

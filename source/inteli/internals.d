@@ -1111,3 +1111,68 @@ __m128i to_m128i(__m64 a) pure @trusted
     r.ptr[0] = a.array[0];
     return cast(__m128i)r;
 }
+
+// SOME NEON INTRINSICS
+// Emulating some x86 intrinsics needs access to a range of ARM intrinsics.
+// Not in the public API but the simde project expose it all for the user to use.
+static if (LDC_with_ARM64)
+{
+    short4 vget_low_s16(short8 a) pure @trusted
+    {
+        short4 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    }
+
+    short4 vget_high_s16(short8 a) pure @trusted
+    {
+        short4 r;
+        r.ptr[0] = a.array[4];
+        r.ptr[1] = a.array[5];
+        r.ptr[2] = a.array[6];
+        r.ptr[3] = a.array[7];
+        return r;
+    }
+
+    int4 vmull_s16(short4 a, short4 b) pure @trusted
+    {
+        int4 r;
+        r.ptr[0] = a.array[0] * b.array[0];
+        r.ptr[1] = a.array[1] * b.array[1];
+        r.ptr[2] = a.array[2] * b.array[2];
+        r.ptr[3] = a.array[3] * b.array[3];
+        return r;
+    }
+
+    int2 vget_low_s32(int4 a) pure @trusted
+    {
+        int2 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
+    }
+
+    int2 vget_high_s32(int4 a) pure @trusted
+    {
+        int2 r;
+        r.ptr[0] = a.array[2];
+        r.ptr[1] = a.array[3];
+        return r;
+    }
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
+        int2 vpadd_s32(int2 a, int2 b) pure @safe;
+
+    int4 vcombine_s32(int2 lo, int2 hi) pure @trusted
+    {
+        int4 r;
+        r.ptr[0] = lo.array[0];
+        r.ptr[1] = lo.array[1];
+        r.ptr[2] = hi.array[0];
+        r.ptr[3] = hi.array[1];
+        return r;
+    }
+}
