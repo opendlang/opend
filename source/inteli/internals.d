@@ -1175,4 +1175,17 @@ static if (LDC_with_ARM64)
         r.ptr[3] = hi.array[1];
         return r;
     }
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.v4i32.v4f32")
+        int4 vcvtnq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v4i32.v4f32")
+        int4 vcvtmq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.v4i32.v4f32")
+        int4 vcvtpq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v4i32.v4f32")
+        int4 vcvtzq_s32_f32(float4 a) pure @safe;
 }
+

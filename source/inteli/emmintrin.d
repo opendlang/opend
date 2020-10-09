@@ -136,7 +136,6 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             short[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -186,7 +185,6 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             byte[16] res;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
@@ -234,7 +232,6 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             ubyte[16] res;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
@@ -281,7 +278,6 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             ushort[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -1323,6 +1319,19 @@ __m128i _mm_cvtps_epi32 (__m128 a) @trusted
     {
         return __builtin_ia32_cvtps2dq(a);
     }
+    else static if (LDC_with_ARM64)
+    {
+        // Get current rounding mode.
+        uint fpscr = arm_get_fpcr();
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     return vcvtnq_s32_f32(a);
+            case _MM_ROUND_DOWN_ARM:        return vcvtmq_s32_f32(a);
+            case _MM_ROUND_UP_ARM:          return vcvtpq_s32_f32(a);
+            case _MM_ROUND_TOWARD_ZERO_ARM: return vcvtzq_s32_f32(a);
+        }
+    }
     else
     {
         __m128i r = void;
@@ -1906,7 +1915,19 @@ unittest
     assert(R.array == correct);
 }
 
-static if (LDC_with_SSE2)
+
+static if (GDC_with_SSE2)
+{
+    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
+    /// (elements are not stored when the highest bit is not set in the corresponding element)
+    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
+    /// boundary.
+    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
+    {
+        return __builtin_ia32_maskmovdqu(cast(ubyte16)a, cast(ubyte16)mask, cast(char*)mem_addr);
+    }
+}
+else static if (LDC_with_SSE2)
 {
     /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
     /// (elements are not stored when the highest bit is not set in the corresponding element)
@@ -1919,29 +1940,21 @@ static if (LDC_with_SSE2)
 }
 else
 {
-    static if (GDC_with_SSE2)
+    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
+    /// (elements are not stored when the highest bit is not set in the corresponding element)
+    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
+    /// boundary.
+    // PERF: catastrophic on ARM
+    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
     {
-        ///ditto
-        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
+        byte16 b = cast(byte16)a;
+        byte16 m = cast(byte16)mask;
+        byte* dest = cast(byte*)(mem_addr);
+        foreach(j; 0..16)
         {
-            return __builtin_ia32_maskmovdqu(cast(ubyte16)a, cast(ubyte16)mask, cast(char*)mem_addr);
-        }
-    }
-    else
-    {
-        ///ditto
-        // PERF: on ARM, is absolutely catastrophic, however needing this intrinsics is rare.
-        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
-        {
-            byte16 b = cast(byte16)a;
-            byte16 m = cast(byte16)mask;
-            byte* dest = cast(byte*)(mem_addr);
-            foreach(j; 0..16)
+            if (m.array[j] & 128)
             {
-                if (m.array[j] & 128)
-                {
-                    dest[j] = b.array[j];
-                }
+                dest[j] = b.array[j];
             }
         }
     }
@@ -4088,7 +4101,6 @@ version(LDC)
         /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             short[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -4149,7 +4161,6 @@ version(LDC)
         /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             byte[16] res;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
@@ -4210,7 +4221,6 @@ version(LDC)
         /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             short[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -4277,7 +4287,6 @@ version(LDC)
          /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
         {
-            // PERF #ARM32 Use an intrinsic in gccbuiltins_arm.d instead
             ubyte[16] res;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
