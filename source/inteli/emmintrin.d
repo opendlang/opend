@@ -376,6 +376,13 @@ unittest
     assert(R.array == correct);
 }
 
+
+version(LDC_with_ARM64)
+{
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v8i16")
+        short8 vrhadd_u16(short8 a, short8 b) pure @safe;
+}
+
 /// Average packed unsigned 16-bit integers in `a` and `b`.
 /// PERF: #ARM, there an A64 instruction for this but I don't manage to call it within LLVM intrinsics
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
@@ -383,6 +390,10 @@ __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pavgw128(a, b);
+    }
+    else static if(LDC_with_ARM64)
+    {
+        return cast(__m128i) vrhadd_u16(cast(short8)a, cast(short8)b);
     }
     else version(LDC)
     {
