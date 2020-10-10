@@ -96,17 +96,6 @@ static if (LDC_with_SSE3)
 }
 else static if (LDC_with_ARM64)
 {
-    static if(__VERSION__ >= 2088) // LDC 1.18 start using LLVM9 who changes the name of the builtin
-    {
-        pragma(LDC_intrinsic, "llvm.aarch64.neon.faddp.v4f32")
-            float4 vpaddq_f32(float4 a, float4 b) pure @safe;
-    }
-    else
-    {
-        pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4f32")
-            float4 vpaddq_f32(float4 a, float4 b) pure @safe;
-    }
-
     float4 _mm_hadd_ps (float4 a, float4 b) pure @safe
     {
         return vpaddq_f32(a, b);
@@ -120,7 +109,6 @@ else
     /// floating-point elements in `a` and `b`.
     __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
     {
-        // TODO: quite bad on #ARM
         __m128 res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = a.array[3] + a.array[2];
@@ -174,6 +162,18 @@ static if (LDC_with_SSE3)
         return __builtin_ia32_hsubps(a, b);
     }
 }
+else static if (LDC_with_ARM64)
+{
+    /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
+    /// floating-point elements in `a` and `b`.
+    float4 _mm_hsub_ps (float4 a, float4 b) pure @safe
+    {
+        int4 mask = [0, 0x80000000, 0, 0x80000000];
+        a = cast(__m128)(cast(int4)a ^ mask);
+        b = cast(__m128)(cast(int4)b ^ mask);
+        return vpaddq_f32(a, b);
+    }
+}
 else
 {
     /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
@@ -181,7 +181,6 @@ else
     __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
     {
         // PERF: GDC doesn't generate the right instruction, do something
-        // TODO: quite bad on #ARM
         __m128 res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = a.array[2] - a.array[3];

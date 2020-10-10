@@ -1223,6 +1223,17 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+    static if(__VERSION__ >= 2088) // LDC 1.18 start using LLVM9 who changes the name of the builtin
+    {
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.faddp.v4f32")
+            float4 vpaddq_f32(float4 a, float4 b) pure @safe;
+    }
+    else
+    {
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4f32")
+            float4 vpaddq_f32(float4 a, float4 b) pure @safe;
+    }
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
         int2 vpadd_s32(int2 a, int2 b) pure @safe;
 

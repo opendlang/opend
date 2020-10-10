@@ -1293,7 +1293,6 @@ unittest
 
 /// Convert packed single-precision (32-bit) floating-point elements 
 /// in `a` to packed 32-bit integers
-// TODO #ARM
 __m128i _mm_cvtps_epi32 (__m128 a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -1879,7 +1878,6 @@ else
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
     /// and pack the results in destination.
-    // TODO: #ARM
     __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
     {
         short8 sa = cast(short8)a;
@@ -2222,6 +2220,7 @@ else static if (LDC_with_SSE2)
         return __builtin_ia32_pmovmskb128(cast(byte16)v);
     }
 }
+/* still doesn't work, 10+ hours spent pon this...
 else static if (LDC_with_ARM64)
 {
     // Solution from https://stackoverflow.com/questions/11870910/sse-mm-movemask-epi8-equivalent-method-for-arm-neon
@@ -2255,7 +2254,7 @@ else static if (LDC_with_ARM64)
         hi = vpadd_u8(hi,hi);
         return ((hi[0] << 8) | (lo[0] & 0xFF));
     }
-} 
+} */
 else 
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.
