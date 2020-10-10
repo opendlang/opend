@@ -21,10 +21,10 @@ It can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for
 
 |       | DMD          | LDC x86                | LDC ARM          | GDC                  |
 |-------|--------------|------------------------|----------------------|----------------------
-| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE2  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes (slow in 32-bit) |
-| SSE3  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but some slow ([#45](https://github.com/AuburnSounds/intel-intrinsics/issues/45)) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes | Yes (slow in 32-bit) |
+| SSE   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes | Yes (slow in 32-bit) |
+| SSE2  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes | Yes (slow in 32-bit) |
+| SSE3  | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | SSSE3 | No           | No                     | No                   | No                   |             
 | ...   | No           | No                     | No                   | No                   |
 
@@ -88,7 +88,7 @@ int elem = A.array[0];
 
 - **Portability** 
   It just works the same for DMD, LDC, and GDC.
-  When using LDC, `intel-intrinsics` allows to target AArch64 with the same semantics.
+  When using LDC, `intel-intrinsics` allows to target AArch64 and 32-bit ARM with the same semantics.
 
 - **Capabilities**
   Some instructions just aren't accessible using `core.simd` and `ldc.simd` capabilities. For example: `pmaddwd` which is so important in digital video. Some instructions need an almost exact sequence of LLVM IR to get generated. `ldc.intrinsics` is a moving target and you need a layer on top of it.
