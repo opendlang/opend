@@ -372,13 +372,6 @@ unittest
     assert(R.array == correct);
 }
 
-
-static if (LDC_with_ARM64)
-{
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v8i16")
-        short8 vrhadd_u16(short8 a, short8 b) pure @safe;
-}
-
 /// Average packed unsigned 16-bit integers in `a` and `b`.
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
@@ -423,12 +416,6 @@ unittest
     short8 avg = cast(short8)(_mm_avg_epu16(A, B));
     foreach(i; 0..8)
         assert(avg.array[i] == 48);
-}
-
-static if (LDC_with_ARM64)
-{
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v16i8")
-        byte16 vrhadd_u8(byte16 a, byte16 b) pure @safe;
 }
 
 /// Average packed unsigned 8-bit integers in `a` and `b`.
@@ -2235,27 +2222,40 @@ else static if (LDC_with_SSE2)
         return __builtin_ia32_pmovmskb128(cast(byte16)v);
     }
 }
-// TODO #ARM: doesn't work
-/*
-else static if (LDC_with_ARM)
+else static if (LDC_with_ARM64)
 {
+    // Solution from https://stackoverflow.com/questions/11870910/sse-mm-movemask-epi8-equivalent-method-for-arm-neon
+    // The other two solutions lead to unfound intrinsics in LLVM and that took a long time.
+    // SO there might be something a bit faster, but this one is reasonable and branchless.
+
     /// Create mask from the most significant bit of each 8-bit element in `v`.
-    int _mm_movemask_epi8 (__m128i a) pure @safe
+    int _mm_movemask_epi8 (__m128i a) pure @trusted
     {
-        // PERF: looks worse than the one in simde
-        byte16 ai = cast(byte16)a;
-        byte16 shift7 = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]; 
-        ai = ai >>> shift7;
-        byte16 shift  = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]; 
-        ai = ai << shift; // 4-way shift, only efficient on ARM.
-        short8 lo = cast(short8) _mm_unpacklo_epi8(ai, _mm_setzero_si128());
-        short8 hi = cast(short8) _mm_unpackhi_epi8(ai, _mm_setzero_si128());
-        short8 shift8 = [8, 8, 8, 8, 8, 8, 8, 8];
-        lo |= (hi << shift8);
-        return lo.array[0] + lo.array[1] + lo.array[2] + lo.array[3]
-             + lo.array[4] + lo.array[5] + lo.array[6] + lo.array[7];
+        byte8 mask_shift;
+        mask_shift.ptr[0] = 0;
+        mask_shift.ptr[1] = 1;
+        mask_shift.ptr[2] = 2;
+        mask_shift.ptr[3] = 3;
+        mask_shift.ptr[4] = 4;
+        mask_shift.ptr[5] = 5;
+        mask_shift.ptr[6] = 6;
+        mask_shift.ptr[7] = 7;
+        byte8 mask_and = byte8(-128);
+        byte8 lo = vget_low_u8(cast(byte16)a);
+        byte8 hi = vget_high_u8(cast(byte16)a);
+        lo = vand_u8(lo, mask_and);
+        lo = vshr_u8(lo, mask_shift);
+        hi = vand_u8(hi, mask_and);
+        hi = vshr_u8(hi, mask_shift);
+        lo = vpadd_u8(lo,lo);
+        lo = vpadd_u8(lo,lo);
+        lo = vpadd_u8(lo,lo);
+        hi = vpadd_u8(hi,hi);
+        hi = vpadd_u8(hi,hi);
+        hi = vpadd_u8(hi,hi);
+        return ((hi[0] << 8) | (lo[0] & 0xFF));
     }
-} */
+} 
 else 
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.

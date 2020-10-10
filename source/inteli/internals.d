@@ -1115,17 +1115,39 @@ __m128i to_m128i(__m64 a) pure @trusted
 // SOME NEON INTRINSICS
 // Emulating some x86 intrinsics needs access to a range of ARM intrinsics.
 // Not in the public API but the simde project expose it all for the user to use.
+// MAYDO: create a new neon.d module, for internal use only.
+// MAYDO: port them to ARM32 so that ARM32 can be as fast as ARM64.
 static if (LDC_with_ARM64)
 {
-    short4 vget_low_s16(short8 a) pure @trusted
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i8")
+        byte8 vpadd_u8(byte8 a, byte8 b) pure @safe;
+
+    byte8 vand_u8(byte8 a, byte8 b) pure @safe
     {
-        short4 r;
-        r.ptr[0] = a.array[0];
-        r.ptr[1] = a.array[1];
-        r.ptr[2] = a.array[2];
-        r.ptr[3] = a.array[3];
+        return a & b;
+    }
+
+    int4 vcombine_s32(int2 lo, int2 hi) pure @trusted
+    {
+        int4 r;
+        r.ptr[0] = lo.array[0];
+        r.ptr[1] = lo.array[1];
+        r.ptr[2] = hi.array[0];
+        r.ptr[3] = hi.array[1];
         return r;
     }
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v4i32.v4f32")
+        int4 vcvtmq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.v4i32.v4f32")
+        int4 vcvtnq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.v4i32.v4f32")
+        int4 vcvtpq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v4i32.v4f32")
+        int4 vcvtzq_s32_f32(float4 a) pure @safe;
 
     short4 vget_high_s16(short8 a) pure @trusted
     {
@@ -1134,6 +1156,60 @@ static if (LDC_with_ARM64)
         r.ptr[1] = a.array[5];
         r.ptr[2] = a.array[6];
         r.ptr[3] = a.array[7];
+        return r;
+    }
+
+    int2 vget_high_s32(int4 a) pure @trusted
+    {
+        int2 r;
+        r.ptr[0] = a.array[2];
+        r.ptr[1] = a.array[3];
+        return r;
+    }
+
+    byte8 vget_high_u8(byte16 a) pure @trusted
+    {
+        byte8 r;
+        r.ptr[0] = a.array[8];
+        r.ptr[1] = a.array[9];
+        r.ptr[2] = a.array[10];
+        r.ptr[3] = a.array[11];
+        r.ptr[4] = a.array[12];
+        r.ptr[5] = a.array[13];
+        r.ptr[6] = a.array[14];
+        r.ptr[7] = a.array[15];
+        return r;
+    }
+
+    short4 vget_low_s16(short8 a) pure @trusted
+    {
+        short4 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    } 
+
+    int2 vget_low_s32(int4 a) pure @trusted
+    {
+        int2 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
+    }
+
+    byte8 vget_low_u8(byte16 a) pure @trusted
+    {
+        byte8 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        r.ptr[4] = a.array[4];
+        r.ptr[5] = a.array[5];
+        r.ptr[6] = a.array[6];
+        r.ptr[7] = a.array[7];
         return r;
     }
 
@@ -1147,45 +1223,18 @@ static if (LDC_with_ARM64)
         return r;
     }
 
-    int2 vget_low_s32(int4 a) pure @trusted
-    {
-        int2 r;
-        r.ptr[0] = a.array[0];
-        r.ptr[1] = a.array[1];
-        return r;
-    }
-
-    int2 vget_high_s32(int4 a) pure @trusted
-    {
-        int2 r;
-        r.ptr[0] = a.array[2];
-        r.ptr[1] = a.array[3];
-        return r;
-    }
-
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
         int2 vpadd_s32(int2 a, int2 b) pure @safe;
 
-    int4 vcombine_s32(int2 lo, int2 hi) pure @trusted
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v16i8")
+        byte16 vrhadd_u8(byte16 a, byte16 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v8i16")
+        short8 vrhadd_u16(short8 a, short8 b) pure @safe;
+
+    byte8 vshr_u8(byte8 a, byte8 b) pure @safe
     {
-        int4 r;
-        r.ptr[0] = lo.array[0];
-        r.ptr[1] = lo.array[1];
-        r.ptr[2] = hi.array[0];
-        r.ptr[3] = hi.array[1];
-        return r;
+        return a >> b;
     }
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.v4i32.v4f32")
-        int4 vcvtnq_s32_f32(float4 a) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v4i32.v4f32")
-        int4 vcvtmq_s32_f32(float4 a) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.v4i32.v4f32")
-        int4 vcvtpq_s32_f32(float4 a) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v4i32.v4f32")
-        int4 vcvtzq_s32_f32(float4 a) pure @safe;
 }
 
