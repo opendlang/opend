@@ -2220,7 +2220,6 @@ else static if (LDC_with_SSE2)
         return __builtin_ia32_pmovmskb128(cast(byte16)v);
     }
 }
-/* still doesn't work, 10+ hours spent pon this...
 else static if (LDC_with_ARM64)
 {
     // Solution from https://stackoverflow.com/questions/11870910/sse-mm-movemask-epi8-equivalent-method-for-arm-neon
@@ -2231,14 +2230,14 @@ else static if (LDC_with_ARM64)
     int _mm_movemask_epi8 (__m128i a) pure @trusted
     {
         byte8 mask_shift;
-        mask_shift.ptr[0] = 0;
-        mask_shift.ptr[1] = 1;
-        mask_shift.ptr[2] = 2;
-        mask_shift.ptr[3] = 3;
-        mask_shift.ptr[4] = 4;
-        mask_shift.ptr[5] = 5;
-        mask_shift.ptr[6] = 6;
-        mask_shift.ptr[7] = 7;
+        mask_shift.ptr[0] = 7;
+        mask_shift.ptr[1] = 6;
+        mask_shift.ptr[2] = 5;
+        mask_shift.ptr[3] = 4;
+        mask_shift.ptr[4] = 3;
+        mask_shift.ptr[5] = 2;
+        mask_shift.ptr[6] = 1;
+        mask_shift.ptr[7] = 0;
         byte8 mask_and = byte8(-128);
         byte8 lo = vget_low_u8(cast(byte16)a);
         byte8 hi = vget_high_u8(cast(byte16)a);
@@ -2252,9 +2251,9 @@ else static if (LDC_with_ARM64)
         hi = vpadd_u8(hi,hi);
         hi = vpadd_u8(hi,hi);
         hi = vpadd_u8(hi,hi);
-        return ((hi[0] << 8) | (lo[0] & 0xFF));
+        return (cast(ubyte)(hi[0]) << 8) | cast(ubyte)(lo[0]);
     }
-} */
+}
 else 
 {
     /// Create mask from the most significant bit of each 8-bit element in `v`.

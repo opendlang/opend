@@ -1245,7 +1245,7 @@ static if (LDC_with_ARM64)
 
     byte8 vshr_u8(byte8 a, byte8 b) pure @safe
     {
-        return a >> b;
+        return a >>> b;
     }
 }
 
