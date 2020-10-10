@@ -221,9 +221,7 @@ private:
                     _currentNodeItemPosition = node.translate_pos(nodeItem);
                 }
             }
-        // @disable this();
-        public:
-            /// create and registanother another instance of unstable range
+            /// create and register another instance of unstable range
             this(this)
             {
                 if ( !_list || !_ptr )
@@ -824,7 +822,8 @@ public:
         int lo_mask = bitswap((((1<<pos) - 1) & node._bitmap) << (int.sizeof*8-pos));
         int hi_mask = (node._bitmap >> pos);
 
-        uint lo_shift = lo_mask == 0 ? uint.max : bsf(lo_mask ^ uint.max);
+        uint lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
+                        pos == 0 ? uint.max : 0;
         uint hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
         auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
         auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
@@ -1108,15 +1107,7 @@ unittest
     assert(list.back == list.ItemsPerNode-2);
     list.insert(5, 17);
     list.insert(3,55);
-    foreach(s;list.dump)
-    {
-        info(s);
-    }
     list.insert(17, 88);
-    foreach(s;list.dump)
-    {
-        info(s);
-    }
     list.insert(15, 99);
     assert(list[15] == 99);
 }
@@ -1404,32 +1395,4 @@ unittest
         assert(r1.count == 50);
     }
     assert(r1.count == 0); // lost container
-}
-
-@("masks")
-unittest
-{
-    import std.stdio;
-    int lo_mask(int bitmap, int pos)
-    {
-        return bitswap((((1<<pos) - 1) & bitmap) << (int.sizeof*8-pos));
-    }
-    int hi_mask(int bitmap, int pos)
-    {
-        return bitmap >> pos;
-    }
-    int m = 0b0101_0010_0010_0001_0000_0100_0000_1000;
-    // foreach(i;0..32)
-    // {
-    //     int lm = lo_mask(m, i);
-    //     int hm = hi_mask(m, i);
-    //     uint lo_shift = lm == 0 ? uint.max : bsf(lm ^ uint.max);
-    //     uint hi_shift = hm == 0 ? uint.max : bsf(hm ^ uint.max);
-    //     writefln("i %d", i);
-    //     writefln("  %*.*s%s", 31-i, 31-i," ", "v");
-    //     writefln("m %32.32b", m);
-    //     writefln("l %32.32b, ls=%d", lm, lo_shift);
-    //     writefln("h %32.32b, hs=%d", hm, hi_shift);
-    //     writeln;
-    // }
 }
