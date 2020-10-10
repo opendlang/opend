@@ -957,7 +957,6 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true)
     import std.experimental.logger;
 
     globalLogLevel = LogLevel.info;
-    info("Testing hash tables");
     import std.meta;
 
     struct S {

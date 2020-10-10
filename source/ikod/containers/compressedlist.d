@@ -1,5 +1,10 @@
 module ikod.containers.compressedlist;
 
+version(unittest)
+{}
+else
+{
+
 /* deprecated */
 
 private import core.memory;
@@ -645,4 +650,4 @@ version(None_Deprecated) unittest {
     iota(0,100).each!(e => a.insertBack(e));
     assert(equal(a.range(), iota(0,100)));
 }
-
+}

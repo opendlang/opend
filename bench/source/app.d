@@ -16,6 +16,7 @@ import containers.unrolledlist;
 // ikod containers
 import ikod.containers.hashmap;
 import ikod.containers.compressedlist;
+import ikod.containers.unrolledlist;
 
 immutable iterations = 1_000_000;
 immutable trials = 1;
@@ -120,9 +121,13 @@ void main()
     }
 
     CompressedList!(string) words;
+    ikod.containers.unrolledlist.UnrolledList!(string) uwords;
+
     auto f = File("t8.shakespeare.txt", "r");
     foreach(word; f.byLine.map!splitter.joiner) {
-        words.insertBack(word.idup);
+        auto w = word.idup;
+        words.insertBack(w);
+        uwords.pushBack(w);
     }
     f.close();
 
@@ -944,7 +949,7 @@ void main()
             else
                 (*ptr)++;
         }
-        foreach(word; words.range()) {
+        foreach(word; uwords.unstableRange()) {
             updateCount(word);
         }
         gcstop = () @trusted {return GC.stats;} ();
@@ -958,9 +963,10 @@ void main()
         void updateCount(string word) {
             count[word] = count.get(word, 0)+1;
         }
-
-        foreach(word; words.range()) {
+        int n;
+        foreach(word; uwords.unstableRange()) {
             updateCount(word);
+            n++;
         }
         gcstop = () @trusted {return GC.stats;} ();
     }
@@ -974,7 +980,7 @@ void main()
             count[word] = count.get(word, 0)+1;
         }
 
-        foreach(word; words.range()) {
+        foreach(word; uwords.unstableRange()) {
             updateCount(word);
         }
         gcstop = () @trusted {return GC.stats;} ();
@@ -1027,6 +1033,23 @@ void main()
         foreach(pair; mycount.byPair)
         {
             assert(pair.value == stdcount[pair.key]);
+        }
+    }
+
+    void test_clist_iter()
+    {
+        int l;
+        foreach(w; words.range)
+        {
+            l++;
+        }
+    }
+    void test_ulist_iter()
+    {
+        int l;
+        foreach(w; uwords.unstableRange)
+        {
+            l++;
         }
     }
 
@@ -1194,17 +1217,17 @@ void main()
 
     GC.collect();GC.minimize();
     test = "std";
-    r = benchmark!shakespeare_std(1);
+    r = benchmark!shakespeare_std(trials);
     writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
     GC.collect();GC.minimize();
     test = "i.c.";
-    r = benchmark!shakespeare_OAHashMap(1);
+    r = benchmark!shakespeare_OAHashMap(trials);
     writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
     GC.collect();GC.minimize();
     test = "i.c.+GC";
-    r = benchmark!shakespeare_OAHashMapGC(1);
+    r = benchmark!shakespeare_OAHashMapGC(trials);
     writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
     version(Posix)
@@ -1212,7 +1235,7 @@ void main()
         // emsi-containers do not work for me under windows
         GC.collect();GC.minimize();
         test = "emsi  ";
-        r = benchmark!shakespeare_HashMap(1);
+        r = benchmark!shakespeare_HashMap(trials);
         writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
     }
 
@@ -1240,21 +1263,33 @@ void main()
 //    r = benchmark!(test_dlist_cachetools_GC)(trials);
 //    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
-   GC.collect();GC.minimize();
-   test = "i.c.unroll";
-   r = benchmark!(test_clist_cachetools)(trials);
-   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+    GC.collect();GC.minimize();
+    test = "i.c.unroll";
+    r = benchmark!(test_clist_cachetools)(trials);
+    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
-   GC.collect();GC.minimize();
-   test = "i.c.unr+GC";
-   r = benchmark!(test_clist_cachetoolsGC)(trials);
-   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+    GC.collect();GC.minimize();
+    test = "i.c.unr+GC";
+    r = benchmark!(test_clist_cachetoolsGC)(trials);
+    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
-   GC.collect();GC.minimize();
-   test = "emsiunroll";
-   r = benchmark!(test_dlist_emsi)(trials);
-   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+    GC.collect();GC.minimize();
+    test = "emsiunroll";
+    r = benchmark!(test_dlist_emsi)(trials);
+    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
+    writeln("\n", center(" Test list iterators ", 50, ' '));
+    writeln(      center(" ================================= ", 50, ' '));
+
+    GC.collect();GC.minimize();
+    test = "i.c.compr";
+    r = benchmark!(test_clist_iter)(trials);
+    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+
+    GC.collect();GC.minimize();
+    test = "i.c.unroll";
+    r = benchmark!(test_ulist_iter)(trials);
+    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
 //    writeln("\n", center(" Test single-linked list SList!int ", 50, ' '));
 //    writeln(      center(" ================================= ", 50, ' '));
