@@ -12,6 +12,7 @@ $(BOOKTABLE ,
         $(TH Description)
     )
     $(LEADINGROW Primary API)
+    $(TR $(TDNW $(MREF mir,ion,ser)) $(TD Serialization API ))
     $(TR $(TDNW $(MREF mir,ion,deser)) $(TD Deserialization API ))
     $(LEADINGROW Support API)
     $(TR $(TDNW $(MREF mir,ion,exception)) $(TD Mir Ion Exceptions ))
