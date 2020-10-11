@@ -51,13 +51,16 @@ void main() @safe @nogc
 
 From Wikipedia, the free encyclopedia [[*](https://en.wikipedia.org/wiki/Unrolled_linked_list)]
 
-In computer programming, an unrolled linked list is a variation on the linked list which stores multiple elements in each node. It can dramatically increase cache performance, while decreasing the memory overhead associated with storing list metadata such as references. It is related to the B-tree.
+> In computer programming, an unrolled linked list is a variation on the linked list which stores multiple elements in each node. It can dramatically increase cache performance, while decreasing the memory overhead associated with storing list metadata such as references. It is related to the B-tree.
 
-Fast, cache-friendly, @nogc, @safe with sane iterators (unstable and stable iterators supported)
+Advantages:
+* Fast, cache-friendly
+* @nogc, @safe
+* sane iterators (unstable and stable iterators supported)
 
 See docs [here](https://ikod.github.io/ikod-containers/ikod.containers.unrolledlist.UnrolledList.html)
 
-Code sample:
+### code sample ###
 ```d
 import std.algorithm: equal;
 import std.range: iota;
