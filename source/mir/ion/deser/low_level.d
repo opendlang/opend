@@ -53,7 +53,7 @@ package template isFirstOrderSerdeType(T)
         enum isFirstOrderSerdeType = true;
 }
 
-package template isNullable(T)
+package(mir.ion) template isNullable(T)
 {
     import std.traits : hasMember;
 

@@ -1,6 +1,5 @@
 module mir.ion.internal.data_holder;
 
-
 private static immutable memoryOverflowMessage = "Can not allocate enough memory";
 
 version(D_Exceptions)

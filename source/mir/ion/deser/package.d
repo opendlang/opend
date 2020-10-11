@@ -181,11 +181,11 @@ SerdeException deserializeValueFromJson(T)(scope const(char)[] text, ref T value
     import mir.ion.exception: ionException;
     import mir.ion.internal.data_holder;
     import mir.ion.internal.stage4_s;
-    import mir.ion.symbol_table: CTFE_IonSymbolTable;
+    import mir.string_table: MirStringTable, minimalIndexType;
 
     enum nMax = 8192u;
-
-    static immutable table = CTFE_IonSymbolTable(serdeGetDeserializatinKeysRecurse!T);
+    enum keys = serdeGetDeserializatinKeysRecurse!T;
+    static immutable table = MirStringTable!(minimalIndexType!(keys.length))(keys);
     auto tapeHolder = IonDataHolder!(nMax * 8)(nMax * 8);
     size_t tapeLength;
 
@@ -197,7 +197,7 @@ SerdeException deserializeValueFromJson(T)(scope const(char)[] text, ref T value
     if (auto error = IonValue(tapeHolder.data[0 .. tapeLength]).describe(ionValue))
         return error.ionException;
 
-    return deserializeValue!(serdeGetDeserializatinKeysRecurse!T)(ionValue, value);
+    return deserializeValue!(keys)(ionValue, value);
 }
 
 /++
@@ -670,3 +670,52 @@ private auto findKey()(string[] symbolTable, string key)
     assert(ret != size_t.max, key);
     return ret + 1;
 }
+
+// ///
+// unittest
+// {
+
+//     import std.uuid;
+
+//     static struct S
+//     {
+//         @serdeScoped
+//         @serdeProxy!string
+//         UUID id;
+//     }
+//     assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id
+//                 == UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46"));
+// }
+
+// ///
+// unittest
+// {
+
+//     import std.uuid;
+
+//     static struct S
+//     {
+//         @serdeFlexible
+//         uint a;
+//     }
+
+//     assert(`{"a":"100"}`.deserializeJson!S.a == 100);
+//     assert(`{"a":true}`.deserializeJson!S.a == 1);
+//     assert(`{"a":null}`.deserializeJson!S.a == 0);
+// }
+
+// ///
+// unittest
+// {
+
+//     static struct Vector
+//     {
+//         @serdeFlexible int x;
+//         @serdeFlexible int y;
+//     }
+
+//     auto json = `[{"x":"1","y":2},{"x":null, "y": null},{"x":1, "y":2}]`;
+//     auto decoded = json.deserializeJson!(Vector[]);
+//     import std.conv;
+//     assert(decoded == [Vector(1, 2), Vector(0, 0), Vector(1, 2)], decoded.text);
+// }

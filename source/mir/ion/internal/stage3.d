@@ -176,10 +176,16 @@ StringLoop: {
             currentTapePosition -= stringLength;
             auto key = tape[currentTapePosition .. currentTapePosition + stringLength];
             currentTapePosition -= ionPutStartLength;
-            auto id = symbolTable.insert(cast(const(char)[])key);
-            if (id == 0)
+            static if (__traits(hasMember, Table, "insert"))
             {
-                goto cant_insert_key;
+                auto id = symbolTable.insert(cast(const(char)[])key);
+            }
+            else
+            {
+                uint id;
+                if (!symbolTable.get(cast(const(char)[])key, id))
+                    goto cant_insert_key;
+                id++;
             }
             // TODO find id using the key
             currentTapePosition += ionPutVarUInt(tape.ptr + currentTapePosition, id);
