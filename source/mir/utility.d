@@ -511,3 +511,27 @@ private ulong divmod128by64(const ulong u1, const ulong u0, ulong v, out ulong r
     r = ((un21 << 32) + (un0 - (q0 * v))) >> s;
     return (q1 << 32) | q0;
 }
+
+/++
+Simple sort algorithm usefull for CTFE code.
++/
+template simpleSort(alias cmp = "a < b")
+{
+    ///
+    T[] simpleSort(T)(return T[] array)
+    {
+        size_t i = 1;
+        while (i < array.length)
+        {
+            size_t j = i;
+            import mir.functional: naryFun;
+            while (j > 0 && !naryFun!cmp(array[j - 1], array[j]))
+            {
+                swap(array[j - 1], array[j]);
+                j--;
+            }
+            i++;
+        }
+        return array;
+    }
+}

@@ -11,6 +11,7 @@ sources_list = [
     'mir/bitop',
     'mir/checkedint',
     'mir/conv',
+    'mir/enums',
     'mir/functional',
     'mir/internal/memory',
     'mir/internal/utility',
@@ -21,6 +22,7 @@ sources_list = [
     'mir/primitives',
     'mir/qualifier',
     'mir/reflection',
+    'mir/string_table',
     'mir/utility',
 ]
 

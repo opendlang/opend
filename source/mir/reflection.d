@@ -1,4 +1,9 @@
 /++
+Base reflection utilities.
+
+License: $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Authors: Ilya Yaroshenko 
+Macros:
 +/
 module mir.reflection;
 
@@ -236,20 +241,26 @@ template reflectGetDocs(string target, alias symbol)
 }
 
 /// ditto
-immutable(ReflectDoc!target)[] reflectGetDocs(string target, T)(T value)
-    if (is(T == enum))
+template reflectGetDocs(string target)
 {
-    foreach (i, member; EnumMembers!T)
-    {{
-        alias all = __traits(getAttributes, EnumMembers!T[i]);
-    }}
-    final switch (value)
+    ///
+    alias reflectGetDocs(alias symbol) = .reflectGetDocs!(target, symbol);
+
+    /// ditto
+    immutable(ReflectDoc!target)[] reflectGetDocs(T)(T value)
+        @safe pure nothrow @nogc
+        if (is(T == enum))
     {
         foreach (i, member; EnumMembers!T)
         {{
-            case member:
-                return .reflectGetDocs!(target, EnumMembers!T[i]);
+            alias all = __traits(getAttributes, EnumMembers!T[i]);
         }}
+        static immutable ReflectDoc!target[][EnumMembers!T.length] docs = [staticMap!(reflectGetDocs, EnumMembers!T)];
+        import mir.enums: getEnumIndex;
+        uint index = void;
+        if (getEnumIndex(value, index))
+            return docs[index];
+        assert(0);
     }
 }
 
@@ -323,6 +334,10 @@ template reflectGetUnittest(string target, alias symbol)
 /// ditto
 template reflectGetUnittest(string target)
 {
+    ///
+    alias reflectGetUnittest(alias symbol) = .reflectGetUnittest!(target, symbol);
+
+    ///
     string reflectGetUnittest(T)(T value)
         if (is(T == enum))
     {
@@ -330,14 +345,12 @@ template reflectGetUnittest(string target)
         {{
             alias all = __traits(getAttributes, EnumMembers!T[i]);
         }}
-        final switch (value)
-        {
-            foreach (i, member; EnumMembers!T)
-            {
-                case member:
-                    return .reflectGetUnittest!(target, EnumMembers!T[i]);
-            }
-        }
+        static immutable string[EnumMembers!T.length] tests = [staticMap!(reflectGetUnittest, EnumMembers!T)];
+        import mir.enums: getEnumIndex;
+        uint index = void;
+        if (getEnumIndex(value, index))
+            return tests[index];
+        assert(0);
     }
 }
 

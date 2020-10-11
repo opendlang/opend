@@ -43,6 +43,7 @@ template to(T)
     auto ref T to(A...)(auto ref A args)
         if (A.length > 0)
     {
+        import mir.utility;
         import mir.functional: forward;
         static if (A.length == 1 && isImplicitlyConvertible!(A[0], T))
             return args[0];
@@ -60,39 +61,31 @@ template to(T)
             static if (is(typeof(cast(T) arg)) && !(isDynamicArray!T && isDynamicArray!I) && !isSomeString!T)
                 return cast(T) forward!arg;
             else
-            static if (isSomeString!I && !isSomeString!T && is(T == enum))
+            static if (isSomeString!I && is(T == enum))
             {
-                S: switch (arg)
+                import mir.enums;
+                uint index = void;
+                if (getEnumIndexFromKey!T(arg, index)._expect(true))
+                    return index.unsafeEnumFromIndex!T;
+                static immutable msg = "Can not convert string to the enum " ~ T.stringof;
+                version (D_Exceptions)
                 {
-                    static foreach(i, member; EnumMembers!T)
-                    {
-                        case __traits(identifier, EnumMembers!T[i]):
-                            return member;
-                    }
-                default:
-                    static immutable msg = "Can not convert string to the enum " ~ T.stringof;
-                    version (D_Exceptions)
-                    {
-                        static immutable Exception exc = new Exception(msg);
-                        throw exc;
-                    }
-                    else
-                    {
-                        assert(0, msg);
-                    }
+                    static immutable Exception exc = new Exception(msg);
+                    throw exc;
+                }
+                else
+                {
+                    assert(0, msg);
                 }
             }
             else
             static if (isSomeString!T && is(I == enum))
             {
-                final switch (arg)
-                {
-                    static foreach(i, member; EnumMembers!(I))
-                    {
-                        case member:
-                            return __traits(identifier, EnumMembers!(I)[i]);
-                    }
-                }
+                import mir.enums;
+                uint id = void;
+                if (getEnumIndex(arg, id)._expect(true))
+                    return enumStrings!I[id];
+                assert(0);
             }
             else
             static if (isMirString!I && !isSomeString!T)
@@ -195,18 +188,27 @@ version(mir_core_test)
 @safe pure @nogc
 unittest
 {
-    enum Foo
+    enum E
     {
         A,
         B,
         C,
     }
 
-    assert(to!Foo("B") == Foo.B);
-    assert(to!string(Foo.B) == "B");
+    assert(to!E("B") == E.B);
+    assert(to!string(E.B) == "B");
     assert(to!string(null) is null);
     assert(to!string(true) == "true");
     assert(to!string(false) == "false");
+
+    enum S : wstring
+    {
+        a = "A",
+        b = "B",
+    }
+
+    assert(to!wstring(S.b) == "B"w);
+    assert(to!S("B"w) == S.b);
 }
 
 /++

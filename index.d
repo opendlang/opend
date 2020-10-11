@@ -36,6 +36,14 @@ range primitives for arrays with multi-dimensional like API support)
         $(TDNW $(MREF mir,utility))
         $(TD Utilities)
     )
+    $(TR
+        $(TDNW $(MREF mir,enums))
+        $(TD Utilities to work with enums)
+    )
+    $(TR
+        $(TDNW $(MREF mir,string_table))
+        $(TD Mir String Table designed for fast deserialization routines)
+    )
     $(LEADINGROW Integer Routines)
     $(TR
         $(TDNW $(MREF mir,bitop))
