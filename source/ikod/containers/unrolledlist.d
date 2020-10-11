@@ -602,7 +602,26 @@ public:
         }
         return Tuple!(Node*, "node", size_t, "index")(n, i);
     }
-    // O(N)
+    /++
+        Get item at some position.
+
+        To be @nogc it do not throw, but return tuple with bool `ok`member.
+
+        Params:
+        i = position
+        Returns:
+        tuple with succes indicator and value
+        -------------------------------------
+        UnrolledList!int l;
+        foreach(i; 0..50)
+        {
+            l.pushBack(i);
+        }
+        auto v = l.get(25);
+        assert(v.ok);
+        assert(v.value == 25);
+        -------------------------------------
+    +/
     auto get(size_t i)
     {
         if (_count == 0 || i >= _count )
