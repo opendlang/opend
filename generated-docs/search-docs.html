@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+/*
+	The purpose of this file is to be a lightweight landing page for standard
+	forms that will redirect to the JS searcher using a #!term thing.
+
+	Since the JS searcher is a heavyweight page (it includes the search index
+	inline so it doesn't have to XHR, which would break on file:// urls), we
+	want it to be cached. Normal ?query urls would bust the cache. I don't mind
+	busting the cache on this little file, but we really want to avoid that on
+	the big index file.
+
+	Hence, the redirect hack.
+*/
+	location.href = "search-results.html#!" + location.search.substring("?searchTerm=".length);
+</script>
+</head>
+<body>
+	<noscript>
+		<p>The "offline" searcher requires Javascript.</p>
+		<p>To get search without JS, build the `locate.d` file (see the adrdox makefile) and use it as a CGI program on a regular web server, or build with -version=embedded_httpd to embed its own server and run that.</p>
+		<p>Then, configure the server to call that script instead of loading this file, or change your skeleton.html search form action to point to it.</p>
+	</noscript>
+</body></html>

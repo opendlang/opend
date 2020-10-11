@@ -145,23 +145,25 @@ private:
     {
         CLEAR = 0,
     }
-    struct Iterator(T)
+    /++
+    +/
+    public struct Iterator(T)
     {
         private T*  _impl;
-        this(Args...)(auto ref Args args, string file = __FILE__, int line = __LINE__) @trusted
+        package this(Args...)(auto ref Args args, string file = __FILE__, int line = __LINE__) @trusted
         {
             import std.functional: forward;
             import std.conv: emplace;
             _impl = cast(typeof(_impl)) allocator.allocate((*_impl).sizeof);
             emplace(_impl, forward!args);
         }
-        this(this)
+        this(this) @safe
         {
             if (!_impl)
             {
                 return;
             }
-            auto _new_impl = cast(typeof(_impl)) allocator.allocate((*_impl).sizeof);
+            auto _new_impl = () @trusted {return cast(typeof(_impl)) allocator.allocate((*_impl).sizeof);}();
             _new_impl._list = null;
             _new_impl._ptr = null;
             *_new_impl = *_impl;
@@ -172,18 +174,22 @@ private:
             _impl.reset();
             () @trusted {allocator.dispose(_impl);}();
         }
-        auto empty()
+        /// test on emptiness
+        bool empty()
         {
             return _impl.empty();
         }
+        /// return front element of iterator
         auto front()
         {
             return _impl.front();
         }
+        /// pop front element
         void popFront()
         {
             _impl.popFront();
         }
+        /// reset iterator
         void reset()
         {
             _impl.reset();
@@ -376,8 +382,40 @@ private:
 
 public:
 
-    //
-    auto unstableRange(int start=0, int end=int.max) @safe
+    /++
+    +   Create new unstable range. Unstable range save it's correctness by
+    +   preventing you from any list mutations.
+    +
+    +   unstable range is `value `type` - assignment and initializations create its copy.
+    +
+    +   Unstable range can't make warranties on it's correctnes if you make any list mutation.
+    +   So, while you have any active unstable range you can't make any mutation to list. At any
+    +   atempt to remove, insert or clear list while unstable range active you'll get AssertionError.
+    +   To make unstableRange inactive you have to consume it to the end or call `reset` on it.
+    +
+    +   Params:
+    +   start = start position in list (default value - head of the list)
+    +   end = end positions in list (default value - end of the list)
+    + --------------------------------------------------------------------
+    +     UnrolledList!int l;
+    + 
+    +     foreach(i; 0..50)
+    +     {
+    +         l.pushBack(i);
+    +     }
+    +     auto r = l.unstableRange();
+    +     assert(equal(r, iota(50)));   // copy of range created 
+    +     assertThrown!AssertError(l.clear); // r still active
+    +     assertThrown!AssertError(l.remove(0)); // r still active
+    +     assertThrown!AssertError(l.pushBack(0)); // r still active
+    +     assertThrown!AssertError(l.pushFront(0)); // r still active
+    +     assertThrown!AssertError(l.popBack()); // r still active
+    +     assertThrown!AssertError(l.popFront()); // r still active
+    +     r.reset();    // deactivate r
+    +     l.clear();    // it is safe to clear list
+    + -------------------------------------------------------------------
+    +/
+    auto unstableRange(int start=0, int end=int.max) @safe @nogc
     {
         U** slot;
         assert(_unstableRanges_counter < MaxRanges-1);
@@ -569,13 +607,13 @@ public:
     {
         if (_count == 0 || i >= _count )
         {
-            return Tuple!(bool, "ok", T, "value")(false, T.init);
+            return Tuple!(bool, "ok", StoredT, "value")(false, T.init);
         }
         auto ni = _node_and_index(i);
         auto n = ni.node;
         auto pos = n.translate_pos(ni.index);
         assert(n.test_bit(pos));
-        return Tuple!(bool, "ok", T, "value")(true, n._items[pos]);
+        return Tuple!(bool, "ok", StoredT, "value")(true, n._items[pos]);
     }
     // O(N)
     auto opIndex(size_t i)
@@ -610,7 +648,7 @@ public:
         }
     }
     // O(N)
-    void opIndexAssign(T v, size_t i)
+    void opIndexAssign(V)(V v, size_t i)
     {
         if (_count == 0 || i >= _count )
         {
@@ -639,15 +677,24 @@ public:
         auto p = bsf(_first_node._bitmap);
         return _first_node._items[p];
     }
-    // O(1)
+    /++
+    + Get last item. O(1)
+    +
+    + Returns: last item.
+    + Throws: AssertError when list is empty.
+    +/
     auto back()
     {
         assert(_count > 0, "Attempting to fetch the front of an empty list");
         auto p = bsr(_last_node._bitmap);
         return _last_node._items[p];
     }
-    // O(1)
-    void pushBack(T v)
+    /++
+    + Append item to the list. O(1)
+    +
+    + Throws: AssertError if any unstable range is registered.
+    +/
+    void pushBack(V)(V v)
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
         _count++;
@@ -676,8 +723,12 @@ public:
         _last_node.mark_bit(pos);
         _last_node._items[pos] = v;
     }
-    // O(1)
-    void pushFront(T v)
+    /++
+    + Prepend list with item v. O(1)
+    +
+    + Throws: AssertError if any unstable range is registered.
+    +/
+    void pushFront(V)(V v)
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
         _count++;
@@ -707,7 +758,13 @@ public:
         _first_node.mark_bit(pos);
         _first_node._items[pos] = v;
     }
-    // O(1)
+    /++
+    + Pop first item from the list. O(1)
+    +
+    + No action if list is empty.
+    +
+    + Throws: AssertError if any unstable range is registered.
+    +/
     void popFront()
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
@@ -737,7 +794,13 @@ public:
             deallocNode(n);
         }
     }
-    // O(1)
+    /++
+    + Pop last item from the list. O(1)
+    +
+    + No action if list is empty.
+    +
+    + Throws: AssertError if any unstable range is registered.
+    +/
     void popBack()
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
@@ -768,7 +831,13 @@ public:
             deallocNode(n);
         }
     }
-    // O(N)
+    /++
+    + Remove item from the list by item index. O(N)
+    +
+    + No action if list is empty.
+    + Returns: True if item were removed.
+    + Throws: AssertError if any unstable range is registered.
+    +/
     bool remove(size_t i)
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
@@ -796,7 +865,17 @@ public:
         node._items[pos] = T.init;
         return true;
     }
-    bool insert(size_t i, T v)
+    /++
+    + Insert item at position i. O(N)
+    +
+    + Params:
+    + v = value to insert
+    + i = position for this value
+    +
+    + Returns: True if item were inserted (false if index is > list.length+1)
+    + Throws: AssertError if any unstable range is registered.
+    +/
+    bool insert(V)(size_t i, V v)
     {
         assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
         debug(ikodcontainers) tracef("insert %s at %s", v, i);
@@ -1324,7 +1403,7 @@ unittest
     assert(l[30] == 1000);
 }
 
-@("ulr1")
+@("unstableIterator")
 unittest
 {
     import std.range;
@@ -1395,4 +1474,50 @@ unittest
         assert(r1.count == 50);
     }
     assert(r1.count == 0); // lost container
+}
+@("classes")
+@safe
+unittest
+{
+    import std.range;
+    class C
+    {
+        int c;
+        this(int i)
+        {
+            c = i;
+        }
+    }
+    UnrolledList!C l;
+    foreach(i; 0..50)
+    {
+        l.pushBack(new C(i));
+    }
+    auto r = l.unstableRange;
+    assert(equal(r.map!(c => c.c), iota(50)));
+}
+@("structs")
+@safe
+unittest
+{
+    import std.format: format;
+    import std.range;
+    struct S
+    {
+        int s;
+        string ss;
+        this(int i)
+        {
+            s = i;
+            ss = "%s".format(i);
+        }
+    }
+    UnrolledList!(S) l;
+    foreach(i; 0..50)
+    {
+        S s = S(i);
+        l.pushBack(s);
+    }
+    auto r = l.unstableRange;
+    assert(equal(r.map!(s => s.s), iota(50)));
 }

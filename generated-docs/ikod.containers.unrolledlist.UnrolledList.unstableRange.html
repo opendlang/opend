@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <title>UnrolledList.unstableRange (ikod.containers.unrolledlist.UnrolledList.unstableRange)</title>
+	<meta charset="utf-8" />
+	<meta content="width=device-width, initial-scale=1" name="viewport" />
+        <link href="style.css" rel="stylesheet" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link href="search-results.html" rel="prefetch" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form action="search-docs.html" id="search">
+			<input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>UnrolledList.unstableRange</h1><div class="breadcrumbs"><a class="breadcrumb" href="ikod.html">ikod</a> <a class="breadcrumb" href="ikod.containers.html">containers</a> <a class="breadcrumb" href="ikod.containers.unrolledlist.html">unrolledlist</a> <a class="breadcrumb" href="ikod.containers.unrolledlist.UnrolledList.html">UnrolledList</a> </div><div><div class="documentation-comment synopsis"><div><p>Create new unstable range. Unstable range save it's correctness by
+  preventing you from any list mutations.</p><p>unstable range is <tt class="inline-code">value </tt>type` - assignment and initializations create its copy.</p><p>Unstable range can't make warranties on it's correctnes if you make any list mutation.
+  So, while you have any active unstable range you can't make any mutation to list. At any
+  atempt to remove, insert or clear list while unstable range active you'll get AssertionError.
+  To make unstableRange inactive you have to consume it to the end or call <tt class="inline-code">reset</tt> on it.</p></div></div></div><div class="annotated-prototype"><div class="function-prototype"><div class="parent-prototype"><span class="builtin-type">struct</span> <span class="name">UnrolledList</span><span class="template-params">(T, Allocator = Mallocator, bool GCRangesAllowed = true)</span></div><div><div class="attributes">@<span class="name" data-ident="safe">safe</span> @<span class="name" data-ident="nogc">nogc</span> </div><div class="return-type"><a class="lang-feature" href="http://dpldocs.info/auto-function-return-prototype">auto</a> </div><div class="function-name">unstableRange</div><div class="template-parameters" data-count="0"></div><div class="runtime-parameters" data-count="2"><div class="parameters-list toplevel"><span class="paren">(</span><div class="runtime-parameter-item parameter-item"><span class="parameter-type-holder"><span class="parameter-type"><span class="builtin-type">int</span></span></span> <span class="parameter-name name" data-ident="start"><a href="#param-start">start</a></span><span class="parameter-default-value">&#160;=&#160;0</span></div><span class="comma">,</span><div class="runtime-parameter-item parameter-item"><span class="parameter-type-holder"><span class="parameter-type"><span class="builtin-type">int</span></span></span> <span class="parameter-name name" data-ident="end"><a href="#param-end">end</a></span><span class="parameter-default-value">&#160;=&#160;int.<span class="name" data-ident="max">max</span></span></div><span class="paren">)</span></div></div><div class="function-contracts"></div></div></div></div><div><h2 id="parameters"><a class="header-anchor" href="#parameters">Parameters</a></h2><dl class="parameter-descriptions"><dt id="param-start"><a class="parameter-name" data-ident="start" href="#param-start">start</a> <span class="parameter-type"><span class="builtin-type">int</span></span></dt><dd><div class="documentation-comment"><div><p>start position in list (default value - head of the list)</p></div></div></dd><dt id="param-end"><a class="parameter-name" data-ident="end" href="#param-end">end</a> <span class="parameter-type"><span class="builtin-type">int</span></span></dt><dd><div class="documentation-comment"><div><p>end positions in list (default value - end of the list)</p><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="hid">UnrolledList</span>!<span class="type">int</span> <span class="hid">l</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>; <span class="num">0</span>..<span class="num">50</span>)
+<span class="br">4 </span>{
+<span class="br">5 </span>    <span class="hid">l</span>.<span class="hid">pushBack</span>(<span class="hid">i</span>);
+<span class="br">6 </span>}
+<span class="br">7 </span><span class="kwrd">auto</span> <span class="hid">r</span> = <span class="hid">l</span>.<span class="hid">unstableRange</span>();
+<span class="br">8 </span><span class="kwrd">assert</span>(<span class="hid">equal</span>(<span class="hid">r</span>, <span class="hid">iota</span>(<span class="num">50</span>)));   <span class="com">// copy of range created </span>
+<span class="br">9 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">clear</span>); <span class="com">// r still active</span>
+<span class="br">10 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">remove</span>(<span class="num">0</span>)); <span class="com">// r still active</span>
+<span class="br">11 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">pushBack</span>(<span class="num">0</span>)); <span class="com">// r still active</span>
+<span class="br">12 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">pushFront</span>(<span class="num">0</span>)); <span class="com">// r still active</span>
+<span class="br">13 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">popBack</span>()); <span class="com">// r still active</span>
+<span class="br">14 </span><span class="hid">assertThrown</span>!<span class="hid">AssertError</span>(<span class="hid">l</span>.<span class="hid">popFront</span>()); <span class="com">// r still active</span>
+<span class="br">15 </span><span class="hid">r</span>.<span class="hid">reset</span>();    <span class="com">// deactivate r</span>
+<span class="br">16 </span><span class="hid">l</span>.<span class="hid">clear</span>();    <span class="com">// it is safe to clear list</span></pre></div></div></dd></dl></div></div>
+		<div id="page-nav"><a class="parent" href="ikod.html">ikod</a> <a class="parent" href="ikod.containers.html">containers</a> <a class="parent" href="ikod.containers.unrolledlist.html">unrolledlist</a> <a class="parent" href="ikod.containers.unrolledlist.UnrolledList.html">UnrolledList</a> 
+		<span class="type-separator">functions</span><ul><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.back.html">back</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.insert.html">insert</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.popBack.html">popBack</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.popFront.html">popFront</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.pushBack.html">pushBack</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.pushFront.html">pushFront</a></li><li><a class="function" href="ikod.containers.unrolledlist.UnrolledList.remove.html">remove</a></li><li><a class="function current" href="ikod.containers.unrolledlist.UnrolledList.unstableRange.html">unstableRange</a></li></ul><span class="type-separator">structs</span><ul><li><a class="struct" href="ikod.containers.unrolledlist.UnrolledList.Iterator.html">Iterator</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>

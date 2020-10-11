@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <title>CompressedList.Page (ikod.containers.compressedlist.CompressedList.Page)</title>
+	<meta charset="utf-8" />
+	<meta content="width=device-width, initial-scale=1" name="viewport" />
+        <link href="style.css" rel="stylesheet" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link href="search-results.html" rel="prefetch" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form action="search-docs.html" id="search">
+			<input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>CompressedList.Page</h1><div class="breadcrumbs"><a class="breadcrumb" href="ikod.html">ikod</a> <a class="breadcrumb" href="ikod.containers.html">containers</a> <a class="breadcrumb" href="ikod.containers.compressedlist.html">compressedlist</a> <a class="breadcrumb" href="ikod.containers.compressedlist.CompressedList.html">CompressedList</a> </div><div><div class="documentation-comment synopsis"><div></div></div></div><div class="annotated-prototype"><div class="aggregate-prototype"><div class="parent-prototype"><span class="builtin-type">struct</span> <span class="name">CompressedList</span><span class="template-params">(T, Allocator = Mallocator, bool GCRangesAllowed = true)</span></div><div><div class="attributes"></div><span class="builtin-type">struct</span> Page  {<div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.Page._freeMap.html"><div class="attributes"></div><tt class="highlighted"><span class="type">ubyte</span>[<span class="hid">BitMapLength</span>]</tt> <span class="name">_freeMap</span>;</a></div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="hid">Page</span>*</tt> <span class="name">_prevPage</span>;</div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="hid">Page</span>*</tt> <span class="name">_nextPage</span>;</div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="type">byte</span></tt> <span class="name">_firstNode</span>;</div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="type">byte</span></tt> <span class="name">_lastNode</span>;</div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="type">ubyte</span></tt> <span class="name">_count</span>;</div><div class="aggregate-member"><div class="attributes"></div><tt class="highlighted"><span class="hid">Node</span>[<span class="hid">NodesPerPage</span>]</tt> <span class="name">_nodes</span>;</div>}</div></div></div><h2 id="members"><a class="header-anchor" href="#members">Members</a></h2><h3 class="member-list-header hide-from-toc" id="variable"><a class="header-anchor" href="#variable">Variables</a></h3><dl class="member-list native"><dt><a href="ikod.containers.compressedlist.CompressedList.Page._freeMap.html">_freeMap</a><div class="simplified-prototype" style="max-width: 31ch;"><tt class="highlighted"><span class="type">ubyte</span>[<span class="hid">BitMapLength</span>]</tt> <span class="name">_freeMap</span>;</div></dt><dd><div><p>Page is fixed-length array of list Nodes with batteries</p></div></dd></dl><div></div></div>
+		<div id="page-nav"><a class="parent" href="ikod.html">ikod</a> <a class="parent" href="ikod.containers.html">containers</a> <a class="parent" href="ikod.containers.compressedlist.html">compressedlist</a> <a class="parent" href="ikod.containers.compressedlist.CompressedList.html">CompressedList</a> 
+		<span class="type-separator">functions</span><ul><li><a class="function" href="ikod.containers.compressedlist.CompressedList.back.html">back</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.clear.html">clear</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.empty.html">empty</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.front.html">front</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.insertBack.html">insertBack</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.insertFront.html">insertFront</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.length.html">length</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.popBack.html">popBack</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.popFront.html">popFront</a></li><li><a class="function" href="ikod.containers.compressedlist.CompressedList.range.html">range</a></li></ul><span class="type-separator">structs</span><ul><li><a class="struct current" href="ikod.containers.compressedlist.CompressedList.Page.html">Page</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>
