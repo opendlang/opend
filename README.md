@@ -60,6 +60,9 @@ Advantages:
 
 See docs [here](https://ikod.github.io/ikod-containers/ikod.containers.unrolledlist.UnrolledList.html)
 
+Note: *UnrolledList is `value` type, so assignment will copy all data. Use ref or pointers if you have to avoid copy*
+
+
 ### code sample ###
 ```d
 import std.algorithm: equal;
