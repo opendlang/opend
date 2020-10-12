@@ -949,7 +949,7 @@ void main()
             else
                 (*ptr)++;
         }
-        foreach(word; uwords.unstableRange()) {
+        foreach(word; uwords.constRange()) {
             updateCount(word);
         }
         gcstop = () @trusted {return GC.stats;} ();
@@ -964,7 +964,7 @@ void main()
             count[word] = count.get(word, 0)+1;
         }
         int n;
-        foreach(word; uwords.unstableRange()) {
+        foreach(word; uwords.constRange()) {
             updateCount(word);
             n++;
         }
@@ -980,7 +980,7 @@ void main()
             count[word] = count.get(word, 0)+1;
         }
 
-        foreach(word; uwords.unstableRange()) {
+        foreach(word; uwords.constRange()) {
             updateCount(word);
         }
         gcstop = () @trusted {return GC.stats;} ();
@@ -1039,17 +1039,21 @@ void main()
     void test_clist_iter()
     {
         int l;
-        foreach(w; words.range)
+        auto r = words.range;
+        while(!r.empty)
         {
             l++;
+            r.popFront;
         }
     }
     void test_ulist_iter()
     {
         int l;
-        foreach(w; uwords.unstableRange)
+        auto r = uwords.constRange;
+        while(!r.empty)
         {
             l++;
+            r.popFront;
         }
     }
 

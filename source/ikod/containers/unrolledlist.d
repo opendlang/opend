@@ -147,9 +147,9 @@ private:
     }
     /++
     +/
-    public struct Iterator(T)
+    public struct Iterator(I)
     {
-        private T*  _impl;
+        private I*  _impl;
         package this(Args...)(auto ref Args args, string file = __FILE__, int line = __LINE__) @trusted
         {
             import std.functional: forward;
@@ -194,14 +194,52 @@ private:
         {
             _impl.reset();
         }
-    }
-    struct U
-    {
-        alias ListType = UnrolledList!(T, Allocator, GCRangesAllowed);
-        alias NodeType = UnrolledList!(T, Allocator, GCRangesAllowed).Node;
+        int opApply(scope int delegate(T) dg)
+        {
+            int result = 0;
+            while(!empty)
+            {
+                result = dg(front);
+                popFront;
+                if (result)
+                    break;
+            }
+            return result;
+        }
+        static if (is(I == Impl!"mut"))
+        {
+            void removeNext()
+            {
 
-        private:
-            U**         _ptr;
+            }
+            void remove()
+            {
+
+            }
+            void removePrev()
+            {
+
+            }
+            void insertBefore()
+            {
+
+            }
+            void insertAfter()
+            {
+
+            }
+            alias insertAt = insertBefore;
+        }
+    }
+
+    template Impl(string kind) if (kind == "mut" || kind == "const")
+    {
+        alias ListType = typeof(this);
+        alias NodeType = ListType.Node;
+        struct Impl
+        {
+            alias T = typeof(this);
+            T**         _ptr;
             ListType*   _list;
             bool        _empty;
             NodeType*   _currentNode;
@@ -209,16 +247,41 @@ private:
             int         _currentNodeItemPosition; // in bitmap
             int         _currentNodeItemsTotal;
             size_t      _item;
-            size_t      _itemsTotal;
+            size_t      _end;
 
+            static if (kind == "mut")
+            {
+                private auto refc()
+                {
+                    return &_list._mutRanges_counter;
+                }
+                private auto refptr(int i)
+                {
+                    return &_list._mutRanges[i];
+                }
+            }
+            else
+            {
+                private auto refc()
+                {
+                    return &_list._constRanges_counter;
+                }
+                private auto refptr(int i)
+                {
+                    return &_list._constRanges[i];
+                }
+            }
         public:
-            this(U** p, ListType* list = null, size_t item = 0, int items = 0, NodeType* node = null, int nodeItem = 0)
+            this(T** p, ListType* list = null, size_t item = 0, int end = 0, NodeType* node = null, int nodeItem = 0) @nogc
             {
                 _ptr = p;
-                *_ptr = &this;
+                if (p)
+                {
+                    *_ptr = &this;
+                }
                 _list = list;
                 _item = item;
-                _itemsTotal = items;
+                _end = end;
                 _currentNode = node;
                 _currentNodeItem = nodeItem;
                 if (node)
@@ -227,7 +290,7 @@ private:
                     _currentNodeItemPosition = node.translate_pos(nodeItem);
                 }
             }
-            /// create and register another instance of unstable range
+            /// create and register another instance of stable range
             this(this)
             {
                 if ( !_list || !_ptr )
@@ -236,49 +299,28 @@ private:
                 }
                 for(auto i=0; i<MaxRanges; i++)
                 {
-                    if ( _list._unstableRanges[i] is null )
+                    if ( *refptr(i) is null )
                     {
-                        _list._unstableRanges_counter++;
-                        _list._unstableRanges[i] = &this;
-                        _ptr = &_list._unstableRanges[i];
+                        (*refc)++;
+                        *refptr(i) = &this;
+                        _ptr = refptr(i);
                         return;
                     }
                 }
-                assert(0, "Too much active ranges");
+                assert(0, "Too much active stable ranges");
             }
-            ///
-            void reset()
-            {
-                if (_list is null || _ptr is null )
-                {
-                    assert(_list is null && _ptr is null);
-                    return;
-                }
-                assert(_list !is null);
-                _list._unstableRanges_counter--;
-                assert(_list._unstableRanges_counter >= 0);
-                if ( _ptr !is null )
-                {
-                    assert(*_ptr == &this);
-                    *_ptr = null;
-                    _ptr = null;
-                }
-                _list = null;
-            }
-            ///
             ~this() @safe
             {
                 if ( _list !is null )
                 {
-                    _list._unstableRanges_counter--;
-                    assert(_list._unstableRanges_counter >= 0);
+                    (*refc)--;
+                    assert((*refc) >= 0);
                 }
                 if (_ptr !is null)
                 {
                     *_ptr = null;
                 }
             }
-            ///
             auto opAssign(V)(auto ref V other) if (is(V==typeof(this)))
             {
                 if ( other is this )
@@ -293,53 +335,63 @@ private:
                 {
                     // register
                     assert(_list is null);
-                    auto l = other._list;
+                    _list = other._list;
                     for(auto i=0; i<MaxRanges; i++)
                     {
-                        if ( l._unstableRanges[i] is null )
+                        if ( *refptr(i) is null )
                         {
-                            l._unstableRanges_counter++;
-                            assert(l._unstableRanges_counter<l.MaxRanges);
-                            l._unstableRanges[i] = &this;
-                            _ptr = &l._unstableRanges[i];
+                            (*refc)++;
+                            assert(*refc < _list.MaxRanges);
+                            *refptr(i) = &this;
+                            _ptr = refptr(i);
                             break;
                         }
                     }
                 }
-                _list = other._list;
                 _item = other._item;
-                _itemsTotal = other._itemsTotal;
+                _end = other._end;
                 _currentNode = other._currentNode;
                 _currentNodeItem = other._currentNodeItem;
                 _currentNodeItemsTotal = other._currentNodeItemsTotal;
                 _currentNodeItemPosition = other._currentNodeItemPosition;
                 _empty = other._empty;
             }
-            ///
+            void reset()
+            {
+                if (_list is null || _ptr is null )
+                {
+                    assert(_list is null && _ptr is null);
+                    return;
+                }
+                assert(_list !is null);
+                (*refc)--;
+                assert(*refc >= 0);
+                if ( _ptr !is null )
+                {
+                    assert(*_ptr == &this);
+                    *_ptr = null;
+                    _ptr = null;
+                }
+                _list = null;
+            }
             auto front()
             {
-                // foreach(s; _list.dump)
-                // {
-                //     debug info(s);
-                // }
                 assert(_list && _currentNode);
                 auto n = _currentNode;
-                auto i = _currentNodeItem;
                 auto p = _currentNodeItemPosition;
                 assert(n.test_bit(p));
                 return n._items[p];
             }
-            ///
             void popFront()
             {
                 if ( !_list || !_ptr )
                 {
                     return;
                 }
-                if ( _item >= _itemsTotal-1 )
+                if ( _item >= _end-1 )
                 {
                     _empty = true;
-                    //reset();
+                    reset();
                     return;
                 }
                 auto n = _currentNode;
@@ -373,57 +425,51 @@ private:
             {
                 return _empty;
             }
+        }
     }
 
     enum MaxRanges = 32;
-
-    U*[MaxRanges]               _unstableRanges;
-    short                       _unstableRanges_counter;
+    Impl!"mut"*[MaxRanges]   _mutRanges;
+    Impl!"const"*[MaxRanges] _constRanges;
+    short                       _constRanges_counter;
+    short                       _mutRanges_counter;
 
 public:
-
-    /++
-    +   Create new unstable range. Unstable range save it's correctness by
-    +   preventing you from any list mutations.
-    +
-    +   unstable range is `value `type` - assignment and initializations create its copy.
-    +
-    +   Unstable range can't make warranties on it's correctnes if you make any list mutation.
-    +   So, while you have any active unstable range you can't make any mutation to list. At any
-    +   atempt to remove, insert or clear list while unstable range active you'll get AssertionError.
-    +   To make unstableRange inactive you have to consume it to the end or call `reset` on it.
-    +
-    +   Params:
-    +   start = start position in list (default value - head of the list)
-    +   end = end positions in list (default value - end of the list)
-    + --------------------------------------------------------------------
-    +     UnrolledList!int l;
-    + 
-    +     foreach(i; 0..50)
-    +     {
-    +         l.pushBack(i);
-    +     }
-    +     auto r = l.unstableRange();
-    +     assert(equal(r, iota(50)));   // copy of range created 
-    +     assertThrown!AssertError(l.clear); // r still active
-    +     assertThrown!AssertError(l.remove(0)); // r still active
-    +     assertThrown!AssertError(l.pushBack(0)); // r still active
-    +     assertThrown!AssertError(l.pushFront(0)); // r still active
-    +     assertThrown!AssertError(l.popBack()); // r still active
-    +     assertThrown!AssertError(l.popFront()); // r still active
-    +     r.reset();    // deactivate r
-    +     l.clear();    // it is safe to clear list
-    + -------------------------------------------------------------------
-    +/
-    auto unstableRange(int start=0, int end=int.max) @safe @nogc
+    auto makeRange(string R)(int start=0, int end=int.max) @safe
     {
-        U** slot;
-        assert(_unstableRanges_counter < MaxRanges-1);
+        static if (R == "mut")
+        {
+            alias _rCounter = _mutRanges_counter;
+            alias _rArray = _mutRanges;
+            alias T = Impl!"mut";
+        }
+        else static if (R == "const")
+        {
+            alias _rCounter = _constRanges_counter;
+            alias _rArray = _constRanges;
+            alias T = Impl!"const";
+        }
+        else
+        {
+            static assert(0, "Wrong type");
+        }
+        //
+
+        if ( _count == 0)
+        {
+            // empty list
+            auto result = Iterator!T(null, null);
+            result._impl._empty = true;
+            return result;
+        }
+
+        T** slot;
+        assert(_rCounter < MaxRanges-1);
         for(auto i=0; i<MaxRanges; i++)
         {
-            if ( _unstableRanges[i] is null )
+            if ( _rArray[i] is null )
             {
-                slot = &_unstableRanges[i];
+                slot = &_rArray[i];
                 break;
             }
         }
@@ -432,28 +478,10 @@ public:
             assert(0, "Too much active ranges");
         }
 
-        _unstableRanges_counter++;
+        _rCounter++;
 
-        auto result = Iterator!U(slot, &this);
+        auto result = Iterator!T(slot, &this);
 
-        if ( _count == 0)
-        {
-            // empty list
-            result._impl._empty = true;
-            return result;
-        }
-
-        // static if (version_major == 2 && version_minor < 94 )
-        // {
-        //     () @trusted // address of variable this assigned to this with longer lifetime
-        //     {r._list = &this;}();
-        // }
-        // else
-        // {
-        //     r._list = &this;
-        // }
-
-        // start counts from end
         if ( start < 0 )
         {
             start = _count + start;
@@ -487,11 +515,45 @@ public:
         result._impl._currentNodeItem = nodeItem;
         result._impl._currentNodeItemPosition = node.translate_pos(nodeItem);
         result._impl._currentNodeItemsTotal = node._count;
-        result._impl._item = 0;
-        result._impl._itemsTotal = items;
+        result._impl._item = start;
+        result._impl._end = end;
         return result;
-        // return U(r, &this, 0, items, node, nodeItem);
     }
+    alias mutRange = makeRange!("mut");
+    /++
+    +   Create new const range. Const range preserve it's correctness by
+    +   preventing you from any list mutations.
+    +
+    +   const range is `value `type` - assignment and initializations create its copy.
+    +
+    +   const range can't make warranties on it's correctnes if you make any list mutation.
+    +   So, while you have any active const range you can't make any mutation to list. At any
+    +   atempt to remove, insert or clear list while const range active you'll get AssertionError.
+    +   To make constRange inactive you have to consume it to the end or call `reset` on it.
+    +
+    +   Params:
+    +   start = start position in list (default value - head of the list)
+    +   end = end positions in list (default value - end of the list)
+    + --------------------------------------------------------------------
+    +     UnrolledList!int l;
+    + 
+    +     foreach(i; 0..50)
+    +     {
+    +         l.pushBack(i);
+    +     }
+    +     auto r = l.constRange();
+    +     assert(equal(r, iota(50)));   // copy of range created 
+    +     assertThrown!AssertError(l.clear); // r still active
+    +     assertThrown!AssertError(l.remove(0)); // r still active
+    +     assertThrown!AssertError(l.pushBack(0)); // r still active
+    +     assertThrown!AssertError(l.pushFront(0)); // r still active
+    +     assertThrown!AssertError(l.popBack()); // r still active
+    +     assertThrown!AssertError(l.popFront()); // r still active
+    +     r.reset();    // deactivate r
+    +     l.clear();    // it is safe to clear list
+    + -------------------------------------------------------------------
+    +/
+    alias constRange = makeRange!"const";
 
     this(this)
     {
@@ -499,8 +561,11 @@ public:
         _first_node = _last_node = null;
         _count = 0;
 
-        _unstableRanges_counter = 0;
-        _unstableRanges = _unstableRanges.init;
+        _constRanges_counter = 0;
+        _constRanges = _constRanges.init;
+
+        _mutRanges_counter = 0;
+        _mutRanges = _mutRanges.init;
 
         while(n)
         {
@@ -518,7 +583,7 @@ public:
 
     ~this()
     {
-        foreach(ur; _unstableRanges)
+        foreach(ur; _constRanges)
         {
             if ( ur !is null )
             {
@@ -559,7 +624,7 @@ public:
 
     void clear()
     {
-        assert(_unstableRanges_counter == 0, "You can't call mutating methods while unstableRange active. Use stableRange");
+        assert(_constRanges_counter == 0, "You can't call mutating methods while constRange active. Use stableRange");
         auto n = _first_node;
         while(n)
         {
@@ -711,11 +776,11 @@ public:
     /++
     + Append item to the list. O(1)
     +
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     void pushBack(V)(V v)
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         _count++;
         int pos;
         if ( _last_node && !_last_node.test_bit(ItemsPerNode-1))
@@ -745,11 +810,11 @@ public:
     /++
     + Prepend list with item v. O(1)
     +
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     void pushFront(V)(V v)
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         _count++;
         int pos;
         if ( _first_node && !_first_node.test_bit(0))
@@ -782,11 +847,11 @@ public:
     +
     + No action if list is empty.
     +
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     void popFront()
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         if ( _count == 0 )
         {
             return;
@@ -818,11 +883,11 @@ public:
     +
     + No action if list is empty.
     +
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     void popBack()
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         if ( _count == 0 )
         {
             return;
@@ -855,11 +920,11 @@ public:
     +
     + No action if list is empty.
     + Returns: True if item were removed.
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     bool remove(size_t i)
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         if ( i >= _count )
         {
             return false;
@@ -892,11 +957,11 @@ public:
     + i = position for this value
     +
     + Returns: True if item were inserted (false if index is > list.length+1)
-    + Throws: AssertError if any unstable range is registered.
+    + Throws: AssertError if any const range is registered.
     +/
     bool insert(V)(size_t i, V v)
     {
-        assert(_unstableRanges_counter == 0, "You can't mutate list while there are active unstable ranges");
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         debug(ikodcontainers) tracef("insert %s at %s", v, i);
         if ( i > _count )
         {
@@ -1422,7 +1487,24 @@ unittest
     assert(l[30] == 1000);
 }
 
-@("unstableIterator")
+@("mutIterator")
+unittest
+{
+    import std.range;
+    UnrolledList!int l;
+
+    foreach(i; 0..50)
+    {
+        l.pushBack(i);
+    }
+    auto r = l.mutRange(1, -1);
+    foreach(v; r)
+    {
+        assert(v>=0);
+    }
+}
+
+@("constIterator")
 unittest
 {
     import std.range;
@@ -1436,7 +1518,7 @@ unittest
     {
         l.pushBack(i);
     }
-    auto r = l.unstableRange();
+    auto r = l.constRange();
     assert(equal(r, iota(50)));
     assertThrown!AssertError(l.clear); // r still active
     assertThrown!AssertError(l.remove(0)); // r still active
@@ -1450,31 +1532,31 @@ unittest
     {
         l.pushBack(i);
     }
-    r = l.unstableRange();
+    r = l.constRange();
     auto r1 = r;
     r.reset();
     assert(equal(r1.take(10), iota(10))); // still can use r1
-    r1 = l.unstableRange();
+    r1 = l.constRange();
     r1 = r1;
     r.reset();
-    assert(l._unstableRanges_counter == 1); // r1 only
+    assert(l._constRanges_counter == 1); // r1 only
     assert(equal(r1, iota(50)));
     // test negative indexing
-    assert(equal(l.unstableRange(25), iota(25,50)));
-    assert(l.unstableRange(-3, -3).count == 0);
-    assertThrown!AssertError(l.unstableRange(0, -10000));
-    assert(l._unstableRanges_counter == 1); // r1 only, temp ranges unregistered
+    assert(equal(l.constRange(25), iota(25,50)));
+    assert(l.constRange(-3, -3).count == 0);
+    assertThrown!AssertError(l.constRange(0, -10000));
+    assert(l._constRanges_counter == 1); // r1 only, temp ranges unregistered
 
-    r = l.unstableRange();
-    assert(l._unstableRanges_counter == 2); // r and r1
+    r = l.constRange();
+    assert(l._constRanges_counter == 2); // r and r1
     foreach(i, v; r.enumerate)
     {
-        r1 = l.unstableRange(cast(int)i, 50);
+        r1 = l.constRange(cast(int)i, 50);
         assert(equal(r1, iota(i, 50)));
     }
     r1.reset();
     r.reset();
-    assert(l._unstableRanges_counter == 0); // we cleared everything
+    assert(l._constRanges_counter == 0); // we cleared everything
 
     // test unregister on list destruction
     {
@@ -1483,16 +1565,36 @@ unittest
         {
             l1.pushBack(i);
         }
-        r1 = l1.unstableRange();
+        r1 = l1.constRange();
         assert(r1.count == 50);
         foreach(i,v; r1.enumerate)
         {
-            auto r2 = l1.unstableRange(cast(int)i);
+            auto r2 = l1.constRange(cast(int)i);
             assert(equal(r2, iota(i, 50)));
         }
         assert(r1.count == 50);
     }
     assert(r1.count == 0); // lost container
+    r = l.constRange();
+    assertThrown!AssertError(l.clear);
+    while(!r.empty)
+    {
+        r.popFront;
+    }
+    l.clear;
+
+    foreach(i; 0..50)
+    {
+        l.pushBack(i);
+    }
+    r = l.constRange();
+    assertThrown!AssertError(l.clear);
+    foreach(i; r)
+    {
+        assert(i>=0);
+    }
+    // iterator consumed by opApply
+    l.clear;
 }
 @("classes")
 @safe
@@ -1512,7 +1614,7 @@ unittest
     {
         l.pushBack(new C(i));
     }
-    auto r = l.unstableRange;
+    auto r = l.constRange;
     assert(equal(r.map!(c => c.c), iota(50)));
 }
 @("structs")
@@ -1537,6 +1639,6 @@ unittest
         S s = S(i);
         l.pushBack(s);
     }
-    auto r = l.unstableRange;
+    auto r = l.constRange;
     assert(equal(r.map!(s => s.s), iota(50)));
 }
