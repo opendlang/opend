@@ -84,6 +84,7 @@ A.ptr[0] = 42;
 int elem = A.array[0];
 ```
 
+
 ## Why `intel-intrinsics`?
 
 - **Portability** 
@@ -104,7 +105,14 @@ https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 Without this Intel documentation, it's much more difficult to write sizeable SIMD code.
 
 
-### Notable difference between x86 and ARM targets
+### Who is using it? `intel-intrinsics`
+
+- `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d)
+- [Auburn Sounds](https://www.auburnsounds.com/) audio products
+- [Cut Through Recordings](https://www.cutthroughrecordings.com/) audio products
+
+
+### Notable differences between x86 and ARM targets
 
 - AArch64 and 32-bit ARM respects floating-point rounding through MXCSR emulation.
   This works using FPCR as thread-local store for rounding mode.
@@ -115,28 +123,6 @@ Without this Intel documentation, it's much more difficult to write sizeable SIM
   - Separate control for denormals-are-zero and flush-to-zero (ARM has one bit for both)
 
 - 32-bit ARM has a different nearest rounding mode as compared to AArch64 and x86. Numbers with a 0.5 fractional part (such as `-4.5`) may not round in the same direction. This shouldn't affect you.
-
-
-
-### Notable difference vs C/C++ or `core.simd`
-
-When using `intel-intrinsics`, every implicit conversion of similarly-sized vectors should be done with a `cast` instead.
-
-```d
-__m128i b = _mm_set1_epi32(42);
-__m128 a = b;             // NO, only works in LDC
-__m128 a = cast(__m128)b; // YES, works in all D compilers
-
-```
-
-This is because D does not allow user-defined implicit conversions, and `core.simd` might be emulated (DMD). Use this `cast`, or your code won't work in every D compiler variation.
-
-
-### Who is using it?
-
-- `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d)
-- [Auburn Sounds](https://www.auburnsounds.com/) audio products
-- [Cut Through Recordings](https://www.cutthroughrecordings.com/) audio products
 
 
 ### Video introduction
