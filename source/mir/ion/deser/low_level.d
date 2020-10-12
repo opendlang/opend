@@ -315,20 +315,14 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow @nogc
     if (is(T == enum))
 {
+    import mir.serde: serdeParseEnum;
+
     IonString ionValue;
     if (auto error = data.get(ionValue))
         return error;
-    switch (ionValue.data)
-    {
-        static foreach(member; __traits(allMembers, T))
-        {
-            case member:
-                value = __traits(getMember, T, member);
-                return IonErrorCode.none;
-        }
-    default:
-        return IonErrorCode.expectedEnumValue;
-    }
+    if (serdeParseEnum(ionValue.data, value))
+        return IonErrorCode.none;
+    return IonErrorCode.expectedEnumValue;
 }
 
 ///
