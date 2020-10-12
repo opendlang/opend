@@ -133,3 +133,6 @@ In this DConf 2019 talk, Auburn Sounds:
 - reminds that normal D code can be really fast and intrinsics might harm performance
 
 [See the talk: intel-intrinsics: Not intrinsically about intrinsics](https://www.youtube.com/watch?v=cmswsx1_BUQ)
+
+<img alt="Ben Franklin" src="https://cdn.rawgit.com/AuburnSounds/intel-intrinsics/master/ben.jpg">
+
