@@ -11,6 +11,11 @@ os:
   - linux
   - osx
 
+jobs:
+  exclude:
+    - d: dmd
+      arch: arm64
+
 install:
   - mkdir .ntmp && curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
   - unzip .ntmp/ninja-linux.zip -d .ntmp
