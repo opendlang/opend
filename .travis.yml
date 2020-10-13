@@ -3,6 +3,7 @@ language: d
 arch:
   - amd64
   - x86
+  - arm64
 d:
   - dmd
   - ldc
