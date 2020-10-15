@@ -1,5 +1,5 @@
 /**
-* Transcendental function on 4 numbers at once.
+* Transcendental bonus functions.
 *
 * Copyright: Copyright Auburn Sounds 2016-2018.
 *            Copyright (C) 2007  Julien Pommier
