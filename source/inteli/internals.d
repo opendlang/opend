@@ -1215,6 +1215,28 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+    short8 vmaxq_s16(short8 a, short8 b) pure @trusted
+    {
+        // PERF: strangely enough, once inlined this will tend not to generate smax.8h
+        short8 r;
+        for(int i = 0; i < 8; ++i)
+        {
+            r[i] = a[i] >= b[i] ? a[i] : b[i];
+        }
+        return r;
+    }
+
+    short8 vminq_s16(short8 a, short8 b) pure @trusted
+    {
+        // PERF: strangely enough, once inlined this will tend not to generate smin.8h
+        short8 r;
+        for(int i = 0; i < 8; ++i)
+        {
+            r[i] = a[i] < b[i] ? a[i] : b[i];
+        }
+        return r;
+    }
+
     int4 vmull_s16(short4 a, short4 b) pure @trusted
     {
         int4 r;
@@ -1238,6 +1260,9 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
         int2 vpadd_s32(int2 a, int2 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v16i8")
+        byte16 vpaddq_s8(byte16 a, byte16 b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v16i8")
         byte16 vrhadd_u8(byte16 a, byte16 b) pure @safe;

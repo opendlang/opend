@@ -2587,6 +2587,7 @@ else static if (LDC_with_SSE2)
 }
 else
 {   
+    // PERF: ARM
     __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
     {
         byte16 r;
@@ -2620,6 +2621,22 @@ else static if (LDC_with_SSE2)
     __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
+    }
+}
+else static if (LDC_with_ARM64)
+{
+    // PERF: still not satisfying in Godbolt, some things just don't get inlined
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        short8 zero = [0, 0, 0, 0, 0, 0, 0, 0];
+        short8 s255 = [255, 255, 255, 255, 255, 255, 255, 255];
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        sa = vmaxq_s16(sa, zero);
+        sa = vminq_s16(sa, s255);
+        sb = vmaxq_s16(sb, zero);    
+        sb = vminq_s16(sb, s255);
+        return cast(__m128i) vpaddq_s8(cast(byte16)sa, cast(byte16)sb);
     }
 }
 else
