@@ -1121,6 +1121,9 @@ __m128i to_m128i(__m64 a) pure @trusted
 // MAYDO: port them to ARM32 so that ARM32 can be as fast as ARM64.
 static if (LDC_with_ARM64)
 {
+    // VERY USEFUL LINK
+    // https://github.com/ldc-developers/llvm-project/blob/ldc-release/11.x/llvm/include/llvm/IR/IntrinsicsAArch64.td
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i8")
         byte8 vpadd_u8(byte8 a, byte8 b) pure @safe;
 
@@ -1215,27 +1218,11 @@ static if (LDC_with_ARM64)
         return r;
     }
 
-    short8 vmaxq_s16(short8 a, short8 b) pure @trusted
-    {
-        // PERF: strangely enough, once inlined this will tend not to generate smax.8h
-        short8 r;
-        for(int i = 0; i < 8; ++i)
-        {
-            r[i] = a[i] >= b[i] ? a[i] : b[i];
-        }
-        return r;
-    }
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.smax.v8i16")
+        short8 vmaxq_s16(short8 a, short8 b) pure @safe;
 
-    short8 vminq_s16(short8 a, short8 b) pure @trusted
-    {
-        // PERF: strangely enough, once inlined this will tend not to generate smin.8h
-        short8 r;
-        for(int i = 0; i < 8; ++i)
-        {
-            r[i] = a[i] < b[i] ? a[i] : b[i];
-        }
-        return r;
-    }
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.smin.v8i16")
+        short8 vminq_s16(short8 a, short8 b) pure @safe;
 
     int4 vmull_s16(short4 a, short4 b) pure @trusted
     {
