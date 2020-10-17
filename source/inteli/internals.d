@@ -1142,6 +1142,28 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+    byte16 vcombine_s8(byte8 lo, byte8 hi) pure @trusted
+    {
+        byte16 r;
+        r.ptr[0]  = lo.array[0];
+        r.ptr[1]  = lo.array[1];
+        r.ptr[2]  = lo.array[2];
+        r.ptr[3]  = lo.array[3];
+        r.ptr[4]  = lo.array[4];
+        r.ptr[5]  = lo.array[5];
+        r.ptr[6]  = lo.array[6];
+        r.ptr[7]  = lo.array[7];
+        r.ptr[8]  = hi.array[0];
+        r.ptr[9]  = hi.array[1];
+        r.ptr[10] = hi.array[2];
+        r.ptr[11] = hi.array[3];
+        r.ptr[12] = hi.array[4];
+        r.ptr[13] = hi.array[5];
+        r.ptr[14] = hi.array[6];
+        r.ptr[15] = hi.array[7];
+        return r;
+    }
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v4i32.v4f32")
         int4 vcvtmq_s32_f32(float4 a) pure @safe;
 
@@ -1250,6 +1272,9 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v16i8")
         byte16 vpaddq_s8(byte16 a, byte16 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v8i8")
+        byte8 vqmovn_s16(short8 a) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v16i8")
         byte16 vrhadd_u8(byte16 a, byte16 b) pure @safe;

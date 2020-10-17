@@ -2585,6 +2585,16 @@ else static if (LDC_with_SSE2)
         return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
     }
 }
+else static if (LDC_with_ARM64)
+{
+    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    {
+        // generate a nice pair of sqxtn.8b + sqxtn2 since LDC 1.5 -02
+        byte8 ra = vqmovn_s16(cast(short8)a);
+        byte8 rb = vqmovn_s16(cast(short8)b);
+        return cast(__m128i)vcombine_s8(ra, rb);
+    }
+}
 else
 {   
     // PERF: ARM
