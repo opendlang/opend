@@ -2634,19 +2634,13 @@ else static if (LDC_with_SSE2)
     }
 }
 else static if (LDC_with_ARM64)
-{
-    // PERF: still not satisfying in Godbolt, some things just don't get inlined
+{        
     __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
     {
-        short8 zero = [0, 0, 0, 0, 0, 0, 0, 0];
-        short8 s255 = [255, 255, 255, 255, 255, 255, 255, 255];
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        sa = vmaxq_s16(sa, zero);
-        sa = vminq_s16(sa, s255);
-        sb = vmaxq_s16(sb, zero);    
-        sb = vminq_s16(sb, s255);
-        return cast(__m128i) vpaddq_s8(cast(byte16)sa, cast(byte16)sb);
+        // generate a nice pair of sqxtun + sqxtun2 since LDC 1.5 -02
+        byte8 ra = vqmovun_s16(cast(short8)a);
+        byte8 rb = vqmovun_s16(cast(short8)b);
+        return cast(__m128i)vcombine_s8(ra, rb);
     }
 }
 else
