@@ -303,47 +303,67 @@ __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
     return cast(__m128) cmpss!(FPComparison.uno)(a, b);
 }
 
-// Note: we've reverted clang and GCC behaviour with regards to EFLAGS
+// Note: we've reversed clang and GCC behaviour with regards to EFLAGS
 // Some such comparisons yields true for NaNs, other don't.
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for equality, 
+/// and return the boolean result (0 or 1).
 int _mm_comieq_ss (__m128 a, __m128 b) pure @safe // comiss + sete
 {
     return comss!(FPComparison.ueq)(a, b); // yields true for NaN!
 }
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for greater-than-or-equal, 
+/// and return the boolean result (0 or 1).
 int _mm_comige_ss (__m128 a, __m128 b) pure @safe // comiss + setae
 {
     return comss!(FPComparison.oge)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for greater-than, 
+/// and return the boolean result (0 or 1).
 int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
 {
     return comss!(FPComparison.ogt)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for less-than-or-equal, 
+/// and return the boolean result (0 or 1).
 int _mm_comile_ss (__m128 a, __m128 b) pure @safe // comiss + setbe
 {
     return comss!(FPComparison.ule)(a, b); // yields true for NaN!
 }
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for less-than, 
+/// and return the boolean result (0 or 1).
 int _mm_comilt_ss (__m128 a, __m128 b) pure @safe // comiss + setb
 {
     return comss!(FPComparison.ult)(a, b); // yields true for NaN!
 }
 
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for not-equal, 
+/// and return the boolean result (0 or 1).
 int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 {
     return comss!(FPComparison.one)(a, b);
 }
 
+/// Convert packed signed 32-bit integers in `b` to packed single-precision (32-bit) 
+/// floating-point elements, store the results in the lower 2 elements, 
+/// and copy the upper 2 packed elements from `a` to the upper elements of result.
 alias _mm_cvt_pi2ps = _mm_cvtpi32_ps;
 
+/// Convert 2 lower packed single-precision (32-bit) floating-point elements in `a` 
+/// to packed 32-bit integers.
 __m64 _mm_cvt_ps2pi (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
 }
 
-__m128 _mm_cvt_si2ss(__m128 v, int x) pure @trusted
+/// Convert the signed 32-bit integer `b` to a single-precision (32-bit) floating-point element, 
+/// store the result in the lower element, and copy the upper 3 packed elements from `a` to the 
+/// upper elements of the result.
+__m128 _mm_cvt_si2ss (__m128 v, int x) pure @trusted
 {
     v.ptr[0] = cast(float)x;
     return v;
@@ -354,7 +374,7 @@ unittest
     assert(a.array == [42f, 0, 0, 0]);
 }
 
-
+/// Convert packed 16-bit integers in `a` to packed single-precision (32-bit) floating-point elements.
 __m128 _mm_cvtpi16_ps (__m64 a) pure @safe
 {
     __m128i ma = to_m128i(a);
@@ -370,6 +390,9 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed signed 32-bit integers in `b` to packed single-precision (32-bit) 
+/// floating-point elements, store the results in the lower 2 elements, 
+/// and copy the upper 2 packed elements from `a` to the upper elements of result.
 __m128 _mm_cvtpi32_ps (__m128 a, __m64 b) pure @trusted
 {
     __m128 fb = _mm_cvtepi32_ps(to_m128i(b));
@@ -384,7 +407,9 @@ unittest
     assert(R.array == correct);
 }
 
-
+/// Convert packed signed 32-bit integers in `a` to packed single-precision (32-bit) floating-point elements, 
+/// store the results in the lower 2 elements, then covert the packed signed 32-bit integers in `b` to 
+/// single-precision (32-bit) floating-point element, and store the results in the upper 2 elements.
 __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @trusted
 {
     long2 l;
@@ -392,7 +417,16 @@ __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @trusted
     l.ptr[1] = b.array[0];
     return _mm_cvtepi32_ps(cast(__m128i)l);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(-45, 128);
+    __m64 B = _mm_setr_pi32(0, 1000);
+    __m128 R = _mm_cvtpi32x2_ps(A, B);
+    float[4] correct = [-45.0f, 128.0f, 0.0f, 1000.0f];
+    assert(R.array == correct);
+}
 
+/// Convert the lower packed 8-bit integers in `a` to packed single-precision (32-bit) floating-point elements.
 __m128 _mm_cvtpi8_ps (__m64 a) pure @safe
 {
     __m128i b = to_m128i(a); 
@@ -413,6 +447,8 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 16-bit integers.
+/// Note: this intrinsic will generate 0x7FFF, rather than 0x8000, for input values between 0x7FFF and 0x7FFFFFFF.
 __m64 _mm_cvtps_pi16 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw
@@ -429,6 +465,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 32-bit integers.
 __m64 _mm_cvtps_pi32 (__m128 a) @safe
 {
     return to_m64(_mm_cvtps_epi32(a));
@@ -441,6 +478,9 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 8-bit integers, 
+/// and store the results in lower 4 elements. 
+/// Note: this intrinsic will generate 0x7F, rather than 0x80, for input values between 0x7F and 0x7FFFFFFF.
 __m64 _mm_cvtps_pi8 (__m128 a) @safe
 {
     // The C++ version of this intrinsic convert to 32-bit float, then use packssdw + packsswb
@@ -458,6 +498,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed unsigned 16-bit integers in `a` to packed single-precision (32-bit) floating-point elements.
 __m128 _mm_cvtpu16_ps (__m64 a) pure @safe
 {
     __m128i ma = to_m128i(a);
@@ -472,6 +513,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert the lower packed unsigned 8-bit integers in `a` to packed single-precision (32-bit) floating-point element.
 __m128 _mm_cvtpu8_ps (__m64 a) pure @safe
 {
     __m128i b = to_m128i(a); 
@@ -489,6 +531,9 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert the signed 32-bit integer `b` to a single-precision (32-bit) floating-point element, 
+/// store the result in the lower element, and copy the upper 3 packed elements from `a` to the 
+/// upper elements of result.
 __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @trusted
 {
     v.ptr[0] = cast(float)x;
@@ -500,7 +545,10 @@ unittest
     assert(a.array == [42.0f, 0, 0, 0]);
 }
 
-// Note: on macOS, using "llvm.x86.sse.cvtsi642ss" was buggy
+
+/// Convert the signed 64-bit integer `b` to a single-precision (32-bit) floating-point element, 
+/// store the result in the lower element, and copy the upper 3 packed elements from `a` to the 
+/// upper elements of result.
 __m128 _mm_cvtsi64_ss(__m128 v, long x) pure @trusted
 {
     v.ptr[0] = cast(float)x;
@@ -512,6 +560,7 @@ unittest
     assert(a.array == [42.0f, 0, 0, 0]);
 }
 
+/// Take the lower single-precision (32-bit) floating-point element of `a`.
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
     return a.array[0];
@@ -519,10 +568,15 @@ float _mm_cvtss_f32(__m128 a) pure @safe
 
 static if (LDC_with_SSE1)
 {
-    alias _mm_cvtss_si32 = __builtin_ia32_cvtss2si;
+    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
+    int _mm_cvtss_si32 (__m128 a) @safe // PERF GDC
+    {
+        return __builtin_ia32_cvtss2si(a);
+    }
 }
 else
 {
+    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
     int _mm_cvtss_si32 (__m128 a) @safe
     {
         return convertFloatToInt32UsingMXCSR(a.array[0]);
@@ -536,18 +590,26 @@ unittest
 version(LDC)
 {
     version(X86_64)
-        alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
-    else
     {
-        // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
+        /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
         long _mm_cvtss_si64 (__m128 a) @safe
         {
+            return __builtin_ia32_cvtss2si64(a);
+        }
+    }
+    else
+    {
+        /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
+        long _mm_cvtss_si64 (__m128 a) @safe
+        {
+            // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
             return convertFloatToInt64UsingMXCSR(a.array[0]);
         }
     }
 }
 else
 {
+    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
     long _mm_cvtss_si64 (__m128 a) @safe
     {
         return convertFloatToInt64UsingMXCSR(a.array[0]);
@@ -1641,6 +1703,7 @@ unittest
     _mm_sfence();
 }
 
+/// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
 __m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @safe
 {
     return cast(__m64) shufflevector!(short4, ( (imm8 >> 0) & 3 ),
@@ -1657,7 +1720,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-// Note: the immediate shuffle value is given at compile-time instead of runtime.
+/// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
 {
     return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
