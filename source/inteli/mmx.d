@@ -329,11 +329,10 @@ void _mm_empty() pure @safe
     // TODO: not sure for GDC, do something?
 }
 
-///ditto
-alias _m_empty = _mm_empty;
 
-alias _m_from_int =  _mm_cvtsi32_si64;
-alias _m_from_int64 = _mm_cvtsi64_m64;
+deprecated alias _m_empty = _mm_empty; /// Deprecated intrinsics.
+deprecated alias _m_from_int =  _mm_cvtsi32_si64; ///ditto
+deprecated alias _m_from_int64 = _mm_cvtsi64_m64; ///ditto
 
 /// Multiply packed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers. 
 /// Horizontally add adjacent pairs of intermediate 32-bit integers
@@ -446,59 +445,59 @@ unittest
 }
 
 deprecated alias
-    _m_packssdw = _mm_packs_pi32,
-    _m_packsswb = _mm_packs_pi16,
-    _m_packuswb = _mm_packs_pu16,
-    _m_paddb = _mm_add_pi8,
-    _m_paddd = _mm_add_pi32,
-    _m_paddsb = _mm_adds_pi8,
-    _m_paddsw = _mm_adds_pi16,
-    _m_paddusb = _mm_adds_pu8,
-    _m_paddusw = _mm_adds_pu16,
-    _m_paddw = _mm_add_pi16,
-    _m_pand = _mm_and_si64,
-    _m_pandn = _mm_andnot_si64,
-    _m_pcmpeqb = _mm_cmpeq_pi8,
-    _m_pcmpeqd = _mm_cmpeq_pi32,
-    _m_pcmpeqw = _mm_cmpeq_pi16,
-    _m_pcmpgtb = _mm_cmpgt_pi8,
-    _m_pcmpgtd = _mm_cmpgt_pi32,
-    _m_pcmpgtw = _mm_cmpgt_pi16,
-    _m_pmaddwd = _mm_madd_pi16,
-    _m_pmulhw = _mm_mulhi_pi16,
-    _m_pmullw = _mm_mullo_pi16,
-    _m_por = _mm_or_si64,
-    _m_pslld = _mm_sll_pi32,
-    _m_pslldi = _mm_slli_pi32,
-    _m_psllq = _mm_sll_si64,
-    _m_psllqi = _mm_slli_si64,
-    _m_psllw = _mm_sll_pi16,
-    _m_psllwi = _mm_slli_pi16,
-    _m_psrad = _mm_sra_pi32,
-    _m_psradi = _mm_srai_pi32,
-    _m_psraw = _mm_sra_pi16,
-    _m_psrawi = _mm_srai_pi16,
-    _m_psrld = _mm_srl_pi32,
-    _m_psrldi = _mm_srli_pi32,
-    _m_psrlq = _mm_srl_si64,
-    _m_psrlqi = _mm_srli_si64,
-    _m_psrlw = _mm_srl_pi16,
-    _m_psrlwi = _mm_srli_pi16,
-    _m_psubb = _mm_sub_pi8,
-    _m_psubd = _mm_sub_pi32,
-    _m_psubsb = _mm_subs_pi8,
-    _m_psubsw = _mm_subs_pi16,
-    _m_psubusb = _mm_subs_pu8,
-    _m_psubusw = _mm_subs_pu16,
-    _m_psubw = _mm_sub_pi16,
-    _m_punpckhbw = _mm_unpackhi_pi8,
-    _m_punpckhdq = _mm_unpackhi_pi32,
-    _m_punpckhwd = _mm_unpackhi_pi16,
-    _m_punpcklbw = _mm_unpacklo_pi8,
-    _m_punpckldq = _mm_unpacklo_pi32,
-    _m_punpcklwd = _mm_unpacklo_pi16,
-    _m_pxor = _mm_xor_si64;
-
+    _m_packssdw = _mm_packs_pi32,     /// Deprecated intrinsics.
+    _m_packsswb = _mm_packs_pi16,     ///ditto
+    _m_packuswb = _mm_packs_pu16,     ///ditto
+    _m_paddb = _mm_add_pi8,           ///ditto
+    _m_paddd = _mm_add_pi32,          ///ditto
+    _m_paddsb = _mm_adds_pi8,         ///ditto
+    _m_paddsw = _mm_adds_pi16,        ///ditto
+    _m_paddusb = _mm_adds_pu8,        ///ditto
+    _m_paddusw = _mm_adds_pu16,       ///ditto
+    _m_paddw = _mm_add_pi16,          ///ditto
+    _m_pand = _mm_and_si64,           ///ditto
+    _m_pandn = _mm_andnot_si64,       ///ditto
+    _m_pcmpeqb = _mm_cmpeq_pi8,       ///ditto
+    _m_pcmpeqd = _mm_cmpeq_pi32,      ///ditto
+    _m_pcmpeqw = _mm_cmpeq_pi16,      ///ditto
+    _m_pcmpgtb = _mm_cmpgt_pi8,       ///ditto
+    _m_pcmpgtd = _mm_cmpgt_pi32,      ///ditto
+    _m_pcmpgtw = _mm_cmpgt_pi16,      ///ditto
+    _m_pmaddwd = _mm_madd_pi16,       ///ditto
+    _m_pmulhw = _mm_mulhi_pi16,       ///ditto
+    _m_pmullw = _mm_mullo_pi16,       ///ditto
+    _m_por = _mm_or_si64,             ///ditto
+    _m_pslld = _mm_sll_pi32,          ///ditto
+    _m_pslldi = _mm_slli_pi32,        ///ditto
+    _m_psllq = _mm_sll_si64,          ///ditto
+    _m_psllqi = _mm_slli_si64,        ///ditto
+    _m_psllw = _mm_sll_pi16,          ///ditto
+    _m_psllwi = _mm_slli_pi16,        ///ditto
+    _m_psrad = _mm_sra_pi32,          ///ditto
+    _m_psradi = _mm_srai_pi32,        ///ditto
+    _m_psraw = _mm_sra_pi16,          ///ditto
+    _m_psrawi = _mm_srai_pi16,        ///ditto
+    _m_psrld = _mm_srl_pi32,          ///ditto
+    _m_psrldi = _mm_srli_pi32,        ///ditto
+    _m_psrlq = _mm_srl_si64,          ///ditto
+    _m_psrlqi = _mm_srli_si64,        ///ditto
+    _m_psrlw = _mm_srl_pi16,          ///ditto
+    _m_psrlwi = _mm_srli_pi16,        ///ditto
+    _m_psubb = _mm_sub_pi8,           ///ditto
+    _m_psubd = _mm_sub_pi32,          ///ditto
+    _m_psubsb = _mm_subs_pi8,         ///ditto
+    _m_psubsw = _mm_subs_pi16,        ///ditto
+    _m_psubusb = _mm_subs_pu8,        ///ditto
+    _m_psubusw = _mm_subs_pu16,       ///ditto
+    _m_psubw = _mm_sub_pi16,          ///ditto
+    _m_punpckhbw = _mm_unpackhi_pi8,  ///ditto
+    _m_punpckhdq = _mm_unpackhi_pi32, ///ditto
+    _m_punpckhwd = _mm_unpackhi_pi16, ///ditto
+    _m_punpcklbw = _mm_unpacklo_pi8,  ///ditto
+    _m_punpckldq = _mm_unpacklo_pi32, ///ditto
+    _m_punpcklwd = _mm_unpacklo_pi16, ///ditto
+    _m_pxor = _mm_xor_si64;           ///ditto
+                
 /// Set packed 16-bit integers with the supplied values.
 __m64 _mm_set_pi16 (short e3, short e2, short e1, short e0) pure @trusted
 {
@@ -871,8 +870,8 @@ unittest
     assert(R.array == correct);
 }
 
-deprecated alias _m_to_int = _mm_cvtsi64_si32;
-deprecated alias _m_to_int64 = _mm_cvtm64_si64;
+deprecated alias _m_to_int = _mm_cvtsi64_si32;  /// Deprecated intrinsics.
+deprecated alias _m_to_int64 = _mm_cvtm64_si64; ///ditto
 
 /// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @trusted

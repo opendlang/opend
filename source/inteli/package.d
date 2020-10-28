@@ -1,5 +1,5 @@
 /**
-* Imports all the public API. 
+* Public API.
 *
 * Copyright: Copyright Auburn Sounds 2016.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)

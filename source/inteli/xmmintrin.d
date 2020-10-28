@@ -28,37 +28,37 @@ else version(D_InlineAsm_X86_64)
 nothrow @nogc:
 
 
-enum int _MM_EXCEPT_INVALID    = 0x0001;
-enum int _MM_EXCEPT_DENORM     = 0x0002;
-enum int _MM_EXCEPT_DIV_ZERO   = 0x0004;
-enum int _MM_EXCEPT_OVERFLOW   = 0x0008;
-enum int _MM_EXCEPT_UNDERFLOW  = 0x0010;
-enum int _MM_EXCEPT_INEXACT    = 0x0020;
-enum int _MM_EXCEPT_MASK       = 0x003f;
+enum int _MM_EXCEPT_INVALID    = 0x0001; /// MXCSR Exception states.
+enum int _MM_EXCEPT_DENORM     = 0x0002; ///ditto
+enum int _MM_EXCEPT_DIV_ZERO   = 0x0004; ///ditto
+enum int _MM_EXCEPT_OVERFLOW   = 0x0008; ///ditto
+enum int _MM_EXCEPT_UNDERFLOW  = 0x0010; ///ditto
+enum int _MM_EXCEPT_INEXACT    = 0x0020; ///ditto
+enum int _MM_EXCEPT_MASK       = 0x003f; /// MXCSR Exception states mask.
 
-enum int _MM_MASK_INVALID      = 0x0080;
-enum int _MM_MASK_DENORM       = 0x0100;
-enum int _MM_MASK_DIV_ZERO     = 0x0200;
-enum int _MM_MASK_OVERFLOW     = 0x0400;
-enum int _MM_MASK_UNDERFLOW    = 0x0800;
-enum int _MM_MASK_INEXACT      = 0x1000;
-enum int _MM_MASK_MASK         = 0x1f80;
+enum int _MM_MASK_INVALID      = 0x0080; /// MXCSR Exception masks.
+enum int _MM_MASK_DENORM       = 0x0100; ///ditto
+enum int _MM_MASK_DIV_ZERO     = 0x0200; ///ditto
+enum int _MM_MASK_OVERFLOW     = 0x0400; ///ditto
+enum int _MM_MASK_UNDERFLOW    = 0x0800; ///ditto
+enum int _MM_MASK_INEXACT      = 0x1000; ///ditto
+enum int _MM_MASK_MASK         = 0x1f80; /// MXCSR Exception masks mask.
 
-enum int _MM_ROUND_NEAREST     = 0x0000;
-enum int _MM_ROUND_DOWN        = 0x2000;
-enum int _MM_ROUND_UP          = 0x4000;
-enum int _MM_ROUND_TOWARD_ZERO = 0x6000;
-enum int _MM_ROUND_MASK        = 0x6000;
+enum int _MM_ROUND_NEAREST     = 0x0000; /// MXCSR Rounding mode.
+enum int _MM_ROUND_DOWN        = 0x2000; ///ditto
+enum int _MM_ROUND_UP          = 0x4000; ///ditto
+enum int _MM_ROUND_TOWARD_ZERO = 0x6000; ///ditto
+enum int _MM_ROUND_MASK        = 0x6000; /// MXCSR Rounding mode mask.
 
-enum int _MM_FLUSH_ZERO_MASK   = 0x8000;
-enum int _MM_FLUSH_ZERO_ON     = 0x8000;
-enum int _MM_FLUSH_ZERO_OFF    = 0x0000;
+enum int _MM_FLUSH_ZERO_MASK   = 0x8000; /// MXCSR Denormal flush to zero mask.
+enum int _MM_FLUSH_ZERO_ON     = 0x8000; /// MXCSR Denormal flush to zero modes.
+enum int _MM_FLUSH_ZERO_OFF    = 0x0000; ///ditto
 
+/// Add packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
     return a + b;
 }
-
 unittest
 {
     __m128 a = [1, 2, 3, 4];
@@ -69,6 +69,9 @@ unittest
     assert(a.array[3] == 8);
 }
 
+/// Add the lower single-precision (32-bit) floating-point element 
+/// in `a` and `b`, store the result in the lower element of result, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
     static if (GDC_with_SSE)
@@ -86,18 +89,43 @@ unittest
     assert(a.array == [2.0f, 2, 3, 4]);
 }
 
+/// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_and_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a & cast(__m128i)b);
 }
 unittest
 {
-    // Note: tested in emmintrin.d
+    float a = 4.32f;
+    float b = -78.99f;
+    int correct = (*cast(int*)(&a)) & (*cast(int*)(&b));
+    __m128 A = _mm_set_ps(a, b, a, b);
+    __m128 B = _mm_set_ps(b, a, b, a);
+    int4 R = cast(int4)( _mm_and_ps(A, B) );
+    assert(R.array[0] == correct);
+    assert(R.array[1] == correct);
+    assert(R.array[2] == correct);
+    assert(R.array[3] == correct);
 }
 
+/// Compute the bitwise NOT of packed single-precision (32-bit) floating-point elements in `a` and then AND with `b`.
 __m128 _mm_andnot_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)( (~cast(__m128i)a) & cast(__m128i)b );
+}
+unittest
+{
+    float a = 4.32f;
+    float b = -78.99f;
+    int correct  = ~(*cast(int*)(&a)) &  (*cast(int*)(&b));
+    int correct2 =  (*cast(int*)(&a)) & ~(*cast(int*)(&b));
+    __m128 A = _mm_set_ps(a, b, a, b);
+    __m128 B = _mm_set_ps(b, a, b, a);
+    int4 R = cast(int4)( _mm_andnot_ps(A, B) );
+    assert(R.array[0] == correct2);
+    assert(R.array[1] == correct);
+    assert(R.array[2] == correct2);
+    assert(R.array[3] == correct);
 }
 
 /// Average packed unsigned 16-bit integers in ``a` and `b`.
@@ -112,16 +140,20 @@ __m64 _mm_avg_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_avg_epu8(to_m128i(a), to_m128i(b)));
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for equality.
 __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.oeq)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for equality, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpeq_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.oeq)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for greater-than-or-equal.
 __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.oge)(a, b);
@@ -134,106 +166,138 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for greater-than-or-equal, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.oge)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for greater-than.
 __m128 _mm_cmpgt_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ogt)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for greater-than, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpgt_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ogt)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for less-than-or-equal.
 __m128 _mm_cmple_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ole)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for less-than-or-equal, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmple_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ole)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for less-than.
 __m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.olt)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for less-than, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmplt_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.olt)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-equal.
 __m128 _mm_cmpneq_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.une)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-equal, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpneq_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.une)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than-or-equal.
 __m128 _mm_cmpnge_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ult)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than-or-equal, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnge_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ult)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than.
 __m128 _mm_cmpngt_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ule)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpngt_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ule)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than-or-equal.
 __m128 _mm_cmpnle_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ugt)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than-or-equal, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnle_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ugt)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than.
 __m128 _mm_cmpnlt_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.uge)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnlt_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.uge)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` to see if neither is NaN.
 __m128 _mm_cmpord_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.ord)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` to see if neither is NaN, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpord_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.ord)(a, b);
 }
 
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` to see if either is NaN.
 __m128 _mm_cmpunord_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.uno)(a, b);
 }
 
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` to see if either is NaN.
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpss!(FPComparison.uno)(a, b);
