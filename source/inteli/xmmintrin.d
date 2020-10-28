@@ -637,28 +637,27 @@ unittest
 }
 
 
-static if(LDC_with_SSE1)
+/// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit 
+/// integer with truncation.
+int _mm_cvtt_ss2si (__m128 a) pure @safe
 {
-    alias _mm_cvtt_ss2si = __builtin_ia32_cvttss2si;
+    // x86: cvttss2si always generated, even in -O0
+    return cast(int)(a.array[0]);
 }
-else
-{
-    int _mm_cvtt_ss2si (__m128 a) pure @safe
-    {
-        return cast(int)(a.array[0]);
-    }
-}
+alias _mm_cvttss_si32 = _mm_cvtt_ss2si; ///ditto
 unittest
 {
     assert(1 == _mm_cvtt_ss2si(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
+
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 32-bit 
+/// integers with truncation.
 __m64 _mm_cvtt_ps2pi (__m128 a) pure @safe
 {
     return to_m64(_mm_cvttps_epi32(a));
 }
 
-alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
 // Note: __builtin_ia32_cvttss2si64 crashes LDC when generating 32-bit x86 code.
 long _mm_cvttss_si64 (__m128 a) pure @safe
