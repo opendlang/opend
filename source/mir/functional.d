@@ -447,6 +447,39 @@ version(mir_core_test) unittest
 }
 
 /++
+Aliases itself to a set of functions.
+
+Transforms strings representing an expression into a binary function. The
+strings must use symbol names `a`, `b`, ..., `z`  as the parameters.
+If `functions[i]` is not a string, `naryFun` aliases itself away to `functions[i]`.
++/
+template naryFun(functions...)
+    if (functions.length > 1)
+{
+    static foreach (fun; functions)
+        alias naryFun = .naryFun!fun;
+}
+
+///
+@safe pure nothrow @nogc
+version(mir_core_test) unittest
+{
+    alias fun = naryFun!(
+        (uint a) => a,
+        (ulong a) => a * 2,
+        a => a * 3,
+    );
+
+    int a = 10;
+    long b = 10;
+    float c = 10;
+
+    assert(fun(a) == 10);
+    assert(fun(b) == 20);
+    assert(fun(c) == 30);
+}
+
+/++
 N-ary predicate that reverses the order of arguments, e.g., given
 `pred(a, b, c)`, returns `pred(c, b, a)`.
 +/
