@@ -170,7 +170,8 @@ static if (LDC_with_ARM64)
 
     package uint arm_get_fpcr() pure nothrow @nogc @trusted
     {
-        return cast(uint) __builtin_aarch64_get_fpcr();
+        // LLVM intrinsic "llvm.aarch64.get.fpcr" seems buggy and doesn't return FPCR
+        return __asm!uint("mrs $0, fpcr", "=r");
     }
 
     package void arm_set_fpcr(uint cw) nothrow @nogc @trusted

@@ -277,7 +277,6 @@ unittest
             if (x > 50) continue;
 
             double phobosValue = exp(x);
-            if (phobosValue < 1e-13) continue; // because relative error too fine to measure in float
             __m128 v = _mm_exp_ps(_mm_set1_ps(x));
             foreach(i; 0..4)
             {
