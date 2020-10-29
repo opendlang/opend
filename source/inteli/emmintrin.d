@@ -4005,6 +4005,20 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
     storeUnaligned!__m128i(a, cast(int*)mem_addr);
 }
 
+/// Store 32-bit integer from the first element of `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
+void _mm_storeu_si32 (void* mem_addr, __m128i a) pure @trusted
+{
+    int* dest = cast(int*)mem_addr;
+    *dest = a.array[0];
+}
+unittest
+{
+    int[2] arr = [-24, 12];
+    _mm_storeu_si32(&arr[1], _mm_setr_epi32(-1, -2, -6, -7));
+    assert(arr == [-24, -1]);
+}
+
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
 /// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte
 /// boundary or a general-protection exception may be generated.
