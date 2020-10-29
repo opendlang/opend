@@ -180,7 +180,7 @@ static if (LDC_with_ARM64)
         __asm!void("str x2, $1 \n" ~
                    "ldr w2, $0 \n" ~
                    "msr fpcr, x2 \n" ~
-                   "ldr x2, $1 "    , "m,m", cw, save_x2);
+                   "ldr x2, $1 "   , "m,m", cw, &save_x2);
     }
 }
 
