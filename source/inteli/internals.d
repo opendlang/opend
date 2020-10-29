@@ -244,6 +244,7 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
+        // TODO: this is a bug, it won't preserve registers when optimized
         result = __asm!int(`vldr s2, $1
                             vcvtr.s32.f32 s2, s2
                             vmov $0, s2`, "=r,m", value);
@@ -256,25 +257,14 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
             default:
-            case _MM_ROUND_NEAREST_ARM:
-                result = __asm!int(`ldr s2, $1
-                                    fcvtns $0,s2`, "=r,m", value);
-                break;
-            case _MM_ROUND_DOWN_ARM:
-                result = __asm!int(`ldr s2, $1
-                                    fcvtms $0,s2`, "=r,m", value);
-                break;
-            case _MM_ROUND_UP_ARM:
-                result = __asm!int(`ldr s2, $1
-                                    fcvtps $0,s2`, "=r,m", value);
-                break;
-            case _MM_ROUND_TOWARD_ZERO_ARM:
-                result = cast(int)value;
-                break;
+            case _MM_ROUND_NEAREST_ARM:     result = vcvtns_s32_f32(value); break;
+            case _MM_ROUND_DOWN_ARM:        result = vcvtms_s32_f32(value); break;
+            case _MM_ROUND_UP_ARM:          result = vcvtps_s32_f32(value); break;
+            case _MM_ROUND_TOWARD_ZERO_ARM: result = vcvts_s32_f32(value);  break;
         }
     }
     else
-    {        
+    {
         asm pure nothrow @nogc @trusted
         {
             cvtss2si EAX, value;
@@ -296,6 +286,7 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
+        // TODO: bug, doesn't preserve registers
         result = __asm!int(`vldr d2, $1
                             vcvtr.s32.f64 s2, d2
                             vmov $0, s2`, "=r,m", value);
@@ -308,21 +299,10 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
             default:
-            case _MM_ROUND_NEAREST_ARM:
-                result = __asm!int(`ldr d2, $1
-                                    fcvtns $0,d2`, "=r,m", value);
-                break;
-            case _MM_ROUND_DOWN_ARM:
-                result = __asm!int(`ldr d2, $1
-                                    fcvtms $0,d2`, "=r,m", value);
-                break;
-            case _MM_ROUND_UP_ARM:
-                result = __asm!int(`ldr d2, $1
-                                    fcvtps $0,d2`, "=r,m", value);
-                break;
-            case _MM_ROUND_TOWARD_ZERO_ARM:
-                result = cast(int)value;
-                break;
+            case _MM_ROUND_NEAREST_ARM:     result = vcvtns_s32_f64(value); break;
+            case _MM_ROUND_DOWN_ARM:        result = vcvtms_s32_f64(value); break;
+            case _MM_ROUND_UP_ARM:          result = vcvtps_s32_f64(value); break;
+            case _MM_ROUND_TOWARD_ZERO_ARM: result = vcvts_s32_f64(value);  break;
         }
     }
     else
@@ -364,17 +344,10 @@ long convertFloatToInt64UsingMXCSR(float value) @trusted
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
             default:
-            case _MM_ROUND_NEAREST_ARM:
-                return __asm!long(`ldr s2, $1
-                                   fcvtns $0,s2`, "=r,m", value);
-            case _MM_ROUND_DOWN_ARM:
-                return __asm!long(`ldr s2, $1
-                                   fcvtms $0,s2`, "=r,m", value);
-            case _MM_ROUND_UP_ARM:
-                return __asm!long(`ldr s2, $1
-                                   fcvtps $0,s2`, "=r,m", value);
-            case _MM_ROUND_TOWARD_ZERO_ARM:
-                return cast(long)value;
+            case _MM_ROUND_NEAREST_ARM:     return vcvtns_s64_f32(value);
+            case _MM_ROUND_DOWN_ARM:        return vcvtms_s64_f32(value);
+            case _MM_ROUND_UP_ARM:          return vcvtps_s64_f32(value);
+            case _MM_ROUND_TOWARD_ZERO_ARM: return vcvts_s64_f32(value);
         }
     }
     // 64-bit can use an SSE instruction
@@ -503,17 +476,10 @@ long convertDoubleToInt64UsingMXCSR(double value) @trusted
         switch(fpscr & _MM_ROUND_MASK_ARM)
         {
             default:
-            case _MM_ROUND_NEAREST_ARM:
-                return __asm!long(`ldr d2, $1
-                                   fcvtns $0,d2`, "=r,m", value);
-            case _MM_ROUND_DOWN_ARM:
-                return __asm!long(`ldr d2, $1
-                                   fcvtms $0,d2`, "=r,m", value);
-            case _MM_ROUND_UP_ARM:
-                return __asm!long(`ldr d2, $1
-                                   fcvtps $0,d2`, "=r,m", value);
-            case _MM_ROUND_TOWARD_ZERO_ARM:
-                return cast(long)value;
+            case _MM_ROUND_NEAREST_ARM:     return vcvtns_s64_f64(value);
+            case _MM_ROUND_DOWN_ARM:        return vcvtms_s64_f64(value);
+            case _MM_ROUND_UP_ARM:          return vcvtps_s64_f64(value);
+            case _MM_ROUND_TOWARD_ZERO_ARM: return vcvts_s64_f64(value);
         }
     }
     // 64-bit can use an SSE instruction
@@ -1183,6 +1149,54 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v4i32.v4f32")
         int4 vcvtzq_s32_f32(float4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.i32.f32")
+        int vcvtms_s32_f32(float a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.i32.f32")
+        int vcvtns_s32_f32(float a) pure @safe;    
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.i32.f32")
+        int vcvtps_s32_f32(float a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i32.f32")
+        int vcvts_s32_f32(float a) pure @safe;
+     
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.i32.f64")
+        int vcvtms_s32_f64(double a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.i32.f64")
+        int vcvtns_s32_f64(double a) pure @safe;    
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.i32.f64")
+        int vcvtps_s32_f64(double a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i32.f64")
+        int vcvts_s32_f64(double a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.i64.f32")
+        long vcvtms_s64_f32(float a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.i64.f32")
+        long vcvtns_s64_f32(float a) pure @safe;    
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.i64.f32")
+        long vcvtps_s64_f32(float a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i64.f32")
+        long vcvts_s64_f32(float a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.i64.f64")
+        long vcvtms_s64_f64(double a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.i64.f64")
+        long vcvtns_s64_f64(double a) pure @safe;    
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.i64.f64")
+        long vcvtps_s64_f64(double a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i64.f64")
+        long vcvts_s64_f64(double a) pure @safe;
 
     short4 vget_high_s16(short8 a) pure @trusted
     {
