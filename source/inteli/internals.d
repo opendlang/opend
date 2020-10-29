@@ -165,14 +165,22 @@ static if (LDC_with_ARM32)
 
 static if (LDC_with_ARM64)
 {
+    pragma(LDC_intrinsic, "llvm.aarch64.get.fpcr")
+        long __builtin_aarch64_get_fpcr() pure nothrow @nogc @safe;
+
     package uint arm_get_fpcr() pure nothrow @nogc @trusted
     {
-        return __asm!uint("mrs $0, fpcr", "=r");
+        return cast(uint) __builtin_aarch64_get_fpcr();
     }
 
     package void arm_set_fpcr(uint cw) nothrow @nogc @trusted
     {
-        __asm!void("ldr w2, $0 \n msr fpcr, x2", "m", cw);
+        // Note: there doesn't seem to be an intrinsic in LLVM to set FPCR.
+        long save_x2;
+        __asm!void("str x2, $1 \n" ~
+                   "ldr w2, $0 \n" ~
+                   "msr fpcr, x2 \n" ~
+                   "ldr x2, $1 "    , "m,m", cw, save_x2);
     }
 }
 
