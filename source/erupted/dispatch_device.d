@@ -250,6 +250,9 @@ struct DispatchDevice {
         vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkAcquireProfilingLockKHR" );
         vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkReleaseProfilingLockKHR" );
 
+        // VK_KHR_fragment_shading_rate
+        vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateKHR" );
+
         // VK_KHR_pipeline_executable_properties
         vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
         vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
@@ -619,6 +622,9 @@ struct DispatchDevice {
     // VK_KHR_performance_query
     VkResult  AcquireProfilingLockKHR( const( VkAcquireProfilingLockInfoKHR )* pInfo ) { return vkAcquireProfilingLockKHR( vkDevice, pInfo ); }
     void      ReleaseProfilingLockKHR() { vkReleaseProfilingLockKHR( vkDevice ); }
+
+    // VK_KHR_fragment_shading_rate
+    void      CmdSetFragmentShadingRateKHR( const( VkExtent2D )* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateKHR( commandBuffer, pFragmentSize, combinerOps ); }
 
     // VK_KHR_pipeline_executable_properties
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
@@ -1038,6 +1044,9 @@ struct DispatchDevice {
     // VK_KHR_performance_query
     PFN_vkAcquireProfilingLockKHR                         vkAcquireProfilingLockKHR;
     PFN_vkReleaseProfilingLockKHR                         vkReleaseProfilingLockKHR;
+
+    // VK_KHR_fragment_shading_rate
+    PFN_vkCmdSetFragmentShadingRateKHR                    vkCmdSetFragmentShadingRateKHR;
 
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR              vkGetPipelineExecutablePropertiesKHR;

@@ -264,6 +264,10 @@ extern( System ) {
     alias PFN_vkGetDisplayModeProperties2KHR                                    = VkResult  function( VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModeProperties2KHR* pProperties );
     alias PFN_vkGetDisplayPlaneCapabilities2KHR                                 = VkResult  function( VkPhysicalDevice physicalDevice, const( VkDisplayPlaneInfo2KHR )* pDisplayPlaneInfo, VkDisplayPlaneCapabilities2KHR* pCapabilities );
 
+    // VK_KHR_fragment_shading_rate
+    alias PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR                        = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates );
+    alias PFN_vkCmdSetFragmentShadingRateKHR                                    = void      function( VkCommandBuffer commandBuffer, const( VkExtent2D )* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps );
+
     // VK_KHR_pipeline_executable_properties
     alias PFN_vkGetPipelineExecutablePropertiesKHR                              = VkResult  function( VkDevice device, const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties );
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
@@ -714,6 +718,10 @@ __gshared {
     PFN_vkGetDisplayModeProperties2KHR                                    vkGetDisplayModeProperties2KHR;
     PFN_vkGetDisplayPlaneCapabilities2KHR                                 vkGetDisplayPlaneCapabilities2KHR;
 
+    // VK_KHR_fragment_shading_rate
+    PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR                        vkGetPhysicalDeviceFragmentShadingRatesKHR;
+    PFN_vkCmdSetFragmentShadingRateKHR                                    vkCmdSetFragmentShadingRateKHR;
+
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
@@ -1078,6 +1086,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
     vkGetDisplayModeProperties2KHR                                    = cast( PFN_vkGetDisplayModeProperties2KHR                                    ) vkGetInstanceProcAddr( instance, "vkGetDisplayModeProperties2KHR" );
     vkGetDisplayPlaneCapabilities2KHR                                 = cast( PFN_vkGetDisplayPlaneCapabilities2KHR                                 ) vkGetInstanceProcAddr( instance, "vkGetDisplayPlaneCapabilities2KHR" );
 
+    // VK_KHR_fragment_shading_rate
+    vkGetPhysicalDeviceFragmentShadingRatesKHR                        = cast( PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR                        ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceFragmentShadingRatesKHR" );
+
     // VK_EXT_debug_report
     vkCreateDebugReportCallbackEXT                                    = cast( PFN_vkCreateDebugReportCallbackEXT                                    ) vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
     vkDestroyDebugReportCallbackEXT                                   = cast( PFN_vkDestroyDebugReportCallbackEXT                                   ) vkGetInstanceProcAddr( instance, "vkDestroyDebugReportCallbackEXT" );
@@ -1313,6 +1324,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_performance_query
     vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetInstanceProcAddr( instance, "vkAcquireProfilingLockKHR" );
     vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetInstanceProcAddr( instance, "vkReleaseProfilingLockKHR" );
+
+    // VK_KHR_fragment_shading_rate
+    vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetInstanceProcAddr( instance, "vkCmdSetFragmentShadingRateKHR" );
 
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutablePropertiesKHR" );
@@ -1678,6 +1692,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_performance_query
     vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkAcquireProfilingLockKHR" );
     vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkReleaseProfilingLockKHR" );
+
+    // VK_KHR_fragment_shading_rate
+    vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateKHR" );
 
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
