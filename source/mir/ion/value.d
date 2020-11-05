@@ -1445,8 +1445,8 @@ struct IonList
 {
     ///
     const(ubyte)[] data;
-    private alias DG = scope int delegate(IonErrorCode error, IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = scope int delegate(IonDescribedValue value) @safe pure @nogc;
+    private alias DG = int delegate(IonErrorCode error, IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(IonDescribedValue value) @safe pure @nogc;
 
     /++
     Returns: true if the sexp is `null.sexp`.
