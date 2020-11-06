@@ -20,14 +20,21 @@ private import ikod.containers.internal;
 ///
 struct UnrolledList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 {
+    invariant(_nodes_counter>=0 && _count>=0);
 private:
     alias allocator = Allocator.instance;
     alias StoredT = StoredType!T;
     enum  ItemsPerNode = 32; // can be variable maybe
-
+    enum  MaxRanges = 16;
+    enum  NewItemPosition = ItemsPerNode/2;
     //
-    int     _count;
-    Node*   _first_node, _last_node;
+    int                      _count;
+    int                      _nodes_counter;
+    Node*                    _first_node, _last_node;
+    short                    _constRanges_counter;
+    short                    _mutRanges_counter;
+    Impl!"mut"*[MaxRanges]   _mutRanges;
+    Impl!"const"*[MaxRanges] _constRanges;
 
     struct Node
     {
@@ -86,18 +93,31 @@ private:
         pragma(inline, true):
         void clear_bit(size_t n) pure @safe @nogc nothrow
         {
+            if ( n >= ItemsPerNode )
+            {
+                debug throw new Exception("X");
+            }
             assert(n < ItemsPerNode);
             _bitmap &= uint.max ^ (1 << n);
         }
-
         pragma(inline, true):
-        bool test_bit(size_t n) pure @safe @nogc
+        int _hi_mask(int pos)
         {
-            debug assert(n < ItemsPerNode, "%d must be < %d".format(n, ItemsPerNode));
-            return (_bitmap & (1 << n)) != 0;
+            return _bitmap >> pos;
+        }
+        pragma(inline, true):
+        int _lo_mask(int pos)
+        {
+            return bitswap((((1<<pos) - 1) & _bitmap) << (int.sizeof*8-pos));
+        }
+        pragma(inline, true):
+        bool test_bit(size_t n) pure @safe @nogc nothrow
+        in(n<ItemsPerNode)
+        {
+            return cast(bool)(_bitmap & (1 << n));
         }
 
-        int translate_pos(size_t n) pure @safe @nogc
+        int translate_pos(int n) pure @safe @nogc nothrow
         in( n < ItemsPerNode )
         out(result; result == -1 || result < ItemsPerNode)
         {
@@ -122,8 +142,21 @@ private:
             assert(0);
         }
     }
+
+    Node* _free_list;
+    int   _free_list_count;
+
     Node* makeNode()
     {
+        if ( _free_list_count > 0 )
+        {
+            Node* n = _free_list;
+            _free_list_count--;
+            _free_list = n._next_node;
+            n._prev_node = n._next_node = null;
+            n._count = n._bitmap = 0;
+            return n;
+        }
         Node* node = make!Node(allocator);
         static if ( UseGCRanges!(Allocator, T, GCRangesAllowed) ) {
             () @trusted {
@@ -134,6 +167,13 @@ private:
     }
     void deallocNode(Node *p)
     {
+        if (_free_list_count < 100)
+        {
+            _free_list_count++;
+            p._next_node = _free_list;
+            _free_list = p;
+            return;
+        }
         () @trusted {
             static if ( UseGCRanges!(Allocator,T, GCRangesAllowed) ) {
                 GC.removeRange(&p._items[0]);
@@ -141,9 +181,11 @@ private:
             dispose(allocator, p);
         }();
     }
-    enum IteratorMsgType
+    enum Sig
     {
         CLEAR = 0,
+        REMOVE,
+        INSERT
     }
     /++
     +/
@@ -189,6 +231,11 @@ private:
         {
             _impl.popFront();
         }
+        // save
+        auto save()
+        {
+            return this;
+        }
         /// reset iterator
         void reset()
         {
@@ -208,27 +255,170 @@ private:
         }
         static if (is(I == Impl!"mut"))
         {
-            void removeNext()
+            void set(T v)
             {
-
+                auto list = _impl._list;
+                assert(list._constRanges_counter == 0);
+                auto node = _impl._currentNode;
+                auto pos = _impl._currentNodeItemPosition;
+                assert(node.test_bit(pos));
+                node._items[pos] = v;
             }
+            ///
+            /// remove current front Item from list
+            /// +--------------+-----------------------+-----------------+
+            /// | this         | other                 | list            |
+            /// | Iter         | Iter                  |                 |
+            /// +--------------+-----------------------+-----------------+
+            /// | remove list  | if points to removed: | free item;      |
+            /// | item;        |   mark invalid        | adjust counters |
+            /// | do popFront; | else:                 |                 |
+            /// |              |   adjust everything   |                 |
+            /// +--------------+-----------------------+-----------------+
+            ///
             void remove()
             {
-
+                auto list = _impl._list;
+                assert(list._constRanges_counter == 0);
+                auto node = _impl._currentNode;
+                auto pos = _impl._currentNodeItemPosition;
+                //debug infof("before remove item: %d, node= %s, pos=%s", _impl._item, _impl._currentNode, _impl._currentNodeItemPosition);
+                assert(node.test_bit(pos));
+                if ( list._mutRanges_counter > 0) foreach(mr; list._mutRanges)
+                {
+                    if (mr !is null && mr != this._impl)
+                    {
+                        // debug infof("callback %x", mr);
+                        mr.signal(Sig.REMOVE, _impl._item, node, _impl._currentNodeItem);
+                    }
+                }
+                list._count--;
+                node._count--;
+                //_impl._item--;
+                _impl._end--;
+                _impl._currentNodeItemsTotal--;
+                node.clear_bit(pos);
+                node._items[pos] = T.init;
+                // debug infof("after remove item: %d", _impl._item);
+                if ( _impl._item == _impl._end)
+                {
+                    // debug info("become empty");
+                    _impl._empty = true;
+                    return;
+                }
+                if ( _impl._currentNodeItem == node._count )
+                {
+                    // debug info("jump next node");
+                    node = node._next_node;
+                    while (node && node._count == 0 )
+                    {
+                        // debug info("jump next node");
+                        auto next_node = node._next_node;
+                        if ( list._constRanges_counter == 0 && list._mutRanges_counter == 1)
+                        {
+                            // safe to remove empty node
+                            if ( _impl._currentNode )
+                            {
+                                _impl._currentNodeItemsTotal = _impl._currentNode._count;
+                            }
+                            if ( node == list._first_node )
+                            {
+                                list._first_node = node._next_node;
+                            }
+                            if ( node == list._last_node )
+                            {
+                                list._last_node = node._prev_node;
+                            }
+                            if ( node._prev_node )
+                            {
+                                node._prev_node._next_node = node._next_node;
+                            }
+                            if ( node._next_node )
+                            {
+                                node._next_node._prev_node = node._prev_node;
+                            }
+                            list._nodes_counter--;
+                            list.deallocNode(node);
+                        }
+                        node = next_node;
+                    }
+                    _impl._currentNodeItem = 0;
+                    _impl._currentNode = node;
+                    _impl._currentNodeItemsTotal = node._count;
+                }
+                _impl._currentNodeItemPosition = node.translate_pos(_impl._currentNodeItem);
+                // debug infof("after remove item: %d, node= %s, pos=%s", _impl._item, _impl._currentNode, _impl._currentNodeItemPosition);
             }
-            void removePrev()
+            void insert(T v)
             {
+                auto list = _impl._list;
+                Node* node = _impl._currentNode;
+                int pos = _impl._currentNodeItemPosition;
+                if ( list._mutRanges_counter > 0) foreach(mr; list._mutRanges)
+                {
+                    if (mr !is null && mr != this._impl)
+                    {
+                        // debug infof("callback %x", mr);
+                        mr.signal(Sig.INSERT, _impl._item, node, _impl._currentNodeItem);
+                    }
+                }
+                if ( _impl._empty )
+                {
+                    // debug info("insert to empty range");
+                    // debug infof("it_item: %s, it_end: %s, it_nodeItem: %s", _impl._item, _impl._end, _impl._currentNodeItem);
+                    // debug infof("list_end: %s", _impl._list._count);
+                    list._doRealPushBack(v);
+                    _impl._end++;
+                    _impl._item++;
+                    return;
+                }
+                _impl._end++;
+                _impl._item++;
+                assert(_impl._currentNodeItemPosition>=0);
+                int lo_mask = node._lo_mask(pos);
+                int hi_mask = node._hi_mask(pos);
+                int lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
+                                pos == 0 ? uint.max : 0;
+                int hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
+                auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
+                auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
+                auto nodeItem = _impl._currentNodeItem;
+                // debug infof("nodeItemPos: %s", pos);
+                // debug infof("nodeItem: %s", nodeItem);
+                // debug infof("bitmap %32.32b", node._bitmap);
+                // debug infof("lomask %32.32b", lo_mask);
+                // debug infof("himask %32.32b", hi_mask);
+                // debug infof("lo_shift: %d, hi shift: %d", lo_shift, hi_shift);
+                // debug infof("lo_over:  %s, hi overfl: %s", lo_overflow, hi_overflow);
 
-            }
-            void insertBefore()
-            {
+                _impl._list._doRealInsert(node, nodeItem, v);
 
+                if (!lo_overflow && !hi_overflow && lo_shift != -1)
+                {
+                    _impl._currentNodeItem++;
+                    _impl._currentNodeItemsTotal++;
+                    if ( lo_shift >= hi_shift)
+                    {
+                        _impl._currentNodeItemPosition++;
+                    }
+                }
+                if ( hi_overflow )
+                {
+                    _impl._currentNodeItem++;
+                    _impl._currentNodeItemPosition++;
+                }
+                if (_impl._currentNodeItem >= _impl._currentNodeItemsTotal)
+                {
+                    _impl._currentNodeItem = 0;
+                    _impl._currentNode = _impl._currentNode._next_node;
+                    if ( _impl._currentNode )
+                    {
+                        _impl._currentNodeItemPosition = _impl._currentNode.translate_pos(0);
+                        _impl._currentNodeItemsTotal = _impl._currentNode._count;
+                    }
+                }
+                // debug infof("nodeItem: %s", _impl._currentNodeItem);
             }
-            void insertAfter()
-            {
-
-            }
-            alias insertAt = insertBefore;
         }
     }
 
@@ -246,7 +436,7 @@ private:
             int         _currentNodeItem;
             int         _currentNodeItemPosition; // in bitmap
             int         _currentNodeItemsTotal;
-            size_t      _item;
+            int         _item;
             size_t      _end;
 
             static if (kind == "mut")
@@ -258,6 +448,171 @@ private:
                 private auto refptr(int i)
                 {
                     return &_list._mutRanges[i];
+                }
+                // Params: sig - signal type
+                //         i - index of the item inside node
+                //         n - node
+                void signal(Sig sig, int item, Node* n, int nodeItem) nothrow
+                {
+                    final switch(sig)
+                    {
+                        case Sig.CLEAR:
+                            _item = 0;
+                            _end = 0;
+                            _empty = true;
+                            _currentNode = null;
+                            _currentNodeItem = 0;
+                            return;
+                        case Sig.REMOVE:
+                            if ( _empty )
+                            {
+                                // nothing to do
+                                return;
+                            }
+                            // debug infof("signal remove: old item# %s, i'm at %s, end: %s", item, _item, _end);
+                            if ( item <= _item )
+                            {
+                                //    ,-remove
+                                // ___X___b....e___
+                                _item--;
+                                _end--;
+                                if ( n != _currentNode )
+                                {
+                                    return;
+                                }
+                                _currentNodeItem--;
+                                _currentNodeItemsTotal--;
+                                if (_currentNodeItemsTotal == 0)
+                                {
+                                    // goto next node
+                                    while(n && n._next_node && n._next_node._count == 0)
+                                    {
+                                        n = n._next_node;
+                                    }
+                                    n = n._next_node;
+                                    _currentNode = n;
+                                    _currentNodeItem = -1;
+                                    //_currentNodeItemPosition = cast(ubyte)bsf(n._bitmap);
+                                    if ( n ) _currentNodeItemsTotal = cast(short)n._count;
+                                }
+                                return;
+                            }
+                            if ( _item <= item && item < _end )
+                            {
+                                //    ,-remove
+                                // _b.X....e___
+                                _end--;
+                                if ( n != _currentNode )
+                                {
+                                    return;
+                                }
+                                _currentNodeItemsTotal--;
+                                return;
+                            }
+                            //           ,-remove
+                            // _b.....e__X__
+                            // nothing to do
+                            break;
+                        case Sig.INSERT:
+                            // debug infof("signal insert: old item# %s, i'm at %s, end: %s", item, _item, _end);
+                            if ( item >= _end)
+                            {
+                                // debug info("insert after end");
+                                return;
+                            }
+                            if ( item <= _item )
+                            {
+                                _item++;
+                                if (n == _currentNode)
+                                {
+                                    _currentNodeItem++;
+                                }
+                            }
+                            if (n !is null && n == _currentNode)
+                            {
+                                auto pos   = n.translate_pos(nodeItem);
+
+                                int lo_mask = n._lo_mask(pos);
+                                int hi_mask = n._hi_mask(pos);
+
+                                int lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
+                                                pos == 0 ? uint.max : 0;
+                                int hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
+                                auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
+                                auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
+                                // debug infof("lomask %32.32b", lo_mask);
+                                // debug infof("himask %32.32b", hi_mask);
+                                // debug infof("lo_shift: %d, hi shift: %d", lo_shift, hi_shift);
+                                // debug infof("lo_over:  %s, hi overfl: %s", lo_overflow, hi_overflow);
+
+
+                                if ( lo_overflow && _currentNodeItemPosition == 0) 
+                                {
+                                    // debug info("going to move left");
+                                    // this item becomes highest item in the prev node
+                                    Node* prev_node = n._prev_node;
+                                    int prev_pos = prev_node.translate_pos(prev_node._count-1)+1;
+                                    // debug infof("my new position: %d", prev_pos);
+                                    _currentNode = prev_node;
+                                    _currentNodeItem = _currentNode._count;
+                                    _currentNodeItemsTotal = _currentNode._count+1;
+                                    _currentNodeItemPosition = prev_pos;
+                                }
+                                else
+                                {
+                                    int p = n.translate_pos(nodeItem);
+                                    if ( (_currentNodeItemPosition < p) && (lo_shift < hi_shift))
+                                    {
+                                        // we might be affectd by the left shift
+                                        // debug infof("my pos = %s, his pos = %s", _currentNodeItemPosition, p);
+                                        if ( p - _currentNodeItemPosition < lo_shift )
+                                        {
+                                            // we shifted left
+                                            _currentNodeItemPosition--;
+                                            assert(_currentNodeItemPosition>=0);
+                                        }
+                                    }
+                                    if (!hi_overflow)
+                                    {
+                                        _currentNodeItemsTotal = _currentNode._count+1;
+                                    }
+                                }
+                                _end++;
+                                // debug infof("_item: %d, _nodeItem: %d, _currentNodeItemsTotal: %s", _item, _currentNodeItem, _currentNodeItemsTotal);
+                                return;
+                            }
+                            if ( n !is null && n == _currentNode._next_node )
+                            {
+                                n = _currentNode._next_node;
+                                auto pos   = n.translate_pos(nodeItem);
+
+                                int lo_mask = n._lo_mask(pos);
+                                int hi_mask = n._hi_mask(pos);
+
+                                int lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
+                                                pos == 0 ? uint.max : 0;
+                                int hi_shift = hi_mask == 0 ? -1 : bsf(hi_mask ^ uint.max);
+                                auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
+                                auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
+
+                                // debug infof("lomask2 %32.32b", lo_mask);
+                                // debug infof("himask2 %32.32b", hi_mask);
+                                // debug infof("lo_shift2: %d, hi shift2: %d", lo_shift, hi_shift);
+                                // debug infof("lo_over2:  %s, hi overfl2: %s", lo_overflow, hi_overflow);
+
+                                if ( (lo_overflow || lo_shift==-1) && _currentNode.count_free_high_bits()>0)
+                                {
+                                    // debug infof("will overflow to me, new _currentNodeItemsTotal: %s", _currentNodeItemsTotal+1);
+                                    // overflow to my node from
+                                    _currentNodeItemsTotal++;
+                                }
+                                _end++;
+                                return;
+                            }
+                            _end++;
+                            // debug infof("signal insert: new item# %d, new end: %d", item, _end);
+                            break;
+                    }
                 }
             }
             else
@@ -272,7 +627,7 @@ private:
                 }
             }
         public:
-            this(T** p, ListType* list = null, size_t item = 0, int end = 0, NodeType* node = null, int nodeItem = 0) @nogc
+            this(T** p, ListType* list = null, int item = 0, int end = 0, NodeType* node = null, int nodeItem = 0) @nogc
             {
                 _ptr = p;
                 if (p)
@@ -379,27 +734,44 @@ private:
                 assert(_list && _currentNode);
                 auto n = _currentNode;
                 auto p = _currentNodeItemPosition;
-                assert(n.test_bit(p));
+                assert(_item >= 0);
+                assert(n.test_bit(p), "You tried to access empty item.");
                 return n._items[p];
             }
             void popFront()
             {
-                if ( !_list || !_ptr )
-                {
-                    return;
-                }
-                if ( _item >= _end-1 )
+                // if ( !_list || !_ptr )
+                // {
+                //     return;
+                // }
+                // debug infof("popping from item %s, nodeItem: %s", _item, _currentNodeItem);
+                _item++;
+                if ( _item >= _end )
                 {
                     _empty = true;
-                    reset();
+                    static if (kind == "const")
+                    {
+                        reset();
+                    }
                     return;
                 }
                 auto n = _currentNode;
+                if ( !n )
+                {
+                    debug throw new Exception("y");
+                }
                 assert(n);
                 _currentNodeItem++;
+                // debug infof("_item=%s, _end=%s, _currentnodeItem now =%s, _currentNodeItems = %s", _item, _end, _currentNodeItem, _currentNodeItemsTotal);
                 if (  _currentNodeItem == _currentNodeItemsTotal )
                 {
+                    // debug infof("jump next node");
                     // goto next node
+                    while(n && n._next_node && n._next_node._count == 0)
+                    {
+                        //debug infof("skip empty node");
+                        n = n._next_node;
+                    }
                     n = n._next_node;
                     _currentNode = n;
                     _currentNodeItem = 0;
@@ -416,10 +788,13 @@ private:
                     {
                         // find next non-zero bit in bitmask
                         auto m = 0xffff_ffff ^ ((1<<(_currentNodeItemPosition+1)) - 1);
+                        // debug infof("m: %32.32b", bitswap(m));
+                        // debug infof("b: %32.32b", bitswap(n._bitmap));
+                        // debug infof("r: %32.32b", bitswap(n._bitmap&m));
                         _currentNodeItemPosition = cast(ubyte)bsf(n._bitmap & m);
+                        // debug infof("nodeItem: %s, cp: %d, itemsTotal: %s", _currentNodeItem, _currentNodeItemPosition, _currentNodeItemsTotal);
                     }
                 }
-                _item++;
             }
             bool empty()
             {
@@ -428,11 +803,6 @@ private:
         }
     }
 
-    enum MaxRanges = 32;
-    Impl!"mut"*[MaxRanges]   _mutRanges;
-    Impl!"const"*[MaxRanges] _constRanges;
-    short                       _constRanges_counter;
-    short                       _mutRanges_counter;
 
 public:
     auto makeRange(string R)(int start=0, int end=int.max) @safe
@@ -455,13 +825,6 @@ public:
         }
         //
 
-        if ( _count == 0)
-        {
-            // empty list
-            auto result = Iterator!T(null, null);
-            result._impl._empty = true;
-            return result;
-        }
 
         T** slot;
         assert(_rCounter < MaxRanges-1);
@@ -481,6 +844,12 @@ public:
         _rCounter++;
 
         auto result = Iterator!T(slot, &this);
+        if ( _count == 0)
+        {
+            // empty list
+            result._impl._empty = true;
+            return result;
+        }
 
         if ( start < 0 )
         {
@@ -567,6 +936,9 @@ public:
         _mutRanges_counter = 0;
         _mutRanges = _mutRanges.init;
 
+        _free_list = null;
+        _free_list_count = 0;
+
         while(n)
         {
             auto nn = n._next_node;
@@ -583,13 +955,22 @@ public:
 
     ~this()
     {
-        foreach(ur; _constRanges)
+        foreach(r; _constRanges)
         {
-            if ( ur !is null )
+            if ( r !is null )
             {
-                ur._empty = true;
-                ur._list = null;
-                ur._ptr = null;
+                r._empty = true;
+                r._list = null;
+                r._ptr = null;
+            }
+        }
+        foreach(r; _mutRanges)
+        {
+            if ( r !is null )
+            {
+                r._empty = true;
+                r._list = null;
+                r._ptr = null;
             }
         }
         auto n = _first_node;
@@ -598,13 +979,30 @@ public:
             auto nn = n._next_node;
             deallocNode(n);
             n = nn;
+            _nodes_counter--;
+        }
+
+        while(_free_list_count)
+        {
+            Node* p = _free_list;
+            _free_list = p._next_node;
+            _free_list_count--;
+            () @trusted {
+                static if ( UseGCRanges!(Allocator,T, GCRangesAllowed) ) {
+                    GC.removeRange(&p._items[0]);
+                }
+                dispose(allocator, p);
+            }();
         }
     }
 
     auto dump()
     {
         string[] s;
-        s ~= "<<<length: %d".format(_count);
+        s ~= "<<<";
+        s ~= "length: %d".format(_count);
+        s ~= "nodes: %d".format(_nodes_counter);
+        s ~= "density: %f".format(_nodes_counter>0?1e0*_count/_nodes_counter/ItemsPerNode:0e0);
         s ~= "first_node: %x".format(_first_node);
         s ~= "last_node: %x".format(_last_node);
         auto n = _first_node;
@@ -625,11 +1023,14 @@ public:
     void clear()
     {
         assert(_constRanges_counter == 0, "You can't call mutating methods while constRange active. Use stableRange");
+        if (_mutRanges_counter)
+            sendnotify(Sig.CLEAR, 0, null, 0);
         auto n = _first_node;
         while(n)
         {
             auto nn = n._next_node;
             deallocNode(n);
+            _nodes_counter--;
             n = nn;
         }
         _count = 0;
@@ -665,7 +1066,7 @@ public:
                 n = n._next_node;
             }
         }
-        return Tuple!(Node*, "node", size_t, "index")(n, i);
+        return Tuple!(Node*, "node", int, "index")(n, cast(int)i);
     }
     /++
         Get item at some position.
@@ -758,8 +1159,13 @@ public:
     auto front()
     {
         assert(_count > 0, "Attempting to fetch the front of an empty list");
-        auto p = bsf(_first_node._bitmap);
-        return _first_node._items[p];
+        auto n = _first_node;
+        while(n && n._count == 0)
+        {
+            n = n._next_node;
+        }
+        auto p = bsf(n._bitmap);
+        return n._items[p];
     }
     /++
     + Get last item. O(1)
@@ -770,8 +1176,33 @@ public:
     auto back()
     {
         assert(_count > 0, "Attempting to fetch the front of an empty list");
-        auto p = bsr(_last_node._bitmap);
-        return _last_node._items[p];
+        auto n = _last_node;
+        while(n && n._count == 0)
+        {
+            n = n._prev_node;
+        }
+        auto p = bsr(n._bitmap);
+        return n._items[p];
+    }
+    ///
+    /// send notifications to mutrange's
+    /// Params: 
+    ///  s=    - Sig type
+    ///  item= - number of the item in the list, where we place new item(this would be its number).
+    ///  n=    - current node (where we hope to place new item)
+    ///  nodeItem= - number of the new item for this node
+    //
+    private void sendnotify(Sig s, int item, Node* n, int nodeItem) pure @nogc @safe nothrow
+    {
+        auto mcs = _mutRanges_counter;
+        for(int mr; mcs>0 && mr < MaxRanges; mr++)
+        {
+            if (_mutRanges[mr] !is null)
+            {
+                _mutRanges[mr].signal(s, item, n, nodeItem);
+                mcs--;
+            }
+        }
     }
     /++
     + Append item to the list. O(1)
@@ -781,31 +1212,11 @@ public:
     void pushBack(V)(V v)
     {
         assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
-        _count++;
-        int pos;
-        if ( _last_node && !_last_node.test_bit(ItemsPerNode-1))
+        if (_mutRanges_counter>0)
         {
-            pos = bsr(_last_node._bitmap) + 1;
+            sendnotify(Sig.INSERT, _count, _last_node, _last_node?_last_node._count:-1);
         }
-        else
-        {
-            Node* n = makeNode();
-            if ( !_last_node )
-            {
-                assert(!_first_node);
-                _first_node = _last_node = n;
-            }
-            else
-            {
-                n._prev_node = _last_node;
-                _last_node._next_node = n;
-                _last_node = n;
-            }
-        }
-        _last_node._count++;
-        // take most significant free bit
-        _last_node.mark_bit(pos);
-        _last_node._items[pos] = v;
+        _doRealPushBack(v);
     }
     /++
     + Prepend list with item v. O(1)
@@ -815,32 +1226,9 @@ public:
     void pushFront(V)(V v)
     {
         assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
-        _count++;
-        int pos;
-        if ( _first_node && !_first_node.test_bit(0))
-        {
-            pos = bsf(_first_node._bitmap)-1;
-        }
-        else
-        {
-            Node* n = makeNode();
-            if ( !_first_node )
-            {
-                assert(!_last_node);
-                _first_node = _last_node = n;
-            }
-            else
-            {
-                n._next_node = _first_node;
-                _first_node._prev_node = n;
-                _first_node = n;
-            }
-            pos = ItemsPerNode - 1; // allow easy handle next pushFront
-        }
-        _first_node._count++;
-        // take most significant free bit
-        _first_node.mark_bit(pos);
-        _first_node._items[pos] = v;
+        if (_mutRanges_counter)
+            sendnotify(Sig.INSERT, 0, _first_node, 0);
+        _doRealInsert(_first_node, 0, v);
     }
     /++
     + Pop first item from the list. O(1)
@@ -856,12 +1244,19 @@ public:
         {
             return;
         }
-        _count--;
         assert(_first_node);
-        auto pos = bsf(_first_node._bitmap);
-        _first_node._count--;
-        _first_node.clear_bit(pos);
-        _first_node._items[pos] = T.init;
+        auto node = _first_node;
+        while(node._count == 0)
+        {
+            node = node._next_node;
+        }
+        if (_mutRanges_counter>0)
+            sendnotify(Sig.REMOVE, 0, node, 0);
+        _count--;
+        auto pos = bsf(node._bitmap);
+        node._count--;
+        node.clear_bit(pos);
+        node._items[pos] = T.init;
         if (_first_node._count == 0)
         {
             // release this page
@@ -876,6 +1271,7 @@ public:
                 _first_node._prev_node = null;
             }
             deallocNode(n);
+            _nodes_counter--;
         }
     }
     /++
@@ -892,13 +1288,20 @@ public:
         {
             return;
         }
+        if (_mutRanges_counter>0)
+            sendnotify(Sig.REMOVE, _count - 1, _last_node, _last_node._count - 1);
         _count--;
-        assert(_last_node);
-        auto pos = bsr(_last_node._bitmap);
-        _last_node._count--;
-        _last_node.clear_bit(pos);
-        _last_node._items[pos] = T.init;
-        if (_last_node._count == 0)
+        auto node = _last_node;
+        while(node && node._count == 0)
+        {
+            node = node._prev_node;
+        }
+        auto pos = bsr(node._bitmap);
+        node._count--;
+        assert(node._count>=0 && node._count < ItemsPerNode);
+        node.clear_bit(pos);
+        node._items[pos] = T.init;
+        if (_last_node._count == 0 && _mutRanges_counter == 0)
         {
             // release this node
             auto n = _last_node;
@@ -913,6 +1316,7 @@ public:
                 _last_node._next_node = null;
             }
             deallocNode(n);
+            _nodes_counter--;
         }
     }
     /++
@@ -922,7 +1326,7 @@ public:
     + Returns: True if item were removed.
     + Throws: AssertError if any const range is registered.
     +/
-    bool remove(size_t i)
+    bool remove(int i)
     {
         assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
         if ( i >= _count )
@@ -943,55 +1347,85 @@ public:
         auto index = ni.index;
         auto node  = ni.node;
         auto pos   = node.translate_pos(index);
-        _count--;
+        int mcs = _mutRanges_counter;
+        for(int mr; mcs>0 && mr < MaxRanges; mr++)
+        {
+            if (_mutRanges[mr] !is null)
+            {
+                _mutRanges[mr].signal(Sig.REMOVE, i, node, index);
+                mcs--;
+            }
+        }
+    _count--;
         node._count--;
         node.clear_bit(pos);
         node._items[pos] = T.init;
         return true;
     }
-    /++
-    + Insert item at position i. O(N)
-    +
-    + Params:
-    + v = value to insert
-    + i = position for this value
-    +
-    + Returns: True if item were inserted (false if index is > list.length+1)
-    + Throws: AssertError if any const range is registered.
-    +/
-    bool insert(V)(size_t i, V v)
+    pragma(inline, true):
+    private void _doRealPushBack(V)(V v)
     {
-        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
-        debug(ikodcontainers) tracef("insert %s at %s", v, i);
-        if ( i > _count )
+        int pos;
+        Node* node = _last_node;
+        while( node && node._count == 0 && node._prev_node )
         {
-            return false;
+            node = node._prev_node;
         }
-        if ( i == 0 )
-        {
-            pushFront(v);
-            return true;
-        }
-        if ( i == _count )
-        {
-            pushBack(v);
-            return true;
-        }
-        auto ni = _node_and_index(i);
-        auto index = ni.index;
-        auto node  = ni.node;
-        auto pos   = node.translate_pos(index);
 
-        int lo_mask = bitswap((((1<<pos) - 1) & node._bitmap) << (int.sizeof*8-pos));
-        int hi_mask = (node._bitmap >> pos);
+        if ( node && !node.test_bit(ItemsPerNode-1))
+        {
+            pos = node._bitmap ? bsr(node._bitmap) + 1 : 0;
+        }
+        else
+        {
+            node = makeNode();
+            if ( !_last_node )
+            {
+                assert(!_first_node);
+                _first_node = _last_node = node;
+            }
+            else
+            {
+                node._prev_node = _last_node;
+                _last_node._next_node = node;
+                _last_node = node;
+            }
+            _nodes_counter++;
+            pos = 0;
+        }
+        node._count++;
+        // take most significant free bit
+        node.mark_bit(pos);
+        node._items[pos] = v;
+        _count++;
+    }
+    private bool _doRealInsert(V)(Node* node, int index, V v)
+    {
+        int pos;
+        if (node is null)
+        {
+            assert(_first_node is null && _last_node is null, "head and tail must be null");
+            node = makeNode();
+            pos = NewItemPosition;
+            _first_node = _last_node = node;
+            _nodes_counter++;
+        }
+        else
+        {
+            pos   = node.translate_pos(index);
+        }
 
-        uint lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
-                        pos == 0 ? uint.max : 0;
-        uint hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
+        int lo_mask = node._lo_mask(pos);
+        int hi_mask = node._hi_mask(pos);
+
+        int lo_shift = lo_mask != 0 ? bsf(lo_mask ^ uint.max) :
+                        pos == 0 ? -1 : 0;
+        int hi_shift = hi_mask == 0 ? uint.max : bsf(hi_mask ^ uint.max);
         auto lo_overflow = lo_shift < hi_shift  && lo_shift >= pos;
         auto hi_overflow = hi_shift <= lo_shift && pos + hi_shift >= ItemsPerNode;
 
-        // debug infof("pos: %s", pos);
+        // debug infof("itemPos: %s", pos);
+        // debug infof("index: %s", index);
         // debug infof("bitmap %32.32b", node._bitmap);
         // debug infof("lomask %32.32b", lo_mask);
         // debug infof("himask %32.32b", hi_mask);
@@ -1001,25 +1435,39 @@ public:
         {
             debug(ikodcontainers) tracef("low overflow");
             if ( node._prev_node
-                && node._prev_node.count_free_high_bits() > 0 
-                && node._prev_node.count_free_high_bits() >= lo_shift )
+                && node._prev_node.count_free_high_bits() > 0 )
             {
-                debug(ikodcontainers) tracef("low overflow to existent node with %s free high bits", node._prev_node.count_free_high_bits());
+                Node* n = node._prev_node;
+                debug(ikodcontainers) tracef("low overflow to existent node with %s free high bits", n.count_free_high_bits());
+                // find free bit _0000100000^ _111v1111^
+                int fp = n._bitmap ? bsf(bitswap(n._bitmap)) : NewItemPosition;
+                debug(ikodcontainers) tracef("overflow to %s", ItemsPerNode - fp);
+                int p = ItemsPerNode - fp;
+                n._count++;
+                n.mark_bit(p);
+                n._items[p] = node._items[0];
+                // now do shift left for lo_shift-1
+                for(int i=0;i < lo_shift - 1; i++)
+                {
+                    node._items[i] = node._items[i+1];
+                }
+                node._items[index-1] = v;
+                _count++;
+                return true;
             }
             else
             {
                 debug(ikodcontainers) tracef("low overflow to new node");
                 auto new_node = makeNode();
-                auto new_p = (ItemsPerNode - lo_shift) / 2;
-                auto old_p = pos - lo_shift;
-                for(auto s=0; s<lo_shift; s++)
+                auto new_p = NewItemPosition;
+                new_node.mark_bit(new_p);
+                new_node._items[new_p] = node._items[0];
+                new_node._count = 1;
+                for(int i=0;i < lo_shift - 1; i++)
                 {
-                    new_node._items[new_p+s] = node._items[old_p+s];
-                    new_node.mark_bit(new_p+s);
-                    new_node._count++;
-                    node.clear_bit(old_p+s);
-                    node._count--;
+                    node._items[i] = node._items[i+1];
                 }
+                node._items[index-1] = v;
                 if ( _first_node == node )
                 {
                     _first_node = new_node;
@@ -1031,41 +1479,27 @@ public:
                 }
                 new_node._next_node = node;
                 node._prev_node = new_node;
-                if ( pos > 0 )
-                {
-                    node._count++;
-                    node._items[pos-1] = v;
-                    node.mark_bit(pos-1);
-                }
-                else
-                {
-                    new_node._count++;
-                    new_node._items[new_p + lo_shift] = v;
-                    new_node.mark_bit(new_p + lo_shift);
-                }
                 _count++;
+                _nodes_counter++;
                 return true;
             }
         }
         if ( hi_overflow )
         {
             debug(ikodcontainers) tracef("high overflow");
-            if (node._next_node && node._next_node.count_free_low_bits() >= hi_shift)
+            if (node._next_node && node._next_node.count_free_low_bits() > 0)
             {
                 debug(ikodcontainers) tracef("high overflow to next existent node");
                 auto next_node = node._next_node;
-                auto next_node_pos = bsf(next_node._bitmap)-hi_shift;
-                for(auto s=0;s<hi_shift;s++)
+                auto next_node_pos = next_node._bitmap ? bsf(next_node._bitmap)-1 : NewItemPosition;
+                next_node.mark_bit(next_node_pos);
+                next_node._count++;
+                next_node._items[next_node_pos] = node._items[ItemsPerNode-1];
+                for(auto s=hi_shift; s>0; s--)
                 {
-                    next_node._items[next_node_pos + s] = node._items[pos+s];
-                    next_node.mark_bit(next_node_pos + s);
-                    next_node._count++;
-                    node.clear_bit(pos+s);
-                    node._count--;
+                    node._items[pos+s-1] = node._items[pos+s-2];
                 }
-                node._count++;
                 node._items[pos] = v;
-                node.mark_bit(pos);
                 _count++;
                 return true;
             }
@@ -1073,18 +1507,15 @@ public:
             {
                 debug(ikodcontainers) tracef("high overflow to new node");
                 auto new_node = makeNode();
-                auto new_p = (ItemsPerNode - hi_shift) / 2;
-                for(auto s=0; s<hi_shift; s++)
+                auto new_p = NewItemPosition;
+                new_node.mark_bit(new_p);
+                new_node._items[new_p] = node._items[ItemsPerNode-1];
+                new_node._count++;
+                for(auto s=hi_shift; s>0; s--)
                 {
-                    new_node._items[new_p+s] = node._items[pos+s];
-                    new_node.mark_bit(new_p+s);
-                    new_node._count++;
-                    node.clear_bit(pos+s);
-                    node._count--;
+                    node._items[pos+s-1] = node._items[pos+s-2];
                 }
-                node._count++;
                 node._items[pos] = v;
-                node.mark_bit(pos);
                 // link right
                 if ( _last_node == node)
                 {
@@ -1098,6 +1529,7 @@ public:
                 new_node._prev_node = node;
                 node._next_node = new_node;
                 _count++;
+                _nodes_counter++;
                 return true;
             }
         }
@@ -1112,10 +1544,29 @@ public:
             _count++;
             return true;
         }
-        if ( lo_shift == uint.max )
+        if ( lo_shift == -1 )
         {
+            // +-- insert here
+            // v
+            // XXXXXXXX
+            if ( node._prev_node )
+            {
+                immutable fhb = node._prev_node.count_free_high_bits();
+                if ( fhb>0 )
+                {
+                    // we can store it in prev node
+                    node = node._prev_node;
+                    auto new_p = ItemsPerNode - fhb;
+                    assert(!node.test_bit(new_p));
+                    node.mark_bit(new_p);
+                    node._items[new_p] = v;
+                    node._count++;
+                    _count++;
+                    return true;
+                }
+            }
             auto new_node = makeNode();
-            auto new_p = ItemsPerNode / 2;
+            auto new_p = NewItemPosition;
             if ( _first_node == node )
             {
                 _first_node = new_node;
@@ -1131,6 +1582,7 @@ public:
             new_node._items[new_p] = v;
             new_node.mark_bit(new_p);
             _count++;
+            _nodes_counter++;
             return true;
         }
         if ( lo_shift < hi_shift )
@@ -1169,7 +1621,45 @@ public:
         }
         assert(0);
     }
+    /++
+    + Insert item at position i. O(N)
+    +
+    + Params:
+    + v = value to insert
+    + i = position for this value
+    +
+    + Returns: True if item were inserted (false if index is > list.length+1)
+    + Throws: AssertError if any const range is registered.
+    +/
+    bool insert(V)(int i, V v)
+    {
+        assert(_constRanges_counter == 0, "You can't mutate list while there are active const ranges");
+        debug(ikodcontainers) tracef("insert %s at %s", v, i);
+        if ( i > _count )
+        {
+            return false;
+        }
+        if ( i == 0 )
+        {
+            pushFront(v);
+            return true;
+        }
+        if ( i == _count )
+        {
+            pushBack(v);
+            return true;
+        }
+        auto  ni    = _node_and_index(i);
+        int   index = ni.index;
+        Node* node  = ni.node;
+
+        if ( _mutRanges_counter>0)
+            sendnotify(Sig.INSERT, i, node, index);
+
+        return _doRealInsert(node, index, v);
+    }
 }
+@("ul0")
 unittest
 {
     UnrolledList!int list;
@@ -1487,10 +1977,14 @@ unittest
     assert(l[30] == 1000);
 }
 
-@("mutIterator")
+@("mutIterator1")
 unittest
 {
+    import std.stdio;
     import std.range;
+    import std.exception;
+    import std.math;
+
     UnrolledList!int l;
 
     foreach(i; 0..50)
@@ -1501,6 +1995,189 @@ unittest
     foreach(v; r)
     {
         assert(v>=0);
+    }
+    r = l.mutRange();
+    while(!r.empty)
+    {
+        auto v = r.front;
+        if ( v % 2 )
+        {
+            r.remove();
+        }
+        else
+        {
+            r.popFront;
+        }
+    }
+    assert(equal(l.constRange,iota(0, 50, 2)));
+    l.clear;
+    //
+    // Build Eratosphenes seed, compare with correct list and clear it
+    //
+    enum limit = 100_500;
+    uint[] sieve(in uint limit) nothrow @safe {
+        // https://rosettacode.org/wiki/Sieve_of_Eratosthenes#Simpler_Version
+        if (limit < 2)
+            return [];
+        auto composite = new bool[limit];
+    
+        foreach (immutable uint n; 2 .. cast(uint)(limit ^^ 0.5) + 1)
+            if (!composite[n])
+                for (uint k = n * n; k < limit; k += n)
+                    composite[k] = true;
+    
+        return iota(2, limit).filter!(i => !composite[i]).array;
+    }
+    foreach(i; 2..limit)
+    {
+        l.pushBack(i);
+    }
+    foreach(index,value; l.mutRange(0, cast(int)sqrt(real(limit))+1).enumerate)
+    {
+        for(auto r1 = l.mutRange(cast(int)index); !r1.empty;)
+        {
+            if (r1.front > value && r1.front % value == 0)
+            {
+                r1.remove;
+            }
+            else
+            {
+                r1.popFront;
+            }
+        }
+    }
+    // foreach(s; l.dump)
+    // {
+    //     info(s);
+    // }
+    assert(equal(l.constRange, sieve(limit)));
+    l.popFront;
+    l.popBack;
+    r = l.mutRange();
+    while(!r.empty)
+    {
+        r.remove();
+    }
+    assert(r.empty);
+    assert(r.count == 0);
+    assert(l.length == 0);
+    //
+    // test popFront/popBack handling by mutRange
+    foreach(i; 0..50)
+    {
+        l.pushBack(i);
+    }
+    // foreach(s; l.dump)
+    // {
+    //     info(s);
+    // }
+    r = l.mutRange();
+    while(!l.empty)
+    {
+        l.popFront;
+        l.popBack;
+        assertThrown!AssertError(r.front); // you tried to access deleted item
+        r.popFront;
+        assert(equal(r, l.constRange));
+    }
+}
+@("mutIterator2")
+unittest
+{
+    import std.stdio;
+    import std.range;
+    import std.exception;
+
+    auto l = UnrolledList!int();
+    foreach(i; iota(1, 50, 2))
+    {
+        l.pushBack(i);
+    }
+    assert(equal(l.constRange(0, 5), [1,3,5,7,9]));
+    auto r0 = l.mutRange();
+    auto r1 = r0;
+    // foreach(s; l.dump)
+    // {
+    //     info(s);
+    // }
+    while(!r0.empty)
+    {
+        // infof("---insert %s", r0.front-1);
+        r0.insert(r0.front - 1);
+        r0.popFront;
+    }
+    assert(equal(l.constRange(0, 5), [0,1,2,3,4]));
+    assert(equal(l.constRange(), iota(50)));
+    // foreach(s; l.dump)
+    // {
+    //     info(s);
+    // }
+    // while(!r1.empty)
+    // {
+    //     writeln(r1.front);
+    //     r1.popFront;
+    // }
+    assert(equal(r1, iota(1,50)));
+    assert(equal(l.constRange, iota(50)));
+    r0 = l.mutRange();
+    while(!r0.empty)
+    {
+        // infof("front %s", r0.front);
+        if ( r0.front % 2 == 0)
+        {
+            // infof("remove %s", r0.front);
+            r0.remove();
+        }
+        else
+        {
+            r0.popFront;
+        }
+        // foreach(s; l.dump)
+        // {
+        //     info(s);
+        // }
+    }
+    assert(equal(r1, iota(1, 50, 2)));
+    r0 = l.mutRange();
+    int x = 0;
+    while(!r0.empty)
+    {
+        // infof("---insert %s", x);
+        r0.insert(x);
+        x += 2;
+        r0.popFront;
+        // foreach(s; l.dump)
+        // {
+        //     info(s);
+        // }
+    }
+    assert(equal(l.constRange(), iota(50)));
+    // while(!r1.empty)
+    // {
+    //     writeln(r1.front);
+    //     r1.popFront;
+    // }
+    assert(equal(r1, iota(1, 50)));
+}
+@("mutIterator3")
+unittest
+{
+    import std.stdio;
+    import std.range;
+    import std.exception;
+    import std.random;
+    auto rnd = Random(19);
+
+    auto l = UnrolledList!int();
+    while(l.length < 5)
+    {
+        int v = uniform(0, 10000, rnd);
+        auto i = l.mutRange();
+        while(!i.empty && i.front > v)
+        {
+            i.popFront;
+        }
+        i.insert(v);
     }
 }
 

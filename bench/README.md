@@ -134,10 +134,16 @@ Test performance for internal list implementations
 |i.c.compr   | 5 ms, 423 μs, and 3 hnsecs      | GC memory Δ   0.00 MB|
 |i.c.unroll  | 4 ms, 139 μs, and 9 hnsecs      | GC memory Δ   0.00 MB|
 
+        Test double-linked list of int's
+        ==================================
+|std         | 40 ms, 763 μs, and 5 hnsecs     | GC memory Δ  30.52 MB|
+|i.c.        | 7 ms, 957 μs, and 3 hnsecs      | GC memory Δ   0.00 MB|
+|i.c.+GC     | 8 ms, 794 μs, and 9 hnsecs      | GC memory Δ   4.72 MB|
+
         Test double-linked list of structs        
         ==================================        
-|std         | 83 ms, 882 μs, and 7 hnsecs     | GC memory Δ  89.16 MB|
-|i.c.        | 14 ms, 88 μs, and 9 hnsecs      | GC memory Δ   0.00 MB|
-|i.c.+GC     | 17 ms, 99 μs, and 7 hnsecs      | GC memory Δ  54.93 MB|
+|std         | 81 ms, 862 μs, and 7 hnsecs     | GC memory Δ  89.14 MB|
+|i.c.        | 19 ms, 762 μs, and 7 hnsecs     | GC memory Δ   0.00 MB|
+|i.c.+GC     | 25 ms, 34 μs, and 2 hnsecs      | GC memory Δ  54.90 MB|
 
 ```

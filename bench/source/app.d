@@ -758,6 +758,21 @@ void main()
         }
         gcstop = () @trusted {return GC.stats;}();
     }
+    void test_dlist_std_int()
+    {
+        import std.container.dlist;
+        gcstart = () @trusted {return GC.stats;}();
+        auto list = new DList!int;
+        foreach(i; randw)
+        {
+            list.insertBack(i);
+            if (i < iterations/10)
+            {
+                list.removeFront();
+            }
+        }
+        gcstop = () @trusted {return GC.stats;}();
+    }
 
     void test_dlist_cachetools_LARGE() @safe
     {
@@ -774,6 +789,21 @@ void main()
         }
         gcstop = () @trusted {return GC.stats;}();
     }
+    void test_unrl_ic_int() @safe
+    {
+        import ikod.containers.unrolledlist;
+        gcstart = () @trusted {return GC.stats;}();
+        ikod.containers.unrolledlist.UnrolledList!int list;
+        foreach(i; randw)
+        {
+            list.pushBack(i);
+            if (i < iterations/10)
+            {
+                list.popFront();
+            }
+        }
+        gcstop = () @trusted {return GC.stats;}();
+    }
 
     void test_dlist_cachetools_LARGE_GC() @safe
     {
@@ -783,6 +813,21 @@ void main()
         foreach(i; randw)
         {
             list.pushBack(LARGE(i));
+            if (i < iterations/10)
+            {
+                list.popFront();
+            }
+        }
+        gcstop = () @trusted {return GC.stats;}();
+    }
+    void test_unrl_ic_int_GC() @safe
+    {
+        import ikod.containers.unrolledlist;
+        gcstart = () @trusted {return GC.stats;}();
+        ikod.containers.unrolledlist.UnrolledList!(int, GCAllocator) list;
+        foreach(i; randw)
+        {
+            list.pushBack(i);
             if (i < iterations/10)
             {
                 list.popFront();
@@ -1318,6 +1363,24 @@ void main()
 //    r = benchmark!(test_slist_emsi)(trials);
 //    writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
+
+   writeln("\n", center(" Test double-linked list of int's   ", 50, ' '));
+   writeln(      center(" ================================== ", 50, ' '));
+
+   GC.collect();GC.minimize();
+   test = "std";
+   r = benchmark!(test_dlist_std_int)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+
+   GC.collect();GC.minimize();
+   test = "i.c.";
+   r = benchmark!(test_unrl_ic_int)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
+
+   GC.collect();GC.minimize();
+   test = "i.c.+GC";
+   r = benchmark!(test_unrl_ic_int_GC)(trials);
+   writefln(fmt, test, to!string(r[0]), 1e0*(gcstop.usedSize - gcstart.usedSize)/1024/1024);
 
    writeln("\n", center(" Test double-linked list of structs ", 50, ' '));
    writeln(      center(" ================================== ", 50, ' '));
