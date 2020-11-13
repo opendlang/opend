@@ -288,7 +288,7 @@ struct IonDescribedValue
         }
         else
         {
-            assert(descriptor.type == IonTypeCodeOf!T);
+            assert(descriptor.type == IonTypeCodeOf!T, T.stringof);
         }
         static if (is(T == typeof(null)))
         {

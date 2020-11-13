@@ -160,6 +160,8 @@ template deserializeListToScopedBuffer(alias impl)
     import mir.appender: ScopedBuffer;
     private SerdeException deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
     {
+        if (_expect(data.descriptor.type != IonTypeCode.list, false))
+            return IonErrorCode.expectedListValue.ionException;
         foreach (error, ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
@@ -599,7 +601,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
         }
         else
         {
-            static if (hasScoped && is(Member == D[], D))
+            static if (hasScoped && is(Member == D[], D) && !is(Unqual!D == char))
             {
                 import mir.appender: ScopedBuffer;
                 alias E = Unqual!D;
