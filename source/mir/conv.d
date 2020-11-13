@@ -311,7 +311,7 @@ void xdestroy(T)(scope T[] ar)
         static if (__traits(isSame, T, __traits(parent, ar[0].__xdtor)))
         {
             pragma(inline, false);
-            foreach (ref e; ar)
+            foreach_reverse (ref e; ar)
                 e.__xdtor();
         }
     }
@@ -341,8 +341,9 @@ template emplaceRef(T)
 {
     void emplaceRef(UT, Args...)(ref UT chunk, auto ref Args args)
     {
+        import core.lifetime: forward;
         import core.internal.lifetime: emplaceRef;
-        return emplaceRef!T(chunk, args);
+        return emplaceRef!T(chunk, forward!args);
     }
 }
 
