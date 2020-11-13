@@ -127,7 +127,7 @@ template TypeSet(T...)
         else
             alias TypeSet = TypeSet!(NoDuplicates!T);
     else
-        alias TypeSet = staticMap!(TryRemoveConst, T);
+        alias TypeSet = TypeSet!(staticMap!(TryRemoveConst, T));
 }
 
 
@@ -631,23 +631,18 @@ struct Algebraic(uint _setId, _TypeSets...)
             Returns:
                 The value held internally by this `Nullable`.
             +/
-            ref inout(AllowedTypes[1]) get() inout
+            auto ref inout(AllowedTypes[1]) get() inout
             {
                 assert(_storage.id, "Called `get' on null Nullable!(" ~ AllowedTypes[1].stringof ~ ").");
                 return trustedGet!(AllowedTypes[1]);
             }
 
             /// ditto
-            @property inout(AllowedTypes[1]) get()(inout(AllowedTypes[1]) fallback) inout @safe pure nothrow
+            @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) inout @safe pure nothrow
             {
                 return isNull ? fallback : get();
             }
 
-            /// ditto
-            @property auto get(U)(inout(U) fallback) inout @safe pure nothrow
-            {
-                return isNull ? fallback : get();
-            }
         }
     }
 
