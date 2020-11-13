@@ -7,6 +7,7 @@ subprojects = []
 has_cpp_headers = false
 
 sources_list = [
+    'mir/algebraic',
     'mir/bitmanip',
     'mir/bitop',
     'mir/checkedint',
@@ -64,7 +65,7 @@ this_dep = declare_dependency(
     dependencies: required_deps,
 )
 
-test_versions = []
+test_versions = ['mir_core_test']
 
 if has_cpp_headers
     install_subdir('include/',
