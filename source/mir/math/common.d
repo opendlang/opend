@@ -3,8 +3,7 @@ Common floating point math functions.
 
 This module has generic LLVM-oriented API compatible with all D compilers.
 
-License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
-Copyright: Copyright © 2016-, Ilya Yaroshenko
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors:   Ilya Yaroshenko, Phobos Team
 +/
 module mir.math.common;

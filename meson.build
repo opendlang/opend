@@ -1,4 +1,4 @@
-project('mir-core', 'd', version : '1.1.1', license: 'BSL-1.0')
+project('mir-core', 'd', version : '1.1.1', license: 'Apache-2.0')
 
 description = 'Mir Core - Base software building blocks and conventions'
 

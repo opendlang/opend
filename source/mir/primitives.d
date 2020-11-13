@@ -6,8 +6,7 @@ Note:
 UTF strings behaves like common arrays in Mir.
 `std.uni.byCodePoint` can be used to create a range of characters.
 
-License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
-Copyright: Copyright © 2017-, Ilya Yaroshenko
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors:   Ilya Yaroshenko
 +/
 module mir.primitives;

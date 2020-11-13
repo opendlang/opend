@@ -33,9 +33,8 @@ $(TR $(TH Function Name) $(TH Description))
         $(TD Creates a $(LREF Ref) structure.
     ))
 )
-Copyright: Andrei Alexandrescu 2008 - 2009, Ilya Yaroshenko 2016-.
-License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
-Authors:   Ilya Yaroshenko, $(HTTP erdani.org, Andrei Alexandrescu (some original code from std.functional))
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
+Authors: Ilya Yaroshenko, $(HTTP erdani.org, Andrei Alexandrescu (some original code from std.functional))
 
 Macros:
 NDSLICE = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)

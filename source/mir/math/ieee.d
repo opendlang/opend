@@ -34,8 +34,7 @@
  *      SQRT = &radic;
  *      HALF = &frac12;
  *
- * Copyright: Copyright The D Language Foundation 2000 - 2011.
- * License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
  * Authors:   $(HTTP digitalmars.com, Walter Bright), Don Clugston, Ilya Yaroshenko
  */
 module mir.math.ieee;

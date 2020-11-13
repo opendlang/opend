@@ -1,7 +1,7 @@
 /++
 Base reflection utilities.
 
-License: $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors: Ilya Yaroshenko 
 Macros:
 +/
