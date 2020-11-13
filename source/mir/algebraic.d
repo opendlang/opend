@@ -25,7 +25,10 @@ private enum canRemoveConst(T) = canConstructWith!(const T, T);
 private enum canRemoveImmutable(T) = canConstructWith!(immutable T, T);
 private enum hasOpPostMove(T) = __traits(hasMember, T, "opPostMove");
 private enum hasToHash(T) = __traits(hasMember, T, "toHash");
-private enum isCopyable(S) = __traits(isCopyable, S); 
+static if (__VERSION__ < 2094)
+    private enum isCopyable(S) = is(typeof({ S foo = S.init; S copy = foo; }));
+else
+    private enum isCopyable(S) = __traits(isCopyable, S); 
 private enum isPOD(T) = __traits(isPOD, T);
 private enum isVariant(T) = __traits(hasMember, T, "_isVariant");
 private enum Sizeof(T) = T.sizeof;
@@ -179,6 +182,21 @@ template Variants(Sets...)
     assert(arr._is!(B*));
     assert(arr.trustedGet!(B*)._is!(A[]));
 }
+
+/++
+Variant Type (aka Algebraic Type) with clever member access.
+
+Compatible with BetterC mode.
++/
+alias Variant(T...) = Algebraic!(0, TypeSet!T);
+
+/++
+Nullable variant Type (aka Algebraic Type) with clever member access.
+
+Compatible with BetterC mode.
++/
+alias Nullable(T...) = Variant!(typeof(null), T);
+
 
 private static struct _Null()
 {
@@ -354,7 +372,10 @@ struct Algebraic(uint _setId, _TypeSets...)
                 {
                     case i: {
                         import std.traits: CopyTypeQualifiers;
-                        CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i) storage = { rhs._storage.payload[i] };
+                        static if (__VERSION__ < 2094)
+                            CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i) storage = CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i)( rhs._storage.payload[i] );
+                        else
+                            CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i) storage = { rhs._storage.payload[i] };
                         trustedBytes[0 .. storage.bytes.length] = storage.bytes;
                         return;
                     }
@@ -795,20 +816,6 @@ struct Algebraic(uint _setId, _TypeSets...)
         assert(variant.to!string == "5");
     }
 }
-
-/++
-Variant Type (aka Algebraic Type) with clever member access.
-
-Compatible with BetterC mode.
-+/
-alias Variant(T...) = Algebraic!(0, TypeSet!T);
-
-/++
-Nullable variant Type (aka Algebraic Type) with clever member access.
-
-Compatible with BetterC mode.
-+/
-alias Nullable(T...) = Variant!(typeof(null), T);
 
 // example from std.variant
 /++
