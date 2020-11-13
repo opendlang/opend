@@ -193,7 +193,7 @@ void alignedReallocate()(ref void* b, size_t s, uint a)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     auto buffer = alignedAllocate(1024 * 1024 * 4, 128);
     alignedFree(buffer);
@@ -204,7 +204,7 @@ version (CRuntime_DigitalMars) version(unittest)
     private size_t addr(ref void* ptr) { return cast(size_t) ptr; }
 
 version(CRuntime_DigitalMars)
-unittest
+version(mir_core_test) unittest
 {
     void* m;
 

@@ -373,7 +373,7 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @trusted
 }
 
 /// 64bit x 64bit -> 128bit
-unittest
+version(mir_core_test) unittest
 {
     immutable a = 0x93_8d_28_00_0f_50_a5_56;
     immutable b = 0x54_c3_2f_e8_cc_a5_97_10;
@@ -384,7 +384,7 @@ unittest
 }
 
 /// 32bit x 32bit -> 64bit
-unittest
+version(mir_core_test) unittest
 {
     immutable a = 0x0f_50_a5_56;
     immutable b = 0xcc_a5_97_10;
@@ -392,7 +392,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     immutable ushort a = 0xa5_56;
     immutable ushort b = 0x97_10;
@@ -400,7 +400,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     immutable ubyte a = 0x56;
     immutable ubyte b = 0x10;

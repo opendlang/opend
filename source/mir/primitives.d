@@ -182,8 +182,7 @@ bool empty(size_t dim = 0, T)(scope const T[] ar)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
    assert((int[]).init.empty);
    assert(![1].empty!0); // Slice-like API
@@ -198,8 +197,7 @@ ref inout(T) front(size_t dim = 0, T)(scope return inout(T)[] ar)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
    assert(*&[3, 4].front == 3); // access be ref
    assert([3, 4].front!0 == 3); // Slice-like API
@@ -215,8 +213,7 @@ ref inout(T) back(size_t dim = 0, T)(scope return inout(T)[] ar)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
    assert(*&[3, 4].back == 4); // access be ref
    assert([3, 4].back!0 == 4); // Slice-like API
@@ -231,8 +228,7 @@ void popFront(size_t dim = 0, T)(scope ref inout(T)[] ar)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4];
     ar.popFront;
@@ -250,8 +246,7 @@ void popBack(size_t dim = 0, T)(scope ref inout(T)[] ar)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4];
     ar.popBack;
@@ -270,8 +265,7 @@ size_t popFrontN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4];
     ar.popFrontN(1);
@@ -290,8 +284,7 @@ size_t popBackN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4];
     ar.popBackN(1);
@@ -309,8 +302,7 @@ void popFrontExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4, 5];
     ar.popFrontExactly(2);
@@ -328,8 +320,7 @@ void popBackExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto ar = [3, 4, 5];
     ar.popBackExactly(2);
@@ -346,8 +337,7 @@ size_t length(size_t d : 0, T)(in T[] array)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     assert([1, 2].length!0 == 2);
     assert([1, 2].elementCount == 2);
@@ -360,8 +350,7 @@ inout(T)[] save(T)(scope return inout(T)[] array)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     auto a = [1, 2];
     assert(a is a.save);

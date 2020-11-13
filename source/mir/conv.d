@@ -184,9 +184,8 @@ template to(T)
 }
 
 ///
-version(mir_core_test)
 @safe pure @nogc
-unittest
+version(mir_core_test) unittest
 {
     enum E
     {
@@ -279,9 +278,8 @@ T[] uninitializedFillDefault(T)(return scope T[] array) nothrow @nogc
 }
 
 ///
-version(mir_core_test)
-pure nothrow @nogc
-@system unittest
+pure nothrow @nogc @system
+version(mir_core_test) unittest
 {
     static struct S { int x = 42; @disable this(this); }
 
@@ -292,8 +290,8 @@ pure nothrow @nogc
 }
 
 ///
-version(mir_core_test)
-@system unittest
+@system 
+version(mir_core_test) unittest
 {
     int[] a = [1, 2, 4];
     uninitializedFillDefault(a);
@@ -318,8 +316,7 @@ void xdestroy(T)(scope T[] ar)
 }
 
 ///
-version(mir_core_test)
-nothrow @nogc unittest
+nothrow @nogc version(mir_core_test) unittest
 {
     __gshared int d;
     __gshared int c;

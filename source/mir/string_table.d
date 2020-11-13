@@ -237,7 +237,7 @@ package template createTable(C)
 
 ///
 @safe pure nothrow @nogc
-unittest
+version(mir_core_test) unittest
 {
     static immutable sortedKeys = ["", "a", "b", "aab", "abb", "aaaaa"];
     static immutable table = MirStringTable!ubyte(sortedKeys); // CTFE
@@ -251,7 +251,7 @@ unittest
 
 ///
 @safe pure nothrow
-unittest
+version(mir_core_test) unittest
 {
     import mir.utility: simpleSort;
     auto keys = ["aaaaa", "abb", "", "b", "a", "aab"];
@@ -261,7 +261,7 @@ unittest
 }
 
 @safe pure nothrow
-unittest
+version(mir_core_test) unittest
 {
     import mir.utility: simpleSort;
     auto keys = ["aaaaa"w, "abb"w, ""w, "b"w, "a"w, "aab"w];
@@ -325,7 +325,7 @@ sizediff_t smallerStringFirstCmp(T)(T[] a, T[] b)
 
 ///
 @safe pure nothrow @nogc
-unittest
+version(mir_core_test) unittest
 {
     assert(smallerStringFirstCmp("aa", "bb") < 0);
     assert(smallerStringFirstCmp("aa", "aa") == 0);
@@ -355,7 +355,7 @@ template smallerStringFirst(alias direction = "<")
 
 ///
 @safe pure nothrow @nogc
-unittest
+version(mir_core_test) unittest
 {
     assert(smallerStringFirst("aa", "bb") == true);
     assert(smallerStringFirst("aa", "aa") == false);

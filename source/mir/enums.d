@@ -116,7 +116,7 @@ bool getEnumIndex(T)(const T value, ref uint index)
 
 ///
 @safe pure nothrow @nogc
-unittest
+version(mir_core_test) unittest
 {
     import std.meta: AliasSeq;
 
@@ -153,7 +153,7 @@ template enumMembers(T)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     enum E {a = 1, b = -1, c}
     static assert(enumMembers!E == [E.a, E.b, E.c]);
@@ -175,7 +175,7 @@ template enumIdentifiers(T)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     enum E {z = 1, b = -1, c}
     static assert(enumIdentifiers!E == ["z", "b", "c"]);
@@ -195,7 +195,7 @@ template enumStrings(T)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     enum E {z = 1, b = -1, c}
     static assert(enumStrings!E == ["z", "b", "c"]);

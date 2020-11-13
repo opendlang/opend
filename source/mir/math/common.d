@@ -567,7 +567,7 @@ version (mir_core_test)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     assert(fabs(3 + 4i) == 25);
 }
@@ -596,7 +596,7 @@ bool approxEqual(T)(const T lhs, const T rhs, const T maxRelDiff = T(0x1p-20f), 
 }
 
 ///
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert(approxEqual(1.0, 1.0000001));
     assert(approxEqual(1.0f, 1.0000001f));
@@ -629,7 +629,7 @@ bool approxEqual(T : creal)(const T lhs, const T rhs, real maxRelDiff = 0x1p-20f
 }
 
 /// Complex types works as `approxEqual(l.re, r.re) && approxEqual(l.im, r.im)`
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert(approxEqual(1.0 + 1i, 1.0000001 + 1.0000001i));
     assert(!approxEqual(100000.0L + 0i, 100001L + 0i));

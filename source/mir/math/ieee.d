@@ -74,7 +74,7 @@ int signbit(T)(const T x) @nogc @trusted pure nothrow
 }
 
 ///
-@nogc @safe pure nothrow unittest
+@nogc @safe pure nothrow version(mir_core_test) unittest
 {
     assert(!signbit(float.nan));
     assert(signbit(-float.nan));
@@ -178,7 +178,7 @@ int feqrel(T)(const T x, const T y) @trusted pure nothrow @nogc
 }
 
 ///
-@safe pure unittest
+@safe pure version(mir_core_test) unittest
 {
     assert(feqrel(2.0, 2.0) == 53);
     assert(feqrel(2.0f, 2.0f) == 24);
@@ -193,7 +193,7 @@ int feqrel(T)(const T x, const T y) @trusted pure nothrow @nogc
     assert(feqrel(2.0, 2.00000000001) > 33);
 }
 
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     void testFeqrel(F)()
     {
@@ -436,7 +436,7 @@ T nextUp(T)(const T x) @trusted pure nothrow @nogc
 }
 
 ///
-@safe @nogc pure nothrow unittest
+@safe @nogc pure nothrow version(mir_core_test) unittest
 {
     assert(nextUp(1.0 - 1.0e-6).feqrel(0.999999) > 16);
     assert(nextUp(1.0 - real.epsilon).feqrel(1.0) > 16);
@@ -463,12 +463,12 @@ T nextDown(T)(const T x) @safe pure nothrow @nogc
 }
 
 ///
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert( nextDown(1.0 + real.epsilon) == 1.0);
 }
 
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     import std.math: NaN, isIdentical;
 
@@ -672,7 +672,7 @@ do
     return u;
 }
 
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert(ieeeMean(-0.0,-1e-20)<0);
     assert(ieeeMean(0.0,1e-20)>0);
@@ -819,7 +819,7 @@ if (isFloatingPoint!T)
 }
 
 ///
-@safe unittest
+@safe version(mir_core_test) unittest
 {
     import mir.math.common: pow, approxEqual;
     alias isNaN = x => x != x;
@@ -840,7 +840,7 @@ if (isFloatingPoint!T)
     assert(frexp(real.infinity, exp) == real.infinity && exp == 1234);
 }
 
-@safe @nogc nothrow unittest
+@safe @nogc nothrow version(mir_core_test) unittest
 {
     import mir.math.common: pow;
     int exp;
@@ -849,7 +849,7 @@ if (isFloatingPoint!T)
     assert(mantissa * pow(2.0L, cast(real) exp) == 123.456L);
 }
 
-@safe unittest
+@safe version(mir_core_test) unittest
 {
     import std.meta : AliasSeq;
     import std.typecons : tuple, Tuple;
@@ -909,7 +909,7 @@ if (isFloatingPoint!T)
     }}
 }
 
-@safe unittest
+@safe version(mir_core_test) unittest
 {
     import std.meta : AliasSeq;
     void foo() {
@@ -1062,7 +1062,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
 }
 
 ///
-@nogc @safe pure nothrow unittest
+@nogc @safe pure nothrow version(mir_core_test) unittest
 {
     import std.meta : AliasSeq;
     static foreach (T; AliasSeq!(float, double, real))
@@ -1077,7 +1077,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
     }}
 }
 
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     import mir.math.common;
     {
@@ -1103,7 +1103,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
 }
 
 /* workaround Issue 14718, float parsing depends on platform strtold
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert(ldexp(1.0, -1024) == 0x1p-1024);
     assert(ldexp(1.0, -1022) == 0x1p-1022);
@@ -1113,7 +1113,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
     assert(x==-1023);
     assert(ldexp(n, x)==0x1p-1024);
 }
-@safe pure nothrow @nogc unittest
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     assert(ldexp(1.0f, -128) == 0x1p-128f);
     assert(ldexp(1.0f, -126) == 0x1p-126f);
@@ -1125,7 +1125,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
 }
 */
 
-@safe @nogc nothrow unittest
+@safe @nogc nothrow version(mir_core_test) unittest
 {
     import std.meta: AliasSeq;
     static F[3][] vals(F) =    // value,exp,ldexp

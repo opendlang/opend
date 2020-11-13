@@ -81,7 +81,7 @@ int adds(int x, int y, scope ref bool overflow)
     return cast(int)r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(adds(2, 3, overflow) == 5);
@@ -119,7 +119,7 @@ long adds(long x, long y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(adds(2L, 3L, overflow) == 5);
@@ -159,7 +159,7 @@ cent adds(cent x, cent y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(adds(cast(cent)2L, 3L, overflow) == 5);
@@ -210,7 +210,7 @@ uint addu(uint x, uint y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(addu(2, 3, overflow) == 5);
@@ -247,7 +247,7 @@ ulong addu(ulong x, ulong y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(addu(2L, 3L, overflow) == 5);
@@ -286,7 +286,7 @@ ucent addu(ucent x, ucent y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(addu(cast(ucent)2L, 3L, overflow) == 5);
@@ -337,7 +337,7 @@ int subs(int x, int y, scope ref bool overflow)
     return cast(int)r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subs(2, -3, overflow) == 5);
@@ -375,7 +375,7 @@ long subs(long x, long y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subs(2L, -3L, overflow) == 5);
@@ -417,7 +417,7 @@ cent subs(cent x, cent y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subs(cast(cent)2L, -3L, overflow) == 5);
@@ -469,7 +469,7 @@ uint subu(uint x, uint y, scope ref bool overflow)
     return x - y;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subu(3, 2, overflow) == 1);
@@ -506,7 +506,7 @@ ulong subu(ulong x, ulong y, scope ref bool overflow)
     return x - y;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subu(3UL, 2UL, overflow) == 1);
@@ -544,7 +544,7 @@ ucent subu(ucent x, ucent y, scope ref bool overflow)
     return x - y;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(subu(cast(ucent)3UL, 2UL, overflow) == 1);
@@ -582,7 +582,7 @@ int negs(int x, scope ref bool overflow)
     return -x;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(negs(0, overflow) == -0);
@@ -606,7 +606,7 @@ long negs(long x, scope ref bool overflow)
     return -x;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(negs(0L, overflow) == -0);
@@ -632,7 +632,7 @@ cent negs(cent x, scope ref bool overflow)
     return -x;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(negs(cast(cent)0L, overflow) == -0);
@@ -680,7 +680,7 @@ int muls(int x, int y, scope ref bool overflow)
     return cast(int)r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(muls(2, 3, overflow) == 6);
@@ -720,7 +720,7 @@ long muls(long x, long y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(muls(2L, 3L, overflow) == 6);
@@ -765,7 +765,7 @@ cent muls(cent x, cent y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     bool overflow;
     assert(muls(cast(cent)2L, 3L, overflow) == 6);
@@ -821,7 +821,7 @@ uint mulu(uint x, uint y, scope ref bool overflow)
     return cast(uint) r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     void test(uint x, uint y, uint r, bool overflow) @nogc nothrow
     {
@@ -873,7 +873,7 @@ ulong mulu(ulong x, ulong y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     void test(T, U)(T x, U y, ulong r, bool overflow) @nogc nothrow
     {
@@ -938,7 +938,7 @@ ucent mulu(ucent x, ucent y, scope ref bool overflow)
     return r;
 }
 
-unittest
+version(mir_core_test) unittest
 {
     void test(ucent x, ucent y, ucent r, bool overflow) @nogc nothrow
     {

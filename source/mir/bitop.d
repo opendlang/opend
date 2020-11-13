@@ -83,7 +83,7 @@ T nTrailingBitsToCount(T)(in T value, in T popcnt)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     assert(nTrailingBitsToCount(0xF0u, 3u) == 7);
     assert(nTrailingBitsToCount(0xE00u, 3u) == 12);
@@ -113,7 +113,7 @@ T nLeadingBitsToCount(T)(in T value, in T popcnt)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     assert(nLeadingBitsToCount(0xF0u, 3u) == 32 - 5);
     assert(nLeadingBitsToCount(0x700u, 3u) == 32 - 8);
@@ -137,7 +137,7 @@ auto bt(Field, T = typeof(Field.init[size_t.init]))(auto ref Field p, size_t bit
 }
 
 ///
-@system pure unittest
+@system pure version(mir_core_test) unittest
 {
     size_t[2] array;
 
@@ -262,7 +262,7 @@ auto bts(Field, T = typeof(Field.init[size_t.init]))(auto ref Field p, size_t bi
 }
 
 ///
-@system pure unittest
+@system pure version(mir_core_test) unittest
 {
     size_t[2] array;
 
@@ -345,7 +345,7 @@ T ctlz(T)(in T src)
 }
 
 ///
-version (mir_core_test) @nogc nothrow pure @safe unittest
+version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
 {
     assert(ctlz(cast(ubyte) 0b0011_1111) == 2);
     assert(ctlz(cast(ushort) 0b0000_0001_1111_1111) == 7);
@@ -364,7 +364,7 @@ T ctlzp(T)(in T src)
 }
 
 ///
-version (mir_core_test) @nogc nothrow pure @safe unittest
+version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
 {
     assert(ctlzp(cast(ubyte) 0b0000_0000) == 8);
     assert(ctlzp(cast(ubyte) 0b0011_1111) == 2);
@@ -396,7 +396,7 @@ T cttz(T)(in T src)
 }
 
 ///
-version (mir_core_test) @nogc nothrow pure @safe unittest
+version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
 {
     assert(cttzp(cast(ubyte) 0b11111100) == 2);
     assert(cttzp(cast(ushort) 0b1111111110000000) == 7);
@@ -415,7 +415,7 @@ T cttzp(T)(in T src)
 }
 
 ///
-version (mir_core_test) @nogc nothrow pure @safe unittest
+version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
 {
     assert(cttzp(cast(ubyte) 0b0000_0000) == 8);
     assert(cttzp(cast(ubyte) 0b11111100) == 2);

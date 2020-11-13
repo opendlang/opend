@@ -27,7 +27,7 @@ template isStdNullable(T)
 }
 
 ///
-unittest
+version(mir_core_test) unittest
 {
     import std.typecons;
     assert(isStdNullable!(Nullable!double));
@@ -62,8 +62,7 @@ template reflectName(string target = null, Args...)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     enum E { A, B, C }
 
@@ -126,8 +125,7 @@ template reflectMeta(string target, string[] fields)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     enum E { A, B, C }
 
@@ -156,8 +154,7 @@ template reflectIgnore(string target)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct S
     {
@@ -265,8 +262,7 @@ template reflectGetDocs(string target)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     enum E
     {
@@ -355,8 +351,7 @@ template reflectGetUnittest(string target)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     enum E
     {
@@ -403,8 +398,7 @@ Checks if member is field.
 enum bool isField(T, string member) = __traits(compiles, (ref T aggregate) { return __traits(getMember, aggregate, member).offsetof; });
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct D
     {
@@ -445,8 +439,7 @@ unittest
 }
 
 ///  with classes
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     class I
     {
@@ -500,8 +493,7 @@ template isProperty(T, string member)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct D
     {
@@ -555,8 +547,7 @@ template getSetters(T, string member)
 }
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct I
     {
@@ -592,8 +583,7 @@ Returns: list of the serializable (public getters) members.
 enum string[] SerializableMembers(T) = [Filter!(ApplyLeft!(Serializable, T), FieldsAndProperties!T)];
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct D
     {
@@ -639,8 +629,7 @@ Returns: list of the deserializable (public setters) members.
 enum string[] DeserializableMembers(T) = [Filter!(ApplyLeft!(Deserializable, T), FieldsAndProperties!T)];
 
 ///
-version(mir_core_test)
-unittest
+version(mir_core_test) unittest
 {
     struct I
     {
