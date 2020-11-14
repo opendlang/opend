@@ -1,5 +1,31 @@
 /++
-This module implements a generic variant and nullable types.
+$(H2 Variant and Nullable types)
+
+$(H4 Features)
+
+$(UL 
+
+$(LI 1. Generic $(LREF Variant)`(T...)` (algebraic) alias with order-independent list of types. )
+$(LI 2. Self-referencing support using $(LREF This) alias)
+$(LI 3. Special $(LREF Nullable)`(T...)` alias of $(LREF Variant)`(typeof(null), T...)` with API similar to `std.typecons.Nullable`. )
+$(LI 4. Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LREF SetAlias)`!setId`. )
+$(LI 5. Pattern matching uses common D overload resolution for visitors: $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch).
+    The last one function always returns $(LREF Nullable).)
+$(LI 6. Variant's member access using: $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember).
+    The last one function always returns $(LREF Nullable).)
+$(LI 7. Visitor's are allowed to return values of different types. If there are more then one return type then the $(LREF Variant) is returned. )
+$(LI 8. Empty $(LREF Variant)`!()` is supported)
+$(LI 9. $(LREF Variant) of type set with `void` type is supported. )
+$(LI 10. BetterC support. Runtime `TypeInfo` is not used.)
+$(LI 11. Copy-constructors and postblit constructors are supported. )
+$(LI 12. `toHash`, `opCmp`. `opEquals`, and `toString` support. )
+$(LI 13. Optimised for fast execution. )
+
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
+Authors: Ilya Yaroshenko
+
+)
+
 +/
 module mir.algebraic;
 
@@ -102,16 +128,87 @@ private template isInstanceOf(alias S)
     enum isInstanceOf(T) = is(T == S!Args, Args...);
 }
 
-private struct VariantSet(Sets...);
+private static struct _Null()
+{
+@safe pure nothrow @nogc const:
+    int opCmp(_Null) { return 0; }
+    this(typeof(null)) inout {}
+    string toString() { return "null"; }
+}
+
+private static struct _Void()
+{
+ @safe pure nothrow @nogc const:
+    int opCmp(_Void) { return 0; }
+    string toString() { return "void"; }
+}
 
 /++
-Dummy type for $(LREF Variant) self-referencing.
+Dummy type for $(LREF Variants) self-referencing.
 +/
-struct SetAlias(uint id) {}
-///ditto
-struct This {}
+struct SetAlias(uint id)
+{
+@safe pure nothrow @nogc const:
+    int opCmp(typeof(this)) { return 0; }
+    string toString() { return typeof(this).stringof; }
+}
 
 /++
+Dummy type for $(LREF Variant) and $(LREF Nullable) self-referencing.
++/
+struct This
+{
+@safe pure nothrow @nogc const:
+    int opCmp(typeof(this)) { return 0; }
+    string toString() { return typeof(this).stringof; }
+}
+
+
+// example from std.variant
+/++
+$(H4 Self-Referential Types)
+A useful and popular use of algebraic data structures is for defining
+$(LUCKY self-referential data structures), i.e. structures that embed references to
+values of their own type within.
+This is achieved with $(LREF Variant) by using $(LREF This) as a placeholder whenever a
+reference to the type being defined is needed. The $(LREF Variant) instantiation
+will perform $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
+alpha renaming) on its constituent types, replacing $(LREF This)
+with the self-referenced type. The structure of the type involving $(LREF This) may
+be arbitrarily complex.
++/
+@safe pure version(mir_core_test) unittest
+{
+    import mir.functional: Tuple = RefTuple;
+
+    // A tree is either a leaf or a branch of two others
+    alias Tree(Leaf) = Variant!(Leaf, Tuple!(This*, This*));
+    alias Leafs = Tuple!(Tree!int*, Tree!int*);
+
+    Tree!int tree = Leafs(new Tree!int(41), new Tree!int(43));
+    Tree!int* right = tree.get!Leafs[1];
+    assert(*right == 43);
+}
+
+///
+@safe pure version(mir_core_test) unittest
+{
+    // An object is a double, a string, or a hash of objects
+    alias Obj = Variant!(double, string, This[string]);
+    alias Map = Obj[string];
+
+    Obj obj = "hello";
+    assert(obj._is!string);
+    assert(obj.trustedGet!string == "hello");
+    obj = 42.0;
+    assert(obj.get!double == 42);
+    obj = ["customer": Obj("John"), "paid": Obj(23.95)];
+    assert(obj.get!Map["customer"] == "John");
+}
+
+
+/++
+Type set for $(LREF Variants) self-referencing.
 +/
 template TypeSet(T...)
 {
@@ -130,7 +227,7 @@ template TypeSet(T...)
         alias TypeSet = TypeSet!(staticMap!(TryRemoveConst, T));
 }
 
-
+///
 version(mir_core_test) unittest
 {
     struct S {}
@@ -190,6 +287,75 @@ Compatible with BetterC mode.
 +/
 alias Variant(T...) = Algebraic!(0, TypeSet!T);
 
+/// Single argument Variant
+// and Type with copy constructor
+@safe pure nothrow @nogc 
+version(mir_core_test) unittest 
+{
+    static struct S
+    {
+        int n;
+        this(ref return scope inout S rhs) inout
+        {
+            this.n = rhs.n + 1;
+        }
+    }
+
+    Variant!S a = S();
+    auto b = a;
+
+    import mir.conv;
+    assert(b.get!S.n == 1);
+    assert(a.get!S.n == 0);
+}
+
+/// Empty type set
+@safe pure nothrow @nogc version(mir_core_test) unittest 
+{
+    Variant!() a;
+    auto b = a;
+    assert(a.toHash == 0);
+    assert(a == b);
+    assert(a <= b && b >= a);
+    static assert(typeof(a).sizeof == 1);
+}
+
+/// Small types
+@safe pure nothrow @nogc version(mir_core_test) unittest 
+{
+    struct S { ubyte d; }
+    static assert(Nullable!(byte, char, S).sizeof == 2);
+}
+
+/// Alignment
+@safe pure nothrow @nogc version(mir_core_test) unittest 
+{
+    struct S { ubyte[3] d; }
+    static assert(Nullable!(ushort, wchar, S).sizeof == 4);
+}
+
+/// opPostMove support
+@safe pure @nogc nothrow
+version(mir_core_test) unittest
+{
+    import std.algorithm.mutation: move;
+
+    static struct S
+    {
+        uint s;
+
+        void opPostMove(const ref S old) nothrow
+        {
+            this.s = old.s + 1;
+        }
+    }
+
+    Variant!S a;
+
+    auto b = a.move;
+    assert(b.get!S.s == 1);
+}
+
 /++
 Nullable variant Type (aka Algebraic Type) with clever member access.
 
@@ -197,27 +363,63 @@ Compatible with BetterC mode.
 +/
 alias Nullable(T...) = Variant!(typeof(null), T);
 
-
-private static struct _Null()
+/++
+Single type `Nullable`
++/
+@safe pure @nogc
+version(mir_core_test) unittest
 {
-@safe pure nothrow @nogc const:
-    size_t toHash() {return 0;}
-    bool opEquals(_Null) { return true; }
-    int opCmp(_Null) { return 0; }
-    typeof(null) __self() @property { return null; }
-    typeof(null) __self(typeof(null)) @property { return null; }
-    this(typeof(null)) inout {}
-    string toString() { return "null"; }
+    static assert(is(Nullable!int == Variant!(typeof(null), int)));
+    
+    Nullable!int a = 5;
+    assert(a.get!int == 5);
+
+    a.nullify;
+    assert(a.isNull);
+
+    a = 4;
+    assert(!a.isNull);
+    assert(a.get == 4);
+    assert(a == 4);
+    a = 4;
+
+    a = null;
+    assert(a == null);
 }
 
-private static struct _Void()
+/++
+Checks toString
+$(LREF Algerbraic)`.toString` requries `mir-algorithm` package
++/
+@safe pure nothrow version(mir_core_test) unittest
 {
- @safe pure nothrow @nogc const:
-    size_t toHash() {return 0;}
-    bool opEquals(_Void) { return true; }
-    int opCmp(_Void) { return 0; }
-    void __self() @property { return; }
-    string toString() { return "void"; }
+    static if (__traits(compiles, { import mir.format; }))
+    {
+        import mir.conv: to;
+
+        alias V = Nullable!(void, int);
+        static assert(is(V == Variant!(typeof(null), void, int)));
+
+        V variant;
+        assert(variant.to!string == "null");
+
+        variant = V._void;
+        assert(variant.to!string == "void");
+
+        variant = 5;
+        assert(variant.to!string == "5");
+    }
+}
+
+/// Empty nullable type set support
+@safe pure nothrow @nogc version(mir_core_test) unittest 
+{
+    Nullable!() a;
+    auto b = a;
+    assert(a.toHash == 0);
+    assert(a == b);
+    assert(a <= b && b >= a);
+    static assert(typeof(a).sizeof == 1);
 }
 
 /++
@@ -302,7 +504,7 @@ struct Algebraic(uint _setId, _TypeSets...)
     private _Storage _storage;
 
     static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
-    ~this() @safe
+    ~this()
     {
         S: switch (_storage.id)
         {
@@ -790,70 +992,6 @@ struct Algebraic(uint _setId, _TypeSets...)
     }
 }
 
-/// Checks toString
-/// Algerbraic.toString requries mir-algorithm package
-@safe pure nothrow version(mir_core_test) unittest
-{
-    static if (__traits(compiles, { import mir.format; }))
-    {
-        import mir.conv: to;
-
-        alias V = Nullable!(void, int);
-        static assert(is(V == Variant!(typeof(null), void, int)));
-
-        V variant;
-        assert(variant.to!string == "null");
-
-        variant = V._void;
-        assert(variant.to!string == "void");
-
-        variant = 5;
-        assert(variant.to!string == "5");
-    }
-}
-
-// example from std.variant
-/++
-$(H4 Self-Referential Types)
-A useful and popular use of algebraic data structures is for defining
-$(LUCKY self-referential data structures), i.e. structures that embed references to
-values of their own type within.
-This is achieved with $(LREF Variant) by using $(LREF This) as a placeholder whenever a
-reference to the type being defined is needed. The $(LREF Variant) instantiation
-will perform $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
-alpha renaming) on its constituent types, replacing $(LREF This)
-with the self-referenced type. The structure of the type involving $(LREF This) may
-be arbitrarily complex.
-+/
-@safe pure version(mir_core_test) unittest
-{
-    import mir.functional: Tuple = RefTuple;
-
-    // A tree is either a leaf or a branch of two others
-    alias Tree(Leaf) = Variant!(Leaf, Tuple!(This*, This*));
-    alias Leafs = Tuple!(Tree!int*, Tree!int*);
-
-    Tree!int tree = Leafs(new Tree!int(41), new Tree!int(43));
-    Tree!int* right = tree.get!Leafs[1];
-    assert(*right == 43);
-}
-
-///ditto
-@safe pure version(mir_core_test) unittest
-{
-    // An object is a double, a string, or a hash of objects
-    alias Obj = Variant!(double, string, This[string]);
-    alias Map = Obj[string];
-
-    Obj obj = "hello";
-    assert(obj._is!string);
-    assert(obj.trustedGet!string == "hello");
-    obj = 42.0;
-    assert(obj.get!double == 42);
-    obj = ["customer": Obj("John"), "paid": Obj(23.95)];
-    assert(obj.get!Map["customer"] == "John");
-}
-
 @safe pure @nogc nothrow
 version(mir_core_test) unittest
 {
@@ -897,7 +1035,7 @@ version(mir_core_test) unittest
     }}
 }
 
-/// const propogation
+// const propogation
 @safe pure nothrow @nogc
 version(mir_core_test) unittest
 {
@@ -916,7 +1054,7 @@ version(mir_core_test) unittest
     // auto i = const V(t);
 }
 
-/// ditto
+// ditto
 @safe pure nothrow @nogc
 version(mir_core_test) unittest
 {
@@ -937,7 +1075,6 @@ version(mir_core_test) unittest
     const f = V(S2());
     auto t = const V(f);
 }
-
 
 @safe pure nothrow @nogc
 version(mir_core_test) unittest
@@ -1092,23 +1229,6 @@ version(mir_core_test) unittest
     assert(y.match!((int v) => false, (float v) => true));
 }
 
-/// Special `typeof(null)` support for the first argument.
-@safe pure @nogc
-version(mir_core_test) unittest
-{
-    Nullable!int a = 5;
-    assert(a.get!int == 5);
-    a.nullify;
-    assert(a.isNull);
-    a = 4;
-    assert(!a.isNull);
-    assert(a.get == 4);
-    assert(a == 4);
-    a = 4;
-    a = null;
-    assert(a == null);
-}
-
 /// ditto
 @safe pure @nogc
 version(mir_core_test) unittest
@@ -1137,85 +1257,6 @@ version(mir_core_test) unittest
     assert(y.isNull);
     assert(z.isNull);
     assert(z == y);
-}
-
-// Type with copy constructor
-@safe pure nothrow @nogc 
-version(mir_core_test) unittest 
-{
-    static struct S
-    {
-        int n;
-        this(ref return scope inout S rhs) inout
-        {
-            this.n = rhs.n + 1;
-        }
-    }
-
-    Variant!S a = S();
-    auto b = a;
-
-    import mir.conv;
-    assert(b.get!S.n == 1);
-    assert(a.get!S.n == 0);
-}
-
-// Empty type set
-@safe pure nothrow @nogc version(mir_core_test) unittest 
-{
-    Variant!() a;
-    auto b = a;
-    assert(a.toHash == 0);
-    assert(a == b);
-    assert(a <= b && b >= a);
-    static assert(typeof(a).sizeof == 1);
-}
-
-// Empty nullable type set
-@safe pure nothrow @nogc version(mir_core_test) unittest 
-{
-    Nullable!() a;
-    auto b = a;
-    assert(a.toHash == 0);
-    assert(a == b);
-    assert(a <= b && b >= a);
-    static assert(typeof(a).sizeof == 1);
-}
-
-// Small types
-@safe pure nothrow @nogc version(mir_core_test) unittest 
-{
-    struct S { ubyte d; }
-    static assert(Nullable!(byte, char, S).sizeof == 2);
-}
-
-// Alignment
-@safe pure nothrow @nogc version(mir_core_test) unittest 
-{
-    struct S { ubyte[3] d; }
-    static assert(Nullable!(ushort, wchar, S).sizeof == 4);
-}
-
-// opPostMove support
-@safe pure @nogc nothrow
-version(mir_core_test) unittest
-{
-    import std.algorithm.mutation: move;
-
-    static struct S
-    {
-        uint s;
-
-        void opPostMove(const ref S old) nothrow
-        {
-            this.s = old.s + 1;
-        }
-    }
-
-    Variant!S a;
-
-    auto b = a.move;
-    assert(b.get!S.s == 1);
 }
 
 /++
@@ -1357,7 +1398,7 @@ private template VariantReturnTypes(T...)
     alias VariantReturnTypes = NoDuplicates!(staticMap!(TryRemoveConst, T));
 }
 
-enum Exhaustive
+private enum Exhaustive
 {
     compileTime,
     exception,
