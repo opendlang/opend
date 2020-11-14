@@ -732,22 +732,32 @@ struct Algebraic(uint _setId, _TypeSets...)
     }
 
     /// Requires mir-algorithm package
+    string toString()() const
+    {
+        import mir.appender;
+        ScopedBuffer!char buffer;
+        toString(buffer);
+        return buffer.data.idup;
+    }
+
+    ///ditto
     void toString(W)(scope ref W w) const
     {
         static if (AllowedTypes.length == 0)
         {
-            return w.put(cast(immutable C[])"Algebraic");
+            return w.put("Algebraic");
         }
         else
         {
-            static assert (__traits(compiles, {import mir.format: print;}), "Algebraic.toString requires mir-algorithm package");
-            import mir.format: print;
             switch (_storage.id)
             {
                 static foreach (i, P; _Payload)
                 {
                     case i:
-                        print(w, _storage.payload[i]);
+                        static if (__traits(compiles, { import mir.format: print; print(w, _storage.payload[i]); }))
+                            { import mir.format: print; print(w, _storage.payload[i]); }
+                        else
+                            w.put(AllowedTypes[i].stringof);
                         return;
                 }
                 default: assert(0);
