@@ -504,7 +504,7 @@ struct Algebraic(uint _setId, _TypeSets...)
     private _Storage _storage;
 
     static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
-    ~this()
+    ~this() @trusted
     {
         S: switch (_storage.id)
         {
