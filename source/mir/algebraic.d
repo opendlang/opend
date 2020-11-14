@@ -5,17 +5,15 @@ $(H4 Features)
 
 $(UL 
 
-$(LI 1. Generic $(LREF Variant)`(T...)` (algebraic) alias with order-independent list of types. )
+$(LI 1. Generic $(LREF Variant)`(T...)` (algebraic) alias with the order-independent list of types. )
 $(LI 2. Self-referencing support using $(LREF This) alias)
 $(LI 3. Special $(LREF Nullable)`(T...)` alias of $(LREF Variant)`(typeof(null), T...)` with API similar to `std.typecons.Nullable`. )
 $(LI 4. Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LREF SetAlias)`!setId`. )
-$(LI 5. Pattern matching uses common D overload resolution for visitors: $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch).
-    The last one function always returns $(LREF Nullable).)
-$(LI 6. Variant's member access using: $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember).
-    The last one function always returns $(LREF Nullable).)
-$(LI 7. Visitor's are allowed to return values of different types. If there are more then one return type then the $(LREF Variant) is returned. )
+$(LI 5. Pattern matching uses common D overload resolution for visitors: $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch). The last function always returns $(LREF Nullable).)
+$(LI 6. Variant's member access using: $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember). The last function always returns $(LREF Nullable).)
+$(LI 7. Visitors are allowed to return values of different types. If there are more then one return type then the $(LREF Variant) is returned. )
 $(LI 8. Empty $(LREF Variant)`!()` is supported)
-$(LI 9. $(LREF Variant) of type set with `void` type is supported. )
+$(LI 9. $(LREF Variant) of typeset with `void` type is supported. )
 $(LI 10. BetterC support. Runtime `TypeInfo` is not used.)
 $(LI 11. Copy-constructors and postblit constructors are supported. )
 $(LI 12. `toHash`, `opCmp`. `opEquals`, and `toString` support. )
@@ -172,7 +170,8 @@ $(LUCKY self-referential data structures), i.e. structures that embed references
 values of their own type within.
 This is achieved with $(LREF Variant) by using $(LREF This) as a placeholder whenever a
 reference to the type being defined is needed. The $(LREF Variant) instantiation
-will perform $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
+will perform 
+$(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
 alpha renaming) on its constituent types, replacing $(LREF This)
 with the self-referenced type. The structure of the type involving $(LREF This) may
 be arbitrarily complex.
@@ -246,7 +245,8 @@ $(LUCKY self-referential data structures), i.e. a kit of structures that embed r
 values of their own type within.
 This is achieved with $(LREF Variants) by using $(LREF SetAlias) as a placeholder whenever a
 reference to the type being defined is needed. The $(LREF Variant) instantiation
-will perform $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
+will perform 
+$(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
 alpha renaming) on its constituent types, replacing $(LREF SetAlias)
 with the self-referenced type. The structure of the type involving $(LREF SetAlias) may
 be arbitrarily complex.
