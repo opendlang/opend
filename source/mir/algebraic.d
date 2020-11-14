@@ -211,7 +211,7 @@ Type set for $(LREF Variants) self-referencing.
 +/
 template TypeSet(T...)
 {
-    import std.meta: NoDuplicates, staticSort, staticMap;
+    import std.meta: staticSort, staticMap;
     // sort types by siezeof and them mangleof
     // but typeof(null) goes first
     static if (is(staticMap!(TryRemoveConst, T) == T))
@@ -432,7 +432,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
-    import std.meta: AliasSeq, anySatisfy, allSatisfy, staticMap, templateOr, Replace;
+    import std.meta: AliasSeq, anySatisfy, allSatisfy, staticMap, templateOr;
     import std.traits:
         hasElaborateAssign,
         hasElaborateCopyConstructor,
@@ -874,7 +874,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                 return _storage.payload[i];
         }
 
-        private auto ref T _mutableTrustedGet(E)() @trusted @property return const nothrow
+        private auto ref _mutableTrustedGet(E)() @trusted @property return const nothrow
             if (is(E == T))
         {
             assert (i == _storage.id, T.stringof);
@@ -1403,7 +1403,7 @@ private template getMemberHandler(string member)
 
 private template VariantReturnTypes(T...)
 {
-    import std.meta: NoDuplicates, staticMap;
+    import std.meta: staticMap;
 
     alias VariantReturnTypes = NoDuplicates!(staticMap!(TryRemoveConst, T));
 }
@@ -1423,7 +1423,7 @@ private template visit(alias visitor, Exhaustive exhaustive)
         if (isVariant!V)
     {
         import core.lifetime: forward;
-        import std.meta: NoDuplicates, staticMap, AliasSeq;
+        import std.meta: staticMap, AliasSeq;
 
         template allArgs(T)
         {
@@ -1528,4 +1528,182 @@ version(mir_core_test) unittest
     variant = S(4);
     variant.tryMatch!fun;
     assert (variant.get!S.a == 6);
+}
+
+private struct PODWithLongPointer {
+    long* x;
+    this(long l) pure
+    {
+        x = new long(l);
+    }
+
+@property:
+    long a() const {
+        return x ? *x : 0;
+    }
+
+    void a(long l) {
+        if (x) {
+            *x = l;
+        } else {
+            x = new long(l);
+        }
+    }
+}
+
+unittest
+{
+    import std.traits: TemplateArgsOf;
+    static assert(is(TemplateArgsOf!(TypeSet!(byte, immutable PODWithLongPointer)) == AliasSeq!(byte, immutable PODWithLongPointer)));
+}
+
+import std.meta: AliasSeq;
+import std.traits: isAggregateType, Unqual;
+
+private template Erase(T, TList...)
+{
+    alias Erase = GenericErase!(T, TList).result;
+}
+
+private template Erase(alias T, TList...)
+{
+    alias Erase = GenericErase!(T, TList).result;
+}
+
+private template GenericErase(args...)
+if (args.length >= 1)
+{
+    alias e     = OldAlias!(args[0]);
+    alias tuple = args[1 .. $] ;
+
+    static if (tuple.length)
+    {
+        alias head = OldAlias!(tuple[0]);
+        alias tail = tuple[1 .. $];
+
+        static if (isSame!(e, head))
+            alias result = tail;
+        else
+            alias result = AliasSeq!(head, GenericErase!(e, tail).result);
+    }
+    else
+    {
+        alias result = AliasSeq!();
+    }
+}
+
+private template Pack(T...)
+{
+    alias Expand = T;
+    enum equals(U...) = isSame!(Pack!T, Pack!U);
+}
+
+
+private template EraseAll(T, TList...)
+{
+    alias EraseAll = GenericEraseAll!(T, TList).result;
+}
+
+private template EraseAll(alias T, TList...)
+{
+    alias EraseAll = GenericEraseAll!(T, TList).result;
+}
+
+private template GenericEraseAll(args...)
+if (args.length >= 1)
+{
+    alias e     = OldAlias!(args[0]);
+    alias tuple = args[1 .. $];
+
+    static if (tuple.length)
+    {
+        alias head = OldAlias!(tuple[0]);
+        alias tail = tuple[1 .. $];
+        alias next = AliasSeq!(
+            GenericEraseAll!(e, tail[0..$/2]).result,
+            GenericEraseAll!(e, tail[$/2..$]).result
+            );
+
+        static if (isSame!(e, head))
+            alias result = next;
+        else
+            alias result = AliasSeq!(head, next);
+    }
+    else
+    {
+        alias result = AliasSeq!();
+    }
+}
+
+private template OldAlias(T)
+{
+    alias OldAlias = T;
+}
+
+private template EraseAllN(uint N, TList...)
+{
+    static if (N == 1)
+    {
+        alias EraseAllN = EraseAll!(TList[0], TList[1 .. $]);
+    }
+    else
+    {
+        static if (N & 1)
+            alias EraseAllN = EraseAllN!(N / 2, TList[N / 2 + 1 .. N],
+                    EraseAllN!(N / 2 + 1, TList[0 .. N / 2 + 1], TList[N .. $]));
+        else
+            alias EraseAllN = EraseAllN!(N / 2, TList[N / 2 .. N],
+                    EraseAllN!(N / 2, TList[0 .. N / 2], TList[N .. $]));
+    }
+}
+
+private template NoDuplicates(TList...)
+{
+    static if (TList.length >= 2)
+    {
+        alias fst = NoDuplicates!(TList[0 .. $/2]);
+        alias snd = NoDuplicates!(TList[$/2 .. $]);
+        alias NoDuplicates = AliasSeq!(fst, EraseAllN!(fst.length, fst, snd));
+    }
+    else
+    {
+        alias NoDuplicates = TList;
+    }
+}
+
+
+private template isSame(ab...)
+if (ab.length == 2)
+{
+    static if (is(ab[0]) && is(ab[1]))
+    {
+        enum isSame = is(ab[0] == ab[1]);
+    }
+    else static if (!is(ab[0]) && !is(ab[1]) &&
+                    !(is(typeof(&ab[0])) && is(typeof(&ab[1]))) &&
+                     __traits(compiles, { enum isSame = ab[0] == ab[1]; }))
+    {
+        enum isSame = (ab[0] == ab[1]);
+    }
+    else
+    {
+        enum isSame = __traits(isSame, ab[0], ab[1]);
+    }
+}
+
+private template Mod(From, To)
+{
+    template Mod(T)
+    {
+        static if (is(T == From))
+            alias Mod = To;
+        else
+            alias Mod = T;
+    }
+}
+
+private template Replace(From, To, T...)
+{
+    import std.meta: staticMap;
+    alias Replace = staticMap!(Mod!(From, To), T);
 }
