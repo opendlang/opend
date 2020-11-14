@@ -21,10 +21,10 @@ $(LI 11. Copy-constructors and postblit constructors are supported. )
 $(LI 12. `toHash`, `opCmp`. `opEquals`, and `toString` support. )
 $(LI 13. Optimised for fast execution. )
 
+)
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors: Ilya Yaroshenko
-
-)
 
 +/
 module mir.algebraic;
