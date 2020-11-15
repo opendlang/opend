@@ -265,8 +265,6 @@ template Variants(Sets...)
 /// 
 @safe pure nothrow version(mir_core_test) unittest
 {
-    import std.meta: AliasSeq;
-
     alias V = Variants!(
         TypeSet!(string, long, SetAlias!1*), // string, long, and V[1]*
         TypeSet!(SetAlias!0[], int), // int and V[0]*
@@ -446,7 +444,6 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     private template _ApplyAliasesImpl(int length, Types...)
     {
-        import std.typecons: ReplaceTypeUnless;
         static if (length == 0)
             alias _ApplyAliasesImpl = ReplaceTypeUnless!(isVariant, This, Algebraic!(_setId, _TypeSets), Types);
         else
@@ -1557,8 +1554,7 @@ unittest
     static assert(is(TemplateArgsOf!(TypeSet!(byte, immutable PODWithLongPointer)) == AliasSeq!(byte, immutable PODWithLongPointer)));
 }
 
-import std.meta: AliasSeq;
-import std.traits: isAggregateType, Unqual;
+import std.meta: AliasSeq, staticMap;
 
 private template Erase(T, TList...)
 {
@@ -1704,6 +1700,280 @@ private template Mod(From, To)
 
 private template Replace(From, To, T...)
 {
-    import std.meta: staticMap;
     alias Replace = staticMap!(Mod!(From, To), T);
+}
+
+private template ReplaceTypeUnless(alias pred, From, To, T...)
+{
+    static if (T.length == 1)
+    {
+        static if (pred!(T[0]))
+            alias ReplaceTypeUnless = T[0];
+        else static if (is(T[0] == From))
+            alias ReplaceTypeUnless = To;
+        else static if (is(T[0] == const(U), U))
+            alias ReplaceTypeUnless = const(ReplaceTypeUnless!(pred, From, To, U));
+        else static if (is(T[0] == immutable(U), U))
+            alias ReplaceTypeUnless = immutable(ReplaceTypeUnless!(pred, From, To, U));
+        else static if (is(T[0] == shared(U), U))
+            alias ReplaceTypeUnless = shared(ReplaceTypeUnless!(pred, From, To, U));
+        else static if (is(T[0] == U*, U))
+        {
+            static if (is(U == function))
+                alias ReplaceTypeUnless = replaceTypeInFunctionTypeUnless!(pred, From, To, T[0]);
+            else
+                alias ReplaceTypeUnless = ReplaceTypeUnless!(pred, From, To, U)*;
+        }
+        else static if (is(T[0] == delegate))
+        {
+            alias ReplaceTypeUnless = replaceTypeInFunctionTypeUnless!(pred, From, To, T[0]);
+        }
+        else static if (is(T[0] == function))
+        {
+            static assert(0, "Function types not supported," ~
+                " use a function pointer type instead of " ~ T[0].stringof);
+        }
+        else static if (is(T[0] == U!V, alias U, V...))
+        {
+            template replaceTemplateArgs(T...)
+            {
+                static if (is(typeof(T[0])))
+                    static if (__traits(compiles, {alias replaceTemplateArgs = T[0];}))
+                        alias replaceTemplateArgs = T[0];
+                    else
+                        enum replaceTemplateArgs = T[0];
+                else
+                    alias replaceTemplateArgs = ReplaceTypeUnless!(pred, From, To, T[0]);
+            }
+            alias ReplaceTypeUnless = U!(staticMap!(replaceTemplateArgs, V));
+        }
+        else static if (is(T[0] == struct))
+            // don't match with alias this struct below
+            // https://issues.dlang.org/show_bug.cgi?id=15168
+            alias ReplaceTypeUnless = T[0];
+        else static if (is(T[0] == U[], U))
+            alias ReplaceTypeUnless = ReplaceTypeUnless!(pred, From, To, U)[];
+        else static if (is(T[0] == U[n], U, size_t n))
+            alias ReplaceTypeUnless = ReplaceTypeUnless!(pred, From, To, U)[n];
+        else static if (is(T[0] == U[V], U, V))
+            alias ReplaceTypeUnless =
+                ReplaceTypeUnless!(pred, From, To, U)[ReplaceTypeUnless!(pred, From, To, V)];
+        else
+            alias ReplaceTypeUnless = T[0];
+    }
+    else static if (T.length > 1)
+    {
+        alias ReplaceTypeUnless = AliasSeq!(ReplaceTypeUnless!(pred, From, To, T[0]),
+            ReplaceTypeUnless!(pred, From, To, T[1 .. $]));
+    }
+    else
+    {
+        alias ReplaceTypeUnless = AliasSeq!();
+    }
+}
+
+@safe unittest
+{
+    import std.typecons: Tuple;
+    import std.traits : isArray;
+    static assert(
+        is(ReplaceTypeUnless!(isArray, int, string, int*) == string*) &&
+        is(ReplaceTypeUnless!(isArray, int, string, int[]) == int[]) &&
+        is(ReplaceTypeUnless!(isArray, int, string, Tuple!(int, int[]))
+            == Tuple!(string, int[]))
+   );
+}
+
+private template replaceTypeInFunctionTypeUnless(alias pred, From, To, fun)
+{
+    import std.meta;
+    import std.traits;
+    alias RX = ReplaceTypeUnless!(pred, From, To, ReturnType!fun);
+    alias PX = AliasSeq!(ReplaceTypeUnless!(pred, From, To, Parameters!fun));
+    // Wrapping with AliasSeq is neccesary because ReplaceType doesn't return
+    // tuple if Parameters!fun.length == 1
+    string gen()
+    {
+        enum  linkage = functionLinkage!fun;
+        alias attributes = functionAttributes!fun;
+        enum  variadicStyle = variadicFunctionStyle!fun;
+        alias storageClasses = ParameterStorageClassTuple!fun;
+        string result;
+        result ~= "extern(" ~ linkage ~ ") ";
+        static if (attributes & FunctionAttribute.ref_)
+        {
+            result ~= "ref ";
+        }
+        result ~= "RX";
+        static if (is(fun == delegate))
+            result ~= " delegate";
+        else
+            result ~= " function";
+        result ~= "(";
+        static foreach (i; 0 .. PX.length)
+        {
+            if (i)
+                result ~= ", ";
+            if (storageClasses[i] & ParameterStorageClass.scope_)
+                result ~= "scope ";
+            if (storageClasses[i] & ParameterStorageClass.out_)
+                result ~= "out ";
+            if (storageClasses[i] & ParameterStorageClass.ref_)
+                result ~= "ref ";
+            if (storageClasses[i] & ParameterStorageClass.lazy_)
+                result ~= "lazy ";
+            if (storageClasses[i] & ParameterStorageClass.return_)
+                result ~= "return ";
+            result ~= "PX[" ~ i.stringof ~ "]";
+        }
+        static if (variadicStyle == Variadic.typesafe)
+            result ~= " ...";
+        else static if (variadicStyle != Variadic.no)
+            result ~= ", ...";
+        result ~= ")";
+        static if (attributes & FunctionAttribute.pure_)
+            result ~= " pure";
+        static if (attributes & FunctionAttribute.nothrow_)
+            result ~= " nothrow";
+        static if (attributes & FunctionAttribute.property)
+            result ~= " @property";
+        static if (attributes & FunctionAttribute.trusted)
+            result ~= " @trusted";
+        static if (attributes & FunctionAttribute.safe)
+            result ~= " @safe";
+        static if (attributes & FunctionAttribute.nogc)
+            result ~= " @nogc";
+        static if (attributes & FunctionAttribute.system)
+            result ~= " @system";
+        static if (attributes & FunctionAttribute.const_)
+            result ~= " const";
+        static if (attributes & FunctionAttribute.immutable_)
+            result ~= " immutable";
+        static if (attributes & FunctionAttribute.inout_)
+            result ~= " inout";
+        static if (attributes & FunctionAttribute.shared_)
+            result ~= " shared";
+        static if (attributes & FunctionAttribute.return_)
+            result ~= " return";
+        return result;
+    }
+    mixin("alias replaceTypeInFunctionTypeUnless = " ~ gen() ~ ";");
+}
+
+private enum false_(T) = false;
+
+private alias ReplaceType(From, To, T...) = ReplaceTypeUnless!(false_, From, To, T);
+
+@safe unittest
+{
+    import std.typecons: Unique, Tuple;
+    template Test(Ts...)
+    {
+        static if (Ts.length)
+        {
+            //pragma(msg, "Testing: ReplaceType!("~Ts[0].stringof~", "
+            //    ~Ts[1].stringof~", "~Ts[2].stringof~")");
+            static assert(is(ReplaceType!(Ts[0], Ts[1], Ts[2]) == Ts[3]),
+                "ReplaceType!("~Ts[0].stringof~", "~Ts[1].stringof~", "
+                    ~Ts[2].stringof~") == "
+                    ~ReplaceType!(Ts[0], Ts[1], Ts[2]).stringof);
+            alias Test = Test!(Ts[4 .. $]);
+        }
+        else alias Test = void;
+    }
+    //import core.stdc.stdio;
+    alias RefFun1 = ref int function(float, long);
+    alias RefFun2 = ref float function(float, long);
+    extern(C) int printf(const char*, ...) nothrow @nogc @system;
+    extern(C) float floatPrintf(const char*, ...) nothrow @nogc @system;
+    int func(float);
+    int x;
+    struct S1 { void foo() { x = 1; } }
+    struct S2 { void bar() { x = 2; } }
+    alias Pass = Test!(
+        int, float, typeof(&func), float delegate(float),
+        int, float, typeof(&printf), typeof(&floatPrintf),
+        int, float, int function(out long, ...),
+            float function(out long, ...),
+        int, float, int function(ref float, long),
+            float function(ref float, long),
+        int, float, int function(ref int, long),
+            float function(ref float, long),
+        int, float, int function(out int, long),
+            float function(out float, long),
+        int, float, int function(lazy int, long),
+            float function(lazy float, long),
+        int, float, int function(out long, ref const int),
+            float function(out long, ref const float),
+        int, int, int, int,
+        int, float, int, float,
+        int, float, const int, const float,
+        int, float, immutable int, immutable float,
+        int, float, shared int, shared float,
+        int, float, int*, float*,
+        int, float, const(int)*, const(float)*,
+        int, float, const(int*), const(float*),
+        const(int)*, float, const(int*), const(float),
+        int*, float, const(int)*, const(int)*,
+        int, float, int[], float[],
+        int, float, int[42], float[42],
+        int, float, const(int)[42], const(float)[42],
+        int, float, const(int[42]), const(float[42]),
+        int, float, int[int], float[float],
+        int, float, int[double], float[double],
+        int, float, double[int], double[float],
+        int, float, int function(float, long), float function(float, long),
+        int, float, int function(float), float function(float),
+        int, float, int function(float, int), float function(float, float),
+        int, float, int delegate(float, long), float delegate(float, long),
+        int, float, int delegate(float), float delegate(float),
+        int, float, int delegate(float, int), float delegate(float, float),
+        int, float, Unique!int, Unique!float,
+        int, float, Tuple!(float, int), Tuple!(float, float),
+        int, float, RefFun1, RefFun2,
+        S1, S2,
+            S1[1][][S1]* function(),
+            S2[1][][S2]* function(),
+        int, string,
+               int[3] function(   int[] arr,    int[2] ...) pure @trusted,
+            string[3] function(string[] arr, string[2] ...) pure @trusted,
+    );
+    // https://issues.dlang.org/show_bug.cgi?id=15168
+    static struct T1 { string s; alias s this; }
+    static struct T2 { char[10] s; alias s this; }
+    static struct T3 { string[string] s; alias s this; }
+    alias Pass2 = Test!(
+        ubyte, ubyte, T1, T1,
+        ubyte, ubyte, T2, T2,
+        ubyte, ubyte, T3, T3,
+    );
+}
+// https://issues.dlang.org/show_bug.cgi?id=17116
+@safe unittest
+{
+    alias ConstDg = void delegate(float) const;
+    alias B = void delegate(int) const;
+    alias A = ReplaceType!(float, int, ConstDg);
+    static assert(is(B == A));
+}
+ // https://issues.dlang.org/show_bug.cgi?id=19696
+@safe unittest
+{
+    static struct T(U) {}
+    static struct S { T!int t; alias t this; }
+    static assert(is(ReplaceType!(float, float, S) == S));
+}
+ // https://issues.dlang.org/show_bug.cgi?id=19697
+@safe unittest
+{
+    class D(T) {}
+    class C : D!C {}
+    static assert(is(ReplaceType!(float, float, C)));
+}
+// https://issues.dlang.org/show_bug.cgi?id=16132
+@safe unittest
+{
+    interface I(T) {}
+    class C : I!int {}
+    static assert(is(ReplaceType!(int, string, C) == C));
 }
