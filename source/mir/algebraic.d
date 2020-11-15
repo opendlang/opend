@@ -7,8 +7,8 @@ $(UL
 
 $(LI 1. Generic $(LREF Variant)`(T...)` (algebraic) alias with the order-independent list of types. )
 $(LI 2. Self-referencing support using $(LREF This) alias)
-$(LI 3. Special $(LREF Nullable)`(T...)` alias of $(LREF Variant)`(typeof(null), T...)` with API similar to `std.typecons.Nullable`. )
-$(LI 4. Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LREF SetAlias)`!setId`. )
+$(LI 3. Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LREF SetAlias)`!setId`. )
+$(LI 4. Special $(LREF Nullable)`(T...)` alias of $(LREF Variant)`(typeof(null), T...)` with API similar to `std.typecons.Nullable`. )
 $(LI 5. Pattern matching API $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch) with common D overload resolution. The last function always returns $(LREF Nullable).)
 $(LI 6. $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember) for variant's member access. The last function always returns $(LREF Nullable).)
 $(LI 7. $(BLUE Visitors are allowed to return values of different types). If there are more then one return type then the $(LREF Variant) is returned. )
@@ -18,7 +18,7 @@ $(LI 10. BetterC support. Runtime `TypeInfo` is not used.)
 $(LI 11. Copy-constructors and postblit constructors are supported. )
 $(LI 12. `toHash`, `opCmp`. `opEquals`, and `toString` support. )
 $(LI 13. Strips types qualifiers if the types allows to do it implicilty. )
-$(LI 15. Optimised for fast execution. )
+$(LI 14. Optimised for fast execution. )
 
 )
 
