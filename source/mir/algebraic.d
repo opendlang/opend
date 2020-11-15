@@ -433,7 +433,7 @@ version(mir_core_test) unittest
 }
 
 /++
-Checks toString
+Checks $(LREF .Algebraic.toString) and `void`
 $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
 +/
 @safe pure nothrow version(mir_core_test) unittest
@@ -449,6 +449,8 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
         assert(variant.to!string == "null");
 
         variant = V._void;
+        assert(variant._is!void);
+        assert(is(typeof(variant.get!void()) == void));
         assert(variant.to!string == "void");
 
         variant = 5;
