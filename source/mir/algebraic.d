@@ -55,7 +55,6 @@ static if (__VERSION__ < 2094)
 else
     private enum isCopyable(S) = __traits(isCopyable, S); 
 private enum isPOD(T) = __traits(isPOD, T);
-private enum isVariant(T) = __traits(hasMember, T, "_isVariant");
 private enum Sizeof(T) = T.sizeof;
 
 private enum hasInoutConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope inout S rhs) inout { this.a = rhs.a; } }} );
@@ -140,6 +139,29 @@ private static struct _Void()
  @safe pure nothrow @nogc const:
     int opCmp(_Void) { return 0; }
     string toString() { return "void"; }
+}
+
+///
+enum isVariant(T) = __traits(hasMember, T, "_isVariant");
+
+///
+unittest
+{
+    static assert(isVariant!(Variant!(int, string)));
+    static assert(isVariant!(Nullable!(int, string)));
+    static assert(!isVariant!int);
+}
+
+///
+enum isNullable(T) = isVariant!T && __traits(hasMember, T, "nullify");
+
+///
+unittest
+{
+    static assert(!isNullable!(Variant!(int, string)));
+    static assert(isNullable!(Nullable!(int, string)));
+    static assert(isNullable!(Nullable!()));
+    static assert(!isNullable!int);
 }
 
 /++
@@ -280,11 +302,23 @@ template Variants(Sets...)
 }
 
 /++
-Variant Type (aka Algebraic Type) with clever member access.
+Variant Type (aka Algebraic Type).
 
 Compatible with BetterC mode.
 +/
 alias Variant(T...) = Algebraic!(0, TypeSet!T);
+
+///
+@safe pure @nogc 
+version(mir_core_test) unittest
+{
+    Variant!(int, double, string) v = 5;
+    assert(v.get!int == 5);
+    v = 3.14;
+    assert(v == 3.14);
+    // auto x = v.get!long; // won't compile, type long not allowed
+    // v = '1'; // won't compile, type char not allowed
+}
 
 /// Single argument Variant
 // and Type with copy constructor
@@ -326,7 +360,7 @@ version(mir_core_test) unittest
     static assert(Nullable!(byte, char, S).sizeof == 2);
 }
 
-/// Alignment
+/// Clever packaging
 @safe pure nothrow @nogc version(mir_core_test) unittest 
 {
     struct S { ubyte[3] d; }
@@ -356,7 +390,19 @@ version(mir_core_test) unittest
 }
 
 /++
-Nullable variant Type (aka Algebraic Type) with clever member access.
+Nullable $(LREF Variant) Type (aka Algebraic Type).
+
+The impllementation is defined as
+```
+alias Nullable(T...) = Variant!(typeof(null), T);
+```
+
+In additional to common algebraic API the following members can be accesssed:
+$(UL 
+$(LI $(LREF .Algebraic.isNull))
+$(LI $(LREF .Algebraic.nullify))
+$(LI $(LREF .Algebraic.get.2))
+)
 
 Compatible with BetterC mode.
 +/
