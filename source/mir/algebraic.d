@@ -12,12 +12,13 @@ $(LI 4. Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LR
 $(LI 5. Pattern matching API $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch) with common D overload resolution. The last function always returns $(LREF Nullable).)
 $(LI 6. $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember) for variant's member access. The last function always returns $(LREF Nullable).)
 $(LI 7. $(BLUE Visitors are allowed to return values of different types). If there are more then one return type then the $(LREF Variant) is returned. )
-$(LI 8. Empty $(LREF Variant)`!()` is supported)
+$(LI 8. Zero type $(LREF Variant)`!()` and single type $(LREF Variant)`!T` variants are also supported.)
 $(LI 9. $(LREF Variant) of typeset with `void` type is supported. )
 $(LI 10. BetterC support. Runtime `TypeInfo` is not used.)
 $(LI 11. Copy-constructors and postblit constructors are supported. )
 $(LI 12. `toHash`, `opCmp`. `opEquals`, and `toString` support. )
-$(LI 13. Optimised for fast execution. )
+$(LI 13. Strips types qualifiers if the types allows to do it implicilty. )
+$(LI 15. Optimised for fast execution. )
 
 )
 
