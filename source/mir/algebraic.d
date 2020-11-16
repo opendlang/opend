@@ -8,23 +8,23 @@ $(LREF Algebraic) template accepts two arguments: self type set id and a list of
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Aliases),
 $(TR $(TH Name) $(TH Description))
-$(T2 $(LREF Variant), an algebraic type for a single type set)
-$(T2 $(LREF Nullable), an algebraic type for a single type set with at least `typeof(null)`)
-$(T2 $(LREF Variants), a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
+$(T2 Variant, an algebraic type for a single type set)
+$(T2 Nullable, an algebraic type for a single type set with at least `typeof(null)`)
+$(T2 Variants, a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
 )
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
 $(TR $(TH Name) $(TH Description))
-$(T2 $(LREF isVariant), an algebraic type)
-$(T2 $(LREF isNullable), an algebraic type with at least `typeof(null)` in the self type set. )
+$(T2 isVariant, an algebraic type)
+$(T2 isNullable, an algebraic type with at least `typeof(null)` in the self type set. )
 )
 
 $(BOOKTABLE $(H3 Special Types),
 $(TR $(TH Name) $(TH Description))
-$(T2 `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
-$(T2 `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't visit the current value of the algebraic. Can't be accesed by reference. )
-$(T2 $(LREF This), An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
-$(T2 $(LREF SetAlias)!setId, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
+$(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
+$(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't visit the current value of the algebraic. Can't be accesed by reference. )
+$(T2 This, An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
+$(T2 SetAlias!setId, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 )
 
 $(H3 Type Set)
@@ -50,12 +50,12 @@ $(LI If the visitors arguments has known types, then such visitors should be pas
 
 $(BOOKTABLE $(H3 Visitor Handlers),
 $(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)))
-$(T4  $(LREF match), Yes, N/A, No)
-$(T4  $(LREF tryMatch), No, Yes, No)
-$(T4  $(LREF optionalMatch), No, No, Yes)
-$(T4  $(LREF getMember), Yes, N/A, No)
-$(T4  $(LREF tryGetMember), No, Yes, No)
-$(T4  $(LREF optionalGetMember), No, No, Yes)
+$(T4 match, Yes, N/A, No)
+$(T4 tryMatch, No, Yes, No)
+$(T4 optionalMatch, No, No, Yes)
+$(T4 getMember, Yes, N/A, No)
+$(T4 tryGetMember, No, Yes, No)
+$(T4 optionalGetMember, No, No, Yes)
 )
 
 $(H3 Implementation Features)
@@ -72,6 +72,7 @@ License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors: Ilya Yaroshenko
 
 Macros:
+T2plain=$(TR $(TDNW $1) $(TD $+))
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
