@@ -1,8 +1,17 @@
 /++
 $(H2 Variant and Nullable types)
 
+This module implements a
+$(HTTP erdani.org/publications/cuj-04-2002.php.html,discriminated union)
+type (a.k.a.
+$(HTTP en.wikipedia.org/wiki/Tagged_union,tagged union),
+$(HTTP en.wikipedia.org/wiki/Algebraic_data_type,algebraic type)).
+Such types are useful
+for type-uniform binary interfaces, interfacing with scripting
+languages, and comfortable exploratory programming.
+
 The module defines generic $(LREF Algebraic) type that contains a payload.
-The allowed type set of the paylad are defined by the unordered $(LREF TypeSet).
+The allowed types of the paylad are defined by the unordered $(LREF TypeSet).
 
 $(LREF Algebraic) template accepts two arguments: self type set id and a list of type sets.
 
@@ -24,7 +33,7 @@ $(TR $(TH Name) $(TH Description))
 $(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
 $(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't visit the current value of the algebraic. Can't be accesed by reference. )
 $(T2 This, An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
-$(T2 SetAlias!setId, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
+$(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 )
 
 $(H3 Type Set)
