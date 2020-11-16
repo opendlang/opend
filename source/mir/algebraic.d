@@ -36,6 +36,16 @@ $(T2 This, An dummy structure that is used to construct self-referencing algebra
 $(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 )
 
+$(BOOKTABLE $(H3 Visitor Handlers),
+$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)))
+$(T4 match, Yes, N/A, No)
+$(T4 tryMatch, No, Yes, No)
+$(T4 optionalMatch, No, No, Yes)
+$(T4 getMember, Yes, N/A, No)
+$(T4 tryGetMember, No, Yes, No)
+$(T4 optionalGetMember, No, No, Yes)
+)
+
 $(H3 Type Set)
 $(UL 
 $(LI Type set is unordered. Example:`TypeSet!(int, double)` and `TypeSet!(double, int)` are the same. )
@@ -55,16 +65,6 @@ $(LI Visitors are matched according to the common $(HTTPS dlang.org/spec/functio
 $(LI Visitors are allowed accept algebraic value by reference except the value of `typeof(null)`. )
 $(LI Visitors are called without algebraic value if its algebraic type is `void`. )
 $(LI If the visitors arguments has known types, then such visitors should be passed to a visitor handler before others to make the compiler happy. This includes visitors with no arguments, which is used to match `void` type. )
-)
-
-$(BOOKTABLE $(H3 Visitor Handlers),
-$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)))
-$(T4 match, Yes, N/A, No)
-$(T4 tryMatch, No, Yes, No)
-$(T4 optionalMatch, No, No, Yes)
-$(T4 getMember, Yes, N/A, No)
-$(T4 tryGetMember, No, Yes, No)
-$(T4 optionalGetMember, No, No, Yes)
 )
 
 $(H3 Implementation Features)
