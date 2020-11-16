@@ -311,27 +311,33 @@ private template _naryAliases(size_t n)
 }
 
 /++
-Transforms a string representing an expression into a binary function. The
-string must use symbol names `a`, `b`, ..., `z`  as the parameters.
-If `fun` is not a string, `naryFun` aliases itself away to `fun`.
+Aliases itself to a set of functions.
+
+Transforms strings representing an expression into a binary function. The
+strings must use symbol names `a`, `b`, ..., `z`  as the parameters.
+If `functions[i]` is not a string, `naryFun` aliases itself away to `functions[i]`.
 +/
-template naryFun(alias fun)
+template naryFun(functions...)
+    if (functions.length >= 1)
 {
-    static if (is(typeof(fun) : string))
+    static foreach (fun; functions)
     {
-        import mir.math.common;
-        /// Specialization for string lambdas
-        @optmath auto ref naryFun(Args...)(auto ref Args args)
-            if (args.length <= 26)
+        static if (is(typeof(fun) : string))
         {
-            mixin(_naryAliases!(Args.length));
-            return mixin(fun);
+            import mir.math.common;
+            /// Specialization for string lambdas
+            @optmath auto ref naryFun(Args...)(auto ref Args args)
+                if (args.length <= 26)
+            {
+                mixin(_naryAliases!(Args.length));
+                return mixin(fun);
+            }
         }
+        else static if (needOpCallAlias!fun)
+            alias naryFun = fun.opCall;
+        else
+            alias naryFun = fun;
     }
-    else static if (needOpCallAlias!fun)
-        alias naryFun = fun.opCall;
-    else
-        alias naryFun = fun;
 }
 
 ///
@@ -368,6 +374,25 @@ version(mir_core_test) unittest
 version(mir_core_test) unittest
 {
     assert(naryFun!("args[0] + args[1]")(2, 3) == 5);
+}
+
+/// Multiple functions
+@safe pure nothrow @nogc
+version(mir_core_test) unittest
+{
+    alias fun = naryFun!(
+        (uint a) => a,
+        (ulong a) => a * 2,
+        a => a * 3,
+    );
+
+    int a = 10;
+    long b = 10;
+    float c = 10;
+
+    assert(fun(a) == 10);
+    assert(fun(b) == 20);
+    assert(fun(c) == 30);
 }
 
 @safe version(mir_core_test) unittest
@@ -445,38 +470,6 @@ version(mir_core_test) unittest
     static assert(!is(typeof(naryFun!FuncObj)));
 }
 
-/++
-Aliases itself to a set of functions.
-
-Transforms strings representing an expression into a binary function. The
-strings must use symbol names `a`, `b`, ..., `z`  as the parameters.
-If `functions[i]` is not a string, `naryFun` aliases itself away to `functions[i]`.
-+/
-template naryFun(functions...)
-    if (functions.length > 1)
-{
-    static foreach (fun; functions)
-        alias naryFun = .naryFun!fun;
-}
-
-///
-@safe pure nothrow @nogc
-version(mir_core_test) unittest
-{
-    alias fun = naryFun!(
-        (uint a) => a,
-        (ulong a) => a * 2,
-        a => a * 3,
-    );
-
-    int a = 10;
-    long b = 10;
-    float c = 10;
-
-    assert(fun(a) == 10);
-    assert(fun(b) == 20);
-    assert(fun(c) == 30);
-}
 
 /++
 N-ary predicate that reverses the order of arguments, e.g., given

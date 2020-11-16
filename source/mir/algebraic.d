@@ -1,29 +1,79 @@
 /++
 $(H2 Variant and Nullable types)
 
-$(H4 Features)
+The module defines generic $(LREF Algebraic) type that contains a payload.
+The allowed type set of the paylad are defined by the unordered $(LREF TypeSet).
 
+$(LREF Algebraic) template accepts two arguments: self type set id and a list of type sets.
+
+$(BOOKTABLE $(H3 $(LREF Algebraic) Aliases),
+$(TR $(TH Name) $(TH Description))
+$(T2 $(LREF Variant), an algebraic type for a single type set)
+$(T2 $(LREF Nullable), an algebraic type for a single type set with at least `typeof(null)`)
+$(T2 $(LREF Variants), a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
+)
+
+$(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
+$(TR $(TH Name) $(TH Description))
+$(T2 $(LREF isVariant), an algebraic type)
+$(T2 $(LREF isNullable), an algebraic type with at least `typeof(null)` in the self type set. )
+)
+
+$(BOOKTABLE $(H3 Special Types),
+$(TR $(TH Name) $(TH Description))
+$(T2 `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
+$(T2 `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't visit the current value of the algebraic. Can't be accesed by reference. )
+$(T2 $(LREF This), An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
+$(T2 $(LREF SetAlias)!setId, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
+)
+
+$(H3 Type Set)
 $(UL 
+$(LI Type set is unordered. Example:`TypeSet!(int, double)` and `TypeSet!(double, int)` are the same. )
+$(LI Duplicats are ignored. Example: `TypeSet!(float, int, float)` and `TypeSet!(int, float)` are the same. )
+$(LI Types are automatically unqualified if this operation can be performed implicitly. Example: `TypeSet!(const int) and `TypeSet!int` are the same. )
+$(LI Non trivial `TypeSet!(A, B, ..., etc)` is allowed.)
+$(LI Trivial `TypeSet!T` is allowed.)
+$(LI Empty `TypeSet!()` is allowed.)
+)
 
-$(LI Generic $(LREF Variant)`(T...)` (algebraic) alias with the order-independent list of types. )
-$(LI Self-referencing support using $(LREF This) alias)
-$(LI Cyclic referencing $(LREF Variants) alias using $(LREF TypeSet) and $(LREF SetAlias)`!setId`. )
-$(LI Special $(LREF Nullable)`(T...)` alias of $(LREF Variant)`(typeof(null), T...)` with API similar to `std.typecons.Nullable`. )
-$(LI Pattern matching API $(LREF match), $(LREF tryMatch), and $(LREF optionalMatch) with common D overload resolution. The last function always returns $(LREF Nullable).)
-$(LI $(LREF getMember), $(LREF tryGetMember), and $(LREF optionalGetMember) for variant's member access. The last function always returns $(LREF Nullable).)
-$(LI $(BLUE Visitors are allowed to return values of different types). If there are more then one return type then the $(LREF Variant) is returned. )
-$(LI Zero type $(LREF Variant)`!()` and single type $(LREF Variant)`!T` variants are also supported.)
-$(LI $(LREF Variant) of typeset with `void` type is supported. )
+$(H3 Visitors)
+$(UL 
+$(LI Visitors are allowed to return values of different types If there are more then one return type then the an $(LREF Algebraic) type is returned. )
+$(LI Visitors are allowed to accept additional arguments. The arguments can be passed to the visitor handler. )
+$(LI Multiple visitors can be passes to the visitor handler. )
+$(LI Visitors are matched according to the common $(HTTPS dlang.org/spec/function.html#function-overloading, Dlang Function Overloading) rules. )
+$(LI Visitors are allowed accept algebraic value by reference except the value of `typeof(null)`. )
+$(LI Visitors are called without algebraic value if its algebraic type is `void`. )
+$(LI If the visitors arguments has known types, then such visitors should be passed to a visitor handler before others to make the compiler happy. This includes visitors with no arguments, which is used to match `void` type. )
+)
+
+$(BOOKTABLE $(H3 Visitor Handlers),
+$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)))
+$(T4  $(LREF match), Yes, N/A, No)
+$(T4  $(LREF tryMatch), No, Yes, No)
+$(T4  $(LREF optionalMatch), No, No, Yes)
+$(T4  $(LREF getMember), Yes, N/A, No)
+$(T4  $(LREF tryGetMember), No, Yes, No)
+$(T4  $(LREF optionalGetMember), No, No, Yes)
+)
+
+$(H3 Implementation Features)
+$(UL 
 $(LI BetterC support. Runtime `TypeInfo` is not used.)
 $(LI Copy-constructors and postblit constructors are supported. )
 $(LI `toHash`, `opCmp`. `opEquals`, and `toString` support. )
-$(LI Strips types qualifiers if the types allows to do it implicilty. )
 $(LI Optimised for fast execution. )
-
 )
+
+See_also: $(HTTPS en.wikipedia.org/wiki/Algebra_of_sets, Algebra of sets).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 Authors: Ilya Yaroshenko
+
+Macros:
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 +/
 module mir.algebraic;
@@ -432,32 +482,6 @@ version(mir_core_test) unittest
     assert(a == null);
 }
 
-/++
-Checks $(LREF .Algebraic.toString) and `void`
-$(LREF Algerbraic)`.toString` requries `mir-algorithm` package
-+/
-@safe pure nothrow version(mir_core_test) unittest
-{
-    static if (__traits(compiles, { import mir.format; }))
-    {
-        import mir.conv: to;
-
-        alias V = Nullable!(void, int);
-        static assert(is(V == Variant!(typeof(null), void, int)));
-
-        V variant;
-        assert(variant.to!string == "null");
-
-        variant = V._void;
-        assert(variant._is!void);
-        assert(is(typeof(variant.get!void()) == void));
-        assert(variant.to!string == "void");
-
-        variant = 5;
-        assert(variant.to!string == "5");
-    }
-}
-
 /// Empty nullable type set support
 @safe pure nothrow @nogc version(mir_core_test) unittest 
 {
@@ -473,7 +497,7 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
 Implementation of $(LREF Variant), $(LREF Variants), and $(LREF Nullable).
 +/
 struct Algebraic(uint _setId, _TypeSets...)
-    if (allSatisfy!(isInstanceOf!TypeSet, _TypeSets))
+    if (allSatisfy!(isInstanceOf!TypeSet, _TypeSets) && _setId < _TypeSets.length)
 {
     private enum _isVariant;
 
@@ -549,7 +573,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     private _Storage _storage;
 
-    static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
+    static if (anySatisfy!(hasElaborateDestructor, _Payload))
     ~this() @trusted
     {
         S: switch (_storage.id)
@@ -567,7 +591,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             _storage.allBytes = 0xCC;
     }
 
-    static if (anySatisfy!(hasOpPostMove, AllowedTypes))
+    static if (anySatisfy!(hasOpPostMove, _Payload))
     void opPostMove(const ref typeof(this) old)
     {
         S: switch (_storage.id)
@@ -585,7 +609,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     static if (AllowedTypes.length)
     {
-        static if (!__traits(compiles, (){ AllowedTypes[0] arg; }))
+        static if (!__traits(compiles, (){ _Payload[0] arg; }))
         {
             @disable this();
         }
@@ -780,10 +804,26 @@ struct Algebraic(uint _setId, _TypeSets...)
     /// Requires mir-algorithm package
     string toString()() const
     {
-        import mir.appender;
-        ScopedBuffer!char buffer;
-        toString(buffer);
-        return buffer.data.idup;
+        static if (AllowedTypes.length == 0)
+        {
+            return "Algebraic";
+        }
+        else
+        {
+            import mir.conv: to;
+            switch (_storage.id)
+            {
+                static foreach (i, P; _Payload)
+                {
+                    case i:
+                        static if (__traits(compiles, { auto s = to!string(_storage.payload[i]);}))
+                            return to!string(_storage.payload[i]);
+                        else
+                            return AllowedTypes[i].stringof;
+                }
+                default: assert(0);
+            }
+        }
     }
 
     ///ditto
@@ -1285,7 +1325,7 @@ version(mir_core_test) unittest
     assert(y.match!((int v) => false, (float v) => true));
 }
 
-/// ditto
+///
 @safe pure @nogc
 version(mir_core_test) unittest
 {
@@ -1297,7 +1337,7 @@ version(mir_core_test) unittest
 
     () nothrow {
         assert(x.match!((int v) => true, (float v) => false));
-        assert(y.match!((int v) => false, (float v) => true));
+        assert(y.match!((int v) => false, (v) => true));
         assert(z.match!((typeof(null) v) => true, (v) => false));
     } ();
 
@@ -1313,6 +1353,48 @@ version(mir_core_test) unittest
     assert(y.isNull);
     assert(z.isNull);
     assert(z == y);
+}
+
+/++
+Checks $(LREF .Algebraic.toString) and `void`
+$(LREF Algerbraic)`.toString` requries `mir-algorithm` package
++/
+@safe pure nothrow version(mir_core_test) unittest
+{
+    import mir.conv: to;
+    enum MIR_ALGORITHM = __traits(compiles, { import mir.format; });
+
+    alias visitorHandler = match!(
+        (typeof(null)) => "NULL",
+        () => "VOID",
+        (ref r) {r += 1;}, // returns void
+    );
+
+    alias secondOrderVisitorHandler = match!(
+        () => "SO VOID", // void => to "RV VOID"
+        (str) => str, // string to => it self
+    );
+
+    alias V = Nullable!(void, int);
+    static assert(is(V == Variant!(typeof(null), void, int)));
+
+    V variant;
+
+    assert(secondOrderVisitorHandler(visitorHandler(variant)) == "NULL");
+    assert(variant.to!string == "null");
+
+    variant = V._void;
+    assert(variant._is!void);
+    assert(is(typeof(variant.get!void()) == void));
+
+    assert(secondOrderVisitorHandler(visitorHandler(variant)) == "VOID");
+    assert(variant.to!string == "void");
+
+    variant = 5;
+
+    assert(secondOrderVisitorHandler(visitorHandler(variant)) == "SO VOID");
+    assert(variant == 6);
+    assert(variant.to!string == (MIR_ALGORITHM ? "6" : "int"));
 }
 
 /++
@@ -1510,18 +1592,37 @@ private template visit(alias visitor, Exhaustive exhaustive)
                     {
                         static if (AllReturnTypes.length == 1)
                         {
-                            return visitor(allArgs!T);
+
+                            static if (is(T == void))
+                                return visitor(forward!args);
+                            else
+                            static if (is(T == typeof(null)))
+                                return visitor(null, forward!args);
+                            else
+                                return visitor(variant.trustedGet!T, forward!args);
                         }
                         else
                         {
                             static if (is(VariantReturnTypesImpl!T == void))
                             {
-                                visitor(allArgs!T);
-                                return Variant!AllReturnTypes.init;
+                                static if (is(T == void))
+                                    visitor(forward!args);
+                                else
+                                static if (is(T == typeof(null)))
+                                    visitor(null, forward!args);
+                                else
+                                    visitor(variant.trustedGet!T, forward!args);
+                                return Variant!AllReturnTypes._void;
                             }
                             else
                             {
-                                return Variant!AllReturnTypes(visitor(allArgs!T));
+                                static if (is(T == void))
+                                    return Variant!AllReturnTypes(visitor(forward!args));
+                                else
+                                static if (is(T == typeof(null)))
+                                    return Variant!AllReturnTypes(visitor(null, forward!args));
+                                else
+                                    return Variant!AllReturnTypes(visitor(variant.trustedGet!T, forward!args));
                             }
                         }
                     }
