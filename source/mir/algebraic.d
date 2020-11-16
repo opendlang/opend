@@ -349,8 +349,8 @@ template Variants(Sets...)
 @safe pure nothrow version(mir_core_test) unittest
 {
     alias V = Variants!(
-        TypeSet!(string, long, SetAlias!1*), // string, long, and V[1]*
-        TypeSet!(SetAlias!0[], int), // int and V[0]*
+        TypeSet!(string, long, SetAlias!1*), // string, long, and pointer to V[1] type
+        TypeSet!(SetAlias!0[], int), // int and array of V[0] type elements
     );
 
     alias A = V[0];
