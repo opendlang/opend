@@ -40,6 +40,7 @@ $(T7 optionalGetMember, No, No, Yes, No, 1+, Yes)
 $(T7 autoGetMember, No, No, auto, No, 1+, Yes)
 $(T7 tryGetMember, No, Yes, No, No, 1+, Yes)
 )
+
 $(BOOKTABLE $(H3 Special Types),
 $(TR $(TH Name) $(TH Description))
 $(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
