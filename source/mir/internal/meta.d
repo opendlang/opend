@@ -1,5 +1,91 @@
 module mir.internal.meta;
 
+alias ConstOf(T) = const T;
+enum Alignof(T) = T.alignof;
+enum canConstructWith(From, To) = __traits(compiles, (From a) { To b = a; } );
+enum canImplicitlyRemoveConst(T) = __traits(compiles, {static T _function_(ref const T a) { return a; }} );
+enum canRemoveConst(T) = canConstructWith!(const T, T);
+enum canRemoveImmutable(T) = canConstructWith!(immutable T, T);
+enum hasOpPostMove(T) = __traits(hasMember, T, "opPostMove");
+enum hasToHash(T) = __traits(hasMember, T, "toHash");
+static if (__VERSION__ < 2094)
+    enum isCopyable(S) = is(typeof({ S foo = S.init; S copy = foo; }));
+else
+    enum isCopyable(S) = __traits(isCopyable, S); 
+enum isPOD(T) = __traits(isPOD, T);
+enum Sizeof(T) = T.sizeof;
+
+enum hasInoutConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope inout S rhs) inout { this.a = rhs.a; } }} );
+enum hasConstConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope const S rhs) const { this.a = rhs.a; } }} );
+enum hasImmutableConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope immutable S rhs) immutable { this.a = rhs.a; } }} );
+enum hasMutableConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope S rhs) { this.a = rhs.a; } }} );
+enum hasSemiImmutableConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope const S rhs) immutable { this.a = rhs.a; } }} );
+enum hasSemiMutableConstruction(T) = __traits(compiles, {static struct S { T a; this(ref return scope const S rhs) { this.a = rhs.a; } }} );
+
+@safe version(mir_core_test) unittest
+{
+    static struct S { this(ref return scope inout S) inout {} }
+    static inout(S) _function_(ref inout S a) { return S(a); }
+    static struct C2 { uint* a; this(ref return scope const S) const {} }
+    static assert(hasInoutConstruction!uint);
+    static assert(hasInoutConstruction!(immutable(uint)[]));
+    static assert(hasInoutConstruction!(typeof(null)));
+    static assert(hasInoutConstruction!S);
+}
+
+template staticIsSorted(alias cmp, Seq...)
+{
+    static if (Seq.length <= 1)
+        enum staticIsSorted = true;
+    else static if (Seq.length == 2)
+        enum staticIsSorted = cmp!(Seq[0], Seq[1]);
+    else
+    {
+        enum staticIsSorted =
+            cmp!(Seq[($ / 2) - 1], Seq[$ / 2]) &&
+            staticIsSorted!(cmp, Seq[0 .. $ / 2]) &&
+            staticIsSorted!(cmp, Seq[$ / 2 .. $]);
+    }
+}
+
+template TryRemoveConst(T)
+{
+    import std.traits: Unqual;
+    alias U = Unqual!T;
+    static if (canImplicitlyRemoveConst!U)
+    {
+        alias TryRemoveConst = U;
+    }
+    else
+    {
+        alias TryRemoveConst = T;
+    }
+}
+
+
+template TypeCmp(A, B)
+{
+    enum bool TypeCmp = is(A == B) ? false:
+    is(A == typeof(null)) ? true:
+    is(B == typeof(null)) ? false:
+    is(A == void) ? true:
+    is(B == void) ? false:
+    A.sizeof < B.sizeof ? true:
+    A.sizeof > B.sizeof ? false:
+    A.mangleof < B.mangleof;
+}
+
+template isInstanceOf(alias S)
+{
+    enum isInstanceOf(T) = is(T == S!Args, Args...);
+}
+
+version(mir_core_test) unittest
+{
+    static assert(is(TryRemoveConst!(const int) == int));
+}
+
+
 // taken from std.meta.allSatisfy
 template allSatisfy(alias F, T...)
 {
