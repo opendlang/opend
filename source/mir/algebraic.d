@@ -448,8 +448,6 @@ Implementation of $(LREF Variant), $(LREF Variants), and $(LREF Nullable).
 struct Algebraic(uint _setId, _TypeSets...)
     if (allSatisfy!(isInstanceOf!TypeSet, _TypeSets) && _setId < _TypeSets.length)
 {
-    private enum _variant_test_ = _TypeSets = AliasSeq!(TypeSet!());
-
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
     import std.meta: AliasSeq, anySatisfy, allSatisfy, staticMap, templateOr;
@@ -464,6 +462,8 @@ struct Algebraic(uint _setId, _TypeSets...)
         Unqual
         ;
 
+    private enum _variant_test_ = is(_TypeSets == AliasSeq!(TypeSet!()));
+
     private template _ApplyAliasesImpl(int length, Types...)
     {
         static if (length == 0)
@@ -476,8 +476,35 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
-    ///
+    /++
+    Allowed types list
+    See_also: $(LREF TypeSet)
+    +/
     alias AllowedTypes = AliasSeq!(_ApplyAliasesImpl!(_TypeSets.length, TemplateArgsOf!(_TypeSets[_setId])));
+
+    version(mir_core_test)
+    static if (_variant_test_)
+    ///
+    unittest
+    {
+        import std.traits: TemplateArgsOf;
+        import std.meta: AliasSeq;
+
+        alias V = Nullable!
+        (
+            This*,
+            string,
+            double,
+            bool,
+        );
+
+        static assert(is(V.AllowedTypes == TemplateArgsOf!(TypeSet!(
+            typeof(null),
+            bool,
+            string,
+            double,
+            V*))));
+    }
 
     private alias _Payload = Replace!(void, _Void!(), Replace!(typeof(null), _Null!(), AllowedTypes));
 
