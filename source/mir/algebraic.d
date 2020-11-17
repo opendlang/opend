@@ -130,26 +130,37 @@ private static struct _Void()
 }
 
 ///
-enum isVariant(T) = __traits(hasMember, T, "_isVariant");
+enum isVariant(T) = is(T : Algebraic!(setId, Sets), uint setId, Sets...);
 
 ///
 unittest
 {
     static assert(isVariant!(Variant!(int, string)));
+    static assert(isVariant!(const Variant!(int[], string)));
     static assert(isVariant!(Nullable!(int, string)));
     static assert(!isVariant!int);
 }
 
 ///
-enum isNullable(T) = isVariant!T && __traits(hasMember, T, "nullify");
+template isNullable(T)
+{
+    import std.traits: TemplateArgsOf;
+    static if (is(T : Algebraic!(setId, Sets), uint setId, Sets...))
+        enum bool isNullable = is(TemplateArgsOf!(Sets[setId])[0] == typeof(null));
+    else
+        enum bool isNullable = false;
+}
 
 ///
 unittest
 {
-    static assert(!isNullable!(Variant!(int, string)));
     static assert(isNullable!(Nullable!(int, string)));
     static assert(isNullable!(Nullable!()));
+
+    static assert(!isNullable!(Variant!()));
+    static assert(!isNullable!(Variant!string));
     static assert(!isNullable!int);
+    static assert(!isNullable!string);
 }
 
 /++
