@@ -22,12 +22,24 @@ $(T2 Nullable, an algebraic type for a single type set with at least `typeof(nul
 $(T2 Variants, a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
 )
 
-$(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
-$(TR $(TH Name) $(TH Description))
-$(T2 isVariant, an algebraic type)
-$(T2 isNullable, an algebraic type with at least `typeof(null)` in the self type set. )
+$(BOOKTABLE $(H3 Visitor Handlers),
+$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
+$(LEADINGROW Classic handlers)
+$(T7 visit, Yes, N/A, No, No, 1+, Yes)
+$(T7 optionalVisit, No, No, Yes, No, 1+, Yes)
+$(T7 autoVisit, No, No, auto, No, 1+, Yes)
+$(T7 tryVisit, No, Yes, No, No, 1+, Yes)
+$(LEADINGROW Handlers with multiple dispatch)
+$(T7 match, Yes, N/A, No, Yes, 0+, auto)
+$(T7 optionalMatch, No, No, Yes, Yes, 0+, auto)
+$(T7 autoMatch, No, No, auto, Yes, 0+, auto)
+$(T7 tryMatch, No, Yes, No, Yes, 0+, auto)
+$(LEADINGROW Handlers for member access)
+$(T7 getMember, Yes, N/A, No, No, 1+, Yes)
+$(T7 optionalGetMember, No, No, Yes, No, 1+, Yes)
+$(T7 autoGetMember, No, No, auto, No, 1+, Yes)
+$(T7 tryGetMember, No, Yes, No, No, 1+, Yes)
 )
-
 $(BOOKTABLE $(H3 Special Types),
 $(TR $(TH Name) $(TH Description))
 $(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
@@ -36,21 +48,12 @@ $(T2 This, An dummy structure that is used to construct self-referencing algebra
 $(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 )
 
-$(BOOKTABLE $(H3 Visitor Handlers),
-$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
-$(T7 visit, Yes, N/A, No, No, 1+, Yes)
-$(T7 optionalVisit, No, No, Yes, No, 1+, Yes)
-$(T7 autoVisit, No, No, auto, No, 1+, Yes)
-$(T7 tryVisit, No, Yes, No, No, 1+, Yes)
-$(T7 match, Yes, N/A, No, Yes, 0+, Yes/No)
-$(T7 optionalMatch, No, No, Yes, Yes, 0+, Yes/No)
-$(T7 autoMatch, No, No, auto, Yes, 0+, Yes/No)
-$(T7 tryMatch, No, Yes, No, Yes, 0+, Yes/No)
-$(T7 getMember, Yes, N/A, No, No, 1+, Yes)
-$(T7 optionalGetMember, No, No, Yes, No, 1+, Yes)
-$(T7 autoGetMember, No, No, auto, No, 1+, Yes)
-$(T7 tryGetMember, No, Yes, No, No, 1+, Yes)
+$(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
+$(TR $(TH Name) $(TH Description))
+$(T2 isVariant, an algebraic type)
+$(T2 isNullable, an algebraic type with at least `typeof(null)` in the self type set. )
 )
+
 
 $(H3 Type Set)
 $(UL 
