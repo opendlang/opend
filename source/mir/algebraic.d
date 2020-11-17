@@ -31,19 +31,25 @@ $(T2 isNullable, an algebraic type with at least `typeof(null)` in the self type
 $(BOOKTABLE $(H3 Special Types),
 $(TR $(TH Name) $(TH Description))
 $(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
-$(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't visit the current value of the algebraic. Can't be accesed by reference. )
+$(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't match the current value of the algebraic. Can't be accesed by reference. )
 $(T2 This, An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
 $(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 )
 
 $(BOOKTABLE $(H3 Visitor Handlers),
-$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)))
-$(T4 match, Yes, N/A, No)
-$(T4 tryMatch, No, Yes, No)
-$(T4 optionalMatch, No, No, Yes)
-$(T4 getMember, Yes, N/A, No)
-$(T4 tryGetMember, No, Yes, No)
-$(T4 optionalGetMember, No, No, Yes)
+$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
+$(T7 visit, Yes, N/A, No, No, 1+, Yes)
+$(T7 optionalVisit, No, No, Yes, No, 1+, Yes)
+$(T7 autoVisit, No, No, auto, No, 1+, Yes)
+$(T7 tryVisit, No, Yes, No, No, 1+, Yes)
+$(T7 match, Yes, N/A, No, Yes, 0+, Yes/No)
+$(T7 optionalMatch, No, No, Yes, Yes, 0+, Yes/No)
+$(T7 autoMatch, No, No, auto, Yes, 0+, Yes/No)
+$(T7 tryMatch, No, Yes, No, Yes, 0+, Yes/No)
+$(T7 getMember, Yes, N/A, No, No, 1+, Yes)
+$(T7 optionalGetMember, No, No, Yes, No, 1+, Yes)
+$(T7 autoGetMember, No, No, auto, No, 1+, Yes)
+$(T7 tryGetMember, No, Yes, No, No, 1+, Yes)
 )
 
 $(H3 Type Set)
@@ -72,6 +78,7 @@ $(UL
 $(LI BetterC support. Runtime `TypeInfo` is not used.)
 $(LI Copy-constructors and postblit constructors are supported. )
 $(LI `toHash`, `opCmp`. `opEquals`, and `toString` support. )
+$(LI No string or template mixins are used. )
 $(LI Optimised for fast execution. )
 )
 
@@ -84,6 +91,7 @@ Macros:
 T2plain=$(TR $(TDNW $1) $(TD $+))
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+T7=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6) $(TD $7))
 
 +/
 module mir.algebraic;
@@ -91,9 +99,9 @@ module mir.algebraic;
 import mir.functional: naryFun;
 import std.meta: allSatisfy;
 
-private static immutable variantExceptionMsg = "mir.variant: the variant stores other type then requested.";
-private static immutable variantNullExceptionMsg = "mir.variant: the variant is empty and doesn't store any value.";
-private static immutable variantMemberExceptionMsg = "mir.variant: the variant is stores the type that isn't compatible with the user provided visitor and arguments.";
+private static immutable variantExceptionMsg = "mir.algebraic: the algebraic stores other type then requested.";
+private static immutable variantNullExceptionMsg = "mir.algebraic: the algebraic is empty and doesn't store any value.";
+private static immutable variantMemberExceptionMsg = "mir.algebraic: the algebraic is stores the type that isn't compatible with the user provided visitor and arguments.";
 
 version (D_Exceptions)
 {
@@ -630,6 +638,16 @@ struct Algebraic(uint _setId, _TypeSets...)
         return *cast(ubyte[_storage.bytes.length]*)&this._storage.bytes;
     }
 
+    ///
+    this(uint rhsId, RhsTypeSets...)(Algebraic!(rhsId, RhsTypeSets) rhs)
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(rhsId, RhsTypeSets).AllowedTypes))
+    {
+        this._storage.allBytes[0 .. rhs._storage.allBytes.length] = rhs._storage.allBytes;
+        this._storage.allBytes[rhs._storage.allBytes.length .. $] = 0;
+        static if (hasElaborateDestructor!(Algebraic!(rhsId, RhsTypeSets)))
+            rhs._storage.allBytes = Algebraic!(rhsId, RhsTypeSets).init._storage.allBytes;
+    }
+
     static if (!allSatisfy!(isCopyable, AllowedTypes))
         @disable this(this);
     else
@@ -878,12 +896,10 @@ struct Algebraic(uint _setId, _TypeSets...)
         auto get()()
             if (allSatisfy!(isCopyable, AllowedTypes[1 .. $]) && AllowedTypes.length != 2)
         {
-            if (!_storage.id)
+            import mir.utility: _expect;
+            if (_expect(!_storage.id, false))
             {
-                version(D_Exceptions)
-                    throw variantNullException;
-                else
-                    assert(0, variantNullExceptionMsg);
+                throw variantNullException;
             }
             static if (AllowedTypes.length > 1)
             {
@@ -946,7 +962,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             }
 
             /// ditto
-            @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) inout @safe pure nothrow
+            @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) inout
             {
                 return isNull ? fallback : get();
             }
@@ -954,8 +970,85 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
+    /// Zero cost always nothrow `get` alternative
+    auto ref trustedGet(R : Algebraic!(retId, RetTypeSets), uint retId, RetTypeSets, this This)() return @property
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(retId, RetTypeSets).AllowedTypes))
+    {
+        static if (_setId == retId && is(RetTypeSets == _TypeSets))
+            return this;
+        else
+        {
+            import std.meta: staticIndexOf;
+            import std.traits: CopyTypeQualifiers;
+            alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
+            alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
+            // uint rhsTypeId;
+            switch (_storage.id)
+            {
+                foreach (i, T; AllowedTypes)
+                static if (staticIndexOf!(T, RhsAllowedTypes) >= 0)
+                {
+                    case i:
+                        static if (is(T == void))
+                            return (()@trusted => cast(Ret) Ret._void)();
+                        else
+                            return Ret(trustedGet!T);
+                }
+                default:
+                    assert(0, variantMemberExceptionMsg);
+            }
+            return ret;
+        }
+    }
+
+    /++
+    Throws: Exception if the storage contains value of the type that isn't represented in the allowed type set of the requested algebraic.
+    +/
+    auto ref get(R : Algebraic!(retId, RetTypeSets), uint retId, RetTypeSets, this This)() return @property
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(retId, RetTypeSets).AllowedTypes))
+    {
+        static if (_setId == retId && is(RetTypeSets == _TypeSets))
+            return this;
+        else
+        {
+            import std.meta: staticIndexOf;
+            import std.traits: CopyTypeQualifiers;
+            alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
+            alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
+            // uint rhsTypeId;
+            switch (_storage.id)
+            {
+                foreach (i, T; AllowedTypes)
+                static if (staticIndexOf!(T, RhsAllowedTypes) >= 0)
+                {
+                    case i:
+                        static if (is(T == void))
+                            return (()@trusted => cast(Ret) Ret._void)();
+                        else
+                            return Ret(trustedGet!T);
+                }
+                default:
+                    throw variantMemberException;
+            }
+            return ret;
+        }
+    }
+
     static foreach (i, T; AllowedTypes)
     {
+        private auto ref _mutableTrustedGet(E)() @trusted @property return const nothrow
+            if (is(E == T))
+        {
+            assert (i == _storage.id, T.stringof);
+            static if (is(T == typeof(null)))
+                return null;
+            else
+            static if (is(T == void))
+                return;
+            else
+                return *cast(Unqual!(AllowedTypes[i])*)&_storage.payload[i];
+        }
+
         /// Zero cost always nothrow `get` alternative
         auto ref trustedGet(E)() @trusted @property return inout nothrow
             if (is(E == T))
@@ -970,19 +1063,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                 return _storage.payload[i];
         }
 
-        private auto ref _mutableTrustedGet(E)() @trusted @property return const nothrow
-            if (is(E == T))
-        {
-            assert (i == _storage.id, T.stringof);
-            static if (is(T == typeof(null)))
-                return null;
-            else
-            static if (is(T == void))
-                return;
-            else
-                return *cast(Unqual!(AllowedTypes[i])*)&_storage.payload[i];
-        }
-
         /++
         Throws: Exception if the storage contains value of other type
         +/
@@ -994,10 +1074,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             {
                 if (_expect(i != _storage.id, false))
                 {
-                    version(D_Exceptions)
-                        throw variantException;
-                    else
-                        assert(0, variantExceptionMsg);
+                    throw variantException;
                 }
             }
             return trustedGet!T;
@@ -1320,7 +1397,7 @@ version(mir_core_test) unittest
 Applies a delegate or function to the given Variant depending on the held type,
 ensuring that all types are handled by the visiting functions.
 +/
-alias match(visitors...) = visit!(naryFun!visitors, Exhaustive.compileTime);
+alias visit(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, false);
 
 ///
 @safe pure @nogc nothrow
@@ -1331,8 +1408,8 @@ version(mir_core_test) unittest
     Number x = 23;
     Number y = 1.0;
 
-    assert(x.match!((int v) => true, (float v) => false));
-    assert(y.match!((int v) => false, (float v) => true));
+    assert(x.visit!((int v) => true, (float v) => false));
+    assert(y.visit!((int v) => false, (float v) => true));
 }
 
 ///
@@ -1346,15 +1423,15 @@ version(mir_core_test) unittest
     Number y = 1.0;
 
     () nothrow {
-        assert(x.match!((int v) => true, (float v) => false));
-        assert(y.match!((int v) => false, (v) => true));
-        assert(z.match!((typeof(null) v) => true, (v) => false));
+        assert(x.visit!((int v) => true, (float v) => false));
+        assert(y.visit!((int v) => false, (v) => true));
+        assert(z.visit!((typeof(null) v) => true, (v) => false));
     } ();
 
     auto xx = x.get;
     static assert (is(typeof(xx) == Variant!(int, double)));
-    assert(xx.match!((int v) => v, (float v) => 0) == 23);
-    assert(xx.match!((ref v) => v) == 23);
+    assert(xx.visit!((int v) => v, (float v) => 0) == 23);
+    assert(xx.visit!((ref v) => v) == 23);
 
     x = null;
     y.nullify;
@@ -1374,13 +1451,13 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
     import mir.conv: to;
     enum MIR_ALGORITHM = __traits(compiles, { import mir.format; });
 
-    alias visitorHandler = match!(
+    alias visitorHandler = visit!(
         (typeof(null)) => "NULL",
         () => "VOID",
         (ref r) {r += 1;}, // returns void
     );
 
-    alias secondOrderVisitorHandler = match!(
+    alias secondOrderVisitorHandler = visit!(
         () => "SO VOID", // void => to "RV VOID"
         (str) => str, // string to => it self
     );
@@ -1408,10 +1485,10 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
 }
 
 /++
-Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Behaves as $(LREF visit) but doesn't enforce at compile time that all types can be handled by the visiting functions.
 Throws: Exception if `naryFun!visitors` can't be called with provided arguments
 +/
-alias tryMatch(visitors...) = visit!(naryFun!visitors, Exhaustive.exception);
+alias tryVisit(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.exception, false);
 
 ///
 @safe pure @nogc
@@ -1421,14 +1498,14 @@ version(mir_core_test) unittest
 
     Number x = 23;
 
-    assert(x.tryMatch!((int v) => true));
+    assert(x.tryVisit!((int v) => true));
 }
 
 /++
-Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
-Returns: nullable variant, null value is used if `naryFun!visitors` can't be called with provided arguments 
+Behaves as $(LREF visit) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Returns: nullable variant, null value is used if `naryFun!visitors` can't be called with provided arguments.
 +/
-alias optionalMatch(visitors...) = visit!(naryFun!visitors, Exhaustive.nullable);
+alias optionalVisit(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.nullable, false);
 
 ///
 @safe pure @nogc nothrow
@@ -1438,27 +1515,304 @@ version(mir_core_test) unittest
 
     Variant!(S, double) variant;
 
-    alias optionalMatchInst = optionalMatch!((ref value) => value + 0);
+    alias optionalVisitInst = optionalVisit!((ref value) => value + 0);
 
     // do nothing because of variant isn't initialized
-    Nullable!double result = optionalMatchInst(variant);
+    Nullable!double result = optionalVisitInst(variant);
     assert(result.isNull);
 
     variant = S(2);
     // do nothing because of lambda can't compile
-    result = optionalMatchInst(variant);
+    result = optionalVisitInst(variant);
     assert(result == null);
 
     variant = 3.0;
-    result = optionalMatchInst(variant);
+    result = optionalVisitInst(variant);
     assert (result == 3.0);
+}
+
+/++
+Behaves as $(LREF visit) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Returns: optionally nullable type, null value is used if `naryFun!visitors` can't be called with provided arguments.
++/
+alias autoVisit(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.auto_, false);
+
+
+/++
+Applies a delegate or function to the given arguments depending on the held type,
+ensuring that all types are handled by the visiting functions.
+
+The handler supports multiple dispatch or multimethods: a feature of handler in which
+a function or method can be dynamically dispatched based on the run time (dynamic) type or,
+in the more general case, some other attribute of more than one of its arguments.
+
+See_also: $(HTTPS en.wikipedia.org/wiki/Multiple_dispatch, Multiple dispatch)
++/
+alias match(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, true);
+
+///
+unittest
+{
+    struct Asteroid { uint size; }
+    struct Spaceship { uint size; }
+    alias SpaceObject = Variant!(Asteroid, Spaceship);
+
+    alias collideWith = match!(
+        (Asteroid x, Asteroid y) => "a/a",
+        (Asteroid x, Spaceship y) => "a/s",
+        (Spaceship x, Asteroid y) => "s/a",
+        (Spaceship x, Spaceship y) => "s/s",
+    );
+
+    import mir.utility: min;
+    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+
+    alias collide = (x, y) => oops(x, y) ? "big-boom" : collideWith(x, y);
+
+    auto ea = Asteroid(1);
+    auto es = Spaceship(2);
+    auto oa = SpaceObject(ea);
+    auto os = SpaceObject(es);
+
+    // Asteroid-Asteroid
+    assert(collide(ea, ea) == "a/a");
+    assert(collide(ea, oa) == "a/a");
+    assert(collide(oa, ea) == "a/a");
+    assert(collide(oa, oa) == "a/a");
+
+    // Asteroid-Spaceship
+    assert(collide(ea, es) == "a/s");
+    assert(collide(ea, os) == "a/s");
+    assert(collide(oa, es) == "a/s");
+    assert(collide(oa, os) == "a/s");
+
+    // Spaceship-Asteroid
+    assert(collide(es, ea) == "s/a");
+    assert(collide(es, oa) == "s/a");
+    assert(collide(os, ea) == "s/a");
+    assert(collide(os, oa) == "s/a");
+
+    // Spaceship-Spaceship
+    assert(collide(es, es) == "big-boom");
+    assert(collide(es, os) == "big-boom");
+    assert(collide(os, es) == "big-boom");
+    assert(collide(os, os) == "big-boom");
+}
+
+/++
+Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Throws: Exception if `naryFun!visitors` can't be called with provided arguments
++/
+alias tryMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.exception, true);
+
+///
+unittest
+{
+    import std.exception: assertThrown;
+    struct Asteroid { uint size; }
+    struct Spaceship { uint size; }
+    alias SpaceObject = Variant!(Asteroid, Spaceship);
+
+    alias collideWith = tryMatch!(
+        (Asteroid x, Asteroid y) => "a/a",
+        // No visitor for A/S pair 
+        // (Asteroid x, Spaceship y) => "a/s",
+        (Spaceship x, Asteroid y) => "s/a",
+        (Spaceship x, Spaceship y) => "s/s",
+    );
+
+    import mir.utility: min;
+    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+
+    alias collide = (x, y) => oops(x, y) ? "big-boom" : collideWith(x, y);
+
+    auto ea = Asteroid(1);
+    auto es = Spaceship(2);
+    auto oa = SpaceObject(ea);
+    auto os = SpaceObject(es);
+
+    // Asteroid-Asteroid
+    assert(collide(ea, ea) == "a/a");
+    assert(collide(ea, oa) == "a/a");
+    assert(collide(oa, ea) == "a/a");
+    assert(collide(oa, oa) == "a/a");
+
+    // Asteroid-Spaceship
+    assertThrown!Exception(collide(ea, es));
+    assertThrown!Exception(collide(ea, os));
+    assertThrown!Exception(collide(oa, es));
+    assertThrown!Exception(collide(oa, os));
+
+     // not enough information to deduce the type from (ea, es) pair
+    static assert(is(typeof(collide(ea, es)) == void));
+    // can deduce the type based on other return values
+    static assert(is(typeof(collide(ea, os)) == string));
+    static assert(is(typeof(collide(oa, es)) == string));
+    static assert(is(typeof(collide(oa, os)) == string));
+
+    // Spaceship-Asteroid
+    assert(collide(es, ea) == "s/a");
+    assert(collide(es, oa) == "s/a");
+    assert(collide(os, ea) == "s/a");
+    assert(collide(os, oa) == "s/a");
+
+    // Spaceship-Spaceship
+    assert(collide(es, es) == "big-boom");
+    assert(collide(es, os) == "big-boom");
+    assert(collide(os, es) == "big-boom");
+    assert(collide(os, os) == "big-boom");
+}
+
+/++
+Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Returns: nullable variant, null value is used if `naryFun!visitors` can't be called with provided arguments.
++/
+alias optionalMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.nullable, true);
+
+///
+unittest
+{
+    struct Asteroid { uint size; }
+    struct Spaceship { uint size; }
+    alias SpaceObject = Variant!(Asteroid, Spaceship);
+
+    alias collideWith = optionalMatch!(
+        (Asteroid x, Asteroid y) => "a/a",
+        // No visitor for A/S pair 
+        // (Asteroid x, Spaceship y) => "a/s",
+        (Spaceship x, Asteroid y) => "s/a",
+        (Spaceship x, Spaceship y) => "s/s",
+    );
+
+    import mir.utility: min;
+    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+
+    alias collide = (x, y) => oops(x, y) ? Nullable!string("big-boom") : collideWith(x, y);
+
+    auto ea = Asteroid(1);
+    auto es = Spaceship(2);
+    auto oa = SpaceObject(ea);
+    auto os = SpaceObject(es);
+
+    // Asteroid-Asteroid
+    assert(collide(ea, ea) == "a/a");
+    assert(collide(ea, oa) == "a/a");
+    assert(collide(oa, ea) == "a/a");
+    assert(collide(oa, oa) == "a/a");
+
+    // Asteroid-Spaceship
+    // assert(collide(ea, es).isNull);  // Compiler error: incompatible types
+    assert(collideWith(ea, es).isNull); // OK
+    assert(collide(ea, os).isNull);
+    assert(collide(oa, es).isNull);
+    assert(collide(oa, os).isNull);
+
+
+    // Spaceship-Asteroid
+    assert(collide(es, ea) == "s/a");
+    assert(collide(es, oa) == "s/a");
+    assert(collide(os, ea) == "s/a");
+    assert(collide(os, oa) == "s/a");
+
+    // Spaceship-Spaceship
+    assert(collide(es, es) == "big-boom");
+    assert(collide(es, os) == "big-boom");
+    assert(collide(os, es) == "big-boom");
+    assert(collide(os, os) == "big-boom");
+
+    // check types  
+
+    static assert(!__traits(compiles, collide(Asteroid.init, Spaceship.init)));
+    static assert(is(typeof(collideWith(Asteroid.init, Spaceship.init)) == Nullable!()));
+
+    static assert(is(typeof(collide(Asteroid.init, Asteroid.init)) == Nullable!string));
+    static assert(is(typeof(collide(Asteroid.init, SpaceObject.init)) == Nullable!string));
+    static assert(is(typeof(collide(SpaceObject.init, Asteroid.init)) == Nullable!string));
+    static assert(is(typeof(collide(SpaceObject.init, SpaceObject.init)) == Nullable!string));
+    static assert(is(typeof(collide(SpaceObject.init, Spaceship.init)) == Nullable!string));
+    static assert(is(typeof(collide(Spaceship.init, Asteroid.init)) == Nullable!string));
+    static assert(is(typeof(collide(Spaceship.init, SpaceObject.init)) == Nullable!string));
+    static assert(is(typeof(collide(Spaceship.init, Spaceship.init)) == Nullable!string));
+}
+
+/++
+Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
+Returns: optionally nullable type, null value is used if `naryFun!visitors` can't be called with provided arguments.
++/
+alias autoMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.auto_, true);
+
+///
+unittest
+{
+    struct Asteroid { uint size; }
+    struct Spaceship { uint size; }
+    alias SpaceObject = Variant!(Asteroid, Spaceship);
+
+    alias collideWith = autoMatch!(
+        (Asteroid x, Asteroid y) => "a/a",
+        // No visitor for A/S pair 
+        // (Asteroid x, Spaceship y) => "a/s",
+        (Spaceship x, Asteroid y) => "s/a",
+        (Spaceship x, Spaceship y) => "s/s",
+    );
+
+    import mir.utility: min;
+    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+
+    import mir.conv: to;
+    alias collide = (x, y) => oops(x, y) ? "big-boom".to!(typeof(collideWith(x, y))) : collideWith(x, y);
+
+    auto ea = Asteroid(1);
+    auto es = Spaceship(2);
+    auto oa = SpaceObject(ea);
+    auto os = SpaceObject(es);
+
+    // Asteroid-Asteroid
+    assert(collide(ea, ea) == "a/a");
+    assert(collide(ea, oa) == "a/a");
+    assert(collide(oa, ea) == "a/a");
+    assert(collide(oa, oa) == "a/a");
+
+    // Asteroid-Spaceship
+    // assert(collide(ea, es).isNull);  // Compiler error: incompatible types
+    assert(collideWith(ea, es).isNull); // OK
+    assert(collide(ea, os).isNull);
+    assert(collide(oa, es).isNull);
+    assert(collide(oa, os).isNull);
+
+    // Spaceship-Asteroid
+    assert(collide(es, ea) == "s/a");
+    assert(collide(es, oa) == "s/a");
+    assert(collide(os, ea) == "s/a");
+    assert(collide(os, oa) == "s/a");
+
+    // Spaceship-Spaceship
+    assert(collide(es, es) == "big-boom");
+    assert(collide(es, os) == "big-boom");
+    assert(collide(os, es) == "big-boom");
+    assert(collide(os, os) == "big-boom");
+
+    // check types  
+
+    static assert(!__traits(compiles, collide(Asteroid.init, Spaceship.init)));
+    static assert(is(typeof(collideWith(Asteroid.init, Spaceship.init)) == Nullable!()));
+
+    static assert(is(typeof(collide(Asteroid.init, Asteroid.init)) == string));
+    static assert(is(typeof(collide(SpaceObject.init, Asteroid.init)) == string));
+    static assert(is(typeof(collide(Spaceship.init, Asteroid.init)) == string));
+    static assert(is(typeof(collide(Spaceship.init, SpaceObject.init)) == string));
+    static assert(is(typeof(collide(Spaceship.init, Spaceship.init)) == string));
+
+    static assert(is(typeof(collide(Asteroid.init, SpaceObject.init)) == Nullable!string));
+    static assert(is(typeof(collide(SpaceObject.init, SpaceObject.init)) == Nullable!string));
+    static assert(is(typeof(collide(SpaceObject.init, Spaceship.init)) == Nullable!string));
 }
 
 /++
 Applies a member handler to the given Variant depending on the held type,
 ensuring that all types are handled by the visiting handler.
 +/
-alias getMember(string member) = visit!(getMemberHandler!member, Exhaustive.compileTime);
+alias getMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.compileTime, false);
 
 ///
 @safe pure @nogc nothrow
@@ -1479,10 +1833,10 @@ version(mir_core_test) unittest
 }
 
 /++
-Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Throws: Exception if member can't be accessed with provided arguments
 +/
-alias tryGetMember(string member) = visit!(getMemberHandler!member, Exhaustive.exception);
+alias tryGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.exception, false);
 
 ///
 @safe pure @nogc
@@ -1511,16 +1865,21 @@ version(mir_core_test) unittest
     Number x = Number(23);
     Number y = Number(1.0);
 
-    assert(x.match!((int v) => true, (float v) => false));
-    assert(y.match!((int v) => false, (float v) => true));
+    assert(x.visit!((int v) => true, (float v) => false));
+    assert(y.visit!((int v) => false, (float v) => true));
 }
 
 /++
-Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the member visitor.
-Returns: nullable variant, null value is used if member can't be called with provided arguments 
+Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Returns: nullable variant, null value is used if the member can't be called with provided arguments.
 +/
-alias optionalGetMember(string member) = visit!(getMemberHandler!member, Exhaustive.nullable);
+alias optionalGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.nullable, false);
 
+/++
+Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Returns: optionally nullable type, null value is used if the member can't be called with provided arguments.
++/
+alias autoGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.auto_, false);
 
 private template getMemberHandler(string member)
 {
@@ -1551,113 +1910,178 @@ private enum Exhaustive
     compileTime,
     exception,
     nullable,
+    auto_,
 }
 
-private template visit(alias visitor, Exhaustive exhaustive)
+private template nextVisitor(T, alias visitor, alias arg)
 {
-    import std.traits: Unqual;
-    ///
-    auto ref visit(V, Args...)(auto ref V variant, auto ref Args args)
-        if (isVariant!V)
+    static if (is(T == void))
+    {
+        alias nextVisitor = visitor;
+    }
+    else
+    auto ref nextVisitor(NextArgs...)(auto ref NextArgs nextArgs)
     {
         import core.lifetime: forward;
-        import std.meta: staticMap, AliasSeq;
+        return visitor(arg.trustedGet!T, forward!nextArgs);
+    }
+}
 
-        template allArgs(T)
-        {
-            static if (is(T == void))
-                alias allArgs = forward!args;
-            else
-            static if (is(T == typeof(null)))
-                alias allArgs = AliasSeq!(null, forward!args);
-            else
-            {
-                ref fun() @property @trusted
-                {
-                    return variant.trustedGet!T;
-                }
-                alias allArgs = AliasSeq!(fun, forward!args);
-            }
-        }
+private template nextVisitor(alias visitor, alias arg)
+{
+    auto ref nextVisitor(NextArgs...)(auto ref NextArgs nextArgs)
+    {
+        import core.lifetime: forward;
+        return visitor(arg, forward!nextArgs);
+    }
+}
 
-        template VariantReturnTypesImpl(T)
-        {
-            static if (__traits(compiles, visitor(allArgs!T)))
-                alias VariantReturnTypesImpl = TryRemoveConst!(typeof(visitor(allArgs!T)));
-            else
-                alias VariantReturnTypesImpl = AliasSeq!();
-        }
+private template visitThis(alias visitor, Exhaustive nextExhaustive, args...)
+{
+    auto ref visitThis(T)()
+    {
+        import core.lifetime: forward;
+        return .visitImpl!(nextVisitor!(T, visitor, args[0]), nextExhaustive, true)(forward!(args[1 .. $]));
+    }
+}
 
-        static if (exhaustive == Exhaustive.nullable)
-            alias AllReturnTypes = NoDuplicates!(typeof(null), staticMap!(VariantReturnTypesImpl, V.AllowedTypes));
+private template visitLast(alias visitor, args...)
+{
+    auto ref visitLast(T)()
+    {
+        import core.lifetime: forward;
+        static if (is(T == void))
+            return visitor(forward!(args[1 .. $]));
         else
-            alias AllReturnTypes = NoDuplicates!(staticMap!(VariantReturnTypesImpl, V.AllowedTypes));
+            return visitor(args[0].trustedGet!T, forward!(args[1 .. $]));
+    }
+}
 
-        switch (variant._storage.id)
+private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
+{
+    import std.meta: anySatisfy, staticMap, AliasSeq;
+
+    ///
+    auto ref visitImpl(Args...)(auto ref Args args)
+    {
+        import core.lifetime: forward;
+
+        static if (!anySatisfy!(isVariant, Args))
         {
-            static foreach (i, T; V.AllowedTypes)
+            static if (exhaustive == Exhaustive.compileTime)
             {
-                case i:
-                    static if (__traits(compiles, visitor(allArgs!T)))
-                    {
-                        static if (AllReturnTypes.length == 1)
-                        {
+                return visitor(forward!args);
+            }
+            else
+            static if (exhaustive == Exhaustive.exception)
+            {
+                static if (__traits(compiles, visitor(forward!args)))
+                    return visitor(forward!args);
+                else
+                    throw variantMemberException;
+            }
+            else
+            static if (exhaustive == Exhaustive.nullable)
+            {
+                static if (__traits(compiles, visitor(forward!args)))
+                    return Nullable!(typeof(visitor(forward!args)))(visitor(forward!args));
+                else
+                    return Nullable!().init;
+            }
+            else
+            static if (exhaustive == Exhaustive.auto_)
+            {
+                static if (__traits(compiles, visitor(forward!args)))
+                    return visitor(forward!args);
+                else
+                    return Nullable!().init;
+            }
+            else
+            static assert(0, "not implemented");
+        }
+        else
+        static if (!isVariant!(Args[0]))
+        {
+            return .visitImpl!(nextVisitor!(visitor, args[0]), exhaustive, fused)(forward!(args[1 .. $]));
+        }
+        else
+        {
+            static if (fused && anySatisfy!(isVariant, Args[1 .. $]))
+            {
+                alias fun = visitThis!(visitor, exhaustive, args);
+            }
+            else
+            {
+                static assert (isVariant!(Args[0]), "First argument should be a Mir Algebraic type");
+                alias fun = visitLast!(visitor, args);
+            }
 
-                            static if (is(T == void))
-                                return visitor(forward!args);
-                            else
-                            static if (is(T == typeof(null)))
-                                return visitor(null, forward!args);
-                            else
-                                return visitor(variant.trustedGet!T, forward!args);
-                        }
-                        else
+            template VariantReturnTypesImpl(T)
+            {
+                static if (__traits(compiles, fun!T()))
+                    static if (fused && is(typeof(fun!T()) : Algebraic!(id, TypeSets), uint id, TypeSets...))
+                        alias VariantReturnTypesImpl = TryRemoveConst!(typeof(fun!T())).AllowedTypes;
+                    else
+                    alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!(typeof(fun!T())));
+                else
+                static if (exhaustive == Exhaustive.auto_)
+                    alias VariantReturnTypesImpl = AliasSeq!(typeof(null));
+                else
+                    alias VariantReturnTypesImpl = AliasSeq!();
+            }
+
+            static if (exhaustive == Exhaustive.nullable)
+                alias AllReturnTypes = NoDuplicates!(typeof(null), staticMap!(VariantReturnTypesImpl, Args[0].AllowedTypes));
+            else
+                alias AllReturnTypes = NoDuplicates!(staticMap!(VariantReturnTypesImpl, Args[0].AllowedTypes));
+
+            switch (args[0]._storage.id)
+            {
+                static foreach (i, T; Args[0].AllowedTypes)
+                {
+                    case i:
+                        static if (__traits(compiles, fun!T()))
                         {
-                            static if (is(VariantReturnTypesImpl!T == void))
+                            static if (AllReturnTypes.length == 1)
                             {
-                                static if (is(T == void))
-                                    visitor(forward!args);
-                                else
-                                static if (is(T == typeof(null)))
-                                    visitor(null, forward!args);
-                                else
-                                    visitor(variant.trustedGet!T, forward!args);
+                                return fun!T();
+                            }
+                            else
+                            static if (is(VariantReturnTypesImpl!T == AliasSeq!void))
+                            {
+                                fun!T();
                                 return Variant!AllReturnTypes._void;
                             }
                             else
+                            static if (is(typeof(fun!T()) : Variant!AllReturnTypes))
                             {
-                                static if (is(T == void))
-                                    return Variant!AllReturnTypes(visitor(forward!args));
-                                else
-                                static if (is(T == typeof(null)))
-                                    return Variant!AllReturnTypes(visitor(null, forward!args));
-                                else
-                                    return Variant!AllReturnTypes(visitor(variant.trustedGet!T, forward!args));
+                                return fun!T();
+                            }
+                            else
+                            {
+                                return Variant!AllReturnTypes(fun!T());
                             }
                         }
-                    }
-                    else
-                    static if (exhaustive == Exhaustive.compileTime)
-                    {
-                        static if (is(T == typeof(null)))
-                            assert(0, "Null " ~ V.stringof);
                         else
-                            static assert(0, V.stringof ~ ": the visitor cann't be caled with type (first argument) " ~ typeof(variant.trustedGet!T()).stringof ~ (Args.length ? (" and additional arguments " ~ Args.stringof) : ""));
-                    }
-                    else
-                    static if (exhaustive == Exhaustive.nullable)
-                    {
-                        return Variant!AllReturnTypes(null);
-                    }
-                    else
-                    {
-                        version(D_Exceptions)
+                        static if (exhaustive == Exhaustive.compileTime)
+                        {
+                            static if (is(T == typeof(null)))
+                                assert(0, "Null " ~ Args[0].stringof);
+                            else
+                                static assert(0, Args[0].stringof ~ ": the visitor cann't be caled with arguments " ~ Args.stringof);
+                        }
+                        else
+                        static if (exhaustive == Exhaustive.nullable || exhaustive == Exhaustive.auto_)
+                        {
+                            return Variant!AllReturnTypes(null);
+                        }
+                        else
+                        {
                             throw variantMemberException;
-                        else
-                            assert(0, variantMemberExceptionMsg);
-                    }
+                        }
+                }
+                default: assert(0);
             }
-            default: assert(0);
         }
     }
 }
@@ -1669,7 +2093,7 @@ version(mir_core_test) unittest
 
     Variant!(S, double) variant;
     variant = 1.0;
-    variant.tryMatch!((ref value, b) => value += b)(2);
+    variant.tryVisit!((ref value, b) => value += b)(2);
     assert (variant.get!double == 3);
 
     alias fun = (ref value) {
@@ -1679,54 +2103,63 @@ version(mir_core_test) unittest
            value += 2;
     };
 
-    variant.tryMatch!fun;
+    variant.tryVisit!fun;
     assert (variant.get!double == 5);
 
     variant = S(4);
-    variant.tryMatch!fun;
+    variant.tryVisit!fun;
     assert (variant.get!S.a == 6);
 }
 
-private struct PODWithLongPointer {
-    long* x;
-    this(long l) pure
-    {
-        x = new long(l);
-    }
+@safe pure @nogc
+version(mir_core_test) unittest
+{
 
-@property:
-    long a() const {
-        return x ? *x : 0;
-    }
-
-    void a(long l) {
-        if (x) {
-            *x = l;
-        } else {
+    static struct PODWithLongPointer {
+        long* x;
+        this(long l) pure
+        {
             x = new long(l);
         }
-    }
-}
 
-unittest
-{
+    @property:
+        long a() const {
+            return x ? *x : 0;
+        }
+
+        void a(long l) {
+            if (x) {
+                *x = l;
+            } else {
+                x = new long(l);
+            }
+        }
+    }
     import std.traits: TemplateArgsOf;
     static assert(is(TemplateArgsOf!(TypeSet!(byte, immutable PODWithLongPointer)) == AliasSeq!(byte, immutable PODWithLongPointer)));
 }
 
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// END OF MIR ALGEBRIAC /////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+private:
+
 import std.meta: AliasSeq, staticMap;
 
-private template Erase(T, TList...)
+template Erase(T, TList...)
 {
     alias Erase = GenericErase!(T, TList).result;
 }
 
-private template Erase(alias T, TList...)
+template Erase(alias T, TList...)
 {
     alias Erase = GenericErase!(T, TList).result;
 }
 
-private template GenericErase(args...)
+template GenericErase(args...)
 if (args.length >= 1)
 {
     alias e     = OldAlias!(args[0]);
@@ -1748,24 +2181,24 @@ if (args.length >= 1)
     }
 }
 
-private template Pack(T...)
+template Pack(T...)
 {
     alias Expand = T;
     enum equals(U...) = isSame!(Pack!T, Pack!U);
 }
 
 
-private template EraseAll(T, TList...)
+template EraseAll(T, TList...)
 {
     alias EraseAll = GenericEraseAll!(T, TList).result;
 }
 
-private template EraseAll(alias T, TList...)
+template EraseAll(alias T, TList...)
 {
     alias EraseAll = GenericEraseAll!(T, TList).result;
 }
 
-private template GenericEraseAll(args...)
+template GenericEraseAll(args...)
 if (args.length >= 1)
 {
     alias e     = OldAlias!(args[0]);
@@ -1791,12 +2224,12 @@ if (args.length >= 1)
     }
 }
 
-private template OldAlias(T)
+template OldAlias(T)
 {
     alias OldAlias = T;
 }
 
-private template EraseAllN(uint N, TList...)
+template EraseAllN(uint N, TList...)
 {
     static if (N == 1)
     {
@@ -1813,7 +2246,7 @@ private template EraseAllN(uint N, TList...)
     }
 }
 
-private template NoDuplicates(TList...)
+template NoDuplicates(TList...)
 {
     static if (TList.length >= 2)
     {
@@ -1828,7 +2261,7 @@ private template NoDuplicates(TList...)
 }
 
 
-private template isSame(ab...)
+template isSame(ab...)
 if (ab.length == 2)
 {
     static if (is(ab[0]) && is(ab[1]))
@@ -1847,7 +2280,7 @@ if (ab.length == 2)
     }
 }
 
-private template Mod(From, To)
+template Mod(From, To)
 {
     template Mod(T)
     {
@@ -1858,12 +2291,12 @@ private template Mod(From, To)
     }
 }
 
-private template Replace(From, To, T...)
+template Replace(From, To, T...)
 {
     alias Replace = staticMap!(Mod!(From, To), T);
 }
 
-private template ReplaceTypeUnless(alias pred, From, To, T...)
+template ReplaceTypeUnless(alias pred, From, To, T...)
 {
     static if (T.length == 1)
     {
@@ -1932,7 +2365,7 @@ private template ReplaceTypeUnless(alias pred, From, To, T...)
     }
 }
 
-@safe unittest
+@safe version(mir_core_test) unittest
 {
     import std.typecons: Tuple;
     import std.traits : isArray;
@@ -1944,7 +2377,13 @@ private template ReplaceTypeUnless(alias pred, From, To, T...)
    );
 }
 
-private template replaceTypeInFunctionTypeUnless(alias pred, From, To, fun)
+template Contains(Types...)
+{
+    import std.meta: staticIndexOf;
+    enum Contains(T) = staticIndexOf!(T, Types) >= 0;
+}
+
+template replaceTypeInFunctionTypeUnless(alias pred, From, To, fun)
 {
     import std.meta;
     import std.traits;
@@ -2020,11 +2459,11 @@ private template replaceTypeInFunctionTypeUnless(alias pred, From, To, fun)
     mixin("alias replaceTypeInFunctionTypeUnless = " ~ gen() ~ ";");
 }
 
-private enum false_(T) = false;
+enum false_(T) = false;
 
-private alias ReplaceType(From, To, T...) = ReplaceTypeUnless!(false_, From, To, T);
+alias ReplaceType(From, To, T...) = ReplaceTypeUnless!(false_, From, To, T);
 
-@safe unittest
+version(mir_core_test) @safe unittest
 {
     import std.typecons: Unique, Tuple;
     template Test(Ts...)
@@ -2109,7 +2548,7 @@ private alias ReplaceType(From, To, T...) = ReplaceTypeUnless!(false_, From, To,
     );
 }
 // https://issues.dlang.org/show_bug.cgi?id=17116
-@safe unittest
+version(mir_core_test) @safe unittest
 {
     alias ConstDg = void delegate(float) const;
     alias B = void delegate(int) const;
@@ -2117,21 +2556,21 @@ private alias ReplaceType(From, To, T...) = ReplaceTypeUnless!(false_, From, To,
     static assert(is(B == A));
 }
  // https://issues.dlang.org/show_bug.cgi?id=19696
-@safe unittest
+version(mir_core_test) @safe unittest
 {
     static struct T(U) {}
     static struct S { T!int t; alias t this; }
     static assert(is(ReplaceType!(float, float, S) == S));
 }
  // https://issues.dlang.org/show_bug.cgi?id=19697
-@safe unittest
+version(mir_core_test) @safe unittest
 {
     class D(T) {}
     class C : D!C {}
     static assert(is(ReplaceType!(float, float, C)));
 }
 // https://issues.dlang.org/show_bug.cgi?id=16132
-@safe unittest
+version(mir_core_test) @safe unittest
 {
     interface I(T) {}
     class C : I!int {}
