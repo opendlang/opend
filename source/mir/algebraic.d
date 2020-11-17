@@ -23,7 +23,7 @@ $(T2 Variants, a list of algebraic types with cyclic type referencing, which def
 )
 
 $(BOOKTABLE $(H3 Visitor Handlers),
-$(TR $(TH Name) $(TH Checks can compile) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
+$(TR $(TH Name) $(TH Ensures can match) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
 $(LEADINGROW Classic handlers)
 $(T7 visit, Yes, N/A, No, No, 1+, Yes)
 $(T7 optionalVisit, No, No, Yes, No, 1+, Yes)
@@ -448,7 +448,7 @@ Implementation of $(LREF Variant), $(LREF Variants), and $(LREF Nullable).
 struct Algebraic(uint _setId, _TypeSets...)
     if (allSatisfy!(isInstanceOf!TypeSet, _TypeSets) && _setId < _TypeSets.length)
 {
-    private enum _isVariant;
+    private enum _variant_test_ = _TypeSets = AliasSeq!(TypeSet!());
 
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
