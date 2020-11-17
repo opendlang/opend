@@ -15,6 +15,7 @@ sources_list = [
     'mir/enums',
     'mir/functional',
     'mir/internal/memory',
+    'mir/internal/meta',
     'mir/internal/utility',
     'mir/math/common',
     'mir/math/constant',

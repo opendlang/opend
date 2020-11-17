@@ -41,9 +41,6 @@ NDSLICE = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 +/
 module mir.functional;
 
-import std.meta;
-import std.traits;
-
 private enum isRef(T) = is(T : Ref!T0, T0);
 
 import mir.math.common: optmath;
@@ -130,7 +127,12 @@ struct RefTuple(T...)
 /// Removes $(LREF Ref) shell.
 alias Unref(V : Ref!T, T) = T;
 /// ditto
-alias Unref(V : RefTuple!T, T...) = RefTuple!(staticMap!(.Unref, T));
+template Unref(V : RefTuple!T, T...)
+{
+    import std.meta: staticMap;
+    alias Unref = RefTuple!(staticMap!(.Unref, T));
+}
+
 /// ditto
 alias Unref(V) = V;
 
@@ -194,6 +196,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
 {
     static if (fun.length != 1)
     {
+        import std.meta: staticMap, Filter;
         static if (Filter!(_needNary, fun).length == 0)
         {
             ///
@@ -254,6 +257,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
 //@safe
 version(mir_core_test) unittest
 {
+    import std.meta: staticMap;
     alias funs = staticMap!(naryFun, "a", "a * 2", "a * 3", "a * a", "-a");
     alias afun = adjoin!funs;
     int a = 5, b = 5;
@@ -290,6 +294,7 @@ private template needOpCallAlias(alias fun)
      */
     static if (is(typeof(fun.opCall) == function))
     {
+        import std.traits: Parameters;
         enum needOpCallAlias = !is(typeof(fun)) && __traits(compiles, () {
             return fun(Parameters!fun.init);
         });
@@ -477,6 +482,7 @@ N-ary predicate that reverses the order of arguments, e.g., given
 +/
 template reverseArgs(alias fun)
 {
+    import std.meta: Reverse;
     ///
     @optmath auto ref reverseArgs(Args...)(auto ref Args args)
         if (is(typeof(fun(Reverse!args))))
@@ -568,11 +574,12 @@ private template _pipe(size_t n)
 
 private template _unpipe(alias fun)
 {
+    import std.traits: TemplateArgsOf, TemplateOf;
     static if (__traits(compiles, TemplateOf!fun))
-    static if (__traits(isSame, TemplateOf!fun, .pipe))
-        alias _unpipe = TemplateArgsOf!fun;
-    else
-        alias _unpipe = fun;
+        static if (__traits(isSame, TemplateOf!fun, .pipe))
+            alias _unpipe = TemplateArgsOf!fun;
+        else
+            alias _unpipe = fun;
     else
         alias _unpipe = fun;
 
@@ -590,6 +597,7 @@ template pipe(fun...)
 {
     static if (fun.length != 1)
     {
+        import std.meta: staticMap, Filter;
         alias f = staticMap!(_unpipe, fun);
         static if (f.length == fun.length && Filter!(_needNary, f).length == 0)
         {
@@ -667,6 +675,7 @@ struct AliasCall(T, string methodName, TemplateArgs...)
     }
     auto ref opCall(Args...)(auto ref Args args)
     {
+        import std.traits: TemplateArgsOf;
         mixin("return __this." ~ methodName ~ (TemplateArgs.length ? "!TemplateArgs" : "") ~ "(forward!args);");
     }
 }
