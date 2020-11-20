@@ -728,3 +728,22 @@ template aliasCall(string methodName, TemplateArgs...)
     auto sfun10 = aliasCall!("fun", 10)(s);   // uses fun!10
     assert(sfun10(3) == 13);
 }
+
+/++
++/
+template recurseTemplatePipe(alias Template, size_t N, Args...)
+{
+    static if (N == 0)
+        alias recurseTemplatePipe = Args;
+    else
+    {
+        alias recurseTemplatePipe = Template!(.recurseTemplatePipe!(Template, N - 1, Args));
+    }
+}
+
+///
+@safe version(mir_core_test) unittest
+{
+    import mir.ndslice.topology: map;
+    static assert (__traits(isSame, recurseTemplatePipe!(map, 2, "a * 2"), map!(map!"a * 2")));
+}
