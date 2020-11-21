@@ -168,7 +168,14 @@ ref V unref(V)(scope return ref V value)
 /// ditto
 V unref(V)(V value)
 {
-    return value;
+    import std.traits: hasElaborateAssign;
+    static if (hasElaborateAssign!V)
+    {
+        import core.lifetime: move;
+        return move(value);
+    }
+    else
+        return value;
 }
 
 private string joinStrings()(string[] strs)
@@ -744,6 +751,47 @@ template recurseTemplatePipe(alias Template, size_t N, Args...)
 ///
 @safe version(mir_core_test) unittest
 {
-    import mir.ndslice.topology: map;
+    // import mir.ndslice.topology: map;
+    alias map(alias fun) = a => a; // some template
     static assert (__traits(isSame, recurseTemplatePipe!(map, 2, "a * 2"), map!(map!"a * 2")));
+}
+
+/++
++/
+template selfAndRecurseTemplatePipe(alias Template, size_t N, Args...)
+{
+    static if (N == 0)
+        alias selfAndRecurseTemplatePipe = Args;
+    else
+    {
+        alias selfAndRecurseTemplatePipe = Template!(.selfAndRecurseTemplatePipe!(Template, N - 1, Args));
+    }
+}
+
+///
+@safe version(mir_core_test) unittest
+{
+    // import mir.ndslice.topology: map;
+    alias map(alias fun) = a => a; // some template
+    static assert (__traits(isSame, selfAndRecurseTemplatePipe!(map, 2, "a * 2"), map!(pipe!("a * 2", map!"a * 2"))));
+}
+
+/++
++/
+template selfTemplatePipe(alias Template, size_t N, Args...)
+{
+    static if (N == 0)
+        alias selfTemplatePipe = Args;
+    else
+    {
+        alias selfTemplatePipe = Template!(.selfTemplatePipe!(Template, N - 1, Args));
+    }
+}
+
+///
+@safe version(mir_core_test) unittest
+{
+    // import mir.ndslice.topology: map;
+    alias map(alias fun) = a => a; // some template
+    static assert (__traits(isSame, selfTemplatePipe!(map, 2, "a * 2"), map!(pipe!("a * 2", map!"a * 2"))));
 }
