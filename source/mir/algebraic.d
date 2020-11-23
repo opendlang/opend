@@ -51,8 +51,9 @@ $(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
 $(TR $(TH Name) $(TH Description))
-$(T2 isVariant, an algebraic type)
-$(T2 isNullable, an algebraic type with at least `typeof(null)` in the self type set. )
+$(T2 isVariant, Checks if the type is instance of $(LREF Algebraic).)
+$(T2 isNullable, Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`. )
+$(T2 isTypeSet, Checks if the type is instance of $(LREF TypeSet). )
 )
 
 
@@ -129,8 +130,10 @@ private static struct _Void()
     string toString() { return "void"; }
 }
 
-///
-enum isVariant(T) = is(T : Algebraic!(setId, Sets), uint setId, Sets...);
+/++
+Checks if the type is instance of $(LREF Algebraic).
++/
+enum bool isVariant(T) = is(T : Algebraic!(setId, Sets), uint setId, Sets...);
 
 ///
 unittest
@@ -141,7 +144,9 @@ unittest
     static assert(!isVariant!int);
 }
 
-///
+/++
+Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`.
++/
 template isNullable(T)
 {
     import std.traits: TemplateArgsOf;
@@ -182,7 +187,6 @@ struct This
     int opCmp(typeof(this)) { return 0; }
     string toString() { return typeof(this).stringof; }
 }
-
 
 // example from std.variant
 /++
@@ -259,6 +263,18 @@ version(mir_core_test) unittest
     static assert(!__traits(isSame, TypeSet!(uint, S), TypeSet!(int, S)));
 }
 
+/++
+Checks if the type is instance of $(LREF TypeSet).
++/
+enum bool isTypeSet(T) = is(T : TypeSet!T, T...);
+
+///
+unittest
+{
+    static assert(isTypeSet!(TypeSet!()));
+    static assert(isTypeSet!(TypeSet!void));
+    static assert(isTypeSet!(TypeSet!(void, int, typeof(null))));
+}
 
 /++
 $(H4 Cyclic-Referential Types)
@@ -274,7 +290,7 @@ with the self-referenced type. The structure of the type involving $(LREF SetAli
 be arbitrarily complex.
 +/
 template Variants(Sets...)
-    if (allSatisfy!(isInstanceOf!TypeSet, Sets))
+    if (allSatisfy!(isTypeSet, Sets))
 {
     import std.meta: staticMap;
     import mir.internal.utility: Iota;
@@ -446,7 +462,7 @@ version(mir_core_test) unittest
 Implementation of $(LREF Variant), $(LREF Variants), and $(LREF Nullable).
 +/
 struct Algebraic(uint _setId, _TypeSets...)
-    if (allSatisfy!(isInstanceOf!TypeSet, _TypeSets) && _setId < _TypeSets.length)
+    if (allSatisfy!(isTypeSet, _TypeSets) && _setId < _TypeSets.length)
 {
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
@@ -462,7 +478,7 @@ struct Algebraic(uint _setId, _TypeSets...)
         Unqual
         ;
 
-    private enum _variant_test_ = is(_TypeSets == AliasSeq!(TypeSet!()));
+    private enum _variant_test_ = is(_TypeSets == AliasSeq!(TypeSet!(typeof(null), double)));
 
     private template _ApplyAliasesImpl(int length, Types...)
     {
@@ -596,7 +612,8 @@ struct Algebraic(uint _setId, _TypeSets...)
         return *cast(ubyte[_storage.bytes.length]*)&this._storage.bytes;
     }
 
-    ///
+    /++
+    +/
     this(uint rhsId, RhsTypeSets...)(Algebraic!(rhsId, RhsTypeSets) rhs)
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!(rhsId, RhsTypeSets).AllowedTypes))
     {
@@ -919,12 +936,29 @@ struct Algebraic(uint _setId, _TypeSets...)
                 return trustedGet!(AllowedTypes[1]);
             }
 
+            version(mir_core_test)
+            static if (_variant_test_)
+            ///
+            @safe pure nothrow @nogc
+            unittest
+            {
+                enum E {a, b}
+                Nullable!E f = E.a;
+                auto e = f.get();
+                static assert(is(typeof(e) == E));
+                assert(e == E.a);
+
+                assert(f.get(E.b) == E.a);
+
+                f = null;
+                assert(f.get(E.b) == E.b);
+            }
+
             /// ditto
             @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) inout
             {
                 return isNull ? fallback : get();
             }
-
         }
     }
 
