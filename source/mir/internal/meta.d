@@ -306,6 +306,8 @@ template ReplaceTypeUnless(alias pred, From, To, T...)
             // don't match with alias this struct below
             // https://issues.dlang.org/show_bug.cgi?id=15168
             alias ReplaceTypeUnless = T[0];
+        else static if (is(T[0] == enum))
+            alias ReplaceTypeUnless = T[0];
         else static if (is(T[0] == U[], U))
             alias ReplaceTypeUnless = ReplaceTypeUnless!(pred, From, To, U)[];
         else static if (is(T[0] == U[n], U, size_t n))

@@ -942,10 +942,10 @@ struct Algebraic(uint _setId, _TypeSets...)
             @safe pure nothrow @nogc
             unittest
             {
-                enum E {a, b}
+                enum E { a = "a", b = "b" }
                 Nullable!E f = E.a;
                 auto e = f.get();
-                static assert(is(typeof(e) == E));
+                static assert(is(typeof(e) == E), Nullable!E.AllowedTypes.stringof);
                 assert(e == E.a);
 
                 assert(f.get(E.b) == E.a);
