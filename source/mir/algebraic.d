@@ -374,6 +374,13 @@ $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Al
 alpha renaming) on its constituent types, replacing $(LREF SetAlias)
 with the self-referenced type. The structure of the type involving $(LREF SetAlias) may
 be arbitrarily complex.
+
+The impllementation is defined as
+----
+private alias TypeSetsInst(uint id) = Algebraic!(id, Sets);
+///
+alias Variants = staticMap!(TypeSetsInst, Iota!(Sets.length));
+----
 +/
 template Variants(Sets...)
     if (allSatisfy!(isTypeSet, Sets))
@@ -426,6 +433,11 @@ template Variants(Sets...)
 
 /++
 Variant Type (aka Algebraic Type).
+
+The impllementation is defined as
+----
+alias Variant(T...) = Algebraic!(0, TypeSet!T);
+----
 
 Compatible with BetterC mode.
 +/
@@ -517,9 +529,15 @@ Tagged Variant Type (aka Tagged Algebraic Type).
 
 Compatible with BetterC mode.
 
+The impllementation is defined as
+----
+alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
+----
+
 See_also: $(LREF Variant), $(LREF isTaggedVariant).
 +/
 alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
+
 
 /// Json Value
 @safe pure 
@@ -565,9 +583,9 @@ version(mir_core_test) unittest
 Nullable $(LREF Variant) Type (aka Algebraic Type).
 
 The impllementation is defined as
-```
+----
 alias Nullable(T...) = Variant!(typeof(null), T);
-```
+----
 
 In additional to common algebraic API the following members can be accesssed:
 $(UL 
