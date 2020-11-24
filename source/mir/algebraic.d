@@ -18,6 +18,7 @@ $(LREF Algebraic) template accepts two arguments: self type set id and a list of
 $(BOOKTABLE $(H3 $(LREF Algebraic) Aliases),
 $(TR $(TH Name) $(TH Description))
 $(T2 Variant, an algebraic type for a single type set)
+$(T2 TaggedVariant, a tagged algebraic type for a single type set)
 $(T2 Nullable, an algebraic type for a single type set with at least `typeof(null)`)
 $(T2 Variants, a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
 )
@@ -45,20 +46,23 @@ $(BOOKTABLE $(H3 Special Types),
 $(TR $(TH Name) $(TH Description))
 $(T2plain `void`, It is usefull to indicate a possible return type of the visitor. Can't be accesed by reference. )
 $(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to indicate that a visitor can't match the current value of the algebraic. Can't be accesed by reference. )
-$(T2 This, An dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
-$(T2plain $(LREF SetAlias)`!setId`, An dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
+$(T2 This, Dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
+$(T2plain $(LREF SetAlias)`!setId`, Dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
+$(T2 TaggedType, Dummy type used to associate tags with type. )
 )
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
 $(TR $(TH Name) $(TH Description))
 $(T2 isVariant, Checks if the type is instance of $(LREF Algebraic).)
 $(T2 isNullable, Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`. )
+$(T2 isTaggedVariant, Checks if the type is instance of tagged $(LREF Algebraic).)
 $(T2 isTypeSet, Checks if the type is instance of $(LREF TypeSet). )
 )
 
 
 $(H3 Type Set)
 $(UL 
+$(LI $(LREF TaggedTypeSet) is supported. Example:`TargetTypeSet!(["integer", "floating"], int, double)`).
 $(LI Type set is unordered. Example:`TypeSet!(int, double)` and `TypeSet!(double, int)` are the same. )
 $(LI Duplicats are ignored. Example: `TypeSet!(float, int, float)` and `TypeSet!(int, float)` are the same. )
 $(LI Types are automatically unqualified if this operation can be performed implicitly. Example: `TypeSet!(const int) and `TypeSet!int` are the same. )
@@ -145,6 +149,21 @@ unittest
 }
 
 /++
+Checks if the type is instance of tagged $(LREF Algebraic).
+
+Tagged algebraics can be defined with $(LREF TaggedVariant) or with pair of $(LREF Variants) and $(LREF TaggedTypeSet).
++/
+enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind);
+
+///
+unittest
+{
+    static assert(!isTaggedVariant!int);
+    static assert(!isTaggedVariant!(Variant!(int, string)));
+    static assert(isTaggedVariant!(TaggedVariant!(["integer", "string"], int, string)));
+}
+
+/++
 Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`.
 +/
 template isNullable(T)
@@ -187,6 +206,36 @@ struct This
     int opCmp(typeof(this)) { return 0; }
     string toString() { return typeof(this).stringof; }
 }
+
+/++
+Dummy type used to associate tags with type.
++/
+struct TaggedType(T, string name)
+    if (name.length)
+{
+    private enum tag = name;
+    private alias Type = T;
+    static if (!is(T == void) && !is(T == typeof(null)))
+        private T payload;
+@safe pure nothrow @nogc const:
+    int opCmp(typeof(this)) { return 0; }
+    string toString() { return typeof(this).stringof; }
+}
+
+/++
+Checks if `T` is $(LREF TaggedType) instance.
++/
+enum isTaggedType(T) = is(T == TaggedType!(I, name), I, string name);
+
+/++
+Gets $(LREF TaggedType) underlying type.
++/
+alias getTaggedTypeUnderlying(T : TaggedType!(I, name), I, string name) = I;
+
+/++
+Gets $(LREF TaggedType) tag name.
++/
+enum getTaggedTypeName(T : TaggedType!(I, name), I, string name) = name;
 
 // example from std.variant
 /++
@@ -237,19 +286,41 @@ Type set for $(LREF Variants) self-referencing.
 +/
 template TypeSet(T...)
 {
-    import std.meta: staticSort, staticMap;
+    import std.meta: staticSort, staticMap, allSatisfy, anySatisfy;
     // sort types by siezeof and them mangleof
     // but typeof(null) goes first
     static if (is(staticMap!(TryRemoveConst, T) == T))
         static if (is(NoDuplicates!T == T))
             static if (staticIsSorted!(TypeCmp, T))
+            {
+                static if (anySatisfy!(isTaggedType, T))
+                {
+                    import std.meta: Filter, templateNot;
+                    static assert(Filter!(templateNot!isTaggedType, T).length == 0,
+                        "Either all or none types must be tagged. Types that doesn't have tags: " ~
+                        Filter!(templateNot!isTaggedType, T).stringof);
+                }
+
                 struct TypeSet;
+            }
             else
                 alias TypeSet = .TypeSet!(staticSort!(TypeCmp, T));
         else
             alias TypeSet = TypeSet!(NoDuplicates!T);
     else
         alias TypeSet = TypeSet!(staticMap!(TryRemoveConst, T));
+}
+
+private template TypeCmp(A, B)
+{
+    enum bool TypeCmp = is(A == B) ? false:
+    is(A == typeof(null)) || is(A == TaggedType!(typeof(null), aname), string aname) ? true:
+    is(B == typeof(null)) || is(B == TaggedType!(typeof(null), bname), string bname) ? false:
+    is(A == void) || is(A == TaggedType!(void, aname), string aname) ? true:
+    is(B == void) || is(A == TaggedType!(void, bname), string bname) ? false:
+    A.sizeof < B.sizeof ? true:
+    A.sizeof > B.sizeof ? false:
+    A.mangleof < B.mangleof;
 }
 
 ///
@@ -262,6 +333,21 @@ version(mir_core_test) unittest
     static assert(__traits(isSame, TypeSet!(S, int, int), TypeSet!(Int, C)));
     static assert(!__traits(isSame, TypeSet!(uint, S), TypeSet!(int, S)));
 }
+
+private template applyTags(string[] tagNames, T...)
+    if (tagNames.length == T.length)
+{
+    import std.meta: AliasSeq;
+    static if (tagNames.length == 0)
+        alias applyTags = AliasSeq!();
+    else
+        alias applyTags =  AliasSeq!(TaggedType!(T[0], tagNames[0]), .applyTags!(tagNames[1 .. $], T[1 .. $]));
+}
+
+/++
+Type set for tagged $(LREF Variants) self-referencing.
++/
+alias TaggedTypeSet(string[] tagNames, T...) = TypeSet!(applyTags!(tagNames, T));
 
 /++
 Checks if the type is instance of $(LREF TypeSet).
@@ -314,6 +400,28 @@ template Variants(Sets...)
     A arr = new B([A("hey"), A(100)]);
     assert(arr._is!(B*));
     assert(arr.trustedGet!(B*)._is!(A[]));
+}
+
+/// Tagged
+@safe pure nothrow version(mir_core_test) unittest
+{
+    alias V = Variants!(
+        TaggedTypeSet!(
+            ["string", "integer", "friend"],
+            string, long, SetAlias!1*), // string, long, and pointer to V[1] type
+
+        TaggedTypeSet!(
+            ["team", "integer"],
+            SetAlias!0[], int), // int and array of V[0] type elements
+    );
+
+    alias A = V[0];
+    alias B = V[1];
+
+    A arr = new B([A("hey"), A(100)]);
+
+    assert(arr.kind == A.Kind.friend);
+    assert(arr.trustedGet!(B*).kind == B.Kind.team);
 }
 
 /++
@@ -405,6 +513,55 @@ version(mir_core_test) unittest
 }
 
 /++
+Tagged Variant Type (aka Tagged Algebraic Type).
+
+Compatible with BetterC mode.
+
+See_also: $(LREF Variant), $(LREF isTaggedVariant).
++/
+alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
+
+/// Json Value
+@safe pure 
+version(mir_core_test) unittest
+{
+    alias JsonValue = TaggedVariant!(
+        ["integer", "floating", "boolean", "null_", "string", "array", "object", ],
+        long,        double,    bool,   typeof(null), string,  This[], This[string]);
+
+    // typeof(null) has priority
+    static assert(JsonValue.Kind.init == JsonValue.Kind.null_);
+    static assert(JsonValue.Kind.null_ == 0);
+    
+    // Kind and AllowedTypes has the same order
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.array] == JsonValue[]));
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.boolean] == bool));
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.floating] == double));
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.integer] == long));
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.null_] == typeof(null)));
+    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.object] == JsonValue[string]));
+
+    JsonValue v;
+    assert(v.kind == JsonValue.Kind.null_);
+
+    v = 5;
+    assert(v == 5);
+    assert(v.kind == JsonValue.Kind.integer);
+
+    v = "Tagged!";
+    assert(v.get!string == "Tagged!");
+    assert(v.kind == JsonValue.Kind.string); //OK, since `string` is just an alias to `immutable(char)[]`
+
+    v = [JsonValue("str"), JsonValue(4.3)];
+
+    assert(v.kind == JsonValue.Kind.array);
+    assert(v.get!(JsonValue[])[1].kind == JsonValue.Kind.floating);
+
+    v = null;
+    assert(v.kind == JsonValue.Kind.null_);
+}
+
+/++
 Nullable $(LREF Variant) Type (aka Algebraic Type).
 
 The impllementation is defined as
@@ -492,11 +649,61 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
+    private alias _ThisTypeSetList = TemplateArgsOf!(_TypeSets[_setId]);
+
+    version (D_Ddoc)
+    {
+        /++
+        Algebraic Kind.
+
+        Defined only for tagged algebraics.
+
+        The Kind enum contains the members defined using tag names.
+
+        If the algebraic type is $(LREF Nullable) then the default Kind enum member has zero value and corresponds to `typeof(null)`.
+
+        See_also: $(LREF TaggedVariant).
+        +/
+        enum Kind { _not_me_but_tags_name_list_ }
+
+        /++
+        Returns: $(LREF .Algebraic.Kind).
+
+        Defined only for tagged algebraics.
+        See_also: $(LREF TaggedVariant).
+        +/
+        Kind kind() @safe pure nothrow @nogc @property
+        {
+            return Kind.init;
+        }
+    }
+
+    static if (anySatisfy!(isTaggedType, _ThisTypeSetList))
+    {
+        private alias _UntaggedThisTypeSetList = staticMap!(getTaggedTypeUnderlying, _ThisTypeSetList);
+
+        version (D_Ddoc){}
+        else
+        {
+            mixin(enumKindText([staticMap!(getTaggedTypeName, _ThisTypeSetList)]));
+
+            auto kind() @safe pure nothrow @nogc @property
+            {
+                assert(_storage.id <= Kind.max);
+                return cast(Kind) _storage.id;
+            }
+        }
+    }
+    else
+    {
+        alias _UntaggedThisTypeSetList = _ThisTypeSetList;
+    }
+
     /++
     Allowed types list
     See_also: $(LREF TypeSet)
     +/
-    alias AllowedTypes = AliasSeq!(_ApplyAliasesImpl!(_TypeSets.length, TemplateArgsOf!(_TypeSets[_setId])));
+    alias AllowedTypes = AliasSeq!(_ApplyAliasesImpl!(_TypeSets.length, _UntaggedThisTypeSetList));
 
     version(mir_core_test)
     static if (_variant_test_)
@@ -771,7 +978,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     /++
     +/
-    static if (is(AllowedTypes == TemplateArgsOf!(_TypeSets[_setId])))
+    static if (is(AllowedTypes == _ThisTypeSetList))
     auto opCmp()(auto ref const typeof(this) rhs) const
     {
         static if (AllowedTypes.length == 0)
@@ -882,7 +1089,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                 Algebraic!(
                     _setId,
                     _TypeSets[0 .. _setId],
-                    TypeSet!(TemplateArgsOf!(_TypeSets[_setId])[1 .. $]),
+                    TypeSet!(_ThisTypeSetList[1 .. $]),
                     _TypeSets[_setId + 1 .. $]
                 ) ret;
                 static if (ret.AllowedTypes.length > 1)
@@ -2077,6 +2284,18 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
             }
         }
     }
+}
+
+private string enumKindText()(string[] strs)
+{
+    auto r = "enum Kind {";
+    foreach (s; strs)
+    {
+        r ~= s;
+        r ~= ", ";
+    }
+    r ~= "}";
+    return r;
 }
 
 @safe pure @nogc
