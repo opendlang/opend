@@ -11,7 +11,7 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
-    $(TR $(TDNW $(MREF mir,stat)) $(TD Deserialization API ))
+    $(TR $(TDNW $(MREF mir,stat)) $(TD Publicly imports `mir.stat.*` modules ))
     $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,transform)) $(TD Algorithms for transforming data ))
 )
