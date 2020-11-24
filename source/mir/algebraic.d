@@ -219,7 +219,7 @@ be arbitrarily complex.
 @safe pure version(mir_core_test) unittest
 {
     // An object is a double, a string, or a hash of objects
-    alias Obj = Variant!(double, string, This[string]);
+    alias Obj = Variant!(double, string, This[string], This[]);
     alias Map = Obj[string];
 
     Obj obj = "hello";
@@ -771,6 +771,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     /++
     +/
+    static if (is(AllowedTypes == TemplateArgsOf!(_TypeSets[_setId])))
     auto opCmp()(auto ref const typeof(this) rhs) const
     {
         static if (AllowedTypes.length == 0)
