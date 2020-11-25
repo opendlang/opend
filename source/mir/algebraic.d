@@ -734,7 +734,7 @@ struct Algebraic(uint _setId, _TypeSets...)
         {
             mixin(enumKindText([staticMap!(getTaggedTypeName, _ThisTypeSetList)]));
 
-            auto kind() @safe pure nothrow @nogc @property
+            auto kind() const @safe pure nothrow @nogc @property
             {
                 assert(_storage.id <= Kind.max);
                 return cast(Kind) _storage.id;
