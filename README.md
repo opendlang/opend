@@ -3,8 +3,7 @@
 Mir Core
 ==============
 
-Base software building blocks and conventions.
-
+Base software building blocks: Alegebraic types (aka sumtype/tagged union), universal reflection API, basic math, and more.
 
 #### Code Constraints
 
