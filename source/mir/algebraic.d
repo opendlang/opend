@@ -690,7 +690,7 @@ struct Algebraic(uint _setId, _TypeSets...)
         Defined only for tagged algebraics.
         See_also: $(LREF TaggedVariant).
         +/
-        Kind kind() @safe pure nothrow @nogc @property
+        Kind kind() const @safe pure nothrow @nogc @property
         {
             return Kind.init;
         }
