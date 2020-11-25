@@ -253,6 +253,13 @@ struct DispatchDevice {
         // VK_KHR_fragment_shading_rate
         vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateKHR" );
 
+        // VK_KHR_deferred_host_operations
+        vkCreateDeferredOperationKHR                      = cast( PFN_vkCreateDeferredOperationKHR                      ) vkGetDeviceProcAddr( device, "vkCreateDeferredOperationKHR" );
+        vkDestroyDeferredOperationKHR                     = cast( PFN_vkDestroyDeferredOperationKHR                     ) vkGetDeviceProcAddr( device, "vkDestroyDeferredOperationKHR" );
+        vkGetDeferredOperationMaxConcurrencyKHR           = cast( PFN_vkGetDeferredOperationMaxConcurrencyKHR           ) vkGetDeviceProcAddr( device, "vkGetDeferredOperationMaxConcurrencyKHR" );
+        vkGetDeferredOperationResultKHR                   = cast( PFN_vkGetDeferredOperationResultKHR                   ) vkGetDeviceProcAddr( device, "vkGetDeferredOperationResultKHR" );
+        vkDeferredOperationJoinKHR                        = cast( PFN_vkDeferredOperationJoinKHR                        ) vkGetDeviceProcAddr( device, "vkDeferredOperationJoinKHR" );
+
         // VK_KHR_pipeline_executable_properties
         vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
         vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
@@ -340,16 +347,16 @@ struct DispatchDevice {
 
         // VK_NV_ray_tracing
         vkCreateAccelerationStructureNV                   = cast( PFN_vkCreateAccelerationStructureNV                   ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureNV" );
-        vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
+        vkDestroyAccelerationStructureNV                  = cast( PFN_vkDestroyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureNV" );
         vkGetAccelerationStructureMemoryRequirementsNV    = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV    ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureMemoryRequirementsNV" );
-        vkBindAccelerationStructureMemoryKHR              = cast( PFN_vkBindAccelerationStructureMemoryKHR              ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryKHR" );
+        vkBindAccelerationStructureMemoryNV               = cast( PFN_vkBindAccelerationStructureMemoryNV               ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryNV" );
         vkCmdBuildAccelerationStructureNV                 = cast( PFN_vkCmdBuildAccelerationStructureNV                 ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructureNV" );
         vkCmdCopyAccelerationStructureNV                  = cast( PFN_vkCmdCopyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureNV" );
         vkCmdTraceRaysNV                                  = cast( PFN_vkCmdTraceRaysNV                                  ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysNV" );
         vkCreateRayTracingPipelinesNV                     = cast( PFN_vkCreateRayTracingPipelinesNV                     ) vkGetDeviceProcAddr( device, "vkCreateRayTracingPipelinesNV" );
         vkGetRayTracingShaderGroupHandlesKHR              = cast( PFN_vkGetRayTracingShaderGroupHandlesKHR              ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupHandlesKHR" );
         vkGetAccelerationStructureHandleNV                = cast( PFN_vkGetAccelerationStructureHandleNV                ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureHandleNV" );
-        vkCmdWriteAccelerationStructuresPropertiesKHR     = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesKHR" );
+        vkCmdWriteAccelerationStructuresPropertiesNV      = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV      ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesNV" );
         vkCompileDeferredNV                               = cast( PFN_vkCompileDeferredNV                               ) vkGetDeviceProcAddr( device, "vkCompileDeferredNV" );
 
         // VK_EXT_external_memory_host
@@ -420,6 +427,32 @@ struct DispatchDevice {
 
         // VK_NV_fragment_shading_rate_enums
         vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
+
+        // VK_KHR_acceleration_structure
+        vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
+        vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
+        vkCmdBuildAccelerationStructuresKHR               = cast( PFN_vkCmdBuildAccelerationStructuresKHR               ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructuresKHR" );
+        vkCmdBuildAccelerationStructuresIndirectKHR       = cast( PFN_vkCmdBuildAccelerationStructuresIndirectKHR       ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructuresIndirectKHR" );
+        vkBuildAccelerationStructuresKHR                  = cast( PFN_vkBuildAccelerationStructuresKHR                  ) vkGetDeviceProcAddr( device, "vkBuildAccelerationStructuresKHR" );
+        vkCopyAccelerationStructureKHR                    = cast( PFN_vkCopyAccelerationStructureKHR                    ) vkGetDeviceProcAddr( device, "vkCopyAccelerationStructureKHR" );
+        vkCopyAccelerationStructureToMemoryKHR            = cast( PFN_vkCopyAccelerationStructureToMemoryKHR            ) vkGetDeviceProcAddr( device, "vkCopyAccelerationStructureToMemoryKHR" );
+        vkCopyMemoryToAccelerationStructureKHR            = cast( PFN_vkCopyMemoryToAccelerationStructureKHR            ) vkGetDeviceProcAddr( device, "vkCopyMemoryToAccelerationStructureKHR" );
+        vkWriteAccelerationStructuresPropertiesKHR        = cast( PFN_vkWriteAccelerationStructuresPropertiesKHR        ) vkGetDeviceProcAddr( device, "vkWriteAccelerationStructuresPropertiesKHR" );
+        vkCmdCopyAccelerationStructureKHR                 = cast( PFN_vkCmdCopyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureKHR" );
+        vkCmdCopyAccelerationStructureToMemoryKHR         = cast( PFN_vkCmdCopyAccelerationStructureToMemoryKHR         ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureToMemoryKHR" );
+        vkCmdCopyMemoryToAccelerationStructureKHR         = cast( PFN_vkCmdCopyMemoryToAccelerationStructureKHR         ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryToAccelerationStructureKHR" );
+        vkGetAccelerationStructureDeviceAddressKHR        = cast( PFN_vkGetAccelerationStructureDeviceAddressKHR        ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureDeviceAddressKHR" );
+        vkCmdWriteAccelerationStructuresPropertiesKHR     = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesKHR" );
+        vkGetDeviceAccelerationStructureCompatibilityKHR  = cast( PFN_vkGetDeviceAccelerationStructureCompatibilityKHR  ) vkGetDeviceProcAddr( device, "vkGetDeviceAccelerationStructureCompatibilityKHR" );
+        vkGetAccelerationStructureBuildSizesKHR           = cast( PFN_vkGetAccelerationStructureBuildSizesKHR           ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureBuildSizesKHR" );
+
+        // VK_KHR_ray_tracing_pipeline
+        vkCmdTraceRaysKHR                                 = cast( PFN_vkCmdTraceRaysKHR                                 ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysKHR" );
+        vkCreateRayTracingPipelinesKHR                    = cast( PFN_vkCreateRayTracingPipelinesKHR                    ) vkGetDeviceProcAddr( device, "vkCreateRayTracingPipelinesKHR" );
+        vkGetRayTracingCaptureReplayShaderGroupHandlesKHR = cast( PFN_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR ) vkGetDeviceProcAddr( device, "vkGetRayTracingCaptureReplayShaderGroupHandlesKHR" );
+        vkCmdTraceRaysIndirectKHR                         = cast( PFN_vkCmdTraceRaysIndirectKHR                         ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysIndirectKHR" );
+        vkGetRayTracingShaderGroupStackSizeKHR            = cast( PFN_vkGetRayTracingShaderGroupStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupStackSizeKHR" );
+        vkCmdSetRayTracingPipelineStackSizeKHR            = cast( PFN_vkCmdSetRayTracingPipelineStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkCmdSetRayTracingPipelineStackSizeKHR" );
     }
 
 
@@ -629,6 +662,13 @@ struct DispatchDevice {
     // VK_KHR_fragment_shading_rate
     void      CmdSetFragmentShadingRateKHR( const( VkExtent2D )* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateKHR( commandBuffer, pFragmentSize, combinerOps ); }
 
+    // VK_KHR_deferred_host_operations
+    VkResult  CreateDeferredOperationKHR( VkDeferredOperationKHR* pDeferredOperation ) { return vkCreateDeferredOperationKHR( vkDevice, pAllocator, pDeferredOperation ); }
+    void      DestroyDeferredOperationKHR( VkDeferredOperationKHR operation ) { vkDestroyDeferredOperationKHR( vkDevice, operation, pAllocator ); }
+    uint32_t  GetDeferredOperationMaxConcurrencyKHR( VkDeferredOperationKHR operation ) { return vkGetDeferredOperationMaxConcurrencyKHR( vkDevice, operation ); }
+    VkResult  GetDeferredOperationResultKHR( VkDeferredOperationKHR operation ) { return vkGetDeferredOperationResultKHR( vkDevice, operation ); }
+    VkResult  DeferredOperationJoinKHR( VkDeferredOperationKHR operation ) { return vkDeferredOperationJoinKHR( vkDevice, operation ); }
+
     // VK_KHR_pipeline_executable_properties
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
     VkResult  GetPipelineExecutableStatisticsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics ) { return vkGetPipelineExecutableStatisticsKHR( vkDevice, pExecutableInfo, pStatisticCount, pStatistics ); }
@@ -713,16 +753,16 @@ struct DispatchDevice {
 
     // VK_NV_ray_tracing
     VkResult  CreateAccelerationStructureNV( const( VkAccelerationStructureCreateInfoNV )* pCreateInfo, VkAccelerationStructureNV* pAccelerationStructure ) { return vkCreateAccelerationStructureNV( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
-    void      DestroyAccelerationStructureKHR( VkAccelerationStructureKHR accelerationStructure ) { vkDestroyAccelerationStructureKHR( vkDevice, accelerationStructure, pAllocator ); }
+    void      DestroyAccelerationStructureNV( VkAccelerationStructureNV accelerationStructure ) { vkDestroyAccelerationStructureNV( vkDevice, accelerationStructure, pAllocator ); }
     void      GetAccelerationStructureMemoryRequirementsNV( const( VkAccelerationStructureMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements ) { vkGetAccelerationStructureMemoryRequirementsNV( vkDevice, pInfo, pMemoryRequirements ); }
-    VkResult  BindAccelerationStructureMemoryKHR( uint32_t bindInfoCount, const( VkBindAccelerationStructureMemoryInfoKHR )* pBindInfos ) { return vkBindAccelerationStructureMemoryKHR( vkDevice, bindInfoCount, pBindInfos ); }
-    void      CmdBuildAccelerationStructureNV( const( VkAccelerationStructureInfoNV )* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkBuffer scratch, VkDeviceSize scratchOffset ) { vkCmdBuildAccelerationStructureNV( commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset ); }
-    void      CmdCopyAccelerationStructureNV( VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkCopyAccelerationStructureModeKHR mode ) { vkCmdCopyAccelerationStructureNV( commandBuffer, dst, src, mode ); }
+    VkResult  BindAccelerationStructureMemoryNV( uint32_t bindInfoCount, const( VkBindAccelerationStructureMemoryInfoNV )* pBindInfos ) { return vkBindAccelerationStructureMemoryNV( vkDevice, bindInfoCount, pBindInfos ); }
+    void      CmdBuildAccelerationStructureNV( const( VkAccelerationStructureInfoNV )* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset ) { vkCmdBuildAccelerationStructureNV( commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset ); }
+    void      CmdCopyAccelerationStructureNV( VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode ) { vkCmdCopyAccelerationStructureNV( commandBuffer, dst, src, mode ); }
     void      CmdTraceRaysNV( VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth ) { vkCmdTraceRaysNV( commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, callableShaderBindingTableBuffer, callableShaderBindingOffset, callableShaderBindingStride, width, height, depth ); }
     VkResult  CreateRayTracingPipelinesNV( VkPipelineCache pipelineCache, uint32_t createInfoCount, const( VkRayTracingPipelineCreateInfoNV )* pCreateInfos, VkPipeline* pPipelines ) { return vkCreateRayTracingPipelinesNV( vkDevice, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines ); }
     VkResult  GetRayTracingShaderGroupHandlesKHR( VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData ) { return vkGetRayTracingShaderGroupHandlesKHR( vkDevice, pipeline, firstGroup, groupCount, dataSize, pData ); }
-    VkResult  GetAccelerationStructureHandleNV( VkAccelerationStructureKHR accelerationStructure, size_t dataSize, void* pData ) { return vkGetAccelerationStructureHandleNV( vkDevice, accelerationStructure, dataSize, pData ); }
-    void      CmdWriteAccelerationStructuresPropertiesKHR( uint32_t accelerationStructureCount, const( VkAccelerationStructureKHR )* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteAccelerationStructuresPropertiesKHR( commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery ); }
+    VkResult  GetAccelerationStructureHandleNV( VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData ) { return vkGetAccelerationStructureHandleNV( vkDevice, accelerationStructure, dataSize, pData ); }
+    void      CmdWriteAccelerationStructuresPropertiesNV( uint32_t accelerationStructureCount, const( VkAccelerationStructureNV )* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteAccelerationStructuresPropertiesNV( commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery ); }
     VkResult  CompileDeferredNV( VkPipeline pipeline, uint32_t shader ) { return vkCompileDeferredNV( vkDevice, pipeline, shader ); }
 
     // VK_EXT_external_memory_host
@@ -792,6 +832,32 @@ struct DispatchDevice {
     // VK_NV_fragment_shading_rate_enums
     void      CmdSetFragmentShadingRateEnumNV( VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateEnumNV( commandBuffer, shadingRate, combinerOps ); }
 
+    // VK_KHR_acceleration_structure
+    VkResult  CreateAccelerationStructureKHR( const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, VkAccelerationStructureKHR* pAccelerationStructure ) { return vkCreateAccelerationStructureKHR( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
+    void      DestroyAccelerationStructureKHR( VkAccelerationStructureKHR accelerationStructure ) { vkDestroyAccelerationStructureKHR( vkDevice, accelerationStructure, pAllocator ); }
+    void      CmdBuildAccelerationStructuresKHR( uint32_t infoCount, const( VkAccelerationStructureBuildGeometryInfoKHR )* pInfos, const( VkAccelerationStructureBuildRangeInfoKHR* )* ppBuildRangeInfos ) { vkCmdBuildAccelerationStructuresKHR( commandBuffer, infoCount, pInfos, ppBuildRangeInfos ); }
+    void      CmdBuildAccelerationStructuresIndirectKHR( uint32_t infoCount, const( VkAccelerationStructureBuildGeometryInfoKHR )* pInfos, const( VkDeviceAddress )* pIndirectDeviceAddresses, const( uint32_t )* pIndirectStrides, const( uint32_t* )* ppMaxPrimitiveCounts ) { vkCmdBuildAccelerationStructuresIndirectKHR( commandBuffer, infoCount, pInfos, pIndirectDeviceAddresses, pIndirectStrides, ppMaxPrimitiveCounts ); }
+    VkResult  BuildAccelerationStructuresKHR( VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const( VkAccelerationStructureBuildGeometryInfoKHR )* pInfos, const( VkAccelerationStructureBuildRangeInfoKHR* )* ppBuildRangeInfos ) { return vkBuildAccelerationStructuresKHR( vkDevice, deferredOperation, infoCount, pInfos, ppBuildRangeInfos ); }
+    VkResult  CopyAccelerationStructureKHR( VkDeferredOperationKHR deferredOperation, const( VkCopyAccelerationStructureInfoKHR )* pInfo ) { return vkCopyAccelerationStructureKHR( vkDevice, deferredOperation, pInfo ); }
+    VkResult  CopyAccelerationStructureToMemoryKHR( VkDeferredOperationKHR deferredOperation, const( VkCopyAccelerationStructureToMemoryInfoKHR )* pInfo ) { return vkCopyAccelerationStructureToMemoryKHR( vkDevice, deferredOperation, pInfo ); }
+    VkResult  CopyMemoryToAccelerationStructureKHR( VkDeferredOperationKHR deferredOperation, const( VkCopyMemoryToAccelerationStructureInfoKHR )* pInfo ) { return vkCopyMemoryToAccelerationStructureKHR( vkDevice, deferredOperation, pInfo ); }
+    VkResult  WriteAccelerationStructuresPropertiesKHR( uint32_t accelerationStructureCount, const( VkAccelerationStructureKHR )* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride ) { return vkWriteAccelerationStructuresPropertiesKHR( vkDevice, accelerationStructureCount, pAccelerationStructures, queryType, dataSize, pData, stride ); }
+    void      CmdCopyAccelerationStructureKHR( const( VkCopyAccelerationStructureInfoKHR )* pInfo ) { vkCmdCopyAccelerationStructureKHR( commandBuffer, pInfo ); }
+    void      CmdCopyAccelerationStructureToMemoryKHR( const( VkCopyAccelerationStructureToMemoryInfoKHR )* pInfo ) { vkCmdCopyAccelerationStructureToMemoryKHR( commandBuffer, pInfo ); }
+    void      CmdCopyMemoryToAccelerationStructureKHR( const( VkCopyMemoryToAccelerationStructureInfoKHR )* pInfo ) { vkCmdCopyMemoryToAccelerationStructureKHR( commandBuffer, pInfo ); }
+    VkDeviceAddress  GetAccelerationStructureDeviceAddressKHR( const( VkAccelerationStructureDeviceAddressInfoKHR )* pInfo ) { return vkGetAccelerationStructureDeviceAddressKHR( vkDevice, pInfo ); }
+    void      CmdWriteAccelerationStructuresPropertiesKHR( uint32_t accelerationStructureCount, const( VkAccelerationStructureKHR )* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteAccelerationStructuresPropertiesKHR( commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery ); }
+    void      GetDeviceAccelerationStructureCompatibilityKHR( const( VkAccelerationStructureVersionInfoKHR )* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility ) { vkGetDeviceAccelerationStructureCompatibilityKHR( vkDevice, pVersionInfo, pCompatibility ); }
+    void      GetAccelerationStructureBuildSizesKHR( VkAccelerationStructureBuildTypeKHR buildType, const( VkAccelerationStructureBuildGeometryInfoKHR )* pBuildInfo, const( uint32_t )* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo ) { vkGetAccelerationStructureBuildSizesKHR( vkDevice, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo ); }
+
+    // VK_KHR_ray_tracing_pipeline
+    void      CmdTraceRaysKHR( const( VkStridedDeviceAddressRegionKHR )* pRaygenShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pMissShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pHitShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth ) { vkCmdTraceRaysKHR( commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth ); }
+    VkResult  CreateRayTracingPipelinesKHR( VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const( VkRayTracingPipelineCreateInfoKHR )* pCreateInfos, VkPipeline* pPipelines ) { return vkCreateRayTracingPipelinesKHR( vkDevice, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines ); }
+    VkResult  GetRayTracingCaptureReplayShaderGroupHandlesKHR( VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData ) { return vkGetRayTracingCaptureReplayShaderGroupHandlesKHR( vkDevice, pipeline, firstGroup, groupCount, dataSize, pData ); }
+    void      CmdTraceRaysIndirectKHR( const( VkStridedDeviceAddressRegionKHR )* pRaygenShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pMissShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pHitShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress ) { vkCmdTraceRaysIndirectKHR( commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress ); }
+    VkDeviceSize  GetRayTracingShaderGroupStackSizeKHR( VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader ) { return vkGetRayTracingShaderGroupStackSizeKHR( vkDevice, pipeline, group, groupShader ); }
+    void      CmdSetRayTracingPipelineStackSizeKHR( uint32_t pipelineStackSize ) { vkCmdSetRayTracingPipelineStackSizeKHR( commandBuffer, pipelineStackSize ); }
+
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                   = GetDeviceGroupPeerMemoryFeatures;
     alias CmdSetDeviceMaskKHR                                   = CmdSetDeviceMask;
@@ -846,10 +912,7 @@ struct DispatchDevice {
     alias CmdDrawIndexedIndirectCountAMD                        = CmdDrawIndexedIndirectCount;
 
     // VK_NV_ray_tracing
-    alias DestroyAccelerationStructureNV                        = DestroyAccelerationStructureKHR;
-    alias BindAccelerationStructureMemoryNV                     = BindAccelerationStructureMemoryKHR;
     alias GetRayTracingShaderGroupHandlesNV                     = GetRayTracingShaderGroupHandlesKHR;
-    alias CmdWriteAccelerationStructuresPropertiesNV            = CmdWriteAccelerationStructuresPropertiesKHR;
 
     // VK_EXT_buffer_device_address
     alias GetBufferDeviceAddressEXT                             = GetBufferDeviceAddress;
@@ -1054,6 +1117,13 @@ struct DispatchDevice {
     // VK_KHR_fragment_shading_rate
     PFN_vkCmdSetFragmentShadingRateKHR                    vkCmdSetFragmentShadingRateKHR;
 
+    // VK_KHR_deferred_host_operations
+    PFN_vkCreateDeferredOperationKHR                      vkCreateDeferredOperationKHR;
+    PFN_vkDestroyDeferredOperationKHR                     vkDestroyDeferredOperationKHR;
+    PFN_vkGetDeferredOperationMaxConcurrencyKHR           vkGetDeferredOperationMaxConcurrencyKHR;
+    PFN_vkGetDeferredOperationResultKHR                   vkGetDeferredOperationResultKHR;
+    PFN_vkDeferredOperationJoinKHR                        vkDeferredOperationJoinKHR;
+
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR              vkGetPipelineExecutableStatisticsKHR;
@@ -1141,16 +1211,16 @@ struct DispatchDevice {
 
     // VK_NV_ray_tracing
     PFN_vkCreateAccelerationStructureNV                   vkCreateAccelerationStructureNV;
-    PFN_vkDestroyAccelerationStructureKHR                 vkDestroyAccelerationStructureKHR;
+    PFN_vkDestroyAccelerationStructureNV                  vkDestroyAccelerationStructureNV;
     PFN_vkGetAccelerationStructureMemoryRequirementsNV    vkGetAccelerationStructureMemoryRequirementsNV;
-    PFN_vkBindAccelerationStructureMemoryKHR              vkBindAccelerationStructureMemoryKHR;
+    PFN_vkBindAccelerationStructureMemoryNV               vkBindAccelerationStructureMemoryNV;
     PFN_vkCmdBuildAccelerationStructureNV                 vkCmdBuildAccelerationStructureNV;
     PFN_vkCmdCopyAccelerationStructureNV                  vkCmdCopyAccelerationStructureNV;
     PFN_vkCmdTraceRaysNV                                  vkCmdTraceRaysNV;
     PFN_vkCreateRayTracingPipelinesNV                     vkCreateRayTracingPipelinesNV;
     PFN_vkGetRayTracingShaderGroupHandlesKHR              vkGetRayTracingShaderGroupHandlesKHR;
     PFN_vkGetAccelerationStructureHandleNV                vkGetAccelerationStructureHandleNV;
-    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     vkCmdWriteAccelerationStructuresPropertiesKHR;
+    PFN_vkCmdWriteAccelerationStructuresPropertiesNV      vkCmdWriteAccelerationStructuresPropertiesNV;
     PFN_vkCompileDeferredNV                               vkCompileDeferredNV;
 
     // VK_EXT_external_memory_host
@@ -1222,6 +1292,32 @@ struct DispatchDevice {
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                 vkCmdSetFragmentShadingRateEnumNV;
 
+    // VK_KHR_acceleration_structure
+    PFN_vkCreateAccelerationStructureKHR                  vkCreateAccelerationStructureKHR;
+    PFN_vkDestroyAccelerationStructureKHR                 vkDestroyAccelerationStructureKHR;
+    PFN_vkCmdBuildAccelerationStructuresKHR               vkCmdBuildAccelerationStructuresKHR;
+    PFN_vkCmdBuildAccelerationStructuresIndirectKHR       vkCmdBuildAccelerationStructuresIndirectKHR;
+    PFN_vkBuildAccelerationStructuresKHR                  vkBuildAccelerationStructuresKHR;
+    PFN_vkCopyAccelerationStructureKHR                    vkCopyAccelerationStructureKHR;
+    PFN_vkCopyAccelerationStructureToMemoryKHR            vkCopyAccelerationStructureToMemoryKHR;
+    PFN_vkCopyMemoryToAccelerationStructureKHR            vkCopyMemoryToAccelerationStructureKHR;
+    PFN_vkWriteAccelerationStructuresPropertiesKHR        vkWriteAccelerationStructuresPropertiesKHR;
+    PFN_vkCmdCopyAccelerationStructureKHR                 vkCmdCopyAccelerationStructureKHR;
+    PFN_vkCmdCopyAccelerationStructureToMemoryKHR         vkCmdCopyAccelerationStructureToMemoryKHR;
+    PFN_vkCmdCopyMemoryToAccelerationStructureKHR         vkCmdCopyMemoryToAccelerationStructureKHR;
+    PFN_vkGetAccelerationStructureDeviceAddressKHR        vkGetAccelerationStructureDeviceAddressKHR;
+    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     vkCmdWriteAccelerationStructuresPropertiesKHR;
+    PFN_vkGetDeviceAccelerationStructureCompatibilityKHR  vkGetDeviceAccelerationStructureCompatibilityKHR;
+    PFN_vkGetAccelerationStructureBuildSizesKHR           vkGetAccelerationStructureBuildSizesKHR;
+
+    // VK_KHR_ray_tracing_pipeline
+    PFN_vkCmdTraceRaysKHR                                 vkCmdTraceRaysKHR;
+    PFN_vkCreateRayTracingPipelinesKHR                    vkCreateRayTracingPipelinesKHR;
+    PFN_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR vkGetRayTracingCaptureReplayShaderGroupHandlesKHR;
+    PFN_vkCmdTraceRaysIndirectKHR                         vkCmdTraceRaysIndirectKHR;
+    PFN_vkGetRayTracingShaderGroupStackSizeKHR            vkGetRayTracingShaderGroupStackSizeKHR;
+    PFN_vkCmdSetRayTracingPipelineStackSizeKHR            vkCmdSetRayTracingPipelineStackSizeKHR;
+
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                   = vkGetDeviceGroupPeerMemoryFeatures;
     alias vkCmdSetDeviceMaskKHR                                   = vkCmdSetDeviceMask;
@@ -1276,10 +1372,7 @@ struct DispatchDevice {
     alias vkCmdDrawIndexedIndirectCountAMD                        = vkCmdDrawIndexedIndirectCount;
 
     // VK_NV_ray_tracing
-    alias vkDestroyAccelerationStructureNV                        = vkDestroyAccelerationStructureKHR;
-    alias vkBindAccelerationStructureMemoryNV                     = vkBindAccelerationStructureMemoryKHR;
     alias vkGetRayTracingShaderGroupHandlesNV                     = vkGetRayTracingShaderGroupHandlesKHR;
-    alias vkCmdWriteAccelerationStructuresPropertiesNV            = vkCmdWriteAccelerationStructuresPropertiesKHR;
 
     // VK_EXT_buffer_device_address
     alias vkGetBufferDeviceAddressEXT                             = vkGetBufferDeviceAddress;
