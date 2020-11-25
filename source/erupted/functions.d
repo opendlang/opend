@@ -463,6 +463,9 @@ extern( System ) {
     alias PFN_vkDestroyPrivateDataSlotEXT                                       = void      function( VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const( VkAllocationCallbacks )* pAllocator );
     alias PFN_vkSetPrivateDataEXT                                               = VkResult  function( VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data );
     alias PFN_vkGetPrivateDataEXT                                               = void      function( VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData );
+
+    // VK_NV_fragment_shading_rate_enums
+    alias PFN_vkCmdSetFragmentShadingRateEnumNV                                 = void      function( VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps );
 }
 
 
@@ -917,6 +920,9 @@ __gshared {
     PFN_vkDestroyPrivateDataSlotEXT                                       vkDestroyPrivateDataSlotEXT;
     PFN_vkSetPrivateDataEXT                                               vkSetPrivateDataEXT;
     PFN_vkGetPrivateDataEXT                                               vkGetPrivateDataEXT;
+
+    // VK_NV_fragment_shading_rate_enums
+    PFN_vkCmdSetFragmentShadingRateEnumNV                                 vkCmdSetFragmentShadingRateEnumNV;
 
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                                         = vkGetPhysicalDeviceFeatures2;
@@ -1492,6 +1498,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetInstanceProcAddr( instance, "vkDestroyPrivateDataSlotEXT" );
     vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetInstanceProcAddr( instance, "vkSetPrivateDataEXT" );
     vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetInstanceProcAddr( instance, "vkGetPrivateDataEXT" );
+
+    // VK_NV_fragment_shading_rate_enums
+    vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetInstanceProcAddr( instance, "vkCmdSetFragmentShadingRateEnumNV" );
 }
 
 
@@ -1860,5 +1869,8 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlotEXT" );
     vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkSetPrivateDataEXT" );
     vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkGetPrivateDataEXT" );
+
+    // VK_NV_fragment_shading_rate_enums
+    vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
 }
 

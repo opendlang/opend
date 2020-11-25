@@ -417,6 +417,9 @@ struct DispatchDevice {
         vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlotEXT" );
         vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkSetPrivateDataEXT" );
         vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkGetPrivateDataEXT" );
+
+        // VK_NV_fragment_shading_rate_enums
+        vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
     }
 
 
@@ -785,6 +788,9 @@ struct DispatchDevice {
     void      DestroyPrivateDataSlotEXT( VkPrivateDataSlotEXT privateDataSlot ) { vkDestroyPrivateDataSlotEXT( vkDevice, privateDataSlot, pAllocator ); }
     VkResult  SetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data ) { return vkSetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, data ); }
     void      GetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData ) { vkGetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, pData ); }
+
+    // VK_NV_fragment_shading_rate_enums
+    void      CmdSetFragmentShadingRateEnumNV( VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateEnumNV( commandBuffer, shadingRate, combinerOps ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                   = GetDeviceGroupPeerMemoryFeatures;
@@ -1212,6 +1218,9 @@ struct DispatchDevice {
     PFN_vkDestroyPrivateDataSlotEXT                       vkDestroyPrivateDataSlotEXT;
     PFN_vkSetPrivateDataEXT                               vkSetPrivateDataEXT;
     PFN_vkGetPrivateDataEXT                               vkGetPrivateDataEXT;
+
+    // VK_NV_fragment_shading_rate_enums
+    PFN_vkCmdSetFragmentShadingRateEnumNV                 vkCmdSetFragmentShadingRateEnumNV;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                   = vkGetDeviceGroupPeerMemoryFeatures;
