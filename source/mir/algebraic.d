@@ -579,6 +579,35 @@ version(mir_core_test) unittest
     assert(v.kind == JsonValue.Kind.null_);
 }
 
+/// Wrapped algebraic with propogated primitives
+@safe pure 
+version(mir_core_test) unittest
+{
+    static struct Response
+    {
+        alias Union = TaggedVariant!(
+            ["double_", "string", "array", "table"],
+            double,
+            string,
+            Response[],
+            Response[string],
+        );
+
+        Union data;
+        alias Tag = Union.Kind;
+        // propogates opEquals, opAssign, and other primitives
+        alias data this;
+
+        static foreach (T; Union.AllowedTypes)
+            this(T v) @safe pure nothrow @nogc { data = v; }
+    }
+
+    Response v = 3.0;
+    assert(v.kind == Response.Tag.double_);
+    v = "str";
+    assert(v == "str");
+}
+
 /++
 Nullable $(LREF Variant) Type (aka Algebraic Type).
 
