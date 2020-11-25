@@ -2315,7 +2315,7 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
                             static if (is(T == typeof(null)))
                                 assert(0, "Null " ~ Args[0].stringof);
                             else
-                                static assert(0, Args[0].stringof ~ ": the visitor cann't be caled with arguments " ~ Args.stringof);
+                                static assert(0, Args[0].stringof ~ ": the visitor cann't be caled with arguments " ~ AliasSeq!(T, Args[1 .. $]).stringof);
                         }
                         else
                         static if (exhaustive == Exhaustive.nullable || exhaustive == Exhaustive.auto_)
