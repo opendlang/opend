@@ -20,7 +20,6 @@ $(TR $(TH Name) $(TH Description))
 $(T2 Variant, an algebraic type for a single type set)
 $(T2 TaggedVariant, a tagged algebraic type for a single type set)
 $(T2 Nullable, an algebraic type for a single type set with at least `typeof(null)`)
-$(T2 Variants, a list of algebraic types with cyclic type referencing, which defined over the same list of type sets)
 )
 
 $(BOOKTABLE $(H3 Visitor Handlers),
@@ -137,7 +136,7 @@ private static struct _Void()
 /++
 Checks if the type is instance of $(LREF Algebraic).
 +/
-enum bool isVariant(T) = is(T : Algebraic!(setId, Sets), uint setId, Sets...);
+enum bool isVariant(T) = is(T == Algebraic!Types, Types...);
 
 ///
 unittest
@@ -151,7 +150,7 @@ unittest
 /++
 Checks if the type is instance of tagged $(LREF Algebraic).
 
-Tagged algebraics can be defined with $(LREF TaggedVariant) or with pair of $(LREF Variants) and $(LREF TaggedTypeSet).
+Tagged algebraics can be defined with $(LREF TaggedVariant).
 +/
 enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind);
 
@@ -166,35 +165,18 @@ unittest
 /++
 Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`.
 +/
-template isNullable(T)
-{
-    import std.traits: TemplateArgsOf;
-    static if (is(T : Algebraic!(setId, Sets), uint setId, Sets...))
-        enum bool isNullable = is(TemplateArgsOf!(Sets[setId])[0] == typeof(null));
-    else
-        enum bool isNullable = false;
-}
+enum bool isNullable(T) = is(T == Algebraic!(typeof(null), Types), Types...);
 
 ///
 unittest
 {
-    static assert(isNullable!(Nullable!(int, string)));
+    static assert(isNullable!(const Nullable!(int, string)));
     static assert(isNullable!(Nullable!()));
 
     static assert(!isNullable!(Variant!()));
     static assert(!isNullable!(Variant!string));
     static assert(!isNullable!int);
     static assert(!isNullable!string);
-}
-
-/++
-Dummy type for $(LREF Variants) self-referencing.
-+/
-struct SetAlias(uint id)
-{
-@safe pure nothrow @nogc const:
-    int opCmp(typeof(this)) { return 0; }
-    string toString() { return typeof(this).stringof; }
 }
 
 /++
@@ -282,7 +264,7 @@ be arbitrarily complex.
 
 
 /++
-Type set for $(LREF Variants) self-referencing.
+Type set resolution template used to construct $(LREF Algebraic) .
 +/
 template TypeSet(T...)
 {
@@ -300,8 +282,7 @@ template TypeSet(T...)
                         "Either all or none types must be tagged. Types that doesn't have tags: " ~
                         Filter!(templateNot!isTaggedType, T).stringof);
                 }
-
-                struct TypeSet;
+                alias TypeSet = T;
             }
             else
                 alias TypeSet = .TypeSet!(staticSort!(TypeCmp, T));
@@ -329,9 +310,9 @@ version(mir_core_test) unittest
     struct S {}
     alias C = S;
     alias Int = int;
-    static assert(__traits(isSame, TypeSet!(S, int), TypeSet!(Int, C)));
-    static assert(__traits(isSame, TypeSet!(S, int, int), TypeSet!(Int, C)));
-    static assert(!__traits(isSame, TypeSet!(uint, S), TypeSet!(int, S)));
+    static assert(is(TypeSet!(S, int) == TypeSet!(Int, C)));
+    static assert(is(TypeSet!(S, int, int) == TypeSet!(Int, C)));
+    static assert(!is(TypeSet!(uint, S) == TypeSet!(int, S)));
 }
 
 private template applyTags(string[] tagNames, T...)
@@ -350,9 +331,9 @@ Type set for tagged $(LREF Variants) self-referencing.
 alias TaggedTypeSet(string[] tagNames, T...) = TypeSet!(applyTags!(tagNames, T));
 
 /++
-Checks if the type is instance of $(LREF TypeSet).
+Checks if the type list is $(LREF TypeSet).
 +/
-enum bool isTypeSet(T) = is(T : TypeSet!T, T...);
+enum bool isTypeSet(T...) = is(T == TypeSet!T);
 
 ///
 unittest
@@ -363,85 +344,16 @@ unittest
 }
 
 /++
-$(H4 Cyclic-Referential Types)
-A useful and popular use of algebraic data structures is for defining cyclic
-$(LUCKY self-referential data structures), i.e. a kit of structures that embed references to
-values of their own type within.
-This is achieved with $(LREF Variants) by using $(LREF SetAlias) as a placeholder whenever a
-reference to the type being defined is needed. The $(LREF Variant) instantiation
-will perform 
-$(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
-alpha renaming) on its constituent types, replacing $(LREF SetAlias)
-with the self-referenced type. The structure of the type involving $(LREF SetAlias) may
-be arbitrarily complex.
-
-The impllementation is defined as
-----
-private alias TypeSetsInst(uint id) = Algebraic!(id, Sets);
-///
-alias Variants = staticMap!(TypeSetsInst, Iota!(Sets.length));
-----
-+/
-template Variants(Sets...)
-    if (allSatisfy!(isTypeSet, Sets))
-{
-    import std.meta: staticMap;
-    import mir.internal.utility: Iota;
-
-    private alias TypeSetsInst(uint id) = Algebraic!(id, Sets);
-    ///
-    alias Variants = staticMap!(TypeSetsInst, Iota!(Sets.length));
-}
-
-/// 
-@safe pure nothrow version(mir_core_test) unittest
-{
-    alias V = Variants!(
-        TypeSet!(string, long, SetAlias!1*), // string, long, and pointer to V[1] type
-        TypeSet!(SetAlias!0[], int), // int and array of V[0] type elements
-    );
-
-    alias A = V[0];
-    alias B = V[1];
-
-    A arr = new B([A("hey"), A(100)]);
-    assert(arr._is!(B*));
-    assert(arr.trustedGet!(B*)._is!(A[]));
-}
-
-/// Tagged
-@safe pure nothrow version(mir_core_test) unittest
-{
-    alias V = Variants!(
-        TaggedTypeSet!(
-            ["string", "integer", "friend"],
-            string, long, SetAlias!1*), // string, long, and pointer to V[1] type
-
-        TaggedTypeSet!(
-            ["team", "integer"],
-            SetAlias!0[], int), // int and array of V[0] type elements
-    );
-
-    alias A = V[0];
-    alias B = V[1];
-
-    A arr = new B([A("hey"), A(100)]);
-
-    assert(arr.kind == A.Kind.friend);
-    assert(arr.trustedGet!(B*).kind == B.Kind.team);
-}
-
-/++
 Variant Type (aka Algebraic Type).
 
 The impllementation is defined as
 ----
-alias Variant(T...) = Algebraic!(0, TypeSet!T);
+alias Variant(T...) = Algebraic!(TypeSet!T);
 ----
 
 Compatible with BetterC mode.
 +/
-alias Variant(T...) = Algebraic!(0, TypeSet!T);
+alias Variant(T...) = Algebraic!(TypeSet!T);
 
 ///
 @safe pure @nogc 
@@ -669,10 +581,9 @@ version(mir_core_test) unittest
 }
 
 /++
-Implementation of $(LREF Variant), $(LREF Variants), and $(LREF Nullable).
+Implementation of $(LREF Variant), and $(LREF Nullable).
 +/
-struct Algebraic(uint _setId, _TypeSets...)
-    if (allSatisfy!(isTypeSet, _TypeSets) && _setId < _TypeSets.length)
+struct Algebraic(_Types...)
 {
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
@@ -684,25 +595,10 @@ struct Algebraic(uint _setId, _TypeSets...)
         isEqualityComparable,
         isOrderingComparable,
         Largest,
-        TemplateArgsOf,
         Unqual
         ;
 
-    private enum _variant_test_ = is(_TypeSets == AliasSeq!(TypeSet!(typeof(null), double)));
-
-    private template _ApplyAliasesImpl(int length, Types...)
-    {
-        static if (length == 0)
-            alias _ApplyAliasesImpl = ReplaceTypeUnless!(isVariant, This, Algebraic!(_setId, _TypeSets), Types);
-        else
-        {
-            enum next  = length - 1;
-            alias _ApplyAliasesImpl = _ApplyAliasesImpl!(next,
-                ReplaceTypeUnless!(isVariant, SetAlias!next, Algebraic!(next, _TypeSets), Types));
-        }
-    }
-
-    private alias _ThisTypeSetList = TemplateArgsOf!(_TypeSets[_setId]);
+    private enum _variant_test_ = is(_Types == AliasSeq!(typeof(null), double));
 
     version (D_Ddoc)
     {
@@ -731,14 +627,14 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
-    static if (anySatisfy!(isTaggedType, _ThisTypeSetList))
+    static if (anySatisfy!(isTaggedType, _Types))
     {
-        private alias _UntaggedThisTypeSetList = staticMap!(getTaggedTypeUnderlying, _ThisTypeSetList);
+        private alias _UntaggedThisTypeSetList = staticMap!(getTaggedTypeUnderlying, _Types);
 
         version (D_Ddoc){}
         else
         {
-            mixin(enumKindText([staticMap!(getTaggedTypeName, _ThisTypeSetList)]));
+            mixin(enumKindText([staticMap!(getTaggedTypeName, _Types)]));
 
             auto kind() const @safe pure nothrow @nogc @property
             {
@@ -749,21 +645,20 @@ struct Algebraic(uint _setId, _TypeSets...)
     }
     else
     {
-        alias _UntaggedThisTypeSetList = _ThisTypeSetList;
+        alias _UntaggedThisTypeSetList = _Types;
     }
 
     /++
     Allowed types list
     See_also: $(LREF TypeSet)
     +/
-    alias AllowedTypes = AliasSeq!(_ApplyAliasesImpl!(_TypeSets.length, _UntaggedThisTypeSetList));
+    alias AllowedTypes = AliasSeq!(ReplaceTypeUnless!(isVariant, This, Algebraic!_Types, _UntaggedThisTypeSetList));
 
     version(mir_core_test)
     static if (_variant_test_)
     ///
     unittest
     {
-        import std.traits: TemplateArgsOf;
         import std.meta: AliasSeq;
 
         alias V = Nullable!
@@ -774,12 +669,12 @@ struct Algebraic(uint _setId, _TypeSets...)
             bool,
         );
 
-        static assert(is(V.AllowedTypes == TemplateArgsOf!(TypeSet!(
+        static assert(is(V.AllowedTypes == TypeSet!(
             typeof(null),
             bool,
             string,
             double,
-            V*))));
+            V*)));
     }
 
     private alias _Payload = Replace!(void, _Void!(), Replace!(typeof(null), _Null!(), AllowedTypes));
@@ -865,13 +760,13 @@ struct Algebraic(uint _setId, _TypeSets...)
     }
 
     version(none)
-    this(uint rhsId, RhsTypeSets...)(Algebraic!(rhsId, RhsTypeSets) rhs)
-        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(rhsId, RhsTypeSets).AllowedTypes))
+    this(RhsTypes...)(Algebraic!RhsTypes rhs)
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
         this._storage.bytes[0 .. rhs._storage.bytes.length] = rhs._storage.bytes;
         this._storage.bytes[rhs._storage.bytes.length .. $] = 0;
-        static if (hasElaborateDestructor!(Algebraic!(rhsId, RhsTypeSets)))
-            rhs._storage.bytes = Algebraic!(rhsId, RhsTypeSets)._Storage.init.bytes;
+        static if (hasElaborateDestructor!(Algebraic!RhsTypes))
+            rhs._storage.bytes = Algebraic!RhsTypes._Storage.init.bytes;
         // static immutable rhsBytes;
     }
 
@@ -888,7 +783,7 @@ struct Algebraic(uint _setId, _TypeSets...)
         private static union _StorageI(uint i)
         {
             _Payload[i] payload;
-            ubyte[_Storage.sizeof] bytes;
+            ubyte[_Storage.bytes.length] bytes;
         }
 
         static if (allSatisfy!(hasInoutConstruction, AllowedTypes))
@@ -1003,7 +898,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () const {
-                            mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -1065,7 +960,7 @@ struct Algebraic(uint _setId, _TypeSets...)
 
     /++
     +/
-    static if (is(AllowedTypes == _ThisTypeSetList))
+    static if (is(AllowedTypes == _Types))
     auto opCmp()(auto ref const typeof(this) rhs) const
     {
         static if (AllowedTypes.length == 0)
@@ -1185,12 +1080,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             }
             static if (AllowedTypes.length > 1)
             {
-                Algebraic!(
-                    _setId,
-                    _TypeSets[0 .. _setId],
-                    TypeSet!(_ThisTypeSetList[1 .. $]),
-                    _TypeSets[_setId + 1 .. $]
-                ) ret;
+                Algebraic!(TypeSet!(_Types[1 .. $])) ret;
 
                 S: switch (_identifier_)
                 {
@@ -1262,17 +1152,17 @@ struct Algebraic(uint _setId, _TypeSets...)
     }
 
     /// Zero cost always nothrow `get` alternative
-    auto ref trustedGet(R : Algebraic!(retId, RetTypeSets), uint retId, RetTypeSets, this This)() return @property
-        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(retId, RetTypeSets).AllowedTypes))
+    auto ref trustedGet(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
     {
-        static if (_setId == retId && is(RetTypeSets == _TypeSets))
+        static if (_setId == retId && is(RetTypes == _Types))
             return this;
         else
         {
             import std.meta: staticIndexOf;
             import std.traits: CopyTypeQualifiers;
-            alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
-            alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
+            alias RhsAllowedTypes = Algebraic!RetTypes.AllowedTypes;
+            alias Ret = CopyTypeQualifiers!(This, Algebraic!RetTypes);
             // uint rhsTypeId;
             switch (_identifier_)
             {
@@ -1292,20 +1182,20 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
-    /++
+    /+
     Throws: Exception if the storage contains value of the type that isn't represented in the allowed type set of the requested algebraic.
     +/
-    auto ref get(R : Algebraic!(retId, RetTypeSets), uint retId, RetTypeSets, this This)() return @property
-        if (allSatisfy!(Contains!AllowedTypes, Algebraic!(retId, RetTypeSets).AllowedTypes))
+    auto ref get(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
     {
-        static if (_setId == retId && is(RetTypeSets == _TypeSets))
+        static if (is(RetTypes == _Types))
             return this;
         else
         {
             import std.meta: staticIndexOf;
             import std.traits: CopyTypeQualifiers;
-            alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
-            alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
+            alias RhsAllowedTypes = Algebraic!RetTypes.AllowedTypes;
+            alias Ret = CopyTypeQualifiers!(This, Algebraic!RetTypes);
             // uint rhsTypeId;
             switch (_identifier_)
             {
@@ -1449,7 +1339,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
                     _storage.bytes = () const @trusted {
-                        auto ret =  immutable _StorageI!i(rhs);
+                        auto ret = immutable  _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
@@ -2056,7 +1946,7 @@ unittest
     import mir.utility: min;
     alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
 
-    alias collide = (x, y) => oops(x, y) ? Nullable!string("big-boom") : collideWith(x, y);
+    alias collide = (x, y) => oops(x, y) ? "big-boom".nullable : collideWith(x, y);
 
     auto ea = Asteroid(1);
     auto es = Spaceship(2);
@@ -2388,7 +2278,7 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
             template VariantReturnTypesImpl(T)
             {
                 static if (__traits(compiles, fun!T()))
-                    static if (fused && is(typeof(fun!T()) : Algebraic!(id, TypeSets), uint id, TypeSets...))
+                    static if (fused && is(typeof(fun!T()) : Algebraic!Types, Types...))
                         alias VariantReturnTypesImpl = TryRemoveConst!(typeof(fun!T())).AllowedTypes;
                     else
                     alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!(typeof(fun!T())));
@@ -2517,6 +2407,5 @@ version(mir_core_test) unittest
             }
         }
     }
-    import std.traits: TemplateArgsOf;
-    static assert(is(TemplateArgsOf!(TypeSet!(byte, immutable PODWithLongPointer)) == AliasSeq!(byte, immutable PODWithLongPointer)));
+    static assert(is(TypeSet!(byte, immutable PODWithLongPointer) == AliasSeq!(byte, immutable PODWithLongPointer)));
 }
