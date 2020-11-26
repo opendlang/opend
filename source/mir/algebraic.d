@@ -903,7 +903,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                     static if (__VERSION__ < 2094)
                     {
                         _storage.bytes = () inout @trusted {
-                            auto ret =  _StorageI!i(rhs.trustedGet!T);
+                            auto ret =  inout _StorageI!i(rhs.trustedGet!T);
                             return ret.bytes;
                         } ();
                         return;
@@ -1423,7 +1423,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
                     _storage.bytes = () const @trusted {
-                        auto ret =  _StorageI!i(rhs);
+                        auto ret =  const _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
@@ -1449,7 +1449,7 @@ struct Algebraic(uint _setId, _TypeSets...)
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
                     _storage.bytes = () const @trusted {
-                        auto ret =  _StorageI!i(rhs);
+                        auto ret =  immutable _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
