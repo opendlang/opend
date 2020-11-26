@@ -287,7 +287,7 @@ Type set for $(LREF Variants) self-referencing.
 template TypeSet(T...)
 {
     import std.meta: staticSort, staticMap, allSatisfy, anySatisfy;
-    // sort types by siezeof and them mangleof
+    // sort types by sizeof and them mangleof
     // but typeof(null) goes first
     static if (is(staticMap!(TryRemoveConst, T) == T))
         static if (is(NoDuplicates!T == T))
@@ -626,6 +626,13 @@ Compatible with BetterC mode.
 +/
 alias Nullable(T...) = Variant!(typeof(null), T);
 
+/// ditto
+Nullable!T nullable(T)(T t)
+{
+    import core.lifetime: forward;
+    return Nullable!T(forward!t);
+}
+
 /++
 Single type `Nullable`
 +/
@@ -877,10 +884,11 @@ struct Algebraic(uint _setId, _TypeSets...)
         // private enum _allCanRemoveConst = allSatisfy!(canRemoveConst, AllowedTypes);
         // private enum _allHaveImplicitSemiMutableConstruction = _allCanImplicitlyRemoveConst && _allHaveMutableConstruction;
 
+        static if (__VERSION__ < 2094)
         private static union _StorageI(uint i)
         {
             _Payload[i] payload;
-            ubyte[_Payload[i].sizeof] bytes;
+            ubyte[_Storage.sizeof] bytes;
         }
 
         static if (allSatisfy!(hasInoutConstruction, AllowedTypes))
@@ -892,12 +900,22 @@ struct Algebraic(uint _setId, _TypeSets...)
             {
                 if (_identifier_ == i)
                 {
-                    _storage = () inout {
-                        import mir.functional: forward;
-                        mixin(`inout _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
-                        return ret;
-                    } ();
-                    return;
+                    static if (__VERSION__ < 2094)
+                    {
+                        _storage.bytes = () inout @trusted {
+                            auto ret =  _StorageI!i(rhs.trustedGet!T);
+                            return ret.bytes;
+                        } ();
+                        return;
+                    }
+                    else
+                    {
+                        _storage = () inout {
+                            mixin(`inout _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
                 }
             }
         }
@@ -913,7 +931,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () {
-                            import mir.functional: forward;
                             mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
@@ -932,7 +949,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () const {
-                            import mir.functional: forward;
                             mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
@@ -951,7 +967,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () immutable {
-                            import mir.functional: forward;
                             mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
@@ -970,7 +985,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () const {
-                            import mir.functional: forward;
                             mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
@@ -989,7 +1003,6 @@ struct Algebraic(uint _setId, _TypeSets...)
                     if (_identifier_ == i)
                     {
                         _storage = () const {
-                            import mir.functional: forward;
                             mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
@@ -1361,7 +1374,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             {
                 Algebraic ret;
                 ret._storage = () {
-                    import mir.functional: forward;
+                    import core.lifetime: forward;
                     mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : _Void!().init };`);
                     return ret;
                 } ();
@@ -1375,15 +1388,26 @@ struct Algebraic(uint _setId, _TypeSets...)
             static if (isCopyable!(const T) || is(Unqual!T == T))
             this(T value)
             {
-                import mir.functional: forward;
+                import core.lifetime: forward;
                 static if (is(T == typeof(null)))
                     auto rhs = _Null!()();
                 else
                     alias rhs = forward!value;
-                _storage = () {
-                    mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
-                    return ret;
-                } ();
+
+                static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
+                {
+                    _storage.bytes = () @trusted {
+                        auto ret =  _StorageI!i(rhs);
+                        return ret.bytes;
+                    } ();
+                }
+                else
+                {
+                    _storage = () {
+                        mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                        return ret;
+                    } ();
+                }
                 static if (_Payload.length > 1)
                     _identifier_ = i;
             }
@@ -1396,10 +1420,20 @@ struct Algebraic(uint _setId, _TypeSets...)
                     auto rhs = _Null!()();
                 else
                     alias rhs = value;
-                _storage = () {
-                    mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
-                    return ret;
-                } ();
+                static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
+                {
+                    _storage.bytes = () const @trusted {
+                        auto ret =  _StorageI!i(rhs);
+                        return ret.bytes;
+                    } ();
+                }
+                else
+                {
+                    _storage = () {
+                        mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                        return ret;
+                    } ();
+                }
                 static if (_Payload.length > 1)
                     _identifier_ = i;
             }
@@ -1412,10 +1446,20 @@ struct Algebraic(uint _setId, _TypeSets...)
                     auto rhs = _Null!()();
                 else
                     alias rhs = value;
-                _storage = () {
-                    mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
-                    return ret;
-                } ();
+                static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
+                {
+                    _storage.bytes = () const @trusted {
+                        auto ret =  _StorageI!i(rhs);
+                        return ret.bytes;
+                    } ();
+                }
+                else
+                {
+                    _storage = () {
+                        mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                        return ret;
+                    } ();
+                }
                 static if (_Payload.length > 1)
                     _identifier_ = i;
             }
