@@ -495,11 +495,10 @@ version(mir_core_test) unittest
     static assert(Nullable!(byte, char, S).sizeof == 2);
 }
 
-/// Clever packaging
 @safe pure nothrow @nogc version(mir_core_test) unittest 
 {
     struct S { ubyte[3] d; }
-    static assert(Nullable!(ushort, wchar, S).sizeof == 4);
+    static assert(Nullable!(ushort, wchar, S).sizeof == 6);
 }
 
 /// opPostMove support
@@ -736,8 +735,8 @@ struct Algebraic(uint _setId, _TypeSets...)
 
             auto kind() const @safe pure nothrow @nogc @property
             {
-                assert(_storage.id <= Kind.max);
-                return cast(Kind) _storage.id;
+                assert(_identifier_ <= Kind.max);
+                return cast(Kind) _identifier_;
             }
         }
     }
@@ -782,65 +781,62 @@ struct Algebraic(uint _setId, _TypeSets...)
     {
         _Payload payload;
 
-        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
-        {
-            ubyte[0] bytes;
-            static if (AllowedTypes.length)
-                enum uint id = 0;
-        }
-        else
-        struct
-        {
-            ubyte[Largest!_Payload.sizeof] bytes;
+        static foreach (int i, P; _Payload)
+            mixin(`alias _member_` ~ i.stringof ~ ` = payload[` ~ i.stringof ~ `];`);
 
-            static if (AllowedTypes.length > 1)
-            {
-                import mir.utility: max;
-                enum _alignof = max(staticMap!(Alignof, _Payload));
-                static if ((bytes.length | _alignof) & 1)
-                    ubyte id;
-                else
-                static if ((bytes.length | _alignof) & 2)
-                    ushort id;
-                else
-                    uint id;
-            }
-            else
-            {
-                enum uint id = 0;
-            }
-        }
-    
-        static if (bytes.length && AllowedTypes.length)
-            ubyte[bytes.length + id.sizeof] allBytes;
+        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
+            ubyte[0] bytes;
         else
-            alias allBytes = bytes;
+            ubyte[Largest!_Payload.sizeof] bytes;
     }
 
     private _Storage _storage;
 
+    static if (AllowedTypes.length > 1)
+    {
+        import mir.utility: max;
+        enum _alignof = max(staticMap!(Alignof, _Payload));
+        static if ((_Storage.alignof & 1) && _Payload.length <= ubyte.max)
+            private alias _ID = ubyte;
+        else
+        static if ((_Storage.alignof & 2) && _Payload.length <= ushort.max)
+            private alias _ID = ushort;
+        else
+        static if (_Storage.alignof & 3)
+            private alias _ID = uint;
+        else
+            private alias _ID = ulong;
+    
+        _ID _identifier_;
+    }
+    else
+    {
+        alias _ID = uint;
+        enum _ID _identifier_ = 0;
+    }
+
     static if (anySatisfy!(hasElaborateDestructor, _Payload))
     ~this() @trusted
     {
-        S: switch (_storage.id)
+        S: switch (_identifier_)
         {
             static foreach (i, T; AllowedTypes)
             static if (hasElaborateDestructor!T)
             {
                 case i:
-                    _mutableTrustedGet!T.__xdtor;
+                    (*cast(Unqual!(_Payload[i])*)&_storage.payload[i]).__xdtor;
                     break S;
             }
             default:
         }
         version(mir_secure_memory)
-            _storage.allBytes = 0xCC;
+            _storage.bytes = 0xCC;
     }
 
     static if (anySatisfy!(hasOpPostMove, _Payload))
     void opPostMove(const ref typeof(this) old)
     {
-        S: switch (_storage.id)
+        S: switch (_identifier_)
         {
             static foreach (i, T; AllowedTypes)
             static if (hasOpPostMove!T)
@@ -861,20 +857,15 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
-    private ref trustedBytes() inout @trusted
-    {
-        return *cast(ubyte[_storage.bytes.length]*)&this._storage.bytes;
-    }
-
-    /++
-    +/
+    version(none)
     this(uint rhsId, RhsTypeSets...)(Algebraic!(rhsId, RhsTypeSets) rhs)
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!(rhsId, RhsTypeSets).AllowedTypes))
     {
-        this._storage.allBytes[0 .. rhs._storage.allBytes.length] = rhs._storage.allBytes;
-        this._storage.allBytes[rhs._storage.allBytes.length .. $] = 0;
+        this._storage.bytes[0 .. rhs._storage.bytes.length] = rhs._storage.bytes;
+        this._storage.bytes[rhs._storage.bytes.length .. $] = 0;
         static if (hasElaborateDestructor!(Algebraic!(rhsId, RhsTypeSets)))
-            rhs._storage.allBytes = Algebraic!(rhsId, RhsTypeSets).init._storage.allBytes;
+            rhs._storage.bytes = Algebraic!(rhsId, RhsTypeSets)._Storage.init.bytes;
+        // static immutable rhsBytes;
     }
 
     static if (!allSatisfy!(isCopyable, AllowedTypes))
@@ -892,108 +883,144 @@ struct Algebraic(uint _setId, _TypeSets...)
             ubyte[_Payload[i].sizeof] bytes;
         }
 
-        private void _copyCtorSwitch(this This, RhsAlgebraic)(return ref scope RhsAlgebraic rhs)
-        {
-            switch (_storage.id)
-            {
-                static foreach (i, T; AllowedTypes)
-                static if (!is(T == typeof(null)) && !is(T == void) && hasElaborateCopyConstructor!T)
-                {
-                    case i: {
-                        import std.traits: CopyTypeQualifiers;
-                        static if (__VERSION__ < 2094)
-                            CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i) storage = CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i)( rhs._storage.payload[i] );
-                        else
-                            CopyTypeQualifiers!(RhsAlgebraic, _StorageI!i) storage = { rhs._storage.payload[i] };
-                        trustedBytes[0 .. storage.bytes.length] = storage.bytes;
-                        return;
-                    }
-                }
-                default: return;
-            }
-        }
-
         static if (allSatisfy!(hasInoutConstruction, AllowedTypes))
         this(return ref scope inout Algebraic rhs) inout
         {
-            this._storage.allBytes = rhs._storage.allBytes;
-            _copyCtorSwitch(rhs);
+            static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+            static foreach (int i, T; AllowedTypes)
+            static if (!is(T == typeof(null)) && !is(T == void))
+            {
+                if (_identifier_ == i)
+                {
+                    _storage = () inout {
+                        import mir.functional: forward;
+                        mixin(`inout _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        return ret;
+                    } ();
+                    return;
+                }
+            }
         }
         else
         {
             static if (allSatisfy!(hasMutableConstruction, AllowedTypes))
             this(return ref scope Algebraic rhs)
             {
-                this._storage.allBytes = rhs._storage.allBytes;
-                _copyCtorSwitch(rhs);
+                static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+                static foreach (int i, T; AllowedTypes)
+                static if (!is(T == typeof(null)) && !is(T == void))
+                {
+                    if (_identifier_ == i)
+                    {
+                        _storage = () {
+                            import mir.functional: forward;
+                            mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
+                }
             }
 
             static if (allSatisfy!(hasConstConstruction, AllowedTypes))
             this(return ref scope const Algebraic rhs) const
             {
-                this._storage.allBytes = rhs._storage.allBytes;
-                _copyCtorSwitch(rhs);
+                static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+                static foreach (int i, T; AllowedTypes)
+                static if (!is(T == typeof(null)) && !is(T == void))
+                {
+                    if (_identifier_ == i)
+                    {
+                        _storage = () const {
+                            import mir.functional: forward;
+                            mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
+                }
             }
 
             static if (allSatisfy!(hasImmutableConstruction, AllowedTypes))
             this(return ref scope immutable Algebraic rhs) immutable
             {
-                this._storage.allBytes = rhs._storage.allBytes;
-                _copyCtorSwitch(rhs);
+                static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+                static foreach (int i, T; AllowedTypes)
+                static if (!is(T == typeof(null)) && !is(T == void))
+                {
+                    if (_identifier_ == i)
+                    {
+                        _storage = () immutable {
+                            import mir.functional: forward;
+                            mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
+                }
             }
 
             static if (allSatisfy!(hasSemiImmutableConstruction, AllowedTypes))
             this(return ref scope const Algebraic rhs) immutable
             {
-                this._storage.allBytes = rhs._storage.allBytes;
-                _copyCtorSwitch(rhs);
+                static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+                static foreach (int i, T; AllowedTypes)
+                static if (!is(T == typeof(null)) && !is(T == void))
+                {
+                    if (_identifier_ == i)
+                    {
+                        _storage = () const {
+                            import mir.functional: forward;
+                            mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
+                }
             }
 
             static if (allSatisfy!(hasSemiMutableConstruction, AllowedTypes))
             this(return ref scope const Algebraic rhs)
             {
-                this._storage.allBytes = rhs._storage.allBytes;
-                _copyCtorSwitch(rhs);
+                static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
+                static foreach (int i, T; AllowedTypes)
+                static if (!is(T == typeof(null)) && !is(T == void))
+                {
+                    if (_identifier_ == i)
+                    {
+                        _storage = () const {
+                            import mir.functional: forward;
+                            mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                            return ret;
+                        } ();
+                        return;
+                    }
+                }
             }
         }
     }
 
     /++
     +/
-    size_t toHash() const
+    size_t toHash() @trusted nothrow const
     {
-        static if (allSatisfy!(isPOD, AllowedTypes))
+        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
         {
-            static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
-            {
-                return 0;
-            }
-            else
-            static if (this.sizeof <= 16)
-            {
-                return hashOf(_storage.bytes, _storage.id);
-            }
-            else
-            {
-                static if (this.sizeof <= ubyte.max)
-                    alias UInt = ubyte;
-                else
-                static if (this.sizeof <= ushort.max)
-                    alias UInt = ushort;
-                else
-                    alias UInt = uint;
-
-                static immutable UInt[_Payload.length + 1] sizes = [0, staticMap!(Sizeof, _Payload)];
-                return hashOf(_storage.bytes[0 .. sizes[_storage.id]], _storage.id);
-            }
+            return 0;
         }
         else
-        switch (_storage.id)
+        switch (_identifier_)
         {
             static foreach (i, T; AllowedTypes)
             {
                 case i:
-                    return hashOf(_storage.payload[i], i);
+                    static if (is(T == void))
+                        return i;
+                    else
+                    static if (is(T == typeof(null)))
+                        return i;
+                    else
+                    return hashOf(trustedGet!T, cast(size_t)i);
             }
             default: assert(0);
         }
@@ -1009,9 +1036,9 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
         else
         {
-            if (this._storage.id != rhs._storage.id)
+            if (this._identifier_ != rhs._identifier_)
                 return false;
-            switch (_storage.id)
+            switch (_identifier_)
             {
                 static foreach (i, T; AllowedTypes)
                 {
@@ -1035,9 +1062,9 @@ struct Algebraic(uint _setId, _TypeSets...)
         else
         {
             import mir.internal.utility: isFloatingPoint;
-            if (auto d = int(this._storage.id) - int(rhs._storage.id))
+            if (auto d = int(this._identifier_) - int(rhs._identifier_))
                 return d;
-            switch (_storage.id)
+            switch (_identifier_)
             {
                 static foreach (i, T; AllowedTypes)
                 {
@@ -1069,13 +1096,19 @@ struct Algebraic(uint _setId, _TypeSets...)
         else
         {
             import mir.conv: to;
-            switch (_storage.id)
+            switch (_identifier_)
             {
-                static foreach (i, P; _Payload)
+                static foreach (i, T; AllowedTypes)
                 {
                     case i:
-                        static if (__traits(compiles, { auto s = to!string(_storage.payload[i]);}))
-                            return to!string(_storage.payload[i]);
+                        static if (is(T == void))
+                            return "void";
+                        else
+                        static if (is(T == typeof(null)))
+                            return "null";
+                        else
+                        static if (__traits(compiles, { auto s = to!string(_storage.trustedGet!T);}))
+                            return to!string(_storage.trustedGet!T);
                         else
                             return AllowedTypes[i].stringof;
                 }
@@ -1093,13 +1126,19 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
         else
         {
-            switch (_storage.id)
+            switch (_identifier_)
             {
-                static foreach (i, P; _Payload)
+                static foreach (i, T; AllowedTypes)
                 {
                     case i:
-                        static if (__traits(compiles, { import mir.format: print; print(w, _storage.payload[i]); }))
-                            { import mir.format: print; print(w, _storage.payload[i]); }
+                        static if (is(T == void))
+                            return w.put("void");
+                        else
+                        static if (is(T == typeof(null)))
+                            return w.put("null");
+                        else
+                        static if (__traits(compiles, { import mir.format: print; print(w, _storage.trustedGet!T); }))
+                            { import mir.format: print; print(w, _storage.trustedGet!T); }
                         else
                             w.put(AllowedTypes[i].stringof);
                         return;
@@ -1115,10 +1154,10 @@ struct Algebraic(uint _setId, _TypeSets...)
         bool opCast(C)() const
             if (is(C == bool))
         {
-            return _storage.id != 0;
+            return _identifier_ != 0;
         }
         /// Defined if the first type is `typeof(null)`
-        bool isNull() const { return _storage.id == 0; }
+        bool isNull() const { return _identifier_ == 0; }
         /// ditto
         void nullify() { this = null; }
 
@@ -1127,7 +1166,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             if (allSatisfy!(isCopyable, AllowedTypes[1 .. $]) && AllowedTypes.length != 2)
         {
             import mir.utility: _expect;
-            if (_expect(!_storage.id, false))
+            if (_expect(!_identifier_, false))
             {
                 throw variantNullException;
             }
@@ -1139,32 +1178,24 @@ struct Algebraic(uint _setId, _TypeSets...)
                     TypeSet!(_ThisTypeSetList[1 .. $]),
                     _TypeSets[_setId + 1 .. $]
                 ) ret;
-                static if (ret.AllowedTypes.length > 1)
-                    ret._storage.id = cast(typeof(ret._storage.id))(this._storage.id - 1);
 
-                static if (anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
+                S: switch (_identifier_)
                 {
-                    ret._storage.bytes = 0;
-                    S: switch (_storage.id)
+                    static foreach (i, T; AllowedTypes[1 .. $])
                     {
-                        static foreach (i, T; AllowedTypes)
                         {
-                            static if (hasElaborateCopyConstructor!T)
-                            {
-                                case i:
-                                    ret.trustedGet!T.emplaceRef(this.trustedGet!T);
-                                    break S;
-                            }
+                            case i:
+                                if (!hasElaborateCopyConstructor!T && !__ctfe)
+                                    goto default;
+                                ret = this.trustedGet!T;
+                                break S;
                         }
-                        default:
-                            ret._storage.bytes = this._storage.bytes[0 .. ret._storage.bytes.length];
                     }
+                    default:
+                        ret._storage.bytes = this._storage.bytes;
+                        static if (ret.AllowedTypes.length > 1)
+                            ret._identifier_ = cast(typeof(ret._identifier_))(this._identifier_ - 1);
                 }
-                else
-                {
-                    ret._storage.bytes = this._storage.bytes[0 .. ret._storage.bytes.length];
-                }
-
                 return ret;
             }
         }
@@ -1187,7 +1218,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             +/
             auto ref inout(AllowedTypes[1]) get() inout
             {
-                assert(_storage.id, "Called `get' on null Nullable!(" ~ AllowedTypes[1].stringof ~ ").");
+                assert(_identifier_, "Called `get' on null Nullable!(" ~ AllowedTypes[1].stringof ~ ").");
                 return trustedGet!(AllowedTypes[1]);
             }
 
@@ -1230,7 +1261,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
             alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
             // uint rhsTypeId;
-            switch (_storage.id)
+            switch (_identifier_)
             {
                 foreach (i, T; AllowedTypes)
                 static if (staticIndexOf!(T, RhsAllowedTypes) >= 0)
@@ -1263,7 +1294,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             alias RhsAllowedTypes = Algebraic!(retId, RetTypeSets).AllowedTypes;
             alias Ret = CopyTypeQualifiers!(This, Algebraic!(retId, RetTypeSets));
             // uint rhsTypeId;
-            switch (_storage.id)
+            switch (_identifier_)
             {
                 foreach (i, T; AllowedTypes)
                 static if (staticIndexOf!(T, RhsAllowedTypes) >= 0)
@@ -1281,26 +1312,13 @@ struct Algebraic(uint _setId, _TypeSets...)
         }
     }
 
-    static foreach (i, T; AllowedTypes)
+    static foreach (int i, T; AllowedTypes)
     {
-        private auto ref _mutableTrustedGet(E)() @trusted @property return const nothrow
-            if (is(E == T))
-        {
-            assert (i == _storage.id, T.stringof);
-            static if (is(T == typeof(null)))
-                return null;
-            else
-            static if (is(T == void))
-                return;
-            else
-                return *cast(Unqual!(AllowedTypes[i])*)&_storage.payload[i];
-        }
-
         /// Zero cost always nothrow `get` alternative
         auto ref trustedGet(E)() @trusted @property return inout nothrow
             if (is(E == T))
         {
-            assert (i == _storage.id);
+            assert (i == _identifier_);
             static if (is(T == typeof(null)))
                 return null;
             else
@@ -1319,7 +1337,7 @@ struct Algebraic(uint _setId, _TypeSets...)
             import mir.utility: _expect;
             static if (AllowedTypes.length > 1)
             {
-                if (_expect(i != _storage.id, false))
+                if (_expect(i != _identifier_, false))
                 {
                     throw variantException;
                 }
@@ -1333,93 +1351,153 @@ struct Algebraic(uint _setId, _TypeSets...)
         bool _is(E)() const @property nothrow @nogc
             if (is(E == T))
         {
-            return _storage.id == i;
+            return _identifier_ == i;
         }
 
         static if (is(T == void))
-        /// Defined if `AllowedTypes` contains `void`
-        static Algebraic _void()
         {
-            Algebraic ret;
-            ret._storage.bytes = 0;
-            ret._storage.id = i;
-            return ret;
+            /// Defined if `AllowedTypes` contains `void`
+            static Algebraic _void()
+            {
+                Algebraic ret;
+                ret._storage = () {
+                    import mir.functional: forward;
+                    mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : _Void!().init };`);
+                    return ret;
+                } ();
+                ret._identifier_ = i;
+                return ret;
+            }
         }
         else
         {
+            ///
+            static if (isCopyable!(const T) || is(Unqual!T == T))
+            this(T value)
+            {
+                import mir.functional: forward;
+                static if (is(T == typeof(null)))
+                    auto rhs = _Null!()();
+                else
+                    alias rhs = forward!value;
+                _storage = () {
+                    mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    return ret;
+                } ();
+                static if (_Payload.length > 1)
+                    _identifier_ = i;
+            }
 
-        private void inoutTrustedCtor(ref scope inout T rhs) inout @trusted
-        {
-            trustedBytes[0 .. _Payload[i].sizeof] = *cast(ubyte[_Payload[i].sizeof]*)&rhs;
-            trustedBytes[_Payload[i].sizeof .. $] = 0;
-            static if (AllowedTypes.length > 1)
-                *cast(typeof(_Storage.id)*)&_storage.id = i;
-            static if (hasOpPostMove!T)
-                (*cast(Unqual!T*)&(trustedGet!T())).opPostMove(rhs);
-            static if (hasElaborateDestructor!T)
-                emplaceRef(*cast(Unqual!T*)&rhs);
-        }
+            /// ditto
+            static if (isCopyable!(const T))
+            this(const T value) const
+            {
+                static if (is(T == typeof(null)))
+                    auto rhs = _Null!()();
+                else
+                    alias rhs = value;
+                _storage = () {
+                    mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    return ret;
+                } ();
+                static if (_Payload.length > 1)
+                    _identifier_ = i;
+            }
 
-        ///
-        this(T rhs)
-        {
-            inoutTrustedCtor(rhs);
-        }
+            /// ditto
+            static if (isCopyable!(immutable T))
+            this(immutable T value) immutable
+            {
+                static if (is(T == typeof(null)))
+                    auto rhs = _Null!()();
+                else
+                    alias rhs = value;
+                _storage = () {
+                    mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    return ret;
+                } ();
+                static if (_Payload.length > 1)
+                    _identifier_ = i;
+            }
 
-        /// ditto
-        this(const T rhs) const
-        {
-            inoutTrustedCtor(rhs);
-        }
+            static if (__traits(compiles, (ref T a, ref T b) { moveEmplace(a, b); }))
+            ///
+            ref opAssign(T rhs) return @trusted
+            {
+                static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
+                    this.__dtor();
+                __ctor(rhs);
+                return this;
+            }
 
-        /// ditto
-        this(immutable T rhs) immutable
-        {
-            inoutTrustedCtor(rhs);
-        }
+            /++
+            +/
+            auto opEquals()(auto ref const T rhs) const
+            {
+                static if (AllowedTypes.length > 1)
+                    if (_identifier_ != i)
+                        return false;
+                return trustedGet!T == rhs;
+            } 
 
-        static if (__traits(compiles, (ref T a, ref T b) { moveEmplace(a, b); }))
-        ///
-        ref opAssign(T rhs) return @trusted
-        {
-            static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
-                this.__dtor();
-            __ctor(rhs);
-            return this;
-        }
-
-        /++
-        +/
-        auto opEquals()(auto ref const T rhs) const
-        {
-            static if (AllowedTypes.length > 1)
-                if (_storage.id != i)
-                    return false;
-            return trustedGet!T == rhs;
-        } 
-
-        /++
-        +/
-        auto opCmp()(auto ref const T rhs) const
-        {
-            import mir.internal.utility: isFloatingPoint;
-            static if (AllowedTypes.length > 1)
-                if (auto d = int(_storage.id) - int(i))
-                    return d;
-            static if (__traits(compiles, __cmp(trustedGet!T, rhs)))
-                return __cmp(trustedGet!T, rhs);
-            else
-            static if (__traits(hasMember, T, "opCmp") && !is(T == U*, U))
-                return trustedGet!T.opCmp(rhs);
-            else
-            static if (isFloatingPoint!T)
-                return trustedGet!T == rhs ? 0 : trustedGet!T - rhs;
-            else
-                return trustedGet!T < rhs ? -1 :
-                    trustedGet!T > rhs ? +1 : 0;
-        }
+            /++
+            +/
+            auto opCmp()(auto ref const T rhs) const
+            {
+                import mir.internal.utility: isFloatingPoint;
+                static if (AllowedTypes.length > 1)
+                    if (auto d = int(_identifier_) - int(i))
+                        return d;
+                static if (__traits(compiles, __cmp(trustedGet!T, rhs)))
+                    return __cmp(trustedGet!T, rhs);
+                else
+                static if (__traits(hasMember, T, "opCmp") && !is(T == U*, U))
+                    return trustedGet!T.opCmp(rhs);
+                else
+                static if (isFloatingPoint!T)
+                    return trustedGet!T == rhs ? 0 : trustedGet!T - rhs;
+                else
+                    return trustedGet!T < rhs ? -1 :
+                        trustedGet!T > rhs ? +1 : 0;
+            }
         }
     }
+}
+
+// test CTFE
+unittest
+{
+    struct S { string s;}
+    alias V = Nullable!(double, S);
+    enum a = V(1.9);
+    static assert (a == 1.9);
+    enum b = V(S("str"));
+    static assert(b == S("str"));
+    static auto foo(int r)
+    {
+        auto s = V(S("str"));
+        s = r;
+        return s;
+    }
+
+    static assert(foo(3) == 3);
+    static auto bar(int r)
+    {
+        auto s = V(S("str"));
+        s = r;
+        return s.visit!((double d) => d, (_)=> 0.0)();
+    }
+    assert(bar(3) == 3);
+    static assert(bar(3) == 3);
+
+    static auto bar3(int r)
+    {
+        auto s = V(S("str"));
+        s = r;
+        return s.match!((double d) => d, (_)=> "3")();
+    }
+    assert(bar(3) == 3);
+    static assert(bar(3) == 3);
 }
 
 @safe pure @nogc nothrow
@@ -1461,7 +1539,7 @@ version(mir_core_test) unittest
                 double,
                 C!(size1, isPOD, hasToHash, hasOpEquals),
                 C!(size2, isPOD, hasToHash, hasOpEquals));
-        static assert (__traits(compiles, T.init <= T.init));
+        // static assert (__traits(compiles, T.init <= T.init));
     }}
 }
 
@@ -2282,7 +2360,7 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
             else
                 alias AllReturnTypes = NoDuplicates!(staticMap!(VariantReturnTypesImpl, Args[0].AllowedTypes));
 
-            switch (args[0]._storage.id)
+            switch (args[0]._identifier_)
             {
                 static foreach (i, T; Args[0].AllowedTypes)
                 {
