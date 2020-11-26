@@ -96,7 +96,7 @@ Platform extensions, found in module `erupted.platform_extensions`, exist in for
 // xlib-d must be specified as dependency in your projects dub file
 module spocks_logic;
 public import X11.Xlib;                                 // publicly import required API
-import erupted.platform.mixin_extensions;               // import the template mixin
+import erupted.platform_extensions;                     // import the template mixin
 mixin Platform_Extensions!USE_PLATFORM_XLIB_KHR;        // mixin all xlib related extensions
 ```
 The template publicly imports `erupted.types` and `erupted.functions`. This is necessary as some functions from the latter module are overwritten/extended to also load related Vulkan extension functions.  `DispatchDevice` from module `erupted.dispatch_device` is also extended/overwritten with the corresponding extension functions. If you would include both, your module and `erupted.functions` in another module, `loadInstanceLevelFunctions`, `loadDeviceLevelFunctions` and `DispatchDevice` would collide.<br/>
