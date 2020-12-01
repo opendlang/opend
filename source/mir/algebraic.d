@@ -385,8 +385,8 @@ version(mir_core_test) unittest
     auto b = a;
 
     import mir.conv;
-    assert(b.get!S.n == 1);
     assert(a.get!S.n == 0);
+    assert(b.n == 1); //direct access of a member in case of all algebraic types has this member
 }
 
 /// Empty type set
@@ -432,7 +432,7 @@ version(mir_core_test) unittest
     Variant!S a;
 
     auto b = a.move;
-    assert(b.get!S.s == 1);
+    assert(b.s == 1);
 }
 
 /++
@@ -679,7 +679,7 @@ struct Algebraic(_Types...)
 
     private alias _Payload = Replace!(void, _Void!(), Replace!(typeof(null), _Null!(), AllowedTypes));
 
-    private static union _Storage
+    private static union _Storage_
     {
         _Payload payload;
 
@@ -692,19 +692,19 @@ struct Algebraic(_Types...)
             ubyte[Largest!_Payload.sizeof] bytes;
     }
 
-    private _Storage _storage;
+    private _Storage_ _storage_;
 
     static if (AllowedTypes.length > 1)
     {
         import mir.utility: max;
         enum _alignof = max(staticMap!(Alignof, _Payload));
-        static if ((_Storage.alignof & 1) && _Payload.length <= ubyte.max)
+        static if ((_Storage_.alignof & 1) && _Payload.length <= ubyte.max)
             private alias _ID = ubyte;
         else
-        static if ((_Storage.alignof & 2) && _Payload.length <= ushort.max)
+        static if ((_Storage_.alignof & 2) && _Payload.length <= ushort.max)
             private alias _ID = ushort;
         else
-        static if (_Storage.alignof & 3)
+        static if (_Storage_.alignof & 3)
             private alias _ID = uint;
         else
             private alias _ID = ulong;
@@ -726,13 +726,13 @@ struct Algebraic(_Types...)
             static if (hasElaborateDestructor!T)
             {
                 case i:
-                    (*cast(Unqual!(_Payload[i])*)&_storage.payload[i]).__xdtor;
+                    (*cast(Unqual!(_Payload[i])*)&_storage_.payload[i]).__xdtor;
                     break S;
             }
             default:
         }
         version(mir_secure_memory)
-            _storage.bytes = 0xCC;
+            _storage_.bytes = 0xCC;
     }
 
     static if (anySatisfy!(hasOpPostMove, _Payload))
@@ -744,7 +744,7 @@ struct Algebraic(_Types...)
             static if (hasOpPostMove!T)
             {
                 case i:
-                    this._storage.payload[i].opPostMove(old._storage.payload[i]);
+                    this._storage_.payload[i].opPostMove(old._storage_.payload[i]);
                     return;
             }
             default: return;
@@ -759,14 +759,14 @@ struct Algebraic(_Types...)
         }
     }
 
-    version(none)
+    version(mir_core_test)
     this(RhsTypes...)(Algebraic!RhsTypes rhs)
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
-        this._storage.bytes[0 .. rhs._storage.bytes.length] = rhs._storage.bytes;
-        this._storage.bytes[rhs._storage.bytes.length .. $] = 0;
+        this._storage_.bytes[0 .. rhs._storage_.bytes.length] = rhs._storage_.bytes;
+        this._storage_.bytes[rhs._storage_.bytes.length .. $] = 0;
         static if (hasElaborateDestructor!(Algebraic!RhsTypes))
-            rhs._storage.bytes = Algebraic!RhsTypes._Storage.init.bytes;
+            rhs._storage_.bytes = Algebraic!RhsTypes._Storage_.init.bytes;
         // static immutable rhsBytes;
     }
 
@@ -783,7 +783,7 @@ struct Algebraic(_Types...)
         private static union _StorageI(uint i)
         {
             _Payload[i] payload;
-            ubyte[_Storage.bytes.length] bytes;
+            ubyte[_Storage_.bytes.length] bytes;
         }
 
         static if (allSatisfy!(hasInoutConstruction, AllowedTypes))
@@ -797,7 +797,7 @@ struct Algebraic(_Types...)
                 {
                     static if (__VERSION__ < 2094)
                     {
-                        _storage.bytes = () inout @trusted {
+                        _storage_.bytes = () inout @trusted {
                             auto ret =  inout _StorageI!i(rhs.trustedGet!T);
                             return ret.bytes;
                         } ();
@@ -805,8 +805,8 @@ struct Algebraic(_Types...)
                     }
                     else
                     {
-                        _storage = () inout {
-                            mixin(`inout _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () inout {
+                            mixin(`inout _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -825,8 +825,8 @@ struct Algebraic(_Types...)
                 {
                     if (_identifier_ == i)
                     {
-                        _storage = () {
-                            mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () {
+                            mixin(`_Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -843,8 +843,8 @@ struct Algebraic(_Types...)
                 {
                     if (_identifier_ == i)
                     {
-                        _storage = () const {
-                            mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () const {
+                            mixin(`const _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -861,8 +861,8 @@ struct Algebraic(_Types...)
                 {
                     if (_identifier_ == i)
                     {
-                        _storage = () immutable {
-                            mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () immutable {
+                            mixin(`immutable _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -879,8 +879,8 @@ struct Algebraic(_Types...)
                 {
                     if (_identifier_ == i)
                     {
-                        _storage = () const {
-                            mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () const {
+                            mixin(`immutable _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -897,8 +897,8 @@ struct Algebraic(_Types...)
                 {
                     if (_identifier_ == i)
                     {
-                        _storage = () const {
-                            mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
+                        _storage_ = () const {
+                            mixin(`const _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
                         return;
@@ -1015,8 +1015,8 @@ struct Algebraic(_Types...)
                         static if (is(T == typeof(null)))
                             return "null";
                         else
-                        static if (__traits(compiles, { auto s = to!string(_storage.trustedGet!T);}))
-                            return to!string(_storage.trustedGet!T);
+                        static if (__traits(compiles, { auto s = to!string(_storage_.trustedGet!T);}))
+                            return to!string(_storage_.trustedGet!T);
                         else
                             return AllowedTypes[i].stringof;
                 }
@@ -1045,8 +1045,8 @@ struct Algebraic(_Types...)
                         static if (is(T == typeof(null)))
                             return w.put("null");
                         else
-                        static if (__traits(compiles, { import mir.format: print; print(w, _storage.trustedGet!T); }))
-                            { import mir.format: print; print(w, _storage.trustedGet!T); }
+                        static if (__traits(compiles, { import mir.format: print; print(w, _storage_.trustedGet!T); }))
+                            { import mir.format: print; print(w, _storage_.trustedGet!T); }
                         else
                             w.put(AllowedTypes[i].stringof);
                         return;
@@ -1095,7 +1095,7 @@ struct Algebraic(_Types...)
                         }
                     }
                     default:
-                        ret._storage.bytes = this._storage.bytes;
+                        ret._storage_.bytes = this._storage_.bytes;
                         static if (ret.AllowedTypes.length > 1)
                             ret._identifier_ = cast(typeof(ret._identifier_))(this._identifier_ - 1);
                 }
@@ -1215,6 +1215,81 @@ struct Algebraic(_Types...)
         }
     }
 
+    import std.traits: isAggregateType, hasMember;
+
+    private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
+    static if (_ReflectionTypes.length)
+    static if (allSatisfy!(isAggregateType, _ReflectionTypes))
+    {
+        import mir.reflection: isPublic, isField, isProperty;
+        import std.meta: ApplyRight, Filter, templateNot, templateOr;
+
+        this(this This, Args...)(auto ref Args args)
+            if (Args.length)
+        {
+            import std.traits: CopyTypeQualifiers;
+            import core.lifetime: forward;
+
+            template CanCompile(T)
+            {
+                alias Q = CopyTypeQualifiers!(This, T);
+                enum CanCompile =
+                    (is(Q == class) && __traits(compiles, new Q(forward!args))) ||
+                    ((is(Q == struct) || is(Q == union)) && __traits(compiles, Q(forward!args)));
+            }
+
+            alias TargetType = Filter!(CanCompile, _ReflectionTypes);
+            static if (TargetType.length == 0)
+                static assert(0, typeof(this).stringof ~ ".this: no types can be constructed with arguments " ~ Args.stringof);
+            static assert(TargetType.length == 1, typeof(this).stringof ~ ".this: multiple types " ~ TargetType.stringof ~ " can be constructed with arguments " ~ Args.stringof);
+            alias TT = TargetType[0];
+            static if (is(TT == struct) || is(TT == union))
+                this(CopyTypeQualifiers!(This, TT)(forward!args));
+            else
+                this(new CopyTypeQualifiers!(This, TT)(forward!args));
+        }
+
+        static foreach (member; AllMembersRec!(_ReflectionTypes[0]))
+        static if (
+            member != "_identifier_" &&
+            member != "_storage_" &&
+            member != "_void" &&
+            member != "_is" &&
+            member != "AllowedTypes" &&
+            member != "get" &&
+            member != "isNull" &&
+            member != "kind" &&
+            member != "Kind" &&
+            member != "nullify" &&
+            member != "opAssign" &&
+            member != "opCast" &&
+            member != "opCmp" &&
+            member != "opEquals" &&
+            member != "opPostMove" &&
+            member != "toHash" &&
+            member != "toString" &&
+            member != "trustedGet" &&
+            !(member.length >= 2 && member[0 .. 2] == "__"))
+        static if (allSatisfy!(ApplyRight!(hasMember, member), _ReflectionTypes))
+        static if (allSatisfy!(ApplyRight!(isPublic, member), _ReflectionTypes))
+        static if (!anySatisfy!(ApplyRight!(isMemberType, member), _ReflectionTypes))
+        {
+            static if (allSatisfy!(ApplyRight!(isField, member), _ReflectionTypes) && NoDuplicates!(staticMap!(ApplyRight!(memberTypeOf, member), _ReflectionTypes)).length == 1)
+            {
+                mixin(`ref ` ~ member ~q{()() inout return @trusted pure nothrow @nogc @property { return this.getMember!member; }});
+            }
+            else
+            static if (allSatisfy!(ApplyRight!(templateOr!(isField, isProperty), member), _ReflectionTypes))
+            {
+                mixin(`auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) @property { static if (args.length) { import core.lifetime: forward; return this.getMember!member = forward!args; } else return this.getMember!member;  }});
+            }
+            static if (allSatisfy!(ApplyRight!(templateNot!(templateOr!(isField, isProperty)), member), _ReflectionTypes))
+            {
+                mixin(`auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) { static if (args.length) { import core.lifetime: forward; return this.getMember!member(forward!args); } else return this.getMember!member;  }});
+            }
+        }
+    }
+
     static foreach (int i, T; AllowedTypes)
     {
         /// Zero cost always nothrow `get` alternative
@@ -1228,7 +1303,7 @@ struct Algebraic(_Types...)
             static if (is(T == void))
                 return;
             else
-                return _storage.payload[i];
+                return _storage_.payload[i];
         }
 
         /++
@@ -1263,9 +1338,9 @@ struct Algebraic(_Types...)
             static Algebraic _void()
             {
                 Algebraic ret;
-                ret._storage = () {
+                ret._storage_ = () {
                     import core.lifetime: forward;
-                    mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : _Void!().init };`);
+                    mixin(`_Storage_ ret = { _member_` ~ i.stringof ~ ` : _Void!().init };`);
                     return ret;
                 } ();
                 ret._identifier_ = i;
@@ -1286,15 +1361,15 @@ struct Algebraic(_Types...)
 
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
-                    _storage.bytes = () @trusted {
+                    _storage_.bytes = () @trusted {
                         auto ret =  _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
                 else
                 {
-                    _storage = () {
-                        mixin(`_Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    _storage_ = () {
+                        mixin(`_Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs };`);
                         return ret;
                     } ();
                 }
@@ -1312,15 +1387,15 @@ struct Algebraic(_Types...)
                     alias rhs = value;
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
-                    _storage.bytes = () const @trusted {
+                    _storage_.bytes = () const @trusted {
                         auto ret =  const _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
                 else
                 {
-                    _storage = () {
-                        mixin(`const _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    _storage_ = () {
+                        mixin(`const _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs };`);
                         return ret;
                     } ();
                 }
@@ -1338,15 +1413,15 @@ struct Algebraic(_Types...)
                     alias rhs = value;
                 static if (__VERSION__ < 2094 && anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
                 {
-                    _storage.bytes = () const @trusted {
+                    _storage_.bytes = () const @trusted {
                         auto ret = immutable  _StorageI!i(rhs);
                         return ret.bytes;
                     } ();
                 }
                 else
                 {
-                    _storage = () {
-                        mixin(`immutable _Storage ret = { _member_` ~ i.stringof ~ ` : rhs };`);
+                    _storage_ = () {
+                        mixin(`immutable _Storage_ ret = { _member_` ~ i.stringof ~ ` : rhs };`);
                         return ret;
                     } ();
                 }
@@ -1396,6 +1471,89 @@ struct Algebraic(_Types...)
             }
         }
     }
+}
+
+/++
+Constructor and methods propagation.
++/
+unittest
+{
+    static struct Base
+    {
+        double d;
+    }
+
+    static class C
+    {
+        // alias this members are supported 
+        Base base;
+        alias base this;
+
+        int a;
+        private string _b;
+
+    @safe pure nothrow @nogc:
+
+        string b() const @property { return _b; }
+        void b(string b) @property { _b = b; }
+
+        int retArg(int v) { return v; }
+
+        this(int a, string b)
+        {
+            this.a = a;
+            this._b = b;
+        }
+    }
+
+    static struct S
+    {
+        string b;
+        int a;
+
+        double retArg(double v) { return v; }
+
+        // alias this members are supported 
+        Base base;
+        alias base this;
+    }
+
+    static void inc(ref int a) { a++; }
+
+    alias V = Nullable!(C, S); // or Variant!
+
+    auto v = V(2, "str");
+    assert(v._is!C);
+    assert(v.a == 2);
+    assert(v.b == "str");
+    // members are returned by reference if possible
+    inc(v.a);
+    assert(v.a == 3);
+    v.b = "s";
+    assert(v.b == "s");
+    // alias this members are supported 
+    v.d = 10;
+    assert(v.d == 10);
+    // method call support
+    assert(v.retArg(100)._is!int);
+    assert(v.retArg(100) == 100);
+
+    v = V("S", 5);
+    assert(v._is!S);
+    assert(v.a == 5);
+    assert(v.b == "S");
+    // members are returned by reference if possible
+    inc(v.a);
+    assert(v.a == 6);
+    v.b = "s";
+    assert(v.b == "s");
+    // alias this members are supported 
+    v.d = 15;
+    assert(v.d == 15);
+    // method call support
+    assert(v.retArg(300)._is!double);
+    assert(v.retArg(300) == 300.0);
+
 }
 
 // test CTFE
@@ -1810,6 +1968,7 @@ See_also: $(HTTPS en.wikipedia.org/wiki/Multiple_dispatch, Multiple dispatch)
 alias match(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, true);
 
 ///
+version(mir_core_test)
 unittest
 {
     struct Asteroid { uint size; }
@@ -1824,7 +1983,9 @@ unittest
     );
 
     import mir.utility: min;
-    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+
+    // Direct access of a member in case of all algebraic types has this member
+    alias oops = (a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1;
 
     alias collide = (x, y) => oops(x, y) ? "big-boom" : collideWith(x, y);
 
@@ -1865,6 +2026,7 @@ Throws: Exception if `naryFun!visitors` can't be called with provided arguments
 alias tryMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.exception, true);
 
 ///
+version(mir_core_test)
 unittest
 {
     import std.exception: assertThrown;
@@ -1881,7 +2043,8 @@ unittest
     );
 
     import mir.utility: min;
-    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+    // Direct access of a member in case of all algebraic types has this member
+    alias oops = (a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1;
 
     alias collide = (x, y) => oops(x, y) ? "big-boom" : collideWith(x, y);
 
@@ -1929,6 +2092,7 @@ Returns: nullable variant, null value is used if `naryFun!visitors` can't be cal
 alias optionalMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.nullable, true);
 
 ///
+version(mir_core_test)
 unittest
 {
     struct Asteroid { uint size; }
@@ -1944,7 +2108,8 @@ unittest
     );
 
     import mir.utility: min;
-    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+    // Direct access of a member in case of all algebraic types has this member
+    alias oops = (a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1;
 
     alias collide = (x, y) => oops(x, y) ? "big-boom".nullable : collideWith(x, y);
 
@@ -2001,6 +2166,7 @@ Returns: optionally nullable type, null value is used if `naryFun!visitors` can'
 alias autoMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.auto_, true);
 
 ///
+version(mir_core_test)
 unittest
 {
     struct Asteroid { uint size; }
@@ -2016,7 +2182,8 @@ unittest
     );
 
     import mir.utility: min;
-    alias oops = match!((a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1);
+    // Direct access of a member in case of all algebraic types has this member
+    alias oops = (a, b) => (a.size + b.size) > 3 && min(a.size, b.size) > 1;
 
     import mir.conv: to;
     alias collide = (x, y) => oops(x, y) ? "big-boom".to!(typeof(collideWith(x, y))) : collideWith(x, y);
@@ -2089,6 +2256,11 @@ version(mir_core_test) unittest
     assert(x.getMember!"bar"(2) == 2);
     assert(y.getMember!"bar"(2) != 4);
     assert(y.getMember!"bar"(2) == 4.0);
+
+    // direct implementation
+    assert(x.bar(2) == 2);
+    assert(y.bar(2) != 4);
+    assert(y.bar(2) == 4.0);
 }
 
 /++
@@ -2152,7 +2324,11 @@ private template getMemberHandler(string member)
         else
         {
             import core.lifetime: forward;
-            return __traits(getMember, value, member)(forward!args);
+            import mir.reflection: isField;
+            static if (isField!(V, member) && Args.length == 1)
+                return __traits(getMember, value, member) = forward!args;
+            else
+                return __traits(getMember, value, member)(forward!args);
         }
     }
 }
@@ -2197,16 +2373,16 @@ private template nextVisitor(alias visitor, alias arg)
 
 private template visitThis(alias visitor, Exhaustive nextExhaustive, args...)
 {
-    auto ref visitThis(T)()
+    auto ref visitThis(T, Args...)(auto ref Args args)
     {
         import core.lifetime: forward;
-        return .visitImpl!(nextVisitor!(T, visitor, args[0]), nextExhaustive, true)(forward!(args[1 .. $]));
+        return .visitImpl!(nextVisitor!(T, visitor, forward!(args[0])), nextExhaustive, true)(forward!(args[1 .. $]));
     }
 }
 
 private template visitLast(alias visitor, args...)
 {
-    auto ref visitLast(T)()
+    auto ref visitLast(T, Args...)(auto ref Args args)
     {
         import core.lifetime: forward;
         static if (is(T == void))
@@ -2267,21 +2443,21 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
         {
             static if (fused && anySatisfy!(isVariant, Args[1 .. $]))
             {
-                alias fun = visitThis!(visitor, exhaustive, args);
+                alias fun = visitThis!(visitor, exhaustive);
             }
             else
             {
                 static assert (isVariant!(Args[0]), "First argument should be a Mir Algebraic type");
-                alias fun = visitLast!(visitor, args);
+                alias fun = visitLast!visitor;
             }
 
             template VariantReturnTypesImpl(T)
             {
-                static if (__traits(compiles, fun!T()))
-                    static if (fused && is(typeof(fun!T()) : Algebraic!Types, Types...))
-                        alias VariantReturnTypesImpl = TryRemoveConst!(typeof(fun!T())).AllowedTypes;
+                static if (__traits(compiles, fun!T(forward!args)))
+                    static if (fused && is(typeof(fun!T(forward!args)) : Algebraic!Types, Types...))
+                        alias VariantReturnTypesImpl = TryRemoveConst!(typeof(fun!T(forward!args))).AllowedTypes;
                     else
-                    alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!(typeof(fun!T())));
+                    alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!(typeof(fun!T(forward!args))));
                 else
                 static if (exhaustive == Exhaustive.auto_)
                     alias VariantReturnTypesImpl = AliasSeq!(typeof(null));
@@ -2299,26 +2475,26 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
                 static foreach (i, T; Args[0].AllowedTypes)
                 {
                     case i:
-                        static if (__traits(compiles, fun!T()))
+                        static if (__traits(compiles, fun!T(forward!args)))
                         {
                             static if (AllReturnTypes.length == 1)
                             {
-                                return fun!T();
+                                return fun!T(forward!args);
                             }
                             else
                             static if (is(VariantReturnTypesImpl!T == AliasSeq!void))
                             {
-                                fun!T();
+                                fun!T(forward!args);
                                 return Variant!AllReturnTypes._void;
                             }
                             else
-                            static if (is(typeof(fun!T()) : Variant!AllReturnTypes))
+                            static if (is(typeof(fun!T(forward!args)) == Variant!AllReturnTypes))
                             {
-                                return fun!T();
+                                return fun!T(forward!args);
                             }
                             else
                             {
-                                return Variant!AllReturnTypes(fun!T());
+                                return Variant!AllReturnTypes(fun!T(forward!args));
                             }
                         }
                         else

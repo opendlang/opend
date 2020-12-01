@@ -1,5 +1,32 @@
 module mir.internal.meta;
 
+template memberTypeOf(T, string member)
+{
+    T* aggregate;
+    alias memberTypeOf = typeof(__traits(getMember, aggregate, member));
+}
+
+template isMemberType(T, string member)
+{
+    enum isMemberType = is(typeof((ref __traits(getMember, T, member) v){}));
+}
+
+template AllMembersRec(T)
+{
+    static if (__traits(getAliasThis, T).length)
+    {
+        import std.meta: Filter, AliasSeq;
+        T* aggregate;
+        alias baseMembers = AllMembersRec!(typeof(__traits(getMember, aggregate, __traits(getAliasThis, T))));
+        alias members = Erase!(__traits(getAliasThis, T)[0], __traits(allMembers, T));
+        alias AllMembersRec = NoDuplicates!(AliasSeq!(baseMembers, members));
+    }
+    else
+    {
+        alias AllMembersRec = __traits(allMembers, T);
+    }
+}
+
 alias ConstOf(T) = const T;
 enum Alignof(T) = T.alignof;
 enum canConstructWith(From, To) = __traits(compiles, (From a) { To b = a; } );
@@ -183,6 +210,11 @@ if (args.length >= 1)
 }
 
 template OldAlias(T)
+{
+    alias OldAlias = T;
+}
+
+template OldAlias(alias T)
 {
     alias OldAlias = T;
 }

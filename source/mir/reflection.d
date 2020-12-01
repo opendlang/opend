@@ -704,7 +704,6 @@ private template FieldsAndPropertiesImpl(T)
         alias baseMembers = FieldsAndPropertiesImpl!(typeof(__traits(getMember, aggregate, __traits(getAliasThis, T))));
         alias members = Erase!(__traits(getAliasThis, T)[0], __traits(allMembers, T));
         alias FieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isMember, members));
-        
     }
     else
     {
@@ -727,7 +726,7 @@ private template isReadableAndWritable(T, string member)
     enum bool isReadableAndWritable = __traits(compiles, __traits(getMember, *aggregate, member) = __traits(getMember, *aggregate, member));
 }
 
-private template isPublic(T, string member)
+package template isPublic(T, string member)
 {
     T* aggregate;
     enum bool isPublic = !__traits(getProtection, __traits(getMember, *aggregate, member)).privateOrPackage;
