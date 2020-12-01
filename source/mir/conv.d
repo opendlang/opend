@@ -79,7 +79,7 @@ template to(T)
                 }
             }
             else
-            static if (isSomeString!T && is(I == enum))
+            static if (is(I == enum) && isSomeString!T)
             {
                 import mir.enums;
                 uint id = void;
@@ -136,7 +136,7 @@ template to(T)
                             {
                                 import mir.appender: UnsafeArrayBuffer;
                                 alias C = Unqual!(ForeachType!T);
-                                C[32] array = '\0';
+                                C[64] array = '\0';
                                 auto buffer = UnsafeArrayBuffer!C(array);
                             }
                             else
