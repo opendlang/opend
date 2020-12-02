@@ -1271,6 +1271,7 @@ struct Algebraic(_Types...)
             !(member.length >= 2 && member[0 .. 2] == "__"))
         static if (allSatisfy!(ApplyRight!(hasMember, member), _ReflectionTypes))
         static if (!anySatisfy!(ApplyRight!(isMemberType, member), _ReflectionTypes))
+        static if (allSatisfy!(ApplyRight!(isSingleMember, member), _ReflectionTypes))
         static if (allSatisfy!(ApplyRight!(isPublic, member), _ReflectionTypes))
         {
             static if (allSatisfy!(ApplyRight!(isField, member), _ReflectionTypes) && NoDuplicates!(staticMap!(ApplyRight!(memberTypeOf, member), _ReflectionTypes)).length == 1)

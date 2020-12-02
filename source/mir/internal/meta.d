@@ -11,6 +11,12 @@ template isMemberType(T, string member)
     enum isMemberType = is(typeof((ref __traits(getMember, T, member) v){}));
 }
 
+template isSingleMember(T, string member)
+{
+    import std.meta: AliasSeq;
+    enum isSingleMember = AliasSeq!(__traits(getMember, T, member)).length == 1;
+}
+
 template AllMembersRec(T)
 {
     static if (is(T == class) || is(T == struct) || is(T == union) || is(T == interface))
