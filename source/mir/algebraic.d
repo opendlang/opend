@@ -696,8 +696,6 @@ struct Algebraic(_Types...)
 
     static if (AllowedTypes.length > 1)
     {
-        import mir.utility: max;
-        enum _alignof = max(staticMap!(Alignof, _Payload));
         static if ((_Storage_.alignof & 1) && _Payload.length <= ubyte.max)
             private alias _ID = ubyte;
         else
