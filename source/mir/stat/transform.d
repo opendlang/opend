@@ -753,12 +753,12 @@ template robustScale(F,
         quantileType!(F, quantileAlgo) low_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(low_quartile);
         meanType!F median_value = temp.median!(F, allowModifySlice);
         quantileType!(F, quantileAlgo) high_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(cast(F) 1 - low_quartile);
-
+/*
         static if (allowModifySlice) {
             return scale(temp, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
-        } else {
+        } else {*/
             return scale(slice, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
-        }
+        //}
     }
     
     /++
@@ -845,19 +845,37 @@ template robustScale(string quantileAlgo, bool allowModifySlice = false)
     mixin("alias robustScale = .robustScale!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
 }
 
+/// ditto
+template robustScale(bool allowModifySlice)
+{
+    mixin("alias robustScale = .robustScale!(QuantileAlgo.type7, allowModifySlice);");
+}
+
 /// robustScale vector
 version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.algorithm.iteration: all;
+    import mir.algorithm.iteration: all, findIndex;
     import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
+    
+    static immutable input = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100];
+    auto x = input.dup.sliced;
+    auto y = x.robustScale;
 
-    auto x = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100].sliced;
-
-    assert(x.robustScale.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
+    assert(y.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
     assert(x.robustScale(0.15).all!approxEqual([8.02752, 0.321101, -0.0458716, 0.0458716, 0.229358, -0.0458716, 0.321101, -0.321101, -0.87156, -10.3211]));
+
+    // When allowModifySlice = true, this modifies both the original input and
+    // the order of the output
+    auto yCopy = y.idup;
+    auto z = x.robustScale!true;
+    size_t j;
+    foreach(i, ref e; input) {
+        j = x.findIndex!(a => a == e);
+        assert(z[j].approxEqual(yCopy[i]));
+    }
 }
 
 /// robustScale dynamic array
