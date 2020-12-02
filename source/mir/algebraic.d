@@ -598,7 +598,7 @@ struct Algebraic(_Types...)
         Unqual
         ;
 
-    private enum _variant_test_ = is(_Types == AliasSeq!(typeof(null), double));
+    private enum bool _variant_test_ = is(_Types == AliasSeq!(typeof(null), double));
 
     version (D_Ddoc)
     {
@@ -1253,6 +1253,7 @@ struct Algebraic(_Types...)
             member != "_is" &&
             member != "_storage_" &&
             member != "_Storage_" &&
+            member != "_variant_test_" &&
             member != "_void" &&
             member != "AllowedTypes" &&
             member != "get" &&
@@ -2244,8 +2245,8 @@ alias getMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.
 @safe pure @nogc nothrow
 version(mir_core_test) unittest
 {
-    static struct S { auto bar(int a) { return a; }}
-    static struct C { alias bar = (double a) => a * 2; }
+    static struct S { auto bar(int a) { return a; } enum boolean = true; }
+    static struct C { alias bar = (double a) => a * 2; enum boolean = false; }
 
     alias V = Variant!(S, C);
 
@@ -2261,6 +2262,8 @@ version(mir_core_test) unittest
     assert(x.bar(2) == 2);
     assert(y.bar(2) != 4);
     assert(y.bar(2) == 4.0);
+    assert(x.boolean);
+    assert(!y.boolean);
 }
 
 /++
@@ -2556,6 +2559,8 @@ version(mir_core_test) unittest
     variant = S(4);
     variant.tryVisit!fun;
     assert (variant.get!S.a == 6);
+
+    alias D = Variant!(Variant!(S, double));
 }
 
 @safe pure @nogc
