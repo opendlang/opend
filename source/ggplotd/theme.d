@@ -31,10 +31,7 @@ ThemeFunction background( string colour )
     import ggplotd.colour : namedColour;
     auto col = namedColour(colour);
     assert(!col.isNull, "Unknown named colour");
-    return delegate(Theme t) { t.backgroundColour = 
-            RGBA(col.r, col.g, col.b, 1); 
+    return delegate(Theme t) { t.backgroundColour =
+        RGBA(col.get().r, col.get().g, col.get().b, 1);
         return t; };
 }
-
-
-

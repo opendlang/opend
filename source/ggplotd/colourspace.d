@@ -33,15 +33,15 @@ cairo.RGBA toCairoRGBA(C)( in C from )
 {
     auto rgb = toColourSpace!(RGBA,C)( from );
     return cairo.RGBA(
-        rgb.r, 
-        rgb.g, 
-        rgb.b, 
-        rgb.a 
+        rgb.r,
+        rgb.g,
+        rgb.b,
+        rgb.a
     );
 }
 
 /// Convert from Cairo colour to specified type (template)
-C fromCairoRGBA(C)( in cairo.RGBA crgb ) 
+C fromCairoRGBA(C)( in cairo.RGBA crgb )
 {
     auto rgba = RGBA( crgb.red, crgb.green, crgb.blue, crgb.alpha );
     return toColourSpace!C( rgba );
@@ -65,6 +65,10 @@ auto toTuple(T : XYZ)( T colour )
 auto toTuple(T)( T colour )
 {
     import std.typecons : Tuple;
-    return Tuple!(double, double, double)( colour.r, colour.g, colour.b );
+    import std.typecons : Nullable;
+    import std.traits : isInstanceOf;
+    static if (isInstanceOf!(Nullable, T))
+        return Tuple!(double, double, double)( colour.get().r, colour.get().g, colour.get().b );
+    else
+        return Tuple!(double, double, double)( colour.r, colour.g, colour.b );
 }
-

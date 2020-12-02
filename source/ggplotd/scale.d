@@ -8,14 +8,14 @@ version (unittest)
     import dunit.toolkit;
 }
 
-alias ScaleType = 
+alias ScaleType =
     cairo.Context delegate(cairo.Context context, in Bounds bounds,
     double width, double height);
 
 /// Scale context by plot boundaries
 ScaleType scale()
 {
-    return (cairo.Context context, in Bounds bounds, 
+    return (cairo.Context context, in Bounds bounds,
         double pixelWidth, double pixelHeight) {
         context.translate(0, pixelHeight);
         context.scale(pixelWidth / bounds.width, -pixelHeight / bounds.height);
@@ -64,8 +64,8 @@ unittest
     assertEqual(sf.scale(10.0), 1);
 }
 
-/// 
-void applyScaleFunction(F, X, Y, Col, Size)(in F func, 
+///
+void applyScaleFunction(F, X, Y, Col, Size)(in F func,
     ref X x, ref Y y, ref Col col, ref Size size)
 {
     if (func.field == "x")
@@ -91,23 +91,23 @@ auto applyScale(B, XF, XStore, YF, YStore)(ref B bounds,
     if (!xf.scaleFunction.isNull)
     {
         // xmax won't be included in the iota so use that to initialize
-        xmax = xf.scaleFunction(xmax);
-        xmin = xf.scaleFunction(xmax);
+        xmax = xf.scaleFunction.get()(xmax);
+        xmin = xf.scaleFunction.get()(xmax);
         foreach(x; iota(xmin, xmax, (xmax-xmin)/100.0))
         {
-            xmin = safeMin(xmin, xf.scaleFunction(x));
-            xmax = safeMax(xmax, xf.scaleFunction(x));
+            xmin = safeMin(xmin, xf.scaleFunction.get()(x));
+            xmax = safeMax(xmax, xf.scaleFunction.get()(x));
         }
     }
     if (!yf.scaleFunction.isNull)
     {
         // ymax won't be included in the iota so use that to initialize
-        ymax = yf.scaleFunction(ymax);
-        ymin = yf.scaleFunction(ymax);
+        ymax = yf.scaleFunction.get()(ymax);
+        ymin = yf.scaleFunction.get()(ymax);
         foreach(y; iota(ymin, ymax, (ymax-ymin)/100.0))
         {
-            ymin = safeMin(ymin, yf.scaleFunction(y));
-            ymax = safeMax(ymax, yf.scaleFunction(y));
+            ymin = safeMin(ymin, yf.scaleFunction.get()(y));
+            ymax = safeMax(ymax, yf.scaleFunction.get()(y));
         }
     }
 
