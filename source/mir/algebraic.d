@@ -1215,14 +1215,13 @@ struct Algebraic(_Types...)
         }
     }
 
-    import std.traits: isAggregateType, hasMember;
-
     private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
     static if (_ReflectionTypes.length)
-    static if (allSatisfy!(isAggregateType, _ReflectionTypes))
+    static if (allSatisfy!(isSimpleAggregateType, _ReflectionTypes))
     {
         import mir.reflection: isPublic, isField, isProperty;
         import std.meta: ApplyRight, Filter, templateNot, templateOr;
+        import std.traits: hasMember;
 
         this(this This, Args...)(auto ref Args args)
             if (Args.length)
@@ -2585,3 +2584,5 @@ version(mir_core_test) unittest
     }
     static assert(is(TypeSet!(byte, immutable PODWithLongPointer) == AliasSeq!(byte, immutable PODWithLongPointer)));
 }
+
+private enum isSimpleAggregateType(T) =  is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
