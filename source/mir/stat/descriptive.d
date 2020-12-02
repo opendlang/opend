@@ -12,6 +12,7 @@ SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
 MATHREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, math, $1)$(NBSP)
 NDSLICEREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+T3=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
 module mir.stat.descriptive;
@@ -59,19 +60,19 @@ the probability, and `m` is a constant determined by the quantile type.
 
 $(BOOKTABLE $(H4 Discontinuous sample quantile),
 $(TR $(TH Type) $(TH m) $(TH gamma))
-$(T2 type1, 0, 0 if `g = 0` and 1 otherwise.)
-$(T2 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
-$(T2 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+$(T3 type1, 0, 0 if `g = 0` and 1 otherwise.)
+$(T3 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
+$(T3 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
 )
 
 $(H4 Continuous sample quantile),
 $(TR $(TH Type) $(TH m) $(TH gamma))
-$(T2 type4, 0, `gamma = g`)
-$(T2 type5, 0.5, `gamma = g`)
-$(T2 type6, `p`, `gamma = g`)
-$(T2 type7, `1 - p`, `gamma = g`)
-$(T2 type8, `(p + 1) / 3`, `gamma = g`)
-$(T2 type9, `p / 4 + 3 / 8`, `gamma = g`)
+$(T3 type4, 0, `gamma = g`)
+$(T3 type5, 0.5, `gamma = g`)
+$(T3 type6, `p`, `gamma = g`)
+$(T3 type7, `1 - p`, `gamma = g`)
+$(T3 type8, `(p + 1) / 3`, `gamma = g`)
+$(T3 type9, `p / 4 + 3 / 8`, `gamma = g`)
 
 References:
     Hyndman, R. J. and Fan, Y. (1996) Sample quantiles in statistical packages, American Statistician 50, 361--365. 10.2307/2684934.
