@@ -413,27 +413,27 @@ version(mir_core_test) unittest
     static assert(Nullable!(ushort, wchar, S).sizeof == 6);
 }
 
-/// opPostMove support
-@safe pure @nogc nothrow
-version(mir_core_test) unittest
-{
-    import std.algorithm.mutation: move;
+// /// opPostMove support
+// @safe pure @nogc nothrow
+// version(mir_core_test) unittest
+// {
+//     import std.algorithm.mutation: move;
 
-    static struct S
-    {
-        uint s;
+//     static struct S
+//     {
+//         uint s;
 
-        void opPostMove(const ref S old) nothrow
-        {
-            this.s = old.s + 1;
-        }
-    }
+//         void opPostMove(const ref S old) nothrow
+//         {
+//             this.s = old.s + 1;
+//         }
+//     }
 
-    Variant!S a;
+//     Variant!S a;
 
-    auto b = a.move;
-    assert(b.s == 1);
-}
+//     auto b = a.move;
+//     assert(b.s == 1);
+// }
 
 /++
 Tagged Variant Type (aka Tagged Algebraic Type).
@@ -733,21 +733,21 @@ struct Algebraic(_Types...)
             _storage_.bytes = 0xCC;
     }
 
-    static if (anySatisfy!(hasOpPostMove, _Payload))
-    void opPostMove(const ref typeof(this) old)
-    {
-        S: switch (_identifier_)
-        {
-            static foreach (i, T; AllowedTypes)
-            static if (hasOpPostMove!T)
-            {
-                case i:
-                    this._storage_.payload[i].opPostMove(old._storage_.payload[i]);
-                    return;
-            }
-            default: return;
-        }
-    }
+    // static if (anySatisfy!(hasOpPostMove, _Payload))
+    // void opPostMove(const ref typeof(this) old)
+    // {
+    //     S: switch (_identifier_)
+    //     {
+    //         static foreach (i, T; AllowedTypes)
+    //         static if (hasOpPostMove!T)
+    //         {
+    //             case i:
+    //                 this._storage_.payload[i].opPostMove(old._storage_.payload[i]);
+    //                 return;
+    //         }
+    //         default: return;
+    //     }
+    // }
 
     static if (AllowedTypes.length)
     {
