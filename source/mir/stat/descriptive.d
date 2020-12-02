@@ -5035,7 +5035,7 @@ unittest
 
     MomentAccumulator!(double, 2, Summation.naive) v;
     auto m = mean(x);
-    v.put(x, m);
+    v.put(x.asSlice.lightScope, m);
     assert(v.sumOfPower.approxEqual(54.76562));
 }
 
@@ -5073,7 +5073,7 @@ unittest
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 3, Summation.naive) v;
     v.put(x, u.mean, u.variance(true).sqrt);
-    //assert(v.moment.approxEqual(12.000999 / 12));
+    assert(v.moment.approxEqual(12.000999 / 12));
     assert(v.count == 12);
 }
 
@@ -5111,7 +5111,7 @@ unittest
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 3, Summation.naive) v;
-    v.put(x, u.mean, u.variance(true).sqrt);
+    v.put(x.asSlice.lightScope, u.mean, u.variance(true).sqrt);
     assert(v.sumOfPower.approxEqual(12.000999));
 }
 
