@@ -697,22 +697,22 @@ struct Algebraic(_Types...)
     static if (AllowedTypes.length > 1)
     {
         static if ((_Storage_.alignof & 1) && _Payload.length <= ubyte.max)
-            private alias _ID = ubyte;
+            private alias _ID_ = ubyte;
         else
         static if ((_Storage_.alignof & 2) && _Payload.length <= ushort.max)
-            private alias _ID = ushort;
+            private alias _ID_ = ushort;
         else
         static if (_Storage_.alignof & 3)
-            private alias _ID = uint;
+            private alias _ID_ = uint;
         else
-            private alias _ID = ulong;
+            private alias _ID_ = ulong;
     
-        _ID _identifier_;
+        _ID_ _identifier_;
     }
     else
     {
-        alias _ID = uint;
-        enum _ID _identifier_ = 0;
+        alias _ID_ = uint;
+        enum _ID_ _identifier_ = 0;
     }
 
     static if (anySatisfy!(hasElaborateDestructor, _Payload))
@@ -1248,6 +1248,7 @@ struct Algebraic(_Types...)
 
         static foreach (member; AllMembersRec!(_ReflectionTypes[0]))
         static if (
+            member != "_ID_" &&
             member != "_identifier_" &&
             member != "_storage_" &&
             member != "_void" &&
