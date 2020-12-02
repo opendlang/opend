@@ -761,12 +761,12 @@ template robustScale(F,
         quantileType!(F, quantileAlgo) low_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(low_quartile);
         meanType!F median_value = temp.median!(F, allowModifySlice);
         quantileType!(F, quantileAlgo) high_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(cast(F) 1 - low_quartile);
-/*
+
         static if (allowModifySlice) {
             return scale(temp, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
-        } else {*/
+        } else {
             return scale(slice, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
-        //}
+        }
     }
     
     /++
