@@ -215,6 +215,107 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
+@fmamath private @safe pure nothrow @nogc
+auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
+    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
+                               quantileAlgo == QuantileAlgo.type3)) &&
+        isFloatingPoint!G)
+{
+    assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
+    size_t n = slice.elementCount;
+    assert(n > 1, "quantileImpl: slice.elementCount must be greater than 1");
+
+    import mir.math.common: floor;
+    import mir.ndslice.sorting: partitionAt;
+    import std.traits: Unqual;
+
+    alias GG = Unqual!G;
+
+    GG m;
+
+    static if (quantileAlgo == QuantileAlgo.type1) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
+        m = -0.5;
+    } else static if (quantileAlgo == QuantileAlgo.type4) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type5) {
+        m = 0.5;
+    } else static if (quantileAlgo == QuantileAlgo.type6) {
+        m = p;
+    } else static if (quantileAlgo == QuantileAlgo.type7) {
+        m = 1 - p;
+    } else static if (quantileAlgo == QuantileAlgo.type8) {
+        m = (p + 1) / 3;
+    } else static if (quantileAlgo == QuantileAlgo.type9) {
+        m = p / 4 + cast(GG) 3 / 8;
+    }
+
+    GG g = n * p + m - 1; //note: 0-based, not 1-based indexing
+
+    GG pre_j = floor(g);
+    GG pre_j_1 = pre_j + 1;
+    size_t j;
+    if (pre_j >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j = n - 1;
+    } else if (pre_j < 0) {
+        j = 0;
+    } else {
+        j = cast(size_t) pre_j;
+    }
+
+    size_t j_1;
+    if (pre_j_1 >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j_1 = n - 1;
+    } else if (pre_j_1 < 0) {
+        j_1 = 0;
+    } else {
+        j_1 = cast(size_t) pre_j_1;
+    }
+
+    g -= j;
+    GG gamma;
+
+    static if (quantileAlgo == QuantileAlgo.type1) {
+        if (g == 0) {
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
+        if (g == 0) {
+            gamma = 0.5;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
+        if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else {
+        gamma = g;
+    }
+
+    if (gamma == 0) {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    } else if (gamma == 1) {
+        partitionAt(slice, j_1);
+        return cast(F) slice[j_1];
+    } else if (j != j_1) {
+        partitionAt(slice, j_1);
+        partitionAt(slice[0 .. j_1], j);
+        return cast(F) ((1 - gamma) * slice[j] + gamma * slice[j_1]);
+    } else {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    }
+}
+
 /++
 Computes the quantile(s) of the input, given one or more probabilities `p`.
 
@@ -470,107 +571,6 @@ template quantile(string quantileAlgo,
                   bool allowModifyProbability = false)
 {
     mixin("alias quantile = .quantile!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice, allowModifyProbability);");
-}
-
-@fmamath private @safe pure nothrow @nogc
-auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
-    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
-                               quantileAlgo == QuantileAlgo.type3)) &&
-        isFloatingPoint!G)
-{
-    assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
-    size_t n = slice.elementCount;
-    assert(n > 1, "quantileImpl: slice.elementCount must be greater than 1");
-
-    import mir.math.common: floor;
-    import mir.ndslice.sorting: partitionAt;
-    import std.traits: Unqual;
-
-    alias GG = Unqual!G;
-
-    GG m;
-
-    static if (quantileAlgo == QuantileAlgo.type1) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type2) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type3) {
-        m = -0.5;
-    } else static if (quantileAlgo == QuantileAlgo.type4) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type5) {
-        m = 0.5;
-    } else static if (quantileAlgo == QuantileAlgo.type6) {
-        m = p;
-    } else static if (quantileAlgo == QuantileAlgo.type7) {
-        m = 1 - p;
-    } else static if (quantileAlgo == QuantileAlgo.type8) {
-        m = (p + 1) / 3;
-    } else static if (quantileAlgo == QuantileAlgo.type9) {
-        m = p / 4 + cast(GG) 3 / 8;
-    }
-
-    GG g = n * p + m - 1; //note: 0-based, not 1-based indexing
-
-    GG pre_j = floor(g);
-    GG pre_j_1 = pre_j + 1;
-    size_t j;
-    if (pre_j >= (n - 1)) { //note: 0-based, not 1-based indexing
-        j = n - 1;
-    } else if (pre_j < 0) {
-        j = 0;
-    } else {
-        j = cast(size_t) pre_j;
-    }
-
-    size_t j_1;
-    if (pre_j_1 >= (n - 1)) { //note: 0-based, not 1-based indexing
-        j_1 = n - 1;
-    } else if (pre_j_1 < 0) {
-        j_1 = 0;
-    } else {
-        j_1 = cast(size_t) pre_j_1;
-    }
-
-    g -= j;
-    GG gamma;
-
-    static if (quantileAlgo == QuantileAlgo.type1) {
-        if (g == 0) {
-            gamma = 0;
-        } else {
-            gamma = 1;
-        }
-    } else static if (quantileAlgo == QuantileAlgo.type2) {
-        if (g == 0) {
-            gamma = 0.5;
-        } else {
-            gamma = 1;
-        }
-    } else static if (quantileAlgo == QuantileAlgo.type3) {
-        if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
-            gamma = 0;
-        } else {
-            gamma = 1;
-        }
-    } else {
-        gamma = g;
-    }
-
-    if (gamma == 0) {
-        partitionAt(slice, j);
-        return cast(F) slice[j];
-    } else if (gamma == 1) {
-        partitionAt(slice, j_1);
-        return cast(F) slice[j_1];
-    } else if (j != j_1) {
-        partitionAt(slice, j_1);
-        partitionAt(slice[0 .. j_1], j);
-        return cast(F) ((1 - gamma) * slice[j] + gamma * slice[j_1]);
-    } else {
-        partitionAt(slice, j);
-        return cast(F) slice[j];
-    }
 }
 
 /// Simple example
