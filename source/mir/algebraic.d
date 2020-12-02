@@ -1250,9 +1250,10 @@ struct Algebraic(_Types...)
         static if (
             member != "_ID_" &&
             member != "_identifier_" &&
-            member != "_storage_" &&
-            member != "_void" &&
             member != "_is" &&
+            member != "_storage_" &&
+            member != "_Storage_" &&
+            member != "_void" &&
             member != "AllowedTypes" &&
             member != "get" &&
             member != "isNull" &&
