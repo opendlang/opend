@@ -184,7 +184,14 @@ StringLoop: {
             {
                 uint id;
                 if (!symbolTable.get(cast(const(char)[])key, id))
+                {
+                    debug(ion) if (!__ctfe)
+                    {
+                        import core.stdc.stdio: stderr, fprintf;
+                        fprintf(stderr, "Error: (debug) can't insert key %*.*s\n", cast(int)key.length, cast(int)key.length, key.ptr);
+                    }
                     goto cant_insert_key;
+                }
                 id++;
             }
             // TODO find id using the key
