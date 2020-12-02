@@ -21,6 +21,7 @@ public import mir.math.stat: center;
 import mir.math.common: fmamath;
 import mir.math.stat: mean, standardDeviation, VarianceAlgo;
 import mir.math.sum: Summation;
+import mir.stat.descriptive: QuantileAlgo;
 import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
 
 /++
@@ -329,6 +330,8 @@ Params:
     import core.lifetime: move;
     import mir.ndslice.internal: LeftOp, ImplicitlyUnqual;
     import mir.ndslice.topology: vmap;
+    
+    assert(d > 0, "scale: cannot divide by zero");
 
     return slice.move.sweep!"-"(m).sweep!"/"(d);
 }
@@ -431,9 +434,9 @@ unittest
     auto resultByDim = result.byDim!1;
     assert(xScaleByDim.equal!(equal!approxEqual)(resultByDim));
 
-    auto xCenterAlongDim = x.alongDim!0.map!scale;
+    auto xScaleAlongDim = x.alongDim!0.map!scale;
     auto resultAlongDim = result.alongDim!0;
-    assert(xScaleByDim.equal!(equal!approxEqual)(resultAlongDim));
+    assert(xScaleAlongDim.equal!(equal!approxEqual)(resultAlongDim));
 }
 
 /// Can also pass arguments to `mean` and `standardDeviation` functions used by scale
@@ -642,13 +645,13 @@ unittest
     ].fuse;
 
     // Use byDim with map to scale by row/column.
-    auto xScaleByDim = x.byDim!1.map!zscore;
+    auto xZScoreByDim = x.byDim!1.map!zscore;
     auto resultByDim = result.byDim!1;
-    assert(xScaleByDim.equal!(equal!approxEqual)(resultByDim));
+    assert(xZScoreByDim.equal!(equal!approxEqual)(resultByDim));
 
-    auto xCenterAlongDim = x.alongDim!0.map!zscore;
+    auto xZScoreAlongDim = x.alongDim!0.map!zscore;
     auto resultAlongDim = result.alongDim!0;
-    assert(xScaleByDim.equal!(equal!approxEqual)(resultAlongDim));
+    assert(xZScoreAlongDim.equal!(equal!approxEqual)(resultAlongDim));
 }
 
 /// Can control how `mean` and `standardDeviation` are calculated and output type
@@ -692,4 +695,268 @@ unittest
 
     assert(x.zscore.all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
     assert(x.zscore(true).all!approxEqual([-1.46385, -0.87831, -0.29277, 0.29277, 0.87831, 1.46385]));
+}
+
+/++
+Scales input using robust statistics.
+
+This function centers the input using the `median` and then `scale`s the data
+according to the quantile range defined by (`low_quartile`, 1 - `low_quartile`).
+By default, it uses the interquartile range, whereby `low_quartile` equals 0.25.
+
+Params:
+    F = controls type of output
+    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
+    allowModifySlice = controls whether the input is modified in place, default is false
+
+Returns:
+    The robust scaled input
+
+See_also:
+    $(LREF scale),
+    $(MATHREF stat, median),
+    $(SUBREF descriptive, quantile),
+    $(SUBREF descriptive, interquartileRange)
++/
+template robustScale(F,
+                     QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
+                     bool allowModifySlice = false)
+{
+    /++
+    Params:
+        slice = slice
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(Iterator, size_t N, SliceKind kind, T)(
+        Slice!(Iterator, N, kind) slice, 
+        T low_quartile = 0.25)
+    {
+        assert(low_quartile > 0.0, "robustScale: low_quartile must be greater than zero");
+        assert(low_quartile < 0.5, "robustScale: low_quartile must be less than 0.5");
+
+        import mir.math.stat: median, meanType;
+        import mir.ndslice.topology: flattened;
+        import mir.stat.descriptive: quantile, quantileType;
+
+        static if (!allowModifySlice) {
+            import mir.ndslice.allocation: rcslice;
+            import mir.ndslice.topology: as;
+            import std.traits: Unqual;
+
+            auto view = slice.lightScope;
+            auto val = view.as!(Unqual!(slice.DeepElement)).rcslice;
+            auto temp = val.lightScope.flattened;
+        } else {
+            auto temp = slice.flattened;
+        }
+
+        quantileType!(F, quantileAlgo) low_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(low_quartile);
+        meanType!F median_value = temp.median!(F, allowModifySlice);
+        quantileType!(F, quantileAlgo) high_quartile_value = temp.quantile!(F, quantileAlgo, allowModifySlice, false)(cast(F) 1 - low_quartile);
+
+        static if (allowModifySlice) {
+            return scale(temp, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
+        } else {
+            return scale(slice, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
+        }
+    }
+    
+    /++
+    Params:
+        array = array
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(T)(T[] array, F low_quartile = cast(F) 0.25)
+    {
+        import mir.ndslice.slice: sliced;
+
+        return robustScale(array.sliced, low_quartile);
+    }
+
+    /++
+    Params:
+        withAsSlice = input for which hasAsSlice is true
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(T)(T withAsSlice, F low_quartile = cast(F) 0.25)
+        if (hasAsSlice!T)
+    {
+        return robustScale(withAsSlice.asSlice, low_quartile);
+    }
+}
+
+/++
+Params:
+    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
+    allowModifySlice = controls whether the input is modified in place, default is false
++/
+template robustScale(QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
+                     bool allowModifySlice = false)
+{
+    import mir.math.stat: meanType;
+
+    /++
+    Params:
+        slice = slice
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(Iterator, size_t N, SliceKind kind)(
+        Slice!(Iterator, N, kind) slice, 
+        double low_quartile = 0.25)
+    {
+        import core.lifetime: move;
+        alias F = meanType!(Slice!(Iterator, N, kind));
+        return .robustScale!(F, quantileAlgo, allowModifySlice)(slice.move, cast(F) low_quartile);
+    }
+
+    /++
+    Params:
+        array = array
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(T)(T[] array, double low_quartile = 0.25)
+    {
+        alias F = meanType!(T[]);
+        return .robustScale!(F, quantileAlgo, allowModifySlice)(array, cast(F) low_quartile);
+    }
+
+    /++
+    Params:
+        withAsSlice = input for which hasAsSlice is true
+        low_quartile = lower end of quartile range
+    +/
+    @fmamath auto robustScale(T)(T withAsSlice, double low_quartile = 0.25)
+        if (hasAsSlice!T)
+    {
+        alias F = meanType!(T);
+        return .robustScale!(F, quantileAlgo, allowModifySlice)(withAsSlice, cast(F) low_quartile);
+    }
+}
+
+/// ditto
+template robustScale(F, string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias robustScale = .robustScale!(F, QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+/// ditto
+template robustScale(string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias robustScale = .robustScale!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+/// robustScale vector
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100].sliced;
+
+    assert(x.robustScale.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
+    assert(x.robustScale(0.15).all!approxEqual([8.02752, 0.321101, -0.0458716, 0.0458716, 0.229358, -0.0458716, 0.321101, -0.321101, -0.87156, -10.3211]));
+}
+
+/// robustScale dynamic array
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+
+    auto x = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100];
+    assert(x.robustScale.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
+}
+
+/// robustScale matrix
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+
+    auto x = [
+        [100.0, 16, 12, 13,   15], 
+        [ 12.0, 16,  9,  3, -100]
+    ].fuse;
+
+    assert(x.robustScale.all!approxEqual([[14.583333, 0.583333, -0.083333, 0.083333, 0.416667], [-0.083333, 0.583333, -0.583333, -1.583333, -18.750000]]));
+}
+
+/// Column robustScale matrix
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all, equal;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.topology: alongDim, byDim, map;
+
+    auto x = [
+        [100.0, 16, 12, 13,   15], 
+        [ 12.0, 16,  9,  3, -100]
+    ].fuse;
+
+    auto result = [
+        [28.333333, 0.333333, -1.0, -0.666667,  0.0], 
+        [ 0.333333, 0.777778,  0.0, -0.666667, -12.111111]
+    ].fuse;
+
+    // Use byDim with map to scale by row/column.
+    auto xRobustScaleByDim = x.byDim!0.map!robustScale;
+    auto resultByDim = result.byDim!0;
+    assert(xRobustScaleByDim.equal!(equal!approxEqual)(resultByDim));
+
+    auto xRobustScaleAlongDim = x.alongDim!1.map!robustScale;
+    auto resultAlongDim = result.alongDim!1;
+    assert(xRobustScaleAlongDim.equal!(equal!approxEqual)(resultAlongDim));
+}
+
+/// Can control `QuantileAlgo` and output type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+    import mir.ndslice.topology: repeat;
+
+    //Set `QuantileAlgo` algorithm or output type
+    auto x = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100].sliced;
+
+    assert(x.robustScale!("type9").all!approxEqual([11.864407, 0.474576, -0.0677966, 0.0677966, 0.338983, -0.0677966, 0.474576, -0.474576, -1.288136, -15.254237]));
+    assert(x.robustScale!("type1").all!approxEqual([12.500000, 0.500000, -0.0714286, 0.0714286, 0.357143, -0.0714286, 0.500000, -0.500000, -1.357143, -16.071429]));
+    assert(x.robustScale!(float, "type6").all!approxEqual([10.294118f, 0.411765f, -0.0588235f, 0.0588235f, 0.294118f, -0.0588235f, 0.411765f, -0.411765f, -1.117647f, -13.235294f]));
+
+    auto y = [uint.max, uint.max / 2, uint.max / 3].sliced;
+    assert(y.robustScale!"type1".all!approxEqual([0.75, 0, -0.25]));
+
+    auto z = [ulong.max, ulong.max / 2, ulong.max / 3].sliced;
+    assert(z.robustScale!(ulong, "type1").all!approxEqual([0.75, 0, -0.25]));
+}
+
+// robustScale withAsSlice
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static immutable value = [100.0, 16, 12, 13, 15, 12, 16, 9, 3, -100];
+
+    auto x = RCArray!double(10);
+    foreach(i, ref e; x)
+        e = value[i];
+
+    assert(x.robustScale.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
 }
