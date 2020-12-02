@@ -25,7 +25,7 @@ struct Title
     string[] title;
 }
 
-/** 
+/**
 Draw the title
 
 Examples:
@@ -38,7 +38,7 @@ TitleFunction title( string title )
     return delegate(Title t) { t.title = [title]; return t; };
 }
 
-/** 
+/**
 Draw the multiline title
 
 Examples:
@@ -100,7 +100,7 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
     auto context = cairo.Context(surface);
     context.setFontSize(16.0);
     context.moveTo( width/2, margins.top/2 );
-    
+
     auto f = context.fontExtents();
     foreach(t; title.title)
     {
@@ -117,9 +117,9 @@ import ggplotd.scale : ScaleType;
 import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
      in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
-     in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc, 
-     in ScaleType scaleFunction, 
-     in Bounds bounds, 
+     in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc,
+     in ScaleType scaleFunction,
+     in Bounds bounds,
      in Margins margins, int width, int height )
 {
     if (geom.draw.isNull)
@@ -128,7 +128,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     if (geom.mask) {
         auto plotSurface = cairo.Surface.createForRectangle(surface,
             cairo.Rectangle!double(margins.left, margins.top,
-            width - (margins.left+margins.right), 
+            width - (margins.left+margins.right),
             height - (margins.top+margins.bottom)));
         context = cairo.Context(plotSurface);
     } else {
@@ -139,7 +139,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     context = scaleFunction(context, bounds,
         width.to!double - (margins.left+margins.right),
         height.to!double - (margins.top+margins.bottom));
-    context = geom.draw(context, xFunc, yFunc, cFunc, sFunc);
+    context = geom.draw.get()(context, xFunc, yFunc, cFunc, sFunc);
     return surface;
 }
 
@@ -162,11 +162,11 @@ struct Margins
     /// left margin
     size_t left = 50;
     /// right margin
-    size_t right = 20; 
+    size_t right = 20;
     /// bottom margin
-    size_t bottom = 50; 
+    size_t bottom = 50;
     /// top margin
-    size_t top = 40; 
+    size_t top = 40;
 }
 
 Margins defaultMargins(int size1, int size2)
@@ -181,7 +181,7 @@ Margins defaultMargins(int size1, int size2)
     return margins;
 }
 
-private auto defaultScaling( int size ) 
+private auto defaultScaling( int size )
 {
     if (size > 500)
         return 1;
@@ -190,12 +190,12 @@ private auto defaultScaling( int size )
     return 0.6+(1.0-0.6)*(size-100)/(500-100);
 }
 
-private auto defaultScaling( int size1, int size2 ) 
+private auto defaultScaling( int size1, int size2 )
 {
     return (defaultScaling(size1) + defaultScaling(size2))/2.0;
 }
 
-unittest 
+unittest
 {
     assertEqual(defaultScaling(50), 0.6);
     assertEqual(defaultScaling(600), 1.0);
@@ -222,7 +222,7 @@ struct GGPlotD
     Returns:
         Resulting surface of the same type as input surface, with this plot drawn on top of it.
     */
-    ref cairo.Surface drawToSurface( ref cairo.Surface surface, int width, int height ) const
+    ref cairo.Surface drawToSurface(ref return cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
         import std.typecons : Tuple;
@@ -316,7 +316,7 @@ struct GGPlotD
         if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = yaxis.min - bounds.height;
 
-        // TODO: Should really take separate scaling for number of ticks (defaultScaling(width)) 
+        // TODO: Should really take separate scaling for number of ticks (defaultScaling(width))
         // and for font: defaultScaling(widht, height)
         auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
             xSortedTicks );
@@ -335,14 +335,14 @@ struct GGPlotD
         auto currentMargins = margins(width, height);
 
         auto gR = chain(
-                geomAxis(aesX, 
-                    bounds.height.tickLength(height - currentMargins.bottom - currentMargins.top, 
+                geomAxis(aesX,
+                    bounds.height.tickLength(height - currentMargins.bottom - currentMargins.top,
                         defaultScaling(width), defaultScaling(height)),
-						xaxis.label, xaxis.textAngle), 
-                geomAxis(aesY, 
-                    bounds.width.tickLength(width - currentMargins.left - currentMargins.right, 
+						xaxis.label, xaxis.textAngle),
+                geomAxis(aesY,
+                    bounds.width.tickLength(width - currentMargins.left - currentMargins.right,
                         defaultScaling(width), defaultScaling(height)),
-						yaxis.label, yaxis.textAngle), 
+						yaxis.label, yaxis.textAngle),
             );
         auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
@@ -352,7 +352,7 @@ struct GGPlotD
         {
             surface = geom.drawGeom( surface,
                 xFunc, yFunc, cFunc, sFunc,
-                scale(), bounds, 
+                scale(), bounds,
                 plotMargins, width, height );
         }
 
@@ -360,33 +360,33 @@ struct GGPlotD
         surface = title.drawTitle( surface, currentMargins, width );
 
         import std.range : iota, zip, dropOne;
-        foreach(ly; zip(legends, iota(0.0, height, height/(legends.length+1.0)).dropOne)) 
+        foreach(ly; zip(legends, iota(0.0, height, height/(legends.length+1.0)).dropOne))
         {
             auto legend = ly[0];
             auto y = ly[1] - legend.height*.5;
             if (legend.type == "continuous") {
-                import ggplotd.legend : drawContinuousLegend; 
+                import ggplotd.legend : drawContinuousLegend;
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
-                    cairo.Rectangle!double(width - currentMargins.right - legend.width, 
+                    cairo.Rectangle!double(width - currentMargins.right - legend.width,
                     y, legend.width, legend.height ));//margins.right, margins.right));
-                legendSurface = drawContinuousLegend( legendSurface, 
-                legend.width, legend.height, 
+                legendSurface = drawContinuousLegend( legendSurface,
+                legend.width, legend.height,
                     colourStore, this.colourGradient );
             } else if (legend.type == "discrete") {
-                import ggplotd.legend : drawDiscreteLegend; 
+                import ggplotd.legend : drawDiscreteLegend;
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
-                    cairo.Rectangle!double(width - currentMargins.right - legend.width, 
+                    cairo.Rectangle!double(width - currentMargins.right - legend.width,
                     y, legend.width, legend.height ));//margins.right, margins.right));
-                legendSurface = drawDiscreteLegend( legendSurface, 
-                legend.width, legend.height, 
+                legendSurface = drawDiscreteLegend( legendSurface,
+                legend.width, legend.height,
                     colourStore, this.colourGradient );
             }
         }
 
         return surface;
     }
- 
-    version(ggplotdGTK) 
+
+    version(ggplotdGTK)
     {
         import gtkdSurface = cairo.Surface; // cairo surface module in GtkD package.
 
@@ -491,8 +491,8 @@ struct GGPlotD
         import ggplotd.scale : defaultScale = scale;
         // Return active function or the default
         if (!scaleFunction.isNull)
-            return scaleFunction;
-        else 
+            return scaleFunction.get();
+        else
             return defaultScale();
     }
 
@@ -502,7 +502,7 @@ struct GGPlotD
         import ggplotd.colour : defaultColourGradient = colourGradient;
         import ggplotd.colourspace : HCY;
         if (!colourGradientFunction.isNull)
-            return colourGradientFunction;
+            return colourGradientFunction.get();
         else
             return defaultColourGradient!HCY("");
     }
@@ -511,7 +511,7 @@ struct GGPlotD
     Margins margins(int width, int height) const
     {
         if (!_margins.isNull)
-            return _margins;
+            return _margins.get();
         else
             return defaultMargins(width, height);
     }
@@ -577,9 +577,9 @@ unittest
     assertEqual( dim, gg.geomRange.data.length );
 }
 
-version(ggplotdGTK) 
+version(ggplotdGTK)
 {
-    unittest 
+    unittest
     {
         import std.range : zip;
         import std.algorithm : map;
@@ -606,10 +606,10 @@ version(ggplotdGTK)
             .map!((a) => aes!("x","y")(a[0], a[1]))
             .geomLine.putIn(gg);
 
-        cairo.Surface cairodSurface = 
+        cairo.Surface cairodSurface =
             new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
-        gtkSurface.Surface gtkdSurface = 
-            gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24, 
+        gtkSurface.Surface gtkdSurface =
+            gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24,
                 win_width, win_height);
 
         auto cairodImageSurface = cast(cairo.ImageSurface)cairodSurface;
@@ -620,7 +620,7 @@ version(ggplotdGTK)
 
         auto byteSize = win_width*win_height*4;
 
-        assertEqual(cairodImageSurface.getData()[0..byteSize], 
+        assertEqual(cairodImageSurface.getData()[0..byteSize],
             gtkdImageSurface.getData()[0..byteSize]);
     }
 }
@@ -634,7 +634,7 @@ unittest
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "My ylabel" );
 
-    gg = GGPlotD(); 
+    gg = GGPlotD();
     gg.put( yaxisLabel( "My ylabel" ) )
         .put( yaxisRange( 0, 2.0 ) );
     assertEqual( gg.yaxis.max, 2.0 );
@@ -686,7 +686,7 @@ unittest
 
     gg = xs.zip(ysfit).map!((a) => aes!("x", "y")(a[0], a[1])).geomLine.putIn(gg);
 
-    //  
+    //
     auto ys2fit = xs.map!((x) => 1-f(x));
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
@@ -715,7 +715,7 @@ unittest
     import ggplotd.range : mergeRange;
 
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto gg = xs 
+    auto gg = xs
         .map!((a) => aes!("x")(a))
         .geomHist
         .putIn(GGPlotD());
@@ -786,7 +786,7 @@ auto gg = data.aes.geomPoint.putIn(GGPlotD());
 auto gg = GGPlotD().put(geomPoint(aes(data)));
 --------------------
 */
-ref auto putIn(T, U)(T t, U u) 
+ref auto putIn(T, U)(T t, U u)
 {
     return u.put(t);
 }
@@ -797,14 +797,14 @@ Plot multiple (sub) plots
 struct Facets
 {
     ///
-    ref Facets put(GGPlotD facet)
+    ref Facets put(GGPlotD facet) return
     {
         ggs.put( facet );
         return this;
     }
 
     ///
-    auto drawToSurface( ref cairo.Surface surface, int dimX, int dimY, 
+    auto drawToSurface( ref cairo.Surface surface, int dimX, int dimY,
             int width, int height ) const
     {
         import std.conv : to;
@@ -819,7 +819,7 @@ struct Facets
         {
             foreach( j; 0..dimY )
             {
-                if (!gs.empty) 
+                if (!gs.empty)
                 {
                     auto rect = Rectangle!double( w*i, h*j, w, h );
                     auto subS = cairo.Surface.createForRectangle( surface, rect );
@@ -841,8 +841,8 @@ struct Facets
         auto grid = gridLayout( ggs.data.length, width.to!double/height );
         return drawToSurface( surface, grid[0], grid[1], width, height );
     }
- 
- 
+
+
     ///
     void save( string fname, int dimX, int dimY, int width = 470, int height = 470 ) const
     {
@@ -918,7 +918,7 @@ unittest
     auto aes3 = [aes!("x", "y", "width", "height")(6.0, -5.0, Pixel(25), Pixel(25))];
     gg.put( geomDiamond( aes3 ) );
     gg.put( geomRectangle( aes3 ) );
- 
+
     gg.save( "shapes1.png", 300, 300 );
 }
 
@@ -947,7 +947,7 @@ unittest
     auto aes3 = [aes!("x", "y", "width", "height")( 6.0, -5.0, Pixel(25), Pixel(25))];
     gg.put( geomEllipse( aes3 ) );
     gg.put( geomTriangle( aes3 ) );
- 
+
     gg.save( "shapes2.png", 300, 300 );
 }
 

@@ -14,7 +14,7 @@ private struct DiscreteStoreWithOffset
     bool put(in DiscreteStoreWithOffset ds)
     {
         bool added = false;
-        foreach(el, offset1, offset2; ds.data) 
+        foreach(el, offset1, offset2; ds.data)
         {
             if (this.put(el, offset1))
                 added = true;
@@ -112,7 +112,7 @@ package struct GuideStore(string type = "")
     import std.range : isInputRange;
     /// Put another GuideStore into the store
     void put(T)(in T gs)
-        if (is(T==GuideStore!(type))) 
+        if (is(T==GuideStore!(type)))
     {
         _store.put(gs._store);
 
@@ -151,7 +151,7 @@ package struct GuideStore(string type = "")
                 static if (!isColour!T) {
                     static if (is(T==string)) {
                         auto col = namedColour(value);
-                        if (col.isNull) 
+                        if (col.isNull)
                         {
                             _store.put(value, offset);
                         }
@@ -197,7 +197,7 @@ package struct GuideStore(string type = "")
     {
         import std.conv : to;
         double[string] hash;
-        foreach(k, v; _store.store) 
+        foreach(k, v; _store.store)
         {
             hash[k] = v.to!double;
         }
@@ -311,7 +311,7 @@ unittest
     gs3.put(cst_gs());
     assertEqual(gs3.store.walkLength, 3);
     assertEqual(gs3.store.array, ["a","b","c"]);
- 
+
 }
 
 unittest
@@ -395,7 +395,7 @@ struct GuideToColourFunction
                 static if (is(T==string)) {
                     auto col = namedColour(value);
                     if (!col.isNull)
-                        return RGBA(col.r, col.g, col.b, 1);
+                        return RGBA(col.get().r, col.get().g, col.get().b, 1);
                     else
                         return stringConvert(value);
                 } else {
