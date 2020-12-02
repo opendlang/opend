@@ -2399,7 +2399,7 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     skewnessAlgo = algorithm for calculating skewness (default: SkewnessAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The skewness of the input, must be floating point or complex type
 +/
@@ -3587,7 +3587,7 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     kurtosisAlgo = algorithm for calculating kurtosis (default: KurtosisAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The kurtosis of the input, must be floating point or complex type
 +/
@@ -4431,7 +4431,7 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
     The coefficient of varition of the input, must be floating point type
@@ -5163,7 +5163,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th raw moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
     The n-th raw moment of the input, must be floating point or complex type
@@ -5390,7 +5390,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th central moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
     The n-th central moment of the input, must be floating point or complex type
@@ -5649,7 +5649,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th standardized moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
     The n-th standardized moment of the input, must be floating point or complex type
@@ -5969,8 +5969,8 @@ Calculates the n-th moment of the input.
 Params:
     F = controls type of output
     N = controls n-th standardized moment
-    momentAlgo: type of moment to be calculated
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    momentAlgo = type of moment to be calculated
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
     The n-th moment of the input, must be floating point or complex type
