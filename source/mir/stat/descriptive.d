@@ -228,15 +228,14 @@ will have a `double` type if `F` is implicitly convertible to a floating point
 type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
-$(MATHREF sum, elementType) of the input. 
+$(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
     quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
     allowModifySlice = controls whether the input is modified in place, default is false
 Returns:
-    The quantile of all the elements in the input at probability `p`. 
-
+    The quantile of all the elements in the input at probability `p`.
 See_also: 
     $(MATHREF stat, median),
     $(MATHREF sum, partitionAt)
@@ -996,7 +995,7 @@ will have a `double` type if `F` is implicitly convertible to a floating point
 type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
-$(MATHREF sum, elementType) of the input. 
+$(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
@@ -1425,15 +1424,18 @@ unittest
 
 /++
 Calculates the dispersion of the input.
+
 For an input `x`, this function first centers `x` by subtracting each `e` in `x`
 by the result of `centralTendency`, then it transforms the centered values using
 the function `transform`, and then finally summarizes that information using
 the `summarize` funcion. 
+
 The default functions provided are equivalent to calculating the population
 variance. The `centralTendency` default is the `mean` function, which results
 in the input being centered about the mean. The default `transform` function
 will square the centered values. The default `summarize` function is `mean`,
 which will return the mean of the squared centered values.
+
 Params:
     centralTendency = function that will produce the value that the input is centered about, default is `mean`
     transform = function to transform centered values, default squares the centered values
@@ -4432,10 +4434,8 @@ Params:
     F = controls type of output
     varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
     summation = algorithm for calculating sums (default: Summation.appropriate)
-
 Returns:
     The coefficient of varition of the input, must be floating point type
-
 See Also:
     $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation).
 +/
@@ -5164,7 +5164,6 @@ Params:
     F = controls type of output
     N = controls n-th raw moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
-
 Returns:
     The n-th raw moment of the input, must be floating point or complex type
 +/
@@ -5391,7 +5390,6 @@ Params:
     F = controls type of output
     N = controls n-th central moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
-
 Returns:
     The n-th central moment of the input, must be floating point or complex type
 +/
@@ -5650,7 +5648,6 @@ Params:
     F = controls type of output
     N = controls n-th standardized moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
-
 Returns:
     The n-th standardized moment of the input, must be floating point or complex type
 +/
@@ -5971,7 +5968,6 @@ Params:
     N = controls n-th standardized moment
     momentAlgo = type of moment to be calculated
     summation = algorithm for calculating sums (default: Summation.appropriate)
-
 Returns:
     The n-th moment of the input, must be floating point or complex type
 +/

@@ -31,6 +31,7 @@ For each `e` of the input, applies `e op m` where `m` is the result of `fun` and
 where `m` is the result of applying `fun` to the input.
 Overloads are provided to directly provide `m` to the function, rather than
 calculate it using `fun`.
+
 Params:
     fun = function used to sweep
     op = operation
@@ -261,13 +262,16 @@ unittest
 
 /++
 Scales the input.
+
 By default, the input is first centered using the mean of the input. A custom
 function may also be provided using `centralTendency`. The centered input is
 then divided by the sample standard deviation of the input. A custom function
 may also be provided using `dispersion`.
+
 Overloads are also provided to scale with variables `m` and `d`, which
 correspond to the results of `centralTendency` and `dispersion`. This function
 is equivalent to `center` when passing `d = 1`.
+
 Params:
     centralTendency = function used to center input, default is `mean`
     dispersion = function used to , default is `dispersion`
@@ -480,8 +484,14 @@ unittest
 
 /++
 Computes the Z-score of the input.
+
 The Z-score is computed by first calculating the mean and standard deviation of
 the input, by default in one pass, and then scaling the input using those values.
+
+Params:
+    F = controls type of output
+    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The z-score of the input
 See_also:
@@ -534,7 +544,7 @@ template zscore(F,
     }
 }
 
-///
+/// ditto
 template zscore(VarianceAlgo varianceAlgo = VarianceAlgo.online,
                 Summation summation = Summation.appropriate)
 {
@@ -708,10 +718,8 @@ Params:
     F = controls type of output
     quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
     allowModifySlice = controls whether the input is modified in place, default is false
-
 Returns:
     The robust scaled input
-
 See_also:
     $(LREF scale),
     $(MATHREF stat, median),
