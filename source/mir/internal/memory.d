@@ -111,7 +111,7 @@ version (Windows)
     // DMD Win 64 bit, uses microsoft standard C library which implements them
     else
     {
-        private extern(C) void* _aligned_free(void *);
+        private extern(C) void _aligned_free(void *);
         private extern(C) void* _aligned_malloc(size_t, size_t);
         private extern(C) void* _aligned_realloc(void *, size_t, size_t);
     }
