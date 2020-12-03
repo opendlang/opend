@@ -215,6 +215,107 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
+@fmamath private @safe pure nothrow @nogc
+auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
+    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
+                               quantileAlgo == QuantileAlgo.type3)) &&
+        isFloatingPoint!G)
+{
+    assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
+    size_t n = slice.elementCount;
+    assert(n > 1, "quantileImpl: slice.elementCount must be greater than 1");
+
+    import mir.math.common: floor;
+    import mir.ndslice.sorting: partitionAt;
+    import std.traits: Unqual;
+
+    alias GG = Unqual!G;
+
+    GG m;
+
+    static if (quantileAlgo == QuantileAlgo.type1) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
+        m = -0.5;
+    } else static if (quantileAlgo == QuantileAlgo.type4) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.type5) {
+        m = 0.5;
+    } else static if (quantileAlgo == QuantileAlgo.type6) {
+        m = p;
+    } else static if (quantileAlgo == QuantileAlgo.type7) {
+        m = 1 - p;
+    } else static if (quantileAlgo == QuantileAlgo.type8) {
+        m = (p + 1) / 3;
+    } else static if (quantileAlgo == QuantileAlgo.type9) {
+        m = p / 4 + cast(GG) 3 / 8;
+    }
+
+    GG g = n * p + m - 1; //note: 0-based, not 1-based indexing
+
+    GG pre_j = floor(g);
+    GG pre_j_1 = pre_j + 1;
+    size_t j;
+    if (pre_j >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j = n - 1;
+    } else if (pre_j < 0) {
+        j = 0;
+    } else {
+        j = cast(size_t) pre_j;
+    }
+
+    size_t j_1;
+    if (pre_j_1 >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j_1 = n - 1;
+    } else if (pre_j_1 < 0) {
+        j_1 = 0;
+    } else {
+        j_1 = cast(size_t) pre_j_1;
+    }
+
+    g -= j;
+    GG gamma;
+
+    static if (quantileAlgo == QuantileAlgo.type1) {
+        if (g == 0) {
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
+        if (g == 0) {
+            gamma = 0.5;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
+        if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else {
+        gamma = g;
+    }
+
+    if (gamma == 0) {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    } else if (gamma == 1) {
+        partitionAt(slice, j_1);
+        return cast(F) slice[j_1];
+    } else if (j != j_1) {
+        partitionAt(slice, j_1);
+        partitionAt(slice[0 .. j_1], j);
+        return cast(F) ((1 - gamma) * slice[j] + gamma * slice[j_1]);
+    } else {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    }
+}
+
 /++
 Computes the quantile(s) of the input, given one or more probabilities `p`.
 
@@ -228,15 +329,14 @@ will have a `double` type if `F` is implicitly convertible to a floating point
 type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
-$(MATHREF sum, elementType) of the input. 
+$(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
     quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
     allowModifySlice = controls whether the input is modified in place, default is false
 Returns:
-    The quantile of all the elements in the input at probability `p`. 
-
+    The quantile of all the elements in the input at probability `p`.
 See_also: 
     $(MATHREF stat, median),
     $(MATHREF sum, partitionAt)
@@ -471,107 +571,6 @@ template quantile(string quantileAlgo,
                   bool allowModifyProbability = false)
 {
     mixin("alias quantile = .quantile!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice, allowModifyProbability);");
-}
-
-@fmamath private @safe pure nothrow @nogc
-auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
-    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
-                               quantileAlgo == QuantileAlgo.type3)) &&
-        isFloatingPoint!G)
-{
-    assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
-    size_t n = slice.elementCount;
-    assert(n > 1, "quantileImpl: slice.elementCount must be greater than 1");
-
-    import mir.math.common: floor;
-    import mir.ndslice.sorting: partitionAt;
-    import std.traits: Unqual;
-
-    alias GG = Unqual!G;
-
-    GG m;
-
-    static if (quantileAlgo == QuantileAlgo.type1) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type2) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type3) {
-        m = -0.5;
-    } else static if (quantileAlgo == QuantileAlgo.type4) {
-        m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.type5) {
-        m = 0.5;
-    } else static if (quantileAlgo == QuantileAlgo.type6) {
-        m = p;
-    } else static if (quantileAlgo == QuantileAlgo.type7) {
-        m = 1 - p;
-    } else static if (quantileAlgo == QuantileAlgo.type8) {
-        m = (p + 1) / 3;
-    } else static if (quantileAlgo == QuantileAlgo.type9) {
-        m = p / 4 + cast(GG) 3 / 8;
-    }
-
-    GG g = n * p + m - 1; //note: 0-based, not 1-based indexing
-
-    GG pre_j = floor(g);
-    GG pre_j_1 = pre_j + 1;
-    size_t j;
-    if (pre_j >= (n - 1)) { //note: 0-based, not 1-based indexing
-        j = n - 1;
-    } else if (pre_j < 0) {
-        j = 0;
-    } else {
-        j = cast(size_t) pre_j;
-    }
-
-    size_t j_1;
-    if (pre_j_1 >= (n - 1)) { //note: 0-based, not 1-based indexing
-        j_1 = n - 1;
-    } else if (pre_j_1 < 0) {
-        j_1 = 0;
-    } else {
-        j_1 = cast(size_t) pre_j_1;
-    }
-
-    g -= j;
-    GG gamma;
-
-    static if (quantileAlgo == QuantileAlgo.type1) {
-        if (g == 0) {
-            gamma = 0;
-        } else {
-            gamma = 1;
-        }
-    } else static if (quantileAlgo == QuantileAlgo.type2) {
-        if (g == 0) {
-            gamma = 0.5;
-        } else {
-            gamma = 1;
-        }
-    } else static if (quantileAlgo == QuantileAlgo.type3) {
-        if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
-            gamma = 0;
-        } else {
-            gamma = 1;
-        }
-    } else {
-        gamma = g;
-    }
-
-    if (gamma == 0) {
-        partitionAt(slice, j);
-        return cast(F) slice[j];
-    } else if (gamma == 1) {
-        partitionAt(slice, j_1);
-        return cast(F) slice[j_1];
-    } else if (j != j_1) {
-        partitionAt(slice, j_1);
-        partitionAt(slice[0 .. j_1], j);
-        return cast(F) ((1 - gamma) * slice[j] + gamma * slice[j_1]);
-    } else {
-        partitionAt(slice, j);
-        return cast(F) slice[j];
-    }
 }
 
 /// Simple example
@@ -996,7 +995,7 @@ will have a `double` type if `F` is implicitly convertible to a floating point
 type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
-$(MATHREF sum, elementType) of the input. 
+$(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
@@ -1425,15 +1424,18 @@ unittest
 
 /++
 Calculates the dispersion of the input.
+
 For an input `x`, this function first centers `x` by subtracting each `e` in `x`
 by the result of `centralTendency`, then it transforms the centered values using
 the function `transform`, and then finally summarizes that information using
 the `summarize` funcion. 
+
 The default functions provided are equivalent to calculating the population
 variance. The `centralTendency` default is the `mean` function, which results
 in the input being centered about the mean. The default `transform` function
 will square the centered values. The default `summarize` function is `mean`,
 which will return the mean of the squared centered values.
+
 Params:
     centralTendency = function that will produce the value that the input is centered about, default is `mean`
     transform = function to transform centered values, default squares the centered values
@@ -2399,7 +2401,7 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     skewnessAlgo = algorithm for calculating skewness (default: SkewnessAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The skewness of the input, must be floating point or complex type
 +/
@@ -3587,7 +3589,7 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     kurtosisAlgo = algorithm for calculating kurtosis (default: KurtosisAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The kurtosis of the input, must be floating point or complex type
 +/
@@ -4431,11 +4433,9 @@ By default, if `F` is not floating point type, then the result will have a
 Params:
     F = controls type of output
     varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
-    summation: algorithm for calculating sums (default: Summation.appropriate)
-
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The coefficient of varition of the input, must be floating point type
-
 See Also:
     $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation).
 +/
@@ -5163,8 +5163,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th raw moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
-
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The n-th raw moment of the input, must be floating point or complex type
 +/
@@ -5390,8 +5389,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th central moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
-
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The n-th central moment of the input, must be floating point or complex type
 +/
@@ -5649,8 +5647,7 @@ type or have a `cdouble` type if `F` is implicitly convertible to a complex type
 Params:
     F = controls type of output
     N = controls n-th standardized moment
-    summation: algorithm for calculating sums (default: Summation.appropriate)
-
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The n-th standardized moment of the input, must be floating point or complex type
 +/
@@ -5969,9 +5966,8 @@ Calculates the n-th moment of the input.
 Params:
     F = controls type of output
     N = controls n-th standardized moment
-    momentAlgo: type of moment to be calculated
-    summation: algorithm for calculating sums (default: Summation.appropriate)
-
+    momentAlgo = type of moment to be calculated
+    summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The n-th moment of the input, must be floating point or complex type
 +/
