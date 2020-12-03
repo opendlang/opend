@@ -17,20 +17,29 @@ template isStdNullable(T)
 {
     import std.traits : hasMember;
 
+    T* aggregate;
+
     enum bool isStdNullable =
         hasMember!(T, "isNull") &&
         hasMember!(T, "get") &&
         hasMember!(T, "nullify") &&
-        is(typeof(__traits(getMember, T, "isNull")) == bool) &&
-        !is(typeof(__traits(getMember, T, "get")) == void) &&
-        is(typeof(__traits(getMember, T, "nullify")) == void);
+        is(typeof(__traits(getMember, aggregate, "isNull")()) == bool) &&
+        !is(typeof(__traits(getMember, aggregate, "get")()) == void) &&
+        is(typeof(__traits(getMember, aggregate, "nullify")()) == void);
 }
 
 ///
 version(mir_core_test) unittest
 {
     import std.typecons;
-    assert(isStdNullable!(Nullable!double));
+    static assert(isStdNullable!(Nullable!double));
+}
+
+///
+version(mir_core_test) unittest
+{
+    import mir.algebraic;
+    static assert(isStdNullable!(Nullable!double));
 }
 
 ///  Attribute for deprecated API

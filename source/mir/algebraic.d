@@ -1063,7 +1063,7 @@ struct Algebraic(_Types...)
             return _identifier_ != 0;
         }
         /// Defined if the first type is `typeof(null)`
-        bool isNull() const { return _identifier_ == 0; }
+        bool isNull() const @property { return _identifier_ == 0; }
         /// ditto
         void nullify() { this = null; }
 
