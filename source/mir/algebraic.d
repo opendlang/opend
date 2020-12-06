@@ -926,7 +926,13 @@ struct Algebraic(_Types...)
                     static if (is(T == typeof(null)))
                         return i;
                     else
-                    return hashOf(trustedGet!T, cast(size_t)i);
+                    static if (__traits(compiles, hashOf(trustedGet!T, cast(size_t)i)))
+                        return hashOf(trustedGet!T, cast(size_t)i);
+                    else
+                    {
+                        debug pragma(msg, "Mir warning: can't compute hash of " ~ (const T).stringof);
+                        return i;
+                    }
             }
             default: assert(0);
         }
