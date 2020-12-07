@@ -55,7 +55,9 @@ $(TR $(TH Name) $(TH Description))
 $(T2 isVariant, Checks if the type is instance of $(LREF Algebraic).)
 $(T2 isNullable, Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`. )
 $(T2 isTaggedVariant, Checks if the type is instance of tagged $(LREF Algebraic).)
-$(T2 isTypeSet, Checks if the type is instance of $(LREF TypeSet). )
+$(T2 isTypeSet, Checks if the types are the same as $(LREF TypeSet) of them. )
+$(T2 ValueTypeOfNullable, Gets type of $(LI $(LREF .Algebraic.get.2)) method. )
+
 )
 
 
@@ -139,7 +141,7 @@ Checks if the type is instance of $(LREF Algebraic).
 enum bool isVariant(T) = is(T == Algebraic!Types, Types...);
 
 ///
-unittest
+@safe pure version(mir_core_test) unittest
 {
     static assert(isVariant!(Variant!(int, string)));
     static assert(isVariant!(const Variant!(int[], string)));
@@ -155,7 +157,7 @@ Tagged algebraics can be defined with $(LREF TaggedVariant).
 enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind);
 
 ///
-unittest
+@safe pure version(mir_core_test) unittest
 {
     static assert(!isTaggedVariant!int);
     static assert(!isTaggedVariant!(Variant!(int, string)));
@@ -168,7 +170,7 @@ Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) 
 enum bool isNullable(T) = is(T == Algebraic!(typeof(null), Types), Types...);
 
 ///
-unittest
+@safe pure version(mir_core_test) unittest
 {
     static assert(isNullable!(const Nullable!(int, string)));
     static assert(isNullable!(Nullable!()));
@@ -177,6 +179,25 @@ unittest
     static assert(!isNullable!(Variant!string));
     static assert(!isNullable!int);
     static assert(!isNullable!string);
+}
+
+/++
+Gets type of $(LI $(LREF .Algebraic.get.2)) method.
++/
+template ValueTypeOfNullable(T : Algebraic!(typeof(null), Types), Types...)
+{
+    static if (Types.length == 1)
+        alias ValueTypeOfNullable = Types[0];
+    else
+        alias ValueTypeOfNullable = Algebraic!Types;
+}
+
+///
+@safe pure version(mir_core_test) unittest
+{
+    static assert(is(ValueTypeOfNullable!(const Nullable!(int, string)) == Algebraic!(int, string)));
+    static assert(is(ValueTypeOfNullable!(Nullable!()) == Algebraic!()));
+    static assert(is(typeof(Nullable!().get()) == Algebraic!()));
 }
 
 /++
@@ -336,7 +357,7 @@ Checks if the type list is $(LREF TypeSet).
 enum bool isTypeSet(T...) = is(T == TypeSet!T);
 
 ///
-unittest
+@safe pure version(mir_core_test) unittest
 {
     static assert(isTypeSet!(TypeSet!()));
     static assert(isTypeSet!(TypeSet!void));
@@ -1082,9 +1103,9 @@ struct Algebraic(_Types...)
             {
                 throw variantNullException;
             }
-            static if (AllowedTypes.length > 1)
+            static if (AllowedTypes.length != 2)
             {
-                Algebraic!(TypeSet!(_Types[1 .. $])) ret;
+                Algebraic!(_Types[1 .. $]) ret;
 
                 S: switch (_identifier_)
                 {
