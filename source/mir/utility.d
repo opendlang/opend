@@ -237,6 +237,25 @@ struct ExtMulResult(I)
     }
 }
 
+private struct ExtDivResult(I)
+    if (isUnsigned!I)
+{
+    version (LittleEndian)
+    {
+        /// Quotient
+        I quotient;
+        /// Remainder
+        I remainder;
+    }
+    else
+    {
+        /// Remainder
+        I remainder;
+        /// Quotient
+        I quotient;
+    }
+}
+
 /++
 Extended unsigned multiplications.
 Performs U x U multiplication and returns $(LREF ExtMulResult)!U that contains extended result.
@@ -338,15 +357,7 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @trusted
             {
                 static if (is(U == ulong))
                 {
-                    version(Windows)
-                    {
-                        ulong[2] r = extMul_X86_64(a, b);
-                        return ExtMulResult!ulong(r[0], r[1]);
-                    }
-                    else
-                    {
-                        return extMul_X86_64(a, b);
-                    }
+                    return extMul_X86_64(a, b);
                 }
             }
         }
@@ -410,14 +421,22 @@ version(mir_core_test) unittest
 version(D_InlineAsm_X86_64)
 {
     version(Windows)
-    private ulong[2] extMul_X86_64()(ulong a, ulong b)
     {
-        asm @safe pure nothrow @nogc
+        private ulong[2] extMul_X86_64_impl()(ulong a, ulong b)
         {
-            naked;
-            mov RAX, RCX;
-            mul RDX;
-            ret;
+            asm @safe pure nothrow @nogc
+            {
+                naked;
+                mov RAX, RCX;
+                mul RDX;
+                ret;
+            }
+        }
+
+        private ExtMulResult!ulong extMul_X86_64()(ulong a, ulong b)
+        {
+            auto res = extMul_X86_64_impl(a, b);
+            return ExtMulResult!ulong(res[0], res[1]);
         }
     }
     else
@@ -431,6 +450,37 @@ version(D_InlineAsm_X86_64)
             ret;
         }
     }
+
+    version(Windows)
+    {
+        private ulong[2] extDiv_X86_64_impl()(ulong high, ulong low, ulong d)
+        {
+            asm @safe pure nothrow @nogc
+            {
+                naked;
+                mov RAX, RCX;
+                div RDX;
+                ret;
+            }
+        }
+
+        private ExtDivResult!ulong extDiv_X86_64()(ExtMulResult!ulong pair, ulong d)
+        {
+            auto res = extDiv_X86_64_impl(pair.high, pair.low);
+            return ExtDivResult!ulong(res[0], res[1]);
+        }
+    }
+    else
+    private ExtDivResult!ulong extDiv_X86_64()(ExtMulResult!ulong pair, ulong d)   
+    {  
+        asm @safe pure nothrow @nogc
+        {
+            naked;
+            mov RAX, RDI;
+            div RSI;
+            ret;
+        }
+    }
 }
 
 version(LDC) {} else version(D_InlineAsm_X86_64)
@@ -439,15 +489,7 @@ version(LDC) {} else version(D_InlineAsm_X86_64)
     immutable a = 0x93_8d_28_00_0f_50_a5_56;
     immutable b = 0x54_c3_2f_e8_cc_a5_97_10;
 
-    version(Windows)
-    {
-        immutable ulong[2] r = extMul_X86_64(a, b);
-        immutable ExtMulResult!ulong c = ExtMulResult!ulong(r[0], r[1]);
-    }
-    else
-    {
-        immutable ExtMulResult!ulong c = extMul_X86_64(a, b);       
-    }
+    immutable ExtMulResult!ulong c = extMul_X86_64(a, b);
 
     assert(c.high == 0x30_da_d1_42_95_4a_50_78);
     assert(c.low == 0x27_9b_4b_b4_9e_fe_0f_60);
