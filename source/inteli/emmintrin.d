@@ -2875,7 +2875,21 @@ __m128d _mm_set_sd (double a) pure @trusted
 
 __m128i _mm_set1_epi16 (short a) pure @trusted
 {
-    return cast(__m128i)(short8(a));
+    version(DigitalMars) // workaround https://issues.dlang.org/show_bug.cgi?id=21469 
+    {
+        short8 v;
+        v.ptr[0] = a;
+        v.ptr[1] = a;
+        v.ptr[2] = a;
+        v.ptr[3] = a;
+        v.ptr[4] = a;
+        v.ptr[5] = a;
+        v.ptr[6] = a;
+        v.ptr[7] = a;
+        return cast(__m128i) v;
+    }
+    else
+        return cast(__m128i)(short8(a));
 }
 
 __m128i _mm_set1_epi32 (int a) pure @trusted
