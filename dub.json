@@ -1,6 +1,6 @@
 {
     "name": "intel-intrinsics",
-    "description": "The most practical D SIMD solution! Using SIMD intrinsics with Intel syntax with D.",
+    "description": "Use SIMD intrinsics with Intel syntax, with any D compiler, targetting x86 or arm. Like simde but for D.",
     "copyright": "Auburn Sounds 2016-2018",
     "license": "BSL-1.0",
     "importPaths": ["source"],

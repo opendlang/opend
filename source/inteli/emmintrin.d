@@ -82,6 +82,7 @@ __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
     else version(DigitalMars)
     {
         // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+        // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
         asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] + b[0];
         return a;
@@ -1641,6 +1642,7 @@ static if (GDC_with_SSE2)
 else version(DigitalMars)
 {
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
     {
         asm pure nothrow @nogc @trusted { nop;}
@@ -2396,6 +2398,7 @@ unittest
 version(DigitalMars)
 {
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
     __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
     {
         asm pure nothrow @nogc @trusted { nop;}
@@ -4096,6 +4099,7 @@ __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
 version(DigitalMars)
 {
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
     __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
     {
         asm pure nothrow @nogc @trusted { nop;}
