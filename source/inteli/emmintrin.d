@@ -2926,7 +2926,8 @@ unittest
 
 __m128i _mm_set1_epi64x (long a) pure @trusted
 {
-    return cast(__m128i)(long2(a));
+    long2 b = a; // Must be on its own line to workaround https://issues.dlang.org/show_bug.cgi?id=21470
+    return cast(__m128i)(b);
 }
 unittest
 {
@@ -2938,7 +2939,8 @@ unittest
 
 __m128i _mm_set1_epi8 (byte a) pure @trusted
 {
-    return cast(__m128i)(byte16(a));
+    byte16 b = a; // Must be on its own line to workaround https://issues.dlang.org/show_bug.cgi?id=21470
+    return cast(__m128i)(b);
 }
 unittest
 {
