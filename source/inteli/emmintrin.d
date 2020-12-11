@@ -2348,16 +2348,27 @@ __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
         long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
     }
 
-    static if (__VERSION__ >= 2076)
+    version(DigitalMars)
     {
-        return cast(__m128i)(la * lb);
-    }
-    else
-    {
+        // DMD has no long2 mul
         // long2 mul not supported before LDC 1.5
         la.ptr[0] *= lb.array[0];
         la.ptr[1] *= lb.array[1];
         return cast(__m128i)(la);
+    }
+    else
+    {
+        static if (__VERSION__ >= 2076)
+        {
+            return cast(__m128i)(la * lb);
+        }
+        else
+        {
+            // long2 mul not supported before LDC 1.5
+            la.ptr[0] *= lb.array[0];
+            la.ptr[1] *= lb.array[1];
+            return cast(__m128i)(la);
+        }
     }
 }
 unittest

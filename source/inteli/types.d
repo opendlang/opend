@@ -7,22 +7,19 @@
 */
 module inteli.types;
 
+
+pure:
+nothrow:
+@nogc:
+
 version(GNU)
 {
     version(X86_64)
     {
-        enum CoreSimdIsEmulated = false;
+        enum MMXSizedVectorsAreEmulated = false;
+        enum SSESizedVectorsAreEmulated = false;
 
-        public import core.simd;
         import gcc.builtins;
-
-        // Declare vector types that correspond to MMX types
-        // Because they are expressible in IR anyway.
-        alias Vector!(long [1]) long1;
-        alias Vector!(float[2]) float2;
-        alias Vector!(int  [2]) int2;
-        alias Vector!(short[4]) short4;
-        alias Vector!(byte [8]) byte8;
 
         float4 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
         {
@@ -105,170 +102,39 @@ version(GNU)
     }
     else
     {
-        enum CoreSimdIsEmulated = true;
+        enum MMXSizedVectorsAreEmulated = true;
+        enum SSESizedVectorsAreEmulated = true;
     }
 }
 else version(LDC)
 {
-    public import core.simd;
     public import ldc.simd;
 
-    // Declare vector types that correspond to MMX types
-    // Because they are expressible in IR anyway.
-    alias Vector!(long [1]) long1;
-    alias Vector!(float[2]) float2;
-    alias Vector!(int  [2]) int2;
-    alias Vector!(short[4]) short4;
-    alias Vector!(byte [8]) byte8;
-
-    enum CoreSimdIsEmulated = false;
+    enum MMXSizedVectorsAreEmulated = false;
+    enum SSESizedVectorsAreEmulated = false;
 }
 else version(DigitalMars)
 {
-    enum CoreSimdIsEmulated = true; // TODO: use core.simd with DMD when D_SIMD is defined
+    public import core.simd;
+
+    version(D_SIMD)
+    {
+        enum MMXSizedVectorsAreEmulated = true;
+        enum SSESizedVectorsAreEmulated = true; //false; currently doesn't work in DMD x86_64
+    }
+    else
+    {
+        // Some DMD 32-bit targets don't have D_SIMD
+        enum MMXSizedVectorsAreEmulated = true;
+        enum SSESizedVectorsAreEmulated = true;
+    }
 }
+
+enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated;
 
 static if (CoreSimdIsEmulated)
 {
-    // This is a LDC SIMD emulation layer, for use with other D compilers.
-    // The goal is to be very similar in precision.
-    // The biggest differences are:
-    //
-    // 1. `cast` everywhere. With LDC vector types, short8 is implicitely convertible to int4
-    //   but this is sadly impossible in D without D_SIMD (Windows 32-bit).
-    //
-    // 2. `vec.array` is directly writeable.
-
-    nothrow:
-    @nogc:
-    pure:
-
-
-    /// MMX-like SIMD types
-    struct float2
-    {
-        float[2] array;
-        mixin VectorOps!(float2, float[2]);
-
-        enum float TrueMask = allOnes();
-        enum float FalseMask = 0.0f;
-
-        private static float allOnes()
-        {
-            uint m1 = 0xffffffff;
-            return *cast(float*)(&m1);
-        }
-    }
-
-    struct byte8
-    {
-        byte[8] array;
-        mixin VectorOps!(byte8, byte[8]);
-        enum byte TrueMask = -1;
-        enum byte FalseMask = 0;
-    }
-
-    struct short4
-    {
-        short[4] array;
-        mixin VectorOps!(short4, short[4]);
-        enum short TrueMask = -1;
-        enum short FalseMask = 0;
-    }
-
-    struct int2
-    {
-        int[2] array;
-        mixin VectorOps!(int2, int[2]);
-        enum int TrueMask = -1;
-        enum int FalseMask = 0;
-    }
-
-    struct long1
-    {
-        long[1] array;
-        mixin VectorOps!(long1, long[1]);
-        enum long TrueMask = -1;
-        enum long FalseMask = 0;
-    }
-
-    static assert(float2.sizeof == 8);
-    static assert(byte8.sizeof == 8);
-    static assert(short4.sizeof == 8);
-    static assert(int2.sizeof == 8);
-    static assert(long1.sizeof == 8);
-
-
-    /// SSE-like SIMD types
-
-    struct float4
-    {
-        float[4] array;
-        mixin VectorOps!(float4, float[4]);
-
-        enum float TrueMask = allOnes();
-        enum float FalseMask = 0.0f;
-
-        private static float allOnes()
-        {
-            uint m1 = 0xffffffff;
-            return *cast(float*)(&m1);
-        }
-    }
-
-    struct byte16
-    {
-        byte[16] array;
-        mixin VectorOps!(byte16, byte[16]);
-        enum byte TrueMask = -1;
-        enum byte FalseMask = 0;
-    }
-
-    struct short8
-    {
-        short[8] array;
-        mixin VectorOps!(short8, short[8]);
-        enum short TrueMask = -1;
-        enum short FalseMask = 0;
-    }
-
-    struct int4
-    {
-        int[4] array;
-        mixin VectorOps!(int4, int[4]);
-        enum int TrueMask = -1;
-        enum int FalseMask = 0;
-    }
-
-    struct long2
-    {
-        long[2] array;
-        mixin VectorOps!(long2, long[2]);
-        enum long TrueMask = -1;
-        enum long FalseMask = 0;
-    }
-
-    struct double2
-    {
-        double[2] array;
-        mixin VectorOps!(double2, double[2]);
-
-        enum double TrueMask = allOnes();
-        enum double FalseMask = 0.0f;
-
-        private static double allOnes()
-        {
-            ulong m1 = 0xffffffff_ffffffff;
-            return *cast(double*)(&m1);
-        }
-    }
-
-    static assert(float4.sizeof == 16);
-    static assert(byte16.sizeof == 16);
-    static assert(short8.sizeof == 16);
-    static assert(int4.sizeof == 16);
-    static assert(long2.sizeof == 16);
-    static assert(double2.sizeof == 16);
+    // core.simd is emulated in some capacity: introduce `VectorOps`
 
     mixin template VectorOps(VectorType, ArrayType: BaseType[N], BaseType, size_t N)
     {
@@ -324,13 +190,12 @@ static if (CoreSimdIsEmulated)
         /// Casting to another vector type is always just a raw copy.
         VecDest opCast(VecDest)() pure const nothrow @trusted @nogc
             if (VecDest.sizeof == VectorType.sizeof)
-        {
-            // import core.stdc.string: memcpy;
-            VecDest dest = void;
-            // Copy
-            dest.array[] = (cast(typeof(dest.array))cast(void[VectorType.sizeof])array)[];
-            return dest;
-        }
+            {
+                VecDest dest = void;
+                // Copy
+                dest.array[] = (cast(typeof(dest.array))cast(void[VectorType.sizeof])array)[];
+                return dest;
+            }
 
         ref inout(BaseType) opIndex(size_t i) inout pure nothrow @safe @nogc
         {
@@ -339,7 +204,33 @@ static if (CoreSimdIsEmulated)
 
     }
 
-    auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
+    private template BaseType(V)
+    {
+        alias typeof(V.array[0]) BaseType;
+    }
+
+    private template TrueMask(V)
+    {
+        alias Elem = BaseType!V;
+
+        static if (is(Elem == float))
+        {
+            immutable uint m1 = 0xffffffff;
+            enum Elem TrueMask = *cast(float*)(&m1);
+        }
+        else static if (is(Elem == double))
+        {
+            immutable ulong m1 = 0xffffffff_ffffffff;
+            enum Elem TrueMask = *cast(double*)(&m1);
+        }
+        else // integer case
+        {
+            enum Elem TrueMask = -1;
+        }
+    }
+
+    // they just weren't interesting enough, use v.array[i] instead.
+    deprecated auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
     {
         static assert(Vec.sizeof == Vec2.sizeof);
         import core.stdc.string: memcpy;
@@ -348,7 +239,8 @@ static if (CoreSimdIsEmulated)
         return v.array[index];
     }
 
-    auto insertelement(Vec, int index, Vec2)(Vec2 vec, Vec.Base e) @trusted
+    // they just weren't interesting enough, use v.ptr[i] = x instead.
+    deprecated auto insertelement(Vec, int index, Vec2)(Vec2 vec, Vec.Base e) @trusted
     {
         static assert(Vec.sizeof == Vec2.sizeof);
         import core.stdc.string: memcpy;
@@ -358,31 +250,66 @@ static if (CoreSimdIsEmulated)
         return v;
     }
 
-    // Note: can't be @safe with this signature
-    Vec loadUnaligned(Vec)(const(Vec.Base)* pvec) @trusted
+    template loadUnaligned(Vec)
     {
-        return *cast(Vec*)(pvec);
+        // Note: can't be @safe with this signature
+        Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
+        {
+            static if (is(Vec == __vector))
+            {
+                // PERF: there is probably something faster to do for this compiler (DMD).
+                //       Avoid this on DMD in the future.
+                enum size_t Count = Vec.array.length;
+                Vec result;
+                foreach(int i; 0..Count)
+                {
+                    result.ptr[i] = pvec[i];
+                }
+                return result;
+            }
+            else
+            {
+                // Since this vector is emulated, it doesn't have alignement constraints
+                // and as such we can just cast it.
+                return *cast(Vec*)(pvec);
+            }
+        }
     }
 
-    // Note: can't be @safe with this signature
-    void storeUnaligned(Vec)(Vec v, Vec.Base* pvec) @trusted
+    template storeUnaligned(Vec)
     {
-        *cast(Vec*)(pvec) = v;
+        // Note: can't be @safe with this signature
+        void storeUnaligned(Vec v, BaseType!Vec* pvec) @trusted
+        {
+            static if (is(Vec == __vector))
+            {
+                // PERF: there is probably something faster to do for this compiler (DMD).
+                //       Avoid this on DMD in the future.
+                enum size_t Count = Vec.array.length;
+                foreach(int i; 0..Count)
+                    pvec[i] = v.array[i];
+            }
+            else
+            {
+                *cast(Vec*)(pvec) = v;
+            }
+        }
     }
 
     Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
     {
-        static assert(mask.length == Vec.Count);
+        enum size_t Count = Vec.array.length;
+        static assert(mask.length == Count);
 
         Vec r = void;
         foreach(int i, m; mask)
         {
-            static assert (m < Vec.Count * 2);
+            static assert (m < Count * 2);
             int ind = cast(int)m;
-            if (ind < Vec.Count)
+            if (ind < Count)
                 r.array[i] = a.array[ind];
             else
-                r.array[i] = b.array[ind-Vec.Count];
+                r.array[i] = b.array[ind-Count];
         }
         return r;
     }
@@ -391,68 +318,173 @@ static if (CoreSimdIsEmulated)
 
     Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
     {
-        alias BaseType = Vec.Base;
-        alias Count = Vec.Count;
+        enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] == b.array[i];
-            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+            result.array[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
 
     Vec notEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "one" comparison
     {
-        alias BaseType = Vec.Base;
-        alias Count = Vec.Count;
+        enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] != b.array[i];
-            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+            result.array[i] = cond ? TrueMask!Vec : Vec.FalseMask;
         }
         return result;
     }
 
     Vec greaterMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "ogt" comparison
     {
-        alias BaseType = Vec.Base;
-        alias Count = Vec.Count;
+        enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] > b.array[i];
-            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+            result.array[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
 
     Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oge" comparison
     {
-        alias BaseType = Vec.Base;
-        alias Count = Vec.Count;
+        enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] > b.array[i];
-            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+            result.array[i] = cond ? TrueMask!Vec : Vec.FalseMask;
         }
         return result;
     }
 
-    unittest
+}
+else
+{
+    public import core.simd;
+}
+
+static if (MMXSizedVectorsAreEmulated)
+{
+    /// MMX-like SIMD types
+    struct float2
     {
-        float4 a = [1, 3, 5, 7];
-        float4 b = [2, 3, 4, 5];
-        int4 c = cast(int4)(greaterMask!float4(a, b));
-        static immutable int[4] correct = [0, 0, 0xffff_ffff, 0xffff_ffff];
-        assert(c.array == correct);
+        float[2] array;
+        mixin VectorOps!(float2, float[2]);
+
+        private static float allOnes() pure nothrow @nogc @trusted
+        {
+            uint m1 = 0xffffffff;
+            return *cast(float*)(&m1);
+        }
+    }
+
+    struct byte8
+    {
+        byte[8] array;
+        mixin VectorOps!(byte8, byte[8]);
+    }
+
+    struct short4
+    {
+        short[4] array;
+        mixin VectorOps!(short4, short[4]);
+    }
+
+    struct int2
+    {
+        int[2] array;
+        mixin VectorOps!(int2, int[2]);
+    }
+
+    struct long1
+    {
+        long[1] array;
+        mixin VectorOps!(long1, long[1]);
+    }
+}
+else
+{
+    // For this compiler, defining MMX-sized vectors is working.
+    public import core.simd;
+    alias Vector!(long [1]) long1;
+    alias Vector!(float[2]) float2;
+    alias Vector!(int  [2]) int2;
+    alias Vector!(short[4]) short4;
+    alias Vector!(byte [8]) byte8;
+}
+
+static assert(float2.sizeof == 8);
+static assert(byte8.sizeof == 8);
+static assert(short4.sizeof == 8);
+static assert(int2.sizeof == 8);
+static assert(long1.sizeof == 8);
+
+
+static if (SSESizedVectorsAreEmulated)
+{
+    /// SSE-like SIMD types
+
+    struct float4
+    {
+        float[4] array;
+        mixin VectorOps!(float4, float[4]);
+    }
+
+    struct byte16
+    {
+        byte[16] array;
+        mixin VectorOps!(byte16, byte[16]);
+    }
+
+    struct short8
+    {
+        short[8] array;
+        mixin VectorOps!(short8, short[8]);
+    }
+
+    struct int4
+    {
+        int[4] array;
+        mixin VectorOps!(int4, int[4]);
+    }
+
+    struct long2
+    {
+        long[2] array;
+        mixin VectorOps!(long2, long[2]);
+    }
+
+    struct double2
+    {
+        double[2] array;
+        mixin VectorOps!(double2, double[2]);
     }
 }
 
-nothrow:
-@nogc:
+static assert(float4.sizeof == 16);
+static assert(byte16.sizeof == 16);
+static assert(short8.sizeof == 16);
+static assert(int4.sizeof == 16);
+static assert(long2.sizeof == 16);
+static assert(double2.sizeof == 16);
+
+
+unittest
+{
+    float4 a = [1, 3, 5, 7];
+    float4 b = [2, 3, 4, 5];
+    int4 c = cast(int4)(greaterMask!float4(a, b));
+    static immutable int[4] correct = [0, 0, 0xffff_ffff, 0xffff_ffff];
+    assert(c.array == correct);
+}
+
 
 alias __m128 = float4;
 alias __m128i = int4;
