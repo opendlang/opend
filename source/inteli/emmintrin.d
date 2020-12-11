@@ -2891,6 +2891,12 @@ __m128i _mm_set1_epi16 (short a) pure @trusted
     else
         return cast(__m128i)(short8(a));
 }
+unittest
+{
+    short8 a = cast(short8) _mm_set1_epi16(31);
+    for (int i = 0; i < 8; ++i)
+        assert(a.array[i] == 31);
+}
 
 __m128i _mm_set1_epi32 (int a) pure @trusted
 {
@@ -2908,15 +2914,37 @@ __m128i _mm_set1_epi64 (__m64 a) pure @safe
 {
     return _mm_set_epi64(a, a);
 }
+unittest
+{
+    long b = 0x1DEADCAFE; 
+    __m64 a;
+    a.ptr[0] = b;
+    long2 c = cast(long2) _mm_set1_epi64(a);
+    assert(c.array[0] == b);
+    assert(c.array[1] == b);
+}
 
 __m128i _mm_set1_epi64x (long a) pure @trusted
 {
     return cast(__m128i)(long2(a));
 }
+unittest
+{
+    long b = 0x1DEADCAFE;
+    long2 c = cast(long2) _mm_set1_epi64x(b);
+    for (int i = 0; i < 2; ++i)
+        assert(c.array[i] == b);
+}
 
 __m128i _mm_set1_epi8 (byte a) pure @trusted
 {
     return cast(__m128i)(byte16(a));
+}
+unittest
+{
+    byte16 b = cast(byte16) _mm_set1_epi8(31);
+    for (int i = 0; i < 16; ++i)
+        assert(b.array[i] == 31);
 }
 
 alias _mm_set1_pd = _mm_set_pd1;
@@ -2927,18 +2955,21 @@ __m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4,
     short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
 }
+// TODO need test
 
 __m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
     int[4] result = [e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
+// TODO need test
 
 __m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
 {
     long[2] result = [e1, e0];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
+// TODO need test
 
 __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                        byte e11, byte e10, byte e9,  byte e8,
@@ -2949,6 +2980,7 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                       e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
 }
+// TODO need test
 
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
@@ -2968,6 +3000,7 @@ __m128d _mm_setzero_pd () pure @trusted
     double[2] result = [0.0, 0.0];
     return loadUnaligned!(double2)(result.ptr);
 }
+// TODO need test
 
 __m128i _mm_setzero_si128() pure @trusted
 {
@@ -2975,6 +3008,7 @@ __m128i _mm_setzero_si128() pure @trusted
     int[4] result = [0, 0, 0, 0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
+// TODO need test
 
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
 {
