@@ -1077,16 +1077,26 @@ unittest // cmpsd and comsd
 __m64 to_m64(__m128i a) pure @trusted
 {
     long2 la = cast(long2)a;
-    long1 r;
-    r.ptr[0] = la.array[0];
+    long1 r = la.array[0];
     return r;
 }
 
 __m128i to_m128i(__m64 a) pure @trusted
 {
-    long2 r = [0, 0];
-    r.ptr[0] = a.array[0];
-    return cast(__m128i)r;
+  /* Not sufficient to avoid https://issues.dlang.org/show_bug.cgi?id=21474 
+    
+    version(DigitalMars) // Workaround for https://issues.dlang.org/show_bug.cgi?id=21474 
+    {
+        long2 r = a.array[0];
+        r.ptr[1] = 0;
+        return cast(int4)r;
+    }
+    else */
+    {
+        long2 r = [0, 0];
+        r.ptr[0] = a.array[0];
+        return cast(__m128i)r;
+    }
 }
 
 // SOME NEON INTRINSICS

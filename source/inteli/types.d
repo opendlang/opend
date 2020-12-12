@@ -120,7 +120,7 @@ else version(DigitalMars)
     version(D_SIMD)
     {
         enum MMXSizedVectorsAreEmulated = true;
-        enum SSESizedVectorsAreEmulated = true; //false; currently doesn't work in DMD x86_64
+        enum SSESizedVectorsAreEmulated = true; // Should be false, but it is blocked by https://issues.dlang.org/show_bug.cgi?id=21474
     }
     else
     {
