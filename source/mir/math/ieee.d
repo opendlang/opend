@@ -42,24 +42,31 @@ module mir.math.ieee;
 import mir.internal.utility: isFloatingPoint;
 
 /*********************************
- * Return 1 if sign bit of e is set, 0 if not.
+ * Return `true` if sign bit of e is set, `false` if not.
  */
-int signbit(T)(const T x) @nogc @trusted pure nothrow
+bool signbit(T)(const T x) @nogc @trusted pure nothrow
 {
+    if (__ctfe)
+    {
+        double dval = cast(double) x; // Precision can increase or decrease but sign won't change (even NaN).
+        return 0 > *cast(long*) &dval;
+    }
+
     mixin floatTraits!T;
+
     static if (realFormat == RealFormat.ieeeSingle)
     {
-        return ((*cast(uint*)&x) & 0x8000_0000) != 0;
+        return 0 > *cast(int*) &x;
     }
     else 
     static if (realFormat == RealFormat.ieeeDouble)
     {
-        return ((*cast(ulong*)&x) & 0x8000_0000_0000_0000) != 0;
+        return 0 > *cast(long*) &x;
     }
     else 
     static if (realFormat == RealFormat.ieeeQuadruple)
     {
-        return ((cast(ulong*)&x)[MANTISSA_MSB] & 0x8000_0000_0000_0000) != 0;
+        return 0 > ((cast(long*)&x)[MANTISSA_MSB]);
     }
     else static if (realFormat == RealFormat.ieeeExtended)
     {
