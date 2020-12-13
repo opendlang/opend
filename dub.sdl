@@ -3,7 +3,7 @@ description "Fast, Expressive, and Easy to use JSON Serialization Library with o
 authors "Ilya Yaroshenko" "Yannick Koechlin"
 copyright "Tamedia Digital, 2016-, Symmetry Investments and Kaleidic Associates, 2020-"
 license "BSL-1.0"
-dependency "mir-algorithm" version=">=3.9.45"
+dependency "mir-algorithm" version=">=3.10.13"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"

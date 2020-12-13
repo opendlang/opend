@@ -94,10 +94,10 @@ unittest
         Decor dec = Decor(20); // { 20, inf }
     }
     
-    assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1}`);
+    assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1e0}`);
     auto cake = Cake.init;
     cake.dec = Decor.init;
-    assert(cake.serializeJson == `{"slices":8,"flavor":1,"dec":{"candles":0,"fluff":"inf"}}`);
+    assert(cake.serializeJson == `{"slices":8,"flavor":1e0,"dec":{"candles":0,"fluff":"inf"}}`);
     assert(cake.dec.serializeJson == `{"candles":0,"fluff":"inf"}`);
     
     static struct A
@@ -418,6 +418,24 @@ struct JsonSerializer(string sep, Dg)
     {
         import std.format: formatValue;
         auto f = &sink.putSmallEscaped;
+        static if (isNumeric!Num)
+        {
+            static struct S
+            {
+                typeof(f) fun;
+                auto put(scope const(char)[] str)
+                {
+                    fun(str);
+                }
+            }
+            auto app = S(f);
+            if (fmt == FormatSpec!char.init)
+            {
+                import mir.format: print;
+                print(app, num);
+                return;
+            }
+        }
         assumePure((typeof(f) fun) => formatValue(fun, num, fmt))(f);
     }
 
@@ -592,7 +610,7 @@ unittest
     import std.bigint;
 
     assert(serializeJson(BigInt(123)) == `123`);
-    assert(serializeJson(2.40f) == `2.4`);
+    assert(serializeJson(2.40f) == `2.4e0`);
     assert(serializeJson(float.nan) == `"nan"`);
     assert(serializeJson(float.infinity) == `"inf"`);
     assert(serializeJson(-float.infinity) == `"-inf"`);
@@ -840,7 +858,7 @@ unittest
     assert(t.serializeJson == `{"str":null,"nested":null}`);
     t.str = "txt";
     t.nested = Nested(123);
-    assert(t.serializeJson == `{"str":"txt","nested":{"f":123}}`);
+    assert(t.serializeJson == `{"str":"txt","nested":{"f":1.23e2}}`);
 }
 
 /// Struct and class type serialization
