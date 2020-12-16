@@ -357,7 +357,7 @@ value_start:
         Decimal!256 decimal;
         DecimalExponentKey key;
 
-        if (!parseDecimal(numberStringView, decimal, key))
+        if (!decimal.fromStringImpl(numberStringView, key))
             goto unexpected_decimal_value;
         if (!key) // integer
         {
