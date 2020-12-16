@@ -22,5 +22,5 @@ Please use https://github.com/libmir/asdf for now.
  - [ ] Ion to Text Ion
  - [ ] Serialization API
  - [x] Deserialization API
- - [x] Precise decimal to floating conversion.
- - [ ] Precise floating to decimal conversion.
+ - [x] Precise decimal to floating conversion (except subnormals)
+ - [x] Precise floating to decimal conversion.
