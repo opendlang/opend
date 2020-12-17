@@ -284,7 +284,10 @@ static if (CoreSimdIsEmulated)
         // Note: can't be @safe with this signature
         void storeUnaligned(Vec v, BaseType!Vec* pvec) @trusted
         {
-            static if (is(Vec == __vector))
+            enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
+                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated) );
+
+            static if (isVector)
             {
                 // PERF: there is probably something faster to do for this compiler (DMD).
                 //       Avoid this on DMD in the future.
