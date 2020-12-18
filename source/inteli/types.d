@@ -110,6 +110,10 @@ else version(LDC)
 {
     public import ldc.simd;
 
+    // Use this alias to mention it should only be used with LDC,
+    // for example when emulated shufflevector would just be wasteful.
+    alias shufflevectorLDC = shufflevector; 
+
     enum MMXSizedVectorsAreEmulated = false;
     enum SSESizedVectorsAreEmulated = false;
 }

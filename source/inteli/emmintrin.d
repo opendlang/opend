@@ -1960,7 +1960,7 @@ unittest
 
 __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
     __m128i lowerShorts = _mm_cmpgt_epi16(a, b); // ones where a should be selected, b else
     __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
     __m128i mask = _mm_and_si128(aTob, lowerShorts);
@@ -1975,10 +1975,9 @@ unittest
 }
 
 
-// Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
 __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
 {
-    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
     __m128i value128 = _mm_set1_epi8(-128);
     __m128i higher = _mm_cmpgt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
     __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
@@ -2089,7 +2088,7 @@ unittest
 
 __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
+    // PREF Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
     // Implemented using masks and XOR
     __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
     __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
@@ -2107,7 +2106,7 @@ unittest
 
 __m128i _mm_min_epu8 (__m128i a, __m128i b) pure @safe
 {
-    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
     __m128i value128 = _mm_set1_epi8(-128);
     __m128i lower = _mm_cmplt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
     __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b

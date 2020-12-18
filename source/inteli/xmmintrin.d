@@ -977,6 +977,7 @@ unittest
     assert(A.array == correct);
 }
 
+/// Load unaligned 16-bit integer from memory into the first element, fill with zeroes otherwise.
 __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
 {
     short r = *cast(short*)(mem_addr);
@@ -992,6 +993,8 @@ unittest
     assert(A.array == correct);
 }
 
+/// Load unaligned 64-bit integer from memory into the first element of result.
+/// Upper 64-bit is zeroed.
 __m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
     long r = *cast(long*)(mem_addr);
@@ -1020,6 +1023,8 @@ void* _mm_malloc(size_t size, size_t alignment) @trusted
     return storeRawPointerPlusInfo(raw, size, alignment); // PERF: no need to store size
 }
 
+/// Conditionally store 8-bit integer elements from a into memory using mask (elements are not stored when the highest 
+/// bit is not set in the corresponding element) and a non-temporal memory hint.
 void _mm_maskmove_si64 (__m64 a, __m64 mask, char* mem_addr) @trusted
 {
     // this works since mask is zero-extended
@@ -1028,22 +1033,24 @@ void _mm_maskmove_si64 (__m64 a, __m64 mask, char* mem_addr) @trusted
 
 deprecated alias _m_maskmovq = _mm_maskmove_si64;
 
+/// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum value.
 __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_max_epi16(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_with_SSE)
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return packed maximum values.
+__m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
 {
-    alias _mm_max_ps = __builtin_ia32_maxps;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_max_ps = __builtin_ia32_maxps;
-}
-else
-{
-    __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_maxps(a, b);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_maxps(a, b);
+    }
+    else
     {
         // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
@@ -1051,7 +1058,7 @@ else
         r[1] = (a[1] > b[1]) ? a[1] : b[1];
         r[2] = (a[2] > b[2]) ? a[2] : b[2];
         r[3] = (a[3] > b[3]) ? a[3] : b[3];
-        return r;
+        return r;    
     }
 }
 unittest
@@ -1065,23 +1072,26 @@ unittest
     assert(M.array[3] != M.array[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
+/// Compare packed unsigned 8-bit integers in `a` and `b`, and return packed maximum values.
 __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_max_epu8(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_with_SSE)
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b`, store the maximum value in the 
+/// lower element of result, and copy the upper 3 packed elements from `a` to the upper element of result.
+ __m128 _mm_max_ss(__m128 a, __m128 b) pure @safe
 {
-    alias _mm_max_ss = __builtin_ia32_maxss;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_max_ss = __builtin_ia32_maxss;
-}
-else
-{
-    __m128 _mm_max_ss(__m128 a, __m128 b) pure @safe
+    static if (GDC_with_SSE)
     {
+        return __builtin_ia32_maxss(a, b);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_maxss(a, b); 
+    }
+    else
+    {  
         __m128 r = a;
         r[0] = (a[0] > b[0]) ? a[0] : b[0];
         return r;
@@ -1103,22 +1113,25 @@ unittest
     assert(M.array[0] == 1);
 }
 
+/// Compare packed signed 16-bit integers in a and b, and return packed minimum values.
 __m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_min_epi16(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_with_SSE)
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return packed maximum values.
+__m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
 {
-    alias _mm_min_ps = __builtin_ia32_minps;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_min_ps = __builtin_ia32_minps;
-}
-else
-{
-    __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_minps(a, b);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        // not technically needed, but better perf in debug mode
+        return __builtin_ia32_minps(a, b);
+    }
+    else
     {
         // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
         __m128 r;
@@ -1140,6 +1153,7 @@ unittest
     assert(M.array[3] != M.array[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
+/// Compare packed unsigned 8-bit integers in `a` and `b`, and return packed minimum values.
 __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_min_epu8(to_m128i(a), to_m128i(b)));
@@ -2020,7 +2034,8 @@ unittest
     assert(a.array == correct);
 }
 
-
+/// Transpose the 4x4 matrix formed by the 4 rows of single-precision (32-bit) floating-point elements in row0, row1, 
+/// row2, and row3, and store the transposed matrix in these vectors (row0 now contains column 0, etc.).
 void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref __m128 row3) pure @safe
 {
     __m128 tmp3, tmp2, tmp1, tmp0;
@@ -2045,21 +2060,38 @@ alias _mm_ucomile_ss = _mm_comile_ss;
 alias _mm_ucomilt_ss = _mm_comilt_ss;
 alias _mm_ucomineq_ss = _mm_comineq_ss;
 
-
+/// Return vector of type `__m128` with undefined elements.
 __m128 _mm_undefined_ps() pure @safe
 {
     __m128 undef = void;
     return undef;
 }
 
+/// Unpack and interleave single-precision (32-bit) floating-point elements from the high half `a` and `b`.
 __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
 {
-    __m128 r;
-    r.ptr[0] = a.array[2];
-    r.ptr[1] = b.array[2];
-    r.ptr[2] = a.array[3];
-    r.ptr[3] = b.array[3];
-    return r;
+    version(LDC)
+    {
+        // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
+        return shufflevectorLDC!(__m128, 2, 6, 3, 7)(a, b);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[2];
+        r.ptr[1] = b.array[2];
+        r.ptr[2] = a.array[3];
+        r.ptr[3] = b.array[3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 R = _mm_unpackhi_ps(A, B);
+    float[4] correct = [3.0f, 7.0f, 4.0f, 8.0f];
+    assert(R.array == correct);
 }
 
 __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
@@ -2149,7 +2181,7 @@ unittest
     _mm_free(nullAlloc);
 }
 
-// For some reason, order of declaration is important for this one... 4
+// For some reason, order of declaration is important for this one
 // so it is misplaced.
 // Note: is just another name for _mm_cvtss_si32
 alias _mm_cvt_ss2si = _mm_cvtss_si32;
