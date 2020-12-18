@@ -904,18 +904,42 @@ unittest
 /// Load a single-precision (32-bit) floating-point element from memory into all elements.
 alias _mm_load1_ps = _mm_load_ps1;
 
+/// Load 2 single-precision (32-bit) floating-point elements from memory into the upper 2 elements of result, 
+/// and copy the lower 2 elements from `a` to result. `mem_addr does` not need to be aligned on any particular boundary.
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
+    // x86: movlhps generated since LDC 1.9.0 -O1
     long2 la = cast(long2)a;
     la.ptr[1] = (*mem_addr).array[0];
     return cast(__m128)la;
 }
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m64 M = to_m64(cast(__m128i)B);
+     __m128 R = _mm_loadh_pi(A, &M);
+    float[4] correct = [1.0f, 2.0f, 5.0f, 6.0f];
+    assert(R.array == correct);
+}
 
+/// Load 2 single-precision (32-bit) floating-point elements from memory into the lower 2 elements of result, 
+/// and copy the upper 2 elements from `a` to result. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
+    // x86: movlpd/movlps generated with all LDC -01
     long2 la = cast(long2)a;
     la.ptr[0] = (*mem_addr).array[0];
     return cast(__m128)la;
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m64 M = to_m64(cast(__m128i)B);
+     __m128 R = _mm_loadl_pi(A, &M);
+    float[4] correct = [5.0f, 6.0f, 3.0f, 4.0f];
+    assert(R.array == correct);
 }
 
 __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
