@@ -1159,17 +1159,19 @@ __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_min_epu8(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_with_SSE)
+/// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b`, store the minimum value in the 
+/// lower element of result, and copy the upper 3 packed elements from `a` to the upper element of result.
+__m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
 {
-    alias _mm_min_ss = __builtin_ia32_minss;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_min_ss = __builtin_ia32_minss;
-}
-else
-{
-    __m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_minss(a, b);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_minss(a, b);
+    }
+    else
     {
         // Generates minss since LDC 1.3 -O1
         __m128 r = a;
@@ -1193,24 +1195,54 @@ unittest
     assert(M.array[0] == 1);
 }
 
+/// Move the lower single-precision (32-bit) floating-point element from `b` to the lower element of result, and copy 
+/// the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_move_ss (__m128 a, __m128 b) pure @trusted
 {
     a.ptr[0] = b.array[0];
     return a;
 }
-
-__m128 _mm_movehl_ps (__m128 a, __m128 b) pure @trusted
+unittest
 {
-    b.ptr[0] = a.array[2];
-    b.ptr[1] = a.array[3];
-    return b;
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 R = _mm_move_ss(A, B);
+    float[4] correct = [5.0f, 2.0f, 3.0f, 4.0f];
+    assert(R.array == correct);
 }
 
+/// Move the upper 2 single-precision (32-bit) floating-point elements from `b` to the lower 2 elements of result, and 
+/// copy the upper 2 elements from `a` to the upper 2 elements of dst.
+__m128 _mm_movehl_ps (__m128 a, __m128 b) pure @trusted
+{
+    a.ptr[0] = b.array[2];
+    a.ptr[1] = b.array[3];
+    return a;
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 R = _mm_movehl_ps(A, B);
+    float[4] correct = [7.0f, 8.0f, 3.0f, 4.0f];
+    assert(R.array == correct);
+}
+
+/// Move the lower 2 single-precision (32-bit) floating-point elements from `b` to the upper 2 elements of result, and 
+/// copy the lower 2 elements from `a` to the lower 2 elements of result
 __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @trusted
 {
     a.ptr[2] = b.array[0];
     a.ptr[3] = b.array[1];
     return a;
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 R = _mm_movelh_ps(A, B);
+    float[4] correct = [1.0f, 2.0f, 5.0f, 6.0f];
+    assert(R.array == correct);
 }
 
 int _mm_movemask_pi8 (__m64 a) pure @safe
