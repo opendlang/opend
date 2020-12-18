@@ -499,13 +499,18 @@ version(mir_core_test) unittest
     assert(v.kind == JsonValue.Kind.integer);
 
     v = "Tagged!";
-    assert(v.get!string == "Tagged!");
+    assert(v.get       !string                  == "Tagged!");
+    assert(v.trustedGet!string                  == "Tagged!");
+
     assert(v.kind == JsonValue.Kind.string); //OK, since `string` is just an alias to `immutable(char)[]`
+
+    assert(v.get       !(JsonValue.Kind.string) == "Tagged!"); // Kind-based get
+    assert(v.trustedGet!(JsonValue.Kind.string) == "Tagged!"); // Kind-based trustedGet
 
     v = [JsonValue("str"), JsonValue(4.3)];
 
     assert(v.kind == JsonValue.Kind.array);
-    assert(v.get!(JsonValue[])[1].kind == JsonValue.Kind.floating);
+    assert(v.trustedGet!(JsonValue[])[1].kind == JsonValue.Kind.floating);
 
     v = null;
     assert(v.kind == JsonValue.Kind.null_);
@@ -1176,7 +1181,7 @@ struct Algebraic(_Types...)
         }
     }
 
-    /// Zero cost always nothrow `get` alternative
+    /// Zero cost always nothrow $(LREF .Algebraic.get) alternative
     auto ref trustedGet(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
     {
@@ -1206,6 +1211,10 @@ struct Algebraic(_Types...)
             return ret;
         }
     }
+
+    static if (anySatisfy!(isTaggedType, _Types))
+    /// ditto
+    alias trustedGet(Kind kind) = trustedGet!(AllowedTypes[kind]);
 
     /+
     Throws: Exception if the storage contains value of the type that isn't represented in the allowed type set of the requested algebraic.
@@ -1239,6 +1248,10 @@ struct Algebraic(_Types...)
             return ret;
         }
     }
+
+    static if (anySatisfy!(isTaggedType, _Types))
+    /// ditto
+    alias get(Kind kind) = get!(AllowedTypes[kind]);
 
     private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
     static if (_ReflectionTypes.length)
@@ -1504,6 +1517,7 @@ struct Algebraic(_Types...)
 /++
 Constructor and methods propagation.
 +/
+version(mir_core_test)
 unittest
 {
     static struct Base
