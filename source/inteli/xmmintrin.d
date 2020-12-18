@@ -658,17 +658,18 @@ __m64 _mm_cvtt_ps2pi (__m128 a) pure @safe
     return to_m64(_mm_cvttps_epi32(a));
 }
 
-
-// Note: __builtin_ia32_cvttss2si64 crashes LDC when generating 32-bit x86 code.
+/// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit 
+/// integer with truncation.
 long _mm_cvttss_si64 (__m128 a) pure @safe
 {
-    return cast(long)(a.array[0]); // Generates cvttss2si as expected
+    return cast(long)(a.array[0]);
 }
 unittest
 {
     assert(1 == _mm_cvttss_si64(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
+/// Divide packed single-precision (32-bit) floating-point elements in `a` by packed elements in `b`.
 __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
 {
     return a / b;
@@ -681,6 +682,9 @@ unittest
     assert(a.array == correct);
 }
 
+/// Divide the lower single-precision (32-bit) floating-point element in `a` by the lower 
+/// single-precision (32-bit) floating-point element in `b`, store the result in the lower 
+/// element of result, and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
     static if (GDC_with_SSE)
@@ -699,6 +703,7 @@ unittest
     assert(a.array == correct);
 }
 
+/// Extract a 16-bit unsigned integer from `a`, selected with `imm8`. Zero-extended.
 int _mm_extract_pi16 (__m64 a, int imm8)
 {
     short4 sa = cast(short4)a;
@@ -732,26 +737,40 @@ void _mm_free(void * mem_addr) @trusted
     free(*rawLocation);
 }
 
+/// Get the exception mask bits from the MXCSR control and status register. 
+/// The exception mask may contain any of the following flags: `_MM_MASK_INVALID`, 
+/// `_MM_MASK_DIV_ZERO`, `_MM_MASK_DENORM`, `_MM_MASK_OVERFLOW`, `_MM_MASK_UNDERFLOW`, `_MM_MASK_INEXACT`.
+/// Note: won't correspond to reality on non-x86, where MXCSR this is emulated.
 uint _MM_GET_EXCEPTION_MASK() @safe
 {
     return _mm_getcsr() & _MM_MASK_MASK;
 }
 
+/// Get the exception state bits from the MXCSR control and status register. 
+/// The exception state may contain any of the following flags: `_MM_EXCEPT_INVALID`, 
+/// `_MM_EXCEPT_DIV_ZERO`, `_MM_EXCEPT_DENORM`, `_MM_EXCEPT_OVERFLOW`, `_MM_EXCEPT_UNDERFLOW`, `_MM_EXCEPT_INEXACT`.
+/// Note: won't correspond to reality on non-x86, where MXCSR this is emulated. No exception reported.
 uint _MM_GET_EXCEPTION_STATE() @safe
 {
     return _mm_getcsr() & _MM_EXCEPT_MASK;
 }
 
+/// Get the flush zero bits from the MXCSR control and status register. 
+/// The flush zero may contain any of the following flags: `_MM_FLUSH_ZERO_ON` or `_MM_FLUSH_ZERO_OFF`
 uint _MM_GET_FLUSH_ZERO_MODE() @safe
 {
     return _mm_getcsr() & _MM_FLUSH_ZERO_MASK;
 }
 
+/// Get the rounding mode bits from the MXCSR control and status register. The rounding mode may 
+/// contain any of the following flags: `_MM_ROUND_NEAREST, `_MM_ROUND_DOWN`, `_MM_ROUND_UP`, `_MM_ROUND_TOWARD_ZERO`.
 uint _MM_GET_ROUNDING_MODE() @safe
 {
     return _mm_getcsr() & _MM_ROUND_MASK;
 }
 
+/// Get the unsigned 32-bit value of the MXCSR control and status register.
+/// Note: this is emulated on ARM, because there is no MXCSR register then.
 uint _mm_getcsr() @trusted
 {
     static if (LDC_with_ARM)
@@ -822,10 +841,11 @@ unittest
     uint csr = _mm_getcsr();
 }
 
-__m64 _mm_insert_pi16 (__m64 v, int i, int index) pure @trusted
+/// Insert a 16-bit integer `i` inside `a` at the location specified by `imm8`.
+__m64 _mm_insert_pi16 (__m64 v, int i, int imm8) pure @trusted
 {
     short4 r = cast(short4)v;
-    r.ptr[index & 3] = cast(short)i;
+    r.ptr[imm8 & 3] = cast(short)i;
     return cast(__m64)r;
 }
 unittest
@@ -836,16 +856,34 @@ unittest
     assert(R.array == correct);
 }
 
+/// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory.
+//  `p` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128 _mm_load_ps(const(float)*p) pure @trusted
 {
     return *cast(__m128*)p;
 }
+unittest
+{
+    static immutable align(16) float[4] correct = [1.0f, 2.0f, 3.0f, 4.0f];
+    __m128 A = _mm_load_ps(correct.ptr);
+    assert(A.array == correct);
+}
 
+/// Load a single-precision (32-bit) floating-point element from memory into all elements.
 __m128 _mm_load_ps1(const(float)*p) pure @trusted
 {
     return __m128(*p);
 }
+unittest
+{
+    float n = 2.5f;
+    float[4] correct = [2.5f, 2.5f, 2.5f, 2.5f];
+    __m128 A = _mm_load_ps1(&n);
+    assert(A.array == correct);
+}
 
+/// Load a single-precision (32-bit) floating-point element from memory into the lower of dst, and zero the upper 3 
+/// elements. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
 {
     __m128 r;
@@ -855,7 +893,15 @@ __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
     r.ptr[3] = 0;
     return r;
 }
+unittest
+{
+    float n = 2.5f;
+    float[4] correct = [2.5f, 0.0f, 0.0f, 0.0f];
+    __m128 A = _mm_load_ss(&n);
+    assert(A.array == correct);
+}
 
+/// Load a single-precision (32-bit) floating-point element from memory into all elements.
 alias _mm_load1_ps = _mm_load_ps1;
 
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
@@ -1344,7 +1390,8 @@ void _mm_prefetch(int locality)(const(void)* p) pure @trusted
 unittest
 {
     // From Intel documentation:
-    // "The amount of data prefetched is also processor implementation-dependent. It will, however, be a minimum of 32 bytes."
+    // "The amount of data prefetched is also processor implementation-dependent. It will, however, be a minimum of 
+    // 32 bytes."
     ubyte[256] cacheline; // though it seems it cannot generate GP fault
     _mm_prefetch!_MM_HINT_T0(cacheline.ptr); 
     _mm_prefetch!_MM_HINT_T1(cacheline.ptr); 
