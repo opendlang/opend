@@ -1985,15 +1985,15 @@ void _mm_stream_pi (__m64* mem_addr, __m64 a)
     *mem_addr = a; // it's a regular move instead
 }
 
-// BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
-// needs some IR outside this function that would say:
-//
-//  !0 = !{ i32 1 }
-//
-// It's a LLVM IR metadata description.
-// Regardless, non-temporal moves are really dangerous for performance...
+
 void _mm_stream_ps (float* mem_addr, __m128 a)
 {
+    // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
+    // needs some IR outside this function that would say:
+    //
+    //  !0 = !{ i32 1 }
+    //
+    // It's a LLVM IR metadata description.
     __m128* dest = cast(__m128*)mem_addr;
     *dest = a; // it's a regular move instead
 }
@@ -2094,16 +2094,34 @@ unittest
     assert(R.array == correct);
 }
 
+/// Unpack and interleave single-precision (32-bit) floating-point elements from the low half of `a` and `b`.
 __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
 {
-    __m128 r;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = b.array[0];
-    r.ptr[2] = a.array[1];
-    r.ptr[3] = b.array[1];
-    return r;
+    version(LDC)
+    {
+        // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
+        return shufflevectorLDC!(__m128, 0, 4, 1, 5)(a, b);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = b.array[0];
+        r.ptr[2] = a.array[1];
+        r.ptr[3] = b.array[1];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 R = _mm_unpacklo_ps(A, B);
+    float[4] correct = [1.0f, 5.0f, 2.0f, 6.0f];
+    assert(R.array == correct);
 }
 
+/// Compute the bitwise XOR of packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
@@ -2112,14 +2130,14 @@ __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 
 private
 {
-    /// Returns: `true` if the pointer is suitably aligned.
+    // Returns: `true` if the pointer is suitably aligned.
     bool isPointerAligned(void* p, size_t alignment) pure
     {
         assert(alignment != 0);
         return ( cast(size_t)p & (alignment - 1) ) == 0;
     }
 
-    /// Returns: next pointer aligned with alignment bytes.
+    // Returns: next pointer aligned with alignment bytes.
     void* nextAlignedPointer(void* start, size_t alignment) pure
     {
         return cast(void*)nextMultipleOf(cast(size_t)(start), alignment);
