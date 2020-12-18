@@ -942,9 +942,11 @@ unittest
     assert(R.array == correct);
 }
 
+/// Load 4 single-precision (32-bit) floating-point elements from memory in reverse order. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
 {
-    __m128* aligned = cast(__m128*)mem_addr;
+    __m128* aligned = cast(__m128*)mem_addr; // x86: movaps + shups since LDC 1.0.0 -O1
     __m128 a = *aligned;
     __m128 r;
     r.ptr[0] = a.array[3];
@@ -953,10 +955,26 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
     r.ptr[3] = a.array[0];
     return r;
 }
+unittest
+{
+    align(16) static immutable float[4] arr = [ 1.0f, 2.0f, 3.0f, 8.0f ];
+    __m128 A = _mm_loadr_ps(arr.ptr);
+    float[4] correct = [ 8.0f, 3.0f, 2.0f, 1.0f ];
+    assert(A.array == correct);
+}
 
+/// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory into dst. 
+/// `p` does not need to be aligned on any particular boundary.
 __m128 _mm_loadu_ps(const(float)*p) pure @safe
 {
     return loadUnaligned!(__m128)(p);
+}
+unittest
+{
+    align(16) static immutable float[5] arr = [ 1.0f, 2.0f, 3.0f, 8.0f, 9.0f ];  // force unaligned load
+    __m128 A = _mm_loadu_ps(&arr[1]);
+    float[4] correct = [ 2.0f, 3.0f, 8.0f, 9.0f ];
+    assert(A.array == correct);
 }
 
 __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
