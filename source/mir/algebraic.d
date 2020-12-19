@@ -1276,7 +1276,7 @@ struct Algebraic(_Types...)
     }
 
     /++
-    Zero cost always nothrow $(LREF .Algebraic.get) alternative that returns an algebraic subset.
+    `nothrow` $(LREF .Algebraic.get) alternative that returns an algebraic subset.
     +/
     auto ref trustedGet(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
@@ -1346,7 +1346,9 @@ struct Algebraic(_Types...)
     /// `trustedGet` overload that accept $(LREF .Algebraic.Kind).
     alias trustedGet(Kind kind) = trustedGet!(AllowedTypes[kind]);
 
-    /+
+    /++
+    Gets an algebraic subset.
+
     Throws: Exception if the storage contains value of the type that isn't represented in the allowed type set of the requested algebraic.
     +/
     auto ref get(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
