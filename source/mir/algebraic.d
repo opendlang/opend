@@ -461,23 +461,48 @@ Tagged Variant Type (aka Tagged Algebraic Type).
 
 Compatible with BetterC mode.
 
-The impllementation is defined as
+Template has two declarations:
 ----
 alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
+// and
+template TaggedVariant(T)
+    if (is(T == union))
+{
+    ...
+}
 ----
 
 See_also: $(LREF Variant), $(LREF isTaggedVariant).
 +/
 alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
 
+/// ditto
+template TaggedVariant(T)
+    if (is(T == union))
+{
+    import std.meta: staticMap;
+    enum names = __traits(allMembers, T);
+    alias TypeOf(string member) = typeof(__traits(getMember, T, member));
+    alias Types = staticMap!(TypeOf, names);
+    alias TaggedVariant = .TaggedVariant!([names], Types);
+}
 
 /// Json Value
 @safe pure 
 version(mir_core_test) unittest
 {
-    alias JsonValue = TaggedVariant!(
-        ["integer", "floating", "boolean", "null_", "string", "array", "object", ],
-        long,        double,    bool,   typeof(null), string,  This[], This[string]);
+    static union JsonUnion
+    {
+        long integer;
+        double floating;
+        bool boolean;
+        typeof(null) null_;
+        string string_;
+        This[] array;
+        This[string] object;
+    }
+
+    alias JsonValue = TaggedVariant!JsonUnion;
 
     // typeof(null) has priority
     static assert(JsonValue.Kind.init == JsonValue.Kind.null_);
@@ -502,10 +527,10 @@ version(mir_core_test) unittest
     assert(v.get       !string                  == "Tagged!");
     assert(v.trustedGet!string                  == "Tagged!");
 
-    assert(v.kind == JsonValue.Kind.string); //OK, since `string` is just an alias to `immutable(char)[]`
+    assert(v.kind == JsonValue.Kind.string_);
 
-    assert(v.get       !(JsonValue.Kind.string) == "Tagged!"); // Kind-based get
-    assert(v.trustedGet!(JsonValue.Kind.string) == "Tagged!"); // Kind-based trustedGet
+    assert(v.get       !(JsonValue.Kind.string_) == "Tagged!"); // Kind-based get
+    assert(v.trustedGet!(JsonValue.Kind.string_) == "Tagged!"); // Kind-based trustedGet
 
     v = [JsonValue("str"), JsonValue(4.3)];
 
