@@ -111,7 +111,7 @@ import mir.functional: naryFun;
 
 private static immutable variantExceptionMsg = "mir.algebraic: the algebraic stores other type then requested.";
 private static immutable variantNullExceptionMsg = "mir.algebraic: the algebraic is empty and doesn't store any value.";
-private static immutable variantMemberExceptionMsg = "mir.algebraic: the algebraic is stores the type that isn't compatible with the user provided visitor and arguments.";
+private static immutable variantMemberExceptionMsg = "mir.algebraic: the algebraic stores a type that isn't compatible with the user provided visitor and arguments.";
 
 version (D_Exceptions)
 {
@@ -808,15 +808,48 @@ struct Algebraic(_Types...)
         }
     }
 
-    version(mir_core_test)
+    /// Construct an algebraic type from its subset.
     this(RhsTypes...)(Algebraic!RhsTypes rhs)
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
-        this._storage_.bytes[0 .. rhs._storage_.bytes.length] = rhs._storage_.bytes;
-        this._storage_.bytes[rhs._storage_.bytes.length .. $] = 0;
-        static if (hasElaborateDestructor!(Algebraic!RhsTypes))
-            rhs._storage_.bytes = Algebraic!RhsTypes._Storage_.init.bytes;
-        // static immutable rhsBytes;
+        import core.lifetime: move;
+        static if (is(RetTypes == _Types))
+            this = move(ret);
+        else
+        {
+            switch (rhs._identifier_)
+            {
+                static foreach (i, T; Algebraic!RhsTypes.AllowedTypes)
+                {
+                    case i:
+                        static if (__traits(compiles, __ctor(move(rhs.trustedGet!T))))
+                            __ctor(move(rhs.trustedGet!T));
+                        else
+                            __ctor(rhs.trustedGet!T);
+                        return;
+                }
+                default:
+                    assert(0, variantMemberExceptionMsg);
+            }
+        }
+    }
+
+    version(mir_core_test)
+    static if (_variant_test_)
+    ///
+    unittest
+    {
+        alias Float = Variant!(float, double);
+        alias Int = Variant!(long, int);
+        alias Number = Variant!(Float.AllowedTypes, Int.AllowedTypes);
+
+        Float fp = 3.0;
+        Number number = fp; // constructor call
+        assert(number == 3.0);
+
+        Int integer = 12L;
+        number = Number(integer);
+        assert(number == 12L);
     }
 
     static if (!allSatisfy!(isCopyable, AllowedTypes))
@@ -1206,11 +1239,49 @@ struct Algebraic(_Types...)
         }
     }
 
-    /// Zero cost always nothrow $(LREF .Algebraic.get) alternative
+    /++
+    Checks if the underlaying type is an element of a user provided type set.
+    +/
+    bool _is(R : Algebraic!RetTypes, RetTypes...)() @safe pure nothrow @nogc const @property
+        if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
+    {
+        static if (is(RetTypes == _Types))
+            return true;
+        else
+        {
+            import std.meta: staticIndexOf;
+            import std.traits: CopyTypeQualifiers;
+            alias RhsAllowedTypes = Algebraic!RetTypes.AllowedTypes;
+            alias Ret = CopyTypeQualifiers!(This, Algebraic!RetTypes);
+            // uint rhsTypeId;
+            switch (_identifier_)
+            {
+                foreach (i, T; AllowedTypes)
+                static if (staticIndexOf!(T, RhsAllowedTypes) >= 0)
+                {
+                    case i:
+                        return true;
+                }
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /// ditto
+    bool _is(RetTypes...)() @safe pure nothrow @nogc const @property
+        if (RetTypes.length > 1)
+    {
+        return this._is!(Variant!RetTypes);
+    }
+
+    /++
+    Zero cost always nothrow $(LREF .Algebraic.get) alternative that returns an algebraic subset.
+    +/
     auto ref trustedGet(R : Algebraic!RetTypes, this This, RetTypes...)() return @property
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RetTypes.AllowedTypes))
     {
-        static if (_setId == retId && is(RetTypes == _Types))
+        static if (is(RetTypes == _Types))
             return this;
         else
         {
@@ -1233,12 +1304,46 @@ struct Algebraic(_Types...)
                 default:
                     assert(0, variantMemberExceptionMsg);
             }
-            return ret;
         }
     }
 
-    static if (anySatisfy!(isTaggedType, _Types))
     /// ditto
+    template trustedGet(RetTypes...)
+        if (RetTypes.length > 1)
+    {
+        ///
+        auto ref trustedGet(this This)()
+        {
+            return this.trustedGet!(Variant!RetTypes);
+        }
+    }
+
+    version(mir_core_test)
+    static if (_variant_test_)
+    ///
+    @safe pure nothrow @nogc
+    unittest
+    {
+        alias Float = Variant!(float, double);
+        alias Int = Variant!(long, int);
+        alias Number = Variant!(Float.AllowedTypes, Int.AllowedTypes);
+
+        Number number = 3.0;
+        assert(number._is!Float);
+        auto fp = number.trustedGet!Float;
+        static assert(is(typeof(fp) == Float));
+        assert(fp == 3.0);
+
+        // type list overload
+        number = 12L;
+        assert(number._is!(int, long));
+        auto integer = number.trustedGet!(int, long);
+        static assert(is(typeof(integer) == Int));
+        assert(integer == 12L);
+    }
+
+    static if (anySatisfy!(isTaggedType, _Types))
+    /// `trustedGet` overload that accept $(LREF .Algebraic.Kind).
     alias trustedGet(Kind kind) = trustedGet!(AllowedTypes[kind]);
 
     /+
@@ -1270,12 +1375,44 @@ struct Algebraic(_Types...)
                 default:
                     throw variantMemberException;
             }
-            return ret;
         }
     }
 
-    static if (anySatisfy!(isTaggedType, _Types))
     /// ditto
+    template get(RetTypes...)
+        if (RetTypes.length > 1)
+    {
+        ///
+        auto ref get(this This)()
+        {
+            return this.get!(Variant!RetTypes);
+        }
+    }
+
+    version(mir_core_test)
+    static if (_variant_test_)
+    ///
+    @safe pure @nogc
+    unittest
+    {
+        alias Float = Variant!(float, double);
+        alias Int = Variant!(long, int);
+        alias Number = Variant!(Float.AllowedTypes, Int.AllowedTypes);
+
+        Number number = 3.0;
+        auto fp = number.get!Float;
+        static assert(is(typeof(fp) == Float));
+        assert(fp == 3.0);
+
+        // type list overload
+        number = 12L;
+        auto integer = number.get!(int, long);
+        static assert(is(typeof(integer) == Int));
+        assert(integer == 12L);
+    }
+
+    static if (anySatisfy!(isTaggedType, _Types))
+    /// `get` overload that accept $(LREF .Algebraic.Kind).
     alias get(Kind kind) = get!(AllowedTypes[kind]);
 
     private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
