@@ -2021,7 +2021,15 @@ void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // TODO: shouldn't b
     r.ptr[3] = a.array[0];
     *aligned = r;
 }
+unittest
+{
+    align(16) float[4] A;
+    _mm_store1_ps(A.ptr, _mm_set_ss(42.0f));
+    float[4] correct = [42.0f, 42, 42, 42];
+    assert(A == correct);
+}
 
+/// Store the upper 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
     long2 la = cast(long2)a;
@@ -2035,6 +2043,7 @@ unittest
     assert(R.array[0] == 25);
 }
 
+/// Store the lower 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
     long2 la = cast(long2)a;
@@ -2048,7 +2057,9 @@ unittest
     assert(R.array[0] == 13);
 }
 
-void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // not safe since nothing guarantees alignment
+/// Store 4 single-precision (32-bit) floating-point elements from `a` into memory in reverse order. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // TODO should not be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
     __m128 r;
@@ -2058,19 +2069,31 @@ void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // not safe since no
     r.ptr[3] = a.array[0];
     *aligned = r;
 }
+unittest
+{
+    align(16) float[4] A;
+    _mm_storer_ps(A.ptr, _mm_setr_ps(1.0f, 2, 3, 4));
+    float[4] correct = [4.0f, 3.0f, 2.0f, 1.0f];
+    assert(A == correct);
+}
 
-void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
+/// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
+void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe // TODO should not be trusted
 {
     storeUnaligned!(float4)(a, mem_addr);
 }
 
+/// Store 64-bits of integer data from `a` into memory using a non-temporal memory hint.
 void _mm_stream_pi (__m64* mem_addr, __m64 a)
 {
     // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
     *mem_addr = a; // it's a regular move instead
 }
 
-
+/// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a`s into memory using
+/// a non-temporal memory hint. mem_addr must be aligned on a 16-byte boundary or a general-protection exception may be
+/// generated.
 void _mm_stream_ps (float* mem_addr, __m128 a)
 {
     // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
@@ -2089,6 +2112,8 @@ unittest
     assert(A[0] == 78.0f && A[1] == 78.0f && A[2] == 78.0f && A[3] == 78.0f);
 }
 
+/// Subtract packed single-precision (32-bit) floating-point elements in `b` from packed single-precision (32-bit) 
+/// floating-point elements in `a`.
 __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 {
     return a - b;
@@ -2101,6 +2126,9 @@ unittest
     assert(a.array == correct);
 }
 
+/// Subtract the lower single-precision (32-bit) floating-point element in `b` from the lower single-precision (32-bit)
+/// floating-point element in `a`, store the subtration result in the lower element of result, and copy the upper 3 
+/// packed elements from a to the upper elements of result.
 __m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
     static if (GDC_with_SSE)
