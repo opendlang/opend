@@ -858,7 +858,7 @@ unittest
 
 /// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory.
 //  `p` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128 _mm_load_ps(const(float)*p) pure @trusted
+__m128 _mm_load_ps(const(float)*p) pure @trusted // TODO shouldn't be trusted
 {
     return *cast(__m128*)p;
 }
@@ -944,7 +944,7 @@ unittest
 
 /// Load 4 single-precision (32-bit) floating-point elements from memory in reverse order. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
+__m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted // TODO shouldn't be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr; // x86: movaps + shups since LDC 1.0.0 -O1
     __m128 a = *aligned;
@@ -1031,7 +1031,7 @@ void _mm_maskmove_si64 (__m64 a, __m64 mask, char* mem_addr) @trusted
     return _mm_maskmoveu_si128 (to_m128i(a), to_m128i(mask), mem_addr);
 }
 
-deprecated("Use _mm_maskmove_si64 instead") alias _m_maskmovq = _mm_maskmove_si64;
+deprecated("Use _mm_maskmove_si64 instead") alias _m_maskmovq = _mm_maskmove_si64;///
 
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum value.
 __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
@@ -1349,16 +1349,16 @@ __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
     return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
-deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;
-deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;
-deprecated("Use _mm_extract_pi16 instead") alias _m_pextrw = _mm_extract_pi16;
-deprecated("Use _mm_insert_pi16 instead") alias _m_pinsrw = _mm_insert_pi16;
-deprecated("Use _mm_max_pi16 instead") alias _m_pmaxsw = _mm_max_pi16;
-deprecated("Use _mm_max_pu8 instead") alias _m_pmaxub = _mm_max_pu8;
-deprecated("Use _mm_min_pi16 instead") alias _m_pminsw = _mm_min_pi16;
-deprecated("Use _mm_min_pu8 instead") alias _m_pminub = _mm_min_pu8;
-deprecated("Use _mm_movemask_pi8 instead") alias _m_pmovmskb = _mm_movemask_pi8;
-deprecated("Use _mm_mulhi_pu16 instead") alias _m_pmulhuw = _mm_mulhi_pu16;
+deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;///
+deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;///
+deprecated("Use _mm_extract_pi16 instead") alias _m_pextrw = _mm_extract_pi16;///
+deprecated("Use _mm_insert_pi16 instead") alias _m_pinsrw = _mm_insert_pi16;///
+deprecated("Use _mm_max_pi16 instead") alias _m_pmaxsw = _mm_max_pi16;///
+deprecated("Use _mm_max_pu8 instead") alias _m_pmaxub = _mm_max_pu8;///
+deprecated("Use _mm_min_pi16 instead") alias _m_pminsw = _mm_min_pi16;///
+deprecated("Use _mm_min_pu8 instead") alias _m_pminub = _mm_min_pu8;///
+deprecated("Use _mm_movemask_pi8 instead") alias _m_pmovmskb = _mm_movemask_pi8;///
+deprecated("Use _mm_mulhi_pu16 instead") alias _m_pmulhuw = _mm_mulhi_pu16;///
 
 enum _MM_HINT_T0  = 3; ///
 enum _MM_HINT_T1  = 2; ///
@@ -1493,8 +1493,8 @@ unittest
     _mm_prefetch!_MM_HINT_NTA(cacheline.ptr); 
 }
 
-deprecated("Use _mm_sad_pu8 instead") alias _m_psadbw = _mm_sad_pu8;
-deprecated("Use _mm_shuffle_pi16 instead") alias _m_pshufw = _mm_shuffle_pi16;
+deprecated("Use _mm_sad_pu8 instead") alias _m_psadbw = _mm_sad_pu8;///
+deprecated("Use _mm_shuffle_pi16 instead") alias _m_pshufw = _mm_shuffle_pi16;///
 
 
 /// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements in a`` , 
@@ -1561,17 +1561,19 @@ unittest
     assert(R.array[3] == correct.array[3]);
 }
 
-static if (GDC_with_SSE)
+/// Compute the approximate reciprocal square root of packed single-precision (32-bit) floating-point elements in `a`. 
+/// The maximum relative error for this approximation is less than 1.5*2^-12.
+__m128 _mm_rsqrt_ps (__m128 a) pure @trusted
 {
-    alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
-}
-else version(LDC)
-{
-    __m128 _mm_rsqrt_ps (__m128 a) pure @safe
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_rsqrtps(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_rsqrtps(a);
+    }
+    else version(LDC)
     {
         a[0] = 1.0f / llvm_sqrt(a[0]);
         a[1] = 1.0f / llvm_sqrt(a[1]);
@@ -1579,48 +1581,55 @@ else version(LDC)
         a[3] = 1.0f / llvm_sqrt(a[3]);
         return a;
     }
-}
-else
-{
-    __m128 _mm_rsqrt_ps (__m128 a) pure @safe
+    else
     {
-        a[0] = 1.0f / sqrt(a[0]);
-        a[1] = 1.0f / sqrt(a[1]);
-        a[2] = 1.0f / sqrt(a[2]);
-        a[3] = 1.0f / sqrt(a[3]);
+        a.ptr[0] = 1.0f / sqrt(a.array[0]);
+        a.ptr[1] = 1.0f / sqrt(a.array[1]);
+        a.ptr[2] = 1.0f / sqrt(a.array[2]);
+        a.ptr[3] = 1.0f / sqrt(a.array[3]);
         return a;
     }
 }
+unittest
+{
+    __m128 A = _mm_setr_ps(2.34f, 70000.0f, 0.00001f, 345.5f);
+    __m128 groundTruth = _mm_setr_ps(0.65372045f, 0.00377964473f, 316.227766f, 0.05379921937f);
+    __m128 result = _mm_rsqrt_ps(A);
+    foreach(i; 0..4)
+    {
+        double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
+        assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    }
+}
 
-static if (GDC_with_SSE)
-{
-    alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
-}
-else version(LDC)
-{
-    __m128 _mm_rsqrt_ss (__m128 a) pure @safe
+/// Compute the approximate reciprocal square root of the lower single-precision (32-bit) floating-point element in `a`,
+/// store the result in the lower element. Copy the upper 3 packed elements from `a` to the upper elements of result. 
+/// The maximum relative error for this approximation is less than 1.5*2^-12.
+__m128 _mm_rsqrt_ss (__m128 a) pure @trusted
+{   
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_rsqrtss(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_rsqrtss(a);
+    }
+    else version(LDC)
     {
         a[0] = 1.0f / llvm_sqrt(a[0]);
         return a;
     }
-}
-else
-{
-    __m128 _mm_rsqrt_ss (__m128 a) pure @safe
+    else
     {
         a[0] = 1.0f / sqrt(a[0]);
         return a;
     }
 }
-
-unittest
+unittest // this one test 4 different intrinsics: _mm_rsqrt_ss, _mm_rsqrt_ps, _mm_rcp_ps, _mm_rcp_ss
 {
-    double maxRelativeError = 0.000245; // -72 dB
-    void testInvSqrt(float number) nothrow @nogc
+    double maxRelativeError = 0.000245; // -72 dB, stuff is apparently more precise than said in the doc?
+    void testApproximateSSE(float number) nothrow @nogc
     {
         __m128 A = _mm_set1_ps(number);
 
@@ -1659,33 +1668,49 @@ unittest
         }
     }
 
-    testInvSqrt(1.1f);
-    testInvSqrt(2.45674864151f);
-    testInvSqrt(27841456468.0f);
+    testApproximateSSE(0.00001f);
+    testApproximateSSE(1.1f);
+    testApproximateSSE(345.0f);
+    testApproximateSSE(2.45674864151f);
+    testApproximateSSE(700000.0f);
+    testApproximateSSE(10000000.0f);
+    testApproximateSSE(27841456468.0f);
 }
 
+/// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each 
+/// consecutive 8 differences to produce four unsigned 16-bit integers, and pack these unsigned 16-bit integers in the 
+/// low 16 bits of result.
 __m64 _mm_sad_pu8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_sad_epu8(to_m128i(a), to_m128i(b)));
 }
 
+/// Set the exception mask bits of the MXCSR control and status register to the value in unsigned 32-bit integer 
+/// `_MM_MASK_xxxx`. The exception mask may contain any of the following flags: `_MM_MASK_INVALID`, `_MM_MASK_DIV_ZERO`,
+/// `_MM_MASK_DENORM`, `_MM_MASK_OVERFLOW`, `_MM_MASK_UNDERFLOW`, `_MM_MASK_INEXACT`.
 void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) @safe
 {
     // Note: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | _MM_MASK_xxxx);
 }
 
+/// Set the exception state bits of the MXCSR control and status register to the value in unsigned 32-bit integer 
+/// `_MM_EXCEPT_xxxx`. The exception state may contain any of the following flags: `_MM_EXCEPT_INVALID`, 
+/// `_MM_EXCEPT_DIV_ZERO`, `_MM_EXCEPT_DENORM`, `_MM_EXCEPT_OVERFLOW`, `_MM_EXCEPT_UNDERFLOW`, `_MM_EXCEPT_INEXACT`.
 void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) @safe
 {
     // Note: unsupported on ARM
     _mm_setcsr((_mm_getcsr() & ~_MM_EXCEPT_MASK) | _MM_EXCEPT_xxxx);
 }
 
+/// Set the flush zero bits of the MXCSR control and status register to the value in unsigned 32-bit integer 
+/// `_MM_FLUSH_xxxx`. The flush zero may contain any of the following flags: `_MM_FLUSH_ZERO_ON` or `_MM_FLUSH_ZERO_OFF`.
 void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_xxxx);
 }
 
+/// Set packed single-precision (32-bit) floating-point elements with the supplied values.
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     // Note: despite appearances, generates sensible code,
@@ -1698,19 +1723,19 @@ unittest
     __m128 A = _mm_set_ps(3, 2, 1, 546);
     float[4] correct = [546.0f, 1.0f, 2.0f, 3.0f];
     assert(A.array == correct);
-    assert(A.array[0] == 546.0f);
-    assert(A.array[1] == 1.0f);
-    assert(A.array[2] == 2.0f);
-    assert(A.array[3] == 3.0f);
 }
 
-alias _mm_set_ps1 = _mm_set1_ps;
+deprecated("Use _mm_set1_ps instead") alias _mm_set_ps1 = _mm_set1_ps; ///
 
+/// Set the rounding mode bits of the MXCSR control and status register to the value in unsigned 32-bit integer 
+/// `_MM_ROUND_xxxx`. The rounding mode may contain any of the following flags: `_MM_ROUND_NEAREST`, `_MM_ROUND_DOWN`, 
+/// `_MM_ROUND_UP`, `_MM_ROUND_TOWARD_ZERO`.
 void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 {
     _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
 }
 
+/// Copy single-precision (32-bit) floating-point element `a` to the lower element of result, and zero the upper 3 elements.
 __m128 _mm_set_ss (float a) pure @trusted
 {
     __m128 r = _mm_setzero_ps();
@@ -1724,6 +1749,7 @@ unittest
     assert(A.array == correct);
 }
 
+/// Broadcast single-precision (32-bit) floating-point value `a` to all elements.
 __m128 _mm_set1_ps (float a) pure @trusted
 {
     __m128 r = void;
@@ -1740,6 +1766,7 @@ unittest
     assert(A.array == correct);
 }
 
+/// Set the MXCSR control and status register with the value in unsigned 32-bit integer `controlWord`.
 void _mm_setcsr(uint controlWord) @trusted
 {
     static if (LDC_with_ARM)
@@ -1800,6 +1827,7 @@ unittest
     _mm_setcsr(_mm_getcsr());
 }
 
+/// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e3, e2, e1, e0];
@@ -1816,6 +1844,7 @@ unittest
     assert(A.array[3] == 546.0f);
 }
 
+/// Return vector of type `__m128` with all elements set to zero.
 __m128 _mm_setzero_ps() pure @trusted
 {
     // Compiles to xorps without problems
@@ -1890,36 +1919,34 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
     return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
 }
 
-static if (GDC_with_SSE)
+/// Compute the square root of packed single-precision (32-bit) floating-point elements in `a`.
+__m128 _mm_sqrt_ps(__m128 a) @trusted
 {
-    alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
-}
-else version(LDC)
-{
-    // Disappeared with LDC 1.11
-    static if (__VERSION__ < 2081)
-        alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
-    else
+    static if (GDC_with_SSE)
     {
-        __m128 _mm_sqrt_ps(__m128 vec) pure @safe
+        return __builtin_ia32_sqrtps(a);
+    }
+    else version(LDC)
+    {
+        // Disappeared with LDC 1.11
+        static if (__VERSION__ < 2081)
+            return __builtin_ia32_sqrtps(a);
+        else
         {
-            vec.array[0] = llvm_sqrt(vec.array[0]);
-            vec.array[1] = llvm_sqrt(vec.array[1]);
-            vec.array[2] = llvm_sqrt(vec.array[2]);
-            vec.array[3] = llvm_sqrt(vec.array[3]);
-            return vec;
+            a[0] = llvm_sqrt(a[0]);
+            a[1] = llvm_sqrt(a[1]);
+            a[2] = llvm_sqrt(a[2]);
+            a[3] = llvm_sqrt(a[3]);
+            return a;
         }
     }
-}
-else
-{
-    __m128 _mm_sqrt_ps(__m128 vec) pure @trusted
+    else
     {
-        vec.ptr[0] = sqrt(vec.array[0]);
-        vec.ptr[1] = sqrt(vec.array[1]);
-        vec.ptr[2] = sqrt(vec.array[2]);
-        vec.ptr[3] = sqrt(vec.array[3]);
-        return vec;
+        a.ptr[0] = sqrt(a.array[0]);
+        a.ptr[1] = sqrt(a.array[1]);
+        a.ptr[2] = sqrt(a.array[2]);
+        a.ptr[3] = sqrt(a.array[3]);
+        return a;
     }
 }
 unittest
@@ -1931,33 +1958,23 @@ unittest
     assert(A.array[3] == 2.0f);
 }
 
-static if (GDC_with_SSE)
+/// Compute the square root of the lower single-precision (32-bit) floating-point element in `a`, store it in the lower
+/// element, and copy the upper 3 packed elements from `a` to the upper elements of result.
+__m128 _mm_sqrt_ss(__m128 a) @trusted
 {
-    alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
-}
-else version(LDC)
-{
-    // Disappeared with LDC 1.11
-    static if (__VERSION__ < 2081)
-        alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
-    else
+    static if (GDC_with_SSE)
     {
-        __m128 _mm_sqrt_ss(__m128 vec) pure @safe
-        {
-            vec.array[0] = llvm_sqrt(vec.array[0]);
-            vec.array[1] = vec.array[1];
-            vec.array[2] = vec.array[2];
-            vec.array[3] = vec.array[3];
-            return vec;
-        }
+        return __builtin_ia32_sqrtss(a);
     }
-}
-else
-{
-    __m128 _mm_sqrt_ss(__m128 vec) pure @trusted
+    else version(LDC)
     {
-        vec.ptr[0] = sqrt(vec.array[0]);
-        return vec;
+        a.ptr[0] = llvm_sqrt(a.array[0]);
+        return a;
+    }
+    else
+    {   
+        a.ptr[0] = sqrt(a.array[0]);
+        return a;
     }
 }
 unittest
@@ -1969,14 +1986,18 @@ unittest
     assert(A.array[3] == 4.0f);
 }
 
-void _mm_store_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+/// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a` into memory. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+void _mm_store_ps (float* mem_addr, __m128 a) pure
 {
     __m128* aligned = cast(__m128*)mem_addr;
     *aligned = a;
 }
 
-alias _mm_store_ps1 = _mm_store1_ps;
+deprecated("Use _mm_store1_ps instead") alias _mm_store_ps1 = _mm_store1_ps; ///
 
+/// Store the lower single-precision (32-bit) floating-point element from `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
 {
     *mem_addr = a.array[0];
@@ -1988,7 +2009,9 @@ unittest
     assert(a == 546);
 }
 
-void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // not safe since nothing guarantees alignment
+/// Store the lower single-precision (32-bit) floating-point element from `a` into 4 contiguous elements in memory. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // TODO: shouldn't be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
     __m128 r;
