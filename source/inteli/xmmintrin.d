@@ -1031,7 +1031,7 @@ void _mm_maskmove_si64 (__m64 a, __m64 mask, char* mem_addr) @trusted
     return _mm_maskmoveu_si128 (to_m128i(a), to_m128i(mask), mem_addr);
 }
 
-deprecated alias _m_maskmovq = _mm_maskmove_si64;
+deprecated("Use _mm_maskmove_si64 instead") alias _m_maskmovq = _mm_maskmove_si64;
 
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum value.
 __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
@@ -1245,6 +1245,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Create mask from the most significant bit of each 8-bit element in `a`.
 int _mm_movemask_pi8 (__m64 a) pure @safe
 {
     return _mm_movemask_epi8(to_m128i(a));
@@ -1254,17 +1255,19 @@ unittest
     assert(0x9C == _mm_movemask_pi8(_mm_set_pi8(-1, 0, 0, -1, -1, -1, 0, 0)));
 }
 
-static if (GDC_with_SSE)
+/// Set each bit of result based on the most significant bit of the corresponding packed single-precision (32-bit) 
+/// floating-point element in `a`.
+int _mm_movemask_ps (__m128 a) pure @trusted
 {
-    alias _mm_movemask_ps = __builtin_ia32_movmskps;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_movemask_ps = __builtin_ia32_movmskps;
-}
-else static if (LDC_with_ARM)
-{
-    int _mm_movemask_ps (__m128 a) pure @safe
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_movmskps(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_movmskps(a);
+    }
+    else static if (LDC_with_ARM)
     {
         int4 ai = cast(int4)a;
         int4 shift31 = [31, 31, 31, 31]; 
@@ -1274,17 +1277,14 @@ else static if (LDC_with_ARM)
         int r = ai.array[0] + (ai.array[1]) + (ai.array[2]) + (ai.array[3]);
         return r;
     }
-}
-else
-{
-    int _mm_movemask_ps (__m128 a) pure @safe
+    else
     {
         int4 ai = cast(int4)a;
         int r = 0;
-        if (ai[0] < 0) r += 1;
-        if (ai[1] < 0) r += 2;
-        if (ai[2] < 0) r += 4;
-        if (ai[3] < 0) r += 8;
+        if (ai.array[0] < 0) r += 1;
+        if (ai.array[1] < 0) r += 2;
+        if (ai.array[2] < 0) r += 4;
+        if (ai.array[3] < 0) r += 8;
         return r;
     }
 }
@@ -1294,6 +1294,7 @@ unittest
     assert(5 == _mm_movemask_ps(cast(float4)A));
 }
 
+/// Multiply packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 {
     return a * b;
@@ -1306,6 +1307,8 @@ unittest
     assert(a.array == correct);
 }
 
+/// Multiply the lower single-precision (32-bit) floating-point element in `a` and `b`, store the result in the lower 
+/// element of result, and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
     static if (GDC_with_SSE)
@@ -1324,6 +1327,8 @@ unittest
     assert(a.array == correct);
 }
 
+/// Multiply the packed unsigned 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, 
+/// and return the high 16 bits of the intermediate integers.
 __m64 _mm_mulhi_pu16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_mulhi_epu16(to_m128i(a), to_m128i(b)));
@@ -1337,22 +1342,23 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compute the bitwise OR of packed single-precision (32-bit) floating-point elements in `a` and `b`, and 
+/// return the result.
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
-deprecated alias 
-    _m_pavgb = _mm_avg_pu8,
-    _m_pavgw = _mm_avg_pu16,
-    _m_pextrw = _mm_extract_pi16,
-    _m_pinsrw = _mm_insert_pi16,
-    _m_pmaxsw = _mm_max_pi16,
-    _m_pmaxub = _mm_max_pu8,
-    _m_pminsw = _mm_min_pi16,
-    _m_pminub = _mm_min_pu8,
-    _m_pmovmskb = _mm_movemask_pi8,
-    _m_pmulhuw = _mm_mulhi_pu16;
+deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;
+deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;
+deprecated("Use _mm_extract_pi16 instead") alias _m_pextrw = _mm_extract_pi16;
+deprecated("Use _mm_insert_pi16 instead") alias _m_pinsrw = _mm_insert_pi16;
+deprecated("Use _mm_max_pi16 instead") alias _m_pmaxsw = _mm_max_pi16;
+deprecated("Use _mm_max_pu8 instead") alias _m_pmaxub = _mm_max_pu8;
+deprecated("Use _mm_min_pi16 instead") alias _m_pminsw = _mm_min_pi16;
+deprecated("Use _mm_min_pu8 instead") alias _m_pminub = _mm_min_pu8;
+deprecated("Use _mm_movemask_pi8 instead") alias _m_pmovmskb = _mm_movemask_pi8;
+deprecated("Use _mm_mulhi_pu16 instead") alias _m_pmulhuw = _mm_mulhi_pu16;
 
 enum _MM_HINT_T0  = 3; ///
 enum _MM_HINT_T1  = 2; ///
@@ -1487,45 +1493,72 @@ unittest
     _mm_prefetch!_MM_HINT_NTA(cacheline.ptr); 
 }
 
-deprecated alias
-    _m_psadbw = _mm_sad_pu8,
-    _m_pshufw = _mm_shuffle_pi16;
+deprecated("Use _mm_sad_pu8 instead") alias _m_psadbw = _mm_sad_pu8;
+deprecated("Use _mm_shuffle_pi16 instead") alias _m_pshufw = _mm_shuffle_pi16;
 
-static if (GDC_with_SSE)
+
+/// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements in a`` , 
+/// and return the results. The maximum relative error for this approximation is less than 1.5*2^-12.
+__m128 _mm_rcp_ps (__m128 a) pure @trusted
 {
-    alias _mm_rcp_ps = __builtin_ia32_rcpps;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_rcp_ps = __builtin_ia32_rcpps;
-}
-else
-{
-    __m128 _mm_rcp_ps (__m128 a) pure @safe
+    static if (GDC_with_SSE)
     {
-        a[0] = 1.0f / a[0];
-        a[1] = 1.0f / a[1];
-        a[2] = 1.0f / a[2];
-        a[3] = 1.0f / a[3];
+        return __builtin_ia32_rcpps(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_rcpps(a);
+    }
+    else
+    {        
+        a.ptr[0] = 1.0f / a.array[0];
+        a.ptr[1] = 1.0f / a.array[1];
+        a.ptr[2] = 1.0f / a.array[2];
+        a.ptr[3] = 1.0f / a.array[3];
         return a;
     }
 }
-
-static if (GDC_with_SSE)
+unittest
 {
-    alias _mm_rcp_ss = __builtin_ia32_rcpss;
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_rcp_ss = __builtin_ia32_rcpss;
-}
-else
-{
-    __m128 _mm_rcp_ss (__m128 a) pure @safe
+    __m128 A = _mm_setr_ps(2.34f, -70000.0f, 0.00001f, 345.5f);
+    __m128 groundTruth = _mm_set1_ps(1.0f) / A;
+    __m128 result = _mm_rcp_ps(A);
+    foreach(i; 0..4)
     {
-        a[0] = 1.0f / a[0];
+        double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
+        assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    }
+}
+
+/// Compute the approximate reciprocal of the lower single-precision (32-bit) floating-point element in `a`, store it 
+/// in the lower element of the result, and copy the upper 3 packed elements from `a` to the upper elements of result. 
+/// The maximum relative error for this approximation is less than 1.5*2^-12.
+__m128 _mm_rcp_ss (__m128 a) pure @trusted
+{
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_rcpss(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_rcpss(a);
+    }
+    else
+    {
+        a.ptr[0] = 1.0f / a.array[0];
         return a;
     }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(2.34f, -70000.0f, 0.00001f, 345.5f);
+    __m128 correct = _mm_setr_ps(1 / 2.34f, -70000.0f, 0.00001f, 345.5f);
+    __m128 R = _mm_rcp_ss(A);
+    double relError = (cast(double)(correct.array[0]) / R.array[0]) - 1;
+    assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    assert(R.array[1] == correct.array[1]);
+    assert(R.array[2] == correct.array[2]);
+    assert(R.array[3] == correct.array[3]);
 }
 
 static if (GDC_with_SSE)
@@ -1790,9 +1823,12 @@ __m128 _mm_setzero_ps() pure @trusted
     return loadUnaligned!(float4)(result.ptr);
 }
 
-version(GNU)
+/// Perform a serializing operation on all store-to-memory instructions that were issued prior 
+/// to this instruction. Guarantees that every store instruction that precedes, in program order, 
+/// is globally visible before any store instruction which follows the fence in program order.
+void _mm_sfence() @trusted
 {
-    void _mm_sfence() pure @trusted
+    version(GNU)
     {
         static if (GDC_with_SSE)
         {
@@ -1808,30 +1844,24 @@ version(GNU)
         else
             static assert(false);
     }
-}
-else static if (LDC_with_SSE1)
-{
-    alias _mm_sfence = __builtin_ia32_sfence;
-}
-else static if (DMD_with_asm)
-{
-    void _mm_sfence() pure @safe
+    else static if (LDC_with_SSE1)
+    {
+        __builtin_ia32_sfence();
+    }
+    else static if (DMD_with_asm)
     {
         asm nothrow @nogc pure @safe
         {
             sfence;
         }
     }
-}
-else version(LDC)
-{
-    void _mm_sfence() pure @safe
+    else version(LDC)
     {
-        llvm_memory_fence(); // PERF: generates mfence
+        llvm_memory_fence(); // PERF: this generates mfence instead of sfence
     }
+    else
+        static assert(false);
 }
-else
-    static assert(false);
 unittest
 {
     _mm_sfence();
@@ -2079,6 +2109,22 @@ void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref _
     row1 = _mm_movehl_ps(tmp2, tmp0);
     row2 = _mm_movelh_ps(tmp1, tmp3);
     row3 = _mm_movehl_ps(tmp3, tmp1);
+}
+unittest
+{
+    __m128 l0 = _mm_setr_ps(0, 1, 2, 3);
+    __m128 l1 = _mm_setr_ps(4, 5, 6, 7);
+    __m128 l2 = _mm_setr_ps(8, 9, 10, 11);
+    __m128 l3 = _mm_setr_ps(12, 13, 14, 15);
+    _MM_TRANSPOSE4_PS(l0, l1, l2, l3);
+    float[4] r0 = [0.0f, 4, 8, 12];
+    float[4] r1 = [1.0f, 5, 9, 13];
+    float[4] r2 = [2.0f, 6, 10, 14];
+    float[4] r3 = [3.0f, 7, 11, 15];
+    assert(l0.array == r0);
+    assert(l1.array == r1);
+    assert(l2.array == r2);
+    assert(l3.array == r3);
 }
 
 // Note: the only difference between these intrinsics is the signalling
