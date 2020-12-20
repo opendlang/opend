@@ -257,9 +257,11 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
 }
 unittest
 {
-    byte16 res = cast(byte16) _mm_adds_epu8(_mm_set_epi8(7, 6, 5, 4, 3, 2, cast(byte)255, 0, 7, 6, 5, 4, 3, 2, cast(byte)255, 0),
-                                            _mm_set_epi8(7, 6, 5, 4, 3, 2, 1, 0, 7, 6, 5, 4, 3, 2, 1, 0));
-    static immutable byte[16] correctResult = [0, cast(byte)255, 4, 6, 8, 10, 12, 14, 0, cast(byte)255, 4, 6, 8, 10, 12, 14];
+    byte16 res = cast(byte16) 
+        _mm_adds_epu8(_mm_set_epi8(7, 6, 5, 4, 3, 2, cast(byte)255, 0, 7, 6, 5, 4, 3, 2, cast(byte)255, 0),
+                      _mm_set_epi8(7, 6, 5, 4, 3, 2, 1, 0, 7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult = [0, cast(byte)255, 4, 6, 8, 10, 12, 14, 
+                                               0, cast(byte)255, 4, 6, 8, 10, 12, 14];
     assert(res.array == correctResult);
 }
 
@@ -1414,22 +1416,20 @@ unittest
     assert(4 == _mm_cvtsd_si32(_mm_set1_pd(4.0)));
 }
 
-version(LDC)
+/// Convert the lower double-precision (64-bit) floating-point element in `a` to a 64-bit integer.
+long _mm_cvtsd_si64 (__m128d a) @trusted
 {
-    // Unfortunately this builtin crashes in 32-bit
-    version(X86_64)
-        alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
-    else
+    version(LDC)
     {
-        long _mm_cvtsd_si64 (__m128d a) @safe
+        // Unfortunately this builtin crashes in 32-bit
+        version(X86_64)
+            return __builtin_ia32_cvtsd2si64(a);
+        else
         {
             return convertDoubleToInt64UsingMXCSR(a[0]);
         }
     }
-}
-else
-{
-    long _mm_cvtsd_si64 (__m128d a) @safe
+    else
     {
         return convertDoubleToInt64UsingMXCSR(a.array[0]);
     }
@@ -1455,9 +1455,12 @@ unittest
     _MM_SET_ROUNDING_MODE(savedRounding);
 }
 
-alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
+deprecated("Use _mm_cvtsd_si64 instead") alias _mm_cvtsd_si64x = _mm_cvtsd_si64; ///
 
-__m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @safe
+/// Convert the lower double-precision (64-bit) floating-point element in `b` to a single-precision (32-bit) 
+/// floating-point element, store that in the lower element of result, and copy the upper 3 packed elements from `a`
+/// to the upper elements of result.
+__m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -1466,7 +1469,7 @@ __m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @safe
     else
     {
         // Generates cvtsd2ss since LDC 1.3 -O0
-        a[0] = b[0];
+        a.ptr[0] = b.array[0];
         return a;
     }
 }
@@ -1476,22 +1479,26 @@ unittest
     assert(R.array == [3.0f, 4.0f, 4.0f, 4.0f]);
 }
 
+/// Get the lower 32-bit integer in `a`.
 int _mm_cvtsi128_si32 (__m128i a) pure @safe
 {
     return a.array[0];
 }
 
+/// Get the lower 64-bit integer in `a`.
 long _mm_cvtsi128_si64 (__m128i a) pure @safe
 {
     long2 la = cast(long2)a;
     return la.array[0];
 }
-alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
+deprecated("Use _mm_cvtsi128_si64 instead") alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
-__m128d _mm_cvtsi32_sd(__m128d v, int x) pure @trusted
+/// Convert the signed 32-bit integer `b` to a double-precision (64-bit) floating-point element, store that in the 
+/// lower element of result, and copy the upper element from `a` to the upper element of result.
+__m128d _mm_cvtsi32_sd(__m128d a, int b) pure @trusted
 {
-    v.ptr[0] = cast(double)x;
-    return v;
+    a.ptr[0] = cast(double)b;
+    return a;
 }
 unittest
 {

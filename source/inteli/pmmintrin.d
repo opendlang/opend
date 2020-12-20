@@ -98,6 +98,8 @@ static if (LDC_with_SSE3)
 }
 else static if (LDC_with_ARM64)
 {
+    /// Horizontally add adjacent pairs of single-precision (32-bit) 
+    /// floating-point elements in `a` and `b`.
     float4 _mm_hadd_ps (float4 a, float4 b) pure @safe
     {
         return vpaddq_f32(a, b);
@@ -203,7 +205,7 @@ unittest
 // See_also: https://stackoverflow.com/questions/38370622/a-faster-integer-sse-unalligned-load-thats-rarely-used
 alias _mm_lddqu_si128 = _mm_loadu_si128;
 
-
+/// Load a double-precision (64-bit) floating-point element from memory into both elements of result.
 __m128d _mm_loaddup_pd (const(double)* mem_addr) pure @trusted
 {
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
@@ -230,6 +232,7 @@ unittest
     }
 }
 
+/// Duplicate the low double-precision (64-bit) floating-point element from `a`.
 __m128d _mm_movedup_pd (__m128d a) pure @trusted
 {
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
