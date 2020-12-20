@@ -355,7 +355,7 @@ else
             foreach(int i; 0..Count)
             {
                 bool cond = a.array[i] != b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : Vec.FalseMask;
+                result.array[i] = cond ? TrueMask!Vec : 0;
             }
             return result;
         }
@@ -379,7 +379,7 @@ else
             foreach(int i; 0..Count)
             {
                 bool cond = a.array[i] > b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : Vec.FalseMask;
+                result.array[i] = cond ? TrueMask!Vec : 0;
             }
             return result;
         }
