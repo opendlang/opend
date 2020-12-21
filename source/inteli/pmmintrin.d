@@ -1,10 +1,9 @@
 /**
 * SSE3 intrinsics.
 *
-* Copyright: Guillaume Piolat 2016-2019.
+* Copyright: Guillaume Piolat 2016-2020.
 *            Charles Gregory 2019.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-* Authors:   Guillaume Piolat
 */
 module inteli.pmmintrin;
 

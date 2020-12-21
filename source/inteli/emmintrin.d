@@ -1,9 +1,8 @@
 /**
 * SSE2 intrinsics. 
 *
-* Copyright: Copyright Auburn Sounds 2016-2019, Stefanos Baziotis 2019.
+* Copyright: Copyright Guillaume Piolat 2016-2020, Stefanos Baziotis 2019.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-* Authors:   Guillaume Piolat
 */
 module inteli.emmintrin;
 

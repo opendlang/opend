@@ -1,10 +1,9 @@
 /**
 * Transcendental bonus functions.
 *
-* Copyright: Copyright Auburn Sounds 2016-2018.
+* Copyright: Copyright Guillaumr Piolat 2016-2020.
 *            Copyright (C) 2007  Julien Pommier
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-* Authors:   Guillaume Piolat
 */
 module inteli.math;
 

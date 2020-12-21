@@ -1,12 +1,8 @@
 /**
 * MMX intrinsics.
 *
-* Copyright: Copyright Auburn Sounds 2019.
+* Copyright: Copyright Guillaume Piolat 2019-2020.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-* Authors:   Guillaume Piolat
-* Macros:
-*      GUIDE = https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=$0
-*
 */
 module inteli.mmx;
 
