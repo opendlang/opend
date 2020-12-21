@@ -57,22 +57,18 @@ unittest
     assert( _mm_addsub_ps(v1,v2).array == _mm_setr_ps(0.0f, 4.0f, 0.0f, 8.0f).array );
 }
 
-static if (LDC_with_SSE3)
+
+/// Horizontally add adjacent pairs of double-precision (64-bit) 
+/// floating-point elements in `a` and `b`.
+__m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
 {
-    /// Horizontally add adjacent pairs of double-precision (64-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @safe
+    static if (LDC_with_SSE3)
     {
         return __builtin_ia32_haddpd(a, b);
     }
-}
-else
-{
-    /// Horizontally add adjacent pairs of double-precision (64-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
+    else
     {
-        // On GDC this generates haddpd with -O1
+       // On GDC this generates haddpd with -O1
         __m128d res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = b.array[1] + b.array[0];
@@ -86,33 +82,21 @@ unittest
     assert( _mm_hadd_pd(A, B).array ==_mm_setr_pd(3.5, 3.0).array );
 }
 
-static if (LDC_with_SSE3)
+// PERF: for GDC, detect SSE3 and use the relevant builtin
+/// Horizontally add adjacent pairs of single-precision (32-bit) 
+/// floating-point elements in `a` and `b`.
+__m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
 {
-    /// Horizontally add adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @safe
+    static if (LDC_with_SSE3)
     {
-    
         return __builtin_ia32_haddps(a, b);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Horizontally add adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    float4 _mm_hadd_ps (float4 a, float4 b) pure @safe
+    else static if (LDC_with_ARM64)
     {
         return vpaddq_f32(a, b);
     }
-}
-else
-{
-    // PERF: for GDC, detect SSE3 and use the relevant builtin
-
-    /// Horizontally add adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
-    {
+    else
+    {    
         __m128 res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = a.array[3] + a.array[2];
@@ -128,21 +112,16 @@ unittest
     assert( _mm_hadd_ps(A, B).array == _mm_setr_ps(3.0f, 8.0f, 3.5f, 7.5f).array );
 }
 
-static if (LDC_with_SSE3)
+/// Horizontally subtract adjacent pairs of double-precision (64-bit) 
+/// floating-point elements in `a` and `b`.
+__m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
 {
-    /// Horizontally subtract adjacent pairs of double-precision (64-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @safe
+    static if (LDC_with_SSE3)
     {
         return __builtin_ia32_hsubpd(a, b);
     }
-}
-else
-{
-    /// Horizontally subtract adjacent pairs of double-precision (64-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
-    {
+    else
+    {        
         // On GDC this generates hsubpd with -O1
         __m128d res;
         res.ptr[0] = a.array[0] - a.array[1];
@@ -157,32 +136,22 @@ unittest
     assert( _mm_hsub_pd(A, B).array ==_mm_setr_pd(-0.5, -1.0).array );
 }
 
-static if (LDC_with_SSE3)
+/// Horizontally subtract adjacent pairs of single-precision (32-bit) 
+/// floating-point elements in `a` and `b`.
+__m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
 {
-    /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @safe
+    static if (LDC_with_SSE3)
     {
         return __builtin_ia32_hsubps(a, b);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    float4 _mm_hsub_ps (float4 a, float4 b) pure @safe
+    else static if (LDC_with_ARM64)
     {
         int4 mask = [0, 0x80000000, 0, 0x80000000];
         a = cast(__m128)(cast(int4)a ^ mask);
         b = cast(__m128)(cast(int4)b ^ mask);
         return vpaddq_f32(a, b);
     }
-}
-else
-{
-    /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
-    /// floating-point elements in `a` and `b`.
-    __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
+    else
     {
         // PERF: GDC doesn't generate the right instruction, do something
         __m128 res;
@@ -226,8 +195,7 @@ unittest
     else
     {
         double a = 7.5;
-        // For some reason, this line breaks with LDC, but not when isolated!
-        // was not reported yet.
+        // For some reason, this line used to break with LDC, but not when isolated! Was never reported.
         assert(_mm_loaddup_pd(&a).array == _mm_set_pd(7.5, 7.5).array);
     }
 }
@@ -255,6 +223,12 @@ __m128 _mm_movehdup_ps (__m128 a) pure @trusted
     a.ptr[2] = a.array[3];
     return a;
 }
+unittest
+{
+    __m128 A = _mm_movehdup_ps(_mm_setr_ps(1, 2, 3, 4));
+    float[4] correct = [2.0f, 2, 4, 4 ];
+    assert(A.array == correct);
+}
 
 /// Duplicate even-indexed single-precision (32-bit) floating-point elements from `a`.
 __m128 _mm_moveldup_ps (__m128 a) pure @trusted
@@ -264,4 +238,10 @@ __m128 _mm_moveldup_ps (__m128 a) pure @trusted
     a.ptr[1] = a.array[0];
     a.ptr[3] = a.array[2];
     return a;
+}
+unittest
+{
+    __m128 A = _mm_moveldup_ps(_mm_setr_ps(1, 2, 3, 4));
+    float[4] correct = [1.0f, 1, 3, 3 ];
+    assert(A.array == correct);
 }
