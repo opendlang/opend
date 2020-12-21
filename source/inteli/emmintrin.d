@@ -1505,6 +1505,7 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
+/// Copy 32-bit integer `a` to the lower element of result, and zero the upper elements.
 __m128i _mm_cvtsi32_si128 (int a) pure @trusted
 {
     int4 r = [0, 0, 0, 0];
@@ -1517,12 +1518,13 @@ unittest
     assert(a.array == [65, 0, 0, 0]);
 }
 
+/// Convert the signed 64-bit integer `b` to a double-precision (64-bit) floating-point element, store the result in 
+/// the lower element of result, and copy the upper element from `a` to the upper element of result.
 
-// Note: on macOS, using "llvm.x86.sse2.cvtsi642sd" was buggy
-__m128d _mm_cvtsi64_sd(__m128d v, long x) pure @trusted
+__m128d _mm_cvtsi64_sd(__m128d a, long b) pure @trusted
 {
-    v.ptr[0] = cast(double)x;
-    return v;
+    a.ptr[0] = cast(double)b;
+    return a;
 }
 unittest
 {
@@ -1530,6 +1532,7 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
+/// Copy 64-bit integer `a` to the lower element of result, and zero the upper element.
 __m128i _mm_cvtsi64_si128 (long a) pure @trusted
 {
     long2 r = [0, 0];
@@ -1537,13 +1540,16 @@ __m128i _mm_cvtsi64_si128 (long a) pure @trusted
     return cast(__m128i)(r);
 }
 
-alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
-alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
+deprecated("Use _mm_cvtsi64_sd instead") alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd; ///
+deprecated("Use _mm_cvtsi64_si128 instead") alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128; ///
 
-double2 _mm_cvtss_sd(double2 v, float4 x) pure @trusted
+/// Convert the lower single-precision (32-bit) floating-point element in `b` to a double-precision (64-bit) 
+/// floating-point element, store that in the lower element of result, and copy the upper element from `a` to the upper 
+// element of result.
+double2 _mm_cvtss_sd(double2 a, float4 b) pure @trusted
 {
-    v.ptr[0] = x.array[0];
-    return v;
+    a.ptr[0] = b.array[0];
+    return a;
 }
 unittest
 {
@@ -1551,6 +1557,7 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
+/// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer with truncation.
 long _mm_cvttss_si64 (__m128 a) pure @safe
 {
     return cast(long)(a.array[0]); // Generates cvttss2si as expected
@@ -1560,24 +1567,26 @@ unittest
     assert(1 == _mm_cvttss_si64(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
-static if (LDC_with_SSE2)
+/// Convert packed double-precision (64-bit) floating-point elements in `a` to packed 32-bit integers with truncation.
+/// Put zeroes in the upper elements of result.
+__m128i _mm_cvttpd_epi32 (__m128d a) pure @trusted
 {
-    alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
-}
-else static if (GDC_with_SSE2)
-{
-    alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
-}
-else
-{
-    __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
+    static if (LDC_with_SSE2)
+    {
+        return __builtin_ia32_cvttpd2dq(a);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cvttpd2dq(a);
+    }
+    else
     {
         // Note: doesn't generate cvttpd2dq as of LDC 1.13
         __m128i r;
-        r.array[0] = cast(int)a.array[0];
-        r.array[1] = cast(int)a.array[1];
-        r.array[2] = 0;
-        r.array[3] = 0;
+        r.ptr[0] = cast(int)a.array[0];
+        r.ptr[1] = cast(int)a.array[1];
+        r.ptr[2] = 0;
+        r.ptr[3] = 0;
         return r;
     }
 }
@@ -1586,7 +1595,6 @@ unittest
     __m128i R = _mm_cvttpd_epi32(_mm_setr_pd(-4.9, 45641.5f));
     assert(R.array == [-4, 45641, 0, 0]);
 }
-
 
 /// Convert packed double-precision (64-bit) floating-point elements in `v` 
 /// to packed 32-bit integers with truncation.
@@ -1601,6 +1609,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 32-bit integers with truncation.
 __m128i _mm_cvttps_epi32 (__m128 a) pure @trusted
 {
     // x86: Generates cvttps2dq since LDC 1.3 -O2
@@ -1618,12 +1627,14 @@ unittest
     assert(R.array == [-4, 45641, 0, 1]);
 }
 
+/// Convert the lower double-precision (64-bit) floating-point element in `a` to a 32-bit integer with truncation.
 int _mm_cvttsd_si32 (__m128d a)
 {
     // Generates cvttsd2si since LDC 1.3 -O0
     return cast(int)a.array[0];
 }
 
+/// Convert the lower double-precision (64-bit) floating-point element in `a` to a 64-bit integer with truncation.
 long _mm_cvttsd_si64 (__m128d a)
 {
     // Generates cvttsd2si since LDC 1.3 -O0
@@ -1631,36 +1642,31 @@ long _mm_cvttsd_si64 (__m128d a)
     return cast(long)a.array[0];
 }
 
-alias _mm_cvttsd_si64x = _mm_cvttsd_si64;
+deprecated("Use _mm_cvttsd_si64 instead") alias _mm_cvttsd_si64x = _mm_cvttsd_si64; ///
 
+/// Divide packed double-precision (64-bit) floating-point elements in `a` by packed elements in `b`.
 __m128d _mm_div_pd(__m128d a, __m128d b) pure @safe
 {
     return a / b;
 }
 
-static if (GDC_with_SSE2)
+__m128d _mm_div_sd(__m128d a, __m128d b) pure @trusted
 {
-    __m128d _mm_div_sd(__m128d a, __m128d b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_divsd(a, b);
     }
-}
-else version(DigitalMars)
-{
-    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
-    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
-    __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
+    else version(DigitalMars)
     {
+        // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+        // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
         asm pure nothrow @nogc @trusted { nop;}
         a.array[0] = a.array[0] / b.array[0];
         return a;
     }
-}
-else
-{
-    __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
+    else
     {
-        a.array[0] /= b.array[0];
+        a.ptr[0] /= b.array[0];
         return a;
     }
 }
@@ -1700,10 +1706,12 @@ unittest
     assert(R.array == correct);
 }
 
-version(GNU)
+
+void _mm_lfence() @trusted
 {
-    void _mm_lfence() pure @trusted
+    version(GNU)
     {
+    
         static if (GDC_with_SSE2)
         {
             __builtin_ia32_lfence();
@@ -1718,48 +1726,60 @@ version(GNU)
         else
             static assert(false);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    alias _mm_lfence = __builtin_ia32_lfence;
-}
-else static if (DMD_with_asm)
-{
-    void _mm_lfence() pure @safe
+    else static if (LDC_with_SSE2)
+    {
+        __builtin_ia32_lfence();
+    }
+    else static if (DMD_with_asm)
     {
         asm nothrow @nogc pure @safe
         {
             lfence;
         }
     }
-}
-else version(LDC)
-{
-    void _mm_lfence() pure @safe
+    else version(LDC)
     {
-        llvm_memory_fence(); // Note: actually generates mfence
+        llvm_memory_fence(); // PERF actually generates mfence
     }
+    else
+        static assert(false);
 }
-else
-    static assert(false);
 unittest
 {
     _mm_lfence();
 }
 
-
+/// Load 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from memory.
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128d _mm_load_pd (const(double) * mem_addr) pure
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     return *aligned;
 }
+unittest
+{
+    align(16) double[2] S = [-5.0, 7.0];
+    __m128d R = _mm_load_pd(S.ptr);
+    assert(R.array == S);
+}
 
+/// Load a double-precision (64-bit) floating-point element from memory into both elements of dst.
+/// `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_load_pd1 (const(double)* mem_addr) pure
 {
     double[2] arr = [*mem_addr, *mem_addr];
     return loadUnaligned!(double2)(&arr[0]);
 }
+unittest
+{
+    double what = 4;
+    __m128d R = _mm_load_pd1(&what);
+    double[2] correct = [4.0, 4];
+    assert(R.array == correct);
+}
 
+/// Load a double-precision (64-bit) floating-point element from memory into the lower of result, and zero the upper 
+/// element. `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_load_sd (const(double)* mem_addr) pure @trusted
 {
     double2 r = [0, 0];
