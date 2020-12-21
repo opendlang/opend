@@ -328,61 +328,67 @@ else
     public import core.simd;
 }
 
-// When core.simd is emulated and we aren't GDC, emulate ldc.simd cmpMask
-version(GNU)
+// Emulate ldc.simd cmpMask
+version(LDC)
 {} 
 else
 {
-    static if (CoreSimdIsEmulated)
+    Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
     {
-        Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
+        enum size_t Count = Vec.array.length;
+        Vec result;
+        foreach(int i; 0..Count)
         {
-            enum size_t Count = Vec.array.length;
-            Vec result;
-            foreach(int i; 0..Count)
-            {
-                bool cond = a.array[i] == b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : 0;
-            }
-            return result;
+            bool cond = a.array[i] == b.array[i];
+            result.array[i] = cond ? TrueMask!Vec : 0;
         }
-
-        Vec notEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "one" comparison
-        {
-            enum size_t Count = Vec.array.length;
-            Vec result;
-            foreach(int i; 0..Count)
-            {
-                bool cond = a.array[i] != b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : 0;
-            }
-            return result;
-        }
-
-        Vec greaterMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "ogt" comparison
-        {
-            enum size_t Count = Vec.array.length;
-            Vec result;
-            foreach(int i; 0..Count)
-            {
-                bool cond = a.array[i] > b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : 0;
-            }
-            return result;
-        }
-
-        Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oge" comparison
-        {
-            enum size_t Count = Vec.array.length;
-            Vec result;
-            foreach(int i; 0..Count)
-            {
-                bool cond = a.array[i] > b.array[i];
-                result.array[i] = cond ? TrueMask!Vec : 0;
-            }
-            return result;
-        }
+        return result;
     }
+
+    Vec notEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "one" comparison
+    {
+        enum size_t Count = Vec.array.length;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] != b.array[i];
+            result.array[i] = cond ? TrueMask!Vec : 0;
+        }
+        return result;
+    }
+
+    Vec greaterMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "ogt" comparison
+    {
+        enum size_t Count = Vec.array.length;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] > b.array[i];
+            result.array[i] = cond ? TrueMask!Vec : 0;
+        }
+        return result;
+    }
+
+    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oge" comparison
+    {
+        enum size_t Count = Vec.array.length;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] > b.array[i];
+            result.array[i] = cond ? TrueMask!Vec : 0;
+        }
+        return result;
+    }
+}
+
+unittest
+{
+    float4 a = [1, 3, 5, 7];
+    float4 b = [2, 3, 4, 5];
+    int4 c = cast(int4)(greaterMask!float4(a, b));
+    static immutable int[4] correct = [0, 0, 0xffff_ffff, 0xffff_ffff];
+    assert(c.array == correct);
 }
 
 static if (MMXSizedVectorsAreEmulated)
@@ -491,14 +497,7 @@ static assert(long2.sizeof == 16);
 static assert(double2.sizeof == 16);
 
 
-unittest
-{
-    float4 a = [1, 3, 5, 7];
-    float4 b = [2, 3, 4, 5];
-    int4 c = cast(int4)(greaterMask!float4(a, b));
-    static immutable int[4] correct = [0, 0, 0xffff_ffff, 0xffff_ffff];
-    assert(c.array == correct);
-}
+
 
 
 alias __m128 = float4;
