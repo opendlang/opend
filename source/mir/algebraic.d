@@ -1207,7 +1207,7 @@ struct Algebraic(_Types...)
             Returns:
                 The value held internally by this `Nullable`.
             +/
-            auto ref inout(AllowedTypes[1]) get() inout
+            auto ref inout(AllowedTypes[1]) get() return inout
             {
                 assert(_identifier_, "Called `get' on null Nullable!(" ~ AllowedTypes[1].stringof ~ ").");
                 return trustedGet!(AllowedTypes[1]);
@@ -1232,7 +1232,7 @@ struct Algebraic(_Types...)
             }
 
             /// ditto
-            @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) inout
+            @property auto ref inout(AllowedTypes[1]) get()(auto ref inout(AllowedTypes[1]) fallback) return inout
             {
                 return isNull ? fallback : get();
             }
@@ -1312,7 +1312,7 @@ struct Algebraic(_Types...)
         if (RetTypes.length > 1)
     {
         ///
-        auto ref trustedGet(this This)()
+        auto ref trustedGet(this This)() return
         {
             return this.trustedGet!(Variant!RetTypes);
         }
@@ -1385,7 +1385,7 @@ struct Algebraic(_Types...)
         if (RetTypes.length > 1)
     {
         ///
-        auto ref get(this This)()
+        auto ref get(this This)() return
         {
             return this.get!(Variant!RetTypes);
         }
@@ -1426,7 +1426,7 @@ struct Algebraic(_Types...)
         import std.traits: hasMember;
 
         this(this This, Args...)(auto ref Args args)
-            if (Args.length)
+            if (Args.length && (Args.length > 1 || !isVariant!(Args[0])))
         {
             import std.traits: CopyTypeQualifiers;
             import core.lifetime: forward;
