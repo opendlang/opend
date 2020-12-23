@@ -1793,35 +1793,73 @@ unittest
     assert(a.array == [-42.0, 0.0]);
 }
 
-__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted
+/// Load 128-bits of integer data from memory into dst. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted // TODO: shoudln't be trusted because alignment, Issue #62
 {
     return *mem_addr;
 }
+unittest
+{
+    align(16) int[4] correct = [-1, 2, 3, 4];
+    int4 A = cast(int4) _mm_load_si128(cast(__m128i*) correct.ptr);
+    assert(A.array == correct);
+}
 
-alias _mm_load1_pd = _mm_load_pd1;
+alias _mm_load1_pd = _mm_load_pd1; ///
 
+/// Load a double-precision (64-bit) floating-point element from memory into the upper element of result, and copy the 
+/// lower element from `a` to result. `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @trusted
 {
     a.ptr[1] = *mem_addr;
     return a;
 }
+unittest
+{
+    double A = 7.0;
+    __m128d B = _mm_setr_pd(4.0, -5.0);
+    __m128d R = _mm_loadh_pd(B, &A);
+    double[2] correct = [ 4.0, 7.0 ];
+    assert(R.array == correct);
+}
 
-// Note: strange signature since the memory doesn't have to aligned
-__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted
+/// Load 64-bit integer from memory into the first element of result. Zero out the other.
+// Note: strange signature since the memory doesn't have to aligned (Issue #60)
+__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted // TODO signature
 {
     auto pLong = cast(const(long)*)mem_addr;
     long2 r = [0, 0];
     r.ptr[0] = *pLong;
     return cast(__m128i)(r);
 }
+unittest
+{
+    long A = 0x7878787870707070;
+    long2 R = cast(long2) _mm_loadl_epi64(cast(__m128i*)&A);
+    long[2] correct = [0x7878787870707070, 0];
+    assert(R.array == correct);
+}
 
+/// Load a double-precision (64-bit) floating-point element from memory into the lower element of result, and copy the 
+/// upper element from `a` to result. mem_addr does not need to be aligned on any particular boundary.
 __m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @trusted
 {
     a.ptr[0] = *mem_addr;
     return a;
 }
+unittest
+{
+    double A = 7.0;
+    __m128d B = _mm_setr_pd(4.0, -5.0);
+    __m128d R = _mm_loadl_pd(B, &A);
+    double[2] correct = [ 7.0, -5.0 ];
+    assert(R.array == correct);
+}
 
-__m128d _mm_loadr_pd2 (const(double)* mem_addr) pure @trusted
+/// Load 2 double-precision (64-bit) floating-point elements from memory into result in reverse order. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+__m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted // TODO: shouldn't be trusted
 {
     __m128d a = *cast(__m128d*)(mem_addr);
     __m128d r;
@@ -1829,7 +1867,16 @@ __m128d _mm_loadr_pd2 (const(double)* mem_addr) pure @trusted
     r.ptr[1] = a.array[0];
     return r;
 }
+unittest
+{
+    align(16) double[2] A = [56.0, -74.0];
+    __m128d R = _mm_loadr_pd(A.ptr);
+    double[2] correct = [-74.0, 56.0];
+    assert(R.array == correct);
+}
 
+/// Load 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -1841,7 +1888,15 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
         return loadUnaligned!(double2)(mem_addr);
     }
 }
+unittest
+{
+    double[2] A = [56.0, -75.0];
+    __m128d R = _mm_loadu_pd(A.ptr);
+    double[2] correct = [56.0, -75.0];
+    assert(R.array == correct);
+}
 
+/// Load 128-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
 __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -1853,7 +1908,14 @@ __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
         return loadUnaligned!(__m128i)(cast(int*)mem_addr);
     }
 }
+unittest
+{
+    align(16) int[4] correct = [-1, 2, -3, 4];
+    int4 A = cast(int4) _mm_loadu_si128(cast(__m128i*) correct.ptr);
+    assert(A.array == correct);
+}
 
+/// Load unaligned 32-bit integer from memory into the first element of result.
 __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
 {
     int r = *cast(int*)(mem_addr);
@@ -1869,32 +1931,20 @@ unittest
     assert(A.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
+/// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
+/// and pack the results in destination.
+__m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
-    /// and pack the results in destination.
-    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
-    /// and pack the results in destination.
-    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
-    /// and pack the results in destination.
-    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    else static if (LDC_with_ARM64)
     {
         int4 pl = vmull_s16(vget_low_s16(cast(short8)a), vget_low_s16(cast(short8)b));
         int4 ph = vmull_s16(vget_high_s16(cast(short8)a), vget_high_s16(cast(short8)b));
@@ -1902,21 +1952,14 @@ else static if (LDC_with_ARM64)
         int2 rh = vpadd_s32(vget_low_s32(ph), vget_high_s32(ph));
         return vcombine_s32(rl, rh);
     }
-}
-else
-{
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
-    /// and pack the results in destination.
-    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    else
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-
         int4 r;
         foreach(i; 0..4)
         {
-            r.array[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];
+            r.ptr[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];
         }
         return r;
     }

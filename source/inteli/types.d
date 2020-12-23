@@ -207,31 +207,6 @@ static if (CoreSimdIsEmulated)
 
     }
 
-    private template BaseType(V)
-    {
-        alias typeof(V.array[0]) BaseType;
-    }
-
-    private template TrueMask(V)
-    {
-        alias Elem = BaseType!V;
-
-        static if (is(Elem == float))
-        {
-            immutable uint m1 = 0xffffffff;
-            enum Elem TrueMask = *cast(float*)(&m1);
-        }
-        else static if (is(Elem == double))
-        {
-            immutable ulong m1 = 0xffffffff_ffffffff;
-            enum Elem TrueMask = *cast(double*)(&m1);
-        }
-        else // integer case
-        {
-            enum Elem TrueMask = -1;
-        }
-    }
-
     // they just weren't interesting enough, use v.array[i] instead.
     deprecated auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
     {
@@ -333,6 +308,31 @@ version(LDC)
 {} 
 else
 {
+    private template BaseType(V)
+    {
+        alias typeof(V.array[0]) BaseType;
+    }
+
+    private template TrueMask(V)
+    {
+        alias Elem = BaseType!V;
+
+        static if (is(Elem == float))
+        {
+            immutable uint m1 = 0xffffffff;
+            enum Elem TrueMask = *cast(float*)(&m1);
+        }
+        else static if (is(Elem == double))
+        {
+            immutable ulong m1 = 0xffffffff_ffffffff;
+            enum Elem TrueMask = *cast(double*)(&m1);
+        }
+        else // integer case
+        {
+            enum Elem TrueMask = -1;
+        }
+    }
+
     Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
     {
         enum size_t Count = Vec.array.length;
