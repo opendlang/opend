@@ -17,9 +17,9 @@ $(LREF Algebraic) template accepts two arguments: self type set id and a list of
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Aliases),
 $(TR $(TH Name) $(TH Description))
-$(T2 Variant, an algebraic type for a single type set)
-$(T2 TaggedVariant, a tagged algebraic type for a single type set)
-$(T2 Nullable, an algebraic type for a single type set with at least `typeof(null)`)
+$(T2 Variant, an algebraic type)
+$(T2 TaggedVariant, a tagged algebraic type)
+$(T2 Nullable, an algebraic type with at least `typeof(null)`)
 )
 
 $(BOOKTABLE $(H3 Visitor Handlers),
