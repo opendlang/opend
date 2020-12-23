@@ -3263,26 +3263,19 @@ deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m1
     }
 }
 
-static if (GDC_with_SSE2)
+
+/// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+__m128i _mm_slli_epi32 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pslldi128(a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    else static if (LDC_with_SSE2)
     {
         return __builtin_ia32_pslldi128(a, cast(ubyte)imm8);
     }
-}
-else
-{
-    /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    else
     {
         // Note: the intrinsics guarantee imm8[0..7] is taken, however
         //       D says "It's illegal to shift by the same or more bits 
@@ -3317,26 +3310,18 @@ unittest
     assert(D.array == expectedD);
 }
 
-static if (GDC_with_SSE2)
+/// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
+__m128i _mm_slli_epi64 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllqi128(cast(long2)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllqi128(cast(long2)a, cast(ubyte)imm8);
     }
-}
-else
-{
-    /// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @trusted
+    else
     {
         long2 sa = cast(long2)a;
 
@@ -3372,26 +3357,18 @@ unittest
     assert(D.array == expectedD);
 }
 
-static if (GDC_with_SSE2)
+/// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+__m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllwi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi16(__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllwi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_ARM64)
     {
         short8 sa = cast(short8)a;
         short8 r = cast(short8)_mm_setzero_si128();
@@ -3401,11 +3378,7 @@ else static if (LDC_with_ARM64)
         r = sa << short8(count);
         return cast(__m128i)r;
     }
-}
-else
-{
-    /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-    __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @trusted
+    else
     {
         short8 sa = cast(short8)a;
         short8 r = cast(short8)_mm_setzero_si128();
@@ -3490,68 +3463,62 @@ unittest
     assert(B.array == expectedB);
 }
 
-version(LDC)
+/// Compute the square root of packed double-precision (64-bit) floating-point elements in `vec`.
+__m128d _mm_sqrt_pd(__m128d vec) pure @trusted
 {
-    // Disappeared with LDC 1.11
-    static if (__VERSION__ < 2081)
-        alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
-    else
+    version(LDC)
     {
-        __m128d _mm_sqrt_pd(__m128d vec) pure @safe
+        // Disappeared with LDC 1.11
+        static if (__VERSION__ < 2081)
+            return __builtin_ia32_sqrtpd(vec);
+        else
         {
             vec.array[0] = llvm_sqrt(vec.array[0]);
             vec.array[1] = llvm_sqrt(vec.array[1]);
             return vec;
         }
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)    
     {
-        alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
+        return __builtin_ia32_sqrtpd(vec);
     }
     else
     {
-        __m128d _mm_sqrt_pd(__m128d vec) pure @safe
-        {
-            vec.array[0] = sqrt(vec.array[0]);
-            vec.array[1] = sqrt(vec.array[1]);
-            return vec;
-        }
+        vec.ptr[0] = sqrt(vec.array[0]);
+        vec.ptr[1] = sqrt(vec.array[1]);
+        return vec;
     }
 }
 
-
-version(LDC)
+/// Compute the square root of the lower double-precision (64-bit) floating-point element in b, store the result in the lower element of dst, and copy the upper element from a to the upper element of dst.
+__m128d _mm_sqrt_sd(__m128d vec) pure @trusted
 {
-    // Disappeared with LDC 1.11
-    static if (__VERSION__ < 2081)
-        alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
-    else
+    // TODO: wrong signature here, should be like https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_sqrt_sd
+    
+    // Note: the builtin has one argument, since the legacy `sqrtsd` SSE2 instruction operates on the same register only.
+    //       "128-bit Legacy SSE version: The first source operand and the destination operand are the same. 
+    //        The quadword at bits 127:64 of the destination operand remains unchanged."
+    version(LDC)
     {
-        __m128d _mm_sqrt_sd(__m128d vec) pure @safe
+        // Disappeared with LDC 1.11
+        static if (__VERSION__ < 2081)
+            return __builtin_ia32_sqrtsd(vec);
+        else
         {
             vec.array[0] = llvm_sqrt(vec.array[0]);
             vec.array[1] = vec.array[1];
             return vec;
         }
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
-        alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
+        return __builtin_ia32_sqrtsd(vec);
     }
     else
     {
-        __m128d _mm_sqrt_sd(__m128d vec) pure @safe
-        {
-            vec.array[0] = sqrt(vec.array[0]);
-            vec.array[1] = vec.array[1];
-            return vec;
-        }
+        vec.ptr[0] = sqrt(vec.array[0]);
+        vec.ptr[1] = vec.array[1];
+        return vec;
     }
 }
 
