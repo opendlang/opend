@@ -2493,24 +2493,21 @@ unittest
     assert(C.array[0] == 0xDEADBEEFuL * 0xCAFEBABEuL);
 }
 
-static if (GDC_with_SSE2)
+/// Multiply the packed signed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, and return the 
+/// high 16 bits of the intermediate integers.
+__m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmulhw128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmulhw128(cast(short8)a, cast(short8)b);
     }
-}
-else
-{    
-    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
+    else
     {
+        // PERF ARM?
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r = void;
@@ -2534,24 +2531,21 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Multiply the packed unsigned 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, and return the 
+/// high 16 bits of the intermediate integers.
+__m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmulhuw128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmulhuw128(cast(short8)a, cast(short8)b);
     }
-}
-else
-{   
-    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
+    else
     {
+        // PERF ARM??
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r = void;
@@ -2575,6 +2569,8 @@ unittest
     assert(R.array == correct);
 }
 
+/// Multiply the packed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, and return the low 16 
+/// bits of the intermediate integers.
 __m128i _mm_mullo_epi16 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(short8)a * cast(short8)b);
@@ -2588,34 +2584,32 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compute the bitwise OR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_or_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)( cast(__m128i)a | cast(__m128i)b );
 }
 
+/// Compute the bitwise OR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 {
     return a | b;
 }
 
-static if (GDC_with_SSE2)
+/// Convert packed signed 32-bit integers from `a` and `b` to packed 16-bit integers using signed saturation.
+__m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packssdw128(a, b);
     }    
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packssdw128(a, b);
     }
-}
-else
-{
-    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
+    else
     {
+        // PERF: catastrophic on ARM
         short8 r;
         r.ptr[0] = saturateSignedIntToSignedShort(a.array[0]);
         r.ptr[1] = saturateSignedIntToSignedShort(a.array[1]);
@@ -2636,35 +2630,27 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Convert packed signed 16-bit integers from `a` and `b` to packed 8-bit integers using signed saturation.
+__m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_ARM64)
     {
         // generate a nice pair of sqxtn.8b + sqxtn2 since LDC 1.5 -02
         byte8 ra = vqmovn_s16(cast(short8)a);
         byte8 rb = vqmovn_s16(cast(short8)b);
         return cast(__m128i)vcombine_s8(ra, rb);
     }
-}
-else
-{   
-    // PERF: ARM
-    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
+    else
     {
+        // PERF: ARM32 is missing
         byte16 r;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
@@ -2684,33 +2670,25 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Convert packed signed 16-bit integers from `a` and `b` to packed 8-bit integers using unsigned saturation.
+__m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
     }
-}
-else static if (LDC_with_ARM64)
-{        
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_ARM64)
     {
         // generate a nice pair of sqxtun + sqxtun2 since LDC 1.5 -02
         byte8 ra = vqmovun_s16(cast(short8)a);
         byte8 rb = vqmovun_s16(cast(short8)b);
         return cast(__m128i)vcombine_s8(ra, rb);
     }
-}
-else
-{   
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    else
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;

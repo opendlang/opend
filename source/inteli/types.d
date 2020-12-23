@@ -13,6 +13,8 @@ nothrow:
 
 version(GNU)
 {
+    // Note: for GDC support, be sure to use https://explore.dgnu.org/
+
     version(X86_64)
     {
         enum MMXSizedVectorsAreEmulated = false;
@@ -310,7 +312,7 @@ else
 {
     private template BaseType(V)
     {
-        alias typeof(V.array[0]) BaseType;
+        alias typeof( ( { V v; return v; }()).array[0]) BaseType;
     }
 
     private template TrueMask(V)
