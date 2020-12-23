@@ -1973,38 +1973,23 @@ unittest
     assert(R.array == correct);
 }
 
-
-static if (GDC_with_SSE2)
+/// Conditionally store 8-bit integer elements from `a` into memory using `mask`
+/// (elements are not stored when the highest bit is not set in the corresponding element)
+/// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
+/// boundary.
+void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
 {
-    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
-    /// (elements are not stored when the highest bit is not set in the corresponding element)
-    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
-    /// boundary.
-    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
-    {
+    static if (GDC_with_SSE2)
+    {    
         return __builtin_ia32_maskmovdqu(cast(ubyte16)a, cast(ubyte16)mask, cast(char*)mem_addr);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
-    /// (elements are not stored when the highest bit is not set in the corresponding element)
-    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
-    /// boundary.
-    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
+    else static if (LDC_with_SSE2)
     {
         return __builtin_ia32_maskmovdqu(cast(byte16)a, cast(byte16)mask, cast(char*)mem_addr);
     }
-}
-else
-{
-    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
-    /// (elements are not stored when the highest bit is not set in the corresponding element)
-    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
-    /// boundary.
-    // PERF: catastrophic on ARM
-    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) @trusted
+    else
     {
+        // PERF: catastrophic on ARM
         byte16 b = cast(byte16)a;
         byte16 m = cast(byte16)mask;
         byte* dest = cast(byte*)(mem_addr);
@@ -2027,6 +2012,7 @@ unittest
     assert(dest == correct);
 }
 
+/// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum values.
 __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
 {
     // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
@@ -2043,7 +2029,7 @@ unittest
     assert(R.array == correct);
 }
 
-
+/// Compare packed unsigned 8-bit integers in a and b, and return packed maximum values.
 __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
 {
     // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
@@ -2061,7 +2047,8 @@ unittest
     assert(R.array == correct);
 }
 
-__m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
+/// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return packed maximum values.
+__m128d _mm_max_pd (__m128d a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -2069,9 +2056,9 @@ __m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
     }
     else
     {
-        // Generates maxpd starting with LDC 1.9
-        a[0] = (a[0] > b[0]) ? a[0] : b[0];
-        a[1] = (a[1] > b[1]) ? a[1] : b[1];
+        // x86: Generates maxpd starting with LDC 1.9 -O2
+        a.ptr[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
+        a.ptr[1] = (a.array[1] > b.array[1]) ? a.array[1] : b.array[1];
         return a;
     }
 }
@@ -2084,7 +2071,9 @@ unittest
     assert(M.array[1] == 8.0);
 }
 
-__m128d _mm_max_sd (__m128d a, __m128d b) pure @safe
+/// Compare the lower double-precision (64-bit) floating-point elements in `a` and `b`, store the maximum value in the 
+/// lower element of result, and copy the upper element from `a` to the upper element of result.
+__m128d _mm_max_sd (__m128d a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -2094,7 +2083,7 @@ __m128d _mm_max_sd (__m128d a, __m128d b) pure @safe
     {
          __m128d r = a;
         // Generates maxsd starting with LDC 1.3
-        r.array[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
+        r.ptr[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
         return r;
     }
 }
@@ -2107,9 +2096,12 @@ unittest
     assert(M.array[1] == 1.0);
 }
 
-version(GNU)
+/// Perform a serializing operation on all load-from-memory and store-to-memory instructions that were issued prior to 
+/// this instruction. Guarantees that every memory access that precedes, in program order, the memory fence instruction 
+/// is globally visible before any memory instruction which follows the fence in program order.
+void _mm_mfence() @trusted
 {
-    void _mm_mfence() pure @trusted
+    version(GNU)
     {
         static if (GDC_with_SSE2)
         {
@@ -2125,39 +2117,37 @@ version(GNU)
         else
             static assert(false);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    alias _mm_mfence = __builtin_ia32_mfence;
-}
-else static if (DMD_with_asm)
-{
-    void _mm_mfence() pure @safe
+    else static if (LDC_with_SSE2)
+    {
+        __builtin_ia32_mfence();
+    }
+    else static if (DMD_with_asm)
     {
         asm nothrow @nogc pure @safe
         {
             mfence;
         }
     }
-}
-else version(LDC)
-{
-    void _mm_mfence() pure @safe
+    else version(LDC)
     {
-        // Note: will generate the DMB instruction on ARM
-        llvm_memory_fence();
+        void _mm_mfence() pure @safe
+        {
+            // Note: will generate the DMB instruction on ARM
+            llvm_memory_fence();
+        }
     }
+    else
+        static assert(false);
 }
-else
-    static assert(false);
 unittest
 {
     _mm_mfence();
 }
 
+/// Compare packed signed 16-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // PREF Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
+    // PERF Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
     // Implemented using masks and XOR
     __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
     __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
@@ -2172,7 +2162,7 @@ unittest
     assert(R.array == correct);
 }
 
-
+/// Compare packed unsigned 8-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epu8 (__m128i a, __m128i b) pure @safe
 {
     // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
@@ -2190,7 +2180,8 @@ unittest
     assert(R.array == correct);
 }
 
-__m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
+/// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return packed minimum values.
+__m128d _mm_min_pd (__m128d a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -2199,8 +2190,8 @@ __m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
     else
     {
         // Generates minpd starting with LDC 1.9
-        a.array[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
-        a.array[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
+        a.ptr[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
+        a.ptr[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
         return a;
     }
 }
@@ -2213,6 +2204,8 @@ unittest
     assert(M.array[1] == 1.0);
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements in `a` and `b`, store the minimum value in 
+/// the lower element of result, and copy the upper element from `a` to the upper element of result.
 __m128d _mm_min_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -2236,7 +2229,8 @@ unittest
     assert(M.array[1] == 3.0);
 }
 
-__m128i _mm_move_epi64 (__m128i a) pure @safe
+/// Copy the lower 64-bit integer in `a` to the lower element of result, and zero the upper element.
+__m128i _mm_move_epi64 (__m128i a) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -2246,7 +2240,7 @@ __m128i _mm_move_epi64 (__m128i a) pure @safe
     {
         long2 result = [ 0, 0 ];
         long2 la = cast(long2) a;
-        result.array[0] = la.array[0];
+        result.ptr[0] = la.array[0];
         return cast(__m128i)(result);
     }
 }
@@ -2258,7 +2252,9 @@ unittest
     assert(B.array == correct);
 }
 
-__m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
+/// Move the lower double-precision (64-bit) floating-point element from `b` to the lower element of result, and copy 
+/// the upper element from `a` to the upper element of dst.
+__m128d _mm_move_sd (__m128d a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -2266,7 +2262,7 @@ __m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
     }
     else
     {
-        b.array[1] = a.array[1];
+        b.ptr[1] = a.array[1];
         return b;
     }
 }
@@ -2279,28 +2275,23 @@ unittest
     assert(C.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Create mask from the most significant bit of each 8-bit element in `v`.
+int _mm_movemask_epi8 (__m128i a) pure @trusted
 {
-    /// Create mask from the most significant bit of each 8-bit element in `v`.
-    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
-}
-else static if (LDC_with_SSE2)
-{
-    /// Create mask from the most significant bit of each 8-bit element in `v`.
-    int _mm_movemask_epi8(__m128i v) pure @safe
+    static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_pmovmskb128(cast(byte16)v);
+        /// Create mask from the most significant bit of each 8-bit element in `v`.
+        return __builtin_ia32_pmovmskb128(cast(byte16)a);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    // Solution from https://stackoverflow.com/questions/11870910/sse-mm-movemask-epi8-equivalent-method-for-arm-neon
-    // The other two solutions lead to unfound intrinsics in LLVM and that took a long time.
-    // SO there might be something a bit faster, but this one is reasonable and branchless.
-
-    /// Create mask from the most significant bit of each 8-bit element in `v`.
-    int _mm_movemask_epi8 (__m128i a) pure @trusted
+    else static if (LDC_with_SSE2)
     {
+        return __builtin_ia32_pmovmskb128(cast(byte16)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Solution from https://stackoverflow.com/questions/11870910/sse-mm-movemask-epi8-equivalent-method-for-arm-neon
+        // The other two solutions lead to unfound intrinsics in LLVM and that took a long time.
+        // SO there might be something a bit faster, but this one is reasonable and branchless.
         byte8 mask_shift;
         mask_shift.ptr[0] = 7;
         mask_shift.ptr[1] = 6;
@@ -2325,13 +2316,9 @@ else static if (LDC_with_ARM64)
         hi = vpadd_u8(hi,hi);
         return (cast(ubyte)(hi[0]) << 8) | cast(ubyte)(lo[0]);
     }
-}
-else 
-{
-    /// Create mask from the most significant bit of each 8-bit element in `v`.
-    int _mm_movemask_epi8(__m128i v) pure @safe
+    else
     {
-        byte16 ai = cast(byte16)v;
+        byte16 ai = cast(byte16)a;
         int r = 0;
         foreach(bit; 0..16)
         {
@@ -2345,23 +2332,23 @@ unittest
     assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 1, 2, -3, -1, -1, 4, 8, 127, 0, -1, -1, 0, -1, -1, 0)));
 }
 
-static if (GDC_with_SSE2)
+/// Set each bit of mask result based on the most significant bit of the corresponding packed double-precision (64-bit) 
+/// loating-point element in `v`.
+int _mm_movemask_pd(__m128d v) pure @safe
 {
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-    /// packed double-precision (64-bit) floating-point element in `v`.
-    alias _mm_movemask_pd = __builtin_ia32_movmskpd;
-}
-else static if (LDC_with_SSE2)
-{
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-    /// packed double-precision (64-bit) floating-point element in `v`.
-    alias _mm_movemask_pd = __builtin_ia32_movmskpd;
-}
-else
-{
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-    /// packed double-precision (64-bit) floating-point element in `v`.
-    int _mm_movemask_pd(__m128d v) pure @safe
+    static if (GDC_with_SSE2)
+    {
+        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+        /// packed double-precision (64-bit) floating-point element in `v`.
+        return __builtin_ia32_movmskpd(v);
+    }
+    else static if (LDC_with_SSE2)
+    {
+        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+        /// packed double-precision (64-bit) floating-point element in `v`.
+        return __builtin_ia32_movmskpd(v);
+    }
+    else
     {
         long2 lv = cast(long2)v;
         int r = 0;
@@ -2451,7 +2438,7 @@ unittest
     assert(LC.array[1] == 12723420444339690338uL);
 }
 
-
+/// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`, and return the results. 
 __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
 {
     return a * b;
@@ -2463,30 +2450,26 @@ unittest
     assert(a.array == [4.0, 2.25]);
 }
 
-version(DigitalMars)
+/// Multiply the lower double-precision (64-bit) floating-point element in `a` and `b`, store the result in the lower 
+/// element of result, and copy the upper element from `a` to the upper element of result.
+__m128d _mm_mul_sd(__m128d a, __m128d b) pure @trusted
 {
-    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
-    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
-    __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
-    {
+    version(DigitalMars)
+    {    
+        // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+        // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
         asm pure nothrow @nogc @trusted { nop;}
         a.array[0] = a.array[0] * b.array[0];
         return a;
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
-        alias _mm_mul_sd = __builtin_ia32_mulsd;
+        return __builtin_ia32_mulsd(a, b);
     }
     else
     {
-        __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
-        {
-            a.array[0] *= b.array[0];
-            return a;
-        }
+        a.ptr[0] *= b.array[0];
+        return a;
     }
 }
 unittest
