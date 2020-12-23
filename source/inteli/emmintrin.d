@@ -2718,10 +2718,11 @@ unittest
         assert(AA.array[i] == cast(byte)(correctResult[i]));
 }
 
-
-version(GNU)
+/// Provide a hint to the processor that the code sequence is a spin-wait loop. This can help improve the performance 
+/// and power consumption of spin-wait loops.
+void _mm_pause() @trusted
 {
-    void _mm_pause() pure @trusted
+    version(GNU)
     {
         static if (GDC_with_SSE2)
         {
@@ -2737,53 +2738,45 @@ version(GNU)
         else
             static assert(false);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    alias _mm_pause = __builtin_ia32_pause;
-}
-else static if (DMD_with_asm)
-{
-    void _mm_pause() pure @safe
+    else static if (LDC_with_SSE2)
+    {
+        __builtin_ia32_pause();
+    }
+    else static if (DMD_with_asm)
     {
         asm nothrow @nogc pure @safe
         {
             rep; nop; // F3 90 =  pause
         }
     }
-}
-else version (LDC)
-{
-    void _mm_pause() pure @safe
+    else version (LDC)
     {
         // PERF: Do nothing currently , could be the "yield" intruction on ARM.
     }
+    else
+        static assert(false);
 }
-else
-    static assert(false);
 unittest
 {
     _mm_pause();
 }
 
-static if (GDC_with_SSE2)
+/// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each 
+/// consecutive 8 differences to produce two unsigned 16-bit integers, and pack these unsigned 16-bit integers in the 
+/// low 16 bits of 64-bit elements in result.
+__m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
 {
-    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psadbw128(cast(byte16)a, cast(byte16)b);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psadbw128(cast(byte16)a, cast(byte16)b);
     }
-}
-else
-{   
-    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
+    else
     {
+        // PERF: ARM??
         byte16 ab = cast(byte16)a;
         byte16 bb = cast(byte16)b;
         ubyte[16] t;
@@ -2811,6 +2804,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 16-bit integers with the supplied values.
 __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
     short[8] result = [e0, e1, e2, e3, e4, e5, e6, e7];
@@ -2824,6 +2818,7 @@ unittest
         assert(B.array[i] == i);
 }
 
+/// Set packed 32-bit integers with the supplied values.
 __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
     int[4] result = [e0, e1, e2, e3];
@@ -2836,6 +2831,7 @@ unittest
         assert(A.array[i] == i);
 }
 
+/// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
 {
     long[2] result = [e0.array[0], e1.array[0]];
@@ -2849,6 +2845,7 @@ unittest
     assert(B.array[1] == 1234);
 }
 
+/// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64x (long e1, long e0) pure @trusted
 {
     long[2] result = [e0, e1];
@@ -2862,6 +2859,7 @@ unittest
     assert(B.array[1] == 1234);
 }
 
+/// Set packed 8-bit integers with the supplied values.
 __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
                       byte e11, byte e10, byte e9, byte e8,
                       byte e7, byte e6, byte e5, byte e4,
@@ -2872,6 +2870,7 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
 }
 
+/// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
 {
     double[2] result = [e0, e1];
@@ -2884,6 +2883,7 @@ unittest
     assert(A.array == correct);
 }
 
+/// Broadcast double-precision (64-bit) floating-point value `a` to all element.
 __m128d _mm_set_pd1 (double a) pure @trusted
 {
     double[2] result = [a, a];
@@ -2896,25 +2896,20 @@ unittest
     assert(A.array == correct);
 }
 
+/// Copy double-precision (64-bit) floating-point element `a` to the lower element of result, 
+/// and zero the upper element.
 __m128d _mm_set_sd (double a) pure @trusted
 {
     double[2] result = [a, 0];
     return loadUnaligned!(double2)(result.ptr);
 }
 
+/// Broadcast 16-bit integer a to all elements of dst.
 __m128i _mm_set1_epi16 (short a) pure @trusted
 {
     version(DigitalMars) // workaround https://issues.dlang.org/show_bug.cgi?id=21469 
     {
-        short8 v;
-        v.ptr[0] = a;
-        v.ptr[1] = a;
-        v.ptr[2] = a;
-        v.ptr[3] = a;
-        v.ptr[4] = a;
-        v.ptr[5] = a;
-        v.ptr[6] = a;
-        v.ptr[7] = a;
+        short8 v = a;
         return cast(__m128i) v;
     }
     else
@@ -2927,6 +2922,7 @@ unittest
         assert(a.array[i] == 31);
 }
 
+/// Broadcast 32-bit integer `a` to all elements.
 __m128i _mm_set1_epi32 (int a) pure @trusted
 {
     return cast(__m128i)(int4(a));
@@ -2938,7 +2934,7 @@ unittest
     assert(_mm_and_ps(a, b).array == [1.0f, 1, 1, 1]);
 }
 
-/// Broadcast 64-bit integer `a` to all elements of `dst`.
+/// Broadcast 64-bit integer `a` to all elements.
 __m128i _mm_set1_epi64 (__m64 a) pure @safe
 {
     return _mm_set_epi64(a, a);
@@ -2953,6 +2949,7 @@ unittest
     assert(c.array[1] == b);
 }
 
+/// Broadcast 64-bit integer `a` to all elements
 __m128i _mm_set1_epi64x (long a) pure @trusted
 {
     long2 b = a; // Must be on its own line to workaround https://issues.dlang.org/show_bug.cgi?id=21470
@@ -2966,6 +2963,7 @@ unittest
         assert(c.array[i] == b);
 }
 
+/// Broadcast 8-bit integer `a` to all elements.
 __m128i _mm_set1_epi8 (byte a) pure @trusted
 {
     byte16 b = a; // Must be on its own line to workaround https://issues.dlang.org/show_bug.cgi?id=21470
@@ -2980,28 +2978,47 @@ unittest
 
 alias _mm_set1_pd = _mm_set_pd1;
 
+/// Set packed 16-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, 
                         short e3, short e2, short e1, short e0) pure @trusted
 {
     short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
 }
-// TODO need test
+unittest
+{
+    short8 A = cast(short8) _mm_setr_epi16(7, 6, 5, -32768, 32767, 2, 1, 0);
+    short[8] correct = [7, 6, 5, -32768, 32767, 2, 1, 0];
+    assert(A.array == correct);
+}
 
+/// Set packed 32-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
     int[4] result = [e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
-// TODO need test
+unittest
+{
+    int4 A = cast(int4) _mm_setr_epi32(-1, 0, -2147483648, 2147483647);
+    int[4] correct = [-1, 0, -2147483648, 2147483647];
+    assert(A.array == correct);
+}
 
+/// Set packed 64-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
 {
     long[2] result = [e1, e0];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
-// TODO need test
+unittest
+{
+    long2 A = cast(long2) _mm_setr_epi64(-1, 0);
+    long[2] correct = [-1, 0];
+    assert(A.array == correct);
+}
 
+/// Set packed 8-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                        byte e11, byte e10, byte e9,  byte e8,
                        byte e7,  byte e6,  byte e5,  byte e4,
@@ -3011,8 +3028,8 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                       e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
 }
-// TODO need test
 
+/// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
     double[2] result = [e1, e0];
@@ -3025,22 +3042,24 @@ unittest
     assert(A.array == correct);
 }
 
+/// Return vector of type `__m128d` with all elements set to zero.
 __m128d _mm_setzero_pd () pure @trusted
 {
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     double[2] result = [0.0, 0.0];
     return loadUnaligned!(double2)(result.ptr);
 }
-// TODO need test
 
+/// Return vector of type `__m128i` with all elements set to zero.
 __m128i _mm_setzero_si128() pure @trusted
 {
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     int[4] result = [0, 0, 0, 0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
-// TODO need test
 
+/// Shuffle 32-bit integers in a using the control in `imm8`.
+/// See_also: `_MM_SHUFFLE`.
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -3064,6 +3083,8 @@ unittest
     assert(B.array == expectedB);
 }
 
+/// Shuffle double-precision (64-bit) floating-point elements using the control in `imm8`.
+/// See_also: `_MM_SHUFFLE2`.
 __m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -3086,6 +3107,9 @@ unittest
     assert(R.array == correct);
 }
 
+/// Shuffle 16-bit integers in the high 64 bits of `a` using the control in `imm8`. Store the results in the high 
+/// 64 bits of result, with the low 64 bits being copied from from `a` to result.
+/// See also: `_MM_SHUFFLE`.
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -3110,6 +3134,9 @@ unittest
     assert(C.array == expectedC);
 }
 
+/// Shuffle 16-bit integers in the low 64 bits of `a` using the control in `imm8`. Store the results in the low 64 
+/// bits of result, with the high 64 bits being copied from from `a` to result.
+/// See_also: `_MM_SHUFFLE`.
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -3133,17 +3160,18 @@ unittest
     assert(B.array == expectedB);
 }
 
-static if (LDC_with_SSE2)
+/// Shift packed 32-bit integers in `a` left by `count` while shifting in zeros.
+deprecated("Use _mm_slli_epi32 instead.") __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_slli_epi32 instead.") alias _mm_sll_epi32 = __builtin_ia32_pslld128;
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_slli_epi32 instead.") alias _mm_sll_epi32 = __builtin_ia32_pslld128;
-}
-else static if (DMD_with_32bit_asm)
-{
-    deprecated("Use _mm_slli_epi32 instead.") __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
+    {
+        return __builtin_ia32_pslld128(a, count);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_pslld128(a, count);
+    }
+    else static if (DMD_with_32bit_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -3154,10 +3182,7 @@ else static if (DMD_with_32bit_asm)
         }
         return a;
     }
-}
-else
-{
-    deprecated("Use _mm_slli_epi32 instead.") __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    else
     {
         int4 r = void;
         long2 lc = cast(long2)count;
@@ -3168,23 +3193,18 @@ else
     }
 }
 
-static if (LDC_with_SSE2)
+/// Shift packed 64-bit integers in `a` left by `count` while shifting in zeros.
+deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllq128(cast(long2)a, cast(long2)count);
     }
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psllq128(cast(long2)a, cast(long2)count);
     }
-}
-else static if (DMD_with_32bit_asm)
-{
-    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    else static if (DMD_with_32bit_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -3195,10 +3215,7 @@ else static if (DMD_with_32bit_asm)
         }
         return a;
     }
-}
-else
-{
-    deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    else
     {
         // ARM: good since LDC 1.12 -O2
         // ~but -O0 version is catastrophic
@@ -3212,23 +3229,18 @@ else
     }
 }
 
-static if (LDC_with_SSE2)
+/// Shift packed 16-bit integers in `a` left by `count` while shifting in zeros.
+deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    static if (LDC_with_SSE2)
     {
         return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
     }
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
     }
-}
-else static if (DMD_with_32bit_asm)
-{
-    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    else static if (DMD_with_32bit_asm)
     {
         asm pure nothrow @nogc
         {
@@ -3239,10 +3251,7 @@ else static if (DMD_with_32bit_asm)
         }
         return a;
     }
-}
-else
-{
-    deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    else
     {
         short8 sa = cast(short8)a;
         long2 lc = cast(long2)count;
