@@ -23,22 +23,27 @@ $(T2 Nullable, an algebraic type for a single type set with at least `typeof(nul
 )
 
 $(BOOKTABLE $(H3 Visitor Handlers),
-$(TR $(TH Name) $(TH Ensures can match) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument))
-$(LEADINGROW Classic handlers)
-$(T7 visit, Yes, N/A, No, No, 1+, Yes)
-$(T7 optionalVisit, No, No, Yes, No, 1+, Yes)
-$(T7 autoVisit, No, No, auto, No, 1+, Yes)
-$(T7 tryVisit, No, Yes, No, No, 1+, Yes)
-$(LEADINGROW Handlers with multiple dispatch)
-$(T7 match, Yes, N/A, No, Yes, 0+, auto)
-$(T7 optionalMatch, No, No, Yes, Yes, 0+, auto)
-$(T7 autoMatch, No, No, auto, Yes, 0+, auto)
-$(T7 tryMatch, No, Yes, No, Yes, 0+, auto)
-$(LEADINGROW Handlers for member access)
-$(T7 getMember, Yes, N/A, No, No, 1+, Yes)
-$(T7 optionalGetMember, No, No, Yes, No, 1+, Yes)
-$(T7 autoGetMember, No, No, auto, No, 1+, Yes)
-$(T7 tryGetMember, No, Yes, No, No, 1+, Yes)
+$(TR $(TH Name) $(TH Ensures can match) $(TH Throws if no match) $(TH Returns $(LREF Nullable)) $(TH Multiple dispatch) $(TH Argumments count) $(TH Algebraic first argument) $(TH Fuses Algebraic types on return))
+$(LEADINGROWN 8, Classic handlers)
+$(T8 visit, Yes, N/A, No, No, 1+, Yes, No)
+$(T8 optionalVisit, No, No, Yes, No, 1+, Yes, No)
+$(T8 autoVisit, No, No, auto, No, 1+, Yes, No)
+$(T8 tryVisit, No, Yes, No, No, 1+, Yes, No)
+$(LEADINGROWN 8, Multiple dispatch and algebraic fusion on return)
+$(T8 match, Yes, N/A, No, Yes, 0+, auto, Yes)
+$(T8 optionalMatch, No, No, Yes, Yes, 0+, auto, Yes)
+$(T8 autoMatch, No, No, auto, Yes, 0+, auto, Yes)
+$(T8 tryMatch, No, Yes, No, Yes, 0+, auto, Yes)
+$(LEADINGROWN 8, Member access)
+$(T8 getMember, Yes, N/A, No, No, 1+, Yes, No)
+$(T8 optionalGetMember, No, No, Yes, No, 1+, Yes, No)
+$(T8 autoGetMember, No, No, auto, No, 1+, Yes, No)
+$(T8 tryGetMember, No, Yes, No, No, 1+, Yes, No)
+$(LEADINGROWN 8, Member access with algebraic fusion on return)
+$(T8 matchMember, Yes, N/A, No, No, 1+, Yes, Yes)
+$(T8 optionalMatchMember, No, No, Yes, No, 1+, Yes, Yes)
+$(T8 autoMatchMember, No, No, auto, No, 1+, Yes, Yes)
+$(T8 tryMatchMember, No, Yes, No, No, 1+, Yes, Yes)
 )
 
 $(BOOKTABLE $(H3 Special Types),
@@ -101,7 +106,7 @@ Macros:
 T2plain=$(TR $(TDNW $1) $(TD $+))
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
-T7=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6) $(TD $7))
+T8=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6) $(TD $7) $(TD $8))
 
 +/
 module mir.algebraic;
@@ -2169,6 +2174,8 @@ The handler supports multiple dispatch or multimethods: a feature of handler in 
 a function or method can be dynamically dispatched based on the run time (dynamic) type or,
 in the more general case, some other attribute of more than one of its arguments.
 
+Fuses algebraic types on return.
+
 See_also: $(HTTPS en.wikipedia.org/wiki/Multiple_dispatch, Multiple dispatch)
 +/
 alias match(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, true);
@@ -2228,6 +2235,8 @@ unittest
 /++
 Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
 Throws: Exception if `naryFun!visitors` can't be called with provided arguments
+
+Fuses algebraic types on return.
 +/
 alias tryMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.exception, true);
 
@@ -2294,6 +2303,8 @@ unittest
 /++
 Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
 Returns: nullable variant, null value is used if `naryFun!visitors` can't be called with provided arguments.
+
+Fuses algebraic types on return.
 +/
 alias optionalMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.nullable, true);
 
@@ -2368,6 +2379,8 @@ unittest
 /++
 Behaves as $(LREF match) but doesn't enforce at compile time that all types can be handled by the visiting functions.
 Returns: optionally nullable type, null value is used if `naryFun!visitors` can't be called with provided arguments.
+
+Fuses algebraic types on return.
 +/
 alias autoMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.auto_, true);
 
@@ -2472,6 +2485,42 @@ version(mir_core_test) unittest
 }
 
 /++
+Applies a member handler to the given Variant depending on the held type,
+ensuring that all types are handled by the visiting handler.
+
+Fuses algebraic types on return.
++/
+alias matchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.compileTime, true);
+
+///
+@safe pure @nogc nothrow
+version(mir_core_test) unittest
+{
+    static struct S
+    {
+        Nullable!int m;
+    }
+
+    static struct C
+    {
+        Variant!(float, double) m;
+    }
+
+    alias V = Variant!(S, C);
+
+    V x = S(2.nullable);
+    V y = C(Variant!(float, double)(4.0));
+
+    // getMember returns an algebraic of algebaics
+    static assert(is(typeof(x.getMember!"m") == Variant!(Variant!(float, double), Nullable!int)));
+    // matchMember returns a fused algebraic
+    static assert(is(typeof(x.matchMember!"m") == Nullable!(int, float, double)));
+    assert(x.matchMember!"m" == 2);
+    assert(y.matchMember!"m" != 4);
+    assert(y.matchMember!"m" == 4.0);
+}
+
+/++
 Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Throws: Exception if member can't be accessed with provided arguments
 +/
@@ -2509,16 +2558,40 @@ version(mir_core_test) unittest
 }
 
 /++
+Behaves as $(LREF matchMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Throws: Exception if member can't be accessed with provided arguments
+
+Fuses algebraic types on return.
++/
+alias tryMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.exception, true);
+
+/++
 Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Returns: nullable variant, null value is used if the member can't be called with provided arguments.
 +/
 alias optionalGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.nullable, false);
 
 /++
+Behaves as $(LREF matchMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Returns: nullable variant, null value is used if the member can't be called with provided arguments.
+
+Fuses algebraic types on return.
++/
+alias optionalMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.nullable, true);
+
+/++
 Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Returns: optionally nullable type, null value is used if the member can't be called with provided arguments.
 +/
 alias autoGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.auto_, false);
+
+/++
+Behaves as $(LREF matchMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
+Returns: optionally nullable type, null value is used if the member can't be called with provided arguments.
+
+Fuses algebraic types on return.
++/
+alias autoMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.auto_, true);
 
 private template getMemberHandler(string member)
 {
