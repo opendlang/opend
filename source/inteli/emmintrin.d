@@ -3522,79 +3522,66 @@ __m128d _mm_sqrt_sd(__m128d vec) pure @trusted
     }
 }
 
-
-static if (GDC_with_SSE2)
+/// Shift packed 16-bit integers in `a` right by `count` while shifting in sign bits.
+deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psraw128(cast(short8)a, cast(short8)count);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psraw128(cast(short8)a, cast(short8)count);
     }
-}
-else
-{
-    deprecated("Use _mm_srai_epi16 instead.") __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    else
     {
         short8 sa = cast(short8)a;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
         short8 r = void;
         foreach(i; 0..8)
-            r.array[i] = cast(short)(sa.array[i] >> bits);
+            r.ptr[i] = cast(short)(sa.array[i] >> bits);
         return cast(int4)r;
     }
 }
 
-static if (LDC_with_SSE2)
+/// Shift packed 32-bit integers in `a` right by `count` while shifting in sign bits.
+deprecated("Use _mm_srai_epi32 instead.") __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_srai_epi32 instead.") alias _mm_sra_epi32  = __builtin_ia32_psrad128;
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_srai_epi32 instead.") alias _mm_sra_epi32  = __builtin_ia32_psrad128;
-}
-else
-{
-    deprecated("Use _mm_srai_epi32 instead.") __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
     {
+        return __builtin_ia32_psrad128(a, count);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_psrad128(a, count);
+    }
+    else
+    {    
         int4 r = void;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
-        r.array[0] = (a.array[0] >> bits);
-        r.array[1] = (a.array[1] >> bits);
-        r.array[2] = (a.array[2] >> bits);
-        r.array[3] = (a.array[3] >> bits);
+        r.ptr[0] = (a.array[0] >> bits);
+        r.ptr[1] = (a.array[1] >> bits);
+        r.ptr[2] = (a.array[2] >> bits);
+        r.ptr[3] = (a.array[3] >> bits);
         return r;
     }
 }
 
 
-static if (GDC_with_SSE2)
+/// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrawi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrawi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_ARM64)
     {
         short8 sa = cast(short8)a;
         ubyte count = cast(ubyte)imm8;
@@ -3603,11 +3590,7 @@ else static if (LDC_with_ARM64)
         short8 r = sa >> short8(count);
         return cast(__m128i)r;
     }
-}
-else
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @trusted
+    else
     {
         short8 sa = cast(short8)a;
         short8 r = void;
@@ -3638,26 +3621,18 @@ unittest
     assert(C.array == expectedC);
 }
 
-static if (LDC_with_SSE2)
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    static if (LDC_with_SSE2)
     {
         return __builtin_ia32_psradi128(a, cast(ubyte)imm8);
     }
-}
-else static if (GDC_with_SSE2)
-{
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_psradi128(a, cast(ubyte)imm8);
     }
-}
-else
-{
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
-    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
+    else
     {
         int4 r = void;
 
@@ -3694,106 +3669,85 @@ unittest
     assert(D.array == expectedD);
 }
 
-static if (LDC_with_SSE2)
+deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlw128(cast(short8)a, cast(short8)count);
     }
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlw128(cast(short8)a, cast(short8)count);
     }
-}
-else
-{
-    deprecated("Use _mm_srli_epi16 instead.") __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    else
     {
         short8 sa = cast(short8)a;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
         short8 r = void;
         foreach(i; 0..8)
-            r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> bits);
+            r.ptr[i] = cast(short)(cast(ushort)(sa.array[i]) >> bits);
         return cast(int4)r;
     }
 }
 
-static if (LDC_with_SSE2)
+deprecated("Use _mm_srli_epi32 instead.") __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_srli_epi32 instead.") alias _mm_srl_epi32  = __builtin_ia32_psrld128;
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_srli_epi32 instead.") alias _mm_srl_epi32  = __builtin_ia32_psrld128;
-}
-else
-{
-    deprecated("Use _mm_srli_epi32 instead.") __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
+    {
+        return __builtin_ia32_psrld128(a, count);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_psrld128(a, count);
+    }
+    else
     {
         int4 r = void;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
-        r.array[0] = cast(uint)(a.array[0]) >> bits;
-        r.array[1] = cast(uint)(a.array[1]) >> bits;
-        r.array[2] = cast(uint)(a.array[2]) >> bits;
-        r.array[3] = cast(uint)(a.array[3]) >> bits;
+        r.ptr[0] = cast(uint)(a.array[0]) >> bits;
+        r.ptr[1] = cast(uint)(a.array[1]) >> bits;
+        r.ptr[2] = cast(uint)(a.array[2]) >> bits;
+        r.ptr[3] = cast(uint)(a.array[3]) >> bits;
         return r;
     }
 }
 
-static if (LDC_with_SSE2)
+deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @trusted
 {
-    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlq128(cast(long2)a, cast(long2)count);
     }
-}
-else static if (GDC_with_SSE2)
-{
-    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlq128(cast(long2)a, cast(long2)count);
     }
-}
-else
-{
-    deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    else
     {
         long2 r = void;
         long2 sa = cast(long2)a;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
-        r.array[0] = cast(ulong)(sa.array[0]) >> bits;
-        r.array[1] = cast(ulong)(sa.array[1]) >> bits;
+        r.ptr[0] = cast(ulong)(sa.array[0]) >> bits;
+        r.ptr[1] = cast(ulong)(sa.array[1]) >> bits;
         return cast(__m128i)r;
     }
 }
 
-
-static if (GDC_with_SSE2)
+/// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+__m128i _mm_srli_epi16 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlwi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlwi128(cast(short8)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_ARM64)
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_ARM64)
     {
         short8 sa = cast(short8)a;
         short8 r = cast(short8) _mm_setzero_si128();
@@ -3805,11 +3759,7 @@ else static if (LDC_with_ARM64)
         r = sa >>> short8(count); // This facility offered with LDC, but not DMD.
         return cast(__m128i)r;
     }
-}
-else
-{
-    /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    else
     {
         short8 sa = cast(short8)a;
         ubyte count = cast(ubyte)imm8;
