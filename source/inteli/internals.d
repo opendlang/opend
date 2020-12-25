@@ -12,6 +12,10 @@ import inteli.types;
 public import core.math: sqrt; // since it's an intrinsics
 public import std.math: abs; // `fabs` is broken with GCC 4.9.2 on Linux 64-bit
 
+package:
+nothrow:
+@nogc:
+
 
 version(GNU)
 {
@@ -24,11 +28,6 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
-        enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = false;
-        enum LDC_with_SSE1 = false;
-        enum LDC_with_SSE2 = false;
-        enum LDC_with_SSE3 = false;
     }
     else version (X86_64)
     {
@@ -48,11 +47,6 @@ version(GNU)
         enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
-        enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = false;
-        enum LDC_with_SSE1 = false;
-        enum LDC_with_SSE2 = false;
-        enum LDC_with_SSE3 = false;
     }
     else
     {
@@ -61,14 +55,18 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
-        enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = false;
-        enum LDC_with_SSE1 = false;
-        enum LDC_with_SSE2 = false;
-        enum LDC_with_SSE3 = false;
     }
 }
-else version(LDC)
+else
+{
+    enum GDC_with_x86 = false;
+    enum GDC_with_MMX = false;
+    enum GDC_with_SSE = false;
+    enum GDC_with_SSE2 = false;
+    enum GDC_with_SSE3 = false;
+}
+
+version(LDC)
 {
     public import core.simd;
     public import ldc.simd;
@@ -88,15 +86,6 @@ else version(LDC)
     {
         alias LDCInlineIR = inlineIR;
     }
-    
-    package(inteli)
-    {
-        enum GDC_with_x86 = false;
-        enum GDC_with_MMX = false;
-        enum GDC_with_SSE = false;
-        enum GDC_with_SSE2 = false;
-        enum GDC_with_SSE3 = false;
-    }
 
     version(ARM)
     {
@@ -109,7 +98,6 @@ else version(LDC)
     }
     else version(AArch64)
     {
-        //public import ldc.gccbuiltins_arm;
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = true;
         enum LDC_with_SSE1 = false;
@@ -126,28 +114,38 @@ else version(LDC)
         enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
     }
 }
-else version(DigitalMars)
+else
 {
-    package(inteli)
-    {
-        enum GDC_with_x86 = false;
-        enum GDC_with_MMX = false;
-        enum GDC_with_SSE = false;
-        enum GDC_with_SSE2 = false;
-        enum GDC_with_SSE3 = false;
-        enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = false;
-        enum LDC_with_SSE1 = false;
-        enum LDC_with_SSE2 = false;
-        enum LDC_with_SSE3 = false;
-    }
+    enum LDC_with_ARM32 = false;
+    enum LDC_with_ARM64 = false;
+    enum LDC_with_SSE1 = false;
+    enum LDC_with_SSE2 = false;
+    enum LDC_with_SSE3 = false;
+}
+
+enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
+
+version(DigitalMars)
+{
+    version(D_InlineAsm_X86)
+        enum DMD_with_asm = true;
+    else version(D_InlineAsm_X86_64)
+        enum DMD_with_asm = true;
+    else
+        enum DMD_with_asm = false;
+
+    version(D_InlineAsm_X86)
+        enum DMD_with_32bit_asm = DMD_with_asm; // sometimes you want a 32-bit DMD only solution
+    else
+        enum DMD_with_32bit_asm = false;
 }
 else
 {
-    static assert(false, "Unknown compiler");
+    enum DMD_with_asm = false;
+    enum DMD_with_32bit_asm = false;
 }
 
-enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64; // ARM32 is largely unsupported though
+
 
 static if (LDC_with_ARM32)
 {
@@ -183,30 +181,6 @@ static if (LDC_with_ARM64)
                    "ldr x2, $1 "   , "m,m", cw, &save_x2);
     }
 }
-
-version(DigitalMars)
-{
-    version(D_InlineAsm_X86)
-        enum DMD_with_asm = true;
-    else version(D_InlineAsm_X86_64)
-        enum DMD_with_asm = true;
-    else
-        enum DMD_with_asm = false;
-
-    version(D_InlineAsm_X86)
-        enum DMD_with_32bit_asm = DMD_with_asm; // sometimes you want a 32-bit DMD only solution
-    else
-        enum DMD_with_32bit_asm = false;
-}
-else
-{
-    enum DMD_with_asm = false;
-    enum DMD_with_32bit_asm = false;
-}
-
-
-package:
-nothrow @nogc:
 
 
 // For internal use only, since public API deals with a x86 semantic emulation
