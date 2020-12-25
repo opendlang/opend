@@ -3508,9 +3508,8 @@ __m128d _mm_sqrt_sd(__m128d a, __m128d b) pure @trusted
         }
         else
         {
-            vec.array[0] = llvm_sqrt(vec.array[0]);
-            vec.array[1] = vec.array[1];
-            return vec;
+            a.array[0] = llvm_sqrt(b.array[0]);
+            return a;
         }
     }
     else static if (GDC_with_SSE2)
@@ -3521,10 +3520,17 @@ __m128d _mm_sqrt_sd(__m128d a, __m128d b) pure @trusted
     }
     else
     {
-        vec.ptr[0] = sqrt(vec.array[0]);
-        vec.ptr[1] = vec.array[1];
-        return vec;
+        a.ptr[0] = sqrt(b.array[0]);
+        return a;
     }
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 3.0);
+    __m128d B = _mm_setr_pd(4.0, 5.0);
+    __m128d R = _mm_sqrt_sd(A, B);
+    double[2] correct = [2.0, 3.0 ];
+    assert(R.array == correct);
 }
 
 /// Shift packed 16-bit integers in `a` right by `count` while shifting in sign bits.
