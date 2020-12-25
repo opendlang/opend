@@ -3490,11 +3490,10 @@ __m128d _mm_sqrt_pd(__m128d vec) pure @trusted
     }
 }
 
-/// Compute the square root of the lower double-precision (64-bit) floating-point element in b, store the result in the lower element of dst, and copy the upper element from a to the upper element of dst.
-__m128d _mm_sqrt_sd(__m128d vec) pure @trusted
+/// Compute the square root of the lower double-precision (64-bit) floating-point element in `b`, store the result in 
+/// the lower element of result, and copy the upper element from `a` to the upper element of result.
+__m128d _mm_sqrt_sd(__m128d a, __m128d b) pure @trusted
 {
-    // TODO: wrong signature here, should be like https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_sqrt_sd
-    
     // Note: the builtin has one argument, since the legacy `sqrtsd` SSE2 instruction operates on the same register only.
     //       "128-bit Legacy SSE version: The first source operand and the destination operand are the same. 
     //        The quadword at bits 127:64 of the destination operand remains unchanged."
@@ -3502,7 +3501,11 @@ __m128d _mm_sqrt_sd(__m128d vec) pure @trusted
     {
         // Disappeared with LDC 1.11
         static if (__VERSION__ < 2081)
-            return __builtin_ia32_sqrtsd(vec);
+        {
+            __m128d c = __builtin_ia32_sqrtsd(b);
+            a[0] = c[0];
+            return a;
+        }
         else
         {
             vec.array[0] = llvm_sqrt(vec.array[0]);
@@ -3512,7 +3515,9 @@ __m128d _mm_sqrt_sd(__m128d vec) pure @trusted
     }
     else static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_sqrtsd(vec);
+        __m128d c = __builtin_ia32_sqrtsd(b);
+        a.ptr[0] = c[0];
+        return a;
     }
     else
     {
