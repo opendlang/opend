@@ -3792,26 +3792,18 @@ unittest
 }
 
 
-static if (GDC_with_SSE2)
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
+__m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_psrldi128(a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return __builtin_ia32_psrldi128(a, cast(ubyte)imm8);
     }
-}
-else
-{
-    /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @trusted
+    else
     {
         ubyte count = cast(ubyte) imm8;
 
@@ -3843,26 +3835,18 @@ unittest
     assert(C.array == expectedC);
 }
 
-static if (GDC_with_SSE2)
+/// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
+__m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
 {
-    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
+    static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlqi128(cast(long2)a, cast(ubyte)imm8);
     }
-}
-else static if (LDC_with_SSE2)
-{
-    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
+    else static if (LDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlqi128(cast(long2)a, cast(ubyte)imm8);
     }
-}
-else
-{
-    /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
-    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
+    else
     {
         long2 r = cast(long2) _mm_setzero_si128();
         long2 sa = cast(long2)a;
@@ -3897,33 +3881,28 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
     {
         return _mm_setzero_si128();
     }
+    else static if (GDC_with_SSE2)
+    {
+        return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
+    }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, v;
+            psrldq XMM0, bytes;
+            movdqu v, XMM0;
+        }
+        return v;
+    }
     else
     {
-        static if (GDC_with_SSE2)
-        {
-            return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
-        }
-        else static if (DMD_with_32bit_asm)
-        {
-            asm pure nothrow @nogc @trusted
-            {
-                movdqu XMM0, v;
-                psrldq XMM0, bytes;
-                movdqu v, XMM0;
-            }
-            return v;
-        }
-        else
-        {
-            return cast(__m128i) shufflevector!(byte16,
-                                                bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
-                                                bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
-                                               (cast(byte16) v, cast(byte16)_mm_setzero_si128());
-        }
+        return cast(__m128i) shufflevector!(byte16,
+                                            bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
+                                            bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
+                                           (cast(byte16) v, cast(byte16)_mm_setzero_si128());
     }
-
 }
-
 unittest
 {
     __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1));
@@ -3955,12 +3934,16 @@ __m128d _mm_srli_pd(ubyte bytes)(__m128d v) pure @safe
     return cast(__m128d) _mm_srli_si128!bytes(cast(__m128i)v);
 }
 
+/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from `a` into memory. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_store_pd (double* mem_addr, __m128d a) pure @trusted
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = a;
 }
 
+/// Store the lower double-precision (64-bit) floating-point element from `a` into 2 contiguous elements in memory. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_store_pd1 (double* mem_addr, __m128d a) pure @trusted
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
@@ -3970,18 +3953,23 @@ void _mm_store_pd1 (double* mem_addr, __m128d a) pure @trusted
     *aligned = r;
 }
 
+/// Store the lower double-precision (64-bit) floating-point element from `a` into memory. `mem_addr` does not need to 
+/// be aligned on any particular boundary.
 void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 {
     *mem_addr = a.array[0];
 }
 
+/// Store 128-bits of integer data from `a` into memory. `mem_addr` must be aligned on a 16-byte boundary or a 
+/// general-protection exception may be generated.
 void _mm_store_si128 (__m128i* mem_addr, __m128i a) pure @safe
 {
     *mem_addr = a;
 }
 
-alias _mm_store1_pd = _mm_store_pd1;
+alias _mm_store1_pd = _mm_store_pd1; ///
 
+/// Store the upper double-precision (64-bit) floating-point element from `a` into memory.
 void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
 {
     *mem_addr = a.array[1];
@@ -4003,22 +3991,29 @@ unittest
     assert(A == correct);
 }
 
+/// Store the lower double-precision (64-bit) floating-point element from `a` into memory.
 void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 {
     *mem_addr = a.array[0];
 }
 
+/// Store 2 double-precision (64-bit) floating-point elements from `a` into memory in reverse order. `mem_addr` must be 
+/// aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_storer_pd (double* mem_addr, __m128d a) pure
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = shufflevector!(double2, 1, 0)(a, a);
 }
 
+/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 {
     storeUnaligned!double2(a, mem_addr);
 }
 
+/// Store 128-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular 
+/// boundary.
 void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
 {
     storeUnaligned!__m128i(a, cast(int*)mem_addr);
@@ -4076,51 +4071,57 @@ void _mm_stream_si64 (long* mem_addr, long a)
     *mem_addr = a;
 }
 
+/// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(short8)a - cast(short8)b);
 }
 
+/// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(int4)a - cast(int4)b);
 }
 
+/// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
 __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(long2)a - cast(long2)b);
 }
 
+/// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(byte16)a - cast(byte16)b);
 }
 
+/// Subtract packed double-precision (64-bit) floating-point elements in `b` from packed double-precision (64-bit) 
+/// floating-point elements in `a`.
 __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
 {
     return a - b;
 }
 
-version(DigitalMars)
+/// Subtract the lower double-precision (64-bit) floating-point element in `b` from the lower double-precision (64-bit) 
+/// floating-point element in `a`, store that in the lower element of result, and copy the upper element from `a` to the
+/// upper element of result.
+__m128d _mm_sub_sd(__m128d a, __m128d b) pure @trusted
 {
-    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
-    // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
-    __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
+    version(DigitalMars)
     {
+        // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+        // Note that this is unneeded since DMD >= 2.094.0 at least, haven't investigated again
         asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] - b[0];
         return a;
     }
-}
-else static if (GDC_with_SSE2)
-{
-    alias _mm_sub_sd = __builtin_ia32_subsd;
-}
-else
-{
-    __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
+    else static if (GDC_with_SSE2)
     {
-        a.array[0] -= b.array[0];
+        return __builtin_ia32_subsd(a, b);
+    }
+    else
+    {
+        a.ptr[0] -= b.array[0];
         return a;
     }
 }
@@ -4131,31 +4132,31 @@ unittest
     assert(a.array == [0.0, -2.0]);
 }
 
+/// Subtract 64-bit integer `b` from 64-bit integer `a`.
 __m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
 {
     return a - b;
 }
 
-version(LDC)
+/// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
+__m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    version(LDC)
     {
-        // Generates PSUBSW since LDC 1.15 -O0
-        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // Generates PSUBSW since LDC 1.15 -O0
+            /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
+            
             enum prefix = `declare <8 x i16> @llvm.ssub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.ssub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
-    }
-    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-    {
-        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
+            /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
             short[8] res;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
@@ -4163,28 +4164,25 @@ version(LDC)
                 res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
-    }
-    else
-        alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
-}
-else
-{
-    static if (GDC_with_SSE2)
-    {
-        alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
-    }
-    else
-    {
-        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_SSE2)
         {
-            short[8] res;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
+            return __builtin_ia32_psubsw128(a, b);
         }
+        else
+            static assert(false);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_psubsw128(a, b);
+    }
+    else
+    {
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            res.ptr[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
