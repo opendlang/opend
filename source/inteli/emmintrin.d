@@ -4193,26 +4193,22 @@ unittest
     assert(res.array == correctResult);
 }
 
-version(LDC)
+/// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
+__m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    version(LDC)
     {
-        // x86: Generates PSUBSB since LDC 1.15 -O0
-        // ARM: Generates sqsub.16b since LDC 1.21 -O0
-        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // x86: Generates PSUBSB since LDC 1.15 -O0
+            // ARM: Generates sqsub.16b since LDC 1.21 -O0
             enum prefix = `declare <16 x i8> @llvm.ssub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.ssub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
-    }
-    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-    {
-        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
             byte[16] res;
             byte16 sa = cast(byte16)a;
@@ -4221,28 +4217,25 @@ version(LDC)
                 res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
-    }
-    else
-        alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
-}
-else
-{
-    static if (GDC_with_SSE2)
-    {
-        alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
-    }
-    else
-    {
-        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
-        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_SSE2)
         {
-            byte[16] res;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
+            return __builtin_ia32_psubsb128(a, b);
         }
+        else
+            static assert(false);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_psubsb128(a, b);
+    }
+    else
+    {
+        byte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -4253,26 +4246,22 @@ unittest
     assert(res.array == correctResult);
 }
 
-version(LDC)
+/// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
+__m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    version(LDC)
     {
-        // x86: Generates PSUBUSW since LDC 1.15 -O0
-        // ARM: Generates uqsub.8h since LDC 1.21 -O0
-        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // x86: Generates PSUBUSW since LDC 1.15 -O0
+            // ARM: Generates uqsub.8h since LDC 1.21 -O0
             enum prefix = `declare <8 x i16> @llvm.usub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.usub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
-    }
-    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-    {
-        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
             short[8] res;
             short8 sa = cast(short8)a;
@@ -4284,31 +4273,28 @@ version(LDC)
             }
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
-    }
-    else
-        alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
-}
-else
-{
-    static if (GDC_with_SSE2)
-    {
-        alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
-    }
-    else
-    {
-        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_SSE2)
         {
-            short[8] res;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-            {
-                int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
-                res[i] = saturateSignedIntToUnsignedShort(sum);
-            }
-            return _mm_loadu_si128(cast(int4*)res.ptr);
+            return __builtin_ia32_psubusw128(a, b);
         }
+        else 
+            static assert(false);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_psubusw128(a, b);
+    }
+    else
+    {
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+        {
+            int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
+            res[i] = saturateSignedIntToUnsignedShort(sum);
+        }
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -4319,56 +4305,53 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+/// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+__m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    version(LDC)
     {
-        // x86: Generates PSUBUSB since LDC 1.15 -O0
-        // ARM: Generates uqsub.16b since LDC 1.21 -O0
-        /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // x86: Generates PSUBUSB since LDC 1.15 -O0
+            // ARM: Generates uqsub.16b since LDC 1.21 -O0
             enum prefix = `declare <16 x i8> @llvm.usub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.usub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
-    }
-    else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-    {
-         /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation
         {
-            ubyte[16] res;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
-            return _mm_loadu_si128(cast(int4*)res.ptr);
+            /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+            __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+            {
+                ubyte[16] res;
+                byte16 sa = cast(byte16)a;
+                byte16 sb = cast(byte16)b;
+                foreach(i; 0..16)
+                    res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+                return _mm_loadu_si128(cast(int4*)res.ptr);
+            }
         }
+        else static if (LDC_with_SSE2)
+        {
+            return __builtin_ia32_psubusb128(a, b);
+        }
+        else 
+            static assert(false);
     }
-    else    
-        alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
-        alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
+        return __builtin_ia32_psubusb128(a, b);
     }
     else
     {
-        /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
-        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
-        {
-            ubyte[16] res;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
+        ubyte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -4383,24 +4366,28 @@ unittest
 //       behaviour of quiet NaNs. This is incorrect but the case where
 //       you would want to differentiate between qNaN and sNaN and then
 //       treat them differently on purpose seems extremely rare.
-alias _mm_ucomieq_sd = _mm_comieq_sd;
-alias _mm_ucomige_sd = _mm_comige_sd;
-alias _mm_ucomigt_sd = _mm_comigt_sd;
-alias _mm_ucomile_sd = _mm_comile_sd;
-alias _mm_ucomilt_sd = _mm_comilt_sd;
-alias _mm_ucomineq_sd = _mm_comineq_sd;
+alias _mm_ucomieq_sd = _mm_comieq_sd; ///
+alias _mm_ucomige_sd = _mm_comige_sd; ///
+alias _mm_ucomigt_sd = _mm_comigt_sd; ///
+alias _mm_ucomile_sd = _mm_comile_sd; ///
+alias _mm_ucomilt_sd = _mm_comilt_sd; ///
+alias _mm_ucomineq_sd = _mm_comineq_sd; ///
 
+/// Return vector of type `__m128d` with undefined elements.
 __m128d _mm_undefined_pd() pure @safe
 {
     __m128d result = void;
     return result;
 }
+
+/// Return vector of type `__m128i` with undefined elements.
 __m128i _mm_undefined_si128() pure @safe
 {
     __m128i result = void;
     return result;
 }
 
+/// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4433,6 +4420,7 @@ unittest
     assert(C.array == correct);
 }
 
+/// Unpack and interleave 32-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4444,7 +4432,9 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
         return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave 64-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi64 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -4468,6 +4458,7 @@ unittest // Issue #36
     assert(C.array == correct);
 }
 
+/// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4492,7 +4483,9 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
                                                    (cast(byte16)a, cast(byte16)b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave double-precision (64-bit) floating-point elements from the high half of `a` and `b`.
 __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4504,7 +4497,9 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
         return shufflevector!(__m128d, 1, 3)(a, b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4528,7 +4523,9 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
                                            (cast(short8)a, cast(short8)b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4541,7 +4538,9 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
                              (cast(int4)a, cast(int4)b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave 64-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -4567,7 +4566,7 @@ unittest // Issue #36
     assert(C.array == correct);
 }
 
-
+/// Unpack and interleave 8-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4592,7 +4591,9 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
                                            (cast(byte16)a, cast(byte16)b);
     }
 }
+// TODO unittest
 
+/// Unpack and interleave double-precision (64-bit) floating-point elements from the low half of `a` and `b`.
 __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -4604,12 +4605,15 @@ __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
         return shufflevector!(__m128d, 0, 2)(a, b);
     }
 }
+// TODO unittest
 
+/// Compute the bitwise XOR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)(cast(__m128i)a ^ cast(__m128i)b);
 }
 
+/// Compute the bitwise XOR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
 {
     return a ^ b;
@@ -4617,7 +4621,6 @@ __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
 
 unittest
 {
-    // distance between two points in 4D
     float distance(float[4] a, float[4] b) nothrow @nogc
     {
         __m128 va = _mm_loadu_ps(a.ptr);
