@@ -1094,6 +1094,20 @@ static if (LDC_with_ARM64)
         return a & b;
     }
 
+    short8 vcombine_s16(short4 lo, short4 hi) pure @trusted
+    {
+        short8 r;
+        r.ptr[0]  = lo.array[0];
+        r.ptr[1]  = lo.array[1];
+        r.ptr[2]  = lo.array[2];
+        r.ptr[3]  = lo.array[3];
+        r.ptr[4]  = hi.array[0];
+        r.ptr[5]  = hi.array[1];
+        r.ptr[6]  = hi.array[2];
+        r.ptr[7]  = hi.array[3];
+        return r;
+    }
+
     int4 vcombine_s32(int2 lo, int2 hi) pure @trusted
     {
         int4 r;
@@ -1285,6 +1299,9 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v8i8")
         byte8 vqmovn_s16(short8 a) pure @safe;
+
+     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v4i16")
+        short4 vqmovn_s32(int4 a) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtun.v8i8")
         byte8 vqmovun_s16(short8 a) pure @safe;

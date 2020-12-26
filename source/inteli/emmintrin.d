@@ -2607,6 +2607,12 @@ __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_packssdw128(a, b);
     }
+    else static if (LDC_with_ARM64)
+    {
+        short4 ra = vqmovn_s32(cast(int4)a);
+        short4 rb = vqmovn_s32(cast(int4)b);
+        return cast(__m128i)vcombine_s16(ra, rb);
+    }
     else
     {
         // PERF: catastrophic on ARM
