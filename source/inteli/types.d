@@ -335,50 +335,50 @@ else
         }
     }
 
-    Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
+    Vec equalMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "oeq" comparison
     {
         enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] == b.array[i];
-            result.array[i] = cond ? TrueMask!Vec : 0;
+            result.ptr[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
 
-    Vec notEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "one" comparison
+    Vec notEqualMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "one" comparison
     {
         enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] != b.array[i];
-            result.array[i] = cond ? TrueMask!Vec : 0;
+            result.ptr[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
 
-    Vec greaterMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "ogt" comparison
+    Vec greaterMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "ogt" comparison
     {
         enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] > b.array[i];
-            result.array[i] = cond ? TrueMask!Vec : 0;
+            result.ptr[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
 
-    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oge" comparison
+    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "oge" comparison
     {
         enum size_t Count = Vec.array.length;
         Vec result;
         foreach(int i; 0..Count)
         {
             bool cond = a.array[i] > b.array[i];
-            result.array[i] = cond ? TrueMask!Vec : 0;
+            result.ptr[i] = cond ? TrueMask!Vec : 0;
         }
         return result;
     }
