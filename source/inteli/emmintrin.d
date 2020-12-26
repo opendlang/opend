@@ -2015,11 +2015,12 @@ unittest
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum values.
 __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
-    __m128i lowerShorts = _mm_cmpgt_epi16(a, b); // ones where a should be selected, b else
-    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-    __m128i mask = _mm_and_si128(aTob, lowerShorts);
-    return _mm_xor_si128(b, mask);
+    // x86: pmaxsw since LDC 1.0 -O1
+    // ARM: smax.8h since LDC 1.5 -01
+    short8 sa = cast(short8)a;
+    short8 sb = cast(short8)b;
+    short8 greater = greaterMask!short8(sa, sb);
+    return cast(__m128i)( (greater & sa) | (~greater & sb) );
 }
 unittest
 {
