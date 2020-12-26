@@ -138,14 +138,18 @@ version(DigitalMars)
         enum DMD_with_32bit_asm = DMD_with_asm; // sometimes you want a 32-bit DMD only solution
     else
         enum DMD_with_32bit_asm = false;
+
+    version (D_SIMD)
+        enum DMD_with_DSIMD = !SSESizedVectorsAreEmulated;
+    else
+        enum DMD_with_DSIMD = false;
 }
 else
 {
     enum DMD_with_asm = false;
     enum DMD_with_32bit_asm = false;
+    enum DMD_with_DSIMD = false;
 }
-
-
 
 static if (LDC_with_ARM32)
 {

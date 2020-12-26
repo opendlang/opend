@@ -74,7 +74,13 @@ unittest
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
     static if (GDC_with_SSE)
+    {
         return __builtin_ia32_addss(a, b);
+    }
+    else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.ADDSS, a, b);
+    }
     else
     {
         a[0] += b[0];

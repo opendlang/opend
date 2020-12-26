@@ -3515,7 +3515,7 @@ __m128d _mm_sqrt_sd(__m128d a, __m128d b) pure @trusted
     else static if (GDC_with_SSE2)
     {
         __m128d c = __builtin_ia32_sqrtsd(b);
-        a.ptr[0] = c[0];
+        a.ptr[0] = c.array[0];
         return a;
     }
     else
