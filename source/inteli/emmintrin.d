@@ -2015,12 +2015,23 @@ unittest
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed maximum values.
 __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // x86: pmaxsw since LDC 1.0 -O1
-    // ARM: smax.8h since LDC 1.5 -01
-    short8 sa = cast(short8)a;
-    short8 sb = cast(short8)b;
-    short8 greater = greaterMask!short8(sa, sb);
-    return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    version(GNU)
+    {
+        // PERF: not necessarily the best for GDC
+        __m128i lowerShorts = _mm_cmpgt_epi16(a, b); // ones where a should be selected, b else
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lowerShorts);
+        return _mm_xor_si128(b, mask);
+    }
+    else
+    {
+        // x86: pmaxsw since LDC 1.0 -O1
+        // ARM: smax.8h since LDC 1.5 -01
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 greater = greaterMask!short8(sa, sb);
+        return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    }
 }
 unittest
 {
@@ -2035,8 +2046,8 @@ __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
 {
     version(LDC)
     {
-        // x86: pminub since LDC 1.0.0 -O1
-        // ARM64: umin.16b since LDC 1.5.0 -O1
+        // x86: pmaxub since LDC 1.0.0 -O1
+        // ARM64: umax.16b since LDC 1.5.0 -O1
         // PERF: catastrophic on ARM32
         alias ubyte16 = Vector!(ubyte[16]);
         ubyte16 sa = cast(ubyte16)a;
@@ -2161,12 +2172,23 @@ unittest
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // x86: pminsw since LDC 1.0 -O1
-    // ARM: smin.8h since LDC 1.5 -01
-    short8 sa = cast(short8)a;
-    short8 sb = cast(short8)b;
-    short8 greater = greaterMask!short8(sa, sb);
-    return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    version(GNU)
+    {
+        // PERF: not necessarily the best for GDC
+        __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lowerShorts);
+        return _mm_xor_si128(b, mask);
+    }
+    else
+    {
+        // x86: pminsw since LDC 1.0 -O1
+        // ARM: smin.8h since LDC 1.5 -01
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 greater = greaterMask!short8(sa, sb);
+        return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
 }
 unittest
 {
