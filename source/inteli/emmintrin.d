@@ -2033,12 +2033,25 @@ unittest
 /// Compare packed unsigned 8-bit integers in a and b, and return packed maximum values.
 __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
 {
-    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
-    __m128i value128 = _mm_set1_epi8(-128);
-    __m128i higher = _mm_cmpgt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
-    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-    __m128i mask = _mm_and_si128(aTob, higher);
-    return _mm_xor_si128(b, mask);
+    version(LDC)
+    {
+        // x86: pminub since LDC 1.0.0 -O1
+        // ARM64: umin.16b since LDC 1.5.0 -O1
+        // PERF: catastrophic on ARM32
+        alias ubyte16 = Vector!(ubyte[16]);
+        ubyte16 sa = cast(ubyte16)a;
+        ubyte16 sb = cast(ubyte16)b;
+        ubyte16 greater = cast(ubyte16) greaterMask!ubyte16(sa, sb);
+        return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    }
+    else
+    {
+        __m128i value128 = _mm_set1_epi8(-128);
+        __m128i higher = _mm_cmpgt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, higher);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
@@ -2166,12 +2179,25 @@ unittest
 /// Compare packed unsigned 8-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epu8 (__m128i a, __m128i b) pure @safe
 {
-    // PERF Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
-    __m128i value128 = _mm_set1_epi8(-128);
-    __m128i lower = _mm_cmplt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
-    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-    __m128i mask = _mm_and_si128(aTob, lower);
-    return _mm_xor_si128(b, mask);
+    version(LDC)
+    {
+        // x86: pminub since LDC 1.0.0 -O1
+        // ARM: umin.16b since LDC 1.5.0 -O1
+        // PERF: catastrophic on ARM32
+        alias ubyte16 = Vector!(ubyte[16]);
+        ubyte16 sa = cast(ubyte16)a;
+        ubyte16 sb = cast(ubyte16)b;
+        ubyte16 greater = cast(ubyte16) greaterMask!ubyte16(sa, sb);
+        return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+    {
+        __m128i value128 = _mm_set1_epi8(-128);
+        __m128i lower = _mm_cmplt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lower);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
