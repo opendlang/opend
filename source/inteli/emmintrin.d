@@ -2024,9 +2024,9 @@ __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
 }
 unittest
 {
-    short8 R = cast(short8) _mm_max_epi16(_mm_setr_epi16(45, 1, -4, -8, 9,  7, 0,-57),
-                                          _mm_setr_epi16(-4,-8,  9,  7, 0,-57, 0,  0));
-    short[8] correct =                                  [45, 1,  9,  7, 9,  7, 0,  0];
+    short8 R = cast(short8) _mm_max_epi16(_mm_setr_epi16(32767, 1, -4, -8, 9,  7, 0,-57),
+                                          _mm_setr_epi16(-4,-8,  9,  7, 0,-32768, 0,  0));
+    short[8] correct =                                  [32767, 1,  9,  7, 9,  7, 0,  0];
     assert(R.array == correct);
 }
 
@@ -2148,18 +2148,18 @@ unittest
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    // PERF Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
-    // Implemented using masks and XOR
-    __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
-    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-    __m128i mask = _mm_and_si128(aTob, lowerShorts);
-    return _mm_xor_si128(b, mask);
+    // x86: pminsw since LDC 1.0 -O1
+    // ARM: smin.8h since LDC 1.5 -01
+    short8 sa = cast(short8)a;
+    short8 sb = cast(short8)b;
+    short8 greater = greaterMask!short8(sa, sb);
+    return cast(__m128i)( (~greater & sa) | (greater & sb) );
 }
 unittest
 {
-    short8 R = cast(short8) _mm_min_epi16(_mm_setr_epi16(45, 1, -4, -8, 9,  7, 0,-57),
+    short8 R = cast(short8) _mm_min_epi16(_mm_setr_epi16(45, 1, -4, -8, 9,  7, 0,-32768),
                                           _mm_setr_epi16(-4,-8,  9,  7, 0,-57, 0,  0));
-    short[8] correct =  [-4,-8, -4, -8, 0,-57, 0, -57];
+    short[8] correct =                                  [-4,-8, -4, -8, 0,-57, 0, -32768];
     assert(R.array == correct);
 }
 
