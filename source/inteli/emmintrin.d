@@ -2843,9 +2843,22 @@ __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_psadbw128(cast(byte16)a, cast(byte16)b);
     }
+    else static if (LDC_with_ARM64)
+    {
+        alias ushort8 = __vector(ushort[8]);
+        ushort8 t = cast(ushort8) vpaddlq_u8(vabdq_u8(cast(byte16) a, cast(byte16) b));
+
+        // PERF: Looks suboptimal vs addp
+        ushort r0 = cast(ushort)(t[0] + t[1] + t[2] + t[3]);
+        ushort r4 = cast(ushort)(t[4] + t[5] + t[6] + t[7]);
+        ushort8 r = 0;
+        r[0] = r0;
+        r[4] = r4;
+        return cast(__m128i) r;
+    }
     else
     {
-        // PERF: ARM??
+        // PERF: ARM32 is lacking
         byte16 ab = cast(byte16)a;
         byte16 bb = cast(byte16)b;
         ubyte[16] t;
