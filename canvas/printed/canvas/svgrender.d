@@ -243,10 +243,13 @@ public:
 
     override void drawImage(Image image, float x, float y)
     {
-        float widthMm = (1000.0f * image.width) / image.pixelsPerMeterX();
-        float heightMm = (1000.0f * image.height) / image.pixelsPerMeterY();
+        drawImage(image, x, y, image.printWidth(), image.printHeight());
+    }
+
+    override void drawImage(Image image, float x, float y, float width, float height)
+    {
         output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, 
-                      image.toDataURI(), convertFloatToText(x), convertFloatToText(y), convertFloatToText(widthMm), convertFloatToText(heightMm)));
+                      image.toDataURI(), convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height)));
     }
 
 protected:

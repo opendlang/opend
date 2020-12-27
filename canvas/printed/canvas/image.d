@@ -73,13 +73,13 @@ class Image
         return _height;
     }
     
-    /// Width when printed, in mm.
+    /// Default width when printed, in mm.
     float printWidth()
     {
         return 1000 * _width / pixelsPerMeterX();
     }
 
-    /// Height when printed, in mm.
+    /// Default height when printed, in mm.
     float printHeight()
     {
         return 1000 * _height / pixelsPerMeterY();

@@ -266,6 +266,13 @@ final class PDFDocument : IRenderingContext2D
 
     override void drawImage(Image image, float x, float y)
     {
+        float widthMm = image.printWidth;
+        float heightMm = image.printHeight;
+        drawImage(image, x, y, widthMm, heightMm);
+    }
+
+    override void drawImage(Image image, float x, float y, float width, float height)
+    {
         string imageName;
         object_id id;
         getImage(image, imageName, id);
@@ -274,11 +281,10 @@ final class PDFDocument : IRenderingContext2D
         outDelim();
         output('q');
 
-        float heightMm = image.printHeight;
-        translate(x, y + heightMm);
+        translate(x, y + height);
 
         // Note: image has to be flipped vertically, since PDF is bottom to up
-        scale(image.printWidth(), -heightMm);
+        scale(width, -height);
 
         outName(imageName);
         output(" Do");

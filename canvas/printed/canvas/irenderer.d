@@ -62,6 +62,9 @@ interface IRenderingContext2D
     /// Draws an image at the given position.
     void drawImage(Image image, float x, float y);
 
+    /// Draws an image at the given position, with the given width and height.
+    /// Both `width` and `height` must be provided.
+    void drawImage(Image image, float x, float y, float width, float height);
 
     // COLOURS
 

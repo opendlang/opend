@@ -18,14 +18,25 @@ void main(string[] args)
                       cast(IRenderingContext2D) htmlDoc,])
     {        
         context.drawImage(jpeg, 10, 10);
+
+        // `printWidth` is the default width when drawn, extracted from DPI information.
         context.drawImage(jpeg, context.pageWidth - jpeg.printWidth - 10, 10);
 
-        foreach(offset; 0..3)
+        foreach(offset; 0..6)
         {
             context.save();
-            context.rotate(offset * 0.08);
-            context.drawImage(png, context.pageWidth - 10 - 30 * offset - png.printWidth, 
-                                  context.pageHeight - 10 - 30 * offset  - png.printHeight);
+            
+            float width = 30 + offset * 5;
+            float height = 50 - offset * 5;
+
+            float x = context.pageWidth/2 - width/2;
+            float y = 40 + 40*offset - height/2;
+
+            context.translate(x, y);
+            context.rotate(offset * 0.1);
+
+            // draw with given width and height
+            context.drawImage(png, 0, 0, width, height);
             context.restore();
         }
 
