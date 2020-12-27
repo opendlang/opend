@@ -1531,7 +1531,7 @@ unittest
     foreach(i; 0..4)
     {
         double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
-        assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+        assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
     }
 }
 
@@ -1560,7 +1560,7 @@ unittest
     __m128 correct = _mm_setr_ps(1 / 2.34f, -70000.0f, 0.00001f, 345.5f);
     __m128 R = _mm_rcp_ss(A);
     double relError = (cast(double)(correct.array[0]) / R.array[0]) - 1;
-    assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
     assert(R.array[1] == correct.array[1]);
     assert(R.array[2] == correct.array[2]);
     assert(R.array[3] == correct.array[3]);
@@ -1603,7 +1603,7 @@ unittest
     foreach(i; 0..4)
     {
         double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
-        assert(abs(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+        assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
     }
 }
 
@@ -1644,7 +1644,7 @@ unittest // this one test 4 different intrinsics: _mm_rsqrt_ss, _mm_rsqrt_ps, _m
         {
             double exact = 1.0f / A.array[i];
             double ratio = cast(double)(B.array[i]) / cast(double)(exact);
-            assert(abs(ratio - 1) <= maxRelativeError);
+            assert(abs_double(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rcp_ss
@@ -1652,7 +1652,7 @@ unittest // this one test 4 different intrinsics: _mm_rsqrt_ss, _mm_rsqrt_ps, _m
             B = _mm_rcp_ss(A);
             double exact = 1.0f / A.array[0];
             double ratio = cast(double)(B.array[0]) / cast(double)(exact);
-            assert(abs(ratio - 1) <= maxRelativeError);
+            assert(abs_double(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rsqrt_ps
@@ -1661,7 +1661,7 @@ unittest // this one test 4 different intrinsics: _mm_rsqrt_ss, _mm_rsqrt_ps, _m
         {
             double exact = 1.0f / sqrt(A.array[i]);
             double ratio = cast(double)(B.array[i]) / cast(double)(exact);
-            assert(abs(ratio - 1) <= maxRelativeError);
+            assert(abs_double(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rsqrt_ss
@@ -1669,7 +1669,7 @@ unittest // this one test 4 different intrinsics: _mm_rsqrt_ss, _mm_rsqrt_ps, _m
             B = _mm_rsqrt_ss(A);
             double exact = 1.0f / sqrt(A.array[0]);
             double ratio = cast(double)(B.array[0]) / cast(double)(exact);
-            assert(abs(ratio - 1) <= maxRelativeError);
+            assert(abs_double(ratio - 1) <= maxRelativeError);
         }
     }
 

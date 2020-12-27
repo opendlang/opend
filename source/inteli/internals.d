@@ -10,7 +10,6 @@ import inteli.types;
 
 // The only math functions needed for intel-intrinsics
 public import core.math: sqrt; // since it's an intrinsics
-public import std.math: abs; // `fabs` is broken with GCC 4.9.2 on Linux 64-bit
 
 package:
 nothrow:
@@ -724,8 +723,8 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
 // Useful for DMD and testing
 private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
 {
-    import std.math;
-    bool unordered = isNaN(a) || isNaN(b);
+    import core.stdc.math: isnan;
+    bool unordered = isnan(a) || isnan(b);
     final switch(comparison) with(FPComparison)
     {
         case oeq: return a == b;
@@ -1318,3 +1317,17 @@ static if (LDC_with_ARM64)
     }
 }
 
+version(unittest)
+{
+    double abs_double(double x) @trusted
+    {
+        version(LDC)
+            return llvm_fabs(x);
+        else
+        {
+            long uf = *cast(long*)(&x);
+            uf &= 0x7fffffff_ffffffff;
+            return *cast(double*)(&uf);
+        }
+    }
+}
