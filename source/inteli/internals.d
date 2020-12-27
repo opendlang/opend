@@ -1144,6 +1144,9 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+
+    // float4 => int4
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v4i32.v4f32")
         int4 vcvtmq_s32_f32(float4 a) pure @safe;
 
@@ -1155,6 +1158,21 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v4i32.v4f32")
         int4 vcvtzq_s32_f32(float4 a) pure @safe;
+
+
+    // double2 => long2
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.v2i64.v2f64")
+        long2 vcvtmq_s64_f64(double2 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtns.v2i64.v2f64")
+        long2 vcvtnq_s64_f64(double2 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.v2i64.v2f64")
+        long2 vcvtpq_s64_f64(double2 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.v2i64.v2f64")
+        long2 vcvtzq_s64_f64(double2 a) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtms.i32.f32")
         int vcvtms_s32_f32(float a) pure @safe;

@@ -1221,15 +1221,31 @@ __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
     {
-        // Like in clang, implemented with a magic intrinsic right now
         return __builtin_ia32_cvtpd2dq(a);
     }
     else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cvtpd2dq(a);
     }
+    else static if (LDC_with_ARM64)
+    {
+        // Get current rounding mode.
+        uint fpscr = arm_get_fpcr();
+        long2 i;
+        switch(fpscr & _MM_ROUND_MASK_ARM)
+        {
+            default:
+            case _MM_ROUND_NEAREST_ARM:     i = vcvtnq_s64_f64(a); break;
+            case _MM_ROUND_DOWN_ARM:        i = vcvtmq_s64_f64(a); break;
+            case _MM_ROUND_UP_ARM:          i = vcvtpq_s64_f64(a); break;
+            case _MM_ROUND_TOWARD_ZERO_ARM: i = vcvtzq_s64_f64(a); break;
+        }
+        int4 zero = 0;
+        return cast(__m128i) shufflevector!(int4, 0, 4, 2, 6)(cast(int4)i, zero);
+    }
     else
     {
+        // PERF ARM32
         __m128i r = _mm_setzero_si128();
         r.ptr[0] = convertDoubleToInt32UsingMXCSR(a.array[0]);
         r.ptr[1] = convertDoubleToInt32UsingMXCSR(a.array[1]);
