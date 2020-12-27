@@ -2556,7 +2556,9 @@ __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        // PERF ARM?
+        // ARM64: LDC 1.5 -O2 or later gives a nice sequence with 2 x ext.16b, 2 x smull.4s and shrn.4h shrn2.8h
+        //        PERF: it seems the simde solution has one less instruction in ARM64.
+        // PERF: Catastrophic in ARM32.
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r = void;
@@ -2594,7 +2596,9 @@ __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        // PERF ARM??
+        // ARM64: LDC 1.5 -O2 or later gives a nice sequence with 2 x ext.16b, 2 x umull.4s and shrn.4h shrn2.8h
+        //      it seems the simde solution has one less instruction in ARM64
+        // PERF: Catastrophic in ARM32.
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r = void;
