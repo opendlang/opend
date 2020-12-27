@@ -723,7 +723,6 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
 // Useful for DMD and testing
 private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
 {
-    import core.stdc.math: isnan;
     bool unordered = isnan(a) || isnan(b);
     final switch(comparison) with(FPComparison)
     {
@@ -1336,4 +1335,41 @@ version(unittest)
             return *cast(double*)(&uf);
         }
     }
+}
+
+// needed because in olg GDC from travis, core.stdc.math.isnan isn't pure
+
+bool isnan(float x) pure @trusted
+{
+    uint u = *cast(uint*)(&x);
+    bool result = ((u & 0x7F800000) == 0x7F800000) && (u & 0x007FFFFF);
+    return result;
+}
+unittest
+{
+    float x = float.nan;
+    assert(isnan(x));
+
+    x = 0;
+    assert(!isnan(x));
+    
+    x = float.infinity;
+    assert(!isnan(x));
+}
+
+bool isnan(double x) pure @trusted
+{
+    ulong u = *cast(ulong*)(&x);
+    return ((u & 0x7FF00000_00000000) == 0x7FF00000_00000000) && (u & 0x000FFFFF_FFFFFFFF);
+}
+unittest
+{
+    double x = double.nan;
+    assert(isnan(x));
+
+    x = 0;
+    assert(!isnan(x));
+    
+    x = double.infinity;
+    assert(!isnan(x));
 }

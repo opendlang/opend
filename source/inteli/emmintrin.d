@@ -1199,7 +1199,7 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
     else
     {
         // x86: Generates cvtdq2ps since LDC 1.0.0 -O1
-        // ARM: Generats scvtf.4s since LDC 1.8.0 -02        
+        // ARM: Generats scvtf.4s since LDC 1.8.0 -02
         __m128 res;
         res.ptr[0] = cast(float)a.array[0];
         res.ptr[1] = cast(float)a.array[1];
@@ -1216,7 +1216,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
-// PERF #ARM
+// PERF ARM64 ARM32
 __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -2193,7 +2193,7 @@ __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
     else
     {
         // x86: pminsw since LDC 1.0 -O1
-        // ARM: smin.8h since LDC 1.5 -01
+        // ARM64: smin.8h since LDC 1.5 -01
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 greater = greaterMask!short8(sa, sb);
