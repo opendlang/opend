@@ -26,7 +26,6 @@ jobs:
                     - ldc-1.19.0
                     - ldc-1.18.0
                     - ldc-1.17.0
-                    - ldc-1.17.0
                 exclude:
                     - { os: ubuntu-latest, dc: dmd-2.089.1 }
                     - { os: macOS-latest, dc: dmd-2.087.1 }
@@ -43,7 +42,7 @@ jobs:
             - name: Vanilla unittest
               run: dub test
 
-            - name: Unittest with unittest-release configuration
+            - name: Unittest with default configuration
               run: dub test -b unittest-release
 
             - name: Unittest with unittest-inst configuration
