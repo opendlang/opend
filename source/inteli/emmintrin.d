@@ -1216,7 +1216,7 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
-// PERF ARM64 ARM32
+// PERF ARM32
 __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
     static if (LDC_with_SSE2)
@@ -1434,13 +1434,16 @@ unittest
 /// Convert the lower double-precision (64-bit) floating-point element in `a` to a 64-bit integer.
 long _mm_cvtsd_si64 (__m128d a) @trusted
 {
-    version(LDC)
+    version (LDC)
     {
-        // Unfortunately this builtin crashes in 32-bit
-        version(X86_64)
+        version (X86_64)
+        {
             return __builtin_ia32_cvtsd2si64(a);
+        }
         else
         {
+            // Note: In 32-bit x86, there is no way to convert from float/double to 64-bit integer
+            // using SSE instructions only. So the builtin doesn't exit for this arch.
             return convertDoubleToInt64UsingMXCSR(a[0]);
         }
     }
@@ -1694,7 +1697,6 @@ unittest
 }
 
 /// Extract a 16-bit integer from `v`, selected with `index`
-// PERF: ARM version has array bound check
 int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
     short8 r = cast(short8)v;

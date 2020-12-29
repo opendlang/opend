@@ -571,18 +571,14 @@ float _mm_cvtss_f32(__m128 a) pure @safe
     return a.array[0];
 }
 
-static if (LDC_with_SSE1)
+/// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
+int _mm_cvtss_si32 (__m128 a) @safe // PERF GDC
 {
-    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
-    int _mm_cvtss_si32 (__m128 a) @safe // PERF GDC
+    static if (LDC_with_SSE1)
     {
         return __builtin_ia32_cvtss2si(a);
     }
-}
-else
-{
-    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
-    int _mm_cvtss_si32 (__m128 a) @safe
+    else
     {
         return convertFloatToInt32UsingMXCSR(a.array[0]);
     }
@@ -592,30 +588,23 @@ unittest
     assert(1 == _mm_cvtss_si32(_mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f)));
 }
 
-version(LDC)
+/// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
+long _mm_cvtss_si64 (__m128 a) @safe
 {
-    version(X86_64)
+    version(LDC)
     {
-        /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
-        long _mm_cvtss_si64 (__m128 a) @safe
+        version(X86_64)
         {
             return __builtin_ia32_cvtss2si64(a);
         }
-    }
-    else
-    {
-        /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
-        long _mm_cvtss_si64 (__m128 a) @safe
+        else
         {
-            // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
+            // Note: In 32-bit x86, there is no way to convert from float/double to 64-bit integer
+            // using SSE instructions only. So the builtin doesn't exit for this arch.
             return convertFloatToInt64UsingMXCSR(a.array[0]);
         }
     }
-}
-else
-{
-    /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
-    long _mm_cvtss_si64 (__m128 a) @safe
+    else
     {
         return convertFloatToInt64UsingMXCSR(a.array[0]);
     }
