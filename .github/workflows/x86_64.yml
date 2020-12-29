@@ -1,4 +1,4 @@
-name: Run all D Tests
+name: x86_64
 on: [push, pull_request]
 
 jobs:
