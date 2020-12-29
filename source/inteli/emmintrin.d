@@ -1241,7 +1241,7 @@ __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
             case _MM_ROUND_TOWARD_ZERO_ARM: i = vcvtzq_s64_f64(a); break;
         }
         int4 zero = 0;
-        return cast(__m128i) shufflevector!(int4, 0, 4, 2, 6)(cast(int4)i, zero);
+        return cast(__m128i) shufflevector!(int4, 0, 2, 4, 6)(cast(int4)i, zero);
     }
     else
     {
