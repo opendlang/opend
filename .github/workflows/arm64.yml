@@ -1,0 +1,37 @@
+name: arm64
+on: [push, pull_request]
+
+jobs:
+    test:
+        name: Dub Tests
+        strategy:
+            matrix:
+                os: [ubuntu-20.04]
+                dc: 
+                    - ldc-latest 
+                    - ldc-1.24.0
+                    - ldc-1.23.0
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install D compiler
+              uses: dlang-community/setup-dlang@v1
+              with:
+                compiler: ${{ matrix.dc }}            
+
+            - uses: uraimo/run-on-arch-action@v2.0.8
+              name: Run commands
+              id: runcmd
+              with:
+                arch: aarch64
+                distro: ubuntu20.04
+                run: |
+                   uname -a
+                   echo ::set-output name=uname::$(uname -a)
+                   dub test -a aarch64-linux-gnu
+                   dub test -a aarch64-linux-gnu -b unittest-release
+                   dub test -a aarch64-linux-gnu -b unittest-inst
+                   dub test -a aarch64-linux-gnu -b unittest-release-inst
+ 
