@@ -17,6 +17,9 @@ jobs:
             - name: Install GDC
               run: sudo apt install gdc
 
+            - name: Install DUB
+              run: sudo apt install dub              
+
             - name: Vanilla unittest
               run: dub test -a x86_64 --compiler gdc
 
