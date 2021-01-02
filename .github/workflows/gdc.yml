@@ -14,14 +14,14 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: Install GDC
-              run: sudo apt install gdc
-
             - name: Install DUB
               run: sudo apt install dub
 
             - name: Install libcurl
               run: sudo apt install libcurl4-gnutls-dev
+
+            - name: Install GDC
+              run: sudo apt install gdc              
 
             - name: Vanilla unittest
               run: dub test -a x86_64 --compiler gdc
