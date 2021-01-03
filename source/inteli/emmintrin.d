@@ -1379,6 +1379,9 @@ unittest
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
     A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
     _mm_print_epi32(A);
+    import core.stdc.stdio;
+    printf("Saved rounding mode = %d\n", savedRounding);
+    printf("Current rounding mode = %d\n", _MM_GET_ROUNDING_MODE());
     assert(A.array == [1, -3, 53, -3]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
