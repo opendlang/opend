@@ -1071,15 +1071,13 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 /// in `a` and `b` for equality, and return the boolean result (0 or 1).
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    // Note: NaN semantics of the intrinsic are not the same as the 
+    // Note: For some of the _mm_comixx_sx intrinsics, NaN semantics of the intrinsic are not the same as the 
     // comisd instruction, it returns false in case of unordered instead.
     //
     // Actually C++ compilers disagree over the meaning of that instruction.
-    // GCC will manage NaN like the comisd instruction (return true if unordered), 
+    // GCC will manage NaNs like the comisd instruction (return true if unordered), 
     // but ICC, clang and MSVC will deal with NaN like the Intel Intrinsics Guide says.
-    // We choose to do like the most numerous.
-    //
-    // See Issue #69.
+    // We choose to do like the most numerous. It seems GCC is buggy with NaNs.
     return a.array[0] == b.array[0];
 }
 unittest
@@ -1096,15 +1094,7 @@ unittest
 /// result (0 or 1).
 int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    static if (GDC_with_SSE2)
-    {
-        return __builtin_ia32_comisdge(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.oge)(a, b);
-    }
+    return a.array[0] >= b.array[0];
 }
 unittest
 {
@@ -1135,45 +1125,47 @@ unittest
 /// in `a` and `b` for less-than-or-equal.
 int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    static if (GDC_with_SSE2)
-    {
-        return __builtin_ia32_comisdle(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.ule)(a, b); // yields true for NaN, same as GCC
-    }
+    return a.array[0] <= b.array[0];
+}
+unittest
+{
+    assert(1 == _mm_comile_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comile_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(1 == _mm_comile_sd(_mm_set_sd(-78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comile_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(0 == _mm_comile_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(1 == _mm_comile_sd(_mm_set_sd(0.0), _mm_set_sd(-0.0)));
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element 
 /// in `a` and `b` for less-than, and return the boolean result (0 or 1).
 int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    static if (GDC_with_SSE2)
-    {
-        return __builtin_ia32_comisdlt(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.ult)(a, b); // yields true for NaN, same as GCC
-    }
+    return a.array[0] < b.array[0];
+}
+unittest
+{
+    assert(0 == _mm_comilt_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comilt_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(1 == _mm_comilt_sd(_mm_set_sd(-78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comilt_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(0 == _mm_comilt_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(0 == _mm_comilt_sd(_mm_set_sd(-0.0), _mm_set_sd(0.0)));
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element
 /// in `a` and `b` for not-equal, and return the boolean result (0 or 1).
 int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    static if (GDC_with_SSE2)
-    {
-        return __builtin_ia32_comisdneq(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.one)(a, b);
-    }
+    return a.array[0] != b.array[0];
+}
+unittest
+{
+    assert(0 == _mm_comineq_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(1 == _mm_comineq_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(1 == _mm_comineq_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(1 == _mm_comineq_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(0 == _mm_comineq_sd(_mm_set_sd(0.0), _mm_set_sd(-0.0)));
 }
 
 /// Convert packed 32-bit integers in `a` to packed double-precision (64-bit)

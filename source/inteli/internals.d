@@ -810,28 +810,6 @@ version(LDC)
         r[0] = LDCInlineIR!(ir, double, double, double)(a[0], b[0]);
         return r;
     }
-
-    // Note: ucomss and ucomsd are left unimplemented
-    package int comss(FPComparison comparison)(float4 a, float4 b) pure @safe
-    {
-        enum ir = `
-            %cmp = fcmp `~ FPComparisonToString[comparison] ~` float %0, %1
-            %r = zext i1 %cmp to i32
-            ret i32 %r`;
-
-        return LDCInlineIR!(ir, int, float, float)(a[0], b[0]);
-    }
-
-    // Note: ucomss and ucomsd are left unimplemented
-    package int comsd(FPComparison comparison)(double2 a, double2 b) pure @safe
-    {
-        enum ir = `
-            %cmp = fcmp `~ FPComparisonToString[comparison] ~` double %0, %1
-            %r = zext i1 %cmp to i32
-            ret i32 %r`;
-
-        return LDCInlineIR!(ir, int, double, double)(a[0], b[0]);
-    }
 }
 else
 {
@@ -871,17 +849,6 @@ else
         long2 result = cast(long2)a;
         result.ptr[0] = compareFloat!double(comparison, a.array[0], b.array[0]) ? -1 : 0;
         return cast(double2)result;
-    }
-
-    package int comss(FPComparison comparison)(float4 a, float4 b) pure @safe
-    {
-        return compareFloat!float(comparison, a.array[0], b.array[0]) ? 1 : 0;
-    }
-
-    // Note: ucomss and ucomsd are left unimplemented
-    package int comsd(FPComparison comparison)(double2 a, double2 b) pure @safe
-    {
-        return compareFloat!double(comparison, a.array[0], b.array[0]) ? 1 : 0;
     }
 }
 unittest // cmpps
@@ -943,7 +910,7 @@ unittest
     static immutable long[2] correct = [cast(long)(-1), 0];
     assert(c.array == correct);
 }
-unittest // cmpss and comss
+unittest // cmpss
 {
     void testComparison(FPComparison comparison)(float4 A, float4 B)
     {
@@ -954,10 +921,6 @@ unittest // cmpss and comss
         assert(result.array[1] == A.array[1]);
         assert(result.array[2] == A.array[2]);
         assert(result.array[3] == A.array[3]);
-
-        // check comss
-        int comResult = comss!comparison(A, B);
-        assert( (expected != 0) == (comResult != 0) );
     }
 
     // Check all comparison type is working
@@ -994,7 +957,7 @@ unittest // cmpss and comss
     testComparison!(FPComparison.uno)(A, B);
     testComparison!(FPComparison.uno)(A, C);
 }
-unittest // cmpsd and comsd
+unittest // cmpsd
 {
     void testComparison(FPComparison comparison)(double2 A, double2 B)
     {
@@ -1003,10 +966,6 @@ unittest // cmpsd and comsd
         long expected = compareFloat!double(comparison, A.array[0], B.array[0]) ? -1 : 0;
         assert(iresult.array[0] == expected);
         assert(result.array[1] == A.array[1]);
-
-        // check comsd
-        int comResult = comsd!comparison(A, B);
-        assert( (expected != 0) == (comResult != 0) );
     }
 
     // Check all comparison type is working
