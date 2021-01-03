@@ -122,7 +122,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_paddsw128(a, b);
+        return cast(__m128i)__builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
     }
     else version(LDC)
     {
@@ -146,7 +146,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
         else
-            return __builtin_ia32_paddsw128(a, b);
+            return cast(__m128i) __builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
     }
     else
     {
@@ -171,7 +171,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_paddsb128(a, b);
+        return cast(__m128i) __builtin_ia32_paddsb128(cast(byte16)a, cast(byte16)b);
     }
     else version(LDC)
     {
@@ -195,7 +195,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
         else
-            return __builtin_ia32_paddsb128(a, b);
+            return cast(__m128i) __builtin_ia32_paddsb128(cast(byte16)a, cast(byte16)b);
     }
     else
     {
@@ -381,7 +381,7 @@ __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_pavgw128(a, b);
+        return cast(__m128i) __builtin_ia32_pavgw128(cast(short8)a, cast(short8)b);
     }
     else static if (LDC_with_ARM64)
     {
@@ -427,7 +427,7 @@ __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_pavgb128(a, b);
+        return cast(__m128i) __builtin_ia32_pavgb128(cast(byte16)a, cast(byte16)b);
     }
     else static if (LDC_with_ARM64)
     {
@@ -3516,7 +3516,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
     {
         static if (GDC_with_SSE2)
         {
-            return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
+            return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
         }
         else version(DigitalMars)
         {
@@ -3994,7 +3994,7 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
     }
     else static if (GDC_with_SSE2)
     {
-        return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
+        return cast(__m128i) __builtin_ia32_psrldqi128(cast(long2)v, cast(ubyte)(bytes * 8));
     }
     else static if (DMD_with_32bit_asm)
     {
