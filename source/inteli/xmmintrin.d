@@ -346,8 +346,15 @@ unittest
 /// and return the boolean result (0 or 1).
 int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    return comss!(FPComparison.ogt)(a, b);
+    return a.array[0] > b.array[0];
+}
+unittest
+{
+    assert(0 == _mm_comigt_ss(_mm_set_ss(78.0f), _mm_set_ss(78.0f)));
+    assert(1 == _mm_comigt_ss(_mm_set_ss(78.0f), _mm_set_ss(-78.0f)));
+    assert(0 == _mm_comigt_ss(_mm_set_ss(78.0f), _mm_set_ss(float.nan)));
+    assert(0 == _mm_comigt_ss(_mm_set_ss(float.nan), _mm_set_ss(-4.22f)));
+    assert(0 == _mm_comigt_ss(_mm_set_ss(0.0f), _mm_set_ss(-0.0f)));
 }
 
 /// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for less-than-or-equal, 

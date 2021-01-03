@@ -1120,15 +1120,15 @@ unittest
 /// in `a` and `b` for greater-than, and return the boolean result (0 or 1).
 int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 {
-    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
-    static if (GDC_with_SSE2)
-    {
-        return __builtin_ia32_comisdgt(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.ogt)(a, b);
-    }
+    return a.array[0] > b.array[0];
+}
+unittest
+{
+    assert(0 == _mm_comigt_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(1 == _mm_comigt_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(0 == _mm_comigt_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(0 == _mm_comigt_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(0 == _mm_comigt_sd(_mm_set_sd(0.0), _mm_set_sd(-0.0)));
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element 
