@@ -1067,16 +1067,19 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
-
-// Note: we've reverted clang and GCC behaviour with regards to EFLAGS
-// Some such comparisons yields true for NaNs, other don't.
-
 /// Compare the lower double-precision (64-bit) floating-point element 
 /// in `a` and `b` for equality, and return the boolean result (0 or 1).
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    // Note: NaN semantics of the intrinsics are not the same as the 
+    // Note: NaN semantics of the intrinsic are not the same as the 
     // comisd instruction, it returns false in case of unordered instead.
+    //
+    // Actually C++ compilers disagree over the meaning of that instruction.
+    // GCC will manage NaN like the comisd instruction (return true if unordered), 
+    // but ICC, clang and MSVC will deal with NaN like the Intel Intrinsics Guide says.
+    // We choose to do like the most numerous.
+    //
+    // See Issue #69.
     return a.array[0] == b.array[0];
 }
 unittest
@@ -1093,6 +1096,7 @@ unittest
 /// result (0 or 1).
 int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comisdge(a, b);
@@ -1116,6 +1120,7 @@ unittest
 /// in `a` and `b` for greater-than, and return the boolean result (0 or 1).
 int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comisdgt(a, b);
@@ -1130,6 +1135,7 @@ int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 /// in `a` and `b` for less-than-or-equal.
 int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comisdle(a, b);
@@ -1144,6 +1150,7 @@ int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 /// in `a` and `b` for less-than, and return the boolean result (0 or 1).
 int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comisdlt(a, b);
@@ -1158,6 +1165,7 @@ int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 /// in `a` and `b` for not-equal, and return the boolean result (0 or 1).
 int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comisdneq(a, b);

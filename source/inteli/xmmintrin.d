@@ -308,27 +308,45 @@ __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
     return cast(__m128) cmpss!(FPComparison.uno)(a, b);
 }
 
-// Note: we've reversed clang and GCC behaviour with regards to EFLAGS
-// Some such comparisons yields true for NaNs, other don't.
 
 /// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for equality, 
 /// and return the boolean result (0 or 1).
-int _mm_comieq_ss (__m128 a, __m128 b) pure @safe // comiss + sete
+int _mm_comieq_ss (__m128 a, __m128 b) pure @safe
 {
-    return comss!(FPComparison.ueq)(a, b); // yields true for NaN!
+    // Note: see Issue #69 for details of NaN behaviour.
+    return a.array[0] == b.array[0];
+}
+unittest
+{
+    assert(1 == _mm_comieq_ss(_mm_set_ss(78.0f), _mm_set_ss(78.0f)));
+    assert(0 == _mm_comieq_ss(_mm_set_ss(78.0f), _mm_set_ss(-78.0f)));
+    assert(0 == _mm_comieq_ss(_mm_set_ss(78.0f), _mm_set_ss(float.nan)));
+    assert(0 == _mm_comieq_ss(_mm_set_ss(float.nan), _mm_set_ss(-4.22f)));
+    assert(1 == _mm_comieq_ss(_mm_set_ss(0.0), _mm_set_ss(-0.0)));
 }
 
 /// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for greater-than-or-equal, 
 /// and return the boolean result (0 or 1).
-int _mm_comige_ss (__m128 a, __m128 b) pure @safe // comiss + setae
+int _mm_comige_ss (__m128 a, __m128 b) pure @safe
 {
-    return comss!(FPComparison.oge)(a, b);
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
+    return a.array[0] >= b.array[0];
+}
+unittest
+{
+    assert(1 == _mm_comige_ss(_mm_set_ss(78.0f), _mm_set_ss(78.0f)));
+    assert(1 == _mm_comige_ss(_mm_set_ss(78.0f), _mm_set_ss(-78.0f)));
+    assert(0 == _mm_comige_ss(_mm_set_ss(-78.0f), _mm_set_ss(78.0f)));
+    assert(0 == _mm_comige_ss(_mm_set_ss(78.0f), _mm_set_ss(float.nan)));
+    assert(0 == _mm_comige_ss(_mm_set_ss(float.nan), _mm_set_ss(-4.22f)));
+    assert(1 == _mm_comige_ss(_mm_set_ss(-0.0f), _mm_set_ss(0.0f)));
 }
 
 /// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` for greater-than, 
 /// and return the boolean result (0 or 1).
 int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     return comss!(FPComparison.ogt)(a, b);
 }
 
@@ -336,6 +354,7 @@ int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
 /// and return the boolean result (0 or 1).
 int _mm_comile_ss (__m128 a, __m128 b) pure @safe // comiss + setbe
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     return comss!(FPComparison.ule)(a, b); // yields true for NaN!
 }
 
@@ -343,6 +362,7 @@ int _mm_comile_ss (__m128 a, __m128 b) pure @safe // comiss + setbe
 /// and return the boolean result (0 or 1).
 int _mm_comilt_ss (__m128 a, __m128 b) pure @safe // comiss + setb
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     return comss!(FPComparison.ult)(a, b); // yields true for NaN!
 }
 
@@ -350,6 +370,7 @@ int _mm_comilt_ss (__m128 a, __m128 b) pure @safe // comiss + setb
 /// and return the boolean result (0 or 1).
 int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 {
+    // See `_mm_comieq_sd` or Issue #69 for details about NaN behaviour.
     return comss!(FPComparison.one)(a, b);
 }
 
