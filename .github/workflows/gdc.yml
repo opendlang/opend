@@ -6,7 +6,7 @@ jobs:
         name: Dub Tests
         strategy:
             matrix:
-                os: [ubuntu-18.04]
+                os: [ubuntu-20.04]
                 dc: 
                     - ldc-latest 
 
@@ -24,14 +24,5 @@ jobs:
               run: sudo apt install gdc              
 
             - name: Vanilla unittest
-              run: dub test -a x86_64 --compiler gdc
-
-            - name: Unittest with default configuration
-              run: dub test -a x86_64 --compiler gdc -b unittest-release
-
-            - name: Unittest with unittest-inst configuration
-              run: dub test -a x86_64 --compiler gdc -b unittest-inst
-
-            - name: Unittest with unittest-release-inst configuration
-              run: dub test -a x86_64 --compiler gdc -b unittest-release-inst
+              run: dub test -a x86_64 --compiler gdc -v
  
