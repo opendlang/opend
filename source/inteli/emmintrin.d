@@ -575,7 +575,7 @@ __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
     {
-        return cast(__m128i) _builtin_ia32_pcmpeqw128(cast(short8)a, cast(short8)b);
+        return cast(__m128i) __builtin_ia32_pcmpeqw128(cast(short8)a, cast(short8)b);
     }
     else
     {
@@ -1075,14 +1075,17 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 /// in `a` and `b` for equality, and return the boolean result (0 or 1).
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
-    {        
-        return __builtin_ia32_comisdeq(a, b);
-    }
-    else
-    {
-        return comsd!(FPComparison.ueq)(a, b); // yields true for NaN, same as GCC
-    }
+    // Note: NaN semantics of the intrinsics are not the same as the 
+    // comisd instruction, it returns false in case of unordered instead.
+    return a.array[0] == b.array[0];
+}
+unittest
+{
+    assert(1 == _mm_comieq_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comieq_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(0 == _mm_comieq_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(0 == _mm_comieq_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(1 == _mm_comieq_sd(_mm_set_sd(0.0), _mm_set_sd(-0.0)));
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element 
@@ -1098,6 +1101,15 @@ int _mm_comige_sd (__m128d a, __m128d b) pure @safe
     {
         return comsd!(FPComparison.oge)(a, b);
     }
+}
+unittest
+{
+    assert(1 == _mm_comige_sd(_mm_set_sd(78.0), _mm_set_sd(78.0)));
+    assert(1 == _mm_comige_sd(_mm_set_sd(78.0), _mm_set_sd(-78.0)));
+    assert(0 == _mm_comige_sd(_mm_set_sd(-78.0), _mm_set_sd(78.0)));
+    assert(0 == _mm_comige_sd(_mm_set_sd(78.0), _mm_set_sd(double.nan)));
+    assert(0 == _mm_comige_sd(_mm_set_sd(double.nan), _mm_set_sd(-4.22)));
+    assert(1 == _mm_comige_sd(_mm_set_sd(-0.0), _mm_set_sd(0.0)));
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element 
