@@ -64,22 +64,22 @@ version(GNU)
 
         void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
         {
-            __builtin_ia32_storedqu(cast(char*)pvec, v);
+            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
         void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
         {
-            __builtin_ia32_storedqu(cast(char*)pvec, v);
+            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
         void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
         {
-            __builtin_ia32_storedqu(cast(char*)pvec, v);
+            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
         void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
         {
-            __builtin_ia32_storedqu(cast(char*)pvec, v);
+            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
         // TODO: for performance, replace that anywhere possible by a GDC intrinsic
@@ -303,6 +303,13 @@ static if (CoreSimdIsEmulated)
 else
 {
     public import core.simd;
+
+    // GDC cannot convert implicitely __vector from signed to unsigned, but LDC can
+    // And LDC sometimes need those unsigned vector types for some intrinsics.
+    // For internal use only.
+    package alias ushort8 = Vector!(ushort[8]);
+    package alias ubyte8  = Vector!(ubyte[8]);
+    package alias ubyte16 = Vector!(ubyte[16]);
 }
 
 // Emulate ldc.simd cmpMask

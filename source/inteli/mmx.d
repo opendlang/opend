@@ -184,7 +184,7 @@ __m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
     {        
-        return cast(__m64) __builtin_ia32_pcmpeqb(cast(byte8)a, cast(byte8)b);
+        return cast(__m64) __builtin_ia32_pcmpeqb(cast(ubyte8)a, cast(ubyte8)b);
     }
     else
     {
@@ -247,7 +247,7 @@ __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
     {
-        return cast(__m64) __builtin_ia32_pcmpgtb (cast(byte8)a, cast(byte8)b);
+        return cast(__m64) __builtin_ia32_pcmpgtb (cast(ubyte8)a, cast(ubyte8)b);
     }
     else
     {
