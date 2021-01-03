@@ -1819,7 +1819,10 @@ void _mm_setcsr(uint controlWord) @trusted
     {
         static if (GDC_with_SSE)
         {
+            // Is it https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55752 ?
+            asm pure nothrow @nogc @trusted { "nop"; }
             __builtin_ia32_ldmxcsr(controlWord);
+            asm pure nothrow @nogc @trusted { "nop"; }
         }
         else version(X86)
         {
