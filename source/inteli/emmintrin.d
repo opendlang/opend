@@ -1376,20 +1376,18 @@ unittest
     __m128i A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
     assert(A.array == [1, -2, 54, -3]);
 
+    // GCC might merge this branch with above! Despite _MM_SET_ROUNDING_MODE 
+    // not being pure.
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
-    _mm_print_epi32(A);
-    import core.stdc.stdio;
-    printf("Saved rounding mode = %d\n", savedRounding);
-    printf("Current rounding mode = %d\n", _MM_GET_ROUNDING_MODE());
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.3f, -2.11f, 53.4f, -2.8f));
     assert(A.array == [1, -3, 53, -3]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.3f, -2.12f, 53.6f, -2.7f));
     assert(A.array == [2, -2, 54, -2]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.17f, 53.8f, -2.91f));
     assert(A.array == [1, -2, 53, -2]);
 
     _MM_SET_ROUNDING_MODE(savedRounding);
