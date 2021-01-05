@@ -125,7 +125,16 @@ else version(DigitalMars)
     version(D_SIMD)
     {
         enum MMXSizedVectorsAreEmulated = true;
-        enum SSESizedVectorsAreEmulated = true; // Should be false, but it is blocked by https://issues.dlang.org/show_bug.cgi?id=21474
+
+        static if (__VERSION__ >= 2096)
+        {
+            enum SSESizedVectorsAreEmulated = false;
+        }
+        else
+        {
+            // Before DMD 2.096, blocked by https://issues.dlang.org/show_bug.cgi?id=21474
+            enum SSESizedVectorsAreEmulated = true; 
+        }
     }
     else
     {
