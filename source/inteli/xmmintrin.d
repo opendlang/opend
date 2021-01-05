@@ -116,7 +116,10 @@ unittest
 /// Compute the bitwise NOT of packed single-precision (32-bit) floating-point elements in `a` and then AND with `b`.
 __m128 _mm_andnot_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128)( (~cast(__m128i)a) & cast(__m128i)b );
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.ANDNPS, a, b);
+    else
+        return cast(__m128)( (~cast(__m128i)a) & cast(__m128i)b );
 }
 unittest
 {
@@ -148,26 +151,61 @@ __m64 _mm_avg_pu8 (__m64 a, __m64 b) pure @safe
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for equality.
 __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.oeq)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, a, b, 0);
+    else
+        return cast(__m128) cmpps!(FPComparison.oeq)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, float.nan, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpeq_ps(A, B);
+    int[4] correct = [0, -1, 0, 0];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for equality, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpeq_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.oeq)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPSS, a, b, 0);
+    else
+        return cast(__m128) cmpss!(FPComparison.oeq)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpeq_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpeq_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpeq_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpeq_ss(A, E);
+    int[4] correct1 = [-1, 0, 0, 0];
+    int[4] correct2 = [0, 0, 0, 0];
+    int[4] correct3 = [0, 0, 0, 0];
+    int[4] correct4 = [0, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for greater-than-or-equal.
 __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.oge)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, b, a, 2);
+    else
+        return cast(__m128) cmpps!(FPComparison.oge)(a, b);
 }
 unittest
 {
-    __m128i R = cast(__m128i) _mm_cmpge_ps(_mm_setr_ps(0, 1, -1, float.nan),
-                                           _mm_setr_ps(0, 0, 0, 0));
-    int[4] correct = [-1, -1, 0, 0];
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpge_ps(A, B);
+    int[4] correct = [0, -1,-1, 0];
     assert(R.array == correct);
 }
 
@@ -175,7 +213,31 @@ unittest
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.oge)(a, b);
+    static if (DMD_with_DSIMD)
+    {
+        __m128 c = cast(__m128) __simd(XMM.CMPSS, b, a, 2);
+        a[0] = c[0];
+        return a;
+    }
+    else
+        return cast(__m128) cmpss!(FPComparison.oge)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpge_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpge_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpge_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpge_ss(A, E);
+    int[4] correct1 = [-1, 0, 0, 0];
+    int[4] correct2 = [-1, 0, 0, 0];
+    int[4] correct3 = [0, 0, 0, 0];
+    int[4] correct4 = [0, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for greater-than.
