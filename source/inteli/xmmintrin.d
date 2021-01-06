@@ -1472,10 +1472,17 @@ unittest
 /// Upper 64-bit is zeroed.
 __m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
-    long r = *cast(long*)(mem_addr);
-    long2 result = [0, 0];
-    result.ptr[0] = r;
-    return cast(__m128i)result;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.LODQ, *cast(__m128i*)mem_addr);
+    }
+    else
+    {
+        long r = *cast(long*)(mem_addr);
+        long2 result = [0, 0];
+        result.ptr[0] = r;
+        return cast(__m128i)result;
+    }
 }
 unittest
 {
@@ -1517,7 +1524,11 @@ __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return packed maximum values.
 __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.MAXPS, a, b);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_maxps(a, b);
     }
@@ -1557,7 +1568,11 @@ __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
 /// lower element of result, and copy the upper 3 packed elements from `a` to the upper element of result.
  __m128 _mm_max_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.MAXSS, a, b);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_maxss(a, b);
     }
@@ -1597,7 +1612,11 @@ __m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return packed maximum values.
 __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.MINPS, a, b);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_minps(a, b);
     }
