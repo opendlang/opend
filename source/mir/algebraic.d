@@ -1108,8 +1108,8 @@ struct Algebraic(_Types...)
                         static if (is(T == typeof(null)))
                             return "null";
                         else
-                        static if (__traits(compiles, { auto s = to!string(_storage_.trustedGet!T);}))
-                            return to!string(_storage_.trustedGet!T);
+                        static if (__traits(compiles, { auto s = to!string(trustedGet!T);}))
+                            return to!string(trustedGet!T);
                         else
                             return AllowedTypes[i].stringof;
                 }
@@ -1138,8 +1138,8 @@ struct Algebraic(_Types...)
                         static if (is(T == typeof(null)))
                             return w.put("null");
                         else
-                        static if (__traits(compiles, { import mir.format: print; print(w, _storage_.trustedGet!T); }))
-                            { import mir.format: print; print(w, _storage_.trustedGet!T); }
+                        static if (__traits(compiles, { import mir.format: print; print(w, trustedGet!T); }))
+                            { import mir.format: print; print(w, trustedGet!T); }
                         else
                             w.put(AllowedTypes[i].stringof);
                         return;
