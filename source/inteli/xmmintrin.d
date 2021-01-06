@@ -423,79 +423,273 @@ unittest
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than-or-equal.
 __m128 _mm_cmpnge_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.ult)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, b, a, 6);
+    else
+        return cast(__m128) cmpps!(FPComparison.ult)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpnge_ps(A, B);
+    int[4] correct = [-1, 0, 0, -1];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than-or-equal, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnge_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.ult)(a, b);
+    static if (DMD_with_DSIMD)
+    {
+        __m128 c = cast(__m128) __simd(XMM.CMPSS, b, a, 6);
+        a[0] = c[0];
+        return a;
+    }
+    else
+        return cast(__m128) cmpss!(FPComparison.ult)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpnge_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpnge_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpnge_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpnge_ss(A, E);
+    int[4] correct1 = [0, 0, 0, 0];
+    int[4] correct2 = [0, 0, 0, 0];
+    int[4] correct3 = [-1, 0, 0, 0];
+    int[4] correct4 = [-1, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than.
 __m128 _mm_cmpngt_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.ule)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, b, a, 5);
+    else
+        return cast(__m128) cmpps!(FPComparison.ule)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpngt_ps(A, B);
+    int[4] correct = [-1, -1, 0, -1];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-greater-than, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpngt_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.ule)(a, b);
+    static if (DMD_with_DSIMD)
+    {
+        __m128 c = cast(__m128) __simd(XMM.CMPSS, b, a, 5);
+        a[0] = c[0];
+        return a;
+    }
+    else
+        return cast(__m128) cmpss!(FPComparison.ule)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpngt_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpngt_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpngt_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpngt_ss(A, E);
+    int[4] correct1 = [-1, 0, 0, 0];
+    int[4] correct2 = [0, 0, 0, 0];
+    int[4] correct3 = [-1, 0, 0, 0];
+    int[4] correct4 = [-1, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than-or-equal.
 __m128 _mm_cmpnle_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.ugt)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, a, b, 6);
+    else
+        return cast(__m128) cmpps!(FPComparison.ugt)(a, b);
 }
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpnle_ps(A, B);
+    int[4] correct = [0, 0, -1, -1];
+    assert(R.array == correct);
+}
+
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than-or-equal, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnle_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.ugt)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPSS, a, b, 6);
+    else
+        return cast(__m128) cmpss!(FPComparison.ugt)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpnle_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpnle_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpnle_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpnle_ss(A, E);
+    int[4] correct1 = [0, 0, 0, 0];
+    int[4] correct2 = [-1, 0, 0, 0];
+    int[4] correct3 = [-1, 0, 0, 0];
+    int[4] correct4 = [0, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than.
 __m128 _mm_cmpnlt_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.uge)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, a, b, 5);
+    else
+        return cast(__m128) cmpps!(FPComparison.uge)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpnlt_ps(A, B);
+    int[4] correct = [0, -1, -1, -1];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` for not-less-than, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpnlt_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.uge)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPSS, a, b, 5);
+    else
+        return cast(__m128) cmpss!(FPComparison.uge)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpnlt_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpnlt_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpnlt_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpnlt_ss(A, E);
+    int[4] correct1 = [-1, 0, 0, 0];
+    int[4] correct2 = [-1, 0, 0, 0];
+    int[4] correct3 = [-1, 0, 0, 0];
+    int[4] correct4 = [0, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` to see if neither is NaN.
 __m128 _mm_cmpord_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.ord)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, a, b, 7);
+    else
+        return cast(__m128) cmpps!(FPComparison.ord)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpord_ps(A, B);
+    int[4] correct = [-1, -1, -1, 0];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` to see if neither is NaN, 
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpord_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.ord)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPSS, a, b, 7);
+    else
+        return cast(__m128) cmpss!(FPComparison.ord)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpord_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpord_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpord_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpord_ss(A, E);
+    int[4] correct1 = [-1, 0, 0, 0];
+    int[4] correct2 = [-1, 0, 0, 0];
+    int[4] correct3 = [0, 0, 0, 0];
+    int[4] correct4 = [-1, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b` to see if either is NaN.
 __m128 _mm_cmpunord_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpps!(FPComparison.uno)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPPS, a, b, 3);
+    else
+        return cast(__m128) cmpps!(FPComparison.uno)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, float.nan);
+    __m128 B = _mm_setr_ps(3.0f, 2.0f, 1.0f, float.nan);
+    __m128i R = cast(__m128i) _mm_cmpunord_ps(A, B);
+    int[4] correct = [0, 0, 0, -1];
+    assert(R.array == correct);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point elements in `a` and `b` to see if either is NaN.
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128) cmpss!(FPComparison.uno)(a, b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.CMPSS, a, b, 3);
+    else return cast(__m128) cmpss!(FPComparison.uno)(a, b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3.0f, 0, 0, 0);
+    __m128 B = _mm_setr_ps(3.0f, float.nan, float.nan, float.nan);
+    __m128 C = _mm_setr_ps(2.0f, float.nan, float.nan, float.nan);
+    __m128 D = _mm_setr_ps(float.nan, float.nan, float.nan, float.nan);
+    __m128 E = _mm_setr_ps(4.0f, float.nan, float.nan, float.nan);
+    __m128i R1 = cast(__m128i) _mm_cmpunord_ss(A, B);
+    __m128i R2 = cast(__m128i) _mm_cmpunord_ss(A, C);
+    __m128i R3 = cast(__m128i) _mm_cmpunord_ss(A, D);
+    __m128i R4 = cast(__m128i) _mm_cmpunord_ss(A, E);
+    int[4] correct1 = [0, 0, 0, 0];
+    int[4] correct2 = [0, 0, 0, 0];
+    int[4] correct3 = [-1, 0, 0, 0];
+    int[4] correct4 = [0, 0, 0, 0];
+    assert(R1.array == correct1 && R2.array == correct2 && R3.array == correct3 && R4.array == correct4);
 }
 
 
@@ -813,9 +1007,19 @@ float _mm_cvtss_f32(__m128 a) pure @safe
 /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 32-bit integer.
 int _mm_cvtss_si32 (__m128 a) @safe // PERF GDC
 {
-    static if (LDC_with_SSE1)
+    static if (GDC_with_SSE)
     {
         return __builtin_ia32_cvtss2si(a);
+    }
+    else static if (LDC_with_SSE1)
+    {
+        return __builtin_ia32_cvtss2si(a);
+    }
+    else static if (DMD_with_DSIMD)
+    {
+        __m128 b;
+        __m128i r = cast(__m128i) __simd(XMM.CVTPS2DQ, a); // Note: converts 4 integers.
+        return r.array[0];
     }
     else
     {
@@ -920,7 +1124,9 @@ unittest
 /// element of result, and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.DIVSS, a, b);
+    else static if (GDC_with_SSE)
         return __builtin_ia32_divss(a, b);
     else
     {
@@ -1544,7 +1750,9 @@ unittest
 /// element of result, and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.MULSS, a, b);
+    else static if (GDC_with_SSE)
         return __builtin_ia32_mulss(a, b);
     else
     {
@@ -2367,7 +2575,9 @@ unittest
 /// packed elements from a to the upper elements of result.
 __m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+        return cast(__m128) __simd(XMM.SUBSS, a, b);
+    else static if (GDC_with_SSE)
         return __builtin_ia32_subss(a, b);
     else
     {
