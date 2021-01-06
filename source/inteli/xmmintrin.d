@@ -1325,12 +1325,19 @@ unittest
 /// elements. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
 {
-    __m128 r;
-    r.ptr[0] = *mem_addr;
-    r.ptr[1] = 0;
-    r.ptr[2] = 0;
-    r.ptr[3] = 0;
-    return r;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128)__simd(XMM.LODSS, *cast(__m128*)mem_addr);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = *mem_addr;
+        r.ptr[1] = 0;
+        r.ptr[2] = 0;
+        r.ptr[3] = 0;
+        return r;
+    }
 }
 unittest
 {
@@ -1347,10 +1354,17 @@ alias _mm_load1_ps = _mm_load_ps1;
 /// and copy the lower 2 elements from `a` to result. `mem_addr does` not need to be aligned on any particular boundary.
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
-    // x86: movlhps generated since LDC 1.9.0 -O1
-    long2 la = cast(long2)a;
-    la.ptr[1] = (*mem_addr).array[0];
-    return cast(__m128)la;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.LODHPS, a, *cast(const(__m128)*)mem_addr); 
+    }
+    else
+    {
+        // x86: movlhps generated since LDC 1.9.0 -O1
+        long2 la = cast(long2)a;
+        la.ptr[1] = (*mem_addr).array[0];
+        return cast(__m128)la;
+    }
 }
 unittest
 {
@@ -1366,10 +1380,17 @@ unittest
 /// and copy the upper 2 elements from `a` to result. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
-    // x86: movlpd/movlps generated with all LDC -01
-    long2 la = cast(long2)a;
-    la.ptr[0] = (*mem_addr).array[0];
-    return cast(__m128)la;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.LODLPS, a, *cast(const(__m128)*)mem_addr); 
+    }
+    else
+    {
+        // x86: movlpd/movlps generated with all LDC -01
+        long2 la = cast(long2)a;
+        la.ptr[0] = (*mem_addr).array[0];
+        return cast(__m128)la;
+    }
 }
 unittest
 {
@@ -1387,12 +1408,19 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted // TODO shouldn't be 
 {
     __m128* aligned = cast(__m128*)mem_addr; // x86: movaps + shups since LDC 1.0.0 -O1
     __m128 a = *aligned;
-    __m128 r;
-    r.ptr[0] = a.array[3];
-    r.ptr[1] = a.array[2];
-    r.ptr[2] = a.array[1];
-    r.ptr[3] = a.array[0];
-    return r;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.SHUFPS, a, a, 27);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[3];
+        r.ptr[1] = a.array[2];
+        r.ptr[2] = a.array[1];
+        r.ptr[3] = a.array[0];
+        return r;
+    }
 }
 unittest
 {
@@ -1419,10 +1447,18 @@ unittest
 /// Load unaligned 16-bit integer from memory into the first element, fill with zeroes otherwise.
 __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
 {
-    short r = *cast(short*)(mem_addr);
-    short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
-    result.ptr[0] = r;
-    return cast(__m128i)result;
+    static if (DMD_with_DSIMD)
+    {
+        int r = *cast(short*)(mem_addr);
+        return cast(__m128i) __simd(XMM.LODD, *cast(__m128i*)&r);
+    }
+    else
+    {
+        short r = *cast(short*)(mem_addr);
+        short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
+        result.ptr[0] = r;
+        return cast(__m128i)result;
+    }
 }
 unittest
 {
