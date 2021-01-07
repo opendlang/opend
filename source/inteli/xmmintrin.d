@@ -1911,6 +1911,12 @@ void _mm_prefetch(int locality)(const(void)* p) pure @trusted
     {
         return __builtin_prefetch(p, (locality & 0x4) >> 2, locality & 0x3);
     }
+    else static if (DMD_with_DSIMD)
+    {
+        enum bool isWrite = (locality & 0x4) != 0;
+        enum level = locality & 3;
+        return prefetch!(isWrite, level)(p);
+    }
     else version(LDC)
     {
         static if (__VERSION__ >= 2091)
@@ -2025,7 +2031,11 @@ deprecated("Use _mm_shuffle_pi16 instead") alias _m_pshufw = _mm_shuffle_pi16;//
 /// and return the results. The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rcp_ps (__m128 a) pure @trusted
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.RCPPS, a);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_rcpps(a);
     }
@@ -2059,7 +2069,11 @@ unittest
 /// The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rcp_ss (__m128 a) pure @trusted
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.RCPSS, a);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_rcpss(a);
     }
@@ -2089,7 +2103,11 @@ unittest
 /// The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rsqrt_ps (__m128 a) pure @trusted
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.RSQRTPS, a);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_rsqrtps(a);
     }
@@ -2131,7 +2149,11 @@ unittest
 /// The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rsqrt_ss (__m128 a) pure @trusted
 {   
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.RSQRTSS, a);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_rsqrtss(a);
     }
@@ -2357,6 +2379,7 @@ unittest
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
+    // PERF DMD_with_D_SIMD
     float[4] result = [e3, e2, e1, e0];
     return loadUnaligned!(float4)(result.ptr);
 }
@@ -2374,9 +2397,15 @@ unittest
 /// Return vector of type `__m128` with all elements set to zero.
 __m128 _mm_setzero_ps() pure @trusted
 {
-    // Compiles to xorps without problems
-    float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);
+    float4 r;
+    r = 0.0f;
+    return r;
+}
+unittest
+{
+    __m128 R = _mm_setzero_ps();
+    float[4] correct = [0.0f, 0, 0, 0];
+    assert(R.array == correct);
 }
 
 /// Perform a serializing operation on all store-to-memory instructions that were issued prior 

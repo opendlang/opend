@@ -176,6 +176,12 @@ static if (CoreSimdIsEmulated)
             return res;
         }
 
+        // Assigning a BaseType value
+        void opAssign(BaseType e) pure nothrow @safe @nogc
+        {
+            array[] = e;
+        }
+
         // Assigning a static array
         void opAssign(ArrayType v) pure nothrow @safe @nogc
         {
@@ -242,6 +248,7 @@ static if (CoreSimdIsEmulated)
     template loadUnaligned(Vec)
     {
         // Note: can't be @safe with this signature
+        // PERF: DMD + D_SIMD
         Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
@@ -416,12 +423,6 @@ static if (MMXSizedVectorsAreEmulated)
     {
         float[2] array;
         mixin VectorOps!(float2, float[2]);
-
-        private static float allOnes() pure nothrow @nogc @trusted
-        {
-            uint m1 = 0xffffffff;
-            return *cast(float*)(&m1);
-        }
     }
 
     struct byte8
