@@ -2368,6 +2368,7 @@ unittest
 /// Create mask from the most significant bit of each 8-bit element in `v`.
 int _mm_movemask_epi8 (__m128i a) pure @trusted
 {
+    // PERF: Not possible in D_SIMD because of https://issues.dlang.org/show_bug.cgi?id=8047
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pmovmskb128(cast(ubyte16)a);
@@ -2425,6 +2426,7 @@ unittest
 /// loating-point element in `v`.
 int _mm_movemask_pd(__m128d v) pure @safe
 {
+    // PERF: Not possible in D_SIMD because of https://issues.dlang.org/show_bug.cgi?id=8047
     static if (GDC_with_SSE2)
     {
         /// Set each bit of mask `dst` based on the most significant bit of the corresponding

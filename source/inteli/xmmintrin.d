@@ -1657,7 +1657,11 @@ __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
 /// lower element of result, and copy the upper 3 packed elements from `a` to the upper element of result.
 __m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_with_SSE)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.MINSS, a, b);
+    }
+    else static if (GDC_with_SSE)
     {
         return __builtin_ia32_minss(a, b);
     }
@@ -1709,9 +1713,19 @@ unittest
 /// copy the upper 2 elements from `a` to the upper 2 elements of dst.
 __m128 _mm_movehl_ps (__m128 a, __m128 b) pure @trusted
 {
-    a.ptr[0] = b.array[2];
-    a.ptr[1] = b.array[3];
-    return a;
+    // Disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
+    /*
+    static if (DMD_with_DSIMD)
+    {
+        
+        return cast(__m128) __simd(XMM.MOVHLPS, a, b);
+    }
+    else */
+    {
+        a.ptr[0] = b.array[2];
+        a.ptr[1] = b.array[3];
+        return a;
+    }
 }
 unittest
 {
@@ -1725,10 +1739,20 @@ unittest
 /// Move the lower 2 single-precision (32-bit) floating-point elements from `b` to the upper 2 elements of result, and 
 /// copy the lower 2 elements from `a` to the lower 2 elements of result
 __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @trusted
-{
-    a.ptr[2] = b.array[0];
-    a.ptr[3] = b.array[1];
-    return a;
+{    
+    // Disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
+    /*
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.MOVLHPS, a, b);
+    }
+    else
+    */
+    {
+        a.ptr[2] = b.array[0];
+        a.ptr[3] = b.array[1];
+        return a;
+    }    
 }
 unittest
 {
@@ -1753,6 +1777,7 @@ unittest
 /// floating-point element in `a`.
 int _mm_movemask_ps (__m128 a) pure @trusted
 {
+    // PERF: Not possible in D_SIMD because of https://issues.dlang.org/show_bug.cgi?id=8047
     static if (GDC_with_SSE)
     {
         return __builtin_ia32_movmskps(a);
@@ -1842,7 +1867,10 @@ unittest
 /// return the result.
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
+    static if (DMD_with_DSIMD)
+        return cast(__m128)__simd(XMM.ORPS, a, b);
+    else
+        return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
 deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;///

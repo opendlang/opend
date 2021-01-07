@@ -6,10 +6,11 @@
 ![x86](https://github.com/AuburnSounds/intel-intrinsics/workflows/x86/badge.svg)
 ![gdc](https://github.com/AuburnSounds/intel-intrinsics/workflows/gdc/badge.svg)
 
-The DUB package `intel-intrinsics` implements Intel intrinsics for D.
+`intel-intrinsics` is the SIMD library for D.
 
-`intel-intrinsics` lets you use x86 SIMD in D with support for LDC / DMD / GDC with a single syntax and API.
-It can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for the Raspberry Pi.
+`intel-intrinsics` lets you use SIMD in D with support for LDC / DMD / GDC with a single syntax and API: the x86 Intel Intrinsics API that is also used within the C, C++, and Rust communities.
+
+`intel-intrinsics` is most similar to [simd-everywhere](https://github.com/simd-everywhere/simde), it can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for the Raspberry Pi.
 
 ```json
 "dependencies":
@@ -34,9 +35,9 @@ It can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
 The philosophy (and guarantee) of `intel-intrinsics` is:
- - When using LDC, `intel-intrinsics` should generate optimal code else it's a bug.
- - **No promise that the exact instruction is generated**, because it's not always the fastest thing to do.
- - Guarantee that the **semantics** of the intrinsic is preserved, above all other consideration.
+ - `intel-intrinsics` generates optimal code else it's a bug.
+ - **No promise that the exact instruction is generated**, because it's often not the fastest thing to do.
+ - Guarantee that the **semantics** of the intrinsic is preserved, above all other consideration (even at the cost of speed). See image below.
 
 ### SIMD types
 
@@ -47,14 +48,14 @@ The philosophy (and guarantee) of `intel-intrinsics` is:
 though most of the time you would deal with
 ```d
 alias __m128 = float4; 
-alias __m128i = int4; // and you can rely on __m128i being int4
+alias __m128i = int4;
 alias __m128d = double2;
 alias __m64 = long1;
 ```
 
 ### Vector Operators for all
 
-`intel-intrinsics` implements Vector Operators for compilers that don't have `__vector` support (DMD with 32-bit x86 target).
+`intel-intrinsics` implements Vector Operators for compilers that don't have `__vector` support (DMD with 32-bit x86 target). It doesn't provide unsigned vectors though.
 
 **Example:**
 ```d
@@ -105,7 +106,7 @@ The problem with introducing new names is that you need hundreds of new identifi
 - **Documentation**
 There is a convenient online guide provided by Intel:
 https://software.intel.com/sites/landingpage/IntrinsicsGuide/
-Without this Intel documentation, it's much more difficult to write sizeable SIMD code.
+Without that Intel documentation, it's impractical to write sizeable SIMD code.
 
 
 ### Who is using it? `intel-intrinsics`
