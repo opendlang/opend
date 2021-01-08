@@ -248,7 +248,6 @@ static if (CoreSimdIsEmulated)
     template loadUnaligned(Vec)
     {
         // Note: can't be @safe with this signature
-        // PERF: DMD + D_SIMD
         Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
@@ -256,15 +255,27 @@ static if (CoreSimdIsEmulated)
 
             static if (isVector)
             {
-                // PERF: there is probably something faster to do for this compiler (DMD).
-                //       Avoid this on DMD in the future.
-                enum size_t Count = Vec.array.length;
-                Vec result;
-                foreach(int i; 0..Count)
+                // PERF DMD
+                /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
+                static if (DMD_with_DSIMD && Vec.sizeof == 8)
                 {
-                    result.ptr[i] = pvec[i];
+                    static if (is(Vec == double2))
+                        return cast(Vec)__simd(XMM.LODUPD, *pvec);
+                    else static if (is(Vec == float4))
+                        return cast(Vec)__simd(XMM.LODUPS, *pvec);
+                    else
+                        return cast(Vec)__simd(XMM.LODDQU, *pvec);
                 }
-                return result;
+                else */
+                {
+                    enum size_t Count = Vec.array.length;
+                    Vec result;
+                    foreach(int i; 0..Count)
+                    {
+                        result.ptr[i] = pvec[i];
+                    }
+                    return result;
+                }
             }
             else
             {
@@ -285,11 +296,23 @@ static if (CoreSimdIsEmulated)
 
             static if (isVector)
             {
-                // PERF: there is probably something faster to do for this compiler (DMD).
-                //       Avoid this on DMD in the future.
-                enum size_t Count = Vec.array.length;
-                foreach(int i; 0..Count)
-                    pvec[i] = v.array[i];
+                // PERF DMD
+                /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
+                static if (DMD_with_DSIMD && Vec.sizeof == 8)
+                {
+                    static if (is(Vec == double2))
+                        __simd_sto(XMM.STOUPD, *pvec, value);
+                    else static if (is(Vec == float4))
+                        __simd_sto(XMM.STOUPS, *pvec, value);
+                    else
+                        __simd_sto(XMM.STODQU, *pvec, value);
+                }
+                else*/
+                {
+                    enum size_t Count = Vec.array.length;
+                    foreach(int i; 0..Count)
+                        pvec[i] = v.array[i];
+                }
             }
             else
             {

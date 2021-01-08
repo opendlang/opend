@@ -2284,9 +2284,16 @@ void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 /// Copy single-precision (32-bit) floating-point element `a` to the lower element of result, and zero the upper 3 elements.
 __m128 _mm_set_ss (float a) pure @trusted
 {
-    __m128 r = _mm_setzero_ps();
-    r.ptr[0] = a;
-    return r;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.LODSS, a);
+    }
+    else
+    {
+        __m128 r = _mm_setzero_ps();
+        r.ptr[0] = a;
+        return r;
+    }
 }
 unittest
 {
@@ -2298,11 +2305,7 @@ unittest
 /// Broadcast single-precision (32-bit) floating-point value `a` to all elements.
 __m128 _mm_set1_ps (float a) pure @trusted
 {
-    __m128 r = void;
-    r.ptr[0] = a;
-    r.ptr[1] = a;
-    r.ptr[2] = a;
-    r.ptr[3] = a;
+    __m128 r = a;
     return r;
 }
 unittest
@@ -2379,7 +2382,6 @@ unittest
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    // PERF DMD_with_D_SIMD
     float[4] result = [e3, e2, e1, e0];
     return loadUnaligned!(float4)(result.ptr);
 }
