@@ -2278,6 +2278,8 @@ deprecated("Use _mm_set1_ps instead") alias _mm_set_ps1 = _mm_set1_ps; ///
 /// `_MM_ROUND_UP`, `_MM_ROUND_TOWARD_ZERO`.
 void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 {
+    // Work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
+    version(GNU) asm @trusted { "" : : : "memory"; }
     _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
 }
 
