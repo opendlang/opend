@@ -2346,10 +2346,9 @@ void _mm_setcsr(uint controlWord) @trusted
     {
         static if (GDC_with_SSE)
         {
-            // Is it https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55752 ?
-            asm pure nothrow @nogc @trusted { "nop"; }
+            // Work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
+            version(GNU) asm @trusted { "" : : : "memory"; }
             __builtin_ia32_ldmxcsr(controlWord);
-            asm pure nothrow @nogc @trusted { "nop"; }
         }
         else version(X86)
         {
