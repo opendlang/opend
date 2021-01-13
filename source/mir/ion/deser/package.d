@@ -62,99 +62,6 @@ SerdeException deserializeValue_(T)(IonDescribedValue data, ref T value)
     return deserializeValueImpl(data, value).ionException;
 }
 
-/++
-+/
-T deserializeJson(T)(scope const(char)[] text)
-{
-    T value;    
-    if (auto exc = deserializeValueFromJson(text, value))
-        throw exc;
-    return value;
-}
-
-/// Test @nogc deserialization
-@safe pure @nogc
-unittest
-{
-    import mir.bignum.decimal;
-    import mir.rc.array;
-    import mir.small_array;
-    import mir.small_string;
-
-    static struct Book
-    {
-        SmallString!64 title;
-        bool wouldRecommend;
-        SmallString!128 description; // common `string` and array can be used as well (with GC)
-        uint numberOfNovellas;
-        Decimal!1 price;
-        double weight;
-
-        // nogc small-array tags
-        SmallArray!(SmallString!16, 10) smallArrayTags;
-
-        // nogc rc-array tags
-        RCArray!(SmallString!16) rcArrayTags;
-
-        // nogc scope array tags
-        // when used with `@property` and `@serdeScoped`
-        @serdeIgnore bool tagsSet; // control flag for test
-
-        @serdeScoped
-        void tags(scope SmallString!16[] tags) @property @safe pure nothrow @nogc
-        {
-            assert(tags.length == 3);
-            assert(tags[0] == "one");
-            assert(tags[1] == "two");
-            assert(tags[2] == "three");
-            tagsSet = true;
-        }
-    }
-
-    auto book = q{{
-        "title": "A Hero of Our Time",
-        "wouldRecommend": true,
-        "description": null,
-        "numberOfNovellas": 5,
-        "price": 7.99,
-        "weight": 6.88,
-        "tags": [
-            "one",
-            "two",
-            "three"
-        ],
-        "rcArrayTags": [
-            "russian",
-            "novel",
-            "19th century"
-        ],
-        "smallArrayTags": [
-            "4",
-            "5",
-            "6"
-        ]
-        }}
-        .deserializeJson!Book;
-
-    import mir.conv: to;
-
-    assert(book.description.length == 0);
-    assert(book.numberOfNovellas == 5);
-    assert(book.price.to!double == 7.99);
-    assert(book.tagsSet);
-    assert(book.rcArrayTags.length == 3);
-    assert(book.rcArrayTags[0] == "russian");
-    assert(book.rcArrayTags[1] == "novel");
-    assert(book.rcArrayTags[2] == "19th century");
-    assert(book.smallArrayTags.length == 3);
-    assert(book.smallArrayTags[0] == "4");
-    assert(book.smallArrayTags[1] == "5");
-    assert(book.smallArrayTags[2] == "6");
-    assert(book.title == "A Hero of Our Time");
-    assert(book.weight == 6.88);
-    assert(book.wouldRecommend);
-}
-
 template deserializeListToScopedBuffer(alias impl)
 {
     import mir.appender: ScopedBuffer;
@@ -174,32 +81,6 @@ template deserializeListToScopedBuffer(alias impl)
         }
         return null;
     }
-}
-
-/++
-+/
-SerdeException deserializeValueFromJson(T)(scope const(char)[] text, ref T value)
-{
-    import mir.ion.exception: ionException;
-    import mir.ion.internal.data_holder;
-    import mir.ion.internal.stage4_s;
-    import mir.string_table: MirStringTable, minimalIndexType;
-
-    enum nMax = 8192u;
-    enum keys = serdeGetDeserializatinKeysRecurse!T;
-    static immutable table = MirStringTable!(minimalIndexType!(keys.length))(keys);
-    auto tapeHolder = IonDataHolder!(nMax * 8)(nMax * 8);
-    size_t tapeLength;
-
-    if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder, tapeLength))
-        return error.ionException;
-
-    IonDescribedValue ionValue;
-
-    if (auto error = IonValue(tapeHolder.data[0 .. tapeLength]).describe(ionValue))
-        return error.ionException;
-
-    return deserializeValue!(keys)(ionValue, value);
 }
 
 /++
@@ -665,6 +546,22 @@ version(mir_ion_test) unittest
     assert(book.wouldRecommend);
 }
 
+///
+unittest
+{
+    import mir.ion.deser.json;
+    import std.uuid;
+
+    static struct S
+    {
+        @serdeScoped
+        @serdeProxy!string
+        UUID id;
+    }
+    assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id
+                == UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46"));
+}
+
 private auto findKey()(string[] symbolTable, string key)
 {
     import mir.algorithm.iteration: findIndex;
@@ -672,52 +569,3 @@ private auto findKey()(string[] symbolTable, string key)
     assert(ret != size_t.max, key);
     return ret + 1;
 }
-
-// ///
-// unittest
-// {
-
-//     import std.uuid;
-
-//     static struct S
-//     {
-//         @serdeScoped
-//         @serdeProxy!string
-//         UUID id;
-//     }
-//     assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id
-//                 == UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46"));
-// }
-
-// ///
-// unittest
-// {
-
-//     import std.uuid;
-
-//     static struct S
-//     {
-//         @serdeFlexible
-//         uint a;
-//     }
-
-//     assert(`{"a":"100"}`.deserializeJson!S.a == 100);
-//     assert(`{"a":true}`.deserializeJson!S.a == 1);
-//     assert(`{"a":null}`.deserializeJson!S.a == 0);
-// }
-
-// ///
-// unittest
-// {
-
-//     static struct Vector
-//     {
-//         @serdeFlexible int x;
-//         @serdeFlexible int y;
-//     }
-
-//     auto json = `[{"x":"1","y":2},{"x":null, "y": null},{"x":1, "y":2}]`;
-//     auto decoded = json.deserializeJson!(Vector[]);
-//     import std.conv;
-//     assert(decoded == [Vector(1, 2), Vector(0, 0), Vector(1, 2)], decoded.text);
-// }

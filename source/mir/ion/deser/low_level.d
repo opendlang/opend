@@ -61,9 +61,9 @@ package(mir.ion) template isNullable(T)
         hasMember!(T, "isNull") &&
         is(typeof(__traits(getMember, T, "isNull")) == bool) &&
         hasMember!(T, "get") &&
-        !is(typeof(__traits(getMember, T, "get")) == void) &&
-        hasMember!(T, "nullify") &&
-        is(typeof(__traits(getMember, T, "nullify")) == void)
+        // !is(typeof(T.init.get()) == void) &&
+        hasMember!(T, "nullify") // &&
+        // is(typeof(__traits(getMember, T, "nullify")) == void)
     )
     {
         enum isNullable = true;

@@ -32,10 +32,9 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
         table,
         (ref Stage3Stage stage) @trusted
         {
+            tapeHolder.extend(stage.tape.length + nMax * 4);
             if (stage.tape !is null)
             {
-                tapeHolder.extend(tapeLength + nMax * 8);
-                stage.tape = tapeHolder.data;
                 assert(stage.n - stage.n < 64);
                 vector[0] = vector[$ - 2];
                 pairedMask1[0] = pairedMask1[$ - 2];
@@ -44,12 +43,11 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
             }
             else
             {
-                tapeHolder.extend(tapeLength + nMax * 8);
-                stage.tape = tapeHolder.data;
                 stage.strPtr = cast(const(ubyte)*)(vector.ptr + 1);
                 stage.pairedMask1 = pairedMask1.ptr + 1;
                 stage.pairedMask2 = pairedMask2.ptr + 1;
             }
+            stage.tape = tapeHolder.data;
             stage.n = min(nMax, text.length);
             if (stage.n == 0)
                 assert(0);
