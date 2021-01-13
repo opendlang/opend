@@ -215,10 +215,13 @@ private template validateHandlers(TU, VISITORS...)
 	alias Types = TU.FieldTypes;
 
 	static foreach (int i; 0 .. VISITORS.length) {
-		static assert(!is(VISITORS[i]) || isSomeFunction!(VISITORS[i]),
-			"Visitor at index "~i.stringof~" must be a function/delegate literal: "~VISITORS[i].stringof);
-		static assert(anySatisfy!(matchesType!(VISITORS[i]), Types),
-			"Visitor at index "~i.stringof~" does not match any type of "~TU.FieldTypes.stringof);
+		static if (isSomeFunction!(VISITORS[i])) {
+			static assert(anySatisfy!(matchesType!(VISITORS[i]), Types),
+				"Visitor at index "~i.stringof~" does not match any type of "~TU.FieldTypes.stringof);
+		} else {
+			static assert(__traits(isTemplate, VISITORS[i]),
+				"Visitor at index "~i.stringof~" must be a function/delegate literal: "~VISITORS[i].stringof);
+		}
 	}
 }
 
@@ -273,22 +276,24 @@ private template selectHandler(T, VISITORS...)
 		static if (i < VISITORS.length) {
 			alias fun = VISITORS[i];
 			static if (!isSomeFunction!fun) {
-				static if (__traits(compiles, fun!T) && isSomeFunction!(fun!T)) {
+				static if (!__traits(isTemplate, fun)) enum genericIndex = "Visitor at index " ~ i.stringof ~ " is neither a function, nor a template.";
+				else static if (__traits(compiles, fun!T) && isSomeFunction!(fun!T)) {
 					static if (ParameterTypeTuple!(fun!T).length == 1) {
 						static if (matched_index >= 0) enum genericIndex = "Only one generic visitor allowed";
 						else enum genericIndex = genericIndex!(i+1, i);
 					} else enum genericIndex = "Generic visitor at index "~i.stringof~" must have a single parameter.";
-				} else enum genericIndex = "Visitor at index "~i.stringof~" (or its template instantiation with type "~T.stringof~") must be a valid function or delegate.";
+				} else enum genericIndex = genericIndex!(i+1, i); // let this fail within the template instantiation instead of here
 			} else enum genericIndex = genericIndex!(i+1, matched_index);
 		} else enum genericIndex = matched_index;
 	}
 
 	enum typed_index = typedIndex!0;
-	static if (is(T == void)) enum generic_index = -1;
+	static if (is(T == void) || (is(typeof(typed_index) == string) && typed_index != -1))
+		enum generic_index = -1;
 	else enum generic_index = genericIndex!0;
 
 	static if (is(typeof(typed_index) == string)) enum selectHandler = typed_index;
-	else static if (is(typeof(generic_index == string))) enum selectHandler = generic_index;
+	else static if (is(typeof(generic_index) == string)) enum selectHandler = generic_index;
 	else static if (typed_index >= 0) alias selectHandler = VISITORS[typed_index];
 	else static if (generic_index >= 0) alias selectHandler = VISITORS[generic_index];
 	else enum selectHandler = null;
