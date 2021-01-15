@@ -2870,3 +2870,13 @@ version(mir_core_test) unittest
 }
 
 private enum isSimpleAggregateType(T) =  is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
+
+unittest
+{
+    static struct Test
+    {
+        alias Value = void;
+    }
+
+    alias B = Nullable!Test;
+}

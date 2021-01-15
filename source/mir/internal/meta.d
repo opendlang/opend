@@ -8,7 +8,7 @@ template memberTypeOf(T, string member)
 
 template isMemberType(T, string member)
 {
-    enum isMemberType = is(typeof((ref __traits(getMember, T, member) v){}));
+    enum isMemberType = is(typeof((ref __traits(getMember, T, member) v){})) || is(__traits(getMember, T, member) : void);
 }
 
 template isSingleMember(T, string member)
