@@ -7,7 +7,6 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
     scope const(char)[] text,
     ref SymbolTable table,
     ref TapeHolder tapeHolder,
-    out size_t tapeLength,
     )
     if (nMax % 64 == 0 && nMax)
 {
@@ -21,7 +20,6 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
     ulong[2][k + 2] pairedMask1 = void;
     ulong[2][k + 2] pairedMask2 = void;
 
-    size_t currentTapePosition;
     bool backwardEscapeBit;
 
     vector[$ - 1] = ' ';
@@ -64,7 +62,7 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
             stage2(vlen, vector.ptr + 1, pairedMask2.ptr + 1);
             return text.length == 0;
         },
-        tapeLength
+        tapeHolder.currentTapePosition,
     );
 }
 
@@ -80,15 +78,14 @@ version(mir_ion_test) unittest
 
         enum nMax = 128u;
 
-        IonSymbolTable table;
+        IonSymbolTable!false table;
         table.initialize;
-        auto tapeHolder = IonDataHolder!(nMax * 4)(nMax * 4);
-        size_t tapeLength;
+        auto tapeHolder = IonTapeHolder!(nMax * 4)(nMax * 4);
 
-        if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder, tapeLength))
+        if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder))
             throw error.ionException;
 
-        return tapeHolder.data[0 .. tapeLength].dup;
+        return tapeHolder.tapeData.dup;
     }
 
     import mir.ion.value;

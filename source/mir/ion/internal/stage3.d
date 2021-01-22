@@ -180,7 +180,7 @@ StringLoop: {
             {
                 auto id = symbolTable.insert(cast(const(char)[])key);
             }
-            else
+            else // mir string table
             {
                 uint id;
                 if (!symbolTable.get(cast(const(char)[])key, id))

@@ -22,7 +22,7 @@ struct JsonSerializer(string sep, Appender)
     +/
     Appender* appender;
 
-    private uint state;
+    private size_t state;
 
     static if(sep.length)
     {
@@ -44,12 +44,12 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
-    private void pushState(uint state)
+    private void pushState(size_t state)
     {
         this.state = state;
     }
 
-    private uint popState()
+    private size_t popState()
     {
         auto ret = state;
         state = 0;
@@ -140,64 +140,7 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
-    /// Serialization primitives
-    uint objectBegin()
-    {
-        static if(sep.length)
-        {
-            deep++;
-            appender.put("{\n");
-        }
-        else
-        {
-            appender.put('{');
-        }
-        return popState;
-    }
-
-    ///ditto
-    void objectEnd(uint state)
-    {
-        static if(sep.length)
-        {
-            deep--;
-            appender.put('\n');
-            putSpace;
-        }
-        appender.put('}');
-        pushState(state);
-    }
-
-    ///ditto
-    uint arrayBegin()
-    {
-        static if(sep.length)
-        {
-            deep++;
-            appender.put("[\n");
-        }
-        else
-        {
-            appender.put('[');
-        }
-        return popState;
-    }
-
-    ///ditto
-    void arrayEnd(uint state)
-    {
-        static if(sep.length)
-        {
-            deep--;
-            appender.put('\n');
-            putSpace;
-        }
-        appender.put(']');
-        pushState(state);
-    }
-
-    ///ditto
-    void putEscapedKey(scope const char[] key)
+    private void putEscapedKey(scope const char[] key)
     {
         incState;
         static if(sep.length)
@@ -214,6 +157,72 @@ struct JsonSerializer(string sep, Appender)
         {
             appender.put(`":`);
         }
+    }
+
+    /// Serialization primitives
+    size_t objectBegin()
+    {
+        static if(sep.length)
+        {
+            deep++;
+            appender.put("{\n");
+        }
+        else
+        {
+            appender.put('{');
+        }
+        return popState;
+    }
+
+    ///ditto
+    void objectEnd(size_t state)
+    {
+        static if(sep.length)
+        {
+            deep--;
+            appender.put('\n');
+            putSpace;
+        }
+        appender.put('}');
+        pushState(state);
+    }
+
+    ///ditto
+    size_t arrayBegin()
+    {
+        static if(sep.length)
+        {
+            deep++;
+            appender.put("[\n");
+        }
+        else
+        {
+            appender.put('[');
+        }
+        return popState;
+    }
+
+    ///ditto
+    void arrayEnd(size_t state)
+    {
+        static if(sep.length)
+        {
+            deep--;
+            appender.put('\n');
+            putSpace;
+        }
+        appender.put(']');
+        pushState(state);
+    }
+
+    ///ditto
+    void putCompileTimeKey(string key)()
+    {
+        import mir.algorithm.iteration: any;
+        static if (key.any!(c => c == '"' || c == '\\' || c < ' '))
+            putKey(key);
+        else
+            putEscapedKey(key);
     }
 
     ///ditto
@@ -237,12 +246,11 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///ditto
-    void putValue(Num)(Num num)
+    void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
         import mir.format: print;
         print(appender, num);
-        return;
     }
 
     ///ditto
@@ -295,7 +303,6 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 }
-
 
 /++
 JSON serialization function.
@@ -455,11 +462,11 @@ unittest
         private int sum;
 
         // opApply is used for serialization
-        int opApply(int delegate(scope const char[] key, int val) pure dg) pure
+        int opApply(int delegate(scope const char[] key, ref const int val) pure dg) pure
         {
-            if(auto r = dg("a", 1)) return r;
-            if(auto r = dg("b", 2)) return r;
-            if(auto r = dg("c", 3)) return r;
+            { int var = 1; if (auto r = dg("a", var)) return r; }
+            { int var = 2; if (auto r = dg("b", var)) return r; }
+            { int var = 3; if (auto r = dg("c", var)) return r; }
             return 0;
         }
 
@@ -554,8 +561,8 @@ template serializeJsonPretty(string sep = "\t")
         if (isOutputRange!(Appender, const(char)[]))
     {
         import mir.ion.ser: serializeValue;
-        auto ser = jsonSerializer!sep((()@trusted => &appender)());
-        ser.serializeValue(value);
+        auto serializer = jsonSerializer!sep((()@trusted => &appender)());
+        serializeValue(serializer, value);
     }
 }
 
@@ -596,10 +603,10 @@ template jsonSerializer(string sep = "")
     auto ser = jsonSerializer((()@trusted=>&buffer)());
     auto state0 = ser.objectBegin;
 
-        ser.putEscapedKey("null");
+        ser.putKey("null");
         ser.putValue(null);
 
-        ser.putEscapedKey("array");
+        ser.putKey("array");
         auto state1 = ser.arrayBegin();
             ser.elemBegin; ser.putValue(null);
             ser.elemBegin; ser.putValue(123);
@@ -625,10 +632,10 @@ unittest
     auto ser = jsonSerializer!"    "(&app);
     auto state0 = ser.objectBegin;
 
-        ser.putEscapedKey("null");
+        ser.putKey("null");
         ser.putValue(null);
 
-        ser.putEscapedKey("array");
+        ser.putKey("array");
         auto state1 = ser.arrayBegin();
             ser.elemBegin; ser.putValue(null);
             ser.elemBegin; ser.putValue(123);

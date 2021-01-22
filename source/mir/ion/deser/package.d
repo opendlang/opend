@@ -561,11 +561,3 @@ unittest
     assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id
                 == UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46"));
 }
-
-private auto findKey()(string[] symbolTable, string key)
-{
-    import mir.algorithm.iteration: findIndex;
-    auto ret = symbolTable.findIndex!(a => a == key);
-    assert(ret != size_t.max, key);
-    return ret + 1;
-}

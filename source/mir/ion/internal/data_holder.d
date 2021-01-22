@@ -26,11 +26,20 @@ private static void* validatePtr()(return void* ptr)
 
 /++
 +/
-struct IonDataHolder(size_t stackAllocatedLength)
+struct IonTapeHolder(size_t stackAllocatedLength)
 {
     private align(16) ubyte[stackAllocatedLength] stackData = void;
     ///
     ubyte[] data;
+
+    ///
+    size_t currentTapePosition;
+
+    ///
+    inout(ubyte)[] tapeData() inout @property
+    {
+        return data[0 .. currentTapePosition];
+    }
 
     ///
     @disable this(this);
@@ -73,6 +82,33 @@ struct IonDataHolder(size_t stackAllocatedLength)
 
         if (newSize > data.length)
         {
+            if (data.ptr != stackData.ptr)
+            {
+                auto ptr = realloc(data.ptr, newSize).validatePtr;
+                data = cast(ubyte[])ptr[0 .. newSize];
+            }
+            else
+            {
+                auto ptr = malloc(newSize).validatePtr;
+                memcpy(ptr, stackData.ptr, stackData.length);
+                data = cast(ubyte[])ptr[0 .. newSize];
+            }
+        }
+    }
+
+    ///
+    void reserve(size_t size)
+    {
+        assert(currentTapePosition <= data.length);
+
+        import mir.utility: max;
+
+        import mir.internal.memory: malloc, realloc;
+        import core.stdc.string: memcpy;
+
+        if (currentTapePosition + size > data.length)
+        {
+            auto newSize = data.length + max(size, data.length);
             if (data.ptr != stackData.ptr)
             {
                 auto ptr = realloc(data.ptr, newSize).validatePtr;
