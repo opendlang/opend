@@ -119,7 +119,7 @@ struct MirStringTable(size_t length, size_t maxKeyLength, bool caseInsensetive =
     The constructor uses GC.
     It can be used in `@nogc` code when if constructed in compile time.
     +/
-    this()(immutable(C)[][length] sortedKeys)
+    this(immutable(C)[][length] sortedKeys)
         @trusted pure nothrow
     {
         pragma(inline, false);
@@ -231,7 +231,11 @@ package template createTable(C)
     auto createTable(immutable(C)[][] keys, bool caseInsensetive = false)()
     {
         static immutable C[][] sortedKeys = prepareStringTableKeys!caseInsensetive(keys);
-        return MirStringTable!(keys.length, sortedKeys.length ? sortedKeys[$ - 1].length : 0, caseInsensetive, C)(sortedKeys[0 .. sortedKeys.length]);
+        alias Table = MirStringTable!(sortedKeys.length, sortedKeys.length ? sortedKeys[$ - 1].length : 0, caseInsensetive, C);
+        static if (sortedKeys.length)
+            return Table(sortedKeys[0 .. sortedKeys.length]);
+        else
+            return Table.init;
     }
 }
 
