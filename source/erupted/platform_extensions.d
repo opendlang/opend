@@ -31,6 +31,7 @@ enum GGP_frame_token;
 enum FUCHSIA_imagepipe_surface;
 enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
+enum NV_acquire_winrt_display;
 enum EXT_directfb_surface;
 
 
@@ -40,7 +41,7 @@ alias USE_PLATFORM_XLIB_KHR        = AliasSeq!( KHR_xlib_surface );
 alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
-alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive );
+alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive, NV_acquire_winrt_display );
 alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_portability_subset );
 alias USE_PLATFORM_GGP             = AliasSeq!( GGP_stream_descriptor_surface, GGP_frame_token );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
@@ -653,6 +654,17 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           = VkResult  function( VkDevice device, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes );
         }
 
+        // VK_NV_acquire_winrt_display : types and function pointer type aliases
+        else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
+            enum VK_NV_acquire_winrt_display = 1;
+
+            enum VK_NV_ACQUIRE_WINRT_DISPLAY_SPEC_VERSION = 1;
+            enum VK_NV_ACQUIRE_WINRT_DISPLAY_EXTENSION_NAME = "VK_NV_acquire_winrt_display";
+            
+            alias PFN_vkAcquireWinrtDisplayNV                                           = VkResult  function( VkPhysicalDevice physicalDevice, VkDisplayKHR display );
+            alias PFN_vkGetWinrtDisplayNV                                               = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay );
+        }
+
         // VK_EXT_directfb_surface : types and function pointer type aliases
         else static if( __traits( isSame, extension, EXT_directfb_surface )) {
             enum VK_EXT_directfb_surface = 1;
@@ -778,6 +790,12 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
             }
 
+            // VK_NV_acquire_winrt_display : function pointer decelerations
+            else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
+                PFN_vkAcquireWinrtDisplayNV                                           vkAcquireWinrtDisplayNV;
+                PFN_vkGetWinrtDisplayNV                                               vkGetWinrtDisplayNV;
+            }
+
             // VK_EXT_directfb_surface : function pointer decelerations
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
@@ -876,6 +894,12 @@ mixin template Platform_Extensions( extensions... ) {
                 vkGetPhysicalDeviceSurfacePresentModes2EXT                        = cast( PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT                        ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfacePresentModes2EXT" );
             }
 
+            // VK_NV_acquire_winrt_display : load instance level function definitions
+            else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
+                vkAcquireWinrtDisplayNV                                           = cast( PFN_vkAcquireWinrtDisplayNV                                           ) vkGetInstanceProcAddr( instance, "vkAcquireWinrtDisplayNV" );
+                vkGetWinrtDisplayNV                                               = cast( PFN_vkGetWinrtDisplayNV                                               ) vkGetInstanceProcAddr( instance, "vkGetWinrtDisplayNV" );
+            }
+
             // VK_EXT_directfb_surface : load instance level function definitions
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 vkCreateDirectFBSurfaceEXT                                        = cast( PFN_vkCreateDirectFBSurfaceEXT                                        ) vkGetInstanceProcAddr( instance, "vkCreateDirectFBSurfaceEXT" );
@@ -940,7 +964,7 @@ mixin template Platform_Extensions( extensions... ) {
     void loadDeviceLevelFunctionsExtD( VkDevice device ) {
 
         // first load all non platform related function pointers from implementation
-        loadDeviceLevelFunctions( device );
+        erupted.functions.loadDeviceLevelFunctions( device );
 
         // 4. loop through alias sequence and mixin corresponding
         // device based device level function pointer definitions
@@ -1194,6 +1218,12 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkAcquireFullScreenExclusiveModeEXT                               vkAcquireFullScreenExclusiveModeEXT;
                 PFN_vkReleaseFullScreenExclusiveModeEXT                               vkReleaseFullScreenExclusiveModeEXT;
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
+            }
+
+            // VK_NV_acquire_winrt_display : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
+                PFN_vkAcquireWinrtDisplayNV                                           vkAcquireWinrtDisplayNV;
+                PFN_vkGetWinrtDisplayNV                                               vkGetWinrtDisplayNV;
             }
 
             // VK_EXT_directfb_surface : dispatch device member function pointer decelerations
