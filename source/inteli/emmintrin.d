@@ -1362,6 +1362,12 @@ __m128i _mm_cvtps_epi32 (__m128 a) @trusted
 }
 unittest
 {
+    // GDC bug #98607
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
+    // GDC does not provide optimization barrier for roundign mode.
+    // Workarounded with different literals. Thsi bug will likely only manifest in unittest.
+    // GDC people provided no actual fix and instead say other compilers are buggy... when they aren't.
+
     uint savedRounding = _MM_GET_ROUNDING_MODE();
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
@@ -1369,15 +1375,15 @@ unittest
     assert(A.array == [1, -2, 54, -3]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.3f, -2.11f, 53.4f, -2.8f));
     assert(A.array == [1, -3, 53, -3]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.3f, -2.12f, 53.6f, -2.7f));
     assert(A.array == [2, -2, 54, -2]);
 
     _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
-    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.17f, 53.8f, -2.91f));
     assert(A.array == [1, -2, 53, -2]);
 
     _MM_SET_ROUNDING_MODE(savedRounding);
