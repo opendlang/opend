@@ -1803,8 +1803,11 @@ unittest
 /// `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_load_pd1 (const(double)* mem_addr) pure
 {
-    double[2] arr = [*mem_addr, *mem_addr];
-    return loadUnaligned!(double2)(&arr[0]);
+    double m = *mem_addr;
+    __m128d r;
+    r.ptr[0] = m;
+    r.ptr[1] = m;
+    return r;
 }
 unittest
 {
@@ -1913,15 +1916,42 @@ unittest
 
 /// Load 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
-__m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
+__m128d _mm_loadu_pd (const(double)* mem_addr) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_loadupd(mem_addr); 
     }
-    else
+    else version(LDC)
     {
         return loadUnaligned!(double2)(mem_addr);
+    }
+    else version(DigitalMars)
+    {
+        static if (DMD_with_DSIMD)
+        {
+            return cast(__m128d)__simd(XMM.LODUPD, *mem_addr);
+        }
+        else static if (SSESizedVectorsAreEmulated)
+        {
+            // Since this vector is emulated, it doesn't have alignement constraints
+            // and as such we can just cast it.
+            return *cast(__m128d*)(mem_addr);
+        }
+        else
+        {
+            __m128d result;
+            result.ptr[0] = mem_addr[0];
+            result.ptr[1] = mem_addr[1];
+            return result;
+        }
+    }
+    else
+    {
+        __m128d result;
+        result.ptr[0] = mem_addr[0];
+        result.ptr[1] = mem_addr[1];
+        return result;
     }
 }
 unittest

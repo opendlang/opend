@@ -1430,11 +1430,47 @@ unittest
     assert(A.array == correct);
 }
 
-/// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory into dst. 
-/// `p` does not need to be aligned on any particular boundary.
-__m128 _mm_loadu_ps(const(float)*p) pure @safe
+/// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
+__m128 _mm_loadu_ps(const(float)* mem_addr) pure @trusted
 {
-    return loadUnaligned!(__m128)(p);
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_loadups(mem_addr);
+    }
+    else version(LDC)
+    {
+        return loadUnaligned!(__m128)(mem_addr);
+    }
+    else version(DigitalMars)
+    {
+        static if (DMD_with_DSIMD)
+        {
+            return cast(__m128)__simd(XMM.LODUPS, *mem_addr);
+        }
+        else static if (SSESizedVectorsAreEmulated)
+        {
+            // Since this vector is emulated, it doesn't have alignement constraints
+            // and as such we can just cast it.
+            return *cast(__m128*)(mem_addr);
+        }
+        else
+        {
+            __m128 result;
+            result.ptr[0] = mem_addr[0];
+            result.ptr[1] = mem_addr[1];
+            result.ptr[2] = mem_addr[2];
+            result.ptr[3] = mem_addr[3];
+            return result;
+        }
+    }
+    else
+    {
+        __m128d result;
+        result.ptr[0] = mem_addr[0];
+        result.ptr[1] = mem_addr[1];
+        return result;
+    }
 }
 unittest
 {
