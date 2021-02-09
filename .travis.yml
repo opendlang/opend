@@ -1,23 +1,40 @@
-sudo: false
 os:
  - linux
  - osx
+
 language: d
 d:
  - dmd
  - ldc
  - dmd-2.093.1
  - ldc-1.23.0
+
 env:
  - ARCH="x86_64"
+
 matrix:
   include:
-    - {os: linux, env: ARCH="AARCH64", services: docker}
-    - {os: linux, d: dmd-2.093.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: ldc-1.23.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - os: linux
+      d: ldc-1.23.0
+      env: ARCH="AARCH64"
+      arch: arm64
+    - os: linux
+      d: dmd-2.093.1
+      env: ARCH="x86"
+      addons:
+      - apt:
+        - packages: gcc-multilib
+    - os: linux
+      d: ldc-1.23.0
+      env: ARCH="x86"
+      addons: 
+      - apt:
+        - packages: gcc-multilib
+
 branches:
   only:
     - master
+
 script: bash -e test_travis.sh
 after_success:
  - bash <(curl -s https://codecov.io/bash)

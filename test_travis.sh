@@ -1,10 +1,8 @@
 echo $ARCH
 if [ "$ARCH" = "AARCH64" ]
 then
-  docker run --rm --privileged multiarch/qemu-user-static:register --reset
-  docker build -t ion-arm64 . -f Dockerfile.aarch64
+  dub test --arch=aarch64 --build=unittest
 else
-  echo $ARCH
   dub test --arch=$ARCH --build=unittest
   # if [ \( "$DC" = "ldc2" \) -o \( "$DC" = "ldmd2" \) ]
   # then
