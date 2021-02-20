@@ -106,3 +106,61 @@ else {
         foreach(i; 0 .. 12) interfaces ~= Oops();
     }
 }
+
+
+int created, destroyed;
+
+struct Issue156 {
+
+    @disable this();
+    @disable this(this);
+
+    this(int val) {
+        writelnUt(" Issue156(", val, ")");
+        this.val = val;
+        created++;
+    }
+    ~this() {
+        writelnUt("~Issue156(", val, ")");
+        destroyed++;
+    }
+    int val;
+}
+
+
+version(AutomemAsan) {}
+else {
+    @("56")
+    @ShouldFail
+    @system unittest {
+
+        import std.range;
+
+        {
+            RefCounted!Issue156 s = RefCounted!Issue156(1);
+            writelnUt("Creating r1");
+            auto r1 = repeat(s, 2);
+            writelnUt("Creating r2");
+            auto r2 = repeat(s, 2);
+            writelnUt("iterating");
+            foreach(s1, s2; lockstep(r1, r2))
+                s1.val.should == s2.val;
+        }
+        writelnUt("after lockstep: created ", created, " vs destroyed ", destroyed);
+        created.should == 1;
+        destroyed.should == 1;
+        {
+            RefCounted!Issue156 s = RefCounted!Issue156(2);
+            writelnUt("Creating r1");
+            auto r1 = repeat(s, 2);
+            writelnUt("Creating r2");
+            auto r2 = repeat(s, 2);
+            writelnUt("iterating");
+            foreach(s1, s2; zip(r1, r2))
+                s1.val.should == s2.val;
+        }
+        writelnUt("after zip: created ", created, " vs destroyed ", destroyed);
+        created.should == 2;
+        destroyed.should == 2;
+    }
+}
