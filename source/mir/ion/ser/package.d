@@ -157,7 +157,7 @@ void serializeValue(S, T)(ref S serializer, T[] value)
 
 /// Input range serialization
 void serializeValue(S, R)(ref S serializer, R value)
-    if ((isInputRange!R) &&
+    if ((isIterable!R) &&
         !isSomeChar!(ElementType!R) &&
         !isDynamicArray!R &&
         !isNullable!R)
@@ -332,7 +332,7 @@ unittest
 
 /// Struct and class type serialization
 void serializeValue(S, V)(ref S serializer, auto ref V value)
-    if (!isNullable!V && isAggregateType!V && !is(V == BigInt!size0, size_t size0) && !isInputRange!V)
+    if (!isNullable!V && isAggregateType!V && !is(V == BigInt!size0, size_t size0) && !isIterable!V)
 {
     static if(is(V == class) || is(V == interface))
     {

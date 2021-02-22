@@ -429,6 +429,14 @@ unittest
 ///
 unittest
 {
+    import mir.rc.array;
+    auto ar = rcarray!int(1, 2, 4);
+    assert(ar.serializeJson == "[1,2,4]");
+}
+
+///
+unittest
+{
     import std.range;
     import std.uuid;
     import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy;
