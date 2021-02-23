@@ -86,7 +86,7 @@ void serializeValue(S, V)(ref S serializer, const V value)
 void serializeValue(S, V : char)(ref S serializer, const V value)
     if (is(V == char) && !is(V == enum))
 {
-    auto v = cast(char[1])value;
+    char[1] v = value;
     serializer.putValue(v[]);
 }
 
