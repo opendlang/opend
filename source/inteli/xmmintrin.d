@@ -1466,9 +1466,11 @@ __m128 _mm_loadu_ps(const(float)* mem_addr) pure @trusted
     }
     else
     {
-        __m128d result;
+        __m128 result;
         result.ptr[0] = mem_addr[0];
         result.ptr[1] = mem_addr[1];
+        result.ptr[2] = mem_addr[2];
+        result.ptr[3] = mem_addr[3];
         return result;
     }
 }
