@@ -103,15 +103,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow @nogc
     if (is(T == bool))
 {
-    if (_expect(data != null, true))
-    {
-        IonBool ionValue;
-        if (auto error = data.get(ionValue))
-            return error;
-        value = ionValue.get;
-        return IonErrorCode.none;
-    }
-    return IonErrorCode.expectedBoolValue;
+    return data.get(value);
 }
 
 ///
@@ -133,24 +125,20 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow @nogc
     if (isIntegral!T && !is(T == enum))
 {
-    if (_expect(data != null, true))
+    static if (__traits(isUnsigned, T))
     {
-        static if (__traits(isUnsigned, T))
-        {
-            IonUInt ionValue;
-            if (auto error = data.get(ionValue))
-                return error;
-            return ionValue.get!T(value);
-        }
-        else
-        {
-            IonInt ionValue;
-            if (auto error = data.get(ionValue))
-                return error;
-            return ionValue.get!T(value);
-        }
+        IonUInt ionValue;
+        if (auto error = data.get(ionValue))
+            return error;
+        return ionValue.get!T(value);
     }
-    return IonErrorCode.expectedIntegerValue;
+    else
+    {
+        IonInt ionValue;
+        if (auto error = data.get(ionValue))
+            return error;
+        return ionValue.get!T(value);
+    }
 }
 
 ///
@@ -223,18 +211,12 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     {
         if (data.descriptor.type == IonTypeCode.float_)
         {
-            IonFloat ionValue;
-            if (auto error = data.get(ionValue))
-                return error;
-            return ionValue.get!T(value);
+            return data.trustedGet!IonFloat.get!T(value);
         }
         else
         if (data.descriptor.type == IonTypeCode.decimal)
         {
-            IonDecimal ionValue;
-            if (auto error = data.get(ionValue))
-                return error;
-            return ionValue.get!T(value);
+            return data.trustedGet!IonDecimal.get!T(value);
         }
         else
         {
@@ -279,17 +261,13 @@ Deserialize decimal value.
 IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSize)(IonDescribedValue data, ref T value)
     pure @safe nothrow @nogc
 {
-    if (_expect(data != null, true))
-    {
-        IonDecimal ionValue;
-        if (auto error = data.get(ionValue))
-            return error;
-        IonDescribedDecimal ionDescribedDecimal;
-        if (auto error = ionValue.get(ionDescribedDecimal))
-            return error;
-        return ionDescribedDecimal.getDecimal(value);
-    }
-    return IonErrorCode.expectedIntegerValue;
+    IonDecimal ionValue;
+    if (auto error = data.get(ionValue))
+        return error;
+    IonDescribedDecimal ionDescribedDecimal;
+    if (auto error = ionValue.get(ionDescribedDecimal))
+        return error;
+    return ionDescribedDecimal.getDecimal(value);
 }
 
 ///
@@ -317,10 +295,10 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 {
     import mir.serde: serdeParseEnum;
 
-    IonString ionValue;
+    const(char)[] ionValue;
     if (auto error = data.get(ionValue))
         return error;
-    if (serdeParseEnum(ionValue.data, value))
+    if (serdeParseEnum(ionValue, value))
         return IonErrorCode.none;
     return IonErrorCode.expectedEnumValue;
 }
@@ -348,24 +326,14 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
 {
     // TODO: symbol deserialization
-    if (data.descriptor.type == IonTypeCode.string)
-    {
-        IonString ionValue;
-        if (auto error = data.get(ionValue))
-            return error;
-        static if (is(T == string))
-            value = ionValue.data.idup;
-        else
-            value = ionValue.data.idup;
-        return IonErrorCode.none; 
-    }
+    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+        return IonErrorCode.expectedStringValue;
+    auto ionValue = data.trustedGet!(const(char)[]);
+    static if (is(T == string))
+        value = ionValue.idup;
     else
-    if (data.descriptor.type == IonTypeCode.null_)
-    {
-        value = null;
-        return IonErrorCode.none; 
-    }
-    return IonErrorCode.expectedStringValue;
+        value = ionValue.dup;
+    return IonErrorCode.none; 
 }
 
 ///
@@ -388,23 +356,13 @@ IonErrorCode deserializeValueImpl(T : SmallString!maxLength, size_t maxLength)(I
     pure @safe nothrow
 {
     // TODO: symbol deserialization
-    if (data.descriptor.type == IonTypeCode.string)
-    {
-        IonString ionValue;
-        if (auto error = data.get(ionValue))
-            return error;
-        if (ionValue.data.length > maxLength)
-            return IonErrorCode.smallStringOverflow;
-        value.trustedAssign(ionValue.data);
-        return IonErrorCode.none; 
-    }
-    else
-    if (data.descriptor.type == IonTypeCode.null_)
-    {
-        value = value.init;
-        return IonErrorCode.none; 
-    }
-    return IonErrorCode.expectedStringValue;
+    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+        return IonErrorCode.expectedStringValue;
+    auto ionValue = data.trustedGet!(const(char)[]);
+    if (ionValue.length > maxLength)
+        return IonErrorCode.smallStringOverflow;
+    value.trustedAssign(ionValue);
+    return IonErrorCode.none; 
 }
 
 ///
@@ -427,12 +385,12 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow
     if (is(T == char))
 {
-    IonString ionValue;
+    const(char)[] ionValue;
     if (auto error = data.get(ionValue))
         return error;
-    if (_expect(ionValue.data.length != 1, false))
+    if (_expect(ionValue.length != 1, false))
         return IonErrorCode.expectedCharValue; 
-    value = ionValue.data[0];
+    value = ionValue[0];
     return IonErrorCode.none; 
 }
 
@@ -475,21 +433,11 @@ IonErrorCode deserializeScopedValueImpl(T)(IonDescribedValue data, ref T value)
     if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
 {
     // TODO: symbol deserialization
-    if (data.descriptor.type == IonTypeCode.string)
-    {
-        IonString ionValue;
-        if (auto error = data.get(ionValue))
-            return error;
-        value = cast(T)ionValue.data;
-        return IonErrorCode.none; 
-    }
-    else
-    if (data.descriptor.type == IonTypeCode.null_)
-    {
-        value = null;
-        return IonErrorCode.none; 
-    }
-    return IonErrorCode.expectedStringValue;
+    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+        return IonErrorCode.expectedStringValue;
+    auto ionValue = data.trustedGet!(const(char)[]);
+    value = cast(T)ionValue;
+    return IonErrorCode.none; 
 }
 
 ///
@@ -544,7 +492,7 @@ version(mir_ion_test) unittest
         0x00, 0x00, 0x48, 0x43, 0x0c, 0x6b,
         0xf5, 0x26, 0x34, 0x00, 0x00, 0x00,
         0x00]).describe;
-    
+
     double[] value;
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value == [12, 100e13]);

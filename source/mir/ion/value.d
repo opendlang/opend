@@ -23,9 +23,9 @@ struct IonVersionMarker
 }
 
 /// Aliases the $(SUBREF type_code, IonTypeCode) to the corresponding Ion Typed Value type.
-alias IonType(IonTypeCode code : IonTypeCode.null_) = typeof(null);
+alias IonType(IonTypeCode code : IonTypeCode.null_) = IonNull;
 /// ditto
-alias IonType(IonTypeCode code : IonTypeCode.bool_) = IonBool;
+alias IonType(IonTypeCode code : IonTypeCode.bool_) = bool;
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.uInt) = IonUInt;
 /// ditto
@@ -35,11 +35,11 @@ alias IonType(IonTypeCode code : IonTypeCode.float_) = IonFloat;
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.decimal) = IonDecimal;
 /// ditto
-alias IonType(IonTypeCode code : IonTypeCode.timestamp) = IonTimestampValue;
+alias IonType(IonTypeCode code : IonTypeCode.timestamp) = IonTimestamp;
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.symbol) = IonSymbolID;
 /// ditto
-alias IonType(IonTypeCode code : IonTypeCode.string) = IonString;
+alias IonType(IonTypeCode code : IonTypeCode.string) = const(char)[];
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.clob) = IonClob;
 /// ditto
@@ -54,9 +54,9 @@ alias IonType(IonTypeCode code : IonTypeCode.struct_) = IonStruct;
 alias IonType(IonTypeCode code : IonTypeCode.annotations) = IonAnnotationWrapper;
 
 /// Aliases the type to the corresponding $(SUBREF type_code, IonTypeCode).
-alias IonTypeCodeOf(T : typeof(null)) = IonTypeCode.null_;
+alias IonTypeCodeOf(T : IonNull) = IonTypeCode.null_;
 /// ditto
-alias IonTypeCodeOf(T : IonBool) = IonTypeCode.bool_;
+alias IonTypeCodeOf(T : bool) = IonTypeCode.bool_;
 /// ditto
 alias IonTypeCodeOf(T : IonUInt) = IonTypeCode.uInt;
 /// ditto
@@ -66,11 +66,11 @@ alias IonTypeCodeOf(T : IonFloat) = IonTypeCode.float_;
 /// ditto
 alias IonTypeCodeOf(T : IonDecimal) = IonTypeCode.decimal;
 /// ditto
-alias IonTypeCodeOf(T : IonTimestampValue) = IonTypeCode.timestamp;
+alias IonTypeCodeOf(T : IonTimestamp) = IonTypeCode.timestamp;
 /// ditto
 alias IonTypeCodeOf(T : IonSymbolID) = IonTypeCode.symbol;
 /// ditto
-alias IonTypeCodeOf(T : IonString) = IonTypeCode.string;
+alias IonTypeCodeOf(T : const(char)[]) = IonTypeCode.string;
 /// ditto
 alias IonTypeCodeOf(T : IonClob) = IonTypeCode.clob;
 /// ditto
@@ -90,9 +90,9 @@ See_also: $(SUBREF type_code, IonTypeCode)
 +/
 enum isIonType(T) = false;
 /// ditto
-enum isIonType(T : typeof(null)) = true;
+enum isIonType(T : IonNull) = true;
 /// ditto
-enum isIonType(T : IonBool) = true;
+enum isIonType(T : bool) = true;
 /// ditto
 enum isIonType(T : IonUInt) = true;
 /// ditto
@@ -102,11 +102,11 @@ enum isIonType(T : IonFloat) = true;
 /// ditto
 enum isIonType(T : IonDecimal) = true;
 /// ditto
-enum isIonType(T : IonTimestampValue) = true;
+enum isIonType(T : IonTimestamp) = true;
 /// ditto
 enum isIonType(T : IonSymbolID) = true;
 /// ditto
-enum isIonType(T : IonString) = true;
+enum isIonType(T : const(char)[]) = true;
 /// ditto
 enum isIonType(T : IonClob) = true;
 /// ditto
@@ -119,6 +119,22 @@ enum isIonType(T : IonSexp) = true;
 enum isIonType(T : IonStruct) = true;
 /// ditto
 enum isIonType(T : IonAnnotationWrapper) = true;
+
+/// Ion null value.
+struct IonNull
+{
+    ///
+    IonTypeCode code;
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        serializer.putNull(code);
+    }
+}
 
 /++
 Ion Value
@@ -177,9 +193,25 @@ struct IonValue
     Returns: GC-allocated copy.
     +/
     @safe pure nothrow const
-    IonValue gcCopy()
+    IonValue gcCopy()()
     {
         return IonValue(data.dup);
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        describe.serialize(serializer);
+    }
+
+    ///
+    unittest
+    {
+        import mir.ion.ser.json;
+        assert(IonValue([0x11]).serializeJson == "true");
     }
 }
 
@@ -191,20 +223,20 @@ struct IonDescriptor
     /++
     The type descriptor octet has two subfields: a four-bit type code T, and a four-bit length L.
     +/
-    const(ubyte)* reference;
+    this(scope const(ubyte)* reference)
+        @safe pure nothrow @nogc
+    {
+        assert(reference);
+        this.type = cast(IonTypeCode)((*reference) >> 4);
+        assert(type <= IonTypeCode.max);
+        this.L = cast(uint)((*reference) & 0xF);
+    }
 
     /// T
-    IonTypeCode type() @safe pure nothrow @nogc const @property
-    {
-        assert(reference);
-        return cast(typeof(return))((*reference) >> 4);
-    }
+    IonTypeCode type;
+
     /// L
-    uint L() @safe pure nothrow @nogc const @property
-    {
-        assert(reference);
-        return cast(typeof(return))((*reference) & 0xF);
-    }
+    uint L;
 }
 
 /++
@@ -218,7 +250,7 @@ struct IonDescribedValue
     const(ubyte)[] data;
 
     /++
-    Returns: true if the blob is `null.blob`.
+    Returns: true if the value is any Ion `null`.
     +/
     bool opEquals(typeof(null))
         @safe pure nothrow @nogc const
@@ -236,14 +268,20 @@ struct IonDescribedValue
         @safe pure nothrow @nogc const
         if (isIonType!T || is(T == IonInt))
     {
+        static if (is(T == IonNull))
+        {
+            if (_expect(descriptor.L != 0xF, false))
+                return IonErrorCode.unexpectedIonType;
+        }
+        else
         static if (is(T == IonInt))
         {
-            if (_expect((descriptor.type | 1) != IonTypeCodeOf!IonNInt, false))
+            if (_expect(descriptor.L == 0xF || (descriptor.type | 1) != IonTypeCodeOf!IonNInt, false))
                 return IonErrorCode.unexpectedIonType;
         }
         else
         {
-            if (_expect(descriptor.type != IonTypeCodeOf!T, false))
+            if (_expect(descriptor.L == 0xF || descriptor.type != IonTypeCodeOf!T, false))
                 return IonErrorCode.unexpectedIonType;
         }
         value = trustedGet!T;
@@ -258,14 +296,20 @@ struct IonDescribedValue
         @safe pure @nogc const
         if (isIonType!T || is(T == IonInt))
     {
+        static if (is(T == IonNull))
+        {
+            if (_expect(descriptor.L != 0xF, false))
+                throw IonErrorCode.unexpectedIonType.ionException;
+        }
+        else
         static if (is(T == IonInt))
         {
-            if (_expect((descriptor.type | 1) != IonTypeCodeOf!IonNInt, false))
+            if (_expect(descriptor.type == IonTypeCode.null_ || (descriptor.type | 1) != IonTypeCodeOf!IonNInt, false))
                 throw IonErrorCode.unexpectedIonType.ionException;
         }
         else
         {
-            if (_expect(descriptor.type != IonTypeCodeOf!T, false))
+            if (_expect(descriptor.type == IonTypeCode.null_ || descriptor.type != IonTypeCodeOf!T, false))
                 throw IonErrorCode.unexpectedIonType.ionException;
         }
         return trustedGet!T;
@@ -284,20 +328,26 @@ struct IonDescribedValue
     {
         static if (is(T == IonInt))
         {
-            assert(descriptor.type == IonTypeCodeOf!IonNInt || descriptor.type == IonTypeCodeOf!IonUInt);
+            assert(descriptor.type == IonTypeCode.null_ || (descriptor.type == IonTypeCodeOf!IonNInt || descriptor.type == IonTypeCodeOf!IonUInt), T.stringof);
+        }
+        else
+        static if (is(T == IonNull))
+        {
+            assert(descriptor.L == 0xF, T.stringof);
         }
         else
         {
-            assert(descriptor.type == IonTypeCodeOf!T, T.stringof);
+            assert(descriptor.type == IonTypeCode.null_ ||  descriptor.type == IonTypeCodeOf!T, T.stringof);
         }
-        static if (is(T == typeof(null)))
+
+        static if (is(T == IonNull))
         {
-            return T.init;
+            return T(descriptor.type);
         }
         else
-        static if (is(T == IonBool))
+        static if (is(T == bool))
         {
-            return T(descriptor);
+            return descriptor.L & 1;
         }
         else
         static if (is(T == IonStruct))
@@ -305,7 +355,12 @@ struct IonDescribedValue
             return T(descriptor, data);
         }
         else
-        static if (is(T == IonString) || is(T == IonClob))
+        static if (is(T == const(char)[]))
+        {
+            return cast(const(char)[])data;
+        }
+        else
+        static if (is(T == IonClob))
         {
             return T(cast(const(char)[])data);
         }
@@ -322,6 +377,66 @@ struct IonDescribedValue
         else
         {
             return T(data);
+        }
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        if (this == null)
+        {
+            trustedGet!IonNull.serialize(serializer);
+        }
+        else
+        {
+            final switch (descriptor.type) with (IonTypeCode)
+            {
+                case IonTypeCode.null_:
+                    assert(0);
+                case IonTypeCode.bool_:
+                    serializer.putValue(trustedGet!bool);
+                    break;
+                case IonTypeCode.uInt:
+                case IonTypeCode.nInt:
+                    // trustedGet!IonInt.serialize(serializer);
+                    break;
+                case IonTypeCode.float_:
+                    trustedGet!IonFloat.serialize(serializer);
+                    break;
+                case IonTypeCode.decimal:
+                    trustedGet!IonDecimal.serialize(serializer);
+                    break;
+                case IonTypeCode.timestamp:
+                    trustedGet!IonTimestamp.serialize(serializer);
+                    break;
+                case IonTypeCode.symbol:
+                    // trustedGet!IonSymbolID.serialize(serializer);
+                    break;
+                case IonTypeCode.string:
+                    // trustedGet!(const(char)[]).serialize(serializer);
+                    break;
+                case IonTypeCode.clob:
+                    // trustedGet!IonClob.serialize(serializer);
+                    break;
+                case IonTypeCode.blob:
+                    // trustedGet!IonBlob.serialize(serializer);
+                    break;
+                case IonTypeCode.list:
+                    // trustedGet!IonList.serialize(serializer);
+                    break;
+                case IonTypeCode.sexp:
+                    // trustedGet!IonSexp.serialize(serializer);
+                    break;
+                case IonTypeCode.struct_:
+                    // trustedGet!IonStruct.serialize(serializer);
+                    break;
+                case IonTypeCode.annotations:
+                    // trustedGet!IonAnnotationWrapper.serialize(serializer);
+                    break;
+            }
         }
     }
 }
@@ -403,57 +518,13 @@ struct IonIntField
     }
 }
 
-/++
-Nullable boolean type. Encodes `false`, `true`, and `null.bool`.
-+/
-struct IonBool
-{
-    ///
-    IonDescriptor descriptor;
-
-    /++
-    Returns: true if the boolean is `null.bool`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        assert (descriptor.type == IonTypeCode.bool_);
-        return *descriptor.reference == 0x1F;
-    }
-
-    /++
-    Params:
-        rhs = right hand side value for `==` and `!=` expressions.
-    Returns: true if the boolean isn't `null.bool` and equals to the `rhs`.
-    +/
-    bool opEquals(bool rhs)
-        @safe pure nothrow @nogc const
-    {
-        assert (descriptor.type == IonTypeCode.bool_);
-        return descriptor.L == rhs;
-    }
-
-    /++
-    Returns: `bool`
-    Precondition: `this != null`.
-    +/
-    bool get()
-        @safe pure nothrow @nogc const
-    {
-        assert(descriptor.reference);
-        auto d = *descriptor.reference;
-        assert((d | 1) == 0x11);
-        return d & 1;
-    }
-}
-
 ///
 @safe pure
 version(mir_ion_test) unittest
 {
-    assert(IonValue([0x1F]).describe.get!IonBool == null);
-    assert(IonValue([0x10]).describe.get!IonBool.get == false);
-    assert(IonValue([0x11]).describe.get!IonBool.get == true);
+    assert(IonValue([0x1F]).describe.get!IonNull.code == IonTypeCode.bool_);
+    assert(IonValue([0x10]).describe.get!bool == false);
+    assert(IonValue([0x11]).describe.get!bool == true);
 }
 
 /++
@@ -464,14 +535,6 @@ struct IonUInt
     ///
     BigUIntView!(const ubyte, WordEndian.big) field;
 
-    /++
-    Returns: true if the integer is `null.int`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return field.coefficients is null;
-    }
 
     /++
     Returns: true if the integer isn't `null.int` and equals to `rhs`.
@@ -479,8 +542,6 @@ struct IonUInt
     bool opEquals(ulong rhs)
         @safe pure nothrow @nogc const
     {
-        if (this == null)
-            return false;
         return field == rhs;
     }
 
@@ -488,13 +549,11 @@ struct IonUInt
     Params:
         value = (out) unsigned or signed integer
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
         if (isIntegral!T)
     {
-        assert(this != null);
         static if (isUnsigned!T)
         {
             return field.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
@@ -513,7 +572,6 @@ struct IonUInt
     {
         /++
         Returns: unsigned or signed integer
-        Precondition: `this != null`.
         +/
         T get(T)()
             @safe pure @nogc const
@@ -528,7 +586,6 @@ struct IonUInt
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T)()
         @trusted pure nothrow @nogc const
@@ -543,7 +600,7 @@ struct IonUInt
 @safe pure
 version(mir_ion_test) unittest
 {
-    assert(IonValue([0x2F]).describe.get!IonUInt == null);
+    assert(IonValue([0x2F]).describe.get!IonNull == IonNull(IonTypeCode.uInt));
     assert(IonValue([0x21, 0x07]).describe.get!IonUInt.get!int == 7);
 
     int v;
@@ -596,15 +653,6 @@ struct IonNInt
     BigUIntView!(const ubyte, WordEndian.big) field;
 
     /++
-    Returns: true if the integer is `null.int`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return field.coefficients is null;
-    }
-
-    /++
     Returns: true if the integer isn't `null.int` and equals to `rhs`.
     +/
     bool opEquals(long rhs)
@@ -619,13 +667,11 @@ struct IonNInt
     Params:
         value = (out) signed or unsigned integer
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
         if (isIntegral!T)
     {
-        assert(this != null);
         static if (isUnsigned!T)
         {
             return IonErrorCode.overflowInIntegerValue;
@@ -645,7 +691,6 @@ struct IonNInt
     {
         /++
         Returns: unsigned or signed integer
-        Precondition: `this != null`.
         +/
         T get(T)()
             @safe pure @nogc const
@@ -660,7 +705,6 @@ struct IonNInt
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T)()
         @trusted pure nothrow @nogc const
@@ -675,7 +719,7 @@ struct IonNInt
 @safe pure
 version(mir_ion_test) unittest
 {
-    assert(IonValue([0x3F]).describe.get!IonNInt == null);
+    assert(IonValue([0x3F]).describe.get!IonNull == IonNull(IonTypeCode.nInt));
     assert(IonValue([0x31, 0x07]).describe.get!IonNInt.get!int == -7);
 
     long v;
@@ -728,26 +772,16 @@ struct IonInt
     ///
     BigIntView!(const ubyte, WordEndian.big) field;
 
-    /++
-    Returns: true if the integer is `null.int`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return field.coefficients is null;
-    }
 
     /++
     Params:
         value = (out) signed or unsigned integer
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
         if (isIntegral!T)
     {
-        assert(this != null);
         static if (isUnsigned!T)
         {
             if (_expect(field.sign, false))
@@ -773,7 +807,6 @@ struct IonInt
     {
         /++
         Returns: unsigned or signed integer
-        Precondition: `this != null`.
         +/
         T get(T)()
             @safe pure @nogc const
@@ -788,7 +821,6 @@ struct IonInt
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T)()
         @trusted pure nothrow @nogc const
@@ -796,6 +828,16 @@ struct IonInt
     {
         T value;
         return get!T(value);
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        pragma(msg, S);
+        serializer.putValue(field);
     }
 }
 
@@ -805,7 +847,7 @@ version(mir_ion_test) unittest
 {
     import mir.ion.exception;
 
-    assert(IonValue([0x2F]).describe.get!IonInt == null);
+    assert(IonValue([0x2F]).describe.get!IonNull == IonNull(IonTypeCode.uInt));
     assert(IonValue([0x21, 0x07]).describe.get!IonInt.get!int == 7);
     assert(IonValue([0x20]).describe.get!IonInt.get!int == 0);
 
@@ -820,7 +862,7 @@ version(mir_ion_test) unittest
 {
     import mir.ion.exception;
 
-    assert(IonValue([0x3F]).describe.get!IonInt == null);
+    assert(IonValue([0x3F]).describe.get!IonNull == IonNull(IonTypeCode.nInt));
     assert(IonValue([0x31, 0x07]).describe.get!IonInt.get!int == -7);
 
     long v;
@@ -840,33 +882,22 @@ struct IonFloat
     const(ubyte)[] data;
 
     /++
-    Returns: true if the float is `null.float`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
-
-    /++
     Params:
         value = (out) `float`, `double`, or `real`
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
         if (isFloatingPoint!T)
     {
-        assert(this != null);
         if (data.length == 8)
         {
-            value = parseDouble(data);
+            value = parseFloating!double(data);
             return IonErrorCode.none;
         }
         if (data.length == 4)
         {
-            value = parseSingle(data);
+            value = parseFloating!float(data);
             return IonErrorCode.none;
         }
         if (_expect(data.length, false))
@@ -881,7 +912,6 @@ struct IonFloat
     {
         /++
         Returns: floating point number
-        Precondition: `this != null`.
         +/
         T get(T)()
             @safe pure @nogc const
@@ -896,7 +926,6 @@ struct IonFloat
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T)()
         @trusted pure nothrow @nogc const
@@ -905,6 +934,31 @@ struct IonFloat
         T value;
         return get!T(value);
     }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        if (data.length == 8)
+        {
+            auto value = parseFloating!double(data);
+            serializer.putValue(value);
+            return;
+        }
+        if (data.length == 4)
+        {
+            auto value = parseFloating!float(data);
+            serializer.putValue(value);
+            return;
+        }
+        if (_expect(data.length, false))
+        {
+            throw IonErrorCode.wrongFloatDescriptor.ionException;
+        }
+        serializer.putValue(0f);
+    }
 }
 
 ///
@@ -912,7 +966,7 @@ struct IonFloat
 version(mir_ion_test) unittest
 {
     // null
-    assert(IonValue([0x4F]).describe.get!IonFloat == null);
+    assert(IonValue([0x4F]).describe.get!IonNull == IonNull(IonTypeCode.float_));
 
     // zero
     auto ionFloat = IonValue([0x40]).describe.get!IonFloat;
@@ -971,7 +1025,6 @@ struct IonDescribedDecimal
     Params:
         value = (out) floating point number
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
@@ -988,7 +1041,6 @@ struct IonDescribedDecimal
     {
         /++
         Returns: floating point number
-        Precondition: `this != null`.
         +/
         T get(T = double)()
             @safe pure @nogc const
@@ -1003,7 +1055,6 @@ struct IonDescribedDecimal
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode()()
         @trusted pure nothrow @nogc const
@@ -1011,6 +1062,18 @@ struct IonDescribedDecimal
     {
         Decimal!256 decimal;
         return get!T(decimal);
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        Decimal!256  decimal;
+        if (auto error = this.getDecimal!256(decimal))
+            throw error.ionException;
+        serializer.putValue(decimal);
     }
 }
 
@@ -1023,15 +1086,6 @@ struct IonDecimal
     const(ubyte)[] data;
 
     /++
-    Returns: true if the decimal is `null.decimal`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
-
-    /++
     Describes decimal (nothrow version).
     Params:
         value = (out) $(LREF IonDescribedDecimal)
@@ -1040,7 +1094,6 @@ struct IonDecimal
     IonErrorCode get(T : IonDescribedDecimal)(scope ref T value)
         @safe pure nothrow @nogc const
     {
-        assert(this != null);
         const(ubyte)[] d = data;
         if (data.length)
         {
@@ -1059,7 +1112,6 @@ struct IonDecimal
     Params:
         value = (out) floating point number
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
@@ -1089,13 +1141,21 @@ struct IonDecimal
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T = IonDescribedDecimal)()
         @trusted pure nothrow @nogc const
     {
         T value;
         return get!T(value);
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        this.get!IonDescribedDecimal.serialize(serializer);
     }
 }
 
@@ -1104,7 +1164,7 @@ struct IonDecimal
 version(mir_ion_test) unittest
 {
     // null.decimal
-    assert(IonValue([0x5F]).describe.get!IonDecimal == null);
+    assert(IonValue([0x5F]).describe.get!IonNull == IonNull(IonTypeCode.decimal));
 
     auto describedDecimal = IonValue([0x56, 0x50, 0xcb, 0x80, 0xbc, 0x2d, 0x86]).describe.get!IonDecimal.get;
     assert(describedDecimal.exponent == -2123);
@@ -1126,39 +1186,31 @@ The 2 non-optional components are offset and year.
 The 5 optional components are (from least precise to most precise): `month`, `day`, `hour` and `minute`, `second`, `fraction_exponent` and `fraction_coefficient`.
 All of these 7 components are in Universal Coordinated Time (UTC).
 +/
-struct IonTimestampValue
+struct IonTimestamp
 {
-    import mir.ion.timestamp;
+    import mir.timestamp;
 
     ///
     const(ubyte)[] data;
 
     /++
-    Returns: true if the timestamp is `null.timestamp`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
-
-    /++
     Describes decimal (nothrow version).
     Params:
-        value = (out) $(LREF IonTimestamp)
+        value = (out) $(LREF Timestamp)
     Returns: $(SUBREF exception, IonErrorCode)
     +/
-    IonErrorCode get(T : IonTimestamp)(scope ref T value)
+    IonErrorCode get(T : Timestamp)(scope ref T value)
         @safe pure nothrow @nogc const
     {
         pragma(inline, false);
-        assert(this != null);
         auto d = data[];
-        IonTimestamp v;
+        Timestamp v;
         if (auto error = parseVarInt(d, v.offset))
             return error;
-        if (auto error = parseVarUInt(d, v.year))
+        ushort year;
+        if (auto error = parseVarUInt(d, year))
             return error;
+        v.year = year;
 
         if (d.length == 0)
             goto R;
@@ -1249,9 +1301,9 @@ struct IonTimestampValue
     {
         /++
         Describes decimal.
-        Returns: $(LREF IonTimestamp)
+        Returns: $(LREF Timestamp)
         +/
-        IonTimestamp get(T = IonTimestamp)()
+        Timestamp get(T = Timestamp)()
             @safe pure @nogc const
         {
             T ret;
@@ -1263,13 +1315,21 @@ struct IonTimestampValue
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
-    IonErrorCode getErrorCode(T = IonTimestamp)()
+    IonErrorCode getErrorCode(T = Timestamp)()
         @trusted pure nothrow @nogc const
     {
         T value;
         return get!T(value);
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        serializer.putValue(this.get!Timestamp);
     }
 }
 
@@ -1277,10 +1337,10 @@ struct IonTimestampValue
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.timestamp;
+    import mir.timestamp;
 
     // null.timestamp
-    assert(IonValue([0x6F]).describe.get!IonTimestampValue == null);
+    assert(IonValue([0x6F]).describe.get!IonNull == IonNull(IonTypeCode.timestamp));
 
     ubyte[][] set = [
         [0x68, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84,         ], // 2000-07-08T02:03:04Z with no fractional seconds
@@ -1290,24 +1350,24 @@ version(mir_ion_test) unittest
         [0x69, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0x81,   ], // The same instant with 0d1 fractional seconds
     ];
 
-    auto r = IonTimestamp(2000, 7, 8, 2, 3, 4);
+    auto r = Timestamp(2000, 7, 8, 2, 3, 4);
 
     foreach(data; set)
     {
-        assert(IonValue(data).describe.get!IonTimestampValue.get == r);
+        assert(IonValue(data).describe.get!IonTimestamp.get == r);
     }
 
     assert(IonValue([0x69, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC2])
         .describe
-        .get!IonTimestampValue
+        .get!IonTimestamp
         .get ==
-            IonTimestamp(2000, 7, 8, 2, 3, 4, -2, 0));
+            Timestamp(2000, 7, 8, 2, 3, 4, -2, 0));
 
     assert(IonValue([0x6A, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC3, 0x10])
         .describe
-        .get!IonTimestampValue
+        .get!IonTimestamp
         .get ==
-            IonTimestamp(2000, 7, 8, 2, 3, 4, -3, 16));
+            Timestamp(2000, 7, 8, 2, 3, 4, -3, 16));
 }
 
 /++
@@ -1322,31 +1382,19 @@ struct IonSymbolID
     BigUIntView!(const ubyte, WordEndian.big) representation;
 
     /++
-    Returns: true if the symbol is `null.symbol`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return representation.coefficients is null;
-    }
-
-    /++
     Params:
         value = (out) symbol id
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
         if (isUnsigned!T)
     {
-        assert(this != null);
         return representation.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
     }
 
     /++
     Returns: unsigned or signed integer
-    Precondition: `this != null`.
     +/
     T get(T = size_t)()
         @safe pure @nogc const
@@ -1360,7 +1408,6 @@ struct IonSymbolID
 
     /++
     Returns: $(SUBREF exception, IonErrorCode)
-    Precondition: `this != null`.
     +/
     IonErrorCode getErrorCode(T = size_t)()
         @trusted pure nothrow @nogc const
@@ -1369,13 +1416,27 @@ struct IonSymbolID
         T value;
         return get!T(value);
     }
+
+    /++
+    Serializes SymbolId as Ion value.
+    Note: This serialization shouldn't be used for `struct` keys or `annotation` list.
+    Params:
+        serializer = serializer with `ionPutValueId` primitive.
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        uint id;
+        if (auto overflow = representation.get(id))
+            throw IonErrorCode.overflowInSymbolId.ionException;
+        serializer.ionPutValueId(cast(uint) representation);
+    }
 }
 
 ///
 @safe pure
 version(mir_ion_test) unittest
 {
-    assert(IonValue([0x7F]).describe.get!IonSymbolID == null);
+    assert(IonValue([0x7F]).describe.get!IonNull == IonNull(IonTypeCode.symbol));
     assert(IonValue([0x71, 0x07]).describe.get!IonSymbolID.get == 7);
 
     size_t v;
@@ -1405,37 +1466,18 @@ version(mir_ion_test) unittest
     assert(IonValue([0x79, 1, 0,0,0,0,0,0,0,0]).describe.get!IonSymbolID.getErrorCode!ulong == IonErrorCode.overflowInIntegerValue);
 }
 
-/++
-Ion String.
-
-These are always sequences of Unicode characters, encoded as a sequence of UTF-8 octets.
-+/
-struct IonString
-{
-    ///
-    const(char)[] data;
-
-    /++
-    Returns: true if the string is `null.string`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
-}
 
 ///
 @safe pure
 version(mir_ion_test) unittest
 {
     // null.string
-    assert(IonValue([0x8F]).describe.get!IonString == null);
+    assert(IonValue([0x8F]).describe.get!IonNull == IonNull(IonTypeCode.string));
     // empty string
-    assert(IonValue([0x80]).describe.get!IonString != null);
-    assert(IonValue([0x80]).describe.get!IonString.data == "");
+    assert(IonValue([0x80]).describe.get!(const(char)[]) !is null);
+    assert(IonValue([0x80]).describe.get!(const(char)[]) == "");
 
-    assert(IonValue([0x85, 0x63, 0x6f, 0x76, 0x69, 0x64]).describe.get!IonString.data == "covid");
+    assert(IonValue([0x85, 0x63, 0x6f, 0x76, 0x69, 0x64]).describe.get!(const(char)[]) == "covid");
 }
 
 /++
@@ -1447,15 +1489,6 @@ struct IonList
     const(ubyte)[] data;
     private alias DG = int delegate(IonErrorCode error, IonDescribedValue value) @safe pure nothrow @nogc;
     private alias EDG = int delegate(IonDescribedValue value) @safe pure @nogc;
-
-    /++
-    Returns: true if the sexp is `null.sexp`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
 
     /++
     Returns: true if the sexp is `null.sexp`, `null`, or `()`.
@@ -1612,6 +1645,21 @@ const:
     @system
     int opApply(scope int delegate(IonErrorCode error, IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        serializer.listBegin;
+        foreach (IonDescribedValue value; this)
+        {
+            serializer.elemBegin;
+            value.serialize(serializer);
+        }
+        serializer.listEnd;
+    }
 }
 
 ///
@@ -1643,15 +1691,6 @@ struct IonSexp
 
     private alias DG = IonList.DG;
     private alias EDG = IonList.EDG;
-
-    /++
-    Returns: true if the sexp is `null.sexp`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
-    }
 
     /++
     Returns: true if the sexp is `null.sexp`, `null`, or `()`.
@@ -1793,6 +1832,21 @@ const:
     @system
     int opApply(scope int delegate(IonErrorCode error, IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        serializer.sexpBegin;
+        foreach (IonDescribedValue value; this)
+        {
+            serializer.elemBegin;
+            value.serialize(serializer);
+        }
+        serializer.sexpEnd;
+    }
 }
 
 ///
@@ -1832,15 +1886,6 @@ struct IonStruct
         @safe pure nothrow @nogc const @property
     {
         return descriptor.L == 1;
-    }
-
-    /++
-    Returns: true if the struct is `null.struct`.
-    +/
-    bool opEquals(typeof(null))
-        @safe pure nothrow @nogc const
-    {
-        return data is null;
     }
 
     /++
@@ -2004,6 +2049,21 @@ const:
     @system
     int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        serializer.structBegin;
+        foreach (size_t symbolID, IonDescribedValue value; this)
+        {
+            serializer.putKeyId(symbolID);
+            value.serialize(serializer);
+        }
+        serializer.structEnd;
+    }
 }
 
 ///
@@ -2011,12 +2071,11 @@ const:
 version(mir_ion_test) unittest
 {
     // null.struct
-    assert(IonValue([0xDF]).describe.get!IonStruct == null);
+    assert(IonValue([0xDF]).describe.get!IonNull == IonNull(IonTypeCode.struct_));
 
     // empty struct
     auto ionStruct = IonValue([0xD0]).describe.get!IonStruct;
     size_t i;
-    assert(ionStruct != null);
     foreach (symbolID, elem; ionStruct)
         i++;
     assert(i == 0);
@@ -2111,6 +2170,22 @@ struct IonAnnotationWrapper
         }
     }
 
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        IonAnnotations annotations;
+        auto value = unwrap(annotations);
+
+        serializer.annotationWrapperBegin;
+
+        annotations.serialize(serializer);
+        value.serialize(serializer);
+
+        serializer.annotationWrapperEnd;
+    }
 }
 
 ///
@@ -2304,6 +2379,25 @@ const:
     @system
     int opApply(scope int delegate(IonErrorCode error, size_t symbolID)
     @system dg) { return opApply(cast(DG) dg); }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        IonAnnotations annotations;
+        auto value = unwrap(annotations);
+
+        serializer.annotationsBegin;
+
+        foreach (size_t id; this)
+        {
+            serializer.putAnnotationId(id);
+        }
+
+        serializer.annotationsEnd;
+    }
 }
 
 package IonErrorCode parseVarUInt(bool checkInput = true, U)(scope ref const(ubyte)[] data, scope out U result)
@@ -2395,8 +2489,8 @@ private IonErrorCode parseValue(ref const(ubyte)[] data, scope ref IonDescribedV
 
     describedValue = IonDescribedValue(IonDescriptor(descriptorPtr));
 
-    const L = uint(descriptorData & 0xF);
-    const type = cast(IonTypeCode)(descriptorData >> 4);
+    const L = describedValue.descriptor.L;
+    const type = describedValue.descriptor.type;
     // if null
     if (L == 0xF)
         return IonErrorCode.none;
@@ -2423,26 +2517,114 @@ private IonErrorCode parseValue(ref const(ubyte)[] data, scope ref IonDescribedV
     return type == IonTypeCode.null_ ? IonErrorCode.nop : IonErrorCode.none;
 }
 
-private double parseDouble(scope const(ubyte)[] data)
+private F parseFloating(F)(scope const(ubyte)[] data)
     @trusted pure nothrow @nogc
+    if (isFloatingPoint!F)
 {
     version(LDC) pragma(inline, true);
-    version (LittleEndian) import core.bitop : bswap;
-    assert(data.length == 8);
-    double value;
-    *cast(ubyte[8]*) &value = cast(ubyte[8]) data[0 .. 8];
-    version (LittleEndian) *cast(ulong*)&value = bswap(*cast(ulong*)&value);
-    return value;
+
+    enum n = F.sizeof;
+    static if (n == 4)
+        alias U = uint;
+    else
+    static if (n == 8)
+        alias U = ulong;
+    else
+    static if (n == 16)
+        alias U = ucent;
+    else static assert(0);
+
+    assert(data.length == n);
+
+    U num;
+    if (__ctfe)
+    {
+        static foreach_reverse (i; 0 .. n)
+        {
+            num <<= 8;
+            num |= data.ptr[i];
+        }
+    }
+    else
+    {
+        num = (cast(U[1])cast(ubyte[n])data.ptr[0 .. n])[0];
+    }
+    version (LittleEndian)
+    {
+        import core.bitop : bswap;
+        num = bswap(num);
+    }
+    return num.unsignedDataToFloating;
 }
 
-private float parseSingle(scope const(ubyte)[] data)
+private auto unsignedDataToFloating(T)(const T data)
     @trusted pure nothrow @nogc
+    if (__traits(isUnsigned, T) && T.sizeof >= 4)
 {
-    version(LDC) pragma(inline, true);
-    version (LittleEndian) import core.bitop : bswap;
-    assert(data.length == 4);
-    float value;
-    *cast(ubyte[4]*) &value = cast(ubyte[4]) data[0 .. 4];
-    version (LittleEndian) *cast(uint*)&value = bswap(*cast(uint*)&value);
-    return value;
+    static if (T.sizeof == 4)
+        alias F = float;
+    else
+    static if (T.sizeof == 8)
+        alias F = double;
+    else
+        alias F = quadruple;
+
+    version(all)
+    {
+        return *cast(F*)&data;
+    }
+    else
+    {        
+        T num = data;
+        bool sign = cast(bool)(num >> (T.sizeof * 8 - 1));
+        num &= num.max >> 1;
+        if (num == 0)
+            return F(sign ? -0.0f : 0.0f);
+        int exp = cast(int) (num >> (F.mant_dig - 1));
+        num &= (T(1) << (F.mant_dig - 1)) - 1;
+        if (exp)
+        {
+            if (exp == (T(1) << (T.sizeof * 8 - F.mant_dig)) - 1)
+            {
+                F ret = num == 0 ? F.infinity : F.nan;
+                if (sign)
+                    ret = -ret;
+                return ret;
+            }
+            exp -= 1;
+            num |= T(1) << (F.mant_dig - 1);
+        }
+
+        exp -= F.mant_dig - F.min_exp;
+        F ret = num;
+        import mir.math.ieee: ldexp;
+        // ret = ldexp(ret, exp);
+        ret *= 2.0 ^^ exp;
+        if (sign)
+            ret = -ret;
+        assert(data == cast(ulong)*cast(T*) &ret);
+        return ret;
+    }
+}
+
+///
+@safe pure nothrow @nogc
+unittest
+{
+    assert(unsignedDataToFloating(1UL) == double.min_normal * double.epsilon);
+    assert(unsignedDataToFloating(1U) == float.min_normal * float.epsilon);
+
+    assert(unsignedDataToFloating(0xFFF0000000000000U) == -double.infinity);
+    assert(unsignedDataToFloating(0x4008000000000000U) == 3.0);
+    assert(unsignedDataToFloating(0x4028000000000000U) == 12.0);
+    assert(unsignedDataToFloating(0x430c6bf526340000U) == 1e15);
+    assert(unsignedDataToFloating(1UL) == double.min_normal * double.epsilon);
+    assert(unsignedDataToFloating(1U) == float.min_normal * float.epsilon);
+
+    static assert(unsignedDataToFloating(0xFFF0000000000000U) == -double.infinity);
+    static assert(unsignedDataToFloating(0x4008000000000000U) == 3.0, unsignedDataToFloating(0x4008000000000000U));
+    static assert(unsignedDataToFloating(0x4028000000000000U) == 12.0, unsignedDataToFloating(0x4028000000000000U));
+    static assert(unsignedDataToFloating(0x430c6bf526340000U) == 1e15, unsignedDataToFloating(0x430c6bf526340000U));
+    static assert(unsignedDataToFloating(1UL) == double.min_normal * double.epsilon);
+    static assert(unsignedDataToFloating(1U) == float.min_normal * float.epsilon);
 }

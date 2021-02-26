@@ -9,13 +9,13 @@ enum IonTypeCode
 {
     /++
     Spec: $(HTTP http://amzn.github.io/ion-docs/docs/binary.html#0-null, 0: null)
-    D_type: `typeof(null)`.
+    D_type: $(SUBREF value, IonNull).
     +/
     null_,
 
     /++
     Spec: $(HTTP http://amzn.github.io/ion-docs/docs/binary.html#1-bool, 1: bool)
-    D_type: $(SUBREF value, IonBool)
+    D_type: `bool`
     +/
     bool_,
 
@@ -41,7 +41,7 @@ enum IonTypeCode
 
     /++
     Spec: $(HTTP http://amzn.github.io/ion-docs/docs/binary.html#6-timestamp, 6: timestamp)
-    D_type: $(SUBREF value, IonTimestampValue)
+    D_type: $(SUBREF value, IonTimestamp)
     +/
     timestamp,
 
@@ -53,7 +53,7 @@ enum IonTypeCode
 
     /++
     Spec: $(HTTP http://amzn.github.io/ion-docs/docs/binary.html#8-string, 8: string)
-    D_type: $(SUBREF value, IonString)
+    D_type: `const(char)[]`
     +/
     string,
 

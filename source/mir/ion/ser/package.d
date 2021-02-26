@@ -146,13 +146,13 @@ void serializeValue(S, T)(ref S serializer, T[] value)
         serializer.putValue(null);
         return;
     }
-    auto state = serializer.arrayBegin();
+    auto state = serializer.listBegin();
     foreach (ref elem; value)
     {
         serializer.elemBegin;
         serializer.serializeValue(elem);
     }
-    serializer.arrayEnd(state);
+    serializer.listEnd(state);
 }
 
 /// Input range serialization
@@ -162,13 +162,13 @@ void serializeValue(S, R)(ref S serializer, R value)
         !isDynamicArray!R &&
         !isNullable!R)
 {
-    auto state = serializer.arrayBegin();
+    auto state = serializer.listBegin();
     foreach (ref elem; value)
     {
         serializer.elemBegin;
         serializer.serializeValue(elem);
     }
-    serializer.arrayEnd(state);
+    serializer.listEnd(state);
 }
 
 /// input range serialization
@@ -210,13 +210,13 @@ void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
         serializer.putValue(null);
         return;
     }
-    auto state = serializer.objectBegin();
+    auto state = serializer.structBegin();
     foreach (key, ref val; value)
     {
         serializer.putKey(key);
         serializer.serializeValue(val);
     }
-    serializer.objectEnd(state);
+    serializer.structEnd(state);
 }
 
 ///
@@ -239,13 +239,13 @@ void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
         serializer.putValue(null);
         return;
     }
-    auto state = serializer.objectBegin();
+    auto state = serializer.structBegin();
     foreach (key, ref val; value)
     {
         serializer.putKey(serdeGetKeyOut(key));
         serializer.putValue(val);
     }
-    serializer.objectEnd(state);
+    serializer.structEnd(state);
 }
 
 ///
@@ -269,7 +269,7 @@ void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
         serializer.putValue(null);
         return;
     }
-    auto state = serializer.objectBegin();
+    auto state = serializer.structBegin();
     foreach (key, ref val; value)
     {
         import mir.format: print;
@@ -279,7 +279,7 @@ void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
         serializer.putKey(buffer[]);
         .serializeValue(serializer, val);
     }
-    serializer.objectEnd(state);
+    serializer.structEnd(state);
 }
 
 ///
@@ -355,7 +355,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     }
     else
     {
-        auto state = serializer.objectBegin();
+        auto state = serializer.structBegin();
         foreach(member; aliasSeqOf!(SerializableMembers!V))
         {{
             enum key = serdeGetKeyOut!(__traits(getMember, value, member));
@@ -384,9 +384,9 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                     auto val = __traits(getMember, value, member);
                 }
 
-                static if (__traits(hasMember, S, "putCompileTimeKey"))
+                static if (__traits(hasMember, S, "putCompiletimeKey"))
                 {
-                    serializer.putCompileTimeKey!key;
+                    serializer.putCompiletimeKey!key;
                 }
                 else
                 {
@@ -404,13 +404,13 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                             continue;
                         }
                     }
-                    auto valState = serializer.arrayBegin();
+                    auto valState = serializer.listBegin();
                     foreach (ref elem; val)
                     {
                         serializer.elemBegin;
                         serializer.serializeValue(elem);
                     }
-                    serializer.arrayEnd(valState);
+                    serializer.listEnd(valState);
                 }
                 else
                 static if(hasUDA!(__traits(getMember, value, member), serdeLikeStruct))
@@ -423,13 +423,13 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                             continue F;
                         }
                     }
-                    auto valState = serializer.objectBegin();
+                    auto valState = serializer.structBegin();
                     foreach (key, ref elem; val)
                     {
                         serializer.putKey(key);
                         serializer.serializeValue(elem);
                     }
-                    serializer.objectEnd(valState);
+                    serializer.structEnd(valState);
                 }
                 else
                 static if(hasUDA!(__traits(getMember, value, member), serdeProxy))
@@ -446,7 +446,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         {
             value.finalizeSerialization(serializer);
         }
-        serializer.objectEnd(state);
+        serializer.structEnd(state);
     }
 }
 
@@ -476,10 +476,10 @@ unittest
     {
         void serialize(S)(ref S serializer) const
         {
-            auto state = serializer.objectBegin;
+            auto state = serializer.structBegin;
             serializer.putKey("foo");
             serializer.putValue("bar");
-            serializer.objectEnd(state);
+            serializer.structEnd(state);
         }
     }
 

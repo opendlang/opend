@@ -8,7 +8,7 @@ import mir.bignum.low_level_view;
 import mir.bitop;
 import mir.date;
 import mir.ion.lob;
-import mir.ion.timestamp: IonTimestamp;
+import mir.timestamp: Timestamp;
 import mir.ion.type_code;
 import mir.utility: _expect;
 import std.traits;
@@ -324,12 +324,7 @@ size_t ionPutUIntField(W, WordEndian endian)(
     }
     foreach (W d; data)
     {
-        version (LittleEndian)
-        {
-            import core.bitop: bswap;
-            d = bswap(d);
-        }
-        *cast(ubyte[W.sizeof]*)(ptr + ret) = cast(ubyte[W.sizeof])cast(W[1])[d];
+        *cast(ubyte[W.sizeof]*)(ptr + ret) = byteData(d);
         ret += W.sizeof;
     }
     return ret;
@@ -344,12 +339,7 @@ size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
     auto c = cast(size_t)ctlzp(value);
     value <<= c & 0xF8;
     c >>>= 3;
-    version (LittleEndian)
-    {
-        import core.bitop: bswap;
-        value = bswap(value);
-    }
-    *cast(ubyte[T.sizeof]*)ptr = cast(ubyte[T.sizeof])cast(T[1])[value];
+    *cast(ubyte[T.sizeof]*)ptr = byteData(value);
     return T.sizeof - c;
 }
 
@@ -475,12 +465,7 @@ size_t ionPutIntField(W, WordEndian endian)(
     data.popFront;
     foreach (W d; data)
     {
-        version (LittleEndian)
-        {
-            import core.bitop: bswap;
-            d = bswap(d);
-        }
-        *cast(ubyte[W.sizeof]*)(ptr + ret) = cast(ubyte[W.sizeof])cast(W[1])[d];
+        *cast(ubyte[W.sizeof]*)(ptr + ret) = byteData(d);
         ret += W.sizeof;
     }
     return ret;
@@ -514,12 +499,7 @@ size_t ionPutIntField(T)(scope ubyte* ptr, const T num, bool sign)
         c >>>= 3;
         value |= T(sign) << (T.sizeof * 8 - 1);
         c = T.sizeof - c + s - (value == 0);
-        version (LittleEndian)
-        {
-            import core.bitop: bswap;
-            value = bswap(value);
-        }
-        *cast(ubyte[T.sizeof]*)ptr = cast(ubyte[T.sizeof])cast(T[1])[value];
+        *cast(ubyte[T.sizeof]*)ptr = byteData(value);
         return c;
     }
     else
@@ -743,6 +723,42 @@ version(mir_ion_test) unittest
     assert(data[2] == 0x02);
 }
 
+private auto byteData(T)(const T value)
+    if (__traits(isUnsigned, T))
+{
+    static if (T.sizeof == 1)
+    {
+        T num = value;
+    }
+    else
+    version (LittleEndian)
+    {
+        import core.bitop: bswap;
+        T num = bswap(value);
+    }
+    else
+    {
+        T num = value;
+    }
+
+    ubyte[T.sizeof] data;
+
+    if (__ctfe)
+    {
+        foreach (ref d; data)
+        {
+            d = num & 0xFF;
+            num >>= 8;
+        }
+    }
+    else
+    {
+        data = cast(ubyte[T.sizeof])cast(T[1])[num];
+    }
+
+    return data;
+}
+
 /++
 +/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
@@ -751,12 +767,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     auto num = *cast(uint*)&value;
     auto s = (num != 0) << 2;
     *ptr = cast(ubyte)(0x40 + s);
-    version (LittleEndian)
-    {
-        import core.bitop: bswap;
-        num = bswap(num);
-    }
-    *cast(ubyte[4]*)(ptr + 1) = cast(ubyte[4])cast(uint[1])[num];
+    *cast(ubyte[4]*)(ptr + 1) = byteData(num);
     return 1 + s;
 }
 
@@ -791,12 +802,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     auto num = *cast(ulong*)&value;
     auto s = (num != 0) << 3;
     *ptr = cast(ubyte)(0x40 + s);
-    version (LittleEndian)
-    {
-        import core.bitop: bswap;
-        num = bswap(num);
-    }
-    *cast(ubyte[8]*)(ptr + 1) = cast(ubyte[8])cast(ulong[1])[num];
+    *cast(ubyte[8]*)(ptr + 1) = byteData(num);
     return 1 + s;
 }
 
@@ -913,8 +919,18 @@ size_t ionPut(W, WordEndian endian)(
         *ptr = cast(ubyte)(q | 0xE);
         ubyte[10] lengthPayload;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, length);
-        memmove(ptr + 1 + lengthLength, ptr + 1, length);
-        memcpy(ptr + 1, lengthPayload.ptr, lengthLength);
+
+        if (__ctfe)
+        {
+            foreach_reverse (i; 0 .. length)
+                ptr[i + 1 + lengthLength] = ptr[i + 1];
+            ptr[1 .. lengthLength + 1] = lengthPayload[0 .. lengthLength];
+        }
+        else
+        {
+            memmove(ptr + 1 + lengthLength, ptr + 1, length);
+            memcpy(ptr + 1, lengthPayload.ptr, lengthLength);
+        }
         return length + 1 + lengthLength;
     }
 }
@@ -955,8 +971,17 @@ size_t ionPut(W, WordEndian endian)(
         *ptr = 0x5E;
         ubyte[10] lengthPayload;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, length);
-        memmove(ptr + 1 + lengthLength, ptr + 1, length);
-        memcpy(ptr + 1, lengthPayload.ptr, lengthLength);
+        if (__ctfe)
+        {
+            foreach_reverse (i; 0 .. length)
+                ptr[i + 1 + lengthLength] = ptr[i + 1];
+            ptr[1 .. lengthLength + 1] = lengthPayload[0 .. lengthLength];
+        }
+        else
+        {
+            memmove(ptr + 1 + lengthLength, ptr + 1, length);
+            memcpy(ptr + 1, lengthPayload.ptr, lengthLength);
+        }
         return length + 1 + lengthLength;
     }
 }
@@ -1020,25 +1045,25 @@ version(mir_ion_test) unittest
 /++
 +/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == IonTimestamp))
+    if (is(T == Timestamp))
 {
     size_t ret = 1;
     ret += ionPutVarInt(ptr + ret, value.offset);
-    ret += ionPutVarUInt(ptr + ret, value.year);
-    if (value.precision >= IonTimestamp.precision.month)
+    ret += ionPutVarUInt(ptr + ret, cast(ushort)value.year);
+    if (value.precision >= Timestamp.precision.month)
     {
         ptr[ret++] = cast(ubyte) (0x80 | value.month);
-        if (value.precision >= IonTimestamp.precision.day)
+        if (value.precision >= Timestamp.precision.day)
         {
             ptr[ret++] = cast(ubyte) (0x80 | value.day);
-            if (value.precision >= IonTimestamp.precision.minute)
+            if (value.precision >= Timestamp.precision.minute)
             {
                 ptr[ret++] = cast(ubyte) (0x80 | value.hour);
                 ptr[ret++] = cast(ubyte) (0x80 | value.minute);
-                if (value.precision >= IonTimestamp.precision.second)
+                if (value.precision >= Timestamp.precision.second)
                 {
                     ptr[ret++] = cast(ubyte) (0x80 | value.second);
-                    if (value.precision > IonTimestamp.precision.second) //fraction
+                    if (value.precision > Timestamp.precision.second) //fraction
                     {
                         ret += ionPutVarInt(ptr + ret, value.fractionExponent);
                         ret += ionPutIntField(ptr + ret, value.fractionCoefficient);
@@ -1055,7 +1080,11 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
     }
     else
     {
-        memmove(ptr + 2, ptr + 1, length);
+        if (__ctfe)
+            foreach_reverse (i; 0 .. length)
+                ptr[i + 2] = ptr[i + 1];
+        else
+            memmove(ptr + 2, ptr + 1, length);
         *ptr = 0x6E;
         ptr[1] = cast(ubyte) (0x80 | length);
         return ret + 1;
@@ -1065,20 +1094,20 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.timestamp;
+    import mir.timestamp;
 
     ubyte[20] data;
 
     ubyte[] result = [0x68, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84];
-    auto ts = IonTimestamp(2000, 7, 8, 2, 3, 4);
+    auto ts = Timestamp(2000, 7, 8, 2, 3, 4);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 
     result = [0x69, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC2];
-    ts = IonTimestamp(2000, 7, 8, 2, 3, 4, -2, 0);
+    ts = Timestamp(2000, 7, 8, 2, 3, 4, -2, 0);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 
     result = [0x6A, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC3, 0x10];
-    ts = IonTimestamp(2000, 7, 8, 2, 3, 4, -3, 16);
+    ts = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 }
 
@@ -1115,7 +1144,7 @@ version(mir_ion_test) unittest
 size_t ionPutSymbolId(T)(scope ubyte* ptr, const T value)
     if (isUnsigned!T)
 {
-    auto length = ionPutVarUInt(ptr + 1, value);
+    auto length = ionPutUIntField(ptr + 1, value);
     *ptr = cast(ubyte)(0x70 | length);
     return length + 1;
 }
@@ -1126,7 +1155,27 @@ version(mir_ion_test) unittest
     ubyte[8] data;
 
     ubyte[] result = [0x72, 0x01, 0xFF];
-    auto id = 0xFFu;
+    auto id = 0x1FFu;
+    assert(data[0 .. ionPutSymbolId(data.ptr, id)] == result);
+}
+
+/++
++/
+size_t ionPutSymbolId(T, WordEndian endian)(scope ubyte* ptr, BigUIntView!(T, endian) value)
+{
+    auto length = ionPutUIntField(ptr + 1, value);
+    assert(length < 10);
+    *ptr = cast(ubyte)(0x70 | length);
+    return length + 1;
+}
+
+///
+version(mir_ion_test) unittest
+{
+    ubyte[8] data;
+
+    ubyte[] result = [0x72, 0x01, 0xFF];
+    auto id = BigUIntView!(ubyte, WordEndian.big).fromHexString("1FF");
     assert(data[0 .. ionPutSymbolId(data.ptr, id)] == result);
 }
 
@@ -1144,7 +1193,10 @@ size_t ionPut()(scope ubyte* ptr, const(char)[] value)
         *ptr = 0x8E;
         ret += ionPutVarUInt(ptr + 1, value.length);
     }
-    memcpy(ptr + ret, value.ptr, value.length);
+    if (__ctfe)
+        ptr[ret .. ret + value.length] = cast(const(ubyte)[])value;
+    else
+        memcpy(ptr + ret, value.ptr, value.length);
     return ret + value.length;
 }
 
@@ -1250,7 +1302,11 @@ size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
         if (totalElementLength < 0xE)
         {
             *startPtr = cast(ubyte) (tck | totalElementLength);
-            memmove(startPtr + 1, startPtr + 3, 16);
+            if (__ctfe)
+                foreach (i; 0 .. totalElementLength)
+                    startPtr[i + 1] = startPtr[i + 3];
+            else
+                memmove(startPtr + 1, startPtr + 3, 16);
             debug {
                 startPtr[totalElementLength + 1] = 0xFF;
                 startPtr[totalElementLength + 2] = 0xFF;
@@ -1261,7 +1317,11 @@ size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
         {
             *startPtr = cast(ubyte)(tck | 0xE);
             startPtr[1] = cast(ubyte) (0x80 | totalElementLength);
-            memmove(startPtr + 2, startPtr + 3, 128);
+            if (__ctfe)
+                foreach (i; 0 .. totalElementLength)
+                    startPtr[i + 2] = startPtr[i + 3];
+            else
+                memmove(startPtr + 2, startPtr + 3, 128);
             debug {
                 startPtr[totalElementLength + 2] = 0xFF;
             }
@@ -1281,8 +1341,17 @@ size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
         {
             ubyte[10] lengthPayload;
             auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
-            memmove(startPtr + 1 + lengthLength, startPtr + 3, totalElementLength);
-            memcpy(startPtr + 1, lengthPayload.ptr, lengthLength);
+            if (__ctfe)
+            {
+                foreach_reverse (i; 0 .. totalElementLength)
+                    startPtr[i + 1 + lengthLength] = startPtr[i + 3];
+                startPtr[1 .. lengthLength + 1] = lengthPayload[0 .. lengthLength];
+            }
+            else
+            {
+                memmove(startPtr + 1 + lengthLength, startPtr + 3, totalElementLength);
+                memcpy(startPtr + 1, lengthPayload.ptr, lengthLength);
+            }
             return totalElementLength + 1 + lengthLength;
         }
     }
@@ -1342,7 +1411,11 @@ size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
         if (totalElementLength < 0xE)
         {
             *startPtr |= cast(ubyte) (totalElementLength);
-            memmove(startPtr + 1, startPtr + 3, 16);
+            if (__ctfe)
+                foreach (i; 0 .. totalElementLength)
+                    startPtr[i + 1] = startPtr[i + 3];
+            else
+                memmove(startPtr + 1, startPtr + 3, 16);
             debug
             {
                 startPtr[totalElementLength + 1] = 0xFF;
@@ -1354,7 +1427,11 @@ size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
         {
             *startPtr |= cast(ubyte)(0xE);
             startPtr[1] = cast(ubyte) (0x80 | totalElementLength);
-            memmove(startPtr + 2, startPtr + 3, 128);
+            if (__ctfe)
+                foreach (i; 0 .. totalElementLength)
+                    startPtr[i + 2] = startPtr[i + 3];
+            else
+                memmove(startPtr + 2, startPtr + 3, 128);
             debug
             {
                 startPtr[totalElementLength + 2] = 0xFF;
@@ -1375,8 +1452,17 @@ size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
         {
             ubyte[10] lengthPayload;
             auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
-            memmove(startPtr + 1 + lengthLength, startPtr + 3, totalElementLength);
-            memcpy(startPtr + 1, lengthPayload.ptr, lengthLength);
+            if (__ctfe)
+            {
+                foreach_reverse (i; 0 .. totalElementLength)
+                    startPtr[i + 1 + lengthLength] = startPtr[i + 3];
+                startPtr[1 .. lengthLength + 1] = lengthPayload[0 .. lengthLength];
+            }
+            else
+            {
+                memmove(startPtr + 1 + lengthLength, startPtr + 3, totalElementLength);
+                memcpy(startPtr + 1, lengthPayload.ptr, lengthLength);
+            }
             return totalElementLength + 1 + lengthLength;
         }
     }
@@ -1402,8 +1488,17 @@ size_t ionPutAnnotationsListEnd()(ubyte* startPtr, size_t totalElementLength)
     {
         ubyte[10] lengthPayload;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
-        memmove(startPtr + lengthLength, startPtr + 1, totalElementLength);
-        memcpy(startPtr, lengthPayload.ptr, lengthLength);
+        if (__ctfe)
+        {
+            foreach_reverse (i; 0 .. totalElementLength)
+                startPtr[lengthLength] = startPtr[i + 1];
+            startPtr[0 .. lengthLength] = lengthPayload[0 .. lengthLength];
+        }
+        else
+        {
+            memmove(startPtr + lengthLength, startPtr + 1, totalElementLength);
+            memcpy(startPtr, lengthPayload.ptr, lengthLength);
+        }
         return totalElementLength + lengthLength;
     }
 }

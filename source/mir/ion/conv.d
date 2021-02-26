@@ -8,6 +8,7 @@ import mir.ion.type_code;
 /++
 WIP
 +/
+version(none)
 IonErrorCode ionGetFlexible(IonDescribedValue value, scope ref bool result)
     @safe pure nothrow @nogc
 {

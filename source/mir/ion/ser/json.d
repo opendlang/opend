@@ -15,12 +15,18 @@ struct JsonSerializer(string sep, Appender)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
+    import mir.bignum.low_level_view: BigIntView, WordEndian;
+    import mir.ion.type_code;
+    import mir.timestamp;
     import std.traits: isNumeric;
 
     /++
     JSON string buffer
     +/
     Appender* appender;
+
+    // for Ion serializer
+    string[] symbolTable;
 
     private size_t state;
 
@@ -160,7 +166,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     /// Serialization primitives
-    size_t objectBegin()
+    size_t structBegin()
     {
         static if(sep.length)
         {
@@ -175,7 +181,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///ditto
-    void objectEnd(size_t state)
+    void structEnd(size_t state)
     {
         static if(sep.length)
         {
@@ -188,7 +194,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///ditto
-    size_t arrayBegin()
+    size_t listBegin()
     {
         static if(sep.length)
         {
@@ -203,7 +209,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///ditto
-    void arrayEnd(size_t state)
+    void listEnd(size_t state)
     {
         static if(sep.length)
         {
@@ -216,7 +222,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///ditto
-    void putCompileTimeKey(string key)()
+    void putCompiletimeKey(string key)()
     {
         import mir.algorithm.iteration: any;
         static if (key.any!(c => c == '"' || c == '\\' || c < ' '))
@@ -245,12 +251,46 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
+    /// ditto
+    void putKeyId(uint id)
+    {
+        // this is a lo
+        string symbol = "<@ ion_error: undefined_ion_symbol, please fill an issue with reproducable example @>";
+        assert(id < symbolTable.length, symbol);
+        if (id < symbolTable.length)
+            symbol = symbolTable[id];
+        putKey(symbol);
+    }
+
+    /// ditto
+    void putValueId(uint id)
+    {
+        // this is a lo
+        string symbol = "<@ ion_error: undefined_ion_symbol, please fill an issue with reproducable example @>";
+        assert(id < symbolTable.length, symbol);
+        if (id < symbolTable.length)
+            symbol = symbolTable[id];
+        putValue(symbol);
+    }
+
     ///ditto
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
         import mir.format: print;
         print(appender, num);
+    }
+
+    ///ditto
+    void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
+    {
+        BigInt!256 num;
+        if (auto overflow = num.copyFrom(view))
+        {
+            static immutable exc = new SerdeException("JsonSerializer: overflow when converting " ~ typeof(view).stringof ~ " to " ~ typeof(num).stringof);
+            throw exc;
+        }
+        putValue(num);
     }
 
     ///ditto
@@ -269,6 +309,12 @@ struct JsonSerializer(string sep, Appender)
     void putValue(typeof(null))
     {
         appender.put("null");
+    }
+
+    /// ditto 
+    void putNull(IonTypeCode code)
+    {
+        putValue(null);
     }
 
     ///ditto
@@ -290,6 +336,14 @@ struct JsonSerializer(string sep, Appender)
     {
         appender.put('\"');
         putString(value);
+        appender.put('\"');
+    }
+
+    ///ditto
+    void putValue(Timestamp value)
+    {
+        appender.put('\"');
+        value.toISOExtString(appender);
         appender.put('\"');
     }
 
@@ -621,13 +675,13 @@ template jsonSerializer(string sep = "")
 
     ScopedBuffer!char buffer;
     auto ser = jsonSerializer((()@trusted=>&buffer)());
-    auto state0 = ser.objectBegin;
+    auto state0 = ser.structBegin;
 
         ser.putKey("null");
         ser.putValue(null);
 
         ser.putKey("array");
-        auto state1 = ser.arrayBegin();
+        auto state1 = ser.listBegin();
             ser.elemBegin; ser.putValue(null);
             ser.elemBegin; ser.putValue(123);
             ser.elemBegin; ser.putValue(12300000.123);
@@ -635,9 +689,9 @@ template jsonSerializer(string sep = "")
             ser.elemBegin; ser.putValue("\r");
             ser.elemBegin; ser.putValue("\n");
             ser.elemBegin; ser.putValue(BigInt!2(1234567890));
-        ser.arrayEnd(state1);
+        ser.listEnd(state1);
 
-    ser.objectEnd(state0);
+    ser.structEnd(state0);
 
     assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e7,"\t","\r","\n",1234567890]}`);
 }
@@ -650,13 +704,13 @@ unittest
 
     auto app = appender!string;
     auto ser = jsonSerializer!"    "(&app);
-    auto state0 = ser.objectBegin;
+    auto state0 = ser.structBegin;
 
         ser.putKey("null");
         ser.putValue(null);
 
         ser.putKey("array");
-        auto state1 = ser.arrayBegin();
+        auto state1 = ser.listBegin();
             ser.elemBegin; ser.putValue(null);
             ser.elemBegin; ser.putValue(123);
             ser.elemBegin; ser.putValue(12300000.123);
@@ -664,9 +718,9 @@ unittest
             ser.elemBegin; ser.putValue("\r");
             ser.elemBegin; ser.putValue("\n");
             ser.elemBegin; ser.putValue(BigInt!2("1234567890"));
-        ser.arrayEnd(state1);
+        ser.listEnd(state1);
 
-    ser.objectEnd(state0);
+    ser.structEnd(state0);
 
     assert(app.data ==
 `{
