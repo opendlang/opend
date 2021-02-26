@@ -12,6 +12,10 @@ has_cpp_headers = false
 
 sources_list = [
     'mir/ion/conv',
+    'mir/ion/deser/text/readers',
+    'mir/ion/deser/text/skippers',
+    'mir/ion/deser/text/tokenizer',
+    'mir/ion/deser/text/tokens',
     'mir/ion/deser/json',
     'mir/ion/deser/low_level',
     'mir/ion/deser/package',
@@ -27,7 +31,7 @@ sources_list = [
     'mir/ion/ser/package',
     'mir/ion/symbol_table',
     'mir/ion/tape',
-    'mir/ion/timestamp',
+    'mir/timestamp',
     'mir/ion/type_code',
     'mir/ion/value',
 ]

@@ -4,17 +4,18 @@ authors "Ilya Yaroshenko" "Yannick Koechlin"
 copyright "Tamedia Digital, 2016-, Symmetry Investments and Kaleidic Associates, 2020-"
 license "BSL-1.0"
 dependency "mir-algorithm" version=">=3.10.17"
-
-buildType "unittest" {
-    buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_ion_test"
-    dflags "-lowmem"
-}
+dependency "mir-cpuid" version="~>1.2.6"
 
 configuration "x86_any" {
-    dependency "mir-cpuid" version="~>1.2.6"
     platforms "x86" "x86_64" 
 }
 
 configuration "common" {
+}
+
+configuration "unittest" {
+    dependency "unit-threaded" version="~>1.0.11"
+    buildOptions "unittests" "debugMode" "debugInfo"
+    dflags "-lowmem"
+    versions "mir_ion_test" "mir_ion_parser_test"
 }
