@@ -20,6 +20,7 @@ struct Stage3Stage
     const(ubyte)* strPtr;
     ulong[2]* pairedMask1;
     ulong[2]* pairedMask2;
+    const(char)[] key; // Last key, it is the reference to the tape
 }
 
 IonErrorCode stage3(Table)(
@@ -167,23 +168,22 @@ StringLoop: {
             auto stringLength = currentTapePosition - (stringCodeStart + ionPutStartLength);
             // foreach(i, e; tape[currentTapePosition - stringLength .. currentTapePosition])
                 
-            // auto key = ;
             if (!currIsKey)
             {
                 currentTapePosition = stringCodeStart + ionPutEnd(tape.ptr + stringCodeStart, IonTypeCode.string, stringLength);
                 goto next;
             }
             currentTapePosition -= stringLength;
-            auto key = tape[currentTapePosition .. currentTapePosition + stringLength];
+            key = cast(const(char)[]) tape[currentTapePosition .. currentTapePosition + stringLength];
             currentTapePosition -= ionPutStartLength;
             static if (__traits(hasMember, Table, "insert"))
             {
-                auto id = symbolTable.insert(cast(const(char)[])key);
+                auto id = symbolTable.insert(key);
             }
             else // mir string table
             {
                 uint id;
-                if (!symbolTable.get(cast(const(char)[])key, id))
+                if (!symbolTable.get(key, id))
                 {
                     debug(ion) if (!__ctfe)
                     {
@@ -355,17 +355,17 @@ value_start:
 
         import mir.bignum.decimal;
         Decimal!256 decimal;
-        DecimalExponentKey key;
+        DecimalExponentKey exponentKey;
 
-        if (!decimal.fromStringImpl(numberStringView, key))
+        if (!decimal.fromStringImpl(numberStringView, exponentKey))
             goto unexpected_decimal_value;
-        if (!key) // integer
+        if (!exponentKey) // integer
         {
             currentTapePosition += ionPut(tape.ptr + currentTapePosition, decimal.coefficient.view);
             goto next;
         }
         else
-        if ((key | 0x20) != DecimalExponentKey.e) // decimal
+        if ((exponentKey | 0x20) != DecimalExponentKey.e) // decimal
         {
             currentTapePosition += ionPut(tape.ptr + currentTapePosition, decimal.view);
             goto next;
