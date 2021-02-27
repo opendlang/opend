@@ -107,6 +107,7 @@ private template stage1_impl(string arch)
         {
             version (ARM_Any)
             {
+                import ldc.simd: extractelement;
                 auto v = *cast(__vector(ubyte[16])[4]*)vector++;
                 __vector(ubyte[16])[4][2] d;
                 static foreach (i; 0 .. 2)
