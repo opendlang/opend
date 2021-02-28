@@ -82,6 +82,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     ///ditto
     void putKey()(scope const char[] key)
     {
+        import mir.utility: _expect;
         uint id;
         if (_expect(compiletimeTable.get(key, id), true))
         {
@@ -89,14 +90,17 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         }
         else // use GC CTFE symbol table because likely `putKey` is used either for Associative array of for similar types.
         {
-            if (_expect(runtimeTable is null, false))
+            if (_expect(!runtimeTable.initialized, false))
             {
-                runtimeTable = new SymbolTable!true();
                 runtimeTable.initialize;
-            }
+                foreach (ctKey; compiletimeSymbolTable)
+                {
+                    runtimeTable.insert(ctKey);
+                }
+             }
             id = runtimeTable.insert(cast(const(char)[])key);
         }
-        putKeyId(compileTimeIndex[id]);
+        putKeyId(id);
     }
 
     ///
@@ -180,6 +184,7 @@ Ion serialization function.
 +/
 immutable(ubyte)[] serializeIon(T)(auto ref T value)
 {
+    import mir.utility: _expect;
     import mir.ion.internal.data_holder;
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
@@ -188,14 +193,28 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    IonSymbolTable!true table;
     alias TapeHolder = IonTapeHolder!(nMax * 8);
     auto tapeHolder = IonTapeHolder!(nMax * 8)(nMax * 8);
-    auto serializer = IonSerializer!(TapeHolder, keys)(()@trusted { return &tapeHolder; }());
+    IonSymbolTable!true table;
+    auto serializer = IonSerializer!(TapeHolder, keys)(
+        ()@trusted { return &tapeHolder; }(),
+        ()@trusted { return &table; }()
+    );
     serializeValue(serializer, value);
 
-    static immutable ubyte[] prefix = ionPrefix ~ serializer.compiletimeTableTape;
-    return prefix ~ tapeHolder.tapeData;
+    static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
+
+    // use runtime table
+    if (_expect(table.initialized, false))
+    {
+        table.finalize;
+        return ionPrefix ~ table.tapeData ~ tapeHolder.tapeData;
+    }
+    // compile time table
+    else
+    {
+        return compiletimePrefixAndTableTapeData ~ tapeHolder.tapeData;
+    }
 }
 
 ///
@@ -221,9 +240,17 @@ unittest
 
     assert (s.serializeIon == data);
     enum staticData = s.serializeIon;
-    import std.stdio;
-    // writefln("%(%02x%)");
     static assert (staticData == data);
+}
+
+///
+unittest
+{
+    static immutable ubyte[] binaryDataAB = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    static immutable ubyte[] binaryDataBA = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x62, 0x81, 0x61, 0xd6, 0x8a, 0x21, 0x02, 0x8b, 0x21, 0x01];
+    int[string] table = ["a" : 1, "b" : 2];
+    auto data = table.serializeIon;
+    assert(data == binaryDataAB || data == binaryDataBA);
 }
 
 /++
@@ -241,25 +268,6 @@ void serializeIon(TapeHolder, T)(
     auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder);
     serializeValue(serializer, value);
 }
-
-///
-unittest
-{
-
-}
-
-// ///
-// unittest
-// {
-//     struct S
-//     {
-//         string foo;
-//         uint bar;
-//     }
-
-//     assert(serializeIon(S("str", 4)) == `{"foo":"str","bar":4}`);
-// }
-
 
 // ///
 // unittest
