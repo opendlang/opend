@@ -1490,6 +1490,14 @@ __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
         int r = *cast(short*)(mem_addr);
         return cast(__m128i) __simd(XMM.LODD, *cast(__m128i*)&r);
     }
+    else version(DigitalMars)
+    {
+        // Workaround issue: https://issues.dlang.org/show_bug.cgi?id=21672
+        // DMD cannot handle the below code...
+        align(16) short[8] r = [0, 0, 0, 0, 0, 0, 0, 0];
+        r[0] = *cast(short*)(mem_addr);
+        return *cast(int4*)(r.ptr);
+    }
     else
     {
         short r = *cast(short*)(mem_addr);
