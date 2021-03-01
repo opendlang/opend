@@ -1350,7 +1350,6 @@ private string generateConstructors(U)()
 			this(UnionType.FieldTypeByName!"%1$s" value, Kind type)
 			{
 				switch (type) {
-					default: assert(false, format("Invalid type ID for type %%s: %%s", UnionType.FieldTypeByName!"%1$s".stringof, type));
 					foreach (i, n; TaggedUnion!U.fieldNames) {
 						static if (is(UnionType.FieldTypeByName!"%1$s" == UnionType.FieldTypes[i])) {
 							case __traits(getMember, Kind, n):
@@ -1360,6 +1359,7 @@ private string generateConstructors(U)()
 								return;
 						}
 					}
+					default: assert(false, format("Invalid type ID for type %%s: %%s", UnionType.FieldTypeByName!"%1$s".stringof, type));
 				}
 			}
 		}.format(tname);
