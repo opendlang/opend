@@ -11,3 +11,8 @@ project_version_full   = project_version + project_version_suffix
 source_root = meson.source_root()
 build_root = meson.build_root()
 subdir('source/taggedalgebraic')
+
+taggedalgebraic_dep = declare_dependency(
+    include_directories: include_directories('source'),
+	link_with: taggedalgebraic_lib
+)
