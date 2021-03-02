@@ -3179,8 +3179,10 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
-    double[2] result = [e1, e0];
-    return loadUnaligned!(double2)(result.ptr);
+    double2 result;
+    result.ptr[0] = e1;
+    result.ptr[1] = e0;
+    return result;
 }
 unittest
 {
