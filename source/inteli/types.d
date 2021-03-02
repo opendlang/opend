@@ -128,7 +128,7 @@ else version(DigitalMars)
 
         static if (__VERSION__ >= 2096)
         {
-            enum SSESizedVectorsAreEmulated = false;
+            enum SSESizedVectorsAreEmulated = true; // Still doesn't work well in DMD 2.096 because of DMD bugs
         }
         else
         {
