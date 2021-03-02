@@ -1743,6 +1743,10 @@ unittest
 /// the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_move_ss (__m128 a, __m128 b) pure @trusted
 {
+    // Workaround https://issues.dlang.org/show_bug.cgi?id=21673
+    // inlining of this function fails.
+    version(DigitalMars) asm nothrow @nogc pure { nop; }
+
     a.ptr[0] = b.array[0];
     return a;
 }
