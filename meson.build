@@ -16,6 +16,7 @@ sources_list = [
     'mir/ion/deser/text/skippers',
     'mir/ion/deser/text/tokenizer',
     'mir/ion/deser/text/tokens',
+    'mir/ion/deser/text/package',
     'mir/ion/deser/json',
     'mir/ion/deser/low_level',
     'mir/ion/deser/package',

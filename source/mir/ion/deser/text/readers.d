@@ -9,7 +9,6 @@ import mir.ion.deser.text.skippers;
 import mir.ion.deser.text.tokens;
 import std.traits : isInstanceOf;
 import mir.appender : ScopedBuffer;
-version(mir_ion_parser_test) import unit_threaded;
 
 // MASSIVE TODO: check if we ever will run into the ScopedBuffers running out of memory!
 // IIRC, they *do* not allocate above their max of 1024, so we may *need* to verify this is correct
@@ -133,17 +132,21 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
             throw new MirIonTokenizerException(text("bad escape 0x", c, " (location: ", t.position, ")"));
     }
 }
-///
-version(mir_ion_parser_test) @("Test reading a unicode escape") unittest
+/// Test reading a unicode escape
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, dchar expected) {
         auto t = tokenizeString(ts);
-        t.readEscapedChar().shouldEqual(expected);
+        assert(t.readEscapedChar() == expected);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.readEscapedChar().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.readEscapedChar());
     }
 
     test("U0001F44D", '\U0001F44D');
@@ -205,16 +208,20 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
 
     return buf.data.idup;
 }
-///
-version(mir_ion_parser_test) @("Test reading a symbol") unittest
+/// Test reading a symbol
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException, IonTokenType;
+
     void test(string ts, string expected, IonTokenType after) {
+        import std.exception : assertNotThrown;
         auto t = tokenizeString(ts); 
-        t.nextToken().shouldNotThrow();
-        t.currentToken.shouldEqual(IonTokenType.TokenSymbol);
-        t.readSymbol().shouldEqual(expected);
-        t.nextToken().shouldNotThrow();
-        t.currentToken.shouldEqual(after);
+        assertNotThrown!MirIonTokenizerException(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenSymbol);
+        assert(t.readSymbol() == expected);
+        assertNotThrown!MirIonTokenizerException(t.nextToken());
+        assert(t.currentToken == after);
     }
 
     test("hello", "hello", IonTokenType.TokenEOF);
@@ -253,15 +260,18 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
         }
     }
 }
-///
-version(mir_ion_parser_test) @("Test reading quoted symbols") unittest
+/// Test reading quoted symbols
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenSymbolQuoted);
-        t.readSymbolQuoted().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenSymbolQuoted);
+        assert(t.readSymbolQuoted() == expected);
+        assert(t.readInput() == after);
     }
 
     test("'a'", "a", 0);
@@ -359,15 +369,18 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     }
     assert(0);
 }
-///
-version(mir_ion_parser_test) @("Test reading a string") unittest
+/// Test reading a string
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenString);
-        t.readString().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenString);
+        assert(t.readString() == expected);
+        assert(t.readInput() == after);
     }
 
     test(`"Hello, world"`, "Hello, world", 0);
@@ -391,15 +404,18 @@ const(char)[] readLongString(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     return readString!(T, true)(t);
 }
-///
-version(mir_ion_parser_test) @("Test reading a long string") unittest
+/// Test reading a long string
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenLongString);
-        t.readLongString().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenLongString);
+        assert(t.readLongString() == expected);
+        assert(t.readInput() == after);
     }
 
     test(`'''Hello, world'''`, "Hello, world", 0);
@@ -433,15 +449,18 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     t.finished = true; // we're done reading!
     return data;
 }
-///
-version(mir_ion_parser_test) @("Test reading a short clob") unittest
+/// Test reading a short clob
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenString);
-        t.readClob().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenString);
+        assert(t.readClob() == expected);
+        assert(t.readInput() == after);
     }
 
     test(`"Hello, world"}}`, "Hello, world", 0);
@@ -569,18 +588,21 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
 
     return num; 
 }
-///
-version(mir_ion_parser_test) @("Test reading numbers") unittest
+/// Test reading numbers
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
     import mir.ion.type_code : IonTypeCode;
+
     void test(string ts, string expected, IonTypeCode type, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenNumber);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenNumber);
         auto n = t.readNumber();
-        n.val.shouldEqual(expected);
-        n.type.shouldEqual(type);
-        t.readInput().shouldEqual(after);
+        assert(n.val == expected);
+        assert(n.type == type);
+        assert(t.readInput() == after);
     }
 
     test("12341", "12341", IonTypeCode.uInt, 0);
@@ -685,15 +707,18 @@ string readBinary(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     return readRadix!(T, "a == 'b' || a == 'B'", "a == '0' || a == '1'")(t);
 }
-///
-version(mir_ion_parser_test) @("Test reading a binary number") unittest
+/// Test reading a binary number
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenBinary);
-        t.readBinary().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenBinary);
+        assert(t.readBinary() == expected);
+        assert(t.readInput() == after);
     }
 
     test("0b101011010", "0b101011010", 0);
@@ -714,15 +739,18 @@ string readHex(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     return readRadix!(T, "a == 'x' || a == 'X'", isHexDigit)(t);
 }
-///
-version(mir_ion_parser_test) @("Test reading a hex number") unittest
+/// Test reading a hex number
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenHex);
-        t.readHex().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenHex);
+        assert(t.readHex() == expected);
+        assert(t.readInput() == after);
     } 
 
     test("0xBADBABE", "0xBADBABE", 0);
@@ -845,15 +873,18 @@ if (isInstanceOf!(IonTokenizer, T) && is(T.inputType == ubyte)) {
     c = readTSOffsetOrZ(c);
     return readTSFinish(c);
 }
-///
-version(mir_ion_parser_test) @("Test reading timestamps") unittest
+/// Test reading timestamps
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : IonTokenType;
+
     void test(string ts, string expected, ubyte after) {
         auto t = tokenizeString(ts);
-        t.nextToken().shouldEqual(true);
-        t.currentToken.shouldEqual(IonTokenType.TokenTimestamp);
-        t.readTimestamp().shouldEqual(expected);
-        t.readInput().shouldEqual(after);
+        assert(t.nextToken());
+        assert(t.currentToken == IonTokenType.TokenTimestamp);
+        assert(t.readTimestamp() == expected);
+        assert(t.readInput() == after);
     } 
 
     test("2001T", "2001T", 0);

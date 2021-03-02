@@ -14,7 +14,6 @@ configuration "common" {
 }
 
 configuration "unittest" {
-    dependency "unit-threaded" version="~>1.0.11"
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
     versions "mir_ion_test" "mir_ion_parser_test"

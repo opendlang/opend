@@ -88,7 +88,6 @@ enum IonTokenType : ubyte
     /++ }} +/ 
     TokenCloseDoubleBrace
 }
-
 ///
 version(mir_ion_test) unittest 
 {

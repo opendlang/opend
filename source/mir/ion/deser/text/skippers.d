@@ -9,7 +9,6 @@ import mir.ion.deser.text.tokens;
 import mir.ion.type_code;
 import std.traits : isInstanceOf;
 import std.range;
-version(mir_ion_parser_test) import unit_threaded;
 
 @safe:
 /++
@@ -95,21 +94,23 @@ if (isInstanceOf!(IonTokenizer, T)) {
         }
     }
 }
-///
-version(mir_ion_parser_test) @("Test skipping of a single-line comment") unittest 
+/// Test skipping over single-line comments.
+version(mir_ion_parser_test) unittest 
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("single-line comment\r\nok");
-    t.skipSingleLineComment().shouldEqual(true);
+    assert(t.skipSingleLineComment());
 
     t.testRead('o');
     t.testRead('k');
     t.testRead(0);
 }
-///
-version(mir_ion_parser_test) @("Test skipping of a single-line comment on the last line") unittest
+/// Test skipping of a single-line comment on the last line
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("single-line comment");
-    t.skipSingleLineComment().shouldEqual(true);
+    assert(t.skipSingleLineComment());
     t.testRead(0);
 }
 
@@ -137,17 +138,19 @@ if (isInstanceOf!(IonTokenizer, T)) {
         }
     }
 }
-///
-version(mir_ion_parser_test) @("Test skipping of an invalid comment") unittest
+/// Test skipping of an invalid comment
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
     auto t = tokenizeString("this is a string that never ends");
-    t.skipBlockComment().shouldEqual(false);
+    assert(!t.skipBlockComment());
 }
-///
-version(mir_ion_parser_test) @("Test skipping of a block comment") unittest
+/// Test skipping of a multi-line comment
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("this is/ a\nmulti-line /** comment.**/ok");
-    t.skipBlockComment().shouldEqual(true);
+    assert(t.skipBlockComment());
 
     t.testRead('o');
     t.testRead('k');
@@ -178,29 +181,32 @@ if (isInstanceOf!(IonTokenizer, T)) {
 
     return false;
 }
-///
-version(mir_ion_parser_test) @("Test different skipping methods (single-line)") unittest
+/// Test single-line skipping
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("/comment\nok");
-    t.skipComment().shouldEqual(true);
+    assert(t.skipComment());
     t.testRead('o');
     t.testRead('k');
     t.testRead(0);
 }
-///
-version(mir_ion_parser_test) @("Test different skipping methods (block)") unittest
+/// Test block skipping
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("*comm\nent*/ok");
-    t.skipComment().shouldEqual(true);
+    assert(t.skipComment());
     t.testRead('o');
     t.testRead('k');
     t.testRead(0);
 }
-///
-version(mir_ion_parser_test) @("Test different skipping methods (false-alarm)") unittest
+/// Test false-alarm skipping
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString(" 0)");
-    t.skipComment().shouldEqual(false);
+    assert(!t.skipComment());
     t.testRead(' ');
     t.testRead('0');
     t.testRead(')');
@@ -254,17 +260,21 @@ if (isInstanceOf!(IonTokenizer, T)) {
 
     return t.expect!(t.isStopChar, true)(c);
 }
-///
-version(mir_ion_parser_test) @("Test skipping over numbers") unittest
+/// Test skipping over numbers
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, ubyte expected) {
         auto t = tokenizeString(ts);
-        t.skipNumber().shouldEqual(expected);
+        assert(t.skipNumber() == expected);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipNumber().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipNumber());
     }
 
     test("", 0);
@@ -287,17 +297,21 @@ T.inputType skipBinary(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T)) {
     return skipRadix!(T, "a == 'b' || a == 'B'", "a == '0' || a == '1'")(t);   
 }
-///
-version(mir_ion_parser_test) @("Test skipping over binary numbers") unittest
+/// Test skipping over binary numbers
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, ubyte expected) {
         auto t = tokenizeString(ts);
-        t.skipBinary().shouldEqual(expected);
+        assert(t.skipBinary() == expected);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipBinary().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipBinary());
     }
 
     test("0b0", 0);
@@ -318,17 +332,21 @@ T.inputType skipHex(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T)) {
     return skipRadix!(T, "a == 'x' || a == 'X'", isHexDigit)(t); 
 }
-///
-version(mir_ion_parser_test) @("Test skipping over hex numbers") unittest
+/// Test skipping over hex numbers
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, ubyte expected) {
         auto t = tokenizeString(ts);
-        t.skipHex().shouldEqual(expected);
+        assert(t.skipHex() == expected);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipHex().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipHex());
     }
 
     test("0xDEADBABE,0xDEADBABE", ',');
@@ -469,17 +487,21 @@ if (isInstanceOf!(IonTokenizer, T)) {
     T.inputType afterOffsetNS = skipTSOffsetOrZ(offsetNS);
     return skipTSFinish(afterOffsetNS);  
 }
-///
-version(mir_ion_parser_test) @("Test skipping over timestamps") unittest
+/// Test skipping over timestamps
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipTimestamp().shouldEqual(result);
+        assert(t.skipTimestamp() == result);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipTimestamp().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipTimestamp());
     }
 
     test("2001T", 0);
@@ -526,12 +548,14 @@ if (isInstanceOf!(IonTokenizer, T)) {
 
     return c;
 }
-///
-version(mir_ion_parser_test) @("Test skipping over symbols") unittest
+/// Test skipping over symbols
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipSymbol().shouldEqual(result);
+        assert(t.skipSymbol() == result);
     }
 
     test("f", 0);
@@ -579,17 +603,21 @@ if (isInstanceOf!(IonTokenizer, T)) {
     t.skipSymbolQuotedInternal();
     return t.readInput();  
 }
-///
-version(mir_ion_parser_test) @("Test skipping over quoted symbols") unittest
+/// Test skipping over quoted symbols
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipSymbolQuoted().shouldEqual(result);
+        assert(t.skipSymbolQuoted() == result);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipSymbolQuoted().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipSymbolQuoted());
     }
 
     test("'", 0);
@@ -616,12 +644,14 @@ if (isInstanceOf!(IonTokenizer, T)) {
     }
     return c; 
 }
-///
-version(mir_ion_parser_test) @("Test skipping over symbol operators") unittest
+/// Test skipping over symbol operators
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipSymbolOperator().shouldEqual(result);
+        assert(t.skipSymbolOperator() == result);
     }
 
     test("+", 0);
@@ -664,17 +694,21 @@ if (isInstanceOf!(IonTokenizer, T)) {
     t.skipStringInternal();
     return t.readInput();  
 }
-///
-version(mir_ion_parser_test) @("Test skipping over strings") unittest
+/// Test skipping over strings
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+ 
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipString().shouldEqual(result);
+        assert(t.skipString() == result);
     }
 
     void testFail(string ts) {
+        import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        t.skipString().shouldThrow();
+        assertThrown!MirIonTokenizerException(t.skipString());
     }
 
     test("\"", 0);
@@ -749,14 +783,15 @@ if (isInstanceOf!(IonTokenizer, T)) {
     skipLongStringInternal!(T, true, false)(t);
     return t.readInput();
 }
-///
-version(mir_ion_parser_test) @("Test skipping over long strings") unittest
+/// Test skipping over long strings
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipLongString().shouldEqual(result);
+        assert(t.skipLongString() == result);
     }
-
 }
 
 /++
@@ -771,12 +806,14 @@ if (isInstanceOf!(IonTokenizer, T)) {
     t.skipBlobInternal();
     return t.readInput();  
 }
-///
-version(mir_ion_parser_test) @("Test skipping over blobs") unittest
+/// Test skipping over blobs
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipBlob().shouldEqual(result);
+        assert(t.skipBlob() == result);
     } 
 
     test("}}", 0);
@@ -813,12 +850,14 @@ T.inputType skipStruct(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T)) {
     return skipContainer!T(t, '}');
 }
-///
-version(mir_ion_parser_test) @("Test skipping over structs") unittest
+/// Test skipping over structs
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+ 
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipStruct().shouldEqual(result);
+        assert(t.skipStruct() == result);
     }
 
     test("},", ',');
@@ -848,12 +887,14 @@ T.inputType skipSexp(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T)) {
     return skipContainer!T(t, ')');
 }
-///
-version(mir_ion_parser_test) @("Test skipping over S-Exps") unittest
+/// Test skipping over S-expressions
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+ 
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipSexp().shouldEqual(result);
+        assert(t.skipSexp() == result);
     }
 
     test("1231 + 1123),", ',');
@@ -882,12 +923,14 @@ T.inputType skipList(T)(ref T t)
 if (isInstanceOf!(IonTokenizer, T)) {
     return skipContainer!T(t, ']'); 
 }
-///
-version(mir_ion_parser_test) @("Test skipping over a list") unittest
+/// Test skipping over lists
+version(mir_ion_parser_test) unittest
 {
+    import mir.ion.deser.text.tokenizer : tokenizeString;
+ 
     void test(string ts, ubyte result) {
         auto t = tokenizeString(ts);
-        t.skipList().shouldEqual(result);
+        assert(t.skipList() == result);
     }
 
     test("\"foo\", \"bar\", \"baz\"],", ',');
