@@ -22,3 +22,12 @@ subPackage {
     sourceFiles         "examples/layers.d"
     dependency          "erupted"   path = "."
 }
+
+subPackage {
+    name                "compute"
+    description         "Simple Vulkan example"
+    targetType          "executable"
+    sourceFiles         "examples/compute/compute.d" "examples/platform/vulkan_windows.d"
+    dependency          "erupted"   path = "."
+    buildOptions        "betterC"
+}

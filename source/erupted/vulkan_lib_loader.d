@@ -19,7 +19,7 @@ private:
     import core.sys.windows.windows;
     HMODULE         vulkan_lib  = null;
     auto loadLib()  { return LoadLibrary( "vulkan-1.dll" ); }
-    auto freeLib()  { return FreeLibrary( vulkan_lib ) != 0; }
+    bool freeLib()  { return FreeLibrary( vulkan_lib ) != 0; }
     auto loadSym()  { return cast( PFN_vkGetInstanceProcAddr )GetProcAddress( vulkan_lib, "vkGetInstanceProcAddr" ); }
     void logLibError( FILE* log_stream, const( char )* message ) {
         fprintf( log_stream, "%svulkan-1.dll! Error code: 0x%x\n", message, GetLastError());
@@ -33,7 +33,7 @@ private:
     import core.sys.posix.dlfcn : dlerror, dlopen, dlclose, dlsym, RTLD_NOW, RTLD_LOCAL;
     void*           vulkan_lib  = null;
     auto loadLib()  { return dlopen( "libvulkan.so", RTLD_NOW | RTLD_LOCAL ); }
-    auto freeLib()  { return dlclose( vulkan_lib ) == 0; }
+    bool freeLib()  { return dlclose( vulkan_lib ) == 0; }
     auto loadSym()  { return cast( PFN_vkGetInstanceProcAddr )dlsym( vulkan_lib, "vkGetInstanceProcAddr" ); }
     void logLibError( FILE* log_stream, const( char )* message ) {
         fprintf( log_stream, "%slibvulkan.so.1! Error: %s\n", message, dlerror );
@@ -47,7 +47,7 @@ private:
     import core.sys.posix.dlfcn : dlerror, dlopen, dlclose, dlsym, RTLD_LAZY, RTLD_LOCAL;
     void*           vulkan_lib  = null;
     auto loadLib()  { return dlopen( "libvulkan.1.dylib", RTLD_LAZY | RTLD_LOCAL ); }
-    auto freeLib()  { return dlclose( vulkan_lib ) == 0; }
+    bool freeLib()  { return dlclose( vulkan_lib ) == 0; }
     auto loadSym()  { return cast( PFN_vkGetInstanceProcAddr )dlsym( vulkan_lib, "vkGetInstanceProcAddr" ); }
     void logLibError( FILE* log_stream, const( char )* message ) {
         fprintf( log_stream, "%slibvulkan.1.dylib! Error: %s\n", message, dlerror );
@@ -61,7 +61,7 @@ private:
     import core.sys.posix.dlfcn : dlerror, dlopen, dlclose, dlsym, RTLD_LAZY, RTLD_LOCAL;
     void*           vulkan_lib  = null;
     auto loadLib()  { return dlopen( "libvulkan.so.1", RTLD_LAZY | RTLD_LOCAL ); }
-    auto freeLib()  { return dlclose( vulkan_lib ) == 0; }
+    bool freeLib()  { return dlclose( vulkan_lib ) == 0; }
     auto loadSym()  { return cast( PFN_vkGetInstanceProcAddr )dlsym( vulkan_lib, "vkGetInstanceProcAddr" ); }
     void logLibError( FILE* log_stream, const( char )* message ) {
         fprintf( log_stream, "%slibvulkan.so.1! Error: %s\n", message, dlerror );
@@ -113,7 +113,7 @@ bool freeVulkanLib( FILE* log_stream = stderr ) {
     if( !vulkan_lib ) {
         fprintf( log_stream, "Cannot free vulkan lib as it is not loaded!" );
         return false;
-    } else if( freeLib ) {
+    } else if( !freeLib() ) {
         logLibError( log_stream, "Could not unload " );
         return false;
     } else {

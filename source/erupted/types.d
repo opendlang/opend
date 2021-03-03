@@ -35,7 +35,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 168;
+enum VK_HEADER_VERSION = 169;
 
 enum VK_NULL_HANDLE = null;
 
@@ -11958,8 +11958,8 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT {
 // - VK_QCOM_rotated_copy_commands -
 enum VK_QCOM_rotated_copy_commands = 1;
 
-enum VK_QCOM_rotated_copy_commands_SPEC_VERSION = 0;
-enum VK_QCOM_rotated_copy_commands_EXTENSION_NAME = "VK_QCOM_rotated_copy_commands";
+enum VK_QCOM_ROTATED_COPY_COMMANDS_SPEC_VERSION = 0;
+enum VK_QCOM_ROTATED_COPY_COMMANDS_EXTENSION_NAME = "VK_QCOM_rotated_copy_commands";
 
 struct VkCopyCommandTransformInfoQCOM {
     VkStructureType                sType = VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM;

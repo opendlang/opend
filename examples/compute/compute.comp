@@ -1,0 +1,13 @@
+#version 450 core
+
+layout( local_size_x = 256 ) in;
+layout( local_size_y =   1 ) in;
+layout( local_size_z =   1 ) in;
+
+layout( binding = 0, r32f  ) uniform restrict imageBuffer compute_buffer;
+
+#define GIX int( gl_GlobalInvocationID.x )
+
+void main( void ) {
+    imageStore( compute_buffer, GIX, 1.5 * imageLoad( compute_buffer, GIX ));
+}

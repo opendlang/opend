@@ -38,7 +38,7 @@ Steps to follow:
     * call `loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but is useful only in a single physical device environment. Calling the same function with another `VkDevice` will overwrite all the previously fetched function
     * create a DispatchDevice with Vulkan functions as members kind of namespaced, see [DispatchDevice](https://github.com/ParticlePeter/ErupteD#dispatchdevice)
 
-Examples for checking instance and device layers as well as device creation can be found in the `examples` directory, and run with `dub run erupted:examplename`. Examples found in 'examples/platform' directory are just explanatory and cannot be build or run (see [Platform Extensions](https://github.com/ParticlePeter/Erupted-V2#platform-extensions))
+Examples for device creation, listing instance/device layers and a simple but complete betterC compute task can be found in the `examples` directory. They can be build and run with `dub run erupted:examplename`, examplename being one of: `devices`, `layers`, `compute`.  Examples found in 'examples/platform' directory are just explanatory and cannot be build or run (see [Platform Extensions](https://github.com/ParticlePeter/Erupted-V2#platform-extensions))
 
 
 
