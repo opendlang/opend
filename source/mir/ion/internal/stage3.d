@@ -28,7 +28,7 @@ IonErrorCode stage3(Table)(
     scope bool delegate(ref Stage3Stage stage) @safe pure nothrow @nogc fetchNext,
     out size_t currentTapePositionResult,
 )
-@trusted pure nothrow @nogc
+@trusted pure nothrow
 {
     pragma(inline, false)
     string _lastError;
@@ -54,7 +54,7 @@ IonErrorCode stage3(Table)(
 
     bool skipSpaces()
     {
-        assert(index < n);
+        assert(index <= n);
         F:
         if (_expect(index < n, true))
         {
@@ -287,7 +287,11 @@ StringLoop: {
 }
 next:
     if (stackPos == stack.length)
-        goto ret;
+    {
+        if (!skipSpaces)
+            goto ret;
+        goto value_start;
+    }
 next_start: {
     if (!skipSpaces)
         goto next_unexpectedEnd;

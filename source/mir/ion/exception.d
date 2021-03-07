@@ -82,6 +82,14 @@ enum IonErrorCode
     smallStringOverflow,
     ///
     smallArrayOverflow,
+    ///
+    unexpectedVersionMarker,
+    ///
+    cantParseValueStream,
+    ///
+    invalidLocalSymbolTable,
+    ///
+    sharedSymbolTablesAreUnsupported,
 }
 
 ///
@@ -138,6 +146,10 @@ string ionErrorMsg(IonErrorCode code) @property
         "integer overflow",
         "small string overflow",
         "small array overflow",
+        "unexpected version marker",
+        "can't parse value stream",
+        "invalid local symbol table",
+        "shared symbol tables are unsupported",
     ];
     return msgs[code - IonErrorCode.min];
 }

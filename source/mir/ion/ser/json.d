@@ -16,6 +16,7 @@ struct JsonSerializer(string sep, Appender)
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
     import mir.bignum.low_level_view: BigIntView, WordEndian;
+    import mir.ion.lob;
     import mir.ion.type_code;
     import mir.timestamp;
     import std.traits: isNumeric;
@@ -24,9 +25,6 @@ struct JsonSerializer(string sep, Appender)
     JSON string buffer
     +/
     Appender* appender;
-
-    // for Ion serializer
-    string[] symbolTable;
 
     private size_t state;
 
@@ -165,7 +163,7 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
-    /// Serialization primitives
+    ///
     size_t structBegin()
     {
         static if(sep.length)
@@ -180,7 +178,7 @@ struct JsonSerializer(string sep, Appender)
         return popState;
     }
 
-    ///ditto
+    ///
     void structEnd(size_t state)
     {
         static if(sep.length)
@@ -193,7 +191,7 @@ struct JsonSerializer(string sep, Appender)
         pushState(state);
     }
 
-    ///ditto
+    ///
     size_t listBegin()
     {
         static if(sep.length)
@@ -208,7 +206,7 @@ struct JsonSerializer(string sep, Appender)
         return popState;
     }
 
-    ///ditto
+    ///
     void listEnd(size_t state)
     {
         static if(sep.length)
@@ -221,7 +219,46 @@ struct JsonSerializer(string sep, Appender)
         pushState(state);
     }
 
-    ///ditto
+    ///
+    alias sexpBegin = listBegin;
+
+    ///
+    alias sexpEnd = listEnd;
+
+    ///
+    alias annotationsBegin = listBegin;
+
+    ///
+    void putAnnotation(scope const(char)[] str)
+    {
+        putValue(str);
+    }
+
+    ///
+    void annotationsEnd(size_t state)
+    {
+        listEnd(state);
+        putKey("@_value");
+    }
+
+    ///
+    size_t annotationWrapperBegin()
+    {
+        auto state = structBegin();
+        putKey("@_annotations");
+        return state;
+    }
+
+    ///
+    alias annotationWrapperEnd = structEnd;
+
+    ///
+    void nextTopLevelValue()
+    {
+        appender.put('\n');
+    }
+
+    ///
     void putCompiletimeKey(string key)()
     {
         import mir.algorithm.iteration: any;
@@ -231,7 +268,7 @@ struct JsonSerializer(string sep, Appender)
             putEscapedKey(key);
     }
 
-    ///ditto
+    ///
     void putKey(scope const char[] key)
     {
         incState;
@@ -251,29 +288,7 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
-    /// ditto
-    void putKeyId(uint id)
-    {
-        // this is a lo
-        string symbol = "<@ ion_error: undefined_ion_symbol, please fill an issue with reproducable example @>";
-        assert(id < symbolTable.length, symbol);
-        if (id < symbolTable.length)
-            symbol = symbolTable[id];
-        putKey(symbol);
-    }
-
-    /// ditto
-    void putValueId(uint id)
-    {
-        // this is a lo
-        string symbol = "<@ ion_error: undefined_ion_symbol, please fill an issue with reproducable example @>";
-        assert(id < symbolTable.length, symbol);
-        if (id < symbolTable.length)
-            symbol = symbolTable[id];
-        putValue(symbol);
-    }
-
-    ///ditto
+    ///
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
@@ -281,7 +296,7 @@ struct JsonSerializer(string sep, Appender)
         print(appender, num);
     }
 
-    ///ditto
+    ///
     void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
     {
         BigInt!256 num;
@@ -293,19 +308,19 @@ struct JsonSerializer(string sep, Appender)
         putValue(num);
     }
 
-    ///ditto
+    ///
     void putValue(size_t size)(auto ref const BigInt!size num)
     {
         num.toString(appender);
     }
 
-    ///ditto
+    ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
         num.toString(appender);
     }
 
-    ///ditto
+    ///
     void putValue(typeof(null))
     {
         appender.put("null");
@@ -317,13 +332,13 @@ struct JsonSerializer(string sep, Appender)
         putValue(null);
     }
 
-    ///ditto
+    ///
     void putValue(bool b)
     {
         appender.put(b ? "true" : "false");
     }
 
-    ///ditto
+    ///
     void putEscapedValue(scope const char[] value)
     {
         appender.put('\"');
@@ -331,7 +346,7 @@ struct JsonSerializer(string sep, Appender)
         appender.put('\"');
     }
 
-    ///ditto
+    ///
     void putValue(scope const char[] value)
     {
         appender.put('\"');
@@ -339,7 +354,19 @@ struct JsonSerializer(string sep, Appender)
         appender.put('\"');
     }
 
-    ///ditto
+    ///
+    void putValue(IonClob value)
+    {
+        putValue(value.data);
+    }
+
+    ///
+    void putValue(IonBlob value)
+    {
+        putValue(cast(const(char)[])value.data);
+    }
+
+    ///
     void putValue(Timestamp value)
     {
         appender.put('\"');
@@ -347,7 +374,7 @@ struct JsonSerializer(string sep, Appender)
         appender.put('\"');
     }
 
-    ///ditto
+    ///
     void elemBegin()
     {
         incState;
@@ -536,7 +563,7 @@ unittest
         private int sum;
 
         // opApply is used for serialization
-        int opApply(int delegate(scope const char[] key, ref const int val) pure dg) pure
+        int opApply(int delegate(scope const char[] key, ref const int val) pure @safe dg) pure @safe
         {
             { int var = 1; if (auto r = dg("a", var)) return r; }
             { int var = 2; if (auto r = dg("b", var)) return r; }
@@ -592,7 +619,7 @@ string serializeJsonPretty(string sep = "\t", V)(auto ref V value)
 
     auto app = appender!(char[]);
     serializeJsonPretty!sep(app, forward!value);
-    return cast(string) app.data;
+    return (()@trusted => cast(string) app.data)();
 }
 
 ///

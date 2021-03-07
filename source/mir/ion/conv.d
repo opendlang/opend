@@ -1,69 +1,84 @@
 ///
 module mir.ion.conv;
 
-import mir.ion.exception;
-import mir.ion.value;
-import mir.ion.type_code;
-
 /++
-WIP
+Converts JSON Value Stream to binary Ion data.
 +/
-version(none)
-IonErrorCode ionGetFlexible(IonDescribedValue value, scope ref bool result)
-    @safe pure nothrow @nogc
-{
-    if (value.descriptor.L == 0xF)
-    {
-        result = false;
-        return IonErrorCode.none;
-    }
-Switch:
-    // final
-    switch (value.descriptor.type)
-    {
-        case IonTypeCode.null_:
-            return IonErrorCode.nop;
-        case IonTypeCode.bool_:
-            result = IonBool(value.descriptor).get;
-            return IonErrorCode.none;
-        case IonTypeCode.uInt:
-        case IonTypeCode.nInt:
-        case IonTypeCode.float_:
-            result = checkData(value.data);
-            return IonErrorCode.none;
-        case IonTypeCode.decimal:
-        {
-            IonDescribedDecimal decimal;
-            if (auto error = value.trustedGet!IonDecimal.get(decimal))
-                return error;
-            result = checkData(decimal.coefficient.data);
-            return IonErrorCode.none;
-        }
-        // case IonTypeCode.timestamp:
-        // case IonTypeCode.symbol:
-        // case IonTypeCode.string:
-        // case IonTypeCode.clob:
-        // case IonTypeCode.blob:
-        // case IonTypeCode.list:
-        // case IonTypeCode.sexp:
-        // case IonTypeCode.struct_:
-        default:
-            result = true;
-            return IonErrorCode.none;
-        case IonTypeCode.annotations:
-            IonAnnotations annotations;
-            if (auto error = value.trustedGet!IonAnnotationWrapper.unwrap(annotations, value))
-                return error;
-            goto Switch;
-    }
-}
-
-private bool checkData(scope const ubyte[] data)
-    @safe pure nothrow @nogc
+immutable(ubyte)[] json2ion(scope const(char)[] text)
+    @safe pure
 {
     pragma(inline, false);
-    foreach(d; data)
-        if (d)
-            return true;
-    return false;
+    import mir.ion.exception: ionException;
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.stage4_s;
+    import mir.ion.symbol_table: IonSymbolTable;
+    import mir.utility: _expect;
+
+    enum nMax = 4096u;
+
+    alias TapeHolder = IonTapeHolder!(nMax * 8);
+    auto tapeHolder = TapeHolder(nMax * 8);
+
+    IonSymbolTable!true table;
+
+    if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder))
+        throw error.ionException;
+
+    return ()@trusted {
+        table.finalize;
+        return cast(immutable(ubyte)[])(ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
+    }();
+}
+
+///
+@safe pure
+unittest
+{
+    const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    // assert(`{"a":1,"b":2}`.json2ion == data);
+}
+
+
+/++
+Converts Ion Value Stream data to JSON text.
+
+The function performs `IonValueStream(data).serializeJson`.
++/
+string ion2json(scope const(ubyte)[] data)
+    @safe pure
+{
+    pragma(inline, false);
+    import mir.ion.stream;
+    import mir.ion.ser.json: serializeJson;
+    return IonValueStream(data).serializeJson;
+}
+
+///
+@safe pure
+unittest
+{
+    const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    assert(data.ion2json == `{"a":1,"b":2}`);
+}
+
+/++
+Converts Ion Value Stream data to JSON text
+
+The function performs `IonValueStream(data).serializeJsonPretty`.
++/
+string ion2jsonPretty(scope const(ubyte)[] data)
+    @safe pure
+{
+    pragma(inline, false);
+    import mir.ion.stream;
+    import mir.ion.ser.json: serializeJsonPretty;
+    return IonValueStream(data).serializeJsonPretty;
+}
+
+///
+@safe pure
+unittest
+{
+    const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    assert(data.ion2jsonPretty == "{\n\t\"a\": 1,\n\t\"b\": 2\n}");
 }

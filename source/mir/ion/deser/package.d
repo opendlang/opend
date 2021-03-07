@@ -69,7 +69,7 @@ template deserializeListToScopedBuffer(alias impl)
     {
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
             return IonErrorCode.expectedListValue.ionException;
-        foreach (error, ionElem; data.trustedGet!IonList)
+        foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
                 return error.ionException;
@@ -299,8 +299,10 @@ template deserializeValue(string[] symbolTable)
                         enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
                         static if (keys.length)
                         {
-                            foreach (symbolID, elem; ionValue)
+                            foreach (IonErrorCode error, size_t symbolID, IonDescribedValue elem; ionValue)
                             {
+                                if (error)
+                                    return error.ionException;
                                 switch(symbolID)
                                 {
                                     static foreach (key; keys)
@@ -322,8 +324,10 @@ template deserializeValue(string[] symbolTable)
                 }
                 else
                 {
-                    foreach (symbolID, elem; ionValue)
+                    foreach (IonErrorCode error, size_t symbolID, IonDescribedValue elem; ionValue)
                     {
+                        if (error)
+                            return error.ionException;
                         S: switch(symbolID)
                         {
                             static foreach(member; serdeFinalProxyDeserializableMembers!T)

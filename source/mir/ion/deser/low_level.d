@@ -410,7 +410,7 @@ version(mir_ion_test) unittest
 private IonErrorCode deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
 {
     auto ionValue = data.trustedGet!IonList;
-    foreach (error, ionElem; ionValue)
+    foreach (IonErrorCode error, IonDescribedValue ionElem; ionValue)
     {
         if (_expect(error, false))
             return error;
@@ -503,7 +503,7 @@ IonErrorCode deserializeValueImpl(T : SmallArray!(E, maxLength), E, size_t maxLe
 {
     if (data.descriptor.type == IonTypeCode.list)
     {
-        foreach (error, ionElem; data.trustedGet!IonList)
+        foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
                 return error;

@@ -1,5 +1,7 @@
 module mir.ion.internal.data_holder;
 
+package(mir.ion) static immutable ubyte[] ionPrefix = [0xe0, 0x01, 0x00, 0xea];
+
 private static immutable memoryOverflowMessage = "Can not allocate enough memory";
 
 version(D_Exceptions)

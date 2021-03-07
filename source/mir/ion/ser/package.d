@@ -18,15 +18,6 @@ import std.traits;
 
 public import mir.serde;
 
-
-private auto assumePure(T)(T t) @trusted
-    // if (isFunctionPointer!T || isDelegate!T)
-{
-    import std.traits;
-    enum attrs = (functionAttributes!T | FunctionAttribute.pure_) & ~FunctionAttribute.system;
-    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-}
-
 /// `null` value serialization
 void serializeValue(S)(ref S serializer, typeof(null))
 {
@@ -331,7 +322,7 @@ unittest
 }
 
 /// Struct and class type serialization
-void serializeValue(S, V)(ref S serializer, auto ref V value)
+void serializeValue(S, V)(ref S serializer, auto ref V value) @safe
     if (!isNullable!V && isAggregateType!V && !is(V == BigInt!size0, size_t size0) && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
     static if(is(V == class) || is(V == interface))

@@ -15,6 +15,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
+    import mir.ion.lob;
     import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
     import mir.ion.tape;
     import mir.ion.type_code;
@@ -44,7 +45,8 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     IonSymbolTable!true* runtimeTable;
 
 @trusted:
-    /// Serialization primitives
+
+    ///
     size_t structBegin()
     {
         auto ret = tapeHolder.currentTapePosition;
@@ -52,34 +54,61 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         return ret;
     }
 
-    ///ditto
+    ///
     void structEnd(size_t state)
     {
         tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.struct_, tapeHolder.currentTapePosition - (state + ionPutStartLength));
     }
 
-    ///ditto
-    size_t listBegin()
-    {
-        auto ret = tapeHolder.currentTapePosition;
-        tapeHolder.currentTapePosition += ionPutStartLength;
-        return ret;
-    }
+    ///
+    alias listBegin = structBegin;
 
-    ///ditto
+    ///
     void listEnd(size_t state)
     {
         tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.list, tapeHolder.currentTapePosition - (state + ionPutStartLength));
     }
 
-    ///ditto
+    ///
+    alias sexpBegin = listBegin;
+
+    ///
+    void sexpEnd(size_t state)
+    {
+        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.sexp, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+    }
+
+    ///
+    size_t annotationsBegin()
+    {
+        auto ret = tapeHolder.currentTapePosition;
+        tapeHolder.currentTapePosition += ionPutAnnotationsListStartLength;
+        return ret;
+    }
+
+    ///
+    void annotationsEnd(size_t state)
+    {
+        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.annotations, tapeHolder.currentTapePosition - (state + ionPutAnnotationsListStartLength));
+    }
+
+    ///
+    alias annotationWrapperBegin = structBegin;
+
+    ///
+    void annotationWrapperEnd(size_t state)
+    {
+        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.annotations, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+    }
+
+    ///
     void putCompiletimeKey(string key)()
     {
         enum id = compiletimeTable[key];
         putKeyId(compileTimeIndex[id]);
     }
 
-    ///ditto
+    ///
     void putKey()(scope const char[] key)
     {
         import mir.utility: _expect;
@@ -111,14 +140,17 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         tapeHolder.currentTapePosition += ionPutVarUInt(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
     }
 
-    ///ditto
+    ///
+    alias putAnnotationId = putKeyId;
+
+    ///
     void putValueId(uint id)
     {
         tapeHolder.reserve(5);
         tapeHolder.currentTapePosition += ionPutSymbolId(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
     }
 
-    ///ditto
+    ///
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
@@ -126,7 +158,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, num);
     }
 
-    ///ditto
+    ///
     void putValue(size_t size)(auto ref const BigInt!size num)
     {
         auto view = num.view;
@@ -135,7 +167,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, view);
     }
 
-    ///ditto
+    ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
         auto view = num.view;
@@ -144,40 +176,52 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, view);
     }
 
-    ///ditto
+    ///
     void putValue(typeof(null))
     {
         tapeHolder.reserve(1);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, null);
     }
 
-    ///ditto
+    ///
     void putValue(bool b)
     {
         tapeHolder.reserve(1);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, b);
     }
 
-    ///ditto
+    ///
     void putEscapedValue(scope const char[] value)
     {
         putValue(value);
     }
 
-    ///ditto
+    ///
     void putValue(scope const char[] value)
     {
         tapeHolder.reserve(value.length + size_t.sizeof + 1);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
     }
 
-    ///ditto
+    ///
+    void putValue(IonClob value)
+    {
+        tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
+        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+    }
+
+    ///
+    void putValue(IonBlob value)
+    {
+        tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
+        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+    }
+
+    ///
     void elemBegin()
     {
     }
 }
-
-private static immutable ubyte[] ionPrefix = [0xe0, 0x01, 0x00, 0xea];
 
 /++
 Ion serialization function.
@@ -185,7 +229,7 @@ Ion serialization function.
 immutable(ubyte)[] serializeIon(T)(auto ref T value)
 {
     import mir.utility: _expect;
-    import mir.ion.internal.data_holder;
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
     import mir.serde: serdeGetDeserializationKeysRecurse;
@@ -194,7 +238,7 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
     alias TapeHolder = IonTapeHolder!(nMax * 8);
-    auto tapeHolder = IonTapeHolder!(nMax * 8)(nMax * 8);
+    auto tapeHolder = TapeHolder(nMax * 8);
     IonSymbolTable!true table;
     auto serializer = IonSerializer!(TapeHolder, keys)(
         ()@trusted { return &tapeHolder; }(),
