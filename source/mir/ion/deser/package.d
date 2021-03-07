@@ -197,7 +197,7 @@ template deserializeValue(string[] symbolTable)
             }
 
             typeof(value.get) payload;
-            if (auto exc = .deserializeValueImpl!symbolTable(data, payload))
+            if (auto exc = .deserializeValue!symbolTable(data, payload))
                 return exc;
             value = payload;
             return null;

@@ -22,6 +22,13 @@ struct IonValueStream
 
 const:
 
+    //
+    void toString(W)(scope ref W w) scope
+    {
+        import mir.ion.ser.json: serializeJson;
+        return serializeJson(w, this);
+    }
+
     version (D_Exceptions)
     {
         /++

@@ -12,14 +12,15 @@ has_cpp_headers = false
 
 sources_list = [
     'mir/ion/conv',
+    'mir/ion/deser/json',
+    'mir/ion/deser/low_level',
+    'mir/ion/deser/package',
+    'mir/ion/deser/text/package',
     'mir/ion/deser/text/readers',
     'mir/ion/deser/text/skippers',
     'mir/ion/deser/text/tokenizer',
     'mir/ion/deser/text/tokens',
-    'mir/ion/deser/text/package',
-    'mir/ion/deser/json',
-    'mir/ion/deser/low_level',
-    'mir/ion/deser/package',
+    'mir/ion/examples',
     'mir/ion/exception',
     'mir/ion/internal/data_holder',
     'mir/ion/internal/simd',
@@ -28,13 +29,14 @@ sources_list = [
     'mir/ion/internal/stage3',
     'mir/ion/internal/stage4_s',
     'mir/ion/lob',
+    'mir/ion/ser/ion',
     'mir/ion/ser/json',
     'mir/ion/ser/package',
     'mir/ion/symbol_table',
     'mir/ion/tape',
-    'mir/timestamp',
     'mir/ion/type_code',
     'mir/ion/value',
+    'mir/timestamp',
 ]
 
 sources = []

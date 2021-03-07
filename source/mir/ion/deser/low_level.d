@@ -30,6 +30,8 @@ import std.traits:
 
 package template isFirstOrderSerdeType(T)
 {
+    import mir.serde: serdeGetFinalProxy;
+
     static if (isAggregateType!T)
     {
         static if (is(T : BigInt!maxSize64, size_t maxSize64))
@@ -44,13 +46,20 @@ package template isFirstOrderSerdeType(T)
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))
             enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
         else
+        static if (is(T == serdeGetFinalProxy!T))
             enum isFirstOrderSerdeType = false;
+        else
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
     }
     else
     static if (isArray!T)
         enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T));
     else
+    static if (is(T == serdeGetFinalProxy!T))
         enum isFirstOrderSerdeType = true;
+    else
+        enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
+    pragma(msg, serdeGetFinalProxy!T.stringof ~ " " ~ isFirstOrderSerdeType.stringof ~ " " ~ T.stringof);
 }
 
 package(mir.ion) template isNullable(T)
@@ -219,11 +228,29 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
             return data.trustedGet!IonDecimal.get!T(value);
         }
         else
+        if (data.descriptor.type == IonTypeCode.uInt || data.descriptor.type == IonTypeCode.nInt)
         {
             IonInt ionValue;
             if (auto error = data.get(ionValue))
                 return error;
             value = cast(T) ionValue.field;
+            return IonErrorCode.none;
+        }
+        else
+        {
+            const(char)[] ionValue;
+            if (auto error = data.get(ionValue))
+                return error;
+
+            import mir.bignum.decimal;
+            Decimal!256 decimal;
+            DecimalExponentKey exponentKey;
+
+
+            if (!decimal.fromStringImpl(ionValue, exponentKey))
+                return IonErrorCode.expectedFloatingValue;
+
+            value = cast(T) decimal;
             return IonErrorCode.none;
         }
     }
@@ -286,15 +313,39 @@ version(mir_ion_test) unittest
     assert(cast(double)value == -12332422e75);
 }
 
+package template hasProxy(T)
+{
+    import mir.serde: serdeProxy;
+    static if (is(T == enum) || is(T == class)  || is(T == struct) || is(T == union)|| is(T == interface))
+        enum hasProxy = hasUDA!(T, serdeProxy);
+    else
+        enum hasProxy = false;
+}
+/++
+Deserialize struct/class value with proxy.
++/
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+    if (hasProxy!T && isFirstOrderSerdeType!T)
+{
+    import std.traits: Select;
+    import mir.serde: serdeGetProxy, serdeScoped, serdeScoped;
+    import mir.conv: to;
+
+    serdeGetProxy!T proxy;
+    enum S = hasUDA!(value, serdeScoped) && __traits(compiles, .deserializeScopedValueImpl(data, proxy));
+    alias Fun = Select!(S, .deserializeScopedValueImpl, .deserializeValueImpl);
+    Fun(data, proxy);
+    value = proxy.to!T;
+    return IonErrorCode.none;
+}
+
 /++
 Deserialize enum value.
 +/
 IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
-    pure @safe nothrow @nogc
-    if (is(T == enum))
+    if (is(T == enum) && !hasProxy!T)
 {
     import mir.serde: serdeParseEnum;
-
     const(char)[] ionValue;
     if (auto error = data.get(ionValue))
         return error;

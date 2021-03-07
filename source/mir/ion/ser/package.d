@@ -322,7 +322,7 @@ unittest
 }
 
 /// Struct and class type serialization
-void serializeValue(S, V)(ref S serializer, auto ref V value) @safe
+void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (!isNullable!V && isAggregateType!V && !is(V == BigInt!size0, size_t size0) && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
     static if(is(V == class) || is(V == interface))

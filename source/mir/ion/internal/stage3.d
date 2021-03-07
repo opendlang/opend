@@ -357,7 +357,7 @@ value_start:
         }
         auto numberStringView = cast(const(char)[]) (tape.ptr + currentTapePosition)[0 .. numberLength];
 
-        import mir.bignum.decimal;
+        import mir.bignum.decimal: Decimal, DecimalExponentKey;
         Decimal!256 decimal;
         DecimalExponentKey exponentKey;
 

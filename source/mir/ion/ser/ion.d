@@ -232,7 +232,6 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
-    import mir.serde: serdeGetDeserializationKeysRecurse;
 
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
@@ -251,7 +250,7 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     // use runtime table
     if (_expect(table.initialized, false))
     {
-        table.finalize;
+        () @trusted { table.finalize; } ();
         return ionPrefix ~ table.tapeData ~ tapeHolder.tapeData;
     }
     // compile time table
@@ -306,7 +305,6 @@ void serializeIon(TapeHolder, T)(
 {
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table;
-    import mir.serde: serdeGetDeserializationKeysRecurse;
 
     enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
     auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder);
