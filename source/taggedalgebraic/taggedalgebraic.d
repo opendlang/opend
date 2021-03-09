@@ -1359,6 +1359,8 @@ private string generateConstructors(U)()
 								return;
 						}
 					}
+					// NOTE: the default case needs to be at the bottom to avoid bogus
+					//       unreachable code warnings (DMD issue 21671)
 					default: assert(false, format("Invalid type ID for type %%s: %%s", UnionType.FieldTypeByName!"%1$s".stringof, type));
 				}
 			}
