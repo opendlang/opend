@@ -1,3 +1,6 @@
 [submodule "doc/dlang.org"]
 	path = doc/dlang.org
 	url = https://github.com/dlang/dlang.org
+[submodule "ion-tests"]
+	path = ion-tests
+	url = https://github.com/amzn/ion-tests

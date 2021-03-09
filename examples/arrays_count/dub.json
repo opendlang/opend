@@ -1,8 +1,0 @@
-{
-	"name": "arrays_count",
-	"dependencies": {
-		"mir-ion" : {
-			"path" : "../../"
-		}
-	}
-}
