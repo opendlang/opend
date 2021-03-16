@@ -720,7 +720,7 @@ template jsonSerializer(string sep = "")
 
     ser.structEnd(state0);
 
-    assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e7,"\t","\r","\n",1234567890]}`);
+    assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`, buffer.data);
 }
 
 ///
@@ -755,11 +755,11 @@ unittest
     "array": [
         null,
         123,
-        1.2300000123e7,
+        1.2300000123e+7,
         "\t",
         "\r",
         "\n",
         1234567890
     ]
-}`);
+}`, app.data);
 }
