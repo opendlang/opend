@@ -389,7 +389,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 	// default initialized to the first field defined
 	TU tu;
 	assert(tu.kind == TU.Kind.count);
-	assert(tu.isCount); // qequivalent to the line above
+	assert(tu.isCount); // equivalent to the line above
 	assert(!tu.isText);
 	assert(tu.value!(TU.Kind.count) == int.init);
 
