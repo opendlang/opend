@@ -388,7 +388,16 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
         enum likeList = hasUDA!(__traits(getMember, value, member), serdeLikeList);
         enum likeStruct  = hasUDA!(__traits(getMember, value, member), serdeLikeStruct);
         enum hasProxy = hasUDA!(__traits(getMember, value, member), serdeProxy);
-        enum hasScoped = hasUDA!(__traits(getMember, value, member), serdeScoped);
+
+        alias Member = serdeDeserializationMemberType!(T, member);
+
+        static if (hasProxy)
+            alias Temporal = serdeGetProxy!(__traits(getMember, value, member));
+        else
+            alias Temporal = Member;
+
+        enum hasScoped = hasUDA!(__traits(getMember, value, member), serdeScoped) || hasScoped!Temporal;
+
         enum hasTransform = hasUDA!(__traits(getMember, value, member), serdeTransformIn);
 
         static if (hasTransform)
@@ -397,13 +406,6 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
         static assert (likeList + likeStruct <= 1, T.stringof ~ "." ~ member ~ " can't have both @serdeLikeStruct and @serdeLikeList attributes");
         static assert (hasProxy >= likeStruct, T.stringof ~ "." ~ member ~ " should have a Proxy type for deserialization");
         static assert (hasProxy >= likeList, T.stringof ~ "." ~ member ~ " should have a Proxy type for deserialization");
-
-        alias Member = serdeDeserializationMemberType!(T, member);
-
-        static if (hasProxy)
-            alias Temporal = serdeGetProxy!(__traits(getMember, value, member));
-        else
-            alias Temporal = Member;
 
         static if (hasScoped)
             static if (__traits(compiles, { Temporal temporal; deserializeScoped(data, temporal); }))

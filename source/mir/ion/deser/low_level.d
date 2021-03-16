@@ -59,7 +59,6 @@ package template isFirstOrderSerdeType(T)
         enum isFirstOrderSerdeType = true;
     else
         enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
-    pragma(msg, serdeGetFinalProxy!T.stringof ~ " " ~ isFirstOrderSerdeType.stringof ~ " " ~ T.stringof);
 }
 
 package(mir.ion) template isNullable(T)
@@ -321,6 +320,16 @@ package template hasProxy(T)
     else
         enum hasProxy = false;
 }
+
+package template hasScoped(T)
+{
+    import mir.serde: serdeScoped;
+    static if (is(T == enum) || is(T == class)  || is(T == struct) || is(T == union)|| is(T == interface))
+        enum hasScoped = hasUDA!(T, serdeScoped);
+    else
+        enum hasScoped = false;
+}
+
 /++
 Deserialize struct/class value with proxy.
 +/
@@ -332,7 +341,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     import mir.conv: to;
 
     serdeGetProxy!T proxy;
-    enum S = hasUDA!(value, serdeScoped) && __traits(compiles, .deserializeScopedValueImpl(data, proxy));
+    enum S = hasUDA!(T, serdeScoped) && __traits(compiles, .deserializeScopedValueImpl(data, proxy));
     alias Fun = Select!(S, .deserializeScopedValueImpl, .deserializeValueImpl);
     Fun(data, proxy);
     value = proxy.to!T;
