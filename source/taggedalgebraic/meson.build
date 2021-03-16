@@ -1,4 +1,5 @@
 taggedalgebraic_src = [
+	'package.d',
 	'taggedalgebraic.d',
 	'taggedunion.d',
 	'visit.d',
