@@ -2172,6 +2172,12 @@ const:
         }
         serializer.structEnd(state);
     }
+
+    ///
+    IonStructWithSymbols withSymbols(return scope const(char[])[] symbolTable) return
+    {
+        return IonStructWithSymbols(this, symbolTable);
+    }
 }
 
 ///
@@ -2208,6 +2214,234 @@ version(mir_ion_test) unittest
         i++;
     }
     assert(i == 2);
+}
+
+
+/++
+Ion struct (object) with a symbol table
++/
+struct IonStructWithSymbols
+{
+    ///
+    IonStruct ionStruct;
+    ///
+    const(char[])[] symbolTable;
+
+    private alias DG = int delegate(IonErrorCode error, scope const(char)[], IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(scope const(char)[], IonDescribedValue value) @safe pure nothrow @nogc;
+
+    ///
+    bool sorted()
+        @safe pure nothrow @nogc const @property
+    {
+        return ionStruct.sorted;
+    }
+
+    /++
+    Returns: true if the struct is `null.struct`, `null`, or `()`.
+    Note: a NOP padding makes in the struct makes it non-empty.
+    +/
+    bool empty()
+        @safe pure nothrow @nogc const @property
+    {
+        return ionStruct.empty;
+    }
+
+const:
+
+    version (D_Exceptions)
+    {
+        /++
+        +/
+        @safe pure @nogc
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value) @safe pure @nogc dg)
+        {
+            return opApply((IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value) {
+                if (_expect(error, false))
+                    throw error.ionException;
+                return dg(symbol, value);
+            });
+        }
+
+        /// ditto
+        @trusted @nogc
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @safe @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @trusted pure
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @safe pure dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @trusted
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @safe dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system pure @nogc
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @system pure @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system @nogc
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @system @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system pure
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @system pure dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system
+        int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        @system dg) { return opApply(cast(EDG) dg); }
+    }
+
+    /++
+    +/
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value) @safe pure nothrow @nogc dg)
+        @safe pure nothrow @nogc
+    {
+        return ionStruct.opApply((IonErrorCode error, size_t symbolId, IonDescribedValue value) {
+            scope const(char)[] symbol;
+            if (!error)
+            {
+                if (symbolId < symbolTable.length)
+                {
+                    symbol = symbolTable[symbolId];
+                }
+                else
+                {
+                    try debug {
+                        import std.stdio;
+                        writeln("symbolId = ", symbolId);
+                        writeln("symbolTable = ", symbolTable);
+                    } catch(Exception e) {}
+                    error = IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable;
+                }
+            }
+            return dg(error, symbol, value);
+        });
+    }
+
+    /// ditto
+    @trusted nothrow @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe pure @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure nothrow
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe pure nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe pure dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted nothrow
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @safe dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure nothrow @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system pure nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system nothrow @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system pure @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure nothrow
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system pure nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system @nogc
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system pure dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system nothrow
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system
+    int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    @system dg) { return opApply(cast(DG) dg); }
+
+    import mir.algebraic: Nullable;
+
+    /++
+    +/
+    IonDescribedValue opIndex(scope const(char)[] symbol) const @safe pure @nogc
+    {
+        foreach (key, value; this)
+        {
+            if (key == symbol)
+            {
+                return value;
+            }
+        }
+        import mir.serde: SerdeMirException;
+        throw new SerdeMirException("Ion struct doesn't contain member ", symbol);
+    }
+
+    import mir.algebraic: Nullable;
+
+    /++
+    +/
+    Nullable!IonDescribedValue opBinaryRight(string op : "in")(scope const(char)[] symbol) const @safe pure @nogc
+    {
+        foreach (key, value; this)
+        {
+            if (key == symbol)
+            {
+                return typeof(return)(value);
+            }
+        }
+        return typeof(return).init;
+    }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(ref S serializer) const
+    {
+        ionStruct.serialize(serializer);
+    }
 }
 
 /++

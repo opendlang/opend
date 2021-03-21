@@ -29,7 +29,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     static immutable U[IonSystemSymbolTable_v1.length + compiletimeTable.sortedKeys.length] compileTimeIndex = () {
         U[IonSystemSymbolTable_v1.length + compiletimeTable.sortedKeys.length] index;
         foreach (i, key; IonSystemSymbolTable_v1 ~ compiletimeSymbolTable)
-            index[compiletimeTable[key]] = cast(U) (i + 1);
+            index[compiletimeTable[key]] = cast(U) i;
         return index;
     } ();
     static immutable ubyte[] compiletimeTableTape = () {

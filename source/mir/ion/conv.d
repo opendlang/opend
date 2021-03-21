@@ -5,10 +5,11 @@ module mir.ion.conv;
 Converts JSON Value Stream to binary Ion data.
 +/
 immutable(ubyte)[] json2ion(scope const(char)[] text)
-    @safe pure
+    @trusted pure
 {
     pragma(inline, false);
-    import mir.ion.exception: ionException;
+    import mir.exception: MirException;
+    import mir.ion.exception: ionErrorMsg;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.internal.stage4_s;
     import mir.ion.symbol_table: IonSymbolTable;
@@ -18,11 +19,11 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
 
     alias TapeHolder = IonTapeHolder!(nMax * 8);
     auto tapeHolder = TapeHolder(nMax * 8);
-
-    IonSymbolTable!true table;
-
-    if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder))
-        throw error.ionException;
+    IonSymbolTable!false table;
+    table.initialize;
+    auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder);
+    if (error.code)
+        throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
 
     return ()@trusted {
         table.finalize;
@@ -35,7 +36,7 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
 unittest
 {
     const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
-    // assert(`{"a":1,"b":2}`.json2ion == data);
+    assert(`{"a":1,"b":2}`.json2ion == data);
 }
 
 

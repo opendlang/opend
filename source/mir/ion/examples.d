@@ -278,3 +278,346 @@ version(unittest) private
         assert(`"NA"`.deserializeJson!E == E.none);
     }
 }
+
+///
+pure unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import mir.serde: serdeKeys;
+    static struct S
+    {
+        @serdeKeys("b", "a")
+        string s;
+    }
+    assert(`{"a":"d"}`.deserializeJson!S.serializeJson == `{"b":"d"}`);
+}
+
+///
+pure unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import mir.serde: serdeKeys, serdeKeyOut;
+    static struct S
+    {
+        @serdeKeys("a")
+        @serdeKeyOut("s")
+        string s;
+    }
+    assert(`{"a":"d"}`.deserializeJson!S.serializeJson == `{"s":"d"}`);
+}
+
+///
+pure unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import std.exception: assertThrown;
+
+    struct S
+    {
+        string field;
+    }
+    
+    assert(`{"field":"val"}`.deserializeJson!S.field == "val");
+    assertThrown(`{"other":"val"}`.deserializeJson!S);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    static struct S
+    {
+        @serdeKeyOut("a")
+        string s;
+    }
+    assert(`{"s":"d"}`.deserializeJson!S.serializeJson == `{"a":"d"}`);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import std.exception: assertThrown;
+
+    static struct S
+    {
+        @serdeIgnore
+        string s;
+    }
+    assertThrown(`{"s":"d"}`.deserializeJson!S);
+    assert(S("d").serializeJson == `{}`);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    static struct Decor
+    {
+        int candles; // 0
+        float fluff = float.infinity; // inf 
+    }
+    
+    static struct Cake
+    {
+        @serdeIgnoreDefault
+        string name = "Chocolate Cake";
+        int slices = 8;
+        float flavor = 1;
+        @serdeIgnoreDefault
+        Decor dec = Decor(20); // { 20, inf }
+    }
+    
+    assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
+    auto cake = Cake.init;
+    cake.dec = Decor.init;
+    assert(cake.serializeJson == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"inf"}}`);
+    assert(cake.dec.serializeJson == `{"candles":0,"fluff":"inf"}`);
+    
+    static struct A
+    {
+        @serdeIgnoreDefault
+        string str = "Banana";
+        int i = 1;
+    }
+    assert(A.init.serializeJson == `{"i":1}`);
+    
+    static struct S
+    {
+        @serdeIgnoreDefault
+        A a;
+    }
+    assert(S.init.serializeJson == `{}`);
+    assert(S(A("Berry")).serializeJson == `{"a":{"str":"Berry","i":1}}`);
+    
+    static struct D
+    {
+        S s;
+    }
+    assert(D.init.serializeJson == `{"s":{}}`);
+    assert(D(S(A("Berry"))).serializeJson == `{"s":{"a":{"str":"Berry","i":1}}}`);
+    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":null,"i":0}}}`);
+    
+    static struct F
+    {
+        D d;
+    }
+    assert(F.init.serializeJson == `{"d":{"s":{}}}`);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import mir.serde: serdeIgnoreOut;
+
+    static struct S
+    {
+        @serdeIgnoreOut
+        string s;
+    }
+    assert(`{"s":"d"}`.deserializeJson!S.s == "d");
+    assert(S("d").serializeJson == `{}`);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    static struct S
+    {
+        @serdeIgnoreOutIf!`a < 0`
+        int a;
+    }
+
+    assert(serializeJson(S(3)) == `{"a":3}`, serializeJson(S(3)));
+    assert(serializeJson(S(-3)) == `{}`);
+}
+
+///
+@safe pure
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    import std.uuid: UUID;
+
+    static struct S
+    {
+        @serdeScoped
+        @serdeProxy!string
+        UUID id;
+    }
+
+    enum result = UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46");
+    assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id == result);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.ion;
+    import mir.ion.value;
+    import mir.ion.conv;
+    import mir.algebraic: Variant;
+
+    static struct ObjectA
+    {
+        string name;
+    }
+    static struct ObjectB
+    {
+        double value;
+    }
+
+    alias MyObject = Variant!(ObjectA, ObjectB);
+
+    static struct MyObjectArrayProxy
+    {
+        MyObject[] array;
+
+        this(MyObject[] array) @safe pure nothrow @nogc
+        {
+            this.array = array;
+        }
+
+        T opCast(T : MyObject[])()
+        {
+            return array;
+        }
+
+        void serialize(S)(ref S serializer) const
+        {
+            import mir.ion.ser: serializeValue;
+            // mir.algebraic has builtin support for serialization.
+            // For other algebraic libraies one can use thier visitor handlers.
+            serializeValue(serializer, array);
+        }
+
+        /++
+        
+        Returns: error msg if any
+        +/
+        string deserializeFromIon(string[] keys)(scope const char[][] symbolTable, IonDescribedValue value)
+        {
+            foreach (elem; value.get!IonList)
+            {
+                array ~= "name" in elem.get!IonStruct.withSymbols(symbolTable)
+                    ? MyObject(deserializeIon!ObjectA(symbolTable, elem))
+                    : MyObject(deserializeIon!ObjectB(symbolTable, elem));
+            }
+            return null;
+        }
+    }
+
+    static struct SomeObject
+    {
+        @serdeProxy!MyObjectArrayProxy MyObject[] objects;
+    }
+
+    string data = q{{"objects":[{"name":"test"},{"value":1.5}]}};
+
+    auto value = data.json2ion.deserializeIon!SomeObject;
+    // assert (value.serializeJson == data);
+}
+
+///
+version(none)
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    import std.range;
+    import std.uuid;
+
+    static struct S
+    {
+        private int count;
+        @serdeLikeList
+        auto numbers() @property // uses `foreach`
+        {
+            return iota(count);
+        }
+
+        @serdeLikeList
+        @serdeProxy!string // input element type of
+        @serdeIgnoreOut
+        Appender!(string[]) strings; //`put` method is used
+    }
+
+    assert(S(5).serializeJson == `{"numbers":[0,1,2,3,4]}`);
+    assert(`{"strings":["a","b"]}`.deserializeJson!S.strings.data == ["a","b"]);
+}
+
+///
+version(none)
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+
+    static struct M
+    {
+        private int sum;
+
+        // opApply is used for serialization
+        int opApply(int delegate(in char[] key, int val) pure dg) pure
+        {
+            if(auto r = dg("a", 1)) return r;
+            if(auto r = dg("b", 2)) return r;
+            if(auto r = dg("c", 3)) return r;
+            return 0;
+        }
+
+        // opIndexAssign for deserialization
+        void opIndexAssign(int val, string key) pure
+        {
+            sum += val;
+        }
+    }
+
+    static struct S
+    {
+        @serdeLikeStruct
+        @serdeProxy!int
+        M obj;
+    }
+
+    assert(S.init.serializeJson == `{"obj":{"a":1,"b":2,"c":3}}`);
+    assert(`{"obj":{"a":1,"b":2,"c":9}}`.deserializeJson!S.obj.sum == 12);
+}
+
+///
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    import std.range;
+    import std.algorithm;
+    import std.conv;
+
+    static struct S
+    {
+        @serdeTransformIn!"a += 2"
+        @serdeTransformOut!(a =>"str".repeat.take(a).joiner("_").to!string)
+        int a;
+    }
+
+    auto s = deserializeJson!S(`{"a":3}`);
+    assert(s.a == 5);
+    assert(serializeJson(s) == `{"a":"str_str_str_str_str"}`);
+}

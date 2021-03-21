@@ -87,6 +87,8 @@ enum IonErrorCode
     ///
     cantParseValueStream,
     ///
+    symbolIdIsTooLargeForTheCurrentSymbolTable,
+    ///
     invalidLocalSymbolTable,
     ///
     sharedSymbolTablesAreUnsupported,
@@ -148,6 +150,7 @@ string ionErrorMsg(IonErrorCode code) @property
         "small array overflow",
         "unexpected version marker",
         "can't parse value stream",
+        "symbol id is too large for the current symbol table",
         "invalid local symbol table",
         "shared symbol tables are unsupported",
     ];

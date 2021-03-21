@@ -4,18 +4,38 @@ module mir.ion.deser.json;
 
 public import mir.serde;
 
-version(D_Exceptions)
-{
-    import mir.serde: SerdeException;
-}
-
 /++
 +/
 T deserializeJson(T)(scope const(char)[] text)
 {
-    T value;    
-    if (auto exc = deserializeValueFromJson(text, value))
-        throw exc;
+    import mir.ion.deser: deserializeValue;
+    import mir.ion.exception: ionErrorMsg;
+    import mir.ion.internal.data_holder;
+    import mir.ion.internal.stage4_s;
+    import mir.ion.value: IonDescribedValue, IonValue;
+    import mir.serde: serdeGetDeserializationKeysRecurse, SerdeMirException, SerdeException;
+    import mir.string_table: createTable;
+
+    enum nMax = 4096u;
+    // enum nMax = 128u;
+    enum keys = serdeGetDeserializationKeysRecurse!T;
+    alias createTableChar = createTable!char;
+    static immutable table = createTableChar!(keys, false);
+    T value;
+
+    // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
+    auto tapeHolder = IonTapeHolder!(nMax * 8)(nMax * 8);
+    auto errorInfo = singleThreadJsonImpl!nMax(text, table, tapeHolder);
+    if (errorInfo.code)
+        throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+
+    IonDescribedValue ionValue;
+
+    if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
+        throw new SerdeException(error.ionErrorMsg);
+
+    if (auto msg = deserializeValue!(keys, false)(ionValue, value))
+        throw new SerdeException(msg);
     return value;
 }
 
@@ -104,35 +124,4 @@ unittest
     assert(book.title == "A Hero of Our Time");
     assert(book.weight == 6.88);
     assert(book.wouldRecommend);
-}
-
-/++
-+/
-SerdeException deserializeValueFromJson(T)(scope const(char)[] text, ref T value)
-{
-    import mir.ion.deser: deserializeValue;
-    import mir.ion.exception: ionException;
-    import mir.ion.internal.data_holder;
-    import mir.ion.internal.stage4_s;
-    import mir.ion.value: IonDescribedValue, IonValue;
-    import mir.serde: serdeGetDeserializationKeysRecurse;
-    import mir.string_table: createTable;
-
-    enum nMax = 4096u;
-    // enum nMax = 128u;
-    enum keys = serdeGetDeserializationKeysRecurse!T;
-    alias createTableChar = createTable!char;
-    static immutable table = createTableChar!(keys, false);
-    // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
-    auto tapeHolder = IonTapeHolder!(nMax * 8)(nMax * 8);
-
-    if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder))
-        return error.ionException;
-
-    IonDescribedValue ionValue;
-
-    if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
-        return error.ionException;
-
-    return deserializeValue!(keys)(ionValue, value);
 }

@@ -3,7 +3,18 @@ module mir.ion.internal.stage4_s;
 import mir.ion.exception: IonErrorCode;
 
 ///
-IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
+struct IonErrorInfo
+{
+    ///
+    IonErrorCode code;
+    ///
+    size_t location;
+    /// refers tape or text
+    const(char)[] key;
+}
+
+///
+IonErrorInfo singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
     scope const(char)[] text,
     ref SymbolTable table,
     ref TapeHolder tapeHolder,
@@ -29,9 +40,13 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
     pairedMask1[$ - 1] = [0UL,  0UL];
     pairedMask1[$ - 1] = [0UL,  ulong.max];
 
-    return stage3(
+    auto currentText = text;
+    Stage3Stage stage;
+
+    auto ret = stage3(
         table,
-        (ref Stage3Stage stage) @trusted
+        stage,
+        () @trusted
         {
             tapeHolder.extend(stage.tape.length + nMax * 4);
             if (stage.tape !is null)
@@ -49,7 +64,7 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
                 stage.pairedMask2 = pairedMask2.ptr + 1;
             }
             stage.tape = tapeHolder.data;
-            stage.n = min(nMax, text.length);
+            stage.n = min(nMax, currentText.length);
             if (stage.n == 0)
                 assert(0);
 
@@ -57,21 +72,22 @@ IonErrorCode singleThreadJsonImpl(size_t nMax, SymbolTable, TapeHolder)(
 
             if (__ctfe)
                 for (size_t i; i < stage.n; i += 64)
-                    vector[i / 64 + 1][0 .. i + 64 <= stage.n ? $ : stage.n % 64] = cast(const(ubyte)[]) text[i .. i + 64 <= stage.n ? i + 64 : $];
+                    vector[i / 64 + 1][0 .. i + 64 <= stage.n ? $ : stage.n % 64] = cast(const(ubyte)[]) currentText[i .. i + 64 <= stage.n ? i + 64 : $];
             else
-                memcpy(vector.ptr.ptr + 64, text.ptr, stage.n);
+                memcpy(vector.ptr.ptr + 64, currentText.ptr, stage.n);
 
-            text = text[stage.n .. $];
+            currentText = currentText[stage.n .. $];
 
             auto vlen = stage.n / 64 + (stage.n % 64 != 0);
             import mir.ion.internal.stage1;
             import mir.ion.internal.stage2;
             stage1(vlen, vector.ptr + 1, pairedMask1.ptr + 1, backwardEscapeBit);
             stage2(vlen, vector.ptr + 1, pairedMask2.ptr + 1);
-            return text.length == 0;
+            return currentText.length == 0;
         },
         tapeHolder.currentTapePosition,
     );
+    return typeof(return)(ret, text.length - currentText.length - stage.index, stage.key);
 }
 
 ///
@@ -80,7 +96,8 @@ version(mir_ion_test) unittest
     static ubyte[] jsonToIonTest(scope const(char)[] text)
     @trusted pure
     {
-        import mir.ion.exception: ionException;
+        import mir.serde: SerdeMirException;
+        import mir.ion.exception: ionErrorMsg;
         import mir.ion.internal.data_holder;
         import mir.ion.symbol_table;
 
@@ -90,8 +107,9 @@ version(mir_ion_test) unittest
         table.initialize;
         auto tapeHolder = IonTapeHolder!(nMax * 4)(nMax * 4);
 
-        if (auto error = singleThreadJsonImpl!nMax(text, table, tapeHolder))
-            throw error.ionException;
+        auto errorInfo = singleThreadJsonImpl!nMax(text, table, tapeHolder);
+        if (errorInfo.code)
+            throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
 
         return tapeHolder.tapeData.dup;
     }

@@ -25,7 +25,8 @@ struct Stage3Stage
 
 IonErrorCode stage3(Table)(
     ref Table symbolTable,
-    scope bool delegate(ref Stage3Stage stage) @safe pure nothrow @nogc fetchNext,
+    ref Stage3Stage stage,
+    scope bool delegate() @safe pure nothrow @nogc fetchNext,
     out size_t currentTapePositionResult,
 )
 @trusted pure nothrow
@@ -33,11 +34,9 @@ IonErrorCode stage3(Table)(
     pragma(inline, false)
     string _lastError;
 
-    Stage3Stage stage;
+    bool last = fetchNext();
 
-    bool last = fetchNext(stage);
-
-    with(stage) {
+    with(stage){
 
     ptrdiff_t prepareSmallInput()
     {
@@ -45,7 +44,7 @@ IonErrorCode stage3(Table)(
         // assert(ret >= 0);
         if (_expect(ret < 64 && !last, false))
         {
-            last = fetchNext(stage);
+            last = fetchNext();
             ret = n - index;
             assert(ret >= 0);
         }
@@ -192,7 +191,6 @@ StringLoop: {
                     }
                     goto cant_insert_key;
                 }
-                id++;
             }
             // TODO find id using the key
             currentTapePosition += ionPutVarUInt(tape.ptr + currentTapePosition, id);

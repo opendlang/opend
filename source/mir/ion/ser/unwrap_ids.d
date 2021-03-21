@@ -23,7 +23,7 @@ struct UnwrapSymbolIdsSerializer(Serializer, SymbolMap)
 
     private void checkId(size_t id) const
     {
-        if (id - 1 >= symbolMap.length)
+        if (id >= symbolMap.length)
         {
             version (D_Exceptions)
                 throw UnwrapSymbolIdsSerializerException;
@@ -33,31 +33,31 @@ struct UnwrapSymbolIdsSerializer(Serializer, SymbolMap)
     }
 
     /++
-    Performs `putKey(symbolMap[id - 1])`
+    Performs `putKey(symbolMap[id])`
     +/
     void putKeyId(size_t id)
     {
         checkId(id);
-        serializer.putKey(symbolMap[id - 1]);
+        serializer.putKey(symbolMap[id]);
     }
 
     /++
-    Performs `putValue(symbolMap[id - 1])`
+    Performs `putValue(symbolMap[id])`
     +/
     void putValueId(size_t id)
     {
         checkId(id);
-        serializer.putValue(symbolMap[id - 1]);
+        serializer.putValue(symbolMap[id]);
     }
 
     static if (__traits(hasMember, *serializer, "putAnnotation"))
     /++
-    Performs `putAnnotation(symbolMap[id - 1])`
+    Performs `putAnnotation(symbolMap[id])`
     +/
     void putAnnotationId(size_t id)
     {
         checkId(id);
-        serializer.putAnnotation(symbolMap[id - 1]);
+        serializer.putAnnotation(symbolMap[id]);
     }
 }
 

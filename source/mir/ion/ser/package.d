@@ -415,7 +415,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                         }
                     }
                     auto valState = serializer.structBegin();
-                    foreach (key, ref elem; val)
+                    foreach (key, elem; val)
                     {
                         serializer.putKey(key);
                         serializer.serializeValue(elem);

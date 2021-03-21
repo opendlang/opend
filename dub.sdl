@@ -9,6 +9,8 @@ dependency "mir-cpuid" version="~>1.2.6"
 configuration "common" {
 }
 
+dflags "-preview=dip1008"
+
 configuration "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
