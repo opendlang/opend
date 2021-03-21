@@ -818,7 +818,13 @@ struct PhobosRandom(Engine) if (isRandomEngine!Engine && !isPhobosUniformRNG!Eng
         _front = _engine.opCall();
     }
 
-    /// Phobos-style random interface.
+    /++
+    Phobos-style random interface.
+
+    `save` is only available when the underlying `Engine` has no indirections
+    and has `pure @safe opCall()` and doesn't have an impure or `@system`
+    destructor.
+    +/
     enum bool isUniformRandom = true;
     /// ditto
     enum Uint min = Uint.min;//Always normalized.
@@ -836,6 +842,38 @@ struct PhobosRandom(Engine) if (isRandomEngine!Engine && !isPhobosUniformRNG!Eng
         _engine.__ctor(args);
         _front = _engine.opCall();
     }
+    /// ditto
+    static if (!hasIndirections!Engine && is(typeof(() pure @safe {
+        Engine e = Engine.init;
+        return e();
+    }())))
+    @property typeof(this) save()() const @trusted
+    {
+        import std.meta: allSatisfy;
+
+        typeof(return) copy = void;
+        static if (allSatisfy!(_isPOD, typeof(Engine.tupleof)))
+        {
+            // The advantage of fieldwise assignment instead of memcpy is that
+            // it works during CTFE.
+            foreach (i, ref e; this.tupleof)
+            {
+                static if (__traits(isPOD, typeof(e)))
+                    copy.tupleof[i] = e;
+                else
+                    foreach (i2, ref e2; e.tupleof)
+                        copy.tupleof[i].tupleof[i2] = e2;
+            }
+        }
+        else
+        {
+            enum N = typeof(this).sizeof;
+            (cast(ubyte*) &copy)[0 .. N] = (cast(const ubyte*) &this)[0 .. N];
+        }
+        return copy;
+    }
+
+    private enum _isPOD(T) = __traits(isPOD, T);
 
     /// Retain support for Mir-style random interface.
     enum bool isRandomEngine = true;
@@ -867,12 +905,14 @@ template PhobosRandom(Engine) if (isRandomEngine!Engine && isPhobosUniformRNG!En
 {
     import mir.random.engine.xorshift: Xorshift1024StarPhi;
     import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    import std.range.primitives: isForwardRange;
 
     alias RNG = PhobosRandom!Xorshift1024StarPhi;
 
     //Phobos interface
     static assert(isPhobosUniformRNG!(RNG, ulong));
     static assert(isSeedable!(RNG, ulong));
+    static assert(isForwardRange!RNG);
     //Mir interface
     static assert(isSaturatedRandomEngine!RNG);
     static assert(is(EngineReturnType!RNG == ulong));
@@ -888,4 +928,17 @@ template PhobosRandom(Engine) if (isRandomEngine!Engine && isPhobosUniformRNG!En
     gen.__ctor(1);
     rng.seed(1);
     assert(gen() == rng());
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random.engine.xorshift: Xorshift1024StarPhi;
+
+    // Test .save works for PhobosRandom.
+    auto gen1 = PhobosRandom!Xorshift1024StarPhi(123456789);
+    auto gen2 = gen1.save;
+    const a = gen1();
+    const b = gen1();
+    assert(a == gen2());
+    assert(b == gen2());
 }

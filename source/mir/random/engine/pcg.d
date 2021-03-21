@@ -86,14 +86,14 @@ alias pcg128_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward
  + Params:
  +  output = should be one of the above functions.
  +      Controls the output permutation of the state.
- +  stream = one of unique, none, oneseq, specific.
+ +  streamType = one of unique, none, oneseq, specific.
  +      Controls the Increment of the LCG portion of the PCG.
  +  output_previous = if true then the pre-advance version (increasing instruction-level parallelism)
  +      if false then use the post-advance version (reducing register pressure)
  +  mult_ = optionally set the multiplier for the LCG.
  +/
 struct PermutedCongruentialEngine(alias output,        // Output function
-                                  stream_t stream,     // The stream type
+                                  stream_t streamType, // The stream type
                                   bool output_previous,
                                   mult_...) if (mult_.length <= 1)
 {
@@ -114,13 +114,13 @@ struct PermutedCongruentialEngine(alias output,        // Output function
         
     @disable this(this);
     @disable this();
-    static if (stream == stream_t.none)
+    static if (streamType == stream_t.none)
         mixin no_stream!Uint;
-    else static if (stream == stream_t.unique)
+    else static if (streamType == stream_t.unique)
         mixin unique_stream!Uint;
-    else static if (stream == stream_t.specific)
+    else static if (streamType == stream_t.specific)
         mixin specific_stream!Uint;
-    else static if (stream == stream_t.oneseq)
+    else static if (streamType == stream_t.oneseq)
         mixin oneseq_stream!Uint;
     else
         static assert(0);
@@ -226,7 +226,8 @@ public:
         /++
         Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
         Phobos library methods). Presents this RNG as an InputRange.
-        Only available if `output_previous == true`.
+        Only available if `output_previous == true`. `save` is available when
+        `streamType` is `stream_t.none` or `stream_t.oneseq`.
 
         The reason that this is enabled when `output_previous == true` is because
         `front` can be implemented without additional cost.
@@ -246,6 +247,15 @@ public:
         void popFront()() { state = bump(state); }
         /// ditto
         void seed()(Uint seed) { this.__ctor(seed); }
+        /// ditto
+        static if (streamType == stream_t.none || streamType == stream_t.oneseq)
+        @property typeof(this) save()() const
+        {
+            typeof(return) result = void;
+            foreach (i, e; this.tupleof)
+                result.tupleof[i] = e;
+            return result;
+        }
     }
 }
 
@@ -255,6 +265,7 @@ public:
     //can be used as Phobos-style randoms.
     import std.meta: AliasSeq;
     import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    import std.range.primitives: isForwardRange;
     foreach(RNG; AliasSeq!(pcg32, pcg32_oneseq, pcg32_fast,
                            pcg32_once_insecure, pcg32_oneseq_once_insecure,
                            pcg64_once_insecure, pcg64_oneseq_once_insecure))
@@ -263,12 +274,22 @@ public:
         static assert(isSeedable!(RNG, RNG.Uint));
         auto gen1 = RNG(1);
         auto gen2 = RNG(2);
+        static if (__traits(hasMember, RNG, "save"))
+        {
+            static assert(isForwardRange!RNG);
+            auto gen3 = gen1.save;
+        }
         gen2.seed(1);
         assert(gen1 == gen2);
         immutable a = gen1.front;
         gen1.popFront();
         assert(a == gen2());
         assert(gen1.front == gen2());
+        static if (is(typeof(gen3)))
+        {
+            assert(a == gen3());
+            assert(gen1.front == gen3());
+        }
     }
 
     foreach(RNG; AliasSeq!(pcg32_unique))

@@ -74,16 +74,21 @@ private void testIsPhobosStyleRandom(RNG)()
     //Test RNG can be used as a Phobos-style random.
     alias UIntType = typeof(RNG.init());
     import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    import std.range: isForwardRange;
     static assert(isPhobosUniformRNG!(RNG, UIntType));
     static assert(isSeedable!(RNG, UIntType));
+    static assert(isForwardRange!RNG);
     auto gen1 = RNG(1);
     auto gen2 = RNG(2);
+    auto gen3 = gen1.save;
     gen2.seed(1);
     assert(gen1 == gen2);
     immutable a = gen1.front;
     gen1.popFront();
     assert(a == gen2());
     assert(gen1.front == gen2());
+    assert(a == gen3());
+    assert(gen1.front == gen3());
 }
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -379,6 +384,14 @@ if ((is(UIntType == uint) || is(UIntType == ulong))
     {
         this.__ctor(x0);
     }
+    /// ditto
+    @property typeof(this) save()() const
+    {
+        typeof(return) copy = void;
+        foreach (i, ref fld; this.tupleof)
+            copy.tupleof[i] = fld;
+        return copy;
+    }
 }
 
 /++
@@ -516,6 +529,14 @@ struct Xoroshiro128Plus
     void seed()(ulong x0)
     {
         this.__ctor(x0);
+    }
+    /// ditto
+    @property typeof(this) save()() const
+    {
+        typeof(return) copy = void;
+        foreach (i, ref fld; this.tupleof)
+            copy.tupleof[i] = fld;
+        return copy;
     }
 }
 

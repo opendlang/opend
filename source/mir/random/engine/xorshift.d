@@ -634,24 +634,6 @@ alias Xorshift64Star32 = XorshiftStarEngine!(ulong,64,12,25,27,26858216577363387
     assert(x == 3988833114);
 }
 
-version(mir_random_test) version(unittest)
-private void testIsPhobosStyleRandom(RNG)()
-{
-    //Test RNG can be used as a Phobos-style random.
-    alias UIntType = typeof(RNG.init());
-    import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
-    static assert(isPhobosUniformRNG!(RNG, UIntType));
-    static assert(isSeedable!(RNG, UIntType));
-    auto gen1 = RNG(1);
-    auto gen2 = RNG(2);
-    gen2.seed(1);
-    assert(gen1 == gen2);
-    immutable a = gen1.front;
-    gen1.popFront();
-    assert(a == gen2());
-    assert(gen1.front == gen2());
-}
-
 // Verify that code rewriting has not changed algorithm results.
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
