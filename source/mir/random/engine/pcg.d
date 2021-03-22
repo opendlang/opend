@@ -226,11 +226,12 @@ public:
         /++
         Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
         Phobos library methods). Presents this RNG as an InputRange.
-        Only available if `output_previous == true`. `save` is available when
-        `streamType` is `stream_t.none` or `stream_t.oneseq`.
+        Only available if `output_previous == true`.
 
         The reason that this is enabled when `output_previous == true` is because
         `front` can be implemented without additional cost.
+
+        `save` is implemented if `streamType` is not [stream_t.unique].
 
         This struct disables its default copy constructor and so will only work with
         Phobos functions that "do the right thing" and take RNGs by reference and
@@ -248,7 +249,7 @@ public:
         /// ditto
         void seed()(Uint seed) { this.__ctor(seed); }
         /// ditto
-        static if (streamType == stream_t.none || streamType == stream_t.oneseq)
+        static if (streamType != stream_t.unique)
         @property typeof(this) save()() const
         {
             typeof(return) result = void;
@@ -272,24 +273,18 @@ public:
     {
         static assert(isPhobosUniformRNG!(RNG, typeof(RNG.max)));
         static assert(isSeedable!(RNG, RNG.Uint));
+        static assert(isForwardRange!RNG);
         auto gen1 = RNG(1);
         auto gen2 = RNG(2);
-        static if (__traits(hasMember, RNG, "save"))
-        {
-            static assert(isForwardRange!RNG);
-            auto gen3 = gen1.save;
-        }
+        auto gen3 = gen1.save;
         gen2.seed(1);
         assert(gen1 == gen2);
         immutable a = gen1.front;
         gen1.popFront();
         assert(a == gen2());
         assert(gen1.front == gen2());
-        static if (is(typeof(gen3)))
-        {
-            assert(a == gen3());
-            assert(gen1.front == gen3());
-        }
+        assert(a == gen3());
+        assert(gen1.front == gen3());
     }
 
     foreach(RNG; AliasSeq!(pcg32_unique))
@@ -434,9 +429,7 @@ mixin template specific_stream(Uint)
     ///
     Uint inc_ = default_increment!Uint;
     ///
-    @property Uint increment()() { return inc_; }
-    ///
-    @property void increment()(Uint u) { inc_ = u;}
+    alias increment = inc_;
     ///
     enum can_specify_stream = true;
     ///
