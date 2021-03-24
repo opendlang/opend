@@ -168,9 +168,9 @@ template to(T)
                     return idup(arg);
             }
             else
-            static if (is(I : const(C)[], C) && is(T : C[]))
+            static if (is(I : const(D)[], D) && is(T : D[]))
             {
-                static if (is(I : C[]))
+                static if (is(I : D[]))
                     return arg;
                 else
                     return dup(arg);
