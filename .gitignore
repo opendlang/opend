@@ -11,3 +11,4 @@ compile_commands.json
 .reggae
 .ninja_deps
 .ninja_log
+*.lst
