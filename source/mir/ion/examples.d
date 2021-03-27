@@ -621,3 +621,69 @@ unittest
     assert(s.a == 5);
     assert(serializeJson(s) == `{"a":"str_str_str_str_str"}`);
 }
+
+///
+@safe pure
+unittest
+{
+    static struct Toto  
+    {
+        import mir.ndslice.slice: Slice;
+
+        Slice!(int*, 2) a;
+        Slice!(int*, 1) b;
+
+        this(int x) @safe pure nothrow
+        {
+            import mir.ndslice.topology: iota, repeat;
+            import mir.ndslice.allocation: slice;
+
+            a = [2, 3].iota!int.slice;
+            b = repeat(x, [2]).slice;
+        }
+    }
+
+    auto toto = Toto(5);
+
+    import mir.ion.ser.json: serializeJson;
+    import mir.ion.deser.json: deserializeJson;
+
+    auto description = toto.serializeJson!Toto;
+    assert(description == q{{"a":[[0,1,2],[3,4,5]],"b":[5,5]}});
+    assert(toto == description.deserializeJson!Toto);
+}
+
+///
+@safe pure @nogc
+unittest
+{
+    static struct Toto  
+    {
+        import mir.ndslice.slice: Slice;
+        import mir.rc.array: RCI;
+
+        Slice!(RCI!int, 2) a;
+        Slice!(RCI!int, 1) b;
+
+        this(int x) @safe pure nothrow @nogc
+        {
+            import mir.ndslice.topology: iota, repeat;
+            import mir.ndslice.allocation: rcslice;
+
+            a = [2, 3].iota!int.rcslice;
+            b = repeat(x, [2]).rcslice;
+        }
+    }
+
+    auto toto = Toto(5);
+
+    import mir.ion.ser.json: serializeJson;
+    import mir.ion.deser.json: deserializeJson;
+    import mir.appender: ScopedBuffer;
+
+    ScopedBuffer!char buffer;
+    serializeJson(buffer, toto);
+    auto description = buffer.data;
+    assert(description == q{{"a":[[0,1,2],[3,4,5]],"b":[5,5]}});
+    assert(toto == description.deserializeJson!Toto);
+}

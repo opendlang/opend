@@ -124,7 +124,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     string deserializeValue(T)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value)
         if (!isFirstOrderSerdeType!T)
     {
-        import mir.rc.array: RCArray;
+        import mir.rc.array: RCArray, RCI;
+        import mir.ndslice.slice: Slice, SliceKind;
 
         static if (__traits(hasMember, value, "deserializeFromIon"))
         {
@@ -186,6 +187,58 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 return null;
             }
             return IonErrorCode.expectedListValue.ionErrorMsg;
+        }
+        else
+        static if (is(T == Slice!(D*, N, kind), D, size_t N, SliceKind kind))
+        {
+            import mir.ndslice.topology: asKindOf;
+
+            static if (N == 1)
+            {
+                import mir.ndslice.slice: sliced;
+
+                D[] array;
+                if (auto ret = deserializeValue(data, tableParams, array))
+                    return ret;
+                value = array.sliced.asKindOf!kind;
+                return null;
+            }
+            // TODO: create a single allocation algorithm
+            else
+            {
+                import mir.ndslice.fuse: fuse;
+
+                Slice!(D*, N - 1)[] array;
+                if (auto ret = deserializeValue(data, tableParams, array))
+                    return ret;
+                value = array.fuse.asKindOf!kind;
+                return null;
+            }
+        }
+        else
+        static if (is(T == Slice!(RCI!D, N, kind), D, size_t N, SliceKind kind))
+        {
+            import mir.ndslice.topology: asKindOf;
+
+            static if (N == 1)
+            {
+                RCArray!D array;
+                if (auto ret = deserializeValue(data, tableParams, array))
+                    return ret;
+                value = array.moveToSlice.asKindOf!kind;
+                return null;
+            }
+            // TODO: create a single allocation algorithm
+            else
+            {
+                import mir.ndslice.fuse: rcfuse;
+
+                RCArray!(Slice!(RCI!D, N - 1)) array;
+                if (auto ret = deserializeValue(data, tableParams, array))
+                    return ret;
+                value = array.moveToSlice.rcfuse.asKindOf!kind;
+                return null;
+            }
         }
         else
         static if (is(T == RCArray!D, D))
