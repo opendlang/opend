@@ -7,6 +7,11 @@ targetPath "bin"
 
 
 configuration "library" {
+    dflags "-preview=dip25" "-preview=dip1000" "-preview=dip1008"
+}
+
+configuration "nodips" {
+
 }
 
 
