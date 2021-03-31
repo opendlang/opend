@@ -3,7 +3,6 @@ taggedalgebraic_src = [
 	'taggedalgebraic.d',
 	'taggedunion.d',
 	'visit.d',
-	'package.d'
 ]
 
 # https://github.com/mesonbuild/meson/issues/6862
