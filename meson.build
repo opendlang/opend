@@ -1,5 +1,5 @@
 project('taggedalgebraic', 'd',
-	meson_version: '>=0.50',
+	meson_version: '>=0.54',
 	version: '0.11.20'
 )
 
@@ -16,3 +16,10 @@ taggedalgebraic_dep = declare_dependency(
 	include_directories: include_directories('source'),
 	link_with: taggedalgebraic_lib
 )
+
+taggedalgebraic_source_dep = declare_dependency(
+	version: project_version,
+	include_directories: '../'
+)
+
+meson.override_dependency('taggedalgebraic', taggedalgebraic_dep)
