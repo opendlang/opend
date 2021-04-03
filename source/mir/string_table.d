@@ -59,33 +59,64 @@ struct MirStringTable(U, C = char)
             auto low = table[key.length] + 0u;
             auto high = table[key.length + 1] + 0u;
             auto items = sortedKeys.ptr;
-            while (low < high)
+            if (low < high)
             {
-                auto mid = (low + high) / 2;
-
-                import core.stdc.string: memcmp;
-                int r = void;
-
-                if (__ctfe)
-                    r = __cmp(key, items[mid]);
-                else
-                version (BigEndian)
-                    r = memcmp(key.ptr, items[mid].ptr, key.length);
-                else
-                static if (C.sizeof == 1)
-                    r = memcmp(key.ptr, items[mid].ptr, key.length);
-                else
-                    r = __cmp(key, items[mid]);
-
-                if (r == 0)
+                if (key.length == 0)
                 {
-                    index = mid;
+                    index = 0;
                     return true;
                 }
-                if (r > 0)
-                    low = mid + 1;
-                else
-                    high = mid;
+                L: do {
+                    auto mid = (low + high) / 2;
+
+                    version (all)
+                    {
+                        import core.stdc.string: memcmp;
+                        int r = void;
+
+                        if (__ctfe)
+                            r = __cmp(key, items[mid]);
+                        else
+                        version (BigEndian)
+                            r = memcmp(key.ptr, items[mid].ptr, key.length);
+                        else
+                        static if (C.sizeof == 1)
+                            r = memcmp(key.ptr, items[mid].ptr, key.length);
+                        else
+                            r = __cmp(key, items[mid]);
+
+                        if (r == 0)
+                        {
+                            index = mid;
+                            return true;
+                        }
+                        if (r > 0)
+                            low = mid + 1;
+                        else
+                            high = mid;
+                    }
+                    else
+                    {
+                        size_t i;
+                        auto value = items[mid];
+                        do {
+                            if (key[i] < value[i])
+                            {
+                                high = mid;
+                                continue L;
+                            }
+                            else
+                            if (key[i] > value[i])
+                            {
+                                low = mid + 1;
+                                continue L;
+                            }
+                        } while (++i < key.length);
+                        index = mid;
+                        return true;
+                    }
+                }
+                while(low < high);
             }
         }
         return false;
@@ -153,33 +184,64 @@ struct MirStringTable(size_t length, size_t maxKeyLength, bool caseInsensetive =
             auto low = table[key.length] + 0u;
             auto high = table[key.length + 1] + 0u;
             auto items = sortedKeys.ptr;
-            while (low < high)
+            if (low < high)
             {
-                auto mid = (low + high) / 2;
-
-                import core.stdc.string: memcmp;
-                int r = void;
-
-                if (__ctfe)
-                    r = __cmp(key, items[mid]);
-                else
-                version (BigEndian)
-                    r = memcmp(key.ptr, items[mid].ptr, key.length);
-                else
-                static if (C.sizeof == 1)
-                    r = memcmp(key.ptr, items[mid].ptr, key.length);
-                else
-                    r = __cmp(key, items[mid]);
-
-                if (r == 0)
+                if (key.length == 0)
                 {
-                    index = mid;
+                    index = 0;
                     return true;
                 }
-                if (r > 0)
-                    low = mid + 1;
-                else
-                    high = mid;
+                L: do {
+                    auto mid = (low + high) / 2;
+
+                    static if (maxKeyLength >= 16)
+                    {
+                        import core.stdc.string: memcmp;
+                        int r = void;
+
+                        if (__ctfe)
+                            r = __cmp(key, items[mid]);
+                        else
+                        version (BigEndian)
+                            r = memcmp(key.ptr, items[mid].ptr, key.length);
+                        else
+                        static if (C.sizeof == 1)
+                            r = memcmp(key.ptr, items[mid].ptr, key.length);
+                        else
+                            r = __cmp(key, items[mid]);
+
+                        if (r == 0)
+                        {
+                            index = mid;
+                            return true;
+                        }
+                        if (r > 0)
+                            low = mid + 1;
+                        else
+                            high = mid;
+                    }
+                    else
+                    {
+                        size_t i;
+                        auto value = items[mid];
+                        do {
+                            if (key[i] < value[i])
+                            {
+                                high = mid;
+                                continue L;
+                            }
+                            else
+                            if (key[i] > value[i])
+                            {
+                                low = mid + 1;
+                                continue L;
+                            }
+                        } while (++i < key.length);
+                        index = mid;
+                        return true;
+                    }
+                }
+                while(low < high);
             }
         }
         return false;

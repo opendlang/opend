@@ -818,8 +818,8 @@ struct Algebraic(_Types...)
         if (allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
         import core.lifetime: move;
-        static if (is(RetTypes == _Types))
-            this = move(ret);
+        static if (is(RhsTypes == _Types))
+            this = move(rhs);
         else
         {
             switch (rhs._identifier_)
