@@ -35,7 +35,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 173;
+enum VK_HEADER_VERSION = 174;
 
 enum VK_NULL_HANDLE = null;
 
@@ -89,7 +89,7 @@ mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkCommandPool} );
 
 enum VK_ATTACHMENT_UNUSED = (~0U);
 enum VK_FALSE = 0;
-enum VK_LOD_CLAMP_NONE = 1000.0f;
+enum VK_LOD_CLAMP_NONE = 1000.0F;
 enum VK_QUEUE_FAMILY_IGNORED = (~0U);
 enum VK_REMAINING_ARRAY_LAYERS = (~0U);
 enum VK_REMAINING_MIP_LEVELS = (~0U);
@@ -5108,7 +5108,7 @@ mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDescriptorUpdateTemplate} );
 
 enum VK_MAX_DEVICE_GROUP_SIZE = 32;
 enum VK_LUID_SIZE = 8;
-enum VK_QUEUE_FAMILY_EXTERNAL = (~0U-1);
+enum VK_QUEUE_FAMILY_EXTERNAL = (~1U);
 
 enum VkPointClippingBehavior {
     VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES                   = 0,
@@ -8181,13 +8181,13 @@ enum VkPipelineStageFlagBits2KHR : VkPipelineStageFlags2KHR {
     VK_PIPELINE_STAGE_2_HOST_BIT_KHR                                     = 0x00004000,
     VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT_KHR                             = 0x00008000,
     VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR                             = 0x00010000,
-    VK_PIPELINE_STAGE_2_COPY_BIT_KHR                                     = 0x100000000UL,
-    VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR                                  = 0x200000000UL,
-    VK_PIPELINE_STAGE_2_BLIT_BIT_KHR                                     = 0x400000000UL,
-    VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR                                    = 0x800000000UL,
-    VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR                              = 0x1000000000UL,
-    VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR                   = 0x2000000000UL,
-    VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR                = 0x4000000000UL,
+    VK_PIPELINE_STAGE_2_COPY_BIT_KHR                                     = 0x100000000,
+    VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR                                  = 0x200000000,
+    VK_PIPELINE_STAGE_2_BLIT_BIT_KHR                                     = 0x400000000,
+    VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR                                    = 0x800000000,
+    VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR                              = 0x1000000000,
+    VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR                   = 0x2000000000,
+    VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR                = 0x4000000000,
     VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT                       = 0x01000000,
     VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT                    = 0x00040000,
     VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV                        = 0x00020000,
@@ -8262,9 +8262,9 @@ enum VkAccessFlagBits2KHR : VkAccessFlags2KHR {
     VK_ACCESS_2_HOST_WRITE_BIT_KHR                               = 0x00004000,
     VK_ACCESS_2_MEMORY_READ_BIT_KHR                              = 0x00008000,
     VK_ACCESS_2_MEMORY_WRITE_BIT_KHR                             = 0x00010000,
-    VK_ACCESS_2_SHADER_SAMPLED_READ_BIT_KHR                      = 0x100000000UL,
-    VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR                      = 0x200000000UL,
-    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR                     = 0x400000000UL,
+    VK_ACCESS_2_SHADER_SAMPLED_READ_BIT_KHR                      = 0x100000000,
+    VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR                      = 0x200000000,
+    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR                     = 0x400000000,
     VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT                 = 0x02000000,
     VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT          = 0x04000000,
     VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT         = 0x08000000,
@@ -9592,7 +9592,7 @@ enum VK_EXT_queue_family_foreign = 1;
 
 enum VK_EXT_QUEUE_FAMILY_FOREIGN_SPEC_VERSION = 1;
 enum VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME = "VK_EXT_queue_family_foreign";
-enum VK_QUEUE_FAMILY_FOREIGN_EXT = (~0U-2);
+enum VK_QUEUE_FAMILY_FOREIGN_EXT = (~2U);
 
 
 // - VK_EXT_debug_utils -
