@@ -33,6 +33,7 @@ enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
 enum NV_acquire_winrt_display;
 enum EXT_directfb_surface;
+enum QNX_screen_surface;
 
 
 /// extensions to a specific platform are grouped in these enum sequences
@@ -51,6 +52,7 @@ alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
 alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface );
 alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
 alias USE_PLATFORM_DIRECTFB_EXT    = AliasSeq!( EXT_directfb_surface );
+alias USE_PLATFORM_SCREEN_QNX      = AliasSeq!( QNX_screen_surface );
 
 
 
@@ -680,6 +682,27 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, IDirectFB* dfb );
         }
 
+        // VK_QNX_screen_surface : types and function pointer type aliases
+        else static if( __traits( isSame, extension, QNX_screen_surface )) {
+            enum VK_QNX_screen_surface = 1;
+
+            enum VK_QNX_SCREEN_SURFACE_SPEC_VERSION = 1;
+            enum VK_QNX_SCREEN_SURFACE_EXTENSION_NAME = "VK_QNX_screen_surface";
+            
+            alias VkScreenSurfaceCreateFlagsQNX = VkFlags;
+            
+            struct VkScreenSurfaceCreateInfoQNX {
+                VkStructureType                sType = VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX;
+                const( void )*                 pNext;
+                VkScreenSurfaceCreateFlagsQNX  flags;
+                const( _screen_context )*      context;
+                const( _screen_window )*       window;
+            }
+            
+            alias PFN_vkCreateScreenSurfaceQNX                                          = VkResult  function( VkInstance instance, const( VkScreenSurfaceCreateInfoQNX )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceScreenPresentationSupportQNX                   = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, const( _screen_window )* window );
+        }
+
         __gshared {
 
             // VK_KHR_xlib_surface : function pointer decelerations
@@ -795,6 +818,12 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
                 PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
             }
+
+            // VK_QNX_screen_surface : function pointer decelerations
+            else static if( __traits( isSame, extension, QNX_screen_surface )) {
+                PFN_vkCreateScreenSurfaceQNX                                          vkCreateScreenSurfaceQNX;
+                PFN_vkGetPhysicalDeviceScreenPresentationSupportQNX                   vkGetPhysicalDeviceScreenPresentationSupportQNX;
+            }
         }
     }
 
@@ -898,6 +927,12 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 vkCreateDirectFBSurfaceEXT                                        = cast( PFN_vkCreateDirectFBSurfaceEXT                                        ) vkGetInstanceProcAddr( instance, "vkCreateDirectFBSurfaceEXT" );
                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 = cast( PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceDirectFBPresentationSupportEXT" );
+            }
+
+            // VK_QNX_screen_surface : load instance level function definitions
+            else static if( __traits( isSame, extension, QNX_screen_surface )) {
+                vkCreateScreenSurfaceQNX                                          = cast( PFN_vkCreateScreenSurfaceQNX                                          ) vkGetInstanceProcAddr( instance, "vkCreateScreenSurfaceQNX" );
+                vkGetPhysicalDeviceScreenPresentationSupportQNX                   = cast( PFN_vkGetPhysicalDeviceScreenPresentationSupportQNX                   ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceScreenPresentationSupportQNX" );
             }
         }
     }
@@ -1224,6 +1259,12 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
                 PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
+            }
+
+            // VK_QNX_screen_surface : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, QNX_screen_surface )) {
+                PFN_vkCreateScreenSurfaceQNX                                          vkCreateScreenSurfaceQNX;
+                PFN_vkGetPhysicalDeviceScreenPresentationSupportQNX                   vkGetPhysicalDeviceScreenPresentationSupportQNX;
             }
         }
     }
