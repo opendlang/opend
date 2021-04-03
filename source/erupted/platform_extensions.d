@@ -144,8 +144,6 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_android_surface )) {
             enum VK_KHR_android_surface = 1;
 
-            alias ANativeWindow = ANativeWindow;
-            
             enum VK_KHR_ANDROID_SURFACE_SPEC_VERSION = 6;
             enum VK_KHR_ANDROID_SURFACE_EXTENSION_NAME = "VK_KHR_android_surface";
             
@@ -495,8 +493,6 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
             enum VK_ANDROID_external_memory_android_hardware_buffer = 1;
 
-            alias AHardwareBuffer = AHardwareBuffer;
-            
             enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 3;
             enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME = "VK_ANDROID_external_memory_android_hardware_buffer";
             
@@ -586,8 +582,6 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_metal_surface )) {
             enum VK_EXT_metal_surface = 1;
 
-            alias CAMetalLayer = CAMetalLayer;
-            
             enum VK_EXT_METAL_SURFACE_SPEC_VERSION = 1;
             enum VK_EXT_METAL_SURFACE_EXTENSION_NAME = "VK_EXT_metal_surface";
             

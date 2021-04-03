@@ -280,6 +280,16 @@ extern( System ) {
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
     alias PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations );
 
+    // VK_KHR_synchronization2
+    alias PFN_vkCmdSetEvent2KHR                                                 = void      function( VkCommandBuffer commandBuffer, VkEvent event, const( VkDependencyInfoKHR )* pDependencyInfo );
+    alias PFN_vkCmdResetEvent2KHR                                               = void      function( VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR stageMask );
+    alias PFN_vkCmdWaitEvents2KHR                                               = void      function( VkCommandBuffer commandBuffer, uint32_t eventCount, const( VkEvent )* pEvents, const( VkDependencyInfoKHR )* pDependencyInfos );
+    alias PFN_vkCmdPipelineBarrier2KHR                                          = void      function( VkCommandBuffer commandBuffer, const( VkDependencyInfoKHR )* pDependencyInfo );
+    alias PFN_vkCmdWriteTimestamp2KHR                                           = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkQueryPool queryPool, uint32_t query );
+    alias PFN_vkQueueSubmit2KHR                                                 = VkResult  function( VkQueue queue, uint32_t submitCount, const( VkSubmitInfo2KHR )* pSubmits, VkFence fence );
+    alias PFN_vkCmdWriteBufferMarker2AMD                                        = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
+    alias PFN_vkGetQueueCheckpointData2NV                                       = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData );
+
     // VK_KHR_copy_commands2
     alias PFN_vkCmdCopyBuffer2KHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkCopyBufferInfo2KHR )* pCopyBufferInfo );
     alias PFN_vkCmdCopyImage2KHR                                                = void      function( VkCommandBuffer commandBuffer, const( VkCopyImageInfo2KHR )* pCopyImageInfo );
@@ -769,6 +779,16 @@ __gshared {
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_synchronization2
+    PFN_vkCmdSetEvent2KHR                                                 vkCmdSetEvent2KHR;
+    PFN_vkCmdResetEvent2KHR                                               vkCmdResetEvent2KHR;
+    PFN_vkCmdWaitEvents2KHR                                               vkCmdWaitEvents2KHR;
+    PFN_vkCmdPipelineBarrier2KHR                                          vkCmdPipelineBarrier2KHR;
+    PFN_vkCmdWriteTimestamp2KHR                                           vkCmdWriteTimestamp2KHR;
+    PFN_vkQueueSubmit2KHR                                                 vkQueueSubmit2KHR;
+    PFN_vkCmdWriteBufferMarker2AMD                                        vkCmdWriteBufferMarker2AMD;
+    PFN_vkGetQueueCheckpointData2NV                                       vkGetQueueCheckpointData2NV;
 
     // VK_KHR_copy_commands2
     PFN_vkCmdCopyBuffer2KHR                                               vkCmdCopyBuffer2KHR;
@@ -1409,6 +1429,16 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+    // VK_KHR_synchronization2
+    vkCmdSetEvent2KHR                                 = cast( PFN_vkCmdSetEvent2KHR                                 ) vkGetInstanceProcAddr( instance, "vkCmdSetEvent2KHR" );
+    vkCmdResetEvent2KHR                               = cast( PFN_vkCmdResetEvent2KHR                               ) vkGetInstanceProcAddr( instance, "vkCmdResetEvent2KHR" );
+    vkCmdWaitEvents2KHR                               = cast( PFN_vkCmdWaitEvents2KHR                               ) vkGetInstanceProcAddr( instance, "vkCmdWaitEvents2KHR" );
+    vkCmdPipelineBarrier2KHR                          = cast( PFN_vkCmdPipelineBarrier2KHR                          ) vkGetInstanceProcAddr( instance, "vkCmdPipelineBarrier2KHR" );
+    vkCmdWriteTimestamp2KHR                           = cast( PFN_vkCmdWriteTimestamp2KHR                           ) vkGetInstanceProcAddr( instance, "vkCmdWriteTimestamp2KHR" );
+    vkQueueSubmit2KHR                                 = cast( PFN_vkQueueSubmit2KHR                                 ) vkGetInstanceProcAddr( instance, "vkQueueSubmit2KHR" );
+    vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarker2AMD" );
+    vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointData2NV" );
+
     // VK_KHR_copy_commands2
     vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetInstanceProcAddr( instance, "vkCmdCopyBuffer2KHR" );
     vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetInstanceProcAddr( instance, "vkCmdCopyImage2KHR" );
@@ -1812,6 +1842,16 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
+
+    // VK_KHR_synchronization2
+    vkCmdSetEvent2KHR                                 = cast( PFN_vkCmdSetEvent2KHR                                 ) vkGetDeviceProcAddr( device, "vkCmdSetEvent2KHR" );
+    vkCmdResetEvent2KHR                               = cast( PFN_vkCmdResetEvent2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdResetEvent2KHR" );
+    vkCmdWaitEvents2KHR                               = cast( PFN_vkCmdWaitEvents2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents2KHR" );
+    vkCmdPipelineBarrier2KHR                          = cast( PFN_vkCmdPipelineBarrier2KHR                          ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier2KHR" );
+    vkCmdWriteTimestamp2KHR                           = cast( PFN_vkCmdWriteTimestamp2KHR                           ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp2KHR" );
+    vkQueueSubmit2KHR                                 = cast( PFN_vkQueueSubmit2KHR                                 ) vkGetDeviceProcAddr( device, "vkQueueSubmit2KHR" );
+    vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
+    vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
 
     // VK_KHR_copy_commands2
     vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2KHR" );

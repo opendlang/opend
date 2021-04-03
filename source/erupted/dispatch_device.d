@@ -265,6 +265,16 @@ struct DispatchDevice {
         vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
         vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+        // VK_KHR_synchronization2
+        vkCmdSetEvent2KHR                                 = cast( PFN_vkCmdSetEvent2KHR                                 ) vkGetDeviceProcAddr( device, "vkCmdSetEvent2KHR" );
+        vkCmdResetEvent2KHR                               = cast( PFN_vkCmdResetEvent2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdResetEvent2KHR" );
+        vkCmdWaitEvents2KHR                               = cast( PFN_vkCmdWaitEvents2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents2KHR" );
+        vkCmdPipelineBarrier2KHR                          = cast( PFN_vkCmdPipelineBarrier2KHR                          ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier2KHR" );
+        vkCmdWriteTimestamp2KHR                           = cast( PFN_vkCmdWriteTimestamp2KHR                           ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp2KHR" );
+        vkQueueSubmit2KHR                                 = cast( PFN_vkQueueSubmit2KHR                                 ) vkGetDeviceProcAddr( device, "vkQueueSubmit2KHR" );
+        vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
+        vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
+
         // VK_KHR_copy_commands2
         vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2KHR" );
         vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdCopyImage2KHR" );
@@ -673,6 +683,14 @@ struct DispatchDevice {
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
     VkResult  GetPipelineExecutableStatisticsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics ) { return vkGetPipelineExecutableStatisticsKHR( vkDevice, pExecutableInfo, pStatisticCount, pStatistics ); }
     VkResult  GetPipelineExecutableInternalRepresentationsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations ) { return vkGetPipelineExecutableInternalRepresentationsKHR( vkDevice, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations ); }
+
+    // VK_KHR_synchronization2
+    void      CmdSetEvent2KHR( VkEvent event, const( VkDependencyInfoKHR )* pDependencyInfo ) { vkCmdSetEvent2KHR( commandBuffer, event, pDependencyInfo ); }
+    void      CmdResetEvent2KHR( VkEvent event, VkPipelineStageFlags2KHR stageMask ) { vkCmdResetEvent2KHR( commandBuffer, event, stageMask ); }
+    void      CmdWaitEvents2KHR( uint32_t eventCount, const( VkEvent )* pEvents, const( VkDependencyInfoKHR )* pDependencyInfos ) { vkCmdWaitEvents2KHR( commandBuffer, eventCount, pEvents, pDependencyInfos ); }
+    void      CmdPipelineBarrier2KHR( const( VkDependencyInfoKHR )* pDependencyInfo ) { vkCmdPipelineBarrier2KHR( commandBuffer, pDependencyInfo ); }
+    void      CmdWriteTimestamp2KHR( VkPipelineStageFlags2KHR stage, VkQueryPool queryPool, uint32_t query ) { vkCmdWriteTimestamp2KHR( commandBuffer, stage, queryPool, query ); }
+    void      CmdWriteBufferMarker2AMD( VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarker2AMD( commandBuffer, stage, dstBuffer, dstOffset, marker ); }
 
     // VK_KHR_copy_commands2
     void      CmdCopyBuffer2KHR( const( VkCopyBufferInfo2KHR )* pCopyBufferInfo ) { vkCmdCopyBuffer2KHR( commandBuffer, pCopyBufferInfo ); }
@@ -1128,6 +1146,16 @@ struct DispatchDevice {
     PFN_vkGetPipelineExecutablePropertiesKHR              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR              vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_synchronization2
+    PFN_vkCmdSetEvent2KHR                                 vkCmdSetEvent2KHR;
+    PFN_vkCmdResetEvent2KHR                               vkCmdResetEvent2KHR;
+    PFN_vkCmdWaitEvents2KHR                               vkCmdWaitEvents2KHR;
+    PFN_vkCmdPipelineBarrier2KHR                          vkCmdPipelineBarrier2KHR;
+    PFN_vkCmdWriteTimestamp2KHR                           vkCmdWriteTimestamp2KHR;
+    PFN_vkQueueSubmit2KHR                                 vkQueueSubmit2KHR;
+    PFN_vkCmdWriteBufferMarker2AMD                        vkCmdWriteBufferMarker2AMD;
+    PFN_vkGetQueueCheckpointData2NV                       vkGetQueueCheckpointData2NV;
 
     // VK_KHR_copy_commands2
     PFN_vkCmdCopyBuffer2KHR                               vkCmdCopyBuffer2KHR;
