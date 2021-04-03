@@ -33,6 +33,8 @@ enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
 enum NV_acquire_winrt_display;
 enum EXT_directfb_surface;
+enum FUCHSIA_external_memory;
+enum FUCHSIA_external_semaphore;
 enum QNX_screen_surface;
 
 
@@ -49,7 +51,7 @@ alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
-alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface );
+alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface, FUCHSIA_external_memory, FUCHSIA_external_semaphore );
 alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
 alias USE_PLATFORM_DIRECTFB_EXT    = AliasSeq!( EXT_directfb_surface );
 alias USE_PLATFORM_SCREEN_QNX      = AliasSeq!( QNX_screen_surface );
@@ -682,6 +684,64 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, IDirectFB* dfb );
         }
 
+        // VK_FUCHSIA_external_memory : types and function pointer type aliases
+        else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+            enum VK_FUCHSIA_external_memory = 1;
+
+            enum VK_FUCHSIA_EXTERNAL_MEMORY_SPEC_VERSION = 1;
+            enum VK_FUCHSIA_EXTERNAL_MEMORY_EXTENSION_NAME = "VK_FUCHSIA_external_memory";
+            
+            struct VkImportMemoryZirconHandleInfoFUCHSIA {
+                VkStructureType                     sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA;
+                const( void )*                      pNext;
+                VkExternalMemoryHandleTypeFlagBits  handleType;
+                zx_handle_t                         handle;
+            }
+            
+            struct VkMemoryZirconHandlePropertiesFUCHSIA {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA;
+                void*            pNext;
+                uint32_t         memoryTypeBits;
+            }
+            
+            struct VkMemoryGetZirconHandleInfoFUCHSIA {
+                VkStructureType                     sType = VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
+                const( void )*                      pNext;
+                VkDeviceMemory                      memory;
+                VkExternalMemoryHandleTypeFlagBits  handleType;
+            }
+            
+            alias PFN_vkGetMemoryZirconHandleFUCHSIA                                    = VkResult  function( VkDevice device, const( VkMemoryGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle );
+            alias PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA                          = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties );
+        }
+
+        // VK_FUCHSIA_external_semaphore : types and function pointer type aliases
+        else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+            enum VK_FUCHSIA_external_semaphore = 1;
+
+            enum VK_FUCHSIA_EXTERNAL_SEMAPHORE_SPEC_VERSION = 1;
+            enum VK_FUCHSIA_EXTERNAL_SEMAPHORE_EXTENSION_NAME = "VK_FUCHSIA_external_semaphore";
+            
+            struct VkImportSemaphoreZirconHandleInfoFUCHSIA {
+                VkStructureType                        sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA;
+                const( void )*                         pNext;
+                VkSemaphore                            semaphore;
+                VkSemaphoreImportFlags                 flags;
+                VkExternalSemaphoreHandleTypeFlagBits  handleType;
+                zx_handle_t                            zirconHandle;
+            }
+            
+            struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
+                VkStructureType                        sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
+                const( void )*                         pNext;
+                VkSemaphore                            semaphore;
+                VkExternalSemaphoreHandleTypeFlagBits  handleType;
+            }
+            
+            alias PFN_vkImportSemaphoreZirconHandleFUCHSIA                              = VkResult  function( VkDevice device, const( VkImportSemaphoreZirconHandleInfoFUCHSIA )* pImportSemaphoreZirconHandleInfo );
+            alias PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 = VkResult  function( VkDevice device, const( VkSemaphoreGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle );
+        }
+
         // VK_QNX_screen_surface : types and function pointer type aliases
         else static if( __traits( isSame, extension, QNX_screen_surface )) {
             enum VK_QNX_screen_surface = 1;
@@ -817,6 +877,18 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
                 PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
+            }
+
+            // VK_FUCHSIA_external_memory : function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                PFN_vkGetMemoryZirconHandleFUCHSIA                                    vkGetMemoryZirconHandleFUCHSIA;
+                PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA                          vkGetMemoryZirconHandlePropertiesFUCHSIA;
+            }
+
+            // VK_FUCHSIA_external_semaphore : function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                PFN_vkImportSemaphoreZirconHandleFUCHSIA                              vkImportSemaphoreZirconHandleFUCHSIA;
+                PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 vkGetSemaphoreZirconHandleFUCHSIA;
             }
 
             // VK_QNX_screen_surface : function pointer decelerations
@@ -984,6 +1056,18 @@ mixin template Platform_Extensions( extensions... ) {
                 vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetInstanceProcAddr( instance, "vkReleaseFullScreenExclusiveModeEXT" );
                 vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModes2EXT" );
             }
+
+            // VK_FUCHSIA_external_memory : load instance based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                vkGetMemoryZirconHandleFUCHSIA                    = cast( PFN_vkGetMemoryZirconHandleFUCHSIA                    ) vkGetInstanceProcAddr( instance, "vkGetMemoryZirconHandleFUCHSIA" );
+                vkGetMemoryZirconHandlePropertiesFUCHSIA          = cast( PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA          ) vkGetInstanceProcAddr( instance, "vkGetMemoryZirconHandlePropertiesFUCHSIA" );
+            }
+
+            // VK_FUCHSIA_external_semaphore : load instance based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreZirconHandleFUCHSIA" );
+                vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreZirconHandleFUCHSIA" );
+            }
         }
     }
 
@@ -1033,6 +1117,18 @@ mixin template Platform_Extensions( extensions... ) {
                 vkAcquireFullScreenExclusiveModeEXT               = cast( PFN_vkAcquireFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
                 vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
                 vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+            }
+
+            // VK_FUCHSIA_external_memory : load device based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                vkGetMemoryZirconHandleFUCHSIA                    = cast( PFN_vkGetMemoryZirconHandleFUCHSIA                    ) vkGetDeviceProcAddr( device, "vkGetMemoryZirconHandleFUCHSIA" );
+                vkGetMemoryZirconHandlePropertiesFUCHSIA          = cast( PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA          ) vkGetDeviceProcAddr( device, "vkGetMemoryZirconHandlePropertiesFUCHSIA" );
+            }
+
+            // VK_FUCHSIA_external_semaphore : load device based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetDeviceProcAddr( device, "vkImportSemaphoreZirconHandleFUCHSIA" );
+                vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetDeviceProcAddr( device, "vkGetSemaphoreZirconHandleFUCHSIA" );
             }
         }
     }
@@ -1100,6 +1196,18 @@ mixin template Platform_Extensions( extensions... ) {
                     vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
                     vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
                 }
+
+                // VK_FUCHSIA_external_memory : load dispatch device member function definitions
+                else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                    vkGetMemoryZirconHandleFUCHSIA                    = cast( PFN_vkGetMemoryZirconHandleFUCHSIA                    ) vkGetDeviceProcAddr( device, "vkGetMemoryZirconHandleFUCHSIA" );
+                    vkGetMemoryZirconHandlePropertiesFUCHSIA          = cast( PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA          ) vkGetDeviceProcAddr( device, "vkGetMemoryZirconHandlePropertiesFUCHSIA" );
+                }
+
+                // VK_FUCHSIA_external_semaphore : load dispatch device member function definitions
+                else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                    vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetDeviceProcAddr( device, "vkImportSemaphoreZirconHandleFUCHSIA" );
+                    vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetDeviceProcAddr( device, "vkGetSemaphoreZirconHandleFUCHSIA" );
+                }
             }
         }
 
@@ -1141,6 +1249,18 @@ mixin template Platform_Extensions( extensions... ) {
                 VkResult  AcquireFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkAcquireFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
                 VkResult  ReleaseFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkReleaseFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
                 VkResult  GetDeviceGroupSurfacePresentModes2EXT( const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes ) { return vkGetDeviceGroupSurfacePresentModes2EXT( vkDevice, pSurfaceInfo, pModes ); }
+            }
+
+            // VK_FUCHSIA_external_memory : dispatch device convenience member functions
+            else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                VkResult  GetMemoryZirconHandleFUCHSIA( const( VkMemoryGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle ) { return vkGetMemoryZirconHandleFUCHSIA( vkDevice, pGetZirconHandleInfo, pZirconHandle ); }
+                VkResult  GetMemoryZirconHandlePropertiesFUCHSIA( VkExternalMemoryHandleTypeFlagBits handleType, zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties ) { return vkGetMemoryZirconHandlePropertiesFUCHSIA( vkDevice, handleType, zirconHandle, pMemoryZirconHandleProperties ); }
+            }
+
+            // VK_FUCHSIA_external_semaphore : dispatch device convenience member functions
+            else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                VkResult  ImportSemaphoreZirconHandleFUCHSIA( const( VkImportSemaphoreZirconHandleInfoFUCHSIA )* pImportSemaphoreZirconHandleInfo ) { return vkImportSemaphoreZirconHandleFUCHSIA( vkDevice, pImportSemaphoreZirconHandleInfo ); }
+                VkResult  GetSemaphoreZirconHandleFUCHSIA( const( VkSemaphoreGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle ) { return vkGetSemaphoreZirconHandleFUCHSIA( vkDevice, pGetZirconHandleInfo, pZirconHandle ); }
             }
         }
 
@@ -1259,6 +1379,18 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_directfb_surface )) {
                 PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
                 PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
+            }
+
+            // VK_FUCHSIA_external_memory : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
+                PFN_vkGetMemoryZirconHandleFUCHSIA                                    vkGetMemoryZirconHandleFUCHSIA;
+                PFN_vkGetMemoryZirconHandlePropertiesFUCHSIA                          vkGetMemoryZirconHandlePropertiesFUCHSIA;
+            }
+
+            // VK_FUCHSIA_external_semaphore : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
+                PFN_vkImportSemaphoreZirconHandleFUCHSIA                              vkImportSemaphoreZirconHandleFUCHSIA;
+                PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 vkGetSemaphoreZirconHandleFUCHSIA;
             }
 
             // VK_QNX_screen_surface : dispatch device member function pointer decelerations
