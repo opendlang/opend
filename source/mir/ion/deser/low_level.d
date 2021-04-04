@@ -32,7 +32,7 @@ package template isFirstOrderSerdeType(T)
 {
     import mir.serde: serdeGetFinalProxy;
 
-    static if (isAggregateType!T)
+    static if (is(T == struct) || is(T == union) || is(T == class) || is(T == interface))
     {
         static if (is(T : BigInt!maxSize64, size_t maxSize64))
             enum isFirstOrderSerdeType = true;
@@ -54,6 +54,9 @@ package template isFirstOrderSerdeType(T)
     else
     static if (isArray!T)
         enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T));
+    else
+    static if (is(T == V[K], K, V))
+        enum isFirstOrderSerdeType = false;
     else
     static if (is(T == serdeGetFinalProxy!T))
         enum isFirstOrderSerdeType = true;
@@ -89,7 +92,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow @nogc
     if (is(T == typeof(null)))
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
     return data == null ? IonErrorCode.none : IonErrorCode.expectedNullValue;
 }
 
@@ -193,7 +196,7 @@ version(mir_ion_test) unittest
     import mir.bignum.integer;
 
     auto data = IonValue([0x31, 0x07]).describe;
-    BigInt!256 value; // 256x64
+    BigInt!256 value = void; // 256x64
 
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value.sign);
@@ -242,9 +245,8 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
                 return error;
 
             import mir.bignum.decimal;
-            Decimal!256 decimal;
+            Decimal!256 decimal = void;
             DecimalExponentKey exponentKey;
-
 
             if (!decimal.fromStringImpl(ionValue, exponentKey))
                 return IonErrorCode.expectedFloatingValue;
@@ -293,7 +295,7 @@ IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSiz
     IonDescribedDecimal ionDescribedDecimal;
     if (auto error = ionValue.get(ionDescribedDecimal))
         return error;
-    return ionDescribedDecimal.getDecimal(value);
+    return ionDescribedDecimal.get(value);
 }
 
 ///
@@ -520,16 +522,23 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     alias E = Unqual!(ForeachType!T);
     if (data.descriptor.type == IonTypeCode.list)
     {
-        ScopedBuffer!E buffer;
-        if (auto error = deserializeListToScopedBuffer(data, buffer))
-            return error;
-        import std.array: uninitializedArray;
-        (()@trusted {
+        if (false)
+        {
+            ScopedBuffer!E buffer;
+            if (auto error = deserializeListToScopedBuffer(data, buffer))
+                return error;
+        }
+        return () @trusted {
+            import std.array: uninitializedArray;
+            ScopedBuffer!E buffer = void;
+            buffer.initialize;
+            if (auto error = deserializeListToScopedBuffer(data, buffer))
+                return error;
             auto ar = uninitializedArray!(E[])(buffer.length);
             buffer.moveDataAndEmplaceTo(ar);
             value = cast(T) ar;
-        })();
-        return IonErrorCode.none;
+            return IonErrorCode.none;
+        } ();
     }
     else
     if (data.descriptor.type == IonTypeCode.null_)

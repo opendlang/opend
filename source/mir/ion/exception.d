@@ -92,6 +92,14 @@ enum IonErrorCode
     invalidLocalSymbolTable,
     ///
     sharedSymbolTablesAreUnsupported,
+    ///
+    unableToOpenFile,
+    ///
+    eof,
+    ///
+    errorReadingFile,
+    ///
+    errorReadingStream,
 }
 
 ///
@@ -108,7 +116,7 @@ Params:
 Returns:
     corresponding error message
 +/
-string ionErrorMsg(IonErrorCode code) @property
+string ionErrorMsg()(IonErrorCode code) @property
 @safe pure nothrow @nogc
 {
     static immutable string[] msgs = [
@@ -153,6 +161,10 @@ string ionErrorMsg(IonErrorCode code) @property
         "symbol id is too large for the current symbol table",
         "invalid local symbol table",
         "shared symbol tables are unsupported",
+        "unable to open file",
+        "end of file",
+        "error reading file",
+        "error reading stream",
     ];
     return msgs[code - IonErrorCode.min];
 }
@@ -186,7 +198,7 @@ Params:
 Returns:
     $(LREF MirIonException)
 +/
-MirIonException ionException(IonErrorCode code) @property
+MirIonException ionException()(IonErrorCode code) @property
 @trusted pure nothrow @nogc
 {
     import mir.array.allocation: array;

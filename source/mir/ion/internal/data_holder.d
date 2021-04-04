@@ -46,23 +46,7 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     ///
     @disable this(this);
     ///
-    @disable this();
-
-    ///
-    this(size_t initialSize)
-        @trusted pure nothrow @nogc
-    {
-        if (initialSize > stackAllocatedLength)
-        {
-            import mir.internal.memory: malloc;
-            auto ptr = malloc(initialSize).validatePtr;
-            data = cast(ubyte[])ptr[0 .. initialSize];
-        }
-        else
-        {
-            data = stackData[];
-        }
-    }
+    // @disable this();
 
     ///
     ~this()
@@ -76,6 +60,13 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     }
 
     ///
+    void initialize() @trusted
+    {
+        data = stackData;
+        currentTapePosition = 0;
+    }
+
+    ///
     void extend(size_t newSize)
         @trusted pure nothrow @nogc
     {
@@ -84,16 +75,19 @@ struct IonTapeHolder(size_t stackAllocatedLength)
 
         if (newSize > data.length)
         {
+            import mir.utility: max;
+            newSize = max(newSize, data.length * 2);
+            sizediff_t shift;
             if (data.ptr != stackData.ptr)
             {
-                auto ptr = realloc(data.ptr, newSize).validatePtr;
-                data = cast(ubyte[])ptr[0 .. newSize];
+                auto ptr = cast(ubyte*) realloc(data.ptr, newSize).validatePtr;
+                data = ptr[0 .. newSize];
             }
             else
             {
-                auto ptr = malloc(newSize).validatePtr;
+                auto ptr = cast(ubyte*) malloc(newSize).validatePtr;
                 memcpy(ptr, stackData.ptr, stackData.length);
-                data = cast(ubyte[])ptr[0 .. newSize];
+                data = ptr[0 .. newSize];
             }
         }
     }

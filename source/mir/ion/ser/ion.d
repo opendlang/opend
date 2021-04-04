@@ -226,7 +226,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
 /++
 Ion serialization function.
 +/
-immutable(ubyte)[] serializeIon(T)(auto ref T value)
+immutable(ubyte)[] serializeIon(T)(auto ref T value) @safe
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
@@ -236,10 +236,10 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    alias TapeHolder = IonTapeHolder!(nMax * 8);
-    auto tapeHolder = TapeHolder(nMax * 8);
+    IonTapeHolder!(nMax * 8) tapeHolder;
+    tapeHolder.initialize;
     IonSymbolTable!true table;
-    auto serializer = IonSerializer!(TapeHolder, keys)(
+    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys)(
         ()@trusted { return &tapeHolder; }(),
         ()@trusted { return &table; }()
     );
@@ -505,8 +505,8 @@ void serializeIon(Appender, V)(ref Appender appender, auto ref V value)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.appender: ScopedBuffer;
-    // ScopedBuffer!char buffer;
+    import mir.format: stringBuf;
+    // stringBuf buffer;
     // static struct S { int a; }
     // serializeIon(buffer, S(4));
     // assert(buffer.data == `{"a":4}`);
@@ -528,10 +528,10 @@ template ionSerializer(string sep = "")
 ///
 @safe pure nothrow @nogc unittest
 {
-    // import mir.appender: ScopedBuffer;
+    // import mir.format: stringBuf;
     // import mir.bignum.integer;
 
-    // ScopedBuffer!char buffer;
+    // stringBuf buffer;
     // auto ser = ionSerializer((()@trusted=>&buffer)());
     // auto state0 = ser.structBegin;
 

@@ -1,6 +1,6 @@
 module mir.ion.internal.stage1;
 
-version(LDC) import ldc.attributes;
+version (LDC) import ldc.attributes;
 import mir.bitop;
 import mir.checkedint: addu;
 import mir.ion.internal.simd;
@@ -25,9 +25,10 @@ size_t stage1 (
     ref bool backwardEscapeBit,
     )
 {
+    version (LDC) pragma(inline, false);
     alias AliasSeq(T...) = T;
     alias params = AliasSeq!(n, vector, pairedMask, backwardEscapeBit);
-    version(LDC)
+    version (LDC)
     {
         version (X86_Any)
         {
@@ -59,7 +60,7 @@ size_t stage1 (
 
 private template stage1_impl(string arch)
 {
-    version(LDC)
+    version (LDC)
     {
         static if (arch.length)
             enum Target = target("arch=" ~ arch);
@@ -79,7 +80,7 @@ private template stage1_impl(string arch)
         ref bool backwardEscapeBit,
         )
     {
-        version(LDC) pragma(inline, false);
+        version (LDC) pragma(inline, true);
         enum ubyte quote = '"';
         enum ubyte escape = '\\';
 
@@ -191,7 +192,7 @@ version(mir_ion_test) unittest
     
     ulong[2][dataA.length] pairedMasks;
 
-    stage1(pairedMasks.length, dataA.ptr, pairedMasks.ptr, backwardEscapeBit);
+    stage1(pairedMasks.length, cast(const) dataA.ptr, pairedMasks.ptr, backwardEscapeBit);
 
     import mir.ndslice;
     auto maskData = pairedMasks.sliced;
@@ -241,7 +242,7 @@ version(mir_ion_test) unittest
 
     ulong[2][dataA.length] pairedMasks;
 
-    stage1(pairedMasks.length, dataA.ptr, pairedMasks.ptr, backwardEscapeBit);
+    stage1(pairedMasks.length, cast(const) dataA.ptr, pairedMasks.ptr, backwardEscapeBit);
 
     import mir.ndslice;
     auto maskData = pairedMasks.sliced;

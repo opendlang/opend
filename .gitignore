@@ -52,3 +52,4 @@ builddir
 mir-ion-test-x86_any
 mir-ion-test-parser-unittest
 mir-ion-test-unittest
+ion_temp.json

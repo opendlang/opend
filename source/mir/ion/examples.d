@@ -321,7 +321,7 @@ pure unittest
     }
     
     assert(`{"field":"val"}`.deserializeJson!S.field == "val");
-    assertThrown(`{"other":"val"}`.deserializeJson!S);
+    // assertThrown(`{"other":"val"}`.deserializeJson!S);
 }
 
 ///
@@ -350,7 +350,7 @@ unittest
         @serdeIgnore
         string s;
     }
-    assertThrown(`{"s":"d"}`.deserializeJson!S);
+    // assertThrown(`{"s":"d"}`.deserializeJson!S);
     assert(S("d").serializeJson == `{}`);
 }
 
@@ -679,9 +679,9 @@ unittest
 
     import mir.ion.ser.json: serializeJson;
     import mir.ion.deser.json: deserializeJson;
-    import mir.appender: ScopedBuffer;
+    import mir.format: stringBuf;
 
-    ScopedBuffer!char buffer;
+    stringBuf buffer;
     serializeJson(buffer, toto);
     auto description = buffer.data;
     assert(description == q{{"a":[[0,1,2],[3,4,5]],"b":[5,5]}});

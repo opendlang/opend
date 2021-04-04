@@ -1,6 +1,6 @@
 module mir.ion.internal.stage2;
 
-version(LDC) import ldc.attributes;
+version (LDC) import ldc.attributes;
 import mir.bitop;
 import mir.ion.internal.simd;
 
@@ -26,7 +26,7 @@ void stage2(
 {
     alias AliasSeq(T...) = T;
     alias params = AliasSeq!(n, vector, pairedMask);
-    version(LDC)
+    version (LDC)
     {
         version (X86_Any)
         {
@@ -71,7 +71,7 @@ void stage2(
 version (X86_Any)
 {
 
-    version(LDC) @target("arch=westmere")
+    version (LDC) @target("arch=westmere")
     private void stage2_impl_westmere(
         size_t n,
         scope const(ubyte[64])* vector,
@@ -108,7 +108,7 @@ version (X86_Any)
         while(--n);
     }
 
-    version(LDC) @target("arch=sandybridge")
+    version (LDC) @target("arch=sandybridge")
     private void stage2_impl_sandybridge(
         size_t n,
         scope const(ubyte[64])* vector,
@@ -145,7 +145,7 @@ version (X86_Any)
         while(--n);
     }
 
-    version(LDC) @target("arch=broadwell")
+    version (LDC) @target("arch=broadwell")
     private void stage2_impl_broadwell(
         size_t n,
         scope const(ubyte[64])* vector,
@@ -183,7 +183,7 @@ version (X86_Any)
         while(--n);
     }
 
-    version(LDC) @target("arch=skylake-avx512")
+    version (LDC) @target("arch=skylake-avx512")
     private void stage2_impl_skylake_avx512(
         size_t n,
         scope const(ubyte[64])* vector,
@@ -270,7 +270,7 @@ version(mir_ion_test) unittest
     
     ulong[2][dataA.length] pairedMasks;
 
-    stage2(pairedMasks.length, dataA.ptr, pairedMasks.ptr);
+    stage2(pairedMasks.length, cast(const) dataA.ptr, pairedMasks.ptr);
 
     import mir.ndslice;
     auto maskData = pairedMasks.sliced;

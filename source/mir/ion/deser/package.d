@@ -168,17 +168,25 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             if (data.descriptor.type == IonTypeCode.list)
             {
                 import mir.appender: ScopedBuffer;
-                ScopedBuffer!E buffer;
-                if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
-                    return exc;
 
-                import std.array: uninitializedArray;
-                (()@trusted {
+                if (false)
+                {
+                    ScopedBuffer!E buffer;
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                        return exc;
+                }
+
+                return () @trusted {
+                    import std.array: uninitializedArray;
+                    ScopedBuffer!E buffer = void;
+                    buffer.initialize;
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                        return exc;
                     auto ar = uninitializedArray!(E[])(buffer.length);
                     buffer.moveDataAndEmplaceTo(ar);
                     value = cast(T) ar;
-                })();
-                return null;
+                    return null;
+                }();
             }
             else
             if (data.descriptor.type == IonTypeCode.null_)
@@ -187,6 +195,11 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 return null;
             }
             return IonErrorCode.expectedListValue.ionErrorMsg;
+        }
+        else
+        static if (is(T == K[V], K , V))
+        {
+            return null;
         }
         else
         static if (is(T == Slice!(D*, N, kind), D, size_t N, SliceKind kind))
@@ -247,19 +260,27 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             if (data.descriptor.type == IonTypeCode.list)
             {
                 import mir.appender: ScopedBuffer;
-                ScopedBuffer!E buffer;
-                if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
-                    return exc;
 
-                (()@trusted @nogc {
+                if (false)
+                {
+                    ScopedBuffer!E buffer;
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                        return exc;
+                }
+
+                return ()@trusted @nogc {
+                    ScopedBuffer!E buffer = void;
+                    buffer.initialize;
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                        return exc;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
                     static if (__traits(compiles, value = ar))
                         value = ar;
                     else
                         value = ar.opCast!T;
-                })();
-                return null;
+                    return null;
+                } ();
             }
             else
             if (data.descriptor.type == IonTypeCode.null_)
@@ -463,16 +484,18 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                     value.serdeUnexpectedKeyHandler(originalID == 0 || originalID > symbolTableInstance.length ? "<@unknown symbol@>" : symbolTableInstance[originalID]);
                                 else
                                 {
-                                    try debug {
-                                        import std.stdio;
+                                //     try debug {
+                                //         import std.stdio;
 
-                                static if (!exteneded)
-                                    static immutable dd = symbolTable;
-                                else
-                                    alias dd = tableParams[0];
+                                // static if (!exteneded)
+                                //     static immutable dd = symbolTable;
+                                // else
+                                //     alias dd = tableParams[0];
 
-                                        writeln(symbolTable, dd, dd[originalID]);
-                                    } catch(Exception e) {}
+                                //         writeln(symbolTable, dd, dd[originalID]);
+                                //     } catch(Exception e) {}
+                                    // import core.stdc.stdio;
+                                    // debug printf("ID = %d\n", symbolID);
                                     return unexpectedKeyException;
                                 }
                         }
@@ -558,23 +581,41 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
 
         static if (likeList)
         {
-            foreach(elem; data.byElement(context))
+            if (data.descriptor.type == IonTypeCode.list)
             {
-                Temporal temporal;
-                if (auto exc = impl(elem, tableParams, temporal, context))
-                    return exc;
-                __traits(getMember, value, member).put(move(temporal));
+                foreach (error, ionElem; data.trustedGet!IonList)
+                {
+                    if (_expect(error, false))
+                        return error.ionErrorMsg;
+                    Temporal elem;
+                    if (auto exc = impl(ionElem, tableParams, elem, context))
+                        return exc;
+                    import core.lifetime: move;
+                    __traits(getMember, value, member).put(move(elem));
+                }
             }
-            static if (isField!(T, member))
+            else
+            if (data.descriptor.type == IonTypeCode.null_)
             {
-                transform(__traits(getMember, value, member));
             }
             else
             {
-                auto temporal = __traits(getMember, value, member);
-                transform(temporal);
-                __traits(getMember, value, member) = move(temporal);
+                return IonErrorCode.expectedListValue.ionErrorMsg;
             }
+            static if (hasTransform)
+            {
+                static if (isField!(T, member))
+                {
+                    transform(__traits(getMember, value, member));
+                }
+                else
+                {
+                    auto temporal = __traits(getMember, value, member);
+                    transform(temporal);
+                    __traits(getMember, value, member) = move(temporal);
+                }
+            }
+            return null;
         }
         else
         static if (likeStruct)
@@ -599,6 +640,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
                     __traits(getMember, value, member) = move(temporal2);
                 }
             }
+            return null;
         }
         else
         static if (hasProxy)
@@ -610,6 +652,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             static if (hasTransform)
                 transform(temporal);
             __traits(getMember, value, member) = move(temporal);
+            return null;
         }
         else
         static if (isField!(T, member))
@@ -618,6 +661,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
                 return exc;
             static if (hasTransform)
                 transform(__traits(getMember, value, member));
+            return null;
         }
         else
         {
@@ -625,23 +669,35 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             {
                 import mir.appender: ScopedBuffer;
                 alias E = Unqual!D;
-                ScopedBuffer!E buffer;
-                if (auto exc = deserializeListToScopedBuffer!(deserializeValue, exteneded)(data, tableParams, buffer))
-                    return exc;
-                auto temporal = (()@trusted => cast(Member)buffer.data)();
+                if (false)
+                {
+                    ScopedBuffer!E buffer;
+                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue, exteneded)(data, tableParams, buffer))
+                        return exc;
+                }
+                return () @trusted {
+                    ScopedBuffer!E buffer = void;
+                    buffer.initialize;
+                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue, exteneded)(data, tableParams, buffer))
+                        return exc;
+                    auto temporal = cast(Member)buffer.data;
+                    static if (hasTransform)
+                        transform(temporal);
+                    __traits(getMember, value, member) = move(temporal);
+                    return null;
+                } ();
             }
             else
             {
                 Member temporal;
                 if (auto exc = impl(data, tableParams, temporal, context))
                     return exc;
+                static if (hasTransform)
+                    transform(temporal);
+                __traits(getMember, value, member) = move(temporal);
+                return null;
             }
-            static if (hasTransform)
-                transform(temporal);
-            __traits(getMember, value, member) = move(temporal);
         }
-
-        return null;
     }
 }
 

@@ -299,7 +299,7 @@ struct JsonSerializer(string sep, Appender)
     ///
     void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
     {
-        BigInt!256 num;
+        BigInt!256 num = void;
         if (auto overflow = num.copyFrom(view))
         {
             static immutable exc = new SerdeException("JsonSerializer: overflow when converting " ~ typeof(view).stringof ~ " to " ~ typeof(num).stringof);
@@ -407,12 +407,12 @@ unittest
 
 unittest
 {
-    import mir.ion.ser.json : serializeJson;
-    import mir.appender : ScopedBuffer;
+    import mir.ion.ser.json: serializeJson;
+    import mir.format: stringBuf;
     import mir.small_string;
 
     SmallString!8 smll = SmallString!8("ciaociao");
-    ScopedBuffer!char buffer;
+    stringBuf buffer;
 
     serializeJson(buffer, smll);
     assert(buffer.data == `"ciaociao"`);
@@ -644,8 +644,8 @@ void serializeJson(Appender, V)(ref Appender appender, auto ref V value)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.appender: ScopedBuffer;
-    ScopedBuffer!char buffer;
+    import mir.format: stringBuf;
+    stringBuf buffer;
     static struct S { int a; }
     serializeJson(buffer, S(4));
     assert(buffer.data == `{"a":4}`);
@@ -671,8 +671,8 @@ template serializeJsonPretty(string sep = "\t")
 // @safe pure nothrow @nogc
 unittest
 {
-    import mir.appender: ScopedBuffer;
-    ScopedBuffer!char buffer;
+    import mir.format: stringBuf;
+    stringBuf buffer;
     static struct S { int a; }
     serializeJsonPretty!"    "(buffer, S(4));
     assert(buffer.data ==
@@ -697,10 +697,10 @@ template jsonSerializer(string sep = "")
 ///
 @safe pure nothrow @nogc unittest
 {
-    import mir.appender: ScopedBuffer;
+    import mir.format: stringBuf;
     import mir.bignum.integer;
 
-    ScopedBuffer!char buffer;
+    stringBuf buffer;
     auto ser = jsonSerializer((()@trusted=>&buffer)());
     auto state0 = ser.structBegin;
 

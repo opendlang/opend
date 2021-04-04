@@ -25,7 +25,7 @@ struct IonVersionMarker
 package IonErrorCode parseVersion(ref const(ubyte)[] data, scope ref IonVersionMarker versionMarker)
     @safe pure nothrow @nogc
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
     if (data.length < 4 || data[0] != 0xE0 || data[3] != 0xEA)
         return IonErrorCode.cantParseValueStream;
     versionMarker = IonVersionMarker(data[1], data[2]);
@@ -173,7 +173,7 @@ struct IonValue
         value = (out) $(LREF IonDescribedValue)
     Returns: $(SUBREF exception, IonErrorCode)
     +/
-    IonErrorCode describe(scope ref IonDescribedValue value)
+    IonErrorCode describe()(scope ref IonDescribedValue value)
         @safe pure nothrow @nogc const
     {
         auto d = data[];
@@ -190,7 +190,7 @@ struct IonValue
         Describes value.
         Returns: $(LREF IonDescribedValue)
         +/
-        IonDescribedValue describe()
+        IonDescribedValue describe()()
             @safe pure @nogc const
         {
             IonDescribedValue ret;
@@ -256,7 +256,7 @@ struct IonDescribedValue
     /++
     Returns: true if the value is any Ion `null`.
     +/
-    bool opEquals(typeof(null))
+    bool opEquals()(typeof(null))
         @safe pure nothrow @nogc const
     {
         return descriptor.L == 0xF;
@@ -265,7 +265,7 @@ struct IonDescribedValue
     /++
     Returns: true if the values have the same binary representation.
     +/
-    bool opEquals(IonDescribedValue rhs)
+    bool opEquals()(IonDescribedValue rhs)
         @safe pure nothrow @nogc const
     {
         return this.descriptor == rhs.descriptor && this.data == rhs.data;
@@ -550,7 +550,7 @@ struct IonIntField
             d = d[1 .. $];
             if (d.length == 0)
             {
-                if (_expect(f < 0, false))
+                if (f < 0)
                     break;
                 if (s)
                     f = cast(T)(0-f);
@@ -561,7 +561,7 @@ struct IonIntField
             i += cast(bool)f;
             f <<= 8;
             f |= d[0];
-            if (_expect(i >= T.sizeof, false))
+            if (i >= T.sizeof)
                 break;
         }
         return IonErrorCode.overflowInIntegerValue;
@@ -1076,7 +1076,7 @@ struct IonDescribedDecimal
     IonIntField coefficient;
 
     ///
-    IonErrorCode getDecimal(size_t maxW64bitSize)(scope ref Decimal!maxW64bitSize value)
+    IonErrorCode get(size_t maxW64bitSize)(scope ref Decimal!maxW64bitSize value)
         @safe pure nothrow @nogc const
     {
         const length = coefficient.data.length;
@@ -1109,8 +1109,8 @@ struct IonDescribedDecimal
         @safe pure nothrow @nogc const
         if (isFloatingPoint!T && isMutable!T)
     {
-        Decimal!256  decimal;
-        if (auto ret = this.getDecimal!256(decimal))
+        Decimal!256 decimal = void;
+        if (auto ret = this.get(decimal))
             return ret;
         value = cast(T) decimal;
         return IonErrorCode.none;
@@ -1139,7 +1139,7 @@ struct IonDescribedDecimal
         @trusted pure nothrow @nogc const
         if (isFloatingPoint!T)
     {
-        Decimal!256 decimal;
+        Decimal!256 decimal = void;
         return get!T(decimal);
     }
 
@@ -1149,8 +1149,8 @@ struct IonDescribedDecimal
     +/
     void serialize(S)(ref S serializer) const
     {
-        Decimal!256  decimal;
-        if (auto error = this.getDecimal!256(decimal))
+        Decimal!256 decimal = void;
+        if (auto error = this.get(decimal))
             throw error.ionException;
         serializer.putValue(decimal);
     }
@@ -2314,11 +2314,6 @@ const:
                 }
                 else
                 {
-                    try debug {
-                        import std.stdio;
-                        writeln("symbolId = ", symbolId);
-                        writeln("symbolTable = ", symbolTable);
-                    } catch(Exception e) {}
                     error = IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable;
                 }
             }
@@ -2459,7 +2454,7 @@ struct IonAnnotationWrapper
         value = (out, optional) $(LREF IonDescribedValue) or $(LREF IonValue)
     Returns: $(SUBREF exception, IonErrorCode)
     +/
-    IonErrorCode unwrap(scope ref IonAnnotations annotations, scope ref IonDescribedValue value)
+    IonErrorCode unwrap()(scope ref IonAnnotations annotations, scope ref IonDescribedValue value)
         @safe pure nothrow @nogc const
     {
         IonValue v;
@@ -2469,7 +2464,7 @@ struct IonAnnotationWrapper
     }
 
     /// ditto
-    IonErrorCode unwrap(scope ref IonAnnotations annotations, scope ref IonValue value)
+    IonErrorCode unwrap()(scope ref IonAnnotations annotations, scope ref IonValue value)
         @safe pure nothrow @nogc const
     {
         size_t length;
@@ -2493,7 +2488,7 @@ struct IonAnnotationWrapper
             annotations = (optional out) $(LREF IonAnnotations)
         Returns: $(LREF IonDescribedValue)
         +/
-        IonDescribedValue unwrap(scope ref IonAnnotations annotations)
+        IonDescribedValue unwrap()(scope ref IonAnnotations annotations)
             @safe pure @nogc const
         {
             IonDescribedValue ret;
@@ -2745,7 +2740,7 @@ package IonErrorCode parseVarUInt(bool checkInput = true, U)(scope ref const(uby
     @safe pure nothrow @nogc
     if (is(U == ubyte) || is(U == ushort) || is(U == uint) || is(U == ulong))
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
     enum mLength = U(1) << (U.sizeof * 8 / 7 * 7);
     for(;;)
     {
@@ -2780,7 +2775,7 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
     @safe pure nothrow @nogc
     if (is(S == byte) || is(S == short) || is(S == int) || is(S == long))
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
     enum mLength = S(1) << (S.sizeof * 8 / 7 * 7 - 1);
     S length;
     if (_expect(data.length == 0, false))
@@ -2814,10 +2809,10 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
     }
 }
 
-package IonErrorCode parseValue(ref const(ubyte)[] data, scope ref IonDescribedValue describedValue)
+package IonErrorCode parseValue()(ref const(ubyte)[] data, scope ref IonDescribedValue describedValue)
     @safe pure nothrow @nogc
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
 
     if (_expect(data.length == 0, false))
         return IonErrorCode.unexpectedEndOfData;
@@ -2862,7 +2857,7 @@ private F parseFloating(F)(scope const(ubyte)[] data)
     @trusted pure nothrow @nogc
     if (isFloatingPoint!F)
 {
-    version(LDC) pragma(inline, true);
+    version (LDC) pragma(inline, true);
 
     enum n = F.sizeof;
     static if (n == 4)
