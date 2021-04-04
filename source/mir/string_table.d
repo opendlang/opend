@@ -10,11 +10,16 @@ module mir.string_table;
 /++
 Fast string table used to get key's id.
 The keys should be first sorted by length and then lexicographically.
+Params:
+    U = an unsigned type that can hold an index of sorted keys. `U.max` must be less then length of the table.
+    C = character type
 +/
 struct MirStringTable(U, C = char)
     if (__traits(isUnsigned, U) && (is(C == char) || is(C == wchar) || is(C == dchar)))
 {
-    ///
+    /++
+    Keys sorted by length and then lexicographically.
+    +/
     const(immutable(C)[])[] sortedKeys;
 
     private U[] table;
@@ -43,8 +48,11 @@ struct MirStringTable(U, C = char)
     }
 
     /++
+    Params:
+        key = string to find index for
+        index = (ref) index to fill with key's position.
     Returns:
-        key's index or `-1` if no key has been found.
+        true if keys index has been found
     +/
     bool get()(scope const C[] key, ref uint index)
          const @trusted pure nothrow @nogc
@@ -61,10 +69,13 @@ struct MirStringTable(U, C = char)
             auto items = sortedKeys.ptr;
             if (low < high)
             {
-                if (key.length == 0)
+                version (none)
                 {
-                    index = 0;
-                    return true;
+                    if (key.length == 0)
+                    {
+                        index = 0;
+                        return true;
+                    }
                 }
                 L: do {
                     auto mid = (low + high) / 2;
@@ -165,8 +176,11 @@ struct MirStringTable(size_t length, size_t maxKeyLength, bool caseInsensetive =
     }
 
     /++
+    Params:
+        key = string to find index for
+        index = (ref) index to fill with key's position.
     Returns:
-        key's index or `-1` if no key has been found.
+        true if keys index has been found
     +/
     bool get()(scope const(C)[] key, ref uint index)
          const @trusted pure nothrow @nogc
@@ -186,10 +200,13 @@ struct MirStringTable(size_t length, size_t maxKeyLength, bool caseInsensetive =
             auto items = sortedKeys.ptr;
             if (low < high)
             {
-                if (key.length == 0)
+                static if (!(maxKeyLength >= 16))
                 {
-                    index = 0;
-                    return true;
+                    if (key.length == 0)
+                    {
+                        index = 0;
+                        return true;
+                    }
                 }
                 L: do {
                     auto mid = (low + high) / 2;
