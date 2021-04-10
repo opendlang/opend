@@ -4581,18 +4581,34 @@ unittest
 }
 
 /// Unpack and interleave 32-bit integers from the high half of `a` and `b`.
-__m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
+__m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhdq128(a, b);
+    }
+    else version(DigitalMars)
+    {
+        __m128i r;
+        r.ptr[0] = a.array[2];
+        r.ptr[1] = b.array[2];
+        r.ptr[2] = a.array[3];
+        r.ptr[3] = b.array[3];
+        return r;
     }
     else
     {
         return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi32(1, 2, 3, 4);
+    __m128i B = _mm_setr_epi32(5, 6, 7, 8);
+    __m128i C = _mm_unpackhi_epi32(A, B);
+    int[4] correct = [3, 7, 4, 8];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 64-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi64 (__m128i a, __m128i b) pure @trusted
@@ -4686,11 +4702,21 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 // TODO unittest
 
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
-__m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
+__m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckldq128(a, b);
+    }
+    else version(DigitalMars)
+    {
+        // TODO: with DMD, shufflevector being inline creates a bug. But this hasn't been reported yet.
+        __m128i r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = b.array[0];
+        r.ptr[2] = a.array[1];
+        r.ptr[3] = b.array[1];
+        return r;
     }
     else
     {
@@ -4698,7 +4724,14 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
                              (cast(int4)a, cast(int4)b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi32(1, 2, 3, 4);
+    __m128i B = _mm_setr_epi32(5, 6, 7, 8);
+    __m128i C = _mm_unpacklo_epi32(A, B);
+    int[4] correct = [1, 5, 2, 6];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 64-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
