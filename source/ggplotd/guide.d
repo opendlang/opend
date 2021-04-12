@@ -330,9 +330,9 @@ unittest
     GuideStore!"" gs3;
     gs3.put("b", -0.7);
     gs.put(gs3);
-    import std.math : approxEqual;
-    assert(approxEqual(gs.min(), 0.3));
-    assert(approxEqual(gs.max(), 1.7));
+    import std.math : isClose;
+    assert(isClose(gs.min(), 0.3));
+    assert(isClose(gs.max(), 1.7));
 }
 
 /// A callable struct that translates any value into a double
