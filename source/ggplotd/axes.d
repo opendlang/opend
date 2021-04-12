@@ -484,13 +484,13 @@ mixin( xy( q{auto axisTextAngle( double angle )
 ///
 unittest {
   import std.stdio : writeln;
-  import std.math : approxEqual;
+  import std.math : isClose;
   XAxis xax;
   auto xf = xaxisTextAngle(90.0);
   writeln(xf(xax).textAngle);
-  assert(approxEqual(xf(xax).textAngle, 1.5708));
+  assert(isClose(xf(xax).textAngle, 1.5708, 0.01, 1e-5));
 
   YAxis yax;
   auto yf = yaxisTextAngle(45.0);
-  assert(approxEqual(xf(xax).textAngle, 1.5708));
+  assert(isClose(xf(xax).textAngle, 1.5708, 0.01, 1e-5));
 }
