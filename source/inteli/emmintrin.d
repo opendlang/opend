@@ -1898,7 +1898,7 @@ unittest
 
 /// Load 2 double-precision (64-bit) floating-point elements from memory into result in reverse order. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted // TODO: shouldn't be trusted
+__m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
 {
     __m128d a = *cast(__m128d*)(mem_addr);
     __m128d r;
@@ -4710,7 +4710,6 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else version(DigitalMars)
     {
-        // TODO: with DMD, shufflevector being inline creates a bug. But this hasn't been reported yet.
         __m128i r;
         r.ptr[0] = a.array[0];
         r.ptr[1] = b.array[0];
@@ -4720,8 +4719,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        return shufflevector!(int4, 0, 4, 1, 5)
-                             (cast(int4)a, cast(int4)b);
+        return shufflevector!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b);
     }
 }
 unittest

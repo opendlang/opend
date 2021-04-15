@@ -330,8 +330,8 @@ static if (CoreSimdIsEmulated)
         foreach(int i, m; mask)
         {
             static assert (m < Count * 2);
-            int ind = cast(int)m;
-            if (ind < Count)
+            enum int ind = cast(int)m;
+            static if (ind < Count)
                 r.array[i] = a.array[ind];
             else
                 r.array[i] = b.array[ind-Count];
