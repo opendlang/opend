@@ -1426,7 +1426,7 @@ struct Algebraic(_Types...)
     static if (_ReflectionTypes.length)
     static if (allSatisfy!(isSimpleAggregateType, _ReflectionTypes))
     {
-        import mir.reflection: isPublic, isField, isProperty;
+        import mir.reflection: isPublic, hasField, isProperty;
         import std.meta: ApplyRight, Filter, templateNot, templateOr;
         import std.traits: hasMember;
 
@@ -1484,16 +1484,16 @@ struct Algebraic(_Types...)
         static if (allSatisfy!(ApplyRight!(isSingleMember, member), _ReflectionTypes))
         static if (allSatisfy!(ApplyRight!(isPublic, member), _ReflectionTypes))
         {
-            static if (allSatisfy!(ApplyRight!(isField, member), _ReflectionTypes) && NoDuplicates!(staticMap!(ApplyRight!(memberTypeOf, member), _ReflectionTypes)).length == 1)
+            static if (allSatisfy!(ApplyRight!(hasField, member), _ReflectionTypes) && NoDuplicates!(staticMap!(ApplyRight!(memberTypeOf, member), _ReflectionTypes)).length == 1)
             {
                 mixin(`ref ` ~ member ~q{()() inout return @trusted pure nothrow @nogc @property { return this.getMember!member; }});
             }
             else
-            static if (allSatisfy!(ApplyRight!(templateOr!(isField, isProperty), member), _ReflectionTypes))
+            static if (allSatisfy!(ApplyRight!(templateOr!(hasField, isProperty), member), _ReflectionTypes))
             {
                 mixin(`auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) @property { static if (args.length) { import core.lifetime: forward; return this.getMember!member = forward!args; } else return this.getMember!member;  }});
             }
-            static if (allSatisfy!(ApplyRight!(templateNot!(templateOr!(isField, isProperty)), member), _ReflectionTypes))
+            static if (allSatisfy!(ApplyRight!(templateNot!(templateOr!(hasField, isProperty)), member), _ReflectionTypes))
             {
                 mixin(`auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) { static if (args.length) { import core.lifetime: forward; return this.getMember!member(forward!args); } else return this.getMember!member;  }});
             }
@@ -2605,8 +2605,8 @@ private template getMemberHandler(string member)
         else
         {
             import core.lifetime: forward;
-            import mir.reflection: isField;
-            static if (isField!(V, member) && Args.length == 1)
+            import mir.reflection: hasField;
+            static if (hasField!(V, member) && Args.length == 1)
                 return __traits(getMember, value, member) = forward!args;
             else
                 return __traits(getMember, value, member)(forward!args);

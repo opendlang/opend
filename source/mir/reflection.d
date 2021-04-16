@@ -402,9 +402,11 @@ template getUDA(alias symbol, alias attribute)
 }
 
 /++
-Checks if member is field.
+Checks if T has a field member.
 +/
-enum bool isField(T, string member) = __traits(compiles, (ref T aggregate) { return __traits(getMember, aggregate, member).offsetof; });
+enum bool hasField(T, string member) = __traits(compiles, (ref T aggregate) { return __traits(getMember, aggregate, member).offsetof; });
+
+deprecated("use 'hasField' instead") alias isField = hasField;
 
 ///
 version(mir_core_test) unittest
@@ -437,14 +439,14 @@ version(mir_core_test) unittest
         void gs(int) @property {}
     }
 
-    static assert(!isField!(S, "gi"));
-    static assert(!isField!(S, "gs"));
-    static assert(!isField!(S, "gc"));
-    static assert(!isField!(S, "gm"));
-    static assert(!isField!(S, "gi"));
-    static assert(isField!(S, "d"));
-    static assert(isField!(S, "f"));
-    static assert(isField!(S, "i"));
+    static assert(!hasField!(S, "gi"));
+    static assert(!hasField!(S, "gs"));
+    static assert(!hasField!(S, "gc"));
+    static assert(!hasField!(S, "gm"));
+    static assert(!hasField!(S, "gi"));
+    static assert(hasField!(S, "d"));
+    static assert(hasField!(S, "f"));
+    static assert(hasField!(S, "i"));
 }
 
 ///  with classes
@@ -470,13 +472,13 @@ version(mir_core_test) unittest
         void gs(int) @property {}
     }
 
-    static assert(!isField!(S, "gi"));
-    static assert(!isField!(S, "gs"));
-    static assert(!isField!(S, "gc"));
-    static assert(!isField!(S, "gm"));
-    static assert(isField!(S, "d"));
-    static assert(isField!(S, "f"));
-    static assert(isField!(S, "i"));
+    static assert(!hasField!(S, "gi"));
+    static assert(!hasField!(S, "gs"));
+    static assert(!hasField!(S, "gc"));
+    static assert(!hasField!(S, "gm"));
+    static assert(hasField!(S, "d"));
+    static assert(hasField!(S, "f"));
+    static assert(hasField!(S, "i"));
 }
 
 /++
@@ -705,8 +707,8 @@ private enum FieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(FieldsAndP
 private template FieldsAndPropertiesImpl(T)
 {
     alias isProperty = ApplyLeft!(.isProperty, T);
-    alias isField = ApplyLeft!(.isField, T);
-    alias isMember = templateOr!(isField, isProperty);
+    alias hasField = ApplyLeft!(.hasField, T);
+    alias isMember = templateOr!(hasField, isProperty);
     static if (__traits(getAliasThis, T).length)
     {
         T* aggregate;

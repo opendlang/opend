@@ -73,7 +73,7 @@ enum hasSemiMutableConstruction(T) = __traits(compiles, {static struct S { T a; 
 @safe version(mir_core_test) unittest
 {
     static struct S { this(ref return scope inout S) inout {} }
-    static inout(S) _function_(ref inout S a) { return S(a); }
+    static inout(S) _function_(ref inout S a) { return a; }
     static struct C2 { uint* a; this(ref return scope const S) const {} }
     static assert(hasInoutConstruction!uint);
     static assert(hasInoutConstruction!(immutable(uint)[]));

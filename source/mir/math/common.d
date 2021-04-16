@@ -8,7 +8,7 @@ Authors:   Ilya Yaroshenko, Phobos Team
 +/
 module mir.math.common;
 
-import mir.internal.utility: isComplex, isFloatingPoint;
+import mir.internal.utility: isComplex, isComplexOf, isFloatingPoint;
 
 version(LDC)
 {
@@ -585,6 +585,7 @@ Returns:
     `true` if the two items are equal or approximately equal under either criterium.
 +/
 bool approxEqual(T)(const T lhs, const T rhs, const T maxRelDiff = T(0x1p-20f), const T maxAbsDiff = T(0x1p-20f))
+    if (isFloatingPoint!T)
 {
     if (rhs == lhs) // infs
         return true;
@@ -608,21 +609,24 @@ bool approxEqual(T)(const T lhs, const T rhs, const T maxRelDiff = T(0x1p-20f), 
 }
 
 /// ditto
-bool approxEqual(T : cfloat)(const T lhs, const T rhs, float maxRelDiff = 0x1p-20f, float maxAbsDiff = 0x1p-20f)
+bool approxEqual(T)(const T lhs, const T rhs, float maxRelDiff = 0x1p-20f, float maxAbsDiff = 0x1p-20f)
+    if (isComplexOf!(T, float))
 {
     return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
         && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
 }
 
 /// ditto
-bool approxEqual(T : cdouble)(const T lhs, const T rhs, double maxRelDiff = 0x1p-20f, double maxAbsDiff = 0x1p-20f)
+bool approxEqual(T)(const T lhs, const T rhs, double maxRelDiff = 0x1p-20f, double maxAbsDiff = 0x1p-20f)
+    if (isComplexOf!(T, double))
 {
     return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
         && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
 }
 
 /// ditto
-bool approxEqual(T : creal)(const T lhs, const T rhs, real maxRelDiff = 0x1p-20f, real maxAbsDiff = 0x1p-20f)
+bool approxEqual(T)(const T lhs, const T rhs, real maxRelDiff = 0x1p-20f, real maxAbsDiff = 0x1p-20f)
+    if (isComplexOf!(T, real))
 {
     return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
         && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
@@ -631,6 +635,12 @@ bool approxEqual(T : creal)(const T lhs, const T rhs, real maxRelDiff = 0x1p-20f
 /// Complex types works as `approxEqual(l.re, r.re) && approxEqual(l.im, r.im)`
 @safe pure nothrow @nogc version(mir_core_test) unittest
 {
-    assert(approxEqual(1.0 + 1i, 1.0000001 + 1.0000001i));
-    assert(!approxEqual(100000.0L + 0i, 100001L + 0i));
+    import mir.internal.utility: isComplexOf;
+    static struct UserComplex(T) { T re, im; }
+    alias _cdouble = UserComplex!double;
+
+    static assert(isComplexOf!(_cdouble, double));
+
+    assert(approxEqual(_cdouble(1.0, 1), _cdouble(1.0000001, 1), 1.0000001));
+    assert(!approxEqual(_cdouble(100000.0L, 0), _cdouble(100001L, 0)));
 }
