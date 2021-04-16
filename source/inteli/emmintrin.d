@@ -4659,7 +4659,14 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
                                                    (cast(byte16)a, cast(byte16)b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi8( 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15);
+    __m128i B = _mm_setr_epi8(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+    byte16 C = cast(byte16) _mm_unpackhi_epi8(A, B);
+    byte[16] correct = [8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave double-precision (64-bit) floating-point elements from the high half of `a` and `b`.
 __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
@@ -4673,7 +4680,14 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
         return shufflevector!(__m128d, 1, 3)(a, b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128d A = _mm_setr_pd(4.0, 6.0);
+    __m128d B = _mm_setr_pd(7.0, 9.0);
+    __m128d C = _mm_unpackhi_pd(A, B);
+    double[2] correct = [6.0, 9.0];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
@@ -4699,7 +4713,14 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
                                            (cast(short8)a, cast(short8)b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, 4, 5, 6, 7);
+    __m128i B = _mm_setr_epi16(8, 9, 10, 11, 12, 13, 14, 15);
+    short8 C = cast(short8) _mm_unpacklo_epi16(A, B);
+    short[8] correct = [0, 8, 1, 9, 2, 10, 3, 11];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
@@ -4782,7 +4803,14 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
                                            (cast(byte16)a, cast(byte16)b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi8( 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15);
+    __m128i B = _mm_setr_epi8(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+    byte16 C = cast(byte16) _mm_unpacklo_epi8(A, B);
+    byte[16] correct = [0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave double-precision (64-bit) floating-point elements from the low half of `a` and `b`.
 __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
@@ -4796,7 +4824,14 @@ __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
         return shufflevector!(__m128d, 0, 2)(a, b);
     }
 }
-// TODO unittest
+unittest
+{
+    __m128d A = _mm_setr_pd(4.0, 6.0);
+    __m128d B = _mm_setr_pd(7.0, 9.0);
+    __m128d C = _mm_unpacklo_pd(A, B);
+    double[2] correct = [4.0, 7.0];
+    assert(C.array == correct);
+}
 
 /// Compute the bitwise XOR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
