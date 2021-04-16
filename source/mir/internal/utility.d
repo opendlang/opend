@@ -40,8 +40,14 @@ template isComplex(C)
     else
     {
         // for backward compatability with cfloat, cdouble and creal
-        enum isComplex = __traits(isFloating, C) && !isFloatingPoint!C;
+        enum isComplex = __traits(isFloating, C) && !isFloatingPoint!C && !is(C : __vector(F[N]), F, size_t N);
     }
+}
+
+version(mir_core_test)
+unittest
+{
+    static assert(!isComplex!(__vector(double[2])));
 }
 
 ///
