@@ -4,6 +4,7 @@ Token definitions for parsing Ion Text.
 Authors: Harrison Ford
 +/
 module mir.ion.deser.text.tokens;
+import mir.ion.type_code : IonTypeCode;
 /++
 Ion Token Types
 +/
@@ -145,7 +146,6 @@ version(mir_ion_test) unittest
     static assert(IonTokenType.TokenCloseDoubleBrace.ionTokenMsg == "}}");
 }
 
-
 /++
 All valid Ion operator characters.
 +/
@@ -160,8 +160,7 @@ static immutable ION_WHITESPACE = [' ', '\t', '\n', '\r'];
 /++
 All characters that Ion considers to be the end of a token (stop chars)
 +/
-static immutable ION_STOP_CHARS = [0, '{', '}', '[', ']', '(', ')', ',', '"', '\'',
-        ' ', '\t', '\n', '\r'];
+static immutable ION_STOP_CHARS = ['\0', '{', '}', '[', ']', '(', ')', ',', '"', '\''] ~ ION_WHITESPACE;
 
 /++
 All valid digits within Ion (0-9)
@@ -200,7 +199,21 @@ All symbols which must be surrounded by quotes
 +/
 static immutable ION_QUOTED_SYMBOLS = ["", "null", "true", "false", "nan"];
 
-@safe:
+/++
+Carriage-Return + Line-Feed
++/
+static immutable ubyte[] ION_CR_LF = ION_CR ~ ION_LF;
+
+/++
+Carriage-Return
++/
+static immutable ubyte[] ION_CR = ['\r'];
+
+/++
+Line-Feed
++/
+static immutable ubyte[] ION_LF = ['\n'];
+
 /++
 Check if a character is considered by Ion to be a digit.
 Params:
@@ -208,7 +221,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a digit.
 +/
-bool isDigit(ubyte c) {
+bool isDigit(char c) @safe @nogc pure {
     static foreach(member; ION_DIGITS) {
         if (c == member) return true;
     }
@@ -222,7 +235,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a hex digit.
 +/
-bool isHexDigit(ubyte c) {
+bool isHexDigit(char c) @safe @nogc pure {
     static foreach(member; ION_HEX_DIGITS) {
         if (c == member) return true;
     }
@@ -236,7 +249,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a valid start to an identifier.
 +/
-bool isIdentifierStart(ubyte c) {
+bool isIdentifierStart(char c) @safe @nogc pure{
     static foreach(member; ION_IDENTIFIER_CHARS) {
         if (c == member) return true;
     }
@@ -250,7 +263,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a valid part of an identifier.
 +/
-bool isIdentifierPart(ubyte c) {
+bool isIdentifierPart(char c) @safe @nogc pure {
     return isIdentifierStart(c) || isDigit(c);
 }   
 
@@ -261,7 +274,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a symbol operator character.
 +/
-bool isOperatorChar(ubyte c) {
+bool isOperatorChar(char c) @safe @nogc pure {
     static foreach(member; ION_OPERATOR_CHARS) {
         if (c == member) return true;
     }
@@ -275,7 +288,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a "stop" character.
 +/
-bool isStopChar(ubyte c) {
+bool isStopChar(char c) @safe @nogc pure {
     static foreach(member; ION_STOP_CHARS) {
         if (c == member) return true;
     }
@@ -290,7 +303,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be whitespace.
 +/
-bool isWhitespace(ubyte c) {
+bool isWhitespace(char c) @safe @nogc pure {
     static foreach(member; ION_WHITESPACE) {
         if (c == member) return true;
     }
@@ -304,7 +317,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a hex digit.
 +/
-bool symbolNeedsQuotes(string symbol) {
+bool symbolNeedsQuotes(string symbol) @safe @nogc pure {
     static foreach(member; ION_QUOTED_SYMBOLS) {
         if (symbol == member) return true;
     }
@@ -324,8 +337,8 @@ Params:
 Returns:
     true if a character is considered to be a new-line.
 +/
-bool isNewLine(ubyte c) {
-    return c == 0x0A || 0x0D;
+bool isNewLine(char c) @safe @nogc pure {
+    return c == 0x0A || c == 0x0D;
 }
 
 /++
@@ -336,7 +349,7 @@ Params:
 Returns:
     true if a character is considered to be printable whitespace.
 +/
-bool isStringWhitespace(ubyte c) {
+bool isStringWhitespace(char c) @safe @nogc pure {
     return c == 0x09 || c == 0x0B || c == 0x0C;
 }
 
@@ -348,7 +361,7 @@ Params:
 Returns:
     true if a character is considered a control character.
 +/
-bool isControlChar(ubyte c) {
+bool isControlChar(char c) @safe @nogc pure {
     return c < 0x20 || c == 0x7F;
 }
 
@@ -360,7 +373,7 @@ Params:
 Returns:
     true if a character is considered to be valid ASCII.
 +/
-bool isASCIIChar(ubyte c) {
+bool isASCIIChar(char c) @safe @nogc pure {
     return c <= 0x7F;
 }
 
@@ -371,7 +384,7 @@ Params:
 Returns:
     true if a character is invalid, false otherwise
 +/
-bool isInvalidChar(ubyte c) {
+bool isInvalidChar(char c) @safe @nogc pure {
     if (isStringWhitespace(c) || isNewLine(c)) return false;
     if (isControlChar(c)) return true;
     return false;
@@ -384,15 +397,178 @@ This is to convert a hex-literal as fast as possible.
 Params:
     c = a hex character
 +/
-ubyte hexLiteral(ubyte c) {
-    if (isDigit(c)) return cast(ubyte)(c - ION_DIGITS[0]);
-    else if (c >= 'a' && c <= 'f') return cast(ubyte)(10 + (c - ION_LOWERCASE[0]));
-    else if (c >= 'A' && c <= 'F') return cast(ubyte)(10 + (c - ION_UPPERCASE[0]));
-    throw new MirIonTokenizerException("invalid hex literal");
+char hexLiteral(char c) @safe @nogc pure {
+    if (isDigit(c)) return cast(char)(c - ION_DIGITS[0]);
+    else if (c >= 'a' && c <= 'f') return cast(char)(10 + (c - ION_LOWERCASE[0]));
+    else if (c >= 'A' && c <= 'F') return cast(char)(10 + (c - ION_UPPERCASE[0]));
+    throw ionTokenizerException(IonTokenizerErrorCode.invalidHexLiteral);
+}
+
+/++
+Represents Ion Text token read from the tokenizer.
++/
+mixin template IonTextToken() {
+    /++
+    What text did we match while scanning for this token?
+    +/
+    const(char)[] matchedText;
+    /++
+    Where in the input stream did we match it?
+    +/
+    size_t matchedIndex;
+}
+
+/++
+For Ion Text Tokens which allow escape characters, what type is it? 
+(either a hex '\xFF', or a Unicode '\uXXXX' '\UXXXXXXXX')
++/
+enum IonTextEscapeType {
+    Hex,
+    UTF
+}
+
+/++
+Represents Ion Text tokens which can have escape characters.
++/
+mixin template IonTextWithEscapeToken() {
+    mixin IonTextToken;
+    /++
+    Have we the end of the token, or is there more to be read?
+    +/
+    bool isFinal;
+    /++
+    Is this token only an escape sequence (and nothing else?)
+    +/
+    bool isEscapeSequence;
+    /++
+    If this is an escape sequence, what type is it?
+    +/
+    IonTextEscapeType escapeSequenceType;
+}
+
+/++
+The Ion Text Number token
++/
+struct IonTextNumber {
+    mixin IonTextToken;
+    /++
+    What type of number is this? (integer, negative integer, decimal, etc)
+    +/
+    IonTypeCode type;
+}
+
+/++
+The Ion Text Timestamp token
++/
+struct IonTextTimestamp {
+    mixin IonTextToken;
+}
+
+/++
+The Ion Text Blob token
++/
+struct IonTextBlob {
+    mixin IonTextToken;
+}
+
+/++
+The Ion Text Symbol token
++/
+struct IonTextSymbol {
+    mixin IonTextToken;
+}
+
+/++
+The Ion Text Symbol (with quotes surrounding it) token
++/
+struct IonTextQuotedSymbol {
+    mixin IonTextWithEscapeToken;
+}
+
+/++
+The Ion Text Symbol Operator token
++/
+struct IonTextSymbolOperator {
+    mixin IonTextToken;
+}
+
+/++
+The Ion Text String token. Can represent a long string as well.
++/
+struct IonTextString {
+    mixin IonTextWithEscapeToken;
+    /++
+    Is this a long string?
+    +/
+    bool isLongString;
+    /++
+    Is this long string a normalized new line?
+    +/
+    bool isNormalizedNewLine;
+}
+
+/++
+The Ion Text Clob token. Can represent a long clob as well.
++/
+struct IonTextClob {
+    mixin IonTextWithEscapeToken;
+    /++
+    Is this a long clob?
+    +/
+    bool isLongClob;
 }
 
 version(D_Exceptions):
 import mir.ion.exception;
+
+/++
+All possible exceptions within the tokenizer.
++/
+enum IonTokenizerErrorCode {
+    none,
+    unexpectedEOF,
+    invalidHexLiteral,
+    unexpectedCharacter,
+    negativeTimestamp,
+    commentsNotAllowed,
+    normalizeEOFFail,
+    cannotUnreadAtPos0,
+    invalidHexEscape,
+    invalidLeadingZeros,
+    cannotUpdateWindow,
+    encodingSurrogateCode,
+    encodingInvalidCode,
+    cannotSkipWhitespace,
+    cannotSkipLongString,
+    expectedValidLeader,
+    invalidTimestampOffset,
+}
+
+string ionTokenizerMsg(IonTokenizerErrorCode error) @property
+@safe pure nothrow @nogc
+{
+    static immutable string[] errors = [
+        null,
+        "unexpected EOF",
+        "invalid hex literal",
+        "unexpected character",
+        "encountered negative timestamp",
+        "encountered unexpected comment",
+        "could not normalize EOF",
+        "cannot unread when pos >= 0",
+        "invalid hex escape",
+        "invalid leading zeros in integer literal",
+        "cannot update sliding window",
+        "encoding a surrogate code point in UTF-8",
+        "encoding an invalid code point in UTF-8",
+        "could not skip over whitespace",
+        "could not skip to end of long string",
+        "expected a valid digit leader",
+        "invalid timestamp offset",
+    ];
+
+    return errors[error - IonTokenizerErrorCode.min];
+}
 
 /++
 Mir Ion Tokenizer Exception
@@ -405,4 +581,21 @@ class MirIonTokenizerException : MirIonException
     {
         super(msg, file, line);
     }
+}
+
+MirIonTokenizerException ionTokenizerException(string file = __FILE__, int line = __LINE__)(IonTokenizerErrorCode code)
+@property @trusted pure nothrow @nogc
+{
+    import mir.array.allocation: array;
+    import mir.ndslice.topology: map;
+    import std.traits: EnumMembers;
+
+    static immutable MirIonTokenizerException[] exceptions =
+        [EnumMembers!IonTokenizerErrorCode]
+        .map!(code => code ? new MirIonTokenizerException("MirIonTokenizerException: " ~ code.ionTokenizerMsg,
+                                                          file, line) 
+                           : null)
+        .array;
+        
+    return cast(MirIonTokenizerException) exceptions[code - IonTokenizerErrorCode.min];
 }
