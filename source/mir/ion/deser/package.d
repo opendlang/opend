@@ -531,7 +531,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
     {
         import core.lifetime: move;
         import mir.conv: to;
-        import mir.reflection: isField;
+        import mir.reflection: hasField;
 
         enum likeList = hasUDA!(__traits(getMember, value, member), serdeLikeList);
         enum likeStruct  = hasUDA!(__traits(getMember, value, member), serdeLikeStruct);
@@ -604,7 +604,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             }
             static if (hasTransform)
             {
-                static if (isField!(T, member))
+                static if (hasField!(T, member))
                 {
                     transform(__traits(getMember, value, member));
                 }
@@ -629,7 +629,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             }
             static if (hasTransform)
             {
-                static if (isField!(T, member))
+                static if (hasField!(T, member))
                 {
                     transform(__traits(getMember, value, member));
                 }
@@ -655,7 +655,7 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             return null;
         }
         else
-        static if (isField!(T, member))
+        static if (hasField!(T, member))
         {
             if (auto exc = impl(data, tableParams, __traits(getMember, value, member), context))
                 return exc;
