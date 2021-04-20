@@ -15,10 +15,10 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
-    import mir.ion.lob;
     import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
     import mir.ion.tape;
     import mir.ion.type_code;
+    import mir.lob;
     import mir.string_table: createTable, minimalIndexType;
     import std.traits: isNumeric;
 
@@ -204,14 +204,14 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     }
 
     ///
-    void putValue(IonClob value)
+    void putValue(Clob value)
     {
         tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
     }
 
     ///
-    void putValue(IonBlob value)
+    void putValue(Blob value)
     {
         tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);

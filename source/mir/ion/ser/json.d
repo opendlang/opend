@@ -16,8 +16,8 @@ struct JsonSerializer(string sep, Appender)
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
     import mir.bignum.low_level_view: BigIntView, WordEndian;
-    import mir.ion.lob;
     import mir.ion.type_code;
+    import mir.lob;
     import mir.timestamp;
     import std.traits: isNumeric;
 
@@ -355,13 +355,13 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    void putValue(IonClob value)
+    void putValue(Clob value)
     {
         putValue(value.data);
     }
 
     ///
-    void putValue(IonBlob value)
+    void putValue(Blob value)
     {
         putValue(cast(const(char)[])value.data);
     }

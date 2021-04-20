@@ -7,7 +7,7 @@ import core.stdc.string: memmove, memcpy;
 import mir.bignum.low_level_view;
 import mir.bitop;
 import mir.date;
-import mir.ion.lob;
+import mir.lob;
 import mir.timestamp: Timestamp;
 import mir.ion.type_code;
 import mir.utility: _expect;
@@ -1220,7 +1220,7 @@ version(mir_ion_test) unittest
 /++
 +/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == IonClob))
+    if (is(T == Clob))
 {
     size_t ret = 1;
     if (value.data.length < 0xE)
@@ -1239,23 +1239,23 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.lob;
+    import mir.lob;
 
     ubyte[18] data;
 
     ubyte[] result = [0x95, 'v', 'a', 'l', 'u', 'e'];
-    auto str = IonClob("value");
+    auto str = Clob("value");
     assert(data[0 .. ionPut(data.ptr, str)] == result);
 
     result = [ubyte(0x9E), ubyte(0x90)] ~ cast(ubyte[])"hexadecimal23456";
-    str = IonClob("hexadecimal23456");
+    str = Clob("hexadecimal23456");
     assert(data[0 .. ionPut(data.ptr, str)] == result);
 }
 
 /++
 +/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == IonBlob))
+    if (is(T == Blob))
 {
     size_t ret = 1;
     if (value.data.length < 0xE)
@@ -1274,16 +1274,16 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.lob;
+    import mir.lob;
 
     ubyte[18] data;
 
     ubyte[] result = [0xA5, 'v', 'a', 'l', 'u', 'e'];
-    auto payload = IonBlob(cast(ubyte[])"value");
+    auto payload = Blob(cast(ubyte[])"value");
     assert(data[0 .. ionPut(data.ptr, payload)] == result);
 
     result = [ubyte(0xAE), ubyte(0x90)] ~ cast(ubyte[])"hexadecimal23456";
-    payload = IonBlob(cast(ubyte[])"hexadecimal23456");
+    payload = Blob(cast(ubyte[])"hexadecimal23456");
     assert(data[0 .. ionPut(data.ptr, payload)] == result);
 }
 

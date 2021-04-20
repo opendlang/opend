@@ -1,4 +1,6 @@
 /++
+Macros:
+AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
 +/
 module mir.ion.value;
 
@@ -6,8 +8,8 @@ import mir.bignum.decimal: Decimal;
 import mir.bignum.low_level_view;
 import mir.bignum.low_level_view: BigUIntView;
 import mir.ion.exception;
-import mir.ion.lob;
 import mir.ion.type_code;
+import mir.lob;
 import mir.utility: _expect;
 import std.traits: isMutable, isIntegral, isSigned, isUnsigned, Unsigned, Signed, isFloatingPoint, ParameterTypeTuple;
 
@@ -52,9 +54,9 @@ alias IonType(IonTypeCode code : IonTypeCode.symbol) = IonSymbolID;
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.string) = const(char)[];
 /// ditto
-alias IonType(IonTypeCode code : IonTypeCode.clob) = IonClob;
+alias IonType(IonTypeCode code : IonTypeCode.clob) = Clob;
 /// ditto
-alias IonType(IonTypeCode code : IonTypeCode.blob) = IonBlob;
+alias IonType(IonTypeCode code : IonTypeCode.blob) = Blob;
 /// ditto
 alias IonType(IonTypeCode code : IonTypeCode.list) = IonList;
 /// ditto
@@ -83,9 +85,9 @@ alias IonTypeCodeOf(T : IonSymbolID) = IonTypeCode.symbol;
 /// ditto
 alias IonTypeCodeOf(T : const(char)[]) = IonTypeCode.string;
 /// ditto
-alias IonTypeCodeOf(T : IonClob) = IonTypeCode.clob;
+alias IonTypeCodeOf(T : Clob) = IonTypeCode.clob;
 /// ditto
-alias IonTypeCodeOf(T : IonBlob) = IonTypeCode.blob;
+alias IonTypeCodeOf(T : Blob) = IonTypeCode.blob;
 /// ditto
 alias IonTypeCodeOf(T : IonList) = IonTypeCode.list;
 /// ditto
@@ -119,9 +121,9 @@ enum isIonType(T : IonSymbolID) = true;
 /// ditto
 enum isIonType(T : const(char)[]) = true;
 /// ditto
-enum isIonType(T : IonClob) = true;
+enum isIonType(T : Clob) = true;
 /// ditto
-enum isIonType(T : IonBlob) = true;
+enum isIonType(T : Blob) = true;
 /// ditto
 enum isIonType(T : IonList) = true;
 /// ditto
@@ -218,6 +220,37 @@ struct IonValue
         assert(IonValueStream([0x11]).serializeJson == "true");
     }
 }
+
+///
+@safe pure
+version(mir_ion_test) unittest
+{
+    import mir.lob;
+    import mir.ion.type_code;
+    import mir.ion.value;
+    // null.string
+    assert(IonValue([0x9F]).describe.get!IonNull == IonNull(IonTypeCode.clob));
+    // empty string
+    assert(IonValue([0x90]).describe.get!Clob.data == "");
+
+    assert(IonValue([0x95, 0x63, 0x6f, 0x76, 0x69, 0x64]).describe.get!Clob.data == "covid");
+}
+
+///
+@safe pure
+version(mir_ion_test) unittest
+{
+    import mir.lob;
+    import mir.ion.type_code;
+    import mir.ion.value;
+    // null.string
+    assert(IonValue([0xAF]).describe.get!IonNull == IonNull(IonTypeCode.blob));
+    // empty string
+    assert(IonValue([0xA0]).describe.get!Blob.data == "");
+
+    assert(IonValue([0xA5, 0x63, 0x6f, 0x76, 0x69, 0x64]).describe.get!Blob.data == "covid");
+}
+
 
 /++
 Ion Type Descriptor
@@ -373,7 +406,7 @@ struct IonDescribedValue
             return cast(const(char)[])data;
         }
         else
-        static if (is(T == IonClob))
+        static if (is(T == Clob))
         {
             return T(cast(const(char)[])data);
         }
@@ -424,10 +457,10 @@ struct IonDescribedValue
                 serializer.putValue(trustedGet!(const(char)[]));
                 break;
             case IonTypeCode.clob:
-                serializer.putValue(trustedGet!IonClob);
+                serializer.putValue(trustedGet!Clob);
                 break;
             case IonTypeCode.blob:
-                serializer.putValue(trustedGet!IonBlob);
+                serializer.putValue(trustedGet!Blob);
                 break;
             case IonTypeCode.list:
                 break;
@@ -478,10 +511,10 @@ struct IonDescribedValue
                         serializer.putValue(trustedGet!(const(char)[]));
                         break;
                     case IonTypeCode.clob:
-                        serializer.putValue(trustedGet!IonClob);
+                        serializer.putValue(trustedGet!Clob);
                         break;
                     case IonTypeCode.blob:
-                        serializer.putValue(trustedGet!IonBlob);
+                        serializer.putValue(trustedGet!Blob);
                         break;
                     case IonTypeCode.list:
                         trustedGet!IonList.serialize(serializer);
@@ -1275,7 +1308,7 @@ struct IonTimestamp
     /++
     Describes decimal (nothrow version).
     Params:
-        value = (out) $(LREF Timestamp)
+        value = (out) $(AlgorithmREF timestamp, Timestamp)
     Returns: $(SUBREF exception, IonErrorCode)
     +/
     IonErrorCode get(T : Timestamp)(scope ref T value)

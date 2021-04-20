@@ -28,7 +28,6 @@ sources_list = [
     'mir/ion/internal/stage2',
     'mir/ion/internal/stage3',
     'mir/ion/internal/stage4_s',
-    'mir/ion/lob',
     'mir/ion/ser/ion',
     'mir/ion/ser/json',
     'mir/ion/ser/package',
@@ -36,7 +35,6 @@ sources_list = [
     'mir/ion/tape',
     'mir/ion/type_code',
     'mir/ion/value',
-    'mir/timestamp',
 ]
 
 sources = []

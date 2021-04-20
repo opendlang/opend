@@ -1,4 +1,8 @@
 /++
+Ion Type enumeration and encoding.
+
+Macros:
+AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
 +/
 module mir.ion.type_code;
 
@@ -59,13 +63,13 @@ enum IonTypeCode
 
     /++
     Spec: $(HTTP http://amzn.github.io/ion-docs/docs/binary.html#9-clob, 9: clob)
-    D_type: $(SUBREF lob, IonClob)
+    D_type: $(AlgorithmREF lob, Clob)
     +/
     clob,
 
     /++
     Spec: $(HTTP 1http://amzn.github.io/ion-docs/docs/binary.html#0-blob, 10: blob)
-    D_type: $(SUBREF lob, IonBlob)
+    D_type: $(AlgorithmREF lob, Blob)
     +/
     blob,
 

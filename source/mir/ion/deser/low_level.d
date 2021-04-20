@@ -1,7 +1,4 @@
 /++
-
-Macros:
- = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser.low_level;
 
