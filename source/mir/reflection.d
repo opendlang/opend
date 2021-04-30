@@ -10,6 +10,8 @@ module mir.reflection;
 import std.meta;
 import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers;
 
+package enum isSomeStruct(T) = is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
+
 /++
 Match types like `std.typeconst: Nullable`.
 +/
@@ -704,6 +706,14 @@ private template Deserializable(T, string member)
 
 private enum FieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(FieldsAndPropertiesImpl!T)));
 
+private template allMembers(T)
+{
+    static if (isSomeStruct!T)
+        alias allMembers = __traits(allMembers, T);
+    else
+        alias allMembers = AliasSeq!();
+}
+
 private template FieldsAndPropertiesImpl(T)
 {
     alias isProperty = ApplyLeft!(.isProperty, T);
@@ -712,13 +722,21 @@ private template FieldsAndPropertiesImpl(T)
     static if (__traits(getAliasThis, T).length)
     {
         T* aggregate;
-        alias baseMembers = FieldsAndPropertiesImpl!(typeof(__traits(getMember, aggregate, __traits(getAliasThis, T))));
+        alias A = typeof(__traits(getMember, aggregate, __traits(getAliasThis, T)));
+        static if (isSomeStruct!T)
+            alias baseMembers = FieldsAndPropertiesImpl!A;
+        else
+            alias baseMembers = AliasSeq!();
         alias members = Erase!(__traits(getAliasThis, T)[0], __traits(allMembers, T));
         alias FieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isMember, members));
     }
     else
     {
-        alias members = __traits(allMembers, T);
+        import mir.algebraic;
+        static if (isVariant!T)
+            alias members = staticMap!(allMembers, T.AllowedTypes);
+        else
+            alias members = allMembers!T;
         alias FieldsAndPropertiesImpl = AliasSeq!(Filter!(isMember, members));
     }
 }

@@ -216,7 +216,7 @@ struct This
 }
 
 /++
-Dummy type used to associate tags with type.
+Dummy type used to associate tags with a type.
 +/
 struct TaggedType(T, string name)
     if (name.length)
@@ -2756,7 +2756,7 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
                 static foreach (i, T; Args[0].AllowedTypes)
                 {
                     case i:
-                        static if (__traits(compiles, fun!T(forward!args)))
+                        static if (__traits(compiles, fun!T(forward!args)) || exhaustive == Exhaustive.compileTime && !is(T == typeof(null)))
                         {
                             static if (AllReturnTypes.length == 1)
                             {
@@ -2779,12 +2779,9 @@ private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
                             }
                         }
                         else
-                        static if (exhaustive == Exhaustive.compileTime)
+                        static if (exhaustive == Exhaustive.compileTime && is(T == typeof(null)))
                         {
-                            static if (is(T == typeof(null)))
-                                assert(0, "Null " ~ Args[0].stringof);
-                            else
-                                static assert(0, Args[0].stringof ~ ": the visitor cann't be caled with arguments " ~ AliasSeq!(T, Args[1 .. $]).stringof);
+                            assert(0, "Null " ~ Args[0].stringof);
                         }
                         else
                         static if (exhaustive == Exhaustive.nullable || exhaustive == Exhaustive.auto_)
