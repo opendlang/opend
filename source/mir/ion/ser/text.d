@@ -1,17 +1,34 @@
 /++
-$(H4 High level JSON serialization API)
+$(H4 High level (text) Ion serialization API)
 
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.ser.json;
+module mir.ion.ser.text;
 
 public import mir.serde;
 
+private bool isIdentifier(scope const char[] str) @safe pure nothrow @nogc @property
+{
+    import mir.algorithm.iteration: all;
+    return str.length
+        && (str[0] < '0' || str[0] > '9')
+        && str != "nan"
+        && str != "null"
+        && str != "true"
+        && str != "false"
+        && str.all!(
+            a => a >= 'a' && a <= 'z'
+                || a >= 'A' && a <= 'Z'
+                || a >= '0' && a <= '9'
+                || a == '_'
+                || a == '$');
+}
+
 /++
-JSON serialization back-end
+Ion serialization back-end
 +/
-struct JsonSerializer(string sep, Appender)
+struct TextSerializer(string sep, Appender)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
@@ -22,7 +39,7 @@ struct JsonSerializer(string sep, Appender)
     import std.traits: isNumeric;
 
     /++
-    JSON string buffer
+    Ion string buffer
     +/
     Appender* appender;
 
@@ -75,6 +92,21 @@ struct JsonSerializer(string sep, Appender)
         }
     }
 
+    private void sexpIncState()
+    {
+        if(state++)
+        {
+            static if(sep.length)
+            {
+                appender.put('\n');
+            }
+            else
+            {
+                appender.put(' ');
+            }
+        }
+    }
+
     private void putEscapedKey(scope const char[] key)
     {
         incState;
@@ -82,15 +114,60 @@ struct JsonSerializer(string sep, Appender)
         {
             putSpace;
         }
-        appender.put('\"');
+        appender.put('\'');
         appender.put(key);
         static if(sep.length)
         {
-            appender.put(`": `);
+            appender.put(`': `);
         }
         else
         {
-            appender.put(`":`);
+            appender.put(`':`);
+        }
+    }
+
+    private void putIdentifierKey(scope const char[] key)
+    {
+        incState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+        appender.put(key);
+        static if(sep.length)
+        {
+            appender.put(`: `);
+        }
+        else
+        {
+            appender.put(':');
+        }
+    }
+
+    private void putCompiletimeSymbol(string str)()
+    {
+        static if (str.isIdentifier)
+        {
+            appender.put(str);
+        }
+        else
+        {
+            appender.put('\'');
+            static if (str.any!(c => c == '"' || c == '\\' || c < ' '))
+            {
+                import str.array: appender;
+                enum estr = () {
+                    auto app = appender!string;
+                    printEscaped!(char, EscapeFormat.ionSymbol)(app, str);
+                    return app.data;
+                } ();
+                appender.put(estr);
+            }
+            else
+            {
+                appender.put(str);
+            }
+            appender.put('\'');
         }
     }
 
@@ -151,38 +228,72 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    alias sexpBegin = listBegin;
+    size_t sexpBegin()
+    {
+        static if(sep.length)
+        {
+            deep++;
+            appender.put("(\n");
+        }
+        else
+        {
+            appender.put('(');
+        }
+        return popState;
+    }
 
     ///
-    alias sexpEnd = listEnd;
+    void sexpEnd(size_t state)
+    {
+        static if(sep.length)
+        {
+            deep--;
+            appender.put('\n');
+            putSpace;
+        }
+        appender.put(')');
+        pushState(state);
+    }
 
     ///
-    alias annotationsBegin = listBegin;
+    size_t annotationsBegin()
+    {
+        return 0;
+    }
 
     ///
     void putAnnotation(scope const(char)[] str)
     {
-        elemBegin;
-        putValue(str);
+        putSymbol(str);
+        appender.put(`::`);
+    }
+
+    ///
+    void putCompiletimeAnnotation(string str)()
+    {
+        putCompiletimeSymbol!str;
+        appender.put(`::`);
     }
 
     ///
     void annotationsEnd(size_t state)
     {
-        listEnd(state);
-        putKey("@_value");
+        static if (sep.length)
+            appender.put(' ');
     }
 
     ///
     size_t annotationWrapperBegin()
     {
-        auto state = structBegin();
-        putKey("@_annotations");
-        return state;
+        return 0;
     }
 
     ///
-    alias annotationWrapperEnd = structEnd;
+    void annotationWrapperEnd(size_t pos)
+    {
+        static if (sep.length)
+            appender.put(' ');
+    }
 
     ///
     void nextTopLevelValue()
@@ -194,10 +305,38 @@ struct JsonSerializer(string sep, Appender)
     void putCompiletimeKey(string key)()
     {
         import mir.algorithm.iteration: any;
-        static if (key.any!(c => c == '"' || c == '\\' || c < ' '))
-            putKey(key);
+        incState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+
+        putCompiletimeSymbol!key;
+
+        static if(sep.length)
+        {
+            appender.put(`: `);
+        }
         else
-            putEscapedKey(key);
+        {
+            appender.put(':');
+        }
+    }
+
+    ///
+    void putSymbol(scope const char[] key)
+    {
+        import mir.format: printEscaped, EscapeFormat;
+
+        if (key.isIdentifier)
+        {
+            appender.put(key);
+            return;
+        }
+
+        appender.put('\'');
+        printEscaped!(char, EscapeFormat.ionSymbol)(appender, key);
+        appender.put('\'');
     }
 
     ///
@@ -210,40 +349,25 @@ struct JsonSerializer(string sep, Appender)
         {
             putSpace;
         }
-        appender.put('\"');
-        printEscaped!(char, EscapeFormat.json)(appender, key);
+
+        putSymbol(key);
+
         static if(sep.length)
         {
-            appender.put(`": `);
+            appender.put(`: `);
         }
         else
         {
-            appender.put(`":`);
+            appender.put(':');
         }
     }
 
     ///
-    void putValue(Num)(const Num value)
+    void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
         import mir.format: print;
-        import mir.internal.utility: isFloatingPoint;
-
-        static if (isFloatingPoint!Num)
-        {
-            import mir.math.common: fabs;
-
-            if (value.fabs < value.infinity)
-                print(appender, value);
-            else if (value == Num.infinity)
-                appender.put(`"+inf"`);
-            else if (value == -Num.infinity)
-                appender.put(`"-inf"`);
-            else
-                appender.put(`"nan"`);
-        }
-        else
-            print(appender, value);
+        print(appender, num);
     }
 
     ///
@@ -252,7 +376,7 @@ struct JsonSerializer(string sep, Appender)
         BigInt!256 num = void;
         if (auto overflow = num.copyFrom(view))
         {
-            static immutable exc = new SerdeException("JsonSerializer: overflow when converting " ~ typeof(view).stringof ~ " to " ~ typeof(num).stringof);
+            static immutable exc = new SerdeException("TextSerializer: overflow when converting " ~ typeof(view).stringof ~ " to " ~ typeof(num).stringof);
             throw exc;
         }
         putValue(num);
@@ -279,7 +403,53 @@ struct JsonSerializer(string sep, Appender)
     /// ditto 
     void putNull(IonTypeCode code)
     {
-        putValue(null);
+        string str;
+        final switch(code)
+        {
+            case IonTypeCode.null_:
+                str = "null";
+                break;
+            case IonTypeCode.bool_:
+                str = "null.bool";
+                break;
+            case IonTypeCode.uInt:
+            case IonTypeCode.nInt:
+                str = "null.int";
+                break;
+            case IonTypeCode.float_:
+                str = "null.float";
+                break;
+            case IonTypeCode.decimal:
+                str = "null.decimal";
+                break;
+            case IonTypeCode.timestamp:
+                str = "null.timestamp";
+                break;
+            case IonTypeCode.symbol:
+                str = "null.symbol";
+                break;
+            case IonTypeCode.string:
+                str = "null.string";
+                break;
+            case IonTypeCode.clob:
+                str = "null.clob";
+                break;
+            case IonTypeCode.blob:
+                str = "null.blob";
+                break;
+            case IonTypeCode.list:
+                str = "null.list";
+                break;
+            case IonTypeCode.sexp:
+                str = "null.sexp";
+                break;
+            case IonTypeCode.struct_:
+                str = "null.struct";
+                break;
+            case IonTypeCode.annotations:
+                assert(0, "Mir ion internal error: null annotation wrappers are illegal.");
+        }
+        appender.put(str);
     }
 
     ///
@@ -294,28 +464,38 @@ struct JsonSerializer(string sep, Appender)
         import mir.format: printEscaped, EscapeFormat;
 
         appender.put('\"');
-        printEscaped!(char, EscapeFormat.json)(appender, value);
+        printEscaped!(char, EscapeFormat.ion)(appender, value);
         appender.put('\"');
     }
 
     ///
     void putValue(Clob value)
     {
-        throw new Exception("JSON CLOB serialization isn't implemented.");
+        import mir.format: printEscaped, EscapeFormat;
+
+        static if(sep.length)
+            appender.put(`{{ "`);
+        else
+            appender.put(`{{"`);
+
+        printEscaped!(char, EscapeFormat.ionClob)(appender, value.data);
+
+        static if(sep.length)
+            appender.put(`" }} `);
+        else
+            appender.put(`"}}`);
     }
 
     ///
     void putValue(Blob value)
     {
-        throw new Exception("JSON BLOB serialization isn't implemented.");
+        throw new Exception("Ion BLOB serialization isn't implemented.");
     }
 
     ///
     void putValue(Timestamp value)
     {
-        appender.put('\"');
         value.toISOExtString(appender);
-        appender.put('\"');
     }
 
     ///
@@ -329,15 +509,22 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    alias sexpElemBegin = elemBegin;
+    void sexpElemBegin()
+    {
+        sexpIncState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+    }
 }
 
 /++
-JSON serialization function.
+Ion serialization function.
 +/
-string serializeJson(V)(auto ref V value)
+string serializeText(V)(auto ref V value)
 {
-    return serializeJsonPretty!""(value);
+    return serializeTextPretty!""(value);
 }
 
 ///
@@ -349,19 +536,19 @@ unittest
         uint bar;
     }
 
-    assert(serializeJson(S("str", 4)) == `{"foo":"str","bar":4}`);
+    assert(serializeText(S("str", 4)) == `{foo:"str",bar:4}`, serializeText(S("str", 4)));
 }
 
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.text: serializeText;
     import mir.format: stringBuf;
     import mir.small_string;
 
     SmallString!8 smll = SmallString!8("ciaociao");
     stringBuf buffer;
 
-    serializeJson(buffer, smll);
+    serializeText(buffer, smll);
     assert(buffer.data == `"ciaociao"`);
 }
 
@@ -386,11 +573,11 @@ unittest
         Decor dec = Decor(20); // { 20, inf }
     }
     
-    assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
+    assert(Cake("Normal Cake").serializeText == `{name:"Normal Cake",slices:8,flavor:1.0}`);
     auto cake = Cake.init;
     cake.dec = Decor.init;
-    assert(cake.serializeJson == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"+inf"}}`);
-    assert(cake.dec.serializeJson == `{"candles":0,"fluff":"+inf"}`);
+    assert(cake.serializeText == `{slices:8,flavor:1.0,dec:{candles:0,fluff:+inf}}`, cake.serializeText);
+    assert(cake.dec.serializeText == `{candles:0,fluff:+inf}`);
     
     static struct A
     {
@@ -398,29 +585,29 @@ unittest
         string str = "Banana";
         int i = 1;
     }
-    assert(A.init.serializeJson == `{"i":1}`);
+    assert(A.init.serializeText == `{i:1}`);
     
     static struct S
     {
         @serdeIgnoreDefault
         A a;
     }
-    assert(S.init.serializeJson == `{}`);
-    assert(S(A("Berry")).serializeJson == `{"a":{"str":"Berry","i":1}}`);
+    assert(S.init.serializeText == `{}`);
+    assert(S(A("Berry")).serializeText == `{a:{str:"Berry",i:1}}`);
     
     static struct D
     {
         S s;
     }
-    assert(D.init.serializeJson == `{"s":{}}`);
-    assert(D(S(A("Berry"))).serializeJson == `{"s":{"a":{"str":"Berry","i":1}}}`);
-    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":null,"i":0}}}`);
+    assert(D.init.serializeText == `{s:{}}`);
+    assert(D(S(A("Berry"))).serializeText == `{s:{a:{str:"Berry",i:1}}}`);
+    assert(D(S(A(null, 0))).serializeText == `{s:{a:{str:null.string,i:0}}}`, D(S(A(null, 0))).serializeText);
     
     static struct F
     {
         D d;
     }
-    assert(F.init.serializeJson == `{"d":{"s":{}}}`);
+    assert(F.init.serializeText == `{d:{s:{}}}`);
 }
 
 ///
@@ -433,22 +620,22 @@ unittest
         @serdeIgnoreIn
         string s;
     }
-    // assert(`{"s":"d"}`.deserializeJson!S.s == null, `{"s":"d"}`.deserializeJson!S.s);
-    assert(S("d").serializeJson == `{"s":"d"}`);
+    // assert(`{"s":"d"}`.deserializeText!S.s == null, `{"s":"d"}`.serializeText!S.s);
+    assert(S("d").serializeText == `{s:"d"}`);
 }
 
 ///
 unittest
 {
-    import mir.ion.deser.json;
+    import mir.ion.deser.ion;
 
     static struct S
     {
         @serdeIgnoreOut
         string s;
     }
-    assert(`{"s":"d"}`.deserializeJson!S.s == "d");
-    assert(S("d").serializeJson == `{}`);
+    // assert(`{s:"d"}`.serializeText!S.s == "d");
+    assert(S("d").serializeText == `{}`);
 }
 
 ///
@@ -462,8 +649,8 @@ unittest
         int a;
     }
 
-    assert(serializeJson(S(3)) == `{"a":3}`, serializeJson(S(3)));
-    assert(serializeJson(S(-3)) == `{}`);
+    assert(serializeText(S(3)) == `{a:3}`, serializeText(S(3)));
+    assert(serializeText(S(-3)) == `{}`);
 }
 
 ///
@@ -471,15 +658,15 @@ unittest
 {
     import mir.rc.array;
     auto ar = rcarray!int(1, 2, 4);
-    assert(ar.serializeJson == "[1,2,4]");
+    assert(ar.serializeText == "[1,2,4]");
 }
 
 ///
 unittest
 {
-    import mir.ndslice.topology: iota;
+    import std.range;
+    import std.uuid;
     import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy;
-    import std.array: Appender;
 
     static struct S
     {
@@ -496,8 +683,8 @@ unittest
         Appender!(string[]) strings; //`put` method is used
     }
 
-    assert(S(5).serializeJson == `{"numbers":[0,1,2,3,4]}`);
-    // assert(`{"strings":["a","b"]}`.deserializeJson!S.strings.data == ["a","b"]);
+    assert(S(5).serializeText == `{numbers:[0,1,2,3,4]}`);
+    // assert(`{"strings":["a","b"]}`.deserializeText!S.strings.data == ["a","b"]);
 }
 
 ///
@@ -532,14 +719,14 @@ unittest
         M obj;
     }
 
-    assert(S.init.serializeJson == `{"obj":{"a":1,"b":2,"c":3}}`);
-    // assert(`{"obj":{"a":1,"b":2,"c":9}}`.deserializeJson!S.obj.sum == 12);
+    assert(S.init.serializeText == `{obj:{a:1,b:2,c:3}}`, S.init.serializeText);
+    // assert(`{"obj":{a:1,"b":2,"c":9}}`.deserializeText!S.obj.sum == 12);
 }
 
 ///
 unittest
 {
-    import mir.ion.deser.json;
+    import mir.ion.deser.ion;
     import std.range;
     import std.algorithm;
     import std.conv;
@@ -551,21 +738,19 @@ unittest
         int a;
     }
 
-    auto s = deserializeJson!S(`{"a":3}`);
-    assert(s.a == 5);
-    assert(serializeJson(s) == `{"a":"str_str_str_str_str"}`);
+    assert(serializeText(S(5)) == `{a:"str_str_str_str_str"}`);
 }
 
 /++
-JSON serialization function with pretty formatting.
+Ion serialization function with pretty formatting.
 +/
-string serializeJsonPretty(string sep = "\t", V)(auto ref V value)
+string serializeTextPretty(string sep = "\t", V)(auto ref V value)
 {
     import std.array: appender;
     import std.functional: forward;
 
     auto app = appender!(char[]);
-    serializeJsonPretty!sep(app, forward!value);
+    serializeTextPretty!sep(app, forward!value);
     return (()@trusted => cast(string) app.data)();
 }
 
@@ -573,18 +758,18 @@ string serializeJsonPretty(string sep = "\t", V)(auto ref V value)
 unittest
 {
     static struct S { int a; }
-    assert(S(4).serializeJsonPretty!"    " ==
+    assert(S(4).serializeTextPretty!"    " ==
 q{{
-    "a": 4
+    a: 4
 }});
 }
 
 /++
-JSON serialization for custom outputt range.
+Ion serialization for custom outputt range.
 +/
-void serializeJson(Appender, V)(ref Appender appender, auto ref V value)
+void serializeText(Appender, V)(ref Appender appender, auto ref V value)
 {
-    return serializeJsonPretty!""(appender, value);
+    return serializeTextPretty!""(appender, value);
 }
 
 ///
@@ -594,22 +779,22 @@ unittest
     import mir.format: stringBuf;
     stringBuf buffer;
     static struct S { int a; }
-    serializeJson(buffer, S(4));
-    assert(buffer.data == `{"a":4}`);
+    serializeText(buffer, S(4));
+    assert(buffer.data == `{a:4}`);
 }
 
 /++
-JSON serialization function with pretty formatting and custom output range.
+Ion serialization function with pretty formatting and custom output range.
 +/
-template serializeJsonPretty(string sep = "\t")
+template serializeTextPretty(string sep = "\t")
 {
     import std.range.primitives: isOutputRange; 
     ///
-    void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value)
+    void serializeTextPretty(Appender, V)(ref Appender appender, auto ref V value)
         if (isOutputRange!(Appender, const(char)[]))
     {
         import mir.ion.ser: serializeValue;
-        auto serializer = jsonSerializer!sep((()@trusted => &appender)());
+        auto serializer = textSerializer!sep((()@trusted => &appender)());
         serializeValue(serializer, value);
     }
 }
@@ -621,23 +806,23 @@ unittest
     import mir.format: stringBuf;
     stringBuf buffer;
     static struct S { int a; }
-    serializeJsonPretty!"    "(buffer, S(4));
+    serializeTextPretty!"    "(buffer, S(4));
     assert(buffer.data ==
 `{
-    "a": 4
+    a: 4
 }`);
 }
 
 /++
-Creates JSON serialization back-end.
+Creates Ion serialization back-end.
 Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
 +/
-template jsonSerializer(string sep = "")
+template textSerializer(string sep = "")
 {
     ///
-    auto jsonSerializer(Appender)(return Appender* appender)
+    auto textSerializer(Appender)(return Appender* appender)
     {
-        return JsonSerializer!(sep, Appender)(appender);
+        return TextSerializer!(sep, Appender)(appender);
     }
 }
 
@@ -648,7 +833,7 @@ template jsonSerializer(string sep = "")
     import mir.bignum.integer;
 
     stringBuf buffer;
-    auto ser = jsonSerializer((()@trusted=>&buffer)());
+    auto ser = textSerializer((()@trusted=>&buffer)());
     auto state0 = ser.structBegin;
 
         ser.putKey("null");
@@ -667,7 +852,7 @@ template jsonSerializer(string sep = "")
 
     ser.structEnd(state0);
 
-    assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`, buffer.data);
+    assert(buffer.data == `{'null':null,array:[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`, buffer.data);
 }
 
 ///
@@ -677,7 +862,7 @@ unittest
     import mir.bignum.integer;
 
     auto app = appender!string;
-    auto ser = jsonSerializer!"    "(&app);
+    auto ser = textSerializer!"    "(&app);
     auto state0 = ser.structBegin;
 
         ser.putKey("null");
@@ -698,8 +883,8 @@ unittest
 
     assert(app.data ==
 `{
-    "null": null,
-    "array": [
+    'null': null,
+    array: [
         null,
         123,
         1.2300000123e+7,

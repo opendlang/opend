@@ -6,14 +6,16 @@ import mir.appender: ScopedBuffer;
 import mir.bignum.decimal: Decimal;
 import mir.bignum.integer: BigInt;
 import mir.ion.exception;
+import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.ion.value;
+import mir.reflection: isSomeStruct;
 import mir.small_array;
 import mir.small_string;
+import mir.timestamp;
 import mir.utility: _expect;
 
 import std.traits:
-    isAggregateType,
     isArray,
     ForeachType,
     hasUDA,
@@ -24,17 +26,19 @@ import std.traits:
     isUnsigned,
     Unqual;
 
-
 package template isFirstOrderSerdeType(T)
 {
     import mir.serde: serdeGetFinalProxy;
 
-    static if (is(T == struct) || is(T == union) || is(T == class) || is(T == interface))
+    static if (isSomeStruct!T)
     {
-        static if (is(T : BigInt!maxSize64, size_t maxSize64))
+        static if (isBigInt!T)
             enum isFirstOrderSerdeType = true;
         else
-        static if (is(T : Decimal!maxW64bitSize, size_t maxW64bitSize))
+        static if (isDecimal!T)
+            enum isFirstOrderSerdeType = true;
+        else
+        static if (isTimestamp!T)
             enum isFirstOrderSerdeType = true;
         else
         static if (is(T : SmallString!maxLength, size_t maxLength))
@@ -311,10 +315,49 @@ version(mir_ion_test) unittest
     assert(cast(double)value == -12332422e75);
 }
 
+/++
+Deserialize timestamp value.
++/
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+    pure @safe nothrow @nogc
+    if (is(T == Timestamp))
+{
+    if (_expect(data != null, true))
+    {
+        if (data.descriptor.type == IonTypeCode.timestamp)
+        {
+            return data.trustedGet!IonTimestamp.get!T(value);
+        }
+        else
+        {
+            const(char)[] ionValue;
+            if (!data.get(ionValue) && Timestamp.fromString(ionValue, value))
+                return IonErrorCode.none;
+        }
+    }
+    return IonErrorCode.expectedTimestampValue;
+}
+
+///
+version(mir_ion_test) unittest
+{
+    import mir.ion.value;
+    import mir.ion.exception;
+    import mir.bignum.decimal;
+
+    Decimal!256 value; // 256x64 bits
+
+    // from ion decimal
+    auto data = IonValue([0x56, 0x00, 0xcb, 0x80, 0xbc, 0x2d, 0x86]).describe;
+
+    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
+    assert(cast(double)value == -12332422e75);
+}
+
 package template hasProxy(T)
 {
     import mir.serde: serdeProxy;
-    static if (is(T == enum) || is(T == class)  || is(T == struct) || is(T == union)|| is(T == interface))
+    static if (is(T == enum) || isSomeStruct!T)
         enum hasProxy = hasUDA!(T, serdeProxy);
     else
         enum hasProxy = false;
@@ -323,7 +366,7 @@ package template hasProxy(T)
 package template hasScoped(T)
 {
     import mir.serde: serdeScoped;
-    static if (is(T == enum) || is(T == class)  || is(T == struct) || is(T == union)|| is(T == interface))
+    static if (is(T == enum) || isSomeStruct!T)
         enum hasScoped = hasUDA!(T, serdeScoped);
     else
         enum hasScoped = false;

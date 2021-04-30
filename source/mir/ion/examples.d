@@ -165,9 +165,9 @@ unittest
 
     assert (deserializeJson!Foo(`{"f":"nan"}`) == Foo(), deserializeJson!Foo(`{"f":"nan"}`).to!string);
 
-    assert (serializeJson(Foo(1f/0f)) == `{"f":"inf"}`);
-    assert (serializeIon(Foo(1f/0f)).ion2json == `{"f":"inf"}`);
-    assert (deserializeJson!Foo(`{"f":"inf"}`)  == Foo( float.infinity));
+    assert (serializeJson(Foo(1f/0f)) == `{"f":"+inf"}`);
+    assert (serializeIon(Foo(1f/0f)).ion2json == `{"f":"+inf"}`);
+    assert (deserializeJson!Foo(`{"f":"+inf"}`)  == Foo( float.infinity));
     assert (deserializeJson!Foo(`{"f":"-inf"}`) == Foo(-float.infinity));
 
     assert (serializeJson(Foo(-1f/0f)) == `{"f":"-inf"}`);
@@ -379,8 +379,8 @@ unittest
     assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
     auto cake = Cake.init;
     cake.dec = Decor.init;
-    assert(cake.serializeJson == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"inf"}}`);
-    assert(cake.dec.serializeJson == `{"candles":0,"fluff":"inf"}`);
+    assert(cake.serializeJson == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"+inf"}}`);
+    assert(cake.dec.serializeJson == `{"candles":0,"fluff":"+inf"}`);
     
     static struct A
     {
@@ -531,7 +531,32 @@ unittest
     string data = q{{"objects":[{"name":"test"},{"value":1.5}]}};
 
     auto value = data.json2ion.deserializeIon!SomeObject;
-    // assert (value.serializeJson == data);
+    assert (value.serializeJson == data, value.serializeJson);
+}
+
+// TODO
+version(none)
+unittest
+{
+    Asdf[string] map;
+
+    map["num"] = serializeToAsdf(124);
+    map["str"] = serializeToAsdf("value");
+
+    import std.stdio;
+    map.serializeToJson.writeln();
+}
+
+// TODO
+version(none)
+unittest
+{
+    import mir.algebraic: Variant, Nullable, This;
+    alias V = Nullable!(double, string, This[], This[string]);
+    V v;
+    assert(v.serializeToJson == "null", v.serializeToJson);
+    v = [V(2), V("str"), V(["key":V(1.0)])];
+    assert(v.serializeToJson == `[2.0,"str",{"key":1.0}]`);
 }
 
 ///

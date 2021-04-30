@@ -44,13 +44,18 @@ struct UnwrapSymbolIdsSerializer(Serializer, SymbolMap)
     /++
     Performs `putValue(symbolMap[id])`
     +/
-    void putValueId(size_t id)
+    void putSymbolId(size_t id)
     {
         checkId(id);
-        serializer.putValue(symbolMap[id]);
+        putSymbol(symbolMap[id]);
     }
 
-    static if (__traits(hasMember, *serializer, "putAnnotation"))
+    static if (!__traits(hasMember, serializer, "putSymbol"))
+    void putSymbol(scope const(char)[] str)
+    {
+        putValue(str);
+    }
+
     /++
     Performs `putAnnotation(symbolMap[id])`
     +/

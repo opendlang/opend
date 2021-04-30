@@ -620,19 +620,20 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t ionPut(T : typeof(null))(scope ubyte* ptr, const T)
+size_t ionPut(scope ubyte* ptr, typeof(null), IonTypeCode typeCode = IonTypeCode.null_) pure nothrow @nogc
 {
-    *ptr++ = 0x0F;
+    *ptr++ = cast(ubyte) (0x0F | (typeCode << 4));
     return 1;
 }
 
 ///
-@system pure nothrow @nogc
+// @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
     ubyte[1] data;
     assert(ionPut(data.ptr, null) == 1);
-    assert(data[0] == 0x0F);
+    import mir.conv;
+    assert(data[0] == 0x0F, data[0].to!string);
 }
 
 /++

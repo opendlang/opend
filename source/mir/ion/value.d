@@ -1533,14 +1533,14 @@ struct IonSymbolID
     Serializes SymbolId as Ion value.
     Note: This serialization shouldn't be used for `struct` keys or `annotation` list.
     Params:
-        serializer = serializer with `putValueId` primitive.
+        serializer = serializer with `putSymbolId` primitive.
     +/
     void serialize(S)(ref S serializer) const
     {
         size_t id;
         if (auto overflow = representation.get(id))
             throw IonErrorCode.overflowInSymbolId.ionException;
-        serializer.putValueId(id);
+        serializer.putSymbolId(id);
     }
 }
 
@@ -1956,7 +1956,7 @@ const:
         auto state = serializer.sexpBegin;
         foreach (value; this)
         {
-            serializer.elemBegin;
+            serializer.sexpElemBegin;
             value.serializeImpl(serializer);
             if (false)
                 value.serializeDummy(serializer);
@@ -2429,8 +2429,6 @@ const:
     int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
 
-    import mir.algebraic: Nullable;
-
     /++
     +/
     IonDescribedValue opIndex(scope const(char)[] symbol) const @safe pure @nogc
@@ -2762,7 +2760,6 @@ const:
         auto state = serializer.annotationsBegin;
         foreach(symbolID; this)
         {
-            serializer.elemBegin;
             serializer.putAnnotationId(symbolID);
         }
         serializer.annotationsEnd(state);

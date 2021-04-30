@@ -6,10 +6,6 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
 
-public import mir.serde;
-
-import mir.bignum.decimal: Decimal;
-import mir.bignum.integer: BigInt;
 import mir.ion.deser.low_level;
 import mir.ion.exception;
 import mir.ion.symbol_table;
@@ -18,18 +14,9 @@ import mir.ion.value;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
+import std.traits: ForeachType, hasUDA, Unqual;
 
-import std.traits:
-    ForeachType,
-    hasUDA,
-    isAggregateType,
-    Unqual;
-
-private enum isUserAggregate(T) = isAggregateType!T
-    && !is(T : BigInt!maxSize64, size_t maxSize64)
-    && !is(T : Decimal!maxW64bitSize, size_t maxW64bitSize)
-    && !is(T : SmallArray!(E, maxLength), E, size_t maxLength)
-    && !is(T : SmallString!maxLength, size_t maxLength);
+public import mir.serde;
 
 private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(IonTypeCode code)
     @safe pure nothrow @nogc
@@ -708,7 +695,6 @@ version(mir_ion_test) unittest
     import mir.serde: SerdeException;
     import mir.small_array;
     import mir.small_string;
-    import mir.bignum.decimal;
 
     static struct Book
     {
@@ -756,4 +742,14 @@ unittest
     }
     assert(`{"id":"8AB3060E-2cba-4f23-b74c-b52db3bdfb46"}`.deserializeJson!S.id
                 == UUID("8AB3060E-2cba-4f23-b74c-b52db3bdfb46"));
+}
+
+/// Mir types
+unittest
+{
+    import mir.bignum.integer;
+    import mir.date;
+    import mir.ion.deser.json: deserializeJson;
+    assert(`"2021-04-24"`.deserializeJson!Date == Date(2021, 4, 24));
+    assert(`123`.deserializeJson!(BigInt!2) == BigInt!2(123));
 }

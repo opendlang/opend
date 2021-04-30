@@ -75,6 +75,8 @@ enum IonErrorCode
     ///
     expectedListValue,
     ///
+    expectedTimestampValue,
+    ///
     requiredDefaultClassConstructor,
     ///
     integerOverflow,
@@ -151,7 +153,8 @@ string ionErrorMsg()(IonErrorCode code) @property
         "expected string value",
         "expected char value",
         "expected struct value",
-        "required list value",
+        "expected list value",
+        "expected timestamp value",
         "required default class constructor",
         "integer overflow",
         "small string overflow",
