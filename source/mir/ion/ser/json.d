@@ -530,9 +530,9 @@ unittest
 ///
 unittest
 {
-    import std.range;
-    import std.uuid;
+    import mir.ndslice.topology: iota;
     import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy;
+    import std.array: Appender;
 
     static struct S
     {

@@ -4,11 +4,10 @@ Helpers to skip over a given Ion Text token.
 Authors: Harrison Ford
 +/
 module mir.ion.deser.text.skippers;
+
 import mir.ion.deser.text.tokenizer;
 import mir.ion.deser.text.tokens;
 import mir.ion.type_code;
-import std.traits : isInstanceOf;
-import std.range : empty;
 
 /++
 Skip over the contents of a S-Exp/Struct/List/Blob.
@@ -163,7 +162,7 @@ Returns:
 +/
 bool skipComment(ref IonTokenizer t) @safe @nogc pure  
 {
-    if (t.input.empty) {
+    if (t.input.length == 0) {
         return false;
     }
     const(char) c = t.peekOne();

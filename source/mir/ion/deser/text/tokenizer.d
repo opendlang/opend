@@ -4,14 +4,11 @@ Tokenizer to split up the contents of an Ion Text file into tokens
 Authors: Harrison Ford
 +/
 module mir.ion.deser.text.tokenizer;
+
 import mir.ion.deser.text.readers;
 import mir.ion.deser.text.skippers;
 import mir.ion.deser.text.tokens;
 import mir.ion.internal.data_holder : IonTapeHolder;
-import std.traits : Unqual;
-import std.range : dropBack, empty, front, popFront;
-import std.range.primitives : isInputRange, ElementType;
-import mir.appender : ScopedBuffer;
 
 /++
 Create a tokenizer for a given UTF-8 string.
@@ -41,11 +38,12 @@ Returns:
     [IonTokenizer]
 +/
 auto tokenizeString(Input)(Input input) @safe pure  
-if (is(Input == wstring) || is(Input == dstring)) {
+if (is(Input : const(wchar)[]) || is(Input : const(dchar)[])) {
     import std.utf : toUTF8;
     auto range = input.toUTF8();
     return tokenizeString(range);
 }
+
 /// UTF-16 string
 version(mir_ion_parser_test) unittest {
     import mir.ion.deser.text.tokens : IonTokenType;
@@ -126,7 +124,7 @@ struct IonTokenizer {
         true if end of file, false otherwise
     +/
     bool isEOF() @safe @nogc pure {
-        return this.window.empty == true 
+        return this.window.length == 0
                || this.currentToken == IonTokenType.TokenEOF 
                || this.position >= this.input.length;
     }
@@ -990,29 +988,25 @@ struct IonTokenizer {
 /++
 Generic helper to verify the functionality of the parsing code in unit-tests
 +/
-template testRead(T, string file = __FILE__, int line = __LINE__) {
-    void testRead(ref T t, char expected) {
-        import mir.exception : MirError;
-        char v = t.readInput();
-        if (v != expected) {
-            import mir.format : stringBuf, print;
-            stringBuf buf;
-            throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
-        }
+void testRead(T)(ref T t, char expected, string file = __FILE__, int line = __LINE__) {
+    import mir.exception : MirError;
+    char v = t.readInput();
+    if (v != expected) {
+        import mir.format : stringBuf, print;
+        stringBuf buf;
+        throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
     }
-} 
+}
 
 /++
 Generic helper to verify the functionality of the parsing code in unit-tests
 +/
-template testPeek(T, string file = __FILE__, int line = __LINE__) {
-    void testPeek(ref T t, char expected) {
-        import mir.exception : MirError;
-        char v = t.peekOne();
-        if (v != expected) {
-            import mir.format : stringBuf, print;
-            stringBuf buf;
-            throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
-        }
+void testPeek(T)(ref T t, char expected, string file = __FILE__, int line = __LINE__) {
+    import mir.exception : MirError;
+    char v = t.peekOne();
+    if (v != expected) {
+        import mir.format : stringBuf, print;
+        stringBuf buf;
+        throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
     }
 }

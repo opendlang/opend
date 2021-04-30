@@ -5,7 +5,8 @@ Heavily influenced (and compatible) with upstream Ion implementations (compatibl
 Authors: Harrison Ford
 +/
 module mir.ion.deser.text;
-public import mir.ion.deser.text.readers;
-public import mir.ion.deser.text.skippers;
-public import mir.ion.deser.text.tokenizer;
-public import mir.ion.deser.text.tokens;
+
+import mir.ion.deser.text.readers;
+import mir.ion.deser.text.skippers;
+import mir.ion.deser.text.tokenizer;
+import mir.ion.deser.text.tokens;

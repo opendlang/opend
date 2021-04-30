@@ -6,8 +6,8 @@ language: d
 d:
  - dmd
  - ldc
- - dmd-2.093.1
- - ldc-1.23.0
+ - dmd-2.095.1
+ - ldc-1.25.1
 
 env:
  - ARCH="x86_64"
@@ -15,17 +15,17 @@ env:
 matrix:
   include:
     - os: linux
-      d: ldc-1.23.0
+      d: ldc
       env: ARCH="AARCH64"
       arch: arm64
     - os: linux
-      d: dmd-2.093.1
+      d: dmd
       env: ARCH="x86"
       addons:
       - apt:
         - packages: gcc-multilib
     - os: linux
-      d: ldc-1.23.0
+      d: ldc
       env: ARCH="x86"
       addons: 
       - apt:

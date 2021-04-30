@@ -541,7 +541,7 @@ unittest
     import mir.ion.ser.json;
     import mir.ion.deser.json;
 
-    import std.range;
+    import std.array: Appender;
     import std.uuid;
 
     static struct S

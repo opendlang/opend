@@ -592,9 +592,7 @@ MirIonTokenizerException ionTokenizerException(string file = __FILE__, int line 
 
     static immutable MirIonTokenizerException[] exceptions =
         [EnumMembers!IonTokenizerErrorCode]
-        .map!(code => code ? new MirIonTokenizerException("MirIonTokenizerException: " ~ code.ionTokenizerMsg,
-                                                          file, line) 
-                           : null)
+        .map!(code => code ? new MirIonTokenizerException("MirIonTokenizerException: " ~ code.ionTokenizerMsg, file, line) : null)
         .array;
         
     return cast(MirIonTokenizerException) exceptions[code - IonTokenizerErrorCode.min];

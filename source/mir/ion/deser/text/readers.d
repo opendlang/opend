@@ -4,14 +4,15 @@ Helpers for reading values from a given Ion token.
 Authors: Harrison Ford
 +/
 module mir.ion.deser.text.readers;
-import mir.ion.deser.text.tokenizer;
-import mir.ion.deser.text.skippers;
-import mir.ion.deser.text.tokens;
-import std.traits : isInstanceOf;
-import mir.appender : ScopedBuffer;
 
-// MASSIVE TODO: check if we ever will run into the ScopedBuffers running out of memory!
-// IIRC, they *do* not allocate above their max of 1024, so we may *need* to verify this is correct
+import mir.ion.deser.text.skippers;
+import mir.ion.deser.text.tokenizer;
+import mir.ion.deser.text.tokens;
+
+private bool isValidDchar(dchar c) pure nothrow @safe @nogc
+{
+    return c < 0xD800 || (c > 0xDFFF && c <= 0x10FFFF);
+}
 
 /++
 Read the contents of a given token from the input range.
@@ -172,8 +173,6 @@ Returns:
 +/
 size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
 {
-    import std.utf : isValidDchar;
-    import std.typecons : No;
     const(char) esc = t.peekOne();
     if (esc == '\n') {
         t.skipOne();

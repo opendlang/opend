@@ -13,7 +13,6 @@ import mir.ion.deser;
 import mir.ion.deser.low_level: isNullable;
 import mir.reflection;
 import std.meta;
-import std.range.primitives;
 import std.traits;
 
 public import mir.serde;
