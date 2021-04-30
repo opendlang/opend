@@ -44,6 +44,7 @@ template isComplex(C)
     }
 }
 
+version(LDC)
 version(mir_core_test)
 unittest
 {
