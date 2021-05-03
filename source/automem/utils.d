@@ -14,8 +14,7 @@ void destruct(T)(T obj) if (is(T == interface)) {
 }
 
 void destruct(T)(ref T obj) if (is(T == struct)) {
-    static if (__traits(hasMember, T, "__xdtor") &&
-               __traits(isSame, T, __traits(parent, obj.__xdtor)))
+    static if (__traits(hasMember, T, "__xdtor"))
         obj.__xdtor;
 }
 
