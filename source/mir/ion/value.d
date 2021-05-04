@@ -2207,6 +2207,7 @@ const:
     }
 
     ///
+    @safe pure nothrow @nogc
     IonStructWithSymbols withSymbols(return scope const(char[])[] symbolTable) return
     {
         return IonStructWithSymbols(this, symbolTable);
@@ -2603,6 +2604,14 @@ struct IonAnnotations
         @safe pure nothrow @nogc const @property
     {
         return data.length == 0;
+    }
+
+    ///
+    IonErrorCode pick(ref size_t symbolID)
+        @safe pure nothrow @nogc
+    {
+        assert(!empty);
+        return parseVarUInt(data, symbolID);
     }
 
 const:

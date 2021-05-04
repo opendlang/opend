@@ -322,20 +322,6 @@ unittest
     static assert(nullTypeCodeOf!long == IonTypeCode.nInt);
 }
 
-template isAnnotatedAliasThisAlgebraic(T)
-{
-    static if (serdeGetAnnotationMembersOut!T.length && __traits(getAliasThis, T).length)
-    {
-        import mir.algebraic: isVariant;
-        T* aggregate;
-        enum isAnnotatedAliasThisAlgebraic = isVariant!(typeof(__traits(getMember, aggregate, __traits(getAliasThis, T))));
-    }
-    else
-    {
-        enum isAnnotatedAliasThisAlgebraic = false;
-    }
-}
-
 private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, size_t annotationsState, size_t wrapperState)
 {
     import mir.algebraic: isVariant;
@@ -347,7 +333,7 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
         }
     }
 
-    static if (isAnnotatedAliasThisAlgebraic!V)
+    static if (isAlgebraicAliasThis!V)
     {
         serializeAnnotatedValue(serializer, __traits(getMember, value, __traits(getAliasThis, V)), annotationsState, wrapperState);
     }
@@ -707,5 +693,8 @@ unittest
     import mir.ion.ser.text: serializeText;
     static immutable text = `LIBOR::$a::Rate::USD::{number:nan,s:null.string}`;
     assert(value.serializeText == text);
-    assert(value.serializeIon.ion2text == text);
+    auto binary = value.serializeIon;
+    assert(binary.ion2text == text);
+    import mir.ion.deser.ion: deserializeIon;
+    assert(binary.deserializeIon!S.serializeText == text);
 }

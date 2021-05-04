@@ -6,6 +6,7 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
 
+import mir.algebraic: isVariant;
 import mir.ion.deser.low_level;
 import mir.ion.exception;
 import mir.ion.symbol_table;
@@ -17,6 +18,8 @@ import mir.utility: _expect;
 import std.traits: ForeachType, hasUDA, Unqual;
 
 public import mir.serde;
+
+private enum isSmallString(T) = is(T == SmallString!N, size_t N);
 
 private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(IonTypeCode code)
     @safe pure nothrow @nogc
@@ -101,6 +104,50 @@ Deserialize aggregate value using compile time symbol table
 +/
 template deserializeValue(string[] symbolTable, bool exteneded = false)
 {
+    static if (!exteneded)
+        static immutable table = symbolTable;
+
+    @safe pure nothrow @nogc
+    private bool prepareSymbolId(scope TableParams!exteneded tableParams, ref size_t symbolId)
+    {
+        static if (exteneded)
+        {
+            alias table = tableParams[0];
+            if (symbolId >= tableParams[1].length)
+                return false;
+            symbolId = tableParams[1][symbolId];
+        }
+        return symbolId < table.length;
+    }
+
+    private string deserializeAnnotations(T)(
+        ref IonAnnotations annotations,
+        scope TableParams!exteneded tableParams,
+        ref T value)
+    {
+        static if (exteneded)
+            alias table = tableParams[0];
+        static foreach (member; serdeGetAnnotationMembersIn!T)
+        {{
+            if (annotations.empty)
+                return "Data missing for annotation member";
+            size_t symbolId;
+            if (auto error = annotations.pick(symbolId))
+                return error.ionErrorMsg;
+            if (symbolId >= table.length)
+                return "Symbol ID is greater then the symbol table";
+            static if (__traits(compiles, {__traits(getMember, value, member) = table[id];}))
+            {
+                __traits(getMember, value, member) = table[symbolId];
+            }
+            else
+            {
+                __traits(getMember, value, member) = table[symbolId].idup;
+            }
+        }}
+        return null;
+    }
+
     /++
     Deserialize aggregate value
     Params:
@@ -108,18 +155,21 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         value = value to deserialize
     Returns: `SerdeException`
     +/
-    string deserializeValue(T)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value)
-        if (!isFirstOrderSerdeType!T)
+    string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations) pure
+        if (!isFirstOrderSerdeType!T && (is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations)))
     {
-        import mir.rc.array: RCArray, RCI;
+        import mir.internal.meta: Contains;
         import mir.ndslice.slice: Slice, SliceKind;
+        import mir.rc.array: RCArray, RCI;
+        import mir.string_map : isStringMap;
+        import std.meta: anySatisfy, Filter, templateAnd, templateNot, templateOr;
+        import std.traits: isArray, isSomeString, isAssociativeArray;
+
+        static if (exteneded)
+            alias table = tableParams[0];
 
         static if (__traits(hasMember, value, "deserializeFromIon"))
         {
-            static if (!exteneded)
-                static immutable table = symbolTable;
-            else
-                alias table = tableParams[0];
             return value.deserializeFromIon!(symbolTable)(table, data);
         }
         else
@@ -134,7 +184,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     if (value._length == maxLength)
                         return IonErrorCode.smallArrayOverflow.ionErrorMsg;
                     E elem;
-                    if (auto exc = .deserializeValue!symbolTable(ionElem, tableParams, elem))
+                    if (auto exc = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, elem))
                         return exc;
                     import core.lifetime: move;
                     value.trustedAppend(move(elem));
@@ -159,7 +209,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                 }
 
@@ -167,7 +217,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     import std.array: uninitializedArray;
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                     auto ar = uninitializedArray!(E[])(buffer.length);
                     buffer.moveDataAndEmplaceTo(ar);
@@ -184,8 +234,53 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             return IonErrorCode.expectedListValue.ionErrorMsg;
         }
         else
-        static if (is(T == K[V], K , V))
+        static if (is(T == V[K], K, V))
         {
+            import mir.conv;
+            if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
+                return "Expected IonStruct for an associative array deserialization";
+            if (data.descriptor.L == 0xF)
+            {
+                value = null;
+                return null;
+            }
+            auto ionValue = data.trustedGet!IonStruct;
+
+            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+            {
+                if (error)
+                    return error.ionErrorMsg;
+                if (symbolId >= table.length)
+                    return "Ion Symbol ID is too large for the current symbol table";
+                import mir.conv: to;
+                if (auto errorMsg = .deserializeValue!(symbolTable, exteneded)(elem, tableParams, value.require(table[symbolId].to!K)))
+                    return errorMsg;
+            }
+            return null;
+        }
+        else
+        static if (isStringMap!T)
+        {
+            import mir.conv;
+            if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
+                return "Expected IonStruct for an associative array deserialization";
+            if (data.descriptor.L == 0xF)
+            {
+                value = null;
+                return null;
+            }
+            auto ionValue = data.trustedGet!IonStruct;
+
+            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+            {
+                if (error)
+                    return error.ionErrorMsg;
+                if (symbolId >= table.length)
+                    return "Ion Symbol ID is too large for the current symbol table";
+                import mir.conv: to;
+                if (auto errorMsg = .deserializeValue!(symbolTable, exteneded)(elem, tableParams, value.require(table[symbolId].to!string)))
+                    return errorMsg;
+            }
             return null;
         }
         else
@@ -251,14 +346,14 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                 }
 
                 return ()@trusted @nogc {
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!symbolTable, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
@@ -278,22 +373,6 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             return IonErrorCode.expectedListValue.ionErrorMsg;
         }
         else
-        static if (isNullable!T)
-        {
-            // TODO: check that descriptor.type correspond underlaying type
-            if (data.descriptor.L == 0xF)
-            {
-                value.nullify;
-                return null;
-            }
-
-            typeof(value.get) payload;
-            if (auto exc = .deserializeValue!symbolTable(data, tableParams, payload))
-                return exc;
-            value = payload;
-            return null;
-        }
-        else
         static if (hasUDA!(T, serdeProxy))
         {
             import mir.conv: to;
@@ -303,207 +382,433 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 static if (__traits(compiles, .deserializeScoped(data, temporal)))
                     alias impl = .deserializeScoped;
                 else
-                    alias impl = .deserializeValue!symbolTable;
+                    alias impl = .deserializeValue!(symbolTable, exteneded);
             else
-                alias impl = .deserializeValue!symbolTable;
+                alias impl = .deserializeValue!(symbolTable, exteneded);
 
-            if (auto exc = impl(data, tableParams, temporal))
-                return exc;
+            static if (isFirstOrderSerdeType!(serdeGetProxy!T))
+            {
+                if (auto exc = impl(data, tableParams, temporal))
+                    return exc;
+            }
+            else
+            {
+                if (auto exc = impl(data, tableParams, temporal, annotations))
+                    return exc;
+            }
+
             value = to!T(move(temporal));
             return null;
         }
         else
+        static if (isVariant!T)
         {
-            if (data.descriptor.L == 0xF)
+            static if (getAlgebraicAnnotationsOfVariant!T.length)
             {
-                if (data.descriptor.type != IonTypeCode.struct_ && data.descriptor.type != IonTypeCode.null_)
-                    goto WrongKindL;
-                static if (__traits(compiles, value = null))
+                static if (Annotations.length)
                 {
-                    value = null;
-                    return null; 
+                    alias annotations = optAnnotations[0];
                 }
                 else
                 {
-                    static immutable exc = "Can't construct null value of type" ~ T.stringof;
-                    return exc;
-                }
-            }
-
-            if (data.descriptor.type != IonTypeCode.struct_)
-            {
-            WrongKindL:
-                return unexpectedIonTypeCode!("Cann't desrialize " ~ T.stringof ~ ". Unexpected descriptor type:")(data.descriptor.type);
-            }
-
-            static if (is(T == interface) || is(T == class))
-            {
-                if (value is null)
-                {
-                    static if (is(T == class))
+                    IonAnnotations annotations;
+                    if (data.descriptor.type == IonTypeCode.annotations)
                     {
-                        static if (__traits(compiles, new T()))
-                        {
-                            value == new T();
-                        }
-                    }
-                    else
-                    {
-                        static immutable cantConstructObjectExc = T.stringof ~ " must be either not null or have a default constructor.";
-                        return cantConstructObjectExc;
-                    }
-                }
-            }
-
-            IonStruct ionValue;
-            if (auto error = data.get(ionValue))
-            {
-                return error.ionErrorMsg;
-            }
-
-            SerdeFlags!T requiredFlags;
-
-            static if (hasUDA!(T, serdeOrderedIn))
-            {
-                SerdeOrderedDummy!T temporal;
-                if (auto exc = .deserializeValue!symbolTable(data, tableParams, temporal))
-                    return exc;
-                temporal.serdeFinalizeTarget(value, requiredFlags);
-            }
-            else
-            {
-                alias impl = deserializeValueMember!(.deserializeValue!(symbolTable, exteneded), deserializeScoped, exteneded);
-
-                static immutable exc(string member) = "mir.ion.deser: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.";
-                
-                enum hasUnexpectedKeyHandler = __traits(hasMember, T, "serdeUnexpectedKeyHandler");
-                static if (!hasUnexpectedKeyHandler)
-                    static immutable unexpectedKeyException = "Unexpected key when deserializing " ~ T.stringof;
-
-
-                import std.meta: staticMap, aliasSeqOf;
-                static if (hasUDA!(T, serdeRealOrderedIn))
-                {
-                    static assert (!hasUnexpectedKeyHandler, "serdeRealOrderedIn aggregate type attribute is not compatible with `serdeUnexpectedKeyHandler` method");
-                    static foreach(member; serdeFinalProxyDeserializableMembers!T)
-                    {{
-                        enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
-                        static if (keys.length)
-                        {
-                            foreach (IonErrorCode error, size_t symbolID, IonDescribedValue elem; ionValue)
-                            {
-                                if (error)
-                                    return error.ionErrorMsg;
-
-                                static if (exteneded)
-                                {
-                                    auto originalID = symbolID;
-                                    if (symbolID >= tableParams[1].length)
-                                        goto Default;
-                                    symbolID = tableParams[1][symbolID];
-                                }
-                                else
-                                {
-                                    alias originalID = symbolID;
-                                }
-
-                                switch(symbolID)
-                                {
-                                    static foreach (key; keys)
-                                    {
-                                    case findKey(symbolTable, key):
-                                    }
-                                        if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
-                                            return mexp;
-                                        break;
-                                    default:
-                                }
-                            }
-                        }
-
-                        static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
-                            if (!__traits(getMember, requiredFlags, member))
-                                return exc!member;
-                    }}
-                }
-                else
-                {
-                    foreach (IonErrorCode error, size_t symbolID, IonDescribedValue elem; ionValue)
-                    {
-                        if (error)
+                        if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(data, annotations))
                         {
                             return error.ionErrorMsg;
                         }
-                        static if (exteneded)
+                    }
+                    
+                }
+
+                string retNull()
+                {
+                    return annotations.empty ? null : "";
+                }
+            }
+            else
+            {
+                string retNull;
+            }
+
+            alias Types = T.AllowedTypes;
+            alias contains = Contains!Types;
+
+            switch (data.descriptor.type)
+            {
+                static if (contains!(typeof(null)))
+                {
+                    case IonTypeCode.null_:
+                    {
+                        value = null;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!bool)
+                {
+                    case IonTypeCode.bool_:
+                    {
+                        value = data.trustedGet!bool;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!string)
+                {
+                    case IonTypeCode.string:
+                    {
+                        string str;
+                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, str))
+                            return exc;
+                        value = str;
+                        return retNull;
+                    }
+                }
+                else
+                static if (Filter!(isSmallString, Types).length == 1)
+                {
+                    case IonTypeCode.string:
+                    {
+                        Filter!(isSmallString, Types)[0] str;
+                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, str))
+                            return exc;
+                        value = str;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!long)
+                {
+                    case IonTypeCode.nInt:
+                    case IonTypeCode.uInt:
+                    {
+                        long number;
+                        if (auto exc = deserializeValue_(data, number))
+                            return exc;
+                        value = number;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!double)
+                {
+                    static if (!contains!long)
+                    {
+                        case IonTypeCode.nInt:
+                        case IonTypeCode.uInt:
+                    }
+                    case IonTypeCode.float_:
+                    case IonTypeCode.decimal:
+                    {
+                        double number;
+                        if (auto exc = deserializeValue_(data, number))
+                            return exc;
+                        value = number;
+                        return retNull;
+                    }
+                }
+
+                static if (anySatisfy!(templateAnd!(isArray, templateNot!isSomeString), Types))
+                {
+                    case IonTypeCode.list:
+                    {
+                        alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
+                        static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
+                        ArrayTypes[0] array;
+                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, array))
+                            return exc;
+                        import core.lifetime: move;
+                        value = move(array);
+                        return retNull;
+                    }
+                }
+
+                static if (getAlgebraicAnnotationsOfVariant!T.length || anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
+                {
+                    case IonTypeCode.struct_:
+                    {
+                        static if (getAlgebraicAnnotationsOfVariant!T.length)
                         {
-                            auto originalID = symbolID;
-                            if (symbolID >= tableParams[1].length)
-                                goto Default;
-                            symbolID = tableParams[1][symbolID];
+                            if (!annotations.empty)
+                            {
+                                size_t symbolId;
+                                if (auto error = annotations.pick(symbolId))
+                                    return error.ionErrorMsg;
+
+                                auto originalId = symbolId;
+                                if (!prepareSymbolId(tableParams, symbolId))
+                                    goto Default;
+
+                                switch (symbolId)
+                                {
+                                    static foreach (VT; Types)
+                                    static if (serdeHasAlgebraicAnnotation!VT)
+                                    {
+                                        case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
+                                        {
+                                            VT object;
+                                            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object, annotations))
+                                                return exc;
+                                            import core.lifetime: move;
+                                            value = move(object);
+                                            return null;
+                                        }
+                                    }
+                                    Default:
+                                    default:
+                                        static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
+                                            value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
+                                        else
+                                            return "Unexpected annotation when deserializing " ~ T.stringof;
+                                }
+                            }
+                        }
+                        
+                        static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
+                        {
+                            static if (anySatisfy!(isStringMap, Types))
+                            {
+                                alias isMapType = isStringMap;
+                            }
+                            else
+                            {
+                                pragma(msg, T);
+                                alias isMapType = isAssociativeArray;
+                            }
+
+                            alias AATypes = Filter!(isMapType, Types);
+                            static assert(AATypes.length == 1, AATypes.stringof);
+                            AATypes[0] object;
+                            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object))
+                                return exc;
+                            value = object;
+                            return retNull;
                         }
                         else
                         {
-                            alias originalID = symbolID;
-                        }
-                        S: switch(symbolID)
-                        {
-                            static foreach(member; serdeFinalProxyDeserializableMembers!T)
-                            {{
-                                enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
-                                static if (keys.length)
-                                {
-                                    static foreach (key; keys)
-                                    {
-                            case findKey(symbolTable, key):
-                                    }
-                                if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
-                                    return mexp;
-                                break S;
-                                }
-                            }}
-                            Default:
-                            default:
-                                static if (!exteneded)
-                                    static immutable symbolTableInstance = symbolTable;
-                                else
-                                    alias symbolTableInstance = tableParams[0];
-                                static if (hasUnexpectedKeyHandler)
-                                    value.serdeUnexpectedKeyHandler(originalID == 0 || originalID > symbolTableInstance.length ? "<@unknown symbol@>" : symbolTableInstance[originalID]);
-                                else
-                                {
-                                //     try debug {
-                                //         import std.stdio;
-
-                                // static if (!exteneded)
-                                //     static immutable dd = symbolTable;
-                                // else
-                                //     alias dd = tableParams[0];
-
-                                //         writeln(symbolTable, dd, dd[originalID]);
-                                //     } catch(Exception e) {}
-                                    // import core.stdc.stdio;
-                                    // debug printf("ID = %d\n", symbolID);
-                                    return unexpectedKeyException;
-                                }
+                            return "Can't deserilize " ~ T.stringof ~ " from IonStruct";
                         }
                     }
+                }
 
-                    static foreach(member; __traits(allMembers, SerdeFlags!T))
-                        static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
-                            if (!__traits(getMember, requiredFlags, member))
-                                return exc!member;
+                default:
+                    return "Unexpected IonTypeCode for " ~ T.stringof;
+            }
+
+            // return visit!((auto ref v) => deserializeValue!(symbolTable, exteneded)(data, tableParams, annotations));
+        }
+        else
+        static if (isNullable!T && !isAlgebraicAliasThis!T)
+        {
+            // TODO: check that descriptor.type correspond underlaying type
+            if (data.descriptor.L == 0xF)
+            {
+                value.nullify;
+                return null;
+            }
+
+            typeof(value.get) payload;
+            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, payload))
+                return exc;
+            value = payload;
+            return null;
+        }
+        else
+        {
+            static if (serdeGetAnnotationMembersIn!T.length || Annotations.length)
+            {
+                static if (Annotations.length)
+                {
+                    alias annotations = optAnnotations[0];
+                }
+                else
+                {
+                    if (data.descriptor.type != IonTypeCode.annotations)
+                    {
+                        return "Cann't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.";
+                    }
+                    
+                    IonAnnotations annotations;
+                    if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotations, data))
+                    {
+                        return error.ionErrorMsg;
+                    }
+                }
+
+                if (auto error = deserializeAnnotations(annotations, tableParams, value))
+                {
+                    return error;
                 }
             }
+            else
+            {
+                alias annotations = AliasSeq!();
+            }
 
-            static if(__traits(hasMember, T, "serdeFinalizeWithFlags"))
+            static if (isAlgebraicAliasThis!T)
             {
-                value.serdeFinalizeWithFlags(requiredFlags);
+                return .deserializeValue!(symbolTable, exteneded)(data, tableParams, __traits(getMember, value, __traits(getAliasThis, T)), annotations);
             }
-            static if(__traits(hasMember, T, "serdeFinalize"))
+            else
             {
-                value.serdeFinalize();
+                static if (serdeGetAnnotationMembersIn!T.length || Annotations.length)
+                {
+                    if (!annotations.empty)
+                    {
+                        return "Unused annotation for " ~ T.stringof;
+                    }
+                }
+
+                if (data.descriptor.L == 0xF)
+                {
+                    if (data.descriptor.type != IonTypeCode.struct_ && data.descriptor.type != IonTypeCode.null_)
+                        goto WrongKindL;
+                    static if (__traits(compiles, value = null))
+                    {
+                        value = null;
+                        return null; 
+                    }
+                    else
+                    {
+                        return "Can't construct null value of type" ~ T.stringof;
+                    }
+                }
+
+                if (data.descriptor.type != IonTypeCode.struct_)
+                {
+                WrongKindL:
+                    return "Cann't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.";
+                }
+
+                static if (is(T == interface) || is(T == class))
+                {
+                    if (value is null)
+                    {
+                        static if (is(T == class))
+                        {
+                            static if (__traits(compiles, new T()))
+                            {
+                                value == new T();
+                            }
+                        }
+                        else
+                        {
+                            static immutable cantConstructObjectExc = T.stringof ~ " must be either not null or have a default constructor.";
+                            return cantConstructObjectExc;
+                        }
+                    }
+                }
+
+                auto ionValue = data.trustedGet!IonStruct;
+
+                SerdeFlags!T requiredFlags;
+
+                static if (hasUDA!(T, serdeOrderedIn))
+                {
+                    SerdeOrderedDummy!T temporal;
+                    if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, temporal))
+                        return exc;
+                    temporal.serdeFinalizeTarget(value, requiredFlags);
+                }
+                else
+                {
+                    alias impl = deserializeValueMember!(.deserializeValue!(symbolTable, exteneded), deserializeScoped, exteneded);
+
+                    static immutable exc(string member) = "mir.ion.deser: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.";
+                    
+                    enum hasUnexpectedKeyHandler = __traits(hasMember, T, "serdeUnexpectedKeyHandler");
+
+                    import std.meta: staticMap, aliasSeqOf;
+                    static if (hasUDA!(T, serdeRealOrderedIn))
+                    {
+                        static assert (!hasUnexpectedKeyHandler, "serdeRealOrderedIn aggregate type attribute is not compatible with `serdeUnexpectedKeyHandler` method");
+                        static foreach(member; serdeFinalProxyDeserializableMembers!T)
+                        {{
+                            enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
+                            static if (keys.length)
+                            {
+                                foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+                                {
+                                    if (error)
+                                        return error.ionErrorMsg;
+                                    prepareSymbolId(tableParams, symbolId);
+
+                                    switch(symbolId)
+                                    {
+                                        static foreach (key; keys)
+                                        {
+                                        case findKey(symbolTable, key):
+                                        }
+                                            if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
+                                                return mexp;
+                                            break;
+                                        default:
+                                    }
+                                }
+                            }
+
+                            static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                if (!__traits(getMember, requiredFlags, member))
+                                    return exc!member;
+                        }}
+                    }
+                    else
+                    {
+                        foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+                        {
+                            if (error)
+                                return error.ionErrorMsg;
+                            auto originalId = symbolId;
+                            if (!prepareSymbolId(tableParams, symbolId))
+                                goto Default;
+                            S: switch(symbolId)
+                            {
+                                static foreach(member; serdeFinalProxyDeserializableMembers!T)
+                                {{
+                                    enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
+                                    static if (keys.length)
+                                    {
+                                        static foreach (key; keys)
+                                        {
+                                case findKey(symbolTable, key):
+                                        }
+                                    if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
+                                        return mexp;
+                                    break S;
+                                    }
+                                }}
+                                Default:
+                                default:
+                                    static if (!exteneded)
+                                        static immutable symbolTableInstance = symbolTable;
+                                    else
+                                        alias symbolTableInstance = tableParams[0];
+                                    static if (hasUnexpectedKeyHandler)
+                                        value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
+                                    else
+                                        return "Unexpected key when deserializing " ~ T.stringof;
+                            }
+                        }
+
+                        static foreach(member; __traits(allMembers, SerdeFlags!T))
+                            static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                if (!__traits(getMember, requiredFlags, member))
+                                    return exc!member;
+                    }
+                }
+
+                static if(__traits(hasMember, T, "serdeFinalizeWithFlags"))
+                {
+                    value.serdeFinalizeWithFlags(requiredFlags);
+                }
+                static if(__traits(hasMember, T, "serdeFinalize"))
+                {
+                    value.serdeFinalize();
+                }
+                return null;
             }
-            return null;
         }
     }
 
