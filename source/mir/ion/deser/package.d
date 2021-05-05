@@ -386,16 +386,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             else
                 alias impl = .deserializeValue!(symbolTable, exteneded);
 
-            static if (isFirstOrderSerdeType!(serdeGetProxy!T))
-            {
-                if (auto exc = impl(data, tableParams, temporal))
-                    return exc;
-            }
-            else
-            {
-                if (auto exc = impl(data, tableParams, temporal, annotations))
-                    return exc;
-            }
+            if (auto exc = impl(data, tableParams, temporal, optAnnotations))
+                return exc;
 
             value = to!T(move(temporal));
             return null;
