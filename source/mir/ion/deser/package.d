@@ -155,7 +155,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         value = value to deserialize
     Returns: `SerdeException`
     +/
-    string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations) pure
+    string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
         if (!isFirstOrderSerdeType!T && (is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations)))
     {
         import mir.internal.meta: Contains;
