@@ -1157,6 +1157,14 @@ struct Algebraic(_Types...)
         {
             return _identifier_ != 0;
         }
+
+        ///
+        Algebraic opCast(C)() const
+            if (is(C == Algebraic))
+        {
+            return this;
+        }
+
         /// Defined if the first type is `typeof(null)`
         bool isNull() const @property { return _identifier_ == 0; }
         /// ditto
