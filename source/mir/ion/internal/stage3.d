@@ -474,7 +474,7 @@ value_start: {
             endMask |= indexL != 0 ? (pairedMask2[indexG + 1][0] | pairedMask2[indexG + 1][1]) << (64 - indexL) : 0;
             if (endMask == 0)
                 goto integerOverflow;
-            auto numberLength = cttz(endMask);
+            auto numberLength = cast(size_t)cttz(endMask);
             auto numberStringView = cast(const(char)[]) (strPtr + index)[0 .. numberLength];
             index += numberLength;
         }
