@@ -38,7 +38,8 @@ void stage3(alias fetchNext, Table)(ref Stage3State stage, ref Table symbolTable
     sizediff_t stackPos = stackLength;
     sizediff_t stackPosSkip = -1;
     size_t[stackLength] stack = void;
-    Decimal!1 decimal = void;
+    enum w64Length = 1;
+    Decimal!w64Length  decimal = void;
 
     with(stage){
 
@@ -480,14 +481,36 @@ value_start: {
 
         DecimalExponentKey exponentKey;
 
-        if (!decimal.fromStringImpl!(char, false, false, false, false, false)(numberStringView, exponentKey))
+        enum bool allowSpecialValues = false;
+        enum bool allowDotOnBounds = false;
+        enum bool allowDExponent = false;
+        enum bool allowStartingPlus = false;
+        enum bool allowUnderscores = false;
+        enum bool allowLeadingZeros = false;
+        enum bool allowExponent = true;
+        enum bool checkEmpty = false;
+
+        if (!decimal.fromStringImpl!(
+            char,
+            allowSpecialValues,
+            allowDotOnBounds,
+            allowDExponent,
+            allowStartingPlus,
+            allowUnderscores,
+            allowLeadingZeros,
+            allowExponent,
+            checkEmpty,
+        )(numberStringView, exponentKey))
             goto unexpected_decimal_value;
+
         if (!exponentKey) // integer
         {
             auto unsignedView = decimal.coefficient.view.unsigned;
-            enum l = ulong.sizeof / size_t.sizeof;
-            if (_expect(unsignedView.coefficients.length > l, true))
-                goto integerOverflow;
+            static if (w64Length > 1)
+            {
+                if (_expect(unsignedView.coefficients.length > ulong.sizeof / size_t.sizeof, false))
+                    goto integerOverflow;
+            }
             currentTapePosition += ionPut(tape.ptr + currentTapePosition, cast(ulong) unsignedView, decimal.coefficient.sign);
             goto next;
             // // else
