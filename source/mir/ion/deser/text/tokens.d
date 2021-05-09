@@ -401,7 +401,7 @@ char hexLiteral(char c) @safe @nogc pure {
     if (isDigit(c)) return cast(char)(c - ION_DIGITS[0]);
     else if (c >= 'a' && c <= 'f') return cast(char)(10 + (c - ION_LOWERCASE[0]));
     else if (c >= 'A' && c <= 'F') return cast(char)(10 + (c - ION_UPPERCASE[0]));
-    throw ionTokenizerException(IonTokenizerErrorCode.invalidHexLiteral);
+    throw new IonTokenizerException(IonTokenizerErrorCode.invalidHexLiteral);
 }
 
 /++
@@ -573,27 +573,36 @@ string ionTokenizerMsg(IonTokenizerErrorCode error) @property
 /++
 Mir Ion Tokenizer Exception
 +/
-class MirIonTokenizerException : MirIonException 
+class IonTokenizerException : IonException
 {
     ///
-    @safe pure nothrow @nogc
-    this(string msg, string file = __FILE__, int line = __LINE__)
+    this(
+        IonTokenizerErrorCode code,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
     {
-        super(msg, file, line);
+        super(code.ionTokenizerMsg, file, line, next);
     }
-}
 
-MirIonTokenizerException ionTokenizerException(string file = __FILE__, int line = __LINE__)(IonTokenizerErrorCode code)
-@property @trusted pure nothrow @nogc
-{
-    import mir.array.allocation: array;
-    import mir.ndslice.topology: map;
-    import std.traits: EnumMembers;
+    ///
+    this(
+        string msg,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
+    {
+        super(msg, file, line, next);
+    }
 
-    static immutable MirIonTokenizerException[] exceptions =
-        [EnumMembers!IonTokenizerErrorCode]
-        .map!(code => code ? new MirIonTokenizerException("MirIonTokenizerException: " ~ code.ionTokenizerMsg, file, line) : null)
-        .array;
-        
-    return cast(MirIonTokenizerException) exceptions[code - IonTokenizerErrorCode.min];
+    ///
+    this(
+        string msg,
+        Throwable next,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        ) pure nothrow @nogc @safe 
+    {
+        this(msg, file, line, next);
+    }
 }

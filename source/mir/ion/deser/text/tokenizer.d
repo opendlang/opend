@@ -101,7 +101,7 @@ struct IonTokenizer {
     +/
     void resizeWindow(size_t start) @safe @nogc pure {
         if (start > input.length) {
-            throw IonTokenizerErrorCode.cannotUpdateWindow.ionTokenizerException;
+            throw new IonTokenizerException(IonTokenizerErrorCode.cannotUpdateWindow);
         }
 
         window = input[start .. $];
@@ -136,7 +136,7 @@ struct IonTokenizer {
     +/
     void unread(char c) @safe @nogc pure  {
         if (this.position <= 0) {
-            throw ionTokenizerException(IonTokenizerErrorCode.cannotUnreadAtPos0);
+            throw new IonTokenizerException(IonTokenizerErrorCode.cannotUnreadAtPos0);
         }
 
         if (c == 0) {
@@ -246,7 +246,7 @@ struct IonTokenizer {
     Returns:
         An array filled with n characters.
     Throws:
-        [MirIonTokenizerException]
+        [IonTokenizerException]
     +/
     auto peekExactly(size_t required = 4096) @safe @nogc pure {
         size_t n = required; 
@@ -263,7 +263,7 @@ struct IonTokenizer {
     {
         import std.exception : assertThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : MirIonTokenizerException;
+        import mir.ion.deser.text.tokens : IonTokenizerException;
 
         auto t = tokenizeString("abc\r\ndef");
         
@@ -285,15 +285,15 @@ struct IonTokenizer {
         t.testRead('\n');
         t.testRead('d');
 
-        assertThrown!MirIonTokenizerException(t.peekExactly(3));
-        assertThrown!MirIonTokenizerException(t.peekExactly(3));
+        assertThrown!IonTokenizerException(t.peekExactly(3));
+        assertThrown!IonTokenizerException(t.peekExactly(3));
         assert(t.peekExactly(2) == "ef");
 
         t.testRead('e');
         t.testRead('f');
         t.testRead(0);
 
-        assertThrown!MirIonTokenizerException(t.peekExactly(10));
+        assertThrown!IonTokenizerException(t.peekExactly(10));
     }
 
     /++
@@ -305,7 +305,7 @@ struct IonTokenizer {
     Returns:
         A single character read ahead from the input range.
     Throws:
-        [MirIonTokenizerException]
+        [IonTokenizerException]
     +/
     char peekOne() @safe @nogc pure {
         if (isEOF) {
@@ -322,7 +322,7 @@ struct IonTokenizer {
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertThrown;
-        import mir.ion.deser.text.tokens : MirIonTokenizerException;
+        import mir.ion.deser.text.tokens : IonTokenizerException;
 
         auto t = tokenizeString("abc");
 
@@ -340,8 +340,8 @@ struct IonTokenizer {
         t.testPeek('c');
         t.testRead('c');
         
-        assertThrown!MirIonTokenizerException(t.peekOne() == 0);
-        assertThrown!MirIonTokenizerException(t.peekOne() == 0);
+        assertThrown!IonTokenizerException(t.peekOne() == 0);
+        assertThrown!IonTokenizerException(t.peekOne() == 0);
         assert(t.readInput() == 0);
     }
 
@@ -352,7 +352,7 @@ struct IonTokenizer {
     Returns:
         a single character from the input range, or 0 if the EOF is encountered.
     Throws:
-        [MirIonTokenizerException]
+        [IonTokenizerException]
     +/
     char readInput() @safe @nogc pure {
         if (isEOF) {
@@ -364,7 +364,7 @@ struct IonTokenizer {
         /*
         if (c == '\r') {
             // EOFs should've been normalized at the first stage
-            throw ionTokenizerException(IonTokenizerErrorCode.normalizeEOFFail);
+            throw Mir(IonTokenizerErrorCode.normalizeEOFFail);
         }
         */
 
@@ -409,7 +409,7 @@ struct IonTokenizer {
     Returns:
         The character located directly after the whitespace.
     Throws:
-        [MirIonTokenizerException]
+        [IonTokenizerException]
     +/
     char skipWhitespace(bool skipComments = true, bool failOnComment = false)() @safe @nogc pure 
     if (skipComments != failOnComment || (skipComments == false && skipComments == failOnComment)) { // just a sanity check, we cannot skip comments and also fail on comments -- it is one or another (fail or skip)
@@ -423,7 +423,7 @@ struct IonTokenizer {
                 
                 case '/': {
                     static if (failOnComment) {
-                        throw IonTokenizerErrorCode.commentsNotAllowed.ionTokenizerException; 
+                        throw new IonTokenizerException(IonTokenizerErrorCode.commentsNotAllowed); 
                     } else static if(skipComments) {
                         // Peek on the next letter, and check if it's a second slash / star
                         // This may fail if we read a comment and do not find the end (newline / '*/')
@@ -448,10 +448,10 @@ struct IonTokenizer {
     {
         import std.exception : assertNotThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : MirIonTokenizerException;
+        import mir.ion.deser.text.tokens : IonTokenizerException;
         void test(string txt, char expectedChar) {
             auto t = tokenizeString(txt);
-            assertNotThrown!MirIonTokenizerException(
+            assertNotThrown!IonTokenizerException(
                 enforce!"skipWhitespace did not return expected character"(t.skipWhitespace() == expectedChar)
             );
         }
@@ -473,7 +473,7 @@ struct IonTokenizer {
     Returns:
         a character located after the whitespace within a clob/blob
     Throws:
-        MirIonTokenizerException if a comment is found
+        IonTokenizerException if a comment is found
     +/
     char skipLobWhitespace() @safe @nogc pure {
         return skipWhitespace!(false, false);
@@ -483,10 +483,10 @@ struct IonTokenizer {
     {
         import std.exception : assertNotThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : MirIonTokenizerException;
+        import mir.ion.deser.text.tokens : IonTokenizerException;
         void test(string txt, char expectedChar)() {
             auto t = tokenizeString(txt);
-            assertNotThrown!MirIonTokenizerException(
+            assertNotThrown!IonTokenizerException(
                 enforce!"Lob whitespace did not match expected character"(t.skipLobWhitespace() == expectedChar)
             );
         }
@@ -580,7 +580,7 @@ struct IonTokenizer {
             }
 
             return false;
-        } catch (MirIonTokenizerException e) {
+        } catch (IonTokenizerException e) {
             return false;
         }
     }
@@ -601,7 +601,7 @@ struct IonTokenizer {
         const(char)[] cs;
         try {
             cs = peekMax(4);
-        } catch(MirIonTokenizerException e) {
+        } catch(IonTokenizerException e) {
             return IonTokenType.TokenInvalid;
         }
 
@@ -774,7 +774,7 @@ struct IonTokenizer {
                     skipOne();
                     IonTokenType tokenType = scanForNumber(cs);
                     if (tokenType == TokenTimestamp) {
-                        throw ionTokenizerException(IonTokenizerErrorCode.negativeTimestamp);
+                        throw new IonTokenizerException(IonTokenizerErrorCode.negativeTimestamp);
                     }
                     unread(cs);
                     unread(c);
@@ -833,7 +833,7 @@ struct IonTokenizer {
         false if we already finished with a token,
         true if we were able to skip to the end of it.
     Throws:
-        MirIonTokenizerException if we were not able to skip to the end.
+        IonTokenizerException if we were not able to skip to the end.
     +/
     bool finish() @safe @nogc pure {
         if (finished) {
@@ -873,20 +873,17 @@ struct IonTokenizer {
     /++
     Helper to generate a thrown exception (if an unexpected character is hit)
     +/
-    void unexpectedChar(string file = __FILE__, int line = __LINE__)(char c, size_t pos = -1) @safe @nogc pure {
-        if (c == 0) {
-            throw ionTokenizerException!(file, line)(IonTokenizerErrorCode.unexpectedEOF);
-        } else {
-            throw ionTokenizerException!(file, line)(IonTokenizerErrorCode.unexpectedCharacter);
-        }
+    void unexpectedChar(char c, size_t pos = -1, string file = __FILE__, int line = __LINE__) @safe @nogc pure {
+        throw new IonTokenizerException(c ? IonTokenizerErrorCode.unexpectedCharacter : IonTokenizerErrorCode.unexpectedEOF, file, line);
     }
 
     /++
     Helper to throw if an unexpected end-of-file is hit.
     +/
-    void unexpectedEOF(string file = __FILE__, int line = __LINE__)(size_t pos = -1) @safe @nogc pure {
-        if (pos == -1) pos = this.position;
-        unexpectedChar!(file, line)(0, pos);
+    void unexpectedEOF(size_t pos = -1, string file = __FILE__, int line = __LINE__) @safe @nogc pure {
+        if (pos == -1)
+            pos = this.position;
+        unexpectedChar(0, pos, file, line);
     }
 
     /++
@@ -894,23 +891,23 @@ struct IonTokenizer {
     Params:
         pred = A predicate that the next character in the range must fulfill
     Throws:
-        [MirIonTokenizerException] if the predicate is not fulfilled
+        [IonTokenizerException] if the predicate is not fulfilled
     +/
-    template expect(alias pred = "a", bool noRead = false, string file = __FILE__, int line = __LINE__) {
+    template expect(alias pred = "a", bool noRead = false) {
         import mir.functional : naryFun;
         static if (noRead) {
-            char expect(char c) @trusted @nogc pure {
+            char expect(char c, string file = __FILE__, int line = __LINE__) @trusted @nogc pure {
                 if (!naryFun!pred(c)) {
-                    unexpectedChar!(file, line)(c);
+                    unexpectedChar(c, -1, file, line);
                 }
 
                 return c;
             }
         } else {
-            char expect() @trusted @nogc pure {
+            char expect(string file = __FILE__, int line = __LINE__) @trusted @nogc pure {
                 char c = readInput();
                 if (!naryFun!pred(c)) {
-                    unexpectedChar!(file, line)(c);
+                    unexpectedChar(c, -1, file, line);
                 }
 
                 return c;
@@ -920,13 +917,13 @@ struct IonTokenizer {
     /// Text expect()
     version(mir_ion_parser_test) unittest
     {
-        import mir.ion.deser.text.tokens : MirIonTokenizerException, isHexDigit;
+        import mir.ion.deser.text.tokens : IonTokenizerException, isHexDigit;
 
         void testIsHex(string ts) {
             auto t = tokenizeString(ts);
             while (!t.isEOF) {
                 import std.exception : assertNotThrown;
-                assertNotThrown!MirIonTokenizerException(t.expect!(isHexDigit));
+                assertNotThrown!IonTokenizerException(t.expect!(isHexDigit));
             }
         }
 
@@ -934,7 +931,7 @@ struct IonTokenizer {
             auto t = tokenizeString(ts);
             while (!t.isEOF) {
                 import std.exception : assertThrown;
-                assertThrown!MirIonTokenizerException(t.expect!(isHexDigit));
+                assertThrown!IonTokenizerException(t.expect!(isHexDigit));
             }
         }
 
@@ -960,14 +957,14 @@ struct IonTokenizer {
     Params:
         pred = A predicate that the next character in the range must NOT fulfill.
     Throws:
-        [MirIonTokenizerException] if the predicate is fulfilled.
+        [IonTokenizerException] if the predicate is fulfilled.
     +/
     template expectFalse(alias pred = "a", bool noRead = false, string file = __FILE__, int line = __LINE__) {
         import mir.functional : naryFun;
         static if (noRead) {
             char expectFalse(char c) @trusted @nogc pure {
                 if (naryFun!pred(c)) {
-                    unexpectedChar!(file, line)(c);
+                    unexpectedChar(c, -1, file, line);
                 }
 
                 return c;
@@ -976,7 +973,7 @@ struct IonTokenizer {
             char expectFalse() @trusted @nogc pure {
                 char c = readInput();
                 if (naryFun!pred(c)) {
-                    unexpectedChar!(file, line)(c);
+                    unexpectedChar(c, -1, file, line);
                 }
 
                 return c;

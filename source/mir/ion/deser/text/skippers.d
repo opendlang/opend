@@ -260,7 +260,7 @@ char skipNumber(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -270,7 +270,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipNumber());
+        assertThrown!IonTokenizerException(t.skipNumber());
     }
 
     test("", 0);
@@ -297,7 +297,7 @@ char skipBinary(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -307,7 +307,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipBinary());
+        assertThrown!IonTokenizerException(t.skipBinary());
     }
 
     test("0b0", 0);
@@ -332,7 +332,7 @@ char skipHex(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -342,7 +342,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipHex());
+        assertThrown!IonTokenizerException(t.skipHex());
     }
 
     test("0xDEADBABE,0xDEADBABE", ',');
@@ -487,7 +487,7 @@ char skipTimestamp(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -497,7 +497,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipTimestamp());
+        assertThrown!IonTokenizerException(t.skipTimestamp());
     }
 
     test("2001T", 0);
@@ -603,7 +603,7 @@ char skipSymbolQuoted(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -613,7 +613,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipSymbolQuoted());
+        assertThrown!IonTokenizerException(t.skipSymbolQuoted());
     }
 
     test("'", 0);
@@ -694,7 +694,7 @@ char skipString(ref IonTokenizer t) @safe @nogc pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
  
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -704,7 +704,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.skipString());
+        assertThrown!IonTokenizerException(t.skipString());
     }
 
     test("\"", 0);
@@ -752,7 +752,7 @@ bool skipLongStringEnd(bool skipComments = true, bool failOnComment = false)(ref
 if (__traits(compiles, { t.skipWhitespace!(skipComments, failOnComment); })) {
     auto cs = t.peekMax(2);
     if (cs.length < 2 || cs[0] != '\'' || cs[1] != '\'') {
-        throw IonTokenizerErrorCode.cannotSkipLongString.ionTokenizerException;
+        throw new IonTokenizerException(IonTokenizerErrorCode.cannotSkipLongString);
     }
 
     t.skipExactly(2);

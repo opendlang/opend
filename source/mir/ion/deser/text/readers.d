@@ -87,7 +87,7 @@ Params:
 Returns:
     a code-point representing the escape value that was read
 Throws:
-    MirIonTokenizerException if an invalid escape value was found.
+    IonTokenizerException if an invalid escape value was found.
 +/
 dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure 
 {
@@ -129,14 +129,14 @@ dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
         case 'x':
             return readHexEscapeLiteral!2;
         default:
-            throw IonTokenizerErrorCode.invalidHexEscape.ionTokenizerException;
+            throw new IonTokenizerException(IonTokenizerErrorCode.invalidHexEscape);
     }
 }
 /// Test reading a unicode escape
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException;
+    import mir.ion.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, dchar expected) {
         auto t = tokenizeString(ts);
@@ -146,7 +146,7 @@ version(mir_ion_parser_test) unittest
     void testFail(string ts) {
         import std.exception : assertThrown;
         auto t = tokenizeString(ts);
-        assertThrown!MirIonTokenizerException(t.readEscapedChar());
+        assertThrown!IonTokenizerException(t.readEscapedChar());
     }
 
     test("U0001F44D", '\U0001F44D');
@@ -200,7 +200,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     if (c <= 0xFFFF)
     {
         if (0xD800 <= c && c <= 0xDFFF)
-            throw IonTokenizerErrorCode.encodingSurrogateCode.ionTokenizerException;
+            throw new IonTokenizerException(IonTokenizerErrorCode.encodingSurrogateCode);
 
         assert(isValidDchar(c));
         t.escapeSequence[0] = cast(char)(0xE0 | (c >> 12));
@@ -219,7 +219,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     }
 
     assert(!isValidDchar(c));
-    throw IonTokenizerErrorCode.encodingInvalidCode.ionTokenizerException;
+    throw new IonTokenizerException(IonTokenizerErrorCode.encodingInvalidCode);
 }
 
 /++
@@ -256,15 +256,15 @@ const(char)[] readSymbol(ref IonTokenizer t) @safe pure @nogc
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : MirIonTokenizerException, IonTokenType;
+    import mir.ion.deser.text.tokens : IonTokenizerException, IonTokenType;
 
     void test(string ts, string expected, IonTokenType after) {
         import std.exception : assertNotThrown;
         auto t = tokenizeString(ts); 
-        assertNotThrown!MirIonTokenizerException(t.nextToken());
+        assertNotThrown!IonTokenizerException(t.nextToken());
         assert(t.currentToken == IonTokenType.TokenSymbol);
         assert(t.readSymbol() == expected);
-        assertNotThrown!MirIonTokenizerException(t.nextToken());
+        assertNotThrown!IonTokenizerException(t.nextToken());
         assert(t.currentToken == after);
     }
 
@@ -815,7 +815,7 @@ IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
     const(char)[] digits = readDigits(t, leader);
     if (leader == '0') {
         if (digits.length != 1) { // if it is not just a plain 0, fail since we don't support leading zeros
-            throw IonTokenizerErrorCode.invalidLeadingZeros.ionTokenizerException;
+            throw new IonTokenizerException(IonTokenizerErrorCode.invalidLeadingZeros);
         }
     }
 
@@ -887,7 +887,7 @@ const(char)[] readDigits(ref IonTokenizer t, char leader) @safe @nogc pure
 {
     immutable char c = leader;
     if (!isDigit(c)) {
-        throw IonTokenizerErrorCode.expectedValidLeader.ionTokenizerException;
+        throw new IonTokenizerException(IonTokenizerErrorCode.expectedValidLeader);
     }
     t.unread(c); // unread so the readRadixDigits can consume it
     return readRadixDigits(t);

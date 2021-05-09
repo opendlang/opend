@@ -185,13 +185,27 @@ version (D_Exceptions):
 /++
 Mir Ion Exception Class
 +/
-class MirIonException : SerdeException
+class IonException : SerdeException
 {
     ///
-    @safe pure nothrow @nogc
-    this(string msg, string file = __FILE__, int line = __LINE__)
+    this(
+        string msg,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
     {
-        super(msg, file, line);
+        super(msg, file, line, next);
+    }
+
+    ///
+    this(
+        string msg,
+        Throwable next,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        ) pure nothrow @nogc @safe 
+    {
+        this(msg, file, line, next);
     }
 }
 
@@ -199,26 +213,26 @@ class MirIonException : SerdeException
 Params:
     code = $(LREF IonErrorCode)
 Returns:
-    $(LREF MirIonException)
+    $(LREF IonException)
 +/
-MirIonException ionException()(IonErrorCode code) @property
+IonException ionException()(IonErrorCode code) @property
 @trusted pure nothrow @nogc
 {
     import mir.array.allocation: array;
     import mir.ndslice.topology: map;
     import std.traits: EnumMembers;
 
-    static immutable MirIonException[] exceptions =
+    static immutable IonException[] exceptions =
         [EnumMembers!IonErrorCode]
-        .map!(code => code ? new MirIonException("MirIonException: " ~ code.ionErrorMsg) : null)
+        .map!(code => code ? new IonException("IonException: " ~ code.ionErrorMsg) : null)
         .array;
-    return cast(MirIonException) exceptions[code - IonErrorCode.min];
+    return cast(IonException) exceptions[code - IonErrorCode.min];
 }
 
 ///
 @safe pure nothrow @nogc
 version(mir_ion_test) unittest
 {
-    static assert(IonErrorCode.nop.ionException.msg == "MirIonException: unexpected NOP Padding", IonErrorCode.nop.ionException.msg);
+    static assert(IonErrorCode.nop.ionException.msg == "IonException: unexpected NOP Padding", IonErrorCode.nop.ionException.msg);
     static assert(IonErrorCode.none.ionException is null);
 }
