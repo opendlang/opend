@@ -9,6 +9,7 @@ import mir.ion.exception;
 import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.ion.value;
+import mir.rc.array: RCArray;
 import mir.reflection: isSomeStruct;
 import mir.small_array;
 import mir.small_string;
@@ -45,6 +46,9 @@ package template isFirstOrderSerdeType(T)
             enum isFirstOrderSerdeType = true;
         else
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
+        else
+        static if (is(T : RCArray!E, E))
             enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
         else
         static if (is(T == serdeGetFinalProxy!T))
@@ -452,6 +456,35 @@ version(mir_ion_test) unittest
 }
 
 /++
+Deserialize ref-counted string value.
++/
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+    pure @safe nothrow
+    if (is(T == RCArray!E, E) && is(Unqual!E == char))
+{
+    import mir.rc.array: rcarray;
+    import std.traits: TemplateArgsOf;
+    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+        return IonErrorCode.expectedStringValue;
+    auto ionValue = data.trustedGet!(const(char)[]);
+    value = ionValue.rcarray!(TemplateArgsOf!T);
+    return IonErrorCode.none; 
+}
+
+///
+version(mir_ion_test) unittest
+{
+    import mir.ion.value;
+    import mir.ion.exception;
+
+    auto data = IonValue([0x83, 'b', 'a', 'r']).describe;
+    RCArray!(immutable char) value;
+
+    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
+    assert(value[] == "bar");
+}
+
+/++
 Deserialize small string value.
 +/
 IonErrorCode deserializeValueImpl(T : SmallString!maxLength, size_t maxLength)(IonDescribedValue data, ref T value)
@@ -605,6 +638,64 @@ version(mir_ion_test) unittest
     double[] value;
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value == [12, 100e13]);
+}
+
+///
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+    if (is(T == RCArray!E, E) && !isSomeChar!E)
+{
+    alias E = Unqual!(ForeachType!T);
+    if (data.descriptor.type == IonTypeCode.list)
+    {
+        if (false)
+        {
+            ScopedBuffer!E buffer;
+            if (auto error = deserializeListToScopedBuffer(data, buffer))
+                return error;
+        }
+        return () @trusted {
+            import core.lifetime: move;
+            import std.traits: TemplateArgsOf;
+            ScopedBuffer!E buffer = void;
+            buffer.initialize;
+            if (auto error = deserializeListToScopedBuffer(data, buffer))
+                return error;
+            alias E = TemplateArgsOf!T;
+            auto ar = RCArray!E(buffer.length, false);
+            buffer.moveDataAndEmplaceTo(ar[]);
+            static if (__traits(compiles, value = move(ar)))
+                value = move(ar);
+            else () @trusted {
+                value = ar.opCast!T;
+            } ();
+            return IonErrorCode.none;
+        } ();
+    }
+    else
+    if (data.descriptor.type == IonTypeCode.null_)
+    {
+        value = null;
+        return IonErrorCode.none;
+    }
+    return IonErrorCode.expectedListValue;
+}
+
+///
+@safe pure
+version(mir_ion_test) unittest
+{
+    import mir.ion.value;
+    import mir.ion.exception;
+
+    auto data = IonValue([
+        0xbe, 0x91, 0x00, 0x00, 0x21, 0x0c,
+        0x00, 0x00, 0x48, 0x43, 0x0c, 0x6b,
+        0xf5, 0x26, 0x34, 0x00, 0x00, 0x00,
+        0x00]).describe;
+
+    RCArray!double value;
+    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
+    assert(value[] == [12, 100e13]);
 }
 
 ///

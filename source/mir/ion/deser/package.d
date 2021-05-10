@@ -357,10 +357,11 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         return exc;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
-                    static if (__traits(compiles, value = ar))
-                        value = ar;
-                    else
+                    static if (__traits(compiles, value = move(ar)))
+                        value = move(ar);
+                    else () @trusted {
                         value = ar.opCast!T;
+                    } ();
                     return null;
                 } ();
             }
