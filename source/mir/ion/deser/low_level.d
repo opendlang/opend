@@ -253,7 +253,26 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
             Decimal!256 decimal = void;
             DecimalExponentKey exponentKey;
 
-            if (!decimal.fromStringImpl(ionValue, exponentKey))
+            enum bool allowSpecialValues = true;
+            enum bool allowDotOnBounds = true;
+            enum bool allowDExponent = true;
+            enum bool allowStartingPlus = true;
+            enum bool allowUnderscores = false;
+            enum bool allowLeadingZeros = true;
+            enum bool allowExponent = true;
+            enum bool checkEmpty = false;
+
+            if (!decimal.fromStringImpl!(
+                char,
+                allowSpecialValues,
+                allowDotOnBounds,
+                allowDExponent,
+                allowStartingPlus,
+                allowUnderscores,
+                allowLeadingZeros,
+                allowExponent,
+                checkEmpty,
+            )(ionValue, exponentKey))
                 return IonErrorCode.expectedFloatingValue;
 
             value = cast(T) decimal;
