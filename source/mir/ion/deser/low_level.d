@@ -679,7 +679,6 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
             buffer.initialize;
             if (auto error = deserializeListToScopedBuffer(data, buffer))
                 return error;
-            alias E = TemplateArgsOf!T;
             auto ar = RCArray!E(buffer.length, false);
             buffer.moveDataAndEmplaceTo(ar[]);
             static if (__traits(compiles, value = move(ar)))
@@ -712,7 +711,7 @@ version(mir_ion_test) unittest
         0xf5, 0x26, 0x34, 0x00, 0x00, 0x00,
         0x00]).describe;
 
-    RCArray!double value;
+    RCArray!(const double) value;
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value[] == [12, 100e13]);
 }
