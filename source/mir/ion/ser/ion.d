@@ -20,6 +20,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     import mir.ion.type_code;
     import mir.lob;
     import mir.string_table: createTable, minimalIndexType;
+    import mir.timestamp;
     import std.traits: isNumeric;
 
     private alias createTableChar = createTable!char;
@@ -220,6 +221,13 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     void putValue(Blob value)
     {
         tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
+        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+    }
+
+    ///
+    void putValue(Timestamp value)
+    {
+        tapeHolder.reserve(20);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
     }
 

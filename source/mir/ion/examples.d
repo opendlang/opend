@@ -539,65 +539,64 @@ unittest
 }
 
 // TODO
-version(none)
-unittest
-{
-    Asdf[string] map;
+// version(none)
+// unittest
+// {
+//     Asdf[string] map;
 
-    map["num"] = serializeToAsdf(124);
-    map["str"] = serializeToAsdf("value");
+//     map["num"] = serializeToAsdf(124);
+//     map["str"] = serializeToAsdf("value");
 
-    import std.stdio;
-    map.serializeToJson.writeln();
-}
+//     import std.stdio;
+//     map.serializeToJson.writeln();
+// }
 
 // TODO
-version(none)
-unittest
-{
-    import mir.algebraic: Variant, Nullable, This;
-    alias V = Nullable!(double, string, This[], This[string]);
-    V v;
-    assert(v.serializeToJson == "null", v.serializeToJson);
-    v = [V(2), V("str"), V(["key":V(1.0)])];
-    assert(v.serializeToJson == `[2.0,"str",{"key":1.0}]`);
-}
+// version(none)
+// unittest
+// {
+//     import mir.algebraic: Variant, Nullable, This;
+//     alias V = Nullable!(double, string, This[], This[string]);
+//     V v;
+//     assert(v.serializeToJson == "null", v.serializeToJson);
+//     v = [V(2), V("str"), V(["key":V(1.0)])];
+//     assert(v.serializeToJson == `[2.0,"str",{"key":1.0}]`);
+// }
 
 ///
-version(none)
+// version(none)
+// unittest
+// {
+//     import mir.ion.ser.json;
+//     import mir.ion.deser.json;
+//     import mir.ndslice.topology: iota;
+//     import std.array: Appender;
+//     import std.uuid;
+
+//     static struct S
+//     {
+//         private int count;
+//         @serdeLikeList
+//         auto numbers() @property // uses `foreach`
+//         {
+//             return iota(count);
+//         }
+
+//         @serdeLikeList
+//         @serdeProxy!string // input element type of
+//         @serdeIgnoreOut
+//         Appender!(string[]) strings; //`put` method is used
+//     }
+
+//     assert(S(5).serializeJson == `{"numbers":[0,1,2,3,4]}`);
+//     assert(`{"strings":["a","b"]}`.deserializeJson!S.strings.data == ["a","b"]);
+// }
+
+///
 unittest
 {
     import mir.ion.ser.json;
-    import mir.ion.deser.json;
-
-    import std.array: Appender;
-    import std.uuid;
-
-    static struct S
-    {
-        private int count;
-        @serdeLikeList
-        auto numbers() @property // uses `foreach`
-        {
-            return iota(count);
-        }
-
-        @serdeLikeList
-        @serdeProxy!string // input element type of
-        @serdeIgnoreOut
-        Appender!(string[]) strings; //`put` method is used
-    }
-
-    assert(S(5).serializeJson == `{"numbers":[0,1,2,3,4]}`);
-    assert(`{"strings":["a","b"]}`.deserializeJson!S.strings.data == ["a","b"]);
-}
-
-///
-version(none)
-unittest
-{
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ion.deser.ion;
 
     static struct M
     {
@@ -626,8 +625,10 @@ unittest
         M obj;
     }
 
+    import mir.ion.conv;
+
     assert(S.init.serializeJson == `{"obj":{"a":1,"b":2,"c":3}}`);
-    assert(`{"obj":{"a":1,"b":2,"c":9}}`.deserializeJson!S.obj.sum == 12);
+    assert(`{"obj":{"a":1,"b":2,"c":9}}`.json2ion.deserializeIon!S.obj.sum == 12);
 }
 
 ///
@@ -756,4 +757,17 @@ unittest
     object = object["this"].get!(StringMap!MyJsonAlgebraic);
     assert(object["c"].get!string == "str");
     assert(object["d"].get!(double[]) == [1.0, 2, 3, 4]);
+}
+
+/// Date serialization
+unittest
+{
+    import mir.date;
+    import mir.ion.conv: ion2text;
+    import mir.ion.ser.ion: serializeIon;
+    import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.text: serializeText;
+    assert(Date(2021, 4, 24).serializeIon.ion2text == `2021-04-24`);
+    assert(Date(2021, 4, 24).serializeText == `2021-04-24`);
+    assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
 }

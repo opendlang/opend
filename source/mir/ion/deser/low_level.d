@@ -493,6 +493,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 ///
 version(mir_ion_test) unittest
 {
+    import mir.rc.array: RCArray;
     import mir.ion.value;
     import mir.ion.exception;
 
@@ -702,8 +703,9 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.value;
     import mir.ion.exception;
+    import mir.ion.value;
+    import mir.rc.array: RCArray;
 
     auto data = IonValue([
         0xbe, 0x91, 0x00, 0x00, 0x21, 0x0c,

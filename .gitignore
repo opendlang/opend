@@ -56,3 +56,8 @@ mir-ion-test-unittest
 ion_temp.json
 *.dylib
 *.out
+docgen
+web
+v2.096.0.tar.gz
+tool*
+putValue

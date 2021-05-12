@@ -891,7 +891,6 @@ size_t ionPut(W, WordEndian endian)(
     return ionPut(ptr, value.signed);
 }
 
-///
 pure
 version(mir_ion_test) unittest
 {
@@ -939,7 +938,6 @@ size_t ionPut(W, WordEndian endian)(
     }
 }
 
-///
 pure
 version(mir_ion_test) unittest
 {
@@ -990,7 +988,6 @@ size_t ionPut(W, WordEndian endian)(
     }
 }
 
-///
 pure
 version(mir_ion_test) unittest
 {
@@ -1176,6 +1173,8 @@ size_t ionPutSymbolId(T, WordEndian endian)(scope ubyte* ptr, BigUIntView!(T, en
 ///
 version(mir_ion_test) unittest
 {
+    import mir.bignum.low_level_view: BigUIntView, WordEndian;
+
     ubyte[8] data;
 
     ubyte[] result = [0x72, 0x01, 0xFF];

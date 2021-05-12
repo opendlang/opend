@@ -1,4 +1,4 @@
-/++
+/+
 Tokenizer to split up the contents of an Ion Text file into tokens
 
 Authors: Harrison Ford
@@ -10,7 +10,7 @@ import mir.ion.deser.text.skippers;
 import mir.ion.deser.text.tokens;
 import mir.ion.internal.data_holder : IonTapeHolder;
 
-/++
+/+
 Create a tokenizer for a given UTF-8 string.
 
 This function will take in a given string, and duplicate it.
@@ -27,7 +27,7 @@ IonTokenizer tokenizeString(const(char)[] input) @safe @nogc pure {
     return IonTokenizer(input);
 }
 
-/++
+/+
 Create a tokenizer for a given UTF-16/UTF-32 string.
 
 This function will take in a UTF-16/UTF-32 string, and convert it to a UTF-8 string before tokenizing.
@@ -44,7 +44,7 @@ if (is(Input : const(wchar)[]) || is(Input : const(dchar)[])) {
     return tokenizeString(range);
 }
 
-/// UTF-16 string
+// UTF-16 string
 version(mir_ion_parser_test) unittest {
     import mir.ion.deser.text.tokens : IonTokenType;
     import mir.ion.deser.text.readers : readString;
@@ -53,7 +53,7 @@ version(mir_ion_parser_test) unittest {
     assert(t.currentToken == IonTokenType.TokenString);
     assert(t.readString().matchedText == "hello𐐷world");
 }
-/// UTF-32 string
+// UTF-32 string
 version(mir_ion_parser_test) unittest {
     import mir.ion.deser.text.tokens : IonTokenType;
     import mir.ion.deser.text.readers : readString;
@@ -62,29 +62,29 @@ version(mir_ion_parser_test) unittest {
     assert(t.currentToken == IonTokenType.TokenString);
     assert(t.readString().matchedText == "hello𐐷world");
 }
-/++
+/+
 Tokenizer based off of how ion-go handles tokenization
 +/
 struct IonTokenizer {
-    /++ Our input range that we read from +/
+    /+ Our input range that we read from +/
     const(char)[] input;
 
-    /++ The current window that we're reading from (sliding window) +/
+    /+ The current window that we're reading from (sliding window) +/
     const(char)[] window;
 
-    /++ The escape sequence that we're reading from the wire +/
+    /+ The escape sequence that we're reading from the wire +/
     char[4] escapeSequence; 
 
-    /++ Bool specifying if we want to read through the contents of the current token +/
+    /+ Bool specifying if we want to read through the contents of the current token +/
     bool finished;
 
-    /++ Current position within our input range +/
+    /+ Current position within our input range +/
     size_t position;
 
-    /++ Current token that we're located on +/
+    /+ Current token that we're located on +/
     IonTokenType currentToken;
 
-    /++ 
+    /+ 
     Constructor
     Params:
         input = The input range to read over 
@@ -94,7 +94,7 @@ struct IonTokenizer {
         resizeWindow(0);
     }
 
-    /++
+    /+
     Update the sliding window's beginning index
     Params:
         start = The beginning index to start at
@@ -108,7 +108,7 @@ struct IonTokenizer {
         this.position = start;
     }
 
-    /++
+    /+
     Clear out the escape sequence buffer.
     +/
     void resetEscapeBuffer() @safe @nogc pure {
@@ -118,7 +118,7 @@ struct IonTokenizer {
         this.escapeSequence[3] = '\0';
     }
 
-    /++
+    /+
     Variable to indicate if we at the end of our range
     Returns:
         true if end of file, false otherwise
@@ -129,7 +129,7 @@ struct IonTokenizer {
                || this.position >= this.input.length;
     }
 
-    /++ 
+    /+ 
     Unread a given character and append it to the peek buffer 
     Params:
         c = Character to append to the top of the peek buffer.
@@ -145,7 +145,7 @@ struct IonTokenizer {
             resizeWindow(this.position - 1);
         }
     }
-    /// Test reading / unreading bytes
+    // Test reading / unreading bytes
     version(mir_ion_parser_test) unittest
     {
         auto t = tokenizeString("abc\rd\ne\r\n");
@@ -180,7 +180,7 @@ struct IonTokenizer {
         t.testRead(0); // test EOF
     }
 
-    /++ 
+    /+ 
     Skip a single character within our input range, and discard it 
     Returns:
         true if it was able to skip a single character,
@@ -194,7 +194,7 @@ struct IonTokenizer {
         return true;
     }
 
-    /++
+    /+
     Skip exactly n input characters from the input range
 
     $(NOTE
@@ -214,7 +214,7 @@ struct IonTokenizer {
         return true;
     }
 
-    /++
+    /+
     Read ahead at most n characters from the input range without discarding them.
 
     $(NOTE
@@ -235,7 +235,7 @@ struct IonTokenizer {
         return arr;
     }
 
-    /++
+    /+
     Read ahead exactly n characters from the input range without discarding them.
 
     $(NOTE
@@ -258,7 +258,7 @@ struct IonTokenizer {
 
         return buf;
     }
-    /// Test peekExactly
+    // Test peekExactly
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertThrown;
@@ -296,7 +296,7 @@ struct IonTokenizer {
         assertThrown!IonTokenizerException(t.peekExactly(10));
     }
 
-    /++
+    /+
     Read ahead one character from the input range without discarding it.
 
     $(NOTE
@@ -318,7 +318,7 @@ struct IonTokenizer {
         
         return c;
     }
-    /// Test peeking the next byte in the stream
+    // Test peeking the next byte in the stream
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertThrown;
@@ -345,7 +345,7 @@ struct IonTokenizer {
         assert(t.readInput() == 0);
     }
 
-    /++
+    /+
     Read a single character from the input range (or from the peek buffer, if it's not empty)
 
     $(NOTE `readInput` does NOT normalize CRLF to a simple new-line.)
@@ -370,7 +370,7 @@ struct IonTokenizer {
 
         return c;
     }
-    /// Test reading bytes off of a range
+    // Test reading bytes off of a range
     version(mir_ion_parser_test) unittest 
     {
         auto t = tokenizeString("abcdefghijklmopqrstuvwxyz1234567890");
@@ -384,7 +384,7 @@ struct IonTokenizer {
         t.testRead('h');
         t.testRead('i');
     }
-    /// Test the normalization of CRLFs
+    // Test the normalization of CRLFs
     version(mir_ion_parser_test) unittest
     {
         auto t = tokenizeString("a\r\nb\r\nc\rd");
@@ -400,7 +400,7 @@ struct IonTokenizer {
         t.testRead(0);
     }
 
-    /++
+    /+
     Skip any whitespace that is present between our current token and the next valid token.
 
     Additionally, skip comments (or fail on comments).
@@ -443,7 +443,7 @@ struct IonTokenizer {
         }
         return 0;
     }
-    /// Test skipping over whitespace 
+    // Test skipping over whitespace 
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertNotThrown;
@@ -465,7 +465,7 @@ struct IonTokenizer {
         test(" \r\n /* comment *//* \r\n comment */x", 'x');
     }
 
-    /++
+    /+
     Skip whitespace within a clob/blob. 
 
     This function is just a wrapper around skipWhitespace, but toggles on it's "fail on comment" mode, as
@@ -478,7 +478,7 @@ struct IonTokenizer {
     char skipLobWhitespace() @safe @nogc pure {
         return skipWhitespace!(false, false);
     }
-    /// Test skipping over whitespace within a (c|b)lob
+    // Test skipping over whitespace within a (c|b)lob
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertNotThrown;
@@ -491,15 +491,15 @@ struct IonTokenizer {
             );
         }
 
-        test!("///=", '/');
+        test!("//=", '/');
         test!("xyz_", 'x');
-        test!(" ///=", '/');
+        test!(" //=", '/');
         test!(" xyz_", 'x');
-        test!("\r\n\t///=", '/');
+        test!("\r\n\t//=", '/');
         test!("\r\n\txyz_", 'x');
     }
 
-    /++
+    /+
     Check if the next characters within the input range are the special "infinity" type.
 
     Params:
@@ -526,7 +526,7 @@ struct IonTokenizer {
 
         return false;
     }
-    /// Test scanning for inf
+    // Test scanning for inf
     version(mir_ion_parser_test) unittest
     {
         void test(string txt, bool inf, char after) {
@@ -561,7 +561,7 @@ struct IonTokenizer {
         test("-", false, 0);
     }
 
-    /++
+    /+
     Check if the current character selected is part of a triple quote (''')
 
     $(NOTE This function will not throw if an EOF is hit. It will simply return false.)
@@ -585,7 +585,7 @@ struct IonTokenizer {
         }
     }
 
-    /++
+    /+
     Check if the current character selected is part of a whole number.
 
     If it is part of a whole number, then return the type of number (hex, binary, timestamp, number)
@@ -634,7 +634,7 @@ struct IonTokenizer {
         return IonTokenType.TokenNumber;
 
     }
-    /// Test scanning for numbers 
+    // Test scanning for numbers 
     version(mir_ion_parser_test) unittest
     {
         import mir.ion.deser.text.tokens : IonTokenType;
@@ -664,7 +664,7 @@ struct IonTokenizer {
         test("123,T", IonTokenType.TokenNumber);
     }
 
-    /++
+    /+
     Set the current token, and if we want to go into the token.
     Params:
         token = The updated token type
@@ -675,7 +675,7 @@ struct IonTokenizer {
         this.finished = !unfinished;
     }
 
-    /++
+    /+
     Read the next token from the range.
     Returns:
         true if it was able to read a valid token from the range.
@@ -825,7 +825,7 @@ struct IonTokenizer {
         }
     }
 
-    /++
+    /+
     Finish reading the current token, and skip to the end of it.
     
     This function will only work if we are in the middle of reading a token.
@@ -846,7 +846,7 @@ struct IonTokenizer {
         return true;
     }
 
-    /++
+    /+
     Check if the given character is a "stop" character.
 
     Stop characters are typically terminators of objects, but here we overload and check if there's a comment after our character.
@@ -870,14 +870,14 @@ struct IonTokenizer {
         return false;
     }
 
-    /++
+    /+
     Helper to generate a thrown exception (if an unexpected character is hit)
     +/
     void unexpectedChar(char c, size_t pos = -1, string file = __FILE__, int line = __LINE__) @safe @nogc pure {
         throw new IonTokenizerException(c ? IonTokenizerErrorCode.unexpectedCharacter : IonTokenizerErrorCode.unexpectedEOF, file, line);
     }
 
-    /++
+    /+
     Helper to throw if an unexpected end-of-file is hit.
     +/
     void unexpectedEOF(size_t pos = -1, string file = __FILE__, int line = __LINE__) @safe @nogc pure {
@@ -886,7 +886,7 @@ struct IonTokenizer {
         unexpectedChar(0, pos, file, line);
     }
 
-    /++
+    /+
     Ensure that the next item in the range fulfills the predicate given.
     Params:
         pred = A predicate that the next character in the range must fulfill
@@ -914,7 +914,7 @@ struct IonTokenizer {
             }
         }
     }
-    /// Text expect()
+    // Text expect()
     version(mir_ion_parser_test) unittest
     {
         import mir.ion.deser.text.tokens : IonTokenizerException, isHexDigit;
@@ -949,7 +949,7 @@ struct IonTokenizer {
         testFailHex("Tst");
     }
 
-    /++
+    /+
     Ensure that the next item in the range does NOT fulfill the predicate given.
 
     This is the opposite of `expect` - which expects that the predicate is fulfilled.
@@ -982,7 +982,7 @@ struct IonTokenizer {
     }
 }
 
-/++
+/+
 Generic helper to verify the functionality of the parsing code in unit-tests
 +/
 void testRead(T)(ref T t, char expected, string file = __FILE__, int line = __LINE__) {
@@ -995,7 +995,7 @@ void testRead(T)(ref T t, char expected, string file = __FILE__, int line = __LI
     }
 }
 
-/++
+/+
 Generic helper to verify the functionality of the parsing code in unit-tests
 +/
 void testPeek(T)(ref T t, char expected, string file = __FILE__, int line = __LINE__) {

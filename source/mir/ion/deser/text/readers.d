@@ -1,4 +1,4 @@
-/++
+/+
 Helpers for reading values from a given Ion token.
 
 Authors: Harrison Ford
@@ -14,7 +14,7 @@ private bool isValidDchar(dchar c) pure nothrow @safe @nogc
     return c < 0xD800 || (c > 0xDFFF && c <= 0x10FFFF);
 }
 
-/++
+/+
 Read the contents of a given token from the input range.
 
 $(WARNING This function does no checking if the current token
@@ -67,7 +67,7 @@ version(mir_ion_parser_test) unittest {
     }
 }
 
-/++
+/+
 Read a UTF-32 code-point from the input range (for clobs).
 Params:
     t = The tokenizer
@@ -78,7 +78,7 @@ dchar readEscapedClobChar(ref IonTokenizer t) @nogc @safe pure {
     return readEscapedChar!(true)(t);
 }
 
-/++
+/+
 Read out a UTF-32 code-point from a hex escape within our input range.
 
 For simplicity's sake, this will return the largest type possible (a UTF-32 code-point).
@@ -132,7 +132,7 @@ dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
             throw new IonTokenizerException(IonTokenizerErrorCode.invalidHexEscape);
     }
 }
-/// Test reading a unicode escape
+// Test reading a unicode escape
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -163,7 +163,7 @@ version(mir_ion_parser_test) unittest
     testFail("!");
 }
 
-/++
+/+
 Read a UTF-32 escape sequence, and return it as UTF-8 character(s).
 Params:
     t = The tokenizer
@@ -222,7 +222,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     throw new IonTokenizerException(IonTokenizerErrorCode.encodingInvalidCode);
 }
 
-/++
+/+
     Read a non-quoted symbol from our input range.
     Params:
         t = The tokenizer
@@ -252,7 +252,7 @@ const(char)[] readSymbol(ref IonTokenizer t) @safe pure @nogc
 
     return cast(typeof(return)) window;
 }
-/// Test reading a symbol
+// Test reading a symbol
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -276,7 +276,7 @@ version(mir_ion_parser_test) unittest
     test("nan]", "nan", IonTokenType.TokenCloseBracket);
 }
 
-/++
+/+
 Read a quoted symbol from our input range, 
 and automatically decode any escape sequences found.
     
@@ -328,7 +328,7 @@ IonTextQuotedSymbol readSymbolQuoted(ref IonTokenizer t) @nogc @safe pure
     val.matchedIndex = startIndex;
     return val;
 }
-/// Test reading quoted symbols
+// Test reading quoted symbols
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -378,7 +378,7 @@ version(mir_ion_parser_test) unittest
     testMultipart(`'a\U0001F44Db'`, "a", "👍", "b", 0);
 }
 
-/++
+/+
 Read a symbol operator from the input range.
 Params:
     t = The tokenizer
@@ -400,7 +400,7 @@ IonTextSymbolOperator readSymbolOperator(ref IonTokenizer t) @safe @nogc pure
     return val;
 }
 
-/++
+/+
 Read a string from the input range and automatically decode any UTF escapes.
 Params:
     longString = Is this string a 'long' string, defined by 3 single-quotes?
@@ -558,7 +558,7 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
     val.matchedIndex = startIndex;
     return val;
 }
-/// Test reading a string
+// Test reading a string
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -595,7 +595,7 @@ version(mir_ion_parser_test) unittest
     test(`"0xFOOBAR",`, "0xFOOBAR", ',');
 }
 
-/++
+/+
 Read a long string (defined by having three single quotes surrounding it's contents).
 
 $(NOTE If this function encounters another long string in the input range separated by whitespace, 
@@ -611,7 +611,7 @@ IonTextString readLongString(ref IonTokenizer t) @safe @nogc pure
 {
     return readString!(true)(t);
 }
-/// Test reading a long string
+// Test reading a long string
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -687,7 +687,7 @@ version(mir_ion_parser_test) unittest
     testNewLine("'''Hello, \r \nworld!'''", "Hello, ", " \nworld!", true, false, 0); // normalized, but there is extra text
 }
 
-/++
+/+
 Read the contents of a clob, and return it as an untyped array.
 
 $(NOTE As per Ion specification, a clob does not contain Base64 data. Use readBlob if you are expecting to decode Base64 data.)
@@ -713,7 +713,7 @@ IonTextClob readClob(bool longClob = false)(ref IonTokenizer t) @safe @nogc pure
     t.finished = true; // we're done reading!
     return data;
 }
-/// Test reading a short clob
+// Test reading a short clob
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -731,7 +731,7 @@ version(mir_ion_parser_test) unittest
     test(`"0xF00BAR"}}, `, "0xF00BAR", ',');
 }
 
-/++
+/+
 Helper to read a long clob from the input stream.
 
 See [readClob] for any notes.
@@ -745,7 +745,7 @@ IonTextClob readLongClob(ref IonTokenizer t) @safe @nogc pure
     return readClob!(true)(t);
 }
 
-/++
+/+
 Read a blob from the input stream, and return the Base64 contents.
 
 $(NOTE This function does not verify if the Base64 contained is valid, or if it is even Base64.)
@@ -772,7 +772,7 @@ IonTextBlob readBlob(ref IonTokenizer t) @safe @nogc pure
     val.matchedIndex = startIndex;
     return val;
 }
-/++
+/+
 Read a number from the input stream, and return the type of number, as well as the number itself.
 
 Params:
@@ -847,7 +847,7 @@ IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
 
     return num; 
 }
-/// Test reading numbers
+// Test reading numbers
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -872,7 +872,7 @@ version(mir_ion_parser_test) unittest
     test("1.1999999999999999e0, ", "1.1999999999999999e0", IonTypeCode.float_, ',');
 }
 
-/++
+/+
 Read as many digits from the input stream as possible, given the first digit of the digits.
 
 This function will stop reading digits as soon as whitespace is hit.
@@ -893,7 +893,7 @@ const(char)[] readDigits(ref IonTokenizer t, char leader) @safe @nogc pure
     return readRadixDigits(t);
 }
 
-/++
+/+
 Read as many digits from the input stream as possible, given a validator.
 
 This function will stop reading digits as soon as the validator returns false.
@@ -921,7 +921,7 @@ const(char)[] readRadixDigits(alias isValid = isDigit)(ref IonTokenizer t)
     }
 }
 
-/++
+/+
 Read a radix number, given two validation functions for it's marker and the validity of each digit read.
 
 Params:
@@ -951,7 +951,7 @@ const(char)[] readRadix(alias isMarker, alias isValid)(ref IonTokenizer t) @safe
     return t.input[startIndex .. t.position];
 }
 
-/++
+/+
 Read a binary number (marked by '0b') from the input stream.
 
 Params:
@@ -963,7 +963,7 @@ const(char)[] readBinary(ref IonTokenizer t) @safe @nogc pure
 {
     return readRadix!("a == 'b' || a == 'B'", "a == '0' || a == '1'")(t);
 }
-/// Test reading a binary number
+// Test reading a binary number
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -983,7 +983,7 @@ version(mir_ion_parser_test) unittest
     test("      0b11011110101011011011111011101111,", "0b11011110101011011011111011101111", ',');  
 }
 
-/++
+/+
 Read a hex number (marked by '0x') from the input stream.
 
 Params:
@@ -995,7 +995,7 @@ const(char)[] readHex(ref IonTokenizer t) @safe @nogc pure
 {
     return readRadix!("a == 'x' || a == 'X'", isHexDigit)(t);
 }
-/// Test reading a hex number
+// Test reading a hex number
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;
@@ -1026,7 +1026,7 @@ version(mir_ion_parser_test) unittest
     testMultipart("     0x414141,0x414142", "0x414141", ',', "0x414142");
 }
 
-/++
+/+
 Read a ISO-8601 extended timestamp from the input stream.
 
 $(NOTE This function does some rudimentary checks to see if the timestamp is valid,
@@ -1130,7 +1130,7 @@ IonTextTimestamp readTimestamp(ref IonTokenizer t) @safe @nogc pure
     c = readTSOffsetOrZ(t.readInput());
     return readTSFinish(c);
 }
-/// Test reading timestamps
+// Test reading timestamps
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.deser.text.tokenizer : tokenizeString;

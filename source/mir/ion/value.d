@@ -13,6 +13,9 @@ import mir.lob;
 import mir.utility: _expect;
 import std.traits: isMutable, isIntegral, isSigned, isUnsigned, Unsigned, Signed, isFloatingPoint, ParameterTypeTuple;
 
+public import mir.ion.type_code;
+public import mir.ion.exception;
+
 /++
 Ion Version Marker
 +/
@@ -2982,7 +2985,6 @@ private auto unsignedDataToFloating(T)(const T data)
     }
 }
 
-///
 @safe pure nothrow @nogc
 unittest
 {

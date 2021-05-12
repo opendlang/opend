@@ -99,10 +99,7 @@ template TableParams(bool exteneded)
     }
 }
 
-/++
-Deserialize aggregate value using compile time symbol table
-+/
-template deserializeValue(string[] symbolTable, bool exteneded = false)
+private template prepareSymbolId(string[] symbolTable, bool exteneded)
 {
     static if (!exteneded)
         static immutable table = symbolTable;
@@ -119,7 +116,13 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         }
         return symbolId < table.length;
     }
+}
 
+/++
+Deserialize aggregate value using compile time symbol table
++/
+template deserializeValue(string[] symbolTable, bool exteneded = false)
+{
     private string deserializeAnnotations(T)(
         ref IonAnnotations annotations,
         scope TableParams!exteneded tableParams,
@@ -152,7 +155,9 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     Deserialize aggregate value
     Params:
         data = $(IONREF value, IonDescribedValue)
+        tableParams = symbol $(LREF TableParams) 
         value = value to deserialize
+        optAnnotations = (optional) $(MREF mir,ion,value, IonAnnotations)
     Returns: `SerdeException`
     +/
     string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
@@ -531,7 +536,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                     return error.ionErrorMsg;
 
                                 auto originalId = symbolId;
-                                if (!prepareSymbolId(tableParams, symbolId))
+                                if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
                                     goto Default;
 
                                 switch (symbolId)
@@ -706,7 +711,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 }
                 else
                 {
-                    alias impl = deserializeValueMember!(.deserializeValue!(symbolTable, exteneded), deserializeScoped, exteneded);
+                    alias impl = deserializeValueMember!(symbolTable, exteneded);
 
                     static immutable exc(string member) = "mir.ion.deser: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.";
                     
@@ -716,7 +721,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     static if (hasUDA!(T, serdeRealOrderedIn))
                     {
                         static assert (!hasUnexpectedKeyHandler, "serdeRealOrderedIn aggregate type attribute is not compatible with `serdeUnexpectedKeyHandler` method");
-                        static foreach(member; serdeFinalProxyDeserializableMembers!T)
+                        static foreach (member; serdeFinalProxyDeserializableMembers!T)
                         {{
                             enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
                             static if (keys.length)
@@ -725,7 +730,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                 {
                                     if (error)
                                         return error.ionErrorMsg;
-                                    prepareSymbolId(tableParams, symbolId);
+                                    prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId);
 
                                     switch(symbolId)
                                     {
@@ -753,11 +758,11 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                             if (error)
                                 return error.ionErrorMsg;
                             auto originalId = symbolId;
-                            if (!prepareSymbolId(tableParams, symbolId))
+                            if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
                                 goto Default;
                             S: switch(symbolId)
                             {
-                                static foreach(member; serdeFinalProxyDeserializableMembers!T)
+                                static foreach (member; serdeFinalProxyDeserializableMembers!T)
                                 {{
                                     enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
                                     static if (keys.length)
@@ -784,7 +789,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                             }
                         }
 
-                        static foreach(member; __traits(allMembers, SerdeFlags!T))
+                        static foreach (member; __traits(allMembers, SerdeFlags!T))
                             static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
                                 if (!__traits(getMember, requiredFlags, member))
                                     return exc!member;
@@ -808,8 +813,12 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     alias deserializeValue = .deserializeValue_;
 }
 
-private template deserializeValueMember(alias deserializeValue, alias deserializeScoped, bool exteneded)
+private template deserializeValueMember(string[] symbolTable, bool exteneded)
 {
+
+    static if (!exteneded)
+        static immutable table = symbolTable;
+
     ///
     string deserializeValueMember(string member, Data, T, Context...)(Data data, scope TableParams!exteneded tableParams, ref T value, ref SerdeFlags!T requiredFlags, ref Context context)
     {
@@ -847,12 +856,12 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
             }
             else
             {
-                alias impl = deserializeValue;
+                alias impl = .deserializeValue!(symbolTable, exteneded);
             }
         }
         else
         {
-            alias impl = deserializeValue;
+            alias impl = .deserializeValue!(symbolTable, exteneded);
         }
 
         static immutable excm(string member) = "mir.serde: multiple keys for member '" ~ member ~ "' in " ~ T.stringof ~ " are not allowed.";
@@ -904,12 +913,41 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
         else
         static if (likeStruct)
         {
-            foreach(v; data.byKeyValue(context))
+            if (data.descriptor.type == IonTypeCode.struct_)
             {
-                Temporal temporal;
-                if (auto exc = impl(v.value, tableParams, temporal, context))
-                    return exc;
-                __traits(getMember, value, member)[v.key.idup] = move(temporal);
+                foreach (error, symbolId, ionElem; data.trustedGet!IonStruct)
+                {
+                    if (_expect(error, false))
+                        return error.ionErrorMsg;
+
+                    Temporal elem;
+                    if (auto exc = impl(ionElem, tableParams, elem, context))
+                        return exc;
+                    import core.lifetime: move;
+
+                    static if (exteneded)
+                        alias table = tableParams[0];
+
+                    if (symbolId >= table.length)
+                        return "Unexpected symbol ID when deserializing " ~ T.stringof;                    
+
+                    static if (__traits(compiles, {__traits(getMember, value, member)[table[symbolId]] = move(elem);}))
+                    {
+                        __traits(getMember, value, member)[table[symbolId]] = move(elem);
+                    }
+                    else
+                    {
+                        __traits(getMember, value, member)[table[symbolId].idup] = move(elem);
+                    }
+                }
+            }
+            else
+            if (data.descriptor.type == IonTypeCode.null_)
+            {
+            }
+            else
+            {
+                return IonErrorCode.expectedStructValue.ionErrorMsg;
             }
             static if (hasTransform)
             {
@@ -989,6 +1027,8 @@ private template deserializeValueMember(alias deserializeValue, alias deserializ
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.ion.symbol_table;
+    import mir.ion.value;
     import mir.serde: SerdeException;
     import mir.small_array;
     import mir.small_string;

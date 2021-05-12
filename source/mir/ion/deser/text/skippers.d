@@ -1,4 +1,4 @@
-/++
+/+
 Helpers to skip over a given Ion Text token.
 
 Authors: Harrison Ford
@@ -9,7 +9,7 @@ import mir.ion.deser.text.tokenizer;
 import mir.ion.deser.text.tokens;
 import mir.ion.type_code;
 
-/++
+/+
 Skip over the contents of a S-Exp/Struct/List/Blob.
 Params:
     t = The tokenizer
@@ -22,7 +22,7 @@ char skipContainer(ref IonTokenizer t, char term) @safe @nogc pure {
     return t.readInput();
 }
 
-/++
+/+
 Skip over the contents of a S-Exp/Struct/List/Blob, but do not read any character after the terminator.
 
 Params:
@@ -74,7 +74,7 @@ in {
     }
 }
 
-/++
+/+
 Skip over a single line comment. This will read input up until a newline or the EOF is hit.
 Params:
     t = The tokenizer
@@ -110,7 +110,7 @@ version(mir_ion_parser_test) unittest
     t.testRead(0);
 }
 
-/++
+/+
     Skip over a block comment. This will read up until `*/` is hit.
     Params:
         t = The tokenizer
@@ -153,7 +153,7 @@ version(mir_ion_parser_test) unittest
     t.testRead(0);
 }
 
-/++
+/+
 Skip over a comment (block or single-line) after reading a '/'
 Params:
     t = The tokenizer
@@ -209,7 +209,7 @@ version(mir_ion_parser_test) unittest
     t.testRead(0);
 }
 
-/++
+/+
 Skip any digits after the last character read.
 Params:
     t = The tokenizer
@@ -226,7 +226,7 @@ char skipDigits(ref IonTokenizer t, char _c) @safe @nogc pure
     return c;
 }
 
-/++
+/+
 Skip over a non-[hex, binary] number.
 Params:
     t = The tokenizer
@@ -282,7 +282,7 @@ version(mir_ion_parser_test) unittest
     testFail("1.2d3d");
 }
 
-/++
+/+
 Skip over a binary number.
 Params:
     t = The tokenizer
@@ -317,7 +317,7 @@ version(mir_ion_parser_test) unittest
     testFail("0b2");
 }
 
-/++
+/+
 Skip over a hex number.
 Params:
     t = The tokenizer
@@ -353,7 +353,7 @@ version(mir_ion_parser_test) unittest
     testFail("0xG");
 }
 
-/++
+/+
 Skip over a number given two predicates to determine the number's marker (`0x`, `0b`) and if any input is valid.
 Params:
     isMarker = A predicate which determines if the marker in a number is valid.
@@ -385,7 +385,7 @@ template skipRadix(alias isMarker, alias isValid)
     }
 }
 
-/++
+/+
 Skip over a timestamp (compliant to ISO 8601)
 Params:
     t = The tokenizer
@@ -528,7 +528,7 @@ version(mir_ion_parser_test) unittest
     testFail("2001-01-02T03:04:05x ");
 }
 
-/++
+/+
 Skip over a symbol.
 Params:
     t = The tokenizer
@@ -565,7 +565,7 @@ version(mir_ion_parser_test) unittest
     test("foo\\n", '\\');
 }
 
-/++
+/+
 Skip over a quoted symbol, but do not read the character after.
 Params:
     t = The tokenizer
@@ -587,7 +587,7 @@ void skipSymbolQuotedInternal(ref IonTokenizer t) @safe @nogc pure
     }
 }
 
-/++
+/+
 Skip over a quoted symbol
 Params:
     t = The tokenizer
@@ -624,7 +624,7 @@ version(mir_ion_parser_test) unittest
     testFail("foo\n");
 }
 
-/++
+/+
 Skip over a symbol operator.
 Params:
     t = The tokenizer
@@ -656,7 +656,7 @@ version(mir_ion_parser_test) unittest
     test("%b", 'b');
 }
 
-/++
+/+
 Skip over a string, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -678,7 +678,7 @@ void skipStringInternal(ref IonTokenizer t) @safe @nogc pure
     }
 }
 
-/++
+/+
 Skip over a string.
 Params:
     t = The tokenizer
@@ -716,7 +716,7 @@ version(mir_ion_parser_test) unittest
     testFail("foobar\n"); 
 }
 
-/++
+/+
 Skip over a long string, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -741,7 +741,7 @@ if (__traits(compiles, { t.skipWhitespace!(skipComments, failOnComment); })) {
     }
 }
 
-/++
+/+
 Skip over the end of a long string (`'''``), and see if we find a long string following this one.
 Params:
     t = The tokenizer
@@ -767,7 +767,7 @@ if (__traits(compiles, { t.skipWhitespace!(skipComments, failOnComment); })) {
     return true;
 }
 
-/++
+/+
 Skip over a long string (marked by `'''`)
 Params:
     t = The tokenizer
@@ -790,7 +790,7 @@ version(mir_ion_parser_test) unittest
     }
 }
 
-/++
+/+
 Skip over a blob.
 Params:
     t = The tokenizer
@@ -817,7 +817,7 @@ version(mir_ion_parser_test) unittest
     test("'''not encoded'''}}\n", '\n');
 }
 
-/++
+/+
 Skip over a blob, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -835,7 +835,7 @@ void skipBlobInternal(ref IonTokenizer t) @safe @nogc pure
     return;
 }
 
-/++
+/+
 Skip over a struct.
 Params:
     t = The tokenizer
@@ -861,7 +861,7 @@ version(mir_ion_parser_test) unittest
     test("{}},{}", ','); // skip over an embedded struct inside of a struct
 }
 
-/++
+/+
 Skip over a struct, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -872,7 +872,7 @@ void skipStructInternal(ref IonTokenizer t) @safe @nogc pure
     return;
 }
 
-/++
+/+
 Skip over a S-expression.
 Params:
     t = The tokenizer
@@ -897,7 +897,7 @@ version(mir_ion_parser_test) unittest
     test("0xF00DBAD)", 0);
 }
 
-/++
+/+
 Skip over a S-expression, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -908,7 +908,7 @@ void skipSexpInternal(ref IonTokenizer t) @safe @nogc pure
     return;
 }
 
-/++
+/+
 Skip over a list.
 Params:
     t = The tokenizer
@@ -933,7 +933,7 @@ version(mir_ion_parser_test) unittest
     test("\"foobar\"]", 0);
 }
 
-/++
+/+
 Skip over a list, but do not read the character following it.
 Params:
     t = The tokenizer
@@ -944,7 +944,7 @@ void skipListInternal(ref IonTokenizer t) @safe @nogc pure
     return;
 }
 
-/++
+/+
 Skip over the current token.
 Params:
     t = The tokenizer
