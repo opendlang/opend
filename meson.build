@@ -32,6 +32,7 @@ sources_list = [
     'mir/ion/ser/json',
     'mir/ion/ser/package',
     'mir/ion/ser/text',
+    'mir/ion/ser/unwrap_ids',
     'mir/ion/stream',
     'mir/ion/symbol_table',
     'mir/ion/tape',
