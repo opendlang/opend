@@ -151,47 +151,70 @@ unittest
     static assert(is(quantileType!(int[], QuantileAlgo.type1) == int));
     static assert(is(quantileType!(double[], QuantileAlgo.type1) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type1) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type1) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type2) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type2) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type2) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type2) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type3) == int));
     static assert(is(quantileType!(double[], QuantileAlgo.type3) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type3) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type3) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type4) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type4) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type4) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type4) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type5) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type5) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type5) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type5) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type6) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type6) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type6) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type6) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type7) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type7) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type7) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type7) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type8) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type8) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type8) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type8) == cfloat));
 
     static assert(is(quantileType!(int[], QuantileAlgo.type9) == double));
     static assert(is(quantileType!(double[], QuantileAlgo.type9) == double));
     static assert(is(quantileType!(float[], QuantileAlgo.type9) == float));
+}
+
+version(mir_stat_test_builtincomplex)
+@safe pure nothrow @nogc
+unittest
+{
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type1) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type2) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type3) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type4) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type5) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type6) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type7) == cfloat));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type8) == cfloat));
     static assert(is(quantileType!(cfloat[], QuantileAlgo.type9) == cfloat));
+}
+
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import std.complex: Complex;
+
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type1) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type2) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type3) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type4) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type5) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type6) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type7) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type8) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
 version(mir_stat_test)
@@ -203,16 +226,22 @@ unittest
         alias x this;
     }
 
-    static struct Bar {
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == float));
+
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type1) == Foo));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
+}
+
+version(mir_stat_test_builtincomplex)
+@safe pure nothrow @nogc
+unittest
+{
+    static struct Foo {
         cfloat x;
         alias x this;
     }
 
-    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == float));
-    static assert(is(quantileType!(Bar[], QuantileAlgo.type7) == cfloat));
-
-    static assert(is(quantileType!(Foo[], QuantileAlgo.type1) == Foo));
-    static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == cfloat));
 }
 
 @fmamath private @safe pure nothrow @nogc
@@ -326,7 +355,7 @@ run-time parameter is provided to instead overwrite the input in-place.
 For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
 by default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
-type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+type or a type for which `isComplex!F` is true.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
 $(MATHREF sum, elementType) of the input.
@@ -992,7 +1021,7 @@ This function computes the result using $(LREF quantile), i.e.
 For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
 by default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
-type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+type or a type for which `isComplex!F` is true.
 
 For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
 $(MATHREF sum, elementType) of the input.
@@ -1616,6 +1645,18 @@ unittest
     assert(x.dispersion!(mean!float, square, mean!float).approxEqual(50.91667 / 12));
 }
 
+// built-in complex test
+version(mir_stat_test_builtincomplex)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
+    assert(x.dispersion.approxEqual((0.0 + 10.0i) / 4));
+}
+
 /++
 Dispersion works for complex numbers and other user-defined types (provided that
 the `centralTendency`, `transform`, and `summary` functions are defined for those
@@ -1627,9 +1668,10 @@ unittest
 {
     import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
+    import std.complex: Complex;
 
-    auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
-    assert(x.dispersion.approxEqual((0.0+10.0i)/ 4));
+    auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
+    assert(x.dispersion.approxEqual(Complex!double(0, 10) / 4));
 }
 
 /// Compute mean tensors along specified dimention of tensors
@@ -3591,7 +3633,7 @@ Params:
     kurtosisAlgo = algorithm for calculating kurtosis (default: KurtosisAlgo.online)
     summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
-    The kurtosis of the input, must be floating point or complex type
+    The kurtosis of the input, must be floating point
 +/
 template kurtosis(
     F, 
@@ -4966,8 +5008,8 @@ unittest
     assert(v.moment.approxEqual(54.76562 / 12));
 }
 
-// Raw Moment: test complex
-version(mir_stat_test)
+// Raw Moment: test built-in complex
+version(mir_stat_test_builtincomplex)
 @safe pure nothrow
 unittest
 {
@@ -4981,6 +5023,24 @@ unittest
     MomentAccumulator!(cdouble, 2, Summation.naive) v;
     v.put(x);
     assert(v.moment.approxEqual((-4.0 - 6i) / 3));
+}
+
+// Raw Moment: test std.complex
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+    import std.complex: Complex;
+
+    auto a = [Complex!double(1.0, 3), Complex!double(2.0, 0), Complex!double(3.0, 0)].sliced;
+    auto x = a.center;
+
+    MomentAccumulator!(Complex!double, 2, Summation.naive) v;
+    v.put(x);
+    assert(v.moment.approxEqual(Complex!double(-4.0, -6.0) / 3));
 }
 
 /// Central moment
@@ -5158,7 +5218,7 @@ Calculates the n-th raw moment of the input.
 
 By default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
-type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+type or a type for which `isComplex!F` is true.
 
 Params:
     F = controls type of output
@@ -5329,11 +5389,8 @@ unittest
     static assert(is(typeof(z) == double));
 }
 
-/++
-rawMoment works for complex numbers and other user-defined types (provided they
-can be converted to a floating point or complex type)
-+/
-version(mir_stat_test)
+// rawMoment built-in complex
+version(mir_stat_test_builtincomplex)
 @safe pure nothrow
 unittest
 {
@@ -5342,6 +5399,22 @@ unittest
 
     auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
     assert(x.rawMoment!2.approxEqual((-24 + 80.0i)/ 4));
+}
+
+/++
+rawMoment works for complex numbers and other user-defined types (that are either
+implicitly convertible to floating point or if `isComplex` is true)
++/
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+    import std.complex: Complex;
+
+    auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
+    assert(x.rawMoment!2.approxEqual(Complex!double(-24, 80)/ 4));
 }
 
 /// Arbitrary raw moment
@@ -5384,7 +5457,7 @@ Calculates the n-th central moment of the input.
 
 By default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
-type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+type or a type for which `isComplex!F` is true.
 
 Params:
     F = controls type of output
@@ -5563,11 +5636,8 @@ unittest
     static assert(is(typeof(z) == double));
 }
 
-/++
-centralMoment works for complex numbers and other user-defined types (provided they
-can be converted to a floating point or complex type)
-+/
-version(mir_stat_test)
+// centralMoment on built-in types
+version(mir_stat_test_builtincomplex)
 @safe pure nothrow
 unittest
 {
@@ -5576,6 +5646,22 @@ unittest
 
     auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
     assert(x.centralMoment!2.approxEqual((0.0 + 10.0i) / 4));
+}
+
+/++
+centralMoment works for complex numbers and other user-defined types (that are
+either implicitly convertible to floating point or if `isComplex` is true)
++/
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+    import std.complex: Complex;
+
+    auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
+    assert(x.centralMoment!2.approxEqual(Complex!double(0, 10) / 4));
 }
 
 /// Arbitrary central moment
@@ -5640,16 +5726,15 @@ enum StandardizedMomentAlgo
 /++
 Calculates the n-th standardized moment of the input.
 
-By default, if `F` is not floating point type or complex type, then the result
-will have a `double` type if `F` is implicitly convertible to a floating point 
-type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+By default, if `F` is not floating point type, then the result will have a
+`double` type if `F` is implicitly convertible to a floating point type.
 
 Params:
     F = controls type of output
     N = controls n-th standardized moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
-    The n-th standardized moment of the input, must be floating point or complex type
+    The n-th standardized moment of the input, must be floating point
 +/
 template standardizedMoment(F, size_t N,
                             StandardizedMomentAlgo standardizedMomentAlgo = StandardizedMomentAlgo.scaled,
