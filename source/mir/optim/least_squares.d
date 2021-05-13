@@ -563,7 +563,7 @@ alias LeastSquaresTask = void delegate(
 
 ///
 alias LeastSquaresTaskBetterC = extern(C) void function(
-        scope ref const LeastSquaresTask,
+        scope const LeastSquaresTask,
         uint totalThreads,
         uint threadId,
         uint i)
@@ -671,7 +671,7 @@ extern(C) @safe nothrow @nogc
         extern(C) void function(
             scope void* context,
             uint count,
-            scope ref const LeastSquaresTask taskContext,
+            scope const LeastSquaresTask taskContext,
             scope LeastSquaresTaskBetterC task)
             @system nothrow @nogc pure;
 
@@ -832,7 +832,7 @@ LeastSquaresResult!T optimizeLeastSquaresImplGenericBetterC(T)
             null
         );
 
-    LeastSquaresTaskBetterC taskFunction = (scope ref const LeastSquaresTask context, uint totalThreads, uint threadId, uint i) @trusted
+    LeastSquaresTaskBetterC taskFunction = (scope const LeastSquaresTask context, uint totalThreads, uint threadId, uint i) @trusted
     {
         context(totalThreads, threadId, i);
     };
