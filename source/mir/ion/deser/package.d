@@ -994,13 +994,13 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                 }
                 return () @trusted {
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue, exteneded)(data, tableParams, buffer))
+                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
                         return exc;
                     auto temporal = cast(Member)buffer.data;
                     static if (hasTransform)
@@ -1089,4 +1089,24 @@ unittest
     import mir.ion.deser.json: deserializeJson;
     assert(`"2021-04-24"`.deserializeJson!Date == Date(2021, 4, 24));
     assert(`123`.deserializeJson!(BigInt!2) == BigInt!2(123));
+}
+
+/// Mir types
+@safe pure @nogc
+unittest
+{
+    static struct S
+    {
+        @serdeIgnoreIn
+        bool set;
+        @serdeScoped
+        @property auto a(int[] a)
+        {
+            static immutable d = [1, 2, 3];
+            set = a == d;
+        }
+    }
+    import mir.ion.deser.json: deserializeJson;
+    auto s = `{"a":[1, 2, 3]}`.deserializeJson!S;
+    assert(s.set);
 }
