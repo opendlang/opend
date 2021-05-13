@@ -159,7 +159,7 @@ Checks if the type is instance of tagged $(LREF Algebraic).
 
 Tagged algebraics can be defined with $(LREF TaggedVariant).
 +/
-enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind);
+enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind == enum);
 
 ///
 @safe pure version(mir_core_test) unittest
@@ -637,7 +637,9 @@ version(mir_core_test) unittest
 }
 
 /++
-Implementation of $(LREF Variant), and $(LREF Nullable).
+Algebraic implementation.
+For more portable code, it is higly recommeded to don't use this template directly.
+Instead, please use of $(LREF Variant) and $(LREF Nullable), which sort types.
 +/
 struct Algebraic(_Types...)
 {
@@ -656,52 +658,13 @@ struct Algebraic(_Types...)
 
     private enum bool _variant_test_ = is(_Types == AliasSeq!(typeof(null), double));
 
-    version (D_Ddoc)
-    {
-        /++
-        Algebraic Kind.
-
-        Defined only for tagged algebraics.
-
-        The Kind enum contains the members defined using tag names.
-
-        If the algebraic type is $(LREF Nullable) then the default Kind enum member has zero value and corresponds to `typeof(null)`.
-
-        See_also: $(LREF TaggedVariant).
-        +/
-        enum Kind { _not_me_but_tags_name_list_ }
-
-        /++
-        Returns: $(LREF .Algebraic.Kind).
-
-        Defined only for tagged algebraics.
-        See_also: $(LREF TaggedVariant).
-        +/
-        Kind kind() const @safe pure nothrow @nogc @property
-        {
-            return Kind.init;
-        }
-    }
-
     static if (anySatisfy!(isTaggedType, _Types))
     {
         private alias _UntaggedThisTypeSetList = staticMap!(getTaggedTypeUnderlying, _Types);
-
-        version (D_Ddoc){}
-        else
-        {
-            mixin(enumKindText([staticMap!(getTaggedTypeName, _Types)]));
-
-            auto kind() const @safe pure nothrow @nogc @property
-            {
-                assert(_identifier_ <= Kind.max);
-                return cast(Kind) _identifier_;
-            }
-        }
     }
     else
     {
-        alias _UntaggedThisTypeSetList = _Types;
+        private alias _UntaggedThisTypeSetList = _Types;
     }
 
     /++
@@ -769,6 +732,52 @@ struct Algebraic(_Types...)
     {
         alias _ID_ = uint;
         enum _ID_ _identifier_ = 0;
+    }
+
+    version (D_Ddoc)
+    {
+        /++
+        Algebraic Kind.
+
+        Defined as enum for tagged algebraics and as unsigned for common algebraics.
+
+        The Kind enum contains the members defined using tag names.
+
+        If the algebraic type is $(LREF Nullable) then the default Kind enum member has zero value and corresponds to `typeof(null)`.
+
+        See_also: $(LREF TaggedVariant).
+        +/
+        enum Kind { _not_me_but_tags_name_list_ }
+    }
+
+    static if (anySatisfy!(isTaggedType, _Types))
+    {
+        version (D_Ddoc){}
+        else
+        {
+            mixin(enumKindText([staticMap!(getTaggedTypeName, _Types)]));
+
+        }
+    }
+    else
+    {
+        version (D_Ddoc){}
+        else
+        {
+            alias Kind = _ID_;
+        }
+    }
+
+    /++
+    Returns: $(LREF .Algebraic.Kind).
+
+    Defined as enum for tagged algebraics and as unsigned for common algebraics.
+    See_also: $(LREF TaggedVariant).
+    +/
+    Kind kind() const @safe pure nothrow @nogc @property
+    {
+        assert(_identifier_ <= Kind.max);
+        return cast(Kind) _identifier_;
     }
 
     static if (anySatisfy!(hasElaborateDestructor, _Payload))
