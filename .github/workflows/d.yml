@@ -1,4 +1,4 @@
-name: Run all D Tests
+name: Run all D Tests and Codecov
 
 on:
   push:
@@ -23,5 +23,8 @@ jobs:
       with:
         compiler: ${{ matrix.dc }}
 
-    - name: Run tests
-      run: dub -q test
+    - name: Run tests with coverage
+      run: dub -q test --build=unittest-cov
+
+    - name: Codecov
+      uses: codecov/codecov-action@v1.5.0
