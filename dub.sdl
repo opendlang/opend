@@ -5,11 +5,11 @@ authors "John Michael Hall" "Ilya Yaroshenko"
 copyright "Copyright © 2020, Mir Stat Authors."
 license "BSL-1.0"
 
-dependency "mir-algorithm" version=">=3.9.6"
+dependency "mir-algorithm" version=">=3.9.60"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_stat_test"
+    versions "mir_stat_test" "mir_stat_test_bultincomplex"
     dflags "-lowmem"
 }
 buildType "unittest-cov" {

@@ -62,11 +62,21 @@ Unqual!T powi(T)(T x, size_t i)
     }
 }
 
-version(mir_stat_test)
+version(mir_stat_test_builtincomplex)
 @safe pure nothrow
 unittest
 {
     cdouble x = 1.0 + 2.0i;
+    assert(x.powi(0) == 0);
+    assert(x.powi(1) == x);
+}
+
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import std.complex: Complex;
+    Complex!double x = Complex!double(1.0, 2.0);
     assert(x.powi(0) == 0);
     assert(x.powi(1) == x);
 }
