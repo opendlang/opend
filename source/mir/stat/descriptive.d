@@ -58,21 +58,24 @@ where x_{j} is the `j`th order statistic. `gamma` is a function of
 `j = floor(np + m)` and `g = np + m - j` where `n` is the sample size, `p` is
 the probability, and `m` is a constant determined by the quantile type.
 
-$(BOOKTABLE $(H4 Discontinuous sample quantile),
-$(TR $(TH Type) $(TH m) $(TH gamma))
-$(T3 type1, 0, 0 if `g = 0` and 1 otherwise.)
-$(T3 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
-$(T3 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+$(BOOKTABLE ,
+    $(TR
+        $(TH Type)
+        $(TH m)
+        $(TH gamma)
+    )
+    $(LEADINGROW Discontinuous sample quantile)
+    $(T3 type1, 0, 0 if `g = 0` and 1 otherwise.)
+    $(T3 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
+    $(T3 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+    $(LEADINGROW Continuous sample quantile)
+    $(T3 type4, 0, `gamma = g`)
+    $(T3 type5, 0.5, `gamma = g`)
+    $(T3 type6, `p`, `gamma = g`)
+    $(T3 type7, `1 - p`, `gamma = g`)
+    $(T3 type8, `(p + 1) / 3`, `gamma = g`)
+    $(T3 type9, `p / 4 + 3 / 8`, `gamma = g`)
 )
-
-$(H4 Continuous sample quantile),
-$(TR $(TH Type) $(TH m) $(TH gamma))
-$(T3 type4, 0, `gamma = g`)
-$(T3 type5, 0.5, `gamma = g`)
-$(T3 type6, `p`, `gamma = g`)
-$(T3 type7, `1 - p`, `gamma = g`)
-$(T3 type8, `(p + 1) / 3`, `gamma = g`)
-$(T3 type9, `p / 4 + 3 / 8`, `gamma = g`)
 
 References:
     Hyndman, R. J. and Fan, Y. (1996) Sample quantiles in statistical packages, American Statistician 50, 361--365. 10.2307/2684934.
