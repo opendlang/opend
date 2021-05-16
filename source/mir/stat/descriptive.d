@@ -1779,7 +1779,7 @@ unittest
 
 /++
 Skew algorithms.
-See Also:
+See_also:
     $(WEB en.wikipedia.org/wiki/Skewness, Skewness).
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance).
 +/
@@ -2861,7 +2861,7 @@ unittest
 
 /++
 Kurtosis algorithms.
-See Also:
+See_also:
     $(WEB en.wikipedia.org/wiki/Kurtosis, Kurtosis).
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance).
 +/
@@ -4482,7 +4482,7 @@ Params:
     summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The coefficient of varition of the input, must be floating point type
-See Also:
+See_also:
     $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation).
 +/
 template coefficientOfVariation(
