@@ -280,8 +280,8 @@ Returns:
     The scaled result
 See_also:
     $(MATHREF stat, center),
-    $(MATHREF stat, VarianceAlgo)
-    $(MATHREF sum, Summation)
+    $(MATHREF stat, VarianceAlgo),
+    $(MATHREF sum, Summation),
     $(MATHREF stat, mean),
     $(MATHREF stat, standardDeviation),
     $(MATHREF stat, median),
