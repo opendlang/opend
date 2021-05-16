@@ -771,3 +771,11 @@ unittest
     assert(Date(2021, 4, 24).serializeText == `2021-04-24`);
     assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
 }
+
+unittest
+{
+    import mir.ion.deser.json;
+    assert(q{"n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn"}
+        .deserializeJson!string == 
+             "n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn");
+}
