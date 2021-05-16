@@ -14,7 +14,7 @@ buildType "unittest" {
 }
 buildType "unittest-cov" {
     buildOptions "unittests" "coverage" "debugMode" "debugInfo"
-    versions "mir_stat_test"
+    versions "mir_stat_test" "mir_stat_test_bultincomplex"
     dflags "-lowmem"
 }
 buildType "unittest-release" {

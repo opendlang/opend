@@ -15,6 +15,7 @@ T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T3=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
+
 module mir.stat.descriptive;
 
 public import mir.math.stat:
@@ -371,7 +372,7 @@ Returns:
     The quantile of all the elements in the input at probability `p`.
 See_also: 
     $(MATHREF stat, median),
-    $(MATHREF sum, partitionAt)
+    $(MATHREF sum, partitionAt),
     $(MATHREF sum, elementType)
 +/
 template quantile(F, 
@@ -1778,9 +1779,9 @@ unittest
 
 /++
 Skew algorithms.
-See Also:
-    $(WEB en.wikipedia.org/wiki/Skewness, Skewness).
-    $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance).
+See_also:
+    $(WEB en.wikipedia.org/wiki/Skewness, Skewness),
+    $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
 +/
 enum SkewnessAlgo
 {
@@ -2860,9 +2861,9 @@ unittest
 
 /++
 Kurtosis algorithms.
-See Also:
-    $(WEB en.wikipedia.org/wiki/Kurtosis, Kurtosis).
-    $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance).
+See_also:
+    $(WEB en.wikipedia.org/wiki/Kurtosis, Kurtosis),
+    $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
 +/
 enum KurtosisAlgo
 {
@@ -4481,8 +4482,8 @@ Params:
     summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The coefficient of varition of the input, must be floating point type
-See Also:
-    $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation).
+See_also:
+    $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation)
 +/
 template coefficientOfVariation(
     F, 
