@@ -154,7 +154,7 @@ unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
-    import mir.ndslice: fuse;
+    import mir.ndslice.fuse: fuse;
 
     static double f(T)(T x) {
         return 3.5;
@@ -402,7 +402,7 @@ unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
-    import mir.ndslice: fuse;
+    import mir.ndslice.fuse: fuse;
     
     auto x = [
         [1.0, 2, 3], 
