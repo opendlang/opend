@@ -30,32 +30,42 @@ size_t stage1 (
     alias params = AliasSeq!(n, vector, pairedMask, backwardEscapeBit);
     version (LDC)
     {
-        version (X86_Any)
-        {
-            static if (!__traits(targetHasFeature, "avx512bw"))
-            {
-                import cpuid.x86_any;
-                if (avx512bw)
-                    return stage1_impl!"skylake-avx512"(params);
-                static if (!__traits(targetHasFeature, "avx2"))
-                {
-                    if (avx2)
+        // version (X86_Any)
+        // {
+            // static if (!__traits(targetHasFeature, "avx512bw"))
+            // {
+            //     if (avx512bw)
+            //         return stage1_impl!"skylake-avx512"(params);
+                // static if (!__traits(targetHasFeature, "avx2"))
+                // {
+                //     import cpuid.x86_any;
+                //     if (avx2)
                         return stage1_impl!"broadwell"(params);
-                    static if (!__traits(targetHasFeature, "avx"))
-                    {
-                        if (avx)
-                            return stage1_impl!"sandybridge"(params);
-                        static if (!__traits(targetHasFeature, "sse4.2"))
-                        {
-                            if (sse42) // && popcnt is assumed to be true
-                                return stage1_impl!"westmere"(params);
-                        }
-                    }
-                }
-            }
-        }
+    //                 static if (!__traits(targetHasFeature, "avx"))
+    //                 {
+    //                     if (avx)
+    //                         return stage1_impl!"sandybridge"(params);
+    //                     static if (!__traits(targetHasFeature, "sse4.2"))
+    //                     {
+    //                         if (sse42) // && popcnt is assumed to be true
+    //                             return stage1_impl!"westmere"(params);
+    //                         else
+    //                             return stage1_impl!""(params);
+    //                     }
+    //                     else
+    //                         return stage1_impl!"westmere"(params);
+    //                 }
+    //                 else
+    //                     return stage1_impl!"sandybridge"(params);
+    //             }
+    //             else
+    //                 return stage1_impl!"broadwell"(params);
+    //     }
+    //     else
+    //         return stage1_impl!""(params);
     }
-    return stage1_impl!""(params);
+    else
+        return stage1_impl!""(params);
 }
 
 private template stage1_impl(string arch)
@@ -104,6 +114,7 @@ private template stage1_impl(string arch)
         size_t count;
         assert(n);
         bool beb = backwardEscapeBit;
+        size_t i;
         do
         {
             version (ARM_Any)
@@ -169,6 +180,7 @@ private template stage1_impl(string arch)
             auto followsEscape = (maskPair[1] << 1) | beb;
             auto evenBits = 0x5555555555555555UL;
             auto odds = maskPair[1] & ~(evenBits | followsEscape);
+            beb = false;
             auto inversion = addu(odds, maskPair[1], beb) << 1;
             maskPair[1] = (evenBits ^ inversion) & followsEscape;
             maskPair[0] &= ~maskPair[1];
