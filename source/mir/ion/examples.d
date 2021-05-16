@@ -775,7 +775,14 @@ unittest
 unittest
 {
     import mir.ion.deser.json;
-    assert(q{"n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn"}
+    auto s = q{"n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn"}.deserializeJson!string;
+    assert(s == "n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn", s);
+}
+
+unittest
+{
+    import mir.ion.deser.json;
+    assert(q{"n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn"}
         .deserializeJson!string == 
-             "n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn");
+             "n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn");
 }

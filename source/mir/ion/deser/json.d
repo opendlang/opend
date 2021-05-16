@@ -26,7 +26,7 @@ private template deserializeJsonImpl(bool file)
             alias algo = singleThreadJsonText;
 
         enum nMax = 4096u;
-        // enum nMax = 128u;
+        // enum nMax = 64u;
         enum keys = serdeGetDeserializationKeysRecurse!T;
         alias createTableChar = createTable!char;
         static immutable table = createTableChar!(keys, false);
