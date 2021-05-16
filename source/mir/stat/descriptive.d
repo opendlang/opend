@@ -1019,8 +1019,10 @@ unittest
 /++
 Computes the interquartile range of the input.
 
-This function computes the result using $(LREF quantile), i.e.
-`result = quantile(x, 0.75) - quantile(x, 0.25)`.
+By default, this function computes the result using $(LREF quantile), i.e.
+`result = quantile(x, 0.75) - quantile(x, 0.25)`. There are also overloads for
+providing a low value, as in `result = quantile(x, 1 - low) - quantile(x, low)`
+and both a low and high value, as in `result = quantile(x, high) - quantile(x, low)`.
 
 For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
 by default, if `F` is not floating point type or complex type, then the result
@@ -1057,6 +1059,42 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
 
         alias FF = typeof(return);
         auto lo_hi = quantile!(FF, quantileAlgo, allowModifySlice, false)(slice.move, cast(FF) 0.25, cast(FF) 0.75);
+        return lo_hi[1] - lo_hi[0];
+    }
+
+    /++
+    Params:
+        slice = slice
+        lo = low value
+    +/
+    @fmamath quantileType!(F, quantileAlgo) interquartileRange(
+        Iterator, size_t N, SliceKind kind)(
+            Slice!(Iterator, N, kind) slice,
+            F lo = 0.25)
+    {
+        import core.lifetime: move;
+
+        alias FF = typeof(return);
+        auto lo_hi = quantile!(FF, quantileAlgo, allowModifySlice, false)(slice.move, cast(FF) lo, cast(FF) (1 - lo));
+        return lo_hi[1] - lo_hi[0];
+    }
+
+    /++
+    Params:
+        slice = slice
+        lo = low value
+        hi = high value
+    +/
+    @fmamath quantileType!(F, quantileAlgo) interquartileRange(
+        Iterator, size_t N, SliceKind kind)(
+            Slice!(Iterator, N, kind) slice,
+            F lo,
+            F hi)
+    {
+        import core.lifetime: move;
+
+        alias FF = typeof(return);
+        auto lo_hi = quantile!(FF, quantileAlgo, allowModifySlice, false)(slice.move, cast(FF) lo, cast(FF) hi);
         return lo_hi[1] - lo_hi[0];
     }
 
@@ -1101,6 +1139,31 @@ template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
     }
 
     /// ditto
+    @fmamath quantileType!(Slice!(Iterator), quantileAlgo)
+        interquartileRange(Iterator, size_t N, SliceKind kind, F)(
+            Slice!(Iterator, N, kind) slice,
+            F lo)
+    {
+        import core.lifetime: move;
+
+        alias FF = typeof(return);
+        return .interquartileRange!(FF, quantileAlgo, allowModifySlice)(slice.move, cast(FF) lo);
+    }
+
+    /// ditto
+    @fmamath quantileType!(Slice!(Iterator), quantileAlgo)
+        interquartileRange(Iterator, size_t N, SliceKind kind, F)(
+            Slice!(Iterator, N, kind) slice,
+            F lo,
+            F hi)
+    {
+        import core.lifetime: move;
+
+        alias FF = typeof(return);
+        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(slice.move, cast(FF) lo, cast(FF) hi);
+    }
+
+    /// ditto
     @fmamath quantileType!(T[], quantileAlgo)
         interquartileRange(T)(scope T[] array...)
     {
@@ -1142,6 +1205,8 @@ unittest
     auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
 
     assert(x.interquartileRange.approxEqual(2.0));
+    assert(x.interquartileRange(0.25).approxEqual(2.0));
+    assert(x.interquartileRange(0.25, 0.75).approxEqual(2.0));
 }
 
 //no change in x by default
