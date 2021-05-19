@@ -51,9 +51,8 @@ All sample quantiles are defined as weighted averages of consecutive order
 statistics. For each QuantileAlgo, the sample quantile is given by
 (using R's 1-based indexing notation):
 
--------
-(1 - `gamma`) * `x$(SUBSCRIPT j)` + `gamma` * `x$(SUBSCRIPT j + 1)`
--------
+    (1 - `gamma`) * `x$(SUBSCRIPT j)` + `gamma` * `x$(SUBSCRIPT j + 1)`
+
 
 where `x$(SUBSCRIPT j)` is the `j`th order statistic. `gamma` is a function of
 `j = floor(np + m)` and `g = np + m - j` where `n` is the sample size, `p` is
