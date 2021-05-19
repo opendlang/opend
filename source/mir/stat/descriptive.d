@@ -52,10 +52,10 @@ statistics. For each QuantileAlgo, the sample quantile is given by
 (using R's 1-based indexing notation):
 
 -------
-(1 - gamma) * x_{j} + gamma * x_{j + 1}
+(1 - `gamma`) * `x$(SUBSCRIPT j)` + `gamma` * `x$(SUBSCRIPT j + 1)`
 -------
 
-where x_{j} is the `j`th order statistic. `gamma` is a function of
+where `x$(SUBSCRIPT j)` is the `j`th order statistic. `gamma` is a function of
 `j = floor(np + m)` and `g = np + m - j` where `n` is the sample size, `p` is
 the probability, and `m` is a constant determined by the quantile type.
 
