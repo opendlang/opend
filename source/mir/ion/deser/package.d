@@ -6,7 +6,6 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.deser;
 
-import mir.algebraic: isVariant;
 import mir.ion.deser.low_level;
 import mir.ion.exception;
 import mir.ion.symbol_table;
@@ -163,6 +162,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
         if (!isFirstOrderSerdeType!T && (is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations)))
     {
+        import mir.algebraic: isVariant;
         import mir.internal.meta: Contains;
         import mir.ndslice.slice: Slice, SliceKind;
         import mir.rc.array: RCArray, RCI;
@@ -412,7 +412,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     IonAnnotations annotations;
                     if (data.descriptor.type == IonTypeCode.annotations)
                     {
-                        if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(data, annotations))
+                        if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotations, data))
                         {
                             return error.ionErrorMsg;
                         }

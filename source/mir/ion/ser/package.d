@@ -686,15 +686,38 @@ unittest
         Data data;
     }
 
-    Nullable!S value = S("LIBOR", S.Data(A(SmallString!32("Rate"), SmallString!32("USD"))));
+
+    @serdeAlgebraicAnnotation("$S2")
+    static struct S2
+    {
+        alias Data = Nullable!(A, C, int);
+
+        alias data this;
+
+        Data data;
+    }
+
 
     import mir.ion.conv: ion2text;
     import mir.ion.ser.ion: serializeIon;
     import mir.ion.ser.text: serializeText;
-    static immutable text = `LIBOR::$a::Rate::USD::{number:nan,s:null.string}`;
-    assert(value.serializeText == text);
-    auto binary = value.serializeIon;
-    assert(binary.ion2text == text);
-    import mir.ion.deser.ion: deserializeIon;
-    assert(binary.deserializeIon!S.serializeText == text);
+
+    {
+        Nullable!S value = S("LIBOR", S.Data(A(SmallString!32("Rate"), SmallString!32("USD"))));
+        static immutable text = `LIBOR::$a::Rate::USD::{number:nan,s:null.string}`;
+        assert(value.serializeText == text);
+        auto binary = value.serializeIon;
+        assert(binary.ion2text == text);
+        import mir.ion.deser.ion: deserializeIon;
+        assert(binary.deserializeIon!S.serializeText == text);
+    }
+
+    {
+        auto value = S2(S2.Data(A(SmallString!32("Rate"), SmallString!32("USD"))));
+        static immutable text = `$a::Rate::USD::{number:nan,s:null.string}`;
+        auto binary = value.serializeIon;
+        assert(binary.ion2text == text);
+        import mir.ion.deser.ion: deserializeIon;
+        assert(binary.deserializeIon!S2.serializeText == text);
+    }
 }
