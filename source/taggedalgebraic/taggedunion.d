@@ -275,7 +275,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 
 		See_Also: `set`, `opAssign`
 	*/
-	@property ref inout(FieldTypes[kind]) value(Kind kind)()
+	@property ref value(Kind kind)()
 	inout {
 		if (this.kind != kind) {
 			enum msg(.string k_is) = "Attempt to get kind "~kind.stringof~" from tagged union with kind "~k_is;
@@ -285,8 +285,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 						assert(false, msg!n);
 			}
 		}
-		//return trustedGet!(FieldTypes[kind]);
-		return *() @trusted { return cast(const(FieldTypes[kind])*)m_data.ptr; } ();
+		return trustedGet!(FieldTypes[kind]);
 	}
 
 
@@ -604,6 +603,22 @@ nothrow unittest {
 	TU tu, tv;
 	tu = S.init;
 	tv = tu;
+}
+
+unittest {
+	static struct S1 { int num; }
+	alias T1 = TaggedUnion!S1;
+	static assert(is(const(T1) : T1));
+	static assert(is(typeof(T1.init.value!int) == int));
+	static assert(is(typeof(T1.init.value!(T1.Kind.num)) == int));
+	static assert(is(typeof(T1.init.numValue) == int));
+	static assert(is(typeof(const(T1).init.value!int) == const(int)));
+	static assert(is(typeof(const(T1).init.value!(T1.Kind.num)) == const(int)));
+	static assert(is(typeof(const(T1).init.numValue) == const(int)));
+
+	static struct S2 { int[] nums; }
+	alias T2 = TaggedUnion!S2;
+	static assert(!is(const(T2) : T2));
 }
 
 
