@@ -4,7 +4,7 @@ import taggedalgebraic.taggedalgebraic;
 import taggedalgebraic.taggedunion;
 
 import std.meta : anySatisfy, staticMap;
-import std.traits : EnumMembers, isInstanceOf;
+import std.traits : Unqual, EnumMembers, isInstanceOf;
 
 
 /** Dispatches the value contained on a `TaggedUnion` or `TaggedAlgebraic` to a
@@ -145,6 +145,7 @@ unittest {
 
 unittest {
 	static struct S {
+		Void nothing;
 		int num;
 		int[] nums;
 	}
@@ -152,24 +153,29 @@ unittest {
 
 	TU tu = [1];
 	tu.visit!(
+		() { assert(false); },
 		(int num) { assert(false); },
 		(int[] num) { assert(num == [1]); }
 	);
 	tu.visit!(
+		() { assert(false); },
 		(const int num) { assert(false); },
 		(const int[] num) { assert(num == [1]); }
 	);
 	tu.visit!(
+		() { assert(false); },
 		(const int num) { assert(false); },
 		(const(int)[] num) { assert(num == [1]); }
 	);
 
 	const(TU) tuc = TU([1]);
 	tuc.visit!(
+		() { assert(false); },
 		(int num) { assert(false); },
 		(const(int)[] num) { assert(num == [1]); }
 	);
 	tuc.visit!(
+		() { assert(false); },
 		(const(int) num) { assert(false); },
 		(const(int[]) num) { assert(num == [1]); }
 	);
@@ -264,10 +270,10 @@ private template matchesType(alias fun) {
 	template matchesType(T) {
 		static if (isSomeFunction!fun) {
 			alias Params = ParameterTypeTuple!fun;
-			static if (Params.length == 0 && isUnitType!T) enum matchesType = true;
+			static if (Params.length == 0 && isUnitType!(Unqual!T)) enum matchesType = true;
 			else static if (Params.length == 1 && isMatch!(Params[0], T)) enum matchesType = true;
 			else enum matchesType = false;
-		} else static if (!isUnitType!T) {
+		} else static if (!isUnitType!(Unqual!T)) {
 			static if (__traits(compiles, fun!T) && isSomeFunction!(fun!T)) {
 				alias Params = ParameterTypeTuple!(fun!T);
 				static if (Params.length == 1 && isMatch!(Params[0], T)) enum matchesType = true;
@@ -287,11 +293,6 @@ unittest {
 	static assert(!mt2!C);
 }
 
-template isMatch(PT, T) {
-	import std.traits : Unqual;
-	enum isMatch = is(Unqual!(immutable(T)) == Unqual!(immutable(PT))) && is(T : PT);
-}
-
 private template selectHandler(T, VISITORS...)
 {
 	import std.traits : ParameterTypeTuple, isSomeFunction;
@@ -302,7 +303,7 @@ private template selectHandler(T, VISITORS...)
 			static if (isSomeFunction!fun) {
 				alias Params = ParameterTypeTuple!fun;
 				static if (Params.length > 1) enum typedIndex = "Visitor at index "~i.stringof~" must not take more than one parameter.";
-				else static if (Params.length == 0 && is(T == void) || Params.length == 1 && isMatch!(Params[0], T)) {
+				else static if (Params.length == 0 && is(Unqual!T == void) || Params.length == 1 && isMatch!(Params[0], T)) {
 					static if (matched_index >= 0) enum typedIndex = "Vistor at index "~i.stringof~" conflicts with visitor at index "~matched_index~".";
 					else enum typedIndex = typedIndex!(i+1, i);
 				} else enum typedIndex = typedIndex!(i+1, matched_index);
@@ -336,3 +337,5 @@ private template selectHandler(T, VISITORS...)
 	else static if (generic_index >= 0) alias selectHandler = VISITORS[generic_index];
 	else enum selectHandler = null;
 }
+
+private enum isMatch(PT, T) = is(Unqual!(immutable(T)) == Unqual!(immutable(PT))) && is(T : PT);
