@@ -1000,7 +1000,7 @@ struct LogNormalVariable(T)
     T opCall(G)(scope ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-       return _nv(gen);
+       return exp(_nv(gen));
     }
     /// ditto
     T opCall(G)(scope G* gen)
