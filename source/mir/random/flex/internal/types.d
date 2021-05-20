@@ -62,7 +62,7 @@ struct Interval(S)
     version(Flex_logging)
     bool opEquals(const Interval s2) const
     {
-        import std.math : isNaN, isFloatingPoint;
+        import mir.math : isNaN, isFloatingPoint;
         import std.meta : AliasSeq;
         string buildMixin()
         {
@@ -134,7 +134,6 @@ Params:
 FunType determineType(S)(in Interval!S iv)
 in
 {
-    import std.math : isInfinity, isNaN;
     assert(iv.lx < iv.rx, "invalid interval");
 }
 out(type)
@@ -378,17 +377,17 @@ struct LinearFun(S)
         switch(fmt.spec)
         {
             case 'l':
-                import std.math: approxEqual, isNaN;
-                if (slope.isNaN)
+                import mir.math: approxEqual;
+                if (slope != slope)
                     w.put("#NaN#");
                 else
                 {
                     auto spec2g = singleSpec("%.2g");
-                    if (!slope.approxEqual(0))
+                    if (!slope.approxEqual(0, 1e-5, 1e-5))
                     {
                         w.formatValue(slope, spec2g);
                         w.put("x");
-                        if (!intercept.approxEqual(0))
+                        if (!intercept.approxEqual(0, 1e-5, 1e-5))
                         {
                             auto sgn = intercept > 0 ? " + " : " - ";
                             w.put(sgn);
@@ -576,7 +575,7 @@ Returns:
 */
 bool approxEqual(S)(LinearFun!S x, LinearFun!S y, S maxRelDiff = 1e-2, S maxAbsDiff = 1e-5)
 {
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     return x.slope.approxEqual(y.slope, maxRelDiff, maxAbsDiff) &&
            x.y.approxEqual(y.y, maxRelDiff, maxAbsDiff) &&
            x.a.approxEqual(y.a, maxRelDiff, maxAbsDiff);

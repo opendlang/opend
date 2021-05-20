@@ -601,7 +601,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     alias S = real;
@@ -674,7 +674,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
                         logf("exp: %a", sqs[i][j]);
                         logf("-- up: %a, down: %a", sqs[i][j].nextUp, sqs[i][j].nextDown);
                         logf("%s", iv.squeezeArea == sqs[i][j]);
-                        import std.math : approxEqual;
+                        import mir.math : approxEqual;
                         logf("%s", iv.squeezeArea.approxEqual(sqs[i][j]));
                         logf("pos: %d,%d", i, j);
                     }
@@ -708,7 +708,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     static immutable points = [-3.0, -1.5, 0.0, 1.5, 3];
@@ -788,10 +788,10 @@ static if (is(typeof({ import mir.ndslice.slice; })))
                 determineSqueezeAndHat(iv);
 
                 hatArea!S(iv);
-                assert(iv.hatArea.approxEqual(hats[i][j]));
+                assert(iv.hatArea.approxEqual(hats[i][j], 1e-5));
 
                 squeezeArea!S(iv);
-                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+                assert(iv.squeezeArea.approxEqual(sqs[i][j], 1e-5));
 
                 ++j;
             }
@@ -807,7 +807,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     alias T = double;
@@ -870,7 +870,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
 
                 hatArea!S(iv);
                 if (iv.hatArea == S.max)
-                    assert(hats[i][j].isInfinity);
+                    assert(hats[i][j].fabs == hats[i][j].infinity);
                 else
                     assert(iv.hatArea.approxEqual(hats[i][j], 1e-4));
 
@@ -891,7 +891,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     static immutable points = [-1, -0.5, 0, 0.5, 1];
@@ -946,7 +946,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
 
                 hatArea!S(iv);
                 if (iv.hatArea == S.max)
-                    assert(hats[i][j].isInfinity);
+                    assert(hats[i][j].fabs == hats[i][j].infinity);
                 else
                     assert(iv.hatArea.approxEqual(hats[i][j]));
 
@@ -967,7 +967,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: abs, approxEqual, isInfinity;
+    import mir.math: fabs, approxEqual;
     import std.meta : AliasSeq;
 
     static immutable points = [-1, 0, 1];
@@ -1004,7 +1004,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        auto f0 = (S x) => -log(abs(x)) / 2;
+        auto f0 = (S x) => -log(fabs(x)) / 2;
         auto f1 = (S x) => -1 / (2 * x);
         auto f2 = (S x) => 1 / (2 * x * x);
 
@@ -1027,12 +1027,12 @@ static if (is(typeof({ import mir.ndslice.slice; })))
                 hatArea!S(iv);
 
                 if (iv.hatArea == S.max)
-                    assert(hats[i][0].isInfinity);
+                    assert(hats[i][0].fabs == hats[i][0].infinity);
                 else
-                    assert(iv.hatArea.approxEqual(hats[i][0]));
+                    assert(iv.hatArea.approxEqual(hats[i][0], 1e-5, 1e-5));
 
                 squeezeArea!S(iv);
-                assert(iv.squeezeArea.approxEqual(sqs[i][0]));
+                assert(iv.squeezeArea.approxEqual(sqs[i][0], 1e-5, 1e-5));
 
                 ++j;
             }
@@ -1048,7 +1048,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     alias T = double;

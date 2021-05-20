@@ -180,6 +180,7 @@ alias simplexVariable = simplexVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.math.common: fabs;
     // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'
     static if (is(typeof({ import mir.ndslice.slice; })))
     {
@@ -195,6 +196,7 @@ alias simplexVariable = simplexVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     import mir.math.common: fabs;
 
     // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'

@@ -37,6 +37,19 @@ import std.traits : ReturnType, TemplateArgsOf;
 nothrow:
 @nogc:
 
+/// Select the above mixin templates.
+enum stream_t
+{
+    /// Increment is cast(size_t) &RNG.
+    unique,
+    /// Increment is 0.
+    none,
+    /// Increment is the default increment.
+    oneseq,
+    /// Increment is runtime setable and defaults to the default (same as oneseq)
+    specific,
+}
+
 /// 32-bit output PCGs with 64 bits of state.
 alias pcg32        = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.specific,true);
 /// ditto
@@ -439,19 +452,6 @@ mixin template specific_stream(Uint)
     }
     ///
     enum size_t streams_pow2 = size_t.sizeof*8 -1u;
-}
-
-/// Select the above mixin templates.
-enum stream_t
-{
-    /// Increment is cast(size_t) &RNG.
-    unique,
-    /// Increment is 0.
-    none,
-    /// Increment is the default increment.
-    oneseq,
-    /// Increment is runtime setable and defaults to the default (same as oneseq)
-    specific,
 }
 
 /++

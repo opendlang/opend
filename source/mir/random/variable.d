@@ -149,6 +149,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto gen = Random(unpredictableSeed);
     auto rv = uniformVar(-10, 10); // [-10, 10]
     static assert(isRandomVariable!(typeof(rv)));
@@ -160,6 +161,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = UniformVariable!int(-10, 10); // [-10, 10]
     auto x = rv(gen); // random variable
@@ -246,6 +248,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     import mir.math : nextDown;
     auto gen = Random(unpredictableSeed);
     auto rv = uniformVar(-8.0, 10); // [-8, 10)
@@ -258,6 +261,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     import mir.math : nextDown;
     auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
@@ -271,6 +275,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     import mir.math : nextDown;
     Random* gen = threadLocalPtr!Random;
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
@@ -348,12 +353,14 @@ alias exponentialVariable = exponentialVar;
 {
     auto rv = exponentialVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = ExponentialVariable!double(1);
     auto x = rv(gen);
@@ -410,6 +417,7 @@ alias weibullVariable = weibullVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto gen = Random(unpredictableSeed);
     auto rv = weibullVar;
     static assert(isRandomVariable!(typeof(rv)));
@@ -419,6 +427,7 @@ alias weibullVariable = weibullVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = WeibullVariable!double(3, 2);
     auto x = rv(gen);
@@ -542,12 +551,14 @@ alias gammaVariable = gammaVar;
 {
     auto rv = gammaVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = GammaVariable!double(1, 1);
     auto x = rv(gen);
@@ -631,11 +642,13 @@ alias betaVariable = betaVar;
 {
     auto rv = betaVariable(2.0, 5);
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = BetaVariable!double(2, 5);
     auto x = rv(gen);
@@ -689,12 +702,14 @@ ChiSquaredVariable!T chiSquared(T = double)(size_t k)
 {
     auto rv = chiSquared(3);
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = ChiSquaredVariable!double(3);
     auto x = rv(gen);
@@ -758,11 +773,13 @@ alias fisherFVariable = fisherFVar;
 {
     auto rv = fisherFVar(3.0, 4);
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = FisherFVariable!double(3, 4);
     auto x = rv(gen);
@@ -824,12 +841,14 @@ alias studentTVariable = studentTVar;
 {
     auto rv = studentTVar(10.0);
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = StudentTVariable!double(10);
     auto x = rv(gen);
@@ -964,12 +983,14 @@ alias normalVariable = normalVar;
 {
     auto rv = normalVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = NormalVariable!double(0, 1);
     auto x = rv(gen);
@@ -1030,12 +1051,14 @@ alias logNormalVariable = logNormalVar;
 {
     auto rv = logNormalVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = LogNormalVariable!double(0, 1);
     auto x = rv(gen);
@@ -1105,12 +1128,14 @@ alias cauchyVariable = cauchyVar;
 {
     auto rv = cauchyVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = CauchyVariable!double(0, 1);
     auto x = rv(gen);
@@ -1169,12 +1194,14 @@ alias extremeValueVariable = extremeValueVar;
 {
     auto rv = extremeValueVar;
     static assert(isRandomVariable!(typeof(rv)));
+    import mir.random.engine;
     auto x = rv(rne);
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = ExtremeValueVariable!double(0, 1);
     auto x = rv(gen);
@@ -1233,6 +1260,7 @@ alias bernoulliVariable = bernoulliVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto rv = bernoulliVar(0.7);
     static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
@@ -1245,6 +1273,7 @@ alias bernoulliVariable = bernoulliVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = BernoulliVariable!double(0.7);
     int[2] hist;
@@ -1305,6 +1334,7 @@ alias bernoulli2Variable = bernoulli2Var;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto rv = bernoulli2Var;
     static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
@@ -1315,6 +1345,7 @@ alias bernoulli2Variable = bernoulli2Var;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = Bernoulli2Variable.init;
     int[2] hist;
@@ -1378,6 +1409,7 @@ alias geometricVariable = geometricVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto rv = geometricVar(0.1);
     static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
@@ -1395,6 +1427,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = GeometricVariable!double(0.1, true);
     size_t[ulong] hist;
@@ -1528,6 +1561,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = PoissonVariable!double(10);
     size_t[ulong] hist;
@@ -1616,6 +1650,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = NegativeBinomialVariable!double(30, 0.3);
     size_t[ulong] hist;
@@ -1774,6 +1809,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto rv = BinomialVariable!double(20, 0.5);
     int[] hist = new int[rv.max + 1];
@@ -1870,6 +1906,7 @@ alias discreteVariable = discreteVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
@@ -1910,6 +1947,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
@@ -1979,6 +2017,7 @@ nothrow @safe version(mir_random_test) unittest
 
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     auto cumulative = [10.0, 30, 40, 90, 120];
     auto ds = DiscreteVariable!double(cumulative, true);
@@ -2055,6 +2094,7 @@ alias piecewiseConstantVariable = piecewiseConstantVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     // 50% of the time, generate a random number between 0 and 1
     // 50% of the time, generate a random number between 10 and 15
     double[] i = [0,  1, 10, 15];
@@ -2087,6 +2127,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     // 50% of the time, generate a random number between 0 and 1
     // 50% of the time, generate a random number between 10 and 15
@@ -2188,6 +2229,7 @@ alias piecewiseLinearVariable = piecewiseLinearVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     auto gen = Random(unpredictableSeed);
     // increase the probability from 0 to 5
     // remain flat from 5 to 10
@@ -2230,6 +2272,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     Random* gen = threadLocalPtr!Random;
     // increase the probability from 0 to 5
     // remain flat from 5 to 10

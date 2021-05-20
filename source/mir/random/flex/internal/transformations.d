@@ -79,7 +79,7 @@ body
 // example from Botts et al. (2013)
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -102,7 +102,7 @@ body
 static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
     import mir.ndslice.topology: pairwise;
     import mir.functional: refTuple;
@@ -139,7 +139,7 @@ pure @safe version(mir_random_test) unittest
 static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
     import mir.ndslice.topology: pairwise;
     import mir.functional: refTuple;
@@ -178,7 +178,7 @@ pure @safe version(mir_random_test) unittest
 static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
     import mir.ndslice.topology: pairwise;
     import mir.functional: refTuple;
@@ -269,7 +269,7 @@ body
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math: E, approxEqual;
+    import mir.math: E, approxEqual;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -280,7 +280,7 @@ body
 
 nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math;
+    import mir.math;
     import std.meta : AliasSeq;
 
     static immutable results = [
@@ -304,7 +304,7 @@ nothrow pure @safe version(mir_random_test) unittest
             {
                 S r = results[i][j];
                 S v = antiderivative!(false, S)(x, c);
-                assert(v.approxEqual(r));
+                assert(v.approxEqual(r, 1e-5, 1e-5));
             }
         }
     }
@@ -312,7 +312,7 @@ nothrow pure @safe version(mir_random_test) unittest
 
 nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math;
+    import mir.math;
     import std.meta : AliasSeq;
 
     alias T = double;
@@ -337,7 +337,7 @@ nothrow pure @safe version(mir_random_test) unittest
             {
                 S r = results[i][j];
                 S v = antiderivative!(false, S)(x, c);
-                assert(v.approxEqual(r));
+                assert(v.approxEqual(r, 1e-5, 1e-5));
             }
         }
     }
@@ -363,30 +363,30 @@ S inverseAntiderivative(S)(in S x, in S c)
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math: approxEqual, E, isNaN;
+    import mir.math: approxEqual, E;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(inverseAntiderivative!S(1, 0).approxEqual(0));
-        assert(inverseAntiderivative!S(3, 0).approxEqual(1.09861));
-        assert(inverseAntiderivative!S(5.5, 0).approxEqual(1.70475));
+        assert(inverseAntiderivative!S(1, 0).approxEqual(0, 1e-5-5));
+        assert(inverseAntiderivative!S(3, 0).approxEqual(1.09861, 1e-5, 1e-5));
+        assert(inverseAntiderivative!S(5.5, 0).approxEqual(1.70475, 1e-5, 1e-5));
 
         assert(inverseAntiderivative!S(1, -0.5) == -1);
         // @@@BUG 16327@@@@
         S c = inverseAntiderivative!S(3, -0.5);
         assert(c == S(-1) / 3);
-        assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
+        assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818, 1e-58, 1e-5));
 
-        assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E));
+        assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E, 1e-5-5));
 
-        assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
-        assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
+        assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421, 1e-5, 1e-5));
+        assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568, 1e-5, 1e-5));
     }
 }
 
 @safe version(mir_random_test) unittest
 {
-    import std.math;
+    import mir.math;
     import std.meta : AliasSeq;
 
     alias T = double;
@@ -415,7 +415,7 @@ S inverseAntiderivative(S)(in S x, in S c)
                 S r = results[i][j];
                 S v = inverseAntiderivative!S(x, c);
                 import std.conv : text;
-                assert(v.approxEqual(r), text(x, " ", c, " ",  v, " ", r));
+                assert(v.approxEqual(r, 1e-5, 1e-5), text(x, " ", c, " ",  v, " ", r));
             }
         }
     }
@@ -423,7 +423,7 @@ S inverseAntiderivative(S)(in S x, in S c)
 
 @safe version(mir_random_test) unittest
 {
-    import std.math;
+    import mir.math;
     import std.meta : AliasSeq;
 
     alias T = double;
@@ -447,7 +447,7 @@ S inverseAntiderivative(S)(in S x, in S c)
                 S r = results[i][j];
                 S v = inverseAntiderivative!S(x, c);
                 import std.conv;
-                assert(v.approxEqual(r), text(x, " ", c, " ",  v, " ", r));
+                assert(v.approxEqual(r, 1e-5, 1e-5), text(x, " ", c, " ",  v, " ", r));
             }
         }
     }

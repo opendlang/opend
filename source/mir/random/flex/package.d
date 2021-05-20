@@ -248,7 +248,7 @@ version(mir_random_test) unittest
 version(X86_64) version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import mir.random.engine.xorshift : Xorshift;
     import mir.math : exp, sqrt, PI;
     foreach (S; AliasSeq!(float, double, real))
@@ -279,10 +279,10 @@ version(X86_64) version(mir_random_test) unittest
 
         foreach (i; 0..intervals.length)
         {
-            assert(intervals[i].lx.approxEqual(intervalsGen[i].lx));
-            assert(intervals[i].rx.approxEqual(intervalsGen[i].rx));
-            assert(intervals[i].hatArea.approxEqual(intervalsGen[i].hatArea));
-            assert(intervals[i].squeezeArea.approxEqual(intervalsGen[i].squeezeArea));
+            assert(intervals[i].lx.approxEqual(intervalsGen[i].lx, 1e-5, 1e-5));
+            assert(intervals[i].rx.approxEqual(intervalsGen[i].rx, 1e-5, 1e-5));
+            assert(intervals[i].hatArea.approxEqual(intervalsGen[i].hatArea, 1e-5, 1e-5));
+            assert(intervals[i].squeezeArea.approxEqual(intervalsGen[i].squeezeArea, 1e-5, 1e-5));
         }
 
         auto tf = flex(pdf, intervals);
@@ -836,7 +836,7 @@ body
 version(mir_random_test) unittest
 {
     import mir.ndslice.topology: member;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
 
     static immutable hats = [1.79547e-05, 0.00271776, 0.0629733, 0.0912821,
@@ -872,8 +872,8 @@ version(mir_random_test) unittest
                 logf("at %d got %a, expected %a (%2$f)", i, el.squeezeArea, sqs[i]);
                 logf("iv %s", el);
             }
-            assert(el.hatArea.approxEqual(hats[i]));
-            assert(el.squeezeArea.approxEqual(sqs[i]));
+            assert(el.hatArea.approxEqual(hats[i], 1e-5, 1e-5));
+            assert(el.squeezeArea.approxEqual(sqs[i], 1e-5, 1e-5));
         }
     }
 }
@@ -882,7 +882,7 @@ version(mir_random_test) unittest
 version(mir_random_test) unittest
 {
     import mir.ndslice.topology: member;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
     static immutable hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036,
                              0.184448, 0.752102, 1.13921, 1.10993, 1.40719,
@@ -916,8 +916,8 @@ version(mir_random_test) unittest
                 logf("got %a, expected %a", el.squeezeArea, sqs[i]);
                 logf("iv %s", el);
             }
-            assert(el.hatArea.approxEqual(hats[i]));
-            assert(el.squeezeArea.approxEqual(sqs[i]));
+            assert(el.hatArea.approxEqual(hats[i], 1e-5, 1e-5));
+            assert(el.squeezeArea.approxEqual(sqs[i], 1e-5, 1e-5));
         }
     }
 }
@@ -927,7 +927,7 @@ version(mir_random_test) unittest
 {
     import mir.ndslice.topology: member;
     import mir.algorithm.iteration: equal;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
 
     static immutable hats = [1.69137e-05, 0.00256095, 0.0597127, 0.0899876,
@@ -955,8 +955,8 @@ version(mir_random_test) unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.member!`hatArea`.equal!approxEqual(hats));
-        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(hats));
+        assert(ips.member!`squeezeArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(sqs));
     }
 }
 
@@ -967,7 +967,7 @@ version(X86_64) version(mir_random_test) unittest
     import mir.ndslice.topology: member;
     import mir.algorithm.iteration: equal;
     import std.meta : AliasSeq;
-    import std.math : approxEqual, PI;
+    import mir.math : approxEqual, PI;
     static immutable hats = [1.60809, 2.23537, 0.797556, 1.23761, 1.60809];
     static immutable sqs = [1.52164, 1.94559, 0.776976, 1.19821, 1.52164];
 
@@ -981,8 +981,8 @@ version(X86_64) version(mir_random_test) unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.member!`hatArea`.equal!approxEqual(hats));
-        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(hats));
+        assert(ips.member!`squeezeArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(sqs));
     }
 }
 
@@ -993,7 +993,7 @@ version(X86_64) version(mir_random_test) unittest
     import mir.ndslice.allocation: slice;
     import mir.ndslice.topology: member;
     import mir.ndslice.topology: repeat;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
 
     static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
@@ -1012,8 +1012,8 @@ version(X86_64) version(mir_random_test) unittest
         S[] cs = S(2).repeat(points.length - 1).slice.field;
 
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
-        assert(ips.member!`hatArea`.equal!approxEqual(hats));
-        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(hats));
+        assert(ips.member!`squeezeArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(sqs));
     }
 
     // double behavior is different
@@ -1031,8 +1031,8 @@ version(X86_64) version(mir_random_test) unittest
 
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.member!`hatArea`.equal!approxEqual(hatsD));
-        assert(ips.member!`squeezeArea`.equal!approxEqual(sqsD));
+        assert(ips.member!`hatArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(hatsD));
+        assert(ips.member!`squeezeArea`.equal!((x, y) => approxEqual(x, y, 1e-5, 1e-5))(sqsD));
     }
 }
 
@@ -1049,7 +1049,6 @@ Returns: Flex-inversed value of x
 */
 S flexInverse(bool common = false, S)(in S x, in S c)
 {
-    import std.math: sgn;
     static if (!common)
     {
         if (c == 0)
@@ -1061,14 +1060,14 @@ S flexInverse(bool common = false, S)(in S x, in S c)
         if (c == 1)
             return x;
     }
-    assert(sgn(c) * x >= 0 || x >= 0);
+    assert(c * x >= 0 || x >= 0);
     // LDC intrinsics compiles to the assembler powf which yields different results
     return pow(fabs(x), 1 / c);
 }
 
 version(mir_random_test) unittest
 {
-    import std.math: E, approxEqual;
+    import mir.math: E, approxEqual;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -1084,7 +1083,7 @@ version(mir_random_test) unittest
 
 version(mir_random_test) unittest
 {
-    import std.math;
+    import mir.math;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -1126,12 +1125,12 @@ version(mir_random_test) unittest
         {
             foreach (j, x; xs)
             {
-                if (sgn(c) * x >= 0)
+                if (c * x >= 0)
                 {
                     S r = results[i][j];
                         S v = flexInverse!(false, S)(x, c);
-                    if (r.isInfinity)
-                        assert(v.isInfinity);
+                    if (r.fabs == r.infinity)
+                        assert(v.fabs == v.infinity);
                     else
                         assert(v.approxEqual(r));
                 }
