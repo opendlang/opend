@@ -1,6 +1,6 @@
 # `printed`
 
-Low-level API to generate self-contained PDF/SVG/HTML documents suitable for print.
+A simple Canvas API to generate self-contained PDF/SVG/HTML documents suitable for print.
 
 `printed` provides an immediate graphical context API for drawing vectorial content inside a multi-page PDF, HTML or SVG.
 It is intended to provide a barebones API, and need text-aware APIs on top of it. 
