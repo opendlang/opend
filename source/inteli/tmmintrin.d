@@ -20,7 +20,7 @@ nothrow @nogc:
 // generate SSE3 instructions.
 
 /// Compute the absolute value of packed signed 16-bit integers in `a`.
-__m128i _mm_abs_epi16 (__m128i a)
+__m128i _mm_abs_epi16 (__m128i a) @trusted
 {
     static if (DMD_with_DSIMD)
     {
@@ -36,7 +36,6 @@ __m128i _mm_abs_epi16 (__m128i a)
     }
     else
     {
-        // PERF: slow in arm64
         // LDC x86: generate pabsw since LDC 1.1 -O2
         short8 sa = cast(short8)a;
         for (int i = 0; i < 8; ++i)
@@ -52,5 +51,40 @@ unittest
     __m128i A = _mm_setr_epi16(0, -1, -32768, 32767, 10, -10, 1000, -1000);
     short8 B = cast(short8) _mm_abs_epi16(A);
     short[8] correct = [0, 1, -32768, 32767, 10, 10, 1000, 1000];
+    assert(B.array == correct);
+}
+
+/// Compute the absolute value of packed signed 32-bit integers in `a`.
+__m128i _mm_abs_epi32 (__m128i a) @trusted
+{
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i)__simd(XMM.PABSD, cast(int4)a);
+    }
+    else static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_pabsd128(cast(int4)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m128i) vabsq_s32(cast(int4)a);
+    }
+    else
+    {
+        // LDC x86: generates pabsd since LDC 1.1 -O2
+        int4 sa = cast(int4)a;
+        for (int i = 0; i < 4; ++i)
+        {
+            int s = sa.array[i];
+            sa.ptr[i] = s >= 0 ? s : -s;
+        }  
+        return cast(__m128i)sa;
+    } 
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, -1, -2_147_483_648, -2_147_483_647);
+    int4 B = cast(int4) _mm_abs_epi32(A);
+    int[4] correct = [0, 1, -2_147_483_648, 2_147_483_647];
     assert(B.array == correct);
 }
