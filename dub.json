@@ -1,7 +1,7 @@
 {
     "name": "intel-intrinsics",
     "description": "Use SIMD intrinsics with Intel syntax, with any D compiler, targetting x86 or arm. Like simde but for D.",
-    "copyright": "Auburn Sounds 2016-2018",
+    "copyright": "Guillaume Piolat 2016-2021",
     "license": "BSL-1.0",
     "importPaths": ["source"],
     "sourcePaths": ["source"],
@@ -9,14 +9,14 @@
     "buildTypes": {
         "unittest-inst": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
-            "dflags-ldc": ["-mattr=+sse3"]
+            "dflags-ldc": ["-mattr=+sse3", "-mattr=+ssse3"]
         },
         "unittest-release": {
             "buildOptions": ["unittests", "optimize", "inline"]
         },
         "unittest-release-inst": {
             "buildOptions": ["unittests", "optimize", "inline"],
-            "dflags-ldc": ["-mattr=+sse3"]
+            "dflags-ldc": ["-mattr=+sse3", "-mattr=+ssse3"]
         },
         "unittest-arm32": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],

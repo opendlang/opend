@@ -30,6 +30,10 @@ __m128i _mm_abs_epi16 (__m128i a)
     {
         return cast(__m128i) __builtin_ia32_pabsw128(cast(short8)a);
     }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m128i) vabsq_s16(cast(short8)a);
+    }
     else
     {
         // PERF: slow in arm64
