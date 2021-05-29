@@ -27,6 +27,7 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
+        enum GDC_with_SSSE3 = false;
     }
     else version (X86_64)
     {
@@ -46,6 +47,7 @@ version(GNU)
         enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
     }
     else
     {
@@ -54,6 +56,7 @@ version(GNU)
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
+        enum GDC_with_SSSE3 = false;
     }
 }
 else
@@ -63,6 +66,7 @@ else
     enum GDC_with_SSE = false;
     enum GDC_with_SSE2 = false;
     enum GDC_with_SSE3 = false;
+    enum GDC_with_SSSE3 = false;
 }
 
 version(LDC)
@@ -94,6 +98,7 @@ version(LDC)
         enum LDC_with_SSE1 = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
+        enum LDC_with_SSSE3 = false;
     }
     else version(AArch64)
     {
@@ -102,6 +107,7 @@ version(LDC)
         enum LDC_with_SSE1 = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
+        enum LDC_with_SSSE3 = false;
     }
     else
     {
@@ -111,6 +117,7 @@ version(LDC)
         enum LDC_with_SSE1 = __traits(targetHasFeature, "sse");
         enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
         enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
+        enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
     }
 }
 else
@@ -120,6 +127,7 @@ else
     enum LDC_with_SSE1 = false;
     enum LDC_with_SSE2 = false;
     enum LDC_with_SSE3 = false;
+    enum LDC_with_SSSE3 = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
@@ -201,13 +209,12 @@ enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
 //  Why is that there? For DMD, we cannot use rint because _MM_SET_ROUNDING_MODE
 //  doesn't change the FPU rounding mode, and isn't expected to do so.
 //  So we devised these rounding function to help having consistent rouding between 
-//  LDC and DMD. It's important that DMD uses what is in MXCST to round.
+//  LDC and DMD. It's important that DMD uses what is in MXCSR to round.
 //
-//  Note: There is no MXCSR in ARM. But there is fpscr that implements similar 
-//  functionality the same.
+//  Note: There is no MXCSR in ARM. But there is fpcr/fpscr that implements similar 
+//  functionality.
 //  https://developer.arm.com/documentation/dui0068/b/vector-floating-point-programming/vfp-system-registers/fpscr--the-floating-point-status-and-control-register
-//  There is no
-//  We use fpscr since it's thread-local, so we can emulate those x86 conversion albeit slowly.
+//  We use fpcr/fpscr since it's thread-local, so we can emulate those x86 conversion albeit slowly.
 
 int convertFloatToInt32UsingMXCSR(float value) @trusted
 {
