@@ -29,7 +29,7 @@
 | SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
 | SSE2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
 | SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| SSSE3 | No           | No                     | No                   | No                   |             
+| SSSE3 | WIP           | WIP (use -mattr=+ssse3)                    | WIP                   | WIP                   |             
 | ...   | No           | No                     | No                   | No                   |
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
