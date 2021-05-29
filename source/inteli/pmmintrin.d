@@ -9,7 +9,7 @@ module inteli.pmmintrin;
 
 public import inteli.types;
 import inteli.internals;
-import inteli.emmintrin;
+public import inteli.emmintrin;
 
 
 // Note: this header will work whether you have SSE3 enabled or not.
