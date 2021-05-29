@@ -25,3 +25,15 @@ would need a text layout library._
 - Reproducibility
 - Common denominator API, support many vectorial formats before being a rich API.
 
+
+## How to add as DUB dependency
+
+With dub.sdl:
+```
+dependency "printed:canvas" version="~>1.0"
+```
+
+With dub.json:
+```json
+     "dependencies": { "printed:canvas": "~>1.0" }
+```
