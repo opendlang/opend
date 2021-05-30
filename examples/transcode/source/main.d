@@ -8,7 +8,7 @@ import audioformats;
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus} output.wav");
+        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus|mod} output.wav");
 
     string inputPath = args[1];
     string outputPath = args[2];
@@ -25,8 +25,15 @@ void main(string[] args)
     writefln("  * format     = %s", convertAudioFileFormatToString(input.getFormat()) );
     writefln("  * samplerate = %s Hz", sampleRate);
     writefln("  * channels   = %s", channels);
-    double seconds = lengthFrames / cast(double) sampleRate;
-    writefln("  * length     = %.3g seconds (%s samples)", seconds, lengthFrames);
+    if (lengthFrames == audiostreamUnknownLength)
+    {
+        writefln("  * length     = unknown");
+    }
+    else
+    {
+        double seconds = lengthFrames / cast(double) sampleRate;
+        writefln("  * length     = %.3g seconds (%s samples)", seconds, lengthFrames);
+    }
 
     float[] buf = new float[1024 * channels];
 

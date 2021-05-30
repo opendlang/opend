@@ -15,15 +15,16 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-version(decodeMP3) import audioformats.minimp3_ex;
+version(decodeMP3)  import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
 version(decodeOGG)  import audioformats.vorbis;
 version(decodeOPUS) import audioformats.dopus;
+version(decodeMOD)  import audioformats.pocketmod;
 
 version(decodeWAV) import audioformats.wav;
 else version(encodeWAV) import audioformats.wav;
 
-/// Libray for sound file decoding and encoding.
+/// Library for sound file decoding and encoding.
 /// All operations are blocking, and should not be done in a real-time audio thread.
 /// (besides, you would also need resampling for playback).
 /// Also not thread-safe, synchronization in on yours.
@@ -36,6 +37,7 @@ enum AudioFileFormat
     flac, /// FLAC format
     ogg,  /// OGG  format
     opus, /// Opus format
+    mod,  /// ProTracker MOD format
     unknown
 }
 
@@ -49,6 +51,7 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
         case flac:    return "flac";
         case ogg:     return "ogg";
         case opus:    return "opus";
+        case mod:     return "mod";
         case unknown: return "unknown";
     }
 }
@@ -274,6 +277,16 @@ public: // This is also part of the public API
             }
         }
 
+        version(decodeMOD)
+        {
+            if (_modDecoder !is null)
+            {
+                free(_modDecoder);
+                _modDecoder = null;
+                _modContent.reallocBuffer(0);
+            }
+        }
+
         version(encodeWAV)
         {
             if (_wavEncoder !is null)
@@ -464,6 +477,21 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
 
+            case AudioFileFormat.mod:
+                version(decodeMOD)
+                {
+                    if (pocketmod_loop_count(_modDecoder) >= 1)
+                        return 0; // end stream after MOD finishes, looping not supported
+                    assert(_modDecoder !is null);
+                    int bytesReturned = pocketmod_render(_modDecoder, outData, frames * 2 * 4);
+                    assert((bytesReturned % 8) == 0);
+                    return bytesReturned / 8;
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
+
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there, since in this case
                 // opening has failed.
@@ -493,6 +521,7 @@ public: // This is also part of the public API
             case AudioFileFormat.flac:
             case AudioFileFormat.ogg:
             case AudioFileFormat.opus:
+            case AudioFileFormat.mod:
             case AudioFileFormat.unknown:
             {
                 assert(false); // Shouldn't have arrived here, such encoding aren't supported.
@@ -538,6 +567,7 @@ public: // This is also part of the public API
             case flac:
             case ogg:
             case opus:
+            case mod:
                 assert(false); // unsupported output encoding
             case wav:
                 { 
@@ -595,6 +625,11 @@ private:
     version(decodeWAV)
     {
         WAVDecoder _wavDecoder;
+    }
+    version(decodeMOD)
+    {
+        pocketmod_context* _modDecoder = null;
+        ubyte[] _modContent = null; // whole buffer, copied
     }
     version(decodeOPUS)
     {
@@ -787,6 +822,41 @@ private:
             }
         }
 
+        version(decodeMOD)
+        {
+            // we need either the first 1084 or 600 bytes if available
+
+            _io.seek(0, false, userData);
+            long lenBytes = _io.getFileLength(userData);
+            if (lenBytes >= 600)
+            {
+                int headerBytes = lenBytes > 1084 ? 1084 : cast(int)lenBytes;
+
+                ubyte[1084] header;
+                int bytes = _io.read(header.ptr, headerBytes, userData);
+                
+                if (_pocketmod_ident(null, header.ptr, bytes))
+                {
+                    // This is a MOD, allocate a proper context, and read the whole file.
+                    _modDecoder = cast(pocketmod_context*) malloc(pocketmod_context.sizeof);
+
+                    // Read whole .mod in a buffer, since the decoder work all from memory
+                    _io.seek(0, false, userData);
+                    _modContent.reallocBuffer(cast(size_t)lenBytes);
+                    bytes = _io.read(_modContent.ptr, cast(int)lenBytes, userData);
+
+                    if (pocketmod_init(_modDecoder, _modContent.ptr, bytes, 44100))
+                    {
+                        _format = AudioFileFormat.mod;
+                        _sampleRate = 44100.0f;
+                        _numChannels = 2;
+                        _lengthInFrames = audiostreamUnknownLength;
+                        return;
+                    }
+                }
+            }
+        }
+
         _format = AudioFileFormat.unknown;
         _sampleRate = float.nan;
         _numChannels = 0;
@@ -811,6 +881,8 @@ private:
                 throw mallocNew!Exception("Unsupported encoding format: OGG");
             case opus:
                 throw mallocNew!Exception("Unsupported encoding format: Opus");
+            case mod:
+                throw mallocNew!Exception("Unsupported encoding format: MOD");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one

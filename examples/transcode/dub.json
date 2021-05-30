@@ -1,7 +1,7 @@
 {
     "name": "transcode",
     "description": "Decode MP3/WAV input, output a WAV.",
-    "license": "LGPL-2.1",
+    "license": "BSL-1.0",
 
     "dependencies": 
     {
