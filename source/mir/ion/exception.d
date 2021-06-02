@@ -102,6 +102,10 @@ enum IonErrorCode
     errorReadingFile,
     ///
     errorReadingStream,
+    ///
+    tooManyElementsForStaticArray,
+    ///
+    notEnoughElementsForStaticArray,
 }
 
 ///
@@ -168,6 +172,8 @@ string ionErrorMsg()(IonErrorCode code) @property
         "end of file",
         "error reading file",
         "error reading stream",
+        "too many elements for static array",
+        "not enough elements for static array",
     ];
     return msgs[code - IonErrorCode.min];
 }

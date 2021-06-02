@@ -786,3 +786,44 @@ unittest
         .deserializeJson!string == 
              "n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn");
 }
+
+/// Static array support
+@safe pure
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    int[3] value = [1, 2, 3];
+    assert(`[1,2,3]`.deserializeJson!(int[3]) == value);
+    assert(value.serializeJson == `[1,2,3]`);
+}
+
+/// ditto
+@safe pure
+unittest
+{
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    static struct S { int v; }
+    S[3] value = [S(1), S(2), S(3)];
+    auto text = `[{"v":1},{"v":2},{"v":3}]`;
+    assert(text.deserializeJson!(S[3]) == value);
+    assert(value.serializeJson == text);
+}
+
+// AliasThis and serdeProxy
+unittest
+{
+    @serdeProxy!(int[3])
+    static struct J
+    {
+        int[3] ar;
+        alias ar this;
+    }
+
+    import mir.ion.ser.json;
+    import mir.ion.deser.json;
+    auto value = J([1, 2, 3]);
+    assert(value.serializeJson == `[1,2,3]`);
+    assert(`[1,2,3]`.deserializeJson!J == value);
+}

@@ -747,6 +747,29 @@ IonErrorCode deserializeValueImpl(T : SmallArray!(E, maxLength), E, size_t maxLe
 }
 
 ///
+IonErrorCode deserializeValueImpl(T : E[N], E, size_t N)(IonDescribedValue data, out T value)
+{
+    if (data.descriptor.type == IonTypeCode.list)
+    {
+        size_t i;
+        foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
+        {
+            if (_expect(error, false))
+                return error;
+            if (i >= N)
+                return IonErrorCode.tooManyElementsForStaticArray;
+            error = .deserializeValueImpl(ionElem, value[i++]);
+            if (_expect(error, false))
+                return error;
+        }
+        if (i < N)
+            return IonErrorCode.notEnoughElementsForStaticArray;
+        return IonErrorCode.none;
+    }
+    return IonErrorCode.expectedListValue;
+}
+
+///
 @safe pure
 version(mir_ion_test) unittest
 {

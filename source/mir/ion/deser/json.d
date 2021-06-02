@@ -52,7 +52,7 @@ private template deserializeJsonImpl(bool file)
                 throw new SerdeException(error.ionErrorMsg);
 
             if (auto msg = deserializeValue!(keys, false)(ionValue, value))
-                throw new SerdeMirException(msg, text);
+                throw new SerdeMirException(msg);
         } ();
 
         return value;

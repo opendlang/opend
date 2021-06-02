@@ -239,6 +239,25 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             return IonErrorCode.expectedListValue.ionErrorMsg;
         }
         else
+        static if (is(T == D[N], D, size_t N))
+        {
+            if (data.descriptor.type != IonTypeCode.list)
+                return IonErrorCode.expectedListValue.ionErrorMsg;
+            size_t i;
+            foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
+            {
+                if (_expect(error, false))
+                    return error.ionErrorMsg;
+                if (i >= N)
+                    return IonErrorCode.tooManyElementsForStaticArray.ionErrorMsg;
+                if (auto exc = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, value[i++]))
+                    return exc;
+            }
+            if (i < N)
+                return IonErrorCode.notEnoughElementsForStaticArray.ionErrorMsg;
+            return null;
+        }
+        else
         static if (is(T == V[K], K, V))
         {
             import mir.conv;
