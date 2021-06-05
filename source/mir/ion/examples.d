@@ -827,3 +827,19 @@ unittest
     assert(value.serializeJson == `[1,2,3]`);
     assert(`[1,2,3]`.deserializeJson!J == value);
 }
+
+
+unittest
+{
+    import mir.ion.ser.text;
+
+    static struct A {
+        private int _a;
+        const @property:
+        int a() { return _a; }
+    }
+
+    auto stra = A(3);
+
+    assert(stra.serializeText == `{a:3}`, stra.serializeText);
+}

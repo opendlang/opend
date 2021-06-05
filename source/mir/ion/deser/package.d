@@ -802,7 +802,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                     else
                                         alias symbolTableInstance = tableParams[0];
                                     static if (hasUnexpectedKeyHandler)
-                                        value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
+                                        value.serdeUnexpectedKeyHandler(originalId < symbolTableInstance.length ? symbolTableInstance[originalId] : "<@unknown symbol@>");
                                     else
                                         return "Unexpected key when deserializing " ~ T.stringof;
                             }

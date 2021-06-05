@@ -243,7 +243,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
 /++
 Ion serialization function.
 +/
-immutable(ubyte)[] serializeIon(T)(auto ref T value) @safe
+immutable(ubyte)[] serializeIon(T)(auto ref T value)
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
