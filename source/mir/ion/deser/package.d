@@ -122,6 +122,9 @@ Deserialize aggregate value using compile time symbol table
 +/
 template deserializeValue(string[] symbolTable, bool exteneded = false)
 {
+    static if (!exteneded)
+        static immutable table = symbolTable;
+
     private string deserializeAnnotations(T)(
         ref IonAnnotations annotations,
         scope TableParams!exteneded tableParams,
@@ -797,12 +800,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                 }}
                                 Default:
                                 default:
-                                    static if (!exteneded)
-                                        static immutable symbolTableInstance = symbolTable;
-                                    else
-                                        alias symbolTableInstance = tableParams[0];
                                     static if (hasUnexpectedKeyHandler)
-                                        value.serdeUnexpectedKeyHandler(originalId < symbolTableInstance.length ? symbolTableInstance[originalId] : "<@unknown symbol@>");
+                                        value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
                                     else
                                         return "Unexpected key when deserializing " ~ T.stringof;
                             }
