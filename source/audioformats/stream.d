@@ -798,7 +798,7 @@ private:
             {
                 _io.seek(0, false, userData);
 
-                ubyte* scratchBuffer = cast(ubyte*) malloc(MINIMP3_BUF_SIZE);
+                ubyte* scratchBuffer = cast(ubyte*) malloc(MINIMP3_BUF_SIZE*2);
                 scope(exit) free(scratchBuffer);
 
                 _mp3io = cast(mp3dec_io_t*) malloc(mp3dec_io_t.sizeof);
