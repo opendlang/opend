@@ -1,7 +1,7 @@
 {
     "name": "audio-formats",
     "description": "Streaming decoding support for popular audio formats.",
-    "license": "LGPL-2.1",
+    "license": "BSL-1.0",
 
     "dependencies": 
     {
@@ -11,12 +11,12 @@
     "configurations": [
         {
             "name": "boost",
-            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
                          "encodeWAV"]
         },
         {
             "name": "lgpl",
-            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS", "decodeMOD",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS", "decodeMOD", "decodeXM",
                          "encodeWAV"]
         }
     ]

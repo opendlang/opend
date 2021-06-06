@@ -24,6 +24,8 @@ version(decodeMOD)  import audioformats.pocketmod;
 version(decodeWAV) import audioformats.wav;
 else version(encodeWAV) import audioformats.wav;
 
+version(decodeXM) import audioformats.libxm;
+
 /// Library for sound file decoding and encoding.
 /// All operations are blocking, and should not be done in a real-time audio thread.
 /// (besides, you would also need resampling for playback).
@@ -38,6 +40,7 @@ enum AudioFileFormat
     ogg,  /// OGG  format
     opus, /// Opus format
     mod,  /// ProTracker MOD format
+    xm,   /// FastTracker II Extended Module format
     unknown
 }
 
@@ -52,6 +55,7 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
         case ogg:     return "ogg";
         case opus:    return "opus";
         case mod:     return "mod";
+        case xm:      return "xm";
         case unknown: return "unknown";
     }
 }
@@ -277,6 +281,20 @@ public: // This is also part of the public API
             }
         }
 
+        version(decodeXM)
+        {
+            if (_xmDecoder !is null)
+            {
+                xm_free_context(_xmDecoder);
+                _xmDecoder = null;
+            }
+            if (_xmContent != null)
+            {
+                free(_xmContent);
+                _xmContent = null;
+            }
+        }
+
         version(decodeMOD)
         {
             if (_modDecoder !is null)
@@ -308,7 +326,7 @@ public: // This is also part of the public API
             {
                 int result = fclose(fileContext.file);
                 if (result)
-                    throw mallocNew!Exception("Closing of audio file errored");            
+                    throw mallocNew!Exception("Closing of audio file errored");
             }
             destroyFree(fileContext);
             fileContext = null;
@@ -477,6 +495,22 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
 
+            case AudioFileFormat.xm:
+                version(decodeXM)
+                {
+                    assert(_xmDecoder !is null);
+
+                    if (xm_get_loop_count(_xmDecoder) >= 1)
+                        return 0; // song is finished
+
+                    xm_generate_samples(_xmDecoder, outData, frames);
+                    return frames; // Note: XM decoder pads end with zeroes.
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
+
             case AudioFileFormat.mod:
                 version(decodeMOD)
                 {
@@ -522,6 +556,7 @@ public: // This is also part of the public API
             case AudioFileFormat.ogg:
             case AudioFileFormat.opus:
             case AudioFileFormat.mod:
+            case AudioFileFormat.xm:
             case AudioFileFormat.unknown:
             {
                 assert(false); // Shouldn't have arrived here, such encoding aren't supported.
@@ -568,6 +603,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case mod:
+            case xm:
                 assert(false); // unsupported output encoding
             case wav:
                 { 
@@ -631,6 +667,12 @@ private:
         pocketmod_context* _modDecoder = null;
         ubyte[] _modContent = null; // whole buffer, copied
     }
+    version(decodeXM)
+    {
+        xm_context_t* _xmDecoder = null;
+        ubyte* _xmContent = null;
+    }
+
     version(decodeOPUS)
     {
         OpusFile _opusDecoder;
@@ -753,33 +795,6 @@ private:
         version(decodeMP3)
         {
             // Check if it's a MP3.
-            _io.seek(0, false, userData);
-            version(MP3DecoderIsLGPL)
-            {
-                // minimp3 need a delegate
-
-                MP3Info info = mp3Scan(&mp3ReadDelegate, _decoderContext);
-
-                if (info.valid)
-                {
-                    // MP3 detected
-                    _format = AudioFileFormat.mp3;
-                    _sampleRate = info.sampleRate;
-                    _numChannels = info.channels;
-                    _lengthInFrames = info.samples;
-
-                    _io.seek(0, false, userData);
-                    _mp3Decoder = mallocNew!MP3Decoder(&mp3ReadDelegate, _decoderContext);
-
-                    _readBuffer = makeVec!float();
-
-                    if (!_mp3Decoder.valid) 
-                        throw mallocNew!Exception("invalid MP3 file");
-
-                    return;
-                }
-            }
-            else
             {
                 _io.seek(0, false, userData);
 
@@ -822,36 +837,82 @@ private:
             }
         }
 
+        version(decodeXM)
+        {
+            {
+                // we need the first 60 bytes to check if XM
+                char[60] xmHeader;
+                int bytes;
+
+                _io.seek(0, false, userData);
+                long lenBytes = _io.getFileLength(userData);
+                if (lenBytes < 60) 
+                    goto not_a_xm;
+
+                bytes = _io.read(xmHeader.ptr, 60, userData);
+                if (bytes != 60)
+                    goto not_a_xm;
+
+               if (0 != xm_check_sanity_preload(xmHeader.ptr, 60))
+                   goto not_a_xm;
+
+                _xmContent = cast(ubyte*) malloc(cast(int)lenBytes);
+                _io.seek(0, false, userData);
+                bytes = _io.read(_xmContent, cast(int)lenBytes, userData);
+                if (bytes != cast(int)lenBytes)
+                    goto not_a_xm;
+
+                if (0 == xm_create_context_safe(&_xmDecoder, cast(const(char)*)_xmContent, cast(size_t)lenBytes, 44100))
+                {
+                    assert(_xmDecoder !is null);
+
+                    xm_set_max_loop_count(_xmDecoder, 1);
+
+                    _format = AudioFileFormat.xm;
+                    _sampleRate = 44100.0f;
+                    _numChannels = 2;
+                    _lengthInFrames = audiostreamUnknownLength;
+                    return;
+                }
+
+                not_a_xm:
+                assert(_xmDecoder == null);
+                free(_xmContent);
+                _xmContent = null;
+            }
+        } 
+
         version(decodeMOD)
         {
-            // we need either the first 1084 or 600 bytes if available
-
-            _io.seek(0, false, userData);
-            long lenBytes = _io.getFileLength(userData);
-            if (lenBytes >= 600)
             {
-                int headerBytes = lenBytes > 1084 ? 1084 : cast(int)lenBytes;
-
-                ubyte[1084] header;
-                int bytes = _io.read(header.ptr, headerBytes, userData);
-                
-                if (_pocketmod_ident(null, header.ptr, bytes))
+                // we need either the first 1084 or 600 bytes if available
+                _io.seek(0, false, userData);
+                long lenBytes = _io.getFileLength(userData);
+                if (lenBytes >= 600)
                 {
-                    // This is a MOD, allocate a proper context, and read the whole file.
-                    _modDecoder = cast(pocketmod_context*) malloc(pocketmod_context.sizeof);
+                    int headerBytes = lenBytes > 1084 ? 1084 : cast(int)lenBytes;
 
-                    // Read whole .mod in a buffer, since the decoder work all from memory
-                    _io.seek(0, false, userData);
-                    _modContent.reallocBuffer(cast(size_t)lenBytes);
-                    bytes = _io.read(_modContent.ptr, cast(int)lenBytes, userData);
+                    ubyte[1084] header;
+                    int bytes = _io.read(header.ptr, headerBytes, userData);
 
-                    if (pocketmod_init(_modDecoder, _modContent.ptr, bytes, 44100))
+                    if (_pocketmod_ident(null, header.ptr, bytes))
                     {
-                        _format = AudioFileFormat.mod;
-                        _sampleRate = 44100.0f;
-                        _numChannels = 2;
-                        _lengthInFrames = audiostreamUnknownLength;
-                        return;
+                        // This is a MOD, allocate a proper context, and read the whole file.
+                        _modDecoder = cast(pocketmod_context*) malloc(pocketmod_context.sizeof);
+
+                        // Read whole .mod in a buffer, since the decoder work all from memory
+                        _io.seek(0, false, userData);
+                        _modContent.reallocBuffer(cast(size_t)lenBytes);
+                        bytes = _io.read(_modContent.ptr, cast(int)lenBytes, userData);
+
+                        if (pocketmod_init(_modDecoder, _modContent.ptr, bytes, 44100))
+                        {
+                            _format = AudioFileFormat.mod;
+                            _sampleRate = 44100.0f;
+                            _numChannels = 2;
+                            _lengthInFrames = audiostreamUnknownLength;
+                            return;
+                        }
                     }
                 }
             }
@@ -862,7 +923,7 @@ private:
         _numChannels = 0;
         _lengthInFrames = -1;
 
-        throw mallocNew!Exception("unrecognized encoding");
+        throw mallocNew!Exception("Cannot decode stream: unrecognized encoding.");
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
@@ -883,6 +944,8 @@ private:
                 throw mallocNew!Exception("Unsupported encoding format: Opus");
             case mod:
                 throw mallocNew!Exception("Unsupported encoding format: MOD");
+            case xm:
+                throw mallocNew!Exception("Unsupported encoding format: XM");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
@@ -931,7 +994,6 @@ struct FileContext // this is what is passed to I/O when used in file mode
     {
         CString strZ = CString(path);
         file = fopen(strZ.storage, forWrite ? "wb".ptr : "rb".ptr);
-
         // finds the size of the file
         fseek(file, 0, SEEK_END);
         fileSize = ftell(file);
