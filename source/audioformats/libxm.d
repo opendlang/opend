@@ -296,6 +296,8 @@ struct xm_context_t
         float volume_ramp;
     }
 
+    uint next_rand;
+
     uint8_t current_table_index;
     uint8_t current_row;
     uint16_t current_tick; /* Can go below 255, with high tempo and a pattern delay */
@@ -881,7 +883,7 @@ int xm_create_context_safe(xm_context_t** ctxp, const char* moddata, size_t modd
 
 	ctx = (*ctxp = cast(xm_context_t*)mempool);
 	ctx.ctx_size = bytes_needed; /* Keep original requested size for xmconvert */
-	mempool += xm_context_t.sizeof;
+    mempool += xm_context_t.sizeof;
 
 	ctx.rate = rate;
 	mempool = xm_load_module(ctx, moddata, moddata_length, mempool);
@@ -891,6 +893,7 @@ int xm_create_context_safe(xm_context_t** ctxp, const char* moddata, size_t modd
 
 	ctx.global_volume = 1.0f;
 	ctx.amplification = 0.25f; /* XXX: some bad modules may still clip. Find out something better. */
+    ctx.next_rand = 24492; // see rng
 
     version(XM_RAMPING)
     {
@@ -1166,11 +1169,10 @@ bool NOTE_IS_VALID(int n)
 
 /* ----- Function definitions ----- */
 
-float xm_waveform(xm_waveform_type_t waveform, uint8_t step) {
-	__gshared static uint next_rand = 24492; // TODO: put into a proper per-decoder context
+float xm_waveform(xm_context_t* context, xm_waveform_type_t waveform, uint8_t step) {
 	step %= 0x40;
-
-	switch(waveform) {
+	switch(waveform) 
+    {
 
         case XM_SINE_WAVEFORM:
             /* Why not use a table? For saving space, and because there's
@@ -1188,8 +1190,8 @@ float xm_waveform(xm_waveform_type_t waveform, uint8_t step) {
         case XM_RANDOM_WAVEFORM:
             /* Use the POSIX.1-2001 example, just to be deterministic
             * across different machines */
-            next_rand = next_rand * 1103515245 + 12345;
-            return cast(float)((next_rand >> 16) & 0x7FFF) / cast(float)0x4000 - 1.0f;
+            context.next_rand = context.next_rand * 1103515245 + 12345;
+            return cast(float)((context.next_rand >> 16) & 0x7FFF) / cast(float)0x4000 - 1.0f;
 
         case XM_RAMP_UP_WAVEFORM:
             /* Ramp up: -1.0f when step = 0; 1.0f when step = 0x40 */
@@ -1220,7 +1222,7 @@ void xm_autovibrato(xm_context_t* ctx, xm_channel_context_t* ch) {
 	}
 
 	uint step = ((ch.autovibrato_ticks++) * instr.vibrato_rate) >> 2;
-	ch.autovibrato_note_offset = .25f * xm_waveform(instr.vibrato_type, cast(ubyte)step)
+	ch.autovibrato_note_offset = .25f * xm_waveform(ctx, instr.vibrato_type, cast(ubyte)step)
 		* cast(float)instr.vibrato_depth / cast(float)0xF * sweep;
 	xm_update_frequency(ctx, ch);
 }
@@ -1229,7 +1231,7 @@ void xm_vibrato(xm_context_t* ctx, xm_channel_context_t* ch, uint8_t param) {
 	ch.vibrato_ticks += (param >> 4);
 	ch.vibrato_note_offset =
 		-2.0f
-		* xm_waveform(ch.vibrato_waveform, cast(ubyte)ch.vibrato_ticks)
+		* xm_waveform(ctx, ch.vibrato_waveform, cast(ubyte)ch.vibrato_ticks)
 		* cast(float)(param & 0x0F) / cast(float)0xF;
 	xm_update_frequency(ctx, ch);
 }
@@ -1238,7 +1240,7 @@ void xm_tremolo(xm_context_t* ctx, xm_channel_context_t* ch, uint8_t param, uint
 	uint step = pos * (param >> 4);
 	/* Not so sure about this, it sounds correct by ear compared with
     * MilkyTracker, but it could come from other bugs */
-	ch.tremolo_volume = -1.0f * xm_waveform(ch.tremolo_waveform, cast(ubyte)step)
+	ch.tremolo_volume = -1.0f * xm_waveform(ctx, ch.tremolo_waveform, cast(ubyte)step)
 		* cast(float)(param & 0x0F) / cast(float)0xF;
 }
 
