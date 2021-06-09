@@ -10,6 +10,7 @@ public import inteli.types;
 import inteli.internals;
 
 public import inteli.pmmintrin;
+import inteli.mmx;
 
 nothrow @nogc:
 
@@ -123,4 +124,84 @@ unittest
     byte16 B = cast(byte16) _mm_abs_epi8(A);
     byte[16] correct =       [0,  1, -128,  127, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     assert(B.array == correct);
+}
+
+/// Concatenate 16-byte blocks in `a` and `b` into a 32-byte temporary result, shift the result right by `count` bytes, and return the low 16 bytes.
+__m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
+{
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_palignr128(cast(long2)a, cast(long2)b, count * 8);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(byte16, ( 0 + count) % 32,
+                                                    ( 1 + count) % 32,
+                                                    ( 2 + count) % 32,
+                                                    ( 3 + count) % 32,
+                                                    ( 4 + count) % 32,
+                                                    ( 5 + count) % 32,
+                                                    ( 6 + count) % 32,
+                                                    ( 7 + count) % 32,
+                                                    ( 8 + count) % 32,
+                                                    ( 9 + count) % 32,
+                                                    (10 + count) % 32,
+                                                    (11 + count) % 32,
+                                                    (12 + count) % 32,
+                                                    (13 + count) % 32,
+                                                    (14 + count) % 32,
+                                                    (15 + count) % 32)(cast(byte16)a, cast(byte16)b);
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    __m128i B = _mm_setr_epi8(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+
+    {
+        byte16 C = cast(byte16)_mm_alignr_epi8!7(A ,B);
+        byte[16] correct = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+        assert(C.array == correct);
+    }
+    {
+        byte16 C = cast(byte16)_mm_alignr_epi8!20(A ,B);
+        byte[16] correct = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 1, 2, 3, 4];
+        assert(C.array == correct);
+    }
+}
+
+/// Concatenate 8-byte blocks in `a` and `b` into a 16-byte temporary result, shift the result right by `count` bytes, and return the low 8 bytes.
+__m64 _mm_alignr_pi8(ubyte count)(__m64 a, __m64 b) @trusted
+{
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_palignr(cast(long)a, cast(long)b, count * 8);
+    }
+    else
+    {
+        return cast(__m64) shufflevector!(byte8, (0 + count) % 16,
+                                                 (1 + count) % 16,
+                                                 (2 + count) % 16,
+                                                 (3 + count) % 16,
+                                                 (4 + count) % 16,
+                                                 (5 + count) % 16,
+                                                 (6 + count) % 16,
+                                                 (7 + count) % 16)(cast(byte8)a, cast(byte8)b);
+    }
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(1, 2, 3, 4, 5, 6, 7, 8);
+    __m64 B = _mm_setr_pi8(17, 18, 19, 20, 21, 22, 23, 24);
+
+    {
+        byte8 C = cast(byte8)_mm_alignr_pi8!3(A ,B);
+        byte[8] correct = [4, 5, 6, 7, 8, 17, 18, 19];
+        assert(C.array == correct);
+    }
+    {
+        byte8 C = cast(byte8)_mm_alignr_pi8!10(A ,B);
+        byte[8] correct = [19, 20, 21, 22, 23, 24, 1, 2];
+        assert(C.array == correct);
+    }
 }
