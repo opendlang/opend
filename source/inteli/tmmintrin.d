@@ -126,6 +126,45 @@ unittest
     assert(B.array == correct);
 }
 
+/// Compute the absolute value of packed signed 16-bit integers in `a`.
+__m64 _mm_abs_pi16 (__m64 a) @trusted
+{
+    return to_m64(_mm_abs_epi16(to_m128i(a)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(0, -1, -32768, 32767);
+    short4 B = cast(short4) _mm_abs_pi16(A);
+    short[4] correct = [0, 1, -32768, 32767];
+    assert(B.array == correct);
+}
+
+/// Compute the absolute value of packed signed 32-bit integers in `a`.
+__m64 _mm_abs_pi32 (__m64 a) @trusted
+{
+     return to_m64(_mm_abs_epi32(to_m128i(a)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(-1, -2_147_483_648);
+    int2 B = cast(int2) _mm_abs_pi32(A);
+    int[2] correct = [1, -2_147_483_648];
+    assert(B.array == correct);
+}
+
+/// Compute the absolute value of packed signed 8-bit integers in `a`.
+__m64 _mm_abs_pi8 (__m64 a) @trusted
+{
+    return to_m64(_mm_abs_epi8(to_m128i(a)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(0, -1, -128, -127, 127, 0, 0, 0);
+    byte8 B = cast(byte8) _mm_abs_pi8(A);
+    byte[8] correct =       [0,  1, -128,  127, 127, 0, 0, 0];
+    assert(B.array == correct);
+}
+
 /// Concatenate 16-byte blocks in `a` and `b` into a 32-byte temporary result, shift the result right by `count` bytes, and return the low 16 bytes.
 __m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
 {
