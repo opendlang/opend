@@ -169,12 +169,15 @@ unittest
 /// Concatenate 16-byte blocks in `a` and `b` into a 32-byte temporary result, shift the result right by `count` bytes, and return the low 16 bytes.
 __m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSSE3)
     {
         return cast(__m128i)__builtin_ia32_palignr128(cast(long2)a, cast(long2)b, count * 8);
     }
     else
     {
+        // Generates palignr since LDC 1.1 -O1
+        // Also generates a single ext instruction on arm64.
         return cast(__m128i) shufflevector!(byte16, ( 0 + count) % 32,
                                                     ( 1 + count) % 32,
                                                     ( 2 + count) % 32,
@@ -213,12 +216,15 @@ unittest
 /// Concatenate 8-byte blocks in `a` and `b` into a 16-byte temporary result, shift the result right by `count` bytes, and return the low 8 bytes.
 __m64 _mm_alignr_pi8(ubyte count)(__m64 a, __m64 b) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSSE3)
     {
         return cast(__m64)__builtin_ia32_palignr(cast(long)a, cast(long)b, count * 8);
     }
     else
     {
+        // Note: in LDC x86 this uses a pshufb.
+        // Generates ext in arm64.
         return cast(__m64) shufflevector!(byte8, (0 + count) % 16,
                                                  (1 + count) % 16,
                                                  (2 + count) % 16,
@@ -245,3 +251,199 @@ unittest
         assert(C.array == correct);
     }
 }
+
+/*
+__m128i _mm_hadd_epi16 (__m128i a, __m128i b) @trusted
+{
+}
+unittest
+{
+}
+*/
+
+/*
+__m128i _mm_hadd_epi32 (__m128i a, __m128i b) @trusted
+{    
+}
+unittest
+{
+}
+*/
+
+/*
+__m64 _mm_hadd_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_hadd_pi32 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_hadds_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_hadds_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_hsub_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_hsub_epi32 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_hsub_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_hsub_pi32 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_hsubs_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_hsubs_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_maddubs_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_maddubs_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_mulhrs_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_mulhrs_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_shuffle_epi8 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_sign_epi16 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_sign_epi32 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m128i _mm_sign_epi8 (__m128i a, __m128i b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_sign_pi16 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_sign_pi32 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+/*
+__m64 _mm_sign_pi8 (__m64 a, __m64 b)
+{
+}
+unittest
+{
+}
+*/
+
