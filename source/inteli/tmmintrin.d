@@ -270,18 +270,17 @@ __m128i _mm_hadd_epi16 (__m128i a, __m128i b) @trusted
     }
     else
     {
-        // Note: LDC x86 would generate phaddw with -O2, but builtin works in -O0 and -O1
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r;
-        r[0] = cast(short)(sa[0] + sa[1]);
-        r[1] = cast(short)(sa[2] + sa[3]);
-        r[2] = cast(short)(sa[4] + sa[5]);
-        r[3] = cast(short)(sa[6] + sa[7]);
-        r[4] = cast(short)(sb[0] + sb[1]);
-        r[5] = cast(short)(sb[2] + sb[3]);
-        r[6] = cast(short)(sb[4] + sb[5]);
-        r[7] = cast(short)(sb[6] + sb[7]);
+        r.ptr[0] = cast(short)(sa.array[0] + sa.array[1]);
+        r.ptr[1] = cast(short)(sa.array[2] + sa.array[3]);
+        r.ptr[2] = cast(short)(sa.array[4] + sa.array[5]);
+        r.ptr[3] = cast(short)(sa.array[6] + sa.array[7]);
+        r.ptr[4] = cast(short)(sb.array[0] + sb.array[1]);
+        r.ptr[5] = cast(short)(sb.array[2] + sb.array[3]);
+        r.ptr[6] = cast(short)(sb.array[4] + sb.array[5]);
+        r.ptr[7] = cast(short)(sb.array[6] + sb.array[7]);
         return cast(__m128i)r;
     }
 }
@@ -311,14 +310,13 @@ __m128i _mm_hadd_epi32 (__m128i a, __m128i b) @trusted
     }
     else
     {
-        // x86: Would generate phaddd since LDC 1.3 -O2, but builtin better
         int4 ia = cast(int4)a;
         int4 ib = cast(int4)b;
         int4 r;
-        r[0] = ia[0] + ia[1];
-        r[1] = ia[2] + ia[3];
-        r[2] = ib[0] + ib[1];
-        r[3] = ib[2] + ib[3];
+        r.ptr[0] = ia.array[0] + ia.array[1];
+        r.ptr[1] = ia.array[2] + ia.array[3];
+        r.ptr[2] = ib.array[0] + ib.array[1];
+        r.ptr[3] = ib.array[2] + ib.array[3];
         return cast(__m128i)r;
     }
 }

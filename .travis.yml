@@ -13,7 +13,8 @@ os:
   - linux
 
 d:
- - ldc-beta
+ - ldc-1.26.0
+ - ldc-1.25.1
  - ldc-1.24.0
  - dmd-beta
  - dmd-2.095.0
