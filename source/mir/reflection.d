@@ -406,6 +406,24 @@ template getUDA(alias symbol, alias attribute)
 /++
 Checks if T has a field member.
 +/
+enum bool isOriginalMember(T, string member) = __traits(identifier, __traits(getMember, T, member)) == member;
+
+///
+version(mir_core_test) unittest
+{
+    struct D
+    {
+        int a;
+        alias b = a;
+    }
+
+    static assert(isOriginalMember!(D, "a"));
+    static assert(!isOriginalMember!(D, "b"));
+}
+
+/++
+Checks if T has a field member.
++/
 enum bool hasField(T, string member) = __traits(compiles, (ref T aggregate) { return __traits(getMember, aggregate, member).offsetof; });
 
 deprecated("use 'hasField' instead") alias isField = hasField;
@@ -718,7 +736,8 @@ private template FieldsAndPropertiesImpl(T)
 {
     alias isProperty = ApplyLeft!(.isProperty, T);
     alias hasField = ApplyLeft!(.hasField, T);
-    alias isMember = templateOr!(hasField, isProperty);
+    alias isOriginalMember = ApplyLeft!(.isOriginalMember, T);
+    alias isMember = templateAnd!(templateOr!(hasField, isProperty), isOriginalMember);
     static if (__traits(getAliasThis, T).length)
     {
         T* aggregate;
