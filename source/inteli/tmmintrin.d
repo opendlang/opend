@@ -315,18 +315,19 @@ __m128i _mm_hadd_epi32 (__m128i a, __m128i b) @trusted
         int4 ia = cast(int4)a;
         int4 ib = cast(int4)b;
         int4 r;
-        r[0] = cast(short)(ia[0] + ia[1]);
-        r[1] = cast(short)(ia[2] + ia[3]);
-        r[2] = cast(short)(ib[0] + ib[1]);
-        r[3] = cast(short)(ib[2] + ib[3]);
+        r[0] = ia[0] + ia[1];
+        r[1] = ia[2] + ia[3];
+        r[2] = ib[0] + ib[1];
+        r[3] = ib[2] + ib[3];
         return cast(__m128i)r;
     }
 }
 unittest
 {
-    __m128i A = _mm_setr_epi16(1, -2, 4, 8, 16, 32, -1, -32768);
-    short8 C = cast(short8) _mm_hadd_epi16(A, A);
-    short[8] correct = [ -1, 12, 48, 32767, -1, 12, 48, 32767];
+    __m128i A = _mm_setr_epi32(1, -2, int.min, -1);
+    __m128i B = _mm_setr_epi32(1, int.max, 4, -4);
+    int4 C = cast(int4) _mm_hadd_epi32(A, B);
+    int[4] correct = [ -1, int.max, int.min, 0 ];
     assert(C.array == correct);
 }
 
