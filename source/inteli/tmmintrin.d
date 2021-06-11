@@ -252,14 +252,47 @@ unittest
     }
 }
 
-/*
+/// Horizontally add adjacent pairs of 16-bit integers in `a` and `b`, and pack the signed 16-bit results.
 __m128i _mm_hadd_epi16 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m128i)vpaddq_s16(cast(short8)a, cast(short8)b);
+    }
+    else
+    {
+        // Note: LDC x86 generates phaddw with -O2
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r;
+        r[0] = cast(short)(sa[0] + sa[1]);
+        r[1] = cast(short)(sa[2] + sa[3]);
+        r[2] = cast(short)(sa[4] + sa[5]);
+        r[3] = cast(short)(sa[6] + sa[7]);
+        r[4] = cast(short)(sb[0] + sb[1]);
+        r[5] = cast(short)(sb[2] + sb[3]);
+        r[6] = cast(short)(sb[4] + sb[5]);
+        r[7] = cast(short)(sb[6] + sb[7]);
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(1, -2, 4, 8, 16, 32, -1, -32768);
+    short8 C = cast(short8) _mm_hadd_epi16(A, A);
+    short[8] correct = [ -1, 12, 48, 32767, -1, 12, 48, 32767];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 __m128i _mm_hadd_epi32 (__m128i a, __m128i b) @trusted
@@ -447,3 +480,47 @@ unittest
 }
 */
 
+
+
+/*
+
+
+Note: LDC 1.0 to 1.27 have the following builtins:
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.d.128")
+    int4 __builtin_ia32_phaddd128(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.sw.128")
+    short8 __builtin_ia32_phaddsw128(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.w.128")
+    short8 __builtin_ia32_phaddw128(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.d.128")
+    int4 __builtin_ia32_phsubd128(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.sw.128")
+    short8 __builtin_ia32_phsubsw128(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.w.128")
+    short8 __builtin_ia32_phsubw128(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.pmadd.ub.sw.128")
+    short8 __builtin_ia32_pmaddubsw128(byte16, byte16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.pmul.hr.sw.128")
+    short8 __builtin_ia32_pmulhrsw128(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.pshuf.b.128")
+    byte16 __builtin_ia32_pshufb128(byte16, byte16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.b.128")
+    byte16 __builtin_ia32_psignb128(byte16, byte16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.d.128")
+    int4 __builtin_ia32_psignd128(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.w.128")
+    short8 __builtin_ia32_psignw128(short8, short8) pure @safe;
+
+*/
