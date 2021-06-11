@@ -30,39 +30,39 @@ size_t stage1 (
     alias params = AliasSeq!(n, vector, pairedMask, backwardEscapeBit);
     version (LDC)
     {
-        // version (X86_Any)
-        // {
+        version (X86_Any)
+        {
             // static if (!__traits(targetHasFeature, "avx512bw"))
             // {
-            //     if (avx512bw)
-            //         return stage1_impl!"skylake-avx512"(params);
+                // if (avx512bw)
+                //     return stage1_impl!"skylake-avx512"(params);
                 // static if (!__traits(targetHasFeature, "avx2"))
                 // {
-                //     import cpuid.x86_any;
-                //     if (avx2)
+                    import cpuid.x86_any;
+                    if (avx2)
                         return stage1_impl!"broadwell"(params);
-    //                 static if (!__traits(targetHasFeature, "avx"))
-    //                 {
-    //                     if (avx)
-    //                         return stage1_impl!"sandybridge"(params);
-    //                     static if (!__traits(targetHasFeature, "sse4.2"))
-    //                     {
-    //                         if (sse42) // && popcnt is assumed to be true
-    //                             return stage1_impl!"westmere"(params);
-    //                         else
-    //                             return stage1_impl!""(params);
-    //                     }
-    //                     else
-    //                         return stage1_impl!"westmere"(params);
-    //                 }
-    //                 else
-    //                     return stage1_impl!"sandybridge"(params);
-    //             }
-    //             else
-    //                 return stage1_impl!"broadwell"(params);
-    //     }
-    //     else
-    //         return stage1_impl!""(params);
+                    static if (!__traits(targetHasFeature, "avx"))
+                    {
+                        if (avx)
+                            return stage1_impl!"sandybridge"(params);
+                        static if (!__traits(targetHasFeature, "sse4.2"))
+                        {
+                            if (sse42) // && popcnt is assumed to be true
+                                return stage1_impl!"westmere"(params);
+                            else
+                                return stage1_impl!""(params);
+                        }
+                        else
+                            return stage1_impl!"westmere"(params);
+                    }
+                    else
+                        return stage1_impl!"sandybridge"(params);
+                // }
+                // else
+                //     return stage1_impl!"broadwell"(params);
+        }
+        else
+            return stage1_impl!""(params);
     }
     else
         return stage1_impl!""(params);
