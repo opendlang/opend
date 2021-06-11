@@ -99,6 +99,10 @@ version(LDC)
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
         enum LDC_with_SSSE3 = false;
+        enum LDC_with_SSE41 = false;
+        enum LDC_with_SSE42 = false;
+        enum LDC_with_AVX = false;
+        enum LDC_with_AVX2 = false;
     }
     else version(AArch64)
     {
@@ -108,6 +112,10 @@ version(LDC)
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
         enum LDC_with_SSSE3 = false;
+        enum LDC_with_SSE41 = false;
+        enum LDC_with_SSE42 = false;
+        enum LDC_with_AVX = false;
+        enum LDC_with_AVX2 = false;
     }
     else
     {
@@ -118,6 +126,10 @@ version(LDC)
         enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
         enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
         enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
+        enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1");
+        enum LDC_with_SSE42 = __traits(targetHasFeature, "sse4.2");
+        enum LDC_with_AVX = __traits(targetHasFeature, "avx");
+        enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2");
     }
 }
 else
@@ -128,6 +140,10 @@ else
     enum LDC_with_SSE2 = false;
     enum LDC_with_SSE3 = false;
     enum LDC_with_SSSE3 = false;
+    enum LDC_with_SSE41 = false;
+    enum LDC_with_SSE42 = false;
+    enum LDC_with_AVX = false;
+    enum LDC_with_AVX2 = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
