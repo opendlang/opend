@@ -270,7 +270,7 @@ __m128i _mm_hadd_epi16 (__m128i a, __m128i b) @trusted
     }
     else
     {
-        // Note: LDC x86 generates phaddw with -O2
+        // Note: LDC x86 would generate phaddw with -O2, but builtin works in -O0 and -O1
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r;
@@ -293,15 +293,43 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
+/// Horizontally add adjacent pairs of 32-bit integers in `a` and `b`, and pack the signed 32-bit results.
 __m128i _mm_hadd_epi32 (__m128i a, __m128i b) @trusted
-{    
+{ 
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddd128(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddd128(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m128i)vpaddq_s32(cast(int4)a, cast(int4)b);
+    }
+    else
+    {
+        // x86: Would generate phaddd since LDC 1.3 -O2, but builtin better
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        int4 r;
+        r[0] = cast(short)(ia[0] + ia[1]);
+        r[1] = cast(short)(ia[2] + ia[3]);
+        r[2] = cast(short)(ib[0] + ib[1]);
+        r[3] = cast(short)(ib[2] + ib[3]);
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(1, -2, 4, 8, 16, 32, -1, -32768);
+    short8 C = cast(short8) _mm_hadd_epi16(A, A);
+    short[8] correct = [ -1, 12, 48, 32767, -1, 12, 48, 32767];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 __m64 _mm_hadd_pi16 (__m64 a, __m64 b)
