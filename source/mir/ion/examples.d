@@ -843,3 +843,37 @@ unittest
 
     assert(stra.serializeText == `{a:3}`, stra.serializeText);
 }
+
+///
+unittest
+{
+    auto json = q{{
+        "a": [
+            0.0031
+        ],
+        "b": [
+            0.999475,
+            0.999425
+        ]
+    }};
+    import mir.ion.conv: json2ion;
+    import mir.ion.deser.ion;
+    auto value = json.json2ion.deserializeIon!(double[][string]);
+}
+
+///
+unittest
+{
+    auto json = q{{
+        "index": 0.9962125,
+        "data": 0.0001
+    }};
+
+    import mir.ion.deser.json;
+    import mir.series;
+
+    alias T = Observation!(double, double);
+    auto value = json.deserializeJson!T;
+    assert(value.index == 0.9962125);
+    assert(value.data == 0.0001);
+}
