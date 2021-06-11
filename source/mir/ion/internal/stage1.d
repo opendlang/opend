@@ -114,7 +114,6 @@ private template stage1_impl(string arch)
         size_t count;
         assert(n);
         bool beb = backwardEscapeBit;
-        size_t i;
         do
         {
             version (ARM_Any)
