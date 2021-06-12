@@ -28,6 +28,7 @@ version(GNU)
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
         enum GDC_with_SSSE3 = false;
+        enum GDC_with_SHA = false;
     }
     else version (X86_64)
     {
@@ -48,6 +49,7 @@ version(GNU)
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_SHA = false;
     }
     else
     {
@@ -57,6 +59,7 @@ version(GNU)
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
         enum GDC_with_SSSE3 = false;
+        enum GDC_with_SHA = false;
     }
 }
 else
@@ -67,6 +70,7 @@ else
     enum GDC_with_SSE2 = false;
     enum GDC_with_SSE3 = false;
     enum GDC_with_SSSE3 = false;
+    enum GDC_with_SHA = false;
 }
 
 version(LDC)
@@ -103,6 +107,7 @@ version(LDC)
         enum LDC_with_SSE42 = false;
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
+        enum LDC_with_SHA = false;
     }
     else version(AArch64)
     {
@@ -116,6 +121,7 @@ version(LDC)
         enum LDC_with_SSE42 = false;
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
+        enum LDC_with_SHA = false;
     }
     else
     {
@@ -130,6 +136,7 @@ version(LDC)
         enum LDC_with_SSE42 = __traits(targetHasFeature, "sse4.2");
         enum LDC_with_AVX = __traits(targetHasFeature, "avx");
         enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2");
+        enum LDC_with_SHA = __traits(targetHasFeature, "sha");
     }
 }
 else
@@ -144,6 +151,7 @@ else
     enum LDC_with_SSE42 = false;
     enum LDC_with_AVX = false;
     enum LDC_with_AVX2 = false;
+    enum LDC_with_SHA = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
