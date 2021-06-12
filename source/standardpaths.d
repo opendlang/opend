@@ -692,6 +692,8 @@ version(Windows) {
     private {
         import std.string : fromStringz;
         version(StandardPathsCocoa) {
+            import core.attribute : selector;
+
             alias size_t NSUInteger;
 
             enum objectiveC_declarations = q{

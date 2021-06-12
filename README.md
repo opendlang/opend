@@ -3,7 +3,7 @@
 D library for getting standard paths (e.g. Pictures, Music, Documents and also generic configuration and data paths). 
 Inspired by QStandardPaths from Qt.
 
-[![Build Status](https://travis-ci.org/FreeSlave/standardpaths.svg?branch=master)](https://travis-ci.org/FreeSlave/standardpaths) [![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/FreeSlave/standardpaths?branch=master&svg=true)](https://ci.appveyor.com/project/FreeSlave/standardpaths)
+[![Build Status](https://github.com/FreeSlave/standardpaths/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FreeSlave/standardpaths/actions/workflows/ci.yml) [![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/FreeSlave/standardpaths?branch=master&svg=true)](https://ci.appveyor.com/project/FreeSlave/standardpaths)
 
 [Online documentation](http://freeslave.github.io/standardpaths/standardpaths.html)
 
