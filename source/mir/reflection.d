@@ -574,7 +574,10 @@ Note: The implementation ignores templates.
 +/
 template getSetters(T, string member)
 {
-    alias getSetters = Filter!(hasSingleArgument, Filter!(isPropertyImpl, __traits(getOverloads, T, member)));
+    static if (__traits(hasMember, T, member))
+        alias getSetters = Filter!(hasSingleArgument, Filter!(isPropertyImpl, __traits(getOverloads, T, member)));
+    else
+        alias getSetters = AliasSeq!();
 }
 
 ///
