@@ -1065,6 +1065,7 @@ static if (LDC_with_ARM64)
 {
     // VERY USEFUL LINK
     // https://github.com/ldc-developers/llvm-project/blob/ldc-release/11.x/llvm/include/llvm/IR/IntrinsicsAArch64.td
+    // Also: https://developer.arm.com/architectures/instruction-sets/intrinsics/
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
         byte16 vabdq_u8(byte16 a, byte16 b) pure @safe;
@@ -1331,6 +1332,9 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtun.v8i8")
         byte8 vqmovun_s16(short8 a) pure @safe;
 
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.tbl1.v16i8")
+        byte16 vqtbl1q_s8(byte16 t, byte16 idx) pure @safe;
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v16i8")
         byte16 vrhadd_u8(byte16 a, byte16 b) pure @safe;
 
@@ -1341,6 +1345,9 @@ static if (LDC_with_ARM64)
     {
         return a >>> b;
     }
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.tbl1.v8i8")
+        byte8 vtbl1_s8(byte16 t, byte8 idx) pure @safe;
 }
 
 version(unittest)

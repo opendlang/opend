@@ -628,6 +628,16 @@ __m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
         index = index & _mm_set1_epi32(0xF7F7F7F7);
         return to_m64( cast(__m128i) __builtin_ia32_pshufb128(cast(byte16)A, cast(byte16) index) );
     }
+    else static if (LDC_with_ARM64)
+    {
+        byte8 bb = cast(byte8)b;
+        byte8 mask;
+        mask = cast(byte)(0x87);
+        bb = bb & mask;
+        __m128i l = to_m128i(a);
+        byte8 r = vtbl1_s8(cast(byte16)l, cast(byte8)bb);
+        return cast(__m64)r;
+    }
     else
     {
         byte8 r;
