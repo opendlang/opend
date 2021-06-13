@@ -538,14 +538,42 @@ unittest
     assert(C.array == correct);
 }
 
-/*
 __m64 _mm_hsub_pi32 (__m64 a, __m64 b)
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_phsubd(cast(int2)a, cast(int2)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // LDC arm64: generates zip1+zip2+sub sequence since LDC 1.8 -O1
+        int2 ia = cast(int2)a;
+        int2 ib = cast(int2)b;
+        int2 c = shufflevector!(int2, 0, 2)(ia, ib);
+        int2 d = shufflevector!(int2, 1, 3)(ia, ib);
+        return c - d;
+    }
+    else
+    {
+        // LDC x86: generates phsubd since LDC 1.24 -O2
+        int2 ia = cast(int2)a;
+        int2 ib = cast(int2)b;
+        int2 r;
+        r.ptr[0] = ia.array[0] - ia.array[1];
+        r.ptr[1] = ib.array[0] - ib.array[1];
+        return cast(__m64)r;
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi32(int.min, 1);
+    __m64 B = _mm_setr_pi32(int.max, -1);
+    int2 C = cast(int2) _mm_hsub_pi32(A, B);
+    int[2] correct = [ int.max, int.min ];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m128i _mm_hsubs_epi16 (__m128i a, __m128i b)
 {
