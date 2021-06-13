@@ -335,7 +335,7 @@ __m64 _mm_hadd_pi16 (__m64 a, __m64 b)
     // PERF DMD
     static if (GDC_with_SSSE3)
     {
-        return cast(__m64) __builtin_ia32_phaddd(cast(int2)a, cast(int2)b);
+        return cast(__m64) __builtin_ia32_phaddw(cast(short4)a, cast(short4)b);
     }
     else static if (LDC_with_ARM64)
     {
@@ -450,15 +450,6 @@ unittest
     short[8] correct = [ short.max, -4, -16, -32767, short.max, -4, -16, -32767];
     assert(C.array == correct);
 }
-
-/*
-__m128i _mm_hsub_epi32 (__m128i a, __m128i b)
-{
-}
-unittest
-{
-}
-*/
 
 /// Horizontally add adjacent pairs of 32-bit integers in `a` and `b`, and pack the signed 32-bit results.
 __m128i _mm_hsub_epi32 (__m128i a, __m128i b) @trusted
