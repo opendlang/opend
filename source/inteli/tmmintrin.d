@@ -669,7 +669,7 @@ unittest
     assert(C.array == correct);
 }
 
-
+/// Shuffle packed 8-bit integers in `a` according to shuffle control mask in the corresponding 8-bit element of `b`.
 __m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
 {
     // PERF DMD
@@ -718,8 +718,8 @@ unittest
     assert(C.array == correct);
 }
 
-
-
+/// Negate packed 16-bit integers in `a` when the corresponding signed 16-bit integer in `b` is negative.
+/// Elements in result are zeroed out when the corresponding element in `b` is zero.
 __m128i _mm_sign_epi16 (__m128i a, __m128i b)
 {
     // PERF DMD
@@ -748,15 +748,34 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
+/// Negate packed 32-bit integers in `a` when the corresponding signed 32-bit integer in `b` is negative. 
+/// Elements in result are zeroed out when the corresponding element in `b` is zero.
 __m128i _mm_sign_epi32 (__m128i a, __m128i b)
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignd128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignd128(cast(short8)a, cast(short8)b);
+    }
+    else
+    {
+        __m128i mask = _mm_srai_epi32(b, 31);
+        __m128i zeromask = _mm_cmpeq_epi32(b, _mm_setzero_si128());
+        return _mm_andnot_si128(zeromask, _mm_xor_si128(_mm_add_epi32(a, mask), mask));
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(-2, -1,  0, int.max);
+    __m128i B = _mm_setr_epi32(-1,  0, -1, 1);
+    int4 C = cast(int4) _mm_sign_epi32(A, B);
+    int[4] correct =          [ 2,  0, 0, int.max];
+    assert(C.array == correct);
 }
-*/
 /*
 __m128i _mm_sign_epi8 (__m128i a, __m128i b)
 {
