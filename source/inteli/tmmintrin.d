@@ -329,15 +329,40 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
+/// Horizontally add adjacent pairs of 16-bit integers in `a` and `b`, and pack the signed 16-bit results.
 __m64 _mm_hadd_pi16 (__m64 a, __m64 b)
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_phaddw(cast(short4)a, cast(short4)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m64) vpadd_s16(cast(short4)a, cast(short4)b);
+    }
+    else
+    {
+        // LDC x86: generates phaddw since LDC 1.24 -O2.
+        short4 r;
+        short4 sa = cast(short4)a;
+        short4 sb = cast(short4)b;
+        r.ptr[0] = cast(short)(sa.array[0] + sa.array[1]); 
+        r.ptr[1] = cast(short)(sa.array[2] + sa.array[3]);
+        r.ptr[2] = cast(short)(sb.array[0] + sb.array[1]);
+        r.ptr[3] = cast(short)(sb.array[2] + sb.array[3]);
+        return cast(__m64)r;
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi16(1, -2, 4, 8);
+    __m64 B = _mm_setr_pi16(16, 32, -1, -32768);
+    short4 C = cast(short4) _mm_hadd_pi16(A, B);
+    short[4] correct = [ -1, 12, 48, 32767 ];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_hadd_pi32 (__m64 a, __m64 b)
 {

@@ -1084,6 +1084,9 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uaddlp.v8i16.v16i8")
         short8 vpaddlq_u8 (byte16 a) pure @safe;
 
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i16")
+        short4 vpadd_s16(short4 a, short4 b) pure @safe;
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i16")
         short8 vpaddq_s16(short8 a, short8 b) pure @safe;
 
