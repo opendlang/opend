@@ -508,11 +508,10 @@ unittest
         }
 
         /++
-        
         Returns: error msg if any
         +/
         @safe pure
-        string deserializeFromIon(string[] keys)(scope const char[][] symbolTable, IonDescribedValue value)
+        string deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
         {
             import mir.ion.exception;
             foreach (IonErrorCode error, IonDescribedValue elem; value.get!IonList)
@@ -858,7 +857,16 @@ unittest
     }};
     import mir.ion.conv: json2ion;
     import mir.ion.deser.ion;
+    static struct S {
+        double[] a;
+
+        void serdeUnexpectedKeyHandler(scope const(char)[] key) @safe pure nothrow @nogc
+        {
+            assert(key == "b");
+        }
+    }
     auto value = json.json2ion.deserializeIon!(double[][string]);
+    auto partialStruct = json.json2ion.deserializeIon!S;
 }
 
 ///

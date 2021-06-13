@@ -178,7 +178,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
 
         static if (__traits(hasMember, value, "deserializeFromIon"))
         {
-            return value.deserializeFromIon!(symbolTable)(table, data);
+            return value.deserializeFromIon(table, data);
         }
         else
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))

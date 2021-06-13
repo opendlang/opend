@@ -33,7 +33,11 @@ template deserializeIon(T)
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
 
-        enum keys = serdeGetDeserializationKeysRecurse!T;
+        static if (__traits(hasMember, T, "deserializeFromIon"))
+            enum keys = string[].init;
+        else
+            enum keys = serdeGetDeserializationKeysRecurse!T;
+
         alias createTableChar = createTable!char;
         static immutable table = createTableChar!(keys, false);
 
