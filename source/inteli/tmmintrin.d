@@ -330,7 +330,7 @@ unittest
 }
 
 /// Horizontally add adjacent pairs of 16-bit integers in `a` and `b`, and pack the signed 16-bit results.
-__m64 _mm_hadd_pi16 (__m64 a, __m64 b)
+__m64 _mm_hadd_pi16 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -364,10 +364,14 @@ unittest
 }
 
 
-__m64 _mm_hadd_pi32 (__m64 a, __m64 b)
+__m64 _mm_hadd_pi32 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
-    static if (LDC_with_ARM64)
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64) __builtin_ia32_phaddd(cast(int2)a, cast(int2)b);
+    }
+    else static if (LDC_with_ARM64)
     {
         return cast(__m64)vpadd_s32(cast(int2)a, cast(int2)b);
     }
@@ -390,7 +394,6 @@ unittest
     int[2] correct = [ int.max, int.min ];
     assert(C.array == correct);
 }
-
 
 
 /*
@@ -562,14 +565,43 @@ unittest
 {
 }
 */
-/*
-__m128i _mm_shuffle_epi8 (__m128i a, __m128i b)
+
+/// Shuffle packed 8-bit integers in `a` according to shuffle control mask in the corresponding 8-bit element of `b`.
+__m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
 {
+    // This is the lovely phsufb.
+    // PERF DMD
+    // PERF ARM64
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, cast(byte16) b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, cast(byte16) b);
+    }
+    else
+    {
+        byte16 r;
+        byte16 ba = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        for (int i = 0; i < 16; ++i)
+        {
+            byte s = bb[i];
+            r[i] = (s < 0) ? 0 : ba[ s ];
+        }
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(15,   14, 13,  12, 11,  10, 9, 8, 7, 6,  5,  4,  3,  2,  1,  0);
+    __m128i B = _mm_setr_epi8(15, -128, 13, -12, 11, -10, 9, 8, 7, 6, -5,  4,  3, -2,  1,  0);
+    byte16 C = cast(byte16) _mm_shuffle_epi8(A, B);
+    byte[16] correct =         [0,   0,   2,  0,  4,   0, 6, 7, 8, 9,  0, 11, 12,  0, 14, 15];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
 {
