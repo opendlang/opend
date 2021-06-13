@@ -424,8 +424,12 @@ __m128i _mm_hsub_epi16 (__m128i a, __m128i b) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        // Note: arm64 doesn't have pairwise sub
-        return cast(__m128i)vpaddq_s16(cast(short8)a, -cast(short8)b);
+        // Produce uzp1 uzp2 sub sequence since LDC 1.8 -O1 
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
+        short8 d = shufflevector!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
+        return cast(__m128i)(c - d);
     }
     else 
     {
@@ -465,7 +469,12 @@ __m128i _mm_hsub_epi32 (__m128i a, __m128i b) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        return cast(__m128i)vpaddq_s32(cast(int4)a, -cast(int4)b);
+        // Produce uzp1 uzp2 sub sequence since LDC 1.8 -O1 
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        int4 c = shufflevector!(int4, 0, 2, 4, 6)(ia, ib);
+        int4 d = shufflevector!(int4, 1, 3, 5, 7)(ia, ib);
+        return c - d;
     }
     else
     {
