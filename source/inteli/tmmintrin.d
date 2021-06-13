@@ -500,15 +500,44 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
-__m64 _mm_hsub_pi16 (__m64 a, __m64 b)
+__m64 _mm_hsub_pi16 (__m64 a, __m64 b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_phsubw(cast(short4)a, cast(short4)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Produce uzp1 uzp2 sub sequence since LDC 1.3 -O1 
+        short4 sa = cast(short4)a;
+        short4 sb = cast(short4)b;
+        short4 c = shufflevector!(short4, 0, 2, 4, 6)(sa, sb);
+        short4 d = shufflevector!(short4, 1, 3, 5, 7)(sa, sb);
+        return cast(__m64)(c - d);
+    }
+    else
+    {
+        // LDC x86: generates phsubw since LDC 1.24 -O2
+        short4 sa = cast(short4)a;
+        short4 sb = cast(short4)b;
+        short4 r;
+        r.ptr[0] = cast(short)(sa.array[0] - sa.array[1]);
+        r.ptr[1] = cast(short)(sa.array[2] - sa.array[3]);
+        r.ptr[2] = cast(short)(sb.array[0] - sb.array[1]);
+        r.ptr[3] = cast(short)(sb.array[2] - sb.array[3]);
+        return cast(__m64)r;
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi16(short.min, 1, 4, 8);
+    __m64 B = _mm_setr_pi16(16, 32, 1, -32768);
+    short4 C = cast(short4) _mm_hsub_pi16(A, B);
+    short[4] correct = [ short.max, -4, -16, -32767];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_hsub_pi32 (__m64 a, __m64 b)
 {
