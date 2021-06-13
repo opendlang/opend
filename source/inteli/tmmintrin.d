@@ -477,7 +477,7 @@ __m128i _mm_hsub_epi32 (__m128i a, __m128i b) @trusted
         int4 ib = cast(int4)b;
         int4 c = shufflevector!(int4, 0, 2, 4, 6)(ia, ib);
         int4 d = shufflevector!(int4, 1, 3, 5, 7)(ia, ib);
-        return c - d;
+        return cast(__m128i)(c - d);
     }
     else
     {
@@ -552,7 +552,7 @@ __m64 _mm_hsub_pi32 (__m64 a, __m64 b)
         int2 ib = cast(int2)b;
         int2 c = shufflevector!(int2, 0, 2)(ia, ib);
         int2 d = shufflevector!(int2, 1, 3)(ia, ib);
-        return c - d;
+        return cast(__m64)(c - d);
     }
     else
     {
