@@ -275,6 +275,7 @@ version(mir_ion_parser_test) unittest
 
     test("", 0);
     test("0", 0);
+    test("-0", 0);
     test("-1234567890,", ',');
     test("1.2 ", ' ');
     test("1d45\n", '\n');

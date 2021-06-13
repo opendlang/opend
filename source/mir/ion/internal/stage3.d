@@ -39,7 +39,7 @@ void stage3(alias fetchNext, Table)(ref Stage3State stage, ref Table symbolTable
     sizediff_t stackPosSkip = -1;
     size_t[stackLength] stack = void;
     enum w64Length = 1;
-    Decimal!w64Length  decimal = void;
+    Decimal!w64Length decimal = void;
 
     with(stage){
 
@@ -511,7 +511,8 @@ value_start: {
                 if (_expect(unsignedView.coefficients.length > ulong.sizeof / size_t.sizeof, false))
                     goto integerOverflow;
             }
-            currentTapePosition += ionPut(tape.ptr + currentTapePosition, cast(ulong) unsignedView, decimal.coefficient.sign);
+            auto word = cast(ulong) unsignedView;
+            currentTapePosition += ionPut(tape.ptr + currentTapePosition, word, word && decimal.coefficient.sign);
             goto next;
             // // else
             // {
