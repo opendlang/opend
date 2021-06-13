@@ -409,14 +409,48 @@ unittest
 {
 }
 */
-/*
-__m128i _mm_hsub_epi16 (__m128i a, __m128i b)
+
+/// Horizontally add adjacent pairs of 16-bit integers in `a` and `b`, and pack the signed 16-bit results.
+__m128i _mm_hsub_epi16 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phsubw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phsubw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Note: arm64 doesn't have pairwise sub
+        return cast(__m128i)vpaddq_s16(cast(short8)a, -cast(short8)b);
+    }
+    else 
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r;
+        r.ptr[0] = cast(short)(sa.array[0] - sa.array[1]);
+        r.ptr[1] = cast(short)(sa.array[2] - sa.array[3]);
+        r.ptr[2] = cast(short)(sa.array[4] - sa.array[5]);
+        r.ptr[3] = cast(short)(sa.array[6] - sa.array[7]);
+        r.ptr[4] = cast(short)(sb.array[0] - sb.array[1]);
+        r.ptr[5] = cast(short)(sb.array[2] - sb.array[3]);
+        r.ptr[6] = cast(short)(sb.array[4] - sb.array[5]);
+        r.ptr[7] = cast(short)(sb.array[6] - sb.array[7]);
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(short.min, 1, 4, 8, 16, 32, 1, -32768);
+    short8 C = cast(short8) _mm_hsub_epi16(A, A);
+    short[8] correct = [ short.max, -4, -16, -32767, short.max, -4, -16, -32767];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m128i _mm_hsub_epi32 (__m128i a, __m128i b)
 {
