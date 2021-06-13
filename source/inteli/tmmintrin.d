@@ -785,6 +785,8 @@ unittest
 }
 */
 
+/// Negate packed 16-bit integers in `a`  when the corresponding signed 16-bit integer in `b` is negative.
+/// Element in result are zeroed out when the corresponding element in `b` is zero.
 __m64 _mm_sign_pi16 (__m64 a, __m64 b)
 {
     return to_m64( _mm_sign_epi16( to_m128i(a), to_m128i(b)) );
@@ -798,14 +800,21 @@ unittest
     assert(C.array == correct);
 }
 
-/*
+/// Negate packed 32-bit integers in `a`  when the corresponding signed 32-bit integer in `b` is negative.
+/// Element in result are zeroed out when the corresponding element in `b` is zero.
 __m64 _mm_sign_pi32 (__m64 a, __m64 b)
 {
+    return to_m64( _mm_sign_epi32( to_m128i(a), to_m128i(b)) );
 }
 unittest
 {
+    __m64 A = _mm_setr_pi32(-2, -100);
+    __m64 B = _mm_setr_pi32(-1,  0);
+    int2 C = cast(int2) _mm_sign_pi32(A, B);
+    int[2] correct =          [ 2,  0];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_sign_pi8 (__m64 a, __m64 b)
 {
