@@ -569,7 +569,7 @@ unittest
 /// Shuffle packed 8-bit integers in `a` according to shuffle control mask in the corresponding 8-bit element of `b`.
 __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
 {
-    // This is the lovely phsufb.
+    // This is the lovely pshufb.
     // PERF DMD
     static if (GDC_with_SSSE3)
     {
@@ -603,21 +603,53 @@ __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
 }
 unittest
 {
-    __m128i A = _mm_setr_epi8(15,   14, 13,  12, 11,  10, 9, 8, 7, 6,  5,  4,  3,  2,  1,  0);
-    __m128i B = _mm_setr_epi8(15, -128, 13, -12, 11, -10, 9, 8, 7, 6, -5,  4,  3, -2,  1,  0);
+    __m128i A = _mm_setr_epi8(15,   14,      13,  12, 11,  10, 9, 8, 7, 6,  5,  4,  3,  2,  1,  0);
+    __m128i B = _mm_setr_epi8(15, -128, 13 + 16, -12, 11, -10, 9, 8, 7, 6, -5,  4,  3, -2,  1,  0);
     byte16 C = cast(byte16) _mm_shuffle_epi8(A, B);
-    byte[16] correct =         [0,   0,   2,  0,  4,   0, 6, 7, 8, 9,  0, 11, 12,  0, 14, 15];
+    byte[16] correct =         [0,   0,       2,  0,  4,   0, 6, 7, 8, 9,  0, 11, 12,  0, 14, 15];
     assert(C.array == correct);
 }
 
-/*
+
 __m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
 {
+    // PERF DMD
+    // PERF ARM64
+    static if (GDC_with_SSSE3)
+    {
+        alias ubyte8  =__vector(ubyte[8]);
+        return cast(__m64) __builtin_ia32_pshufb(cast(ubyte8) a, cast(ubyte8) b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        // GDC does proper dance to avoid mmx registers, do it manually in LDC since __builtin_ia32_pshufb doesn't exist there
+        __m128i A = to_m128i(a);
+        __m128i index = to_m128i(b);
+        index = index & _mm_set1_epi32(0xF7F7F7F7);
+        return to_m64( cast(__m128i) __builtin_ia32_pshufb128(cast(byte16)A, cast(byte16) index) );
+    }
+    else
+    {
+        byte8 r;
+        byte8 ba = cast(byte8)a;
+        byte8 bb = cast(byte8)b;
+        for (int i = 0; i < 8; ++i)
+        {
+            byte s = bb.array[i];
+            r.ptr[i] = (s < 0) ? 0 : ba.array[ s & 7 ];
+        }
+        return cast(__m64)r;
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi8(7,  6,  5,  4,      3,  2,  1,  0);
+    __m64 B = _mm_setr_pi8(7,  6, -5,  4,  3 + 8, -2,  1,  0);
+    byte8 C = cast(byte8) _mm_shuffle_pi8(A, B);
+    byte[8] correct =    [0,  1,  0,  3,      4,  0,  6,  7];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m128i _mm_sign_epi16 (__m128i a, __m128i b)
 {

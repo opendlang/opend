@@ -3076,9 +3076,9 @@ __m128i _mm_set1_epi32 (int a) pure @trusted
 }
 unittest
 {
-    __m128 a = _mm_set1_ps(-1.0f);
-    __m128 b = cast(__m128) _mm_set1_epi32(0x7fffffff);
-    assert(_mm_and_ps(a, b).array == [1.0f, 1, 1, 1]);
+    int4 a = cast(int4) _mm_set1_epi32(31);
+    for (int i = 0; i < 4; ++i)
+        assert(a.array[i] == 31);
 }
 
 /// Broadcast 64-bit integer `a` to all elements.
