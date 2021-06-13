@@ -776,14 +776,35 @@ unittest
     int[4] correct =          [ 2,  0, 0, int.max];
     assert(C.array == correct);
 }
-/*
+
+/// Negate packed 8-bit integers in `a` when the corresponding signed 8-bit integer in `b` is negative. 
+/// Elements in result are zeroed out when the corresponding element in `b` is zero.
 __m128i _mm_sign_epi8 (__m128i a, __m128i b)
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignb128(cast(byte16)a, cast(byte16)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignb128(cast(byte16)a, cast(byte16)b);
+    }
+    else
+    {
+        __m128i mask = _mm_cmplt_epi8(b, _mm_setzero_si128()); // extend sign bit
+        __m128i zeromask = _mm_cmpeq_epi8(b, _mm_setzero_si128());
+        return _mm_andnot_si128(zeromask, _mm_xor_si128(_mm_add_epi8(a, mask), mask));
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(-2, -1, 0, 1,  2, byte.min, byte.min, byte.min, -1,  0,-1, 1, -2,      -50,        0,       50);
+    __m128i B = _mm_setr_epi8(-1,  0,-1, 1, -2,      -50,        0,       50, -2, -1, 0, 1,  2, byte.min, byte.min, byte.min);
+    byte16  C = cast(byte16) _mm_sign_epi8(A, B);
+    byte[16] correct =       [ 2,  0, 0, 1, -2, byte.min,        0, byte.min,  1,  0, 0, 1, -2,       50,        0,      -50];
+    assert(C.array == correct);
 }
-*/
 
 /// Negate packed 16-bit integers in `a`  when the corresponding signed 16-bit integer in `b` is negative.
 /// Element in result are zeroed out when the corresponding element in `b` is zero.
@@ -815,14 +836,20 @@ unittest
     assert(C.array == correct);
 }
 
-/*
+/// Negate packed 8-bit integers in `a` when the corresponding signed 8-bit integer in `b` is negative. 
+/// Elements in result are zeroed out when the corresponding element in `b` is zero.
 __m64 _mm_sign_pi8 (__m64 a, __m64 b)
 {
+    return to_m64( _mm_sign_epi8( to_m128i(a), to_m128i(b)) );
 }
 unittest
 {
+    __m64 A = _mm_setr_pi8(-2, -1, 0, 1,  2, byte.min, byte.min, byte.min);
+    __m64 B = _mm_setr_pi8(-1,  0,-1, 1, -2,      -50,        0,       50);
+    byte8  C = cast(byte8) _mm_sign_pi8(A, B);
+    byte[8] correct =     [ 2,  0, 0, 1, -2, byte.min,        0, byte.min];
+    assert(C.array == correct);
 }
-*/
 
 
 
@@ -831,40 +858,16 @@ unittest
 
 Note: LDC 1.0 to 1.27 have the following builtins:
 
-pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.d.128")
-    int4 __builtin_ia32_phaddd128(int4, int4) pure @safe;
-
 pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.sw.128")
     short8 __builtin_ia32_phaddsw128(short8, short8) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.ssse3.phadd.w.128")
-    short8 __builtin_ia32_phaddw128(short8, short8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.d.128")
-    int4 __builtin_ia32_phsubd128(int4, int4) pure @safe;
-
 pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.sw.128")
     short8 __builtin_ia32_phsubsw128(short8, short8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.phsub.w.128")
-    short8 __builtin_ia32_phsubw128(short8, short8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.ssse3.pmadd.ub.sw.128")
     short8 __builtin_ia32_pmaddubsw128(byte16, byte16) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.ssse3.pmul.hr.sw.128")
     short8 __builtin_ia32_pmulhrsw128(short8, short8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.pshuf.b.128")
-    byte16 __builtin_ia32_pshufb128(byte16, byte16) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.b.128")
-    byte16 __builtin_ia32_psignb128(byte16, byte16) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.d.128")
-    int4 __builtin_ia32_psignd128(int4, int4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.psign.w.128")
-    short8 __builtin_ia32_psignw128(short8, short8) pure @safe;
 
 */
