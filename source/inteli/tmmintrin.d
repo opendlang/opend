@@ -590,6 +590,8 @@ unittest
 {
 }
 */
+
+
 /*
 __m128i _mm_maddubs_epi16 (__m128i a, __m128i b)
 {
@@ -671,7 +673,6 @@ unittest
 __m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
 {
     // PERF DMD
-    // PERF ARM64
     static if (GDC_with_SSSE3)
     {
         alias ubyte8  =__vector(ubyte[8]);
@@ -717,14 +718,37 @@ unittest
     assert(C.array == correct);
 }
 
-/*
+
+
 __m128i _mm_sign_epi16 (__m128i a, __m128i b)
 {
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_psignw128(cast(short8)a, cast(short8)b);       
+    }
+    else
+    {
+        // LDC arm64: 5 instructions
+        __m128i mask = _mm_srai_epi16(b, 15);
+        __m128i zeromask = _mm_cmpeq_epi16(b, _mm_setzero_si128());
+        return _mm_andnot_si128(zeromask, _mm_xor_si128(_mm_add_epi16(a, mask), mask));
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(-2, -1, 0, 1,  2, short.min, short.min, short.min);
+    __m128i B = _mm_setr_epi16(-1,  0,-1, 1, -2,       -50,         0,        50);
+    short8 C = cast(short8) _mm_sign_epi16(A, B);
+    short[8] correct =        [ 2,  0, 0, 1, -2, short.min,         0, short.min];
+    assert(C.array == correct);
 }
-*/
+
+
 /*
 __m128i _mm_sign_epi32 (__m128i a, __m128i b)
 {
@@ -741,14 +765,20 @@ unittest
 {
 }
 */
-/*
+
 __m64 _mm_sign_pi16 (__m64 a, __m64 b)
 {
+    return to_m64( _mm_sign_epi16( to_m128i(a), to_m128i(b)) );
 }
 unittest
 {
+    __m64 A = _mm_setr_pi16( 2, short.min, short.min, short.min);
+    __m64 B = _mm_setr_pi16(-2,       -50,         0,        50);
+    short4 C = cast(short4) _mm_sign_pi16(A, B);
+    short[4] correct =     [-2, short.min,         0, short.min];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_sign_pi32 (__m64 a, __m64 b)
 {
