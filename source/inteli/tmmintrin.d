@@ -571,7 +571,6 @@ __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
 {
     // This is the lovely phsufb.
     // PERF DMD
-    // PERF ARM64
     static if (GDC_with_SSSE3)
     {
         return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, cast(byte16) b);
@@ -580,6 +579,15 @@ __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
     {
         return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, cast(byte16) b);
     }
+    else static if (LDC_with_ARM64)
+    {
+        byte16 bb = cast(byte16)b;
+        byte16 mask;
+        mask = cast(byte)(0x8F);
+        bb = bb & mask;
+        byte16 r = vqtbl1q_s8(cast(byte16)a, bb);
+        return cast(__m128i)r;
+    }
     else
     {
         byte16 r;
@@ -587,8 +595,8 @@ __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
         byte16 bb = cast(byte16)b;
         for (int i = 0; i < 16; ++i)
         {
-            byte s = bb[i];
-            r[i] = (s < 0) ? 0 : ba[ s ];
+            byte s = bb.array[i];
+            r.ptr[i] = (s < 0) ? 0 : ba.array[ s & 15 ];
         }
         return cast(__m128i)r;
     }
