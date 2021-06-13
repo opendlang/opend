@@ -459,6 +459,45 @@ unittest
 {
 }
 */
+
+/// Horizontally add adjacent pairs of 32-bit integers in `a` and `b`, and pack the signed 32-bit results.
+__m128i _mm_hsub_epi32 (__m128i a, __m128i b) @trusted
+{ 
+    // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phsubd128(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phsubd128(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        return cast(__m128i)vpaddq_s32(cast(int4)a, -cast(int4)b);
+    }
+    else
+    {
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        int4 r;
+        r.ptr[0] = ia.array[0] - ia.array[1];
+        r.ptr[1] = ia.array[2] - ia.array[3];
+        r.ptr[2] = ib.array[0] - ib.array[1];
+        r.ptr[3] = ib.array[2] - ib.array[3];
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(1, 2, int.min, 1);
+    __m128i B = _mm_setr_epi32(int.max, -1, 4, 4);
+    int4 C = cast(int4) _mm_hsub_epi32(A, B);
+    int[4] correct = [ -1, int.max, int.min, 0 ];
+    assert(C.array == correct);
+}
+
+
 /*
 __m64 _mm_hsub_pi16 (__m64 a, __m64 b)
 {
