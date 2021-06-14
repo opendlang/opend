@@ -18,14 +18,10 @@ import inteli.internals;
 
 static if (LDC_with_SHA)
 {
-    import ldc.gccbuiltins_x86;
-
     private enum SHA_builtins = true;
 }
 else static if (GDC_with_SHA)
 {
-    import gcc.builtins;
-
     private enum SHA_builtins = true;
 }
 else
@@ -125,10 +121,10 @@ __m128i _mm_sha256msg1_epu32(__m128i a, __m128i b) @trusted
         uint W2 = a4.array[2];
         uint W1 = a4.array[1];
         uint W0 = a4.array[0];
-        dst.array[3] = W3 + sigma0(W4);
-        dst.array[2] = W2 + sigma0(W3);
-        dst.array[1] = W1 + sigma0(W2);
-        dst.array[0] = W0 + sigma0(W1);
+        dst.ptr[3] = W3 + sigma0(W4);
+        dst.ptr[2] = W2 + sigma0(W3);
+        dst.ptr[1] = W1 + sigma0(W2);
+        dst.ptr[0] = W0 + sigma0(W1);
         return cast(__m128i) dst;
     }
 }
@@ -161,10 +157,10 @@ __m128i _mm_sha256msg2_epu32(__m128i a, __m128i b) @trusted
         uint W17 = a4.array[1] + sigma1(W15);
         uint W18 = a4.array[2] + sigma1(W16);
         uint W19 = a4.array[3] + sigma1(W17);
-        dst.array[3] = W19;
-        dst.array[2] = W18;
-        dst.array[1] = W17;
-        dst.array[0] = W16;
+        dst.ptr[3] = W19;
+        dst.ptr[2] = W18;
+        dst.ptr[1] = W17;
+        dst.ptr[0] = W16;
         return cast(__m128i) dst;
     }
 }
@@ -223,10 +219,10 @@ __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k) @trusted
         const G2 = F1;
         const H2 = G1;
 
-        dst.array[3] = A2;
-        dst.array[2] = B2;
-        dst.array[1] = E2;
-        dst.array[0] = F2;
+        dst.ptr[3] = A2;
+        dst.ptr[2] = B2;
+        dst.ptr[1] = E2;
+        dst.ptr[0] = F2;
 
         return cast(__m128i) dst;
     }
