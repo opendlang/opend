@@ -110,8 +110,10 @@ __m128i _mm_sha256msg1_epu32(__m128i a, __m128i b) @trusted
     }
     else
     {
-        import core.bitop : ror;
-        static uint sigma0(uint x) { return ror(x, 7) ^ ror(x, 18) ^ x >> 3; }
+        static uint sigma0(uint x) nothrow @nogc @safe
+        { 
+            return bitwiseRotateRight_uint(x, 7) ^ bitwiseRotateRight_uint(x, 18) ^ x >> 3;
+        }
 
         int4 dst;
         int4 a4 = cast(int4) a;
@@ -145,8 +147,10 @@ __m128i _mm_sha256msg2_epu32(__m128i a, __m128i b) @trusted
     }
     else
     {
-        import core.bitop : ror;
-        static uint sigma1(uint x) { return ror(x, 17) ^ ror(x, 19) ^ x >> 10; }
+        static uint sigma1(uint x) nothrow @nogc @safe
+        { 
+            return bitwiseRotateRight_uint(x, 17) ^ bitwiseRotateRight_uint(x, 19) ^ x >> 10; 
+        }
 
         int4 dst;
         int4 a4 = cast(int4) a;
@@ -181,11 +185,25 @@ __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k) @trusted
     }
     else
     {
-        import core.bitop : ror;
-        static uint Ch(uint x, uint y, uint z) { return z ^ (x & (y ^ z)); }
-        static uint Maj(uint x, uint y, uint z) { return (x & y) | (z & (x ^ y)); }
-        static uint sum0(uint x) { return ror(x, 2) ^ ror(x, 13) ^ ror(x, 22); }
-        static uint sum1(uint x) { return ror(x, 6) ^ ror(x, 11) ^ ror(x, 25); }
+        static uint Ch(uint x, uint y, uint z) nothrow @nogc @safe
+        { 
+            return z ^ (x & (y ^ z)); 
+        }
+        
+        static uint Maj(uint x, uint y, uint z) nothrow @nogc @safe
+        { 
+            return (x & y) | (z & (x ^ y)); 
+        }
+
+        static uint sum0(uint x) nothrow @nogc @safe
+        { 
+            return bitwiseRotateRight_uint(x, 2) ^ bitwiseRotateRight_uint(x, 13) ^ bitwiseRotateRight_uint(x, 22); 
+        }
+
+        static uint sum1(uint x) nothrow @nogc @safe
+        { 
+            return bitwiseRotateRight_uint(x, 6) ^ bitwiseRotateRight_uint(x, 11) ^ bitwiseRotateRight_uint(x, 25); 
+        }
 
         int4 dst;
         int4 a4 = cast(int4) a;
@@ -234,4 +252,10 @@ unittest
     __m128i k = [15, 20, 130, 12345];
     __m128i result = _mm_sha256rnds2_epu32(a, b, k);
     assert(result.array == [1384123044, -2050674062, 327754346, 956342016]);
+}
+
+private uint bitwiseRotateRight_uint(const uint value, const uint count) @safe
+{
+    assert(count < 8 * uint.sizeof);
+    return cast(uint) ((value >> count) | (value << (uint.sizeof * 8 - count)));
 }
