@@ -13,6 +13,7 @@ public import inteli.xmmintrin;
 public import inteli.pmmintrin;
 public import inteli.tmmintrin;
 public import inteli.smmintrin;
+public import inteli.shaintrin;
 
 public import inteli.math;
 
