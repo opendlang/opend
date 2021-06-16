@@ -1087,24 +1087,6 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.abs.v16i8")
         byte16 vabsq_s8(byte16 a) pure @safe;
 
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i8")
-        byte8 vpadd_u8(byte8 a, byte8 b) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.uaddlp.v8i16.v16i8")
-        short8 vpaddlq_u8 (byte16 a) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i16")
-        short4 vpadd_s16(short4 a, short4 b) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i16")
-        short8 vpaddq_s16(short8 a, short8 b) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
-        int2 vpadd_s32(int2 a, int2 b) pure @safe;
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i32")
-        int4 vpaddq_s32(int4 a, int4 b) pure @safe;
-
     byte8 vand_u8(byte8 a, byte8 b) pure @safe
     {
         return a & b;
@@ -1314,6 +1296,19 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i16")
+        short4 vpadd_s16(short4 a, short4 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
+        int2 vpadd_s32(int2 a, int2 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i8")
+        byte8 vpadd_u8(byte8 a, byte8 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.uaddlp.v8i16.v16i8")
+        short8 vpaddlq_u8 (byte16 a) pure @safe;
+
     static if(__VERSION__ >= 2088) // LDC 1.18 start using LLVM9 who changes the name of the builtin
     {
         pragma(LDC_intrinsic, "llvm.aarch64.neon.faddp.v4f32")
@@ -1324,12 +1319,18 @@ static if (LDC_with_ARM64)
         pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4f32")
             float4 vpaddq_f32(float4 a, float4 b) pure @safe;
     }
-
-    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v2i32")
-        int2 vpadd_s32(int2 a, int2 b) pure @safe;
+    
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v8i16")
+        short8 vpaddq_s16(short8 a, short8 b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v16i8")
-        byte16 vpaddq_s8(byte16 a, byte16 b) pure @safe;
+        byte16 vpaddq_s8(byte16 a, byte16 b) pure @safe;            
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i32")
+        int4 vpaddq_s32(int4 a, int4 b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.sqadd.v8i16")
+        short8 vqaddq_s16(short8 a, short8 b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v8i8")
         byte8 vqmovn_s16(short8 a) pure @safe;

@@ -395,15 +395,51 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
-__m128i _mm_hadds_epi16 (__m128i a, __m128i b)
+/// Horizontally add adjacent pairs of signed 16-bit integers in `a` and `b` using saturation, 
+/// and pack the signed 16-bit results.
+__m128i _mm_hadds_epi16 (__m128i a, __m128i b) @trusted
 {
+     // PERF DMD
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddsw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_phaddsw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
+        short8 d = shufflevector!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
+        return cast(__m128i)vqaddq_s16(c, d);
+    }
+    else
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r;
+        r.ptr[0] = saturateSignedIntToSignedShort(sa.array[0] + sa.array[1]);
+        r.ptr[1] = saturateSignedIntToSignedShort(sa.array[2] + sa.array[3]);
+        r.ptr[2] = saturateSignedIntToSignedShort(sa.array[4] + sa.array[5]);
+        r.ptr[3] = saturateSignedIntToSignedShort(sa.array[6] + sa.array[7]);
+        r.ptr[4] = saturateSignedIntToSignedShort(sb.array[0] + sb.array[1]);
+        r.ptr[5] = saturateSignedIntToSignedShort(sb.array[2] + sb.array[3]);
+        r.ptr[6] = saturateSignedIntToSignedShort(sb.array[4] + sb.array[5]);
+        r.ptr[7] = saturateSignedIntToSignedShort(sb.array[6] + sb.array[7]);
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(1, -2, 4, 8, 16, 32, -1, -32768);
+    short8 C = cast(short8) _mm_hadds_epi16(A, A);
+    short[8] correct = [ -1, 12, 48, -32768, -1, 12, 48, -32768];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_hadds_pi16 (__m64 a, __m64 b)
 {
