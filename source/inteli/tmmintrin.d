@@ -410,6 +410,7 @@ __m128i _mm_hadds_epi16 (__m128i a, __m128i b) @trusted
     }
     else static if (LDC_with_ARM64)
     {
+        // uzp1/uzp2/sqadd sequence
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
@@ -440,14 +441,57 @@ unittest
     assert(C.array == correct);
 }
 
-/*
+/// Horizontally add adjacent pairs of signed 16-bit integers in `a` and `b` using saturation, 
+/// and pack the signed 16-bit results.
 __m64 _mm_hadds_pi16 (__m64 a, __m64 b)
 {
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_phaddsw(cast(short4)a, cast(short4)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        // Note: LDC doesn't have __builtin_ia32_phaddsw
+        long2 la;
+        la.ptr[0] = a.array[0];
+        long2 lb;
+        lb.ptr[0] = b.array[0];
+        int4 sum = cast(int4)__builtin_ia32_phaddsw128(cast(short8)la, cast(short8)lb);
+        int2 r;
+        r.ptr[0] = sum.array[0];
+        r.ptr[1] = sum.array[2];
+        return cast(__m64)r;
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // uzp1/uzp2/sqadd sequence
+        short4 sa = cast(short4)a;
+        short4 sb = cast(short4)b;
+        short4 c = shufflevector!(short4, 0, 2, 4, 6)(sa, sb);
+        short4 d = shufflevector!(short4, 1, 3, 5, 7)(sa, sb);
+        return cast(__m64)vqadd_s16(c, d);
+    }
+    else
+    {
+        short4 sa = cast(short4)a;
+        short4 sb = cast(short4)b;
+        short4 r;
+        r.ptr[0] = saturateSignedIntToSignedShort(sa.array[0] + sa.array[1]);
+        r.ptr[1] = saturateSignedIntToSignedShort(sa.array[2] + sa.array[3]);
+        r.ptr[2] = saturateSignedIntToSignedShort(sb.array[0] + sb.array[1]);
+        r.ptr[3] = saturateSignedIntToSignedShort(sb.array[2] + sb.array[3]);
+        return cast(__m64)r;
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi16(-16, 32, -100, -32768);
+    __m64 B = _mm_setr_pi16( 64, 32,    1,  32767);
+    short4 C = cast(short4) _mm_hadds_pi16(A, B);
+    short[4] correct = [ 16, -32768,  96,  32767];
+    assert(C.array == correct);
 }
-*/
+
 
 /// Horizontally add adjacent pairs of 16-bit integers in `a` and `b`, and pack the signed 16-bit results.
 __m128i _mm_hsub_epi16 (__m128i a, __m128i b) @trusted
