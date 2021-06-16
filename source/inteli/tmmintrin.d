@@ -580,6 +580,8 @@ unittest
     assert(C.array == correct);
 }
 
+/// Horizontally subtract adjacent pairs of 16-bit integers in `a` and `b`, 
+/// and pack the signed 16-bit results.
 __m64 _mm_hsub_pi16 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
@@ -618,7 +620,9 @@ unittest
     assert(C.array == correct);
 }
 
-__m64 _mm_hsub_pi32 (__m64 a, __m64 b)
+/// Horizontally subtract adjacent pairs of 32-bit integers in `a` and `b`, 
+/// and pack the signed 32-bit results.
+__m64 _mm_hsub_pi32 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -654,8 +658,9 @@ unittest
     assert(C.array == correct);
 }
 
-
-__m128i _mm_hsubs_epi16 (__m128i a, __m128i b)
+/// Horizontally subtract adjacent pairs of signed 16-bit integers in `a` and `b` using saturation, 
+/// and pack the signed 16-bit results.
+__m128i _mm_hsubs_epi16 (__m128i a, __m128i b) @trusted
 {
      // PERF DMD
     static if (GDC_with_SSSE3)
@@ -700,7 +705,9 @@ unittest
 }
 
 
-__m64 _mm_hsubs_pi16 (__m64 a, __m64 b)
+/// Horizontally subtract adjacent pairs of signed 16-bit integers in `a` and `b` using saturation, 
+/// and pack the signed 16-bit results.
+__m64 _mm_hsubs_pi16 (__m64 a, __m64 b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
@@ -750,14 +757,51 @@ unittest
 }
 
 
-/*
+/// Vertically multiply each unsigned 8-bit integer from `a` with the corresponding 
+/// signed 8-bit integer from `b`, producing intermediate signed 16-bit integers. 
+/// Horizontally add adjacent pairs of intermediate signed 16-bit integers, 
+/// and pack the saturated results.
 __m128i _mm_maddubs_epi16 (__m128i a, __m128i b)
 {
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_pmaddubsw128(cast(byte16)a, cast(byte16)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i)__builtin_ia32_pmaddubsw128(cast(byte16)a, cast(byte16)b);
+    }
+    else
+    {
+        // zero-extend a to 16-bit
+        __m128i zero = _mm_setzero_si128();
+        __m128i a_lo = _mm_unpacklo_epi8(a, zero);
+        __m128i a_hi = _mm_unpackhi_epi8(a, zero);
+
+        // sign-extend b to 16-bit
+        __m128i b_lo = _mm_unpacklo_epi8(b, zero);
+        __m128i b_hi = _mm_unpackhi_epi8(b, zero);    
+        b_lo = _mm_srai_epi16( _mm_slli_epi16(b_lo, 8), 8);
+        b_hi = _mm_srai_epi16( _mm_slli_epi16(b_hi, 8), 8); 
+
+        // Multiply element-wise, no overflow can occur
+        __m128i c_lo = _mm_mullo_epi16(a_lo, b_lo);  
+        __m128i c_hi = _mm_mullo_epi16(a_hi, b_hi);
+
+        // Add pairwise with horizontal add
+        return _mm_hadds_epi16(c_lo, c_hi);
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(  -1,  10, 100, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // u8
+    __m128i B = _mm_setr_epi8(-128, -30, 100,  127, -1, 2, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0); // i8
+    short8 C = cast(short8) _mm_maddubs_epi16(A, B);
+    short[8] correct =       [   -32768,     26256, 0, 0, 0, 0, 0, 0];
+    assert(C.array == correct);
 }
-*/
+
+
 /*
 __m64 _mm_maddubs_pi16 (__m64 a, __m64 b)
 {
