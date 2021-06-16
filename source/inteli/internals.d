@@ -47,6 +47,7 @@ version(GNU)
         enum GDC_with_MMX = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
+
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SHA = false;
