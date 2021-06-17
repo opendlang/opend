@@ -844,15 +844,45 @@ unittest
     assert(C.array == correct);
 }
 
-/*
-__m128i _mm_mulhrs_epi16 (__m128i a, __m128i b)
+/// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate signed 32-bit integers.
+/// Truncate each intermediate integer to the 18 most significant bits, round by adding 1, and return bits `[16:1]`.
+__m128i _mm_mulhrs_epi16 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    // PERM ARM64
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_pmulhrsw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        return cast(__m128i) __builtin_ia32_pmulhrsw128(cast(short8)a, cast(short8)b);
+    }
+    else
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r;
+
+        for (int i = 0; i < 8; ++i)
+        {
+            // I doubted it at first, but an exhaustive search show this to be equivalent to Intel pseudocode.
+            r.ptr[i] = cast(short) ( (sa.array[i] * sb.array[i] + 0x4000) >> 15);
+        }
+
+        return cast(__m128i)r;
+    }
 }
+
 unittest
 {
-    _mm_mulhrs_epi16
+    __m128i A = _mm_setr_epi16(12345, -32768, 32767, 0, 1, 845, -6999, -1);
+    __m128i B = _mm_setr_epi16(8877, -24487, 15678, 32760, 1, 0, -149, -1);
+    short8 C = cast(short8) _mm_mulhrs_epi16(A, B);
+    short[8] correct = [3344, 24487, 15678, 0, 0, 0, 32, 0];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m64 _mm_mulhrs_pi16 (__m64 a, __m64 b)
 {
