@@ -29,7 +29,7 @@
 | SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
 | SSE2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
 | SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| SSSE3 | WIP           | WIP (use -mattr=+ssse3)                    | WIP                   | WIP                   |             
+| SSSE3 | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+ssse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | ...   | No           | No                     | No                   | No                   |
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
@@ -41,11 +41,11 @@ The philosophy (and guarantee) of `intel-intrinsics` is:
 
 ### SIMD types
 
-`intel-intrinsics` define the following types whatever the compiler:
+`intel-intrinsics` define the following types whatever the compiler and target:
 
 `long1`, `float2`, `int2`, `short4`, `byte8`, `float4`, `int4`, `double2`
 
-though most of the time you would deal with
+though most of the time you should deal with
 ```d
 alias __m128 = float4; 
 alias __m128i = int4;
@@ -111,7 +111,8 @@ Without that Intel documentation, it's impractical to write sizeable SIMD code.
 
 ### Who is using it? `intel-intrinsics`
 
-- `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d)
+- `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d), twice as fast as Cairo
+- [10x faster SHA-256](https://github.com/AuburnSounds/intel-intrinsics/issues/72) with `intel-intrinsics`
 - [Auburn Sounds](https://www.auburnsounds.com/) audio products
 - [Cut Through Recordings](https://www.cutthroughrecordings.com/) audio products
 
