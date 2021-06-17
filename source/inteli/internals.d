@@ -1330,6 +1330,9 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i32")
         int4 vpaddq_s32(int4 a, int4 b) pure @safe;
 
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.sqadd.v4i16")
+        short4 vqadd_s16(short4 a, short4 b) pure @safe;
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqadd.v8i16")
         short8 vqaddq_s16(short8 a, short8 b) pure @safe;
 
@@ -1341,6 +1344,9 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtun.v8i8")
         byte8 vqmovun_s16(short8 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.sqsub.v4i16")
+        short4 vqsub_s16(short4 a, short4 b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqsub.v8i16")
         short8 vqsubq_s16(short8 a, short8 b) pure @safe;
