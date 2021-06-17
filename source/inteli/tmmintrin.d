@@ -788,7 +788,7 @@ __m128i _mm_maddubs_epi16 (__m128i a, __m128i b)
         __m128i c_lo = _mm_mullo_epi16(a_lo, b_lo);  
         __m128i c_hi = _mm_mullo_epi16(a_hi, b_hi);
 
-        // Add pairwise with horizontal add
+        // Add pairwise with saturating horizontal add
         return _mm_hadds_epi16(c_lo, c_hi);
     }
 }
@@ -801,21 +801,55 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
+/// Vertically multiply each unsigned 8-bit integer from `a` with the corresponding 
+/// signed 8-bit integer from `b`, producing intermediate signed 16-bit integers. 
+/// Horizontally add adjacent pairs of intermediate signed 16-bit integers, 
+/// and pack the saturated results.
 __m64 _mm_maddubs_pi16 (__m64 a, __m64 b)
 {
+    static if (GDC_with_SSSE3)
+    {
+        return cast(__m64)__builtin_ia32_pmaddubsw(cast(byte8)a, cast(byte8)b);
+    }
+    else static if (LDC_with_SSSE3)
+    {
+        __m128i A = to_m128i(a);
+        __m128i B = to_m128i(b);
+        return to_m64( cast(__m128i)__builtin_ia32_pmaddubsw128(cast(byte16) to_m128i(a), cast(byte16) to_m128i(b)));
+    }
+    else
+    {
+        // zero-extend a to 16-bit
+        __m128i zero = _mm_setzero_si128();
+        __m128i A = _mm_unpacklo_epi8(to_m128i(a), zero);
+
+        // sign-extend b to 16-bit
+        __m128i B = _mm_unpacklo_epi8(to_m128i(b), zero);    
+        B = _mm_srai_epi16( _mm_slli_epi16(B, 8), 8);
+
+        // Multiply element-wise, no overflow can occur
+        __m128i c = _mm_mullo_epi16(A, B);
+
+        // Add pairwise with saturating horizontal add
+        return to_m64( _mm_hadds_epi16(c, zero));
+    }
 }
 unittest
 {
+    __m64 A = _mm_setr_pi8(  -1,  10, 100, -128, 0, 0, 0, 0); // u8
+    __m64 B = _mm_setr_pi8(-128, -30, 100,  127, -1, 2, 4, 6); // i8
+    short4 C = cast(short4) _mm_maddubs_pi16(A, B);
+    short[4] correct =       [   -32768,   26256, 0, 0];
+    assert(C.array == correct);
 }
-*/
+
 /*
 __m128i _mm_mulhrs_epi16 (__m128i a, __m128i b)
 {
 }
 unittest
 {
+    _mm_mulhrs_epi16
 }
 */
 /*
