@@ -1360,6 +1360,9 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.urhadd.v8i16")
         short8 vrhadd_u16(short8 a, short8 b) pure @safe;
 
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.rshrn.v4i16")
+        short4 vrshrn_n_s32(int4 a, int n) pure @safe;        
+
     byte8 vshr_u8(byte8 a, byte8 b) pure @safe
     {
         return a >>> b;

@@ -849,7 +849,6 @@ unittest
 __m128i _mm_mulhrs_epi16 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
-    // PERM ARM64
     static if (GDC_with_SSSE3)
     {
         return cast(__m128i) __builtin_ia32_pmulhrsw128(cast(short8)a, cast(short8)b);
@@ -858,13 +857,28 @@ __m128i _mm_mulhrs_epi16 (__m128i a, __m128i b) @trusted
     {
         return cast(__m128i) __builtin_ia32_pmulhrsw128(cast(short8)a, cast(short8)b);
     }
+    else static if (LDC_with_ARM64)
+    {
+        int4 mul_lo = vmull_s16(vget_low_s16(cast(short8)a),
+                                vget_low_s16(cast(short8)b));
+        int4 mul_hi = vmull_s16(vget_high_s16(cast(short8)a),
+                                vget_high_s16(cast(short8)b));
+
+        // Rounding narrowing shift right
+        // narrow = (int16_t)((mul + 16384) >> 15);
+        short4 narrow_lo = vrshrn_n_s32(mul_lo, 15);
+        short4 narrow_hi = vrshrn_n_s32(mul_hi, 15);
+
+        // Join together.
+        return cast(__m128i) vcombine_s16(narrow_lo, narrow_hi);
+    }
     else
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 r;
 
-        for (int i = 0; i < 8; ++i) // PERF This is catastrophic in arm64
+        for (int i = 0; i < 8; ++i)
         {
             // I doubted it at first, but an exhaustive search show this to be equivalent to Intel pseudocode.
             r.ptr[i] = cast(short) ( (sa.array[i] * sb.array[i] + 0x4000) >> 15);
@@ -888,7 +902,6 @@ unittest
 __m64 _mm_mulhrs_pi16 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
-    // PERM ARM64
     static if (GDC_with_SSSE3)
     {
         return cast(__m64) __builtin_ia32_pmulhrsw(cast(short4)a, cast(short4)b);
@@ -897,13 +910,21 @@ __m64 _mm_mulhrs_pi16 (__m64 a, __m64 b) @trusted
     {
         return cast(__m64) to_m64( cast(__m128i) __builtin_ia32_pmulhrsw128(cast(short8) to_m128i(a), cast(short8) to_m128i(b)));
     }
+    else static if (LDC_with_ARM64)
+    {
+        int4 mul = vmull_s16(cast(short4)a, cast(short4)b);
+
+        // Rounding narrowing shift right
+        // (int16_t)((mul + 16384) >> 15);
+        return cast(__m64) vrshrn_n_s32(mul, 15);
+    }
     else
     {
         short4 sa = cast(short4)a;
         short4 sb = cast(short4)b;
         short4 r;
 
-        for (int i = 0; i < 4; ++i) // Catastrophic too in arm64
+        for (int i = 0; i < 4; ++i)
         {
             r.ptr[i] = cast(short) ( (sa.array[i] * sb.array[i] + 0x4000) >> 15);
         }
@@ -1145,14 +1166,3 @@ unittest
     byte[8] correct =     [ 2,  0, 0, 1, -2, byte.min,        0, byte.min];
     assert(C.array == correct);
 }
-
-
-
-/*
-
-Note: LDC 1.0 to 1.27 have the following builtins:
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.pmul.hr.sw.128")
-    short8 __builtin_ia32_pmulhrsw128(short8, short8) pure @safe;
-
-*/
