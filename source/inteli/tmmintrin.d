@@ -363,7 +363,8 @@ unittest
     assert(C.array == correct);
 }
 
-
+/// Horizontally add adjacent pairs of 32-bit integers in `a` and `b`, 
+/// and pack the signed 32-bit results.
 __m64 _mm_hadd_pi32 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
@@ -443,7 +444,7 @@ unittest
 
 /// Horizontally add adjacent pairs of signed 16-bit integers in `a` and `b` using saturation, 
 /// and pack the signed 16-bit results.
-__m64 _mm_hadds_pi16 (__m64 a, __m64 b)
+__m64 _mm_hadds_pi16 (__m64 a, __m64 b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
@@ -761,7 +762,7 @@ unittest
 /// signed 8-bit integer from `b`, producing intermediate signed 16-bit integers. 
 /// Horizontally add adjacent pairs of intermediate signed 16-bit integers, 
 /// and pack the saturated results.
-__m128i _mm_maddubs_epi16 (__m128i a, __m128i b)
+__m128i _mm_maddubs_epi16 (__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
@@ -805,7 +806,7 @@ unittest
 /// signed 8-bit integer from `b`, producing intermediate signed 16-bit integers. 
 /// Horizontally add adjacent pairs of intermediate signed 16-bit integers, 
 /// and pack the saturated results.
-__m64 _mm_maddubs_pi16 (__m64 a, __m64 b)
+__m64 _mm_maddubs_pi16 (__m64 a, __m64 b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
@@ -906,7 +907,7 @@ unittest
 }
 
 /// Shuffle packed 8-bit integers in `a` according to shuffle control mask in the corresponding 8-bit element of `b`.
-__m64 _mm_shuffle_pi8 (__m64 a, __m64 b)
+__m64 _mm_shuffle_pi8 (__m64 a, __m64 b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -956,7 +957,7 @@ unittest
 
 /// Negate packed 16-bit integers in `a` when the corresponding signed 16-bit integer in `b` is negative.
 /// Elements in result are zeroed out when the corresponding element in `b` is zero.
-__m128i _mm_sign_epi16 (__m128i a, __m128i b)
+__m128i _mm_sign_epi16 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -986,7 +987,7 @@ unittest
 
 /// Negate packed 32-bit integers in `a` when the corresponding signed 32-bit integer in `b` is negative. 
 /// Elements in result are zeroed out when the corresponding element in `b` is zero.
-__m128i _mm_sign_epi32 (__m128i a, __m128i b)
+__m128i _mm_sign_epi32 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -1015,7 +1016,7 @@ unittest
 
 /// Negate packed 8-bit integers in `a` when the corresponding signed 8-bit integer in `b` is negative. 
 /// Elements in result are zeroed out when the corresponding element in `b` is zero.
-__m128i _mm_sign_epi8 (__m128i a, __m128i b)
+__m128i _mm_sign_epi8 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSSE3)
@@ -1044,7 +1045,7 @@ unittest
 
 /// Negate packed 16-bit integers in `a`  when the corresponding signed 16-bit integer in `b` is negative.
 /// Element in result are zeroed out when the corresponding element in `b` is zero.
-__m64 _mm_sign_pi16 (__m64 a, __m64 b)
+__m64 _mm_sign_pi16 (__m64 a, __m64 b) @trusted
 {
     return to_m64( _mm_sign_epi16( to_m128i(a), to_m128i(b)) );
 }
@@ -1059,7 +1060,7 @@ unittest
 
 /// Negate packed 32-bit integers in `a`  when the corresponding signed 32-bit integer in `b` is negative.
 /// Element in result are zeroed out when the corresponding element in `b` is zero.
-__m64 _mm_sign_pi32 (__m64 a, __m64 b)
+__m64 _mm_sign_pi32 (__m64 a, __m64 b) @trusted
 {
     return to_m64( _mm_sign_epi32( to_m128i(a), to_m128i(b)) );
 }
@@ -1074,7 +1075,7 @@ unittest
 
 /// Negate packed 8-bit integers in `a` when the corresponding signed 8-bit integer in `b` is negative. 
 /// Elements in result are zeroed out when the corresponding element in `b` is zero.
-__m64 _mm_sign_pi8 (__m64 a, __m64 b)
+__m64 _mm_sign_pi8 (__m64 a, __m64 b) @trusted
 {
     return to_m64( _mm_sign_epi8( to_m128i(a), to_m128i(b)) );
 }
@@ -1091,11 +1092,7 @@ unittest
 
 /*
 
-
 Note: LDC 1.0 to 1.27 have the following builtins:
-
-pragma(LDC_intrinsic, "llvm.x86.ssse3.pmadd.ub.sw.128")
-    short8 __builtin_ia32_pmaddubsw128(byte16, byte16) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.ssse3.pmul.hr.sw.128")
     short8 __builtin_ia32_pmulhrsw128(short8, short8) pure @safe;
