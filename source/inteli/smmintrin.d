@@ -669,3 +669,59 @@ unittest
 {
 }
 */
+
+
+// LDC intrinsics present from 1.0.0 to 
+
+/*
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.blendvpd")
+    double2 __builtin_ia32_blendvpd(double2, double2, double2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.blendvps")
+    float4 __builtin_ia32_blendvps(float4, float4, float4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.dppd")
+    double2 __builtin_ia32_dppd(double2, double2, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.dpps")
+    float4 __builtin_ia32_dpps(float4, float4, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
+    float4 __builtin_ia32_insertps128(float4, float4, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.mpsadbw")
+    short8 __builtin_ia32_mpsadbw128(byte16, byte16, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.packusdw")
+    short8 __builtin_ia32_packusdw128(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
+    byte16 __builtin_ia32_pblendvb128(byte16, byte16, byte16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.phminposuw")
+    short8 __builtin_ia32_phminposuw128(short8) pure @safe;
+
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.ptestc")
+    int __builtin_ia32_ptestc128(long2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.ptestnzc")
+    int __builtin_ia32_ptestnzc128(long2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.ptestz")
+    int __builtin_ia32_ptestz128(long2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.round.pd")
+    double2 __builtin_ia32_roundpd(double2, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.round.ps")
+    float4 __builtin_ia32_roundps(float4, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.round.sd")
+    double2 __builtin_ia32_roundsd(double2, double2, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse41.round.ss")
+    float4 __builtin_ia32_roundss(float4, float4, int) pure @safe;
+
+    */

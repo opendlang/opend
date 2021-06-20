@@ -23,14 +23,14 @@
 
 ### SIMD intrinsics with `_mm_` prefix
 
-|       | DMD          | LDC x86                | LDC ARM          | GDC                  |
+|       | DMD x86/x86_64        | LDC x86/x86_64         | LDC arm64/arm32      | GDC x86_64              |
 |-------|--------------|------------------------|----------------------|----------------------
-| MMX   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
-| SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
-| SSE2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes (slow in 32-bit) |
-| SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| SSSE3 | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+ssse3) | Yes | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| ...   | No           | No                     | No                   | No                   |
+| MMX   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes |
+| SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes |
+| SSE2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                    | Yes | Yes |
+| SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse3) | Yes | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| SSSE3 | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+ssse3) | Yes | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| SSE4.1   | WIP           | WIP                     | WIP                   | WIP                   |
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
