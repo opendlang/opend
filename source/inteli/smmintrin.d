@@ -36,25 +36,67 @@ enum int _MM_FROUND_TRUNC     = (_MM_FROUND_RAISE_EXC | _MM_FROUND_TO_ZERO);
 enum int _MM_FROUND_RINT      = (_MM_FROUND_RAISE_EXC | _MM_FROUND_CUR_DIRECTION);
 enum int _MM_FROUND_NEARBYINT = (_MM_FROUND_NO_EXC    | _MM_FROUND_CUR_DIRECTION);
 
-/*
-/// Blend packed 16-bit integers from a and b using control mask imm8, and store the results in dst.
-__m128i _mm_blend_epi16 (__m128i a, __m128i b, const int imm8) @trusted
+/// Blend packed 16-bit integers from `a` and `b` using control mask `imm8`, and store the results.
+// Note: changed signature, GDC needs a compile-time value for imm8.
+__m128i _mm_blend_epi16(int imm8)(__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    // PERF LDC: clang has access to __builtin_ia32_pblendw128 but we do not, for some reason.
+    // Not sure how to get vblendw
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pblendw128(cast(short8)a, cast(short8)b, imm8);
+    }
+    else 
+    {
+        short8 r;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        for (int n = 0; n < 8; ++n)
+        {
+            r.ptr[n] = (imm8 & (1 << n)) ? sb.array[n] : sa.array[n];
+        }
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(0, 1,  2,  3,  4,  5,  6,  7);
+    __m128i B = _mm_setr_epi16(8, 9, 10, 11, 12, 13, 14, 15);
+    short8 C = cast(short8) _mm_blend_epi16!147(A, B); // 10010011
+    short[8] correct =        [8, 9,  2,  3, 12,  5,  6, 15];
+    assert(C.array == correct);
 }
-*/
 
-/*
+
+
 /// Blend packed double-precision (64-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.
 __m128d _mm_blend_pd (__m128d a, __m128d b, const int imm8) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pblendw128(cast(short8)a, cast(short8)b, imm8);
+    }
+    else 
+    {
+        // LDC x86: right thing since LDC 1.1 -02
+        double2 r;
+        for (int n = 0; n < 2; ++n)
+        {
+            r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];
+        }
+        return cast(__m128d)r;
+    }
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(0, 1);
+    __m128d B = _mm_setr_pd(8, 9);
+    double2 C = _mm_blend_pd(A, B, 2); // 10
+    double[2] correct =    [0, 9];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Blend packed single-precision (32-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.

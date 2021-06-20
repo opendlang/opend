@@ -28,6 +28,8 @@ version(GNU)
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
         enum GDC_with_SSSE3 = false;
+        enum GDC_with_SSE41 = false;
+        enum GDC_with_SSE42 = false;
         enum GDC_with_SHA = false;
     }
     else version (X86_64)
@@ -50,6 +52,8 @@ version(GNU)
 
         enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_SSE41 = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_SSE42 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SHA = false;
     }
     else
@@ -60,6 +64,8 @@ version(GNU)
         enum GDC_with_SSE2 = false;
         enum GDC_with_SSE3 = false;
         enum GDC_with_SSSE3 = false;
+        enum GDC_with_SSE41 = false;
+        enum GDC_with_SSE42 = false;
         enum GDC_with_SHA = false;
     }
 }
@@ -71,6 +77,8 @@ else
     enum GDC_with_SSE2 = false;
     enum GDC_with_SSE3 = false;
     enum GDC_with_SSSE3 = false;
+    enum GDC_with_SSE41 = false;
+    enum GDC_with_SSE42 = false;
     enum GDC_with_SHA = false;
 }
 
