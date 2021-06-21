@@ -61,9 +61,12 @@ version (mir_test) static if (NOGCEXP && HASFORMAT)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.exception;
-    try throw new MirException("Hi D", 2, "!");
-    catch(Exception e) assert(e.msg == "Hi D2!");
+    static if (__traits(compiles, (()@nogc {import mir.format;})()))
+    {
+        import mir.exception;
+        try throw new MirException("Hi D", 2, "!");
+        catch(Exception e) assert(e.msg == "Hi D2!");
+    }
 }
 
 /// C++ style
@@ -71,10 +74,13 @@ version (mir_test) static if (NOGCEXP && HASFORMAT)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.exception;
-    import mir.format;
-    try throw new MirException(stringBuf() << "Hi D" << 2 << "!" << getData);
-    catch(Exception e) assert(e.msg == "Hi D2!");
+    static if (__traits(compiles, (()@nogc {import mir.format;})()))
+    {
+        import mir.exception;
+        import mir.format;
+        try throw new MirException(stringBuf() << "Hi D" << 2 << "!" << getData);
+        catch(Exception e) assert(e.msg == "Hi D2!");
+    }
 }
 
 /// Low-level style
@@ -82,11 +88,14 @@ version (mir_test) static if (NOGCEXP && HASFORMAT)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.exception;
-    import mir.format;
-    stringBuf buf;
-    try throw new MirException(buf.print( "Hi D", 2, "!").data);
-    catch(Exception e) assert(e.msg == "Hi D2!");
+    static if (__traits(compiles, (()@nogc {import mir.format;})()))
+    {
+        import mir.exception;
+        import mir.format;
+        stringBuf buf;
+        try throw new MirException(buf.print( "Hi D", 2, "!").data);
+        catch(Exception e) assert(e.msg == "Hi D2!");
+    }
 }
 
 ///
@@ -181,7 +190,7 @@ class MirError : Error
 
 ///
 @system pure nothrow @nogc
-version (mir_test) static if (NOGCEXP && HASFORMAT)
+version (mir_test) static if (NOGCEXP)
 unittest
 {
     @system pure nothrow @nogc 
