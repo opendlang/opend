@@ -59,8 +59,8 @@ template deserializeIon(T)
                 tableMapBuffer.put(id);
             }
 
-            if (auto msg = deserializeValue!(keys, true)(ionValue, symbolTable, tableMapBuffer.data, value))
-                throw new SerdeException(msg);
+            if (auto exception = deserializeValue!(keys, true)(ionValue, symbolTable, tableMapBuffer.data, value))
+                throw exception;
             
         } ();
         return value;

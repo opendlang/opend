@@ -101,7 +101,7 @@ struct IonTokenizer {
     +/
     void resizeWindow(size_t start) @safe @nogc pure {
         if (start > input.length) {
-            throw new IonTokenizerException(IonTokenizerErrorCode.cannotUpdateWindow);
+            throw IonTokenizerErrorCode.cannotUpdateWindow.ionTokenizerException;
         }
 
         window = input[start .. $];
@@ -136,7 +136,7 @@ struct IonTokenizer {
     +/
     void unread(char c) @safe @nogc pure  {
         if (this.position <= 0) {
-            throw new IonTokenizerException(IonTokenizerErrorCode.cannotUnreadAtPos0);
+            throw IonTokenizerErrorCode.cannotUnreadAtPos0.ionTokenizerException;
         }
 
         if (c == 0) {
@@ -423,7 +423,7 @@ struct IonTokenizer {
                 
                 case '/': {
                     static if (failOnComment) {
-                        throw new IonTokenizerException(IonTokenizerErrorCode.commentsNotAllowed); 
+                        throw IonTokenizerErrorCode.commentsNotAllowed.ionTokenizerException; 
                     } else static if(skipComments) {
                         // Peek on the next letter, and check if it's a second slash / star
                         // This may fail if we read a comment and do not find the end (newline / '*/')
@@ -774,7 +774,7 @@ struct IonTokenizer {
                     skipOne();
                     IonTokenType tokenType = scanForNumber(cs);
                     if (tokenType == TokenTimestamp) {
-                        throw new IonTokenizerException(IonTokenizerErrorCode.negativeTimestamp);
+                        throw IonTokenizerErrorCode.negativeTimestamp.ionTokenizerException;
                     }
                     unread(cs);
                     unread(c);
@@ -874,7 +874,10 @@ struct IonTokenizer {
     Helper to generate a thrown exception (if an unexpected character is hit)
     +/
     void unexpectedChar(char c, size_t pos = -1, string file = __FILE__, int line = __LINE__) @safe @nogc pure {
-        throw new IonTokenizerException(c ? IonTokenizerErrorCode.unexpectedCharacter : IonTokenizerErrorCode.unexpectedEOF, file, line);
+        static if (__traits(compiles, ()@nogc { throw new Exception(""); }))
+            throw new IonTokenizerException(c ? IonTokenizerErrorCode.unexpectedCharacter : IonTokenizerErrorCode.unexpectedEOF, file, line);
+        else
+            throw ionTokenizerException(c ? IonTokenizerErrorCode.unexpectedCharacter : IonTokenizerErrorCode.unexpectedEOF, /+file, line+/);
     }
 
     /+

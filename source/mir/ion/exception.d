@@ -106,6 +106,12 @@ enum IonErrorCode
     tooManyElementsForStaticArray,
     ///
     notEnoughElementsForStaticArray,
+    ///
+    unusedAnnotations,
+    ///
+    missingAnnotation,
+    ///
+    expectedIonStructForAnAssociativeArrayDeserialization,
 }
 
 ///
@@ -174,6 +180,9 @@ string ionErrorMsg()(IonErrorCode code) @property
         "error reading stream",
         "too many elements for static array",
         "not enough elements for static array",
+        "unused annotations",
+        "missing annotation",
+        "expected IonStruct for an associative array deserialization",
     ];
     return msgs[code - IonErrorCode.min];
 }
@@ -216,6 +225,52 @@ class IonException : SerdeException
 }
 
 /++
+Mir Ion Exception Class
++/
+class IonMirException : IonException
+{
+    import mir.exception: MirThrowableImpl, mirExceptionInitilizePayloadImpl;
+    private enum maxMsgLen = 447;
+    ///
+    mixin MirThrowableImpl;
+}
+
+/++
+Mir Ion Parser Exception Class
+
+The exception is used for JSON parsing.
++/
+class IonParserMirException : IonMirException
+{
+    ///
+    size_t location;
+
+    ///
+    this(
+        scope const(char)[] msg,
+        size_t location,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
+    {
+        this.location = location;
+        super(msg, file, line, next);
+    }
+
+    ///
+    this(
+        scope const(char)[] msg,
+        size_t location,
+        Throwable next,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        ) pure nothrow @nogc @safe 
+    {
+        this(msg, location, file, line, next);
+    }
+}
+
+/++
 Params:
     code = $(LREF IonErrorCode)
 Returns:
@@ -241,4 +296,10 @@ version(mir_ion_test) unittest
 {
     static assert(IonErrorCode.nop.ionException.msg == "IonException: unexpected NOP Padding", IonErrorCode.nop.ionException.msg);
     static assert(IonErrorCode.none.ionException is null);
+}
+
+package auto unqualException(T)(T exception) @trusted pure nothrow @nogc
+    // if (is(T : const Exception))
+{
+    return cast() exception;
 }

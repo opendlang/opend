@@ -753,7 +753,7 @@ bool skipLongStringEnd(bool skipComments = true, bool failOnComment = false)(ref
 if (__traits(compiles, { t.skipWhitespace!(skipComments, failOnComment); })) {
     auto cs = t.peekMax(2);
     if (cs.length < 2 || cs[0] != '\'' || cs[1] != '\'') {
-        throw new IonTokenizerException(IonTokenizerErrorCode.cannotSkipLongString);
+        throw IonTokenizerErrorCode.cannotSkipLongString.ionTokenizerException;
     }
 
     t.skipExactly(2);

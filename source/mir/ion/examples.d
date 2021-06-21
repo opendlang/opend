@@ -231,12 +231,14 @@ version(unittest) private
     {
         E e;
 
+    @safe pure:
+
         this(E e)
         {
             this.e = e;
         }
 
-        this(in char[] str)
+        this(in char[] str) @trusted
         {
             switch(str)
             {
@@ -511,13 +513,13 @@ unittest
         Returns: error msg if any
         +/
         @safe pure
-        string deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
+        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
         {
             import mir.ion.exception;
             foreach (IonErrorCode error, IonDescribedValue elem; value.get!IonList)
             {
                 if (error)
-                    return error.ionErrorMsg;
+                    return error.ionException;
                 array ~= "name" in elem.get!IonStruct.withSymbols(symbolTable)
                     ? MyObject(deserializeIon!ObjectA(symbolTable, elem))
                     : MyObject(deserializeIon!ObjectB(symbolTable, elem));

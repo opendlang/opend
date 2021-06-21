@@ -7,6 +7,10 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 module mir.ion.ser.json;
 
 public import mir.serde;
+import mir.ion.exception: IonException;
+
+static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
+static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
 
 /++
 JSON serialization back-end
@@ -301,13 +305,13 @@ struct JsonSerializer(string sep, Appender)
     ///
     void putValue(Clob value)
     {
-        throw new Exception("JSON CLOB serialization isn't implemented.");
+        throw jsonClobSerializationIsntImplemented;
     }
 
     ///
     void putValue(Blob value)
     {
-        throw new Exception("JSON BLOB serialization isn't implemented.");
+        throw jsonBlobSerializationIsntImplemented;
     }
 
     ///

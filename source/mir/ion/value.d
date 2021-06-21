@@ -2434,10 +2434,11 @@ const:
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
+    Returns: $(LREF IonDescribedValue)
     +/
-    IonDescribedValue opIndex(scope const(char)[] symbol) const @safe pure @nogc
+    auto opIndex(scope const(char)[] symbol) const @safe pure // @nogc DIP1008
     {
-        foreach (key, value; this)
+        foreach (key, IonDescribedValue value; this)
         {
             if (key == symbol)
             {

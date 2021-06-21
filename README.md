@@ -12,6 +12,10 @@ This library seeks to implement the [Ion file format](http://amzn.github.io/ion-
 You can find the documentation for this library [here](http://mir-ion.libmir.org/). 
 Additionally, for examples of the Ion format, you can check the [Ion Cookbook](https://amzn.github.io/ion-docs/guides/cookbook.html)
 
+
+## Exceptions
+Mir Ion internals are `@nogc` and almost all are preallocated. If DIP1008 is enabled, then the parsing exception will contains additional information about error location in the file and last occured key.
+
 ## Status
 This package is considered experimental, under active/early development, and the API is subject to change.
 

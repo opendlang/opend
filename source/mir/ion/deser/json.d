@@ -13,6 +13,7 @@ private template deserializeJsonImpl(bool file)
     T deserializeJsonImpl(T)(scope const(char)[] text)
     {
         import mir.ion.deser: deserializeValue;
+        import mir.ion.exception: IonException, ionException;
         import mir.ion.exception: ionErrorMsg;
         import mir.ion.internal.data_holder;
         import mir.ion.internal.stage4_s;
@@ -34,8 +35,8 @@ private template deserializeJsonImpl(bool file)
 
         if (false)
         {
-            if (auto msg = deserializeValue!(keys, false)(IonDescribedValue.init, value))
-                throw new SerdeMirException(msg, text);
+            if (auto exception = deserializeValue!(keys, false)(IonDescribedValue.init, value))
+                throw exception;
         }
 
         () @trusted {
@@ -44,15 +45,20 @@ private template deserializeJsonImpl(bool file)
             tapeHolder.initialize;
             auto errorInfo = algo!nMax(table, tapeHolder, text);
             if (errorInfo.code)
-                throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+            {
+                static if (__traits(compiles, () @nogc { throw new Exception(""); }))
+                    throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+                else
+                    throw errorInfo.code.ionException;
+            }
 
             IonDescribedValue ionValue;
 
             if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
-                throw new SerdeException(error.ionErrorMsg);
+                throw error.ionException;
 
-            if (auto msg = deserializeValue!(keys, false)(ionValue, value))
-                throw new SerdeMirException(msg);
+            if (auto exception = deserializeValue!(keys, false)(ionValue, value))
+                throw exception;
         } ();
 
         return value;

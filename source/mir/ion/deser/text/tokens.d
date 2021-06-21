@@ -401,7 +401,7 @@ char hexLiteral(char c) @safe @nogc pure {
     if (isDigit(c)) return cast(char)(c - ION_DIGITS[0]);
     else if (c >= 'a' && c <= 'f') return cast(char)(10 + (c - ION_LOWERCASE[0]));
     else if (c >= 'A' && c <= 'F') return cast(char)(10 + (c - ION_UPPERCASE[0]));
-    throw new IonTokenizerException(IonTokenizerErrorCode.invalidHexLiteral);
+    throw IonTokenizerErrorCode.invalidHexLiteral.ionTokenizerException;
 }
 
 /+
@@ -605,4 +605,18 @@ class IonTokenizerException : IonException
     {
         this(msg, file, line, next);
     }
+}
+
+///
+IonTokenizerException ionTokenizerException(IonTokenizerErrorCode code) @safe pure nothrow @nogc
+{
+    import mir.array.allocation: array;
+    import mir.ndslice.topology: map;
+    import std.traits: EnumMembers;
+
+    static immutable IonTokenizerException[] exceptions =
+        [EnumMembers!IonTokenizerErrorCode]
+        .map!(code => code ? new IonTokenizerException(code) : null)
+        .array;
+    return unqualException(exceptions[code - IonErrorCode.min]);
 }

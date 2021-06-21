@@ -129,7 +129,7 @@ dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
         case 'x':
             return readHexEscapeLiteral!2;
         default:
-            throw new IonTokenizerException(IonTokenizerErrorCode.invalidHexEscape);
+            throw IonTokenizerErrorCode.invalidHexEscape.ionTokenizerException;
     }
 }
 // Test reading a unicode escape
@@ -200,7 +200,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     if (c <= 0xFFFF)
     {
         if (0xD800 <= c && c <= 0xDFFF)
-            throw new IonTokenizerException(IonTokenizerErrorCode.encodingSurrogateCode);
+            throw IonTokenizerErrorCode.encodingSurrogateCode.ionTokenizerException;
 
         assert(isValidDchar(c));
         t.escapeSequence[0] = cast(char)(0xE0 | (c >> 12));
@@ -219,7 +219,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     }
 
     assert(!isValidDchar(c));
-    throw new IonTokenizerException(IonTokenizerErrorCode.encodingInvalidCode);
+    throw IonTokenizerErrorCode.encodingInvalidCode.ionTokenizerException;
 }
 
 /+
@@ -815,7 +815,7 @@ IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
     const(char)[] digits = readDigits(t, leader);
     if (leader == '0') {
         if (digits.length != 1) { // if it is not just a plain 0, fail since we don't support leading zeros
-            throw new IonTokenizerException(IonTokenizerErrorCode.invalidLeadingZeros);
+            throw IonTokenizerErrorCode.invalidLeadingZeros.ionTokenizerException;
         }
     }
 
@@ -887,7 +887,7 @@ const(char)[] readDigits(ref IonTokenizer t, char leader) @safe @nogc pure
 {
     immutable char c = leader;
     if (!isDigit(c)) {
-        throw new IonTokenizerException(IonTokenizerErrorCode.expectedValidLeader);
+        throw IonTokenizerErrorCode.expectedValidLeader.ionTokenizerException;
     }
     t.unread(c); // unread so the readRadixDigits can consume it
     return readRadixDigits(t);

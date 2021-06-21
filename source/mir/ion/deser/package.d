@@ -31,7 +31,7 @@ private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(Io
     {
         foreach (member; EnumMembers!IonTypeCode)
         {case member:
-            return exc!member;
+            return unqualException(exc!(T, member));
         }
         default:
             static immutable ret = "Wrong encoding of Ion type code";
@@ -39,25 +39,25 @@ private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(Io
     }
 }
 
-string deserializeScoped(T)(IonDescribedValue data, ref T value)
+IonException deserializeScoped(T)(IonDescribedValue data, ref T value)
     if (isFirstOrderSerdeType!T)
 {
-    return deserializeScopedValueImpl(data, value).ionErrorMsg;
+    return deserializeScopedValueImpl(data, value).ionException;
 }
 
-string deserializeScoped(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
+IonException deserializeScoped(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeScoped(data, value);
 }
 
-string deserializeValue_(T)(IonDescribedValue data, ref T value)
+IonException deserializeValue_(T)(IonDescribedValue data, ref T value)
     if (isFirstOrderSerdeType!T)
 {
-    return deserializeValueImpl(data, value).ionErrorMsg;
+    return deserializeValueImpl(data, value).ionException;
 }
 
-string deserializeValue_(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
+IonException deserializeValue_(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValue_(data, value);
@@ -66,17 +66,17 @@ string deserializeValue_(T)(IonDescribedValue data, scope TableParams!true param
 template deserializeListToScopedBuffer(alias impl, bool exteneded)
 {
     import mir.appender: ScopedBuffer;
-    private string deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, scope TableParams!exteneded params, ref ScopedBuffer!(E, bytes) buffer)
+    private IonException deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, scope TableParams!exteneded params, ref ScopedBuffer!(E, bytes) buffer)
     {
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
-            return IonErrorCode.expectedListValue.ionErrorMsg;
+            return IonErrorCode.expectedListValue.ionException;
         foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
-                return error.ionErrorMsg;
+                return error.ionException;
             E value;
-            if (auto exc = impl(ionElem, params, value))
-                return exc;
+            if (auto exception = impl(ionElem, params, value))
+                return exception;
             import core.lifetime: move;
             buffer.put(move(value));
         }
@@ -117,6 +117,19 @@ private template prepareSymbolId(string[] symbolTable, bool exteneded)
     }
 }
 
+static immutable exc(T, string member, int line = __LINE__) = new IonException("mir.ion: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.", __FILE__, line);
+static immutable excm(T, string member, int line = __LINE__) = new IonException("mir.ion: multiple keys for member '" ~ member ~ "' in " ~ T.stringof ~ " are not allowed.", __FILE__, line);
+
+static immutable cantConstructNullValueOfType(T, int line = __LINE__) = new IonException("Can't construct null value of type" ~ T.stringof, __FILE__, line);
+static immutable cantConstructObjectExc(T, int line = __LINE__) = new IonException(T.stringof ~ " must be either not null or have a default constructor.", __FILE__, line);
+static immutable cantDeserilizeTFromIonStruct(T, int line = __LINE__) = new IonException("Can't deserilize " ~ T.stringof ~ " from IonStruct", __FILE__, line);
+static immutable cantDesrializeUnexpectedDescriptorType(T, int line = __LINE__) = new IonException("Can't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.", __FILE__, line);
+static immutable unexpectedAnnotationWhenDeserializing(T, int line = __LINE__) = new IonException("Unexpected annotation when deserializing " ~ T.stringof, __FILE__, line);
+static immutable unexpectedIonTypeCodeFor(T, int line = __LINE__) = new IonException("Unexpected IonTypeCode for " ~ T.stringof, __FILE__, line);
+static immutable unexpectedKeyWhenDeserializing(T, int line = __LINE__) = new IonException("Unexpected key when deserializing " ~ T.stringof, __FILE__, line);
+static immutable unexpectedSymbolIdWhenDeserializing(T, int line = __LINE__) = new IonException("Unexpected symbol ID when deserializing " ~ T.stringof, __FILE__, line);
+static immutable unusedAnnotation(T, int line = __LINE__) = new IonException("Unused annotation for " ~ T.stringof, __FILE__, line);
+
 /++
 Deserialize aggregate value using compile time symbol table
 +/
@@ -125,7 +138,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     static if (!exteneded)
         static immutable table = symbolTable;
 
-    private string deserializeAnnotations(T)(
+    private IonException deserializeAnnotations(T)(
         ref IonAnnotations annotations,
         scope TableParams!exteneded tableParams,
         ref T value)
@@ -135,12 +148,12 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         static foreach (member; serdeGetAnnotationMembersIn!T)
         {{
             if (annotations.empty)
-                return "Data missing for annotation member";
+                return IonErrorCode.missingAnnotation.ionException;
             size_t symbolId;
             if (auto error = annotations.pick(symbolId))
-                return error.ionErrorMsg;
+                return error.ionException;
             if (symbolId >= table.length)
-                return "Symbol ID is greater then the symbol table";
+                return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
             static if (__traits(compiles, {__traits(getMember, value, member) = table[id];}))
             {
                 __traits(getMember, value, member) = table[symbolId];
@@ -160,9 +173,9 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         tableParams = symbol $(LREF TableParams) 
         value = value to deserialize
         optAnnotations = (optional) $(MREF mir,ion,value, IonAnnotations)
-    Returns: `SerdeException`
+    Returns: `IonException`
     +/
-    string deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
+    IonException deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
         if (!isFirstOrderSerdeType!T && (is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations)))
     {
         import mir.algebraic: isVariant;
@@ -188,12 +201,12 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 foreach (error, ionElem; data.trustedGet!IonList)
                 {
                     if (_expect(error, false))
-                        return error.ionErrorMsg;
+                        return error.ionException;
                     if (value._length == maxLength)
-                        return IonErrorCode.smallArrayOverflow.ionErrorMsg;
+                        return IonErrorCode.smallArrayOverflow.ionException;
                     E elem;
-                    if (auto exc = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, elem))
-                        return exc;
+                    if (auto exception = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, elem))
+                        return exception;
                     import core.lifetime: move;
                     value.trustedAppend(move(elem));
                 }
@@ -204,7 +217,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             {
                 return null;
             }
-            return IonErrorCode.expectedListValue.ionErrorMsg;
+            return IonErrorCode.expectedListValue.ionException;
         }
         else
         static if (is(T == D[], D))
@@ -217,16 +230,16 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                 }
 
                 return () @trusted {
                     import std.array: uninitializedArray;
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                     auto ar = uninitializedArray!(E[])(buffer.length);
                     buffer.moveDataAndEmplaceTo(ar);
                     value = cast(T) ar;
@@ -239,25 +252,25 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 value = null;
                 return null;
             }
-            return IonErrorCode.expectedListValue.ionErrorMsg;
+            return IonErrorCode.expectedListValue.ionException;
         }
         else
         static if (is(T == D[N], D, size_t N))
         {
             if (data.descriptor.type != IonTypeCode.list)
-                return IonErrorCode.expectedListValue.ionErrorMsg;
+                return IonErrorCode.expectedListValue.ionException;
             size_t i;
             foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
             {
                 if (_expect(error, false))
-                    return error.ionErrorMsg;
+                    return error.ionException;
                 if (i >= N)
-                    return IonErrorCode.tooManyElementsForStaticArray.ionErrorMsg;
-                if (auto exc = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, value[i++]))
-                    return exc;
+                    return IonErrorCode.tooManyElementsForStaticArray.ionException;
+                if (auto exception = .deserializeValue!(symbolTable, exteneded)(ionElem, tableParams, value[i++]))
+                    return exception;
             }
             if (i < N)
-                return IonErrorCode.notEnoughElementsForStaticArray.ionErrorMsg;
+                return IonErrorCode.notEnoughElementsForStaticArray.ionException;
             return null;
         }
         else
@@ -265,7 +278,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         {
             import mir.conv;
             if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
-                return "Expected IonStruct for an associative array deserialization";
+                return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
             if (data.descriptor.L == 0xF)
             {
                 value = null;
@@ -276,9 +289,9 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
             {
                 if (error)
-                    return error.ionErrorMsg;
+                    return error.ionException;
                 if (symbolId >= table.length)
-                    return "Ion Symbol ID is too large for the current symbol table";
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
                 if (auto errorMsg = .deserializeValue!(symbolTable, exteneded)(elem, tableParams, value.require(table[symbolId].to!K)))
                     return errorMsg;
@@ -290,7 +303,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         {
             import mir.conv;
             if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
-                return "Expected IonStruct for an associative array deserialization";
+                return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
             if (data.descriptor.L == 0xF)
             {
                 value = null;
@@ -301,9 +314,9 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
             {
                 if (error)
-                    return error.ionErrorMsg;
+                    return error.ionException;
                 if (symbolId >= table.length)
-                    return "Ion Symbol ID is too large for the current symbol table";
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
                 if (auto errorMsg = .deserializeValue!(symbolTable, exteneded)(elem, tableParams, value.require(table[symbolId].to!string)))
                     return errorMsg;
@@ -373,15 +386,15 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                 }
 
                 return ()@trusted @nogc {
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(.deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
                     static if (__traits(compiles, value = move(ar)))
@@ -398,7 +411,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 value = null;
                 return null;
             }
-            return IonErrorCode.expectedListValue.ionErrorMsg;
+            return IonErrorCode.expectedListValue.ionException;
         }
         else
         static if (hasUDA!(T, serdeProxy))
@@ -414,8 +427,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             else
                 alias impl = .deserializeValue!(symbolTable, exteneded);
 
-            if (auto exc = impl(data, tableParams, temporal, optAnnotations))
-                return exc;
+            if (auto exception = impl(data, tableParams, temporal, optAnnotations))
+                return exception;
 
             value = to!T(move(temporal));
             return null;
@@ -436,20 +449,20 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     {
                         if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotations, data))
                         {
-                            return error.ionErrorMsg;
+                            return error.ionException;
                         }
                     }
                     
                 }
 
-                string retNull()
+                IonException retNull() @property
                 {
-                    return annotations.empty ? null : "";
+                    return annotations.empty ? null : IonErrorCode.unusedAnnotations.ionException;
                 }
             }
             else
             {
-                string retNull;
+                IonException retNull;
             }
 
             alias Types = T.AllowedTypes;
@@ -480,8 +493,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.string:
                     {
                         string str;
-                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, str))
-                            return exc;
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, str))
+                            return exception;
                         value = str;
                         return retNull;
                     }
@@ -492,8 +505,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.string:
                     {
                         Filter!(isSmallString, Types)[0] str;
-                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, str))
-                            return exc;
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, str))
+                            return exception;
                         value = str;
                         return retNull;
                     }
@@ -505,8 +518,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.uInt:
                     {
                         long number;
-                        if (auto exc = deserializeValue_(data, number))
-                            return exc;
+                        if (auto exception = deserializeValue_(data, number))
+                            return exception;
                         value = number;
                         return retNull;
                     }
@@ -523,8 +536,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.decimal:
                     {
                         double number;
-                        if (auto exc = deserializeValue_(data, number))
-                            return exc;
+                        if (auto exception = deserializeValue_(data, number))
+                            return exception;
                         value = number;
                         return retNull;
                     }
@@ -537,8 +550,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
                         static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
                         ArrayTypes[0] array;
-                        if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, array))
-                            return exc;
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, array))
+                            return exception;
                         import core.lifetime: move;
                         value = move(array);
                         return retNull;
@@ -555,7 +568,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                             {
                                 size_t symbolId;
                                 if (auto error = annotations.pick(symbolId))
-                                    return error.ionErrorMsg;
+                                    return error.ionException;
 
                                 auto originalId = symbolId;
                                 if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
@@ -569,8 +582,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                         case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
                                         {
                                             VT object;
-                                            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object, annotations))
-                                                return exc;
+                                            if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object, annotations))
+                                                return exception;
                                             import core.lifetime: move;
                                             value = move(object);
                                             return null;
@@ -581,7 +594,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                         static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
                                             value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
                                         else
-                                            return "Unexpected annotation when deserializing " ~ T.stringof;
+                                            return unqualException(unexpectedAnnotationWhenDeserializing!T);
                                 }
                             }
                         }
@@ -600,20 +613,20 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                             alias AATypes = Filter!(isMapType, Types);
                             static assert(AATypes.length == 1, AATypes.stringof);
                             AATypes[0] object;
-                            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object))
-                                return exc;
+                            if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object))
+                                return exception;
                             value = object;
                             return retNull;
                         }
                         else
                         {
-                            return "Can't deserilize " ~ T.stringof ~ " from IonStruct";
+                            return unqualException(cantDeserilizeTFromIonStruct!T);
                         }
                     }
                 }
 
                 default:
-                    return "Unexpected IonTypeCode for " ~ T.stringof;
+                    return unqualException(unexpectedIonTypeCodeFor!T);
             }
 
             // return visit!((auto ref v) => deserializeValue!(symbolTable, exteneded)(data, tableParams, annotations));
@@ -629,8 +642,8 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             }
 
             typeof(value.get) payload;
-            if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, payload))
-                return exc;
+            if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, payload))
+                return exception;
             value = payload;
             return null;
         }
@@ -646,13 +659,13 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 {
                     if (data.descriptor.type != IonTypeCode.annotations)
                     {
-                        return "Cann't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.";
+                        return unqualException(cantDesrializeUnexpectedDescriptorType!T);
                     }
                     
                     IonAnnotations annotations;
                     if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotations, data))
                     {
-                        return error.ionErrorMsg;
+                        return error.ionException;
                     }
                 }
 
@@ -676,7 +689,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 {
                     if (!annotations.empty)
                     {
-                        return "Unused annotation for " ~ T.stringof;
+                        return unqualException(unusedAnnotation!T);
                     }
                 }
 
@@ -691,14 +704,14 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     }
                     else
                     {
-                        return "Can't construct null value of type" ~ T.stringof;
+                        return unqualException(cantConstructNullValueOfType!T);
                     }
                 }
 
                 if (data.descriptor.type != IonTypeCode.struct_)
                 {
                 WrongKindL:
-                    return "Cann't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.";
+                    return unqualException(cantDesrializeUnexpectedDescriptorType!T);
                 }
 
                 static if (is(T == interface) || is(T == class))
@@ -714,8 +727,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         }
                         else
                         {
-                            static immutable cantConstructObjectExc = T.stringof ~ " must be either not null or have a default constructor.";
-                            return cantConstructObjectExc;
+                            return cantConstructObjectExc!T;
                         }
                     }
                 }
@@ -727,15 +739,13 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 static if (hasUDA!(T, serdeOrderedIn))
                 {
                     SerdeOrderedDummy!T temporal;
-                    if (auto exc = .deserializeValue!(symbolTable, exteneded)(data, tableParams, temporal))
-                        return exc;
+                    if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, temporal))
+                        return exception;
                     temporal.serdeFinalizeTarget(value, requiredFlags);
                 }
                 else
                 {
                     alias impl = deserializeValueMember!(symbolTable, exteneded);
-
-                    static immutable exc(string member) = "mir.ion.deser: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.";
                     
                     enum hasUnexpectedKeyHandler = __traits(hasMember, T, "serdeUnexpectedKeyHandler");
 
@@ -751,7 +761,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                 foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
                                 {
                                     if (error)
-                                        return error.ionErrorMsg;
+                                        return error.ionException;
                                     prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId);
 
                                     switch(symbolId)
@@ -770,7 +780,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
 
                             static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
                                 if (!__traits(getMember, requiredFlags, member))
-                                    return exc!member;
+                                    return unqualException(exc!(T, member));
                         }}
                     }
                     else
@@ -778,7 +788,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
                         {
                             if (error)
-                                return error.ionErrorMsg;
+                                return error.ionException;
                             auto originalId = symbolId;
                             if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
                                 goto Default;
@@ -803,14 +813,14 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                     static if (hasUnexpectedKeyHandler)
                                         value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
                                     else
-                                        return "Unexpected key when deserializing " ~ T.stringof;
+                                        return unqualException(unexpectedKeyWhenDeserializing!T);
                             }
                         }
 
                         static foreach (member; __traits(allMembers, SerdeFlags!T))
                             static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
                                 if (!__traits(getMember, requiredFlags, member))
-                                    return exc!member;
+                                    return unqualException(exc!(T, member));
                     }
                 }
 
@@ -838,7 +848,7 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
         static immutable table = symbolTable;
 
     ///
-    string deserializeValueMember(string member, Data, T, Context...)(Data data, scope TableParams!exteneded tableParams, ref T value, ref SerdeFlags!T requiredFlags, ref Context context)
+    IonException deserializeValueMember(string member, Data, T, Context...)(Data data, scope TableParams!exteneded tableParams, ref T value, ref SerdeFlags!T requiredFlags, ref Context context)
     {
         import core.lifetime: move;
         import mir.conv: to;
@@ -882,11 +892,9 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
             alias impl = .deserializeValue!(symbolTable, exteneded);
         }
 
-        static immutable excm(string member) = "mir.serde: multiple keys for member '" ~ member ~ "' in " ~ T.stringof ~ " are not allowed.";
-
         static if (!hasUDA!(__traits(getMember, value, member), serdeAllowMultiple))
             if (__traits(getMember, requiredFlags, member))
-                return excm!member;
+                return unqualException(excm!(T, member));
 
         __traits(getMember, requiredFlags, member) = true;
 
@@ -897,10 +905,10 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
                 foreach (error, ionElem; data.trustedGet!IonList)
                 {
                     if (_expect(error, false))
-                        return error.ionErrorMsg;
+                        return error.ionException;
                     Temporal elem;
-                    if (auto exc = impl(ionElem, tableParams, elem, context))
-                        return exc;
+                    if (auto exception = impl(ionElem, tableParams, elem, context))
+                        return exception;
                     import core.lifetime: move;
                     __traits(getMember, value, member).put(move(elem));
                 }
@@ -911,7 +919,7 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
             }
             else
             {
-                return IonErrorCode.expectedListValue.ionErrorMsg;
+                return IonErrorCode.expectedListValue.ionException;
             }
             static if (hasTransform)
             {
@@ -936,18 +944,18 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
                 foreach (error, symbolId, ionElem; data.trustedGet!IonStruct)
                 {
                     if (_expect(error, false))
-                        return error.ionErrorMsg;
+                        return error.ionException;
 
                     Temporal elem;
-                    if (auto exc = impl(ionElem, tableParams, elem, context))
-                        return exc;
+                    if (auto exception = impl(ionElem, tableParams, elem, context))
+                        return exception;
                     import core.lifetime: move;
 
                     static if (exteneded)
                         alias table = tableParams[0];
 
                     if (symbolId >= table.length)
-                        return "Unexpected symbol ID when deserializing " ~ T.stringof;                    
+                        return unqualException(unexpectedSymbolIdWhenDeserializing!T);
 
                     static if (__traits(compiles, {__traits(getMember, value, member)[table[symbolId]] = move(elem);}))
                     {
@@ -965,7 +973,7 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
             }
             else
             {
-                return IonErrorCode.expectedStructValue.ionErrorMsg;
+                return IonErrorCode.expectedStructValue.ionException;
             }
             static if (hasTransform)
             {
@@ -986,8 +994,8 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
         static if (hasProxy)
         {
             Temporal proxy;
-            if (auto exc = impl(data, tableParams, proxy, context))
-                return exc;
+            if (auto exception = impl(data, tableParams, proxy, context))
+                return exception;
             auto temporal = to!(serdeDeserializationMemberType!(T, member))(move(proxy));
             static if (hasTransform)
                 transform(temporal);
@@ -997,8 +1005,8 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
         else
         static if (hasField!(T, member))
         {
-            if (auto exc = impl(data, tableParams, __traits(getMember, value, member), context))
-                return exc;
+            if (auto exception = impl(data, tableParams, __traits(getMember, value, member), context))
+                return exception;
             static if (hasTransform)
                 transform(__traits(getMember, value, member));
             return null;
@@ -1012,14 +1020,14 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
                 if (false)
                 {
                     ScopedBuffer!E buffer;
-                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                 }
                 return () @trusted {
                     ScopedBuffer!E buffer = void;
                     buffer.initialize;
-                    if (auto exc = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
-                        return exc;
+                    if (auto exception = deserializeListToScopedBuffer!(deserializeValue!(symbolTable, exteneded), exteneded)(data, tableParams, buffer))
+                        return exception;
                     auto temporal = cast(Member)buffer.data;
                     static if (hasTransform)
                         transform(temporal);
@@ -1030,8 +1038,8 @@ private template deserializeValueMember(string[] symbolTable, bool exteneded)
             else
             {
                 Member temporal;
-                if (auto exc = impl(data, tableParams, temporal, context))
-                    return exc;
+                if (auto exception = impl(data, tableParams, temporal, context))
+                    return exception;
                 static if (hasTransform)
                     transform(temporal);
                 __traits(getMember, value, member) = move(temporal);
@@ -1047,7 +1055,7 @@ version(mir_ion_test) unittest
 {
     import mir.ion.symbol_table;
     import mir.ion.value;
-    import mir.serde: SerdeException;
+    import mir.ion.exception;
     import mir.small_array;
     import mir.small_string;
 
@@ -1068,8 +1076,8 @@ version(mir_ion_test) unittest
     auto data = IonValue(binaryData).describe;
     
     Book book;
-    if (auto msg = deserializeValue!(IonSystemSymbolTable_v1 ~ symbolTable)(data, book))
-        throw new SerdeException(msg);
+    if (auto exception = deserializeValue!(IonSystemSymbolTable_v1 ~ symbolTable)(data, book))
+        throw exception;
 
     assert(book.description.length == 0);
     assert(book.numberOfNovellas == 5);
