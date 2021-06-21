@@ -1,6 +1,9 @@
 ![](https://github.com/ikod/ikod-containers/workflows/CI/badge.svg)
 # ikod-containers
 
+You can find generated docs for containers on [githubio](https://ikod.github.io/ikod-containers/ikod.containers.html) or on [dpldocs](https://ikod-containers.dpldocs.info/ikod.containers.html).
+
+
 ## HashMap ##
 
 Differences from D associated arrays:
