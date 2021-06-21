@@ -9,3 +9,9 @@ buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_core_test"
 }
+
+buildType "unittest-dip1008" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
+    dflags "-lowmem" "-preview=dip1008"
+}

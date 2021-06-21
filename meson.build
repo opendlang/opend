@@ -13,6 +13,7 @@ sources_list = [
     'mir/checkedint',
     'mir/conv',
     'mir/enums',
+    'mir/exception',
     'mir/functional',
     'mir/internal/memory',
     'mir/internal/meta',
