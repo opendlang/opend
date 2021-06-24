@@ -2,8 +2,8 @@
     "name": "printed",
     "description": "Low-level API to generate self-contained PDF/SVG/HTML documents suitable for print",
     "license": "BSL-1.0",
-    "importPaths": [ "source" ],
-    "sourcePaths": [ "source" ],
+    "importPaths": [],
+    "sourcePaths": [],
 
     "dependencies":
     {
@@ -15,14 +15,14 @@
    "subPackages": [
         {
             "name": "font",
-            "sourcePaths": 
-            [ 
-                "font/printed/font" 
+            "sourcePaths":
+            [
+                "font/printed/font"
             ],
 
             "importPaths": [ "font" ],
 
-            "dependencies": 
+            "dependencies":
             {
                 "standardpaths": "~>0.0",
                 "binrange": "~>1.0"
@@ -30,13 +30,13 @@
         },
         {
             "name": "canvas",
-            "sourcePaths": 
-            [ 
-                "canvas/printed/canvas" 
+            "sourcePaths":
+            [
+                "canvas/printed/canvas"
             ],
 
             "importPaths": [ "canvas" ],
-            "dependencies": 
+            "dependencies":
             {
                 "printed:font": "*",
                 "binrange": "~>1.0",
@@ -46,9 +46,9 @@
         },
         {
             "name": "htmlcolors",
-            "sourcePaths": 
-            [ 
-                "htmlcolors/printed/htmlcolors" 
+            "sourcePaths":
+            [
+                "htmlcolors/printed/htmlcolors"
             ],
 
             "importPaths": [ "htmlcolors" ]
