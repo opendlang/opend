@@ -29,8 +29,11 @@ void main(string[] args)
 
             // Draw a blue rect
             lineWidth(2);
+            setLineDash([ 2, 1, 1]); // with dash pattern
             strokeStyle = brush("lightblue");
             strokeRect(50, 50, 40, 40);
+            setLineDash(); // without dash pattern
+            strokeRect(70, 70, 40, 40);
 
             // Draw a 50% transparent green triangle
             fillStyle = brush("rgba(0, 255, 0, 0.5)");

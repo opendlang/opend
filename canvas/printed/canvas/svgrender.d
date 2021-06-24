@@ -132,8 +132,9 @@ public:
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f" fill="none"/>`,
-                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentStroke, _dashSegments, _dashOffset));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" stroke-width="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f" fill="none"/>`,
+                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), 
+                      _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
     override TextMetrics measureText(string text)
