@@ -38,6 +38,8 @@ public:
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
+
+        _stateStack = [ State(0) ];
         beginPage();
     }
 
@@ -63,18 +65,24 @@ public:
 
     override void save()
     {
-        _numberOfNestedGroups += 1;
+        _stateStack ~= State(currentOpenedNestedGroups() + 1);
         output("<g>");
     }
 
     /// Restore the graphical contect: transformation matrices.
     override void restore()
-    {        
-        foreach(i; 0.._numberOfNestedGroups)
+    {
+        // if you crash here => too much restore() without save()
+        assert(_stateStack.length > 1);
+
+        int nestedGroupsBefore = currentOpenedNestedGroups();
+        _stateStack = _stateStack[0..$-1]; // pop
+        int nestedGroupsAfter = currentOpenedNestedGroups();
+
+        for (int n = nestedGroupsBefore; n > nestedGroupsAfter; --n)
         {
             output("</g>");
         }
-        _numberOfNestedGroups = 0;
     }
 
     /// Start a new page, finish the previous one.
@@ -225,20 +233,20 @@ public:
     override void scale(float x, float y)
     {
         output(format(`<g transform="scale(%s %s)">`, convertFloatToText(x), convertFloatToText(y)));
-        _numberOfNestedGroups++;
+        currentState().openedNestedGroups += 1;
     }
 
     override void translate(float dx, float dy)
     {
         output(format(`<g transform="translate(%s %s)">`, convertFloatToText(dx), convertFloatToText(dy)));
-        _numberOfNestedGroups++;
+        currentState().openedNestedGroups += 1;
     }
 
     override void rotate(float angle)
     {
         float angleInDegrees = (angle * 180) / PI;
         output(format(`<g transform="rotate(%s)">`, convertFloatToText(angleInDegrees)));
-        _numberOfNestedGroups++;
+        currentState().openedNestedGroups += 1;
     }
 
     override void drawImage(Image image, float x, float y)
@@ -266,7 +274,7 @@ private:
     string _currentFill = "#000";
     string _currentStroke = "#000";
     float _currentLineWidth = 1;
-    int _numberOfNestedGroups = 0;
+
     int _numberOfPage = 1;
     float _pageWidthMm;
     float _pageHeightMm;
@@ -279,6 +287,23 @@ private:
     float _fontSize = convertPointsToMillimeters(11.0f);
     TextAlign _textAlign = TextAlign.start;
     TextBaseline _textBaseline = TextBaseline.alphabetic;
+
+    static struct State
+    {
+        int openedNestedGroups; // Number of opened <g> at the point `save()` is called.
+    }
+    State[] _stateStack;
+
+    ref State currentState()
+    {
+        assert(_stateStack.length > 0);
+        return _stateStack[$-1];
+    }
+
+    int currentOpenedNestedGroups()
+    {
+        return _stateStack[$-1].openedNestedGroups;
+    }
 
     void output(ubyte b)
     {
@@ -298,12 +323,13 @@ private:
     void endPage()
     {
         restore();
+        assert(_stateStack.length == 1);
     }
 
     void beginPage()
     {        
+        _stateStack ~= State(currentOpenedNestedGroups() + 1);
         output(format(`<g transform="translate(0,%s)">`, convertFloatToText(_pageHeightMm * (_numberOfPage-1))));
-        _numberOfNestedGroups = 1;
     }
 
     void end()
