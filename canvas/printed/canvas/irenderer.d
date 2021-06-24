@@ -10,12 +10,12 @@ public import printed.canvas.image;
 
 /// Describes the `printed` 2D renderer.
 ///
-/// This is the law, specific implementation MUST obey this interface and 
+/// This is the law, specific implementation MUST obey this interface and
 /// not the underlying implementation in PDF/SVG/whatever (and if necessary revise this spec).
 ///
 /// We are heavily influenced by the HTML5 Canvas 2D context API, for its familiarity.
 /// See_also: https://www.w3.org/TR/2dcontext/
-interface IRenderingContext2D 
+interface IRenderingContext2D
 {
     // GRAPHICAL CONTEXT
 
@@ -36,7 +36,7 @@ interface IRenderingContext2D
     void restore();
 
     /// Start a new page, finish the previous one.
-    /// This invalidates any transformation. 
+    /// This invalidates any transformation.
     /// The origin (0, 0) becomes again the top-left point of each page.
     void newPage();
 
@@ -50,7 +50,7 @@ interface IRenderingContext2D
     /// Changes the transformation matrix to apply a translation transformation with the given characteristics.
     void translate(float dx, float dy);
 
-    /// Changes the transformation matrix to apply a rotation transformation with the given characteristics. 
+    /// Changes the transformation matrix to apply a rotation transformation with the given characteristics.
     /// The angle is in radians, the direction is clockwise.
     /// Params:
     ///     angle The rotation angle, in radians.
@@ -78,6 +78,28 @@ interface IRenderingContext2D
     ///    color Any HTML color string.
     void strokeStyle(Brush brush);
 
+    // DASHED LINES
+
+    /// Sets the current line dash pattern (as used when stroking). The
+    /// argument is an array of distances for which to alternately have the
+    /// line on and the line off.
+    ///
+    /// Params:
+    ///    segments = array of distances for which to alternately have the line on and
+    ///               the line off.
+    void setLineDash(float[] segments = []);
+
+    /// Returns a copy of the current line dash pattern. The array returned
+    /// will always have an even number of entries (i.e. the pattern is
+    /// normalized).
+    float[] getLineDash();
+
+    /// Returns the phase offset (in the same units as the line dash pattern).
+    /// Can be set, to change the phase offset. Values that are not finite
+    /// values are ignored.
+    @property void lineDashOffset(float offset);
+    /// ditto
+    @property float lineDashOffset();
 
     // BASIC SHAPES
 
@@ -85,11 +107,11 @@ interface IRenderingContext2D
     void fillRect(float x, float y, float width, float height);
     void strokeRect(float x, float y, float width, float height);
 
-    /// Draw filled text. 
+    /// Draw filled text.
     void fillText(string text, float x, float y);
 
     // PATHS
-    /// The context always has a current default path. 
+    /// The context always has a current default path.
     /// There is only one current path, it is not part of the drawing state.
 
     /// Resets the current path, and move the cursor to (x, y).
@@ -121,10 +143,10 @@ interface IRenderingContext2D
 
 
     // FONTS
-    // The specific font will be lazily choosen across all available fonts, 
+    // The specific font will be lazily choosen across all available fonts,
     // with a matching algorithm.
     // See_also: `findBestMatchingFont`.
-    
+
     /// Changes font face (default = Helvetica)
     void fontFace(string fontFace);
 
@@ -144,7 +166,7 @@ interface IRenderingContext2D
     /// Changes text baseline (default = TextBaseline.alphabetic)
     void textBaseline(TextBaseline baseline);
 
-    /// Returns a `TextMetrics` struct that contains information about the measured text 
+    /// Returns a `TextMetrics` struct that contains information about the measured text
     /// (such as its width, for example).
     TextMetrics measureText(string text);
 }
@@ -276,7 +298,7 @@ float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
 }
 
 
-/// The `TextMetrics` interface represents the dimensions of a piece of text, 
+/// The `TextMetrics` interface represents the dimensions of a piece of text,
 /// as created by the `measureText()` method.
 struct TextMetrics
 {
@@ -285,3 +307,26 @@ struct TextMetrics
 }
 
 
+/// Validate line dash pattern. A dash pattern is valid if all values are
+/// finite and non-negative.
+bool isValidLineDashPattern(float[] segments)
+{
+    import std.algorithm : all;
+    import std.range.primitives;
+
+    return segments.all!(x => 0 <= x && x <= float.infinity);
+}
+
+
+/// Normalize line dash pattern, i.e. the array returned will always have an
+/// even number of entries.
+///
+/// Returns: a copy of segments if the number of entries is even; otherwise
+///          the concatenation of segments with itself.
+float[] normalizeLineDashPattern(float[] segments)
+{
+    if (segments.length % 2 == 0)
+        return segments.dup;
+    else
+        return segments ~ segments;
+}

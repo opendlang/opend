@@ -203,7 +203,7 @@ final class PDFDocument : IRenderingContext2D
 
         // restore CTM
         outDelim();
-        output('Q'); 
+        output('Q');
     }
 
     // State stack
@@ -240,7 +240,7 @@ final class PDFDocument : IRenderingContext2D
     override void rotate(float angle)
     {
         if (angle == 0) return;
-        float cosi = cos(angle);        
+        float cosi = cos(angle);
         float sine = sin(angle);
         transform(cosi, sine,
                   -sine, cosi,
@@ -319,6 +319,38 @@ final class PDFDocument : IRenderingContext2D
         setStrokeAlpha(c[3]);
     }
 
+    override void setLineDash(float[] segments = [])
+    {
+        if (isValidLineDashPattern(segments))
+        {
+            auto normSegments = normalizeLineDashPattern(segments);
+            if (normSegments != _dashSegments)
+            {
+                _dashSegments = normalizeLineDashPattern(segments);
+                _isSetDashPattern = false;
+            }
+        }
+    }
+
+    override float[] getLineDash()
+    {
+        return _dashSegments.dup;
+    }
+
+    override @property void lineDashOffset(float offset)
+    {
+        if (offset != _dashOffset && -float.infinity < offset && offset < float.infinity)
+        {
+            _dashOffset = offset;
+            _isSetDashPattern = false;
+        }
+    }
+
+    override @property float lineDashOffset()
+    {
+        return _dashOffset;
+    }
+
     // Basic shapes
     // UB if you are into a path.
 
@@ -334,6 +366,8 @@ final class PDFDocument : IRenderingContext2D
 
     override void strokeRect(float x, float y, float width, float height)
     {
+        setDashPattern();
+        outDelim();
         outFloat(x);
         outFloat(y);
         outFloat(width);
@@ -346,6 +380,8 @@ final class PDFDocument : IRenderingContext2D
 
     override void beginPath(float x, float y)
     {
+        setDashPattern();
+        outDelim();
         outFloat(x);
         outFloat(y);
         output(" m");
@@ -426,6 +462,12 @@ private:
     /// Whether this opacity value is used at all in the document (non-stroke operations).
     bool[256] _nonStrokeAlpha;
 
+    bool _isSetDashPattern;
+
+    float[] _dashSegments = [];
+
+    float _dashOffset = 0f;
+
     void setStrokeAlpha(ubyte alpha)
     {
         _strokeAlpha[alpha] = true;
@@ -442,6 +484,14 @@ private:
         makeNonStrokeAlphaName(alpha, gsName);
         outName(gsName[]);
         output(" gs");
+    }
+
+    void setDashPattern()
+    {
+        if (_isSetDashPattern)
+            return; // already emitted to PDF; do nothing
+
+        output(format!"[%-(%f %)] %f d"(_dashSegments, _dashOffset));
     }
 
     // </alpha support>
@@ -547,7 +597,7 @@ private:
                 assert(false);
 
             const(ubyte)[] pdfData = originalEncodedData; // what content will be embeded
-            const(ubyte)[] smaskData = null; // optional smask object 
+            const(ubyte)[] smaskData = null; // optional smask object
             object_id smaskId;
             if (isPNG)
             {
@@ -592,8 +642,8 @@ private:
                     outName("BitsPerComponent"); outInteger(8);
                     outName("Length"); outInteger(cast(int)(pdfData.length));
                     outName("Filter"); outName(filter);
-                    if (smaskData) 
-                    { 
+                    if (smaskData)
+                    {
                         outName("SMask"); outReference(smaskId);
                     }
                 outEndDict();
@@ -635,9 +685,9 @@ private:
                 outName("Type"); outName("Font");
                 outName("Subtype"); outName("Type0");
                 outName("BaseFont"); outName(info.baseFont);
-                outName("DescendantFonts"); 
-                    outBeginArray(); 
-                        outReference(info.cidFontId); 
+                outName("DescendantFonts");
+                    outBeginArray();
+                        outReference(info.cidFontId);
                     outEndArray();
 
                 // TODO ToUnicode?
@@ -651,7 +701,7 @@ private:
                 outName("FontDescriptor"); outReference(info.descriptorId);
 
                 // Export text advance ("widths") of glyphs in the font
-                outName("W"); 
+                outName("W");
                     outBeginArray();
                         foreach(crange; font.charRanges())
                         {
@@ -666,9 +716,9 @@ private:
                         }
                     outEndArray();
 
-                outName("CIDToGIDMap"); outReference(info.cidToGidId);                
-                
-                outName("CIDSystemInfo"); 
+                outName("CIDToGIDMap"); outReference(info.cidToGidId);
+
+                outName("CIDSystemInfo");
                 outBeginDict();
                     outName("Registry"); outLiteralString("Adobe");
                     outName("Ordering"); outLiteralString("Identity");
@@ -1392,7 +1442,7 @@ float convertMillimetersToPoints(float x) pure
 
 static immutable string HEX = "0123456789abcdef";
 
-// Name /S80 means a stroke alpha value of 128.0 / 255.0 
+// Name /S80 means a stroke alpha value of 128.0 / 255.0
 void makeStrokeAlphaName(ubyte alpha, ref char[3] outName) pure
 {
     outName[0] = 'S';
@@ -1400,10 +1450,10 @@ void makeStrokeAlphaName(ubyte alpha, ref char[3] outName) pure
     outName[2] = HEX[alpha & 15];
 }
 
-// Name /T80 means a non-stroke alpha value of 128.0 / 255.0 
+// Name /T80 means a non-stroke alpha value of 128.0 / 255.0
 void makeNonStrokeAlphaName(ubyte alpha, ref char[3] outName) pure
 {
     outName[0] = 'T';
     outName[1] = HEX[(alpha >> 4)];
-    outName[2] = HEX[alpha & 15];    
+    outName[2] = HEX[alpha & 15];
 }

@@ -90,7 +90,7 @@ public:
     {
         endPage();
         _numberOfPage += 1;
-        beginPage();        
+        beginPage();
     }
 
     override void fillStyle(Brush brush)
@@ -103,23 +103,44 @@ public:
         _currentStroke = brush.toSVGColor();
     }
 
+    override void setLineDash(float[] segments = [])
+    {
+        if (isValidLineDashPattern(segments))
+            _dashSegments = normalizeLineDashPattern(segments);
+    }
+
+    override float[] getLineDash()
+    {
+        return _dashSegments.dup;
+    }
+
+    override @property void lineDashOffset(float offset)
+    {
+        _dashOffset = offset;
+    }
+
+    override @property float lineDashOffset()
+    {
+        return _dashOffset;
+    }
+
     override void fillRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, 
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`,
                       convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentFill));
     }
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" stroke-width="%s" fill="none"/>`, 
-                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentStroke, convertFloatToText(_currentLineWidth)));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f" fill="none"/>`,
+                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentStroke, _dashSegments, _dashOffset));
     }
 
     override TextMetrics measureText(string text)
     {
         string svgFamilyName;
         OpenTypeFont font;
-        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);    
+        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);
         OpenTypeTextMetrics otMetrics = font.measureText(text);
         TextMetrics metrics;
         metrics.width = _fontSize * otMetrics.horzAdvance * font.invUPM(); // convert to millimeters
@@ -131,7 +152,7 @@ public:
     {
         string svgFamilyName;
         OpenTypeFont font;
-        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);    
+        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);
 
         // We need a baseline offset in millimeters
         float textBaselineInGlyphUnits = font.getBaselineOffset(cast(FontBaseline)_textBaseline);
@@ -160,8 +181,8 @@ public:
                 textAnchor="middle";
         }
 
-        output(format(`<text x="%s" y="%s" font-family="%s" font-size="%s" fill="%s" text-anchor="%s">%s</text>`, 
-                      convertFloatToText(x), convertFloatToText(y + textBaselineInMm), svgFamilyName, convertFloatToText(_fontSize), _currentFill, textAnchor, text)); 
+        output(format(`<text x="%s" y="%s" font-family="%s" font-size="%s" fill="%s" text-anchor="%s">%s</text>`,
+                      convertFloatToText(x), convertFloatToText(y + textBaselineInMm), svgFamilyName, convertFloatToText(_fontSize), _currentFill, textAnchor, text));
         // TODO escape XML sequences in text
     }
 
@@ -187,12 +208,12 @@ public:
 
     override void stroke()
     {
-        output(format(`<path d="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentStroke, convertFloatToText(_currentLineWidth)));
+        output(format(`<path d="%s" stroke="%s" stroke-width="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f"/>`, _currentPath, _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
     override void fillAndStroke()
     {
-        output(format(`<path d="%s" fill="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentFill, _currentStroke, convertFloatToText(_currentLineWidth)));
+        output(format(`<path d="%s" fill="%s" stroke="%s" stroke-width="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f"/>`, _currentPath, _currentFill, _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
     override void closePath()
@@ -256,7 +277,7 @@ public:
 
     override void drawImage(Image image, float x, float y, float width, float height)
     {
-        output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, 
+        output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`,
                       image.toDataURI(), convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height)));
     }
 
@@ -280,8 +301,10 @@ private:
     float _pageHeightMm;
 
     string _currentPath;
+    float[] _dashSegments = [];
+    float _dashOffset = 0f;
 
-    string _fontFace = "Helvetica";    
+    string _fontFace = "Helvetica";
     FontWeight _fontWeight = FontWeight.normal;
     FontStyle _fontStyle = FontStyle.normal;
     float _fontSize = convertPointsToMillimeters(11.0f);
@@ -327,7 +350,7 @@ private:
     }
 
     void beginPage()
-    {        
+    {
         _stateStack ~= State(currentOpenedNestedGroups() + 1);
         output(format(`<g transform="translate(0,%s)">`, convertFloatToText(_pageHeightMm * (_numberOfPage-1))));
     }
@@ -341,7 +364,7 @@ private:
 
         endPage();
         output(`</svg>`);
-    }    
+    }
 
     string getHeader()
     {
@@ -356,7 +379,7 @@ private:
     {
         string svgFamilyName; // name used as family name in this SVG, doesn't have to be the real one
     }
-    
+
     /// Associates with each open font information about
     /// the SVG embedding of that font.
     FontSVGInfo[OpenTypeFont] _fontSVGInfos;
@@ -365,7 +388,7 @@ private:
     string getDefinitions()
     {
         string defs;
-        defs ~= 
+        defs ~=
         `<defs>` ~
             `<style type="text/css">` ~
                 "<![CDATA[\n";
@@ -378,7 +401,7 @@ private:
 
                     const(ubyte)[] fontContent = font.fileData;
                     const(char)[] base64font = Base64.encode(fontContent);
-                    defs ~= 
+                    defs ~=
                         `@font-face` ~
                         `{` ~
                             `font-family: ` ~ info.svgFamilyName ~ `;` ~
