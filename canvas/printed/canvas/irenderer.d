@@ -97,9 +97,9 @@ interface IRenderingContext2D
     /// Returns the phase offset (in the same units as the line dash pattern).
     /// Can be set, to change the phase offset. Values that are not finite
     /// values are ignored.
-    @property void lineDashOffset(float offset);
+    void lineDashOffset(float offset);
     /// ditto
-    @property float lineDashOffset();
+    float lineDashOffset();
 
     // BASIC SHAPES
 

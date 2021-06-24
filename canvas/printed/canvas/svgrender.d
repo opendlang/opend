@@ -114,12 +114,12 @@ public:
         return _dashSegments.dup;
     }
 
-    override @property void lineDashOffset(float offset)
+    override void lineDashOffset(float offset)
     {
         _dashOffset = offset;
     }
 
-    override @property float lineDashOffset()
+    override float lineDashOffset()
     {
         return _dashOffset;
     }

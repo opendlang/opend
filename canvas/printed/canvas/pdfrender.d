@@ -337,7 +337,7 @@ final class PDFDocument : IRenderingContext2D
         return _dashSegments.dup;
     }
 
-    override @property void lineDashOffset(float offset)
+    override void lineDashOffset(float offset)
     {
         if (offset != _dashOffset && -float.infinity < offset && offset < float.infinity)
         {
@@ -346,7 +346,7 @@ final class PDFDocument : IRenderingContext2D
         }
     }
 
-    override @property float lineDashOffset()
+    override float lineDashOffset()
     {
         return _dashOffset;
     }
