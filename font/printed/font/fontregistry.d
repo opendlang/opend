@@ -12,6 +12,7 @@ import std.array;
 import std.uni;
 import std.string: format;
 import std.math: abs;
+import std.typecons: Tuple;
 import standardpaths;
 
 import printed.font.opentype;
@@ -76,11 +77,27 @@ class FontRegistry
         }
     }
 
+
+    static struct FontSpec
+    {
+        string familyName;
+        OpenTypeFontWeight weight;
+        OpenTypeFontStyle style;
+    }
+
+    OpenTypeFont[FontSpec] _matchedFonts;
+
+
     /// Returns: a font which best follows the requested characteristics given.
-    OpenTypeFont findBestMatchingFont(string familyName, 
-                                      OpenTypeFontWeight weight, 
+    OpenTypeFont findBestMatchingFont(string familyName,
+                                      OpenTypeFontWeight weight,
                                       OpenTypeFontStyle style)
     {
+        auto fontSpec = FontSpec(familyName, weight, style);
+        auto matched = fontSpec in _matchedFonts;
+        if (matched !is null)
+            return *matched;
+
         KnownFont* best = null;
         float bestScore = float.infinity;
 
@@ -119,7 +136,11 @@ class FontRegistry
         if (best is null)
             throw new Exception(format("No matching font found for '%s'.", familyName));
 
-        return best.getParsedFont();
+        auto matchedFont = best.getParsedFont();
+
+        _matchedFonts[fontSpec] = matchedFont;
+
+        return matchedFont;
     }
 
     auto knownFonts() @property const { return _knownFonts; }
