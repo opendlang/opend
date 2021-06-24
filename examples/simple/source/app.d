@@ -27,6 +27,11 @@ void main(string[] args)
             lineTo(100, 250);
             stroke();
 
+            // Draw a blue rect
+            lineWidth(2);
+            strokeStyle = brush("lightblue");
+            strokeRect(50, 50, 40, 40);
+
             // Draw a 50% transparent green triangle
             fillStyle = brush("rgba(0, 255, 0, 0.5)");
             beginPath(80, 170);
