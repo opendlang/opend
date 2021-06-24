@@ -307,6 +307,9 @@ struct TextMetrics
 }
 
 
+package:
+
+
 /// Validate line dash pattern. A dash pattern is valid if all values are
 /// finite and non-negative.
 bool isValidLineDashPattern(float[] segments)
