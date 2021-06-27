@@ -150,6 +150,11 @@ struct IonNull
     {
         serializer.putNull(code);
     }
+
+    string toString() @safe pure nothrow @nogc const
+    {
+        return code.nullStringOf;
+    }
 }
 
 /++

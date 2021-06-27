@@ -97,3 +97,64 @@ enum IonTypeCode
     +/
     annotations,
 }
+
+/++
+Returns: text Ion representation of null type code.
++/
+string nullStringOf()(IonTypeCode code) @safe pure nothrow @nogc
+{
+    final switch(code)
+    {
+        case IonTypeCode.null_:
+            return "null";
+        case IonTypeCode.bool_:
+            return "null.bool";
+        case IonTypeCode.uInt:
+        case IonTypeCode.nInt:
+            return "null.int";
+        case IonTypeCode.float_:
+            return "null.float";
+        case IonTypeCode.decimal:
+            return "null.decimal";
+        case IonTypeCode.timestamp:
+            return "null.timestamp";
+        case IonTypeCode.symbol:
+            return "null.symbol";
+        case IonTypeCode.string:
+            return "null.string";
+        case IonTypeCode.clob:
+            return "null.clob";
+        case IonTypeCode.blob:
+            return "null.blob";
+        case IonTypeCode.list:
+            return "null.list";
+        case IonTypeCode.sexp:
+            return "null.sexp";
+        case IonTypeCode.struct_:
+            return "null.struct";
+        case IonTypeCode.annotations:
+            return "null.annotations"; // invalid
+    }
+}
+
+/++
+Returns: JSON representation of null value that can be deserialized to an algebraic types.
+Empty strings, structs, and lists are used instead of `null` value for the corresponding codes.
++/
+string nullStringJsonAlternative()(IonTypeCode code) @safe pure nothrow @nogc
+{
+    switch(code)
+    {
+        case IonTypeCode.symbol:
+        case IonTypeCode.string:
+        case IonTypeCode.clob:
+            return `""`;
+        case IonTypeCode.list:
+        case IonTypeCode.sexp:
+            return `[]`;
+        case IonTypeCode.struct_:
+            return `{}`;
+        default:
+            return `null`;
+    }
+}

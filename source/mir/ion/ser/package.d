@@ -173,7 +173,7 @@ unittest
     assert(serializeJson(ar) == `[1,2]`);
     assert(serializeJson(ar[]) == `[1,2]`);
     assert(serializeJson(ar[0 .. 0]) == `[]`);
-    assert(serializeJson((uint[]).init) == `null`);
+    assert(serializeJson((uint[]).init) == `[]`);
 }
 
 /// String-value associative array serialization
@@ -201,7 +201,7 @@ unittest
     assert(serializeJson(ar) == `{"a":1}`);
     ar.remove("a");
     assert(serializeJson(ar) == `{}`);
-    assert(serializeJson((uint[string]).init) == `null`);
+    assert(serializeJson((uint[string]).init) == `{}`);
 }
 
 /// Enumeration-value associative array serialization
@@ -231,7 +231,7 @@ unittest
     assert(serializeJson(ar) == `{"a":1}`);
     ar.remove(E.a);
     assert(serializeJson(ar) == `{}`);
-    assert(serializeJson((uint[string]).init) == `null`);
+    assert(serializeJson((uint[string]).init) == `{}`);
 }
 
 /// integral typed value associative array serialization
@@ -264,7 +264,7 @@ unittest
     assert(serializeJson(ar) == `{"256":1}`);
     ar.remove(256);
     assert(serializeJson(ar) == `{}`);
-    assert(serializeJson((uint[string]).init) == `null`);
+    assert(serializeJson((uint[string]).init) == `{}`);
     // assert(deserializeJson!(uint[short])(`{"256":1}`) == cast(uint[short]) [256 : 1]);
 }
 
@@ -381,13 +381,28 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                 if (__traits(getMember, value, member) == __traits(getMember, V.init, member))
                     continue;
             }
-            
+
             static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreOutIf))
             {
                 alias pred = serdeGetIgnoreOutIf!(__traits(getMember, value, member));
                 if (pred(__traits(getMember, value, member)))
                     continue;
             }
+
+            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+            {
+                alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
+                if (pred(value))
+                    continue;
+            }
+
+            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreOutIfAggregate))
+            {
+                alias pred = serdeGetIgnoreOutIfAggregate!(__traits(getMember, value, member));
+                if (pred(value))
+                    continue;
+            }
+
             static if(hasUDA!(__traits(getMember, value, member), serdeTransformOut))
             {
                 alias f = serdeGetTransformOut!(__traits(getMember, value, member));
@@ -629,7 +644,7 @@ unittest
     }
 
     T t;
-    assert(t.serializeJson == `{"str":null,"nested":null}`, t.serializeJson);
+    assert(t.serializeJson == `{"str":"","nested":{}}`);
     t.str = "txt";
     t.nested = Nested(123);
     assert(t.serializeJson == `{"str":"txt","nested":{"f":123.0}}`);

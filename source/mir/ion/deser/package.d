@@ -770,6 +770,27 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                         {
                                         case findKey(symbolTable, key):
                                         }
+
+                                            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                            {
+                                                alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
+                                                if (pred(value))
+                                                {
+                                                    __traits(getMember, requiredFlags, member) = true;
+                                                    goto default;
+                                                }
+                                            }
+
+                                            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                            {
+                                                alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
+                                                if (pred(value))
+                                                {
+                                                    __traits(getMember, requiredFlags, member) = true;
+                                                    goto default;
+                                                }
+                                            }
+
                                             if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
                                                 return mexp;
                                             break;
@@ -779,8 +800,26 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                             }
 
                             static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
-                                if (!__traits(getMember, requiredFlags, member))
-                                    return unqualException(exc!(T, member));
+                            {
+                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                {
+                                    alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
+                                    if (!__traits(getMember, requiredFlags, member) && !pred(value))
+                                        return unqualException(exc!(T, member));
+                                }
+                                else
+                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                {
+                                    alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
+                                    if (!__traits(getMember, requiredFlags, member) && !pred(value))
+                                        return unqualException(exc!(T, member));
+                                }
+                                else
+                                {
+                                    if (!__traits(getMember, requiredFlags, member))
+                                        return unqualException(exc!(T, member));
+                                }
+                            }
                         }}
                     }
                     else
@@ -803,6 +842,27 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                                         {
                                 case findKey(symbolTable, key):
                                         }
+                                    static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                    {
+                                        alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
+                                        if (pred(value))
+                                        {
+                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                                __traits(getMember, requiredFlags, member) = true;
+                                            goto default;
+                                        }
+                                    }
+                                    static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                    {
+                                        alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
+                                        if (pred(value))
+                                        {
+                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                                __traits(getMember, requiredFlags, member) = true;
+                                            goto default;
+                                        }
+                                    }
+
                                     if (auto mexp = impl!member(elem, tableParams, value, requiredFlags))
                                         return mexp;
                                     break S;
@@ -819,8 +879,26 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
 
                         static foreach (member; __traits(allMembers, SerdeFlags!T))
                             static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
-                                if (!__traits(getMember, requiredFlags, member))
-                                    return unqualException(exc!(T, member));
+                            {
+                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                {
+                                    alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
+                                    if (!__traits(getMember, requiredFlags, member) && !pred(value))
+                                        return unqualException(exc!(T, member));
+                                }
+                                else
+                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                {
+                                    alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
+                                    if (!__traits(getMember, requiredFlags, member) && !pred(value))
+                                        return unqualException(exc!(T, member));
+                                }
+                                else
+                                {
+                                    if (!__traits(getMember, requiredFlags, member))
+                                        return unqualException(exc!(T, member));
+                                }
+                            }
                     }
                 }
 
@@ -1135,4 +1213,100 @@ unittest
     import mir.ion.deser.json: deserializeJson;
     auto s = `{"a":[1, 2, 3]}`.deserializeJson!S;
     assert(s.set);
+}
+
+///
+@safe pure //@nogc
+unittest
+{
+    enum Kind { request, cancel }
+
+    @serdeOrderedIn
+    static struct S
+    {
+        Kind kind;
+
+        @serdeIgnoreInIfAggregate!((ref a) => a.kind == Kind.cancel)
+        @serdeIgnoreOutIfAggregate!((ref a) => a.kind == Kind.cancel)
+        int number;
+    }
+
+    import mir.ion.deser.json: deserializeJson;
+    import mir.ion.ser.json: serializeJson;
+    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
+    assert(`{"kind":"request", "number":3}`.deserializeJson!S.number == 3);
+    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
+    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
+}
+
+///
+@safe pure //@nogc
+unittest
+{
+    enum Kind { request, cancel }
+
+    @serdeRealOrderedIn
+    static struct S
+    {
+        Kind kind;
+
+        @serdeIgnoreInIfAggregate!((ref a) => a.kind == Kind.cancel)
+        @serdeIgnoreOutIfAggregate!((ref a) => a.kind == Kind.cancel)
+        int number;
+    }
+
+    import mir.ion.deser.json: deserializeJson;
+    import mir.ion.ser.json: serializeJson;
+    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
+    assert(`{"kind":"cancel","number":3}`.deserializeJson!S.number == 0); // ignores number
+    assert(`{"kind":"request","number":3}`.deserializeJson!S.number == 3);
+    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
+    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
+}
+
+///
+@safe pure //@nogc
+unittest
+{
+    enum Kind { request, cancel }
+
+    @serdeOrderedIn
+    static struct S
+    {
+        Kind kind;
+
+        @serdeIgnoreIfAggregate!((ref a) => a.kind == Kind.cancel)
+        int number;
+    }
+
+    import mir.ion.deser.json: deserializeJson;
+    import mir.ion.ser.json: serializeJson;
+    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
+    assert(`{"kind":"request", "number":3}`.deserializeJson!S.number == 3);
+    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
+    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
+}
+
+///
+@safe pure //@nogc
+unittest
+{
+    enum Kind { request, cancel }
+
+    @serdeRealOrderedIn
+    static struct S
+    {
+        Kind kind;
+
+        @serdeIgnoreIfAggregate!((ref a) => a.kind == Kind.cancel)
+        int number;
+    }
+
+    import mir.ion.deser.json: deserializeJson;
+    import mir.ion.ser.json: serializeJson;
+    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
+    assert(`{"kind":"cancel","number":3}`.deserializeJson!S.number == 0); // ignores number
+    assert(`{"kind":"request","number":3}`.deserializeJson!S.number == 3);
+    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
+    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
 }

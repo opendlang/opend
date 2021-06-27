@@ -406,7 +406,7 @@ unittest
     }
     assert(D.init.serializeJson == `{"s":{}}`);
     assert(D(S(A("Berry"))).serializeJson == `{"s":{"a":{"str":"Berry","i":1}}}`);
-    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":null,"i":0}}}`);
+    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":"","i":0}}}`);
     
     static struct F
     {
@@ -758,6 +758,15 @@ unittest
     object = object["this"].get!(StringMap!MyJsonAlgebraic);
     assert(object["c"].get!string == "str");
     assert(object["d"].get!(double[]) == [1.0, 2, 3, 4]);
+}
+
+///
+unittest
+{
+    import mir.algebraic_alias.json;
+    import mir.ion.ser.json: serializeJson;
+    auto value = [JsonAlgebraic[].init.JsonAlgebraic, StringMap!JsonAlgebraic.init.JsonAlgebraic, string.init.JsonAlgebraic];
+    assert(value.serializeJson == `[[],{},""]`, value.serializeJson);
 }
 
 /// Date serialization

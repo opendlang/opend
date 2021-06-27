@@ -283,7 +283,7 @@ struct JsonSerializer(string sep, Appender)
     /// ditto 
     void putNull(IonTypeCode code)
     {
-        putValue(null);
+        appender.put(code.nullStringJsonAlternative);
     }
 
     ///
@@ -418,7 +418,7 @@ unittest
     }
     assert(D.init.serializeJson == `{"s":{}}`);
     assert(D(S(A("Berry"))).serializeJson == `{"s":{"a":{"str":"Berry","i":1}}}`);
-    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":null,"i":0}}}`);
+    assert(D(S(A(null, 0))).serializeJson == `{"s":{"a":{"str":"","i":0}}}`);
     
     static struct F
     {

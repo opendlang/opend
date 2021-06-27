@@ -407,53 +407,7 @@ struct TextSerializer(string sep, Appender)
     /// ditto 
     void putNull(IonTypeCode code)
     {
-        string str;
-        final switch(code)
-        {
-            case IonTypeCode.null_:
-                str = "null";
-                break;
-            case IonTypeCode.bool_:
-                str = "null.bool";
-                break;
-            case IonTypeCode.uInt:
-            case IonTypeCode.nInt:
-                str = "null.int";
-                break;
-            case IonTypeCode.float_:
-                str = "null.float";
-                break;
-            case IonTypeCode.decimal:
-                str = "null.decimal";
-                break;
-            case IonTypeCode.timestamp:
-                str = "null.timestamp";
-                break;
-            case IonTypeCode.symbol:
-                str = "null.symbol";
-                break;
-            case IonTypeCode.string:
-                str = "null.string";
-                break;
-            case IonTypeCode.clob:
-                str = "null.clob";
-                break;
-            case IonTypeCode.blob:
-                str = "null.blob";
-                break;
-            case IonTypeCode.list:
-                str = "null.list";
-                break;
-            case IonTypeCode.sexp:
-                str = "null.sexp";
-                break;
-            case IonTypeCode.struct_:
-                str = "null.struct";
-                break;
-            case IonTypeCode.annotations:
-                assert(0, "Mir ion internal error: null annotation wrappers are illegal.");
-        }
-        appender.put(str);
+        appender.put(code.nullStringOf);
     }
 
     ///
