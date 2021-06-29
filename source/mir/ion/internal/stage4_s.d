@@ -118,9 +118,9 @@ version(mir_ion_test) unittest
 
         enum nMax = 128u;
 
-        IonSymbolTable!false table;
+        IonSymbolTable!false table = void;
         table.initialize;
-        IonTapeHolder!(nMax * 4) tapeHolder;
+        IonTapeHolder!(nMax * 4) tapeHolder = void;
         tapeHolder.initialize;
 
         auto errorInfo = singleThreadJsonText!nMax(table, tapeHolder, text);

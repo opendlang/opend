@@ -1184,7 +1184,7 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t ionPut()(scope ubyte* ptr, const(char)[] value)
+size_t ionPut()(scope ubyte* ptr, scope const(char)[] value)
 {
     size_t ret = 1;
     if (value.length < 0xE)

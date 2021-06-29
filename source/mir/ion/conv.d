@@ -18,10 +18,10 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
     enum nMax = 4096u;
 
     alias TapeHolder = IonTapeHolder!(nMax * 8);
-    TapeHolder tapeHolder;
+    TapeHolder tapeHolder = void;
     tapeHolder.initialize;
 
-    IonSymbolTable!false table;
+    IonSymbolTable!false table = void;
     table.initialize;
     auto error = singleThreadJsonText!nMax(table, tapeHolder, text);
     if (error.code)

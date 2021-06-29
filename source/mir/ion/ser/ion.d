@@ -11,7 +11,7 @@ public import mir.serde;
 /++
 Ion serialization back-end
 +/
-struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
+struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC = true)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
@@ -43,7 +43,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable)
     } ();
 
     TapeHolder* tapeHolder;
-    IonSymbolTable!true* runtimeTable;
+    IonSymbolTable!tableGC* runtimeTable;
 
 @trusted:
 
@@ -253,18 +253,28 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    IonTapeHolder!(nMax * 8) tapeHolder;
-    tapeHolder.initialize;
-    IonSymbolTable!true table;
-    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys)(
-        ()@trusted { return &tapeHolder; }(),
-        ()@trusted { return &table; }()
-    );
-    serializeValue(serializer, value);
-
-    static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
+    if (false)
+    {
+        IonTapeHolder!(nMax * 8) tapeHolder;
+        tapeHolder.initialize;
+        IonSymbolTable!true table;
+        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
+            ()@trusted { return &tapeHolder; }(),
+            ()@trusted { return &table; }()
+        );
+        serializeValue(serializer, value);
+    }
 
     immutable(ubyte)[] ret () @trusted {
+
+        IonTapeHolder!(nMax * 8) tapeHolder = void;
+        tapeHolder.initialize;
+        IonSymbolTable!true table;
+        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table);
+        serializeValue(serializer, value);
+
+        static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
+
         // use runtime table
         if (_expect(table.initialized, false))
         {
