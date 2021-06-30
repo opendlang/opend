@@ -99,6 +99,28 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
+    size_t stringBegin()
+    {
+        appender.put('\"');
+        return 0;
+    }
+
+    /++
+    Puts string part. The implementation allows to split string unicode points.
+    +/
+    void putStringPart(scope const(char)[] value)
+    {
+        import mir.format: printEscaped, EscapeFormat;
+        printEscaped!(char, EscapeFormat.json)(appender, value);
+    }
+
+    ///
+    void stringEnd(size_t)
+    {
+        appender.put('\"');
+    }
+
+    ///
     size_t structBegin()
     {
         static if(sep.length)
@@ -295,11 +317,9 @@ struct JsonSerializer(string sep, Appender)
     ///
     void putValue(scope const char[] value)
     {
-        import mir.format: printEscaped, EscapeFormat;
-
-        appender.put('\"');
-        printEscaped!(char, EscapeFormat.json)(appender, value);
-        appender.put('\"');
+        auto state = stringBegin;
+        putStringPart(value);
+        stringEnd(state);
     }
 
     ///

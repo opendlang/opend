@@ -896,3 +896,46 @@ unittest
     assert(value.index == 0.9962125);
     assert(value.data == 0.0001);
 }
+
+///
+unittest
+{
+    static class MyHugeRESTString
+    {
+        string s;
+
+        this(string s)  @safe pure nothrow @nogc
+        {
+            this.s = s;
+        }
+
+        void serialize(S)(ref S serializer) const
+        {
+            auto state = serializer.stringBegin;
+            // putStringPart is usefull in the loop and with buffers
+            serializer.putStringPart(s);
+            serializer.putStringPart(" Another chunk.");
+            serializer.stringEnd(state);
+        }
+    }
+
+    import mir.algebraic: Nullable, This;
+    import mir.string_map;
+
+    // Your JSON DOM Type
+    alias Json = Nullable!(bool, long, double, string, MyHugeRESTString, StringMap!This, This[]);
+
+    /// ordered
+    StringMap!Json response;
+    response["type"] = Json("response");
+    response["data"] = Json(new MyHugeRESTString("First chunk."));
+
+    import mir.ion.conv: ion2text;
+    import mir.ion.ser.ion;
+    import mir.ion.ser.json;
+    import mir.ion.ser.text;
+
+    assert(response.serializeJson == `{"type":"response","data":"First chunk. Another chunk."}`);
+    assert(response.serializeText == `{type:"response",data:"First chunk. Another chunk."}`);
+    assert(response.serializeIon.ion2text == `{type:"response",data:"First chunk. Another chunk."}`);
+}

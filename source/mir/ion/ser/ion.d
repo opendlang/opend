@@ -80,6 +80,25 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
+    alias stringBegin = structBegin;
+
+    /++
+    Puts string part. The implementation allows to split string unicode points.
+    +/
+    void putStringPart(scope const(char)[] str)
+    {
+        tapeHolder.reserve(str.length);
+        (tapeHolder.data.ptr + tapeHolder.currentTapePosition)[0 .. str.length] = cast(const(ubyte)[])str;
+        tapeHolder.currentTapePosition += str.length;
+    }
+
+    ///
+    void stringEnd(size_t state)
+    {
+        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.string, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+    }
+
+    ///
     size_t annotationsBegin()
     {
         auto ret = tapeHolder.currentTapePosition;

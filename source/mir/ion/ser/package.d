@@ -483,6 +483,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isSomeStruct!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
+    import mir.string_map: isStringMap;
     import mir.algebraic: Algebraic;
 
     static if(is(V == class) || is(V == interface))
@@ -498,6 +499,18 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     {
         serializer.putValue(value);
         return;
+    }
+    else
+    static if (isStringMap!V)
+    {
+        auto state = serializer.structBegin;
+        auto keys = value.keys;
+        foreach (i, ref v; value.values)
+        {
+            serializer.putKey(keys[i]);
+            .serializeValue(serializer, v);
+        }
+        serializer.structEnd(state);
     }
     else
     static if (hasUDA!(V, serdeProxy))
