@@ -393,7 +393,7 @@ template getUDA(alias symbol, alias attribute)
 {
     private alias all = getUDAs!(symbol, attribute);
     static if (all.length != 1)
-        static assert(0, "Exactly one " ~ attribute.stringof ~ " attribute is required");
+        static assert(0, "Exactly one " ~ attribute.stringof ~ " attribute is required, " ~ "got " ~ all.length.stringof);
     else
     {
         static if (is(typeof(all[0])))
