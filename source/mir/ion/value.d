@@ -1782,6 +1782,14 @@ const:
         }
         serializer.listEnd(state);
     }
+
+    ///
+    size_t walkLength() const @property @safe pure @nogc {
+        size_t length;
+        foreach (IonDescribedValue value; this)
+            length++;
+        return length;
+    }
 }
 
 ///
@@ -1970,6 +1978,14 @@ const:
                 value.serializeDummy(serializer);
         }
         serializer.sexpEnd(state);
+    }
+
+    ///
+    size_t walkLength() const @property @safe pure @nogc {
+        size_t length;
+        foreach (IonDescribedValue value; this)
+            length++;
+        return length;
     }
 }
 
@@ -2219,6 +2235,14 @@ const:
     IonStructWithSymbols withSymbols(return scope const(char[])[] symbolTable) return
     {
         return IonStructWithSymbols(this, symbolTable);
+    }
+
+    ///
+    size_t walkLength() const @property @safe pure @nogc {
+        size_t length;
+        foreach (size_t symbolID, IonDescribedValue value; this)
+            length++;
+        return length;
     }
 }
 
