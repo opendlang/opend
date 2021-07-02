@@ -645,11 +645,13 @@ struct Algebraic(_Types...)
 {
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
-    import std.meta: AliasSeq, anySatisfy, allSatisfy, staticMap, templateOr;
+    import mir.reflection: isPublic, hasField, isProperty;
+    import std.meta: Filter, AliasSeq, ApplyRight, anySatisfy, allSatisfy, staticMap, templateOr, templateNot;
     import std.traits:
         hasElaborateAssign,
         hasElaborateCopyConstructor,
         hasElaborateDestructor,
+        hasMember,
         isEqualityComparable,
         isOrderingComparable,
         Largest,
@@ -1440,38 +1442,33 @@ struct Algebraic(_Types...)
     alias get(Kind kind) = get!(AllowedTypes[kind]);
 
     private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
+
     static if (_ReflectionTypes.length)
-    static if (allSatisfy!(isSimpleAggregateType, _ReflectionTypes))
+    this(this This, Args...)(auto ref Args args)
+        if (Args.length && (Args.length > 1 || !isVariant!(Args[0])))
     {
-        import mir.reflection: isPublic, hasField, isProperty;
-        import std.meta: ApplyRight, Filter, templateNot, templateOr;
-        import std.traits: hasMember;
+        import std.traits: CopyTypeQualifiers;
+        import core.lifetime: forward;
 
-        this(this This, Args...)(auto ref Args args)
-            if (Args.length && (Args.length > 1 || !isVariant!(Args[0])))
+        template CanCompile(T)
         {
-            import std.traits: CopyTypeQualifiers;
-            import core.lifetime: forward;
-
-            template CanCompile(T)
-            {
-                alias Q = CopyTypeQualifiers!(This, T);
-                enum CanCompile =
-                    (is(Q == class) && __traits(compiles, new Q(forward!args))) ||
-                    ((is(Q == struct) || is(Q == union)) && __traits(compiles, Q(forward!args)));
-            }
-
-            alias TargetType = Filter!(CanCompile, _ReflectionTypes);
-            static if (TargetType.length == 0)
-                static assert(0, typeof(this).stringof ~ ".this: no types can be constructed with arguments " ~ Args.stringof);
-            static assert(TargetType.length == 1, typeof(this).stringof ~ ".this: multiple types " ~ TargetType.stringof ~ " can be constructed with arguments " ~ Args.stringof);
-            alias TT = TargetType[0];
-            static if (is(TT == struct) || is(TT == union))
-                this(CopyTypeQualifiers!(This, TT)(forward!args));
-            else
-                this(new CopyTypeQualifiers!(This, TT)(forward!args));
+            alias Q = CopyTypeQualifiers!(This, T);
+            enum CanCompile = __traits(compiles, new Q(forward!args));
         }
 
+        alias TargetType = Filter!(CanCompile, _ReflectionTypes);
+        static if (TargetType.length == 0)
+            static assert(0, typeof(this).stringof ~ ".this: no types can be constructed with arguments " ~ Args.stringof);
+        static assert(TargetType.length == 1, typeof(this).stringof ~ ".this: multiple types " ~ TargetType.stringof ~ " can be constructed with arguments " ~ Args.stringof);
+        alias TT = TargetType[0];
+        static if (is(TT == struct) || is(TT == union))
+            this(CopyTypeQualifiers!(This, TT)(forward!args));
+        else
+            this(new CopyTypeQualifiers!(This, TT)(forward!args));
+    }
+
+    static if (_ReflectionTypes.length && allSatisfy!(isSimpleAggregateType, _ReflectionTypes))
+    {
         static foreach (member; AllMembersRec!(_ReflectionTypes[0]))
         static if (
             member != "_ID_" &&
@@ -2883,7 +2880,7 @@ version(mir_core_test) unittest
     static assert(is(TypeSet!(byte, immutable PODWithLongPointer) == AliasSeq!(byte, immutable PODWithLongPointer)));
 }
 
-private enum isSimpleAggregateType(T) =  is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
+private enum isSimpleAggregateType(T) = is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
 
 unittest
 {
