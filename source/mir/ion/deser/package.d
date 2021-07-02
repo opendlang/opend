@@ -550,7 +550,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
                         static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
                         ArrayTypes[0] array;
-                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, array))
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, array))
                             return exception;
                         import core.lifetime: move;
                         value = move(array);
@@ -1221,30 +1221,6 @@ unittest
 {
     enum Kind { request, cancel }
 
-    @serdeOrderedIn
-    static struct S
-    {
-        Kind kind;
-
-        @serdeIgnoreInIfAggregate!((ref a) => a.kind == Kind.cancel)
-        @serdeIgnoreOutIfAggregate!((ref a) => a.kind == Kind.cancel)
-        int number;
-    }
-
-    import mir.ion.deser.json: deserializeJson;
-    import mir.ion.ser.json: serializeJson;
-    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
-    assert(`{"kind":"request", "number":3}`.deserializeJson!S.number == 3);
-    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
-    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
-}
-
-///
-@safe pure //@nogc
-unittest
-{
-    enum Kind { request, cancel }
-
     @serdeRealOrderedIn
     static struct S
     {
@@ -1257,32 +1233,10 @@ unittest
 
     import mir.ion.deser.json: deserializeJson;
     import mir.ion.ser.json: serializeJson;
-    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
-    assert(`{"kind":"cancel","number":3}`.deserializeJson!S.number == 0); // ignores number
+    assert(`{"number":3, "kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
+    assert(`{"number":3, "kind":"cancel"}`.deserializeJson!S.number == 0);
+    assert(`{"number":3, "kind":"request"}`.deserializeJson!S.number == 3);
     assert(`{"kind":"request","number":3}`.deserializeJson!S.number == 3);
-    assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
-    assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
-}
-
-///
-@safe pure //@nogc
-unittest
-{
-    enum Kind { request, cancel }
-
-    @serdeOrderedIn
-    static struct S
-    {
-        Kind kind;
-
-        @serdeIgnoreIfAggregate!((ref a) => a.kind == Kind.cancel)
-        int number;
-    }
-
-    import mir.ion.deser.json: deserializeJson;
-    import mir.ion.ser.json: serializeJson;
-    assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
-    assert(`{"kind":"request", "number":3}`.deserializeJson!S.number == 3);
     assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
     assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
 }
