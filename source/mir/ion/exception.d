@@ -3,7 +3,10 @@ Mir Ion error codes, messages, and exceptions.
 +/
 module mir.ion.exception;
 
+import mir.array.allocation: array;
+import mir.ndslice.topology: map;
 import mir.serde: SerdeException;
+import std.traits: EnumMembers;
 
 /++
 Ion Error Codes
@@ -270,6 +273,11 @@ class IonParserMirException : IonMirException
     }
 }
 
+private static immutable IonException[] exceptionsArray =
+    [EnumMembers!IonErrorCode]
+    .map!(code => code ? new IonException("IonException: " ~ code.ionErrorMsg) : null)
+    .array;
+
 /++
 Params:
     code = $(LREF IonErrorCode)
@@ -279,15 +287,7 @@ Returns:
 IonException ionException()(IonErrorCode code) @property
 @trusted pure nothrow @nogc
 {
-    import mir.array.allocation: array;
-    import mir.ndslice.topology: map;
-    import std.traits: EnumMembers;
-
-    static immutable IonException[] exceptions =
-        [EnumMembers!IonErrorCode]
-        .map!(code => code ? new IonException("IonException: " ~ code.ionErrorMsg) : null)
-        .array;
-    return cast(IonException) exceptions[code - IonErrorCode.min];
+    return cast(IonException) exceptionsArray[code - IonErrorCode.min];
 }
 
 ///
