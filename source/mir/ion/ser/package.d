@@ -130,13 +130,21 @@ void serializeValue(S, T)(ref S serializer, T[] value)
 }
 
 /// Input range serialization
-void serializeValue(S, R)(ref S serializer, R value)
-    if (isIterable!R &&
-        !isSomeChar!(ForeachType!R) &&
-        !isDynamicArray!R &&
-        !isNullable!R)
+void serializeValue(S, V)(ref S serializer, V value)
+    if (isIterable!V &&
+        !isSomeChar!(ForeachType!V) &&
+        !isDynamicArray!V &&
+        !isNullable!V)
 {
-    auto state = serializer.listBegin();
+    static if(is(V == interface) || is(V == class) || is(V : E[], E) && !is(V : D[N], D, size_t N))
+    {
+        if (value is null)
+        {
+            serializer.putNull(nullTypeCodeOf!V);
+            continue;
+        }
+    }
+    auto state = serializer.beginList(value);
     foreach (ref elem; value)
     {
         serializer.elemBegin;
@@ -184,7 +192,7 @@ void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
         serializer.putNull(IonTypeCode.struct_);
         return;
     }
-    auto state = serializer.structBegin();
+    auto state = serializer.beginStruct(value);
     foreach (key, ref val; value)
     {
         serializer.putKey(key);
@@ -213,7 +221,7 @@ void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
         serializer.putNull(IonTypeCode.struct_);
         return;
     }
-    auto state = serializer.structBegin();
+    auto state = serializer.beginStruct(value);
     foreach (key, ref val; value)
     {
         serializer.putKey(serdeGetKeyOut(key));
@@ -243,7 +251,7 @@ void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
         serializer.putNull(IonTypeCode.struct_);
         return;
     }
-    auto state = serializer.structBegin();
+    auto state = serializer.beginStruct(value);
     foreach (key, ref val; value)
     {
         import mir.format: print;
@@ -368,7 +376,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
     if (isSomeStruct!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
     import mir.algebraic;
-    auto state = serializer.structBegin();
+    auto state = serializer.structBegin(size_t.max);
 
     foreach(member; aliasSeqOf!(SerializableMembers!V))
     {{
@@ -503,7 +511,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     else
     static if (isStringMap!V)
     {
-        auto state = serializer.structBegin;
+        auto state = serializer.beginStruct(value);
         auto keys = value.keys;
         foreach (i, ref v; value.values)
         {
@@ -747,5 +755,51 @@ unittest
         assert(binary.ion2text == text);
         import mir.ion.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S2.serializeText == text);
+    }
+}
+
+
+/++
++/
+auto beginList(S, V)(ref S serializer, ref V value)
+{
+    static if (__traits(compiles, serializer.listBegin))
+    {
+        return serializer.listBegin;
+    }
+    else
+    {
+        import mir.primitives: walkLength;
+        return serializer.listBegin(value.walkLength);
+    }
+}
+
+/++
++/
+auto beginSexp(S, V)(ref S serializer, ref V value)
+{
+    static if (__traits(compiles, serializer.sexpBegin))
+    {
+        return serializer.sexpBegin;
+    }
+    else
+    {
+        import mir.primitives: walkLength;
+        return serializer.sexpBegin(value.walkLength);
+    }
+}
+
+/++
++/
+auto beginStruct(S, V)(ref S serializer, ref V value)
+{
+    static if (__traits(compiles, serializer.structBegin))
+    {
+        return serializer.structBegin;
+    }
+    else
+    {
+        import mir.primitives: walkLength;
+        return serializer.structBegin(value.walkLength);
     }
 }

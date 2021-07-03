@@ -1772,7 +1772,8 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        auto state = serializer.listBegin;
+        import mir.ion.ser: beginList;
+        auto state = serializer.beginList(this);
         foreach (value; this)
         {
             serializer.elemBegin;
@@ -1969,7 +1970,8 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        auto state = serializer.sexpBegin;
+        import mir.ion.ser: beginSexp;
+        auto state = serializer.beginSexp(this);
         foreach (value; this)
         {
             serializer.sexpElemBegin;
@@ -2219,7 +2221,8 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        auto state = serializer.structBegin;
+        import mir.ion.ser: beginStruct;
+        auto state = serializer.beginStruct(this);
         foreach (symbolID, value; this)
         {
             serializer.putKeyId(symbolID);
