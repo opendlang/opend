@@ -7,7 +7,10 @@ UTF strings behaves like common arrays in Mir.
 `std.uni.byCodePoint` can be used to create a range of characters.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors:   Ilya Yaroshenko
+Authors: Ilya Yaroshenko, $(HTTP erdani.com, Andrei Alexandrescu), David Simcha, and
+         $(HTTP jmdavisprog.com, Jonathan M Davis). Credit for some of the ideas
+         in building this module goes to
+         $(HTTP fantascienza.net/leonardo/so/, Leonardo Maffi)
 +/
 module mir.primitives;
 
@@ -355,3 +358,131 @@ version(mir_core_test) unittest
     auto a = [1, 2];
     assert(a is a.save);
 }
+
+/**
+Returns `true` if `R` is an input range. An input range must
+define the primitives `empty`, `popFront`, and `front`. The
+following code should compile for any input range.
+----
+R r;              // can define a range object
+if (r.empty) {}   // can test for empty
+r.popFront();     // can invoke popFront()
+auto h = r.front; // can get the front of the range of non-void type
+----
+The following are rules of input ranges are assumed to hold true in all
+Phobos code. These rules are not checkable at compile-time, so not conforming
+to these rules when writing ranges or range based code will result in
+undefined behavior.
+$(UL
+    $(LI `r.empty` returns `false` if and only if there is more data
+    available in the range.)
+    $(LI `r.empty` evaluated multiple times, without calling
+    `r.popFront`, or otherwise mutating the range object or the
+    underlying data, yields the same result for every evaluation.)
+    $(LI `r.front` returns the current element in the range.
+    It may return by value or by reference.)
+    $(LI `r.front` can be legally evaluated if and only if evaluating
+    `r.empty` has, or would have, equaled `false`.)
+    $(LI `r.front` evaluated multiple times, without calling
+    `r.popFront`, or otherwise mutating the range object or the
+    underlying data, yields the same result for every evaluation.)
+    $(LI `r.popFront` advances to the next element in the range.)
+    $(LI `r.popFront` can be called if and only if evaluating `r.empty`
+    has, or would have, equaled `false`.)
+)
+Also, note that Phobos code assumes that the primitives `r.front` and
+`r.empty` are $(BIGOH 1) time complexity wise or "cheap" in terms of
+running time. $(BIGOH) statements in the documentation of range functions
+are made with this assumption.
+Params:
+    R = type to be tested
+Returns:
+    `true` if R is an input range, `false` if not
+ */
+enum bool isInputRange(R) =
+    is(typeof(R.init) == R)
+    && is(ReturnType!((R r) => r.empty) == bool)
+    && is(typeof((return ref R r) => r.front))
+    && !is(ReturnType!((R r) => r.front) == void)
+    && is(typeof((R r) => r.popFront));
+
+/**
+Returns `true` if `R` is an infinite input range. An
+infinite input range is an input range that has a statically-defined
+enumerated member called `empty` that is always `false`,
+for example:
+----
+struct MyInfiniteRange
+{
+    enum bool empty = false;
+    ...
+}
+----
+ */
+
+template isInfinite(R)
+{
+    static if (isInputRange!R && __traits(compiles, { enum e = R.empty; }))
+        enum bool isInfinite = !R.empty;
+    else
+        enum bool isInfinite = false;
+}
+
+
+/**
+The element type of `R`. `R` does not have to be a range. The
+element type is determined as the type yielded by `r.front` for an
+object `r` of type `R`. For example, `ElementType!(T[])` is
+`T` if `T[]` isn't a narrow string; if it is, the element type is
+`dchar`. If `R` doesn't have `front`, `ElementType!R` is
+`void`.
+ */
+template ElementType(R)
+{
+    static if (is(typeof(R.init.front.init) T))
+        alias ElementType = T;
+    else
+        alias ElementType = void;
+}
+
+/++
+This is a best-effort implementation of `length` for any kind of
+range.
+If `hasLength!Range`, simply returns `range.length` without
+checking `upTo` (when specified).
+Otherwise, walks the range through its length and returns the number
+of elements seen. Performes $(BIGOH n) evaluations of `range.empty`
+and `range.popFront()`, where `n` is the effective length of $(D
+range).
++/
+auto walkLength(Range)(Range range)
+if (isIterable!Range && !isInfinite!Range)
+{
+    static if (hasLength!Range)
+        return range.length;
+    else
+    static if (__traits(hasMember, Range, "walkLength"))
+        return range.walkLength;
+    static if (isInputRange!Range)
+    {
+        size_t result;
+        for ( ; !range.empty ; range.popFront() )
+            ++result;
+        return result;
+    }
+    else
+    {
+        size_t result;
+        foreach (ref e; range)
+            ++result;
+        return result;
+    }
+}
+
+/++
+Returns `true` if `R` is an output range for elements of type
+`E`. An output range is defined functionally as a range that
+supports the operation $(D r.put(e)).
+ +/
+enum bool isOutputRange(R, E) =
+    is(typeof(R.init.put(E.init)));
