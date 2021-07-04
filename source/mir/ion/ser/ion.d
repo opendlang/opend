@@ -345,28 +345,29 @@ unittest
 ///
 unittest
 {
+    import mir.serde: SerdeTarget;
     static immutable ubyte[] binaryDataAB = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     static immutable ubyte[] binaryDataBA = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x62, 0x81, 0x61, 0xd6, 0x8a, 0x21, 0x02, 0x8b, 0x21, 0x01];
     int[string] table = ["a" : 1, "b" : 2];
-    auto data = table.serializeIon;
+    auto data = table.serializeIon(SerdeTarget.ion);
     assert(data == binaryDataAB || data == binaryDataBA);
 }
 
-/++
-Ion low-level serialization function.
-+/
-void serializeIon(TapeHolder, T)(
-    TapeHolder* tapeHolder,
-    auto ref T value,
-    int serdeTarget = serdeTarget.ion)
-{
-    import mir.ion.ser: serializeValue;
-    import mir.ion.symbol_table;
+// /++
+// Ion low-level serialization function.
+// +/
+// void serializeIon(TapeHolder, T)(
+//     TapeHolder* tapeHolder,
+//     auto ref T value,
+//     int serdeTarget = serdeTarget.ion)
+// {
+//     import mir.ion.ser: serializeValue;
+//     import mir.ion.symbol_table;
 
-    enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
-    auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder, null, serdeTarget);
-    serializeValue(serializer, value);
-}
+//     enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
+//     auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder, null, serdeTarget);
+//     serializeValue(serializer, value);
+// }
 
 // ///
 // unittest
@@ -551,23 +552,23 @@ void serializeIon(TapeHolder, T)(
 //     assert(serializeIon(s) == `{"a":"str_str_str_str_str"}`);
 // }
 
-/++
-Ion serialization for custom outputt range.
-+/
-void serializeIon(Appender, V)(ref Appender appender, auto ref V value)
-{
-}
+// /++
+// Ion serialization for custom outputt range.
+// +/
+// void serializeIon(Appender, V)(ref Appender appender, auto ref V value)
+// {
+// }
 
-///
-@safe pure nothrow @nogc
-unittest
-{
-    import mir.format: stringBuf;
-    // stringBuf buffer;
-    // static struct S { int a; }
-    // serializeIon(buffer, S(4));
-    // assert(buffer.data == `{"a":4}`);
-}
+// ///
+// @safe pure nothrow @nogc
+// unittest
+// {
+//     import mir.format: stringBuf;
+//     // stringBuf buffer;
+//     // static struct S { int a; }
+//     // serializeIon(buffer, S(4));
+//     // assert(buffer.data == `{"a":4}`);
+// }
 
 /++
 Creates Ion serialization back-end.
@@ -583,8 +584,8 @@ template ionSerializer(string sep = "")
 }
 
 ///
-@safe pure nothrow @nogc unittest
-{
+// @safe pure nothrow @nogc unittest
+// {
     // import mir.format: stringBuf;
     // import mir.bignum.integer;
 
@@ -609,11 +610,11 @@ template ionSerializer(string sep = "")
     // ser.structEnd(state0);
 
     // assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e7,"\t","\r","\n",1234567890]}`);
-}
+// }
 
 ///
-unittest
-{
+// unittest
+// {
 //     import std.array;
 //     import mir.bignum.integer;
 
@@ -650,4 +651,4 @@ unittest
 //         1234567890
 //     ]
 // }`);
-}
+// }

@@ -256,3 +256,98 @@ alias deserializeJsonFile = deserializeJsonImpl!true;
 //     assert(book.weight == 6.88);
 //     assert(book.wouldRecommend);
 // }
+
+// version(none):
+// private template deserializeJsonDynamicImpl(bool file)
+// {
+//     // @optStrategy("optsize")
+//     T deserializeJsonImpl(T)(scope const(char)[] text)
+//     {
+//         import mir.exception: MirException;
+//         import mir.ion.deser: deserializeValue;
+//         import mir.ion.exception: ionErrorMsg;
+//         import mir.ion.exception: IonException, ionException;
+//         import mir.ion.internal.data_holder;
+//         import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+//         import mir.ion.internal.stage4_s;
+//         import mir.ion.symbol_table: IonSymbolTable;
+//         import mir.ion.value: IonDescribedValue, IonValue;
+//         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeMirException, SerdeException;
+//         import mir.string_table: createTable;
+//         import mir.utility: _expect;
+
+//         static if (file)
+//             alias algo = singleThreadJsonFile;
+//         else
+//             alias algo = singleThreadJsonText;
+
+//         enum nMax = 4096u;
+//         // enum nMax = 64u;
+
+//         alias TapeHolder = IonTapeHolder!(nMax * 8);
+//         TapeHolder tapeHolder = void;
+//         tapeHolder.initialize;
+
+//         IonSymbolTable!false table = void;
+//         table.initialize;
+//         table.startId = 0;
+
+//         auto error = singleThreadJsonText!nMax(table, tapeHolder, text);
+//         if (error.code)
+//             throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+
+//         auto ionValue = IonDescribedValue(tapeHolder.tapeData);
+
+//         import mir.ion.value: IonList, IonDescribedValue;
+
+//         foreach (IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
+//         {
+//             symbolTableBuffer.put(symbolValue.trustedGet(const(char)[]));
+//         }
+
+
+//         enum keys = serdeGetDeserializationKeysRecurse!T;
+//         T value;
+
+//         if (false)
+//         {
+//             if (auto exception = deserializeValue!(keys, true)(IonDescribedValue.init, symbolTable, null, value))
+//                 throw exception;
+//         }
+
+//         () @trusted {
+//             // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
+//             IonTapeHolder!(nMax * 8) tapeHolder = void;
+//             tapeHolder.initialize;
+//             auto errorInfo = algo!nMax(table, tapeHolder, text);
+//             if (errorInfo.code)
+//             {
+//                 static if (__traits(compiles, () @nogc { throw new Exception(""); }))
+//                     throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+//                 else
+//                     throw errorInfo.code.ionException;
+//             }
+
+//             IonDescribedValue ionValue;
+
+//             if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
+//                 throw error.ionException;
+
+//             ScopedBuffer!(uint, 1024) tableMapBuffer = void;
+//             tableMapBuffer.initialize;
+
+//             foreach (key; symbolTable)
+//             {
+//                 uint id;
+//                 if (!table.get(key, id))
+//                     id = uint.max;
+//                 tableMapBuffer.put(id);
+//             }
+
+//             if (auto exception = deserializeValue!(keys, true)(ionValue, symbolTable, tableMapBuffer.data, value))
+//                 throw exception;
+//         } ();
+
+//         return value;
+//     }
+// }
