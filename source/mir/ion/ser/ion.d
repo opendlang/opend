@@ -42,8 +42,14 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
         return table.tapeData;
     } ();
 
+    ///
     TapeHolder* tapeHolder;
+
+    ///
     IonSymbolTable!tableGC* runtimeTable;
+
+    /// Mutable value used to choose format specidied or user-defined serialization specializations
+    int serdeTarget = SerdeTarget.ion;
 
 @trusted:
 
@@ -262,7 +268,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 /++
 Ion serialization function.
 +/
-immutable(ubyte)[] serializeIon(T)(auto ref T value)
+immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarget.json)
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
@@ -279,7 +285,8 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
         IonSymbolTable!true table;
         auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
             ()@trusted { return &tapeHolder; }(),
-            ()@trusted { return &table; }()
+            ()@trusted { return &table; }(),
+            serdeTarget,
         );
         serializeValue(serializer, value);
     }
@@ -289,7 +296,7 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value)
         IonTapeHolder!(nMax * 8) tapeHolder = void;
         tapeHolder.initialize;
         IonSymbolTable!true table;
-        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table);
+        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table, serdeTarget);
         serializeValue(serializer, value);
 
         static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
@@ -350,13 +357,14 @@ Ion low-level serialization function.
 +/
 void serializeIon(TapeHolder, T)(
     TapeHolder* tapeHolder,
-    auto ref T value)
+    auto ref T value,
+    int serdeTarget = serdeTarget.ion)
 {
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table;
 
     enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
-    auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder);
+    auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder, null, serdeTarget);
     serializeValue(serializer, value);
 }
 
@@ -568,9 +576,9 @@ Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
 template ionSerializer(string sep = "")
 {
     ///
-    auto ionSerializer(Appender)(return Appender* appender)
+    auto ionSerializer(Appender)(return Appender* appender, int serdeTarget = serdeTarget.ion)
     {
-        return IonSerializer!(sep, Appender)(appender);
+        return IonSerializer!(sep, Appender)(appender, serdeTarget);
     }
 }
 

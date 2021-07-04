@@ -47,6 +47,9 @@ struct TextSerializer(string sep, Appender)
     +/
     Appender* appender;
 
+    /// Mutable value used to choose format specidied or user-defined serialization specializations
+    int serdeTarget = SerdeTarget.ion;
+
     private size_t state;
 
     static if(sep.length)
@@ -500,9 +503,9 @@ struct TextSerializer(string sep, Appender)
 /++
 Ion serialization function.
 +/
-string serializeText(V)(auto ref V value)
+string serializeText(V)(auto ref V value, int serdeTarget = SerdeTarget.ion)
 {
-    return serializeTextPretty!""(value);
+    return serializeTextPretty!""(value, serdeTarget);
 }
 
 ///
@@ -722,13 +725,13 @@ unittest
 /++
 Ion serialization function with pretty formatting.
 +/
-string serializeTextPretty(string sep = "\t", V)(auto ref V value)
+string serializeTextPretty(string sep = "\t", V)(auto ref V value, int serdeTarget = SerdeTarget.ion)
 {
     import std.array: appender;
     import std.functional: forward;
 
     auto app = appender!(char[]);
-    serializeTextPretty!sep(app, forward!value);
+    serializeTextPretty!sep(app, forward!value, serdeTarget);
     return (()@trusted => cast(string) app.data)();
 }
 
@@ -745,9 +748,9 @@ q{{
 /++
 Ion serialization for custom outputt range.
 +/
-void serializeText(Appender, V)(ref Appender appender, auto ref V value)
+void serializeText(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
 {
-    return serializeTextPretty!""(appender, value);
+    return serializeTextPretty!""(appender, value, serdeTarget);
 }
 
 ///
@@ -768,11 +771,11 @@ template serializeTextPretty(string sep = "\t")
 {
     import std.range.primitives: isOutputRange; 
     ///
-    void serializeTextPretty(Appender, V)(ref Appender appender, auto ref V value)
+    void serializeTextPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
         if (isOutputRange!(Appender, const(char)[]))
     {
         import mir.ion.ser: serializeValue;
-        auto serializer = textSerializer!sep((()@trusted => &appender)());
+        auto serializer = textSerializer!sep((()@trusted => &appender)(), serdeTarget);
         serializeValue(serializer, value);
     }
 }
@@ -798,9 +801,9 @@ Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
 template textSerializer(string sep = "")
 {
     ///
-    auto textSerializer(Appender)(return Appender* appender)
+    auto textSerializer(Appender)(return Appender* appender, int serdeTarget = SerdeTarget.ion)
     {
-        return TextSerializer!(sep, Appender)(appender);
+        return TextSerializer!(sep, Appender)(appender, serdeTarget);
     }
 }
 

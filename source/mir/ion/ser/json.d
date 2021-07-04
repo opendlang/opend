@@ -30,6 +30,9 @@ struct JsonSerializer(string sep, Appender)
     +/
     Appender* appender;
 
+    /// Mutable value used to choose format specidied or user-defined serialization specializations
+    int serdeTarget = SerdeTarget.json;
+
     private size_t state;
 
     static if(sep.length)
@@ -359,9 +362,9 @@ struct JsonSerializer(string sep, Appender)
 /++
 JSON serialization function.
 +/
-string serializeJson(V)(auto ref V value)
+string serializeJson(V)(auto ref V value, int serdeTarget = SerdeTarget.json)
 {
-    return serializeJsonPretty!""(value);
+    return serializeJsonPretty!""(value, serdeTarget);
 }
 
 ///
@@ -581,34 +584,11 @@ unittest
 }
 
 /++
-JSON serialization function with pretty formatting.
-+/
-string serializeJsonPretty(string sep = "\t", V)(auto ref V value)
-{
-    import std.array: appender;
-    import std.functional: forward;
-
-    auto app = appender!(char[]);
-    serializeJsonPretty!sep(app, forward!value);
-    return (()@trusted => cast(string) app.data)();
-}
-
-///
-unittest
-{
-    static struct S { int a; }
-    assert(S(4).serializeJsonPretty!"    " ==
-q{{
-    "a": 4
-}});
-}
-
-/++
 JSON serialization for custom outputt range.
 +/
-void serializeJson(Appender, V)(ref Appender appender, auto ref V value)
+void serializeJson(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
 {
-    return serializeJsonPretty!""(appender, value);
+    return serializeJsonPretty!""(appender, value, serdeTarget);
 }
 
 ///
@@ -627,15 +607,38 @@ JSON serialization function with pretty formatting and custom output range.
 +/
 template serializeJsonPretty(string sep = "\t")
 {
-    import std.range.primitives: isOutputRange; 
+    import mir.primitives: isOutputRange; 
     ///
-    void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value)
-        if (isOutputRange!(Appender, const(char)[]))
+    void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
+        if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))
     {
         import mir.ion.ser: serializeValue;
-        auto serializer = jsonSerializer!sep((()@trusted => &appender)());
+        auto serializer = jsonSerializer!sep((()@trusted => &appender)(), serdeTarget);
         serializeValue(serializer, value);
     }
+
+    /++
+    JSON serialization function with pretty formatting.
+    +/
+    string serializeJsonPretty(V)(auto ref V value, int serdeTarget = SerdeTarget.json)
+    {
+        import std.array: appender;
+        import std.functional: forward;
+
+        auto app = appender!(char[]);
+        serializeJsonPretty(app, forward!value, serdeTarget);
+        return (()@trusted => cast(string) app.data)();
+    }
+}
+
+///
+unittest
+{
+    static struct S { int a; }
+    assert(S(4).serializeJsonPretty!"    " ==
+q{{
+    "a": 4
+}});
 }
 
 ///
@@ -659,9 +662,9 @@ Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
 template jsonSerializer(string sep = "")
 {
     ///
-    auto jsonSerializer(Appender)(return Appender* appender)
+    auto jsonSerializer(Appender)(return Appender* appender, int serdeTarget = SerdeTarget.json)
     {
-        return JsonSerializer!(sep, Appender)(appender);
+        return JsonSerializer!(sep, Appender)(appender, serdeTarget);
     }
 }
 
@@ -672,7 +675,7 @@ template jsonSerializer(string sep = "")
     import mir.bignum.integer;
 
     stringBuf buffer;
-    auto ser = jsonSerializer((()@trusted=>&buffer)());
+    auto ser = jsonSerializer((()@trusted=>&buffer)(), 3);
     auto state0 = ser.structBegin;
 
         ser.putKey("null");
