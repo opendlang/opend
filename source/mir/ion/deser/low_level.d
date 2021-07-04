@@ -69,6 +69,23 @@ package template isFirstOrderSerdeType(T)
         enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
 }
 
+version(mir_ion_test)
+unittest
+{
+    import std.datetime.date;
+    import std.datetime.systime;
+    static assert(isFirstOrderSerdeType!Date);
+    static assert(isFirstOrderSerdeType!DateTime);
+    static assert(isFirstOrderSerdeType!SysTime);
+}
+
+version(mir_ion_test)
+unittest
+{
+    import mir.date;
+    static assert(isFirstOrderSerdeType!Date);
+}
+
 package(mir.ion) template isNullable(T)
 {
     import std.traits : hasMember;
@@ -359,6 +376,18 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
         }
     }
     return IonErrorCode.expectedTimestampValue;
+}
+
+///ditto
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+    // pure @safe nothrow @nogc
+    if (!(hasProxy!T && isFirstOrderSerdeType!T) && is(typeof(Timestamp.init.opCast!T)))
+{
+    Timestamp temporal;
+    if (auto error = .deserializeValueImpl(data, temporal))
+        return error;
+    value = temporal.opCast!T;
+    return IonErrorCode.none;
 }
 
 ///

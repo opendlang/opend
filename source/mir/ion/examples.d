@@ -3,7 +3,7 @@ module mir.ion.examples;
 
 /// A user may define setter and/or getter properties.
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -32,7 +32,7 @@ unittest
 /// non-void property `get` returning payload and void property `nullify` that
 /// makes nullable type to null value)
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -125,7 +125,7 @@ unittest
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.ion;
     import mir.ion.ser.json;
@@ -141,7 +141,7 @@ unittest
 }
 
 /// Support for floating point nan and (partial) infinity
-unittest
+version(mir_ion_test) unittest
 {
     import mir.conv: to;
     import mir.ion.ser.ion;
@@ -176,7 +176,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.ion;
     import mir.ion.ser.json;
@@ -196,7 +196,7 @@ unittest
 }
 
 /// Proxy for members
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -213,76 +213,8 @@ unittest
     assert(deserializeJson!S(json) == S(4));
 }
 
-
-version(unittest) private
-{
-    import mir.serde: serdeProxy;
-
-    @serdeProxy!ProxyE
-    enum E
-    {
-        none,
-        bar,
-    }
-
-    // const(char)[] doesn't reallocate ASDF data.
-    @serdeProxy!(const(char)[])
-    struct ProxyE
-    {
-        E e;
-
-    @safe pure:
-
-        this(E e)
-        {
-            this.e = e;
-        }
-
-        this(in char[] str) @trusted
-        {
-            switch(str)
-            {
-                case "NONE":
-                case "NA":
-                case "N/A":
-                    e = E.none;
-                    break;
-                case "BAR":
-                case "BR":
-                    e = E.bar;
-                    break;
-                default:
-                    throw new Exception("Unknown: " ~ cast(string)str);
-            }
-        }
-
-        string toString() const
-        {
-            if (e == E.none)
-                return "NONE";
-            else
-                return "BAR";
-        }
-
-        E opCast(T : E)()
-        {
-            return e;
-        }
-    }
-
-    unittest
-    {
-        import mir.ion.ser.json;
-        import mir.ion.deser.json;
-
-        assert(serializeJson(E.bar) == `"BAR"`);
-        assert(`"N/A"`.deserializeJson!E == E.none);
-        assert(`"NA"`.deserializeJson!E == E.none);
-    }
-}
-
 ///
-pure unittest
+pure version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -296,7 +228,7 @@ pure unittest
 }
 
 ///
-pure unittest
+pure version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -311,7 +243,7 @@ pure unittest
 }
 
 ///
-pure unittest
+pure version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -327,7 +259,7 @@ pure unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -341,7 +273,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -357,7 +289,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -416,7 +348,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -432,7 +364,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -449,7 +381,7 @@ unittest
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -468,7 +400,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.ion;
@@ -594,7 +526,7 @@ unittest
 // }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.ion;
@@ -633,7 +565,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -655,7 +587,7 @@ unittest
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static struct Toto  
     {
@@ -686,7 +618,7 @@ unittest
 
 ///
 @safe pure @nogc
-unittest
+version(mir_ion_test) unittest
 {
     static struct Toto  
     {
@@ -739,7 +671,7 @@ Serializations works with any algebraic types.
 
 See_also: $(GMREF mir-core, mir,algebraic), $(GMREF mir-algorithm, mir,string_map)
 +/
-unittest
+version(mir_ion_test) unittest
 {
     import mir.string_map;
     import mir.ion.deser.ion: deserializeIon;
@@ -761,7 +693,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.algebraic_alias.json;
     import mir.ion.ser.json: serializeJson;
@@ -770,7 +702,7 @@ unittest
 }
 
 /// Date serialization
-unittest
+version(mir_ion_test) unittest
 {
     import mir.date;
     import mir.ion.conv: ion2text;
@@ -782,14 +714,50 @@ unittest
     assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
 }
 
-unittest
+/// Phobos date-time serialization
+version(mir_ion_test) unittest
+{
+    import core.time : hnsecs, minutes;
+    import mir.ion.conv: ion2text;
+    import mir.ion.ser.ion: serializeIon;
+    import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.text: serializeText;
+    import mir.ion.deser.ion: deserializeIon;
+    import mir.ion.deser.json: deserializeJson;
+    import std.datetime.date : Date, DateTime;
+    import std.datetime.systime : SysTime;
+    import std.datetime.timezone : SimpleTimeZone;
+
+    auto date = Date(2021, 4, 24);
+    assert(date.serializeIon.ion2text == `2021-04-24`);
+    assert(date.serializeText == `2021-04-24`);
+    assert(date.serializeJson == `"2021-04-24"`);
+    assert(`"2021-04-24"`.deserializeJson!Date == date);
+
+    auto datetime = DateTime(1982, 4, 1, 20, 59, 22);
+    assert(datetime.serializeIon.ion2text == `1982-04-01T20:59:22Z`);
+    assert(datetime.serializeText == `1982-04-01T20:59:22Z`);
+    assert(datetime.serializeJson == `"1982-04-01T20:59:22Z"`);
+    assert(`"1982-04-01T20:59:22Z"`.deserializeJson!DateTime == datetime);
+
+    auto dt = DateTime(1982, 4, 1, 20, 59, 22);
+    auto tz = new immutable SimpleTimeZone(-330.minutes);
+    auto st = SysTime(dt, 1234567.hnsecs, tz);
+    assert(st.serializeIon.ion2text == `1982-04-01T20:59:22.1234567-05:30`);
+    assert(st.serializeText == `1982-04-01T20:59:22.1234567-05:30`);
+    assert(st.serializeJson == `"1982-04-01T20:59:22.1234567-05:30"`);
+    assert(st.serializeIon.deserializeIon!SysTime == st);
+    assert(`"1982-04-01T20:59:22.1234567-05:30"`.deserializeJson!SysTime == st);
+}
+
+version(mir_ion_test) unittest
 {
     import mir.ion.deser.json;
     auto s = q{"n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn"}.deserializeJson!string;
     assert(s == "n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn", s);
 }
 
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.deser.json;
     assert(q{"n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn"}
@@ -799,7 +767,7 @@ unittest
 
 /// Static array support
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -810,7 +778,7 @@ unittest
 
 /// ditto
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
     import mir.ion.deser.json;
@@ -822,7 +790,7 @@ unittest
 }
 
 // AliasThis and serdeProxy
-unittest
+version(mir_ion_test) unittest
 {
     @serdeProxy!(int[3])
     static struct J
@@ -839,7 +807,7 @@ unittest
 }
 
 
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.ser.text;
 
@@ -855,7 +823,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     auto json = q{{
         "a": [
@@ -881,7 +849,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     auto json = q{{
         "index": 0.9962125,
@@ -898,7 +866,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     static class MyHugeRESTString
     {
@@ -938,4 +906,72 @@ unittest
     assert(response.serializeJson == `{"type":"response","data":"First chunk. Another chunk."}`);
     assert(response.serializeText == `{type:"response",data:"First chunk. Another chunk."}`);
     assert(response.serializeIon.ion2text == `{type:"response",data:"First chunk. Another chunk."}`);
+}
+
+
+version(unittest) private
+{
+    import mir.serde: serdeProxy;
+
+    @serdeProxy!ProxyE
+    enum E
+    {
+        none,
+        bar,
+    }
+
+    // const(char)[] doesn't reallocate ASDF data.
+    @serdeProxy!(const(char)[])
+    struct ProxyE
+    {
+        E e;
+
+    @safe pure:
+
+        this(E e)
+        {
+            this.e = e;
+        }
+
+        this(in char[] str) @trusted
+        {
+            switch(str)
+            {
+                case "NONE":
+                case "NA":
+                case "N/A":
+                    e = E.none;
+                    break;
+                case "BAR":
+                case "BR":
+                    e = E.bar;
+                    break;
+                default:
+                    throw new Exception("Unknown: " ~ cast(string)str);
+            }
+        }
+
+        string toString() const
+        {
+            if (e == E.none)
+                return "NONE";
+            else
+                return "BAR";
+        }
+
+        E opCast(T : E)()
+        {
+            return e;
+        }
+    }
+
+    unittest
+    {
+        import mir.ion.ser.json;
+        import mir.ion.deser.json;
+
+        assert(serializeJson(E.bar) == `"BAR"`);
+        assert(`"N/A"`.deserializeJson!E == E.none);
+        assert(`"NA"`.deserializeJson!E == E.none);
+    }
 }

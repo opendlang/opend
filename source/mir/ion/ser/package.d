@@ -491,6 +491,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isSomeStruct!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
+    import mir.timestamp: Timestamp;
     import mir.string_map: isStringMap;
     import mir.algebraic: Algebraic;
 
@@ -526,6 +527,12 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         serializeValue(serializer, value.to!(serdeGetProxy!V));
         return;
     }}
+    else
+    static if (is(typeof(Timestamp(V.init))))
+    {
+        serializer.putValue(Timestamp(value));
+        return;
+    }
     else
     static if(__traits(hasMember, V, "serialize"))
     {
