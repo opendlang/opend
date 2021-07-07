@@ -352,7 +352,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             struct VkPhysicalDeviceVideoFormatInfoKHR {
                 VkStructureType               sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
-                const( void )*                pNext;
+                void*                         pNext;
                 VkImageUsageFlags             imageUsage;
                 const( VkVideoProfilesKHR )*  pVideoProfiles;
             }

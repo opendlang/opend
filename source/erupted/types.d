@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 182;
+enum VK_HEADER_VERSION = 183;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 2, VK_HEADER_VERSION );
@@ -769,7 +769,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                              = 1000364002,
     VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA                        = 1000365000,
     VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA                           = 1000365001,
-    VK_STRUCTURE_TYPE_SUBPASSS_SHADING_PIPELINE_CREATE_INFO_HUAWEI                       = 1000369000,
+    VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI                        = 1000369000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI                    = 1000369001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI                  = 1000369002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT              = 1000377000,
@@ -1450,7 +1450,7 @@ enum VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA                  
 enum VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                             = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
 enum VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA                       = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA;
 enum VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA                          = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
-enum VK_STRUCTURE_TYPE_SUBPASSS_SHADING_PIPELINE_CREATE_INFO_HUAWEI                      = VkStructureType.VK_STRUCTURE_TYPE_SUBPASSS_SHADING_PIPELINE_CREATE_INFO_HUAWEI;
+enum VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI                       = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
@@ -7197,7 +7197,7 @@ struct VkAcquireNextImageInfoKHR {
 
 struct VkDeviceGroupPresentCapabilitiesKHR {
     VkStructureType                       sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
-    const( void )*                        pNext;
+    void*                                 pNext;
     uint32_t[ VK_MAX_DEVICE_GROUP_SIZE ]  presentMask;
     VkDeviceGroupPresentModeFlagsKHR      modes;
 }
@@ -7795,7 +7795,7 @@ struct VkPhysicalDevicePerformanceQueryPropertiesKHR {
 
 struct VkPerformanceCounterKHR {
     VkStructureType                 sType = VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR;
-    const( void )*                  pNext;
+    void*                           pNext;
     VkPerformanceCounterUnitKHR     unit;
     VkPerformanceCounterScopeKHR    Scope;
     VkPerformanceCounterStorageKHR  storage;
@@ -7806,7 +7806,7 @@ struct VkPerformanceCounterKHR {
 
 struct VkPerformanceCounterDescriptionKHR {
     VkStructureType                          sType = VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR;
-    const( void )*                           pNext;
+    void*                                    pNext;
     VkPerformanceCounterDescriptionFlagsKHR  flags;
     char[ VK_MAX_DESCRIPTION_SIZE ]          name;
     char[ VK_MAX_DESCRIPTION_SIZE ]          category;
@@ -12397,7 +12397,7 @@ struct VkPhysicalDeviceDeviceMemoryReportFeaturesEXT {
 
 struct VkDeviceMemoryReportCallbackDataEXT {
     VkStructureType                   sType = VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT;
-    const( void )*                    pNext;
+    void*                             pNext;
     VkDeviceMemoryReportFlagsEXT      flags;
     VkDeviceMemoryReportEventTypeEXT  type;
     uint64_t                          memoryObjectId;
@@ -12748,7 +12748,7 @@ struct VkAccelerationStructureMotionInstanceNV {
 
 struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV {
     VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
-    const( void )*   pNext;
+    void*            pNext;
     VkBool32         rayTracingMotionBlur;
     VkBool32         rayTracingMotionBlurPipelineTraceRaysIndirect;
 }
@@ -12910,7 +12910,7 @@ enum VK_HUAWEI_SUBPASS_SHADING_SPEC_VERSION = 0;
 enum VK_HUAWEI_SUBPASS_SHADING_EXTENSION_NAME = "VK_HUAWEI_subpass_shading";
 
 struct VkSubpassShadingPipelineCreateInfoHUAWEI {
-    VkStructureType  sType = VK_STRUCTURE_TYPE_SUBPASSS_SHADING_PIPELINE_CREATE_INFO_HUAWEI;
+    VkStructureType  sType = VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI;
     void*            pNext;
     VkRenderPass     renderPass;
     uint32_t         subpass;
