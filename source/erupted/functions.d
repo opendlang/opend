@@ -484,6 +484,12 @@ extern( System ) {
     // VK_NV_fragment_shading_rate_enums
     alias PFN_vkCmdSetFragmentShadingRateEnumNV                                 = void      function( VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps );
 
+    // VK_EXT_vertex_input_dynamic_state
+    alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
+
+    // VK_EXT_color_write_enable
+    alias PFN_vkCmdSetColorWriteEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t attachmentCount, const( VkBool32 )* pColorWriteEnables );
+
     // VK_KHR_acceleration_structure
     alias PFN_vkCreateAccelerationStructureKHR                                  = VkResult  function( VkDevice device, const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure );
     alias PFN_vkDestroyAccelerationStructureKHR                                 = void      function( VkDevice device, VkAccelerationStructureKHR accelerationStructure, const( VkAllocationCallbacks )* pAllocator );
@@ -983,6 +989,12 @@ __gshared {
 
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                                 vkCmdSetFragmentShadingRateEnumNV;
+
+    // VK_EXT_vertex_input_dynamic_state
+    PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
+
+    // VK_EXT_color_write_enable
+    PFN_vkCmdSetColorWriteEnableEXT                                       vkCmdSetColorWriteEnableEXT;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1602,6 +1614,12 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_NV_fragment_shading_rate_enums
     vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetInstanceProcAddr( instance, "vkCmdSetFragmentShadingRateEnumNV" );
 
+    // VK_EXT_vertex_input_dynamic_state
+    vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
+
+    // VK_EXT_color_write_enable
+    vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetColorWriteEnableEXT" );
+
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureKHR" );
     vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureKHR" );
@@ -2015,6 +2033,12 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_NV_fragment_shading_rate_enums
     vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
+
+    // VK_EXT_vertex_input_dynamic_state
+    vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
+
+    // VK_EXT_color_write_enable
+    vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteEnableEXT" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );

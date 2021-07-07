@@ -438,6 +438,12 @@ struct DispatchDevice {
         // VK_NV_fragment_shading_rate_enums
         vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
 
+        // VK_EXT_vertex_input_dynamic_state
+        vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
+
+        // VK_EXT_color_write_enable
+        vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteEnableEXT" );
+
         // VK_KHR_acceleration_structure
         vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
         vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
@@ -849,6 +855,12 @@ struct DispatchDevice {
 
     // VK_NV_fragment_shading_rate_enums
     void      CmdSetFragmentShadingRateEnumNV( VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateEnumNV( commandBuffer, shadingRate, combinerOps ); }
+
+    // VK_EXT_vertex_input_dynamic_state
+    void      CmdSetVertexInputEXT( uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions ) { vkCmdSetVertexInputEXT( commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions ); }
+
+    // VK_EXT_color_write_enable
+    void      CmdSetColorWriteEnableEXT( uint32_t attachmentCount, const( VkBool32 )* pColorWriteEnables ) { vkCmdSetColorWriteEnableEXT( commandBuffer, attachmentCount, pColorWriteEnables ); }
 
     // VK_KHR_acceleration_structure
     VkResult  CreateAccelerationStructureKHR( const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, VkAccelerationStructureKHR* pAccelerationStructure ) { return vkCreateAccelerationStructureKHR( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
@@ -1319,6 +1331,12 @@ struct DispatchDevice {
 
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                 vkCmdSetFragmentShadingRateEnumNV;
+
+    // VK_EXT_vertex_input_dynamic_state
+    PFN_vkCmdSetVertexInputEXT                            vkCmdSetVertexInputEXT;
+
+    // VK_EXT_color_write_enable
+    PFN_vkCmdSetColorWriteEnableEXT                       vkCmdSetColorWriteEnableEXT;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                  vkCreateAccelerationStructureKHR;
