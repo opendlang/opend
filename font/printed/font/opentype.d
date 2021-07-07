@@ -380,18 +380,56 @@ public:
             return 0; // special value for non available characters
     }
 
+    /// Return the glyph used when a char is requested that the font doesn't provide.
+    GlyphDesc glyphForChar(dchar ch)
+    {
+        ushort index = glyphIndexFor(ch);
+        if (index != 0)
+            return _glyphs[index];
+
+        // Unicode has two symbols for unknown characters:
+        // U+25A1 and U+FFFD
+        // Browsers seem to use U+FFFD.
+        
+        index = glyphIndexFor('\uFFFD');
+        if (index != 0)
+            return _glyphs[index];
+
+        // try 0x7f character (Webdings...)
+        index = glyphIndexFor('\u007f');
+        if (index != 0)
+            return _glyphs[index];
+
+        // try ? character
+        index = glyphIndexFor('\u003F');
+        if (index != 0)
+            return _glyphs[index];
+
+        // try space character
+        index = glyphIndexFor(' ');
+        if (index != 0)
+            return _glyphs[index];
+
+        // Return first glyph.
+        if (_glyphs.length > 0)
+            return _glyphs[0];
+
+        // give up, this font has no suitable replacement character
+        assert(false);
+    }
+
     /// Returns: left side bearing for this character.
     int leftSideBearing(dchar ch)
     {
         computeFontMetrics();
-        return _glyphs[ _charToGlyphMapping[ch] ].leftSideBearing;
+        return glyphForChar(ch).leftSideBearing;
     }
 
     /// Returns: horizontal advance for this character.
     int horizontalAdvance(dchar ch)
     {
         computeFontMetrics();
-        return _glyphs[ _charToGlyphMapping[ch] ].horzAdvance;
+        return glyphForChar(ch).horzAdvance;
     }
 
     /// Returns: number of glyphs in the font.
@@ -581,7 +619,10 @@ private:
             uint offset = popBE!uint(cmapTable);
 
             // in stb_truetype, only case supported, seems to be common
-            if (platformID == 3 && (encodingID == 1 /* Unicode UCS-2 */ || encodingID == 4 /* Unicode UCS-4 */))
+            // Unfortunately documentation is scarce about these table formats.
+            if (platformID == 3 && (encodingID == 0 /* Unicode 1.0 */
+                                 || encodingID == 1 /* Unicode UCS-2 */
+                                 || encodingID == 4 /* Unicode UCS-4 */))
             {
                 const(ubyte)[] subTable = cmapTableFull[offset..$];
                 ushort format = popBE!ushort(subTable);
