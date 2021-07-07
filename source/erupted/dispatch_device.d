@@ -449,7 +449,11 @@ struct DispatchDevice {
         vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
         // VK_HUAWEI_subpass_shading
+        vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetDeviceProcAddr( device, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
         vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetDeviceProcAddr( device, "vkCmdSubpassShadingHUAWEI" );
+
+        // VK_NV_external_memory_rdma
+        vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
 
         // VK_EXT_extended_dynamic_state2
         vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
@@ -888,7 +892,11 @@ struct DispatchDevice {
     void      CmdSetVertexInputEXT( uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions ) { vkCmdSetVertexInputEXT( commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions ); }
 
     // VK_HUAWEI_subpass_shading
+    VkResult  GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI( VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize ) { return vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI( vkDevice, renderpass, pMaxWorkgroupSize ); }
     void      CmdSubpassShadingHUAWEI() { vkCmdSubpassShadingHUAWEI( commandBuffer ); }
+
+    // VK_NV_external_memory_rdma
+    VkResult  GetMemoryRemoteAddressNV( const( VkMemoryGetRemoteAddressInfoNV )* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress ) { return vkGetMemoryRemoteAddressNV( vkDevice, getMemoryRemoteAddressInfo, pAddress ); }
 
     // VK_EXT_extended_dynamic_state2
     void      CmdSetPatchControlPointsEXT( uint32_t patchControlPoints ) { vkCmdSetPatchControlPointsEXT( commandBuffer, patchControlPoints ); }
@@ -1385,7 +1393,11 @@ struct DispatchDevice {
     PFN_vkCmdSetVertexInputEXT                            vkCmdSetVertexInputEXT;
 
     // VK_HUAWEI_subpass_shading
+    PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI;
     PFN_vkCmdSubpassShadingHUAWEI                         vkCmdSubpassShadingHUAWEI;
+
+    // VK_NV_external_memory_rdma
+    PFN_vkGetMemoryRemoteAddressNV                        vkGetMemoryRemoteAddressNV;
 
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                     vkCmdSetPatchControlPointsEXT;

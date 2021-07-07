@@ -499,8 +499,11 @@ extern( System ) {
     alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
 
     // VK_HUAWEI_subpass_shading
-    alias PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI                         = VkResult  function( VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize );
+    alias PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI                   = VkResult  function( VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize );
     alias PFN_vkCmdSubpassShadingHUAWEI                                         = void      function( VkCommandBuffer commandBuffer );
+
+    // VK_NV_external_memory_rdma
+    alias PFN_vkGetMemoryRemoteAddressNV                                        = VkResult  function( VkDevice device, const( VkMemoryGetRemoteAddressInfoNV )* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress );
 
     // VK_EXT_extended_dynamic_state2
     alias PFN_vkCmdSetPatchControlPointsEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t patchControlPoints );
@@ -1031,8 +1034,11 @@ __gshared {
     PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
 
     // VK_HUAWEI_subpass_shading
-    PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI                         vkGetSubpassShadingMaxWorkgroupSizeHUAWEI;
+    PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI                   vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI;
     PFN_vkCmdSubpassShadingHUAWEI                                         vkCmdSubpassShadingHUAWEI;
+
+    // VK_NV_external_memory_rdma
+    PFN_vkGetMemoryRemoteAddressNV                                        vkGetMemoryRemoteAddressNV;
 
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                                     vkCmdSetPatchControlPointsEXT;
@@ -1165,15 +1171,12 @@ void loadGlobalLevelFunctions( PFN_vkGetInstanceProcAddr getInstanceProcAddr ) {
     vkGetInstanceProcAddr = getInstanceProcAddr;
 
     // VK_VERSION_1_0
-    vkCreateInstance                          = cast( PFN_vkCreateInstance                          ) vkGetInstanceProcAddr( null, "vkCreateInstance" );
-    vkEnumerateInstanceExtensionProperties    = cast( PFN_vkEnumerateInstanceExtensionProperties    ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceExtensionProperties" );
-    vkEnumerateInstanceLayerProperties        = cast( PFN_vkEnumerateInstanceLayerProperties        ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceLayerProperties" );
+    vkCreateInstance                       = cast( PFN_vkCreateInstance                       ) vkGetInstanceProcAddr( null, "vkCreateInstance" );
+    vkEnumerateInstanceExtensionProperties = cast( PFN_vkEnumerateInstanceExtensionProperties ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceExtensionProperties" );
+    vkEnumerateInstanceLayerProperties     = cast( PFN_vkEnumerateInstanceLayerProperties     ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceLayerProperties" );
 
     // VK_VERSION_1_1
-    vkEnumerateInstanceVersion                = cast( PFN_vkEnumerateInstanceVersion                ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
-
-    // VK_HUAWEI_subpass_shading
-    vkGetSubpassShadingMaxWorkgroupSizeHUAWEI = cast( PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI ) vkGetInstanceProcAddr( null, "vkGetSubpassShadingMaxWorkgroupSizeHUAWEI" );
+    vkEnumerateInstanceVersion             = cast( PFN_vkEnumerateInstanceVersion             ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
 }
 
 
@@ -1684,7 +1687,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
 
     // VK_HUAWEI_subpass_shading
+    vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetInstanceProcAddr( instance, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
     vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetInstanceProcAddr( instance, "vkCmdSubpassShadingHUAWEI" );
+
+    // VK_NV_external_memory_rdma
+    vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetInstanceProcAddr( instance, "vkGetMemoryRemoteAddressNV" );
 
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetPatchControlPointsEXT" );
@@ -2125,7 +2132,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
     // VK_HUAWEI_subpass_shading
+    vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetDeviceProcAddr( device, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
     vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetDeviceProcAddr( device, "vkCmdSubpassShadingHUAWEI" );
+
+    // VK_NV_external_memory_rdma
+    vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
 
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
