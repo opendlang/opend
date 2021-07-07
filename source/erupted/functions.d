@@ -487,6 +487,13 @@ extern( System ) {
     // VK_EXT_vertex_input_dynamic_state
     alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
 
+    // VK_EXT_extended_dynamic_state2
+    alias PFN_vkCmdSetPatchControlPointsEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t patchControlPoints );
+    alias PFN_vkCmdSetRasterizerDiscardEnableEXT                                = void      function( VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable );
+    alias PFN_vkCmdSetDepthBiasEnableEXT                                        = void      function( VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable );
+    alias PFN_vkCmdSetLogicOpEXT                                                = void      function( VkCommandBuffer commandBuffer, VkLogicOp logicOp );
+    alias PFN_vkCmdSetPrimitiveRestartEnableEXT                                 = void      function( VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable );
+
     // VK_EXT_color_write_enable
     alias PFN_vkCmdSetColorWriteEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t attachmentCount, const( VkBool32 )* pColorWriteEnables );
 
@@ -992,6 +999,13 @@ __gshared {
 
     // VK_EXT_vertex_input_dynamic_state
     PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
+
+    // VK_EXT_extended_dynamic_state2
+    PFN_vkCmdSetPatchControlPointsEXT                                     vkCmdSetPatchControlPointsEXT;
+    PFN_vkCmdSetRasterizerDiscardEnableEXT                                vkCmdSetRasterizerDiscardEnableEXT;
+    PFN_vkCmdSetDepthBiasEnableEXT                                        vkCmdSetDepthBiasEnableEXT;
+    PFN_vkCmdSetLogicOpEXT                                                vkCmdSetLogicOpEXT;
+    PFN_vkCmdSetPrimitiveRestartEnableEXT                                 vkCmdSetPrimitiveRestartEnableEXT;
 
     // VK_EXT_color_write_enable
     PFN_vkCmdSetColorWriteEnableEXT                                       vkCmdSetColorWriteEnableEXT;
@@ -1617,6 +1631,13 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
 
+    // VK_EXT_extended_dynamic_state2
+    vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetPatchControlPointsEXT" );
+    vkCmdSetRasterizerDiscardEnableEXT                = cast( PFN_vkCmdSetRasterizerDiscardEnableEXT                ) vkGetInstanceProcAddr( instance, "vkCmdSetRasterizerDiscardEnableEXT" );
+    vkCmdSetDepthBiasEnableEXT                        = cast( PFN_vkCmdSetDepthBiasEnableEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBiasEnableEXT" );
+    vkCmdSetLogicOpEXT                                = cast( PFN_vkCmdSetLogicOpEXT                                ) vkGetInstanceProcAddr( instance, "vkCmdSetLogicOpEXT" );
+    vkCmdSetPrimitiveRestartEnableEXT                 = cast( PFN_vkCmdSetPrimitiveRestartEnableEXT                 ) vkGetInstanceProcAddr( instance, "vkCmdSetPrimitiveRestartEnableEXT" );
+
     // VK_EXT_color_write_enable
     vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetColorWriteEnableEXT" );
 
@@ -2036,6 +2057,13 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
+
+    // VK_EXT_extended_dynamic_state2
+    vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
+    vkCmdSetRasterizerDiscardEnableEXT                = cast( PFN_vkCmdSetRasterizerDiscardEnableEXT                ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizerDiscardEnableEXT" );
+    vkCmdSetDepthBiasEnableEXT                        = cast( PFN_vkCmdSetDepthBiasEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBiasEnableEXT" );
+    vkCmdSetLogicOpEXT                                = cast( PFN_vkCmdSetLogicOpEXT                                ) vkGetDeviceProcAddr( device, "vkCmdSetLogicOpEXT" );
+    vkCmdSetPrimitiveRestartEnableEXT                 = cast( PFN_vkCmdSetPrimitiveRestartEnableEXT                 ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveRestartEnableEXT" );
 
     // VK_EXT_color_write_enable
     vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteEnableEXT" );

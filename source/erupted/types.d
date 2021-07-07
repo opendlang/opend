@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 175;
+enum VK_HEADER_VERSION = 176;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 2, VK_HEADER_VERSION );
@@ -758,6 +758,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                              = 1000364002,
     VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA                        = 1000365000,
     VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA                           = 1000365001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT              = 1000377000,
     VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX                                     = 1000378000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT                    = 1000381000,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT                               = 1000381001,
@@ -1420,6 +1421,7 @@ enum VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA                  
 enum VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                             = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
 enum VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA                       = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA;
 enum VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA                          = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX                                    = VkStructureType.VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT                              = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT;
@@ -2756,6 +2758,11 @@ enum VkDynamicState {
     VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT                     = 1000267010,
     VK_DYNAMIC_STATE_STENCIL_OP_EXT                              = 1000267011,
     VK_DYNAMIC_STATE_VERTEX_INPUT_EXT                            = 1000352000,
+    VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT                    = 1000377000,
+    VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT               = 1000377001,
+    VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT                       = 1000377002,
+    VK_DYNAMIC_STATE_LOGIC_OP_EXT                                = 1000377003,
+    VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT                = 1000377004,
     VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT                      = 1000381000,
     VK_DYNAMIC_STATE_BEGIN_RANGE                                 = VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_END_RANGE                                   = VK_DYNAMIC_STATE_STENCIL_REFERENCE,
@@ -2794,6 +2801,11 @@ enum VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT               = VkDynamicStat
 enum VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT                    = VkDynamicState.VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT;
 enum VK_DYNAMIC_STATE_STENCIL_OP_EXT                             = VkDynamicState.VK_DYNAMIC_STATE_STENCIL_OP_EXT;
 enum VK_DYNAMIC_STATE_VERTEX_INPUT_EXT                           = VkDynamicState.VK_DYNAMIC_STATE_VERTEX_INPUT_EXT;
+enum VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT                   = VkDynamicState.VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT;
+enum VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT              = VkDynamicState.VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT;
+enum VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT                      = VkDynamicState.VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT;
+enum VK_DYNAMIC_STATE_LOGIC_OP_EXT                               = VkDynamicState.VK_DYNAMIC_STATE_LOGIC_OP_EXT;
+enum VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT               = VkDynamicState.VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT;
 enum VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT                     = VkDynamicState.VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT;
 enum VK_DYNAMIC_STATE_BEGIN_RANGE                                = VkDynamicState.VK_DYNAMIC_STATE_BEGIN_RANGE;
 enum VK_DYNAMIC_STATE_END_RANGE                                  = VkDynamicState.VK_DYNAMIC_STATE_END_RANGE;
@@ -8767,7 +8779,7 @@ enum VK_EXT_debug_report = 1;
 
 mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDebugReportCallbackEXT} );
 
-enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 9;
+enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 10;
 enum VK_EXT_DEBUG_REPORT_EXTENSION_NAME = "VK_EXT_debug_report";
 
 enum VkDebugReportObjectTypeEXT {
@@ -10860,7 +10872,7 @@ struct VkPipelineCompilerControlCreateInfoAMD {
 // - VK_EXT_calibrated_timestamps -
 enum VK_EXT_calibrated_timestamps = 1;
 
-enum VK_EXT_CALIBRATED_TIMESTAMPS_SPEC_VERSION = 1;
+enum VK_EXT_CALIBRATED_TIMESTAMPS_SPEC_VERSION = 2;
 enum VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME = "VK_EXT_calibrated_timestamps";
 
 enum VkTimeDomainEXT {
@@ -12506,7 +12518,7 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT {
 // - VK_QCOM_rotated_copy_commands -
 enum VK_QCOM_rotated_copy_commands = 1;
 
-enum VK_QCOM_ROTATED_COPY_COMMANDS_SPEC_VERSION = 0;
+enum VK_QCOM_ROTATED_COPY_COMMANDS_SPEC_VERSION = 1;
 enum VK_QCOM_ROTATED_COPY_COMMANDS_EXTENSION_NAME = "VK_QCOM_rotated_copy_commands";
 
 struct VkCopyCommandTransformInfoQCOM {
@@ -12596,6 +12608,21 @@ struct VkVertexInputAttributeDescription2EXT {
     uint32_t         binding;
     VkFormat         format;
     uint32_t         offset;
+}
+
+
+// - VK_EXT_extended_dynamic_state2 -
+enum VK_EXT_extended_dynamic_state2 = 1;
+
+enum VK_EXT_EXTENDED_DYNAMIC_STATE_2_SPEC_VERSION = 1;
+enum VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME = "VK_EXT_extended_dynamic_state2";
+
+struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         extendedDynamicState2;
+    VkBool32         extendedDynamicState2LogicOp;
+    VkBool32         extendedDynamicState2PatchControlPoints;
 }
 
 
