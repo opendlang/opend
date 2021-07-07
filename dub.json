@@ -41,7 +41,7 @@
                 "printed:font": "*",
                 "binrange": "~>1.0",
                 "printed:htmlcolors": "*",
-                "dplug:graphics": ">=8.0.0 <10.0.0"
+                "dplug:graphics": ">=8.0.0 <12.0.0"
             }
         },
         {
