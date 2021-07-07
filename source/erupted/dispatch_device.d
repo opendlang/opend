@@ -298,6 +298,13 @@ struct DispatchDevice {
         vkCmdEndQueryIndexedEXT                           = cast( PFN_vkCmdEndQueryIndexedEXT                           ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
         vkCmdDrawIndirectByteCountEXT                     = cast( PFN_vkCmdDrawIndirectByteCountEXT                     ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
 
+        // VK_NVX_binary_import
+        vkCreateCuModuleNVX                               = cast( PFN_vkCreateCuModuleNVX                               ) vkGetDeviceProcAddr( device, "vkCreateCuModuleNVX" );
+        vkCreateCuFunctionNVX                             = cast( PFN_vkCreateCuFunctionNVX                             ) vkGetDeviceProcAddr( device, "vkCreateCuFunctionNVX" );
+        vkDestroyCuModuleNVX                              = cast( PFN_vkDestroyCuModuleNVX                              ) vkGetDeviceProcAddr( device, "vkDestroyCuModuleNVX" );
+        vkDestroyCuFunctionNVX                            = cast( PFN_vkDestroyCuFunctionNVX                            ) vkGetDeviceProcAddr( device, "vkDestroyCuFunctionNVX" );
+        vkCmdCuLaunchKernelNVX                            = cast( PFN_vkCmdCuLaunchKernelNVX                            ) vkGetDeviceProcAddr( device, "vkCmdCuLaunchKernelNVX" );
+
         // VK_NVX_image_view_handle
         vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
         vkGetImageViewAddressNVX                          = cast( PFN_vkGetImageViewAddressNVX                          ) vkGetDeviceProcAddr( device, "vkGetImageViewAddressNVX" );
@@ -727,6 +734,13 @@ struct DispatchDevice {
     void      CmdBeginQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index ) { vkCmdBeginQueryIndexedEXT( commandBuffer, queryPool, query, flags, index ); }
     void      CmdEndQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, uint32_t index ) { vkCmdEndQueryIndexedEXT( commandBuffer, queryPool, query, index ); }
     void      CmdDrawIndirectByteCountEXT( uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride ) { vkCmdDrawIndirectByteCountEXT( commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride ); }
+
+    // VK_NVX_binary_import
+    VkResult  CreateCuModuleNVX( const( VkCuModuleCreateInfoNVX )* pCreateInfo, VkCuModuleNVX* pModule ) { return vkCreateCuModuleNVX( vkDevice, pCreateInfo, pAllocator, pModule ); }
+    VkResult  CreateCuFunctionNVX( const( VkCuFunctionCreateInfoNVX )* pCreateInfo, VkCuFunctionNVX* pFunction ) { return vkCreateCuFunctionNVX( vkDevice, pCreateInfo, pAllocator, pFunction ); }
+    void      DestroyCuModuleNVX( VkCuModuleNVX Module ) { vkDestroyCuModuleNVX( vkDevice, Module, pAllocator ); }
+    void      DestroyCuFunctionNVX( VkCuFunctionNVX Function ) { vkDestroyCuFunctionNVX( vkDevice, Function, pAllocator ); }
+    void      CmdCuLaunchKernelNVX( const( VkCuLaunchInfoNVX )* pLaunchInfo ) { vkCmdCuLaunchKernelNVX( commandBuffer, pLaunchInfo ); }
 
     // VK_NVX_image_view_handle
     uint32_t  GetImageViewHandleNVX( const( VkImageViewHandleInfoNVX )* pInfo ) { return vkGetImageViewHandleNVX( vkDevice, pInfo ); }
@@ -1205,6 +1219,13 @@ struct DispatchDevice {
     PFN_vkCmdBeginQueryIndexedEXT                         vkCmdBeginQueryIndexedEXT;
     PFN_vkCmdEndQueryIndexedEXT                           vkCmdEndQueryIndexedEXT;
     PFN_vkCmdDrawIndirectByteCountEXT                     vkCmdDrawIndirectByteCountEXT;
+
+    // VK_NVX_binary_import
+    PFN_vkCreateCuModuleNVX                               vkCreateCuModuleNVX;
+    PFN_vkCreateCuFunctionNVX                             vkCreateCuFunctionNVX;
+    PFN_vkDestroyCuModuleNVX                              vkDestroyCuModuleNVX;
+    PFN_vkDestroyCuFunctionNVX                            vkDestroyCuFunctionNVX;
+    PFN_vkCmdCuLaunchKernelNVX                            vkCmdCuLaunchKernelNVX;
 
     // VK_NVX_image_view_handle
     PFN_vkGetImageViewHandleNVX                           vkGetImageViewHandleNVX;
