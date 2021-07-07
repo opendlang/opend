@@ -482,6 +482,10 @@ extern( System ) {
     alias PFN_vkCreateIndirectCommandsLayoutNV                                  = VkResult  function( VkDevice device, const( VkIndirectCommandsLayoutCreateInfoNV )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout );
     alias PFN_vkDestroyIndirectCommandsLayoutNV                                 = void      function( VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const( VkAllocationCallbacks )* pAllocator );
 
+    // VK_EXT_acquire_drm_display
+    alias PFN_vkAcquireDrmDisplayEXT                                            = VkResult  function( VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display );
+    alias PFN_vkGetDrmDisplayEXT                                                = VkResult  function( VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display );
+
     // VK_EXT_private_data
     alias PFN_vkCreatePrivateDataSlotEXT                                        = VkResult  function( VkDevice device, const( VkPrivateDataSlotCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot );
     alias PFN_vkDestroyPrivateDataSlotEXT                                       = void      function( VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const( VkAllocationCallbacks )* pAllocator );
@@ -494,6 +498,10 @@ extern( System ) {
     // VK_EXT_vertex_input_dynamic_state
     alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
 
+    // VK_HUAWEI_subpass_shading
+    alias PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI                         = VkResult  function( VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize );
+    alias PFN_vkCmdSubpassShadingHUAWEI                                         = void      function( VkCommandBuffer commandBuffer );
+
     // VK_EXT_extended_dynamic_state2
     alias PFN_vkCmdSetPatchControlPointsEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t patchControlPoints );
     alias PFN_vkCmdSetRasterizerDiscardEnableEXT                                = void      function( VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable );
@@ -503,6 +511,10 @@ extern( System ) {
 
     // VK_EXT_color_write_enable
     alias PFN_vkCmdSetColorWriteEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t attachmentCount, const( VkBool32 )* pColorWriteEnables );
+
+    // VK_EXT_multi_draw
+    alias PFN_vkCmdDrawMultiEXT                                                 = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawInfoEXT )* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride );
+    alias PFN_vkCmdDrawMultiIndexedEXT                                          = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawIndexedInfoEXT )* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const( int32_t )* pVertexOffset );
 
     // VK_KHR_acceleration_structure
     alias PFN_vkCreateAccelerationStructureKHR                                  = VkResult  function( VkDevice device, const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure );
@@ -1002,6 +1014,10 @@ __gshared {
     PFN_vkCreateIndirectCommandsLayoutNV                                  vkCreateIndirectCommandsLayoutNV;
     PFN_vkDestroyIndirectCommandsLayoutNV                                 vkDestroyIndirectCommandsLayoutNV;
 
+    // VK_EXT_acquire_drm_display
+    PFN_vkAcquireDrmDisplayEXT                                            vkAcquireDrmDisplayEXT;
+    PFN_vkGetDrmDisplayEXT                                                vkGetDrmDisplayEXT;
+
     // VK_EXT_private_data
     PFN_vkCreatePrivateDataSlotEXT                                        vkCreatePrivateDataSlotEXT;
     PFN_vkDestroyPrivateDataSlotEXT                                       vkDestroyPrivateDataSlotEXT;
@@ -1014,6 +1030,10 @@ __gshared {
     // VK_EXT_vertex_input_dynamic_state
     PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
 
+    // VK_HUAWEI_subpass_shading
+    PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI                         vkGetSubpassShadingMaxWorkgroupSizeHUAWEI;
+    PFN_vkCmdSubpassShadingHUAWEI                                         vkCmdSubpassShadingHUAWEI;
+
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                                     vkCmdSetPatchControlPointsEXT;
     PFN_vkCmdSetRasterizerDiscardEnableEXT                                vkCmdSetRasterizerDiscardEnableEXT;
@@ -1023,6 +1043,10 @@ __gshared {
 
     // VK_EXT_color_write_enable
     PFN_vkCmdSetColorWriteEnableEXT                                       vkCmdSetColorWriteEnableEXT;
+
+    // VK_EXT_multi_draw
+    PFN_vkCmdDrawMultiEXT                                                 vkCmdDrawMultiEXT;
+    PFN_vkCmdDrawMultiIndexedEXT                                          vkCmdDrawMultiIndexedEXT;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1141,12 +1165,15 @@ void loadGlobalLevelFunctions( PFN_vkGetInstanceProcAddr getInstanceProcAddr ) {
     vkGetInstanceProcAddr = getInstanceProcAddr;
 
     // VK_VERSION_1_0
-    vkCreateInstance                       = cast( PFN_vkCreateInstance                       ) vkGetInstanceProcAddr( null, "vkCreateInstance" );
-    vkEnumerateInstanceExtensionProperties = cast( PFN_vkEnumerateInstanceExtensionProperties ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceExtensionProperties" );
-    vkEnumerateInstanceLayerProperties     = cast( PFN_vkEnumerateInstanceLayerProperties     ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceLayerProperties" );
+    vkCreateInstance                          = cast( PFN_vkCreateInstance                          ) vkGetInstanceProcAddr( null, "vkCreateInstance" );
+    vkEnumerateInstanceExtensionProperties    = cast( PFN_vkEnumerateInstanceExtensionProperties    ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceExtensionProperties" );
+    vkEnumerateInstanceLayerProperties        = cast( PFN_vkEnumerateInstanceLayerProperties        ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceLayerProperties" );
 
     // VK_VERSION_1_1
-    vkEnumerateInstanceVersion             = cast( PFN_vkEnumerateInstanceVersion             ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
+    vkEnumerateInstanceVersion                = cast( PFN_vkEnumerateInstanceVersion                ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
+
+    // VK_HUAWEI_subpass_shading
+    vkGetSubpassShadingMaxWorkgroupSizeHUAWEI = cast( PFN_vkGetSubpassShadingMaxWorkgroupSizeHUAWEI ) vkGetInstanceProcAddr( null, "vkGetSubpassShadingMaxWorkgroupSizeHUAWEI" );
 }
 
 
@@ -1254,6 +1281,10 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_headless_surface
     vkCreateHeadlessSurfaceEXT                                        = cast( PFN_vkCreateHeadlessSurfaceEXT                                        ) vkGetInstanceProcAddr( instance, "vkCreateHeadlessSurfaceEXT" );
+
+    // VK_EXT_acquire_drm_display
+    vkAcquireDrmDisplayEXT                                            = cast( PFN_vkAcquireDrmDisplayEXT                                            ) vkGetInstanceProcAddr( instance, "vkAcquireDrmDisplayEXT" );
+    vkGetDrmDisplayEXT                                                = cast( PFN_vkGetDrmDisplayEXT                                                ) vkGetInstanceProcAddr( instance, "vkGetDrmDisplayEXT" );
 }
 
 
@@ -1652,6 +1683,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
 
+    // VK_HUAWEI_subpass_shading
+    vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetInstanceProcAddr( instance, "vkCmdSubpassShadingHUAWEI" );
+
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetPatchControlPointsEXT" );
     vkCmdSetRasterizerDiscardEnableEXT                = cast( PFN_vkCmdSetRasterizerDiscardEnableEXT                ) vkGetInstanceProcAddr( instance, "vkCmdSetRasterizerDiscardEnableEXT" );
@@ -1661,6 +1695,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_color_write_enable
     vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetColorWriteEnableEXT" );
+
+    // VK_EXT_multi_draw
+    vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiEXT" );
+    vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiIndexedEXT" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureKHR" );
@@ -2086,6 +2124,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
+    // VK_HUAWEI_subpass_shading
+    vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetDeviceProcAddr( device, "vkCmdSubpassShadingHUAWEI" );
+
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
     vkCmdSetRasterizerDiscardEnableEXT                = cast( PFN_vkCmdSetRasterizerDiscardEnableEXT                ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizerDiscardEnableEXT" );
@@ -2095,6 +2136,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_color_write_enable
     vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteEnableEXT" );
+
+    // VK_EXT_multi_draw
+    vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiEXT" );
+    vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiIndexedEXT" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
