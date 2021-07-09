@@ -8,9 +8,10 @@ Macros:
 module mir.reflection;
 
 import std.meta;
-import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers;
+import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
 
-package enum isSomeStruct(T) = is(T == class) || is(T == struct) || is(T == union) || is(T == interface);
+deprecated
+package alias isSomeStruct = isAggregateType;
 
 /++
 Match types like `std.typeconst: Nullable`.
@@ -729,7 +730,7 @@ private enum FieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(FieldsAndP
 
 private template allMembers(T)
 {
-    static if (isSomeStruct!T)
+    static if (isAggregateType!T)
         alias allMembers = __traits(allMembers, T);
     else
         alias allMembers = AliasSeq!();
@@ -745,7 +746,7 @@ private template FieldsAndPropertiesImpl(T)
     {
         T* aggregate;
         alias A = typeof(__traits(getMember, aggregate, __traits(getAliasThis, T)));
-        static if (isSomeStruct!T)
+        static if (isAggregateType!T)
             alias baseMembers = FieldsAndPropertiesImpl!A;
         else
             alias baseMembers = AliasSeq!();
