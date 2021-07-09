@@ -286,7 +286,7 @@ size_t SHA256_HashMultipleBlocks_SHANI(ref uint[8] state, scope const(ubyte)[] d
 }
 
 
-/*
+
 unittest
 {
     assert( sha256Of("a") == cast(ubyte[]) hexString!"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
@@ -294,4 +294,3 @@ unittest
     assert( sha256Of_intrin(cast(ubyte[]) "a") == cast(ubyte[]) hexString!"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
     assert( sha256Of_intrin(cast(ubyte[]) "abc") == cast(ubyte[]) hexString!"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 }
-*/
