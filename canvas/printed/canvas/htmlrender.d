@@ -16,9 +16,9 @@ import printed.canvas.svgrender;
 class HTMLDocument : SVGDocument
 {
 public:
-    this(int pageWidthMm = 210, int pageHeightMm = 297)
+    this(int pageWidthMm = 210, int pageHeightMm = 297, RenderOptions options = defaultRenderOptions)
     {
-        super(pageWidthMm, pageHeightMm);
+        super(pageWidthMm, pageHeightMm, options);
     }
 
     override const(ubyte)[] bytes()

@@ -260,7 +260,13 @@ public:
         return getName(NameID.postscriptName);
     }
 
-    /// Returns: `trye` is the font is monospaced.
+    /// Returns: the "full" font name, if available.
+    string fullFontName()
+    {
+        return getName(NameID.fullFontName);
+    }
+
+    /// Returns: `true` is the font is monospaced.
     bool isMonospaced()
     {
         return _isMonospaced;

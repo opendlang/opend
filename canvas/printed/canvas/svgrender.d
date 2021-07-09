@@ -14,6 +14,7 @@ import std.base64;
 import printed.canvas.irenderer;
 import printed.font.fontregistry;
 import printed.font.opentype;
+import printed.canvas.internals;
 
 class SVGException : Exception
 {
@@ -34,10 +35,11 @@ class SVGException : Exception
 class SVGDocument : IRenderingContext2D
 {
 public:
-    this(float pageWidthMm = 210, float pageHeightMm = 297)
+    this(float pageWidthMm = 210, float pageHeightMm = 297, RenderOptions options = defaultRenderOptions)
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
+        _options = options;
 
         _stateStack = [ State(0) ];
         beginPage();
@@ -292,6 +294,7 @@ private:
 
     bool _finished = false;
     ubyte[] _bytes;
+    RenderOptions _options;
 
     string _currentFill = "#000";
     string _currentStroke = "#000";
@@ -405,9 +408,21 @@ private:
                     defs ~=
                         `@font-face` ~
                         `{` ~
-                            `font-family: ` ~ info.svgFamilyName ~ `;` ~
-                            `src: url('data:application/x-font-ttf;charset=utf-8;base64,` ~ base64font ~ `');` ~
-                        "}\n";
+                            `font-family: ` ~ info.svgFamilyName ~ `;`;
+
+                    if (_options.embedFonts)
+                        defs ~= `src: url('data:application/x-font-ttf;charset=utf-8;base64,` ~ base64font ~ `');`; 
+                    else
+                    {
+                        /// Ref: MDN
+                        /// "Specifies the name of a locally-installed font face using the local() function, 
+                        ///  which uniquely identifies a single font face within a larger family."
+                        string fullFontName = font.fullFontName();
+                        assert(fullFontName !is null); // if false, it would mean not all font have this table and name and we have to chnge our method
+                        defs ~= `src: local('` ~ fullFontName ~ `');`;
+                    }
+                        
+                    defs ~= "}\n";
                 }
 
         defs ~= `]]>`~

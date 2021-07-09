@@ -14,6 +14,7 @@ import std.conv;
 import std.math;
 import std.zlib;
 import printed.canvas.irenderer;
+import printed.canvas.internals;
 import printed.font.fontregistry;
 import printed.font.opentype;
 
@@ -34,8 +35,11 @@ class PDFException : Exception
 
 final class PDFDocument : IRenderingContext2D
 {
-    this(float pageWidthMm = 210, float pageHeightMm = 297)
+    this(float pageWidthMm = 210, float pageHeightMm = 297, RenderOptions options = defaultRenderOptions)
     {
+        // Not embedding fonts isn't supported.
+        assert(options.embedFonts);
+
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
 
