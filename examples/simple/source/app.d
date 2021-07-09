@@ -6,11 +6,8 @@ import printed.canvas;
 
 void main(string[] args)
 {
-    RenderOptions options;
-    options.embedFonts = false;
-
     auto pdfDoc = new PDFDocument();
-    auto svgDoc = new SVGDocument(210, 297, options);
+    auto svgDoc = new SVGDocument();
     auto htmlDoc = new HTMLDocument();
 
     foreach(renderer; [cast(IRenderingContext2D) pdfDoc, 
