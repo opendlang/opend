@@ -256,7 +256,6 @@ unittest
     }
     {
         byte16 C = cast(byte16)_mm_alignr_epi8!20(A ,B);
-        _mm_print_epi8(_mm_alignr_epi8!20(A ,B));
         byte[16] correct = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0];
         assert(C.array == correct);
     }
