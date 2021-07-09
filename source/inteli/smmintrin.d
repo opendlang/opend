@@ -69,17 +69,18 @@ unittest
 }
 
 
-
 /// Blend packed double-precision (64-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.
+// Note: changed signature, GDC needs a compile-time value for imm8.
 __m128d _mm_blend_pd (__m128d a, __m128d b, const int imm8) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_pblendw128(cast(short8)a, cast(short8)b, imm8);
+        return cast(__m128i) __builtin_ia32_blendpd(cast(short8)a, cast(short8)b, imm8);
     }
     else 
     {
-        // LDC x86: right thing since LDC 1.1 -02
+        // LDC x86: blendpd since LDC 1.1 -02, uses blendps after LDC 1.12
         double2 r;
         for (int n = 0; n < 2; ++n)
         {
@@ -98,15 +99,44 @@ unittest
 }
 
 
-/*
 /// Blend packed single-precision (32-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.
-__m128 _mm_blend_ps (__m128 a, __m128 b, const int imm8) @trusted
+// Note: changed signature, GDC needs a compile-time value for imm8.
+__m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
 {
+    // PERF DMD
+    static assert(imm8 >= 0 && imm8 < 16);
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_blendps(a, b, imm8);
+    }
+    else version(LDC)
+    {
+        // LDC x86: generates blendps since LDC 1.1 -O2
+        //   arm64: pretty good, two instructions worst case
+        return shufflevector!(float4, (imm8 & 1) ? 4 : 0,
+                                      (imm8 & 2) ? 5 : 1,
+                                      (imm8 & 4) ? 6 : 2,
+                                      (imm8 & 8) ? 7 : 3)(a, b);
+    }
+    else
+    {
+        __m128 r;
+        for (int n = 0; n < 4; ++n)
+        {
+            r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(0, 1,  2,  3);
+    __m128 B = _mm_setr_ps(8, 9, 10, 11);
+    float4 C = cast(float4) _mm_blend_ps!13(A, B); // 1101
+    float[4] correct =    [8, 1, 10, 11];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Blend packed 8-bit integers from a and b using mask, and store the results in dst.
