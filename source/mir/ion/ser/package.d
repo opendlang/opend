@@ -3,6 +3,7 @@ $(H4 High level serialization API)
 
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
+Authros: Ilya Yaroshenko
 +/
 module mir.ion.ser;
 
@@ -12,7 +13,6 @@ import mir.ion.deser.low_level: isNullable;
 import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.reflection;
-import mir.reflection: isSomeStruct;
 import std.meta;
 import std.traits;
 
@@ -81,7 +81,7 @@ void serializeValue(S, V)(ref S serializer, in V value)
     }
     else
     {
-        serializer.putValue(serdeGetKeyOut(value));
+        serializer.putSymbol(serdeGetKeyOut(value));
     }
 }
 
@@ -89,8 +89,10 @@ void serializeValue(S, V)(ref S serializer, in V value)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.text: serializeText;
     enum Key { @serdeKeys("FOO", "foo") foo }
     assert(serializeJson(Key.foo) == `"FOO"`);
+    assert(serializeText(Key.foo) == `FOO`);
 }
 
 /// String serialization
@@ -205,8 +207,10 @@ void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.text: serializeText;
     uint[string] ar = ["a" : 1];
     assert(serializeJson(ar) == `{"a":1}`);
+    assert(serializeText(ar) == `{a:1}`);
     ar.remove("a");
     assert(serializeJson(ar) == `{}`);
     assert(serializeJson((uint[string]).init) == `{}`);
@@ -225,7 +229,7 @@ void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
     foreach (key, ref val; value)
     {
         serializer.putKey(serdeGetKeyOut(key));
-        serializer.putValue(val);
+        serializer.serializeValue(val);
     }
     serializer.structEnd(state);
 }
@@ -308,7 +312,7 @@ private IonTypeCode nullTypeCodeOf(T)()
     static if (isSomeString!T)
         code = IonTypeCode.string;
     else
-    static if (!isVariant!T && isSomeStruct!T)
+    static if (!isVariant!T && isAggregateType!T)
     {
         static if (hasUDA!(T, serdeProxy))
             code = .nullTypeCodeOf!(serdeGetFinalProxy!T);
@@ -354,7 +358,19 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
                 alias A = typeof(v);
                 static if (serdeIsComplexVariant!V && serdeHasAlgebraicAnnotation!A)
                 {
-                    serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
+                    {
+                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    }
+                    else
+                    static if (__traits(hasMember, S, "putAnnotationPtr"))
+                    {
+                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
+                    }
+                    else
+                    {
+                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
+                    }
                 }
                 serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
             }
@@ -373,7 +389,7 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
 
 /// Struct and class type serialization
 void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
-    if (isSomeStruct!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
+    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
     import mir.algebraic;
     auto state = serializer.structBegin(size_t.max);
@@ -424,6 +440,11 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             static if (__traits(hasMember, S, "putCompiletimeKey"))
             {
                 serializer.putCompiletimeKey!key;
+            }
+            else
+            static if (__traits(hasMember, S, "putKeyPtr"))
+            {
+                serializer.putKeyPtr(key.ptr);
             }
             else
             {
@@ -489,7 +510,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 
 /// Struct and class type serialization
 void serializeValue(S, V)(ref S serializer, auto ref V value)
-    if (isSomeStruct!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
+    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
     import mir.timestamp: Timestamp;
     import mir.string_map: isStringMap;
@@ -808,5 +829,161 @@ auto beginStruct(S, V)(ref S serializer, ref V value)
     {
         import mir.primitives: walkLength;
         return serializer.structBegin(value.walkLength);
+    }
+}
+
+version(bloomberg)
+{
+    import mir.bloomberg.blpapi : BloombergElement = Element;
+
+    private static immutable excBytearray = new Exception("Mir Bloomberg: unexpected data type: bytearray");
+    private static immutable excCorrelationOd = new Exception("Mir Bloomberg: unexpected data type: correlation_id");
+
+    ///
+    void serializeValue(S)(ref S serializer, const(BloombergElement)* value)
+    {
+        import core.stdc.string: strlen;
+        import mir.ion.type_code;
+        import mir.timestamp: Timestamp;
+        static import blpapi = mir.bloomberg.blpapi;
+        import mir.bloomberg.blpapi: validate = validateBloombergErroCode;
+
+        if (value is null || blpapi.isNull(value))
+        {
+            serializer.putValue(null);
+            return;
+        }
+
+        if (blpapi.isArray(value))
+        {
+            auto length = blpapi.numValues(value);
+            auto state = serializer.listBegin(length);
+            foreach(i; 0 .. length)
+            {
+                BloombergElement* v;
+                blpapi.getValueAsElement(value, v, i).validate;
+                serializer.elemBegin;
+                serializer.serializeValue(v);
+            }
+            serializer.listEnd(state);
+            return;
+        }
+
+        final switch (blpapi.datatype(value))
+        {
+            case blpapi.DataType.bool_: {
+                blpapi.Bool v;
+                blpapi.getValueAsBool(value, v, 0).validate;
+                serializer.putValue(cast(bool)v);
+                return;
+            }
+            case blpapi.DataType.char_: {
+                char[1] v;
+                blpapi.getValueAsChar(value, v[0], 0).validate;
+                serializer.putValue(v[]);
+                return;
+            }
+            case blpapi.DataType.byte_:
+            case blpapi.DataType.int32: {
+                int v;
+                blpapi.getValueAsInt32(value, v, 0).validate;
+                serializer.putValue(v);
+                return;
+            }
+            case blpapi.DataType.int64: {
+                long v;
+                blpapi.getValueAsInt64(value, v, 0).validate;
+                serializer.putValue(v);
+                return;
+            }
+            case blpapi.DataType.float32: {
+                float v;
+                blpapi.getValueAsFloat32(value, v, 0).validate;
+                serializer.putValue(v);
+                return;
+            }
+            case blpapi.DataType.decimal:
+            case blpapi.DataType.float64: {
+                double v;
+                blpapi.getValueAsFloat64(value, v, 0).validate;
+                serializer.putValue(v);
+                return;
+            }
+            case blpapi.DataType.string: {
+                const(char)* v;
+                blpapi.getValueAsString(value, v, 0).validate;
+                serializer.putValue(v[0 .. (()@trusted => v.strlen)()]);
+                return;
+            }
+            case blpapi.DataType.date:
+            case blpapi.DataType.time:
+            case blpapi.DataType.datetime: {
+                blpapi.HighPrecisionDatetime v;
+                blpapi.getValueAsHighPrecisionDatetime(value, v, 0).validate;
+                serializer.putValue(cast(Timestamp)v);
+                return;
+            }
+            case blpapi.DataType.enumeration: {
+                const(char)* v = blpapi.nameString(value);
+                if (v is null)
+                    serializer.putNull(IonTypeCode.symbol);
+                else
+                    serializer.putSymbol(v[0 .. (()@trusted => v.strlen)()]);
+                return;
+            }
+            case blpapi.DataType.sequence: {
+                auto length = blpapi.numElements(value);
+                auto state = serializer.structBegin(length);
+                foreach(i; 0 .. length)
+                {
+                    BloombergElement* v;
+                    blpapi.getElementAt(value, v, i).validate;
+                    blpapi.Name* name = blpapi.name(v);
+                    const(char)* keyPtr = name ? blpapi.nameString(name) :  null;
+                    auto key = keyPtr ? keyPtr[0 .. (()@trusted => keyPtr.strlen)()] : null;
+                    serializer.putKey(key);
+                    serializer.serializeValue(v);
+                }
+                serializer.structEnd(state);
+                return;
+            }
+            case blpapi.DataType.choice: {
+                auto wrapperState = serializer.annotationWrapperBegin;
+                auto annotationsState = serializer.annotationsBegin;
+                do
+                {
+                    BloombergElement* v;
+                    blpapi.getChoice(value, v).validate;
+                    blpapi.Name* name = blpapi.name(v);
+                    const(char)* annotationPtr = name ? blpapi.nameString(name) :  null;
+                    auto annotation = annotationPtr ? annotationPtr[0 .. (()@trusted => annotationPtr.strlen)()] : null;
+                    serializer.putAnnotation(annotation);
+                    value = v;
+                }
+                while (blpapi.datatype(value) == blpapi.DataType.choice);
+                serializer.annotationsEnd(annotationsState);
+                serializer.serializeValue(value);
+                serializer.annotationWrapperEnd(wrapperState);
+                return;
+            }
+            case blpapi.DataType.bytearray:
+                throw excBytearray;
+            case blpapi.DataType.correlation_id:
+                throw excCorrelationOd;
+        }
+    }
+
+    unittest
+    {
+        import mir.ion.ser.bloomberg;
+        import mir.ion.ser.ion;
+        import mir.ion.ser.json;
+        import mir.ion.ser.text;
+        BloombergSerializer ser;
+        BloombergElement* value;
+        serializeValue(ser, value.init);
+        auto text = value.serializeText;
+        auto json = value.serializeJson;
+        auto ion = value.serializeIon;
     }
 }

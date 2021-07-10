@@ -7,6 +7,14 @@ dependency "mir-algorithm" version=">=3.10.69"
 dependency "mir-cpuid" version="~>1.2.6"
 
 configuration "common" {
+    excludedSourceFiles "*/bloomberg*"
+}
+
+configuration "bloomberg" {
+    libs "blpapi3_64" platform="posix"
+    libs "blpapi3_64" platform="windows-x86_64"
+    libs "blpapi3_32" platform="windows-x86_mscoff"
+    versions "bloomberg"
 }
 
 // dflags "-preview=dip1008"

@@ -15,6 +15,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
+    import mir.bignum.low_level_view: WordEndian;
     import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
     import mir.ion.tape;
     import mir.ion.type_code;
@@ -137,14 +138,13 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     alias putCompiletimeAnnotation = putCompiletimeKey;
 
-    ///
-    void putKey()(scope const char[] key)
+    uint _getId(scope const char[] key)
     {
         import mir.utility: _expect;
         uint id;
         if (_expect(compiletimeTable.get(key, id), true))
         {
-            id = compiletimeIndex[id];
+            return id = compiletimeIndex[id];
         }
         else // use GC CTFE symbol table because likely `putKey` is used either for Associative array of for similar types.
         {
@@ -156,9 +156,14 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
                     runtimeTable.insert(ctKey);
                 }
              }
-            id = runtimeTable.insert(cast(const(char)[])key);
+            return runtimeTable.insert(cast(const(char)[])key);
         }
-        putKeyId(id);
+    }
+
+    ///
+    void putKey()(scope const char[] key)
+    {
+        putKeyId(_getId(key));
     }
 
     ///
@@ -183,6 +188,13 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
+    void putSymbol(scope const char[] key)
+    {
+        import mir.utility: _expect;
+        putSymbolId(_getId(key));
+    }
+
+    ///
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
@@ -191,12 +203,17 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
-    void putValue(size_t size)(auto ref const BigInt!size num)
+    void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
     {
-        auto view = num.view;
         auto len = view.unsigned.coefficients.length;
         tapeHolder.reserve(len * size_t.sizeof + 16);
         tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, view);
+    }
+
+    ///
+    void putValue(size_t size)(auto ref const BigInt!size num)
+    {
+        putValue(num.view);
     }
 
     ///

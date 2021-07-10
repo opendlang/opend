@@ -9,8 +9,8 @@ module mir.ion.ser.json;
 public import mir.serde;
 import mir.ion.exception: IonException;
 
-static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
-static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
+private static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
+private static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
 
 /++
 JSON serialization back-end
@@ -187,6 +187,12 @@ struct JsonSerializer(string sep, Appender)
 
     ///
     alias annotationsBegin = listBegin;
+
+    ///
+    void putSymbol(scope const char[] symbol)
+    {
+        putValue(symbol);
+    }
 
     ///
     void putAnnotation(scope const(char)[] str)

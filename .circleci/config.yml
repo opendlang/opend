@@ -14,6 +14,7 @@ jobs:
             ninja -C build
             gcc test.c build/libion_meson_example.so
             LD_LIBRARY_PATH=build ./a.out
+            dub build -c bloomberg
 
 orbs:
   mirci: libmir/upload_docs@0.1.4

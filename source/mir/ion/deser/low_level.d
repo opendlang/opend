@@ -10,7 +10,6 @@ import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.ion.value;
 import mir.rc.array: RCArray;
-import mir.reflection: isSomeStruct;
 import mir.small_array;
 import mir.small_string;
 import mir.timestamp;
@@ -18,6 +17,7 @@ import mir.utility: _expect;
 
 import std.traits:
     isArray,
+    isAggregateType,
     ForeachType,
     hasUDA,
     isFloatingPoint,
@@ -31,7 +31,7 @@ package template isFirstOrderSerdeType(T)
 {
     import mir.serde: serdeGetFinalProxy;
 
-    static if (isSomeStruct!T)
+    static if (isAggregateType!T)
     {
         static if (isBigInt!T)
             enum isFirstOrderSerdeType = true;
@@ -409,7 +409,7 @@ version(mir_ion_test) unittest
 package template hasProxy(T)
 {
     import mir.serde: serdeProxy;
-    static if (is(T == enum) || isSomeStruct!T)
+    static if (is(T == enum) || isAggregateType!T)
         enum hasProxy = hasUDA!(T, serdeProxy);
     else
         enum hasProxy = false;
@@ -418,7 +418,7 @@ package template hasProxy(T)
 package template hasScoped(T)
 {
     import mir.serde: serdeScoped;
-    static if (is(T == enum) || isSomeStruct!T)
+    static if (is(T == enum) || isAggregateType!T)
         enum hasScoped = hasUDA!(T, serdeScoped);
     else
         enum hasScoped = false;
