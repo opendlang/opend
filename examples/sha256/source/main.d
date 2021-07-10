@@ -15,21 +15,24 @@ import inteli.shaintrin; // Import SHA instructions
 
 void main()
 {
+    getCurrentThreadHandle();
     ubyte[] onemilliona = new ubyte[512 * 2000];
     onemilliona[] = 'a';
     {
-        auto sw = StopWatch(AutoStart.no);
-        sw.start();
-        auto digest256 = sha256Of(onemilliona);
-        sw.stop();
-        writeln("Phobos: ", sw.peek.total!"usecs", " us => ", digest256.toHexString);
+        ulong before = getTickUs();
+        ubyte[32] digest256;
+        foreach(N; 0..1000)
+            digest256 = sha256Of(onemilliona);
+        ulong after = getTickUs();
+        writeln("Phobos: ", after - before, " => ", digest256.toHexString);
     }
     {
-        auto sw = StopWatch(AutoStart.no);
-        sw.start();
-        auto digest256 = sha256Of_intrin(onemilliona);
-        sw.stop();
-        writeln("Intrinsics: ", sw.peek.total!"usecs", " us => ", digest256.toHexString);
+        ulong before = getTickUs();
+        ubyte[32] digest256;
+        foreach(N; 0..1000)
+            digest256 = sha256Of_intrin(onemilliona);
+        ulong after = getTickUs();
+        writeln("Intrinsics: ", after - before, " => ", digest256.toHexString);
     }
 }
 
@@ -293,4 +296,57 @@ unittest
     assert( sha256Of("abc") == cast(ubyte[]) hexString!"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");  
     assert( sha256Of_intrin(cast(ubyte[]) "a") == cast(ubyte[]) hexString!"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
     assert( sha256Of_intrin(cast(ubyte[]) "abc") == cast(ubyte[]) hexString!"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+}
+
+
+
+version(Windows)
+{
+    import core.sys.windows.windows;
+    __gshared HANDLE hThread;
+
+    extern(Windows) BOOL QueryThreadCycleTime(HANDLE   ThreadHandle, PULONG64 CycleTime) nothrow @nogc;
+    long qpcFrequency;
+    void getCurrentThreadHandle()
+    {
+        hThread = GetCurrentThread();    
+        QueryPerformanceFrequency(&qpcFrequency);
+    }
+}
+else
+{
+    void getCurrentThreadHandle()
+    {
+    }
+}
+
+static long getTickUs(bool precise = true) nothrow @nogc
+{
+    version(Windows)
+    {
+        if (precise)
+        {
+            // Note about -precise measurement
+            // We use the undocumented fact that QueryThreadCycleTime
+            // seem to return a counter in QPC units.
+            // That may not be the case everywhere, so -precise is not reliable and should
+            // never be the default.
+            import core.sys.windows.windows;
+            ulong cycles;
+            BOOL res = QueryThreadCycleTime(hThread, &cycles);
+            assert(res != 0);
+            real us = 1000.0 * cast(real)(cycles) / cast(real)(qpcFrequency);
+            return cast(long)(0.5 + us);
+        }
+        else
+        {
+            import core.time;
+            return convClockFreq(MonoTime.currTime.ticks, MonoTime.ticksPerSecond, 1_000_000);
+        }
+    }
+    else
+    {
+        import core.time;
+        return convClockFreq(MonoTime.currTime.ticks, MonoTime.ticksPerSecond, 1_000_000);
+    }
 }
