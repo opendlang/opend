@@ -1114,6 +1114,11 @@ static if (LDC_with_ARM64)
         return c ^ ((c ^ b) & a);
     }
 
+    long2 vbslq_s64(long2 a, long2 b, long2 c) pure @safe
+    {
+        return c ^ ((c ^ b) & a);
+    }
+
     short8 vcombine_s16(short4 lo, short4 hi) pure @trusted
     {
         short8 r;
@@ -1237,6 +1242,13 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i64.f64")
         long vcvts_s64_f64(double a) pure @safe;
+
+    long2 vdupq_n_s64(long value) pure @safe
+    {
+        long2 r;
+        r = value;
+        return r;
+    }
 
     short4 vget_high_s16(short8 a) pure @trusted
     {
@@ -1414,7 +1426,7 @@ version(unittest)
     }
 }
 
-// needed because in olg GDC from travis, core.stdc.math.isnan isn't pure
+// needed because in old GDC from travis, core.stdc.math.isnan isn't pure
 
 bool isnan(float x) pure @trusted
 {

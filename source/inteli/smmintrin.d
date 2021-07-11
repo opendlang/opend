@@ -177,15 +177,53 @@ unittest
     assert(R.array == correct);
 }
 
-/*
+
 /// Blend packed double-precision (64-bit) floating-point elements from a and b using mask, and store the results in dst.
 __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE42)
+    {
+        // Amazingly enough, GCC/GDC generates the blendvpd instruction
+        // with -msse4.2 but not -msse4.1.
+        // Not sure what is the reason, and there is a replacement sequence.
+        // Sounds like a bug.
+        return __builtin_ia32_blendvpd(a, b, mask);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_blendvpd(a, b, mask);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        long2 lmask = greaterOrEqualMask!long2(vdupq_n_s64(0), cast(long2)mask);
+        return cast(__m128d) vbslq_s64(lmask, cast(long2)b, cast(long2)a);
+    }
+    else
+    {
+        __m128d r;
+        long2 lmask = cast(long2)mask;
+        for (int n = 0; n < 2; ++n)
+        {
+            r.ptr[n] = (lmask.array[n] < 0) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.0, 2.0);
+    __m128d B = _mm_setr_pd(3.0, 4.0);
+    __m128d M1 = _mm_setr_pd(-3.0, 2.0);
+    __m128d M2 = _mm_setr_pd(double.nan, -double.nan);
+    __m128d R1 = _mm_blendv_pd(A, B, M1);
+    __m128d R2 = _mm_blendv_pd(A, B, M2);
+    double[2] correct1 = [3.0, 2.0];
+    double[2] correct2 = [1.0, 4.0];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
 }
-*/
+
 
 /*
 /// Blend packed single-precision (32-bit) floating-point elements from a and b using mask, and store the results in dst.
