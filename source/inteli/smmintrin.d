@@ -147,22 +147,20 @@ __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
     }
-    static if (LDC_with_SSE41)
+    else static if (LDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
     }
+    else static if (LDC_with_ARM64)
+    {
+        // LDC arm64: two instructions since LDC 1.12 -O2
+        byte16 maskSX = vshrq_n_s8(cast(byte16)mask, 7);
+        return cast(__m128i) vbslq_s8(maskSX, cast(byte16)b, cast(byte16)a);
+    }
     else
     {
-        byte16 r;
-        byte16 ba = cast(byte16)a;
-        byte16 bb = cast(byte16)b;
-        byte16 bmask = cast(byte16)mask;
-
-        for (int n = 0; n < 16; ++n)
-        {
-            r.ptr[n] = (bmask.array[n] < 0) ? bb.array[n] : ba.array[n];
-        }
-        return cast(__m128i)r;
+        __m128i m = _mm_cmpgt_epi8(_mm_setzero_si128(), mask);
+        return _mm_xor_si128(_mm_subs_epu8(_mm_xor_si128(a, b), m), b);
     }
 }
 unittest

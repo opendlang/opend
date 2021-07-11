@@ -1109,6 +1109,11 @@ static if (LDC_with_ARM64)
         return a & b;
     }
 
+    byte16 vbslq_s8(byte16 a, byte16 b, byte16 c) pure @safe
+    {
+        return c ^ ((c ^ b) & a);
+    }
+
     short8 vcombine_s16(short4 lo, short4 hi) pure @trusted
     {
         short8 r;
@@ -1382,6 +1387,12 @@ static if (LDC_with_ARM64)
     byte8 vshr_u8(byte8 a, byte8 b) pure @safe
     {
         return a >>> b;
+    }
+
+    byte16 vshrq_n_s8(byte16 a, byte r) pure @safe
+    { 
+        a = a >> byte16(cast(byte)r);
+        return a;
     }
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.tbl1.v8i8")
