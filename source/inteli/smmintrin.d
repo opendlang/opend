@@ -41,14 +41,13 @@ enum int _MM_FROUND_NEARBYINT = (_MM_FROUND_NO_EXC    | _MM_FROUND_CUR_DIRECTION
 __m128i _mm_blend_epi16(int imm8)(__m128i a, __m128i b) @trusted
 {
     // PERF DMD
-    // PERF LDC: clang has access to __builtin_ia32_pblendw128 but we do not, for some reason.
-    // Not sure how to get vblendw
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendw128(cast(short8)a, cast(short8)b, imm8);
     }
     else 
     {
+        // LDC x86 This generates pblendw since LDC 1.1 and -O2
         short8 r;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
@@ -138,15 +137,47 @@ unittest
 }
 
 
-/*
+
 /// Blend packed 8-bit integers from a and b using mask, and store the results in dst.
 __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
 {
+    // PERF DMD
+    // PERF Catastrophic on ARM64
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
+    }
+    static if (LDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
+    }
+    else
+    {
+        byte16 r;
+        byte16 ba = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        byte16 bmask = cast(byte16)mask;
+
+        for (int n = 0; n < 16; ++n)
+        {
+            r.ptr[n] = (bmask.array[n] < 0) ? bb.array[n] : ba.array[n];
+        }
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8( 0,  1,  2,  3,  4,  5,  6,  7,  
+                               8,  9, 10, 11, 12, 13, 14, 15);
+    __m128i B = _mm_setr_epi8(16, 17, 18, 19, 20, 21, 22, 23, 
+                              24, 25, 26, 27, 28, 29, 30, 31);
+    __m128i M = _mm_setr_epi8( 1, -1,  1,  1, -4,  1, -8,  127,  
+                               1,  1, -1, -1,  4,  1,  8, -128);
+    byte16 R = cast(byte16) _mm_blendv_epi8(A, B, M);
+    byte[16] correct =      [  0, 17,  2,  3, 20,  5, 22,  7,
+                               8,  9, 26, 27, 12, 13, 14, 31 ];
+    assert(R.array == correct);
 }
-*/
 
 /*
 /// Blend packed double-precision (64-bit) floating-point elements from a and b using mask, and store the results in dst.

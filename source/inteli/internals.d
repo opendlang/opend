@@ -1073,6 +1073,14 @@ __m128i to_m128i(__m64 a) pure @trusted
     }
 }
 
+// ADDITIONAL x86 INTRINSICS
+// Absent from ldc.gccbuiltins_x86 for some reason, but needed.
+static if (LDC_with_SSE41)
+{
+    pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
+        byte16 __builtin_ia32_pblendvb(byte16, byte16, byte16) pure @safe;
+}
+
 // SOME NEON INTRINSICS
 // Emulating some x86 intrinsics needs access to a range of ARM intrinsics.
 // Not in the public API but the simde project expose it all for the user to use.

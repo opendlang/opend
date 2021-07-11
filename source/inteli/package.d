@@ -6,6 +6,7 @@
 */
 module inteli; 
 
+// Importing with `import inteli;` simply imports all available intrinsics.
 public import inteli.types;
 public import inteli.mmx;
 public import inteli.emmintrin;
