@@ -89,10 +89,19 @@ void serializeValue(S, V)(ref S serializer, in V value)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
+    import mir.ion.ser.ion: serializeIon;
     import mir.ion.ser.text: serializeText;
-    enum Key { @serdeKeys("FOO", "foo") foo }
+    import mir.ion.deser.ion: deserializeIon;
+    import mir.small_string;
+    import mir.rc.array;
+    enum Key { bar, @serdeKeys("FOO", "foo") foo }
     assert(serializeJson(Key.foo) == `"FOO"`);
     assert(serializeText(Key.foo) == `FOO`);
+    assert(serializeIon(Key.foo).deserializeIon!Key == Key.foo);
+    assert(serializeIon(Key.foo).deserializeIon!string == "FOO");
+    assert(serializeIon(Key.foo).deserializeIon!(SmallString!32) == "FOO");
+    auto rcstring = serializeIon(Key.foo).deserializeIon!(RCArray!char);
+    assert(rcstring[] == "FOO");
 }
 
 /// String serialization

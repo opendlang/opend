@@ -2,12 +2,7 @@
 +/
 module mir.ion.ser.unwrap_ids;
 
-private static immutable UnwrapSymbolIdsSerializerExceptionMsg = "Symbol ID exceed symbol table";
-
-version (D_Exceptions)
-{
-    private static immutable UnwrapSymbolIdsSerializerException = new Exception(UnwrapSymbolIdsSerializerExceptionMsg);
-}
+import mir.ion.exception;
 
 /++
 +/
@@ -26,9 +21,9 @@ struct UnwrapSymbolIdsSerializer(Serializer, SymbolMap)
         if (id >= symbolMap.length)
         {
             version (D_Exceptions)
-                throw UnwrapSymbolIdsSerializerException;
+                throw IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
             else
-                assert(0, UnwrapSymbolIdsSerializerExceptionMsg);
+                assert(0, IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionErrorMsg);
         }
     }
 

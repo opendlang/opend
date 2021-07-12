@@ -27,7 +27,7 @@ import std.traits:
     isUnsigned,
     Unqual;
 
-package template isFirstOrderSerdeType(T)
+package template isFirstOrderSerdeType(T, bool proxy = false)
 {
     import mir.serde: serdeGetFinalProxy;
 
@@ -43,30 +43,36 @@ package template isFirstOrderSerdeType(T)
             enum isFirstOrderSerdeType = true;
         else
         static if (is(T : SmallString!maxLength, size_t maxLength))
-            enum isFirstOrderSerdeType = true;
+            enum isFirstOrderSerdeType = proxy;
         else
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(E, proxy);
         else
         static if (is(T : RCArray!E, E))
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(E, proxy);
         else
         static if (is(T == serdeGetFinalProxy!T))
             enum isFirstOrderSerdeType = false;
         else
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T, true);
     }
     else
     static if (isArray!T)
-        enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T));
+        enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T), proxy);
     else
     static if (is(T == V[K], K, V))
         enum isFirstOrderSerdeType = false;
     else
+    static if (is(T == enum))
+        enum isFirstOrderSerdeType = false;
+    else
+    static if (isSomeChar!T)
+        enum isFirstOrderSerdeType = proxy;
+    else
     static if (is(T == serdeGetFinalProxy!T))
         enum isFirstOrderSerdeType = true;
     else
-        enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
+        enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T, true);
 }
 
 version(mir_ion_test)
@@ -449,7 +455,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     if (is(T == enum) && !hasProxy!T)
 {
     import mir.serde: serdeParseEnum;
-    const(char)[] ionValue;
+    scope const(char)[] ionValue;
     if (auto error = data.get(ionValue))
         return error;
     if (serdeParseEnum(ionValue, value))
@@ -479,7 +485,6 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow
     if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
 {
-    // TODO: symbol deserialization
     if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
         return IonErrorCode.expectedStringValue;
     auto ionValue = data.trustedGet!(const(char)[]);
@@ -508,7 +513,7 @@ Deserialize ref-counted string value.
 +/
 IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     pure @safe nothrow
-    if (is(T == RCArray!E, E) && is(Unqual!E == char))
+    if (is(T == RCArray!E, E) && isSomeChar!E)
 {
     import mir.rc.array: rcarray;
     import std.traits: TemplateArgsOf;
@@ -539,7 +544,6 @@ Deserialize small string value.
 IonErrorCode deserializeValueImpl(T : SmallString!maxLength, size_t maxLength)(IonDescribedValue data, ref T value)
     pure @safe nothrow
 {
-    // TODO: symbol deserialization
     if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
         return IonErrorCode.expectedStringValue;
     auto ionValue = data.trustedGet!(const(char)[]);
@@ -616,7 +620,6 @@ IonErrorCode deserializeScopedValueImpl(T)(IonDescribedValue data, ref T value)
     pure @trusted nothrow @nogc
     if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
 {
-    // TODO: symbol deserialization
     if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
         return IonErrorCode.expectedStringValue;
     auto ionValue = data.trustedGet!(const(char)[]);

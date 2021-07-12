@@ -14,7 +14,9 @@ import mir.ion.value;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
-import std.traits: ForeachType, hasUDA, Unqual;
+import std.traits: ForeachType, hasUDA, Unqual, isSomeChar, EnumMembers, TemplateArgsOf;
+
+private alias AliasSeq(T...) = T;
 
 public import mir.serde;
 
@@ -39,28 +41,29 @@ private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(Io
     }
 }
 
-IonException deserializeScoped(T)(IonDescribedValue data, ref T value)
-    if (isFirstOrderSerdeType!T)
+template deserializeScoped(T)
 {
-    return deserializeScopedValueImpl(data, value).ionException;
+    IonException deserializeScoped(IonDescribedValue data, ref T value)
+    {
+        return deserializeScopedValueImpl(data, value).ionException;
+    }
+
+    IonException deserializeScoped(IonDescribedValue data, scope TableParams!true params, ref T value)
+    {
+        return deserializeScoped(data, value);
+    }
 }
 
-IonException deserializeScoped(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
-    if (isFirstOrderSerdeType!T)
-{
-    return deserializeScoped(data, value);
-}
-
-IonException deserializeValue_(T)(IonDescribedValue data, ref T value)
-    if (isFirstOrderSerdeType!T)
+IonException deserializeValue_(T, bool proxy = false)(IonDescribedValue data, ref T value)
+    if (isFirstOrderSerdeType!T || proxy)
 {
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T)(IonDescribedValue data, scope TableParams!true params, ref T value)
-    if (isFirstOrderSerdeType!T)
+IonException deserializeValue_(T, bool proxy = false)(IonDescribedValue data, scope TableParams!true params, ref T value)
+    if (isFirstOrderSerdeType!T || proxy)
 {
-    return deserializeValue_(data, value);
+    return deserializeValue_!(T, proxy)(data, value);
 }
 
 template deserializeListToScopedBuffer(alias impl, bool exteneded)
@@ -83,7 +86,6 @@ template deserializeListToScopedBuffer(alias impl, bool exteneded)
         return null;
     }
 }
-private alias AliasSeq(T...) = T;
 
 template TableParams(bool exteneded)
 {
@@ -218,6 +220,74 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                 return null;
             }
             return IonErrorCode.expectedListValue.ionException;
+        }
+        else
+        static if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
+        {
+            if (data.descriptor.type == IonTypeCode.symbol)
+            {
+                size_t id;
+                if (auto exc = data.trustedGet!IonSymbolID.get(id))
+                    return exc.ionException;
+                if (id >= table.length)
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                import mir.conv: to;
+                if (exteneded && !is(typeof(table[id]) == string) && !is(T == string))
+                    value = table[id].dup;
+                else
+                    value = table[id].to!T;
+                return null;
+            }
+            if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+                return IonErrorCode.expectedStringValue.ionException;
+            auto ionValue = data.trustedGet!(const(char)[]);
+            static if (is(T == string))
+                value = ionValue.idup;
+            else
+                value = ionValue.dup;
+            return null; 
+        }
+        else
+        static if (is(T : SmallString!maxLength, size_t maxLength))
+        {
+            if (data.descriptor.type == IonTypeCode.symbol)
+            {
+                size_t id;
+                if (auto exc = data.trustedGet!IonSymbolID.get(id))
+                    return exc.ionException;
+                if (id >= table.length)
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                value = table[id];
+                return null;
+            }
+            if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+                return IonErrorCode.expectedStringValue.ionException;
+            auto ionValue = data.trustedGet!(const(char)[]);
+            if (ionValue.length > maxLength)
+                return IonErrorCode.smallStringOverflow.ionException;
+            value.trustedAssign(ionValue);
+            return null; 
+        }
+        else
+        static if (is(T == RCArray!RC, RC) && isSomeChar!RC)
+        {
+            import mir.rc.array: rcarray;
+            if (data.descriptor.type == IonTypeCode.symbol)
+            {
+                size_t id;
+                if (auto exc = data.trustedGet!IonSymbolID.get(id))
+                    return exc.ionException;
+                if (id >= table.length)
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                value = table[id].rcarray!(TemplateArgsOf!T);
+                return null;
+            }
+            import std.traits: TemplateArgsOf;
+            if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+                return IonErrorCode.expectedStringValue.ionException;
+            auto ionValue = data.trustedGet!(const(char)[]);
+            value = ionValue.rcarray!(TemplateArgsOf!T);
+            return null; 
         }
         else
         static if (is(T == D[], D))
@@ -434,6 +504,49 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             return null;
         }
         else
+        static if (is(T == enum))
+        {
+            scope const(char)[] ionValue;
+            if (data.descriptor.type == IonTypeCode.symbol)
+            {
+                size_t id;
+                if (auto exc = data.trustedGet!IonSymbolID.get(id))
+                    return exc.ionException;
+                if (id >= table.length)
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+
+                auto originalId = id;
+                if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, id))
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+
+                switch (id)
+                {
+                    foreach(i, member; EnumMembers!T)
+                    {{
+                        enum keys = serdeGetKeysIn(EnumMembers!T[i]);
+                        static assert (keys.length, "At least one input enum key is required");
+                        static foreach (key; keys)
+                        {
+                            case findKey(symbolTable, key):
+                            value = member;
+                            return null;
+                        }
+                    }}
+                    default:
+                        static if (hasUDA!(T, serdeIgnoreCase))
+                            ionValue = table[id];
+                        else
+                            return IonErrorCode.expectedEnumValue.ionException;
+                }
+            }
+            import mir.serde: serdeParseEnum;
+            if (auto error = data.get(ionValue))
+                return error.ionException;
+            if (serdeParseEnum(ionValue, value))
+                return null;
+            return IonErrorCode.expectedEnumValue.ionException;
+        }
+        else
         static if (isVariant!T)
         {
             static if (getAlgebraicAnnotationsOfVariant!T.length)
@@ -493,7 +606,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.string:
                     {
                         string str;
-                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, str))
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, str))
                             return exception;
                         value = str;
                         return retNull;
@@ -505,7 +618,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     case IonTypeCode.string:
                     {
                         Filter!(isSmallString, Types)[0] str;
-                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, str))
+                        if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, str))
                             return exception;
                         value = str;
                         return retNull;
