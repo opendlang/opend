@@ -196,7 +196,9 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        long2 lmask = greaterOrEqualMask!long2(vdupq_n_s64(0), cast(long2)mask);
+        long2 zero;
+        zero = 0;
+        long2 lmask = greaterOrEqualMask!long2(zero, cast(long2)mask);
         return cast(__m128d) vbslq_s64(lmask, cast(long2)b, cast(long2)a);
     }
     else
