@@ -211,7 +211,7 @@ public:
 
     override void stroke()
     {
-        output(format(`<path d="%s" stroke="%s" stroke-width="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f"/>`, _currentPath, _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
+        output(format(`<path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-dasharray="%-(%f %)" stroke-dashoffset="%f"/>`, _currentPath, _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
     override void fillAndStroke()
