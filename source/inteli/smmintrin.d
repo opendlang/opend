@@ -227,15 +227,43 @@ unittest
 }
 
 
-/*
 /// Blend packed single-precision (32-bit) floating-point elements from a and b using mask, and store the results in dst.
 __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_blendvps(a, b, mask);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_blendvps(a, b, mask);
+    }
+    else
+    {
+        __m128 r;
+        int4 lmask = cast(int4)mask;
+        for (int n = 0; n < 4; ++n)
+        {
+            r.ptr[n] = (lmask.array[n] < 0) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
 }
 unittest
 {
+    __m128 A  = _mm_setr_ps( 0.0f, 1.0f, 2.0f, 3.0f);
+    __m128 B  = _mm_setr_ps( 4.0f, 5.0f, 6.0f, 7.0f);
+    __m128 M1 = _mm_setr_ps(-3.0f, 2.0f, 1.0f, -10000.0f);
+    __m128 M2 = _mm_setr_ps(float.nan, -float.nan, -0.0f, +0.0f);
+    __m128 R1 = _mm_blendv_ps(A, B, M1);
+    __m128 R2 = _mm_blendv_ps(A, B, M2);
+    float[4] correct1 =    [ 4.0f, 1.0f, 2.0f, 7.0f];
+    float[4] correct2 =    [ 0.0f, 5.0f, 6.0f, 3.0f];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
 }
-*/
+
 
 /*
 /// Round the packed double-precision (64-bit) floating-point elements in a up to an integer value, and store the results as packed double-precision floating-point elements in dst.
