@@ -231,7 +231,7 @@ unittest
 __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
 {
     // PERF DMD
-    static if (GDC_with_SSE42)
+    static if (GDC_with_SSE41)
     {
         return __builtin_ia32_blendvps(a, b, mask);
     }
@@ -312,15 +312,45 @@ unittest
 }
 */
 
-/*
+
 /// Compare packed 64-bit integers in a and b for equality, and store the results in dst.
 __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i)__builtin_ia32_pcmpeqq(cast(long2)a, cast(long2)b);
+    }
+    else version(LDC)
+    {
+        // LDC x86: generates pcmpeqq since LDC 1.1 -O1
+        //     arm64: generates cmeq since LDC 1.8 -O1
+        return cast(__m128i) equalMask!long2(cast(long2)a, cast(long2)b);
+    }
+    else
+    {
+        // Clever pcmpeqd + pand use with LDC 1.24 -O2
+        long2 la = cast(long2)a;
+        long2 lb = cast(long2)b;
+        long2 res;
+        res.ptr[0] = (la.array[0] == lb.array[0]) ? -1 : 0;
+        res.ptr[1] = (la.array[1] == lb.array[1]) ? -1 : 0;
+        return cast(__m128i)res;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi64(-1, -2);
+    __m128i B = _mm_setr_epi64(-3, -2);
+    __m128i C = _mm_setr_epi64(-1, -4);
+    long2 AB = cast(long2) _mm_cmpeq_epi64(A, B);
+    long2 AC = cast(long2) _mm_cmpeq_epi64(A, C);
+    long[2] correct1 = [0, -1];
+    long[2] correct2 = [-1, 0];
+    assert(AB.array == correct1);
+    assert(AC.array == correct2);
 }
-*/
+
 
 /*
 /// Sign extend packed 16-bit integers in a to packed 32-bit integers, and store the results in dst.

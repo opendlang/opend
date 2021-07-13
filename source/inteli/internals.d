@@ -1075,6 +1075,7 @@ __m128i to_m128i(__m64 a) pure @trusted
 
 // ADDITIONAL x86 INTRINSICS
 // Absent from ldc.gccbuiltins_x86 for some reason, but needed.
+// https://github.com/ldc-developers/llvm-project/blob/ldc-release/12.x/llvm/include/llvm/IR/IntrinsicsX86.td
 static if (LDC_with_SSE41)
 {
     pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
