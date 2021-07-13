@@ -1109,6 +1109,11 @@ static if (LDC_with_ARM64)
         return a & b;
     }
 
+    int4 vbslq_s32(int4 a, int4 b, int4 c) pure @safe
+    {
+        return c ^ ((c ^ b) & a);
+    }
+
     byte16 vbslq_s8(byte16 a, byte16 b, byte16 c) pure @safe
     {
         return c ^ ((c ^ b) & a);

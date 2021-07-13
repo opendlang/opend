@@ -239,6 +239,13 @@ __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
     {
         return __builtin_ia32_blendvps(a, b, mask);
     }
+    else static if (LDC_with_ARM64)
+    {
+        int4 zero;
+        zero = 0;
+        int4 lmask = greaterOrEqualMask!int4(zero, cast(int4)mask);
+        return cast(__m128) vbslq_s32(lmask, cast(int4)b, cast(int4)a);
+    }
     else
     {
         __m128 r;
