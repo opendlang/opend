@@ -19,6 +19,8 @@ import printed.font.opentype;
 
 //debug = displayParsedFonts;
 
+//debug = showMatchedFonts;
+
 /// FontRegistry register partial font information for all fonts
 /// from the system directories, plus the ones added by the user.
 /// Aggregates all fonts by family, a bit like a browser or Word does.
@@ -139,6 +141,12 @@ class FontRegistry
         auto matchedFont = best.getParsedFont();
 
         _matchedFonts[fontSpec] = matchedFont;
+
+        debug(showMatchedFonts)
+        {
+            import std.stdio;
+            writeln("Selected font = ", matchedFont.fullFontName());
+        }
 
         return matchedFont;
     }
