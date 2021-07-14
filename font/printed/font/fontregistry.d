@@ -191,7 +191,16 @@ private:
     /// Get a list of system font directories
     static private string[] getFontDirectories()
     {
-        return standardPaths(StandardPath.fonts);
+        string[] paths = standardPaths(StandardPath.fonts);
+        version(Windows)
+        {
+            string[] appdata = standardPaths(StandardPath.data);
+            foreach(p; appdata)
+            {
+                paths ~= p ~ `\Microsoft\Windows\Fonts`;
+            }
+        }
+        return paths;
     }
 
     /// Gives back a list of absolute pathes of .ttf files we know about
