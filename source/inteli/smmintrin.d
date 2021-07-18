@@ -68,7 +68,7 @@ unittest
 }
 
 
-/// Blend packed double-precision (64-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.
+/// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using control mask `imm8`.
 // Note: changed signature, GDC needs a compile-time value for imm8.
 __m128d _mm_blend_pd (__m128d a, __m128d b, const int imm8) @trusted
 {
@@ -98,7 +98,7 @@ unittest
 }
 
 
-/// Blend packed single-precision (32-bit) floating-point elements from a and b using control mask imm8, and store the results in dst.
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using control mask `imm8`.
 // Note: changed signature, GDC needs a compile-time value for imm8.
 __m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
 {
@@ -138,7 +138,7 @@ unittest
 
 
 
-/// Blend packed 8-bit integers from a and b using mask, and store the results in dst.
+/// Blend packed 8-bit integers from `a` and `b` using `mask`.
 __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
 {
     // PERF DMD
@@ -178,7 +178,7 @@ unittest
 }
 
 
-/// Blend packed double-precision (64-bit) floating-point elements from a and b using mask, and store the results in dst.
+/// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using `mask`.
 __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
 {
     // PERF DMD
@@ -227,7 +227,7 @@ unittest
 }
 
 
-/// Blend packed single-precision (32-bit) floating-point elements from a and b using mask, and store the results in dst.
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using `mask`.
 __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
 {
     // PERF DMD
@@ -313,7 +313,7 @@ unittest
 */
 
 
-/// Compare packed 64-bit integers in a and b for equality, and store the results in dst.
+/// Compare packed 64-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
@@ -358,7 +358,7 @@ __m128i _mm_cvtepi16_epi32 (__m128i a) @trusted
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i)__builtin_ia32_pmovsxwd(cast(int4)a);
+        return cast(__m128i)__builtin_ia32_pmovsxwd128(cast(short8)a);
     }
     else version(LDC)
     {
@@ -371,7 +371,6 @@ __m128i _mm_cvtepi16_epi32 (__m128i a) @trusted
     }
     else
     {
-        // this is reasonable on ARM64, but bad in x86 with all compilers.
         short8 sa = cast(short8)a;
         int4 r;
         r.ptr[0] = sa.array[0];
@@ -389,19 +388,43 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
-/// Sign extend packed 16-bit integers in a to packed 64-bit integers, and store the results in dst.
+/// Sign extend packed 16-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepi16_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
+    version(GNU)
+    {
+        return cast(__m128i)__builtin_ia32_pmovsxwq128(cast(short8)a);
+    }
+    else version(LDC)
+    {
+        // LDC x86: Generates pmovsxwq since LDC 1.1 -O0, also good in arm64
+        enum ir = `
+            %v = shufflevector <8 x i16> %0,<8 x i16> %0, <2 x i32> <i32 0, i32 1>
+            %r = sext <2 x i16> %v to <2 x i64>
+            ret <2 x i64> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, long2, short8)(cast(short8)a);
+    }
+    else
+    {
+        short8 sa = cast(short8)a;
+        long2 r;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sa.array[1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(-32768, 32767, 0, 0, 0, 0, 0, 0);
+    long2 C = cast(long2) _mm_cvtepi16_epi64(A);
+    long[2] correct = [-32768, 32767];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
-/// Sign extend packed 32-bit integers in a to packed 64-bit integers, and store the results in dst.
+/// Sign extend packed 32-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepi32_epi64 (__m128i a) @trusted
 {
 }
@@ -411,7 +434,7 @@ unittest
 */
 
 /*
-/// Sign extend packed 8-bit integers in a to packed 16-bit integers, and store the results in dst.
+/// Sign extend packed 8-bit integers in `a` to packed 16-bit integers.
 __m128i _mm_cvtepi8_epi16 (__m128i a) @trusted
 {
 }
@@ -421,7 +444,7 @@ unittest
 */
 
 /*
-/// Sign extend packed 8-bit integers in a to packed 32-bit integers, and store the results in dst.
+/// Sign extend packed 8-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepi8_epi32 (__m128i a) @trusted
 {
 }
@@ -431,7 +454,7 @@ unittest
 */
 
 /*
-/// Sign extend packed 8-bit integers in the low 8 bytes of a to packed 64-bit integers, and store the results in dst.
+/// Sign extend packed 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepi8_epi64 (__m128i a) @trusted
 {
 }
@@ -441,7 +464,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 16-bit integers in a to packed 32-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepu16_epi32 (__m128i a) @trusted
 {
 }
@@ -451,7 +474,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 16-bit integers in a to packed 64-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 16-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu16_epi64 (__m128i a) @trusted
 {
 }
@@ -461,7 +484,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 32-bit integers in a to packed 64-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 32-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu32_epi64 (__m128i a) @trusted
 {
 }
@@ -471,7 +494,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 8-bit integers in a to packed 16-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
 __m128i _mm_cvtepu8_epi16 (__m128i a) @trusted
 {
 }
@@ -481,7 +504,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 8-bit integers in a to packed 32-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 8-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepu8_epi32 (__m128i a) @trusted
 {
 }
@@ -491,7 +514,7 @@ unittest
 */
 
 /*
-/// Zero extend packed unsigned 8-bit integers in the low 8 byte sof a to packed 64-bit integers, and store the results in dst.
+/// Zero extend packed unsigned 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepu8_epi64 (__m128i a) @trusted
 {
 }
@@ -761,7 +784,7 @@ unittest
 */
 
 /*
-/// Convert packed signed 32-bit integers from a and b to packed 16-bit integers using unsigned saturation, and store the results in dst.
+/// Convert packed signed 32-bit integers from `a` and `b` to packed 16-bit integers using unsigned saturation.
 __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
 {
 }
