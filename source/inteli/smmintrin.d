@@ -194,9 +194,6 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
     {
         return __builtin_ia32_blendvpd(a, b, mask);
     }
-    // For some reason this does'nt work with a NaN mask in arm64 Linux, but does in arm64 macOS
-    // Workaround that.
-    /*
     else static if (LDC_with_ARM64)
     {
         long2 shift;
@@ -204,7 +201,6 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
         long2 lmask = cast(long2)mask >> shift;
         return cast(__m128d) vbslq_s64(lmask, cast(long2)b, cast(long2)a);
     }
-    */    
     else
     {
         __m128d r;
@@ -225,7 +221,7 @@ unittest
  //   __m128d M3 = _mm_setr_pd(0.0, -0.0);
     __m128d R1 = _mm_blendv_pd(A, B, M1);
     __m128d R2 = _mm_blendv_pd(A, B, M2);
-    __m128d R3 = _mm_blendv_pd(A, B, M3);
+  //  __m128d R3 = _mm_blendv_pd(A, B, M3);
     double[2] correct1 = [3.0, 2.0];
     double[2] correct2 = [1.0, 4.0];
  //   double[2] correct3 = [1.0, 4.0];
