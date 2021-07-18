@@ -227,6 +227,8 @@ unittest
     double[2] correct3 = [1.0, 4.0];
     assert(R1.array == correct1);
     assert(R2.array == correct2);
+    _mm_print_pd(M3);
+    _mm_print_pd(R3);
     assert(R3.array == correct3);
 }
 
