@@ -196,9 +196,9 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        long2 zero;
-        zero = 0;
-        long2 lmask = greaterOrEqualMask!long2(zero, cast(long2)mask);
+        long2 shift;
+        shift = 63;
+        long2 lmask = cast(long2)mask >> shift;
         return cast(__m128d) vbslq_s64(lmask, cast(long2)b, cast(long2)a);
     }
     else
@@ -218,12 +218,16 @@ unittest
     __m128d B = _mm_setr_pd(3.0, 4.0);
     __m128d M1 = _mm_setr_pd(-3.0, 2.0);
     __m128d M2 = _mm_setr_pd(double.nan, -double.nan);
+    __m128d M3 = _mm_setr_pd(0.0, -0.0);
     __m128d R1 = _mm_blendv_pd(A, B, M1);
     __m128d R2 = _mm_blendv_pd(A, B, M2);
+    __m128d R3 = _mm_blendv_pd(A, B, M3);
     double[2] correct1 = [3.0, 2.0];
     double[2] correct2 = [1.0, 4.0];
+    double[2] correct3 = [1.0, 4.0];
     assert(R1.array == correct1);
     assert(R2.array == correct2);
+    assert(R3.array == correct3);
 }
 
 
@@ -241,9 +245,9 @@ __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        int4 zero;
-        zero = 0;
-        int4 lmask = greaterOrEqualMask!int4(zero, cast(int4)mask);
+        int4 shift;
+        shift = 31;
+        int4 lmask = cast(int4)mask >> shift;
         return cast(__m128) vbslq_s32(lmask, cast(int4)b, cast(int4)a);
     }
     else
