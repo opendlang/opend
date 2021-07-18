@@ -236,11 +236,11 @@ __m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
             } 
             else if (srcpos > 15) 
             {
-                r.ptr[i] = ab[(srcpos) & 15];
+                r.ptr[i] = ab.array[(srcpos) & 15];
             } 
             else 
             {
-                r.ptr[i] = bb[srcpos];
+                r.ptr[i] = bb.array[srcpos];
             }
        }
        return cast(__m128i)r;
@@ -328,11 +328,11 @@ __m64 _mm_alignr_pi8(ubyte count)(__m64 a, __m64 b) @trusted
             } 
             else if (srcpos > 7) 
             {
-                r.ptr[i] = ab[(srcpos) & 7];
+                r.ptr[i] = ab.array[(srcpos) & 7];
             } 
             else 
             {
-                r.ptr[i] = bb[srcpos];
+                r.ptr[i] = bb.array[srcpos];
             }
        }
        return cast(__m64)r;
