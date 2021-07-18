@@ -422,16 +422,39 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
 /// Sign extend packed 32-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepi32_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
+    version(GNU)
+    {
+        return cast(__m128i)__builtin_ia32_pmovsxdq128(cast(int4)a);
+    }
+    else version(LDC)
+    {
+        // LDC x86: Generates pmovsxdq since LDC 1.1 -O0, also good in arm64
+        enum ir = `
+            %v = shufflevector <4 x i32> %0,<4 x i32> %0, <2 x i32> <i32 0, i32 1>
+            %r = sext <2 x i32> %v to <2 x i64>
+            ret <2 x i64> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, long2, int4)(cast(int4)a);
+    }
+    else
+    {
+        int4 sa = cast(int4)a;
+        long2 r;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sa.array[1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(-4, 42, 0, 0);
+    long2 C = cast(long2) _mm_cvtepi32_epi64(A);
+    long[2] correct = [-4, 42];
+    assert(C.array == correct);
 }
-*/
 
 /*
 /// Sign extend packed 8-bit integers in `a` to packed 16-bit integers.
