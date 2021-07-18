@@ -392,7 +392,7 @@ unittest
 __m128i _mm_cvtepi16_epi64 (__m128i a) @trusted
 {
     // PERF DMD
-    version(GNU)
+    static if (GDC_with_SSE41)
     {
         return cast(__m128i)__builtin_ia32_pmovsxwq128(cast(short8)a);
     }
@@ -426,7 +426,7 @@ unittest
 __m128i _mm_cvtepi32_epi64 (__m128i a) @trusted
 {
     // PERF DMD
-    version(GNU)
+    static if (GDC_with_SSE41)
     {
         return cast(__m128i)__builtin_ia32_pmovsxdq128(cast(int4)a);
     }
@@ -456,35 +456,103 @@ unittest
     assert(C.array == correct);
 }
 
-/*
+
 /// Sign extend packed 8-bit integers in `a` to packed 16-bit integers.
 __m128i _mm_cvtepi8_epi16 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        alias ubyte16 = __vector(ubyte[16]);
+        return cast(__m128i)__builtin_ia32_pmovsxbw128(cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        // LDC x86: pmovsxbw generated since LDC 1.1.0 -O0 
+        // LDC ARM64: sshll generated since LDC 1.8.0 -O1
+        enum ir = `
+            %v = shufflevector <16 x i8> %0,<16 x i8> %0, <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>
+            %r = sext <8 x i8> %v to <8 x i16>
+            ret <8 x i16> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, short8, byte16)(cast(byte16)a);
+    }
+    else
+    {
+        byte16 sa = cast(byte16)a;
+        short8 r;
+        foreach(n; 0..8)
+            r.ptr[n] = sa.array[n];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -128, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    short8 C = cast(short8) _mm_cvtepi8_epi16(A);
+    short[8] correct = [127, -128, 1, -1, 0, 2, -4, -8];
+    assert(C.array == correct);
 }
-*/
 
-/*
+
+
 /// Sign extend packed 8-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepi8_epi32 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        alias ubyte16 = __vector(ubyte[16]);
+        return cast(__m128i)__builtin_ia32_pmovsxbd128(cast(ubyte16)a);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        // LDC x86: Generates pmovsxbd since LDC 1.1 -O0
+        enum ir = `
+            %v = shufflevector <16 x i8> %0,<16 x i8> %0, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+            %r = sext <4 x i8> %v to <4 x i32>
+            ret <4 x i32> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, int4, byte16)(cast(byte16)a);
+    }
+    else
+    {
+        // LDC ARM64: this gives the same codegen than a vmovl_s16/vmovl_s8 sequence would
+        byte16 sa = cast(byte16)a;
+        int4 r;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sa.array[1];
+        r.ptr[2] = sa.array[2];
+        r.ptr[3] = sa.array[3];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -128, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    int4 C = cast(int4) _mm_cvtepi8_epi32(A);
+    int[4] correct = [127, -128, 1, -1];
+    assert(C.array == correct);
 }
-*/
 
-/*
+
 /// Sign extend packed 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepi8_epi64 (__m128i a) @trusted
 {
+    {
+        byte16 sa = cast(byte16)a;
+        long2 r;
+        foreach(n; 0..2)
+            r.ptr[n] = sa.array[n];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -128, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    long2 C = cast(long2) _mm_cvtepi8_epi64(A);
+    long[2] correct = [127, -128];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Zero extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
