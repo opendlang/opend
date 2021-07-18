@@ -352,15 +352,43 @@ unittest
 }
 
 
-/*
-/// Sign extend packed 16-bit integers in a to packed 32-bit integers, and store the results in dst.
+/// Sign extend packed 16-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepi16_epi32 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i)__builtin_ia32_pmovsxwd(cast(int4)a);
+    }
+    else version(LDC)
+    {
+        // LDC x86: Generates pmovsxwd since LDC 1.1 -O0, also good in arm64
+        enum ir = `
+            %v = shufflevector <8 x i16> %0,<8 x i16> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
+            %r = sext <4 x i16> %v to <4 x i32>
+            ret <4 x i32> %r`;
+        return cast(__m128d) LDCInlineIR!(ir, int4, short8)(cast(short8)a);
+    }
+    else
+    {
+        // this is reasonable on ARM64, but bad in x86 with all compilers.
+        short8 sa = cast(short8)a;
+        int4 r;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sa.array[1];
+        r.ptr[2] = sa.array[2];
+        r.ptr[3] = sa.array[3];
+        return r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(-1, 0, -32768, 32767, 0, 0, 0, 0);
+    int4 C = cast(int4) _mm_cvtepi16_epi32(A);
+    int[4] correct = [-1, 0, -32768, 32767];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Sign extend packed 16-bit integers in a to packed 64-bit integers, and store the results in dst.
