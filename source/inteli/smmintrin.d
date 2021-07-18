@@ -537,6 +537,23 @@ unittest
 /// Sign extend packed 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepi8_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        alias ubyte16 = __vector(ubyte[16]);
+        return cast(__m128i)__builtin_ia32_pmovsxbq128(cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        // LDC x86: Generates pmovsxbq since LDC 1.1 -O0, 
+        // LDC arm64: it's ok since LDC 1.8 -O1
+        enum ir = `
+            %v = shufflevector <16 x i8> %0,<16 x i8> %0, <2 x i32> <i32 0, i32 1>
+            %r = sext <2 x i8> %v to <2 x i64>
+            ret <2 x i64> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, long2, byte16)(cast(byte16)a);
+    }
+    else
     {
         byte16 sa = cast(byte16)a;
         long2 r;
