@@ -108,9 +108,16 @@ __m128i _mm_abs_epi8 (__m128i a) @trusted
     {
         return cast(__m128i) vabsq_s8(cast(byte16)a);
     }
-    else static if (LDC_with_SSSE3)
+    else version(LDC)
     {
-        return __asm!__m128i("pabsb $1,$0","=x,x",a);
+        // LDC x86: generates pabsb since LDC 1.1 -O1
+        //     arm64: generates abs since LDC 1.8 -O1
+        enum ir = `
+                %n = sub <16 x i8> <i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0>, %0
+                %s = icmp slt <16 x i8> <i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0, i8 0>, %0
+                %r = select <16 x i1> %s, <16 x i8> %0, <16 x i8> %n
+                ret <16 x i8> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, byte16, byte16)(cast(byte16)a);
     }
     else
     {
