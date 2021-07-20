@@ -222,6 +222,7 @@ unittest
     assert(R1.array == correct1);
 
     // BUG: LDC _mm_blendv_pd doesn't work with NaN mask in arm64 Linux for some unknown reason.
+    // but it does work in arm64 macOS
     // yields different results despite FP seemingly not being used
     version(linux)
     {}
@@ -587,25 +588,69 @@ unittest
 }
 
 
-/*
 /// Zero extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepu16_epi32 (__m128i a) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmovzxwd128(cast(short8)a);
+    }
+    else
+    {
+        // LDC x86: generates pmovzxwd since LDC 1.12 -O1 also good without SSE4.1
+        //     arm64: ushll since LDC 1.12 -O1
+        short8 sa = cast(short8)a;
+        int4 r;
+        r.ptr[0] = cast(ushort)sa.array[0];
+        r.ptr[1] = cast(ushort)sa.array[1];
+        r.ptr[2] = cast(ushort)sa.array[2];
+        r.ptr[3] = cast(ushort)sa.array[3];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(-1, 0, -32768, 32767, 0, 0, 0, 0);
+    int4 C = cast(int4) _mm_cvtepu16_epi32(A);
+    int[4] correct = [65535, 0, 32768, 32767];
+    assert(C.array == correct);
 }
-*/
 
-/*
+
 /// Zero extend packed unsigned 16-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu16_epi64 (__m128i a) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmovzxwq128(cast(short8)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // LDC arm64: a bit shorter than below
+        short8 sa = cast(short8)a;
+        long2 r;
+        for(int n = 0; n < 2; ++n)
+            r.ptr[n] = cast(ushort)sa.array[n];
+        return cast(__m128i)r;
+    }
+    else
+    {
+        // LDC x86: generates pmovzxwd since LDC 1.12 -O1 also good without SSE4.1
+        short8 sa = cast(short8)a;
+        long2 r;
+        r.ptr[0] = cast(ushort)sa.array[0];
+        r.ptr[1] = cast(ushort)sa.array[1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(-1, 0, -32768, 32767, 0, 0, 0, 0);
+    long2 C = cast(long2) _mm_cvtepu16_epi64(A);
+    long[2] correct = [65535, 0];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Zero extend packed unsigned 32-bit integers in `a` to packed 64-bit integers.
