@@ -1329,9 +1329,7 @@ __m128i _mm_cvtps_epi32 (__m128 a) @trusted
 {
     static if (LDC_with_SSE2)
     {
-        // Disabled, since it fail with optimizations unfortunately
-        //alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
-        return __asm!__m128i("cvtps2dq $1,$0","=x,x",a);
+        return cast(__m128i) __builtin_ia32_cvtps2dq(a);
     }
     else static if (GDC_with_SSE2)
     {
@@ -1364,9 +1362,9 @@ unittest
 {
     // GDC bug #98607
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
-    // GDC does not provide optimization barrier for roundign mode.
-    // Workarounded with different literals. Thsi bug will likely only manifest in unittest.
-    // GDC people provided no actual fix and instead say other compilers are buggy... when they aren't.
+    // GDC does not provide optimization barrier for rounding mode.
+    // Workarounded with different literals. This bug will likely only manifest in unittest.
+    // GCC people provided no actual fix and instead say other compilers are buggy... when they aren't.
 
     uint savedRounding = _MM_GET_ROUNDING_MODE();
 
