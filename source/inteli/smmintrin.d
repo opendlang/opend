@@ -511,7 +511,6 @@ unittest
 }
 
 
-
 /// Sign extend packed 8-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepi8_epi32 (__m128i a) @trusted
 {
@@ -591,6 +590,7 @@ unittest
 /// Zero extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepu16_epi32 (__m128i a) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pmovzxwd128(cast(short8)a);
@@ -620,6 +620,7 @@ unittest
 /// Zero extend packed unsigned 16-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu16_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pmovzxwq128(cast(short8)a);
@@ -655,6 +656,7 @@ unittest
 /// Zero extend packed unsigned 32-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu32_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pmovzxdq128(cast(short8)a);
@@ -679,15 +681,40 @@ unittest
 }
 
 
-/*
 /// Zero extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
 __m128i _mm_cvtepu8_epi16 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmovzxbw128(cast(short8)a);
+    }
+    else
+    {
+        // LDC x86: generates pmovzxbw since LDC 1.12 -O1 also good without SSE4.1
+        //     arm64: ushll since LDC 1.12 -O1
+        // PERF: catastrophic with GDC without SSE4.1
+        byte16 sa = cast(byte16)a;
+        short8 r;
+        r.ptr[0] = cast(ubyte)sa.array[0];
+        r.ptr[1] = cast(ubyte)sa.array[1];
+        r.ptr[2] = cast(ubyte)sa.array[2];
+        r.ptr[3] = cast(ubyte)sa.array[3];
+        r.ptr[4] = cast(ubyte)sa.array[4];
+        r.ptr[5] = cast(ubyte)sa.array[5];
+        r.ptr[6] = cast(ubyte)sa.array[6];
+        r.ptr[7] = cast(ubyte)sa.array[7];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -128, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    short8 C = cast(short8) _mm_cvtepu8_epi16(A);
+    short[8] correct = [127, 128, 1, 255, 0, 2, 252, 248];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Zero extend packed unsigned 8-bit integers in `a` to packed 32-bit integers.
