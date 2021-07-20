@@ -756,15 +756,43 @@ unittest
 }
 
 
-/*
+
 /// Zero extend packed unsigned 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepu8_epi64 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        alias ubyte16 = __vector(ubyte[16]);
+        return cast(__m128i)__builtin_ia32_pmovzxbq128(cast(ubyte16)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // LDC arm64: this optimizes better than the loop below
+        byte16 sa = cast(byte16)a;
+        long2 r;
+        for (int n = 0; n < 2; ++n)
+            r.ptr[n] = cast(ubyte)sa.array[n];
+        return cast(__m128i)r;
+    }
+    else
+    {
+        // LDC x86: Generates pmovzxbq since LDC 1.1 -O0, a pshufb without SSE4.1
+        byte16 sa = cast(byte16)a;
+        long2 r;
+        r.ptr[0] = cast(ubyte)sa.array[0];
+        r.ptr[1] = cast(ubyte)sa.array[1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -2, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    long2 C = cast(long2) _mm_cvtepu8_epi64(A);
+    long[2] correct = [127, 254];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Conditionally multiply the packed double-precision (64-bit) floating-point elements in a and b using the high 4 bits in imm8, sum the four products, and conditionally store the sum in dst using the low 4 bits of imm8.
