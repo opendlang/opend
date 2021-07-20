@@ -716,15 +716,45 @@ unittest
 }
 
 
-/*
 /// Zero extend packed unsigned 8-bit integers in `a` to packed 32-bit integers.
 __m128i _mm_cvtepu8_epi32 (__m128i a) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        alias ubyte16 = __vector(ubyte[16]);
+        return cast(__m128i) __builtin_ia32_pmovzxbd128(cast(ubyte16)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // LDC arm64: a bit better than below in -O2
+        byte16 sa = cast(byte16)a;
+        int4 r;
+        for(int n = 0; n < 4; ++n) 
+            r.ptr[n] = cast(ubyte)sa.array[n];
+        return cast(__m128i)r;
+    }
+    else
+    {
+        // LDC x86: generates pmovzxbd since LDC 1.12 -O1 also good without SSE4.1
+        // PERF: catastrophic with GDC without SSE4.1
+        byte16 sa = cast(byte16)a;
+        int4 r;
+        r.ptr[0] = cast(ubyte)sa.array[0];
+        r.ptr[1] = cast(ubyte)sa.array[1];
+        r.ptr[2] = cast(ubyte)sa.array[2];
+        r.ptr[3] = cast(ubyte)sa.array[3];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127, -128, 1, -1, 0, 2, -4, -8, 0, 0, 0, 0, 0, 0, 0, 0);
+    int4 C = cast(int4) _mm_cvtepu8_epi32(A);
+    int[4] correct = [127, 128, 1, 255];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Zero extend packed unsigned 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
