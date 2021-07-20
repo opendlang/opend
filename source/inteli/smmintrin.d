@@ -626,7 +626,7 @@ __m128i _mm_cvtepu16_epi64 (__m128i a) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        // LDC arm64: a bit shorter than below
+        // LDC arm64: a bit shorter than below, in -O2
         short8 sa = cast(short8)a;
         long2 r;
         for(int n = 0; n < 2; ++n)
@@ -652,15 +652,32 @@ unittest
 }
 
 
-/*
 /// Zero extend packed unsigned 32-bit integers in `a` to packed 64-bit integers.
 __m128i _mm_cvtepu32_epi64 (__m128i a) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmovzxdq128(cast(short8)a);
+    }
+    else
+    {
+        // LDC x86: generates pmovzxdq since LDC 1.12 -O1 also good without SSE4.1
+        //     arm64: generates ushll since LDC 1.12 -O1
+        int4 sa = cast(int4)a;
+        long2 r;
+        r.ptr[0] = cast(uint)sa.array[0];
+        r.ptr[1] = cast(uint)sa.array[1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(-1, 42, 0, 0);
+    long2 C = cast(long2) _mm_cvtepu32_epi64(A);
+    long[2] correct = [4294967295, 42];
+    assert(C.array == correct);
 }
-*/
+
 
 /*
 /// Zero extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
