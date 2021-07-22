@@ -814,35 +814,50 @@ unittest
 }
 */
 
-/*
-/// Extract a 32-bit integer from a, selected with imm8, and store the result in dst.
-int _mm_extract_epi32 (__m128i a, const int imm8) @trusted
+
+/// Extract a 32-bit integer from `a`, selected with `imm8`.
+int _mm_extract_epi32 (__m128i a, const int imm8) pure @trusted
 {
+    return (cast(int4)a).array[imm8 & 3];
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(1, 2, 3, 4);
+    assert(_mm_extract_epi32(A, 0) == 1);
+    assert(_mm_extract_epi32(A, 1 + 8) == 2);
+    assert(_mm_extract_epi32(A, 3 + 4) == 4);
 }
-*/
 
-/*
-/// Extract a 64-bit integer from a, selected with imm8, and store the result in dst.
-__int64 _mm_extract_epi64 (__m128i a, const int imm8) @trusted
+/// Extract a 64-bit integer from `a`, selected with `imm8`.
+long _mm_extract_epi64 (__m128i a, const int imm8) pure @trusted
 {
+    long2 la = cast(long2)a;
+    return la.array[imm8 & 1];
 }
 unittest
 {
+    __m128i A = _mm_setr_epi64(45, -67);
+    assert(_mm_extract_epi64(A, 0) == 45);
+    assert(_mm_extract_epi64(A, 1) == -67);
+    assert(_mm_extract_epi64(A, 2) == 45);
 }
-*/
 
-/*
-/// Extract an 8-bit integer from a, selected with imm8, and store the result in the lower element of dst.
+
+/// Extract an 8-bit integer from `a`, selected with `imm8`.
+/// Warning: the returned value is zero-extended to 32-bits.
 int _mm_extract_epi8 (__m128i a, const int imm8) @trusted
 {
+    byte16 ba = cast(byte16)a;
+    return cast(ubyte) ba.array[imm8 & 15];
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -1, 14, 15);
+    assert(_mm_extract_epi8(A, 7) == 7);
+    assert(_mm_extract_epi8(A, 13) == 255);
+    assert(_mm_extract_epi8(A, 7 + 16) == 7);
 }
-*/
+
 
 /*
 /// Extract a single-precision (32-bit) floating-point element from a, selected with imm8, and store the result in dst.

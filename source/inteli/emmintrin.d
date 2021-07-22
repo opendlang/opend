@@ -1712,17 +1712,19 @@ unittest
     assert(a.array == [1.0, 4.5]);
 }
 
-/// Extract a 16-bit integer from `v`, selected with `index`
+/// Extract a 16-bit integer from `v`, selected with `index`.
+/// Warning: the returned value is zero-extended to 32-bits.
 int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
     short8 r = cast(short8)v;
-    return cast(ushort)(r.array[index]);
+    return cast(ushort)(r.array[index & 7]);
 }
 unittest
 {
     __m128i A = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, -1);
     assert(_mm_extract_epi16(A, 6) == 6);
     assert(_mm_extract_epi16(A, 0) == 65535);
+    assert(_mm_extract_epi16(A, 5 + 8) == 5);
 }
 
 /// Copy `v`, and insert the 16-bit integer `i` at the location specified by `index`.
