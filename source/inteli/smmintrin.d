@@ -842,7 +842,6 @@ unittest
     assert(_mm_extract_epi64(A, 2) == 45);
 }
 
-
 /// Extract an 8-bit integer from `a`, selected with `imm8`.
 /// Warning: the returned value is zero-extended to 32-bits.
 int _mm_extract_epi8 (__m128i a, const int imm8) @trusted
@@ -858,16 +857,20 @@ unittest
     assert(_mm_extract_epi8(A, 7 + 16) == 7);
 }
 
-
-/*
-/// Extract a single-precision (32-bit) floating-point element from a, selected with imm8, and store the result in dst.
+/// Extract a single-precision (32-bit) floating-point element from `a`, selected with `imm8`.
+/// Note: returns a 32-bit $(I integer).
 int _mm_extract_ps (__m128 a, const int imm8) @trusted
 {
+    return (cast(int4)a).array[imm8 & 3];
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, -4.0f);
+    assert(_mm_extract_ps(A, 0) == 0x3f800000);
+    assert(_mm_extract_ps(A, 1 + 8) == 0x40000000);
+    assert(_mm_extract_ps(A, 3 + 4) == cast(int)0xc0800000);
 }
-*/
+
 
 /*
 /// Round the packed double-precision (64-bit) floating-point elements in a down to an integer value, and store the results as packed double-precision floating-point elements in dst.
