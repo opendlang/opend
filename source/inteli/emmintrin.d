@@ -2250,15 +2250,11 @@ unittest
 /// Compare packed signed 16-bit integers in `a` and `b`, and return packed minimum values.
 __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    version(GNU)
+    static if (GDC_with_SSE2)
     {
-        // PERF: not necessarily the best for GDC
-        __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
-        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-        __m128i mask = _mm_and_si128(aTob, lowerShorts);
-        return _mm_xor_si128(b, mask);
+        return cast(__m128i) __builtin_ia32_pminsw128(cast(short8)a, cast(short8)b);
     }
-    else
+    else version(LDC)
     {
         // x86: pminsw since LDC 1.0 -O1
         // ARM64: smin.8h since LDC 1.5 -01
@@ -2266,6 +2262,13 @@ __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
         short8 sb = cast(short8)b;
         short8 greater = greaterMask!short8(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+    {
+        __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lowerShorts);
+        return _mm_xor_si128(b, mask);
     }
 }
 unittest
