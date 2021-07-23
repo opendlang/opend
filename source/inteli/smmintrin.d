@@ -952,15 +952,31 @@ unittest
 }
 */
 
-/*
 /// Compare packed signed 32-bit integers in a and b, and store packed maximum values in dst.
 __m128i _mm_max_epi32 (__m128i a, __m128i b) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmaxsd128(cast(int4)a, cast(int4)b);
+    }
+    else
+    {
+        // x86: pmaxsd since LDC 1.1 -O1
+        // ARM: smax.4s since LDC 1.8 -01
+        int4 sa = cast(int4)a;
+        int4 sb = cast(int4)b;
+        int4 greater = greaterMask!int4(sa, sb);
+        return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    }
 }
 unittest
 {
+    int4 R = cast(int4) _mm_max_epi32(_mm_setr_epi32(0x7fffffff, 1, -4, 7),
+                                      _mm_setr_epi32(        -4,-8,  9, -8));
+    int[4] correct =                               [0x7fffffff, 1,  9,  7];
+    assert(R.array == correct);
 }
-*/
+
 
 /*
 /// Compare packed signed 8-bit integers in a and b, and store packed maximum values in dst.
