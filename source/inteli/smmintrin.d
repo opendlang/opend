@@ -1111,15 +1111,39 @@ unittest
 }
 */
 
-/*
+
 /// Compare packed unsigned 16-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epu16 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pminuw128(cast(short8)a, cast(short8)b);
+    }
+    else version(LDC)
+    {
+        // x86: pminuw since LDC 1.1 -O1, psubusw+psubw sequence without sse4.1
+        // ARM64: umin.8h since LDC 1.8.0 -O1        
+        ushort8 sa = cast(ushort8)a;
+        ushort8 sb = cast(ushort8)b;
+        ushort8 greater = cast(ushort8) greaterMask!ushort8(sb, sa);
+        return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    }
+    else
+    {
+        __m128i c = _mm_subs_epu16(b, a);
+        b = _mm_sub_epi16(b, c);
+        return b;
+    }
 }
 unittest
 {
+    short8 R = cast(short8) _mm_min_epu16(_mm_setr_epi16(32767,  1, -4, -8, 9,     7, 0, 57),
+                                          _mm_setr_epi16(   -4, -8,  9, -7, 0,-32768, 0,  0));
+    short[8] correct =                                  [32767,  1,  9, -8, 0,     7, 0,  0];
+    assert(R.array == correct);
 }
-*/
+
 
 /// Compare packed unsigned 32-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
