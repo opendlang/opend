@@ -1094,15 +1094,39 @@ unittest
 }
 */
 
-/*
 /// Compare packed unsigned 32-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pminud128(cast(int4)a, cast(int4)b);
+    }
+    else version(LDC)
+    {
+        // x86: pminud since LDC 1.1 -O1, also good without sse4.1
+        // ARM64: umin.4s since LDC 1.8.0 -O1
+        uint4 sa = cast(uint4)a;
+        uint4 sb = cast(uint4)b;
+        uint4 greater = cast(uint4) greaterMask!uint4(sa, sb);
+        return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+    {
+        __m128i valueShift = _mm_set1_epi32(-0x80000000);
+        __m128i higher = _mm_cmpgt_epi32(_mm_add_epi32(b, valueShift), _mm_add_epi32(a, valueShift));
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, higher);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
+    int4 R = cast(int4) _mm_min_epu32(_mm_setr_epi32(0x7fffffff, 1,  4, -7),
+                                      _mm_setr_epi32(        -4,-8,  9, -8));
+    int[4] correct =                                [0x7fffffff, 1,  4, -8];
+    assert(R.array == correct);
 }
-*/
 
 /*
 /// Horizontally compute the minimum amongst the packed unsigned 16-bit integers in a, store the minimum and index in dst, and zero the remaining bits in dst.
