@@ -1039,16 +1039,40 @@ unittest
     assert(R.array == correct);
 }
 
-
-/*
 /// Compare packed signed 32-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epi32 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pminsd128(cast(int4)a, cast(int4)b);
+    }
+    else version(LDC)
+    {
+        // x86: pminsd since LDC 1.1 -O1, also good without sse4.1
+        // ARM: smin.4s since LDC 1.8 -01
+        int4 sa = cast(int4)a;
+        int4 sb = cast(int4)b;
+        int4 greater = greaterMask!int4(sa, sb);
+        return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+    {
+        __m128i higher = _mm_cmplt_epi32(a, b);
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, higher);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
+    int4 R = cast(int4) _mm_min_epi32(_mm_setr_epi32(0x7fffffff,  1, -4, 7),
+                                      _mm_setr_epi32(        -4, -8,  9, -8));
+    int[4] correct =                               [         -4, -8, -4, -8];
+    assert(R.array == correct);
 }
-*/
+
+
 
 /*
 /// Compare packed signed 8-bit integers in a and b, and store packed minimum values in dst.
