@@ -1002,12 +1002,16 @@ __m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_pmaxuw128(cast(int4)a, cast(int4)b);
+        return cast(__m128i) __builtin_ia32_pmaxuw128(cast(short8)a, cast(short8)b);
     }
     else version(LDC)
     {
-        // x86: pmaxud since LDC 1.1 -O1, also good without sse4.1
-        // ARM64: umax.4s since LDC 1.8.0 -O1
+        // x86: pmaxuw since LDC 1.1 -O1
+        // ARM64: umax.8h since LDC 1.8.0 -O1
+        // PERF: without sse4.1, LLVM 12 produces a very interesting
+        //          psubusw xmm0, xmm1
+        //          paddw   xmm0, xmm1
+        //       sequence that maybe should go in other min/max intrinsics? 
         ushort8 sa = cast(ushort8)a;
         ushort8 sb = cast(ushort8)b;
         ushort8 greater = cast(ushort8) greaterMask!ushort8(sa, sb);
@@ -1015,11 +1019,9 @@ __m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
     }
     else
     {
-        __m128i valueShift = _mm_set1_epi16(-0x8000);
-        __m128i higher = _mm_cmpgt_epi16(_mm_add_epi16(a, valueShift), _mm_add_epi16(b, valueShift));
-        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
-        __m128i mask = _mm_and_si128(aTob, higher);
-        return _mm_xor_si128(b, mask);
+        b = _mm_subs_epu16(b, a);
+        b = _mm_add_epi16(b, a);
+        return b;
     }
 }
 unittest
