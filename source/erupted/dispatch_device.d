@@ -253,6 +253,9 @@ struct DispatchDevice {
         // VK_KHR_fragment_shading_rate
         vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateKHR" );
 
+        // VK_KHR_present_wait
+        vkWaitForPresentKHR                               = cast( PFN_vkWaitForPresentKHR                               ) vkGetDeviceProcAddr( device, "vkWaitForPresentKHR" );
+
         // VK_KHR_deferred_host_operations
         vkCreateDeferredOperationKHR                      = cast( PFN_vkCreateDeferredOperationKHR                      ) vkGetDeviceProcAddr( device, "vkCreateDeferredOperationKHR" );
         vkDestroyDeferredOperationKHR                     = cast( PFN_vkDestroyDeferredOperationKHR                     ) vkGetDeviceProcAddr( device, "vkDestroyDeferredOperationKHR" );
@@ -451,6 +454,9 @@ struct DispatchDevice {
         // VK_HUAWEI_subpass_shading
         vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetDeviceProcAddr( device, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
         vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetDeviceProcAddr( device, "vkCmdSubpassShadingHUAWEI" );
+
+        // VK_HUAWEI_invocation_mask
+        vkCmdBindInvocationMaskHUAWEI                     = cast( PFN_vkCmdBindInvocationMaskHUAWEI                     ) vkGetDeviceProcAddr( device, "vkCmdBindInvocationMaskHUAWEI" );
 
         // VK_NV_external_memory_rdma
         vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
@@ -703,6 +709,9 @@ struct DispatchDevice {
     // VK_KHR_fragment_shading_rate
     void      CmdSetFragmentShadingRateKHR( const( VkExtent2D )* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateKHR( commandBuffer, pFragmentSize, combinerOps ); }
 
+    // VK_KHR_present_wait
+    VkResult  WaitForPresentKHR( VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout ) { return vkWaitForPresentKHR( vkDevice, swapchain, presentId, timeout ); }
+
     // VK_KHR_deferred_host_operations
     VkResult  CreateDeferredOperationKHR( VkDeferredOperationKHR* pDeferredOperation ) { return vkCreateDeferredOperationKHR( vkDevice, pAllocator, pDeferredOperation ); }
     void      DestroyDeferredOperationKHR( VkDeferredOperationKHR operation ) { vkDestroyDeferredOperationKHR( vkDevice, operation, pAllocator ); }
@@ -895,8 +904,11 @@ struct DispatchDevice {
     VkResult  GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI( VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize ) { return vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI( vkDevice, renderpass, pMaxWorkgroupSize ); }
     void      CmdSubpassShadingHUAWEI() { vkCmdSubpassShadingHUAWEI( commandBuffer ); }
 
+    // VK_HUAWEI_invocation_mask
+    void      CmdBindInvocationMaskHUAWEI( VkImageView imageView, VkImageLayout imageLayout ) { vkCmdBindInvocationMaskHUAWEI( commandBuffer, imageView, imageLayout ); }
+
     // VK_NV_external_memory_rdma
-    VkResult  GetMemoryRemoteAddressNV( const( VkMemoryGetRemoteAddressInfoNV )* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress ) { return vkGetMemoryRemoteAddressNV( vkDevice, getMemoryRemoteAddressInfo, pAddress ); }
+    VkResult  GetMemoryRemoteAddressNV( const( VkMemoryGetRemoteAddressInfoNV )* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress ) { return vkGetMemoryRemoteAddressNV( vkDevice, pMemoryGetRemoteAddressInfo, pAddress ); }
 
     // VK_EXT_extended_dynamic_state2
     void      CmdSetPatchControlPointsEXT( uint32_t patchControlPoints ) { vkCmdSetPatchControlPointsEXT( commandBuffer, patchControlPoints ); }
@@ -1197,6 +1209,9 @@ struct DispatchDevice {
     // VK_KHR_fragment_shading_rate
     PFN_vkCmdSetFragmentShadingRateKHR                    vkCmdSetFragmentShadingRateKHR;
 
+    // VK_KHR_present_wait
+    PFN_vkWaitForPresentKHR                               vkWaitForPresentKHR;
+
     // VK_KHR_deferred_host_operations
     PFN_vkCreateDeferredOperationKHR                      vkCreateDeferredOperationKHR;
     PFN_vkDestroyDeferredOperationKHR                     vkDestroyDeferredOperationKHR;
@@ -1395,6 +1410,9 @@ struct DispatchDevice {
     // VK_HUAWEI_subpass_shading
     PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI;
     PFN_vkCmdSubpassShadingHUAWEI                         vkCmdSubpassShadingHUAWEI;
+
+    // VK_HUAWEI_invocation_mask
+    PFN_vkCmdBindInvocationMaskHUAWEI                     vkCmdBindInvocationMaskHUAWEI;
 
     // VK_NV_external_memory_rdma
     PFN_vkGetMemoryRemoteAddressNV                        vkGetMemoryRemoteAddressNV;

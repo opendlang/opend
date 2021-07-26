@@ -268,6 +268,9 @@ extern( System ) {
     alias PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR                        = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates );
     alias PFN_vkCmdSetFragmentShadingRateKHR                                    = void      function( VkCommandBuffer commandBuffer, const( VkExtent2D )* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps );
 
+    // VK_KHR_present_wait
+    alias PFN_vkWaitForPresentKHR                                               = VkResult  function( VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout );
+
     // VK_KHR_deferred_host_operations
     alias PFN_vkCreateDeferredOperationKHR                                      = VkResult  function( VkDevice device, const( VkAllocationCallbacks )* pAllocator, VkDeferredOperationKHR* pDeferredOperation );
     alias PFN_vkDestroyDeferredOperationKHR                                     = void      function( VkDevice device, VkDeferredOperationKHR operation, const( VkAllocationCallbacks )* pAllocator );
@@ -502,8 +505,11 @@ extern( System ) {
     alias PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI                   = VkResult  function( VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize );
     alias PFN_vkCmdSubpassShadingHUAWEI                                         = void      function( VkCommandBuffer commandBuffer );
 
+    // VK_HUAWEI_invocation_mask
+    alias PFN_vkCmdBindInvocationMaskHUAWEI                                     = void      function( VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout );
+
     // VK_NV_external_memory_rdma
-    alias PFN_vkGetMemoryRemoteAddressNV                                        = VkResult  function( VkDevice device, const( VkMemoryGetRemoteAddressInfoNV )* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress );
+    alias PFN_vkGetMemoryRemoteAddressNV                                        = VkResult  function( VkDevice device, const( VkMemoryGetRemoteAddressInfoNV )* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress );
 
     // VK_EXT_extended_dynamic_state2
     alias PFN_vkCmdSetPatchControlPointsEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t patchControlPoints );
@@ -803,6 +809,9 @@ __gshared {
     PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR                        vkGetPhysicalDeviceFragmentShadingRatesKHR;
     PFN_vkCmdSetFragmentShadingRateKHR                                    vkCmdSetFragmentShadingRateKHR;
 
+    // VK_KHR_present_wait
+    PFN_vkWaitForPresentKHR                                               vkWaitForPresentKHR;
+
     // VK_KHR_deferred_host_operations
     PFN_vkCreateDeferredOperationKHR                                      vkCreateDeferredOperationKHR;
     PFN_vkDestroyDeferredOperationKHR                                     vkDestroyDeferredOperationKHR;
@@ -1036,6 +1045,9 @@ __gshared {
     // VK_HUAWEI_subpass_shading
     PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI                   vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI;
     PFN_vkCmdSubpassShadingHUAWEI                                         vkCmdSubpassShadingHUAWEI;
+
+    // VK_HUAWEI_invocation_mask
+    PFN_vkCmdBindInvocationMaskHUAWEI                                     vkCmdBindInvocationMaskHUAWEI;
 
     // VK_NV_external_memory_rdma
     PFN_vkGetMemoryRemoteAddressNV                                        vkGetMemoryRemoteAddressNV;
@@ -1491,6 +1503,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_fragment_shading_rate
     vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetInstanceProcAddr( instance, "vkCmdSetFragmentShadingRateKHR" );
 
+    // VK_KHR_present_wait
+    vkWaitForPresentKHR                               = cast( PFN_vkWaitForPresentKHR                               ) vkGetInstanceProcAddr( instance, "vkWaitForPresentKHR" );
+
     // VK_KHR_deferred_host_operations
     vkCreateDeferredOperationKHR                      = cast( PFN_vkCreateDeferredOperationKHR                      ) vkGetInstanceProcAddr( instance, "vkCreateDeferredOperationKHR" );
     vkDestroyDeferredOperationKHR                     = cast( PFN_vkDestroyDeferredOperationKHR                     ) vkGetInstanceProcAddr( instance, "vkDestroyDeferredOperationKHR" );
@@ -1689,6 +1704,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_HUAWEI_subpass_shading
     vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetInstanceProcAddr( instance, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
     vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetInstanceProcAddr( instance, "vkCmdSubpassShadingHUAWEI" );
+
+    // VK_HUAWEI_invocation_mask
+    vkCmdBindInvocationMaskHUAWEI                     = cast( PFN_vkCmdBindInvocationMaskHUAWEI                     ) vkGetInstanceProcAddr( instance, "vkCmdBindInvocationMaskHUAWEI" );
 
     // VK_NV_external_memory_rdma
     vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetInstanceProcAddr( instance, "vkGetMemoryRemoteAddressNV" );
@@ -1936,6 +1954,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_fragment_shading_rate
     vkCmdSetFragmentShadingRateKHR                    = cast( PFN_vkCmdSetFragmentShadingRateKHR                    ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateKHR" );
 
+    // VK_KHR_present_wait
+    vkWaitForPresentKHR                               = cast( PFN_vkWaitForPresentKHR                               ) vkGetDeviceProcAddr( device, "vkWaitForPresentKHR" );
+
     // VK_KHR_deferred_host_operations
     vkCreateDeferredOperationKHR                      = cast( PFN_vkCreateDeferredOperationKHR                      ) vkGetDeviceProcAddr( device, "vkCreateDeferredOperationKHR" );
     vkDestroyDeferredOperationKHR                     = cast( PFN_vkDestroyDeferredOperationKHR                     ) vkGetDeviceProcAddr( device, "vkDestroyDeferredOperationKHR" );
@@ -2134,6 +2155,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_HUAWEI_subpass_shading
     vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   = cast( PFN_vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI   ) vkGetDeviceProcAddr( device, "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI" );
     vkCmdSubpassShadingHUAWEI                         = cast( PFN_vkCmdSubpassShadingHUAWEI                         ) vkGetDeviceProcAddr( device, "vkCmdSubpassShadingHUAWEI" );
+
+    // VK_HUAWEI_invocation_mask
+    vkCmdBindInvocationMaskHUAWEI                     = cast( PFN_vkCmdBindInvocationMaskHUAWEI                     ) vkGetDeviceProcAddr( device, "vkCmdBindInvocationMaskHUAWEI" );
 
     // VK_NV_external_memory_rdma
     vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
