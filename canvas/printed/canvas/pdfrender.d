@@ -610,7 +610,18 @@ private:
 
                 // decode to RGBA
                 int width, height, origComponents;
-                ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, 4);
+
+                // Made a mistake of breaking a function inside dplug:graphics that was used directly by printed
+                static if (__traits(compiles, { int w, h, comp; stbi_load_png_from_memory(null, w, h, comp, 4); }))
+                {
+                    ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, 4);
+                }
+                else
+                {
+                    ubyte* decoded = stbi_load_from_memory(originalEncodedData.ptr,
+                                                           cast(int)(originalEncodedData.length), 
+                                                           &width, &height, &origComponents, 4);
+                }
                 if (origComponents != 3 && origComponents != 4)
                     throw new Exception("Only support embed of RGB or RGBA PNG");
 
