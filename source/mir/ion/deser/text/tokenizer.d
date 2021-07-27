@@ -597,7 +597,7 @@ struct IonTokenizer {
     IonTokenType scanForNumber(char c) @safe @nogc pure 
     in {
         assert(isDigit(c), "Scan for number called with non-digit number");
-    } body {
+    } do {
         const(char)[] cs;
         try {
             cs = peekMax(4);

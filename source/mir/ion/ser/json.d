@@ -195,10 +195,10 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    void putAnnotation(scope const(char)[] str)
+    void putAnnotation(scope const(char)[] annotation)
     {
         elemBegin;
-        putValue(str);
+        putValue(annotation);
     }
 
     ///

@@ -32,7 +32,7 @@ Params:
 void skipContainerInternal(ref IonTokenizer t, char term) @safe @nogc pure  
 in {
     assert(term == ']' || term == '}' || term == ')', "Unexpected character for skipping");
-} body {
+} do {
     char c;
     while (true) {
         c = t.skipWhitespace();

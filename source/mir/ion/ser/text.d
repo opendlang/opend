@@ -291,16 +291,16 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    void putAnnotation(scope const(char)[] str)
+    void putAnnotation(scope const(char)[] annotation)
     {
-        putSymbol(str);
+        putSymbol(annotation);
         appender.put(`::`);
     }
 
     ///
-    void putCompiletimeAnnotation(string str)()
+    void putCompiletimeAnnotation(string annotation)()
     {
-        putCompiletimeSymbol!str;
+        putCompiletimeSymbol!annotation;
         appender.put(`::`);
     }
 

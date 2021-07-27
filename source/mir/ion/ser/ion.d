@@ -15,7 +15,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
-    import mir.bignum.low_level_view: WordEndian;
+    import mir.bignum.low_level_view: BigIntView, WordEndian;
     import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
     import mir.ion.tape;
     import mir.ion.type_code;
@@ -280,6 +280,11 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 
     ///
     alias sexpElemBegin = elemBegin;
+
+    ///
+    void nextTopLevelValue()
+    {
+    }
 }
 
 /++

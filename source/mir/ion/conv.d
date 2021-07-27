@@ -45,7 +45,7 @@ unittest
 /++
 Converts Ion Value Stream data to JSON text.
 
-The function performs `IonValueStream(data).serializeJson`.
+The function performs `data.IonValueStream.serializeJson`.
 +/
 string ion2json(scope const(ubyte)[] data)
     @safe pure
@@ -53,7 +53,7 @@ string ion2json(scope const(ubyte)[] data)
     pragma(inline, false);
     import mir.ion.stream;
     import mir.ion.ser.json: serializeJson;
-    return IonValueStream(data).serializeJson;
+    return data.IonValueStream.serializeJson;
 }
 
 ///
@@ -67,7 +67,7 @@ unittest
 /++
 Converts Ion Value Stream data to JSON text
 
-The function performs `IonValueStream(data).serializeJsonPretty`.
+The function performs `data.IonValueStream.serializeJsonPretty`.
 +/
 string ion2jsonPretty(scope const(ubyte)[] data)
     @safe pure
@@ -75,7 +75,7 @@ string ion2jsonPretty(scope const(ubyte)[] data)
     pragma(inline, false);
     import mir.ion.stream;
     import mir.ion.ser.json: serializeJsonPretty;
-    return IonValueStream(data).serializeJsonPretty;
+    return data.IonValueStream.serializeJsonPretty;
 }
 
 ///
@@ -89,7 +89,7 @@ unittest
 /++
 Converts Ion Value Stream data to text.
 
-The function performs `IonValueStream(data).serializeText`.
+The function performs `data.IonValueStream.serializeText`.
 +/
 string ion2text(scope const(ubyte)[] data)
     @safe pure
@@ -97,7 +97,7 @@ string ion2text(scope const(ubyte)[] data)
     pragma(inline, false);
     import mir.ion.stream;
     import mir.ion.ser.text: serializeText;
-    return IonValueStream(data).serializeText;
+    return data.IonValueStream.serializeText;
 }
 
 ///
@@ -121,7 +121,7 @@ unittest
 /++
 Converts Ion Value Stream data to text
 
-The function performs `IonValueStream(data).serializeTextPretty`.
+The function performs `data.IonValueStream.serializeTextPretty`.
 +/
 string ion2textPretty(scope const(ubyte)[] data)
     @safe pure
@@ -129,7 +129,7 @@ string ion2textPretty(scope const(ubyte)[] data)
     pragma(inline, false);
     import mir.ion.stream;
     import mir.ion.ser.text: serializeTextPretty;
-    return IonValueStream(data).serializeTextPretty;
+    return data.IonValueStream.serializeTextPretty;
 }
 
 ///
