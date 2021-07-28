@@ -14,6 +14,7 @@ import inteli.mmx;
 import inteli.emmintrin;
 
 import core.stdc.stdlib: malloc, free;
+import core.stdc.string: memcpy;
 import core.exception: onOutOfMemoryError;
 
 version(D_InlineAsm_X86)
@@ -2149,6 +2150,50 @@ unittest
     assert(R.array[3] == correct.array[3]);
 }
 
+/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, 
+/// and return a pointer to the newly allocated memory. 
+/// `_mm_free` or `alignedRealloc` with size 0 should be used to free memory that is 
+/// allocated with `_mm_malloc` or `_mm_realloc`.
+/// Previous data is preserved.
+void* _mm_realloc(void* aligned, size_t size, size_t alignment) nothrow @nogc // #BONUS
+{
+    return alignedReallocImpl!true(aligned, size, alignment);
+}
+unittest
+{
+    enum NALLOC = 8;
+    enum size_t[8] ALIGNMENTS = [1, 2, 4, 8, 16, 32, 64, 128];
+    
+    void*[NALLOC] alloc;
+
+    foreach(t; 0..100)
+    {
+        foreach(n; 0..NALLOC)
+        {
+            size_t alignment = ALIGNMENTS[n];
+            size_t s = ( (n + t * 69096) & 0xffff );
+            alloc[n] = _mm_realloc(alloc[n], s, alignment);
+            assert(isPointerAligned(alloc[n], alignment));
+            foreach(b; 0..s)
+                (cast(ubyte*)alloc[n])[b] = cast(ubyte)n;
+        }
+    }
+    foreach(n; 0..NALLOC)
+    {
+        alloc[n] = _mm_realloc(alloc[n], 0, ALIGNMENTS[n]);
+    }
+}
+
+/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, 
+/// and return a pointer to the newly allocated memory. 
+/// `_mm_free` or `alignedRealloc` with size 0 should be used to free memory that is 
+/// allocated with `_mm_malloc` or `_mm_realloc`.
+/// Previous data is discarded.
+void* _mm_realloc_discard(void* aligned, size_t size, size_t alignment) nothrow @nogc // #BONUS
+{
+    return alignedReallocImpl!false(aligned, size, alignment);
+}
+
 /// Compute the approximate reciprocal square root of packed single-precision (32-bit) floating-point elements in `a`. 
 /// The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rsqrt_ps (__m128 a) pure @trusted
@@ -2891,7 +2936,7 @@ private
         return askedSize + alignment - 1 + pointerSize * 3;
     }
 
-    // Store pointer given my malloc, size and alignment
+    // Store pointer given by malloc + size + alignment
     @nogc void* storeRawPointerPlusInfo(void* raw, size_t size, size_t alignment) pure
     {
         enum size_t pointerSize = size_t.sizeof;
@@ -2915,6 +2960,49 @@ private
 
         size_t mask = ~(powerOfTwo - 1);
         return (n + powerOfTwo - 1) & mask;
+    }
+
+    void* alignedReallocImpl(bool PreserveDataIfResized)(void* aligned, size_t size, size_t alignment)
+    {
+        if (aligned is null)
+            return _mm_malloc(size, alignment);
+
+        assert(alignment != 0);
+        assert(isPointerAligned(aligned, alignment));
+
+        size_t previousSize = *cast(size_t*)(cast(char*)aligned - size_t.sizeof * 2);
+        size_t prevAlignment = *cast(size_t*)(cast(char*)aligned - size_t.sizeof * 3);
+
+        // It is illegal to change the alignment across calls.
+        assert(prevAlignment == alignment);
+
+        void* raw = *cast(void**)(cast(char*)aligned - size_t.sizeof);
+        size_t request = requestedSize(size, alignment);
+        size_t previousRequest = requestedSize(previousSize, alignment);
+        assert(previousRequest - request == previousSize - size);
+
+        // Heuristic: if a requested size is within 50% to 100% of what is already allocated
+        //            then exit with the same pointer
+        // PERF it seems like `realloc` should do that, not us.
+        if ( (previousRequest < request * 4) && (request <= previousRequest) )
+            return aligned;
+
+        void* newRaw = malloc(request);
+        if (request > 0 && newRaw == null) // realloc(0) can validly return anything
+            onOutOfMemoryError();
+
+        void* newAligned = storeRawPointerPlusInfo(newRaw, size, alignment);
+
+        static if (PreserveDataIfResized)
+        {
+            size_t minSize = size < previousSize ? size : previousSize;
+            memcpy(newAligned, aligned, minSize);
+        }
+
+        // Free previous data
+        _mm_free(aligned);
+        assert(isPointerAligned(newAligned, alignment));
+        return newAligned;
     }
 }
 
