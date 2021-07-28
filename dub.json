@@ -1,0 +1,21 @@
+{
+    "name": "gamut",
+    "description": "image library",
+    "license": "BSL-1.0",
+
+    "dependencies":
+    {
+        "intel-intrinsics": "~>1.0"
+    },
+
+    "configurations": [
+        {
+            "name": "boost",
+            "versions": ["decodeJPEG", "decodePNG", "encodePNG"]
+        },
+        {
+            "name": "game",
+            "versions": ["decodeJPEG", "decodePNG"]
+        }
+    ]
+}
