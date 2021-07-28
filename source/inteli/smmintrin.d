@@ -985,15 +985,41 @@ unittest
 }
 
 
-/*
-/// Compare packed signed 8-bit integers in a and b, and store packed maximum values in dst.
+
+/// Compare packed signed 8-bit integers in `a` and `b`, 
+/// and return packed maximum values.
 __m128i _mm_max_epi8 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmaxsb128(cast(ubyte16)a, cast(ubyte16)b);
+    }
+    else version(LDC)
+    {
+        // x86: pmaxsb since LDC 1.1 -O1
+        // ARM64: smax.16b since LDC 1.8.0 -O1
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        byte16 greater = cast(byte16) greaterMask!byte16(sa, sb);
+        return cast(__m128i)( (greater & sa) | (~greater & sb) );
+    }
+    else
+    {
+        __m128i lower = _mm_cmpgt_epi8(a, b); // ones where a should be selected, b else
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lower);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127,  1, -4, -8, 9,    7, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0);
+    __m128i B = _mm_setr_epi8(  4, -8,  9, -7, 0, -128, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0);
+    byte16 R = cast(byte16) _mm_max_epi8(A, B);
+    byte[16] correct =       [127,  1,  9, -7, 9,    7, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correct);
 }
-*/
 
 
 /// Compare packed unsigned 16-bit integers in `a` and `b`, returns packed maximum values.
@@ -1099,18 +1125,40 @@ unittest
     assert(R.array == correct);
 }
 
-
-
-/*
-/// Compare packed signed 8-bit integers in a and b, and store packed minimum values in dst.
+/// Compare packed signed 8-bit integers in `a` and `b`, 
+/// and return packed minimum values.
 __m128i _mm_min_epi8 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pminsb128(cast(ubyte16)a, cast(ubyte16)b);
+    }
+    else version(LDC)
+    {
+        // x86: pminsb since LDC 1.1 -O1
+        // ARM64: smin.16b since LDC 1.8.0 -O1
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        byte16 greater = cast(byte16) greaterMask!byte16(sa, sb);
+        return cast(__m128i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+    {
+        __m128i lower = _mm_cmplt_epi8(a, b); // ones where a should be selected, b else
+        __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+        __m128i mask = _mm_and_si128(aTob, lower);
+        return _mm_xor_si128(b, mask);
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(127,  1, -4, -8, 9,    7, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0);
+    __m128i B = _mm_setr_epi8(  4, -8,  9, -7, 0, -128, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0);
+    byte16 R = cast(byte16) _mm_min_epi8(A, B);
+    byte[16] correct =       [  4, -8, -4, -8, 0, -128, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correct);
 }
-*/
-
 
 /// Compare packed unsigned 16-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epu16 (__m128i a, __m128i b) @trusted
