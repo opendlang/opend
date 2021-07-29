@@ -2750,7 +2750,7 @@ __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        // PERF: catastrophic on ARM
+        // PERF: catastrophic on ARM32
         short8 r;
         r.ptr[0] = saturateSignedIntToSignedShort(a.array[0]);
         r.ptr[1] = saturateSignedIntToSignedShort(a.array[1]);

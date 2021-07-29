@@ -1267,15 +1267,55 @@ unittest
 }
 */
 
-/*
-/// Convert packed signed 32-bit integers from `a` and `b` to packed 16-bit integers using unsigned saturation.
+/// Convert packed signed 32-bit integers from `a` and `b` 
+/// to packed 16-bit integers using unsigned saturation.
 __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        // PERF For some reason doesn't generates the builtin???
+        return cast(__m128i) __builtin_ia32_packusdw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_packusdw128(cast(short8)a, cast(short8)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+       int4 z;
+       z = 0;       
+       return cast(__m128i) vcombine_u16(vqmovn_u32(vmaxq_s32(z, cast(int4)a)),
+                                         vqmovn_u32(vmaxq_s32(z, cast(int4)b)));
+    }
+    else
+    {
+        // PERF: not great without SSE4.1
+        int4 sa = cast(int4)a;
+        int4 sb = cast(int4)b;
+        ushort[8] result;
+        for (int i = 0; i < 4; ++i)
+        {
+            int s = sa[i];
+            if (s < 0) s = 0;
+            if (s > 65535) s = 65535;
+            result[i] = cast(ushort)s;
+
+            s = sb[i];
+            if (s < 0) s = 0;
+            if (s > 65535) s = 65535;
+            result[i+4] = cast(ushort)s;
+        }
+        return cast(__m128i) loadUnaligned!(short8)(cast(short*)result.ptr);
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(100000, -100000, 1000, 0);
+    short8 R = cast(short8) _mm_packus_epi32(A, A);
+    short[8] correct = [cast(short)65535, 0, 1000, 0, cast(short)65535, 0, 1000, 0];
+    assert(R.array == correct);
 }
-*/
+
 
 /// Round the packed double-precision (64-bit) floating-point elements in a using the rounding parameter, and store the results as packed double-precision floating-point elements in dst.
 /// Rounding is done according to the rounding[3:0] parameter, which can be one of:

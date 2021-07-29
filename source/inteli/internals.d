@@ -1171,6 +1171,20 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+    short8 vcombine_u16(short4 lo, short4 hi) pure @trusted
+    {
+        short8 r;
+        r.ptr[0]  = lo.array[0];
+        r.ptr[1]  = lo.array[1];
+        r.ptr[2]  = lo.array[2];
+        r.ptr[3]  = lo.array[3];
+        r.ptr[4]  = hi.array[0];
+        r.ptr[5]  = hi.array[1];
+        r.ptr[6]  = hi.array[2];
+        r.ptr[7]  = hi.array[3];
+        return r;
+    }
+
 
     // float4 => int4
 
@@ -1323,6 +1337,16 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smax.v8i16")
         short8 vmaxq_s16(short8 a, short8 b) pure @safe;
 
+    int4 vmaxq_s32(int4 a, int4 b)
+    {
+        int4 r;
+        r[0] = a[0] >= b[0] ? a[0] : b[0];
+        r[1] = a[1] >= b[1] ? a[1] : b[1];
+        r[2] = a[2] >= b[2] ? a[2] : b[2];
+        r[3] = a[3] >= b[3] ? a[3] : b[3];
+        return r;
+    }
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smin.v8i16")
         short8 vminq_s16(short8 a, short8 b) pure @safe;
 
@@ -1378,8 +1402,11 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v8i8")
         byte8 vqmovn_s16(short8 a) pure @safe;
 
-     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v4i16")
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtn.v4i16")
         short4 vqmovn_s32(int4 a) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.uqxtn.v4i16")
+        short4 vqmovn_u32(int4 a) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.sqxtun.v8i8")
         byte8 vqmovun_s16(short8 a) pure @safe;
