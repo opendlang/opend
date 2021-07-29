@@ -290,7 +290,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 /++
 Ion serialization function.
 +/
-immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarget.json)
+immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
