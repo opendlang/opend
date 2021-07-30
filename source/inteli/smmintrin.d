@@ -1272,7 +1272,7 @@ __m128i _mm_mul_epi32 (__m128i a, __m128i b) @trusted
     else static if (LDC_with_ARM64)  
     {
         // 3 instructions since LDC 1.8 -O2
-        // But had to make vmull_s32 use the builtin else it wouldn't optimize to smull
+        // But had to make vmull_s32 be a builtin else it wouldn't optimize to smull
         int2 a_lo = vmovn_s64(cast(long2)a);
         int2 b_lo = vmovn_s64(cast(long2)b);
         return cast(__m128i) vmull_s32(a_lo, b_lo);
@@ -1518,7 +1518,7 @@ int _mm_testc_si128 (__m128i a, __m128i b) @trusted
     else static if (LDC_with_ARM64)
     {
         // Acceptable since LDC 1.8 -02
-        long2 s64 = vbicq_s64(cast(long2)a, cast(long2)b);
+        long2 s64 = vbicq_s64(cast(long2)b, cast(long2)a);
         return !(vgetq_lane_s64(s64, 0) & vgetq_lane_s64(s64, 1));
     }
     else
@@ -1556,8 +1556,8 @@ int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        long2 s640 = vandq_s64(cast(long2)a, cast(long2)b);
-        long2 s641 = vbicq_s64(cast(long2)a, cast(long2)b);
+        long2 s640 = vandq_s64(cast(long2)b, cast(long2)a);
+        long2 s641 = vbicq_s64(cast(long2)b, cast(long2)a);
         return (   (vgetq_lane_s64(s640, 0) | vgetq_lane_s64(s640, 1)) 
                  & (vgetq_lane_s64(s641, 0) | vgetq_lane_s64(s641, 1))  ) != 0;
     }
@@ -1616,7 +1616,6 @@ unittest
     assert(_mm_testz_si128(A, M2) == 0);
 }
 
-// LDC intrinsics present from 1.0.0 to 
 
 /*
 
