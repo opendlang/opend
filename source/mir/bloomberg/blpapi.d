@@ -1,6 +1,8 @@
 ///
 module mir.bloomberg.blpapi;
 
+import mir.timestamp: Timestamp;
+
 ///
 enum DataType
 {
@@ -115,6 +117,27 @@ struct Datetime
     ushort year;
     /// (signed) minutes ahead of UTC
     short  offset;
+
+    /// Construct from $(MREF mir,timestamp).
+    this(Timestamp timestamp) @safe pure nothrow @nogc
+    {
+        this = HighPrecisionDatetime(timestamp).datetime;
+    }
+
+    /// Converts `Datetime` to $(MREF mir,timestamp).
+    Timestamp asTimestamp()  @safe pure nothrow @nogc const @property
+    {
+        return HighPrecisionDatetime(this).asTimestamp;
+    }
+
+    ///
+    alias opCast(T : Timestamp) = asTimestamp;
+
+    ///
+    bool isOnlyTime() @safe pure nothrow @nogc const @property
+    {
+        return (parts & DatetimeParts.year) == 0;
+    }
 }
 
 ///
@@ -133,7 +156,11 @@ struct HighPrecisionDatetime {
     +/
     uint picoseconds;
 
-    import mir.timestamp;
+    ///
+    this(Datetime datetime) @safe pure nothrow @nogc
+    {
+        this.datetime = datetime;
+    }
 
     /// Construct from $(MREF mir,timestamp).
     this(Timestamp timestamp) @safe pure nothrow @nogc
@@ -246,12 +273,6 @@ struct HighPrecisionDatetime {
 
     ///
     alias opCast(T : Timestamp) = asTimestamp;
-
-    ///
-    bool isOnlyTime() @safe pure nothrow @nogc const @property
-    {
-        return (parts & DatetimeParts.year) == 0;
-    }
 }
 
 @safe pure @nogc validateBloombergErroCode(
