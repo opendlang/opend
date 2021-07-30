@@ -1390,25 +1390,39 @@ __m128i _mm_stream_load_si128 (__m128i * mem_addr) @trusted
     return *mem_addr; // it's a regular move instead
 }
 
-/*
-/// Compute the bitwise NOT of a and then AND with a 128-bit vector containing all 1's, and return 1 if the result is zero, otherwise return 0.
-int _mm_test_all_ones (__m128i a) @trusted
-{
-}
-unittest
-{
-}
-*/
 
-/*
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and return 1 if the result is zero, otherwise return 0.
-int _mm_test_all_zeros (__m128i a, __m128i mask) @trusted
+/// Return 1 if all bits in `a` are all 1's. Else return 0.
+int _mm_test_all_ones (__m128i a) @safe
 {
+    return _mm_testc_si128(a, _mm_set1_epi32(0xffffffff));
 }
 unittest
 {
+    __m128i A = _mm_set1_epi32(0xffffffff);
+    __m128i B = _mm_set_epi32(-1, -2, -1, -1);
+    assert(_mm_test_all_ones(A) == 1);
+    assert(_mm_test_all_ones(B) == 0);
 }
-*/
+
+/// Return 1 if all bits in `a` are all 0's. Else return 0.
+// This is a #BONUS since it was lacking in Intel Intrinsics API.
+int _mm_test_all_zeros (__m128i a) @safe
+{
+    return _mm_testz_si128(a, _mm_set1_epi32(0xffffffff));
+}
+unittest
+{
+    __m128i A = _mm_set1_epi32(0);
+    __m128i B = _mm_set_epi32(0, 8, 0, 0);
+    assert(_mm_test_all_zeros(A) == 1);
+    assert(_mm_test_all_zeros(B) == 0);
+}
+
+/// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and return 1 if the result is zero, otherwise return 0.
+int _mm_test_all_zeros (__m128i a, __m128i mask) @safe
+{
+    return _mm_testz_si128(a, mask); // it's really the same, but with a good name
+}
 
 /*
 /// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with mask, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
@@ -1422,10 +1436,10 @@ unittest
 
 /// Compute the bitwise NOT of a and then AND with b, and return 1 if the 
 /// result is zero, otherwise return 0.
+/// In other words, test if all bits masked by `b` are 1 in `a`.
 int _mm_testc_si128 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
-    // PERF ARM64
     static if (GDC_with_SSE41)
     {
         return __builtin_ia32_ptestc128(cast(long2)a, cast(long2)b);
@@ -1458,7 +1472,10 @@ unittest
 }
 
 /*
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
+/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
+/// and set ZF to 1 if the result is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. 
+/// Return 1 if both the ZF and CF values are zero, otherwise return 0.
 int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
 {
     pragma(LDC_intrinsic, "llvm.x86.sse41.ptestnzc")
@@ -1469,23 +1486,42 @@ unittest
 }
 */
 
-
 /// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
-/// and set ZF to 1 if the result is zero, otherwise set ZF to 0. 
-/// Return the ZF value.
-/*int _mm_testz_si128 (__m128i a, __m128i b) @trusted
+/// and return 1 if the result is zero, otherwise return 0.
+/// In other words, test if all bits masked by `b` are 0 in `a`.
+int _mm_testz_si128 (__m128i a, __m128i b) @trusted
 {
-
-    pragma(LDC_intrinsic, "llvm.x86.sse41.ptestz")
-    int __builtin_ia32_ptestz128(long2, long2) pure @safe;
-
-
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Acceptable since LDC 1.8 -02
+        long2 s64 = vandq_s64(cast(long2)a, cast(long2)b);
+        return !(vgetq_lane_s64(s64, 0) & vgetq_lane_s64(s64, 1));
+    }
+    else
+    {
+        __m128i c = a & b;
+        int[4] zero = [0, 0, 0, 0];
+        return c.array == zero;
+    }    
 }
 unittest
 {
+    __m128i A  = _mm_setr_epi32(0x01, 0x02, 0x04, 0xf8);
+    __m128i M1 = _mm_setr_epi32(0xfe, 0xfd, 0x00, 0x07);
+    __m128i M2 = _mm_setr_epi32(0x00, 0x00, 0x04, 0x00);
+    assert(_mm_testz_si128(A, A) == 0);
+    assert(_mm_testz_si128(A, M1) == 1);
+    assert(_mm_testz_si128(A, M2) == 0);
 }
-*/
-
 
 // LDC intrinsics present from 1.0.0 to 
 

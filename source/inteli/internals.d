@@ -1110,7 +1110,12 @@ static if (LDC_with_ARM64)
         return a & b;
     }
 
-    long2 vbicq_s64(long2 a, long2 b)
+    long2 vandq_s64(long2 a, long2 b)
+    {
+        return a & b;
+    }
+
+    long2 vbicq_s64(long2 a, long2 b) pure @safe
     {
         return a & ~b;
     }
@@ -1339,7 +1344,7 @@ static if (LDC_with_ARM64)
         return r;
     }
 
-    long vgetq_lane_s64(long2 v, const int lane)
+    long vgetq_lane_s64(long2 v, const int lane) pure @safe
     {
         return v.array[lane];
     }
