@@ -549,6 +549,9 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         else
         static if (isVariant!T)
         {
+            import mir.lob: Blob, Clob;
+            import mir.timestamp: Timestamp;
+
             static if (getAlgebraicAnnotationsOfVariant!T.length)
             {
                 static if (Annotations.length)
@@ -652,6 +655,38 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                         if (auto exception = deserializeValue_(data, number))
                             return exception;
                         value = number;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!Timestamp)
+                {
+                    case IonTypeCode.timestamp:
+                    {
+                        Timestamp timestamp;
+                        if (auto error = data.trustedGet!IonTimestamp.get(timestamp))
+                            return error.ionException;
+                        value = timestamp;
+                        return retNull;
+                    }
+                }
+
+                static if (contains!Blob)
+                {
+                    case IonTypeCode.blob:
+                    {
+                        auto blob = data.trustedGet!Blob;
+                        value = Blob(blob.data.dup);
+                        return retNull;
+                    }
+                }
+
+                static if (contains!Clob)
+                {
+                    case IonTypeCode.clob:
+                    {
+                        auto clob = data.trustedGet!Clob;
+                        value = Clob(clob.data.dup);
                         return retNull;
                     }
                 }

@@ -714,6 +714,26 @@ version(mir_ion_test) unittest
     assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
 }
 
+/// Timestamp and LOB support in algebraic types
+version(mir_ion_test) unittest
+{
+    import mir.algebraic;
+    import mir.ion.deser.ion: deserializeIon;
+    import mir.ion.ser.ion: serializeIon;
+    import mir.lob;
+    import mir.string_map;
+    import mir.timestamp;
+
+    alias IonLikeAlgebraic = Variant!(Blob, Clob, Timestamp, double, long, string, StringMap!This, This[]);
+
+    StringMap!IonLikeAlgebraic map;
+    map["ts"] = Timestamp(2021, 4, 24);
+    map["clob"] = Clob("Some clob");
+    map["blob"] = Blob([0x32, 0x52]);
+
+    assert(map.serializeIon.deserializeIon!(StringMap!IonLikeAlgebraic) == map);
+}
+
 /// Phobos date-time serialization
 version(mir_ion_test) unittest
 {
