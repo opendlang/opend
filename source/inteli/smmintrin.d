@@ -1418,21 +1418,18 @@ unittest
     assert(_mm_test_all_zeros(B) == 0);
 }
 
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and return 1 if the result is zero, otherwise return 0.
+/// Compute the bitwise AND of 128 bits (representing integer data) in `a` and `mask`, 
+/// and return 1 if the result is zero, otherwise return 0.
 int _mm_test_all_zeros (__m128i a, __m128i mask) @safe
 {
     return _mm_testz_si128(a, mask); // it's really the same, but with a good name
 }
 
-/*
 /// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with mask, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
 int _mm_test_mix_ones_zeros (__m128i a, __m128i mask) @trusted
 {
+    return _mm_testnzc_si128(a, mask);
 }
-unittest
-{
-}
-*/
 
 /// Compute the bitwise NOT of a and then AND with b, and return 1 if the 
 /// result is zero, otherwise return 0.
@@ -1459,7 +1456,7 @@ int _mm_testc_si128 (__m128i a, __m128i b) @trusted
         __m128i c = ~a & b;
         int[4] zero = [0, 0, 0, 0];
         return c.array == zero;
-    }    
+    }
 }
 unittest
 {
@@ -1471,20 +1468,46 @@ unittest
     assert(_mm_testc_si128(A, M2) == 1);
 }
 
-/*
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
+/// Compute the bitwise AND of 128 bits (representing integer data) in `a` and `b`, 
 /// and set ZF to 1 if the result is zero, otherwise set ZF to 0. 
-/// Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. 
+/// Compute the bitwise NOT of `a` and then AND with `b`, and set CF to 1 if the 
+/// result is zero, otherwise set CF to 0. 
 /// Return 1 if both the ZF and CF values are zero, otherwise return 0.
 int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse41.ptestnzc")
-    int __builtin_ia32_ptestnzc128(long2, long2) pure @safe;
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestnzc128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestnzc128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        long2 s640 = vandq_s64(cast(long2)a, cast(long2)b);
+        long2 s641 = vbicq_s64(cast(long2)a, cast(long2)b);
+        return (   (vgetq_lane_s64(s640, 0) | vgetq_lane_s64(s640, 1)) 
+                 & (vgetq_lane_s64(s641, 0) | vgetq_lane_s64(s641, 1))  ) != 0;
+    }
+    else
+    {
+        __m128i c = a & b;
+        __m128i d = ~a & b;
+        int[4] zero = [0, 0, 0, 0];
+        return !( (c.array == zero) || (d.array == zero));
+    }    
 }
 unittest
 {
+    __m128i A  = _mm_setr_epi32(0x01, 0x02, 0x04, 0xf8);
+    __m128i M  = _mm_setr_epi32(0x01, 0x40, 0x00, 0x00);
+    __m128i Z = _mm_setzero_si128();
+    assert(_mm_testnzc_si128(A, Z) == 0);
+    assert(_mm_testnzc_si128(A, M) == 1);
+    assert(_mm_testnzc_si128(A, A) == 0);
 }
-*/
 
 /// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
 /// and return 1 if the result is zero, otherwise return 0.
@@ -1544,16 +1567,6 @@ pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.phminposuw")
     short8 __builtin_ia32_phminposuw128(short8) pure @safe;
-
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.ptestc")
-    int __builtin_ia32_ptestc128(long2, long2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.ptestnzc")
-    int __builtin_ia32_ptestnzc128(long2, long2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.ptestz")
-    int __builtin_ia32_ptestz128(long2, long2) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.round.pd")
     double2 __builtin_ia32_roundpd(double2, int) pure @safe;
