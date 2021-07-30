@@ -1256,15 +1256,45 @@ unittest
 }
 */
 
-/*
-/// Multiply the packed 32-bit integers in a and b, producing intermediate 64-bit integers, and store the low 32 bits of the intermediate integers in dst.
+/// Multiply the packed 32-bit integers in `a` and `b`, producing intermediate 64-bit integers, 
+/// return the low 32 bits of the intermediate integers.
 __m128i _mm_mullo_epi32 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    version(GNU)
+    {
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        return cast(__m128i)(a * b);
+    }
+    else version(LDC)
+    {
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        return cast(__m128i)(a * b);
+    }
+    else
+    {
+        // DMD doesn't take the above
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        int4 r;
+        r.ptr[0] = ia.array[0] * ib.array[0];
+        r.ptr[1] = ia.array[1] * ib.array[1];
+        r.ptr[2] = ia.array[2] * ib.array[2];
+        r.ptr[3] = ia.array[3] * ib.array[3];
+        return r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(61616461, 1915324654, 4564061, 3);
+    __m128i B = _mm_setr_epi32(49716422, -915616216, -121144, 0);
+    int4 R = cast(int4) _mm_mullo_epi32(A, B);
+    int[4] correct = [cast(int)0xBF370D8E, cast(int)(1915324654 * -915616216), cast(int)(4564061 * -121144), 0];
+    assert(R.array == correct);
 }
-*/
+
 
 /// Convert packed signed 32-bit integers from `a` and `b` 
 /// to packed 16-bit integers using unsigned saturation.
