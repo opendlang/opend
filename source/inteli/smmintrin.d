@@ -142,7 +142,6 @@ unittest
 __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
 {
     // PERF DMD
-    // PERF Catastrophic on ARM64
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
@@ -1381,15 +1380,15 @@ unittest
 }
 */
 
-/*
-/// Load 128-bits of integer data from memory into dst using a non-temporal memory hint. mem_addr must be aligned on a 16-byte boundary or a general-protection exception may be generated.
+
+/// Load 128-bits of integer data from memory using a non-temporal memory hint. 
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection 
+/// exception may be generated.
 __m128i _mm_stream_load_si128 (__m128i * mem_addr) @trusted
 {
+    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    return *mem_addr; // it's a regular move instead
 }
-unittest
-{
-}
-*/
 
 /*
 /// Compute the bitwise NOT of a and then AND with a 128-bit vector containing all 1's, and return 1 if the result is zero, otherwise return 0.
@@ -1421,30 +1420,66 @@ unittest
 }
 */
 
-/*
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. Return the CF value.
+/// Compute the bitwise NOT of a and then AND with b, and return 1 if the 
+/// result is zero, otherwise return 0.
 int _mm_testc_si128 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    // PERF ARM64
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestc128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestc128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Acceptable since LDC 1.8 -02
+        long2 s64 = vbicq_s64(cast(long2)a, cast(long2)b);
+        return !(vgetq_lane_s64(s64, 0) & vgetq_lane_s64(s64, 1));
+    }
+    else
+    {
+        __m128i c = ~a & b;
+        int[4] zero = [0, 0, 0, 0];
+        return c.array == zero;
+    }    
 }
 unittest
 {
+    __m128i A  = _mm_setr_epi32(0x01, 0x02, 0x04, 0xf8);
+    __m128i M1 = _mm_setr_epi32(0xfe, 0xfd, 0x00, 0x00);
+    __m128i M2 = _mm_setr_epi32(0x00, 0x00, 0x04, 0x00);
+    assert(_mm_testc_si128(A, A) == 1);
+    assert(_mm_testc_si128(A, M1) == 0);
+    assert(_mm_testc_si128(A, M2) == 1);
 }
-*/
 
 /*
 /// Compute the bitwise AND of 128 bits (representing integer data) in a and b, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
 int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
 {
+    pragma(LDC_intrinsic, "llvm.x86.sse41.ptestnzc")
+    int __builtin_ia32_ptestnzc128(long2, long2) pure @safe;
 }
 unittest
 {
 }
 */
 
-/*
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with b, and set CF to 1 if the result is zero, otherwise set CF to 0. Return the ZF value.
-int _mm_testz_si128 (__m128i a, __m128i b) @trusted
+
+/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
+/// and set ZF to 1 if the result is zero, otherwise set ZF to 0. 
+/// Return the ZF value.
+/*int _mm_testz_si128 (__m128i a, __m128i b) @trusted
 {
+
+    pragma(LDC_intrinsic, "llvm.x86.sse41.ptestz")
+    int __builtin_ia32_ptestz128(long2, long2) pure @safe;
+
+
 }
 unittest
 {
@@ -1455,12 +1490,6 @@ unittest
 // LDC intrinsics present from 1.0.0 to 
 
 /*
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.blendvpd")
-    double2 __builtin_ia32_blendvpd(double2, double2, double2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.blendvps")
-    float4 __builtin_ia32_blendvps(float4, float4, float4) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.dppd")
     double2 __builtin_ia32_dppd(double2, double2, byte) pure @safe;
@@ -1473,9 +1502,6 @@ pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.mpsadbw")
     short8 __builtin_ia32_mpsadbw128(byte16, byte16, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.packusdw")
-    short8 __builtin_ia32_packusdw128(int4, int4) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
     byte16 __builtin_ia32_pblendvb128(byte16, byte16, byte16) pure @safe;

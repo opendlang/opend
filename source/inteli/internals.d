@@ -1110,6 +1110,11 @@ static if (LDC_with_ARM64)
         return a & b;
     }
 
+    long2 vbicq_s64(long2 a, long2 b)
+    {
+        return a & ~b;
+    }
+
     int4 vbslq_s32(int4 a, int4 b, int4 c) pure @safe
     {
         return c ^ ((c ^ b) & a);
@@ -1332,6 +1337,11 @@ static if (LDC_with_ARM64)
         r.ptr[6] = a.array[6];
         r.ptr[7] = a.array[7];
         return r;
+    }
+
+    long vgetq_lane_s64(long2 v, const int lane)
+    {
+        return v.array[lane];
     }
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smax.v8i16")
