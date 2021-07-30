@@ -1365,6 +1365,14 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smin.v8i16")
         short8 vminq_s16(short8 a, short8 b) pure @safe;
 
+    int2 vmovn_s64(long2 a) pure @trusted
+    {
+        int2 r;
+        r.ptr[0] = cast(int)(a.array[0]);
+        r.ptr[1] = cast(int)(a.array[1]);
+        return r;
+    }        
+
     int4 vmull_s16(short4 a, short4 b) pure @trusted
     {
         int4 r;
@@ -1375,6 +1383,8 @@ static if (LDC_with_ARM64)
         return r;
     }
 
+    pragma(LDC_intrinsic, "llvm.aarch64.neon.smull.v2i64")
+        long2 vmull_s32(int2 a, int2 b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v4i16")
         short4 vpadd_s16(short4 a, short4 b) pure @safe;

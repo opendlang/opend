@@ -1246,15 +1246,55 @@ unittest
 }
 */
 
-/*
+
 /// Multiply the low signed 32-bit integers from each packed 64-bit element in a and b, and store the signed 64-bit results in dst.
 __m128i _mm_mul_epi32 (__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_pmuldq128(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        // For some reason, clang has the builtin but it's not in IntrinsicsX86.td
+        // Use IR instead.
+        // This generates pmuldq with since LDC 1.2.0 -O0 
+        enum ir = `
+            %ia = shufflevector <4 x i32> %0,<4 x i32> %0, <2 x i32> <i32 0, i32 2>
+            %ib = shufflevector <4 x i32> %1,<4 x i32> %1, <2 x i32> <i32 0, i32 2>
+            %la = sext <2 x i32> %ia to <2 x i64>
+            %lb = sext <2 x i32> %ib to <2 x i64>
+            %r = mul <2 x i64> %la, %lb
+            ret <2 x i64> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, long2, int4, int4)(cast(int4)a, cast(int4)b);
+    }
+    else static if (LDC_with_ARM64)  
+    {
+        // 3 instructions since LDC 1.8 -O2
+        // But had to make vmull_s32 use the builtin else it wouldn't optimize to smull
+        int2 a_lo = vmovn_s64(cast(long2)a);
+        int2 b_lo = vmovn_s64(cast(long2)b);
+        return cast(__m128i) vmull_s32(a_lo, b_lo);
+    }
+    else
+    {
+        int4 ia = cast(int4)a;
+        int4 ib = cast(int4)b;
+        long2 r;
+        r.ptr[0] = cast(long)ia.array[0] * ib.array[0];
+        r.ptr[1] = cast(long)ia.array[2] * ib.array[2];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(61616461, 1915324654, 4564061, 3);
+    __m128i B = _mm_setr_epi32(49716422, -915616216, -121144, 0);
+    long2 R = cast(long2) _mm_mul_epi32(A, B);
+    long[2] correct = [cast(long)61616461 * 49716422, cast(long)4564061 * -121144];
+    assert(R.array == correct);
 }
-*/
 
 /// Multiply the packed 32-bit integers in `a` and `b`, producing intermediate 64-bit integers, 
 /// return the low 32 bits of the intermediate integers.
