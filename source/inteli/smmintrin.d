@@ -1239,17 +1239,23 @@ __m128i _mm_minpos_epu16 (__m128i a) @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        __m128i indices = _mm_setr_epi(0, 1, 2, 3, 4, 5, 6, 7);
-        __m128i combinedLo = _mm_unpacklo_epi16(a, indices);
-        __m128i combinedHi = _mm_unpackhi_epi16(a, indices);
-        __m128i best = _mm_max_epu32(combinedLo, combinedHi);
-        best = _mm_max_epu32(_mm_srli_si128!8(best));
-        best = _mm_max_epu32(_mm_srli_si128!4(best));
-        int4 r = cast(int4)best;
-        r.ptr[1] = 0;
-        r.ptr[2] = 0;
-        r.ptr[3] = 0;
-        return cast(__mm128i)r;
+        __m128i indices = _mm_setr_epi16(0, 1, 2, 3, 4, 5, 6, 7);
+        __m128i combinedLo = _mm_unpacklo_epi16(indices, a);
+        __m128i combinedHi = _mm_unpackhi_epi16(indices, a);
+        __m128i best = _mm_min_epu32(combinedLo, combinedHi);
+        best = _mm_min_epu32(best, _mm_srli_si128!8(best));
+        best = _mm_min_epu32(best, _mm_srli_si128!4(best));
+        short8 sbest = cast(short8)best;
+        short8 r;
+        r[0] = sbest[1];
+        r[1] = sbest[0]; // Note: the search must have inverted index in order to prioritize lower index in case of tie
+        r[2] = 0;
+        r[3] = 0;
+        r[4] = 0;
+        r[5] = 0;
+        r[6] = 0;
+        r[7] = 0;
+        return cast(__m128i)r;
     }
     else
     {
@@ -1512,11 +1518,11 @@ __m128i _mm_stream_load_si128 (__m128i * mem_addr) @trusted
 /// Return 1 if all bits in `a` are all 1's. Else return 0.
 int _mm_test_all_ones (__m128i a) @safe
 {
-    return _mm_testc_si128(a, _mm_set1_epi32(0xffffffff));
+    return _mm_testc_si128(a, _mm_set1_epi32(-1));
 }
 unittest
 {
-    __m128i A = _mm_set1_epi32(0xffffffff);
+    __m128i A = _mm_set1_epi32(-1);
     __m128i B = _mm_set_epi32(-1, -2, -1, -1);
     assert(_mm_test_all_ones(A) == 1);
     assert(_mm_test_all_ones(B) == 0);
@@ -1526,7 +1532,7 @@ unittest
 // This is a #BONUS since it was lacking in Intel Intrinsics API.
 int _mm_test_all_zeros (__m128i a) @safe
 {
-    return _mm_testz_si128(a, _mm_set1_epi32(0xffffffff));
+    return _mm_testz_si128(a, _mm_set1_epi32(-1));
 }
 unittest
 {
@@ -1567,7 +1573,7 @@ int _mm_testc_si128 (__m128i a, __m128i b) @trusted
     {
         // Acceptable since LDC 1.8 -02
         long2 s64 = vbicq_s64(cast(long2)b, cast(long2)a);
-        return !(vgetq_lane_s64(s64, 0) & vgetq_lane_s64(s64, 1));
+        return !(vgetq_lane_s64(s64, 0) | vgetq_lane_s64(s64, 1));
     }
     else
     {
@@ -1606,8 +1612,8 @@ int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
     {
         long2 s640 = vandq_s64(cast(long2)b, cast(long2)a);
         long2 s641 = vbicq_s64(cast(long2)b, cast(long2)a);
-        return (   (vgetq_lane_s64(s640, 0) | vgetq_lane_s64(s640, 1)) 
-                 & (vgetq_lane_s64(s641, 0) | vgetq_lane_s64(s641, 1))  ) != 0;
+        return !( !(vgetq_lane_s64(s641, 0) | vgetq_lane_s64(s641, 1))
+                | !(vgetq_lane_s64(s640, 0) | vgetq_lane_s64(s640, 1)) );
     }
     else
     {
@@ -1645,9 +1651,9 @@ int _mm_testz_si128 (__m128i a, __m128i b) @trusted
     {
         // Acceptable since LDC 1.8 -02
         long2 s64 = vandq_s64(cast(long2)a, cast(long2)b);
-        return !(vgetq_lane_s64(s64, 0) & vgetq_lane_s64(s64, 1));
+        return !(vgetq_lane_s64(s64, 0) | vgetq_lane_s64(s64, 1));
     }
-    else
+    else 
     {
         __m128i c = a & b;
         int[4] zero = [0, 0, 0, 0];
