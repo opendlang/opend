@@ -1237,9 +1237,22 @@ __m128i _mm_minpos_epu16 (__m128i a) @trusted
     {
         return cast(__m128i) __builtin_ia32_phminposuw128(cast(short8)a);
     }
+    else static if (LDC_with_ARM64)
+    {
+        __m128i indices = _mm_setr_epi(0, 1, 2, 3, 4, 5, 6, 7);
+        __m128i combinedLo = _mm_unpacklo_epi16(a, indices);
+        __m128i combinedHi = _mm_unpackhi_epi16(a, indices);
+        __m128i best = _mm_max_epu32(combinedLo, combinedHi);
+        best = _mm_max_epu32(_mm_srli_si128!8(best));
+        best = _mm_max_epu32(_mm_srli_si128!4(best));
+        int4 r = cast(int4)best;
+        r.ptr[1] = 0;
+        r.ptr[2] = 0;
+        r.ptr[3] = 0;
+        return cast(__mm128i)r;
+    }
     else
     {
-        // PERF 37 inst in ARM64
         short8 sa = cast(short8)a;
         ushort min = 0xffff;
         int index = 0;
@@ -1665,9 +1678,6 @@ pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.mpsadbw")
     short8 __builtin_ia32_mpsadbw128(byte16, byte16, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.pblendvb")
-    byte16 __builtin_ia32_pblendvb128(byte16, byte16, byte16) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.phminposuw")
     short8 __builtin_ia32_phminposuw128(short8) pure @safe;
