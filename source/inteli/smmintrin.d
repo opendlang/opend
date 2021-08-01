@@ -1239,6 +1239,7 @@ __m128i _mm_minpos_epu16 (__m128i a) @trusted
     }
     else
     {
+        // PERF 37 inst in ARM64
         short8 sa = cast(short8)a;
         ushort min = 0xffff;
         int index = 0;
@@ -1398,15 +1399,15 @@ __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
         ushort[8] result;
         for (int i = 0; i < 4; ++i)
         {
-            int s = sa[i];
+            int s = sa.array[i];
             if (s < 0) s = 0;
             if (s > 65535) s = 65535;
-            result[i] = cast(ushort)s;
+            result.ptr[i] = cast(ushort)s;
 
-            s = sb[i];
+            s = sb.array[i];
             if (s < 0) s = 0;
             if (s > 65535) s = 65535;
-            result[i+4] = cast(ushort)s;
+            result.ptr[i+4] = cast(ushort)s;
         }
         return cast(__m128i) loadUnaligned!(short8)(cast(short*)result.ptr);
     }

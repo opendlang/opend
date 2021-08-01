@@ -12,7 +12,6 @@ __m128i _mm_strange_intrinsic (__m128i a) pure @safe
     return a;
 }
 
-
 // </your code here>
 
 // Useful links for your efforts:
