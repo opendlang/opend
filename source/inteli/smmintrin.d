@@ -983,8 +983,6 @@ unittest
     assert(R.array == correct);
 }
 
-
-
 /// Compare packed signed 8-bit integers in `a` and `b`, 
 /// and return packed maximum values.
 __m128i _mm_max_epi8 (__m128i a, __m128i b) @trusted
@@ -1019,7 +1017,6 @@ unittest
     byte[16] correct =       [127,  1,  9, -7, 9,    7, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0];
     assert(R.array == correct);
 }
-
 
 /// Compare packed unsigned 16-bit integers in `a` and `b`, returns packed maximum values.
 __m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
@@ -1170,7 +1167,7 @@ __m128i _mm_min_epu16 (__m128i a, __m128i b) @trusted
     else version(LDC)
     {
         // x86: pminuw since LDC 1.1 -O1, psubusw+psubw sequence without sse4.1
-        // ARM64: umin.8h since LDC 1.8.0 -O1        
+        // ARM64: umin.8h since LDC 1.8.0 -O1
         ushort8 sa = cast(ushort8)a;
         ushort8 sb = cast(ushort8)b;
         ushort8 greater = cast(ushort8) greaterMask!ushort8(sb, sa);
@@ -1190,7 +1187,6 @@ unittest
     short[8] correct =                                  [32767,  1,  9, -8, 0,     7, 0,  0];
     assert(R.array == correct);
 }
-
 
 /// Compare packed unsigned 32-bit integers in a and b, and store packed minimum values in dst.
 __m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
@@ -1226,15 +1222,53 @@ unittest
     assert(R.array == correct);
 }
 
-/*
-/// Horizontally compute the minimum amongst the packed unsigned 16-bit integers in a, store the minimum and index in dst, and zero the remaining bits in dst.
+/// Horizontally compute the minimum amongst the packed unsigned 16-bit integers in `a`, 
+/// store the minimum and index in return value, and zero the remaining bits.
 __m128i _mm_minpos_epu16 (__m128i a) @trusted
 {
+    // PERF DMD
+    // PERF ARM64
+    // PERF: if we interleave index and value, possible to use _mm_max_epu32 to be branchless
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_phminposuw128(cast(short8)a);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_phminposuw128(cast(short8)a);
+    }
+    else
+    {
+        short8 sa = cast(short8)a;
+        ushort min = 0xffff;
+        int index = 0;
+        for(int n = 0; n < 8; ++n)
+        {
+            ushort c = sa.array[n];
+            if (c < min)
+            {
+                min = c;
+                index = n;
+            }
+        }
+        short8 r;
+        r.ptr[0] = min;
+        r.ptr[1] = cast(short)index;
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi16(14, 15, 1, 2, -3, 4, 5, 6);
+    __m128i B = _mm_setr_epi16(14,  4, 4, 2, -3, 2, 5, 6);
+    short8 R1 = cast(short8) _mm_minpos_epu16(A);
+    short8 R2 = cast(short8) _mm_minpos_epu16(B);
+    short[8] correct1 = [1, 2, 0, 0, 0, 0, 0, 0];
+    short[8] correct2 = [2, 3, 0, 0, 0, 0, 0, 0];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
 }
-*/
+
 
 /*
 /// Compute the sum of absolute differences (SADs) of quadruplets of unsigned 8-bit integers in a compared to those in b, and store the 16-bit results in dst. Eight SADs are performed using one quadruplet from b and eight quadruplets from a. One quadruplet is selected from b starting at on the offset specified in imm8. Eight quadruplets are formed from sequential 8-bit integers selected from a starting at the offset specified in imm8.
