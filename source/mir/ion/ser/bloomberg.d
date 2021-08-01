@@ -13,7 +13,7 @@ public import mir.bloomberg.blpapi : BloombergElement = Element;
 /++
 Ion serialization back-end
 +/
-struct BloombergSerializer
+struct BloombergSerializer()
 {
     import mir.format: stringBuf, getData;
     import mir.bignum.decimal: Decimal;
@@ -41,7 +41,7 @@ struct BloombergSerializer
     /// Mutable value used to choose format specidied or user-defined serialization specializations
     int serdeTarget = SerdeTarget.bloomberg;
 
-@safe pure @nogc:
+@safe pure:
 
     private const(char)* toScopeStringz(scope const(char)[] value) @trusted return scope nothrow
     {

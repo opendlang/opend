@@ -988,7 +988,7 @@ version(bloomberg)
         import mir.ion.ser.ion;
         import mir.ion.ser.json;
         import mir.ion.ser.text;
-        BloombergSerializer ser;
+        BloombergSerializer!() ser;
         BloombergElement* value;
         serializeValue(ser, value.init);
         auto text = value.serializeText;

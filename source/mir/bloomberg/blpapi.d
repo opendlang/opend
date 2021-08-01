@@ -275,7 +275,8 @@ struct HighPrecisionDatetime {
     alias opCast(T : Timestamp) = asTimestamp;
 }
 
-@safe pure @nogc validateBloombergErroCode(
+@safe pure // @nogc
+validateBloombergErroCode()(
     int errorCode,
     string file = __FILE__,
     size_t line = __LINE__)
@@ -283,17 +284,17 @@ struct HighPrecisionDatetime {
     import mir.ion.exception: IonException, IonMirException;
     if (errorCode)
     {
-        static if (__traits(compiles, () @nogc { throw new Exception(""); }))
-        {
-            blpapi.ErrorInfo info;
-            blpapi.getErrorInfo(info, errorCode);
+        // static if (__traits(compiles, () @nogc { throw new Exception(""); }))
+        // {
+            ErrorInfo info;
+            getErrorInfo(info, errorCode);
             throw new IonMirException(info.description, file, __LINE__);
-        }
-        else
-        {
-            static immutable exc = new IonException("Exception thrown in bloomberg API: add DIP1008 for better error messages.");
-            throw exc;
-        }
+        // }
+        // else
+        // {
+        //     static immutable exc = new IonException("Exception thrown in bloomberg API: add DIP1008 for better error messages.");
+        //     throw exc;
+        // }
     }
 }
 
@@ -302,7 +303,7 @@ struct HighPrecisionDatetime {
 ///
 alias getErrorInfo = blpapi_getErrorInfo;
 /// ditto
-int blpapi_getErrorInfo(ErrorInfo *buffer, int errorCode);
+int blpapi_getErrorInfo(scope ref ErrorInfo buffer, int errorCode);
 
 ///
 alias nameCreate = blpapi_Name_create;
