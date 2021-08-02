@@ -1355,11 +1355,14 @@ unittest
 __m128i _mm_mullo_epi32 (__m128i a, __m128i b) @trusted
 {
     // PERF DMD
-    version(GNU)
+    // PERF GDC without SSE4.1 could be better
+    static if (GDC_with_SSE41)
     {
         int4 ia = cast(int4)a;
         int4 ib = cast(int4)b;
-        return cast(__m128i)(a * b);
+        // Note: older GDC doesn't have that op, but older GDC
+        // also has no support for -msse4.1 detection
+        return cast(__m128i)(a * b); 
     }
     else version(LDC)
     {
