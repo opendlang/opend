@@ -69,15 +69,15 @@ unittest
 
 
 /// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using control mask `imm8`.
-// Note: changed signature, GDC needs a compile-time value for imm8.
-__m128d _mm_blend_pd (__m128d a, __m128d b, const int imm8) @trusted
+// Note: changed signature, GDC needs a compile-time value for `imm8`.
+__m128d _mm_blend_pd(ubyte imm8)(__m128d a, __m128d b) @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_blendpd(cast(short8)a, cast(short8)b, imm8);
+        return cast(double2) __builtin_ia32_blendpd(cast(double2)a, cast(double2)b, imm8 & 3);
     }
-    else 
+    else
     {
         // LDC x86: blendpd since LDC 1.1 -02, uses blendps after LDC 1.12
         double2 r;
@@ -92,7 +92,7 @@ unittest
 {
     __m128d A = _mm_setr_pd(0, 1);
     __m128d B = _mm_setr_pd(8, 9);
-    double2 C = _mm_blend_pd(A, B, 2); // 10
+    double2 C = _mm_blend_pd!2(A, B);
     double[2] correct =    [0, 9];
     assert(C.array == correct);
 }
@@ -135,8 +135,6 @@ unittest
     float[4] correct =    [8, 1, 10, 11];
     assert(C.array == correct);
 }
-
-
 
 /// Blend packed 8-bit integers from `a` and `b` using `mask`.
 __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
@@ -754,8 +752,6 @@ unittest
     assert(C.array == correct);
 }
 
-
-
 /// Zero extend packed unsigned 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m128i _mm_cvtepu8_epi64 (__m128i a) @trusted
 {
@@ -792,16 +788,42 @@ unittest
     assert(C.array == correct);
 }
 
-
-/*
-/// Conditionally multiply the packed double-precision (64-bit) floating-point elements in a and b using the high 4 bits in imm8, sum the four products, and conditionally store the sum in dst using the low 4 bits of imm8.
-__m128d _mm_dp_pd (__m128d a, __m128d b, const int imm8) @trusted
+/// Conditionally multiply the packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` using the high 4 bits in `imm8`, sum the four products, and conditionally
+/// store the sum in dst using the low 4 bits of `imm8`.
+__m128d _mm_dp_pd(int imm8)(__m128d a, __m128d b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_dppd(a, b, imm8 & 0x33);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_dppd(a, b, imm8 & 0x33);
+    }
+    else
+    {
+        __m128d zero = _mm_setzero_pd();
+        __m128d temp = _mm_blend_pd!(imm8 >>> 4)(zero, a * b);
+        double sum = temp.array[0] + temp.array[1];
+        return _mm_blend_pd!imm8(zero, _mm_set1_pd(sum));
+    }
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.0, 2.0);
+    __m128d B = _mm_setr_pd(4.0, 8.0);
+    double2 R1 = _mm_dp_pd!(0x10 + 0x3 + 0x44)(A, B);
+    double2 R2 = _mm_dp_pd!(0x20 + 0x1 + 0x88)(A, B);
+    double2 R3 = _mm_dp_pd!(0x30 + 0x2 + 0x00)(A, B);
+    double[2] correct1 = [ 4.0,  4.0];
+    double[2] correct2 = [16.0,  0.0];
+    double[2] correct3 = [ 0.0, 20.0];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
+    assert(R3.array == correct3);
 }
-*/
 
 /*
 /// Conditionally multiply the packed single-precision (32-bit) floating-point elements in a and b using the high 4 bits in imm8, sum the four products, and conditionally store the sum in dst using the low 4 bits of imm8.
@@ -1615,6 +1637,7 @@ int _mm_testnzc_si128 (__m128i a, __m128i b) @trusted
     {
         long2 s640 = vandq_s64(cast(long2)b, cast(long2)a);
         long2 s641 = vbicq_s64(cast(long2)b, cast(long2)a);
+
         return !( !(vgetq_lane_s64(s641, 0) | vgetq_lane_s64(s641, 1))
                 | !(vgetq_lane_s64(s640, 0) | vgetq_lane_s64(s640, 1)) );
     }
@@ -1687,9 +1710,6 @@ pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.mpsadbw")
     short8 __builtin_ia32_mpsadbw128(byte16, byte16, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.phminposuw")
-    short8 __builtin_ia32_phminposuw128(short8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.sse41.round.pd")
     double2 __builtin_ia32_roundpd(double2, int) pure @safe;
