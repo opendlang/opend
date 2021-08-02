@@ -203,7 +203,7 @@ struct BloombergSerializer()
     ///
     void putKeyPtr(scope const char* key)
     {
-        assert(nextValue is null);
+        nextValue = null;
         auto name = getName(key);
         blpapi.getElement(aggregateValue, nextValue, null, name).validate;
         blpapi.nameDestroy(name);
