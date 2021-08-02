@@ -70,12 +70,13 @@ unittest
 
 /// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using control mask `imm8`.
 // Note: changed signature, GDC needs a compile-time value for `imm8`.
-__m128d _mm_blend_pd(ubyte imm8)(__m128d a, __m128d b) @trusted
+__m128d _mm_blend_pd(int imm8)(__m128d a, __m128d b) @trusted
 {
+    static assert(imm8 >= 0 && imm8 < 4);
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(double2) __builtin_ia32_blendpd(cast(double2)a, cast(double2)b, imm8 & 3);
+        return cast(double2) __builtin_ia32_blendpd(cast(double2)a, cast(double2)b, imm8);
     }
     else
     {
@@ -805,9 +806,9 @@ __m128d _mm_dp_pd(int imm8)(__m128d a, __m128d b) @trusted
     else
     {
         __m128d zero = _mm_setzero_pd();
-        __m128d temp = _mm_blend_pd!(imm8 >>> 4)(zero, a * b);
+        __m128d temp = _mm_blend_pd!( (imm8 >>> 4) & 3)(zero, a * b);
         double sum = temp.array[0] + temp.array[1];
-        return _mm_blend_pd!imm8(zero, _mm_set1_pd(sum));
+        return _mm_blend_pd!(imm8 & 3)(zero, _mm_set1_pd(sum));
     }
 }
 unittest
@@ -825,15 +826,42 @@ unittest
     assert(R3.array == correct3);
 }
 
-/*
-/// Conditionally multiply the packed single-precision (32-bit) floating-point elements in a and b using the high 4 bits in imm8, sum the four products, and conditionally store the sum in dst using the low 4 bits of imm8.
-__m128 _mm_dp_ps (__m128 a, __m128 b, const int imm8) @trusted
+/// Conditionally multiply the packed single-precision (32-bit) floating-point elements 
+/// in `a` and `b` using the high 4 bits in `imm8`, sum the four products, 
+/// and conditionally store the sum in result using the low 4 bits of `imm8`.
+__m128 _mm_dp_ps(int imm8)(__m128 a, __m128 b) @trusted
 {
+      // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_dpps(a, b, cast(byte)imm8);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_dpps(a, b, cast(byte)imm8);
+    }
+    else
+    {
+        __m128 zero = _mm_setzero_ps();
+        __m128 temp = _mm_blend_ps!( (imm8 >>> 4) & 15)(zero, a * b);
+        float sum = temp.array[0] + temp.array[1] + temp.array[2] + temp.array[3];
+        return _mm_blend_ps!(imm8 & 15)(zero, _mm_set1_ps(sum));
+    }        
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 4.0f, 8.0f);
+    __m128 B = _mm_setr_ps(9.0f, 7.0f, 5.0f, 3.0f);
+    float4 R1 = _mm_dp_ps!(0xf0 + 0xf)(A, B);
+    float4 R2 = _mm_dp_ps!(0x30 + 0x5)(A, B);
+    float4 R3 = _mm_dp_ps!(0x50 + 0xa)(A, B);
+    float[4] correct1 =   [67.0f, 67.0f, 67.0f, 67.0f];
+    float[4] correct2 =   [23.0f, 0.0f, 23.0f, 0.0f];
+    float[4] correct3 =   [0.0f, 29.0f, 0.0f, 29.0f];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
+    assert(R3.array == correct3);
 }
-*/
 
 
 /// Extract a 32-bit integer from `a`, selected with `imm8`.
