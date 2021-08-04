@@ -1684,6 +1684,8 @@ __m128d _mm_round_pd(int rounding)(__m128d a) @trusted
         }
         else
         {
+            version(GNU) pragma(inline, false); // else fail unittest with optimizations
+
             uint old = _MM_GET_ROUNDING_MODE();
             _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
             
