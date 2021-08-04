@@ -1037,12 +1037,12 @@ unittest
 /// Insert the 64-bit integer `i` into `a` at the location specified by `imm8[0]`.
 __m128i _mm_insert_epi64 (__m128i a, long i, const int imm8) pure @trusted
 {
-    // GDC: special to do, psinrq generated with -O1 -msse4.1
+    // GDC: nothing special to do, psinrq generated with -O1 -msse4.1
     // LDC x86: always do something sensible.
     // PERF ARM64 does not seem ideal, no "ins"
     long2 la = cast(long2)a;
     la.ptr[imm8 & 1] = i;
-    return cast(__m128i)la; 
+    return cast(__m128i)la;
 }
 unittest
 {
@@ -1052,25 +1052,57 @@ unittest
     assert(C.array == result);
 }
 
-/*
+/// Insert the 8-bit integer `i` into `a` at the location specified by `imm8[2:0]`.
 /// Copy a to dst, and insert the lower 8-bit integer from i into dst at the location specified by imm8.
 __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8) @trusted
 {
+    // GDC: nothing special to do, pinsrb generated with -O1 -msse4.1
+    // LDC x86: doesn't do pinsrb, maybe it's slower. arm64 also spills to memory.
+    byte16 ba = cast(byte16)a;
+    ba.ptr[imm8 & 15] = cast(byte)i;
+    return cast(__m128i)ba; 
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+    byte16 C = cast(byte16) _mm_insert_epi8(A, 30, 4 + 16);
+    byte[16] result = [0, 1, 2, 3, 30, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    assert(C.array == result);
 }
-*/
 
-/*
-/// Copy a to tmp, then insert a single-precision (32-bit) floating-point element from b into tmp using the control in imm8. Store tmp to dst using the mask in imm8 (elements are zeroed out when the corresponding bit is set).
-__m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8) @trusted
+
+/// Warning: of course it does something totally different from `_mm_insert_epi32`!
+/// Copy `a` to `tmp`, then insert a single-precision (32-bit) floating-point element from `b` 
+/// into `tmp` using the control in `imm8`. Store `tmp` to result using the mask in `imm8[3:0]` 
+/// (elements are zeroed out when the corresponding bit is set).
+__m128 _mm_insert_ps(int imm8)(__m128 a, __m128 b) @trusted
 {
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_insertps128(a, b, cast(byte)imm8);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_insertps128(a, b, cast(byte)imm8);
+    }
+    else
+    {
+        float4 tmp2 = a;
+        float tmp1 = b.array[(imm8 >> 6) & 3];
+        tmp2.ptr[(imm8 >> 4) & 3] = tmp1;
+        return _mm_blend_ps!(imm8 & 15)(tmp2, _mm_setzero_ps());
+    }
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f);
+    __m128 B = _mm_setr_ps(5.0f, 6.0f, 7.0f, 8.0f);
+    __m128 C = _mm_insert_ps!(128 + (32 + 16) + 4)(A, B);
+    float[4] correct =    [1.0f, 2.0f, 0.0f, 7.0f];
+    assert(C.array == correct);
 }
-*/
+
 
 /// Compare packed signed 32-bit integers in `a` and `b`, returns packed maximum values.
 __m128i _mm_max_epi32 (__m128i a, __m128i b) @trusted
@@ -1996,12 +2028,3 @@ unittest
     assert(_mm_testz_si128(A, M2) == 0);
 }
 
-
-/*
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
-    float4 __builtin_ia32_insertps128(float4, float4, byte) pure @safe;
-
-
-
-    */
