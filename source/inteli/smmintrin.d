@@ -290,7 +290,7 @@ unittest
 /// and store the results as packed double-precision floating-point elements.
 __m128d _mm_ceil_pd (__m128d a) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_pd!2(a);
 }
 unittest
@@ -309,7 +309,7 @@ unittest
 /// and store the results as packed single-precision floating-point elements.
 __m128 _mm_ceil_ps (__m128 a) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_ps!2(a);
 }
 unittest
@@ -325,7 +325,7 @@ unittest
 /// and copy the upper element from `a` to the upper element of dst.
 __m128d _mm_ceil_sd (__m128d a, __m128d b) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_sd!2(a, b);
 }
 unittest
@@ -342,7 +342,7 @@ unittest
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_ceil_ss (__m128 a, __m128 b) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_ss!2(a, b);
 }
 unittest
@@ -952,7 +952,7 @@ unittest
 /// integer value, and store the results as packed double-precision floating-point elements.
 __m128d _mm_floor_pd (__m128d a) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_pd!1(a);
 }
 unittest
@@ -971,7 +971,7 @@ unittest
 /// integer value, and store the results as packed single-precision floating-point elements.
 __m128 _mm_floor_ps (__m128 a) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_ps!1(a);
 }
 unittest
@@ -987,7 +987,7 @@ unittest
 /// lower element, and copy the upper element from `a` to the upper element.
 __m128d _mm_floor_sd (__m128d a, __m128d b) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_sd!1(a, b);
 }
 unittest
@@ -1004,7 +1004,7 @@ unittest
 /// lower element, and copy the upper 3 packed elements from `a` to the upper elements.
 __m128 _mm_floor_ss (__m128 a, __m128 b) @trusted
 {
-    // PERF: ARM64
+    // PERF ARM64
     return _mm_round_ss!1(a, b);
 }
 unittest
@@ -1380,8 +1380,6 @@ unittest
 __m128i _mm_minpos_epu16 (__m128i a) @trusted
 {
     // PERF DMD
-    // PERF ARM64
-    // PERF: if we interleave index and value, possible to use _mm_max_epu32 to be branchless
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_phminposuw128(cast(short8)a);
