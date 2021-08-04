@@ -1228,9 +1228,9 @@ unittest
 
 /// Convert packed double-precision (64-bit) floating-point elements 
 /// in `a` to packed 32-bit integers.
-// PERF ARM32
 __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
 {
+    // PERF ARM32
     static if (LDC_with_SSE2)
     {
         return __builtin_ia32_cvtpd2dq(a);

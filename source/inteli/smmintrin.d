@@ -286,47 +286,73 @@ unittest
     }
 }
 
-
-/*
-/// Round the packed double-precision (64-bit) floating-point elements in a up to an integer value, and store the results as packed double-precision floating-point elements in dst.
+/// Round the packed double-precision (64-bit) floating-point elements in `a` up to an integer value, 
+/// and store the results as packed double-precision floating-point elements.
 __m128d _mm_ceil_pd (__m128d a) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_pd!2(a);
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.3f, -2.12f);
+    __m128d B = _mm_setr_pd(53.6f, -2.7f);
+    A = _mm_ceil_pd(A);
+    B = _mm_ceil_pd(B);
+    double[2] correctA = [2.0, -2.0];
+    double[2] correctB = [54.0, -2.0];
+    assert(A.array == correctA);
+    assert(B.array == correctB);
 }
-*/
 
-/*
-/// Round the packed single-precision (32-bit) floating-point elements in a up to an integer value, and store the results as packed single-precision floating-point elements in dst.
+/// Round the packed single-precision (32-bit) floating-point elements in `a` up to an integer value, 
+/// and store the results as packed single-precision floating-point elements.
 __m128 _mm_ceil_ps (__m128 a) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_ps!2(a);
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.3f, -2.12f, 53.6f, -2.7f);
+    __m128 C = _mm_ceil_ps(A);
+    float[4] correct = [2.0f, -2.0f, 54.0f, -2.0f];
+    assert(C.array == correct);
 }
-*/
 
-/*
-/// Round the lower double-precision (64-bit) floating-point element in b up to an integer value, store the result as a double-precision floating-point element in the lower element of dst, and copy the upper element from a to the upper element of dst.
+/// Round the lower double-precision (64-bit) floating-point element in `b` up to an integer value, 
+/// store the result as a double-precision floating-point element in the lower element of result, 
+/// and copy the upper element from `a` to the upper element of dst.
 __m128d _mm_ceil_sd (__m128d a, __m128d b) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_sd!2(a, b);
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.3, -2.12);
+    __m128d B = _mm_setr_pd(53.6, -3.7);
+    __m128d C = _mm_ceil_sd(A, B);
+    double[2] correct = [54.0, -2.12];
+    assert(C.array == correct);
 }
-*/
 
-/*
-/// Round the lower single-precision (32-bit) floating-point element in b up to an integer value, store the result as a single-precision floating-point element in the lower element of dst, and copy the upper 3 packed elements from a to the upper elements of dst.
+/// Round the lower single-precision (32-bit) floating-point element in `b` up to an integer value,
+/// store the result as a single-precision floating-point element in the lower element of result, 
+/// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_ceil_ss (__m128 a, __m128 b) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_ss!2(a, b);
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.3f, -2.12f, -4.5f, 1.1f);
+    __m128 B = _mm_setr_ps(53.6f, -3.7f, 8.0f, 7.0f);
+    __m128 C = _mm_ceil_ss(A, B);
+    float[4] correct = [54.0f, -2.12f, -4.5f, 1.1f];
+    assert(C.array == correct);
 }
-*/
-
 
 /// Compare packed 64-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b) @trusted
@@ -1552,69 +1578,210 @@ unittest
 }
 
 
-/// Round the packed double-precision (64-bit) floating-point elements in a using the rounding parameter, and store the results as packed double-precision floating-point elements in dst.
+/// Round the packed double-precision (64-bit) floating-point elements in `a` using the 
+/// rounding parameter, and store the results as packed double-precision floating-point elements.
 /// Rounding is done according to the rounding[3:0] parameter, which can be one of:
 ///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
 ///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
 ///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
 ///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
-/*
 ///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
-__m128d _mm_round_pd (__m128d a, int rounding) @trusted
+__m128d _mm_round_pd(int rounding)(__m128d a) @trusted
 {
-}
-unittest
-{
-}
-*/
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_roundpd(a, rounding);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_roundpd(a, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            // Convert to 64-bit integers
+            long lo = _mm_cvtsd_si64(a);
+            a.ptr[0] = a.array[1];
+            long hi = _mm_cvtsd_si64(a);
+            return _mm_setr_pd(lo, hi);
+        }
+        else
+        {
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            
+            // Convert to 64-bit integers
+            long lo = _mm_cvtsd_si64(a);
+            a.ptr[0] = a.array[1];
+            long hi = _mm_cvtsd_si64(a);
 
-/// Round the packed single-precision (32-bit) floating-point elements in a using the rounding parameter, and store the results as packed single-precision floating-point elements in dst.
-/// Rounding is done according to the rounding[3:0] parameter, which can be one of:
-///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
-///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
-///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
-///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
-/*
-///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
-__m128 _mm_round_ps (__m128 a, int rounding) @trusted
-{
+            // Convert back to double to achieve the rounding
+            // The problem is that a 64-bit double can't represent all the values 
+            // a 64-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            _MM_SET_ROUNDING_MODE(old);
+            return _mm_setr_pd(lo, hi);
+        }
+    }
 }
 unittest
 {
+    // tested in other intrinsics
 }
-*/
 
-/// Round the lower double-precision (64-bit) floating-point element in b using the rounding parameter, store the result as a double-precision floating-point element in the lower element of dst, and copy the upper element from a to the upper element of dst.
+/// Round the packed single-precision (32-bit) floating-point elements in `a` using the 
+/// rounding parameter, and store the results as packed single-precision floating-point elements.
 /// Rounding is done according to the rounding[3:0] parameter, which can be one of:
 ///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
 ///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
 ///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
 ///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
-/*
 ///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
-__m128d _mm_round_sd (__m128d a, __m128d b, int rounding) @trusted
+__m128 _mm_round_ps(int rounding)(__m128 a) @trusted
 {
-}
-unittest
-{
-}
-*/
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_roundps(a, rounding);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_roundps(a, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            __m128i integers = _mm_cvtps_epi32(a);
+            return _mm_cvtepi32_ps(integers);
+        }
+        else
+        {
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            
+            // Convert to 64-bit integers
+            __m128i integers = _mm_cvtps_epi32(a);
+            __m128 result = _mm_cvtepi32_ps(integers);
 
-/// Round the lower single-precision (32-bit) floating-point element in b using the rounding parameter, store the result as a single-precision floating-point element in the lower element of dst, and copy the upper 3 packed elements from a to the upper elements of dst.
+            // Convert back to float to achieve the rounding
+            // The problem is that a 32-float can't represent all the values 
+            // a 32-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            _MM_SET_ROUNDING_MODE(old);
+            return result;
+        }
+    }
+}
+unittest
+{
+    // tested in other intrinsics
+}
+
+
+/// Round the lower double-precision (64-bit) floating-point element in `b` using the
+/// rounding parameter, store the result as a double-precision floating-point element 
+/// in the lower element of result, and copy the upper element from `a` to the upper element of result.
 /// Rounding is done according to the rounding[3:0] parameter, which can be one of:
 ///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
 ///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
 ///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
 ///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
-/*
 ///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
-__m128 _mm_round_ss (__m128 a, __m128 b, int rounding) @trusted
+__m128d _mm_round_sd(int rounding)(__m128d a, __m128d b) @trusted
 {
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_roundsd(a, b, rounding);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_roundsd(a, b, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            // Convert to 64-bit integer
+            long b0 = _mm_cvtsd_si64(b);
+            a.ptr[0] = b0;
+            return a;
+        }
+        else
+        {
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            
+            // Convert to 64-bit integer
+            long b0 = _mm_cvtsd_si64(b);
+            a.ptr[0] = b0;       
+
+            // Convert back to double to achieve the rounding
+            // The problem is that a 64-bit double can't represent all the values 
+            // a 64-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            _MM_SET_ROUNDING_MODE(old);
+            return a;
+        }
+    }
 }
 unittest
 {
+    // tested in other intrinsics
 }
-*/
+
+
+/// Round the lower single-precision (32-bit) floating-point element in `b` using the 
+/// rounding parameter, store the result as a single-precision floating-point element 
+/// in the lower element of result, and copy the upper 3 packed elements from `a`
+/// to the upper elements of result.
+/// Rounding is done according to the rounding[3:0] parameter, which can be one of:
+///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
+///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
+///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
+///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
+///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
+__m128 _mm_round_ss(int rounding)(__m128 a, __m128 b) @trusted
+{
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_roundss(a, b, rounding);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_roundss(a, b, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            int b0 = _mm_cvtss_si32(b);
+            a.ptr[0] = b0;   
+            return a;
+        }
+        else
+        {
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            
+            // Convert to 32-bit integer
+            int b0 = _mm_cvtss_si32(b);
+            a.ptr[0] = b0;       
+
+            // Convert back to double to achieve the rounding
+            // The problem is that a 64-bit double can't represent all the values 
+            // a 64-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            _MM_SET_ROUNDING_MODE(old);
+            return a;
+        }
+    }
+}
+unittest
+{
+    // tested in other intrinsics
+}
 
 
 /// Load 128-bits of integer data from memory using a non-temporal memory hint. 
@@ -1786,28 +1953,9 @@ unittest
 
 /*
 
-pragma(LDC_intrinsic, "llvm.x86.sse41.dppd")
-    double2 __builtin_ia32_dppd(double2, double2, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.dpps")
-    float4 __builtin_ia32_dpps(float4, float4, byte) pure @safe;
-
 pragma(LDC_intrinsic, "llvm.x86.sse41.insertps")
     float4 __builtin_ia32_insertps128(float4, float4, byte) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.sse41.mpsadbw")
-    short8 __builtin_ia32_mpsadbw128(byte16, byte16, byte) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.sse41.round.pd")
-    double2 __builtin_ia32_roundpd(double2, int) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.round.ps")
-    float4 __builtin_ia32_roundps(float4, int) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.round.sd")
-    double2 __builtin_ia32_roundsd(double2, double2, int) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse41.round.ss")
-    float4 __builtin_ia32_roundss(float4, float4, int) pure @safe;
 
     */
