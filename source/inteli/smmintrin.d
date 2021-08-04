@@ -947,45 +947,74 @@ unittest
 }
 
 
-/*
-/// Round the packed double-precision (64-bit) floating-point elements in a down to an integer value, and store the results as packed double-precision floating-point elements in dst.
+
+/// Round the packed double-precision (64-bit) floating-point elements in `a` down to an 
+/// integer value, and store the results as packed double-precision floating-point elements.
 __m128d _mm_floor_pd (__m128d a) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_pd!1(a);
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.3f, -2.12f);
+    __m128d B = _mm_setr_pd(53.6f, -2.7f);
+    A = _mm_floor_pd(A);
+    B = _mm_floor_pd(B);
+    double[2] correctA = [1.0, -3.0];
+    double[2] correctB = [53.0, -3.0];
+    assert(A.array == correctA);
+    assert(B.array == correctB);
 }
-*/
 
-/*
-/// Round the packed single-precision (32-bit) floating-point elements in a down to an integer value, and store the results as packed single-precision floating-point elements in dst.
+/// Round the packed single-precision (32-bit) floating-point elements in `a` down to an 
+/// integer value, and store the results as packed single-precision floating-point elements.
 __m128 _mm_floor_ps (__m128 a) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_ps!1(a);
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.3f, -2.12f, 53.6f, -2.7f);
+    __m128 C = _mm_floor_ps(A);
+    float[4] correct = [1.0f, -3.0f, 53.0f, -3.0f];
+    assert(C.array == correct);
 }
-*/
 
-/*
-/// Round the lower double-precision (64-bit) floating-point element in b down to an integer value, store the result as a double-precision floating-point element in the lower element of dst, and copy the upper element from a to the upper element of dst.
+/// Round the lower double-precision (64-bit) floating-point element in `b` down to an 
+/// integer value, store the result as a double-precision floating-point element in the 
+/// lower element, and copy the upper element from `a` to the upper element.
 __m128d _mm_floor_sd (__m128d a, __m128d b) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_sd!1(a, b);
 }
 unittest
 {
+    __m128d A = _mm_setr_pd(1.3, -2.12);
+    __m128d B = _mm_setr_pd(-53.1, -3.7);
+    __m128d C = _mm_floor_sd(A, B);
+    double[2] correct = [-54.0, -2.12];
+    assert(C.array == correct);
 }
-*/
 
-/*
-/// Round the lower single-precision (32-bit) floating-point element in b down to an integer value, store the result as a single-precision floating-point element in the lower element of dst, and copy the upper 3 packed elements from a to the upper elements of dst.
+/// Round the lower single-precision (32-bit) floating-point element in `b` down to an
+/// integer value, store the result as a single-precision floating-point element in the
+/// lower element, and copy the upper 3 packed elements from `a` to the upper elements.
 __m128 _mm_floor_ss (__m128 a, __m128 b) @trusted
 {
+    // PERF: ARM64
+    return _mm_round_ss!1(a, b);
 }
 unittest
 {
+    __m128 A = _mm_setr_ps(1.3f, -2.12f, -4.5f, 1.1f);
+    __m128 B = _mm_setr_ps(-539.3f, -3.7f, 8.0f, 7.0f);
+    __m128 C = _mm_floor_ss(A, B);
+    float[4] correct = [-540.0f, -2.12f, -4.5f, 1.1f];
+    assert(C.array == correct);
 }
-*/
 
 /*
 /// Copy a to dst, and insert the 32-bit integer i into dst at the location specified by imm8.
@@ -1365,8 +1394,6 @@ unittest
     assert(R2.array == correct2);
 }
 
-
-
 /// Compute the sum of absolute differences (SADs) of quadruplets of unsigned 8-bit integers 
 /// in `a` compared to those in `b`, and store the 16-bit results in dst. 
 /// Eight SADs are performed using one quadruplet from `b` and eight quadruplets from `a`. 
@@ -1658,18 +1685,21 @@ __m128 _mm_round_ps(int rounding)(__m128 a) @trusted
         }
         else
         {
+            version(LDC) pragma(inline, false); // else _MM_SET_ROUNDING_MODE and _mm_cvtps_epi32 gets shuffled
+
             uint old = _MM_GET_ROUNDING_MODE();
             _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
-            
+            scope(exit) _MM_SET_ROUNDING_MODE(old);
+
             // Convert to 64-bit integers
             __m128i integers = _mm_cvtps_epi32(a);
-            __m128 result = _mm_cvtepi32_ps(integers);
 
             // Convert back to float to achieve the rounding
             // The problem is that a 32-float can't represent all the values 
             // a 32-bit integer can (and vice-versa). So this function won't work for
             // large values. (TODO: what range exactly?)
-            _MM_SET_ROUNDING_MODE(old);
+            __m128 result = _mm_cvtepi32_ps(integers);
+
             return result;
         }
     }
@@ -1715,7 +1745,7 @@ __m128d _mm_round_sd(int rounding)(__m128d a, __m128d b) @trusted
             
             // Convert to 64-bit integer
             long b0 = _mm_cvtsd_si64(b);
-            a.ptr[0] = b0;       
+            a.ptr[0] = b0;
 
             // Convert back to double to achieve the rounding
             // The problem is that a 64-bit double can't represent all the values 
