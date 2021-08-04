@@ -17,19 +17,14 @@ d:
  - dmd-beta
  - dmd-2.097.0
  - dmd-2.094.2
- - gdc
 
 matrix:
   allow_failures:
-   - d: gdc
-     os: osx          # no GDC for OSX
    - d: dmd-beta      # DMD on arm64 not supported
      arch: arm64
    - d: dmd-2.097.0
      arch: arm64
    - d: dmd-2.094.2
-     arch: arm64
-   - d: gdc           # GDC + arm64 not supported
      arch: arm64
 
 # Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
