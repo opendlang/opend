@@ -1340,16 +1340,75 @@ unittest
 }
 
 
-/*
-/// Compute the sum of absolute differences (SADs) of quadruplets of unsigned 8-bit integers in a compared to those in b, and store the 16-bit results in dst. Eight SADs are performed using one quadruplet from b and eight quadruplets from a. One quadruplet is selected from b starting at on the offset specified in imm8. Eight quadruplets are formed from sequential 8-bit integers selected from a starting at the offset specified in imm8.
-__m128i _mm_mpsadbw_epu8 (__m128i a, __m128i b, const int imm8) @trusted
+
+/// Compute the sum of absolute differences (SADs) of quadruplets of unsigned 8-bit integers 
+/// in `a` compared to those in `b`, and store the 16-bit results in dst. 
+/// Eight SADs are performed using one quadruplet from `b` and eight quadruplets from `a`. 
+/// One quadruplet is selected from `b` starting at on the offset specified in `imm8[1:0]`. 
+/// Eight quadruplets are formed from sequential 8-bit integers selected from `a` starting 
+/// at the offset specified in `imm8[2]`.
+__m128i _mm_mpsadbw_epu8(int imm8)(__m128i a, __m128i b) @trusted
 {
+    // PERF DMD
+    // PERF ARM64
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_mpsadbw128(cast(byte16)a, cast(byte16)b, cast(byte)imm8);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_mpsadbw128(cast(byte16)a, cast(byte16)b, cast(byte)imm8);
+    }
+    else
+    {
+        // PERF implement with _mm_sad_epu8
+        int a_offset = ((imm8 & 4) >> 2) * 4; // Yes, the two high order quadruplet are unaddressable...
+        int b_offset = (imm8 & 3) * 4;
+
+        byte16 ba = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        short8 r;
+
+        static ubyte abs_diff(ubyte a, ubyte b)
+        {
+            int r = a - b;
+            if (r < 0) r = -r;
+            return cast(ubyte)r;
+        }
+
+        for (int j = 0; j < 8; ++j)
+        {
+            int k = a_offset + j;
+            int l = b_offset;
+            short sum = abs_diff(ba.array[k+0], bb.array[l+0])
+                      + abs_diff(ba.array[k+1], bb.array[l+1])
+                      + abs_diff(ba.array[k+2], bb.array[l+2])
+                      + abs_diff(ba.array[k+3], bb.array[l+3]);
+            r.ptr[j] = sum;
+        }
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
+    __m128i A = _mm_setr_epi8(0, 1, 2, 3,  4,  5, 6,  7, 8, 9, 10, 11, 12, 13, 14, 15);
+    __m128i B = _mm_setr_epi8(9, 1, 2, 3, -1, -1, 0, -1, 5, 5,  5,  5, 12, 13, 14, 15);
+    short[8] correct0 = [9, 11, 13, 15, 17, 19, 21, 23];
+    short[8] correct1 = [763, 761, 759, 757, 755, 753, 751, 749];
+    short[8] correct4 = [17, 19, 21, 23, 25, 27, 31, 35];
+    short[8] correct5 = [755, 753, 751, 749, 747, 745, 743, 741];
+    short[8] correct7 = [32, 28, 24, 20, 16, 12, 8, 4];
+    short8 r1 = cast(short8) _mm_mpsadbw_epu8!1(A, B,);
+    short8 r4 = cast(short8) _mm_mpsadbw_epu8!4(A, B,);
+    short8 r5 = cast(short8) _mm_mpsadbw_epu8!5(A, B,);
+    short8 r7 = cast(short8) _mm_mpsadbw_epu8!7(A, B,);
+    short8 r8 = cast(short8) _mm_mpsadbw_epu8!8(A, B,);
+    assert(r1.array == correct1);
+    assert(r4.array == correct4);
+    assert(r5.array == correct5);
+    assert(r7.array == correct7);
+    assert(r8.array == correct0);
 }
-*/
-
 
 /// Multiply the low signed 32-bit integers from each packed 64-bit element in a and b, and store the signed 64-bit results in dst.
 __m128i _mm_mul_epi32 (__m128i a, __m128i b) @trusted
