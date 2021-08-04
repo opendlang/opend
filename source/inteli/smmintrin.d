@@ -1736,6 +1736,7 @@ __m128 _mm_round_ps(int rounding)(__m128 a) @trusted
         else
         {
             version(LDC) pragma(inline, false); // else _MM_SET_ROUNDING_MODE and _mm_cvtps_epi32 gets shuffled
+            // TODO: is this caused by __builtin_ia32_cvtps2dq being marked pure? because it's not it reads MXCSR
 
             uint old = _MM_GET_ROUNDING_MODE();
             _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
