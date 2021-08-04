@@ -1016,25 +1016,41 @@ unittest
     assert(C.array == correct);
 }
 
-/*
-/// Copy a to dst, and insert the 32-bit integer i into dst at the location specified by imm8.
-__m128i _mm_insert_epi32 (__m128i a, int i, const int imm8) @trusted
+/// Insert the 32-bit integer `i` into `a` at the location specified by `imm8[1:0]`.
+__m128i _mm_insert_epi32 (__m128i a, int i, const int imm8) pure @trusted
 {
+    // GDC: nothing special to do, pinsrd generated with -O1 -msse4.1
+    // LDC x86: psinrd since LDC 1.1 -O2 with -mattr=+sse4.1
+    // LDC arm64: ins.s since LDC 1.8 -O2
+    int4 ia = cast(int4)a;
+    ia.ptr[imm8 & 3] = i;
+    return cast(__m128i)ia; 
 }
 unittest
 {
+    __m128i A = _mm_setr_epi32(1, 2, 3, 4);
+    int4 C = cast(int4) _mm_insert_epi32(A, 5, 2 + 4);
+    int[4] result = [1, 2, 5, 4];
+    assert(C.array == result);
 }
-*/
 
-/*
-/// Copy a to dst, and insert the 64-bit integer i into dst at the location specified by imm8.
-__m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8) @trusted
+/// Insert the 64-bit integer `i` into `a` at the location specified by `imm8[0]`.
+__m128i _mm_insert_epi64 (__m128i a, long i, const int imm8) pure @trusted
 {
+    // GDC: special to do, psinrq generated with -O1 -msse4.1
+    // LDC x86: always do something sensible.
+    // PERF ARM64 does not seem ideal, no "ins"
+    long2 la = cast(long2)a;
+    la.ptr[imm8 & 1] = i;
+    return cast(__m128i)la; 
 }
 unittest
 {
+    __m128i A = _mm_setr_epi64(1, 2);
+    long2 C = cast(long2) _mm_insert_epi64(A, 5, 1 + 2);
+    long[2] result = [1, 5];
+    assert(C.array == result);
 }
-*/
 
 /*
 /// Copy a to dst, and insert the lower 8-bit integer from i into dst at the location specified by imm8.
