@@ -1790,6 +1790,8 @@ __m128d _mm_round_sd(int rounding)(__m128d a, __m128d b) @trusted
         }
         else
         {
+            version(GNU) pragma(inline, false); // else fail unittest with optimizations
+
             uint old = _MM_GET_ROUNDING_MODE();
             _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
             
