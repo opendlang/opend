@@ -351,8 +351,15 @@ unittest
 /// and copy the upper element from `a` to the upper element of dst.
 __m128d _mm_ceil_sd (__m128d a, __m128d b) @trusted
 {
-    // PERF ARM64
-    return _mm_round_sd!2(a, b);
+    static if (LDC_with_ARM64)
+    {
+        a[0] = vcvtps_s64_f64(b[0]);
+        return a;
+    }
+    else
+    {
+        return _mm_round_sd!2(a, b);
+    }
 }
 unittest
 {
@@ -368,8 +375,15 @@ unittest
 /// and copy the upper 3 packed elements from `a` to the upper elements of result.
 __m128 _mm_ceil_ss (__m128 a, __m128 b) @trusted
 {
-    // PERF ARM64
-    return _mm_round_ss!2(a, b);
+    static if (LDC_with_ARM64)
+    {
+        a[0] = vcvtps_s32_f32(b[0]);
+        return a;
+    }
+    else
+    {
+        return _mm_round_ss!2(a, b);
+    }
 }
 unittest
 {
@@ -1037,8 +1051,15 @@ unittest
 /// lower element, and copy the upper element from `a` to the upper element.
 __m128d _mm_floor_sd (__m128d a, __m128d b) @trusted
 {
-    // PERF ARM64
-    return _mm_round_sd!1(a, b);
+    static if (LDC_with_ARM64)
+    {
+        a[0] = vcvtms_s64_f64(b[0]);
+        return a;
+    }
+    else
+    {
+        return _mm_round_sd!1(a, b);
+    }
 }
 unittest
 {
@@ -1054,8 +1075,15 @@ unittest
 /// lower element, and copy the upper 3 packed elements from `a` to the upper elements.
 __m128 _mm_floor_ss (__m128 a, __m128 b) @trusted
 {
-    // PERF ARM64
-    return _mm_round_ss!1(a, b);
+    static if (LDC_with_ARM64)
+    {
+        a[0] = vcvtms_s32_f32(b[0]);
+        return a;
+    }
+    else
+    {
+        return _mm_round_ss!1(a, b);
+    }
 }
 unittest
 {

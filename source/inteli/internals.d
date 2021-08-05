@@ -1268,7 +1268,7 @@ static if (LDC_with_ARM64)
         long vcvtns_s64_f64(double a) pure @safe;    
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtps.i64.f64")
-        long vcvtps_s64_f64(double a) pure @safe;
+        long vcvtps_s64_f64(double a) pure @safe; // Note: technically should be named vcvtpd_s64_f64
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.fcvtzs.i64.f64")
         long vcvts_s64_f64(double a) pure @safe;
