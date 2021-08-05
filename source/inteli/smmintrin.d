@@ -1117,7 +1117,6 @@ __m128i _mm_insert_epi64 (__m128i a, long i, const int imm8) pure @trusted
 {
     // GDC: nothing special to do, psinrq generated with -O1 -msse4.1
     // LDC x86: always do something sensible.
-    // PERF ARM64 does not seem ideal, no "ins"
     long2 la = cast(long2)a;
     la.ptr[imm8 & 1] = i;
     return cast(__m128i)la;
@@ -1527,7 +1526,6 @@ unittest
 __m128i _mm_mpsadbw_epu8(int imm8)(__m128i a, __m128i b) @trusted
 {
     // PERF DMD
-    // PERF ARM64
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_mpsadbw128(cast(byte16)a, cast(byte16)b, cast(byte)imm8);
@@ -1538,7 +1536,6 @@ __m128i _mm_mpsadbw_epu8(int imm8)(__m128i a, __m128i b) @trusted
     }
     else
     {
-        // PERF implement with _mm_sad_epu8
         int a_offset = ((imm8 & 4) >> 2) * 4; // Yes, the two high order quadruplet are unaddressable...
         int b_offset = (imm8 & 3) * 4;
 
@@ -1546,22 +1543,18 @@ __m128i _mm_mpsadbw_epu8(int imm8)(__m128i a, __m128i b) @trusted
         byte16 bb = cast(byte16)b;
         short8 r;
 
-        static ubyte abs_diff(ubyte a, ubyte b)
-        {
-            int r = a - b;
-            if (r < 0) r = -r;
-            return cast(ubyte)r;
-        }
+        __m128i comp_b = _mm_setr_epi32(b.array[imm8 & 3], 0, b.array[imm8 & 3], 0);
 
-        for (int j = 0; j < 8; ++j)
+        for (int j = 0; j < 8; j += 2)
         {
             int k = a_offset + j;
-            int l = b_offset;
-            short sum = abs_diff(ba.array[k+0], bb.array[l+0])
-                      + abs_diff(ba.array[k+1], bb.array[l+1])
-                      + abs_diff(ba.array[k+2], bb.array[l+2])
-                      + abs_diff(ba.array[k+3], bb.array[l+3]);
-            r.ptr[j] = sum;
+            __m128i comp_a = _mm_setr_epi8(ba[k+0], ba[k+1], ba[k+2], ba[k+3],
+                                           0, 0, 0, 0, 
+                                           ba[k+1], ba[k+2], ba[k+3], ba[k+4],
+                                           0, 0, 0, 0);
+            short8 diffs = cast(short8) _mm_sad_epu8(comp_a, comp_b); // reusing this wins instructions in both x86 and arm64
+            r.ptr[j] = diffs.array[0];
+            r.ptr[j+1] = diffs.array[4];
         }
         return cast(__m128i)r;
     }
