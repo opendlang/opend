@@ -484,7 +484,7 @@ struct IonDescribedValue
     // Issue 21681 workaround
     private void serializeImpl(S)(ref S serializer) const @safe pure nothrow @nogc
     {
-        assumeAllAttributes(()
+        return invokeAssumingAllAttributes(()
         {
             if (this == null)
             {
@@ -538,7 +538,7 @@ struct IonDescribedValue
                         break;
                 }
             }
-        })();
+        });
     }
 
     /++
@@ -554,11 +554,11 @@ struct IonDescribedValue
     }
 }
 
-private auto assumeAllAttributes(T)(scope T t) @trusted pure nothrow @nogc
+private auto invokeAssumingAllAttributes(T)(scope T t) @trusted pure nothrow @nogc
 {
     import std.traits: functionAttributes, functionLinkage, FunctionAttribute, SetFunctionAttributes;
     enum attrs = functionAttributes!T  & ~FunctionAttribute.system  & ~FunctionAttribute.trusted | FunctionAttribute.pure_  | FunctionAttribute.nothrow_ | FunctionAttribute.nogc | FunctionAttribute.safe;
-    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+    return (cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t)();
 }
 
 /++
