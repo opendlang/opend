@@ -290,8 +290,21 @@ unittest
 /// and store the results as packed double-precision floating-point elements.
 __m128d _mm_ceil_pd (__m128d a) @trusted
 {
-    // PERF ARM64
-    return _mm_round_pd!2(a);
+    static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O2
+        // Unfortunately x86 intrinsics force a round-trip back to double2
+        // ARM neon semantics wouldn't have that
+        long2 l = vcvtpq_s64_f64(a);
+        double2 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        return r;
+    }
+    else
+    {
+        return _mm_round_pd!2(a);
+    }
 }
 unittest
 {
@@ -309,8 +322,21 @@ unittest
 /// and store the results as packed single-precision floating-point elements.
 __m128 _mm_ceil_ps (__m128 a) @trusted
 {
-    // PERF ARM64
-    return _mm_round_ps!2(a);
+    static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O1
+        int4 l = vcvtpq_s32_f32(a);
+        float4 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        r.ptr[2] = l.array[2];
+        r.ptr[3] = l.array[3];
+        return r;
+    }
+    else
+    {
+        return _mm_round_ps!2(a);
+    }
 }
 unittest
 {
@@ -952,8 +978,19 @@ unittest
 /// integer value, and store the results as packed double-precision floating-point elements.
 __m128d _mm_floor_pd (__m128d a) @trusted
 {
-    // PERF ARM64
-    return _mm_round_pd!1(a);
+    static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O2
+        long2 l = vcvtmq_s64_f64(a);
+        double2 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        return r;
+    }
+    else
+    {
+        return _mm_round_pd!1(a);
+    }
 }
 unittest
 {
@@ -971,8 +1008,21 @@ unittest
 /// integer value, and store the results as packed single-precision floating-point elements.
 __m128 _mm_floor_ps (__m128 a) @trusted
 {
-    // PERF ARM64
-    return _mm_round_ps!1(a);
+    static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O1
+        int4 l = vcvtmq_s32_f32(a);
+        float4 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        r.ptr[2] = l.array[2];
+        r.ptr[3] = l.array[3];
+        return r;
+    }
+    else
+    {
+        return _mm_round_ps!1(a);
+    }
 }
 unittest
 {
