@@ -1,6 +1,32 @@
 version: 2.1
 
 jobs:
+  test_aarch64:
+    machine:
+      image: ubuntu-2004:202101-01
+    environment:
+      ARCH: AARCH64
+      LDC_VERSION: 1.26.0
+    resource_class: arm.medium
+    steps:
+      - checkout
+      - run: 
+          name: Pull install script
+          command: |
+            curl -fsSL -A "Travis-CI" --connect-timeout 5 --speed-time 30 --speed-limit 1024 "https://dlang.org/install.sh" -O ;
+      - run:
+          name: Pull install script (fallback)
+          command: |
+            curl -fsSL -A "Travis-CI" --connect-timeout 5 --speed-time 30 --speed-limit 1024 "https://github.com/dlang/installer/raw/stable/script/install.sh" -O ;
+          when: on_fail
+      - run: 
+          name: Setup env for LDC
+          command: |
+            echo "source $(CURL_USER_AGENT=\"Travis-CI\" bash install.sh ldc-$LDC_VERSION --activate)" > ~/.bashrc
+      - run: ldc2 --version
+      - run: dub --help | tail -n 1
+      - run: bash -e test_travis.sh
+
   test_example:
     docker:
       - image: libmir/circle-dlang
@@ -26,6 +52,7 @@ workflows:
   version: 2
   build-deploy:
     jobs:
+      - test_aarch64
       - test_example
       - mirci/test_and_build_docs:
           filters:
