@@ -581,39 +581,26 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     static if (is(Unqual!V == Algebraic!TypeSet, TypeSet...))
     {
         import mir.algebraic: visit, isNullable;
-        static if (serdeIsComplexVariant!V)
-        {
-            value.visit!(
-                (auto ref v) {
-                    alias A = typeof(v);
-                    static if (serdeHasAlgebraicAnnotation!A)
-                    {
-                        auto wrapperState = serializer.annotationWrapperBegin;
-                        auto annotationsState = serializer.annotationsBegin;
-                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
-                        serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
-                    }
-                    else
-                    {
-                        serializeValue(serializer, v);
-                    }
+        enum isSimpleNullable = isNullable!V && V.AllowedTypes.length == 2;
+        value.visit!(
+            (auto ref v) {
+                alias A = typeof(v);
+                static if (serdeHasAlgebraicAnnotation!A && !isSimpleNullable)
+                {
+                    auto wrapperState = serializer.annotationWrapperBegin;
+                    auto annotationsState = serializer.annotationsBegin;
+                    serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
                 }
-            );
-        }
-        else
-        static if (isNullable!V && V.AllowedTypes.length > 1)
-        {
-            value.visit!(
-                (typeof(null)) => serializer.putNull(nullTypeCodeOf!(V.AllowedTypes[1])),
-                (auto ref v) => .serializeValue(serializer, v)
-            );
-        }
-        else
-        {
-            value.visit!(
-                (auto ref v) => .serializeValue(serializer, v)
-            );
-        }
+                else
+                {
+                    static if (is(immutable A == immutable typeof(null)))
+                        serializer.putNull(nullTypeCodeOf!(V.AllowedTypes[1]));
+                    else
+                        serializeValue(serializer, v);
+                }
+            }
+        );
         return;
     }
     else

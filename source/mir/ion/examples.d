@@ -940,6 +940,24 @@ version(mir_ion_test) unittest
     assert(`{"integralValue":1.23e+2}`.deserializeJson!S.integralValue == 123);
 }
 
+/// Annotated single variant
+version(mir_ion_test) unittest
+{
+    import mir.algebraic;
+    import mir.ion.deser.ion;
+    import mir.ion.ser.ion;
+    import mir.ion.ser.text;
+    import mir.serde;
+
+    @serdeAlgebraicAnnotation("annotation")
+    static struct S {
+        long key;
+    }
+    alias V = Variant!S;
+
+    assert(V(S(123)).serializeText == `annotation::{key:123}`, V(S(123)).serializeText);
+    assert(V(S(123)).serializeIon.deserializeIon!V == S(123));
+}
 
 version(unittest) private
 {
