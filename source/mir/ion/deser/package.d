@@ -178,7 +178,7 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
     Returns: `IonException`
     +/
     IonException deserializeValue(T, Annotations...)(IonDescribedValue data, scope TableParams!exteneded tableParams, ref T value, Annotations optAnnotations)
-        if (!isFirstOrderSerdeType!T && (is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations)))
+        if (!isFirstOrderSerdeType!T && is(Annotations == AliasSeq!()) || is(Annotations == AliasSeq!IonAnnotations))
     {
         import mir.algebraic: isVariant;
         import mir.internal.meta: Contains;
@@ -191,6 +191,11 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         static if (exteneded)
             alias table = tableParams[0];
 
+        static if (isFirstOrderSerdeType!T)
+        {
+            return .deserializeValue_(data, tableParams, value);
+        }
+        else
         static if (__traits(hasMember, value, "deserializeFromIon"))
         {
             return value.deserializeFromIon(table, data);
@@ -584,6 +589,43 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
             alias Types = T.AllowedTypes;
             alias contains = Contains!Types;
 
+            static if (getAlgebraicAnnotationsOfVariant!T.length)
+            {
+                if (!annotations.empty)
+                {
+                    size_t symbolId;
+                    if (auto error = annotations.pick(symbolId))
+                        return error.ionException;
+
+                    auto originalId = symbolId;
+                    if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
+                        goto Default;
+
+                    switch (symbolId)
+                    {
+                        static foreach (VT; Types)
+                        static if (serdeHasAlgebraicAnnotation!VT)
+                        {
+                            case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
+                            {
+                                VT object;
+                                if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object, annotations))
+                                    return exception;
+                                import core.lifetime: move;
+                                value = move(object);
+                                return null;
+                            }
+                        }
+                        Default:
+                        default:
+                            static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
+                                value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
+                            else
+                                return unqualException(unexpectedAnnotationWhenDeserializing!T);
+                    }
+                }
+            }
+
             switch (data.descriptor.type)
             {
                 static if (contains!(typeof(null)))
@@ -706,47 +748,10 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
                     }
                 }
 
-                static if (getAlgebraicAnnotationsOfVariant!T.length || anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
+                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
                 {
                     case IonTypeCode.struct_:
-                    {
-                        static if (getAlgebraicAnnotationsOfVariant!T.length)
-                        {
-                            if (!annotations.empty)
-                            {
-                                size_t symbolId;
-                                if (auto error = annotations.pick(symbolId))
-                                    return error.ionException;
-
-                                auto originalId = symbolId;
-                                if (!prepareSymbolId!(symbolTable, exteneded)(tableParams, symbolId))
-                                    goto Default;
-
-                                switch (symbolId)
-                                {
-                                    static foreach (VT; Types)
-                                    static if (serdeHasAlgebraicAnnotation!VT)
-                                    {
-                                        case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
-                                        {
-                                            VT object;
-                                            if (auto exception = .deserializeValue!(symbolTable, exteneded)(data, tableParams, object, annotations))
-                                                return exception;
-                                            import core.lifetime: move;
-                                            value = move(object);
-                                            return null;
-                                        }
-                                    }
-                                    Default:
-                                    default:
-                                        static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
-                                            value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
-                                        else
-                                            return unqualException(unexpectedAnnotationWhenDeserializing!T);
-                                }
-                            }
-                        }
-                        
+                    {                        
                         static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
                         {
                             static if (anySatisfy!(isStringMap, Types))

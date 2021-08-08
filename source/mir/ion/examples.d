@@ -955,8 +955,29 @@ version(mir_ion_test) unittest
     }
     alias V = Variant!S;
 
-    assert(V(S(123)).serializeText == `annotation::{key:123}`, V(S(123)).serializeText);
+    assert(V(S(123)).serializeText == `annotation::{key:123}`);
     assert(V(S(123)).serializeIon.deserializeIon!V == S(123));
+}
+
+/// Annotated arrays
+version(mir_ion_test) unittest
+{
+    import mir.algebraic;
+    import mir.ion.deser.ion;
+    import mir.ion.ser.ion;
+    import mir.ion.ser.text;
+    import mir.serde;
+
+    @serdeAlgebraicAnnotation("annotation")
+    @serdeProxy!(long[])
+    static struct St3 {
+        long[] arr;
+        alias arr this;
+    }
+    alias V = Variant!St3;
+
+    assert(V(St3([123])).serializeText == `annotation::[123]`);
+    assert(V(St3([123])).serializeIon.deserializeIon!V == St3([123]));
 }
 
 version(unittest) private

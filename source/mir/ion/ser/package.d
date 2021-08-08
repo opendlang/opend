@@ -152,7 +152,7 @@ void serializeValue(S, V)(ref S serializer, V value)
         if (value is null)
         {
             serializer.putNull(nullTypeCodeOf!V);
-            continue;
+            return;
         }
     }
     auto state = serializer.beginList(value);
