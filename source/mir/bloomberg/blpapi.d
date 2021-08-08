@@ -230,14 +230,6 @@ struct HighPrecisionDatetime {
     Timestamp asTimestamp()  @safe pure nothrow @nogc const @property
     {
         Timestamp ret;
-        ret.year = year;
-        ret.month = month;
-        ret.day = day;
-        ret.hour = hours;
-        ret.minute = minutes;
-        ret.second = seconds;
-        ret.offset = offset;
-
         if (parts & DatetimeParts.year)
         {
             ret.year = year;
@@ -273,10 +265,6 @@ struct HighPrecisionDatetime {
             ret.fractionExponent = -12;
             ret.fractionCoefficient = 1000000000UL * milliseconds + picoseconds;
             ret.precision = Timestamp.Precision.fraction;
-        }
-        if (parts & DatetimeParts.month)
-        {
-            ret.precision = Timestamp.Precision.month;
         }
         if (parts & DatetimeParts.offset && offset && ret.precision >= Timestamp.Precision.minute)
         {
