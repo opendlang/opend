@@ -2,10 +2,24 @@
 module mir.bloomberg.blpapi;
 
 import mir.timestamp: Timestamp;
+import mir.algebraic: Nullable;
+
+///
+alias BloombergStreamWriter = extern(C) int function(const(char)* data, int length, void* stream);
+
+///
+alias BloombergAlgebraic = Nullable!(
+    bool,
+    long,
+    double,
+    string,
+    Timestamp);
 
 ///
 enum DataType
 {
+    ///
+    null_,
     /// Bool
     bool_          = 1,
     /// Char
@@ -288,7 +302,7 @@ validateBloombergErroCode()(
         // {
             ErrorInfo info;
             getErrorInfo(info, errorCode);
-            throw new IonMirException(info.description, file, __LINE__);
+            throw new IonMirException(info.description, file, line);
         // }
         // else
         // {
@@ -347,6 +361,17 @@ alias nameFindName = blpapi_Name_findName;
 ///ditto
 Name* blpapi_Name_findName(
     scope const(char)* nameString);
+
+///
+int blpapi_Element_print(
+    const Element* element,
+    BloombergStreamWriter streamWriter,
+    void *stream,
+    int level,
+    int spacesPerLevel);
+
+/// ditto
+alias print = blpapi_Element_print;
 
 ///
 alias name = blpapi_Element_name;

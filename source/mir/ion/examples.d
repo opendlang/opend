@@ -928,6 +928,18 @@ version(mir_ion_test) unittest
     assert(response.serializeIon.ion2text == `{type:"response",data:"First chunk. Another chunk."}`);
 }
 
+/// Float proxy for integer types
+version(mir_ion_test) unittest
+{
+    import mir.ion.deser.json;
+    static struct S {
+        @serdeProxy!double
+        long integralValue;
+    }
+
+    assert(`{"integralValue":1.23e+2}`.deserializeJson!S.integralValue == 123);
+}
+
 
 version(unittest) private
 {

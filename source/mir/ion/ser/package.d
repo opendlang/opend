@@ -863,122 +863,141 @@ version(bloomberg)
             return;
         }
 
-        if (blpapi.isArray(value))
+        auto isArray = blpapi.isArray(value);
+        auto type = blpapi.datatype(value);
+        size_t arrayLength = 1;
+        typeof(serializer.listBegin(arrayLength)) arrayState;
+        if (isArray)
         {
-            auto length = blpapi.numValues(value);
-            auto state = serializer.listBegin(length);
-            foreach(i; 0 .. length)
+            arrayLength = blpapi.numValues(value);
+            arrayState = serializer.listBegin(arrayLength);
+            if (type == blpapi.DataType.choice || type == blpapi.DataType.sequence)
             {
-                BloombergElement* v;
-                blpapi.getValueAsElement(value, v, i).validate;
-                serializer.elemBegin;
-                serializer.serializeValue(v);
-            }
-            serializer.listEnd(state);
-            return;
-        }
-
-        final switch (blpapi.datatype(value))
-        {
-            case blpapi.DataType.bool_: {
-                blpapi.Bool v;
-                blpapi.getValueAsBool(value, v, 0).validate;
-                serializer.putValue(cast(bool)v);
-                return;
-            }
-            case blpapi.DataType.char_: {
-                char[1] v;
-                blpapi.getValueAsChar(value, v[0], 0).validate;
-                serializer.putValue(v[]);
-                return;
-            }
-            case blpapi.DataType.byte_:
-            case blpapi.DataType.int32: {
-                int v;
-                blpapi.getValueAsInt32(value, v, 0).validate;
-                serializer.putValue(v);
-                return;
-            }
-            case blpapi.DataType.int64: {
-                long v;
-                blpapi.getValueAsInt64(value, v, 0).validate;
-                serializer.putValue(v);
-                return;
-            }
-            case blpapi.DataType.float32: {
-                float v;
-                blpapi.getValueAsFloat32(value, v, 0).validate;
-                serializer.putValue(v);
-                return;
-            }
-            case blpapi.DataType.decimal:
-            case blpapi.DataType.float64: {
-                double v;
-                blpapi.getValueAsFloat64(value, v, 0).validate;
-                serializer.putValue(v);
-                return;
-            }
-            case blpapi.DataType.string: {
-                const(char)* v;
-                blpapi.getValueAsString(value, v, 0).validate;
-                serializer.putValue(v[0 .. (()@trusted => v.strlen)()]);
-                return;
-            }
-            case blpapi.DataType.date:
-            case blpapi.DataType.time:
-            case blpapi.DataType.datetime: {
-                blpapi.HighPrecisionDatetime v;
-                blpapi.getValueAsHighPrecisionDatetime(value, v, 0).validate;
-                serializer.putValue(cast(Timestamp)v);
-                return;
-            }
-            case blpapi.DataType.enumeration: {
-                const(char)* v = blpapi.nameString(value);
-                if (v is null)
-                    serializer.putNull(IonTypeCode.symbol);
-                else
-                    serializer.putSymbol(v[0 .. (()@trusted => v.strlen)()]);
-                return;
-            }
-            case blpapi.DataType.sequence: {
-                auto length = blpapi.numElements(value);
-                auto state = serializer.structBegin(length);
-                foreach(i; 0 .. length)
+                foreach(index; 0 .. arrayLength)
                 {
                     BloombergElement* v;
-                    blpapi.getElementAt(value, v, i).validate;
-                    blpapi.Name* name = blpapi.name(v);
-                    const(char)* keyPtr = name ? blpapi.nameString(name) :  null;
-                    auto key = keyPtr ? keyPtr[0 .. (()@trusted => keyPtr.strlen)()] : null;
-                    serializer.putKey(key);
+                    blpapi.getValueAsElement(value, v, index).validate;
+                    serializer.elemBegin;
                     serializer.serializeValue(v);
                 }
-                serializer.structEnd(state);
+                serializer.listEnd(arrayState);
                 return;
             }
-            case blpapi.DataType.choice: {
-                auto wrapperState = serializer.annotationWrapperBegin;
-                auto annotationsState = serializer.annotationsBegin;
-                do
-                {
-                    BloombergElement* v;
-                    blpapi.getChoice(value, v).validate;
-                    blpapi.Name* name = blpapi.name(v);
-                    const(char)* annotationPtr = name ? blpapi.nameString(name) :  null;
-                    auto annotation = annotationPtr ? annotationPtr[0 .. (()@trusted => annotationPtr.strlen)()] : null;
-                    serializer.putAnnotation(annotation);
-                    value = v;
+        }
+        foreach(index; 0 .. arrayLength)
+        {
+            if (isArray)
+                serializer.elemBegin;
+            final switch (type)
+            {
+                case blpapi.DataType.null_:
+                    serializer.putValue(null);
+                    continue;
+                case blpapi.DataType.bool_: {
+                    blpapi.Bool v;
+                    blpapi.getValueAsBool(value, v, index).validate;
+                    serializer.putValue(cast(bool)v);
+                    continue;
                 }
-                while (blpapi.datatype(value) == blpapi.DataType.choice);
-                serializer.annotationsEnd(annotationsState);
-                serializer.serializeValue(value);
-                serializer.annotationWrapperEnd(wrapperState);
-                return;
+                case blpapi.DataType.char_: {
+                    char[1] v;
+                    blpapi.getValueAsChar(value, v[0], index).validate;
+                    serializer.putValue(v[]);
+                    continue;
+                }
+                case blpapi.DataType.byte_:
+                case blpapi.DataType.int32: {
+                    int v;
+                    blpapi.getValueAsInt32(value, v, index).validate;
+                    serializer.putValue(v);
+                    continue;
+                }
+                case blpapi.DataType.int64: {
+                    long v;
+                    blpapi.getValueAsInt64(value, v, index).validate;
+                    serializer.putValue(v);
+                    continue;
+                }
+                case blpapi.DataType.float32: {
+                    float v;
+                    blpapi.getValueAsFloat32(value, v, index).validate;
+                    serializer.putValue(v);
+                    continue;
+                }
+                case blpapi.DataType.decimal:
+                case blpapi.DataType.float64: {
+                    double v;
+                    blpapi.getValueAsFloat64(value, v, index).validate;
+                    serializer.putValue(v);
+                    continue;
+                }
+                case blpapi.DataType.string: {
+                    const(char)* v;
+                    blpapi.getValueAsString(value, v, index).validate;
+                    serializer.putValue(v[0 .. (()@trusted => v.strlen)()]);
+                    continue;
+                }
+                case blpapi.DataType.date:
+                case blpapi.DataType.time:
+                case blpapi.DataType.datetime: {
+                    blpapi.HighPrecisionDatetime v;
+                    blpapi.getValueAsHighPrecisionDatetime(value, v, index).validate;
+                    serializer.putValue(cast(Timestamp)v);
+                    continue;
+                }
+                case blpapi.DataType.enumeration: {
+                    const(char)* v;
+                    blpapi.getValueAsString(value, v, index).validate;
+                    if (v is null)
+                        serializer.putNull(IonTypeCode.symbol);
+                    else
+                        serializer.putSymbol(v[0 .. (()@trusted => v.strlen)()]);
+                    continue;
+                }
+                case blpapi.DataType.sequence: {
+                    auto length = blpapi.numElements(value);
+                    auto state = serializer.structBegin(length);
+                    foreach(i; 0 .. length)
+                    {
+                        BloombergElement* v;
+                        blpapi.getElementAt(value, v, i).validate;
+                        blpapi.Name* name = blpapi.name(v);
+                        const(char)* keyPtr = name ? blpapi.nameString(name) :  null;
+                        auto key = keyPtr ? keyPtr[0 .. (()@trusted => keyPtr.strlen)()] : null;
+                        serializer.putKey(key);
+                        serializer.serializeValue(v);
+                    }
+                    serializer.structEnd(state);
+                    continue;
+                }
+                case blpapi.DataType.choice: {
+                    auto wrapperState = serializer.annotationWrapperBegin;
+                    auto annotationsState = serializer.annotationsBegin;
+                    do
+                    {
+                        BloombergElement* v;
+                        blpapi.getChoice(value, v).validate;
+                        blpapi.Name* name = blpapi.name(v);
+                        const(char)* annotationPtr = name ? blpapi.nameString(name) :  null;
+                        auto annotation = annotationPtr ? annotationPtr[0 .. (()@trusted => annotationPtr.strlen)()] : null;
+                        serializer.putAnnotation(annotation);
+                        value = v;
+                    }
+                    while (blpapi.datatype(value) == blpapi.DataType.choice);
+                    serializer.annotationsEnd(annotationsState);
+                    serializer.serializeValue(value);
+                    serializer.annotationWrapperEnd(wrapperState);
+                    continue;
+                }
+                case blpapi.DataType.bytearray:
+                    throw excBytearray;
+                case blpapi.DataType.correlation_id:
+                    throw excCorrelationOd;
             }
-            case blpapi.DataType.bytearray:
-                throw excBytearray;
-            case blpapi.DataType.correlation_id:
-                throw excCorrelationOd;
+        }
+        if (isArray)
+        {
+            serializer.listEnd(arrayState);
         }
     }
 
