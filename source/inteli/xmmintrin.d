@@ -2449,7 +2449,7 @@ void _mm_setcsr(uint controlWord) @trusted
         }
         else version(X86)
         {
-            asm pure nothrow @nogc @trusted
+            asm nothrow @nogc @trusted
             {
                 "ldmxcsr %0;\n" 
                   : 
@@ -2462,7 +2462,7 @@ void _mm_setcsr(uint controlWord) @trusted
     }
     else version (InlineX86Asm)
     {
-        asm pure nothrow @nogc @safe
+        asm nothrow @nogc @safe
         {
             ldmxcsr controlWord;
         }
