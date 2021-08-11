@@ -5,10 +5,14 @@ module mir.ion.ser.bloomberg;
 
 version(bloomberg):
 
-static import blpapi = mir.bloomberg.blpapi;
-private alias validate = blpapi.validateBloombergErroCode;
+import mir.ion.exception: IonException;
 public import mir.bloomberg.blpapi : BloombergElement = Element;
-// version(none):
+static import blpapi = mir.bloomberg.blpapi;
+
+private alias validate = blpapi.validateBloombergErroCode;
+
+private static immutable bloombergClobSerializationIsntImplemented = new IonException("Bloomberg CLOB serialization isn't implemented.");
+private static immutable bloombergBlobSerializationIsntImplemented = new IonException("Bloomberg BLOB serialization isn't implemented.");
 
 /++
 Ion serialization back-end
@@ -24,18 +28,11 @@ struct BloombergSerializer()
     import mir.timestamp;
     import mir.serde: SerdeTarget;
     import std.traits: isNumeric;
-    import mir.ion.exception: IonException;
 
-    private static immutable bloombergClobSerializationIsntImplemented = new IonException("Bloomberg CLOB serialization isn't implemented.");
-    private static immutable bloombergBlobSerializationIsntImplemented = new IonException("Bloomberg BLOB serialization isn't implemented.");
-
-    ///
     BloombergElement* nextValue;
 
-    ///
     BloombergElement* aggregateValue;
 
-    ///
     stringBuf currentPartString;
 
     /// Mutable value used to choose format specidied or user-defined serialization specializations
@@ -67,7 +64,6 @@ struct BloombergSerializer()
         return state;
     }
 
-    ///
     BloombergElement* stringBegin()
     {
         currentPartString.reset;
@@ -83,7 +79,6 @@ struct BloombergSerializer()
         currentPartString.put(value);
     }
 
-    ///
     void stringEnd(BloombergElement*) @trusted
     {
         if (currentPartString.length == 1)
@@ -109,7 +104,6 @@ struct BloombergSerializer()
         return getName(toScopeStringz(str));
     }
 
-    ///
     void putSymbolPtr(scope const char* value)
     {
         auto name = getName(value);
@@ -117,51 +111,42 @@ struct BloombergSerializer()
         blpapi.nameDestroy(name);
     }
 
-    ///
     void putSymbol(scope const char[] value)
     {
         return putSymbolPtr(toScopeStringz(value));
     }
 
-    ///
     BloombergElement* structBegin(size_t length = 0)
     {
         return popState;
     }
 
-    ///
     void structEnd(BloombergElement* state)
     {
         pushState(state);
     }
 
-    ///
     BloombergElement* listBegin(size_t length = 0)
     {
         valueIndex = uint.max;
         return null;
     }
 
-    ///
     void listEnd(BloombergElement* state)
     {
         valueIndex = 0;
         nextValue = null;
     }
 
-    ///
     alias sexpBegin = listBegin;
 
-    ///
     alias sexpEnd = listEnd;
 
-    ///
     BloombergElement* annotationsBegin()
     {
         return aggregateValue;
     }
 
-    ///
     void putAnnotationPtr(scope const char* value)
     {
         aggregateValue = nextValue;
@@ -170,37 +155,31 @@ struct BloombergSerializer()
         blpapi.nameDestroy(name);
     }
 
-    ///
     void putAnnotation(scope const char[] value) @trusted
     {
         putAnnotationPtr(toScopeStringz(value));
     }
 
-    ///
     void annotationsEnd(BloombergElement* state)
     {
         aggregateValue = state;
     }
 
-    ///
     BloombergElement* annotationWrapperBegin()
     {
         return null;
     }
 
-    ///
     void annotationWrapperEnd(BloombergElement*)
     {
     }
 
-    ///
     void nextTopLevelValue()
     {
         static immutable exc = new IonException("Can't serialize to multiple Bloomberg Elements at once.");
         throw exc;
     }
 
-    ///
     void putKeyPtr(scope const char* key)
     {
         nextValue = null;
@@ -210,13 +189,11 @@ struct BloombergSerializer()
         assert(nextValue !is null);
     }
 
-    ///
     void putKey(scope const char[] key)
     {
         putKeyPtr(toScopeStringz(key));
     }
 
-    ///
     void putValue(Num)(const Num value)
         if (isNumeric!Num && !is(Num == enum))
     {
@@ -253,7 +230,6 @@ struct BloombergSerializer()
         }
     }
 
-    ///
     void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
     {
         auto i = cast(long) view;
@@ -265,19 +241,16 @@ struct BloombergSerializer()
         putValue(num);
     }
 
-    ///
     void putValue(size_t size)(auto ref const BigInt!size num)
     {
         putValue(num.view);
     }
 
-    ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
         putValue(cast(double)num);
     }
 
-    ///
     void putValue(typeof(null))
     {
         assert(nextValue);
@@ -289,14 +262,12 @@ struct BloombergSerializer()
         putValue(null);
     }
 
-    ///
     void putValue(bool b)
     {
         assert(nextValue);
         blpapi.setValueBool(nextValue, b, valueIndex).validate;
     }
 
-    ///
     void putValue(scope const char[] value)
     {
         auto state = stringBegin;
@@ -304,30 +275,25 @@ struct BloombergSerializer()
         stringEnd(state);
     }
 
-    ///
     void putValue(Clob value)
     {
         throw bloombergClobSerializationIsntImplemented;
     }
 
-    ///
     void putValue(Blob value)
     {
         throw bloombergBlobSerializationIsntImplemented;
     }
 
-    ///
     void putValue(Timestamp value)
     {
         blpapi.HighPrecisionDatetime dt = value;
         blpapi.setValueHighPrecisionDatetime(nextValue, dt, valueIndex).validate;
     }
 
-    ///
     void elemBegin()
     {
     }
 
-    ///
     alias sexpElemBegin = elemBegin;
 }
