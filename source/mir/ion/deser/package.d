@@ -163,6 +163,8 @@ struct DeserializationParams(TableKind tableKind, bool annotated = false)
     }
 }
 
+package static immutable tableInsance(string[] symbolTable) = symbolTable;
+
 /++
 Deserialize aggregate value using compile time symbol table
 +/
@@ -182,7 +184,7 @@ template deserializeValue(string[] symbolTable)
         }
         else
         {
-            alias table = symbolTable;
+            alias table = tableInsance!symbolTable;
         }
         return symbolId < table.length;
     }
@@ -313,7 +315,7 @@ template deserializeValue(string[] symbolTable)
                     static if (tableKind)
                         auto table = runtimeSymbolTable;
                     else
-                        alias table = symbolTable;
+                        alias table = tableInsance!symbolTable;
 
                     if (symbolId >= table.length)
                         return unqualException(unexpectedSymbolIdWhenDeserializing!T);
@@ -429,7 +431,7 @@ template deserializeValue(string[] symbolTable)
         static if (tableKind)
             auto table = runtimeSymbolTable;
         else
-            alias table = symbolTable;
+            alias table = tableInsance!symbolTable;
 
         static if (isFirstOrderSerdeType!T)
         {
@@ -1044,7 +1046,7 @@ template deserializeValue(string[] symbolTable)
                 {
                     if (data.descriptor.type != IonTypeCode.annotations)
                     {
-                        throw unqualException(cantDesrializeUnexpectedDescriptorType!T);
+                        return unqualException(cantDesrializeUnexpectedDescriptorType!T);
                     }
                     
                     IonAnnotations annotations;
