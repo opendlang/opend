@@ -218,6 +218,12 @@ public: // This is also part of the public API
         startEncoding(format, sampleRate, numChannels);
     }
 
+    /// Returns: `true` if using operations that are accetpable in an audio thread (eg: no file I/O).
+    bool realtimeSafe() @nogc
+    {
+        return fileContext is null;
+    }
+
     ~this() @nogc
     {
         cleanUp();
