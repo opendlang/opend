@@ -1044,8 +1044,6 @@ template deserializeValue(string[] symbolTable)
                 {
                     if (data.descriptor.type != IonTypeCode.annotations)
                     {
-                        import std.stdio;
-                        debug writeln(data.descriptor.type);
                         throw unqualException(cantDesrializeUnexpectedDescriptorType!T);
                     }
                     
