@@ -151,18 +151,32 @@ template deserializeValue(string[] symbolTable, bool exteneded = false)
         {{
             if (annotations.empty)
                 return IonErrorCode.missingAnnotation.ionException;
-            size_t symbolId;
-            if (auto error = annotations.pick(symbolId))
-                return error.ionException;
-            if (symbolId >= table.length)
-                return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-            static if (__traits(compiles, {__traits(getMember, value, member) = table[id];}))
+            for(;;)
             {
-                __traits(getMember, value, member) = table[symbolId];
-            }
-            else
-            {
-                __traits(getMember, value, member) = table[symbolId].idup;
+                size_t symbolId;
+                if (auto error = annotations.pick(symbolId))
+                    return error.ionException;
+                if (symbolId >= table.length)
+                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId].idup))
+                {
+                    static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId]))
+                    {
+                        __traits(getMember, value, member) = table[symbolId];
+                    }
+                    else
+                    {
+                        __traits(getMember, value, member) = table[symbolId].idup;
+                    }
+                    break;
+                }
+                else
+                {
+                    import mir.conv : to;
+                    __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!(typeof(__traits(getMember, value, member))));
+                    if (annotations.empty)
+                        break;
+                }
             }
         }}
         return null;

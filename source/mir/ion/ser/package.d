@@ -350,7 +350,11 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
     {
         static foreach (annotationMember; serdeGetAnnotationMembersOut!V)
         {
-            serializer.putAnnotation(__traits(getMember, value, annotationMember)[]);
+            static if (__traits(compiles, serializer.putAnnotation(__traits(getMember, value, annotationMember)[])))
+                serializer.putAnnotation(__traits(getMember, value, annotationMember)[]);
+            else
+                foreach (annotation; __traits(getMember, value, annotationMember))
+                    serializer.putAnnotation(annotation);
         }
     }
 
@@ -713,7 +717,7 @@ unittest
         SmallString!32 id1;
 
         @serdeAnnotation
-        SmallString!32 id2;
+        string[] id2;
 
         // Alias this is transparent for members and can catch algebraic annotation
         alias c this;
@@ -763,8 +767,8 @@ unittest
     import mir.ion.ser.text: serializeText;
 
     {
-        Nullable!S value = S("LIBOR", S.Data(A(SmallString!32("Rate"), SmallString!32("USD"))));
-        static immutable text = `LIBOR::$a::Rate::USD::{number:nan,s:null.string}`;
+        Nullable!S value = S("LIBOR", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
+        static immutable text = `LIBOR::$a::Rate::USD::GBP::{number:nan,s:null.string}`;
         assert(value.serializeText == text);
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
@@ -773,8 +777,8 @@ unittest
     }
 
     {
-        auto value = S2(S2.Data(A(SmallString!32("Rate"), SmallString!32("USD"))));
-        static immutable text = `$a::Rate::USD::{number:nan,s:null.string}`;
+        auto value = S2(S2.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
+        static immutable text = `$a::Rate::USD::GBP::{number:nan,s:null.string}`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
         import mir.ion.deser.ion: deserializeIon;
