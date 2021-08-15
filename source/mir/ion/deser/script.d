@@ -39,7 +39,7 @@ ScriptDeserializer!R getScriptDeserializer(R)() @safe pure nothrow @nogc
 private R scriptDeserializerHandle(T, R = T)(const string[] symbolTable, scope const uint[] dynamicIndex, IonDescribedValue ionValue)
     if (isMutable!T && (is(T == R) || isMutable!R && __traits(compiles, R(T.init))))
 {
-    import mir.ion.deser: deserializeValue;
+    import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
 
     assert(symbolTable.length == dynamicIndex.length);
 
@@ -50,7 +50,8 @@ private R scriptDeserializerHandle(T, R = T)(const string[] symbolTable, scope c
     else
         enum keys = serdeGetDeserializationKeysRecurse!T;
 
-    if (auto exception = deserializeValue!(keys, true)(ionValue, symbolTable, dynamicIndex, value))
+    auto params = DeserializationParams!(TableKind.immutableRuntime)(ionValue, symbolTable, dynamicIndex); 
+    if (auto exception = deserializeValue!keys(params, value))
         throw exception;
     
 

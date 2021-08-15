@@ -12,7 +12,7 @@ private template deserializeJsonImpl(bool file)
     // @optStrategy("optsize")
     T deserializeJsonImpl(T)(scope const(char)[] text)
     {
-        import mir.ion.deser: deserializeValue;
+        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.ion.exception: IonException, ionException;
         import mir.ion.exception: ionErrorMsg;
         import mir.ion.internal.data_holder;
@@ -35,7 +35,8 @@ private template deserializeJsonImpl(bool file)
 
         if (false)
         {
-            if (auto exception = deserializeValue!(keys, false)(IonDescribedValue.init, value))
+            auto params = DeserializationParams!(TableKind.compiletime)(); 
+            if (auto exception = deserializeValue!keys(params, value))
                 throw exception;
         }
 
@@ -57,7 +58,8 @@ private template deserializeJsonImpl(bool file)
             if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
                 throw error.ionException;
 
-            if (auto exception = deserializeValue!(keys, false)(ionValue, value))
+            auto params = DeserializationParams!(TableKind.compiletime)(ionValue); 
+            if (auto exception = deserializeValue!keys(params, value))
                 throw exception;
         } ();
 
@@ -264,7 +266,7 @@ alias deserializeJsonFile = deserializeJsonImpl!true;
 //     T deserializeJsonImpl(T)(scope const(char)[] text)
 //     {
 //         import mir.exception: MirException;
-//         import mir.ion.deser: deserializeValue;
+//         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
 //         import mir.ion.exception: ionErrorMsg;
 //         import mir.ion.exception: IonException, ionException;
 //         import mir.ion.internal.data_holder;

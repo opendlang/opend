@@ -29,7 +29,7 @@ template deserializeIon(T)
     T deserializeIon(scope const char[][] symbolTable, IonDescribedValue ionValue)
     {
         import mir.appender: ScopedBuffer;
-        import mir.ion.deser: deserializeValue;
+        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
 
@@ -44,7 +44,10 @@ template deserializeIon(T)
         T value;
         if (false)
         {
-            auto msg = deserializeValue!(keys, true)(ionValue, symbolTable, null, value);
+            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable); 
+            if (auto exception = deserializeValue!keys(params, value))
+            {
+            }
         }
         () @trusted {
 
@@ -58,8 +61,8 @@ template deserializeIon(T)
                     id = uint.max;
                 tableMapBuffer.put(id);
             }
-
-            if (auto exception = deserializeValue!(keys, true)(ionValue, symbolTable, tableMapBuffer.data, value))
+            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable, tableMapBuffer.data);
+            if (auto exception = deserializeValue!keys(params, value))
                 throw exception;
             
         } ();
@@ -71,7 +74,7 @@ template deserializeIon(T)
     T deserializeIon(immutable char[][] symbolTable, IonDescribedValue ionValue)
     {
         import mir.appender: ScopedBuffer;
-        import mir.ion.deser: deserializeValue;
+        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: MirStringTable;
 
@@ -90,7 +93,10 @@ template deserializeIon(T)
         T value;
         if (false)
         {
-            auto msg = deserializeValue!(keys, true)(ionValue, symbolTable, null, value);
+            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable);
+            if (auto exception = deserializeValue!keys(params, value))
+            {
+            }
         }
         () @trusted {
 
@@ -105,7 +111,9 @@ template deserializeIon(T)
                 tableMapBuffer.put(id);
             }
 
-            if (auto exception = deserializeValue!(keys, true)(ionValue, symbolTable, tableMapBuffer.data, value))
+
+            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable, tableMapBuffer.data);
+            if (auto exception = deserializeValue!keys(params, value))
                 throw exception;
             
         } ();
