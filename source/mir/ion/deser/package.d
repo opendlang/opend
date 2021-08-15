@@ -411,9 +411,8 @@ template deserializeValue(string[] symbolTable)
     /++
     Deserialize aggregate value
     Params:
-        data = $(IONREF value, IonDescribedValue)
+        params = $(LREF DeserializationParams)
         value = value to deserialize
-        optAnnotations = (optional) $(MREF mir,ion,value, IonAnnotations)
     Returns: `IonException`
     +/
     IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
