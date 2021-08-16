@@ -25,6 +25,7 @@ void serializeValue(S)(ref S serializer, typeof(null))
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -39,6 +40,7 @@ void serializeValue(S, V)(ref S serializer, auto ref const V value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -65,6 +67,7 @@ void serializeValue(S, V : char)(ref S serializer, const V value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -86,6 +89,7 @@ void serializeValue(S, V)(ref S serializer, in V value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -116,6 +120,7 @@ void serializeValue(S)(ref S serializer, scope const(char)[] value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -165,6 +170,7 @@ void serializeValue(S, V)(ref S serializer, V value)
 }
 
 /// input range serialization
+version(mir_ion_test)
 unittest
 {
     import std.algorithm : filter;
@@ -213,6 +219,7 @@ void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -244,6 +251,7 @@ void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -278,6 +286,7 @@ void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -338,6 +347,7 @@ private IonTypeCode nullTypeCodeOf(T)()
     return code;
 }
 
+version(mir_ion_test)
 unittest
 {
     static assert(nullTypeCodeOf!long == IonTypeCode.nInt);
@@ -626,6 +636,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
 }
 
 /// Mir types
+version(mir_ion_test)
 unittest
 {
     import mir.bignum.integer;
@@ -639,6 +650,7 @@ unittest
 }
 
 /// Alias this support
+version(mir_ion_test)
 unittest
 {
     struct S
@@ -658,6 +670,7 @@ unittest
 }
 
 /// Custom `serialize`
+version(mir_ion_test)
 unittest
 {
     struct S
@@ -676,6 +689,7 @@ unittest
 }
 
 /// Nullable type serialization
+version(mir_ion_test)
 unittest
 {
     import mir.ion.ser.json: serializeJson;
@@ -700,6 +714,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.algebraic;
@@ -992,6 +1007,7 @@ version(bloomberg)
         }
     }
 
+    version(mir_ion_test)
     unittest
     {
         import mir.ion.ser.bloomberg;

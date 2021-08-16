@@ -1,5 +1,93 @@
-///
+/++
+Conversion utilities.
++/
 module mir.ion.conv;
+
+/++
+Serialize value to binary ion data and deserialize it back to requested type.
+Uses GC allocated string tables.
++/
+template serde(T)
+{
+    import mir.serde: SerdeTarget;
+    ///
+    T serde(V)(auto ref const V value, SerdeTarget serdeTarget = SerdeTarget.ion)
+    {
+        import mir.ion.exception;
+        import mir.appender: ScopedBuffer;
+        import mir.ion.deser.ion: deserializeIon;
+        import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+        import mir.ion.ser: serializeValue;
+        import mir.ion.ser.ion: IonSerializer;
+        import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
+        import mir.ion.value: IonValue, IonDescribedValue, IonList;
+        import mir.serde: serdeGetSerializationKeysRecurse;
+        import mir.utility: _expect;
+
+        enum nMax = 4096u;
+        enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
+
+        immutable(string)[] symbolTable;
+
+        if (false)
+        {
+            IonTapeHolder!(nMax * 8) tapeHolder;
+            tapeHolder.initialize;
+            IonSymbolTable!true table;
+            auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
+                ()@trusted { return &tapeHolder; }(),
+                ()@trusted { return &table; }(),
+                serdeTarget,
+            );
+            serializeValue(serializer, value);
+            return deserializeIon!T(symbolTable, IonDescribedValue.init);
+        }
+
+        auto ret () @trusted {
+            ScopedBuffer!(immutable string) symbolTableBuffer = void;
+            IonTapeHolder!(nMax * 8) tapeHolder = void;
+            symbolTableBuffer.initialize;
+            tapeHolder.initialize;
+            IonSymbolTable!true table;
+            auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table, serdeTarget);
+            serializeValue(serializer, value);
+
+            // use runtime table
+            if (table.initialized)
+            {
+                symbolTableBuffer.put(IonSystemSymbolTable_v1);
+                foreach (IonErrorCode error, IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
+                {
+                    assert(!error);
+                    symbolTableBuffer.put(cast(string)symbolValue.trustedGet!(const(char)[]));
+                }
+                symbolTable = symbolTableBuffer.data;
+            }
+            else
+            {
+                static immutable compileTimeTable = IonSystemSymbolTable_v1 ~ keys;
+                symbolTable = compileTimeTable;
+            }
+            IonDescribedValue ionValue;
+            auto error = tapeHolder.data.IonValue.describe(ionValue);
+            return deserializeIon!T(symbolTable, ionValue);
+        }
+        return ret();
+    }
+}
+
+///
+version(mir_ion_test)
+unittest {
+    import mir.algebraic_alias.json: JsonAlgebraic;
+    static struct S
+    {
+        double a;
+        string s;
+    }
+    auto s = S(12.34, "str");
+    assert(s.serde!JsonAlgebraic.serde!S == s);
+}
 
 /++
 Converts JSON Value Stream to binary Ion data.
