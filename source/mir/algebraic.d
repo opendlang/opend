@@ -524,9 +524,11 @@ version(mir_core_test) unittest
     JsonValue v;
     assert(v.kind == JsonValue.Kind.null_);
 
-    v = 5;
-    assert(v == 5);
+    v = 1;
     assert(v.kind == JsonValue.Kind.integer);
+    assert(v == 1);
+    v = JsonValue(1);
+    assert(v == 1);
 
     v = "Tagged!";
     assert(v.get       !string                  == "Tagged!");
@@ -1692,6 +1694,76 @@ struct Algebraic(_Types...)
                 else
                     return trustedGet!T < rhs ? -1 :
                         trustedGet!T > rhs ? +1 : 0;
+            }
+
+            static if (is(Unqual!T == bool))
+            {
+                private alias contains = Contains!AllowedTypes;
+                static if (contains!long && !contains!int)
+                {
+                    this(int value)
+                    {
+                        this(long(value));
+                    }
+
+                    this(int value) const
+                    {
+                        this(long(value));
+                    }
+
+                    this(int value) immutable
+                    {
+                        this(long(value));
+                    }
+
+                    ref opAssign(int rhs) return @trusted
+                    {
+                        return opAssign(long(rhs));
+                    }
+
+                    auto opEquals()(int rhs) const
+                    {
+                        return opEquals(long(rhs));
+                    } 
+
+                    auto opCmp()(int rhs) const
+                    {
+                        return opCmp(long(rhs));
+                    }
+                }
+
+                static if (contains!ulong && !contains!uint)
+                {
+                    this(uint value)
+                    {
+                        this(ulong(value));
+                    }
+
+                    this(uint value) const
+                    {
+                        this(ulong(value));
+                    }
+
+                    this(uint value) immutable
+                    {
+                        this(ulong(value));
+                    }
+
+                    ref opAssign(uint rhs) return @trusted
+                    {
+                        return opAssign(ulong(rhs));
+                    }
+
+                    auto opEquals()(uint rhs) const
+                    {
+                        return opEquals(ulong(rhs));
+                    } 
+
+                    auto opCmp()(uint rhs) const
+                    {
+                        return opCmp(ulong(rhs));
+                    }
+                }
             }
         }
     }
