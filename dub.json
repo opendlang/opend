@@ -23,7 +23,7 @@
 			  "dub run --compiler=$$DC unit-threaded -c gen_ut_main -- -f bin/ut.d"
 			],
 			"dependencies": {
-			  "unit-threaded": "~>0"
+			  "unit-threaded": "*"
 			},
 			"excludedSourceFiles": [
 			  "source/app.d"
