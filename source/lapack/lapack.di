@@ -6,17 +6,9 @@ Copyright:  Copyright (c) 2009, Lars T. Kyllingstad; Copyright © 2017, Symmetry
 +/
 module lapack.lapack;
 
-version(LAPACK_STD_COMPLEX)
-{
-    import std.complex: Complex;
-    alias _cfloat = Complex!float;
-    alias _cdouble = Complex!double;
-}
-else
-{
-    alias _cfloat = cfloat;
-    alias _cdouble = cdouble;
-}
+import std.complex: Complex;
+alias _cfloat = Complex!float;
+alias _cdouble = Complex!double;
 
 version(LAPACKNATIVEINT)
 {
