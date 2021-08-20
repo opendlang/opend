@@ -104,10 +104,18 @@ struct Complex(T)
         return this;
     }
 
-const:
+scope const:
+
+    ///
+    bool opEquals(Complex rhs)
+    {
+        pragma(inline, true);
+        return re == rhs.re && im == rhs.im;
+    }
 
     ///
     bool opEquals(R)(Complex!R rhs)
+        if (!is(R == T))
     {
         return re == rhs.re && im == rhs.im;
     }
