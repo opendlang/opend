@@ -11,6 +11,7 @@ sources_list = [
     'mir/bitmanip',
     'mir/bitop',
     'mir/checkedint',
+    'mir/complex',
     'mir/conv',
     'mir/enums',
     'mir/exception',

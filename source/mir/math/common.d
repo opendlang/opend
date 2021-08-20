@@ -569,9 +569,8 @@ version (mir_core_test)
 ///
 version(mir_core_test) unittest
 {
-    static struct UserComplex(T) { T re, im; }
-    alias _cdouble = UserComplex!double;
-    assert(fabs(_cdouble(3, 4)) == 25);
+    import mir.complex;
+    assert(fabs(Complex!double(3, 4)) == 25);
 }
 
 /++
