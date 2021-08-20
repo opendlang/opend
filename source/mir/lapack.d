@@ -21,6 +21,8 @@ static import lapack;
 
 public import lapack: lapackint;
 
+import lapack.lapack: _cfloat, _cdouble;
+
 @trusted pure nothrow @nogc:
 
 ///
@@ -59,8 +61,8 @@ unittest
 {
     alias s = getri_wq!float;
     alias d = getri_wq!double;
-    alias c = getri_wq!cfloat;
-    alias z = getri_wq!cdouble;
+    alias c = getri_wq!_cfloat;
+    alias z = getri_wq!_cdouble;
 }
 
 ///
@@ -92,8 +94,8 @@ unittest
 {
     alias s = getri!float;
     alias d = getri!double;
-    alias c = getri!cfloat;
-    alias z = getri!cdouble;
+    alias c = getri!_cfloat;
+    alias z = getri!_cdouble;
 }
 
 ///
@@ -122,8 +124,8 @@ unittest
 {
     alias s = getrf!float;
     alias d = getrf!double;
-    alias c = getrf!cfloat;
-    alias z = getrf!cdouble;
+    alias c = getrf!_cfloat;
+    alias z = getrf!_cdouble;
 }
 
 ///
@@ -282,8 +284,8 @@ unittest
 {
     alias s = gelsd_wq!float;
     alias d = gelsd_wq!double;
-    alias c = gelsd_wq!cfloat;
-    alias z = gelsd_wq!cdouble;
+    alias c = gelsd_wq!_cfloat;
+    alias z = gelsd_wq!_cdouble;
 }
 
 ///
@@ -359,8 +361,8 @@ unittest
 {
     alias s = gelsd!float;
     alias d = gelsd!double;
-    alias c = gelsd!cfloat;
-    alias z = gelsd!cdouble;
+    alias c = gelsd!_cfloat;
+    alias z = gelsd!_cdouble;
 }
 
 /// `gesdd` work space query
@@ -397,8 +399,8 @@ unittest
 {
     alias s = gesdd_wq!float;
     alias d = gesdd_wq!double;
-    alias c = gesdd_wq!cfloat;
-    alias z = gesdd_wq!cdouble;
+    alias c = gesdd_wq!_cfloat;
+    alias z = gesdd_wq!_cdouble;
 }
 
 ///
@@ -458,8 +460,8 @@ unittest
 {
     alias s = gesdd!float;
     alias d = gesdd!double;
-    alias c = gesdd!cfloat;
-    alias z = gesdd!cdouble;
+    alias c = gesdd!_cfloat;
+    alias z = gesdd!_cdouble;
 }
 
 /// `gesvd` work space query
@@ -497,8 +499,8 @@ unittest
 {
     alias s = gesvd_wq!float;
     alias d = gesvd_wq!double;
-    alias c = gesvd_wq!cfloat;
-    alias z = gesvd_wq!cdouble;
+    alias c = gesvd_wq!_cfloat;
+    alias z = gesvd_wq!_cdouble;
 }
 
 ///
@@ -558,8 +560,8 @@ unittest
 {
     alias s = gesvd!float;
     alias d = gesvd!double;
-    alias c = gesvd!cfloat;
-    alias z = gesvd!cdouble;
+    alias c = gesvd!_cfloat;
+    alias z = gesvd!_cdouble;
 }
 
 ///
@@ -656,8 +658,8 @@ unittest
 {
     alias s = sytrf!float;
     alias d = sytrf!double;
-    alias c = sytrf!cfloat;
-    alias z = sytrf!cdouble;
+    alias c = sytrf!_cfloat;
+    alias z = sytrf!_cdouble;
 }
 
 ///
@@ -699,8 +701,8 @@ unittest
 {
     alias s = geqrf!float;
     alias d = geqrf!double;
-    alias c = geqrf!cfloat;
-    alias z = geqrf!cdouble;
+    alias c = geqrf!_cfloat;
+    alias z = geqrf!_cdouble;
 }
 
 ///
@@ -735,8 +737,8 @@ unittest
 {
     alias s = getrs!float;
     alias d = getrs!double;
-    alias c = getrs!cfloat;
-    alias z = getrs!cdouble;
+    alias c = getrs!_cfloat;
+    alias z = getrs!_cdouble;
 }
 
 ///
@@ -769,8 +771,8 @@ unittest
 {
     alias s = potrs!float;
     alias d = potrs!double;
-    alias c = potrs!cfloat;
-    alias z = potrs!cdouble;
+    alias c = potrs!_cfloat;
+    alias z = potrs!_cdouble;
 }
 
 ///
@@ -805,8 +807,8 @@ unittest
 {
     alias s = sytrs2!float;
     alias d = sytrs2!double;
-    alias c = sytrs2!cfloat;
-    alias z = sytrs2!cdouble;
+    alias c = sytrs2!_cfloat;
+    alias z = sytrs2!_cdouble;
 }
 
 ///
@@ -852,8 +854,8 @@ unittest
 {
     alias s = geqrs!float;
     alias d = geqrs!double;
-    alias c = geqrs!cfloat;
-    alias z = geqrs!cdouble;
+    alias c = geqrs!_cfloat;
+    alias z = geqrs!_cdouble;
 }
 
 ///
@@ -886,8 +888,8 @@ unittest
 {
     alias s = sysv_rook_wk!float;
     alias d = sysv_rook_wk!double;
-    alias c = sysv_rook_wk!cfloat;
-    alias z = sysv_rook_wk!cdouble;
+    alias c = sysv_rook_wk!_cfloat;
+    alias z = sysv_rook_wk!_cdouble;
 }
 
 ///
@@ -923,8 +925,8 @@ unittest
 {
     alias s = sysv_rook!float;
     alias d = sysv_rook!double;
-    alias c = sysv_rook!cfloat;
-    alias z = sysv_rook!cdouble;
+    alias c = sysv_rook!_cfloat;
+    alias z = sysv_rook!_cdouble;
 }
 
 ///
@@ -1081,8 +1083,8 @@ unittest
 {
     alias s = potrf!float;
     alias d = potrf!double;
-    alias c = potrf!cfloat;
-    alias z = potrf!cdouble;
+    alias c = potrf!_cfloat;
+    alias z = potrf!_cdouble;
 }
 
 ///
@@ -1105,8 +1107,8 @@ unittest
 {
     alias s = pptrf!float;
     alias d = pptrf!double;
-    alias c = pptrf!cfloat;
-    alias z = pptrf!cdouble;
+    alias c = pptrf!_cfloat;
+    alias z = pptrf!_cdouble;
 }
 
 ///
@@ -1163,8 +1165,8 @@ unittest
 {
     alias s = sptri!float;
     alias d = sptri!double;
-    alias c = sptri!cfloat;
-    alias z = sptri!cdouble;
+    alias c = sptri!_cfloat;
+    alias z = sptri!_cdouble;
 }
 
 ///
@@ -1192,8 +1194,8 @@ unittest
 {
     alias s = potri!float;
     alias d = potri!double;
-    alias c = potri!cfloat;
-    alias z = potri!cdouble;
+    alias c = potri!_cfloat;
+    alias z = potri!_cdouble;
 }
 
 ///
@@ -1234,8 +1236,8 @@ unittest
 {
     alias s = pptri!float;
     alias d = pptri!double;
-    alias c = pptri!cfloat;
-    alias z = pptri!cdouble;
+    alias c = pptri!_cfloat;
+    alias z = pptri!_cdouble;
 }
 
 ///
@@ -1264,8 +1266,8 @@ unittest
 {
     alias s = trtri!float;
     alias d = trtri!double;
-    alias c = trtri!cfloat;
-    alias z = trtri!cdouble;
+    alias c = trtri!_cfloat;
+    alias z = trtri!_cdouble;
 }
 
 ///
@@ -1309,8 +1311,8 @@ unittest
 {
     alias s = tptri!float;
     alias d = tptri!double;
-    alias c = tptri!cfloat;
-    alias z = tptri!cdouble;
+    alias c = tptri!_cfloat;
+    alias z = tptri!_cdouble;
 }
 
 ///
@@ -1373,8 +1375,8 @@ size_t unmqr(T)(
 
 unittest
 {
-    alias s = unmqr!cfloat;
-    alias d = unmqr!cdouble;
+    alias s = unmqr!_cfloat;
+    alias d = unmqr!_cdouble;
 }
 
 ///
@@ -1450,8 +1452,8 @@ do
 
 unittest
 {
-    alias s = ungqr!cfloat;
-    alias d = ungqr!cdouble;
+    alias s = ungqr!_cfloat;
+    alias d = ungqr!_cdouble;
 }
 
 alias orghr = unghr; // this is the name for the real type vairant of ungqr
@@ -1495,8 +1497,8 @@ unittest
     alias orghrd = orghr!double;
     alias unghrf = unghr!float;
     alias unghrd = unghr!double;
-    alias unghrcf = unghr!cfloat;
-    alias unghrcd = unghr!cdouble;
+    alias unghrcf = unghr!_cfloat;
+    alias unghrcd = unghr!_cdouble;
 }
 
 ///
@@ -1528,8 +1530,8 @@ do
 
 unittest
 {
-    alias s = gehrd!cfloat;
-    alias d = gehrd!cdouble;
+    alias s = gehrd!_cfloat;
+    alias d = gehrd!_cdouble;
 }
 
 size_t hsein(T)(
@@ -1664,8 +1666,8 @@ unittest
 {
     alias f = hsein!(float);
     alias d = hsein!(double);
-    alias s = hsein!(cfloat,float);
-    alias c = hsein!(cdouble,double);
+    alias s = hsein!(_cfloat, float);
+    alias c = hsein!(_cdouble, double);
 }
 
 alias ormhr = unmhr;
@@ -1724,8 +1726,8 @@ do
 
 unittest
 {
-    alias s = unmhr!cfloat;
-    alias d = unmhr!cdouble;
+    alias s = unmhr!_cfloat;
+    alias d = unmhr!_cdouble;
     alias a = ormhr!double;
     alias b = ormhr!float;
 }
@@ -1805,8 +1807,8 @@ unittest
 {
     alias f = hseqr!float;
     alias d = hseqr!double;
-    alias s = hseqr!cfloat;
-    alias c = hseqr!cdouble;
+    alias s = hseqr!_cfloat;
+    alias c = hseqr!_cdouble;
 }
 
 ///
@@ -1842,14 +1844,9 @@ unittest
 {
     alias f = trevc!float;
     alias d = trevc!double;
-    alias s = trevc!cfloat;
-    alias c = trevc!cdouble;
+    alias s = trevc!_cfloat;
+    alias c = trevc!_cdouble;
 }
-
-alias complexType(T : double) = cdouble;
-alias complexType(T : float) = cfloat;
-alias complexType(T : real) = creal;
-alias complexType(T : isComplex!T) = T;
 
 ///
 size_t gebal(T, realT)(char job,
@@ -1870,10 +1867,10 @@ size_t gebal(T, realT)(char job,
 
 unittest
 {
-    alias a = gebal!(double,double);
-    alias b = gebal!(cdouble,double);
-    alias c = gebal!(float,float);
-    alias d = gebal!(cfloat,float);
+    alias a = gebal!(double, double);
+    alias b = gebal!(_cdouble, double);
+    alias c = gebal!(float, float);
+    alias d = gebal!(_cfloat, float);
 }
 
 ///
@@ -1898,10 +1895,10 @@ size_t gebak(T, realT)(
 
 unittest
 {
-    alias a = gebak!(double,double);
-    alias b = gebak!(cdouble,double);
-    alias c = gebak!(float,float);
-    alias d = gebak!(cfloat,float);
+    alias a = gebak!(double, double);
+    alias b = gebak!(_cdouble, double);
+    alias c = gebak!(float, float);
+    alias d = gebak!(_cfloat, float);
 }
 
 ///
@@ -1981,8 +1978,8 @@ unittest
 {
     alias a = steqr!float;
     alias b = steqr!double;
-    alias c = steqr!cfloat;
-    alias d = steqr!cdouble;
+    alias c = steqr!_cfloat;
+    alias d = steqr!_cdouble;
 }
 
 
@@ -2019,8 +2016,8 @@ unittest
 {
     alias s = sytrs_3!float;
     alias d = sytrs_3!double;
-    alias c = sytrs_3!cfloat;
-    alias z = sytrs_3!cdouble;
+    alias c = sytrs_3!_cfloat;
+    alias z = sytrs_3!_cdouble;
 }
 
 ///
@@ -2053,8 +2050,8 @@ unittest
 {
     alias s = sytrf_rk!float;
     alias d = sytrf_rk!double;
-    alias c = sytrf_rk!cfloat;
-    alias z = sytrf_rk!cdouble;
+    alias c = sytrf_rk!_cfloat;
+    alias z = sytrf_rk!_cdouble;
 }
 
 
