@@ -52,7 +52,7 @@ do
     lapack.getri_(n, null, lda, null, &work, lwork, info);
 
     assert(info == 0);
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -239,7 +239,7 @@ do
 
     assert(info == 0);
     liwork = iwork;
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 
@@ -275,7 +275,7 @@ do
     assert(info == 0);
     lrwork = cast(size_t)rwork;
     liwork = iwork;
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -390,7 +390,7 @@ size_t gesdd_wq(T)(
     }
 
     assert(info == 0);
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -490,7 +490,7 @@ size_t gesvd_wq(T)(
     }
 
     assert(info == 0);
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -879,7 +879,7 @@ do
 
     lapack.sysv_rook_(uplo, n, nrhs, a._iterator, lda, null, b._iterator, ldb, &work, lwork, info);
 
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -949,7 +949,7 @@ do
 
     lapack.syev_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
 
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
@@ -1012,7 +1012,7 @@ do
 
     lapack.syev_2stage_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
 
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 version(none)
@@ -2081,7 +2081,7 @@ do
 
     lapack.sytrf_rk_(uplo, n, a.iterator, lda, &e, &ipiv, &work, lwork, info);
 
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 version(none)
@@ -2201,7 +2201,7 @@ do
 
     lapack.sytrf_(uplo, n, a.iterator, lda, &ipiv, &work, lwork, info);
 
-    return cast(size_t) work;
+    return cast(size_t) work.re;
 }
 
 unittest
