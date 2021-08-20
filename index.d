@@ -69,6 +69,10 @@ range primitives for arrays with multi-dimensional like API support)
         $(TD Common floating point math functions)
     )
     $(TR
+        $(TDNW $(MREF mir,complex))
+        $(TD Generic complex type)
+    )
+    $(TR
         $(TDNW $(MREF mir,math,constant))
         $(TD Math constants)
     )
