@@ -20,7 +20,7 @@ struct Complex(T)
     import mir.internal.utility: isComplex;
     import std.traits: isNumeric;
 
-@safe pure nothrow @nogc @optmath:
+@optmath:
 
     /++
     Real part. Default value is zero.
@@ -104,14 +104,22 @@ struct Complex(T)
         return this;
     }
 
-scope const:
+const:
 
     ///
-    bool opEquals(Complex rhs)
+    bool opEquals(const Complex rhs)
     {
-        pragma(inline, true);
         return re == rhs.re && im == rhs.im;
     }
+
+    ///
+    size_t toHash()
+    {
+        T[2] val = [re, im];
+        return hashOf(val) ;
+    }
+
+scope:
 
     ///
     bool opEquals(R)(Complex!R rhs)
@@ -247,6 +255,10 @@ Complex!T complex(T)(const T re, const T im)
 {
     return typeof(return)(re, im);
 }
+
+private alias _cdouble_ = Complex!double;
+private alias _cfloat_ = Complex!float;
+private alias _creal_ = Complex!real;
 
 ///
 unittest

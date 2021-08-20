@@ -1042,7 +1042,7 @@ struct Algebraic(_Types...)
 
     /++
     +/
-    bool opEquals()(auto ref const typeof(this) rhs) const
+    bool opEquals()(auto ref const typeof(this) rhs) const @trusted
     {
         static if (AllowedTypes.length == 0)
         {
@@ -1067,7 +1067,7 @@ struct Algebraic(_Types...)
     /++
     +/
     static if (is(AllowedTypes == _Types))
-    auto opCmp()(auto ref const typeof(this) rhs) const
+    auto opCmp()(auto ref const typeof(this) rhs) const @trusted
     {
         static if (AllowedTypes.length == 0)
         {
