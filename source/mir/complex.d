@@ -17,6 +17,7 @@ Generic complex number type
 struct Complex(T)
     if (is(T == float) || is(T == double) || is(T == real))
 {
+    import mir.internal.utility: isComplex;
     import std.traits: isNumeric;
 
 @safe pure nothrow @nogc @optmath:
@@ -220,6 +221,16 @@ const:
             -rhs * (this.im / norm),
         );
     }
+
+    ///
+    R opCast(R)()
+        if (isNumeric!R || isComplex!R)
+    {
+        static if (isNumeric!R)
+            return cast(R) re;
+        else
+            return R(re, im);
+    }
 }
 
 /// ditto
@@ -270,4 +281,11 @@ unittest
     a = +a;
 
     assert(a != 4.0);
+    a = 4;
+    assert(a == 4);
+    assert(cast(int)a == 4);
+    assert(cast(Complex!float)a == 4);
+
+    import std.complex : StdComplex = Complex;
+    assert(cast(StdComplex!double)a == StdComplex!double(4, 0));
 }
