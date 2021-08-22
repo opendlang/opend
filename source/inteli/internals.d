@@ -31,6 +31,7 @@ version(GNU)
         enum GDC_with_SSE41 = false;
         enum GDC_with_SSE42 = false;
         enum GDC_with_SHA = false;
+        enum GDC_with_BMI2 = false;
     }
     else version (X86_64)
     {
@@ -55,6 +56,7 @@ version(GNU)
         enum GDC_with_SSE41 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSE42 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SHA = false;
+        enum GDC_with_BMI2 = false;
     }
     else
     {
@@ -67,6 +69,7 @@ version(GNU)
         enum GDC_with_SSE41 = false;
         enum GDC_with_SSE42 = false;
         enum GDC_with_SHA = false;
+        enum GDC_with_BMI2 = false;
     }
 }
 else
@@ -80,6 +83,7 @@ else
     enum GDC_with_SSE41 = false;
     enum GDC_with_SSE42 = false;
     enum GDC_with_SHA = false;
+    enum GDC_with_BMI2 = false;
 }
 
 version(LDC)
@@ -117,6 +121,7 @@ version(LDC)
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
         enum LDC_with_SHA = false;
+        enum LDC_with_BMI2 = false;
     }
     else version(AArch64)
     {
@@ -131,6 +136,7 @@ version(LDC)
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
         enum LDC_with_SHA = false;
+        enum LDC_with_BMI2 = false;
     }
     else
     {
@@ -146,6 +152,7 @@ version(LDC)
         enum LDC_with_AVX = __traits(targetHasFeature, "avx");
         enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2");
         enum LDC_with_SHA = __traits(targetHasFeature, "sha");
+        enum LDC_with_BMI2 = __traits(targetHasFeature, "bmi2");
     }
 }
 else
@@ -161,6 +168,7 @@ else
     enum LDC_with_AVX = false;
     enum LDC_with_AVX2 = false;
     enum LDC_with_SHA = false;
+    enum LDC_with_BMI2 = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;

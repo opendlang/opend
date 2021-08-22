@@ -15,6 +15,7 @@ public import inteli.pmmintrin;
 public import inteli.tmmintrin;
 public import inteli.smmintrin;
 public import inteli.shaintrin;
+public import inteli.bmi2intrin;
 
 public import inteli.math;
 
