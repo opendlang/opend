@@ -529,6 +529,7 @@ version(mir_core_test) unittest
     assert(v == 1);
     v = JsonValue(1);
     assert(v == 1);
+    v = v.get!(long, double);
 
     v = "Tagged!";
     assert(v.get       !string                  == "Tagged!");
@@ -1516,6 +1517,17 @@ struct Algebraic(_Types...)
         }
     }
 
+    ///
+    ref opAssign(RhsTypes...)(Algebraic!RhsTypes rhs) return @trusted
+        if (RhsTypes.length < AllowedTypes.length && allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
+    {
+        import core.lifetime: forward;
+        static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
+            this.__dtor();
+        __ctor(forward!rhs);
+        return this;
+    }
+
     static foreach (int i, T; AllowedTypes)
     {
         /// Zero cost always nothrow `get` alternative
@@ -1659,9 +1671,10 @@ struct Algebraic(_Types...)
             ///
             ref opAssign(T rhs) return @trusted
             {
+                import core.lifetime: forward;
                 static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
                     this.__dtor();
-                __ctor(rhs);
+                __ctor(forward!rhs);
                 return this;
             }
 
