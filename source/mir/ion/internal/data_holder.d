@@ -30,17 +30,32 @@ private static void* validatePtr()(return void* ptr)
 +/
 struct IonTapeHolder(size_t stackAllocatedLength)
 {
-    private align(16) ubyte[stackAllocatedLength] stackData = void;
     ///
     ubyte[] data;
 
     ///
     size_t currentTapePosition;
 
+    private align(16) ubyte[stackAllocatedLength] stackData = void;
+
+    version(assert)
+    {
+        // for stack overflow validation
+        ubyte[32] ctrlStack;
+    }
+
     ///
     inout(ubyte)[] tapeData() inout @property
     {
+        version(assert) assert(ctrlStack == ctrlStack.init);
         return data[0 .. currentTapePosition];
+    }
+
+    ///
+    void adjustPosition(size_t length)
+    {
+        reserve(length);
+        currentTapePosition += length;
     }
 
     ///
@@ -52,6 +67,7 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     ~this()
         @trusted pure nothrow @nogc
     {
+        version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: free;
         if (data.ptr != stackData.ptr)
         {
@@ -64,12 +80,14 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     {
         data = stackData;
         currentTapePosition = 0;
+        ctrlStack = 0;
     }
 
     ///
     void extend(size_t newSize)
         @trusted pure nothrow @nogc
     {
+        version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: malloc, realloc;
         import core.stdc.string: memcpy;
 
@@ -95,6 +113,7 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     ///
     void reserve(size_t size)
     {
+        version(assert) assert(ctrlStack == ctrlStack.init);
         assert(currentTapePosition <= data.length);
 
         import mir.utility: max;

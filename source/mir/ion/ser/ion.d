@@ -22,6 +22,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     import mir.lob;
     import mir.string_table: createTable, minimalIndexType;
     import mir.timestamp;
+    import mir.utility: _expect;
     import std.traits: isNumeric;
 
     private alias createTableChar = createTable!char;
@@ -54,18 +55,26 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 
 @trusted:
 
+    private void putEnd(size_t state, IonTypeCode typeCode)
+    {
+        size_t totalElementLength = tapeHolder.currentTapePosition - (state + ionPutStartLength);
+        if (_expect(totalElementLength >= 0x4000, false))
+            tapeHolder.reserve(7);
+        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, typeCode, totalElementLength);
+    }
+
     ///
     size_t structBegin(size_t length = 0)
     {
         auto ret = tapeHolder.currentTapePosition;
-        tapeHolder.currentTapePosition += ionPutStartLength;
+        tapeHolder.adjustPosition(ionPutStartLength);
         return ret;
     }
 
     ///
     void structEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.struct_, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+        putEnd(state, IonTypeCode.struct_);
     }
 
     ///
@@ -74,7 +83,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void listEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.list, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+        putEnd(state, IonTypeCode.list);
     }
 
     ///
@@ -83,7 +92,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void sexpEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.sexp, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+        putEnd(state, IonTypeCode.sexp);
     }
 
     ///
@@ -102,21 +111,24 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void stringEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.string, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+        putEnd(state, IonTypeCode.string);
     }
 
     ///
     size_t annotationsBegin()
     {
         auto ret = tapeHolder.currentTapePosition;
-        tapeHolder.currentTapePosition += ionPutAnnotationsListStartLength;
+        tapeHolder.adjustPosition(ionPutAnnotationsListStartLength);
         return ret;
     }
 
     ///
     void annotationsEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutAnnotationsListEnd(tapeHolder.data.ptr + state, tapeHolder.currentTapePosition - (state + ionPutAnnotationsListStartLength));
+        size_t totalElementLength = tapeHolder.currentTapePosition - (state + ionPutAnnotationsListStartLength);
+        if (_expect(totalElementLength >= 0x80, false))
+            tapeHolder.reserve(9);
+        tapeHolder.currentTapePosition = state + ionPutAnnotationsListEnd(tapeHolder.data.ptr + state, totalElementLength);
     }
 
     ///
@@ -125,7 +137,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void annotationWrapperEnd(size_t state)
     {
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, IonTypeCode.annotations, tapeHolder.currentTapePosition - (state + ionPutStartLength));
+        putEnd(state, IonTypeCode.annotations);
     }
 
     ///
@@ -181,9 +193,9 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     alias putAnnotationId = putKeyId;
 
     ///
-    void putSymbolId(uint id)
+    void putSymbolId(size_t id)
     {
-        tapeHolder.reserve(5);
+        tapeHolder.reserve(10);
         tapeHolder.currentTapePosition += ionPutSymbolId(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
     }
 
