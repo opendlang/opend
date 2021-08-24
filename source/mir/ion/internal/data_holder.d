@@ -38,11 +38,9 @@ struct IonTapeHolder(size_t stackAllocatedLength)
 
     private align(16) ubyte[stackAllocatedLength] stackData = void;
 
-    version(assert)
-    {
-        // for stack overflow validation
-        ubyte[32] ctrlStack;
-    }
+    
+    // for stack overflow validation
+    version(assert) ubyte[32] ctrlStack;
 
     ///
     inout(ubyte)[] tapeData() inout @property
@@ -80,7 +78,7 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     {
         data = stackData;
         currentTapePosition = 0;
-        ctrlStack = 0;
+        version(assert) ctrlStack = 0;
     }
 
     ///
