@@ -1202,7 +1202,7 @@ struct Algebraic(_Types...)
                     static foreach (i, T; AllowedTypes[1 .. $])
                     {
                         {
-                            case i:
+                            case i + 1:
                                 if (!hasElaborateCopyConstructor!T && !__ctfe)
                                     goto default;
                                 ret = this.trustedGet!T;
