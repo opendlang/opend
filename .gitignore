@@ -12,3 +12,4 @@ lapack-test-library
 example/example
 .DS_Store
 build/
+dub.selections.json
