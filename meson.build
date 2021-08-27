@@ -6,6 +6,7 @@ subprojects = ['mir-core']
 
 sources_list = [
     'lapack/lapack'
+    'lapack/package'
 ]
 
 sources = []
