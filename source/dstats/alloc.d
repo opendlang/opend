@@ -118,7 +118,7 @@ public:
     void popFront()
     in {
         assert(!empty);
-    } body {
+    } do {
         this._length--;
         if(next is null) {
             do {
@@ -149,14 +149,14 @@ public:
         @property ref Unqual!(K) front()
         in {
             assert(!empty);
-        } body {
+        } do {
             return *frontElem;
         }
     } else {
        @property Unqual!(K) front()
        in {
             assert(!empty);
-       } body {
+       } do {
             return *frontElem;
         }
     }
@@ -911,7 +911,7 @@ struct AVLNodeBitwise(T) {
     void left(typeof(this)* newLeft) nothrow @property
     in {
         assert((cast(size_t) newLeft & mask) == 0);
-    } body {
+    } do {
         _left &= mask;
         _left |= cast(size_t) newLeft;
         assert(left is newLeft);
@@ -928,7 +928,7 @@ struct AVLNodeBitwise(T) {
     void right(typeof(this)* newRight) nothrow @property
     in {
         assert((cast(size_t) newRight & mask) == 0);
-    } body {
+    } do {
         _right &= mask;
         _right |= cast(size_t) newRight;
         assert(right is newRight);
@@ -1054,7 +1054,7 @@ private:
         assert(node.left !is null);
         assert( abs(node.balance) <= 2);
 
-    } body {
+    } do {
         Node* newHead = node.left;
         node.left = newHead.right;
         newHead.right = node;
@@ -1070,7 +1070,7 @@ private:
     in {
         assert(node.right !is null);
         assert( abs(node.balance) <= 2);
-    } body {
+    } do {
         Node* newHead = node.right;
         node.right = newHead.left;
         newHead.left = node;
@@ -1087,7 +1087,7 @@ private:
         assert(node is null || abs(node.balance) <= 2);
     } out(ret) {
         assert( abs(ret.balance) < 2);
-    } body {
+    } do {
         if(node is null) {
             return null;
         }
@@ -1144,7 +1144,7 @@ private:
     in {
         assert(freeList);
         assert(*freeList);
-    } body {
+    } do {
         auto ret = *freeList;
         *freeList = ret.right;
         return ret;
@@ -1153,7 +1153,7 @@ private:
     Node* newNode(T payload)
     in {
         assert(freeList, "Uninitialized StackTree!(" ~ T.stringof ~ ")");
-    } body {
+    } do {
         Node* ret;
         if(*freeList !is null) {
             ret = popFreeList();

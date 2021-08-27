@@ -344,7 +344,7 @@ in {
     foreach(array; data[1..$]) {
         assert(array.length == len);
     }
-} body {
+} do {
     if(data[0].length < 25) {
         // Skip computing logarithm rather than waiting until qsortImpl to
         // do this.
@@ -481,7 +481,7 @@ in {
         static if(!is(typeof(array) == ulong*))
             assert(array.length == len);
     }
-} body {
+} do {
     if(data[0].length < 65) {  //Avoid mem allocation.
         return insertionSortImpl!(compFun)(data);
     }
@@ -602,7 +602,7 @@ in {
         static if(!is(typeof(array) == ulong*))
             assert(array.length == len);
     }
-} body {
+} do {
     static if(is(T[$ - 1] == ulong*)) {
         enum dl = data.length - 1;
     } else {
@@ -737,7 +737,7 @@ in {
     foreach(array; data[1..$]) {
         assert(array.length == len);
     }
-} body {
+} do {
     auto toSort = prepareForSorting!compFun(data[0]);
     mergeSortInPlaceImpl!compFun(toSort, data[1..$]);
     postProcess!compFun(data[0]);
@@ -854,7 +854,7 @@ in {
     foreach(array; data[1..$]) {
         assert(array.length == len);
     }
-} body {
+} do {
     auto toSort = prepareForSorting!compFun(data[0]);
     heapSortImpl!compFun(toSort, data[1..$]);
     postProcess!compFun(data[0]);
@@ -944,7 +944,7 @@ in {
         static if(!is(typeof(array) == ulong*))
             assert(array.length == len);
     }
-} body {
+} do {
     auto toSort = prepareForSorting!compFun(data[0]);
     insertionSortImpl!compFun(toSort, data[1..$]);
     postProcess!compFun(data[0]);
@@ -1111,7 +1111,7 @@ in {
     foreach(array; data[1..$]) {
         assert(array.length == len);
     }
-} body {
+} do {
     // Don't use the float-to-int trick because it's actually slower here
     // because the main part of the algorithm is O(N), not O(N log N).
     return partitionKImpl!compFun(data, k);
@@ -1293,4 +1293,3 @@ unittest {
         assert(more.getSorted == qsort!("a > b")(nums[0..5]));
     }
 }
-

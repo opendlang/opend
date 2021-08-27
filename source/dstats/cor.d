@@ -589,7 +589,7 @@ package KendallLowLevel kendallCorDestructiveLowLevelImpl
 (R1, R2)(R1 input1, R2 input2, bool needTies)
 in {
     assert(input1.length == input2.length);
-} body {
+} do {
     static ulong getMs(V)(V data) {  //Assumes data is sorted.
         ulong Ms = 0, tieCount = 0;
         foreach(i; 1..data.length) {
@@ -707,7 +707,7 @@ in {
     // implementation exists in this module for large N, but when N gets this
     // large it's not even correct due to overflow errors.
     assert(input1.length < 1 << 15);
-} body {
+} do {
     int m1 = 0, m2 = 0;
     int s = 0;
 
@@ -1259,7 +1259,7 @@ private void dotMatrix(Matrix)(
     }
 
     assert(ret.rows == rows.length);
-} body {
+} do {
     // HACK:  Before the multithreaded portion of this algorithm
     // starts, make sure that there's no need to unshare ret if it's
     // using ref-counted COW semantics.

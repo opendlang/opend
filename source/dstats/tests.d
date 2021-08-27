@@ -1730,7 +1730,7 @@ private double wilcoxonSignedRankPval(double W, ulong N, Alt alt = Alt.twoSided,
 in {
     assert(N > 0);
     assert(tieSum >= 0 || isNaN(tieSum));
-} body {
+} do {
     if(alt == Alt.none) {
         return double.nan;
     }
@@ -3146,7 +3146,7 @@ private double ksPval(ulong N, ulong Nprime, double D)
 in {
     assert(D >= -1);
     assert(D <= 1);
-} body {
+} do {
     return 1 - kolmogorovDistrib(sqrt(cast(double) (N * Nprime) / (N + Nprime)) * abs(D));
 }
 
@@ -3154,7 +3154,7 @@ private double ksPval(ulong N, double D)
 in {
     assert(D >= -1);
     assert(D <= 1);
-} body {
+} do {
     return 1 - kolmogorovDistrib(abs(D) * sqrt(cast(double) N));
 }
 

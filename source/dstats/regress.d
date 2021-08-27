@@ -1304,7 +1304,7 @@ private void shermanMorrisonRidge(
     assert(lambda > 0);
     foreach(col; x) assert(col.length == x[0].length);
     if(x.length) assert(y.length == x[0].length);
-} body {
+} do {
     auto alloc = newRegionAllocator();
     immutable p = x.length;
     if(p == 0) return;
@@ -2800,7 +2800,7 @@ private double threeDot(
 ) in {
     assert(x1.length == x2.length);
     assert(x2.length == x3.length);
-} body {
+} do {
     immutable n = x1.length;
     auto avec = x1.ptr, bvec = x2.ptr, cvec = x3.ptr;
     typeof(return) sum0 = 0, sum1 = 0;
