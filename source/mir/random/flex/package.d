@@ -635,7 +635,7 @@ in
     if (points[$ - 1].isInfinity)
         assert(cs[$ - 1] > - 1, "cs must be > -1 for unbounded domains");
 }
-body
+do
 {
     import mir.random.flex.internal.area: calcInterval;
     import mir.random.flex.internal.calc: arcmean;

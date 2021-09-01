@@ -142,7 +142,7 @@ out(type)
     if (!type)
         warningf("Interval has an undefined type: %s", iv);
 }
-body
+do
 {
     with(FunType)
     {

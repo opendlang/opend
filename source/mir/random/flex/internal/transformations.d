@@ -62,7 +62,7 @@ in
     assert(!iv.rx.isNaN, "r can't be NaN");
     assert(iv.lx < iv.rx, "invalid interval - right side must be larger than the left side");
 }
-body
+do
 {
     import mir.math.common: exp, copysign;
     with(iv)
@@ -248,7 +248,7 @@ in
     if (c != -1 && c != S(-0.5) && c != 0)
         assert(sgn(c) * x >= 0);
 }
-body
+do
 {
     static if (!common)
     {

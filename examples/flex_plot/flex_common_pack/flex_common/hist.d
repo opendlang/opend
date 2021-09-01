@@ -40,7 +40,7 @@ in
     assert(histType == "bar" || histType == "step" || histType == "stepfilled",
                 "Invalid histogram type");
 }
-body
+do
 {
     import pyd.embedded : InterpContext;
     import pyd.extra : d_to_python_numpy_ndarray;

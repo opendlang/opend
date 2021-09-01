@@ -2170,7 +2170,7 @@ struct PiecewiseLinearVariable(T)
         assert(areas.length);
         assert(areas.length + 1 == weights.length);
     }
-    body {
+    do {
         foreach(size_t i; 0 .. areas.length)
             areas[i] = (weights[i + 1] + weights[i]) * (points[i + 1] - points[i]);
         dv = discreteVar(areas);

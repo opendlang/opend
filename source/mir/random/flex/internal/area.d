@@ -263,7 +263,7 @@ in
 {
     assert(iv.lx < iv.rx, "invalid interval");
 }
-body
+do
 {
     import mir.random.flex.internal.transformations : antiderivative;
     import mir.random.flex : flexInverse;
@@ -1123,7 +1123,7 @@ in
 {
     assert(iv.lx < iv.rx, "invalid interval");
 }
-body
+do
 {
     import mir.random.flex.internal.types : determineType;
     import std.math: isFinite;

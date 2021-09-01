@@ -22,7 +22,7 @@ in
     assert(intervals[0].lx <= leftStart);
     assert(rightStart <= intervals[$ - 1].rx);
 }
-body
+do
 {
     static struct PlotRange
     {
