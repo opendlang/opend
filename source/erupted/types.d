@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 188;
+enum VK_HEADER_VERSION = 190;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 2, VK_HEADER_VERSION );
@@ -702,6 +702,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV              = 1000277007,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV             = 1000278000,
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV                = 1000278001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR            = 1000280000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR          = 1000280001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT                = 1000281000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT              = 1000281001,
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM         = 1000282000,
@@ -768,6 +770,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT                             = 1000352001,
     VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT                           = 1000352002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT                                 = 1000353000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT       = 1000356000,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA                           = 1000364000,
     VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA                            = 1000364001,
     VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                              = 1000364002,
@@ -1390,6 +1393,8 @@ enum VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_NV           
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV               = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR           = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM        = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM;
@@ -1456,6 +1461,7 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT  
 enum VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT                            = VkStructureType.VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;
 enum VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT                                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA                          = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA;
 enum VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA                           = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA;
 enum VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA                             = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
@@ -3891,13 +3897,7 @@ enum VkImageViewCreateFlagBits : VkImageViewCreateFlags {
 enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT   = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT;
 enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT  = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT;
 enum VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                     = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM;
-
 alias VkShaderModuleCreateFlags = VkFlags;
-enum VkShaderModuleCreateFlagBits : VkShaderModuleCreateFlags {
-    VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM           = 0x7FFFFFFF
-}
-
-enum VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM          = VkShaderModuleCreateFlagBits.VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM;
 
 alias VkPipelineCacheCreateFlags = VkFlags;
 enum VkPipelineCacheCreateFlagBits : VkPipelineCacheCreateFlags {
@@ -8415,6 +8415,54 @@ struct VkPipelineExecutableInternalRepresentationKHR {
     VkBool32                         isText;
     size_t                           dataSize;
     void*                            pData;
+}
+
+
+// - VK_KHR_shader_integer_dot_product -
+enum VK_KHR_shader_integer_dot_product = 1;
+
+enum VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME = "VK_KHR_shader_integer_dot_product";
+
+struct VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         shaderIntegerDotProduct;
+}
+
+struct VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
+    void*            pNext;
+    VkBool32         integerDotProduct8BitUnsignedAccelerated;
+    VkBool32         integerDotProduct8BitSignedAccelerated;
+    VkBool32         integerDotProduct8BitMixedSignednessAccelerated;
+    VkBool32         integerDotProduct4x8BitPackedUnsignedAccelerated;
+    VkBool32         integerDotProduct4x8BitPackedSignedAccelerated;
+    VkBool32         integerDotProduct4x8BitPackedMixedSignednessAccelerated;
+    VkBool32         integerDotProduct16BitUnsignedAccelerated;
+    VkBool32         integerDotProduct16BitSignedAccelerated;
+    VkBool32         integerDotProduct16BitMixedSignednessAccelerated;
+    VkBool32         integerDotProduct32BitUnsignedAccelerated;
+    VkBool32         integerDotProduct32BitSignedAccelerated;
+    VkBool32         integerDotProduct32BitMixedSignednessAccelerated;
+    VkBool32         integerDotProduct64BitUnsignedAccelerated;
+    VkBool32         integerDotProduct64BitSignedAccelerated;
+    VkBool32         integerDotProduct64BitMixedSignednessAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating8BitUnsignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating8BitSignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating16BitUnsignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating16BitSignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating32BitUnsignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating32BitSignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating64BitUnsignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating64BitSignedAccelerated;
+    VkBool32         integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated;
 }
 
 
@@ -12997,6 +13045,20 @@ struct VkPhysicalDeviceDrmPropertiesEXT {
     int64_t          primaryMinor;
     int64_t          renderMajor;
     int64_t          renderMinor;
+}
+
+
+// - VK_EXT_primitive_topology_list_restart -
+enum VK_EXT_primitive_topology_list_restart = 1;
+
+enum VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_SPEC_VERSION = 1;
+enum VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME = "VK_EXT_primitive_topology_list_restart";
+
+struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         primitiveTopologyListRestart;
+    VkBool32         primitiveTopologyPatchListRestart;
 }
 
 
