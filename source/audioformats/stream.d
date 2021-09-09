@@ -262,7 +262,7 @@ public: // This is also part of the public API
         {
             if (_oggDecoder !is null)
             {
-                stb_vorbis_close(_oggDecoder);
+                destroyFree(_oggDecoder);
                 _oggDecoder = null;
             }
             _oggBuffer.reallocBuffer(0);
@@ -464,7 +464,7 @@ public: // This is also part of the public API
                 version(decodeOGG)
                 {
                     assert(_oggDecoder !is null);
-                    return stb_vorbis_get_samples_float_interleaved(_oggDecoder, _numChannels, outData, frames);
+                    return _oggDecoder.stb_vorbis_get_samples_float_interleaved(_numChannels, outData, frames * _numChannels);
                 }
                 else
                 {
@@ -662,7 +662,7 @@ private:
     version(decodeOGG)
     {
         ubyte[] _oggBuffer; // all allocations from the ogg decoder
-        stb_vorbis* _oggDecoder;
+        VorbisDecoder _oggDecoder;
     }
     version(decodeWAV)
     {
@@ -780,19 +780,20 @@ private:
             // Is it an OGG?
             {
                 //"In my test files the maximal-size usage is ~150KB", so let's take a bit more
-                _oggBuffer.reallocBuffer(200 * 1024); 
+                _oggBuffer.reallocBuffer(200 * 1024);
+
                 stb_vorbis_alloc alloc;
-                alloc.alloc_buffer = cast(char*)(_oggBuffer.ptr);
+                alloc.alloc_buffer = cast(ubyte*)(_oggBuffer.ptr);
                 alloc.alloc_buffer_length_in_bytes = cast(int)(_oggBuffer.length);
 
                 int error;
-                _oggDecoder = stb_vorbis_open_audioformats(_io, userData, &error, &alloc);
+                _oggDecoder = mallocNew!VorbisDecoder(_io, userData);
                 if (_oggDecoder !is null)
                 {
                     _format = AudioFileFormat.ogg;
-                    _sampleRate = _oggDecoder.sample_rate;
-                    _numChannels = _oggDecoder.channels;
-                    _lengthInFrames = stb_vorbis_stream_length_in_samples(_oggDecoder);
+                    _sampleRate = _oggDecoder.sampleRate;
+                    _numChannels = _oggDecoder.chans;
+                    _lengthInFrames = audiostreamUnknownLength;//stb_vorbis_stream_length_in_samples(_oggDecoder);
                     return;
                 }
             }
