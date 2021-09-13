@@ -175,6 +175,67 @@ unittest
 }
 
 /++
+Convert an Ion Text value to a Ion Value Stream.
+Params:
+    addSymbolTable = Add the symbol table to the data stream outputted
+    text = The text to convert
+Returns:
+    An array containing the Ion Text value as an Ion Value Stream.
++/
+immutable(ubyte)[] text2ion(bool addSymbolTable = true)(scope const(char)[] text)
+
+    @trusted pure
+{
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.stage4_s;
+    import mir.ion.symbol_table: IonSymbolTable;
+    import mir.ion.internal.data_holder: ionPrefix;
+    import mir.ion.ser.ion : IonSerializer;
+    import mir.serde : SerdeTarget;
+    import mir.ion.deser.text : IonTextDeserializer;
+    enum nMax = 4096;
+    IonTapeHolder!(nMax * 8) tapeHolder = void;
+    tapeHolder.initialize;
+    IonSymbolTable!true table;
+    auto ser = IonSerializer!(typeof(tapeHolder), null, true)(
+        () @trusted { return &tapeHolder; }(),
+        () @trusted { return &table; }(),
+        SerdeTarget.ion
+    );
+
+    auto deser = IonTextDeserializer!(typeof(ser))(
+        () @trusted { return &ser; }()
+    );
+
+    deser(text);
+
+    static if (addSymbolTable)
+    {
+        static immutable ctPrefixAndTable = ionPrefix ~ ser.compiletimeTableTape;
+        if (table.initialized)
+        {
+            table.finalize;
+            return cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
+        }
+        else
+        {
+            return cast(immutable) (ctPrefixAndTable ~ tapeHolder.tapeData);
+        }
+    }   
+    else 
+    {
+        return cast(immutable) tapeHolder.tapeData;
+    }
+}
+///
+@safe pure
+unittest
+{
+    const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    assert(`{"a":1,"b":2}`.text2ion == data);
+}
+
+/++
 Converts Ion Value Stream data to text.
 
 The function performs `data.IonValueStream.serializeText`.

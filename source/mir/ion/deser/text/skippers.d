@@ -527,6 +527,54 @@ version(mir_ion_parser_test) unittest
     testFail("2001-01-02T03z");
     testFail("2001-01-02T03:04x ");
     testFail("2001-01-02T03:04:05x ");
+} 
+
+/+
+Skip over a double colon.
+
+Params:
+    t = The tokenizer
+Returns:
+    A character located after the double-colon that was skipped (or after any whitespace has been skipped, if a double-colon is not found)
++/
+char skipDoubleColon(ref IonTokenizer t) @safe @nogc pure
+{
+    if (t.isDoubleColon()) {
+        t.skipExactly(2);
+    }
+    return t.readInput();
+}
+/// Test skipping over double-colons
+version(mir_ion_parser_test) unittest
+{
+    import mir.ion.deser.text.tokenizer;
+
+    void test(string ts, char result) {
+        auto t = tokenizeString(ts);
+        assert(t.skipDoubleColon() == result);
+    }
+
+    test("    :: ", ' ');
+    test(":: ", ' ');
+    test("::", 0);
+    test("::\t", '\t');
+}
+/+
+Skip over a dot. 
+
+Params:
+    t = The tokenizer
+Returns:
+    A character located after the dot was skipped.
++/
+char skipDot(ref IonTokenizer t) @safe @nogc pure
+{
+    auto cs = t.peekMax(1);
+    if (cs.length == 1 && cs[0] == '.') {
+        t.skipOne();
+    }
+    
+    return t.readInput();
 }
 
 /+
@@ -995,7 +1043,12 @@ char skipValue(ref IonTokenizer t) @safe @nogc pure
         case TokenOpenBracket:
             ret = t.skipList();
             break;
+        case TokenDoubleColon:
+            ret = t.skipDoubleColon();
+            break;
         default:
+            debug import std.stdio;
+            debug writefln("Unhandled token %s. This should not happen.", t.currentToken);
             assert(0, "unhandled token");
     }
 

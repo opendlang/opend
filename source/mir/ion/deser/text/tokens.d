@@ -31,6 +31,9 @@ enum IonTokenType : ubyte
     /+ -inf +/
     TokenFloatMinusInf,
 
+    /+ nan +/
+    TokenFloatNaN,
+
     /+
     2020-01-01T00:00:00.000Z
 
@@ -116,6 +119,7 @@ string ionTokenMsg(IonTokenType token) @property
         "<hex>",
         "+inf",
         "-inf",
+        "nan",
         "<timestamp>",
         "<symbol>",
         "<quoted-symbol>",
@@ -311,13 +315,13 @@ bool isWhitespace(char c) @safe @nogc pure {
 }
 
 /+
-Check if a character is considered by Ion to be a hex digit.
+Check if a symbol found needs to be surrounded in quotes.
 Params:
-    c = The character to check
+    symbol = The symbol to check
 Returns:
-    true if the character is considered by Ion to be a hex digit.
+    true if the symbol requires quotes around it.
 +/
-bool symbolNeedsQuotes(string symbol) @safe @nogc pure {
+bool symbolNeedsQuotes(const(char)[] symbol) @safe @nogc pure {
     static foreach(member; ION_QUOTED_SYMBOLS) {
         if (symbol == member) return true;
     }
@@ -327,6 +331,19 @@ bool symbolNeedsQuotes(string symbol) @safe @nogc pure {
         if (!isIdentifierPart(symbol[i])) return true;
     }
     return false;
+}
+
+/+
+Check if a symbol found has quotes surrounding it.
+Params:
+    symbol = The symbol to check
+Returns:
+    true if the symbol has quotes surrounding it.
++/
+bool symbolHasQuotes(const(char)[] symbol) @safe @nogc pure {
+    if (symbol[0] != '\'') return false;
+    if (symbol[$ - 1] != '\'') return false;
+    return true;
 }
 
 /+
@@ -520,6 +537,90 @@ struct IonTextClob {
 
 version(D_Exceptions):
 import mir.ion.exception;
+
+/+
+All possible exceptions within the deserializer.
++/
+enum IonDeserializerErrorCode {
+    none,
+    unexpectedState,
+    unexpectedToken,
+    unexpectedDecimalValue,
+    twoHandlersState,
+    nestedAnnotations,
+    requiresQuotes,
+    invalidNullType,
+    unexpectedEOF,
+};
+
+string ionDeserializerMsg(IonDeserializerErrorCode error) @property
+@safe pure nothrow @nogc
+{
+    static immutable string[] errors = [
+        null,
+        "unexpected state",
+        "unexpected token",
+        "unexpected decimal value",
+        "two handlers for one state is not supported",
+        "nested annotations are not supported",
+        "keyword requires quotes when used as field name / annotation",
+        "invalid null type specified",
+        "unexpected end of file",
+    ];
+
+    return errors[error - IonDeserializerErrorCode.min];
+}
+
+/+
+Mir Ion Text Deserializer Exception
++/
+class IonDeserializerException : IonException
+{
+    ///
+    this(
+        IonDeserializerErrorCode code,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
+    {
+        super(code.ionDeserializerMsg, file, line, next);
+    }
+
+    ///
+    this(
+        string msg,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        Throwable next = null) pure nothrow @nogc @safe 
+    {
+        super(msg, file, line, next);
+    }
+
+    ///
+    this(
+        string msg,
+        Throwable next,
+        string file = __FILE__,
+        size_t line = __LINE__,
+        ) pure nothrow @nogc @safe 
+    {
+        this(msg, file, line, next);
+    }
+}
+
+///
+IonDeserializerException ionDeserializerException(IonDeserializerErrorCode code) @safe pure nothrow @nogc
+{
+    import mir.array.allocation: array;
+    import mir.ndslice.topology: map;
+    import std.traits: EnumMembers;
+
+    static immutable IonDeserializerException[] exceptions =
+        [EnumMembers!IonDeserializerErrorCode]
+        .map!(code => code ? new IonDeserializerException(code) : null)
+        .array;
+    return unqualException(exceptions[code - IonDeserializerErrorCode.min]);
+}
 
 /+
 All possible exceptions within the tokenizer.

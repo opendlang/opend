@@ -91,6 +91,7 @@ struct IonTokenizer {
     +/
     this(const(char)[] input) @safe @nogc pure {
         this.input = input;
+        this.finished = true;
         resizeWindow(0);
     }
 
@@ -500,6 +501,78 @@ struct IonTokenizer {
     }
 
     /+
+    Check if the next characters within the input range are a double colon, representing an annotation.
+    Returns:
+        true if it finds a double colon, false if it does not.
+    +/
+    bool isDoubleColon() @safe @nogc pure {
+        char c = skipWhitespace();
+        unread(c);
+
+        auto cs = peekMax(2); 
+        if (cs.length == 2 && cs[0] == ':' && cs[1] == ':') {
+            return true;
+        }
+        return false;
+    }
+
+    /+
+    Check if the next characters within the input range are the special "nan" type.
+    Params:
+        c = The last character read off of the stream (typically 'n')
+    Returns:
+        true if it is the nan type, false if it is not.
+    +/
+    bool isNAN(char c) @safe @nogc pure {
+        if (c != 'n') return false;
+
+        auto cs = peekMax(4);
+
+        if (cs.length < 2 || cs[0] != 'a' || cs[1] != 'n') {
+            return false;
+        }
+        
+        if (cs.length == 2) { // is this just 'an' + EOF?
+            skipExactly(2);
+            return true;
+        } else if (cs.length == 3 && isStopChar(cs[2])) { // is this 'an' + stop char
+            skipExactly(2);
+            return true;
+        // is this 'an' + comment (block or regular)
+        } else if ((cs.length > 2 && cs[2] == '/') && cs.length > 3 && (cs[3] == '/' || cs[3] == '*')) {
+            skipExactly(2);
+            return true;
+        }
+
+        return false;
+    }
+    // Test scanning for nan
+    version(mir_ion_parser_test) unittest
+    {
+        void test(string txt, bool nan, char after) {
+            auto t = tokenizeString(txt);
+            auto c = t.readInput();
+            assert(t.isNAN(c) == nan);
+            assert(t.readInput() == after);
+        }
+        
+        test("nan", true, 0);
+        test("nan/*", true, '/');
+        test("nan\t", true, '\t');
+        test("nan\n", true, '\n');
+        test("nan ", true, ' ');
+
+        test("-nan", false, 'n');
+        test("+nan", false, 'n');
+        test("nat\t", false, 'a');
+        test("nat/*", false, 'a');
+        test("nat//", false, 'a');
+        test("na", false, 'a');
+        test("n", false, 0);
+    }
+
+
+    /+
     Check if the next characters within the input range are the special "infinity" type.
 
     Params:
@@ -512,14 +585,17 @@ struct IonTokenizer {
 
         auto cs = peekMax(5);
 
-        if (cs.length == 3 || (cs.length >= 3 && isStopChar(cs[3]))) {
-            if (cs[0] == 'i' && cs[1] == 'n' && cs[2] == 'f') {
-                skipExactly(3);
-                return true;
-            }
+        if (cs.length < 3 || cs[0] != 'i' || cs[1] != 'n' || cs[2] != 'f') {
+            return false;
         }
 
-        if ((cs.length > 3 && cs[3] == '/') && cs.length > 4 && (cs[4] == '/' || cs[4] == '*')) {
+        if (cs.length == 3) {
+            skipExactly(3);
+            return true;
+        } else if (cs.length > 3 && isStopChar(cs[3])) { // cleanly terminated with a stop char
+            skipExactly(3);
+            return true;
+        } else if ((cs.length > 3 && cs[3] == '/') && cs.length > 4 && (cs[4] == '/' || cs[4] == '*')) {
             skipExactly(3);
             return true;
         }
@@ -550,6 +626,8 @@ struct IonTokenizer {
 
         test("+inf/", false, 'i');
         test("-inf/0", false, 'i');
+        test("+int//", false, 'i');
+        test("+int/*", false, 'i');
         test("+int", false, 'i');
         test("-iot", false, 'i');
         test("+unf", false, 'u');
@@ -570,19 +648,15 @@ struct IonTokenizer {
         false if it is not.
     +/
     bool isTripleQuote() @safe @nogc pure {
-        try {
-            auto cs = peekExactly(2);
+        auto cs = peekMax(2);
 
-            // If the next two characters are '', then it is a triple-quote.
-            if (cs[0] == '\'' && cs[1] == '\'') { 
-                skipExactly(2);
-                return true;
-            }
-
-            return false;
-        } catch (IonTokenizerException e) {
-            return false;
+        // If the next two characters are '', then it is a triple-quote.
+        if (cs.length == 2 && cs[0] == '\'' && cs[1] == '\'') { 
+            skipExactly(2);
+            return true;
         }
+
+        return false;
     }
 
     /+
@@ -670,9 +744,9 @@ struct IonTokenizer {
         token = The updated token type
         finished = Whether or not we want to go into the token (and parse it)
     +/
-    void ok(IonTokenType token, bool unfinished) @safe @nogc pure {
+    void ok(IonTokenType token, bool finished) @safe @nogc pure {
         this.currentToken = token;
-        this.finished = !unfinished;
+        this.finished = finished;
     }
 
     /+
@@ -684,7 +758,7 @@ struct IonTokenizer {
         char c;
         // if we're finished with the current value, then skip over the rest of it and go to the next token
         // this typically happens when we hit commas (or the like) and don't have anything to extract
-        if (this.finished) {
+        if (!this.finished) {
             c = this.skipValue();
         } else {
             c = skipWhitespace();
@@ -701,72 +775,72 @@ struct IonTokenizer {
         
         with(IonTokenType) switch(c) {
             case 0:
-                ok(TokenEOF, true);
+                ok(TokenEOF, false);
                 return true;
             case ':':
                 cs = peekOne();
                 if (cs == ':') {
                     skipOne();
-                    ok(TokenDoubleColon, false);
+                    ok(TokenDoubleColon, true);
                 } else {
-                    ok(TokenColon, false);
+                    ok(TokenColon, true);
                 }
                 return true;
             case '{': 
                 cs = peekOne();
                 if (cs == '{') {
                     skipOne();
-                    ok(TokenOpenDoubleBrace, true);
+                    ok(TokenOpenDoubleBrace, false);
                 } else {
-                    ok(TokenOpenBrace, true);
+                    ok(TokenOpenBrace, false);
                 }
                 return true;
             case '}':
-                ok(TokenCloseBrace, false);
+                ok(TokenCloseBrace, true);
                 return true;
             case '[':
-                ok(TokenOpenBracket, true);
+                ok(TokenOpenBracket, false);
                 return true;
             case ']':
-                ok(TokenCloseBracket, true);
+                ok(TokenCloseBracket, false);
                 return true;
             case '(':
-                ok(TokenOpenParen, true);
+                ok(TokenOpenParen, false);
                 return true;
             case ')':
-                ok(TokenCloseParen, true);
+                ok(TokenCloseParen, false);
                 return true;
             case ',':
-                ok(TokenComma, false);
+                ok(TokenComma, true);
                 return true;
             case '.':
                 cs = peekOne();
                 if (isOperatorChar(cs)) {
                     unread(cs);
-                    ok(TokenSymbolOperator, true);
+                    ok(TokenSymbolOperator, false);
                     return true;
                 }
 
                 if (cs == ' ' || isIdentifierPart(cs)) {
                     unread(cs);
                 }
-                ok(TokenDot, false);
+                ok(TokenDot, true);
                 return true;
             case '\'':
                 if (isTripleQuote()) {
-                    ok(TokenLongString, true);
+                    ok(TokenLongString, false);
                     return true;
                 }
-                ok(TokenSymbolQuoted, true);
+                ok(TokenSymbolQuoted, false);
                 return true;
             case '+':
                 inf = isInfinity(c);
                 if (inf) {
-                    ok(TokenFloatInf, false);
+                    ok(TokenFloatInf, true);
                     return true;
                 }
                 unread(c);
-                ok(TokenSymbolOperator, true);
+                ok(TokenSymbolOperator, false);
                 return true;
             case '-':
                 cs = peekOne();
@@ -778,36 +852,42 @@ struct IonTokenizer {
                     }
                     unread(cs);
                     unread(c);
-                    ok(tokenType, true);
+                    ok(tokenType, false);
                     return true;
                 }
 
                 inf = isInfinity(c);
                 if (inf) {
-                    ok(TokenFloatMinusInf, false);
+                    ok(TokenFloatMinusInf, true);
                     return true;
                 }
                 unread(c);
-                ok(TokenSymbolOperator, true);
+                ok(TokenSymbolOperator, false);
                 return true;
 
            static foreach(member; ION_OPERATOR_CHARS) {
                 static if (member != '+' && member != '-' && member != '"' && member != '.') {
                     case member:
                         unread(c);
-                        ok(TokenSymbolOperator, true);
+                        ok(TokenSymbolOperator, false);
                         return true;
                 }
             }
 
             case '"':
-                ok(TokenString, true);
+                ok(TokenString, false);
                 return true;
 
             static foreach(member; ION_IDENTIFIER_START_CHARS) {
                 case member:
+                    static if (member == 'n') {
+                        if (isNAN(c)) {
+                            ok(TokenFloatNaN, false);
+                            return true;
+                        }
+                    }
                     unread(c);
-                    ok(TokenSymbol, true);
+                    ok(TokenSymbol, false);
                     return true;
             } 
 
@@ -815,7 +895,7 @@ struct IonTokenizer {
                 case member:
                     IonTokenType t = scanForNumber(c);
                     unread(c);
-                    ok(t, true);
+                    ok(t, false);
                     return true;
             }
 
