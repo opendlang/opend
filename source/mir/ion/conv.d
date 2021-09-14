@@ -152,6 +152,12 @@ unittest
     assert(data.ion2json == `{"a":1,"b":2}`);
 }
 
+unittest
+{
+    import std.stdio;
+    assert("".json2ion.ion2text == "");
+}
+
 /++
 Converts Ion Value Stream data to JSON text
 

@@ -64,13 +64,15 @@ IonErrorInfo singleThreadJsonImpl(size_t nMax, alias fillBuffer, SymbolTable, Ta
             stage.tape = tapeHolder.data;
             if (_expect(!fillBuffer(cast(char*)(vector.ptr.ptr + 64), stage.n, stage.eof), false))
                 return false;
-            memset(vector.ptr.ptr + 64 + stage.n, ' ', 64 - stage.n % 64);
-            assert (stage.n);
-            auto vlen = stage.n / 64 + (stage.n % 64 != 0);
-            stage1(vlen, cast(const) vector.ptr + 1, pairedMask1.ptr + 1, backwardEscapeBit);
-            pairedMask1[vlen + 1] = 0;
-            stage2(vlen, cast(const) vector.ptr + 1, pairedMask2.ptr + 1);
-            pairedMask2[vlen + 1] = 0;
+            if (stage.n)
+            {
+                memset(vector.ptr.ptr + 64 + stage.n, ' ', 64 - stage.n % 64);
+                auto vlen = stage.n / 64 + (stage.n % 64 != 0);
+                stage1(vlen, cast(const) vector.ptr + 1, pairedMask1.ptr + 1, backwardEscapeBit);
+                pairedMask1[vlen + 1] = 0;
+                stage2(vlen, cast(const) vector.ptr + 1, pairedMask2.ptr + 1);
+                pairedMask2[vlen + 1] = 0;
+            }
             return true;
         })(stage, table);
     tapeHolder.currentTapePosition = stage.currentTapePosition;
