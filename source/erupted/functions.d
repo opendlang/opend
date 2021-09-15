@@ -525,6 +525,9 @@ extern( System ) {
     alias PFN_vkCmdDrawMultiEXT                                                 = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawInfoEXT )* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride );
     alias PFN_vkCmdDrawMultiIndexedEXT                                          = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawIndexedInfoEXT )* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const( int32_t )* pVertexOffset );
 
+    // VK_EXT_pageable_device_local_memory
+    alias PFN_vkSetDeviceMemoryPriorityEXT                                      = void      function( VkDevice device, VkDeviceMemory memory, float priority );
+
     // VK_KHR_acceleration_structure
     alias PFN_vkCreateAccelerationStructureKHR                                  = VkResult  function( VkDevice device, const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure );
     alias PFN_vkDestroyAccelerationStructureKHR                                 = void      function( VkDevice device, VkAccelerationStructureKHR accelerationStructure, const( VkAllocationCallbacks )* pAllocator );
@@ -1065,6 +1068,9 @@ __gshared {
     // VK_EXT_multi_draw
     PFN_vkCmdDrawMultiEXT                                                 vkCmdDrawMultiEXT;
     PFN_vkCmdDrawMultiIndexedEXT                                          vkCmdDrawMultiIndexedEXT;
+
+    // VK_EXT_pageable_device_local_memory
+    PFN_vkSetDeviceMemoryPriorityEXT                                      vkSetDeviceMemoryPriorityEXT;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1725,6 +1731,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiEXT" );
     vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiIndexedEXT" );
 
+    // VK_EXT_pageable_device_local_memory
+    vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetInstanceProcAddr( instance, "vkSetDeviceMemoryPriorityEXT" );
+
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureKHR" );
     vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureKHR" );
@@ -2175,6 +2184,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_EXT_multi_draw
     vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiEXT" );
     vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiIndexedEXT" );
+
+    // VK_EXT_pageable_device_local_memory
+    vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );

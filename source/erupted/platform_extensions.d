@@ -302,14 +302,12 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias VkVideoCodingQualityPresetFlagsKHR = VkFlags;
             enum VkVideoCodingQualityPresetFlagBitsKHR : VkVideoCodingQualityPresetFlagsKHR {
-                VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR               = 0,
                 VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR                = 0x00000001,
                 VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR                 = 0x00000002,
                 VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR               = 0x00000004,
                 VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR        = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR              = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR;
             enum VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR               = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR;
             enum VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR                = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR;
             enum VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR              = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR;
