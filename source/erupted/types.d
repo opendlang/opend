@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 191;
+enum VK_HEADER_VERSION = 192;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 2, VK_HEADER_VERSION );
@@ -7418,8 +7418,10 @@ enum VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME = "VK_KHR_shader_draw_paramete
 // - VK_KHR_maintenance1 -
 enum VK_KHR_maintenance1 = 1;
 
-enum VK_KHR_MAINTENANCE1_SPEC_VERSION = 2;
-enum VK_KHR_MAINTENANCE1_EXTENSION_NAME = "VK_KHR_maintenance1";
+enum VK_KHR_MAINTENANCE_1_SPEC_VERSION = 2;
+enum VK_KHR_MAINTENANCE_1_EXTENSION_NAME = "VK_KHR_maintenance1";
+alias VK_KHR_MAINTENANCE1_SPEC_VERSION = VK_KHR_MAINTENANCE_1_SPEC_VERSION;
+alias VK_KHR_MAINTENANCE1_EXTENSION_NAME = VK_KHR_MAINTENANCE_1_EXTENSION_NAME;
 
 alias VkCommandPoolTrimFlagsKHR = VkCommandPoolTrimFlags;
 
@@ -7885,8 +7887,10 @@ enum VK_KHR_maintenance2 = 1;
 
 alias VkPointClippingBehaviorKHR = VkPointClippingBehavior;
 alias VkTessellationDomainOriginKHR = VkTessellationDomainOrigin;
-enum VK_KHR_MAINTENANCE2_SPEC_VERSION = 1;
-enum VK_KHR_MAINTENANCE2_EXTENSION_NAME = "VK_KHR_maintenance2";
+enum VK_KHR_MAINTENANCE_2_SPEC_VERSION = 1;
+enum VK_KHR_MAINTENANCE_2_EXTENSION_NAME = "VK_KHR_maintenance2";
+alias VK_KHR_MAINTENANCE2_SPEC_VERSION = VK_KHR_MAINTENANCE_2_SPEC_VERSION;
+alias VK_KHR_MAINTENANCE2_EXTENSION_NAME = VK_KHR_MAINTENANCE_2_EXTENSION_NAME;
 
 alias VkPhysicalDevicePointClippingPropertiesKHR = VkPhysicalDevicePointClippingProperties;
 alias VkRenderPassInputAttachmentAspectCreateInfoKHR = VkRenderPassInputAttachmentAspectCreateInfo;
@@ -8046,8 +8050,10 @@ alias VkBindImageMemoryInfoKHR = VkBindImageMemoryInfo;
 // - VK_KHR_maintenance3 -
 enum VK_KHR_maintenance3 = 1;
 
-enum VK_KHR_MAINTENANCE3_SPEC_VERSION = 1;
-enum VK_KHR_MAINTENANCE3_EXTENSION_NAME = "VK_KHR_maintenance3";
+enum VK_KHR_MAINTENANCE_3_SPEC_VERSION = 1;
+enum VK_KHR_MAINTENANCE_3_EXTENSION_NAME = "VK_KHR_maintenance3";
+alias VK_KHR_MAINTENANCE3_SPEC_VERSION = VK_KHR_MAINTENANCE_3_SPEC_VERSION;
+alias VK_KHR_MAINTENANCE3_EXTENSION_NAME = VK_KHR_MAINTENANCE_3_EXTENSION_NAME;
 
 alias VkPhysicalDeviceMaintenance3PropertiesKHR = VkPhysicalDeviceMaintenance3Properties;
 alias VkDescriptorSetLayoutSupportKHR = VkDescriptorSetLayoutSupport;
@@ -9804,8 +9810,10 @@ enum VK_NV_GEOMETRY_SHADER_PASSTHROUGH_EXTENSION_NAME = "VK_NV_geometry_shader_p
 // - VK_NV_viewport_array2 -
 enum VK_NV_viewport_array2 = 1;
 
-enum VK_NV_VIEWPORT_ARRAY2_SPEC_VERSION = 1;
-enum VK_NV_VIEWPORT_ARRAY2_EXTENSION_NAME = "VK_NV_viewport_array2";
+enum VK_NV_VIEWPORT_ARRAY_2_SPEC_VERSION = 1;
+enum VK_NV_VIEWPORT_ARRAY_2_EXTENSION_NAME = "VK_NV_viewport_array2";
+alias VK_NV_VIEWPORT_ARRAY2_SPEC_VERSION = VK_NV_VIEWPORT_ARRAY_2_SPEC_VERSION;
+alias VK_NV_VIEWPORT_ARRAY2_EXTENSION_NAME = VK_NV_VIEWPORT_ARRAY_2_EXTENSION_NAME;
 
 
 // - VK_NVX_multiview_per_view_attributes -
@@ -11617,8 +11625,10 @@ alias VkPhysicalDeviceScalarBlockLayoutFeaturesEXT = VkPhysicalDeviceScalarBlock
 // - VK_GOOGLE_hlsl_functionality1 -
 enum VK_GOOGLE_hlsl_functionality1 = 1;
 
-enum VK_GOOGLE_HLSL_FUNCTIONALITY1_SPEC_VERSION = 1;
-enum VK_GOOGLE_HLSL_FUNCTIONALITY1_EXTENSION_NAME = "VK_GOOGLE_hlsl_functionality1";
+enum VK_GOOGLE_HLSL_FUNCTIONALITY_1_SPEC_VERSION = 1;
+enum VK_GOOGLE_HLSL_FUNCTIONALITY_1_EXTENSION_NAME = "VK_GOOGLE_hlsl_functionality1";
+alias VK_GOOGLE_HLSL_FUNCTIONALITY1_SPEC_VERSION = VK_GOOGLE_HLSL_FUNCTIONALITY_1_SPEC_VERSION;
+alias VK_GOOGLE_HLSL_FUNCTIONALITY1_EXTENSION_NAME = VK_GOOGLE_HLSL_FUNCTIONALITY_1_EXTENSION_NAME;
 
 
 // - VK_GOOGLE_decorate_string -
