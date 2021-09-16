@@ -499,6 +499,10 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
                     }
             }
             case '\\':
+                char e = t.peekOne();
+                if (e == '\'' || e == '\"' || e == '\n') {
+                    break s;
+                }
                 if (read != 0) {
                     t.unread(c);
                     endIndex = t.position;
@@ -713,20 +717,24 @@ IonTextClob readClob(bool longClob = false)(ref IonTokenizer t) @safe @nogc pure
     char c;
     static if (longClob) {
         data.isLongClob = true;
-        c = t.skipLobWhitespace();
-        if (c == '\'' && t.isTripleQuote()) {
-            data.isFinal = false;
-            return data;
+        if (data.isFinal) {
+            c = t.skipLobWhitespace();
+            if (c == '\'' && t.isTripleQuote()) {
+                data.isFinal = false;
+                return data;
+            }
         }
     }
 
-    // read out the following }}
-    static if (longClob) {
-        c = t.expect!("a == '}'", true)(c);
-    } else {
-        c = t.expect!("a == '}'", true)(t.skipLobWhitespace()); // after skipping any whitespace, it should be the terminator ('}')
+    // read out the following }} ONLY if we don't encounter an escape sequence
+    if (data.isFinal) {
+        static if (longClob) {
+            c = t.expect!("a == '}'", true)(c);
+        } else {
+            c = t.expect!("a == '}'", true)(t.skipLobWhitespace()); // after skipping any whitespace, it should be the terminator ('}')
+        }
+        c = t.expect!"a == '}'"; // and no whitespace should between one bracket and another
     }
-    c = t.expect!"a == '}'"; // and no whitespace should between one bracket and another
 
     return data;
 }
@@ -774,7 +782,7 @@ Returns:
 IonTextBlob readBlob(ref IonTokenizer t) @safe @nogc pure
 {
     IonTextBlob val;
-    size_t startIndex = t.position, endIndex = 0;
+    size_t startIndex = t.position, endIndex = t.position;
     char c;
     while (true) {
         c = t.expect!("a != 0", true)(t.skipLobWhitespace());

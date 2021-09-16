@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+mir-ion-integration-tester
+mir-ion-integration-tester.so
+mir-ion-integration-tester.dylib
+mir-ion-integration-tester.dll
+mir-ion-integration-tester.a
+mir-ion-integration-tester.lib
+mir-ion-integration-tester-test-*
+*.exe
+*.o
+*.obj
+*.lst

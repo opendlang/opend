@@ -551,6 +551,7 @@ enum IonDeserializerErrorCode {
     requiresQuotes,
     invalidNullType,
     unexpectedEOF,
+    unimplemented,
 };
 
 string ionDeserializerMsg(IonDeserializerErrorCode error) @property
@@ -566,6 +567,7 @@ string ionDeserializerMsg(IonDeserializerErrorCode error) @property
         "keyword requires quotes when used as field name / annotation",
         "invalid null type specified",
         "unexpected end of file",
+        "feature unimplemented",
     ];
 
     return errors[error - IonDeserializerErrorCode.min];

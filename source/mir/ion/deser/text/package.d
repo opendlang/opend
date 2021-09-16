@@ -715,7 +715,12 @@ private:
                 {   
                     // if the current token is a value type (a non-symbol), then we should also end the annotation array
                     ser.annotationsEnd(arrayStart);
-                    assert(typeHandlers[t.currentToken] !is null, "XXX: should never happen");
+                    if (typeHandlers[t.currentToken] is null) {
+                        version(D_Exceptions)
+                            throw IonDeserializerErrorCode.unexpectedToken.ionDeserializerException;
+                        else
+                            assert(0, "Unexpected token");
+                    }
                     typeHandlers[t.currentToken]();
                     ser.annotationWrapperEnd(wrapperStart);
                     break;
@@ -945,7 +950,10 @@ private:
     void onBinaryNumber() @safe @nogc pure
     {
         // XXX: mir does *NOT* support binary literals, replace this when implemented
-        assert(0, "Unimplemented");
+        version(D_Exceptions)
+            throw IonDeserializerErrorCode.unimplemented.ionDeserializerException;
+        else
+            assert(0, "Unimplemented");
         /*
         import std.format;
         auto v = t.readValue!(IonTokenType.TokenBinary);
@@ -995,12 +1003,18 @@ private:
     void onLob() @safe pure
     {
         import mir.lob;
+        stringBuf buf;
 
         char c = t.skipLobWhitespace();
         if (c == '"')
         {
             IonTextClob clob = t.readClob();
-            ser.putValue(Clob(clob.matchedText));
+            buf.put(clob.matchedText);
+            while (!clob.isFinal) {
+                clob = t.readClob();
+                buf.put(clob.matchedText);
+            }
+            ser.putValue(Clob(buf.data));
         }
         else if (c == '\'')
         {
@@ -1008,7 +1022,6 @@ private:
                 t.unexpectedChar(c);
             // XXX: ScopedBuffer is unavoidable for the implicit concatenation of long clob values.
             // Replace when we're able to put in a clob by parts (similar to strings)
-            stringBuf buf;
             IonTextClob clob = t.readClob!true();
             buf.put(clob.matchedText);
             while (!clob.isFinal)
@@ -1027,6 +1040,7 @@ private:
             IonTextBlob blob = t.readBlob();
             ser.putValue(Blob(Base64.decode(blob.matchedText)));
         }
+        t.finished = true;
     } 
 }
 

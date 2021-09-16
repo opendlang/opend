@@ -1,0 +1,14 @@
+{
+	"authors": [
+		"Harrison Ford"
+	],
+	"copyright": "Copyright © 2021, Harrison Ford",
+	"description": "An application to verify the compliance of Mir Ion's parser to reference data published by Amazon.",
+	"license": "BSL-1.0",
+	"name": "mir-ion-integration-tester",
+	"dependencies": {
+		"mir-ion": {
+			"path": "../"
+		}
+	}
+}
