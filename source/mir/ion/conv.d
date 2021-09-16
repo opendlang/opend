@@ -188,7 +188,7 @@ Params:
 Returns:
     An array containing the Ion Text value as an Ion Value Stream.
 +/
-immutable(ubyte)[] text2ion(bool addSymbolTable = true)(scope const(char)[] text)
+immutable(ubyte)[] text2ion(scope const(char)[] text)
 
     @trusted pure
 {
@@ -215,22 +215,15 @@ immutable(ubyte)[] text2ion(bool addSymbolTable = true)(scope const(char)[] text
 
     deser(text);
 
-    static if (addSymbolTable)
+    static immutable ctPrefixAndTable = ionPrefix ~ ser.compiletimeTableTape;
+    if (table.initialized)
     {
-        static immutable ctPrefixAndTable = ionPrefix ~ ser.compiletimeTableTape;
-        if (table.initialized)
-        {
-            table.finalize;
-            return cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
-        }
-        else
-        {
-            return cast(immutable) (ctPrefixAndTable ~ tapeHolder.tapeData);
-        }
-    }   
-    else 
+        table.finalize;
+        return cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
+    }
+    else
     {
-        return cast(immutable) tapeHolder.tapeData;
+        return cast(immutable) (ctPrefixAndTable ~ tapeHolder.tapeData);
     }
 }
 ///
