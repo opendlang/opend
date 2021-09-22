@@ -315,17 +315,17 @@ size_t ionPutUIntField(W, WordEndian endian)(
     )
     if (isUnsigned!W && (W.sizeof == 1 || endian == TargetEndian))
 {
-    auto data = value.mostSignificantFirst;
+    auto data = value.leastSignificantFirst;
     size_t ret;
     static if (W.sizeof > 1)
     {
         if (data.length)
         {
-            ret = .ionPutUIntField(ptr, data[0]);
-            data.popFront;
+            ret = .ionPutUIntField(ptr, data.back);
+            data.popBack;
         }
     }
-    foreach (W d; data)
+    foreach_reverse (W d; data)
     {
         *cast(ubyte[W.sizeof]*)(ptr + ret) = byteData(d);
         ret += W.sizeof;
@@ -461,12 +461,12 @@ size_t ionPutIntField(W, WordEndian endian)(
     )
     if (isUnsigned!W && (W.sizeof == 1 || endian == TargetEndian))
 {
-    auto data = value.unsigned.mostSignificantFirst;
+    auto data = value.unsigned.leastSignificantFirst;
     if (data.length == 0)
         return 0;
-    size_t ret = .ionPutIntField(ptr, data[0], value.sign);
-    data.popFront;
-    foreach (W d; data)
+    size_t ret = .ionPutIntField(ptr, data.back, value.sign);
+    data.popBack;
+    foreach_reverse (W d; data)
     {
         *cast(ubyte[W.sizeof]*)(ptr + ret) = byteData(d);
         ret += W.sizeof;
