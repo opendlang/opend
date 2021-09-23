@@ -191,7 +191,6 @@ Returns:
     An array containing the Ion Text value as an Ion Value Stream.
 +/
 immutable(ubyte)[] text2ion(scope const(char)[] text)
-
     @trusted pure
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
@@ -202,18 +201,12 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
     import mir.serde : SerdeTarget;
     import mir.ion.deser.text : IonTextDeserializer;
     enum nMax = 4096;
-    IonTapeHolder!(nMax * 8) tapeHolder = void;
+    IonTapeHolder!(nMax * 8, true) tapeHolder = void;
     tapeHolder.initialize;
     IonSymbolTable!true table;
-    auto ser = IonSerializer!(typeof(tapeHolder), null, true)(
-        () @trusted { return &tapeHolder; }(),
-        () @trusted { return &table; }(),
-        SerdeTarget.ion
-    );
+    auto ser = IonSerializer!(typeof(tapeHolder), null, true)(&tapeHolder, &table, SerdeTarget.ion);
 
-    auto deser = IonTextDeserializer!(typeof(ser))(
-        () @trusted { return &ser; }()
-    );
+    auto deser = IonTextDeserializer!(typeof(ser))(&ser);
 
     deser(text);
 

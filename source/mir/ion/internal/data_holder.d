@@ -28,7 +28,7 @@ private static void* validatePtr()(return void* ptr)
 
 /++
 +/
-struct IonTapeHolder(size_t stackAllocatedLength)
+struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
 {
     ///
     ubyte[] data;
@@ -67,10 +67,9 @@ struct IonTapeHolder(size_t stackAllocatedLength)
     {
         version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: free;
-        if (data.ptr != stackData.ptr)
-        {
-            free(data.ptr);
-        }
+        static if (!useGC)
+            if (data.ptr != stackData.ptr)
+                free(data.ptr);
     }
 
     ///
@@ -83,7 +82,7 @@ struct IonTapeHolder(size_t stackAllocatedLength)
 
     ///
     void extend(size_t newSize)
-        @trusted pure nothrow @nogc
+        @trusted pure nothrow
     {
         version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: malloc, realloc;
@@ -96,14 +95,25 @@ struct IonTapeHolder(size_t stackAllocatedLength)
             sizediff_t shift;
             if (data.ptr != stackData.ptr)
             {
-                auto ptr = cast(ubyte*) realloc(data.ptr, newSize).validatePtr;
-                data = ptr[0 .. newSize];
+                static if (useGC)
+                    data.length = newSize;
+                else
+                    data = cast(ubyte[]) realloc(data.ptr, newSize).validatePtr[0 .. newSize];
             }
             else
             {
-                auto ptr = cast(ubyte*) malloc(newSize).validatePtr;
-                memcpy(ptr, stackData.ptr, stackData.length);
-                data = ptr[0 .. newSize];
+                static if (useGC)
+                {
+                    auto ptr = new ubyte[newSize];
+                    ptr[0 .. data.length] = data;
+                    data = ptr;
+                }
+                else
+                {
+                    auto ptr = cast(ubyte*) malloc(newSize).validatePtr;
+                    memcpy(ptr, stackData.ptr, stackData.length);
+                    data = ptr[0 .. newSize];
+                }
             }
         }
     }
@@ -124,14 +134,25 @@ struct IonTapeHolder(size_t stackAllocatedLength)
             auto newSize = data.length + max(size, data.length);
             if (data.ptr != stackData.ptr)
             {
-                auto ptr = realloc(data.ptr, newSize).validatePtr;
-                data = cast(ubyte[])ptr[0 .. newSize];
+                static if (useGC)
+                    data.length = newSize;
+                else
+                    data = cast(ubyte[]) realloc(data.ptr, newSize).validatePtr[0 .. newSize];
             }
             else
             {
-                auto ptr = malloc(newSize).validatePtr;
-                memcpy(ptr, stackData.ptr, stackData.length);
-                data = cast(ubyte[])ptr[0 .. newSize];
+                static if (useGC)
+                {
+                    auto ptr = new ubyte[newSize];
+                    ptr[0 .. data.length] = data;
+                    data = ptr;
+                }
+                else
+                {
+                    auto ptr = malloc(newSize).validatePtr;
+                    memcpy(ptr, stackData.ptr, stackData.length);
+                    data = cast(ubyte[])ptr[0 .. newSize];
+                }
             }
         }
     }

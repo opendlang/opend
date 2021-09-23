@@ -28,7 +28,15 @@ size_t ionPutVarUInt(T)(scope ubyte* ptr, const T num)
     while (value >>>= 7);
     ptr[s - 1] |= 0x80;
     auto arr = *cast(ubyte[s-1]*)(ptr + s - len);
-    *cast(ubyte[s-1]*)ptr = arr;
+    if (!__ctfe)
+    {
+        *cast(ubyte[s-1]*)ptr = arr;
+    }
+    else
+    {
+        foreach(i; 0 .. len)
+            ptr[i] = arr[i];
+    }
     return len;
 }
 

@@ -449,7 +449,7 @@ private:
 
     /* Individual token handlers */
 
-    void onNull() @safe @nogc pure
+    void onNull() @safe pure
     {
         auto cs = t.peekMax(1);
         if (cs.length == 1 && cs[0] == '.')
@@ -758,7 +758,7 @@ private:
 
     @T(IonTokenType.TokenString)
     @T(IonTokenType.TokenLongString)
-    void onString() @safe @nogc pure
+    void onString() @safe pure
     {
         IonTextString v;
         if (t.currentToken == IonTokenType.TokenString)
@@ -823,7 +823,7 @@ private:
     }
 
     @T(IonTokenType.TokenTimestamp)
-    void onTimestamp() @safe @nogc pure
+    void onTimestamp() @safe pure
     {
         import mir.timestamp : Timestamp;
         auto v = t.readValue!(IonTokenType.TokenTimestamp);
@@ -831,7 +831,7 @@ private:
     }
 
     @T(IonTokenType.TokenNumber)
-    void onNumber() @safe @nogc pure
+    void onNumber() @safe pure
     {
         import mir.bignum.integer;
         import mir.bignum.decimal;
@@ -947,7 +947,7 @@ private:
     }
 
     @T(IonTokenType.TokenBinary)
-    void onBinaryNumber() @safe @nogc pure
+    void onBinaryNumber() @safe pure
     {
         // XXX: mir does *NOT* support binary literals, replace this when implemented
         version(D_Exceptions)
@@ -964,7 +964,7 @@ private:
     }
 
     @T(IonTokenType.TokenHex)
-    void onHexNumber() @safe @nogc pure
+    void onHexNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenHex);
         BigInt!256 val = void;
@@ -983,7 +983,7 @@ private:
     @T(IonTokenType.TokenFloatInf)
     @T(IonTokenType.TokenFloatMinusInf)
     @T(IonTokenType.TokenFloatNaN)
-    void onFloatSpecial() @safe @nogc pure
+    void onFloatSpecial() @safe pure
     {
         if (t.currentToken == IonTokenType.TokenFloatNaN)
         {
