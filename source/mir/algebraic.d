@@ -1495,6 +1495,8 @@ struct Algebraic(_Types...)
             member != "toHash" &&
             member != "toString" &&
             member != "trustedGet" &&
+            member != "deserializeFromAsdf" &&
+            member != "deserializeFromIon" &&
             !(member.length >= 2 && member[0 .. 2] == "__"))
         static if (allSatisfy!(ApplyRight!(hasMember, member), _ReflectionTypes))
         static if (!anySatisfy!(ApplyRight!(isMemberType, member), _ReflectionTypes))
