@@ -121,7 +121,7 @@ template deserializeIon(T)
     }
 }
 
-///
+version(mir_ion_test)
 unittest
 {
     alias d = deserializeIon!(int[string]);
