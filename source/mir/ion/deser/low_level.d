@@ -92,27 +92,6 @@ unittest
     static assert(isFirstOrderSerdeType!Date);
 }
 
-package(mir.ion) template isNullable(T)
-{
-    import std.traits : hasMember;
-
-    static if (
-        hasMember!(T, "isNull") &&
-        is(typeof(__traits(getMember, T, "isNull")) == bool) &&
-        hasMember!(T, "get") &&
-        // !is(typeof(T.init.get()) == void) &&
-        hasMember!(T, "nullify") // &&
-        // is(typeof(__traits(getMember, T, "nullify")) == void)
-    )
-    {
-        enum isNullable = true;
-    }
-    else
-    {
-        enum isNullable = false;
-    }
-}
-
 /++
 Deserialize `null` value
 +/

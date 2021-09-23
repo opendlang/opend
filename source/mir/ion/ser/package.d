@@ -9,7 +9,6 @@ module mir.ion.ser;
 
 import mir.conv;
 import mir.ion.deser;
-import mir.ion.deser.low_level: isNullable;
 import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.reflection;
@@ -150,7 +149,7 @@ void serializeValue(S, V)(ref S serializer, V value)
     if (isIterable!V &&
         !isSomeChar!(ForeachType!V) &&
         !isDynamicArray!V &&
-        !isNullable!V)
+        !isStdNullable!V)
 {
     static if(is(V == interface) || is(V == class) || is(V : E[], E) && !is(V : D[N], D, size_t N))
     {
@@ -535,9 +534,9 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
 {
-    import mir.timestamp: Timestamp;
+    import mir.algebraic: Algebraic, isVariant, isNullable, visit;
     import mir.string_map: isStringMap;
-    import mir.algebraic: Algebraic;
+    import mir.timestamp: Timestamp;
 
     static if(is(V == class) || is(V == interface))
     {
@@ -594,7 +593,6 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     else
     static if (is(Unqual!V == Algebraic!TypeSet, TypeSet...))
     {
-        import mir.algebraic: visit, isNullable;
         enum isSimpleNullable = isNullable!V && V.AllowedTypes.length == 2;
         value.visit!(
             (auto ref v) {
@@ -618,7 +616,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         return;
     }
     else
-    static if (isNullable!V)
+    static if (isStdNullable!V)
     {
         if(value.isNull)
         {

@@ -420,10 +420,11 @@ template deserializeValue(string[] symbolTable)
     IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
         if (!isFirstOrderSerdeType!T)
     {with(params){
-        import mir.algebraic: isVariant;
+        import mir.algebraic: isVariant, isNullable;
         import mir.internal.meta: Contains;
         import mir.ndslice.slice: Slice, SliceKind;
         import mir.rc.array: RCArray, RCI;
+        import mir.reflection: isStdNullable;
         import mir.string_map : isStringMap;
         import std.meta: anySatisfy, Filter, templateAnd, templateNot, templateOr;
         import std.traits: isArray, isSomeString, isAssociativeArray;
@@ -864,8 +865,23 @@ template deserializeValue(string[] symbolTable)
                                 return unqualException(unexpectedAnnotationWhenDeserializing!T);
                     }
                 }
-            }
+            }			
+            static if (isNullable!T && T.AllowedTypes.length == 2)
+            {
+                // TODO: check that descriptor.type correspond underlaying type
+                if (data.descriptor.L == 0xF)
+                {
+                    value = null;
+                    return null;
+                }
 
+                T.AllowedTypes[1] payload;
+                if (auto exception = deserializeValue(params, payload))
+                    return exception;
+                value = payload;
+                return null;
+            }
+            else
             switch (data.descriptor.type)
             {
                 static if (contains!(typeof(null)))
@@ -1023,7 +1039,7 @@ template deserializeValue(string[] symbolTable)
             }
         }
         else
-        static if (isNullable!T && !isAlgebraicAliasThis!T)
+        static if (isStdNullable!T && !isAlgebraicAliasThis!T)
         {
             // TODO: check that descriptor.type correspond underlaying type
             if (data.descriptor.L == 0xF)
@@ -1471,4 +1487,36 @@ unittest
     assert(`{"kind":"request","number":3}`.deserializeJson!S.number == 3);
     assert(S(Kind.cancel, 4).serializeJson == `{"kind":"cancel"}`);
     assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
+}
+
+unittest {
+    import mir.ion.deser.json;
+    import mir.algebraic : Nullable;
+    import mir.ion.value : IonDescribedValue;
+    import mir.ion.exception : IonException;
+    import mir.ion.deser.ion : deserializeIon;
+
+    static struct Q
+    {
+        int i;
+        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
+        {
+            i = deserializeIon!int(symbolTable, value);
+            return null;
+        }
+    }
+
+    // works
+    // Q s = deserializeJson!Q(`5`);
+
+    static struct T
+    {
+        Nullable!Q test;
+    }
+
+    // does not work
+    // ../subprojects/mir-core/source/mir/algebraic.d(2883): [unittest] Null Algebraic!(typeof(null), S)
+    // core.exception.AssertError@../subprojects/mir-core/source/mir/algebraic.d(2883): Null Algebraic!(typeof(null), S)
+    T t = `{ "test": 5 }`.deserializeJson!T;
+    assert (!t.test.isNull);
 }
