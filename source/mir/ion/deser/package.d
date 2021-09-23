@@ -1394,7 +1394,7 @@ version(mir_ion_test) unittest
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.deser.json;
     import std.uuid;
@@ -1410,7 +1410,7 @@ unittest
 }
 
 /// Mir types
-unittest
+version(mir_ion_test) unittest
 {
     import mir.bignum.integer;
     import mir.date;
@@ -1421,7 +1421,7 @@ unittest
 
 /// Mir types
 @safe pure @nogc
-unittest
+version(mir_ion_test) unittest
 {
     static struct S
     {
@@ -1441,7 +1441,7 @@ unittest
 
 ///
 @safe pure //@nogc
-unittest
+version(mir_ion_test) unittest
 {
     enum Kind { request, cancel }
 
@@ -1467,7 +1467,7 @@ unittest
 
 ///
 @safe pure //@nogc
-unittest
+version(mir_ion_test) unittest
 {
     enum Kind { request, cancel }
 
@@ -1489,7 +1489,8 @@ unittest
     assert(S(Kind.request, 4).serializeJson == `{"kind":"request","number":4}`);
 }
 
-unittest {
+version(mir_ion_test) unittest
+{
     import mir.ion.deser.json;
     import mir.algebraic : Nullable;
     import mir.ion.value : IonDescribedValue;
