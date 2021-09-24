@@ -14,6 +14,7 @@ import mir.small_array;
 import mir.small_string;
 import mir.timestamp;
 import mir.utility: _expect;
+import mir.serde: serdeGetFinalProxy;
 
 import std.traits:
     isArray,
@@ -27,7 +28,7 @@ import std.traits:
     isUnsigned,
     Unqual;
 
-package template isFirstOrderSerdeType(T, bool proxy = false)
+package template isFirstOrderSerdeType(T)
 {
     import mir.serde: serdeGetFinalProxy;
 
@@ -39,26 +40,26 @@ package template isFirstOrderSerdeType(T, bool proxy = false)
         static if (isDecimal!T)
             enum isFirstOrderSerdeType = true;
         else
-        static if (isTimestamp!T)
+        static if (isTimestamp!T || is(typeof(Timestamp(T.init))))
             enum isFirstOrderSerdeType = true;
         else
         static if (is(T : SmallString!maxLength, size_t maxLength))
-            enum isFirstOrderSerdeType = proxy;
+            enum isFirstOrderSerdeType = false;
         else
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(E, proxy);
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
         else
         static if (is(T : RCArray!E, E))
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(E, proxy);
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
         else
         static if (is(T == serdeGetFinalProxy!T))
             enum isFirstOrderSerdeType = false;
         else
-            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T, true);
+            enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T);
     }
     else
     static if (isArray!T)
-        enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T), proxy);
+        enum isFirstOrderSerdeType = .isFirstOrderSerdeType!(Unqual!(ForeachType!T));
     else
     static if (is(T == V[K], K, V))
         enum isFirstOrderSerdeType = false;
@@ -67,12 +68,12 @@ package template isFirstOrderSerdeType(T, bool proxy = false)
         enum isFirstOrderSerdeType = false;
     else
     static if (isSomeChar!T)
-        enum isFirstOrderSerdeType = proxy;
+        enum isFirstOrderSerdeType = false;
     else
     static if (is(T == serdeGetFinalProxy!T))
         enum isFirstOrderSerdeType = true;
     else
-        enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T, true);
+        enum isFirstOrderSerdeType = isFirstOrderSerdeType!(serdeGetFinalProxy!T, false);
 }
 
 version(mir_ion_test)
@@ -400,15 +401,6 @@ package template hasProxy(T)
         enum hasProxy = false;
 }
 
-package template hasScoped(T)
-{
-    import mir.serde: serdeScoped;
-    static if (is(T == enum) || isAggregateType!T)
-        enum hasScoped = hasUDA!(T, serdeScoped);
-    else
-        enum hasScoped = false;
-}
-
 /++
 Deserialize struct/class value with proxy.
 +/
@@ -420,9 +412,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     import mir.conv: to;
 
     serdeGetProxy!T proxy;
-    enum S = hasUDA!(T, serdeScoped) && __traits(compiles, .deserializeScopedValueImpl(data, proxy));
-    alias Fun = Select!(S, .deserializeScopedValueImpl, .deserializeValueImpl);
-    Fun(data, proxy);
+    deserializeValueImpl(data, proxy);
     value = proxy.to!T;
     return IonErrorCode.none;
 }
@@ -457,93 +447,6 @@ version(mir_ion_test) unittest
     assert(value == E.b);
 }
 
-/++
-Deserialize string value.
-+/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
-    pure @safe nothrow
-    if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
-{
-    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
-        return IonErrorCode.expectedStringValue;
-    auto ionValue = data.trustedGet!(const(char)[]);
-    static if (is(T == string))
-        value = ionValue.idup;
-    else
-        value = ionValue.dup;
-    return IonErrorCode.none; 
-}
-
-///
-version(mir_ion_test) unittest
-{
-    import mir.ion.value;
-    import mir.ion.exception;
-
-    auto data = IonValue([0x83, 'b', 'a', 'r']).describe;
-    string value;
-
-    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
-    assert(value == "bar");
-}
-
-/++
-Deserialize ref-counted string value.
-+/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
-    pure @safe nothrow
-    if (is(T == RCArray!E, E) && isSomeChar!E)
-{
-    import mir.rc.array: rcarray;
-    import std.traits: TemplateArgsOf;
-    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
-        return IonErrorCode.expectedStringValue;
-    auto ionValue = data.trustedGet!(const(char)[]);
-    value = ionValue.rcarray!(TemplateArgsOf!T);
-    return IonErrorCode.none; 
-}
-
-///
-version(mir_ion_test) unittest
-{
-    import mir.rc.array: RCArray;
-    import mir.ion.value;
-    import mir.ion.exception;
-
-    auto data = IonValue([0x83, 'b', 'a', 'r']).describe;
-    RCArray!(immutable char) value;
-
-    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
-    assert(value[] == "bar");
-}
-
-/++
-Deserialize small string value.
-+/
-IonErrorCode deserializeValueImpl(T : SmallString!maxLength, size_t maxLength)(IonDescribedValue data, ref T value)
-    pure @safe nothrow
-{
-    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
-        return IonErrorCode.expectedStringValue;
-    auto ionValue = data.trustedGet!(const(char)[]);
-    if (ionValue.length > maxLength)
-        return IonErrorCode.smallStringOverflow;
-    value.trustedAssign(ionValue);
-    return IonErrorCode.none; 
-}
-
-///
-version(mir_ion_test) unittest
-{
-    import mir.ion.value;
-    import mir.ion.exception;
-
-    auto data = IonValue([0x83, 'b', 'a', 'r']).describe;
-    string value;
-
-    assert(deserializeValueImpl(data, value) == IonErrorCode.none);
-    assert(value == "bar");
-}
 
 /++
 Deserialize ascii value from ion string.
@@ -591,33 +494,6 @@ private IonErrorCode deserializeListToScopedBuffer(E, size_t bytes)(IonDescribed
     return IonErrorCode.none;
 }
 
-/++
-Deserializes scoped string value.
-This function does not allocate a new string and just make a raw cast of Ion data.
-+/
-IonErrorCode deserializeScopedValueImpl(T)(IonDescribedValue data, ref T value)
-    pure @trusted nothrow @nogc
-    if (is(T == string) || is(T == const(char)[]) || is(T == char[]))
-{
-    if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
-        return IonErrorCode.expectedStringValue;
-    auto ionValue = data.trustedGet!(const(char)[]);
-    value = cast(T)ionValue;
-    return IonErrorCode.none; 
-}
-
-///
-version(mir_ion_test) unittest
-{
-    import mir.ion.value;
-    import mir.ion.exception;
-
-    auto data = IonValue([0x83, 'b', 'a', 'r']).describe;
-    string value;
-
-    assert(deserializeScopedValueImpl(data, value) == IonErrorCode.none);
-    assert(value == "bar");
-}
 
 ///
 IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)

@@ -980,6 +980,26 @@ version(mir_ion_test) unittest
     assert(V(St3([123])).serializeIon.deserializeIon!V == St3([123]));
 }
 
+version(mir_ion_test) @nogc unittest
+{
+    import mir.ion.conv: text2ion;
+    import mir.ion.deser.ion;
+    import mir.serde;
+
+    @serdeScoped
+    @serdeProxy!(const(char)[])
+    static struct S
+    {
+        bool r;
+        this(scope const(char)[] s) @safe pure nothrow @nogc
+        {
+            this.r = s == `simpleSymbol`;
+        }
+    }
+    static immutable data = `simpleSymbol`.text2ion;
+    assert(data.deserializeIon!S.r);
+}
+
 version(unittest) private
 {
     import mir.serde: serdeProxy;

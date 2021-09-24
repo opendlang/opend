@@ -11,6 +11,7 @@ import mir.ion.exception;
 import mir.ion.symbol_table;
 import mir.ion.type_code;
 import mir.ion.value;
+import mir.serde: serdeGetFinalProxy;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
@@ -41,14 +42,14 @@ private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(Io
     }
 }
 
-private IonException deserializeScoped(T)(IonDescribedValue data, ref T value)
+package template hasScoped(T)
 {
-    return deserializeScopedValueImpl(data, value).ionException;
-}
-
-private IonException deserializeScoped(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
-{
-    return deserializeScoped(params.data, value);
+    import std.traits: isAggregateType;
+    import mir.serde: serdeScoped;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasScoped = hasUDA!(T, serdeScoped);
+    else
+        enum hasScoped = false;
 }
 
 IonException deserializeValue_(T, bool proxy = false)(IonDescribedValue data, ref T value)
@@ -184,6 +185,39 @@ template deserializeValue(string[] symbolTable)
         return symbolId < symbolTable.length;
     }
 
+    @trusted pure nothrow @nogc private IonException deserializeScoped(C, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref C[] value)
+        if (is(immutable C == immutable char))
+    {with(params){
+
+        import std.traits: Select;
+        import mir.serde: serdeGetProxy, serdeScoped, serdeScoped;
+        import mir.conv: to;
+
+        static if (tableKind)
+            auto table = runtimeSymbolTable;
+        else
+            alias table = tableInsance!symbolTable;
+
+        if (data.descriptor.type == IonTypeCode.symbol)
+        {
+            size_t id;
+            if (auto exc = data.trustedGet!IonSymbolID.get(id))
+                return exc.ionException;
+            if (id >= table.length)
+                return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+            value = cast(C[])table[id];
+            return null;
+        }
+        else
+        {
+            if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
+                return IonErrorCode.expectedStringValue.ionException;
+            auto ionValue = data.trustedGet!(const(char)[]);
+            value = cast(C[])ionValue;
+            return null;
+        }
+    }}
+
     private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, E, size_t bytes)(
         DeserializationParams!(tableKind, annotated) params,
         ref ScopedBuffer!(E, bytes) buffer)
@@ -233,7 +267,7 @@ template deserializeValue(string[] symbolTable)
 
         static if (hasScoped)
         {
-            static if (__traits(compiles, { Temporal temporal; deserializeScoped(data, temporal); }))
+            static if (is(immutable Temporal == immutable char[]))
             {
                 alias impl = deserializeScoped;
             }
@@ -732,8 +766,8 @@ template deserializeValue(string[] symbolTable)
             import core.lifetime: move;
             serdeGetProxy!T temporal;
             static if (hasUDA!(T, serdeScoped))
-                static if (__traits(compiles, .deserializeScoped(data, temporal)))
-                    alias impl = .deserializeScoped;
+                static if (is(serdeGetProxy!T == C[], C) && is(immutable C == immutable char))
+                    alias impl = deserializeScoped;
                 else
                     alias impl = deserializeValue;
             else
