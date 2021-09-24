@@ -14,7 +14,6 @@ template serde(T)
     T serde(V)(auto ref const V value, SerdeTarget serdeTarget = SerdeTarget.ion)
     {
         import mir.ion.exception;
-        import mir.appender: ScopedBuffer;
         import mir.ion.deser.ion: deserializeIon;
         import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
         import mir.ion.ser: serializeValue;
@@ -44,6 +43,7 @@ template serde(T)
         }
 
         auto ret () @trusted {
+            import mir.appender : ScopedBuffer;
             ScopedBuffer!(immutable string) symbolTableBuffer = void;
             IonTapeHolder!(nMax * 8) tapeHolder = void;
             symbolTableBuffer.initialize;
@@ -185,7 +185,6 @@ unittest
 /++
 Convert an Ion Text value to a Ion Value Stream.
 Params:
-    addSymbolTable = Add the symbol table to the data stream outputted
     text = The text to convert
 Returns:
     An array containing the Ion Text value as an Ion Value Stream.
@@ -194,7 +193,6 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
     @trusted pure
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
-    import mir.ion.internal.stage4_s;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
     import mir.ion.ser.ion : IonSerializer;
@@ -210,7 +208,6 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
 
     deser(text);
 
-    static immutable ctPrefixAndTable = ionPrefix ~ ser.compiletimeTableTape;
     if (table.initialized)
     {
         table.finalize;
@@ -218,7 +215,7 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
     }
     else
     {
-        return cast(immutable) (ctPrefixAndTable ~ tapeHolder.tapeData);
+        return cast(immutable) (ionPrefix ~ tapeHolder.tapeData);
     }
 }
 ///
@@ -229,6 +226,52 @@ unittest
     assert(`{"a":1,"b":2}`.text2ion == data);
     static assert(`{"a":1,"b":2}`.text2ion == data);
     enum s = `{a:2.232323e2, b:2.1,}`.text2ion;
+}
+
+/++
+Convert an Ion Text value to a Ion Value Stream.
+
+This function is the @nogc version of text2ion.
+Params:
+    text = The text to convert
+    buf = A buffer that will receive the Ion binary data
++/
+void text2ion(Appender)(scope const(char)[] text, ref Appender appender)
+    @trusted pure @nogc
+{
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.symbol_table: IonSymbolTable;
+    import mir.ion.internal.data_holder: ionPrefix;
+    import mir.ion.ser.ion : IonSerializer;
+    import mir.serde : SerdeTarget;
+    import mir.ion.deser.text : IonTextDeserializer;
+    enum nMax = 4096;
+    IonTapeHolder!(nMax * 8) tapeHolder = void;
+    tapeHolder.initialize;
+    IonSymbolTable!false table;
+    auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
+
+    auto deser = IonTextDeserializer!(typeof(ser))(&ser);
+
+    deser(text);
+
+    appender.put(ionPrefix);
+    if (table.initialized)
+    {
+        table.finalize;
+        appender.put(table.tapeData);
+    }
+    appender.put(tapeHolder.tapeData);
+}
+///
+@safe pure @nogc
+unittest
+{
+    import mir.appender : scopedBuffer;
+    static immutable data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    auto buf = scopedBuffer!ubyte;
+    text2ion(`{"a":1,"b":2}`, buf);
+    assert(buf.data == data);
 }
 
 /++

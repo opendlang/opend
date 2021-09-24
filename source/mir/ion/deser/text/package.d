@@ -18,6 +18,7 @@ import mir.format; // Quoted symbol support
 import mir.ion.internal.data_holder;
 import mir.ion.internal.stage4_s : IonErrorInfo;
 import mir.bignum.integer;
+import std.traits : hasUDA, getUDAs;
 
 private mixin template Stack(T, size_t maxDepth = 1024)
 {
@@ -72,22 +73,12 @@ private enum State {
     EOF
 }
 
-private alias StateHandlerFunc = bool delegate() @safe pure;
-private alias StateTransitionFunc = State delegate() @safe pure;
-private alias TypeHandlerFunc = void delegate() @safe pure;
-
 // UDA
 private struct S 
 {
     State state;
     bool transition = false;
     bool disableAfterValue = false;
-}
-
-// UDA
-private struct T 
-{
-    IonTokenType type;
 }
 
 /++
@@ -98,9 +89,6 @@ struct IonTextDeserializer(Serializer)
     mixin Stack!(IonTypeCode);
     private Serializer* ser;
     private State state;
-    private StateHandlerFunc[__traits(allMembers, State).length] stateHandlers;
-    private StateTransitionFunc[__traits(allMembers, State).length] stateTransitionHandlers;
-    private TypeHandlerFunc[__traits(allMembers, IonTokenType).length] typeHandlers;
     private IonTokenizer t;
 
     /++
@@ -112,8 +100,6 @@ struct IonTextDeserializer(Serializer)
     {
         this.ser = ser;
         this.state = State.beforeAnnotations;
-
-        registerHandlers();
     }
 
     /++
@@ -122,89 +108,98 @@ struct IonTextDeserializer(Serializer)
     Params:
         text = The text to deserialize
     +/
-    void opCall(scope const(char)[] text) @safe pure
-    {
-        t = IonTokenizer(text);
-        while (!t.isEOF()) 
+        void opCall(scope const(char)[] text) @safe pure
         {
-            assert(t.nextToken(), "hit eof when tokenizer says we're not at an EOF??");
-
-            bool done = false;
-            switch (state) with (State)
+            t = IonTokenizer(text);
+            while (!t.isEOF()) 
             {
-                case afterValue:
-                case beforeFieldName:
-                case beforeAnnotations:
-                    done = stateHandlers[state]();
-                    break;
-                default:
-                    version(D_Exceptions)
-                        throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
-                    else
-                        assert(0, "unexpected state");
+                assert(t.nextToken(), "hit eof when tokenizer says we're not at an EOF??");
+
+                switch (state) with (State)
+                {
+                    case afterValue:
+                    case beforeFieldName:
+                    case beforeAnnotations:
+                        return handleState(state);
+                    default:
+                        version(D_Exceptions)
+                            throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
+                        else
+                            assert(0, "unexpected state");
+                }
+            }
+        }
+
+private:
+
+    // import std.traits: 
+    static if (__traits(compiles, () @nogc { typeof(this).init.onString(); } ()))
+    {
+        void handleState(State s) @safe pure @nogc { handleStateImpl(s); }
+        void handleToken(IonTokenType t) @safe pure @nogc { handleTokenImpl(t); }
+    }
+    else
+    {
+        void handleState(State s) @safe pure { handleStateImpl(s); }
+        void handleToken(IonTokenType t) @safe pure { handleTokenImpl(t); }
+    }
+
+    private void handleStateImpl(State s) @safe pure
+    {
+        switch (s) {
+            // Cannot use getSymbolsByUDA as it leads to recursive template instantiations
+            static foreach(member; __traits(allMembers, typeof(this))) {
+                static foreach(registeredState; getUDAs!(__traits(getMember, this, member), S))
+                    static if (!registeredState.transition) {
+                        case registeredState.state:
+                            __traits(getMember, this, member)(); 
+                            static if (!registeredState.disableAfterValue)
+                                state = handleStateTransition(State.afterValue);
+                            return;
+                    }
+            }
+            default: {
+                version (D_Exceptions)
+                    throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
+                else
+                    assert(0, "Unexpected state");
             }
         }
     }
 
-private:
-    void registerHandlers() @safe pure
+    private State handleStateTransition(State s) @safe pure
     {
-        import std.traits : getSymbolsByUDA, getUDAs;
-        static foreach(_func; getSymbolsByUDA!(IonTextDeserializer, S)) 
-        {{
-            enum registeredState = getUDAs!(_func, S)[0];
-            static if (!registeredState.transition) 
-            {
-                alias arr = stateHandlers;
-            } 
-            else 
-            {
-                alias arr = stateTransitionHandlers;
-            }
-
-            if (arr[registeredState.state] !is null)
-            {
-                version(D_Exceptions)
-                    throw IonDeserializerErrorCode.twoHandlersState.ionDeserializerException;
+        switch (s)
+        {
+            static foreach(member; __traits(allMembers, typeof(this)))
+                static foreach(registeredState; getUDAs!(__traits(getMember, this, member), S))
+                    static if (registeredState.transition) {
+                        case registeredState.state:
+                            return __traits(getMember, this, member);
+                    }
+            default:
+                version (D_Exceptions)
+                    throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
                 else
-                    assert(0, "registering two handlers for one state is not supported");
-            }
-            else
-            {
-                arr[registeredState.state] = ()
-                    {
-                        auto a = _func();
-                        static if (!registeredState.transition && !registeredState.disableAfterValue) 
-                        { // add post hook 
-                            state = stateTransitionHandlers[State.afterValue]();
-                        }
-                        return a;
-                    };
-            }
-        }}
+                    assert(0, "Unexpected state");
+        }
+    }
 
-        static foreach(member; getSymbolsByUDA!(IonTextDeserializer, T)) 
-        {{
-            static foreach(entry; getUDAs!(member, T)) 
-            {
-                if (typeHandlers[entry.type] !is null) 
-                {
-                    version(D_Exceptions)
-                        throw IonDeserializerErrorCode.twoHandlersState.ionDeserializerException;
-                    else
-                        assert(0, "registering two handlers for one state is not supported");
+    private void handleTokenImpl(IonTokenType t) @safe pure
+    {
+        switch (t)
+        {
+            static foreach(member; __traits(allMembers, typeof(this)))
+                static foreach(registeredToken; getUDAs!(__traits(getMember, this, member), IonTokenType)) {
+                    case registeredToken:
+                        return __traits(getMember, this, member);
                 }
+            default:
+                version (D_Exceptions)
+                    throw IonDeserializerErrorCode.unexpectedToken.ionDeserializerException;
                 else
-                {
-                    // the compiler *really* doesn't like when we do
-                    // &member here... wtf?
-                    typeHandlers[entry.type] = () pure @safe 
-                        {
-                            member();
-                        };
-                }
-            }
-        }}
+                    assert(0, "Unexpected token");
+        }
     }
 
     /* State / state transition handlers */
@@ -231,8 +226,7 @@ private:
             case TokenOpenBrace: 
             case TokenOpenBracket:
             case TokenOpenParen:
-                assert(typeHandlers[t.currentToken] !is null, "XXX: THIS SHOULD NEVER HAPPEN!");
-                typeHandlers[t.currentToken]();
+                handleToken(t.currentToken);
                 return true;
             case TokenEOF:
                 return false;
@@ -507,7 +501,7 @@ private:
         }
     }
 
-    @T(IonTokenType.TokenOpenBrace)
+    @(IonTokenType.TokenOpenBrace)
     void onStruct() @safe pure
     {
         auto s0 = ser.structBegin();
@@ -522,14 +516,14 @@ private:
                 break;
             }
 
-            stateHandlers[state]();
+            handleState(state);
         }
         assert(peekStack() == IonTypeCode.struct_, "XXX: should never happen");
         popStackBack();
         ser.structEnd(s0);
     }
 
-    @T(IonTokenType.TokenOpenBracket)
+    @(IonTokenType.TokenOpenBracket)
     void onList() @safe pure
     {
         auto s0 = ser.listBegin();
@@ -544,14 +538,14 @@ private:
                 break;
             }
 
-            ser.elemBegin; stateHandlers[state]();
+            ser.elemBegin; handleState(state);
         }
         assert(peekStack() == IonTypeCode.list, "XXX: should never happen");
         popStackBack();
         ser.listEnd(s0);
     }
 
-    @T(IonTokenType.TokenOpenParen)
+    @(IonTokenType.TokenOpenParen)
     void onSexp() @safe pure
     {
         auto s0 = ser.sexpBegin();
@@ -566,15 +560,15 @@ private:
                 break;
             }
 
-            ser.sexpElemBegin; stateHandlers[state]();
+            ser.sexpElemBegin; handleState(state);
         }
         assert(peekStack() == IonTypeCode.sexp, "XXX: should never happen");
         popStackBack();
         ser.sexpEnd(s0);
     }
 
-    @T(IonTokenType.TokenSymbolOperator)
-    @T(IonTokenType.TokenDot)
+    @(IonTokenType.TokenSymbolOperator)
+    @(IonTokenType.TokenDot)
     void onSymbolOperator() @safe pure 
     {
         if (peekStack() != IonTypeCode.sexp)
@@ -587,8 +581,8 @@ private:
         onSymbol();
     }
 
-    @T(IonTokenType.TokenSymbol)
-    @T(IonTokenType.TokenSymbolQuoted)
+    @(IonTokenType.TokenSymbol)
+    @(IonTokenType.TokenSymbolQuoted)
     void onSymbol() @safe pure
     {
         // The use of a scoped buffer is inevitable, as quoted symbols
@@ -717,13 +711,7 @@ private:
                 {   
                     // if the current token is a value type (a non-symbol), then we should also end the annotation array
                     ser.annotationsEnd(arrayStart);
-                    if (typeHandlers[t.currentToken] is null) {
-                        version(D_Exceptions)
-                            throw IonDeserializerErrorCode.unexpectedToken.ionDeserializerException;
-                        else
-                            assert(0, "Unexpected token");
-                    }
-                    typeHandlers[t.currentToken]();
+                    handleToken(t.currentToken);
                     ser.annotationWrapperEnd(wrapperStart);
                     break;
                 }
@@ -758,8 +746,8 @@ private:
         }
     }
 
-    @T(IonTokenType.TokenString)
-    @T(IonTokenType.TokenLongString)
+    @(IonTokenType.TokenString)
+    @(IonTokenType.TokenLongString)
     void onString() @safe pure
     {
         IonTextString v;
@@ -824,7 +812,7 @@ private:
         ser.stringEnd(s0);
     }
 
-    @T(IonTokenType.TokenTimestamp)
+    @(IonTokenType.TokenTimestamp)
     void onTimestamp() @safe pure
     {
         import mir.timestamp : Timestamp;
@@ -832,7 +820,7 @@ private:
         ser.putValue(Timestamp(v.matchedText));
     }
 
-    @T(IonTokenType.TokenNumber)
+    @(IonTokenType.TokenNumber)
     void onNumber() @safe pure
     {
         import mir.bignum.integer;
@@ -948,7 +936,7 @@ private:
                 assert(0, "unexpected decimal value");
     }
 
-    @T(IonTokenType.TokenBinary)
+    @(IonTokenType.TokenBinary)
     void onBinaryNumber() @safe pure
     {
         // XXX: mir does *NOT* support binary literals, replace this when implemented
@@ -965,7 +953,7 @@ private:
         */
     }
 
-    @T(IonTokenType.TokenHex)
+    @(IonTokenType.TokenHex)
     void onHexNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenHex);
@@ -982,9 +970,9 @@ private:
         ser.putValue(val);
     }
 
-    @T(IonTokenType.TokenFloatInf)
-    @T(IonTokenType.TokenFloatMinusInf)
-    @T(IonTokenType.TokenFloatNaN)
+    @(IonTokenType.TokenFloatInf)
+    @(IonTokenType.TokenFloatMinusInf)
+    @(IonTokenType.TokenFloatNaN)
     void onFloatSpecial() @safe pure
     {
         if (t.currentToken == IonTokenType.TokenFloatNaN)
@@ -1001,7 +989,7 @@ private:
         }
     }
 
-    @T(IonTokenType.TokenOpenDoubleBrace)
+    @(IonTokenType.TokenOpenDoubleBrace)
     void onLob() @safe pure
     {
         import mir.lob;
@@ -1035,40 +1023,36 @@ private:
         }
         else
         {
-            // XXX: integrate base64 decoding into Mir
-            import std.base64 : Base64;
-
-            t.unread(c);
-            IonTextBlob blob = t.readBlob();
-            ser.putValue(Blob(Base64.decode(blob.matchedText)));
+            version(D_Exceptions)
+                throw IonDeserializerErrorCode.unimplemented.ionDeserializerException;
+            else
+                assert(0, "Unimplemented");
         }
         t.finished = true;
     } 
 }
 
-/++ 
- +/
-template deserializeText(T) 
+/++
+Deserialize an Ion Text value to a D value.
+Params:
+    text = The text to deserialize
+Returns:
+    The deserialized Ion Text value
++/
+T deserializeText(T)(scope const(char)[] text)
 {
     import mir.ion.deser.ion;
     import mir.ion.conv : text2ion;
     import mir.ion.value;
+    import mir.appender : scopedBuffer;
 
-    /++
-        Deserialize an Ion Text value to a D value.
-        Params:
-            text = The text to deserialize
-        Returns:
-            The deserialized Ion Text value
-    +/
-    T deserializeText(scope const(char)[] text) 
-    {
-        auto data = text.text2ion;
-        return deserializeIon!T(data);
-    }
+    auto buf = scopedBuffer!(ubyte);
+    text2ion(text, buf);
+    return deserializeIon!T(buf.data);
 }
 
 /// Test struct deserialization
+@safe pure
 version(mir_ion_parser_test) unittest
 {
     import mir.ion.value;
@@ -1098,6 +1082,50 @@ version(mir_ion_parser_test) unittest
     assert(book.description.length == 0);
     assert(book.numberOfNovellas == 5);
     assert(book.price == 7.99);
+    assert(book.tags.length == 3);
+    assert(book.tags[0] == "russian");
+    assert(book.tags[1] == "novel");
+    assert(book.tags[2] == "19th century");
+    assert(book.title == "A Hero of Our Time");
+    assert(book.weight == 6.88f);
+    assert(book.wouldRecommend);
+}
+
+/// Test @nogc struct deserialization
+@safe pure @nogc
+version(mir_ion_parser_test) unittest
+{
+    import mir.ion.value;
+    import mir.bignum.decimal;
+    import mir.small_string;
+    import mir.small_array;
+    import mir.conv : to;
+    static struct Book
+    {
+        SmallString!64 title;
+        bool wouldRecommend;
+        SmallString!64 description;
+        uint numberOfNovellas;
+        Decimal!1 price;
+        double weight;
+        SmallArray!(SmallString!(16), 10) tags;
+    }
+
+    static immutable textData = `
+    {
+        "title": "A Hero of Our Time",
+        "wouldRecommend": true,
+        "description": "",
+        "numberOfNovellas": 5,
+        "price": 7.99,
+        "weight": 6.88,
+        "tags": ["russian", "novel", "19th century"]
+    }`;
+
+    Book book = deserializeText!Book(textData);
+    assert(book.description.length == 0);
+    assert(book.numberOfNovellas == 5);
+    assert(book.price.to!double == 7.99);
     assert(book.tags.length == 3);
     assert(book.tags[0] == "russian");
     assert(book.tags[1] == "novel");
