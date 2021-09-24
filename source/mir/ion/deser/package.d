@@ -177,16 +177,11 @@ template deserializeValue(string[] symbolTable)
     {
         static if (tableKind)
         {
-            auto table = params.runtimeSymbolTable;
             if (symbolId >= params.compiletimeIndex.length)
                 return false;
             symbolId = params.compiletimeIndex[symbolId];
         }
-        else
-        {
-            alias table = tableInsance!symbolTable;
-        }
-        return symbolId < table.length;
+        return symbolId < symbolTable.length;
     }
 
     private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, E, size_t bytes)(
