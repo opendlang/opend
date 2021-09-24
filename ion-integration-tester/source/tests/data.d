@@ -50,6 +50,16 @@ enum ION_TEST_DATA_SKIP = [
     "bad/typecodes/type_6_length_0.10n",
 //    "good/typecodes/T7-large.10n", 
     "good/equivs/clobNewlines.ion",
+    // Binary literals with underscore support is TBD
+    "good/intBinary.ion",
+    "good/intsWithUnderscores.ion",
+    // Shared symbol tables support is TBD
+    "good/subfieldVarUInt15bit.ion",
+    "good/testfile35.ion",
+    "good/subfieldVarUInt16bit.ion",
+    // Blob serialization is TBD
+    "good/nonNulls.ion",
+    "good/lists.ion",
 ];
 
 bool isSkippedFile(string path) {

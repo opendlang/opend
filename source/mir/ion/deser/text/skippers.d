@@ -1046,9 +1046,9 @@ char skipValue(ref IonTokenizer t) @safe @nogc pure
         case TokenDoubleColon:
             ret = t.skipDoubleColon();
             break;
+        case TokenEOF:
+            break;
         default:
-            debug import std.stdio;
-            debug writefln("Unhandled token %s. This should not happen.", t.currentToken);
             assert(0, "unhandled token");
     }
 

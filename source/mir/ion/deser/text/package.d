@@ -234,6 +234,8 @@ private:
                 assert(typeHandlers[t.currentToken] !is null, "XXX: THIS SHOULD NEVER HAPPEN!");
                 typeHandlers[t.currentToken]();
                 return true;
+            case TokenEOF:
+                return false;
             default:
                 version(D_Exceptions)
                     throw IonDeserializerErrorCode.unexpectedToken.ionDeserializerException;
