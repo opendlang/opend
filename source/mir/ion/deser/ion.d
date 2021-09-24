@@ -93,7 +93,7 @@ template deserializeIon(T)
         T value;
         if (false)
         {
-            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable);
+            auto params = DeserializationParams!(TableKind.immutableRuntime)(ionValue, symbolTable);
             if (auto exception = deserializeValue!keys(params, value))
             {
             }
@@ -112,7 +112,7 @@ template deserializeIon(T)
             }
 
 
-            auto params = DeserializationParams!(TableKind.scopeRuntime)(ionValue, symbolTable, tableMapBuffer.data);
+            auto params = DeserializationParams!(TableKind.immutableRuntime)(ionValue, symbolTable, tableMapBuffer.data);
             if (auto exception = deserializeValue!keys(params, value))
                 throw exception;
             
