@@ -36,10 +36,9 @@ enum ION_EQUIVS_TEST_DATA = buildPath(ION_GOOD_TEST_DATA, "equivs");
 // iontestdata/good/non-equivs
 enum ION_NONEQUIVS_TEST_DATA = buildPath(ION_GOOD_TEST_DATA, "non-equivs");
 
-// upstream implementations can't parse these files, don't bother
 enum ION_TEST_DATA_SKIP = [
+    // upstream implementations can't parse these files, don't bother
     "bad/clobWithNullCharacter.ion",
-//    "bad/emptyAnnotatedInt.10n",
     "good/subfieldVarUInt32bit.ion",
     "good/utf16.ion",
     "good/utf32.ion",
@@ -48,7 +47,6 @@ enum ION_TEST_DATA_SKIP = [
     "good/testfile26.ion",
     "good/localSymbolTableImportZeroMaxId.ion",
     "bad/typecodes/type_6_length_0.10n",
-//    "good/typecodes/T7-large.10n", 
     "good/equivs/clobNewlines.ion",
     // Binary literals with underscore support is TBD
     "good/intBinary.ion",
@@ -60,6 +58,10 @@ enum ION_TEST_DATA_SKIP = [
     // Blob serialization is TBD
     "good/nonNulls.ion",
     "good/lists.ion",
+    "good/blobs.ion",
+    // We shouldn't have a IonValueStream that's fully empty in real data
+    "good/empty.ion",
+    "good/blank.ion",
 ];
 
 bool isSkippedFile(string path) {

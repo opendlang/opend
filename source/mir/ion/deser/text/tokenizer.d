@@ -433,7 +433,8 @@ struct IonTokenizer {
                             break;
                         else
                             goto default;
-                    } else {
+                    }
+                    else {
                         return '/';
                     }
                 }

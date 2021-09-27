@@ -175,7 +175,17 @@ Returns:
 size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
 {
     const(char) esc = t.peekOne();
-    if (esc == '\n') {
+    if (esc == '\r') {
+        const(char)[] cs = t.peekMax(2);
+        if (cs.length == 2 && cs == "\r\n") {
+            t.skipExactly(2);
+            return 0;
+        } else {
+            t.skipOne();
+            return 0;
+        }
+    }
+    else if (esc == '\n') {
         t.skipOne();
         return 0;
     }
@@ -429,15 +439,16 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
     size_t read = 0, startIndex = t.position, endIndex = 0;
     loop: while (true) {
         char c = t.expect!"a != 0";
-        t.expectFalse!(isInvalidChar, true)(c);
 
         static if (!longString) {
             t.expectFalse!(isNewLine, true)(c);
         }
 
         static if (isClob) {
-            t.expectFalse!(isInvalidChar, true)(c);
+            //t.expectFalse!(isInvalidChar, true)(c);
             t.expect!(isASCIIChar, true)(c);
+        } else {
+            t.expectFalse!(isInvalidChar, true)(c);
         }
 
         s: switch (c) {
@@ -849,11 +860,11 @@ IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
     if (c == '.') {
         num.type = IonTypeCode.decimal;
         c = t.readInput();
-        if (c) {
+        if (c.isDigit) {
             immutable char decimalLeader = t.expect!("a != 0", true)(c);
             readDigits(t, decimalLeader);
+            c = t.readInput();
         }
-        c = t.readInput();
     }
 
     switch (c) {

@@ -234,7 +234,7 @@ Convert an Ion Text value to a Ion Value Stream.
 This function is the @nogc version of text2ion.
 Params:
     text = The text to convert
-    buf = A buffer that will receive the Ion binary data
+    appender = A buffer that will receive the Ion binary data
 +/
 void text2ion(Appender)(scope const(char)[] text, ref Appender appender)
     @trusted pure @nogc
