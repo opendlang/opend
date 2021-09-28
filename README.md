@@ -31,7 +31,7 @@ As such, please look towards using [asdf](https://github.com/libmir/asdf) until 
  - [x] Ion Symbol Tables
  - [x] JSON to Ion
  - [x] Ion to JSON
- - [ ] Text Ion to Ion
+ - [x] Text Ion to Ion
  - [x] Ion to Text Ion
  - [x] Serialization API
  - [x] Deserialization API
