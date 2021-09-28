@@ -85,7 +85,7 @@ bool skipSingleLineComment(ref IonTokenizer t) @safe @nogc pure
 {
     while (true) {
         const(char) c = t.readInput();
-        if (c == '\n' || c == 0) {
+        if (c == '\n' || c == '\r' || c == 0) {
             return true;
         }
     }
@@ -170,6 +170,7 @@ bool skipComment(ref IonTokenizer t) @safe @nogc pure
         case '/':
             return t.skipSingleLineComment();
         case '*':
+            t.skipOne();
             return t.skipBlockComment();
         default:
             break;
