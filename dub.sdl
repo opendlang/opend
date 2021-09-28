@@ -1,5 +1,5 @@
 name "mir-ion"
-description "Fast, Expressive, and Easy to use JSON Serialization Library with optional SIMD Optimization."
+description "Fast, Expressive, and Easy to use Ion/JSON Serialization Library with optional SIMD Optimization."
 authors "Ilya Yaroshenko" "Yannick Koechlin"
 copyright "Tamedia Digital, 2016-, Symmetry Investments and Kaleidic Associates, 2020-"
 license "BSL-1.0"
