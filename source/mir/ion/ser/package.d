@@ -359,6 +359,9 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
     {
         static foreach (annotationMember; serdeGetAnnotationMembersOut!V)
         {
+            static if (is(typeof(__traits(getMember, value, annotationMember)) == enum))
+                serializer.putAnnotation(serdeGetKeyOut(__traits(getMember, value, annotationMember)));
+            else
             static if (__traits(compiles, serializer.putAnnotation(__traits(getMember, value, annotationMember)[])))
                 serializer.putAnnotation(__traits(getMember, value, annotationMember)[]);
             else
@@ -756,7 +759,7 @@ unittest
         @serdeAnnotation
         string sid;
 
-        alias Data = Nullable!(A, C, int);
+        alias Data = Nullable!(A, C, long);
 
         alias data this;
 
@@ -767,7 +770,7 @@ unittest
     @serdeAlgebraicAnnotation("$S2")
     static struct S2
     {
-        alias Data = Nullable!(A, C, int);
+        alias Data = Nullable!(A, C, long);
 
         alias data this;
 
@@ -796,6 +799,15 @@ unittest
         assert(binary.ion2text == text);
         import mir.ion.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S2.serializeText == text);
+    }
+
+    {
+        auto value = S("USD", S.Data(3));
+        static immutable text = `USD::3`;
+        auto binary = value.serializeIon;
+        assert(binary.ion2text == text, binary.ion2text);
+        import mir.ion.deser.ion: deserializeIon;
+        assert(binary.deserializeIon!S.serializeText == text);
     }
 }
 

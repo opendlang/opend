@@ -52,16 +52,16 @@ package template hasScoped(T)
         enum hasScoped = false;
 }
 
-IonException deserializeValue_(T, bool proxy = false)(IonDescribedValue data, ref T value)
-    if (isFirstOrderSerdeType!T || proxy)
+IonException deserializeValue_(T)(IonDescribedValue data, ref T value)
+    if (isFirstOrderSerdeType!T)
 {
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T, bool proxy = false, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
-    if (isFirstOrderSerdeType!T || proxy)
+IonException deserializeValue_(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
+    if (isFirstOrderSerdeType!T)
 {
-    return deserializeValue_!(T, proxy)(params.data, value);
+    return deserializeValue_!T(params.data, value);
 }
 
 static immutable exc(T, string member, int line = __LINE__) = new IonException("mir.ion: non-optional member '" ~ member ~ "' in " ~ T.stringof ~ " is missing.", __FILE__, line);
@@ -1126,10 +1126,23 @@ template deserializeValue(string[] symbolTable)
                         }
                         else
                         {
-                            import mir.conv : to;
-                            __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!(typeof(__traits(getMember, value, member))));
-                            if (annotations.empty)
+                            alias AT = typeof(__traits(getMember, value, member));
+                            static if (is(typeof(__traits(getMember, value, member)) == enum))
+                            {
+                                import mir.serde: serdeParseEnum;
+                                AT memberValue;
+                                if (!serdeParseEnum(table[symbolId], memberValue))
+                                    return IonErrorCode.cantConvertAnnotationToEnum.ionException;
+                                __traits(getMember, value, member) = memberValue;
                                 break;
+                            }
+                            else
+                            {
+                                import mir.conv : to;
+                                __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!AT);
+                                if (annotations.empty)
+                                    break;
+                            }
                         }
                     }
                 }}

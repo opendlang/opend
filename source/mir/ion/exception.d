@@ -114,6 +114,8 @@ enum IonErrorCode
     ///
     missingAnnotation,
     ///
+    cantConvertAnnotationToEnum,
+    ///
     expectedIonStructForAnAssociativeArrayDeserialization,
 }
 
@@ -185,6 +187,7 @@ string ionErrorMsg()(IonErrorCode code) @property
         "not enough elements for static array",
         "unused annotations",
         "missing annotation",
+        "can't convert annotation to enum",
         "expected IonStruct for an associative array deserialization",
     ];
     return msgs[code - IonErrorCode.min];

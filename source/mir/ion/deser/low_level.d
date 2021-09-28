@@ -28,7 +28,7 @@ import std.traits:
     isUnsigned,
     Unqual;
 
-package template isFirstOrderSerdeType(T)
+template isFirstOrderSerdeType(T)
 {
     import mir.serde: serdeGetFinalProxy;
 
@@ -40,7 +40,7 @@ package template isFirstOrderSerdeType(T)
         static if (isDecimal!T)
             enum isFirstOrderSerdeType = true;
         else
-        static if (isTimestamp!T || is(typeof(Timestamp(T.init))))
+        static if (isTimestamp!T || is(typeof(Timestamp(T.init))) && __traits(getAliasThis, T).length == 0)
             enum isFirstOrderSerdeType = true;
         else
         static if (is(T : SmallString!maxLength, size_t maxLength))
