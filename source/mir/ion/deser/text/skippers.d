@@ -85,7 +85,17 @@ bool skipSingleLineComment(ref IonTokenizer t) @safe @nogc pure
 {
     while (true) {
         const(char) c = t.readInput();
-        if (c == '\n' || c == '\r' || c == 0) {
+        if (c == '\r')
+        {
+            auto cs = t.peekMax(1);
+            if (cs.length == 1 && cs[0] == '\n')
+            {
+                t.skipOne();
+            } 
+            return true;
+        }
+        else if (c == '\n' || c == 0)
+        {
             return true;
         }
     }
