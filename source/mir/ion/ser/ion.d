@@ -185,7 +185,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     void putKeyId(T)(const T id)
         if (__traits(isUnsigned, T))
     {
-        tapeHolder.reserve(10);
+        tapeHolder.reserve(19);
         tapeHolder.currentTapePosition += ionPutVarUInt(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
     }
 
@@ -195,7 +195,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void putSymbolId(size_t id)
     {
-        tapeHolder.reserve(10);
+        tapeHolder.reserve(19);
         tapeHolder.currentTapePosition += ionPutSymbolId(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
     }
 

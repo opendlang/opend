@@ -27,15 +27,15 @@ size_t ionPutVarUInt(T)(scope ubyte* ptr, const T num)
     do ptr[s - 1 - len++] = value & 0x7F;
     while (value >>>= 7);
     ptr[s - 1] |= 0x80;
-    auto arr = *cast(ubyte[s-1]*)(ptr + s - len);
     if (!__ctfe)
     {
+        auto arr = *cast(ubyte[s-1]*)(ptr + s - len);
         *cast(ubyte[s-1]*)ptr = arr;
     }
     else
     {
         foreach(i; 0 .. len)
-            ptr[i] = arr[i];
+            ptr[i] = ptr[i + s - len];
     }
     return len;
 }
@@ -44,7 +44,7 @@ size_t ionPutVarUInt(T)(scope ubyte* ptr, const T num)
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
-    ubyte[10] data;
+    ubyte[19] data = void;
 
     alias AliasSeq(T...) = T;
 
@@ -160,7 +160,7 @@ size_t ionPutVarInt(T)(scope ubyte* ptr, const T num, bool sign)
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
-    ubyte[10] data;
+    ubyte[19] data = void;
 
     alias AliasSeq(T...) = T;
 
@@ -684,7 +684,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value, bool sign = false)
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
-    ubyte[10] data;
+    ubyte[19] data = void;
     assert(ionPut(data.ptr, 0u) == 1);
     assert(data[0] == 0x20);
     assert(ionPut(data.ptr, 0u, true) == 1);
@@ -724,7 +724,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
 @system pure nothrow @nogc
 version(mir_ion_test) unittest
 {
-    ubyte[10] data;
+    ubyte[19] data = void;
     assert(ionPut(data.ptr, -16) == 2);
     assert(data[0] == 0x31);
     assert(data[1] == 0x10);
@@ -928,7 +928,7 @@ size_t ionPut(W, WordEndian endian)(
     else
     {
         *ptr = cast(ubyte)(q | 0xE);
-        ubyte[10] lengthPayload;
+        ubyte[19] lengthPayload = void;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, length);
 
         if (__ctfe)
@@ -949,7 +949,7 @@ size_t ionPut(W, WordEndian endian)(
 pure
 version(mir_ion_test) unittest
 {
-    ubyte[3] data;
+    ubyte[9] data;
     // big unsigned integer
     assert(ionPut(data.ptr, -BigUIntView!size_t.fromHexString("45be").lightConst) == 3);
     assert(data[0] == 0x32);
@@ -979,7 +979,7 @@ size_t ionPut(W, WordEndian endian)(
     else
     {
         *ptr = 0x5E;
-        ubyte[10] lengthPayload;
+        ubyte[19] lengthPayload = void;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, length);
         if (__ctfe)
         {
@@ -1214,7 +1214,7 @@ size_t ionPut()(scope ubyte* ptr, scope const(char)[] value)
 ///
 version(mir_ion_test) unittest
 {
-    ubyte[18] data;
+    ubyte[20] data;
 
     ubyte[] result = [0x85, 'v', 'a', 'l', 'u', 'e'];
     auto str = "value";
@@ -1249,7 +1249,7 @@ version(mir_ion_test) unittest
 {
     import mir.lob;
 
-    ubyte[18] data;
+    ubyte[20] data;
 
     ubyte[] result = [0x95, 'v', 'a', 'l', 'u', 'e'];
     auto str = Clob("value");
@@ -1284,7 +1284,7 @@ version(mir_ion_test) unittest
 {
     import mir.lob;
 
-    ubyte[18] data;
+    ubyte[20] data;
 
     ubyte[] result = [0xA5, 'v', 'a', 'l', 'u', 'e'];
     auto payload = Blob(cast(ubyte[])"value");
@@ -1355,7 +1355,7 @@ size_t ionPutEnd()(ubyte* startPtr, IonTypeCode tc, size_t totalElementLength)
         startPtr[2] = cast(ubyte) (totalElementLength | 0x80);
         return 3 + totalElementLength;
     }
-    ubyte[10] lengthPayload;
+    ubyte[19] lengthPayload  = void;
     auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
     if (__ctfe)
     {
@@ -1459,7 +1459,7 @@ size_t ionPutEnd()(ubyte* startPtr, size_t totalElementLength)
         startPtr[2] = cast(ubyte) (totalElementLength | 0x80);
         return 3 + totalElementLength;
     }
-    ubyte[10] lengthPayload;
+    ubyte[19] lengthPayload  = void;
     auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
     if (__ctfe)
     {
@@ -1493,7 +1493,7 @@ size_t ionPutAnnotationsListEnd()(ubyte* startPtr, size_t totalElementLength)
     }
     else
     {
-        ubyte[10] lengthPayload;
+        ubyte[19] lengthPayload  = void;
         auto lengthLength = ionPutVarUInt(lengthPayload.ptr, totalElementLength);
         if (__ctfe)
         {
