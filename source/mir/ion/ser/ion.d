@@ -58,8 +58,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     private void putEnd(size_t state, IonTypeCode typeCode)
     {
         size_t totalElementLength = tapeHolder.currentTapePosition - (state + ionPutStartLength);
-        if (_expect(totalElementLength >= 0x4000, false))
-            tapeHolder.reserve(7);
+        tapeHolder.reserve(128 + 3);
         tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, typeCode, totalElementLength);
     }
 
