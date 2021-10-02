@@ -139,9 +139,7 @@ bool skipBlockComment(ref IonTokenizer t) @safe @nogc pure
             return false;
         }
 
-        if (c == '*') {
-            foundStar = true;
-        }
+        foundStar = c == '*';
     }
 }
 /// Test skipping of an invalid comment

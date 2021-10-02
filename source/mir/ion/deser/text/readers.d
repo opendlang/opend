@@ -444,12 +444,14 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
             t.expectFalse!(isNewLine, true)(c);
         }
 
+        /*
         static if (isClob) {
             //t.expectFalse!(isInvalidChar, true)(c);
             t.expect!(isASCIIChar, true)(c);
         } else {
             t.expectFalse!(isInvalidChar, true)(c);
         }
+        */
 
         s: switch (c) {
             static if (!longString) {
@@ -510,24 +512,25 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
                     }
             }
             case '\\':
-                char e = t.peekOne();
-                if (e == '\'' || e == '\"' || e == '\n') {
-                    break s;
-                }
                 if (read != 0) {
                     t.unread(c);
                     endIndex = t.position;
                     val.isFinal = false;
                     break loop;
                 }
-                
+
                 size_t esc = readEscapeSeq!(isClob)(t);
                 static if (isClob) {
-                    assert(esc == 1); // this should throw *way* earlier, just a sanity check 
-                } else {
-                    assert(esc <= 4); // sanity check that we do not have an escape larger then 4 chars
+                    if (esc == 2) {
+                        // XXX: hack
+                        // Since we can't have unicode escapes, this HAS to be \x80 - \xFF.
+                        // We shouldn't convert this into a UTF codepoint, and we should keep it as is.
+                        break s;
+                    } 
                 }
-                
+
+                assert(esc <= 4); // sanity check that we do not have an escape larger then 4 chars
+            
                 val.matchedText = t.escapeSequence[0 .. esc];
                 val.matchedIndex = startIndex;
                 val.isEscapeSequence = true;

@@ -120,7 +120,8 @@ struct IonTextDeserializer(Serializer)
                     case afterValue:
                     case beforeFieldName:
                     case beforeAnnotations:
-                        return handleState(state);
+                        handleState(state);
+                        break;
                     default:
                         version(D_Exceptions)
                             throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
@@ -345,8 +346,17 @@ private:
                             else
                                 assert(0, "unquoted symbol requires quotes");
                         }
+                        ser.putKey(val.matchedText);
+                    } else {
+                        stringBuf buf;
+                        buf.put(val.matchedText);
+                        while (!val.isFinal) {
+                            val = t.readValue!(tok);
+                            buf.put(val.matchedText);
+                        }
+                        ser.putKey(buf.data);
                     }
-                    ser.putKey(val.matchedText);
+
                     if (!t.nextToken())
                     {
                         version(D_Exceptions)
@@ -448,7 +458,9 @@ private:
     void onNull() @safe pure
     {
         auto cs = t.peekMax(1);
-        if (cs.length == 1 && cs[0] == '.')
+        // Nulls cannot have any whitespace preceding the dot
+        // This is a workaround, as we skip all whitespace checking for the double-colon
+        if (cs.length == 1 && cs[0] == '.' && !isWhitespace(t.input[t.position - 1 .. t.position][0]))
         {
             t.skipOne();
             if (!t.nextToken())

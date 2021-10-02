@@ -19,6 +19,19 @@ import tests.utils;
 import std.path : buildPath;
 
 __gshared string testDataLocation = "../ion-tests/iontestdata";
+
+enum IonTestData {
+    good,
+    goodTypecodes,
+    goodTimestamp,
+    bad,
+    badTypecodes,
+    badTimestamp,
+    equivs,
+    nonequivs,
+    roundtrip
+};
+
 // iontestdata/good
 enum ION_GOOD_TEST_DATA = "good";
 // iontestdata/good/typecodes
@@ -35,10 +48,22 @@ enum ION_BAD_TIMESTAMP_TEST_DATA = buildPath(ION_BAD_TEST_DATA, "timestamp");
 enum ION_EQUIVS_TEST_DATA = buildPath(ION_GOOD_TEST_DATA, "equivs");
 // iontestdata/good/non-equivs
 enum ION_NONEQUIVS_TEST_DATA = buildPath(ION_GOOD_TEST_DATA, "non-equivs");
+enum ION_ROUNDTRIP_TEST_DATA = "good";
 
-enum ION_TEST_DATA_SKIP = [
+static immutable const(char)[][] ION_TEST_DATA = [
+    ION_GOOD_TEST_DATA,
+    ION_GOOD_TYPECODES_TEST_DATA,
+    ION_GOOD_TIMESTAMP_TEST_DATA,
+    ION_BAD_TEST_DATA,
+    ION_BAD_TYPECODES_TEST_DATA,
+    ION_BAD_TIMESTAMP_TEST_DATA,
+    ION_EQUIVS_TEST_DATA,
+    ION_NONEQUIVS_TEST_DATA,
+    ION_ROUNDTRIP_TEST_DATA
+];
+
+static immutable ION_GOOD_TEST_DATA_SKIP = [
     // upstream implementations can't parse these files, don't bother
-    "bad/clobWithNullCharacter.ion",
     "good/subfieldVarUInt32bit.ion",
     "good/utf16.ion",
     "good/utf32.ion",
@@ -46,17 +71,17 @@ enum ION_TEST_DATA_SKIP = [
     "good/item1.10n",
     "good/testfile26.ion",
     "good/localSymbolTableImportZeroMaxId.ion",
-    "bad/typecodes/type_6_length_0.10n",
-    "good/equivs/clobNewlines.ion",
     // Binary literals with underscore support is TBD
     "good/intBinary.ion",
     "good/intsWithUnderscores.ion",
     // Shared symbol tables support is TBD
+    "good/subfieldVarUInt.ion",
     "good/subfieldVarUInt15bit.ion",
     "good/testfile35.ion",
     "good/subfieldVarUInt16bit.ion",
     // Blob serialization is TBD
     "good/nonNulls.ion",
+    "good/testfile29.ion",
     "good/lists.ion",
     "good/blobs.ion",
     // We shouldn't have a IonValueStream that's fully empty in real data
@@ -64,9 +89,46 @@ enum ION_TEST_DATA_SKIP = [
     "good/blank.ion",
 ];
 
-bool isSkippedFile(string path) {
+static immutable ION_GOOD_TYPECODES_TEST_DATA_SKIP = [];
+
+static immutable ION_GOOD_TIMESTAMP_TEST_DATA_SKIP = [];
+
+static immutable ION_BAD_TEST_DATA_SKIP = [
+    "bad/clobWithNullCharacter.ion"
+];
+
+static immutable ION_BAD_TYPECODES_TEST_DATA_SKIP = [
+    "bad/typecodes/type_6_length_0.10n"
+];
+
+static immutable ION_BAD_TIMESTAMP_TEST_DATA_SKIP = [];
+
+static immutable ION_EQUIVS_TEST_DATA_SKIP = [
+    "good/equivs/clobNewlines.ion",
+];
+
+static immutable ION_NONEQUIVS_TEST_DATA_SKIP = [];
+
+static immutable ION_ROUNDTRIP_TEST_DATA_SKIP = ION_GOOD_TEST_DATA_SKIP ~ [
+    "good/testfile37.ion",
+    "good/testfile23.ion",
+];
+
+static immutable const(char)[][][] ION_TEST_DATA_SKIP = [
+    ION_GOOD_TEST_DATA_SKIP,
+    ION_GOOD_TYPECODES_TEST_DATA_SKIP,
+    ION_GOOD_TIMESTAMP_TEST_DATA_SKIP,
+    ION_BAD_TEST_DATA_SKIP,
+    ION_BAD_TYPECODES_TEST_DATA_SKIP,
+    ION_BAD_TIMESTAMP_TEST_DATA_SKIP,
+    ION_EQUIVS_TEST_DATA_SKIP,
+    ION_NONEQUIVS_TEST_DATA_SKIP,
+    ION_ROUNDTRIP_TEST_DATA_SKIP,
+];
+
+bool isSkippedFile(IonTestData testData, string path) {
     import std.algorithm.searching : any, canFind;
-    return ION_TEST_DATA_SKIP.any!(e => path.canFind(e));
+    return ION_TEST_DATA_SKIP[testData].any!(e => path.canFind(e));
 }
 
 enum IonDataType {
@@ -78,12 +140,14 @@ enum IonDataType {
 struct Test {
     string filePath;
     string name;
+    bool verbose;
     bool expectedFail;
     IonDataType type;
     ubyte[] data;
 
-    void run(alias m)(out TestResult result, bool failFast) {
+    void run(alias m)(out TestResult result, bool failFast, bool verbose) {
         result.test = this;
+        this.verbose = verbose;
 
         try {
             m(this);
@@ -170,10 +234,11 @@ struct TestResult {
     }
 }
 
-Test[] loadIonTestData(string dir, bool expectedFail, IonDataType wantedType) {
+Test[] loadIonTestData(string root, IonTestData dataType, bool expectedFail, IonDataType wantedType) {
     import std.array : array, join;
     import std.file : read, dirEntries, SpanMode, DirEntry;
-    import std.path : relativePath, extension;
+    import std.path : buildPath, relativePath, extension;
+    string path = buildPath(root, ION_TEST_DATA[dataType]);
     Test[] testCases;
     string searchPattern = "*{.ion,.10n}";
     if (wantedType == IonDataType.binary)
@@ -181,8 +246,8 @@ Test[] loadIonTestData(string dir, bool expectedFail, IonDataType wantedType) {
     else if (wantedType == IonDataType.text)
         searchPattern = "*{.ion}";
 
-    foreach (DirEntry e; dirEntries(dir, searchPattern, SpanMode.shallow)) {
-        if (e.name.isSkippedFile) {
+    foreach (DirEntry e; dirEntries(path, searchPattern, SpanMode.shallow)) {
+        if (dataType.isSkippedFile(e.name)) {
             continue;
         }
 

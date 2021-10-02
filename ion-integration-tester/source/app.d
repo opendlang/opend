@@ -69,8 +69,7 @@ bool runAllTests() {
 							testRunner.name,
 							testRunner.expectedFail);
 
-					string fixedDirectory = buildPath(testDataLocation, testRunner.directory);
-					Test[] testCases = loadIonTestData(fixedDirectory, testRunner.expectedFail, testRunner.wantedData);
+					Test[] testCases = loadIonTestData(testDataLocation, testRunner.data, testRunner.expectedFail, testRunner.wantedData);
 					atomicOp!"+="(total, testCases.length);
 
 					with (new TaskPool(runnerThreads - 1))
@@ -91,7 +90,7 @@ bool runAllTests() {
 									atomicOp!"+="(result.passed ? passed : failed, 1);
 								}
 
-								testCase.run!(m)(result, failFast);
+								testCase.run!(m)(result, failFast, verbose);
 							}
 							finish(true);
 						} catch (Throwable t) {
