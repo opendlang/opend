@@ -226,7 +226,7 @@ struct TaggedType(T, string name)
     static if (!is(T == void) && !is(T == typeof(null)))
         private T payload;
 @safe pure nothrow @nogc const:
-    int opCmp(typeof(this)) { return 0; }
+    int opCmp(ref typeof(this)) { return 0; }
     string toString() { return typeof(this).stringof; }
 }
 
@@ -286,6 +286,18 @@ be arbitrarily complex.
     assert(obj.get!double == 42);
     obj = ["customer": Obj("John"), "paid": Obj(23.95)];
     assert(obj.get!Map["customer"] == "John");
+}
+
+version(mir_core_test) unittest
+{
+   static struct Foo
+   {
+      ~this() @system
+      {
+      }
+   }
+   alias TFoo = TaggedType!(Foo, "foo");
+   TFoo foo;
 }
 
 
