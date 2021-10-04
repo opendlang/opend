@@ -19,7 +19,7 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | MP3   | Yes        | No       |
 | FLAC  | Yes        | No       |
 | OPUS  | Yes (LGPL) | No       |
-| OGG   | Broken     | No       |
+| OGG   | Yes        | No       |
 | MOD   | Yes        | No       |
 | XM    | Yes        | No       |
 
@@ -38,7 +38,7 @@ Some of these decoders were originally translated by Ketmar, who did the heavy-l
 
 - Boost license otherwise.
 - LGPL v2.1 with OPUS decoding.
-(use DUB subconfigurations) to choose, defaukt is boost.
+(use DUB subconfigurations) to choose, default is boost.
 
 
 # Bugs
