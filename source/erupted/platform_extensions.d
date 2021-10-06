@@ -461,7 +461,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_decode_queue )) {
             enum VK_KHR_video_decode_queue = 1;
 
-            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 1;
+            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 2;
             enum VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
             
             alias VkVideoDecodeFlagsKHR = VkFlags;
@@ -674,7 +674,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_encode_queue )) {
             enum VK_KHR_video_encode_queue = 1;
 
-            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 2;
+            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 3;
             enum VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_encode_queue";
             
             alias VkVideoEncodeFlagsKHR = VkFlags;
@@ -1124,7 +1124,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
             enum VK_ANDROID_external_memory_android_hardware_buffer = 1;
 
-            enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 3;
+            enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 4;
             enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME = "VK_ANDROID_external_memory_android_hardware_buffer";
             
             struct VkAndroidHardwareBufferUsageANDROID {
@@ -1169,6 +1169,19 @@ mixin template Platform_Extensions( extensions... ) {
                 VkStructureType  sType = VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
                 void*            pNext;
                 uint64_t         externalFormat;
+            }
+            
+            struct VkAndroidHardwareBufferFormatProperties2ANDROID {
+                VkStructureType                sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID;
+                void*                          pNext;
+                VkFormat                       format;
+                uint64_t                       externalFormat;
+                VkFormatFeatureFlags2KHR       formatFeatures;
+                VkComponentMapping             samplerYcbcrConversionComponents;
+                VkSamplerYcbcrModelConversion  suggestedYcbcrModel;
+                VkSamplerYcbcrRange            suggestedYcbcrRange;
+                VkChromaLocation               suggestedXChromaOffset;
+                VkChromaLocation               suggestedYChromaOffset;
             }
             
             alias PFN_vkGetAndroidHardwareBufferPropertiesANDROID                       = VkResult  function( VkDevice device, const( AHardwareBuffer )* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties );

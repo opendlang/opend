@@ -301,6 +301,11 @@ extern( System ) {
     alias PFN_vkCmdBlitImage2KHR                                                = void      function( VkCommandBuffer commandBuffer, const( VkBlitImageInfo2KHR )* pBlitImageInfo );
     alias PFN_vkCmdResolveImage2KHR                                             = void      function( VkCommandBuffer commandBuffer, const( VkResolveImageInfo2KHR )* pResolveImageInfo );
 
+    // VK_KHR_maintenance4
+    alias PFN_vkGetDeviceBufferMemoryRequirementsKHR                            = void      function( VkDevice device, const( VkDeviceBufferMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements );
+    alias PFN_vkGetDeviceImageMemoryRequirementsKHR                             = void      function( VkDevice device, const( VkDeviceImageMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements );
+    alias PFN_vkGetDeviceImageSparseMemoryRequirementsKHR                       = void      function( VkDevice device, const( VkDeviceImageMemoryRequirementsKHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements );
+
     // VK_EXT_debug_report
     alias PFN_vkCreateDebugReportCallbackEXT                                    = VkResult  function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
     alias PFN_vkDestroyDebugReportCallbackEXT                                   = void      function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -844,6 +849,11 @@ __gshared {
     PFN_vkCmdCopyImageToBuffer2KHR                                        vkCmdCopyImageToBuffer2KHR;
     PFN_vkCmdBlitImage2KHR                                                vkCmdBlitImage2KHR;
     PFN_vkCmdResolveImage2KHR                                             vkCmdResolveImage2KHR;
+
+    // VK_KHR_maintenance4
+    PFN_vkGetDeviceBufferMemoryRequirementsKHR                            vkGetDeviceBufferMemoryRequirementsKHR;
+    PFN_vkGetDeviceImageMemoryRequirementsKHR                             vkGetDeviceImageMemoryRequirementsKHR;
+    PFN_vkGetDeviceImageSparseMemoryRequirementsKHR                       vkGetDeviceImageSparseMemoryRequirementsKHR;
 
     // VK_EXT_debug_report
     PFN_vkCreateDebugReportCallbackEXT                                    vkCreateDebugReportCallbackEXT;
@@ -1542,6 +1552,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetInstanceProcAddr( instance, "vkCmdBlitImage2KHR" );
     vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetInstanceProcAddr( instance, "vkCmdResolveImage2KHR" );
 
+    // VK_KHR_maintenance4
+    vkGetDeviceBufferMemoryRequirementsKHR            = cast( PFN_vkGetDeviceBufferMemoryRequirementsKHR            ) vkGetInstanceProcAddr( instance, "vkGetDeviceBufferMemoryRequirementsKHR" );
+    vkGetDeviceImageMemoryRequirementsKHR             = cast( PFN_vkGetDeviceImageMemoryRequirementsKHR             ) vkGetInstanceProcAddr( instance, "vkGetDeviceImageMemoryRequirementsKHR" );
+    vkGetDeviceImageSparseMemoryRequirementsKHR       = cast( PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       ) vkGetInstanceProcAddr( instance, "vkGetDeviceImageSparseMemoryRequirementsKHR" );
+
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
     vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -1995,6 +2010,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdCopyImageToBuffer2KHR                        = cast( PFN_vkCmdCopyImageToBuffer2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer2KHR" );
     vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2KHR" );
     vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2KHR" );
+
+    // VK_KHR_maintenance4
+    vkGetDeviceBufferMemoryRequirementsKHR            = cast( PFN_vkGetDeviceBufferMemoryRequirementsKHR            ) vkGetDeviceProcAddr( device, "vkGetDeviceBufferMemoryRequirementsKHR" );
+    vkGetDeviceImageMemoryRequirementsKHR             = cast( PFN_vkGetDeviceImageMemoryRequirementsKHR             ) vkGetDeviceProcAddr( device, "vkGetDeviceImageMemoryRequirementsKHR" );
+    vkGetDeviceImageSparseMemoryRequirementsKHR       = cast( PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       ) vkGetDeviceProcAddr( device, "vkGetDeviceImageSparseMemoryRequirementsKHR" );
 
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );

@@ -286,6 +286,11 @@ struct DispatchDevice {
         vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2KHR" );
         vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2KHR" );
 
+        // VK_KHR_maintenance4
+        vkGetDeviceBufferMemoryRequirementsKHR            = cast( PFN_vkGetDeviceBufferMemoryRequirementsKHR            ) vkGetDeviceProcAddr( device, "vkGetDeviceBufferMemoryRequirementsKHR" );
+        vkGetDeviceImageMemoryRequirementsKHR             = cast( PFN_vkGetDeviceImageMemoryRequirementsKHR             ) vkGetDeviceProcAddr( device, "vkGetDeviceImageMemoryRequirementsKHR" );
+        vkGetDeviceImageSparseMemoryRequirementsKHR       = cast( PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       ) vkGetDeviceProcAddr( device, "vkGetDeviceImageSparseMemoryRequirementsKHR" );
+
         // VK_EXT_debug_marker
         vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
         vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -742,6 +747,11 @@ struct DispatchDevice {
     void      CmdCopyImageToBuffer2KHR( const( VkCopyImageToBufferInfo2KHR )* pCopyImageToBufferInfo ) { vkCmdCopyImageToBuffer2KHR( commandBuffer, pCopyImageToBufferInfo ); }
     void      CmdBlitImage2KHR( const( VkBlitImageInfo2KHR )* pBlitImageInfo ) { vkCmdBlitImage2KHR( commandBuffer, pBlitImageInfo ); }
     void      CmdResolveImage2KHR( const( VkResolveImageInfo2KHR )* pResolveImageInfo ) { vkCmdResolveImage2KHR( commandBuffer, pResolveImageInfo ); }
+
+    // VK_KHR_maintenance4
+    void      GetDeviceBufferMemoryRequirementsKHR( const( VkDeviceBufferMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceBufferMemoryRequirementsKHR( vkDevice, pInfo, pMemoryRequirements ); }
+    void      GetDeviceImageMemoryRequirementsKHR( const( VkDeviceImageMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceImageMemoryRequirementsKHR( vkDevice, pInfo, pMemoryRequirements ); }
+    void      GetDeviceImageSparseMemoryRequirementsKHR( const( VkDeviceImageMemoryRequirementsKHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements ) { vkGetDeviceImageSparseMemoryRequirementsKHR( vkDevice, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements ); }
 
     // VK_EXT_debug_marker
     VkResult  DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) { return vkDebugMarkerSetObjectTagEXT( vkDevice, pTagInfo ); }
@@ -1247,6 +1257,11 @@ struct DispatchDevice {
     PFN_vkCmdCopyImageToBuffer2KHR                        vkCmdCopyImageToBuffer2KHR;
     PFN_vkCmdBlitImage2KHR                                vkCmdBlitImage2KHR;
     PFN_vkCmdResolveImage2KHR                             vkCmdResolveImage2KHR;
+
+    // VK_KHR_maintenance4
+    PFN_vkGetDeviceBufferMemoryRequirementsKHR            vkGetDeviceBufferMemoryRequirementsKHR;
+    PFN_vkGetDeviceImageMemoryRequirementsKHR             vkGetDeviceImageMemoryRequirementsKHR;
+    PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       vkGetDeviceImageSparseMemoryRequirementsKHR;
 
     // VK_EXT_debug_marker
     PFN_vkDebugMarkerSetObjectTagEXT                      vkDebugMarkerSetObjectTagEXT;
