@@ -50,9 +50,7 @@ mir-ion-test-library
 subprojects/*/
 */subprojects/*/
 builddir
-mir-ion-test-x86_any
-mir-ion-test-parser-unittest
-mir-ion-test-unittest
+mir-ion-test-*
 ion_temp.json
 *.dylib
 *.out

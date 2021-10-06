@@ -782,7 +782,7 @@ unittest
     import mir.ion.ser.ion: serializeIon;
     import mir.ion.ser.text: serializeText;
 
-    {
+    () {
         Nullable!S value = S("LIBOR", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
         static immutable text = `LIBOR::$a::Rate::USD::GBP::{number:nan,s:null.string}`;
         assert(value.serializeText == text);
@@ -790,25 +790,25 @@ unittest
         assert(binary.ion2text == text);
         import mir.ion.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S.serializeText == text);
-    }
+    } ();
 
-    {
+    () {
         auto value = S2(S2.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
         static immutable text = `$a::Rate::USD::GBP::{number:nan,s:null.string}`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
         import mir.ion.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S2.serializeText == text);
-    }
+    } ();
 
-    {
+    () {
         auto value = S("USD", S.Data(3));
         static immutable text = `USD::3`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text, binary.ion2text);
         import mir.ion.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S.serializeText == text);
-    }
+    } ();
 }
 
 

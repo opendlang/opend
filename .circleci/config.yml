@@ -26,22 +26,6 @@ jobs:
       - run: ldc2 --version
       - run: dub --help | tail -n 1
       - run: bash -e test_travis.sh
-  test_coverage:
-    docker:
-      - image: libmir/circle-dlang
-    steps:
-      - checkout
-      - run:
-          name: Pull submodules
-          command: |
-            git submodule sync
-            git submodule update --init
-      - run:
-          name: Run integration testing
-          command: |
-            ls
-            cd ion-integration-tester
-            dub run -- --no-colors --fails-only
   test_example:
     docker:
       - image: libmir/circle-dlang
@@ -69,7 +53,6 @@ workflows:
     jobs:
       - test_aarch64
       - test_example
-      - test_coverage
       - mirci/test_and_build_docs:
           filters:
             tags:

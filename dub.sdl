@@ -26,6 +26,12 @@ configuration "unittest" {
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
+configuration "asan-unittest" {
+    excludedSourceFiles "*/bloomberg*"
+    dflags "--fsanitize=address" platform="ldc"
+    versions "mir_ion_test" "mir_ion_parser_test"
+}
+
 configuration "parser-test" {
     excludedSourceFiles "*/bloomberg*"
     buildOptions "unittests" "debugMode" "debugInfo"

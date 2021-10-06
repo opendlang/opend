@@ -1,0 +1,30 @@
+name: Integration Testing
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch:
+    # allow this workflow to be triggered manually
+
+jobs:
+  test_integration:
+    name: 'Run integration testing with upstream Ion data'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code and submodules 
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Set up D compiler / tools
+        uses: dlang-community/setup-dlang@v1.1.0
+        with:
+          compiler: ldc-latest
+      - name: Run integration tester 
+        id: test
+        run: |
+          cd ion-integration-tester
+          dub run -- --no-colors --fails-only
