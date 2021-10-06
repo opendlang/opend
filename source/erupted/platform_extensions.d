@@ -41,6 +41,7 @@ enum NV_acquire_winrt_display;
 enum EXT_directfb_surface;
 enum FUCHSIA_external_memory;
 enum FUCHSIA_external_semaphore;
+enum FUCHSIA_buffer_collection;
 enum QNX_screen_surface;
 
 
@@ -57,7 +58,7 @@ alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
-alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface, FUCHSIA_external_memory, FUCHSIA_external_semaphore );
+alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface, FUCHSIA_external_memory, FUCHSIA_external_semaphore, FUCHSIA_buffer_collection );
 alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
 alias USE_PLATFORM_DIRECTFB_EXT    = AliasSeq!( EXT_directfb_surface );
 alias USE_PLATFORM_SCREEN_QNX      = AliasSeq!( QNX_screen_surface );
@@ -1430,6 +1431,133 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 = VkResult  function( VkDevice device, const( VkSemaphoreGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle );
         }
 
+        // VK_FUCHSIA_buffer_collection : types and function pointer type aliases
+        else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+            enum VK_FUCHSIA_buffer_collection = 1;
+
+            mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkBufferCollectionFUCHSIA} );
+            
+            enum VK_FUCHSIA_BUFFER_COLLECTION_SPEC_VERSION = 2;
+            enum VK_FUCHSIA_BUFFER_COLLECTION_EXTENSION_NAME = "VK_FUCHSIA_buffer_collection";
+            
+            alias VkImageFormatConstraintsFlagsFUCHSIA = VkFlags;
+            enum VkImageFormatConstraintsFlagBitsFUCHSIA : VkImageFormatConstraintsFlagsFUCHSIA {
+                VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA = 0x7FFFFFFF
+            }
+            
+            enum VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA = VkImageFormatConstraintsFlagBitsFUCHSIA.VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA;
+            
+            alias VkImageConstraintsInfoFlagsFUCHSIA = VkFlags;
+            enum VkImageConstraintsInfoFlagBitsFUCHSIA : VkImageConstraintsInfoFlagsFUCHSIA {
+                VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA            = 0x00000001,
+                VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA             = 0x00000002,
+                VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA           = 0x00000004,
+                VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA            = 0x00000008,
+                VK_IMAGE_CONSTRAINTS_INFO_PROTECTED_OPTIONAL_FUCHSIA         = 0x00000010,
+                VK_IMAGE_CONSTRAINTS_INFO_FLAG_BITS_MAX_ENUM_FUCHSIA         = 0x7FFFFFFF
+            }
+            
+            enum VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA           = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA;
+            enum VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA            = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA;
+            enum VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA          = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA;
+            enum VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA           = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA;
+            enum VK_IMAGE_CONSTRAINTS_INFO_PROTECTED_OPTIONAL_FUCHSIA        = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_PROTECTED_OPTIONAL_FUCHSIA;
+            enum VK_IMAGE_CONSTRAINTS_INFO_FLAG_BITS_MAX_ENUM_FUCHSIA        = VkImageConstraintsInfoFlagBitsFUCHSIA.VK_IMAGE_CONSTRAINTS_INFO_FLAG_BITS_MAX_ENUM_FUCHSIA;
+            
+            struct VkBufferCollectionCreateInfoFUCHSIA {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_CREATE_INFO_FUCHSIA;
+                const( void )*   pNext;
+                zx_handle_t      collectionToken;
+            }
+            
+            struct VkImportMemoryBufferCollectionFUCHSIA {
+                VkStructureType            sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_BUFFER_COLLECTION_FUCHSIA;
+                const( void )*             pNext;
+                VkBufferCollectionFUCHSIA  collection;
+                uint32_t                   index;
+            }
+            
+            struct VkBufferCollectionImageCreateInfoFUCHSIA {
+                VkStructureType            sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_IMAGE_CREATE_INFO_FUCHSIA;
+                const( void )*             pNext;
+                VkBufferCollectionFUCHSIA  collection;
+                uint32_t                   index;
+            }
+            
+            struct VkBufferCollectionConstraintsInfoFUCHSIA {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_CONSTRAINTS_INFO_FUCHSIA;
+                const( void )*   pNext;
+                uint32_t         minBufferCount;
+                uint32_t         maxBufferCount;
+                uint32_t         minBufferCountForCamping;
+                uint32_t         minBufferCountForDedicatedSlack;
+                uint32_t         minBufferCountForSharedSlack;
+            }
+            
+            struct VkBufferConstraintsInfoFUCHSIA {
+                VkStructureType                           sType = VK_STRUCTURE_TYPE_BUFFER_CONSTRAINTS_INFO_FUCHSIA;
+                const( void )*                            pNext;
+                VkBufferCreateInfo                        createInfo;
+                VkFormatFeatureFlags                      requiredFormatFeatures;
+                VkBufferCollectionConstraintsInfoFUCHSIA  bufferCollectionConstraints;
+            }
+            
+            struct VkBufferCollectionBufferCreateInfoFUCHSIA {
+                VkStructureType            sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_BUFFER_CREATE_INFO_FUCHSIA;
+                const( void )*             pNext;
+                VkBufferCollectionFUCHSIA  collection;
+                uint32_t                   index;
+            }
+            
+            struct VkSysmemColorSpaceFUCHSIA {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_SYSMEM_COLOR_SPACE_FUCHSIA;
+                const( void )*   pNext;
+                uint32_t         colorSpace;
+            }
+            
+            struct VkBufferCollectionPropertiesFUCHSIA {
+                VkStructureType                sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_PROPERTIES_FUCHSIA;
+                void*                          pNext;
+                uint32_t                       memoryTypeBits;
+                uint32_t                       bufferCount;
+                uint32_t                       createInfoIndex;
+                uint64_t                       sysmemPixelFormat;
+                VkFormatFeatureFlags           formatFeatures;
+                VkSysmemColorSpaceFUCHSIA      sysmemColorSpaceIndex;
+                VkComponentMapping             samplerYcbcrConversionComponents;
+                VkSamplerYcbcrModelConversion  suggestedYcbcrModel;
+                VkSamplerYcbcrRange            suggestedYcbcrRange;
+                VkChromaLocation               suggestedXChromaOffset;
+                VkChromaLocation               suggestedYChromaOffset;
+            }
+            
+            struct VkImageFormatConstraintsInfoFUCHSIA {
+                VkStructureType                       sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_CONSTRAINTS_INFO_FUCHSIA;
+                const( void )*                        pNext;
+                VkImageCreateInfo                     imageCreateInfo;
+                VkFormatFeatureFlags                  requiredFormatFeatures;
+                VkImageFormatConstraintsFlagsFUCHSIA  flags;
+                uint64_t                              sysmemPixelFormat;
+                uint32_t                              colorSpaceCount;
+                const( VkSysmemColorSpaceFUCHSIA )*   pColorSpaces;
+            }
+            
+            struct VkImageConstraintsInfoFUCHSIA {
+                VkStructureType                                sType = VK_STRUCTURE_TYPE_IMAGE_CONSTRAINTS_INFO_FUCHSIA;
+                const( void )*                                 pNext;
+                uint32_t                                       formatConstraintsCount;
+                const( VkImageFormatConstraintsInfoFUCHSIA )*  pFormatConstraints;
+                VkBufferCollectionConstraintsInfoFUCHSIA       bufferCollectionConstraints;
+                VkImageConstraintsInfoFlagsFUCHSIA             flags;
+            }
+            
+            alias PFN_vkCreateBufferCollectionFUCHSIA                                   = VkResult  function( VkDevice device, const( VkBufferCollectionCreateInfoFUCHSIA )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkBufferCollectionFUCHSIA* pCollection );
+            alias PFN_vkSetBufferCollectionImageConstraintsFUCHSIA                      = VkResult  function( VkDevice device, VkBufferCollectionFUCHSIA collection, const( VkImageConstraintsInfoFUCHSIA )* pImageConstraintsInfo );
+            alias PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA                     = VkResult  function( VkDevice device, VkBufferCollectionFUCHSIA collection, const( VkBufferConstraintsInfoFUCHSIA )* pBufferConstraintsInfo );
+            alias PFN_vkDestroyBufferCollectionFUCHSIA                                  = void      function( VkDevice device, VkBufferCollectionFUCHSIA collection, const( VkAllocationCallbacks )* pAllocator );
+            alias PFN_vkGetBufferCollectionPropertiesFUCHSIA                            = VkResult  function( VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties );
+        }
+
         // VK_QNX_screen_surface : types and function pointer type aliases
         else static if( __traits( isSame, extension, QNX_screen_surface )) {
             enum VK_QNX_screen_surface = 1;
@@ -1603,6 +1731,15 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
                 PFN_vkImportSemaphoreZirconHandleFUCHSIA                              vkImportSemaphoreZirconHandleFUCHSIA;
                 PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 vkGetSemaphoreZirconHandleFUCHSIA;
+            }
+
+            // VK_FUCHSIA_buffer_collection : function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                PFN_vkCreateBufferCollectionFUCHSIA                                   vkCreateBufferCollectionFUCHSIA;
+                PFN_vkSetBufferCollectionImageConstraintsFUCHSIA                      vkSetBufferCollectionImageConstraintsFUCHSIA;
+                PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA                     vkSetBufferCollectionBufferConstraintsFUCHSIA;
+                PFN_vkDestroyBufferCollectionFUCHSIA                                  vkDestroyBufferCollectionFUCHSIA;
+                PFN_vkGetBufferCollectionPropertiesFUCHSIA                            vkGetBufferCollectionPropertiesFUCHSIA;
             }
 
             // VK_QNX_screen_surface : function pointer decelerations
@@ -1812,6 +1949,15 @@ mixin template Platform_Extensions( extensions... ) {
                 vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreZirconHandleFUCHSIA" );
                 vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreZirconHandleFUCHSIA" );
             }
+
+            // VK_FUCHSIA_buffer_collection : load instance based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                vkCreateBufferCollectionFUCHSIA                   = cast( PFN_vkCreateBufferCollectionFUCHSIA                   ) vkGetInstanceProcAddr( instance, "vkCreateBufferCollectionFUCHSIA" );
+                vkSetBufferCollectionImageConstraintsFUCHSIA      = cast( PFN_vkSetBufferCollectionImageConstraintsFUCHSIA      ) vkGetInstanceProcAddr( instance, "vkSetBufferCollectionImageConstraintsFUCHSIA" );
+                vkSetBufferCollectionBufferConstraintsFUCHSIA     = cast( PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA     ) vkGetInstanceProcAddr( instance, "vkSetBufferCollectionBufferConstraintsFUCHSIA" );
+                vkDestroyBufferCollectionFUCHSIA                  = cast( PFN_vkDestroyBufferCollectionFUCHSIA                  ) vkGetInstanceProcAddr( instance, "vkDestroyBufferCollectionFUCHSIA" );
+                vkGetBufferCollectionPropertiesFUCHSIA            = cast( PFN_vkGetBufferCollectionPropertiesFUCHSIA            ) vkGetInstanceProcAddr( instance, "vkGetBufferCollectionPropertiesFUCHSIA" );
+            }
         }
     }
 
@@ -1897,6 +2043,15 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
                 vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetDeviceProcAddr( device, "vkImportSemaphoreZirconHandleFUCHSIA" );
                 vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetDeviceProcAddr( device, "vkGetSemaphoreZirconHandleFUCHSIA" );
+            }
+
+            // VK_FUCHSIA_buffer_collection : load device based device level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                vkCreateBufferCollectionFUCHSIA                   = cast( PFN_vkCreateBufferCollectionFUCHSIA                   ) vkGetDeviceProcAddr( device, "vkCreateBufferCollectionFUCHSIA" );
+                vkSetBufferCollectionImageConstraintsFUCHSIA      = cast( PFN_vkSetBufferCollectionImageConstraintsFUCHSIA      ) vkGetDeviceProcAddr( device, "vkSetBufferCollectionImageConstraintsFUCHSIA" );
+                vkSetBufferCollectionBufferConstraintsFUCHSIA     = cast( PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA     ) vkGetDeviceProcAddr( device, "vkSetBufferCollectionBufferConstraintsFUCHSIA" );
+                vkDestroyBufferCollectionFUCHSIA                  = cast( PFN_vkDestroyBufferCollectionFUCHSIA                  ) vkGetDeviceProcAddr( device, "vkDestroyBufferCollectionFUCHSIA" );
+                vkGetBufferCollectionPropertiesFUCHSIA            = cast( PFN_vkGetBufferCollectionPropertiesFUCHSIA            ) vkGetDeviceProcAddr( device, "vkGetBufferCollectionPropertiesFUCHSIA" );
             }
         }
     }
@@ -2000,6 +2155,15 @@ mixin template Platform_Extensions( extensions... ) {
                     vkImportSemaphoreZirconHandleFUCHSIA              = cast( PFN_vkImportSemaphoreZirconHandleFUCHSIA              ) vkGetDeviceProcAddr( device, "vkImportSemaphoreZirconHandleFUCHSIA" );
                     vkGetSemaphoreZirconHandleFUCHSIA                 = cast( PFN_vkGetSemaphoreZirconHandleFUCHSIA                 ) vkGetDeviceProcAddr( device, "vkGetSemaphoreZirconHandleFUCHSIA" );
                 }
+
+                // VK_FUCHSIA_buffer_collection : load dispatch device member function definitions
+                else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                    vkCreateBufferCollectionFUCHSIA                   = cast( PFN_vkCreateBufferCollectionFUCHSIA                   ) vkGetDeviceProcAddr( device, "vkCreateBufferCollectionFUCHSIA" );
+                    vkSetBufferCollectionImageConstraintsFUCHSIA      = cast( PFN_vkSetBufferCollectionImageConstraintsFUCHSIA      ) vkGetDeviceProcAddr( device, "vkSetBufferCollectionImageConstraintsFUCHSIA" );
+                    vkSetBufferCollectionBufferConstraintsFUCHSIA     = cast( PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA     ) vkGetDeviceProcAddr( device, "vkSetBufferCollectionBufferConstraintsFUCHSIA" );
+                    vkDestroyBufferCollectionFUCHSIA                  = cast( PFN_vkDestroyBufferCollectionFUCHSIA                  ) vkGetDeviceProcAddr( device, "vkDestroyBufferCollectionFUCHSIA" );
+                    vkGetBufferCollectionPropertiesFUCHSIA            = cast( PFN_vkGetBufferCollectionPropertiesFUCHSIA            ) vkGetDeviceProcAddr( device, "vkGetBufferCollectionPropertiesFUCHSIA" );
+                }
             }
         }
 
@@ -2077,6 +2241,15 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
                 VkResult  ImportSemaphoreZirconHandleFUCHSIA( const( VkImportSemaphoreZirconHandleInfoFUCHSIA )* pImportSemaphoreZirconHandleInfo ) { return vkImportSemaphoreZirconHandleFUCHSIA( vkDevice, pImportSemaphoreZirconHandleInfo ); }
                 VkResult  GetSemaphoreZirconHandleFUCHSIA( const( VkSemaphoreGetZirconHandleInfoFUCHSIA )* pGetZirconHandleInfo, zx_handle_t* pZirconHandle ) { return vkGetSemaphoreZirconHandleFUCHSIA( vkDevice, pGetZirconHandleInfo, pZirconHandle ); }
+            }
+
+            // VK_FUCHSIA_buffer_collection : dispatch device convenience member functions
+            else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                VkResult  CreateBufferCollectionFUCHSIA( const( VkBufferCollectionCreateInfoFUCHSIA )* pCreateInfo, VkBufferCollectionFUCHSIA* pCollection ) { return vkCreateBufferCollectionFUCHSIA( vkDevice, pCreateInfo, pAllocator, pCollection ); }
+                VkResult  SetBufferCollectionImageConstraintsFUCHSIA( VkBufferCollectionFUCHSIA collection, const( VkImageConstraintsInfoFUCHSIA )* pImageConstraintsInfo ) { return vkSetBufferCollectionImageConstraintsFUCHSIA( vkDevice, collection, pImageConstraintsInfo ); }
+                VkResult  SetBufferCollectionBufferConstraintsFUCHSIA( VkBufferCollectionFUCHSIA collection, const( VkBufferConstraintsInfoFUCHSIA )* pBufferConstraintsInfo ) { return vkSetBufferCollectionBufferConstraintsFUCHSIA( vkDevice, collection, pBufferConstraintsInfo ); }
+                void      DestroyBufferCollectionFUCHSIA( VkBufferCollectionFUCHSIA collection ) { vkDestroyBufferCollectionFUCHSIA( vkDevice, collection, pAllocator ); }
+                VkResult  GetBufferCollectionPropertiesFUCHSIA( VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties ) { return vkGetBufferCollectionPropertiesFUCHSIA( vkDevice, collection, pProperties ); }
             }
         }
 
@@ -2233,6 +2406,15 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, FUCHSIA_external_semaphore )) {
                 PFN_vkImportSemaphoreZirconHandleFUCHSIA                              vkImportSemaphoreZirconHandleFUCHSIA;
                 PFN_vkGetSemaphoreZirconHandleFUCHSIA                                 vkGetSemaphoreZirconHandleFUCHSIA;
+            }
+
+            // VK_FUCHSIA_buffer_collection : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_buffer_collection )) {
+                PFN_vkCreateBufferCollectionFUCHSIA                                   vkCreateBufferCollectionFUCHSIA;
+                PFN_vkSetBufferCollectionImageConstraintsFUCHSIA                      vkSetBufferCollectionImageConstraintsFUCHSIA;
+                PFN_vkSetBufferCollectionBufferConstraintsFUCHSIA                     vkSetBufferCollectionBufferConstraintsFUCHSIA;
+                PFN_vkDestroyBufferCollectionFUCHSIA                                  vkDestroyBufferCollectionFUCHSIA;
+                PFN_vkGetBufferCollectionPropertiesFUCHSIA                            vkGetBufferCollectionPropertiesFUCHSIA;
             }
 
             // VK_QNX_screen_surface : dispatch device member function pointer decelerations
