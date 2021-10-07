@@ -420,7 +420,8 @@ struct TextSerializer(string sep, Appender)
     ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
-        num.toString(appender);
+        import mir.format : NumericSpec;
+        num.toString(appender, NumericSpec(NumericSpec.format.human, '\0', 'd'));
     }
 
     ///
