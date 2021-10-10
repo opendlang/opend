@@ -218,7 +218,7 @@ public: // This is also part of the public API
         startEncoding(format, sampleRate, numChannels);
     }
 
-    /// Returns: `true` if using operations that are accetpable in an audio thread (eg: no file I/O).
+    /// Returns: `true` if using this stream's operations is acceptable in an audio thread (eg: no file I/O).
     bool realtimeSafe() @nogc
     {
         return fileContext is null;
@@ -358,14 +358,14 @@ public: // This is also part of the public API
         return _format;
     }
 
-    /// Returns: File format of this stream.
+    /// Returns: Number of channels in this stream. 1 means mono, 2 means stereo...
     int getNumChannels() nothrow @nogc
     {
         return _numChannels;
     }
 
     /// Returns: Length of this stream in frames.
-    /// Note: may return `audiostreamUnknownLength` if the length is unknown.
+    /// Note: may return the special value `audiostreamUnknownLength` if the length is unknown.
     long getLengthInFrames() nothrow @nogc
     {
         return _lengthInFrames;
@@ -377,8 +377,16 @@ public: // This is also part of the public API
         return _sampleRate;
     }
 
-    /// Read interleaved float samples.
-    /// `outData` must have enough room for `frames` * `channels` decoded samples.
+    /// Read interleaved float samples in the given buffer `outData`.
+    /// 
+    /// Params:
+    ///     outData Buffer where to put decoded samples. Samples are arranged in an interleaved fashion.
+    ///     frames The number of frames to be read.
+    ///
+    /// Returns: Number of actually read frames. Multiply by `getNumChannels()` to get the number of read samples.
+    ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
+    ///
+    /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
     int readSamplesFloat(float* outData, int frames) @nogc
     {
         // If you fail here, you are using this `AudioStream` for decoding:
@@ -545,8 +553,14 @@ public: // This is also part of the public API
         return readSamplesFloat(outData.ptr, cast(int)(outData.length / _numChannels) );
     }
 
-    /// Write interleaved float samples.
-    /// `inData` must have enough data for `frames` * `channels` samples.
+    /// Write interleaved float samples to the stream, from the given buffer `inData[0..frames]`.
+    /// 
+    /// Params:
+    ///     inData Buffer of interleaved samples to append to the stream.
+    ///     frames The number of frames to append to the stream.
+    ///
+    /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
+    ///          When that number is less than `frames`, it means the stream had a write error.
     int writeSamplesFloat(float* inData, int frames) nothrow @nogc
     {
         // If you fail here, you are using this `AudioStream` for encoding:
