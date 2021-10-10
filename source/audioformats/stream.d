@@ -793,7 +793,7 @@ private:
                     _format = AudioFileFormat.ogg;
                     _sampleRate = _oggDecoder.sampleRate;
                     _numChannels = _oggDecoder.chans;
-                    _lengthInFrames = audiostreamUnknownLength;//stb_vorbis_stream_length_in_samples(_oggDecoder);
+                    _lengthInFrames = _oggDecoder.streamLengthInSamples();
                     return;
                 }
                 else
