@@ -3581,6 +3581,10 @@ public class VorbisDecoder {
     IOCallbacks* io;
     void* userData;
 
+    // run-time results
+    bool eof = true;
+    STBVorbisError error;
+
   // return # of bytes read, 0 on eof, -1 on error
   // if called with `buf is null`, do `close()`
  // alias readCB = int delegate (void[] buf, uint ofs, VorbisDecoder vb) nothrow @nogc;
@@ -3636,9 +3640,7 @@ private:
   int setup_offset;
   int temp_offset;
 
-  // run-time results
-  bool eof = true;
-  STBVorbisError error;
+
 
   // header info
   int[2] blocksize;

@@ -788,7 +788,7 @@ private:
 
                 int error;
                 _oggDecoder = mallocNew!VorbisDecoder(_io, userData);
-                if (_oggDecoder !is null)
+                if (_oggDecoder.error == STBVorbisError.no_error)
                 {
                     _format = AudioFileFormat.ogg;
                     _sampleRate = _oggDecoder.sampleRate;
@@ -796,6 +796,12 @@ private:
                     _lengthInFrames = audiostreamUnknownLength;//stb_vorbis_stream_length_in_samples(_oggDecoder);
                     return;
                 }
+                else
+                {
+                    destroyFree(_oggDecoder);
+                    _oggDecoder = null;
+                }
+
             }
         }
 
