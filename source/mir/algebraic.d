@@ -2393,12 +2393,21 @@ unittest
     assertThrown!Exception(collide(oa, es));
     assertThrown!Exception(collide(oa, os));
 
-     // not enough information to deduce the type from (ea, es) pair
-    static assert(is(typeof(collide(ea, es)) == void));
     // can deduce the type based on other return values
     static assert(is(typeof(collide(ea, os)) == string));
     static assert(is(typeof(collide(oa, es)) == string));
     static assert(is(typeof(collide(oa, os)) == string));
+
+    // Also allows newer compilers to detect combinations which always throw an exception
+    static if (is(typeof(collideWith(ea, es)) == noreturn))
+    {
+        static assert(is(typeof(collide(ea, es)) == string));
+    }
+    else
+    {
+        // not enough information to deduce the type from (ea, es) pair
+        static assert(is(typeof(collide(ea, es)) == void));
+    }
 
     // Spaceship-Asteroid
     assert(collide(es, ea) == "s/a");
