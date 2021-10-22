@@ -1799,6 +1799,7 @@ unittest
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128d _mm_load_pd (const(double) * mem_addr) pure
 {
+    pragma(inline, true);
     __m128d* aligned = cast(__m128d*)mem_addr;
     return *aligned;
 }
@@ -1846,6 +1847,7 @@ unittest
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted // TODO: shoudln't be trusted because alignment, Issue #62
 {
+    pragma(inline, true);
     return *mem_addr;
 }
 unittest
@@ -1861,6 +1863,7 @@ alias _mm_load1_pd = _mm_load_pd1; ///
 /// lower element from `a` to result. `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     a.ptr[1] = *mem_addr;
     return a;
 }
@@ -1877,6 +1880,7 @@ unittest
 // Note: strange signature since the memory doesn't have to aligned (Issue #60)
 __m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted // TODO signature
 {
+    pragma(inline, true);
     auto pLong = cast(const(long)*)mem_addr;
     long2 r = [0, 0];
     r.ptr[0] = *pLong;
@@ -1928,6 +1932,7 @@ unittest
 /// `mem_addr` does not need to be aligned on any particular boundary.
 __m128d _mm_loadu_pd (const(double)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_loadupd(mem_addr); 
@@ -1975,6 +1980,7 @@ unittest
 /// Load 128-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
 __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_loaddqu(cast(const(char*))mem_addr);
@@ -1994,6 +2000,7 @@ unittest
 /// Load unaligned 32-bit integer from memory into the first element of result.
 __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     int r = *cast(int*)(mem_addr);
     int4 result = [0, 0, 0, 0];
     result.ptr[0] = r;
@@ -4131,6 +4138,7 @@ __m128d _mm_srli_pd(ubyte bytes)(__m128d v) pure @safe
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_store_pd (double* mem_addr, __m128d a) pure @trusted
 {
+    pragma(inline, true);
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = a;
 }
@@ -4150,6 +4158,7 @@ void _mm_store_pd1 (double* mem_addr, __m128d a) pure @trusted
 /// be aligned on any particular boundary.
 void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 {
+    pragma(inline, true);
     *mem_addr = a.array[0];
 }
 
@@ -4157,6 +4166,7 @@ void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 /// general-protection exception may be generated.
 void _mm_store_si128 (__m128i* mem_addr, __m128i a) pure @safe
 {
+    pragma(inline, true);
     *mem_addr = a;
 }
 
@@ -4165,6 +4175,7 @@ alias _mm_store1_pd = _mm_store_pd1; ///
 /// Store the upper double-precision (64-bit) floating-point element from `a` into memory.
 void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
 {
+    pragma(inline, true);
     *mem_addr = a.array[1];
 }
 
@@ -4172,6 +4183,7 @@ void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
 // expectations from the user point of view. This problem also exist in C++.
 void _mm_storel_epi64 (__m128i* mem_addr, __m128i a) pure @safe
 {
+    pragma(inline, true);
     long* dest = cast(long*)mem_addr;
     long2 la = cast(long2)a;
     *dest = la.array[0];
@@ -4187,6 +4199,7 @@ unittest
 /// Store the lower double-precision (64-bit) floating-point element from `a` into memory.
 void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 {
+    pragma(inline, true);
     *mem_addr = a.array[0];
 }
 
@@ -4202,6 +4215,7 @@ void _mm_storer_pd (double* mem_addr, __m128d a) pure
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 {
+    pragma(inline, true);
     storeUnaligned!double2(a, mem_addr);
 }
 
@@ -4209,6 +4223,7 @@ void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 /// boundary.
 void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
 {
+    pragma(inline, true);
     storeUnaligned!__m128i(a, cast(int*)mem_addr);
 }
 
@@ -4216,6 +4231,7 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_si32 (void* mem_addr, __m128i a) pure @trusted
 {
+    pragma(inline, true);
     int* dest = cast(int*)mem_addr;
     *dest = a.array[0];
 }

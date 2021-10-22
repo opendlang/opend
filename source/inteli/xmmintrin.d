@@ -1304,6 +1304,7 @@ unittest
 //  `p` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 __m128 _mm_load_ps(const(float)*p) pure @trusted // TODO shouldn't be trusted
 {
+    pragma(inline, true);
     return *cast(__m128*)p;
 }
 unittest
@@ -1330,6 +1331,7 @@ unittest
 /// elements. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (DMD_with_DSIMD)
     {
         return cast(__m128)__simd(XMM.LODSS, *cast(__m128*)mem_addr);
@@ -1359,6 +1361,7 @@ alias _mm_load1_ps = _mm_load_ps1;
 /// and copy the lower 2 elements from `a` to result. `mem_addr does` not need to be aligned on any particular boundary.
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (DMD_with_DSIMD)
     {
         return cast(__m128) __simd(XMM.LODHPS, a, *cast(const(__m128)*)mem_addr); 
@@ -1385,6 +1388,7 @@ unittest
 /// and copy the upper 2 elements from `a` to result. `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (DMD_with_DSIMD)
     {
         return cast(__m128) __simd(XMM.LODLPS, a, *cast(const(__m128)*)mem_addr); 
@@ -1439,6 +1443,7 @@ unittest
 /// `mem_addr` does not need to be aligned on any particular boundary.
 __m128 _mm_loadu_ps(const(float)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_loadups(mem_addr);
@@ -1523,6 +1528,7 @@ unittest
 /// Upper 64-bit is zeroed.
 __m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
+    pragma(inline, true);
     static if (DMD_with_DSIMD)
     {
         return cast(__m128i) __simd(XMM.LODQ, *cast(__m128i*)mem_addr);
@@ -2653,6 +2659,7 @@ unittest
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_store_ps (float* mem_addr, __m128 a) pure
 {
+    pragma(inline, true);
     __m128* aligned = cast(__m128*)mem_addr;
     *aligned = a;
 }
@@ -2663,6 +2670,7 @@ deprecated("Use _mm_store1_ps instead") alias _mm_store_ps1 = _mm_store1_ps; ///
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
 {
+    pragma(inline, true);
     *mem_addr = a.array[0];
 }
 unittest
@@ -2695,6 +2703,7 @@ unittest
 /// Store the upper 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
+    pragma(inline, true);
     long2 la = cast(long2)a;
     (*p).ptr[0] = la.array[1];
 }
@@ -2709,6 +2718,7 @@ unittest
 /// Store the lower 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
+    pragma(inline, true);
     long2 la = cast(long2)a;
     (*p).ptr[0] = la.array[0];
 }
@@ -2744,6 +2754,7 @@ unittest
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe // TODO should not be trusted
 {
+    pragma(inline, true);
     storeUnaligned!(float4)(a, mem_addr);
 }
 
