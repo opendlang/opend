@@ -2408,6 +2408,7 @@ unittest
 /// Broadcast single-precision (32-bit) floating-point value `a` to all elements.
 __m128 _mm_set1_ps (float a) pure @trusted
 {
+    pragma(inline, true);
     __m128 r = a;
     return r;
 }
@@ -2484,6 +2485,7 @@ unittest
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
+    pragma(inline, true);
     float[4] result = [e3, e2, e1, e0];
     return loadUnaligned!(float4)(result.ptr);
 }

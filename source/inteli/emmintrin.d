@@ -2987,6 +2987,7 @@ unittest
 /// Set packed 32-bit integers with the supplied values.
 __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
+    pragma(inline, true);
     int[4] result = [e0, e1, e2, e3];
     return loadUnaligned!(int4)(result.ptr);
 }
@@ -3000,6 +3001,7 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
 {
+    pragma(inline, true);
     long[2] result = [e0.array[0], e1.array[0]];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
@@ -3014,6 +3016,7 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64x (long e1, long e0) pure @trusted
 {
+    pragma(inline, true);
     long[2] result = [e0, e1];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
@@ -3039,6 +3042,7 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
 {
+    pragma(inline, true);
     double[2] result = [e0, e1];
     return loadUnaligned!(double2)(result.ptr);
 }
@@ -3052,6 +3056,7 @@ unittest
 /// Broadcast double-precision (64-bit) floating-point value `a` to all element.
 __m128d _mm_set_pd1 (double a) pure @trusted
 {
+    pragma(inline, true);
     double[2] result = [a, a];
     return loadUnaligned!(double2)(result.ptr);
 }
@@ -3079,7 +3084,10 @@ __m128i _mm_set1_epi16 (short a) pure @trusted
         return cast(__m128i) v;
     }
     else
+    {
+        pragma(inline, true);
         return cast(__m128i)(short8(a));
+    }
 }
 unittest
 {
@@ -3091,6 +3099,7 @@ unittest
 /// Broadcast 32-bit integer `a` to all elements.
 __m128i _mm_set1_epi32 (int a) pure @trusted
 {
+    pragma(inline, true);
     return cast(__m128i)(int4(a));
 }
 unittest
@@ -3132,6 +3141,7 @@ unittest
 /// Broadcast 8-bit integer `a` to all elements.
 __m128i _mm_set1_epi8 (byte a) pure @trusted
 {
+    pragma(inline, true);
     byte16 b = a; // Must be on its own line to workaround https://issues.dlang.org/show_bug.cgi?id=21470
     return cast(__m128i)(b);
 }
@@ -3161,6 +3171,7 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
+    pragma(inline, true);
     int[4] result = [e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
 }
@@ -3198,6 +3209,7 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
+    pragma(inline, true);
     double2 result;
     result.ptr[0] = e1;
     result.ptr[1] = e0;
