@@ -103,6 +103,7 @@ unittest
 /// Add packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_add_pd (__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return a + b;
 }
 unittest
@@ -1683,6 +1684,7 @@ deprecated("Use _mm_cvttsd_si64 instead") alias _mm_cvttsd_si64x = _mm_cvttsd_si
 /// Divide packed double-precision (64-bit) floating-point elements in `a` by packed elements in `b`.
 __m128d _mm_div_pd(__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return a / b;
 }
 
@@ -2573,6 +2575,7 @@ unittest
 /// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`, and return the results. 
 __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return a * b;
 }
 unittest
@@ -4266,6 +4269,7 @@ __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
 /// floating-point elements in `a`.
 __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return a - b;
 }
 
@@ -4543,6 +4547,7 @@ alias _mm_ucomineq_sd = _mm_comineq_sd; ///
 /// Return vector of type `__m128d` with undefined elements.
 __m128d _mm_undefined_pd() pure @safe
 {
+    pragma(inline, true);
     __m128d result = void;
     return result;
 }
@@ -4550,6 +4555,7 @@ __m128d _mm_undefined_pd() pure @safe
 /// Return vector of type `__m128i` with undefined elements.
 __m128i _mm_undefined_si128() pure @safe
 {
+    pragma(inline, true);
     __m128i result = void;
     return result;
 }

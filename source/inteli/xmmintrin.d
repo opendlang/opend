@@ -58,6 +58,7 @@ enum int _MM_FLUSH_ZERO_OFF    = 0x0000; ///ditto
 /// Add packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
+    pragma(inline, true);
     return a + b;
 }
 unittest
@@ -1111,6 +1112,7 @@ unittest
 /// Divide packed single-precision (32-bit) floating-point elements in `a` by packed elements in `b`.
 __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
 {
+    pragma(inline, true);
     return a / b;
 }
 unittest
@@ -1868,6 +1870,7 @@ unittest
 /// Multiply packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 {
+    pragma(inline, true);
     return a * b;
 }
 unittest
@@ -2771,6 +2774,7 @@ unittest
 /// floating-point elements in `a`.
 __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 {
+    pragma(inline, true);
     return a - b;
 }
 unittest
@@ -2849,6 +2853,7 @@ alias _mm_ucomineq_ss = _mm_comineq_ss;
 /// Return vector of type `__m128` with undefined elements.
 __m128 _mm_undefined_ps() pure @safe
 {
+    pragma(inline, true);
     __m128 undef = void;
     return undef;
 }
