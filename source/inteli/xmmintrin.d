@@ -100,6 +100,7 @@ unittest
 /// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_and_ps (__m128 a, __m128 b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128)(cast(__m128i)a & cast(__m128i)b);
 }
 unittest
@@ -1927,6 +1928,7 @@ __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
     else
         return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
+// TODO unittest and force inline
 
 deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;///
 deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;///
@@ -2917,7 +2919,7 @@ __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
 }
-
+// TODO unittest and force inline
 
 private
 {

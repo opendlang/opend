@@ -321,6 +321,7 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128d _mm_and_pd (__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128d)( cast(long2)a & cast(long2)b );
 }
 unittest
@@ -338,6 +339,7 @@ unittest
 /// Compute the bitwise AND of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_and_si128 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return a & b;
 }
 unittest
@@ -2731,12 +2733,14 @@ unittest
 /// Compute the bitwise OR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_or_pd (__m128d a, __m128d b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128d)( cast(__m128i)a | cast(__m128i)b );
 }
 
 /// Compute the bitwise OR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return a | b;
 }
 
@@ -4861,12 +4865,14 @@ __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)(cast(__m128i)a ^ cast(__m128i)b);
 }
+// TODO unittest and thus force inline
 
 /// Compute the bitwise XOR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
 {
     return a ^ b;
 }
+// TODO unittest and thus force inline
 
 unittest
 {
