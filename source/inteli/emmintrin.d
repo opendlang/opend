@@ -21,6 +21,7 @@ nothrow @nogc:
 /// Add packed 16-bit integers in `a` and `b`.
 __m128i _mm_add_epi16 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(short8)a + cast(short8)b);
 }
 unittest
@@ -34,6 +35,7 @@ unittest
 /// Add packed 32-bit integers in `a` and `b`.
 __m128i _mm_add_epi32 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(int4)a + cast(int4)b);
 }
 unittest
@@ -47,6 +49,7 @@ unittest
 /// Add packed 64-bit integers in `a` and `b`.
 __m128i _mm_add_epi64 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(long2)a + cast(long2)b);
 }
 unittest
@@ -60,6 +63,7 @@ unittest
 /// Add packed 8-bit integers in `a` and `b`.
 __m128i _mm_add_epi8 (__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(byte16)a + cast(byte16)b);
 }
 unittest
@@ -116,6 +120,7 @@ unittest
 /// Add 64-bit integers `a` and `b`.
 __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
 {
+    pragma(inline, true);
     return a + b;
 }
 
@@ -4244,24 +4249,28 @@ void _mm_stream_si64 (long* mem_addr, long a)
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(short8)a - cast(short8)b);
 }
 
 /// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(int4)a - cast(int4)b);
 }
 
 /// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
 __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(long2)a - cast(long2)b);
 }
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
 {
+    pragma(inline, true);
     return cast(__m128i)(cast(byte16)a - cast(byte16)b);
 }
 
@@ -4306,6 +4315,7 @@ unittest
 /// Subtract 64-bit integer `b` from 64-bit integer `a`.
 __m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
 {
+    pragma(inline, true);
     return a - b;
 }
 
