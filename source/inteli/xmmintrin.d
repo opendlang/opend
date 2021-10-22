@@ -2503,6 +2503,7 @@ unittest
 /// Return vector of type `__m128` with all elements set to zero.
 __m128 _mm_setzero_ps() pure @trusted
 {
+    pragma(inline, true);
     float4 r;
     r = 0.0f;
     return r;

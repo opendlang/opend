@@ -3225,6 +3225,7 @@ unittest
 /// Return vector of type `__m128d` with all elements set to zero.
 __m128d _mm_setzero_pd () pure @trusted
 {
+    pragma(inline, true);
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     double[2] result = [0.0, 0.0];
     return loadUnaligned!(double2)(result.ptr);
@@ -3233,6 +3234,7 @@ __m128d _mm_setzero_pd () pure @trusted
 /// Return vector of type `__m128i` with all elements set to zero.
 __m128i _mm_setzero_si128() pure @trusted
 {
+    pragma(inline, true);
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     int[4] result = [0, 0, 0, 0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
