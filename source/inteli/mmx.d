@@ -1,6 +1,7 @@
 /**
 * MMX intrinsics.
-*
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=MMX
+* 
 * Copyright: Copyright Guillaume Piolat 2019-2020.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */

@@ -1,6 +1,7 @@
 /**
 * SHA intrinsics.
-*
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#othertechs=SHA
+* 
 * Copyright: Guillaume Piolat 2021.
 *            Johan Engelen 2021.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)

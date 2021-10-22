@@ -1,5 +1,6 @@
 /**
 * SSE3 intrinsics.
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=SSE3
 *
 * Copyright: Guillaume Piolat 2016-2020.
 *            Charles Gregory 2019.

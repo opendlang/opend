@@ -1,6 +1,7 @@
 /**
 * SSE intrinsics.
-*
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=SSE
+* 
 * Copyright: Copyright Guillaume Piolat 2016-2020.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */

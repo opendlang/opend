@@ -1,5 +1,6 @@
 /**
 * SSE4.1 intrinsics.
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=SSE4_1
 *
 * Copyright: Guillaume Piolat 2021.
 *            Johan Engelen 2021.

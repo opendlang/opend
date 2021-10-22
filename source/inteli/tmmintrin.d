@@ -1,5 +1,6 @@
 /**
 * SSSE3 intrinsics.
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=SSSE3
 *
 * Copyright: Guillaume Piolat 2021.
 *            Johan Engelen 2021.
@@ -134,6 +135,21 @@ unittest
     assert(B.array == correct);
 }
 
+/// Compute the absolute value of packed 64-bit floating-point elements in `a`.
+/// #BONUS.
+__m128d _mm_abs_pd (__m128d a) @trusted
+{
+    long2 mask = 0x7fff_ffff_ffff_ffff;
+    return cast(__m128d)((cast(long2)a) & mask);
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(-42.0f, -double.infinity);
+    __m128d R = _mm_abs_pd(A);
+    double[2] correct =    [42.0f, +double.infinity];
+    assert(R.array == correct);
+}
+
 /// Compute the absolute value of packed signed 16-bit integers in `a`.
 __m64 _mm_abs_pi16 (__m64 a) @trusted
 {
@@ -171,6 +187,21 @@ unittest
     byte8 B = cast(byte8) _mm_abs_pi8(A);
     byte[8] correct =       [0,  1, -128,  127, 127, 0, 0, 0];
     assert(B.array == correct);
+}
+
+/// Compute the absolute value of packed 32-bit floating-point elements in `a`.
+/// #BONUS.
+__m128 _mm_abs_ps (__m128 a) @trusted
+{
+    __m128i mask = 0x7fffffff;
+    return cast(__m128)((cast(__m128i)a) & mask);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-0.0f, 10.0f, -42.0f, -float.infinity);
+    __m128 R = _mm_abs_ps(A);
+    float[4] correct =    [0.0f, 10.0f, 42.0f, +float.infinity];
+    assert(R.array == correct);
 }
 
 /// Concatenate 16-byte blocks in `a` and `b` into a 32-byte temporary result, shift the result right by `count` bytes, and return the low 16 bytes.

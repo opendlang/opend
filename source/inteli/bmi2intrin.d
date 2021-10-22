@@ -1,6 +1,6 @@
 /**
 * BMI2 intrinsics.
-* https://software.intel.com/sites/landingpage/IntrinsicsGuide/#othertechs=BMI2
+* https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#othertechs=BMI2
 *
 * Copyright: Copyright Johan Engelen 2021.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
