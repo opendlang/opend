@@ -47,10 +47,10 @@ debug(cachetools) @safe @nogc
             }
             catch(Exception e)
             {
-                () @trusted @nogc nothrow {try{errorf("[%x] %s:%d Exception: %s", Thread.getThis().id(), file, line, e);}catch{}}();
+                () @trusted @nogc nothrow {try{errorf("[%x] %s:%d Exception: %s", Thread.getThis().id(), file, line, e);}catch(Throwable) {}}();
             }
         }
-    }    
+    }
 }
 
 bool UseGCRanges(T)() {
