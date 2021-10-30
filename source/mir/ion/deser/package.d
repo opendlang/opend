@@ -158,7 +158,7 @@ struct DeserializationParams(TableKind tableKind, bool annotated = false)
             const(char[])[] runtimeSymbolTable;
         else
             ///
-            const(immutable(char)[])[] runtimeSymbolTable;
+            const(string)[] runtimeSymbolTable;
         ///
         const(uint)[] compiletimeIndex;
     }
