@@ -601,8 +601,9 @@ public: // This is also part of the public API
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
-    /// Seeking. Subsequent reads start from frame `frames`.
+    /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
     /// Only available for input streams.
+    /// Formats that support seeking: WAV, MP3, OGG, FLAC.
     bool seekPosition(int frame)
     {
         assert(_io && (_io.read !is null) );
@@ -620,12 +621,20 @@ public: // This is also part of the public API
                     assert(false);
             case ogg:
                 version(decodeOGG)
-                    return false; // TODO
+                {
+                    assert(false); // TODO: see #6
+                }
                 else 
                     assert(false);
             case opus:
                 version(decodeOPUS)
-                    return false; // TODO
+                {
+                    // Note: drflac seeks 1sec too early for some reason.
+                    // This isn't sample accurate, rather 64ms accurate.
+                    long timeInMs = 1000 + cast(long)(  1000.0 * frame / _sampleRate);
+                    _opusDecoder.seek(timeInMs);
+                    return true;
+                }
                 else 
                     assert(false);
             case mod:
@@ -634,7 +643,7 @@ public: // This is also part of the public API
             case wav:
                 version(decodeWAV)
                     return _wavDecoder.seekPosition(frame);
-                else 
+                else
                     assert(false);
             case unknown:
                 assert(false);

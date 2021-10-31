@@ -8110,7 +8110,7 @@ public:
   }
 
   // read and decode one sound frame; return samples or null
-  short[] readFrame () {
+  short[] readFrame () return {
     AVFrame frame;
     AVPacket pkt;
     ubyte*[2] eptr;
