@@ -601,6 +601,26 @@ public: // This is also part of the public API
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
+    /// Seeking. Subsequent reads start from frame `frames`.
+    /// Only available for input streams.
+    bool seekPosition(int frame)
+    {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3:
+            case flac:
+            case ogg:
+            case opus:
+            case mod:
+            case xm:
+                return false; // NOT IMPLEMENTED
+            case wav: return _wavDecoder.seekPosition(frame);
+            case unknown:
+                assert(false);
+        }
+    }
+
     /// Call `fflush()` on written samples, if any. 
     /// It is only useful for streamable output formats, that may want to flush things to disk.
     void flush() nothrow @nogc
@@ -1034,11 +1054,12 @@ long file_tell(void* userData) nothrow @nogc
     return ftell(context.file);
 }
 
-void file_seek(long offset, bool relative, void* userData) nothrow @nogc
+bool file_seek(long offset, bool relative, void* userData) nothrow @nogc
 {
     FileContext* context = cast(FileContext*)userData;
     assert(offset <= int.max);
-    fseek(context.file, cast(int)offset, relative ? SEEK_CUR : SEEK_SET); // Limitations: file larger than 2gb not supported
+    int r = fseek(context.file, cast(int)offset, relative ? SEEK_CUR : SEEK_SET); // Limitations: file larger than 2gb not supported
+    return r == 0;
 }
 
 long file_getFileLength(void* userData) nothrow @nogc
@@ -1139,13 +1160,21 @@ long memory_tell(void* userData) nothrow @nogc
     return cast(long)(context.cursor);
 }
 
-void memory_seek(long offset, bool relative, void* userData) nothrow @nogc
+bool memory_seek(long offset, bool relative, void* userData) nothrow @nogc
 {
     MemoryContext* context = cast(MemoryContext*)userData;    
     if (relative) offset += context.cursor;
+    if (offset < 0)
+        return false;
+
+    bool r = true;
     if (offset >= context.size) // can't seek past end of buffer, stick to the end so that read return 0 byte
+    {
         offset = context.size;
+        r = false;
+    }
     context.cursor = cast(size_t)offset; // Note: memory streams larger than 2gb not supported
+    return r;
 }
 
 long memory_getFileLength(void* userData) nothrow @nogc

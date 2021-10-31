@@ -135,6 +135,20 @@ version(decodeWAV)
             _framePosition = 0; // seek to start
         }
 
+        /// Returns: false in case of failure.
+        bool seekPosition(int absoluteFrame)
+        {
+            if (absoluteFrame < 0)
+                return false;
+            if (absoluteFrame > _lengthInFrames)
+                return false;
+            uint frameSize = _channels * _bytePerSample;
+            long pos = _samplesOffsetInFile + absoluteFrame * frameSize;
+            _io.seek(pos, false, _userData);
+            _framePosition = absoluteFrame;
+            return true;
+        }
+
         // read interleaved samples
         // `outData` should have enough room for frames * _channels
         // Returs: Frames actually read.
