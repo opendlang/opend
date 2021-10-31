@@ -608,16 +608,37 @@ public: // This is also part of the public API
         assert(_io && (_io.read !is null) );
         final switch(_format) with (AudioFileFormat)
         {
-            case mp3: return (mp3dec_ex_seek(_mp3DecoderNew, frame * _numChannels) == 0);
+            case mp3: 
+                version(decodeMP3)
+                    return (mp3dec_ex_seek(_mp3DecoderNew, frame * _numChannels) == 0);
+                else
+                    assert(false);
             case flac:
+                version(decodeFLAC)
+                    return drflac__seek_to_sample__brute_force (_flacDecoder, frame * _numChannels);
+                else
+                    assert(false);
             case ogg:
+                version(decodeOGG)
+                    return false; // TODO
+                else 
+                    assert(false);
             case opus:
+                version(decodeOPUS)
+                    return false; // TODO
+                else 
+                    assert(false);
             case mod:
             case xm:
                 return false; // NOT IMPLEMENTED
-            case wav: return _wavDecoder.seekPosition(frame);
+            case wav:
+                version(decodeWAV)
+                    return _wavDecoder.seekPosition(frame);
+                else 
+                    assert(false);
             case unknown:
                 assert(false);
+
         }
     }
 

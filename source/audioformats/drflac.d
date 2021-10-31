@@ -1751,7 +1751,7 @@ bool drflac__seek_to_frame_containing_sample (drflac* pFlac, ulong sampleIndex) 
   return true;
 }
 
-bool drflac__seek_to_sample__brute_force (drflac* pFlac, ulong sampleIndex) {
+public bool drflac__seek_to_sample__brute_force (drflac* pFlac, ulong sampleIndex) {
   if (!drflac__seek_to_frame_containing_sample(pFlac, sampleIndex)) return false;
 
   // At this point we should be sitting on the first byte of the frame containing the sample. We need to decode every sample up to (but
