@@ -1,7 +1,7 @@
 # audio-formats
 Audio format loading for D.
 
-Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM from a file or memory.
+Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
 Can encode WAV to a file or to memory.
 
 It is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
@@ -13,15 +13,15 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 
 # File format support
 
-|       | Decoding   | Encoding |
-|-------|------------|----------|
-| WAV   | Yes        | Yes      |
-| MP3   | Yes        | No       |
-| FLAC  | Yes        | No       |
-| OPUS  | Yes (LGPL) | No       |
-| OGG   | Yes        | No       |
-| MOD   | Yes        | No       |
-| XM    | Yes        | No       |
+|       | Decoding   | Encoding | Seeking support |
+|-------|------------|----------|-----------------|
+| WAV   | Yes        | Yes      | Sample          |
+| MP3   | Yes        | No       | Sample          |
+| FLAC  | Yes        | No       | Sample          |
+| OPUS  | Yes (LGPL) | No       | Coarse          |
+| OGG   | Yes        | No       | No              |
+| MOD   | Yes        | No       | No              |
+| XM    | Yes        | No       | No              |
 
 
 Some of these decoders were originally translated by Ketmar, who did the heavy-lifting.
