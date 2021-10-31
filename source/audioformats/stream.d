@@ -608,7 +608,7 @@ public: // This is also part of the public API
         assert(_io && (_io.read !is null) );
         final switch(_format) with (AudioFileFormat)
         {
-            case mp3:
+            case mp3: return (mp3dec_ex_seek(_mp3DecoderNew, frame * _numChannels) == 0);
             case flac:
             case ogg:
             case opus:
