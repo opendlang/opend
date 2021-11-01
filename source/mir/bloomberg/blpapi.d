@@ -100,6 +100,29 @@ struct Datetime
     /// (signed) minutes ahead of UTC
     short  offset;
 
+    ///
+    this(
+        ubyte  parts,
+        ubyte  hours,
+        ubyte  minutes,
+        ubyte  seconds,
+        ushort milliseconds,
+        ubyte  month,
+        ubyte  day,
+        ushort year,
+        short  offset,
+    ) {
+        this.parts = parts;
+        this.hours = hours;
+        this.minutes = minutes;
+        this.seconds = seconds;
+        this.milliseconds = milliseconds;
+        this.month = month;
+        this.day = day;
+        this.year = year;
+        this.offset = offset;
+    }
+
     /// Construct from $(MREF mir,timestamp).
     this(Timestamp timestamp) @safe pure nothrow @nogc
     {
@@ -107,7 +130,7 @@ struct Datetime
     }
 
     /// Converts `Datetime` to $(MREF mir,timestamp).
-    Timestamp asTimestamp()  @safe pure nothrow @nogc const @property
+    Timestamp asTimestamp() @safe pure nothrow @nogc const @property
     {
         return HighPrecisionDatetime(this).asTimestamp;
     }
@@ -133,9 +156,10 @@ struct HighPrecisionDatetime {
     +/
     uint picoseconds;
 
-    this(Datetime datetime) @safe pure nothrow @nogc
+    this(Datetime datetime, uint picoseconds = 0) @safe pure nothrow @nogc
     {
         this.datetime = datetime;
+        this.picoseconds = picoseconds;
     }
 
     /// Construct from $(MREF mir,timestamp).
@@ -189,10 +213,9 @@ struct HighPrecisionDatetime {
     }
 
     /// Converts `Datetime` to $(MREF mir,timestamp).
-    Timestamp asTimestamp()  @safe pure nothrow @nogc const @property
+    Timestamp asTimestamp() @safe pure nothrow @nogc const @property
     {
         import std.stdio;
-        try debug writeln(this); catch(Exception e) {}
         Timestamp ret;
         if (parts & DatetimeParts.year)
         {
@@ -238,6 +261,47 @@ struct HighPrecisionDatetime {
     }
 
     alias opCast(T : Timestamp) = asTimestamp;
+}
+
+unittest
+{
+    auto tests = [
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 11, 1, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 11, 2, 2020, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 6, 2, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 7, 0, 0, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 6, 59, 59, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 16, 59, 59, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 11, 1, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 3, 15, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 11, 2, 2020, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 3, 23, 2020, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 3, 23, 2020, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(7, 0, 0, 0, 0, 10, 29, 2021, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 9, 30, 0, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 16, 30, 0, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(112, 20, 4, 0, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(240, 20, 4, 0, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(240, 12, 38, 48, 0, 1, 1, 1, 0), 0),
+        HighPrecisionDatetime(Datetime(240, 13, 5, 3, 0, 1, 1, 1, 0), 0),
+    ];
+
+    foreach (test; tests)
+    {
+        import mir.ion.ser.ion;
+        import mir.ion.deser.ion;
+        auto ts = test.asTimestamp;
+        assert(ts.serializeIon.deserializeIon!Timestamp == ts);
+    }
 }
 
 @safe pure // @nogc

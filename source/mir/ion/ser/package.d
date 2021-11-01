@@ -958,7 +958,10 @@ version(bloomberg)
                 case blpapi.DataType.datetime: {
                     blpapi.HighPrecisionDatetime v;
                     blpapi.getValueAsHighPrecisionDatetime(value, v, index).validate;
-                    serializer.putValue(cast(Timestamp)v);
+                    if (v.parts)
+                        serializer.putValue(cast(Timestamp)v);
+                    else
+                        serializer.putNull(IonTypeCode.timestamp);
                     continue;
                 }
                 case blpapi.DataType.enumeration: {
