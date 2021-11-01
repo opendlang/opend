@@ -381,7 +381,11 @@ public: // This is also part of the public API
     /// 
     /// Params:
     ///     outData Buffer where to put decoded samples. Samples are arranged in an interleaved fashion.
-    ///     frames The number of frames to be read.
+    ///             Must have room for `frames` x `getNumChannels()` samples.
+    ///             For a stereo file, the output data will contain LRLRLR... repeated `result` times.
+    ///
+    ///     frames The number of multichannel frames to be read. 
+    ///            A frame is `getNumChannels()` samples.
     ///
     /// Returns: Number of actually read frames. Multiply by `getNumChannels()` to get the number of read samples.
     ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
@@ -557,7 +561,11 @@ public: // This is also part of the public API
     /// 
     /// Params:
     ///     inData Buffer of interleaved samples to append to the stream.
+    ///            Must contain `frames` x `getNumChannels()` samples.
+    ///            For a stereo file, `inData` contains LRLRLR... repeated `frames` times.
+    ///
     ///     frames The number of frames to append to the stream.
+    ///            A frame is `getNumChannels()` samples.
     ///
     /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
     ///          When that number is less than `frames`, it means the stream had a write error.
