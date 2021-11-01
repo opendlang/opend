@@ -1403,7 +1403,7 @@ struct IonTimestamp
             if (fractionExponent < -12
              || fractionExponent > 0
              || fractionCoefficient < 0
-             || fractionCoefficient > exps[0-fractionExponent])
+             || fractionCoefficient >= exps[0-fractionExponent])
                 return IonErrorCode.illegalTimeStamp;
             v.fractionExponent = fractionExponent;
             v.fractionCoefficient = fractionCoefficient;
