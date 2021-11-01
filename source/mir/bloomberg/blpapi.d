@@ -216,6 +216,7 @@ struct HighPrecisionDatetime {
     Timestamp asTimestamp() @safe pure nothrow @nogc const @property
     {
         import std.stdio;
+        try debug writeln(cast()this); cast(Exception e) {}
         Timestamp ret;
         if (parts & DatetimeParts.year)
         {
