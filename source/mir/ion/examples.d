@@ -1066,3 +1066,14 @@ version(unittest) private
         assert(`"NA"`.deserializeJson!E == E.none);
     }
 }
+
+// check symbols support
+unittest
+{
+    import mir.algebraic;
+    import mir.ion.deser.text;
+    import mir.small_string;
+    import mir.timestamp;
+    assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, string, Timestamp)) == `aSymbol`);
+    assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, SmallString!32, Timestamp)) == `aSymbol`.SmallString!32);
+}
