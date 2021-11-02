@@ -215,8 +215,6 @@ struct HighPrecisionDatetime {
     /// Converts `Datetime` to $(MREF mir,timestamp).
     Timestamp asTimestamp() @safe pure nothrow @nogc const @property
     {
-        import std.stdio;
-        try debug writeln(cast()this); catch(Exception e) {}
         Timestamp ret;
         if (parts & DatetimeParts.year)
         {
