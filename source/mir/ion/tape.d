@@ -1075,7 +1075,7 @@ size_t ionPut(T)(scope ubyte* ptr, const T value)
                     if (value.precision > Timestamp.precision.second) //fraction
                     {
                         ret += ionPutVarInt(ptr + ret, value.fractionExponent);
-                        ret += ionPutIntField(ptr + ret, value.fractionCoefficient);
+                        ret += ionPutIntField(ptr + ret, long(value.fractionCoefficient));
                     }
                 }
             }
