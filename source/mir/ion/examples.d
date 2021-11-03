@@ -1068,6 +1068,7 @@ version(unittest) private
 }
 
 // check symbols support
+// check typed nullable support
 unittest
 {
     import mir.algebraic;
@@ -1076,4 +1077,6 @@ unittest
     import mir.timestamp;
     assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, string, Timestamp)) == `aSymbol`);
     assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, SmallString!32, Timestamp)) == `aSymbol`.SmallString!32);
+    assert(`null.timestamp`.deserializeText!(Nullable!Timestamp) == null);
+    assert(`null.timestamp`.deserializeText!(Nullable!(bool, Timestamp)) == null);
 }

@@ -894,8 +894,8 @@ template deserializeValue(string[] symbolTable)
                                 return unqualException(unexpectedAnnotationWhenDeserializing!T);
                     }
                 }
-            }			
-            static if (isNullable!T && T.AllowedTypes.length == 2)
+            }
+            static if (isNullable!T)
             {
                 // TODO: check that descriptor.type correspond underlaying type
                 if (data.descriptor.L == 0xF)
@@ -903,7 +903,9 @@ template deserializeValue(string[] symbolTable)
                     value = null;
                     return null;
                 }
-
+            }
+            static if (isNullable!T && T.AllowedTypes.length == 2)
+            {
                 T.AllowedTypes[1] payload;
                 if (auto exception = deserializeValue(params, payload))
                     return exception;
@@ -913,14 +915,14 @@ template deserializeValue(string[] symbolTable)
             else
             switch (data.descriptor.type)
             {
-                static if (contains!(typeof(null)))
-                {
-                    case IonTypeCode.null_:
-                    {
-                        value = null;
-                        return retNull;
-                    }
-                }
+                // static if (contains!(typeof(null)))
+                // {
+                //     case IonTypeCode.null_:
+                //     {
+                //         value = null;
+                //         return retNull;
+                //     }
+                // }
 
                 static if (contains!bool)
                 {
