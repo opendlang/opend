@@ -698,13 +698,24 @@ struct IonTokenizer {
 
         // Otherwise, it's not, and we check if it's a timestamp or just a plain number.
         if (cs.length == 4) {
-            foreach(i; 0 .. 3) {
-                if (!isDigit(cs[i])) return IonTokenType.TokenNumber;
-            }
+            if (!isDigit(cs[0])) return IonTokenType.TokenNumber;
 
-            if (cs[3] == '-' || cs[3] == 'T') {
+            // "time-of-day" extension
+            if (cs[1] == ':')
+            {
                 return IonTokenType.TokenTimestamp;
             }
+            else
+            {
+                foreach(i; 1 .. 3)
+                {
+                    if (!isDigit(cs[i])) return IonTokenType.TokenNumber;
+                }
+                if (cs[3] == '-' || cs[3] == 'T') {
+                    return IonTokenType.TokenTimestamp;
+                }
+            }
+
         }
         return IonTokenType.TokenNumber;
 

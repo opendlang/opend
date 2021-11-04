@@ -1132,55 +1132,70 @@ IonTextTimestamp readTimestamp(ref IonTokenizer t) @safe @nogc pure
         return val;
     }
 
+    // could be either:
     // yyyy(T || -)
-    char c = t.expect!("a == 'T' || a == '-'", true)(readTSDigits(4));
-    if (c == 'T') {
-        // yyyyT
-        val.matchedText = t.input[startIndex .. t.position];
-        return val;
+    // or hh
+    char c = readTSDigits(2);
+    // is this a year? if so, then the character after
+    // the first two digits should be a digit... if not,
+    // we can just assume that it's a "time of day"
+    if (c.isDigit())
+    {
+        c = t.expect!("a == 'T' || a == '-'", true)(readTSDigits(1));
+        if (c == 'T') {
+            // yyyyT
+            val.matchedText = t.input[startIndex .. t.position];
+            return val;
+        }
+        // yyyy-mm(T || -)
+        c = t.expect!("a == 'T' || a == '-'", true)(readTSDigits(2));
+        if (c == 'T') {
+            val.matchedText = t.input[startIndex .. t.position];
+            return val;
+        }
+        // yyyy-mm-dd(T)?
+        c = readTSDigits(2);
+        if (c != 'T') {
+            return readTSFinish(c);
+        }
+        // yyyy-mm-ddT 
+        c = t.readInput();
+        if (!c.isDigit()) {
+            // yyyy-mm-ddT(+ || -)hh:mm
+            c = readTSOffset(c);
+            return readTSFinish(c);
+        }
+        // (yyyy-mm-ddT)?hh
+        c = t.expect!("a == ':'", true)(readTSDigits(1));
     }
-    // yyyy-mm(T || -)
-    c = t.expect!("a == 'T' || a == '-'", true)(readTSDigits(2));
-    if (c == 'T') {
-        val.matchedText = t.input[startIndex .. t.position];
-        return val;
+    else
+    {
+        // hh
+        c = t.expect!("a == ':'", true)(c);
     }
-    // yyyy-mm-dd(T)?
-    c = readTSDigits(2);
-    if (c != 'T') {
-        return readTSFinish(c);
-    }
-    // yyyy-mm-ddT 
-    c = t.readInput();
-    if (!c.isDigit()) {
-        // yyyy-mm-ddT(+ || -)hh:mm
-        c = readTSOffset(c);
-        return readTSFinish(c);
-    }
-    // yyyy-mm-ddThh
-    c = t.expect!("a == ':'", true)(readTSDigits(1));
-    // yyyy-mm-ddThh:mm
+
+    // (yyyy-mm-ddT)?hh:mm
     c = readTSDigits(2);
     if (c != ':') {
-        // yyyy-mm-ddThh:mm(+-|Z)?
+        // (yyyy-mm-ddT)?hh:mm(+-|Z)?
         if (c) {
             c = readTSOffsetOrZ(c);
         }
         return readTSFinish(c);
     }
 
-    // yyyy-mm-ddThh:mm:ss
+    // (yyyy-mm-ddT)?hh:mm:ss
     c = readTSDigits(2);
 
     if (c != '.') {
-        // yyyy-mm-ddThh:mm:ss(Z)?
+        // (yyyy-mm-ddT)?hh:mm:ss(Z)?
         if (c) {
             c = readTSOffsetOrZ(c);
         }
         return readTSFinish(c);
     }
 
-    // yyyy-mm-ddThh:mm:ss.ssssZ
+    // (yyyy-mm-ddT)?hh:mm:ss.ssssZ
     c = t.readInput();
     if (c.isDigit()) {
         readDigits(t, c);
@@ -1221,4 +1236,16 @@ version(mir_ion_parser_test) unittest
     test("2001-01-02T03:04:05+00:00 ", "2001-01-02T03:04:05+00:00", ' ');
     test("2001-01-02T03:04:05.666Z ", "2001-01-02T03:04:05.666Z", ' ');
     test("2001-01-02T03:04:05.666666z ", "2001-01-02T03:04:05.666666z", ' ');
+
+    // Test new "time of day" timestamps
+    test("03:04+00:00", "03:04+00:00", 0);
+    test("03:04-00:00", "03:04-00:00", 0);
+    test("03:04Z", "03:04Z", 0);
+    test("03:04z", "03:04z", 0);
+    test("03:04:05Z", "03:04:05Z", 0);
+    test("03:04:05+00:00", "03:04:05+00:00", 0);
+    test("03:04:05.666Z", "03:04:05.666Z", 0);
+    test("03:04:05.666z", "03:04:05.666z", 0);
+    test("03:04:05.666666Z", "03:04:05.666666Z", 0);
+    test("03:04:05.666666z", "03:04:05.666666z", 0);
 }
