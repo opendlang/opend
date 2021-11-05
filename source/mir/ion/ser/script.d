@@ -67,6 +67,42 @@ interface ISerializer
     void putKey(scope const char[] key);
 
     ///
+    final void putValue(ubyte value)
+    {
+        putValue(ulong(value));
+    }
+
+    ///
+    final void putValue(ushort value)
+    {
+        putValue(ulong(value));
+    }
+
+    ///
+    final void putValue(uint value)
+    {
+        putValue(ulong(value));
+    }
+
+    ///
+    final void putValue(byte value)
+    {
+        putValue(long(value));
+    }
+
+    ///
+    final void putValue(short value)
+    {
+        putValue(long(value));
+    }
+
+    ///
+    final void putValue(int value)
+    {
+        putValue(long(value));
+    }
+
+    ///
     void putValue(long value);
 
     ///
@@ -330,8 +366,12 @@ unittest
     assert(wrap(Date(1234, 5, 6)).serializeJson == `"1234-05-06"`);
     assert(wrap(Date(1234, 5, 6)).serializeText == `1234-05-06`);
     assert(wrap(Date(1234, 5, 6)).serializeIon.ion2text == `1234-05-06`);
+    immutable(ushort)[] imdata = [10, 20, 30];
+    assert(wrap(imdata).serializeIon.ion2text == `[10,20,30]`);
 
     const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     auto json = wrap(data.IonValueStream).serializeJson;
     assert(json == `{"a":1,"b":2}`);
+
+
 }
