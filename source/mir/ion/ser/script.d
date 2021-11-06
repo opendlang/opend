@@ -4,7 +4,16 @@ The module can be used for scripting languages to register a universal type seri
 module mir.ion.ser.script;
 
 /++
-Unified serializer interface
+Unified serializer interface.
+
+ISerializer can be used in `serialize` method instead of generic serilizer.
+
+-----
+struct S
+{
+    void serialize(ISerializer serializer) const @safe
+    ...
+-----
 +/
 interface ISerializer
 {
@@ -335,7 +344,6 @@ final scope class SerializerWrapper(S) : ISerializer
     }
 }
 
-///
 unittest
 {
     static struct Wrapper(T)
@@ -345,9 +353,10 @@ unittest
         void serialize(S)(ref S serializer) const @safe
         {
             import mir.ion.ser: serializeValue;
-            scope s = new SerializerWrapper!S(serializer);
-            auto i = s.ISerializer;
-            serializeValue(i, value);
+            import mir.ion.ser.script: SerializerWrapper;
+            scope wserializer = new SerializerWrapper!S(serializer);
+            auto iserializer = wserializer.ISerializer;
+            serializeValue(iserializer, value);
         }
     }
 
@@ -372,6 +381,41 @@ unittest
     const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     auto json = wrap(data.IonValueStream).serializeJson;
     assert(json == `{"a":1,"b":2}`);
+}
 
+///
+unittest
+{
+    static struct Wrapper(T)
+    {
+        T value;
 
+        void serialize(ISerializer serializer) const @safe
+        {
+            import mir.ion.ser: serializeValue;
+            serializeValue(serializer, value);
+        }
+    }
+
+    static auto wrap(T)(T value)
+    {
+        return Wrapper!T(value);
+    }
+
+    import mir.ion.conv;
+    import mir.ion.ser.ion;
+    import mir.ion.ser.json;
+    import mir.ion.ser.text;
+    import mir.ion.stream;
+    import std.datetime.date;
+
+    assert(wrap(Date(1234, 5, 6)).serializeJson == `"1234-05-06"`);
+    assert(wrap(Date(1234, 5, 6)).serializeText == `1234-05-06`);
+    assert(wrap(Date(1234, 5, 6)).serializeIon.ion2text == `1234-05-06`);
+    immutable(ushort)[] imdata = [10, 20, 30];
+    assert(wrap(imdata).serializeIon.ion2text == `[10,20,30]`);
+
+    const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    auto json = wrap(data.IonValueStream).serializeJson;
+    assert(json == `{"a":1,"b":2}`);
 }

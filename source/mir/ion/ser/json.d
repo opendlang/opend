@@ -629,7 +629,7 @@ template serializeJsonPretty(string sep = "\t")
     string serializeJsonPretty(V)(auto ref V value, int serdeTarget = SerdeTarget.json)
     {
         import std.array: appender;
-        import std.functional: forward;
+        import mir.functional: forward;
 
         auto app = appender!(char[]);
         serializeJsonPretty(app, forward!value, serdeTarget);

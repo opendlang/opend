@@ -582,7 +582,19 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     else
     static if(__traits(hasMember, V, "serialize"))
     {
-        value.serialize(serializer);
+        alias soverloads = getSerializeOverloads!(S, V);
+        static if (__traits(hasMember, soverloads, "best") || !__traits(hasMember, soverloads, "script"))
+        {
+            value.serialize(serializer);
+        }
+        else
+        static if (__traits(hasMember, soverloads, "script"))
+        {
+            import mir.ion.ser.script: SerializerWrapper;
+            scope wserializer = new SerializerWrapper!S(serializer);
+            auto iserializer = wserializer.ISerializer;
+            value.serialize(iserializer);
+        }
         return;
     }
     else
@@ -633,6 +645,28 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     {
         serializeValueImpl(serializer, value);
         return;
+    }
+}
+
+private template getSerializeOverloads(S, alias value)
+{
+    import mir.ion.ser.script: ISerializer;
+    static foreach (i, so; __traits(getOverloads, value, "serialize"))
+    {
+        static if (!__traits(isTemplate, value.serialize))
+        {
+            static if (is(Parameters!so[0] == S))
+            {
+                enum best = i;
+            }
+            else
+            {
+                static if (is(Parameters!so[0] == ISerializer))
+                {
+                    enum script = i;
+                }
+            }
+        }
     }
 }
 
