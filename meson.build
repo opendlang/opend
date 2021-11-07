@@ -16,7 +16,6 @@ sources_list = [
     'mir/ion/deser/json',
     'mir/ion/deser/low_level',
     'mir/ion/deser/package',
-    'mir/ion/deser/script',
     'mir/ion/deser/text/package',
     'mir/ion/deser/text/readers',
     'mir/ion/deser/text/skippers',

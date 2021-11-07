@@ -413,6 +413,15 @@ package template hasLikeStruct(T)
         enum hasLikeStruct = false;
 }
 
+package template hasAnnotation(T)
+{
+    import mir.serde: serdeAnnotation;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasAnnotation = hasUDA!(T, serdeAnnotation);
+    else
+        enum hasAnnotation = false;
+}
+
 /++
 Deserialize struct/class value with proxy.
 +/

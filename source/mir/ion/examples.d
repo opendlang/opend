@@ -1138,12 +1138,22 @@ version(unittest) private
 // check typed nullable support
 unittest
 {
+    import mir.algebraic_alias.ion;
     import mir.algebraic;
+    import mir.annotated;
     import mir.ion.deser.text;
+    import mir.ion.type_code;
+    import mir.ion.value: IonNull;
     import mir.small_string;
     import mir.timestamp;
     assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, string, Timestamp)) == `aSymbol`);
     assert(`aSymbol`.deserializeText!(Nullable!(bool, double, long, SmallString!32, Timestamp)) == `aSymbol`.SmallString!32);
     assert(`null.timestamp`.deserializeText!(Nullable!Timestamp) == null);
     assert(`null.timestamp`.deserializeText!(Nullable!(bool, Timestamp)) == null);
+    //IonNull support
+    assert(`null.timestamp`.deserializeText!(Variant!(IonNull, bool, Timestamp)) == IonTypeCode.timestamp.IonNull);
+    //Annotated support
+    auto annotated = Annotated!IonAlgebraic(["birthday"], Timestamp("2001-01-01"));
+    auto variant = `birthday::2001-01-01`.deserializeText!IonAlgebraic;
+    assert(variant == annotated);
 }

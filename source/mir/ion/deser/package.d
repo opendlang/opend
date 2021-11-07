@@ -243,9 +243,9 @@ template deserializeValue(string[] symbolTable)
         import mir.conv: to;
         import mir.reflection: hasField;
 
-        enum likeList = hasUDA!(__traits(getMember, value, member), serdeLikeList);
-        enum likeStruct  = hasUDA!(__traits(getMember, value, member), serdeLikeStruct);
-        enum hasProxy = hasUDA!(__traits(getMember, value, member), serdeProxy);
+        enum likeList = hasUDA!(__traits(getMember, T, member), serdeLikeList);
+        enum likeStruct  = hasUDA!(__traits(getMember, T, member), serdeLikeStruct);
+        enum hasProxy = hasUDA!(__traits(getMember, T, member), serdeProxy);
 
         alias Member = serdeDeserializationMemberType!(T, member);
 
@@ -254,9 +254,9 @@ template deserializeValue(string[] symbolTable)
         else
             alias Temporal = Member;
 
-        enum hasScoped = hasUDA!(__traits(getMember, value, member), serdeScoped) || hasScoped!Temporal;
+        enum hasScoped = hasUDA!(__traits(getMember, T, member), serdeScoped) || hasScoped!Temporal;
 
-        enum hasTransform = hasUDA!(__traits(getMember, value, member), serdeTransformIn);
+        enum hasTransform = hasUDA!(__traits(getMember, T, member), serdeTransformIn);
 
         static if (hasTransform)
             alias transform = serdeGetTransformIn!(__traits(getMember, value, member));
@@ -281,7 +281,7 @@ template deserializeValue(string[] symbolTable)
             alias impl = deserializeValue;
         }
 
-        static if (!hasUDA!(__traits(getMember, value, member), serdeAllowMultiple))
+        static if (!hasUDA!(__traits(getMember, T, member), serdeAllowMultiple))
             if (__traits(getMember, requiredFlags, member))
                 return unqualException(excm!(T, member));
 
@@ -944,13 +944,23 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
             }
+            static if (contains!IonNull)
+            {
+                // TODO: check that descriptor.type correspond underlaying type
+                if (data.descriptor.L == 0xF)
+                {
+                    value = IonNull(data.descriptor.type);
+                    return retNull;
+                }
+            }
+            else
             static if (isNullable!T)
             {
                 // TODO: check that descriptor.type correspond underlaying type
                 if (data.descriptor.L == 0xF)
                 {
                     value = null;
-                    return null;
+                    return retNull;
                 }
             }
             static if (isNullable!T && T.AllowedTypes.length == 2)
@@ -959,7 +969,7 @@ template deserializeValue(string[] symbolTable)
                 if (auto exception = deserializeValue(params, payload))
                     return exception;
                 value = payload;
-                return null;
+                return retNull;
             }
             else
             switch (data.descriptor.type)
@@ -1106,33 +1116,47 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
 
-                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
+                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct), Types))
                 {
                     case IonTypeCode.struct_:
                     {                        
-                        static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray), Types))
+                        static if (anySatisfy!(isStringMap, Types))
                         {
-                            static if (anySatisfy!(isStringMap, Types))
-                            {
-                                alias isMapType = isStringMap;
-                            }
-                            else
-                            {
-                                alias isMapType = isAssociativeArray;
-                            }
-
-                            alias AATypes = Filter!(isMapType, Types);
-                            static assert(AATypes.length == 1, AATypes.stringof);
-                            AATypes[0] object;
-                            if (auto exception = deserializeValue(params, object))
-                                return exception;
-                            value = object;
-                            return retNull;
+                            alias isMapType = isStringMap;
+                        }
+                        else
+                        static if (anySatisfy!(isAssociativeArray, Types))
+                        {
+                            alias isMapType = isAssociativeArray;
                         }
                         else
                         {
-                            return unqualException(cantDeserilizeTFromIonStruct!T);
+                            alias isMapType = Filter!(hasLikeStruct, Types)[0];
                         }
+
+                        alias AATypes = Filter!(isMapType, Types);
+                        static assert(AATypes.length == 1, AATypes.stringof);
+                        AATypes[0] object;
+                        if (auto exception = deserializeValue(params, object))
+                            return exception;
+                        import core.lifetime: move;
+                        value = move(object);
+                        return retNull;
+                    }
+                }
+
+                static if (anySatisfy!(hasAnnotation, Types))
+                {
+                    case IonTypeCode.annotations:
+                    {
+                        alias ATypes = Filter!(hasAnnotation, Types);
+                        static assert(ATypes.length == 1, ATypes.stringof);
+                        ATypes[0] object;
+                        if (auto exception = deserializeValue(params, object))
+                            return exception;
+                        import core.lifetime: move;
+                        value = move(object);
+                        return retNull;
                     }
                 }
 
@@ -1228,7 +1252,18 @@ template deserializeValue(string[] symbolTable)
 
             static if (isAlgebraicAliasThis!T)
             {
-                return deserializeValue(annotatedParams, __traits(getMember, value, __traits(getAliasThis, T)));
+                import mir.reflection: hasField;
+                enum aliasMember = __traits(getAliasThis, T);
+                static if (hasField!(T, aliasMember))
+                    return deserializeValue(annotatedParams, __traits(getMember, value, aliasMember));
+                else {
+                    typeof(__traits(getMember, value, aliasMember)) temporal;
+                    if (auto exception = deserializeValue(annotatedParams, temporal))
+                        return exception;
+                    import core.lifetime: move;
+                    __traits(getMember, value, aliasMember) = move(temporal);
+                    return null;
+                }
             }
             else
             {
@@ -1316,7 +1351,7 @@ template deserializeValue(string[] symbolTable)
                                         case findKey(symbolTable, key):
                                         }
 
-                                            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                            static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreIfAggregate))
                                             {
                                                 alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
                                                 if (pred(value))
@@ -1326,7 +1361,7 @@ template deserializeValue(string[] symbolTable)
                                                 }
                                             }
 
-                                            static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                            static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreInIfAggregate))
                                             {
                                                 alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
                                                 if (pred(value))
@@ -1344,16 +1379,16 @@ template deserializeValue(string[] symbolTable)
                                 }
                             }
 
-                            static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
+                            static if (!hasUDA!(__traits(getMember, T, member), serdeOptional))
                             {
-                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreIfAggregate))
                                 {
                                     alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
                                     if (!__traits(getMember, requiredFlags, member) && !pred(value))
                                         return unqualException(exc!(T, member));
                                 }
                                 else
-                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreInIfAggregate))
                                 {
                                     alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
                                     if (!__traits(getMember, requiredFlags, member) && !pred(value))
@@ -1380,29 +1415,29 @@ template deserializeValue(string[] symbolTable)
                             {
                                 static foreach (member; serdeFinalProxyDeserializableMembers!T)
                                 {{
-                                    enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
+                                    enum keys = serdeGetKeysIn!(__traits(getMember, T, member));
                                     static if (keys.length)
                                     {
                                         static foreach (key; keys)
                                         {
                                 case findKey(symbolTable, key):
                                         }
-                                    static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                    static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreInIfAggregate))
                                     {
                                         alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
                                         if (pred(value))
                                         {
-                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, T, member), serdeOptional))
                                                 __traits(getMember, requiredFlags, member) = true;
                                             goto default;
                                         }
                                     }
-                                    static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                    static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreIfAggregate))
                                     {
                                         alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
                                         if (pred(value))
                                         {
-                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, value, member), serdeOptional))
+                                            static if (hasUnexpectedKeyHandler && !hasUDA!(__traits(getMember, T, member), serdeOptional))
                                                 __traits(getMember, requiredFlags, member) = true;
                                             goto default;
                                         }
@@ -1423,16 +1458,16 @@ template deserializeValue(string[] symbolTable)
                         }
 
                         static foreach (member; __traits(allMembers, SerdeFlags!T))
-                            static if (!hasUDA!(__traits(getMember, value, member), serdeOptional))
+                            static if (!hasUDA!(__traits(getMember, T, member), serdeOptional))
                             {
-                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreIfAggregate))
+                                static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreIfAggregate))
                                 {
                                     alias pred = serdeGetIgnoreIfAggregate!(__traits(getMember, value, member));
                                     if (!__traits(getMember, requiredFlags, member) && !pred(value))
                                         return unqualException(exc!(T, member));
                                 }
                                 else
-                                static if(hasUDA!(__traits(getMember, value, member), serdeIgnoreInIfAggregate))
+                                static if(hasUDA!(__traits(getMember, T, member), serdeIgnoreInIfAggregate))
                                 {
                                     alias pred = serdeGetIgnoreInIfAggregate!(__traits(getMember, value, member));
                                     if (!__traits(getMember, requiredFlags, member) && !pred(value))
