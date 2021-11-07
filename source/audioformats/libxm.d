@@ -944,16 +944,12 @@ uint8_t xm_get_loop_count(xm_context_t* context) {
 	return context.loop_count;
 }
 
-
-
 void xm_seek(xm_context_t* ctx, uint8_t pot, uint8_t row, uint16_t tick) {
 	ctx.current_table_index = pot;
 	ctx.current_row = row;
 	ctx.current_tick = tick;
 	ctx.remaining_samples_in_tick = 0;
 }
-
-
 
 bool xm_mute_channel(xm_context_t* ctx, uint16_t channel, bool mute) {
 	bool old = ctx.channels[channel - 1].muted;
@@ -1023,8 +1019,6 @@ void* xm_get_sample_waveform(xm_context_t* ctx, uint16_t i, uint16_t s, size_t* 
 	*bits = ctx.module_.instruments[i - 1].samples[s].bits;
 	return ctx.module_.instruments[i - 1].samples[s].data8;
 }
-
-
 
 void xm_get_playing_speed(xm_context_t* ctx, uint16_t* bpm, uint16_t* tempo) {
 	if(bpm) *bpm = ctx.bpm;
@@ -1118,25 +1112,6 @@ static const float[16] multi_retrig_multiply =
 	1.0f,   1.0f,  1.0f,        1.0f,  /* 8, 9, A, B */
 	1.0f,   1.0f,  1.5f,       2.0f   /* C, D, E, F */
 ];
-
-/*#define XM_CLAMP_UP1F(vol, limit) do {			\
-if((vol) > (limit)) (vol) = (limit);	\
-} while(0)
-
-#define XM_CLAMP_UP(vol) XM_CLAMP_UP1F((vol), 1.0f)
-
-#define XM_CLAMP_DOWN1F(vol, limit) do {		\
-if((vol) < (limit)) (vol) = (limit);	\
-} while(0)
-#define XM_CLAMP_DOWN(vol) XM_CLAMP_DOWN1F((vol), .0f)
-
-#define XM_CLAMP2F(vol, up, down) do {			\
-if((vol) > (up)) (vol) = (up);			\
-else if((vol) < (down)) (vol) = (down); \
-} while(0)
-#define XM_CLAMP(vol) XM_CLAMP2F((vol), 1.0f, .0f)
-
-*/
 
 void XM_SLIDE_TOWARDS(ref float val, float goal, float incr)
 {
