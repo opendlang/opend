@@ -175,11 +175,11 @@ template to(T)
                 else
                     return dup(arg);
             }
-            else
-                static assert(0);
+            else 
+                static assert(0, T.stringof);
         }
         else
-            static assert(0);
+            static assert(0, T.stringof);
     }
 }
 
