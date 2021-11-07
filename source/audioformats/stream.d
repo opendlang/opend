@@ -15,9 +15,20 @@ import dplug.core.vec;
 
 import audioformats.io;
 
+//version = newVorbis;
+
 version(decodeMP3)  import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
-version(decodeOGG)  import audioformats.vorbis;
+
+version(newVorbis)
+{
+    version(decodeOGG) import audioformats.stb_vorbis2;
+}
+else
+{
+    version(decodeOGG)  import audioformats.vorbis;
+}
+
 version(decodeOPUS) import audioformats.dopus;
 version(decodeMOD)  import audioformats.pocketmod;
 
@@ -260,10 +271,21 @@ public: // This is also part of the public API
 
         version(decodeOGG)
         {
-            if (_oggDecoder !is null)
+            version(newVorbis)
             {
-                destroyFree(_oggDecoder);
-                _oggDecoder = null;
+                if (_oggHandle !is null)
+                {
+                    stb_vorbis_close(_oggHandle);
+                    _oggHandle = null;
+                }
+            }
+            else
+            {
+                if (_oggDecoder !is null)
+                {
+                    destroyFree(_oggDecoder);
+                    _oggDecoder = null;
+                }
             }
             _oggBuffer.reallocBuffer(0);
         }
@@ -475,8 +497,16 @@ public: // This is also part of the public API
             {
                 version(decodeOGG)
                 {
-                    assert(_oggDecoder !is null);
-                    return _oggDecoder.stb_vorbis_get_samples_float_interleaved(_numChannels, outData, frames * _numChannels);
+                    version(newVorbis)
+                    {
+                        assert(_oggHandle !is null);
+                        return stb_vorbis_get_samples_float_interleaved(_oggHandle, _numChannels, outData, frames * _numChannels);
+                    }
+                    else
+                    {
+                        assert(_oggDecoder !is null);
+                        return _oggDecoder.stb_vorbis_get_samples_float_interleaved(_numChannels, outData, frames * _numChannels);
+                    }
                 }
                 else
                 {
@@ -734,7 +764,15 @@ private:
     version(decodeOGG)
     {
         ubyte[] _oggBuffer; // all allocations from the ogg decoder
-        VorbisDecoder _oggDecoder;
+
+        version(newVorbis)
+        {
+            stb_vorbis* _oggHandle;
+        }
+        else
+        {
+            VorbisDecoder _oggDecoder;            
+        }
     }
     version(decodeWAV)
     {
@@ -859,21 +897,40 @@ private:
                 alloc.alloc_buffer_length_in_bytes = cast(int)(_oggBuffer.length);
 
                 int error;
-                _oggDecoder = mallocNew!VorbisDecoder(_io, userData);
-                if (_oggDecoder.error == STBVorbisError.no_error)
+
+                version(newVorbis)
                 {
-                    _format = AudioFileFormat.ogg;
-                    _sampleRate = _oggDecoder.sampleRate;
-                    _numChannels = _oggDecoder.chans;
-                    _lengthInFrames = _oggDecoder.streamLengthInSamples();
-                    return;
+                    _oggHandle = stb_vorbis_open_file(_io, userData, &error, &alloc);
+                    if (error == VORBIS__no_error)
+                    {
+                        _format = AudioFileFormat.ogg;
+                        _sampleRate = _oggHandle.sample_rate;
+                        _numChannels = _oggHandle.channels;
+                        _lengthInFrames = stb_vorbis_stream_length_in_samples(_oggHandle);
+                        return;
+                    }
+                    else
+                    {
+                        _oggHandle = null;
+                    }
                 }
                 else
                 {
-                    destroyFree(_oggDecoder);
-                    _oggDecoder = null;
+                    _oggDecoder = mallocNew!VorbisDecoder(_io, userData);
+                    if (_oggDecoder.error == STBVorbisError.no_error)
+                    {
+                        _format = AudioFileFormat.ogg;
+                        _sampleRate = _oggDecoder.sampleRate;
+                        _numChannels = _oggDecoder.chans;
+                        _lengthInFrames = _oggDecoder.streamLengthInSamples();
+                        return;
+                    }
+                    else
+                    {
+                        destroyFree(_oggDecoder);
+                        _oggDecoder = null;
+                    }
                 }
-
             }
         }
 

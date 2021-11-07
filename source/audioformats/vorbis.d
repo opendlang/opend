@@ -82,7 +82,8 @@ public struct stb_vorbis_alloc
 
 ////////   ERROR CODES
 
-public enum STBVorbisError {
+public enum STBVorbisError 
+{
   no_error,
 
   need_more_data = 1,    // not a real error
