@@ -15,7 +15,7 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-//version = newVorbis;
+version = newVorbis;
 
 version(decodeMP3)  import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
@@ -660,7 +660,12 @@ public: // This is also part of the public API
             case ogg:
                 version(decodeOGG)
                 {
-                    assert(false); // TODO: see #6
+                    version(newVorbis)
+                    {
+                        return stb_vorbis_seek(_oggHandle, frame) == 1;
+                    }
+                    else
+                        assert(false); // former decoder doesn't support it
                 }
                 else 
                     assert(false);
