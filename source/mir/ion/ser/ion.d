@@ -506,68 +506,6 @@ unittest
 // ///
 // unittest
 // {
-//     import std.range;
-//     import std.uuid;
-//     import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy;
-
-//     static struct S
-//     {
-//         private int count;
-//         @serdeLikeList
-//         auto numbers() @property // uses `foreach`
-//         {
-//             return iota(count);
-//         }
-
-//         @serdeLikeList
-//         @serdeProxy!string // input element type of
-//         @serdeIgnoreOut
-//         Appender!(string[]) strings; //`put` method is used
-//     }
-
-//     assert(S(5).serializeIon == `{"numbers":[0,1,2,3,4]}`);
-//     // assert(`{"strings":["a","b"]}`.deserializeIon!S.strings.data == ["a","b"]);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.serde: serdeLikeStruct, serdeProxy;
-
-//     static struct M
-//     {
-//         private int sum;
-
-//         // opApply is used for serialization
-//         int opApply(int delegate(scope const char[] key, int val) pure dg) pure
-//         {
-//             if(auto r = dg("a", 1)) return r;
-//             if(auto r = dg("b", 2)) return r;
-//             if(auto r = dg("c", 3)) return r;
-//             return 0;
-//         }
-
-//         // opIndexAssign for deserialization
-//         void opIndexAssign(int val, string key) pure
-//         {
-//             sum += val;
-//         }
-//     }
-
-//     static struct S
-//     {
-//         @serdeLikeStruct
-//         @serdeProxy!int
-//         M obj;
-//     }
-
-//     assert(S.init.serializeIon == `{"obj":{"a":1,"b":2,"c":3}}`);
-//     // assert(`{"obj":{"a":1,"b":2,"c":9}}`.deserializeIon!S.obj.sum == 12);
-// }
-
-// ///
-// unittest
-// {
 //     import mir.ion.deser.ion;
 //     import std.range;
 //     import std.algorithm;

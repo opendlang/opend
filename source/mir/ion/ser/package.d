@@ -458,6 +458,12 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                 auto val = f(__traits(getMember, value, member));
             }
             else
+            static if (hasField!(V, member))
+            {
+                auto valPtr = &__traits(getMember, value, member);
+                ref val() @trusted @property { return *valPtr; }
+            }
+            else
             {
                 auto val = __traits(getMember, value, member);
             }
@@ -476,14 +482,15 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                 serializer.putKey(key);
             }
 
+            alias W = typeof(val);
+
             static if(hasUDA!(__traits(getMember, value, member), serdeLikeList))
             {
-                alias V = typeof(val);
-                static if(is(V == interface) || is(V == class) || is(V : E[], E))
+                static if(is(W == interface) || is(W == class) || is(W : E[], E))
                 {
                     if(val is null)
                     {
-                        serializer.putNull(nullTypeCodeOf!V);
+                        serializer.putNull(IonTypeCode.list);
                         continue;
                     }
                 }
@@ -498,19 +505,30 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             else
             static if(hasUDA!(__traits(getMember, value, member), serdeLikeStruct))
             {
-                static if(is(V == interface) || is(V == class) || is(V : E[T], E, T))
+                static if(is(W == interface) || is(W == class) || is(W : E[T], E, T))
                 {
                     if(val is null)
                     {
-                        serializer.putNull(nullTypeCodeOf!V);
+                        serializer.putNull(IonTypeCode.struct_);
                         continue F;
                     }
                 }
                 auto valState = serializer.structBegin();
-                foreach (key, elem; val)
+                static if (__traits(hasMember, val, "byKeyValue"))
                 {
-                    serializer.putKey(key);
-                    serializer.serializeValue(elem);
+                    foreach (keyElem; val.byKeyValue)
+                    {
+                        serializer.putKey(keyElem.key);
+                        serializer.serializeValue(keyElem.value);
+                    }
+                }
+                else
+                {
+                    foreach (key, ref elem; val)
+                    {
+                        serializer.putKey(key);
+                        serializer.serializeValue(elem);
+                    }
                 }
                 serializer.structEnd(valState);
             }
@@ -566,6 +584,56 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
             .serializeValue(serializer, v);
         }
         serializer.structEnd(state);
+    }
+    else
+    static if(hasUDA!(V, serdeLikeList))
+    {
+        static if(is(V == interface) || is(V == class) || is(V : E[], E))
+        {
+            if(value is null)
+            {
+                serializer.putNull(nullTypeCodeOf!V);
+                continue;
+            }
+        }
+        auto valState = serializer.listBegin();
+        foreach (ref elem; value)
+        {
+            serializer.elemBegin;
+            serializer.serializeValue(elem);
+        }
+        serializer.listEnd(valState);
+    }
+    else
+    static if(hasUDA!(V, serdeLikeStruct))
+    {
+        static if(is(V == interface) || is(V == class) || is(V : E[T], E, T))
+        {
+            if(value is null)
+            {
+                serializer.putNull(nullTypeCodeOf!V);
+                continue F;
+            }
+        }
+        auto valState = serializer.structBegin();
+
+        static if (__traits(hasMember, value, "byKeyValue"))
+        {
+            foreach (keyElem; value.byKeyValue)
+            {
+                serializer.putKey(keyElem.key);
+                serializer.serializeValue(keyElem.value);
+            }
+        }
+        else
+        {
+            foreach (key, ref elem; value)
+            {
+                serializer.putKey(key);
+                serializer.serializeValue(elem);
+            }
+        }
+        serializer.structEnd(valState);
     }
     else
     static if (hasUDA!(V, serdeProxy))

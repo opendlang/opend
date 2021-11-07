@@ -349,7 +349,7 @@ template deserializeValue(string[] symbolTable)
                     if (symbolId >= table.length)
                         return unqualException(unexpectedSymbolIdWhenDeserializing!T);
 
-                    static if (__traits(compiles, __traits(getMember, value, member)[table[symbolId]] = move(elem)))
+                    static if (__traits(compiles, {__traits(getMember, value, member)[table[symbolId]] = move(elem);}))
                     {
                         __traits(getMember, value, member)[table[symbolId]] = move(elem);
                     }
@@ -743,7 +743,7 @@ template deserializeValue(string[] symbolTable)
                         return exception;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
-                    static if (__traits(compiles, value = move(ar)))
+                    static if (__traits(compiles, {value = move(ar);}))
                         value = move(ar);
                     else () @trusted {
                         value = ar.opCast!T;
@@ -764,7 +764,6 @@ template deserializeValue(string[] symbolTable)
         {
             import mir.conv: to;
             import core.lifetime: move;
-            serdeGetProxy!T temporal;
             static if (hasUDA!(T, serdeScoped))
                 static if (is(serdeGetProxy!T == C[], C) && is(immutable C == immutable char))
                     alias impl = deserializeScoped;
@@ -773,11 +772,61 @@ template deserializeValue(string[] symbolTable)
             else
                 alias impl = deserializeValue;
 
-            if (auto exception = impl(params, temporal))
-                return exception;
+            static if (hasUDA!(T, serdeLikeStruct))
+            {
+                import mir.conv;
+                if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
+                    return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
+                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; data.trustedGet!IonStruct)
+                {
+                    if (error)
+                        return error.ionException;
+                    if (symbolId >= table.length)
+                        return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                    import mir.conv: to;
+                    auto elemParams = params.withData(elem);
+                    serdeGetProxy!T temporal;
+                    if (auto exception = impl(elemParams, temporal))
+                        return exception;
+                    static if (__traits(compiles, {value[table[symbolId]] = move(temporal);}))
+                    {
+                        value[table[symbolId]] = move(temporal);
+                    }
+                    else
+                    {
+                        value[table[symbolId].idup] = move(temporal);
+                    }
+                }
+                return null;
+            }
+            else
+            static if (hasUDA!(T, serdeLikeList))
+            {
+                import mir.conv;
+                if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.list)
+                    return IonErrorCode.expectedListValue.ionException;
+                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, IonDescribedValue elem; data.trustedGet!IonList)
+                {
+                    if (error)
+                        return error.ionException;
+                    import mir.conv: to;
+                    auto elemParams = params.withData(elem);
+                    serdeGetProxy!T temporal;
+                    if (auto exception = impl(elemParams, temporal))
+                        return exception;
+                    value.put(move(temporal));
+                }
+                return null;
+            }
+            else
+            {
+                serdeGetProxy!T temporal;
+                if (auto exception = impl(params, temporal))
+                    return exception;
 
-            value = to!T(move(temporal));
-            return null;
+                value = to!T(move(temporal));
+                return null;
+            }
         }
         else
         static if (is(T == enum))
@@ -1136,9 +1185,9 @@ template deserializeValue(string[] symbolTable)
                             return error.ionException;
                         if (symbolId >= table.length)
                             return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                        static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId].idup))
+                        static if (__traits(compiles, {__traits(getMember, value, member) = table[symbolId].idup;}))
                         {
-                            static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId]))
+                            static if (__traits(compiles, {__traits(getMember, value, member) = table[symbolId];}))
                             {
                                 __traits(getMember, value, member) = table[symbolId];
                             }

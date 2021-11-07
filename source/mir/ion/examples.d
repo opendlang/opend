@@ -496,51 +496,77 @@ version(mir_ion_test) unittest
 //     assert(v.serializeToJson == `[2.0,"str",{"key":1.0}]`);
 // }
 
-///
-// version(none)
-// unittest
-// {
-//     import mir.ion.ser.json;
-//     import mir.ion.deser.json;
-//     import mir.ndslice.topology: iota;
-//     import std.array: Appender;
-//     import std.uuid;
-
-//     static struct S
-//     {
-//         private int count;
-//         @serdeLikeList
-//         auto numbers() @property // uses `foreach`
-//         {
-//             return iota(count);
-//         }
-
-//         @serdeLikeList
-//         @serdeProxy!string // input element type of
-//         @serdeIgnoreOut
-//         Appender!(string[]) strings; //`put` method is used
-//     }
-
-//     assert(S(5).serializeJson == `{"numbers":[0,1,2,3,4]}`);
-//     assert(`{"strings":["a","b"]}`.deserializeJson!S.strings.data == ["a","b"]);
-// }
-
-///
-version(mir_ion_test) unittest
+/// Iterable and serdeLikeList
+unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.ion;
+    import mir.ion.deser.text: deserializeText;
+    import mir.ion.ser.text: serializeText;
+    import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy, serdeKeys;
+    import std.array: Appender;
 
+    static struct S
+    {
+        @serdeLikeList
+        @serdeProxy!string // input element type of
+        @serdeIgnoreOut
+        @serdeKeys("strings")
+        Appender!(string[]) stringsApp; //`put` method is used
+
+        this(const(string)[] strings)
+        {
+            stringsApp.put(strings);
+        }
+
+        auto strings() const @property // Iterable
+        {
+            import mir.ndslice.topology: map;
+            return stringsApp.data.map!((string s) => "_" ~ s);
+        }
+
+    }
+
+    assert(S([`a`, `b`]).serializeText == `{strings:["_a","_b"]}`);
+    assert(`{strings:["a","b"]}`.deserializeText!S.stringsApp.data == [`a`, `b`]);
+
+    @serdeLikeList
+    @serdeProxy!string // input element type of
+    static struct C
+    {
+        /// Used to make S deserializable
+        Appender!(string[]) stringsApp; //`put` method is used
+        alias stringsApp this;
+
+        this(const(string)[] strings)
+        {
+            stringsApp.put(strings);
+        }
+
+        /// To make C iterable and serializable
+        auto opIndex() const { return stringsApp.data; }
+    }
+
+    assert(C([`a`, `b`]).serializeText == `["a","b"]`);
+    assert(`["a","b"]`.deserializeText!C.stringsApp.data == [`a`, `b`]);
+}
+
+/// serdeLikeStruct
+unittest
+{
+    import mir.ion.ser.text: serializeText;
+    import mir.ion.deser.text: deserializeText;
+    import mir.serde: serdeLikeStruct, serdeProxy;
+
+    // opApply for serialization & and opIndexAssign for deserialization
     static struct M
     {
         private int sum;
 
         // opApply is used for serialization
-        int opApply(int delegate(in char[] key, int val) pure dg) pure
+        int opApply(int delegate(scope const char[] key, ref const int val) pure @safe dg) pure @safe
         {
-            if(auto r = dg("a", 1)) return r;
-            if(auto r = dg("b", 2)) return r;
-            if(auto r = dg("c", 3)) return r;
+            { int var = 1; if (auto r = dg("a", var)) return r; }
+            { int var = 2; if (auto r = dg("b", var)) return r; }
+            { int var = 3; if (auto r = dg("c", var)) return r; }
             return 0;
         }
 
@@ -551,17 +577,58 @@ version(mir_ion_test) unittest
         }
     }
 
+    // attribute on member + opApply
     static struct S
     {
         @serdeLikeStruct
-        @serdeProxy!int
+        @serdeProxy!int // for deserialization
         M obj;
     }
 
-    import mir.ion.conv;
+    assert(S().serializeText == `{obj:{a:1,b:2,c:3}}`);
+    assert(`{obj:{a:1,b:2,c:3}}`.deserializeText!S.obj.sum == 6);
 
-    assert(S.init.serializeJson == `{"obj":{"a":1,"b":2,"c":3}}`);
-    assert(`{"obj":{"a":1,"b":2,"c":9}}`.json2ion.deserializeIon!S.obj.sum == 12);
+    // attribute on type + opApply
+    @serdeLikeStruct
+    @serdeProxy!int // for deserialization
+    static struct C
+    {
+        M obj;
+        alias obj this;
+    }
+
+    assert(C().serializeText == `{a:1,b:2,c:3}`);
+    assert(`{a:1,b:2,c:3}`.deserializeText!C.obj.sum == 6);
+
+    // byKeyValue
+    static struct D
+    {
+        static struct KeyValue
+        {
+            string key;
+            int value;
+        }
+        KeyValue[] byKeyValue = [KeyValue("a", 1), KeyValue("b", 2), KeyValue("c", 3)];
+    }
+
+    // attribute on member + byKeyValue
+    static struct F
+    {
+        @serdeLikeStruct
+        D obj;
+    }
+
+    assert(F().serializeText == `{obj:{a:1,b:2,c:3}}`);
+
+    // attribute on type + byKeyValue
+    @serdeLikeStruct
+    static struct B
+    {
+        D obj;
+        alias obj this;
+    }
+
+    assert(B().serializeText == `{a:1,b:2,c:3}`);
 }
 
 ///

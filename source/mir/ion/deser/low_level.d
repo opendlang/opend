@@ -30,7 +30,7 @@ import std.traits:
 
 template isFirstOrderSerdeType(T)
 {
-    import mir.serde: serdeGetFinalProxy;
+    import mir.serde: serdeGetFinalProxy, serdeLikeStruct, serdeLikeList;
 
     static if (isAggregateType!T)
     {
@@ -51,6 +51,9 @@ template isFirstOrderSerdeType(T)
         else
         static if (is(T : RCArray!E, E))
             enum isFirstOrderSerdeType = isFirstOrderSerdeType!E;
+        else
+        static if (hasUDA!(T, serdeLikeStruct) || hasUDA!(T, serdeLikeList))
+            enum isFirstOrderSerdeType = false;
         else
         static if (is(T == serdeGetFinalProxy!T))
             enum isFirstOrderSerdeType = false;
@@ -367,7 +370,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 ///ditto
 IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     // pure @safe nothrow @nogc
-    if (!(hasProxy!T && isFirstOrderSerdeType!T) && is(typeof(Timestamp.init.opCast!T)))
+    if (!(hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T) && is(typeof(Timestamp.init.opCast!T)))
 {
     Timestamp temporal;
     if (auto error = .deserializeValueImpl(data, temporal))
@@ -401,11 +404,20 @@ package template hasProxy(T)
         enum hasProxy = false;
 }
 
+package template hasLikeStruct(T)
+{
+    import mir.serde: serdeLikeStruct;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasLikeStruct = hasUDA!(T, serdeLikeStruct);
+    else
+        enum hasLikeStruct = false;
+}
+
 /++
 Deserialize struct/class value with proxy.
 +/
 IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
-    if (hasProxy!T && isFirstOrderSerdeType!T)
+    if (hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T)
 {
     import std.traits: Select;
     import mir.serde: serdeGetProxy, serdeScoped, serdeScoped;
