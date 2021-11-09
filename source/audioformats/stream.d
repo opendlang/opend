@@ -1078,6 +1078,8 @@ struct FileContext // this is what is passed to I/O when used in file mode
     {
         CString strZ = CString(path);
         file = fopen(strZ.storage, forWrite ? "wb".ptr : "rb".ptr);
+        if (file is null)
+            throw mallocNew!Exception("File not found");
         // finds the size of the file
         fseek(file, 0, SEEK_END);
         fileSize = ftell(file);
