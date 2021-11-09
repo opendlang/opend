@@ -1145,11 +1145,11 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
 
-                static if (anySatisfy!(hasAnnotation, Types))
+                static if (anySatisfy!(isAnnotated, Types))
                 {
                     case IonTypeCode.annotations:
                     {
-                        alias ATypes = Filter!(hasAnnotation, Types);
+                        alias ATypes = Filter!(isAnnotated, Types);
                         static assert(ATypes.length == 1, ATypes.stringof);
                         ATypes[0] object;
                         if (auto exception = deserializeValue(params, object))
@@ -1250,10 +1250,13 @@ template deserializeValue(string[] symbolTable)
             else
                 alias annotatedParams = params;
 
-            static if (isAlgebraicAliasThis!T)
+            static if (isAlgebraicAliasThis!T || isAnnotated!T)
             {
                 import mir.reflection: hasField;
-                enum aliasMember = __traits(getAliasThis, T);
+                static if (__traits(getAliasThis, T).length == 1)
+                    enum aliasMember = __traits(getAliasThis, T);
+                else
+                    enum aliasMember = "value";
                 static if (hasField!(T, aliasMember))
                     return deserializeValue(annotatedParams, __traits(getMember, value, aliasMember));
                 else {

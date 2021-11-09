@@ -79,7 +79,7 @@ void serializeValue(S, V)(ref S serializer, in V value)
 {
     static if (hasUDA!(V, serdeProxy))
     {
-        serializer.serializeValue(value.to!(serdeGetProxy!V));
+        serializer.serializeValue(to!(serdeGetProxy!V)(value));
     }
     else
     {
@@ -370,9 +370,13 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
         }
     }
 
-    static if (isAlgebraicAliasThis!V)
+    static if (isAlgebraicAliasThis!V || isAnnotated!V)
     {
-        serializeAnnotatedValue(serializer, __traits(getMember, value, __traits(getAliasThis, V)), annotationsState, wrapperState);
+        static if (__traits(getAliasThis, V).length == 1)
+            enum aliasThisMember = __traits(getAliasThis, V)[0];
+        else
+            enum aliasThisMember = "value";
+        serializeAnnotatedValue(serializer, __traits(getMember, value, aliasThisMember), annotationsState, wrapperState);
     }
     else
     static if (isVariant!V)
@@ -535,7 +539,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             else
             static if(hasUDA!(__traits(getMember, value, member), serdeProxy))
             {
-                serializer.serializeValue(val.to!(serdeGetProxy!(__traits(getMember, value, member))));
+                serializer.serializeValue(to!(serdeGetProxy!(__traits(getMember, value, member)))(val));
             }
             else
             {
@@ -636,24 +640,16 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         serializer.structEnd(valState);
     }
     else
-    static if (hasUDA!(V, serdeProxy))
-    {{
-        serializeValue(serializer, value.to!(serdeGetProxy!V));
-        return;
-    }}
-    else
-    static if (is(typeof(Timestamp(V.init))))
-    {
-        serializer.putValue(Timestamp(value));
-        return;
-    }
-    else
     static if(__traits(hasMember, V, "serialize"))
     {
         alias soverloads = getSerializeOverloads!(S, V);
         static if (__traits(hasMember, soverloads, "best") || !__traits(hasMember, soverloads, "script"))
         {
-            value.serialize(serializer);
+            static if (__traits(compiles, value.serialize(serializer)) || !hasUDA!(V, serdeProxy))
+                value.serialize(serializer);
+            else
+                serializeValue(serializer, to!(serdeGetProxy!V)(value));
+
         }
         else
         static if (__traits(hasMember, soverloads, "script"))
@@ -663,6 +659,18 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
             auto iserializer = wserializer.ISerializer;
             value.serialize(iserializer);
         }
+        return;
+    }
+    else
+    static if (hasUDA!(V, serdeProxy))
+    {
+        serializeValue(serializer, to!(serdeGetProxy!V)(value));
+        return;
+    }
+    else
+    static if (is(typeof(Timestamp(V.init))))
+    {
+        serializer.putValue(Timestamp(value));
         return;
     }
     else
