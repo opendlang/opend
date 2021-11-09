@@ -1131,7 +1131,7 @@ template deserializeValue(string[] symbolTable)
                         }
                         else
                         {
-                            alias isMapType = Filter!(hasLikeStruct, Types)[0];
+                            alias isMapType = hasLikeStruct;
                         }
 
                         alias AATypes = Filter!(isMapType, Types);
