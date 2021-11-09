@@ -1157,3 +1157,18 @@ unittest
     auto variant = `birthday::2001-01-01`.deserializeText!IonAlgebraic;
     assert(variant == annotated);
 }
+
+unittest
+{
+    import mir.ion.deser.text;
+    import mir.ion.ser.text;
+    enum CaseSensitive
+    {
+        no,
+        yes,
+        osDefault = yes,
+    }
+
+    assert(CaseSensitive.osDefault.serializeText == `yes`);
+    assert(`yes`.deserializeText!CaseSensitive == CaseSensitive.yes);
+}
