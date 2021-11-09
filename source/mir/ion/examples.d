@@ -1171,4 +1171,17 @@ unittest
 
     assert(CaseSensitive.osDefault.serializeText == `yes`);
     assert(`yes`.deserializeText!CaseSensitive == CaseSensitive.yes);
+
+    enum TextAlignment : uint {
+        Left = 0, ///
+        Center = 1, ///
+        Right = 2, ///
+
+        VerticalTop = 0, ///
+        VerticalCenter = 4, ///
+        VerticalBottom = 8, ///
+    }
+
+    assert(TextAlignment.VerticalTop.serializeText == `Left`);
+    assert(`Left`.deserializeText!TextAlignment == TextAlignment.Left);
 }

@@ -847,9 +847,10 @@ template deserializeValue(string[] symbolTable)
                 switch (id)
                 {
                     import std.meta: NoDuplicates;
-                    foreach(i, member; NoDuplicates!(EnumMembers!T))
+                    alias Members = NoDuplicates!(EnumMembers!T);
+                    foreach(i, member; Members)
                     {{
-                        enum keys = serdeGetKeysIn(EnumMembers!T[i]);
+                        enum keys = serdeGetKeysIn(Members[i]);
                         static assert (keys.length, "At least one input enum key is required");
                         static foreach (key; keys)
                         {
