@@ -11,7 +11,7 @@ template serde(T)
 {
     import mir.serde: SerdeTarget;
     ///
-    T serde(V)(auto ref const V value, SerdeTarget serdeTarget = SerdeTarget.ion)
+    T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
     {
         import mir.ion.exception;
         import mir.ion.deser.ion: deserializeIon;
