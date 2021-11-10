@@ -1336,8 +1336,6 @@ struct IonTimestamp
             goto R;
         if (auto error = parseVarUInt(d, v.month))
             return error;
-        if (v.month > 12)
-            return IonErrorCode.illegalTimeStamp;
         v.precision = v.precision.month;
 
         if (d.length == 0)
@@ -1411,13 +1409,18 @@ struct IonTimestamp
         v.precision = v.precision.fraction;
     R:
         import mir.date: maxDay;
-        auto s = (v.month == 0) + (v.day == 0);
-        if (s == 0 && (v.precision < Timestamp.Precision.day || v.day <= maxDay(v.year, v.month)) || s == 1 && v.precision == Timestamp.Precision.month || s == 2 && v.precision > Timestamp.Precision.day && v.year == 0)
+
+        if (v.day == 88 || v.day == 99)
+            goto F;
         {
-            value = v;
-            return IonErrorCode.none;
+            auto s = (v.month == 0) + (v.day == 0);
+            if (v.month <= 12 && s == 0 && (v.precision < Timestamp.Precision.day || v.day <= maxDay(v.year, v.month)) || s == 1 && v.precision == Timestamp.Precision.month || s == 2 && v.precision > Timestamp.Precision.day && v.year == 0)
+                goto F;
+            return IonErrorCode.illegalTimeStamp; 
         }
-        return IonErrorCode.illegalTimeStamp; 
+    F:
+        value = v;
+        return IonErrorCode.none;
     }
 
     version (D_Exceptions)

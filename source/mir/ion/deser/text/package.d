@@ -1236,6 +1236,11 @@ version(mir_ion_parser_test) unittest
     testFail("2001-01-02T03:04:05+00:50", Timestamp(2001, 1, 2, 3, 4, 5));
     testFail("2001-01-02T03:04:05.666Z", Timestamp(2001, 1, 2, 3, 4, 5));
     testFail("2001-01-02T03:54:05.666+00:50", Timestamp(2001, 1, 2, 3, 4, 5));
+
+    // Fake timestamps for Duration encoding
+    import core.time : weeks, days, hours, minutes, seconds, hnsecs;
+    test("0005-02-88T07:40:04.9876543", Timestamp(5.weeks + 2.days + 7.hours + 40.minutes + 4.seconds + 9876543.hnsecs));
+    test("0005-02-99T07:40:04.9876543", Timestamp(-5.weeks - 2.days - 7.hours - 40.minutes - 4.seconds - 9876543.hnsecs));
 }
 
 /// Test that binary literals are de-serialized properly.
