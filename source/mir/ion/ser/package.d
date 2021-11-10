@@ -135,7 +135,7 @@ void serializeValue(S, T)(ref S serializer, T[] value)
         serializer.putNull(IonTypeCode.list);
         return;
     }
-    auto state = serializer.listBegin();
+    auto state = serializer.beginList(value);
     foreach (ref elem; value)
     {
         serializer.elemBegin;
@@ -144,11 +144,39 @@ void serializeValue(S, T)(ref S serializer, T[] value)
     serializer.listEnd(state);
 }
 
+private enum isRefIterable(T) = __traits(compiles, (ref T value) { foreach (ref elem; value) {}  });
+
+version(mir_ion_test)
+unittest
+{
+    static assert(isRefIterable!(double[]));
+}
+
+package template hasLikeList(T)
+{
+    import mir.serde: serdeLikeList;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasLikeList = hasUDA!(T, serdeLikeList);
+    else
+        enum hasLikeList = false;
+}
+
+package template hasProxy(T)
+{
+    import mir.serde: serdeProxy;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasProxy = hasUDA!(T, serdeProxy);
+    else
+        enum hasProxy = false;
+}
+
 /// Input range serialization
-void serializeValue(S, V)(ref S serializer, V value)
+void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isIterable!V &&
+        (!hasProxy!V || hasLikeList!V) &&
         !isSomeChar!(ForeachType!V) &&
         !isDynamicArray!V &&
+        !isAssociativeArray!V &&
         !isStdNullable!V)
 {
     static if(is(V == interface) || is(V == class) || is(V : E[], E) && !is(V : D[N], D, size_t N))
@@ -160,10 +188,21 @@ void serializeValue(S, V)(ref S serializer, V value)
         }
     }
     auto state = serializer.beginList(value);
-    foreach (ref elem; value)
+    static if (isRefIterable!V)
     {
-        serializer.elemBegin;
-        serializer.serializeValue(elem);
+        foreach (ref elem; value)
+        {
+            serializer.elemBegin;
+            serializer.serializeValue(elem);
+        }
+    }
+    else
+    {
+        foreach (elem; value)
+        {
+            serializer.elemBegin;
+            serializer.serializeValue(elem);
+        }
     }
     serializer.listEnd(state);
 }
@@ -418,7 +457,7 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
 
 /// Struct and class type serialization
 void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
-    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
+    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic;
     auto state = serializer.structBegin(size_t.max);
@@ -499,10 +538,21 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                     }
                 }
                 auto valState = serializer.listBegin();
-                foreach (ref elem; val)
+                static if (isRefIterable!W)
                 {
-                    serializer.elemBegin;
-                    serializer.serializeValue(elem);
+                    foreach (ref elem; val)
+                    {
+                        serializer.elemBegin;
+                        serializer.serializeValue(elem);
+                    }
+                }
+                else
+                {
+                    foreach (elem; val)
+                    {
+                        serializer.elemBegin;
+                        serializer.serializeValue(elem);
+                    }
                 }
                 serializer.listEnd(valState);
             }
@@ -557,7 +607,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 
 /// Struct and class type serialization
 void serializeValue(S, V)(ref S serializer, auto ref V value)
-    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy)))
+    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic: Algebraic, isVariant, isNullable, visit;
     import mir.string_map: isStringMap;
@@ -601,10 +651,21 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
             }
         }
         auto valState = serializer.listBegin();
-        foreach (ref elem; value)
+        static if (isRefIterable!V)
         {
-            serializer.elemBegin;
-            serializer.serializeValue(elem);
+            foreach (ref elem; value)
+            {
+                serializer.elemBegin;
+                serializer.serializeValue(elem);
+            }
+        }
+        else
+        {
+            foreach (elem; value)
+            {
+                serializer.elemBegin;
+                serializer.serializeValue(elem);
+            }
         }
         serializer.listEnd(valState);
     }
