@@ -174,7 +174,6 @@ package template hasProxy(T)
 void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isIterable!V &&
         (!hasProxy!V || hasLikeList!V) &&
-        !isSomeChar!(ForeachType!V) &&
         !isDynamicArray!V &&
         !isAssociativeArray!V &&
         !isStdNullable!V)
@@ -187,24 +186,35 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
             return;
         }
     }
-    auto state = serializer.beginList(value);
-    static if (isRefIterable!V)
+    static if (isSomeChar!(ForeachType!V))
     {
-        foreach (ref elem; value)
-        {
-            serializer.elemBegin;
-            serializer.serializeValue(elem);
-        }
+        import mir.format: stringBuf;
+        stringBuf buf;
+        foreach (elem; value)
+            buf.put(elem);
+        serializer.putValue(buf.data);
     }
     else
     {
-        foreach (elem; value)
+        auto state = serializer.beginList(value);
+        static if (isRefIterable!V)
         {
-            serializer.elemBegin;
-            serializer.serializeValue(elem);
+            foreach (ref elem; value)
+            {
+                serializer.elemBegin;
+                serializer.serializeValue(elem);
+            }
         }
+        else
+        {
+            foreach (elem; value)
+            {
+                serializer.elemBegin;
+                serializer.serializeValue(elem);
+            }
+        }
+        serializer.listEnd(state);
     }
-    serializer.listEnd(state);
 }
 
 /// input range serialization
@@ -529,32 +539,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 
             static if(hasUDA!(__traits(getMember, value, member), serdeLikeList))
             {
-                static if(is(W == interface) || is(W == class) || is(W : E[], E))
-                {
-                    if(val is null)
-                    {
-                        serializer.putNull(IonTypeCode.list);
-                        continue;
-                    }
-                }
-                auto valState = serializer.listBegin();
-                static if (isRefIterable!W)
-                {
-                    foreach (ref elem; val)
-                    {
-                        serializer.elemBegin;
-                        serializer.serializeValue(elem);
-                    }
-                }
-                else
-                {
-                    foreach (elem; val)
-                    {
-                        serializer.elemBegin;
-                        serializer.serializeValue(elem);
-                    }
-                }
-                serializer.listEnd(valState);
+                static assert(0);
             }
             else
             static if(hasUDA!(__traits(getMember, value, member), serdeLikeStruct))
@@ -642,32 +627,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     else
     static if(hasUDA!(V, serdeLikeList))
     {
-        static if(is(V == interface) || is(V == class) || is(V : E[], E))
-        {
-            if(value is null)
-            {
-                serializer.putNull(nullTypeCodeOf!V);
-                continue;
-            }
-        }
-        auto valState = serializer.listBegin();
-        static if (isRefIterable!V)
-        {
-            foreach (ref elem; value)
-            {
-                serializer.elemBegin;
-                serializer.serializeValue(elem);
-            }
-        }
-        else
-        {
-            foreach (elem; value)
-            {
-                serializer.elemBegin;
-                serializer.serializeValue(elem);
-            }
-        }
-        serializer.listEnd(valState);
+        static assert(0);
     }
     else
     static if(hasUDA!(V, serdeLikeStruct))

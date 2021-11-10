@@ -1123,7 +1123,7 @@ version(unittest) private
         }
     }
 
-    unittest
+    version(mir_ion_test) unittest
     {
         import mir.ion.ser.json;
         import mir.ion.deser.json;
@@ -1136,7 +1136,7 @@ version(unittest) private
 
 // check symbols support
 // check typed nullable support
-unittest
+version(mir_ion_test) unittest
 {
     import mir.algebraic_alias.ion;
     import mir.algebraic;
@@ -1158,7 +1158,7 @@ unittest
     assert(variant == annotated);
 }
 
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.deser.text;
     import mir.ion.ser.text;
@@ -1184,4 +1184,13 @@ unittest
 
     assert(TextAlignment.VerticalTop.serializeText == `Left`);
     assert(`Left`.deserializeText!TextAlignment == TextAlignment.Left);
+}
+
+version(mir_ion_test) unittest
+{
+    import mir.ndslice.topology: iota, as;
+    auto range = as!char(3.iota + 'a');
+    assert(range == "abc");
+    import mir.ion.ser.text;
+    assert(range.serializeText == `"abc"`);
 }
