@@ -463,7 +463,7 @@ struct TextSerializer(string sep, Appender)
         printEscaped!(char, EscapeFormat.ionClob)(appender, value.data);
 
         static if(sep.length)
-            appender.put(`" }} `);
+            appender.put(`" }}`);
         else
             appender.put(`"}}`);
     }
