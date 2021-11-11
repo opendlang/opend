@@ -1314,7 +1314,7 @@ template deserializeValue(string[] symbolTable)
                         }
                         else
                         {
-                            return cantConstructObjectExc!T;
+                            return unqualException(cantConstructObjectExc!T);
                         }
                     }
                 }
