@@ -951,18 +951,18 @@ private:
     @(IonTokenType.TokenBinary)
     void onBinaryNumber() @safe pure
     {
-        // XXX: mir does *NOT* support binary literals, replace this when implemented
-        version(D_Exceptions)
-            throw IonDeserializerErrorCode.unimplemented.ionDeserializerException;
-        else
-            assert(0, "Unimplemented");
-        /*
-        import std.format;
         auto v = t.readValue!(IonTokenType.TokenBinary);
-        ulong val;
-        formattedRead(v[2 .. $], "%b", &val); // skip over the leading '0b' as that breaks this (???)
+        BigInt!256 val = void;
+        if (v[0] == '-')
+        {
+            val.fromBinaryStringImpl!(char, true)(v[3 .. $]); // skip over the negative + 0b
+            val.sign = true;
+        }
+        else
+        {
+            val.fromBinaryStringImpl!(char, true)(v[2 .. $]);
+        }
         ser.putValue(val);
-        */
     }
 
     @(IonTokenType.TokenHex)
@@ -1246,20 +1246,22 @@ version(mir_ion_parser_test) unittest
 /// Test that binary literals are de-serialized properly.
 version (mir_ion_parser_test) unittest
 {
-    import mir.ion.value;
+    import mir.ion.value : IonUInt;
+    import mir.ion.stream;
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, uint val)
     {
-        auto v = ionData.text2ion.IonValue.describe.get!(IonUInt);
-        assert(v.get!uint == val);
+        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+            auto v = ionValue.get!(IonUInt);
+            assert(v.get!uint == val);
+        }
     }
 
-    // Disabled until implemented in Mir
-    /*
+    test("0b00001", 0b1);
     test("0b10101", 0b10101);
     test("0b11111", 0b11111);
     test("0b111111111111111111111", 0b1111_1111_1111_1111_1111_1);
-    */
+    test("0b1_1111_1111_1111_1111_1111", 0b1_1111_1111_1111_1111_1111);
 }
 
 /// Test that signed / unsigned integers are de-serialized properly.

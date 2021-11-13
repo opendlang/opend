@@ -71,9 +71,6 @@ static immutable ION_GOOD_TEST_DATA_SKIP = [
     "good/item1.10n",
     "good/testfile26.ion",
     "good/localSymbolTableImportZeroMaxId.ion",
-    // Binary literals with underscore support is TBD
-    "good/intBinary.ion",
-    "good/intsWithUnderscores.ion",
     // Shared symbol tables support is TBD
     "good/subfieldVarUInt.ion",
     "good/subfieldVarUInt15bit.ion",
