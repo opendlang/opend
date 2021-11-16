@@ -1194,3 +1194,29 @@ version(mir_ion_test) unittest
     import mir.ion.ser.text;
     assert(range.serializeText == `"abc"`);
 }
+
+/// Series de/serialization
+@safe version(mir_ion_test) unittest
+{
+    import mir.ion.deser.text;
+    import mir.ion.ser.text;
+    import mir.series;
+    auto s = ["a", "b"].series([5, 6]);
+    auto t = `{index:["a","b"],data:[5,6]}`;
+    assert(s.serializeText == t, s.serializeText);
+    assert(t.deserializeText!(typeof(s)) == s);
+}
+
+/// RC Series de/serialization
+@safe version(mir_ion_test) unittest
+{
+    import mir.ion.deser.text;
+    import mir.ion.ser.text;
+    import mir.ndslice.allocation: rcslice;
+    import mir.series;
+    import mir.small_string;
+    auto s = [SmallString!32("a"), SmallString!32("b")].rcslice.series([5, 6].rcslice);
+    auto t = `{index:["a","b"],data:[5,6]}`;
+    assert(s.serializeText == t, s.serializeText);
+    assert(t.deserializeText!(typeof(s)) == s);
+}

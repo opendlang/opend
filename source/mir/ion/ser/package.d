@@ -170,11 +170,21 @@ package template hasProxy(T)
         enum hasProxy = false;
 }
 
+package template hasFields(T)
+{
+    import mir.serde: serdeFields;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasFields = hasUDA!(T, serdeFields);
+    else
+        enum hasFields = false;
+}
+
 /// Input range serialization
 void serializeValue(S, V)(ref S serializer, auto ref V value)
     if (isIterable!V &&
         (!hasProxy!V || hasLikeList!V) &&
         !isDynamicArray!V &&
+        !hasFields!V &&
         !isAssociativeArray!V &&
         !isStdNullable!V)
 {
@@ -383,13 +393,13 @@ private IonTypeCode nullTypeCodeOf(T)()
         static if (hasUDA!(T, serdeProxy))
             code = .nullTypeCodeOf!(serdeGetFinalProxy!T);
         else
-        static if (isIterable!T)
+        static if (isIterable!T && !hasFields!T)
             code = IonTypeCode.list;
         else
             code = IonTypeCode.struct_;
     }
     else
-    static if (isIterable!T)
+    static if (isIterable!T && !hasFields!T)
         code = IonTypeCode.list;
 
     return code;
@@ -467,7 +477,7 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
 
 /// Struct and class type serialization
 void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
-    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
+    if (isAggregateType!V && (!isIterable!V || hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic;
     auto state = serializer.structBegin(size_t.max);
@@ -592,7 +602,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 
 /// Struct and class type serialization
 void serializeValue(S, V)(ref S serializer, auto ref V value)
-    if (isAggregateType!V && (!isIterable!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
+    if (isAggregateType!V && (!isIterable!V ||  hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic: Algebraic, isVariant, isNullable, visit;
     import mir.string_map: isStringMap;
