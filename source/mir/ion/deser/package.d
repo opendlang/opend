@@ -989,7 +989,10 @@ template deserializeValue(string[] symbolTable)
                 {
                     case IonTypeCode.bool_:
                     {
-                        value = data.trustedGet!bool;
+                        bool boolean;
+                        if (auto errorCode = data.get!bool(boolean))
+                            return errorCode.ionException;
+                        value = boolean;
                         return retNull;
                     }
                 }
@@ -997,16 +1000,6 @@ template deserializeValue(string[] symbolTable)
                 static if (contains!string)
                 {
                     case IonTypeCode.symbol:
-                    {
-                        size_t id;
-                        if (auto exc = data.trustedGet!IonSymbolID.get(id))
-                            return exc.ionException;
-                        if (id >= table.length)
-                            return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                        import mir.conv: to;
-                        value = table[id].to!string;
-                        return null;
-                    }
                     case IonTypeCode.string:
                     {
                         string str;
@@ -1017,22 +1010,12 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
                 else
-                static if (Filter!(isSmallString, Types).length == 1)
+                static if (Filter!(isSmallString, Types).length)
                 {
                     case IonTypeCode.symbol:
-                    {
-                        alias SmallStringType = Filter!(isSmallString, Types)[0];
-                        size_t id;
-                        if (auto exc = data.trustedGet!IonSymbolID.get(id))
-                            return exc.ionException;
-                        if (id >= table.length)
-                            return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                        value = SmallStringType(table[id]);
-                        return retNull;
-                    }
                     case IonTypeCode.string:
                     {
-                        Filter!(isSmallString, Types)[0] str;
+                        Filter!(isSmallString, Types)[$ - 1] str; // pick the largest one
                         if (auto exception = deserializeValue(params, str))
                             return exception;
                         value = str;
