@@ -35,6 +35,9 @@ template isComplex(C)
         static if (hasField!(C, "re") && hasField!(C, "im") && C.init.tupleof.length == 2)
             enum isComplex = isFloatingPoint!(typeof(C.init.tupleof[0]));
         else
+        static if (__traits(getAliasThis, C).length == 1)
+            enum isComplex = .isComplex!(typeof(__traits(getMember, C, __traits(getAliasThis, C)[0]))); 
+        else
             enum isComplex = false;
     }
     else
@@ -44,6 +47,26 @@ template isComplex(C)
     }
 }
 
+///
+version(mir_core_test)
+unittest
+{
+    static assert(!isComplex!double);
+    import mir.complex: Complex;
+    static assert(isComplex!(Complex!double));
+    import std.complex: PhobosComplex = Complex;
+    static assert(isComplex!(PhobosComplex!double));
+
+    static struct C
+    {
+        Complex!double value;
+        alias value this;
+    }
+
+    static assert(isComplex!C);
+}
+
+///
 version(LDC)
 version(mir_core_test)
 unittest
