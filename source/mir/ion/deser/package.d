@@ -349,7 +349,7 @@ template deserializeValue(string[] symbolTable)
                     if (symbolId >= table.length)
                         return unqualException(unexpectedSymbolIdWhenDeserializing!T);
 
-                    static if (__traits(compiles, {__traits(getMember, value, member)[table[symbolId]] = move(elem);}))
+                    static if (__traits(compiles, __traits(getMember, value, member)[table[symbolId]] = move(elem)))
                     {
                         __traits(getMember, value, member)[table[symbolId]] = move(elem);
                     }
@@ -743,7 +743,7 @@ template deserializeValue(string[] symbolTable)
                         return exception;
                     auto ar = RCArray!E(buffer.length, false);
                     buffer.moveDataAndEmplaceTo(ar[]);
-                    static if (__traits(compiles, {value = move(ar);}))
+                    static if (__traits(compiles, value = move(ar)))
                         value = move(ar);
                     else () @trusted {
                         value = ar.opCast!T;
@@ -1194,37 +1194,39 @@ template deserializeValue(string[] symbolTable)
                             return error.ionException;
                         if (symbolId >= table.length)
                             return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                        static if (__traits(compiles, {__traits(getMember, value, member) = table[symbolId].idup;}))
+                        static if (is(typeof(__traits(getMember, value, member)) == enum))
                         {
-                            static if (__traits(compiles, {__traits(getMember, value, member) = table[symbolId];}))
-                            {
-                                __traits(getMember, value, member) = table[symbolId];
-                            }
-                            else
-                            {
-                                __traits(getMember, value, member) = table[symbolId].idup;
-                            }
+                            import mir.serde: serdeParseEnum;
+                            typeof(__traits(getMember, value, member)) memberValue;
+                            if (!serdeParseEnum(table[symbolId], memberValue))
+                                return IonErrorCode.cantConvertAnnotationToEnum.ionException;
+                            __traits(getMember, value, member) = memberValue;
+                            break;
+                        }
+                        else
+                        static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId]))
+                        {
+                            __traits(getMember, value, member) = table[symbolId];
+                            break;
+                        }
+                        else
+                        static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId].idup))
+                        {
+                            __traits(getMember, value, member) = table[symbolId].idup;
                             break;
                         }
                         else
                         {
                             alias AT = typeof(__traits(getMember, value, member));
-                            static if (is(typeof(__traits(getMember, value, member)) == enum))
-                            {
-                                import mir.serde: serdeParseEnum;
-                                AT memberValue;
-                                if (!serdeParseEnum(table[symbolId], memberValue))
-                                    return IonErrorCode.cantConvertAnnotationToEnum.ionException;
-                                __traits(getMember, value, member) = memberValue;
-                                break;
-                            }
-                            else
+                            static if (!isSomeChar!(ForeachType!AT))
                             {
                                 import mir.conv : to;
                                 __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!AT);
                                 if (annotations.empty)
                                     break;
                             }
+                            else
+                            static assert(0, "Can't deserialize annotation member " ~ member ~ " of " ~ T.stringof);
                         }
                     }
                 }}
