@@ -447,18 +447,12 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
                 static if (serdeIsComplexVariant!V && serdeHasAlgebraicAnnotation!A)
                 {
                     static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
-                    {
                         serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
-                    }
                     else
                     static if (__traits(hasMember, S, "putAnnotationPtr"))
-                    {
                         serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
-                    }
                     else
-                    {
                         serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
-                    }
                 }
                 serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
             }
@@ -723,7 +717,13 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                 {
                     auto wrapperState = serializer.annotationWrapperBegin;
                     auto annotationsState = serializer.annotationsBegin;
-                    serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
+                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    else
+                    static if (__traits(hasMember, S, "putAnnotationPtr"))
+                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
+                    else
+                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
                     serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
                 }
                 else
