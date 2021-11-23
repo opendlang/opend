@@ -552,6 +552,7 @@ enum IonDeserializerErrorCode {
     invalidNullType,
     unexpectedEOF,
     unimplemented,
+    invalidBase64Length
 };
 
 string ionDeserializerMsg(IonDeserializerErrorCode error) @property
@@ -568,6 +569,7 @@ string ionDeserializerMsg(IonDeserializerErrorCode error) @property
         "invalid null type specified",
         "unexpected end of file",
         "feature unimplemented",
+        "invalid base64 length (maybe missing padding?)",
     ];
 
     return errors[error - IonDeserializerErrorCode.min];

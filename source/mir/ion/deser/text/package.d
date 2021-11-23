@@ -1035,10 +1035,30 @@ private:
         }
         else
         {
-            version(D_Exceptions)
-                throw IonDeserializerErrorCode.unimplemented.ionDeserializerException;
-            else
-                assert(0, "Unimplemented");
+            import mir.appender : scopedBuffer;
+            import mir.base64 : decodeBase64;
+            // This is most likely a "blob", and we need every single
+            // character to be read correctly, so we will unread this byte.
+            t.unread(c);
+            auto decoded = scopedBuffer!(ubyte);
+            IonTextBlob blob = t.readBlob();
+            // Since we don't do any whitespace trimming, we need to do that here...
+            foreach(b; blob.matchedText) {
+                if (b.isWhitespace) {
+                    continue;
+                }
+
+                buf.put(b);
+            }
+
+            if (buf.data.length % 4 != 0) {
+                version(D_Exceptions)
+                    throw IonDeserializerErrorCode.invalidBase64Length.ionDeserializerException;
+                else
+                    assert(0, "invalid Base64 length (maybe missing padding?)");
+            }
+            decodeBase64(buf.data, decoded);
+            ser.putValue(Blob(decoded.data));
         }
         t.finished = true;
     } 
@@ -1469,19 +1489,19 @@ version (mir_ion_parser_test) unittest
 version (mir_ion_parser_test) unittest
 {
     import mir.ion.value;
+    import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.lob;
     void test(const(char)[] ionData, ubyte[] blobData)
     {
-        auto v = ionData.text2ion.IonValue.describe.get!(Blob);
-        assert(v.data == blobData);
+        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+            auto v = ionValue.get!(Blob);
+            assert(v.data == blobData);
+        }
     }
 
-    // Blob deserialization is disabled for further notice
-    /*
     test("{{ SGVsbG8sIHdvcmxkIQ== }}", cast(ubyte[])"Hello, world!");
     test("{{ R29vZCBhZnRlcm5vb24hIPCfkY0= }}", cast(ubyte[])"Good afternoon! 👍");
-    */
 }
 
 /// Test that long/short clobs are getting de-serialized correctly.

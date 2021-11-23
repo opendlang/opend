@@ -76,11 +76,6 @@ static immutable ION_GOOD_TEST_DATA_SKIP = [
     "good/subfieldVarUInt15bit.ion",
     "good/testfile35.ion",
     "good/subfieldVarUInt16bit.ion",
-    // Blob serialization is TBD
-    "good/nonNulls.ion",
-    "good/testfile29.ion",
-    "good/lists.ion",
-    "good/blobs.ion",
     // We shouldn't have a IonValueStream that's fully empty in real data
     "good/empty.ion",
     "good/blank.ion",

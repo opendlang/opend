@@ -8,10 +8,6 @@ module mir.ion.ser.text;
 
 public import mir.serde;
 
-import mir.ion.exception: IonException;
-
-static immutable ionBlobSerializationIsntImplemented = new IonException("Ion BLOB serialization isn't implemented.");
-
 private bool isIdentifier(scope const char[] str) @safe pure nothrow @nogc @property
 {
     import mir.algorithm.iteration: all;
@@ -471,7 +467,18 @@ struct TextSerializer(string sep, Appender)
     ///
     void putValue(Blob value)
     {
-        throw ionBlobSerializationIsntImplemented;
+        import mir.base64 : encodeBase64;
+        static if(sep.length)
+            appender.put("{{ ");
+        else
+            appender.put("{{");
+
+        encodeBase64(value.data, appender);
+
+        static if(sep.length)
+            appender.put(" }}");
+        else
+            appender.put("}}");
     }
 
     ///
