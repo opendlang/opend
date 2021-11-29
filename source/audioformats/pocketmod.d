@@ -892,6 +892,14 @@ int pocketmod_render(pocketmod_context *c, void *buffer, int buffer_size)
     return samples_rendered * POCKETMOD_SAMPLE_SIZE;
 }
 
+void pocketmod_seek(pocketmod_context* c, ubyte pattern, ubyte row, ushort tick) {
+    // NOTE: This is untested.
+    c.line = row;
+    c.pattern = pattern;
+    c.tick = tick;
+    c.sample = 0;
+}
+
 int pocketmod_loop_count(pocketmod_context *c)
 {
     return c.loop_count;

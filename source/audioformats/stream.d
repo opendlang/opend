@@ -609,6 +609,145 @@ public: // This is also part of the public API
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
+    /// Length. Returns the amount of patterns in the module
+    /// Formats that support this: MOD, XM
+    int countModulePattern() {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+                return _modDecoder.num_patterns;
+            case xm:
+                return xm_get_number_of_patterns(_xmDecoder);
+        }
+    }
+
+    /// Tell. Returns amount of rows in a pattern.
+    /// Formats that support this: MOD, XM
+    int rowsInPattern(int pattern) {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+                // According to http://lclevy.free.fr/mo3/mod.txt
+                // there's 64 lines (aka rows) per pattern.
+                // TODO: error checking, make sure no out of bounds happens.
+                return 64;
+            case xm:
+                // TODO: error checking, make sure no out of bounds happens.
+                return xm_get_number_of_rows(_xmDecoder, pattern);
+        }
+    }
+
+    /// Tell. Returns the current playing pattern id
+    /// Formats that support this: MOD, XM
+    int tellModulePattern() {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+                return _modDecoder.pattern;
+            case xm:
+                return _xmDecoder.current_table_index;
+        }
+    }
+
+    /// Tell. Returns the current playing row id
+    /// Formats that support this: MOD, XM
+    int tellModuleRow() {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+                return _modDecoder.line;
+            case xm:
+                return _xmDecoder.current_row;
+        }
+    }
+
+    /// Playback info. Returns the amount of samples remaining in the current playing pattern
+    /// Formats that support this: MOD
+    long samplesRemainingInPattern() {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+
+                // According to http://lclevy.free.fr/mo3/mod.txt
+                // there's 64 lines (aka rows) per pattern.
+                int rows = 64;
+
+                // NOTE: This is untested.
+                long samplesPerLine = cast(int)(cast(float)_modDecoder.ticks_per_line*_modDecoder.samples_per_tick);
+                return cast(long)(rows-_modDecoder.line)*samplesPerLine;
+            
+            case xm:
+                return 0; // NOT IMPLEMENTED
+        }
+    }
+
+    /// Seeking. Subsequent reads start from pattern + row, 0 index
+    /// Only available for input streams.
+    /// Formats that support seeking per pattern/row: MOD, XM
+    bool seekPosition(int pattern, int row) {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+
+                // NOTE: This is untested.
+                pocketmod_seek(_modDecoder, pattern, row, 0);
+                return true;
+            case xm:
+            
+                xm_seek(_xmDecoder, cast(ubyte)pattern, cast(ubyte)row, 0);
+                return true;
+
+        }
+    }
+
     /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
     /// Only available for input streams.
     /// Formats that support seeking: WAV, MP3, OGG, FLAC.
