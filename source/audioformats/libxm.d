@@ -944,11 +944,14 @@ uint8_t xm_get_loop_count(xm_context_t* context) {
 	return context.loop_count;
 }
 
-void xm_seek(xm_context_t* ctx, uint8_t pot, uint8_t row, uint16_t tick) {
-	ctx.current_table_index = pot;
-	ctx.current_row = row;
-	ctx.current_tick = tick;
+bool xm_seek(xm_context_t* ctx, int pot, int row, int tick) 
+{
+    // TODO: check validity of position, return false otherwise.
+	ctx.current_table_index = cast(uint8_t)pot;
+	ctx.current_row = cast(uint8_t) row;
+	ctx.current_tick = cast(uint16_t) tick;
 	ctx.remaining_samples_in_tick = 0;
+    return true;
 }
 
 bool xm_mute_channel(xm_context_t* ctx, uint16_t channel, bool mute) {

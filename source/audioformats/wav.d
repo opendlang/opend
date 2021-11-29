@@ -149,6 +149,12 @@ version(decodeWAV)
             return true;
         }
 
+        /// Returns: position in absolute number of frames since beginning.
+        int tellPosition()
+        {
+            return _framePosition;
+        }
+
         // read interleaved samples
         // `outData` should have enough room for frames * _channels
         // Returs: Frames actually read.

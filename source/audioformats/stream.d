@@ -126,7 +126,7 @@ public: // This is also part of the public API
     }
 
     /// Opens an audio stream that writes to file.
-    /// This stream will be opened for writing only.
+    /// This stream will be open for writing only.
     /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     ///
     /// Params: 
@@ -155,7 +155,7 @@ public: // This is also part of the public API
     }
 
     /// Opens an audio stream that writes to a dynamically growable output buffer.
-    /// This stream will be opened for writing only.
+    /// This stream will be open for writing only.
     /// Access to the internal buffer after encoding with `finalizeAndGetEncodedResult`.
     /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     ///
@@ -184,7 +184,7 @@ public: // This is also part of the public API
     }
 
     /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
-    /// This stream will be opened for writing only.
+    /// This stream will be open for writing only.
     /// Destroy this stream with `closeAudioStream`.
     /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     ///
@@ -216,12 +216,6 @@ public: // This is also part of the public API
         _io.flush         = &memory_flush;
 
         startEncoding(format, sampleRate, numChannels);
-    }
-
-    /// Returns: `true` if using this stream's operations is acceptable in an audio thread (eg: no file I/O).
-    bool realtimeSafe() @nogc
-    {
-        return fileContext is null;
     }
 
     ~this() @nogc
@@ -358,6 +352,75 @@ public: // This is also part of the public API
         return _format;
     }
 
+    /// Returns: `true` if using this stream's operations is acceptable in an audio thread (eg: no file I/O).
+    bool realtimeSafe() @nogc
+    {
+        return fileContext is null;
+    }
+
+    /// Returns: `true` if this stream is concerning a tracker module format.
+    /// This is useful because the seek/tell functions are different.
+    bool isModule() @nogc
+    {
+        final switch(_format) with (AudioFileFormat)
+        {
+            case wav:
+            case mp3:
+            case flac:
+            case ogg:
+            case opus:
+                return false;
+            case mod:
+            case xm:
+                return true;
+            case unknown:
+                assert(false);
+
+        }
+    }
+
+    /// Returns: `true` if this stream allows seeking.
+    /// Note: the particular function to call for seeking depends on whether the stream is a tracker module.
+    /// See_also: `seekPosition`.
+    bool canSeek() @nogc
+    {
+        final switch(_format) with (AudioFileFormat)
+        {
+            case wav:
+            case mp3:
+            case flac:
+            case ogg:
+            case opus:
+                return true;
+            case mod:
+            case xm:
+                return true;
+            case unknown:
+                assert(false);
+
+        }
+    }
+
+    /// Returns: `true` if this stream is currently open for reading (decoding).
+    ///          `false` if the stream has been destroyed, or if it was created for encoding instead.
+    bool isOpenForReading() nothrow @nogc
+    {
+        return (_io !is null) && (_io.read !is null);
+    }
+
+    deprecated("Use isOpenForWriting instead") alias isOpenedForWriting = isOpenForWriting;
+
+    /// Returns: `true` if this stream is currently open for writing (encoding).
+    ///          `false` if the stream has been destroyed, finalized with `finalizeEncoding()`, 
+    ///          or if it was created for decoding instead.    
+    bool isOpenForWriting() nothrow @nogc
+    {
+        // Note: 
+        //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
+        //  * when opened for writing, I/O operations given are: seek/tell/write/flush.
+        return (_io !is null) && (_io.read is null);
+    }
+
     /// Returns: Number of channels in this stream. 1 means mono, 2 means stereo...
     int getNumChannels() nothrow @nogc
     {
@@ -393,10 +456,7 @@ public: // This is also part of the public API
     /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
     int readSamplesFloat(float* outData, int frames) @nogc
     {
-        // If you fail here, you are using this `AudioStream` for decoding:
-        // - after it has been destroyed,
-        // - or it was created for encoding instead 
-        assert(_io && _io.read !is null);
+        assert(isOpenForReading());
 
         final switch(_format)
         {
@@ -571,10 +631,6 @@ public: // This is also part of the public API
     ///          When that number is less than `frames`, it means the stream had a write error.
     int writeSamplesFloat(float* inData, int frames) nothrow @nogc
     {
-        // If you fail here, you are using this `AudioStream` for encoding:
-        // - after it has been destroyed,
-        // - or after encoding has been finalized with 
-        // - or it was created for encoding instead 
         assert(_io && _io.write !is null);
 
         final switch(_format)
@@ -609,10 +665,17 @@ public: // This is also part of the public API
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
+    // -----------------------------------------------------------------------------------------------------
+    // <module functions>
+    // Those tracker module-specific functions below can only be called when `isModule()` returns `true`.
+    // Additionally, seeking function can only be called if `canSeek()` also returns `true`.
+    // -----------------------------------------------------------------------------------------------------
+
     /// Length. Returns the amount of patterns in the module
-    /// Formats that support this: MOD, XM
-    int countModulePatterns() {
-        assert(_io && (_io.read !is null) );
+    /// Formats that support this: MOD, XM.
+    int countModulePatterns() 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -630,9 +693,10 @@ public: // This is also part of the public API
     }
 
     /// Length. Returns the amount of PLAYED patterns in the module
-    /// Formats that support this: MOD, XM
-    int getModuleLength() {
-        assert(_io && (_io.read !is null) );
+    /// Formats that support this: MOD, XM.
+    int getModuleLength() 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -650,9 +714,11 @@ public: // This is also part of the public API
     }
 
     /// Tell. Returns amount of rows in a pattern.
-    /// Formats that support this: MOD, XM
-    int rowsInPattern(int pattern) {
-        assert(_io && (_io.read !is null) );
+    /// Formats that support this: MOD, XM.
+    /// Returns: -1 on error. Else, number of patterns.
+    int rowsInPattern(int pattern) 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -662,21 +728,29 @@ public: // This is also part of the public API
             case wav:
             case unknown:
                 assert(false);
+
             case mod:
                 // According to http://lclevy.free.fr/mo3/mod.txt
                 // there's 64 lines (aka rows) per pattern.
                 // TODO: error checking, make sure no out of bounds happens.
                 return 64;
+
             case xm:
-                // TODO: error checking, make sure no out of bounds happens.
-                return xm_get_number_of_rows(_xmDecoder, pattern);
+            {
+                int numPatterns = xm_get_number_of_patterns(_xmDecoder);
+                if (pattern < 0 || pattern >= numPatterns)
+                    return -1;
+
+                return xm_get_number_of_rows(_xmDecoder, cast(ushort) pattern);
+            }
         }
     }
 
     /// Tell. Returns the current playing pattern id
     /// Formats that support this: MOD, XM
-    int tellModulePattern() {
-        assert(_io && (_io.read !is null) );
+    int tellModulePattern() 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -695,8 +769,9 @@ public: // This is also part of the public API
 
     /// Tell. Returns the current playing row id
     /// Formats that support this: MOD, XM
-    int tellModuleRow() {
-        assert(_io && (_io.read !is null) );
+    int tellModuleRow() 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -715,8 +790,9 @@ public: // This is also part of the public API
 
     /// Playback info. Returns the amount of samples remaining in the current playing pattern
     /// Formats that support this: MOD
-    long samplesRemainingInPattern() {
-        assert(_io && (_io.read !is null) );
+    long samplesRemainingInPattern() 
+    {
+        assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -726,6 +802,7 @@ public: // This is also part of the public API
             case wav:
             case unknown:
                 assert(false);
+
             case mod:
 
                 // According to http://lclevy.free.fr/mo3/mod.txt
@@ -744,8 +821,10 @@ public: // This is also part of the public API
     /// Seeking. Subsequent reads start from pattern + row, 0 index
     /// Only available for input streams.
     /// Formats that support seeking per pattern/row: MOD, XM
-    bool seekPosition(int pattern, int row) {
-        assert(_io && (_io.read !is null) );
+    /// Returns: `true` in case of success.
+    bool seekPosition(int pattern, int row) 
+    {
+        assert(isOpenForReading() && isModule() && canSeek());
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -755,25 +834,32 @@ public: // This is also part of the public API
             case wav:
             case unknown:
                 assert(false);
+
             case mod:
-
                 // NOTE: This is untested.
-                pocketmod_seek(_modDecoder, pattern, row, 0);
-                return true;
+                return pocketmod_seek(_modDecoder, pattern, row, 0);
+
             case xm:
-
-                xm_seek(_xmDecoder, cast(ubyte)pattern, cast(ubyte)row, 0);
-                return true;
-
+                return xm_seek(_xmDecoder, pattern, row, 0);
         }
     }
+
+    // -----------------------------------------------------------------------------------------------------
+    // </module functions>
+    // -----------------------------------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------------------------------------
+    // <non-module functions>
+    // Those functions below can't be used for tracker module formats, because there is no real concept of 
+    // absolute position in these formats.
+    // -----------------------------------------------------------------------------------------------------
 
     /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
     /// Only available for input streams.
     /// Formats that support seeking: WAV, MP3, OGG, FLAC.
     bool seekPosition(int frame)
     {
-        assert(_io && (_io.read !is null) );
+        assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -804,9 +890,11 @@ public: // This is also part of the public API
                 }
                 else 
                     assert(false);
+
             case mod:
             case xm:
-                return false; // NOT IMPLEMENTED
+                assert(false);
+
             case wav:
                 version(decodeWAV)
                     return _wavDecoder.seekPosition(frame);
@@ -817,6 +905,56 @@ public: // This is also part of the public API
 
         }
     }
+
+    /// Tell. Returns the current position in multichannel frames. -1 on error.
+    int tellPosition()
+    {
+        assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+                version(decodeMP3)
+                    return -1; // TODO: support that
+                else
+                    assert(false);
+            case flac:
+                version(decodeFLAC)
+                    return -1; // TODO: support that
+                else
+                    assert(false);
+            case ogg:
+                version(decodeOGG)
+                {
+                    return -1; // TODO: support that
+                }
+                else 
+                    assert(false);
+            case opus:
+                version(decodeOPUS)
+                {                    
+                    return -1; // TODO: support that
+                }
+                else 
+                    assert(false);         
+
+            case wav:
+                version(decodeWAV)
+                    return _wavDecoder.tellPosition();
+                else
+                    assert(false);
+
+            case mod:
+            case xm:
+            case unknown:
+                assert(false);
+
+        }
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------
+    // </non-module functions>
+    // -----------------------------------------------------------------------------------------------------
 
     /// Call `fflush()` on written samples, if any. 
     /// It is only useful for streamable output formats, that may want to flush things to disk.
@@ -831,7 +969,7 @@ public: // This is also part of the public API
     void finalizeEncoding() @nogc 
     {
         // If you crash here, it's because `finalizeEncoding` has been called twice.
-        assert( _io && (_io.write !is null) );
+        assert(isOpenForWriting());
 
         final switch(_format) with (AudioFileFormat)
         {
@@ -920,14 +1058,6 @@ private:
     version(encodeWAV)
     {
         WAVEncoder _wavEncoder;
-    }
-
-    bool isOpenedForWriting() nothrow @nogc
-    {
-        // Note: 
-        //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
-        //  * when opened for writing, I/O operations given are: seek/tell/write/flush.
-        return (_io !is null) && (_io.read is null);
     }
 
     void startDecoding() @nogc
