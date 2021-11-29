@@ -611,7 +611,7 @@ public: // This is also part of the public API
 
     /// Length. Returns the amount of patterns in the module
     /// Formats that support this: MOD, XM
-    int countModulePattern() {
+    int countModulePatterns() {
         assert(_io && (_io.read !is null) );
         final switch(_format) with (AudioFileFormat)
         {
@@ -741,7 +741,7 @@ public: // This is also part of the public API
                 pocketmod_seek(_modDecoder, pattern, row, 0);
                 return true;
             case xm:
-            
+
                 xm_seek(_xmDecoder, cast(ubyte)pattern, cast(ubyte)row, 0);
                 return true;
 
