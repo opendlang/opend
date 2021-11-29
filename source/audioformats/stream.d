@@ -788,9 +788,9 @@ public: // This is also part of the public API
         }
     }
 
-    /// Playback info. Returns the amount of samples remaining in the current playing pattern
+    /// Playback info. Returns the amount of multi-channel frames remaining in the current playing pattern.
     /// Formats that support this: MOD
-    long samplesRemainingInPattern() 
+    int framesRemainingInPattern() 
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -810,8 +810,9 @@ public: // This is also part of the public API
                 int rows = 64;
 
                 // NOTE: This is untested.
-                long samplesPerLine = cast(int)(cast(float)_modDecoder.ticks_per_line*_modDecoder.samples_per_tick);
-                return cast(long)(rows-_modDecoder.line)*samplesPerLine;
+                int samplesPerLine = cast(int)(cast(float)_modDecoder.ticks_per_line*_modDecoder.samples_per_tick);
+                int samples = (rows-_modDecoder.line)*samplesPerLine;
+                return samples / _numChannels;
             
             case xm:
                 return 0; // NOT IMPLEMENTED
