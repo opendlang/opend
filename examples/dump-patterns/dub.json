@@ -1,0 +1,10 @@
+{
+    "name": "dump-patterns",
+    "description": "Attempt at decode a XM/MOD while reorganizing it. Testbed for module functions.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "audio-formats": { "path": "../.." }
+    }
+}
