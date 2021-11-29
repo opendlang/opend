@@ -629,6 +629,26 @@ public: // This is also part of the public API
         }
     }
 
+    /// Length. Returns the amount of PLAYED patterns in the module
+    /// Formats that support this: MOD, XM
+    int getModuleLength() {
+        assert(_io && (_io.read !is null) );
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3: 
+            case flac:
+            case ogg:
+            case opus:
+            case wav:
+            case unknown:
+                assert(false);
+            case mod:
+                return _modDecoder.length;
+            case xm:
+                return xm_get_module_length(_xmDecoder);
+        }
+    }
+
     /// Tell. Returns amount of rows in a pattern.
     /// Formats that support this: MOD, XM
     int rowsInPattern(int pattern) {
