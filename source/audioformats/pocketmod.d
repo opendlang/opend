@@ -289,6 +289,37 @@ void _pocketmod_volume_slide(_pocketmod_chan *ch, int param)
     ch.dirty |= POCKETMOD_VOLUME;
 }
 
+/**
+    Returns where there is a pattern break in the current playing pattern
+*/
+int pocketmod_pattern_break(pocketmod_context *c) {
+    ubyte[4]* data;
+    int i, pos;
+
+    for(int line = 0; line < 64; line++) {
+        /* Find the pattern data for the current line */
+        pos = (c.order[c.pattern] * 64 + line) * c.num_channels * 4;
+        data = cast(ubyte[4]*) (c.patterns + pos);
+        for (i = 0; i < c.num_channels; i++) 
+        {
+
+            /* Decode columns */
+            int effect = ((data[i][2] & 0x0f) << 8) | data[i][3];
+
+            /* Memorize effect parameter values */
+            _pocketmod_chan *ch = &c.channels[i];
+            ch.effect = cast(ubyte) ( (effect >> 8) != 0xe ? (effect >> 8) : (effect >> 4) );
+            ch.param = (effect >> 8) != 0xe ? (effect & 0xff) : (effect & 0x0f);
+            switch (ch.effect) {
+                /* Dxy: Pattern break */
+                case 0xD: return line;
+                default: break;
+            }
+        }
+    }
+    return -1;
+}
+
 void _pocketmod_next_line(pocketmod_context *c)
 {
     ubyte[4]* data;
