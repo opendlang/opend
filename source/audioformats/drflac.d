@@ -113,19 +113,13 @@ version(decodeFLAC):
 // - Perverse and erroneous files have not been tested. Again, if you know where I can get some test files let me know.
 // - dr_flac is not thread-safe, but it's APIs can be called from any thread so long as you do your own synchronization.
 
-
-static if (is(typeof((){import iv.vfs;}()))) {
-  enum DrFlacHasVFS = true;
-  import iv.vfs;
-} else {
-  enum DrFlacHasVFS = false;
-}
+enum DrFlacHasVFS = false;
 
 
 // As data is read from the client it is placed into an internal buffer for fast access. This controls the
 // size of that buffer. Larger values means more speed, but also more memory. In my testing there is diminishing
 // returns after about 4KB, but you can fiddle with this to suit your own needs. Must be a multiple of 8.
-static if (!is(typeof(DR_FLAC_BUFFER_SIZE))) enum DR_FLAC_BUFFER_SIZE = 4096;
+enum DR_FLAC_BUFFER_SIZE = 4096;
 
 // Check if we can enable 64-bit optimizations.
 //version = DRFLAC_64BIT;
@@ -1857,7 +1851,6 @@ struct drflac_init_info {
 
 private struct ReadStruct {
 @nogc:	
-  static if (DrFlacHasVFS) VFile srcfile;
   drflac_read_proc onReadCB;
   drflac_seek_proc onSeekCB;
   void* pUserData;
@@ -1871,10 +1864,7 @@ private struct ReadStruct {
         if (onReadCB !is null) {
           rd = onReadCB(pUserData, b, bytesToRead);
         } else {
-          static if (DrFlacHasVFS) {
-            if (srcfile.isOpen) rd = srcfile.rawRead(b[0..bytesToRead]).length;
-          }
-        }
+         }
         if (rd == 0) break;
         b += rd;
         res += rd;
@@ -1891,15 +1881,6 @@ private struct ReadStruct {
       if (onSeekCB !is null) {
         return onSeekCB(pUserData, offset, origin);
       } else {
-        static if (DrFlacHasVFS) {
-          if (srcfile.isOpen) {
-            switch (origin) {
-              case drflac_seek_origin_start: srcfile.seek(offset, Seek.Set); return true;
-              case drflac_seek_origin_current: srcfile.seek(offset, Seek.Cur); return true;
-              default: return false;
-            }
-          }
-        }
       }
       return false;
     } catch (Exception e) {
@@ -2591,21 +2572,6 @@ bool drflac__init_private (drflac_init_info* pInit, drflac_read_proc onRead, drf
 
 } //nothrow
 
-static if (DrFlacHasVFS)
-bool drflac__init_private (drflac_init_info* pInit, VFile fl, scope drflac_meta_proc onMeta, void* pUserDataMD) {
-  //import core.stdc.string : memset;
-  //memset(&pInit.rs.srcfile, 0, pInit.rs.srcfile.sizeof); // just in case
-
-  pInit.rs.srcfile   = fl;
-  pInit.rs.onReadCB  = null;
-  pInit.rs.onSeekCB  = null;
-  pInit.rs.pUserData = null;
-  //pInit.onMeta       = onMeta;
-  //pInit.pUserDataMD  = pUserDataMD;
-
-  return drflac__check_init_private(pInit, onMeta, pUserDataMD);
-}
-
 nothrow {
 void drflac__init_from_info (drflac* pFlac, drflac_init_info* pInit) {
   import core.stdc.string : memcpy, memset;
@@ -2683,14 +2649,6 @@ drflac* drflac_open_with_metadata_private (drflac_read_proc onRead, drflac_seek_
 
 } //nothrow
 
-static if (DrFlacHasVFS)
-drflac* drflac_open_with_metadata_private (VFile fl, scope drflac_meta_proc onMeta, void* pUserDataMD, bool stdio) {
-  drflac_init_info init;
-  if (!drflac__init_private(&init, fl, onMeta, pUserDataMD)) return null;
-  return drflac_open_with_metadata_private_xx(&init, onMeta, pUserDataMD, stdio);
-}
-
-
 nothrow {
 alias drflac_file = void*;
 
@@ -2718,7 +2676,7 @@ void drflac__close_file_handle (drflac_file file) {
   fclose(cast(FILE*)file);
 }
 
-public drflac* drflac_open_file (const(char)[] filename) {
+deprecated public drflac* drflac_open_file (const(char)[] filename) {
   
 
   drflac_file file = drflac__open_file_handle(filename);
@@ -2734,7 +2692,7 @@ public drflac* drflac_open_file (const(char)[] filename) {
   return pFlac;
 }
 
-public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drflac_meta_proc onMeta, void* pUserData=null) {
+deprecated  public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drflac_meta_proc onMeta, void* pUserData=null) {
 
   drflac_file file = drflac__open_file_handle(filename);
   if (file is null) return null;
@@ -2750,22 +2708,6 @@ public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drf
 }
 
 } //nothrow
-
-static if (DrFlacHasVFS) {
-  public drflac* drflac_open_file (VFile fl, scope drflac_meta_proc onMeta=null) {
-
-    drflac* pFlac;
-    if (onMeta !is null) {
-      pFlac = drflac_open_with_metadata_private(fl, onMeta, null, true);
-    } else {
-      pFlac = drflac_open(fl);
-    }
-    if (pFlac is null) return null;
-    pFlac.bs.stdio = false;
-
-    return pFlac;
-  }
-}
 
 nothrow {
 
@@ -2867,10 +2809,6 @@ public drflac* drflac_open (drflac_read_proc onRead, drflac_seek_proc onSeek, vo
 
 } //nothrow
 
-static if (DrFlacHasVFS)
-public drflac* drflac_open (VFile fl) {
-  return drflac_open_with_metadata_private(fl, null, null, false);
-}
 
 nothrow {
 
@@ -2989,7 +2927,11 @@ public ulong drflac_read_s32 (drflac* pFlac, ulong samplesToRead, int* bufferOut
   // Note that <bufferOut> is allowed to be null, in which case this will be treated as something like a seek.
   if (pFlac is null || samplesToRead == 0) return 0;
 
-  if (bufferOut is null) return drflac__seek_forward_by_samples(pFlac, samplesToRead);
+  if (bufferOut is null) 
+  {
+     // wtf
+     return drflac__seek_forward_by_samples(pFlac, samplesToRead);
+  }
 
   ulong samplesRead = 0;
   while (samplesToRead > 0) {
@@ -3131,101 +3073,6 @@ public bool drflac_seek_to_sample (drflac* pFlac, ulong sampleIndex) {
   }
 
   return true;
-}
-
-
-
-//// High Level APIs ////
-int* drflac__full_decode_and_close (drflac* pFlac, uint* sampleRateOut, uint* channelsOut, ulong* totalSampleCountOut) {
-  import core.stdc.stdlib : malloc, realloc, free;
-  import core.stdc.string : memset, memcpy;
-  assert(pFlac !is null);
-
-  int* pSampleData = null;
-  ulong totalSampleCount = pFlac.totalSampleCount;
-
-  if (totalSampleCount == 0) {
-    int[4096] buffer;
-
-    size_t sampleDataBufferSize = (buffer).sizeof;
-    pSampleData = cast(int*)malloc(sampleDataBufferSize);
-    if (pSampleData is null) goto on_error;
-
-    ulong samplesRead;
-    while ((samplesRead = cast(ulong)drflac_read_s32(pFlac, (buffer).sizeof/(buffer[0]).sizeof, buffer.ptr)) > 0) {
-      if (((totalSampleCount+samplesRead)*(int).sizeof) > sampleDataBufferSize) {
-        sampleDataBufferSize *= 2;
-        int* pNewSampleData = cast(int*)realloc(pSampleData, sampleDataBufferSize);
-        if (pNewSampleData is null) {
-          free(pSampleData);
-          goto on_error;
-        }
-        pSampleData = pNewSampleData;
-      }
-      memcpy(pSampleData+totalSampleCount, buffer.ptr, cast(size_t)(samplesRead*(int).sizeof));
-      totalSampleCount += samplesRead;
-    }
-    // At this point everything should be decoded, but we just want to fill the unused part buffer with silence - need to
-    // protect those ears from random noise!
-    memset(pSampleData+totalSampleCount, 0, cast(size_t)(sampleDataBufferSize-totalSampleCount*(int).sizeof));
-  } else {
-    ulong dataSize = totalSampleCount*(int).sizeof;
-    if (dataSize > uint.max) goto on_error;  // The decoded data is too big.
-
-    pSampleData = cast(int*)malloc(cast(size_t)dataSize);    // <-- Safe cast as per the check above.
-    if (pSampleData is null) goto on_error;
-
-    ulong samplesDecoded = drflac_read_s32(pFlac, pFlac.totalSampleCount, pSampleData);
-    if (samplesDecoded != pFlac.totalSampleCount) {
-      free(pSampleData);
-      goto on_error;  // Something went wrong when decoding the FLAC stream.
-    }
-  }
-
-  if (sampleRateOut) *sampleRateOut = pFlac.sampleRate;
-  if (channelsOut) *channelsOut = pFlac.channels;
-  if (totalSampleCountOut) *totalSampleCountOut = totalSampleCount;
-
-  drflac_close(pFlac);
-  return pSampleData;
-
-on_error:
-  drflac_close(pFlac);
-  return null;
-}
-
-public int* drflac_open_and_decode (drflac_read_proc onRead, drflac_seek_proc onSeek, void* pUserData, uint* sampleRate, uint* channels, ulong* totalSampleCount) {
-  // Safety.
-  if (sampleRate) *sampleRate = 0;
-  if (channels) *channels = 0;
-  if (totalSampleCount) *totalSampleCount = 0;
-
-  drflac* pFlac = drflac_open(onRead, onSeek, pUserData);
-  if (pFlac is null) return null;
-
-  return drflac__full_decode_and_close(pFlac, sampleRate, channels, totalSampleCount);
-}
-
-public int* drflac_open_and_decode_file (const(char)[] filename, uint* sampleRate, uint* channels, ulong* totalSampleCount) {
-  if (sampleRate) *sampleRate = 0;
-  if (channels) *channels = 0;
-  if (totalSampleCount) *totalSampleCount = 0;
-
-  drflac* pFlac = drflac_open_file(filename);
-  if (pFlac is null) return null;
-
-  return drflac__full_decode_and_close(pFlac, sampleRate, channels, totalSampleCount);
-}
-
-public int* drflac_open_and_decode_memory (const void* data, size_t dataSize, uint* sampleRate, uint* channels, ulong* totalSampleCount) {
-  if (sampleRate) *sampleRate = 0;
-  if (channels) *channels = 0;
-  if (totalSampleCount) *totalSampleCount = 0;
-
-  drflac* pFlac = drflac_open_memory(data, dataSize);
-  if (pFlac is null) return null;
-
-  return drflac__full_decode_and_close(pFlac, sampleRate, channels, totalSampleCount);
 }
 
 public void drflac_free (void* pSampleDataReturnedByOpenAndDecode) {
