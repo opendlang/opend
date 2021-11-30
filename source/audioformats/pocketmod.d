@@ -27,8 +27,6 @@ SOFTWARE.
 // Translated to D by Guillaume Piolat Copyright 2021.
 module audioformats.pocketmod;
 
-
-version = POCKETMOD_NO_INTERPOLATION; // sounds better to me, linear interp is darker
 nothrow:
 @nogc:
 
@@ -692,15 +690,12 @@ void _pocketmod_render_channel(pocketmod_context *c,
         for (i = 0; i < num; i++) 
         {
             int x0 = cast(int)(chan.position);
-            version(POCKETMOD_NO_INTERPOLATION)
-            {
-                float s = sample.data[x0];
-            }
-            else
-            {
+            version(AF_LINEAR) {
                 int x1 = x0 + 1 - loop_length * (x0 + 1 >= loop_end);
                 float t = chan.position - x0;
                 float s = (1.0f - t) * sample.data[x0] + t * sample.data[x1];
+            } else {
+                float s = sample.data[x0];
             }
 
             chan.position += chan.increment;
