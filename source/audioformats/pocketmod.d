@@ -288,7 +288,8 @@ void _pocketmod_volume_slide(_pocketmod_chan *ch, int param)
 }
 
 /**
-    Returns where there is a pattern break in the current playing pattern
+    Returns the amount of remaining (mono) samples/frames in the 
+    currently playing pattern.
 */
 int pocketmod_count_remaining_samples(pocketmod_context *c) {
     ubyte[4]* data;
