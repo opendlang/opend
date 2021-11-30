@@ -848,6 +848,7 @@ public: // This is also part of the public API
 
     /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
     /// Only available for input streams, for streams whose `canSeek()` returns `true`.
+    /// Warning: `seekPosition(lengthInFrames)` is Undefined Behaviour for now. (it works in MP3
     bool seekPosition(int frame)
     {
         assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
@@ -855,7 +856,12 @@ public: // This is also part of the public API
         {
             case mp3: 
                 version(decodeMP3)
+                {
+                    assert(_lengthInFrames != audiostreamUnknownLength);
+                    if (frame < 0 || frame > _lengthInFrames)
+                        return false;
                     return (mp3dec_ex_seek(_mp3DecoderNew, frame * _numChannels) == 0);
+                }
                 else
                     assert(false);
             case flac:
@@ -905,7 +911,9 @@ public: // This is also part of the public API
         {
             case mp3: 
                 version(decodeMP3)
-                    return -1; // TODO: support that
+                {
+                    return cast(int) _mp3DecoderNew.cur_sample / _numChannels; // TODO: support that
+                }
                 else
                     assert(false);
             case flac:

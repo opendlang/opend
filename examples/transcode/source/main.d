@@ -89,28 +89,37 @@ debug(checkSeeking)
             bool res = input.seekPosition(0);
             assert(res && input.tellPosition() == 0);
 
-            // Seeking past the end is illegal and should be a no-op
+            // Seeking past the end is illegal and is a no-op
             res = input.seekPosition(maxFrame + 1);
             assert(!res && input.tellPosition() == 0);
 
-            // Seeking before beginning is illegal and should be a no-op
+            // Seeking before beginning is illegal and is a no-op
             res = input.seekPosition(-1);
             assert(!res && input.tellPosition() == 0);
 
-            // It is legal to seek just before the the end.
+            // It is legal to seek just before the end.
             if (maxFrame > 0)
             {
                 res = input.seekPosition(maxFrame - 1);
                 int pos = input.tellPosition();
                 assert(res && pos == maxFrame - 1);
 
-                // TODO: in OGG, can't re-read the stream once finished.
-                // Where the remaining decoding should yield one frame
-                //float[] smallbuf = new float[16 * channels];
-                //int read = input.readSamplesFloat(smallbuf);
-                //assert(read == 1);
+                if (input.getFormat() != AudioFileFormat.ogg) // TODO: in OGG, can't re-read the stream once finished.
+                {
+                    // Where the remaining decoding should yield one frame
+                    float[] smallbuf = new float[16 * channels];
+                    int read = input.readSamplesFloat(smallbuf);
+                    assert(read == 1);
 
-                // And at this point we cannot seek to beginning in OGG, since stream is finished (has returned 0 samples).
+                    res = input.seekPosition(maxFrame);
+                    pos = input.tellPosition();
+                    assert(res && pos == maxFrame);
+                    // Where the remaining decoding should yield 0 frame
+                    read = input.readSamplesFloat(smallbuf);
+                    assert(read == 0);
+
+                    // And at this point we cannot seek to beginning in OGG, since stream is finished (has returned 0 samples).
+                }
             }
 
             // Come back at start.
