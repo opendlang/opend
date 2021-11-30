@@ -292,16 +292,22 @@ void _pocketmod_volume_slide(_pocketmod_chan *ch, int param)
 /**
     Returns where there is a pattern break in the current playing pattern
 */
-int pocketmod_pattern_break(pocketmod_context *c) {
+int pocketmod_count_remaining_samples(pocketmod_context *c) {
     ubyte[4]* data;
     int i, pos;
 
-    for(int line = 0; line < 64; line++) {
+    int result = 0;
+    int lineEnd = 64;
+
+    int iTicksPerLine = c.ticks_per_line;
+    float iSamplesPerTick = c.samples_per_tick;
+
+    /* For every (remaining) line in this current pattern */
+    for(int line = c.line; line < 64; line++) {
         /* Find the pattern data for the current line */
         pos = (c.order[c.pattern] * 64 + line) * c.num_channels * 4;
         data = cast(ubyte[4]*) (c.patterns + pos);
-        for (i = 0; i < c.num_channels; i++) 
-        {
+        for (i = 0; i < c.num_channels; i++) {
             /* Decode columns */
             int effect = ((data[i][2] & 0x0f) << 8) | data[i][3];
 
@@ -311,12 +317,39 @@ int pocketmod_pattern_break(pocketmod_context *c) {
             ch.param = (effect >> 8) != 0xe ? (effect & 0xff) : (effect & 0x0f);
             switch (ch.effect) {
                 /* Dxy: Pattern break */
-                case 0xD: return line+1; // Our pattern jumps *after* decoding the data where the break is on.
+                case 0xD: 
+                    // Our pattern jumps *after* decoding the data where the break is on.
+                    return result+cast(int)(cast(float)iTicksPerLine*iSamplesPerTick); 
+                
+                /* E6x: Pattern loop */
+                case 0xE6: 
+                    if (ch.param) {
+                        if (!ch.loop_count) {
+                            lineEnd = ch.loop_line;
+                        } else if (--ch.loop_count) {
+                            lineEnd = ch.loop_line;
+                        }
+                    }
+                    break;
+
+                /* Fxx: Set speed */
+                case 0xF: 
+                    if (ch.param != 0) {
+                        if (ch.param < 0x20) {
+                            iTicksPerLine = ch.param;
+                        } else {
+                            float rate = c.samples_per_second;
+                            iSamplesPerTick = rate / (0.4f * ch.param);
+                        }
+                    }
+                    break;
                 default: break;
             }
         }
+
+        result += cast(int)(cast(float)iTicksPerLine*iSamplesPerTick);
     }
-    return -1;
+    return result;
 }
 
 void _pocketmod_next_line(pocketmod_context *c)
