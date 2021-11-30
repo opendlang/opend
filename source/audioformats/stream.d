@@ -847,8 +847,7 @@ public: // This is also part of the public API
     // -----------------------------------------------------------------------------------------------------
 
     /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
-    /// Only available for input streams.
-    /// Formats that support seeking: WAV, MP3, OGG, FLAC.
+    /// Only available for input streams, for streams whose `canSeek()` returns `true`.
     bool seekPosition(int frame)
     {
         assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
@@ -916,9 +915,7 @@ public: // This is also part of the public API
                     assert(false);
             case ogg:
                 version(decodeOGG)
-                {
-                    return -1; // TODO: support that
-                }
+                    return cast(int) stb_vorbis_get_sample_offset(_oggHandle);
                 else 
                     assert(false);
             case opus:

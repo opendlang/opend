@@ -448,6 +448,9 @@ struct stb_vorbis
    int previous_length;
 
    int16*[STB_VORBIS_MAX_CHANNELS] finalY;
+
+   long current_sample_loc; // sample location of next sample to decode
+
    
    uint32 current_loc; // sample location of next frame to decode
    int    current_loc_valid;
@@ -3330,10 +3333,13 @@ static void vorbis_init(stb_vorbis *p, stb_vorbis_alloc *z)
    p.codebooks = null;
 }
 
-int stb_vorbis_get_sample_offset(stb_vorbis *f)
+long stb_vorbis_get_sample_offset(stb_vorbis *f)
 {
+   // Note: this is rewritten vs original stb_vorbis, who wasn't returning something good.    
    if (f.current_loc_valid)
-      return f.current_loc;
+   {
+        return f.current_sample_loc;
+   }
    else
       return -1;
 }
@@ -3739,9 +3745,15 @@ int stb_vorbis_seek_frame(stb_vorbis *f, uint sample_number)
    return 1;
 }
 
-int stb_vorbis_seek(stb_vorbis *f, uint sample_number)
+int stb_vorbis_seek(stb_vorbis *f, long sample_number)
 {
-   if (!stb_vorbis_seek_frame(f, sample_number))
+    if (sample_number < 0)
+        return 0;
+
+    if (sample_number > uint.max)
+        return 0;
+
+   if (!stb_vorbis_seek_frame(f, cast(uint)sample_number))
       return 0;
 
    if (sample_number != f.current_loc) {
@@ -3752,6 +3764,7 @@ int stb_vorbis_seek(stb_vorbis *f, uint sample_number)
       assert(f.channel_buffer_start + cast(int) (sample_number-frame_start) <= f.channel_buffer_end);
       f.channel_buffer_start += (sample_number - frame_start);
    }
+   f.current_sample_loc = sample_number;
 
    return 1;
 }
