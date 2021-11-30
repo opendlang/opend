@@ -302,7 +302,6 @@ int pocketmod_pattern_break(pocketmod_context *c) {
         data = cast(ubyte[4]*) (c.patterns + pos);
         for (i = 0; i < c.num_channels; i++) 
         {
-
             /* Decode columns */
             int effect = ((data[i][2] & 0x0f) << 8) | data[i][3];
 
@@ -312,7 +311,7 @@ int pocketmod_pattern_break(pocketmod_context *c) {
             ch.param = (effect >> 8) != 0xe ? (effect & 0xff) : (effect & 0x0f);
             switch (ch.effect) {
                 /* Dxy: Pattern break */
-                case 0xD: return line;
+                case 0xD: return line+1; // Our pattern jumps *after* decoding the data where the break is on.
                 default: break;
             }
         }
