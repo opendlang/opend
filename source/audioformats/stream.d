@@ -249,6 +249,7 @@ public: // This is also part of the public API
             {
                 drflac_close(_flacDecoder);
                 _flacDecoder = null;
+                _flacPositionFrame = 0;
             }
         }
 
@@ -522,8 +523,10 @@ public: // This is also part of the public API
                     foreach(n; 0..samples)
                     {
                         outData[n] = integerData[n]  * factor;
-                    }  
-                    return samples / _numChannels;
+                    }
+                    int framesDecoded = samples / _numChannels;
+                    _flacPositionFrame += framesDecoded;
+                    return framesDecoded;
                 }
                 else
                 {
@@ -866,7 +869,14 @@ public: // This is also part of the public API
                     assert(false);
             case flac:
                 version(decodeFLAC)
-                    return drflac__seek_to_sample__brute_force (_flacDecoder, frame * _numChannels);
+                {
+                    if (frame < 0 || frame > _lengthInFrames)
+                        return false;
+                    bool success = drflac__seek_to_sample__brute_force (_flacDecoder, frame * _numChannels);
+                    if (success)
+                        _flacPositionFrame = frame;
+                    return success;
+                }
                 else
                     assert(false);
             case ogg:
@@ -918,7 +928,11 @@ public: // This is also part of the public API
                     assert(false);
             case flac:
                 version(decodeFLAC)
-                    return -1; // TODO: support that
+                {
+                    // Implemented externally since drflac is impenetrable.
+                    //return cast(int) _flacPositionFrame;
+                    return -1; // doesn't work in last frame though... seekPosition buggy in FLAC?
+                }
                 else
                     assert(false);
             case ogg:
@@ -1028,6 +1042,7 @@ private:
     version(decodeFLAC)
     {
         drflac* _flacDecoder;
+        long _flacPositionFrame;
     }
     version(decodeOGG)
     {
@@ -1103,6 +1118,7 @@ private:
                     _sampleRate = _flacDecoder.sampleRate;
                     _numChannels = _flacDecoder.channels;
                     _lengthInFrames = _flacDecoder.totalSampleCount / _numChannels;
+                    _flacPositionFrame = 0;
                     return;
                 }
             }
