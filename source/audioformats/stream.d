@@ -912,7 +912,7 @@ public: // This is also part of the public API
             case mp3: 
                 version(decodeMP3)
                 {
-                    return cast(int) _mp3DecoderNew.cur_sample / _numChannels; // TODO: support that
+                    return cast(int) _mp3DecoderNew.cur_sample / _numChannels;
                 }
                 else
                     assert(false);
@@ -926,10 +926,14 @@ public: // This is also part of the public API
                     return cast(int) stb_vorbis_get_sample_offset(_oggHandle);
                 else 
                     assert(false);
+
             case opus:
                 version(decodeOPUS)
-                {                    
-                    return -1; // TODO: support that
+                {              
+                    // Note: blocked by issue #22.
+                    // Because seeking in OPUS is not sample-accurate, we don't return a value for tellPosition 
+                    // since it will be inconsistent with the set value anyway.
+                    return -1; 
                 }
                 else 
                     assert(false);         
