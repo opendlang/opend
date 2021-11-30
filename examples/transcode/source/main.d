@@ -7,6 +7,9 @@ import audioformats;
 import dplug.core;
 import core.stdc.stdlib;
 
+
+//debug = checkSeeking;
+
 void main(string[] args)
 {
     if (args.length != 3)
@@ -39,6 +42,8 @@ void main(string[] args)
             writefln("  * length     = %.3g seconds (%s samples)", seconds, lengthFrames);
         }
 
+        debug(checkSeeking) additionalTests(input);
+
         float[] buf = new float[1024 * channels];
         output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
 
@@ -60,5 +65,57 @@ void main(string[] args)
     {
         writeln(e.msg);
         destroyFree(e);
+    }
+}
+
+debug(checkSeeking)
+{
+    // For audio-formats debug purpose.
+    void additionalTests(ref AudioStream input)
+    {
+        int channels = input.getNumChannels();
+        long lengthFrames = input.getLengthInFrames();
+        if (lengthFrames == audiostreamUnknownLength)
+            return;
+
+        int maxFrame = cast(int) lengthFrames;        
+
+        // Check that seeking work
+        if (input.canSeek() && !input.isModule())
+        {
+            assert(input.tellPosition() == 0);
+
+            // Seeking at beginning is always legal.
+            bool res = input.seekPosition(0);
+            assert(res && input.tellPosition() == 0);
+
+            // Seeking past the end is illegal and should be a no-op
+            res = input.seekPosition(maxFrame + 1);
+            assert(!res && input.tellPosition() == 0);
+
+            // Seeking before beginning is illegal and should be a no-op
+            res = input.seekPosition(-1);
+            assert(!res && input.tellPosition() == 0);
+
+            // It is legal to seek just before the the end.
+            if (maxFrame > 0)
+            {
+                res = input.seekPosition(maxFrame - 1);
+                int pos = input.tellPosition();
+                assert(res && pos == maxFrame - 1);
+
+                // TODO: in OGG, can't re-read the stream once finished.
+                // Where the remaining decoding should yield one frame
+                //float[] smallbuf = new float[16 * channels];
+                //int read = input.readSamplesFloat(smallbuf);
+                //assert(read == 1);
+
+                // And at this point we cannot seek to beginning in OGG, since stream is finished (has returned 0 samples).
+            }
+
+            // Come back at start.
+            res = input.seekPosition(0);
+            assert(res && input.tellPosition() == 0);
+        }
     }
 }
