@@ -27,8 +27,6 @@ SOFTWARE.
 // Translated to D by Guillaume Piolat Copyright 2021.
 module audioformats.pocketmod;
 
-
-version = POCKETMOD_NO_INTERPOLATION; // sounds better to me, linear interp is darker
 nothrow:
 @nogc:
 
@@ -287,6 +285,70 @@ void _pocketmod_volume_slide(_pocketmod_chan *ch, int param)
     int change = (param & 0xf0) ? (param >> 4) : -(param & 0x0f);
     ch.volume = cast(ubyte) _pocketmod_clamp_volume(ch.volume + change);
     ch.dirty |= POCKETMOD_VOLUME;
+}
+
+/**
+    Returns the amount of remaining (mono) samples/frames in the 
+    currently playing pattern.
+*/
+int pocketmod_count_remaining_samples(pocketmod_context *c) {
+    ubyte[4]* data;
+    int i, pos;
+
+    int result = 0;
+    int lineEnd = 64;
+
+    int iTicksPerLine = c.ticks_per_line;
+    float iSamplesPerTick = c.samples_per_tick;
+
+    /* For every (remaining) line in this current pattern */
+    for(int line = c.line; line < 64; line++) {
+        /* Find the pattern data for the current line */
+        pos = (c.order[c.pattern] * 64 + line) * c.num_channels * 4;
+        data = cast(ubyte[4]*) (c.patterns + pos);
+        for (i = 0; i < c.num_channels; i++) {
+            /* Decode columns */
+            int effect = ((data[i][2] & 0x0f) << 8) | data[i][3];
+
+            /* Memorize effect parameter values */
+            _pocketmod_chan *ch = &c.channels[i];
+            ch.effect = cast(ubyte) ( (effect >> 8) != 0xe ? (effect >> 8) : (effect >> 4) );
+            ch.param = (effect >> 8) != 0xe ? (effect & 0xff) : (effect & 0x0f);
+            switch (ch.effect) {
+                /* Dxy: Pattern break */
+                case 0xD: 
+                    // Our pattern jumps *after* decoding the data where the break is on.
+                    return result+cast(int)(cast(float)iTicksPerLine*iSamplesPerTick); 
+                
+                /* E6x: Pattern loop */
+                case 0xE6: 
+                    if (ch.param) {
+                        if (!ch.loop_count) {
+                            lineEnd = ch.loop_line;
+                        } else if (--ch.loop_count) {
+                            lineEnd = ch.loop_line;
+                        }
+                    }
+                    break;
+
+                /* Fxx: Set speed */
+                case 0xF: 
+                    if (ch.param != 0) {
+                        if (ch.param < 0x20) {
+                            iTicksPerLine = ch.param;
+                        } else {
+                            float rate = c.samples_per_second;
+                            iSamplesPerTick = rate / (0.4f * ch.param);
+                        }
+                    }
+                    break;
+                default: break;
+            }
+        }
+
+        result += cast(int)(cast(float)iTicksPerLine*iSamplesPerTick);
+    }
+    return result;
 }
 
 void _pocketmod_next_line(pocketmod_context *c)
@@ -629,15 +691,12 @@ void _pocketmod_render_channel(pocketmod_context *c,
         for (i = 0; i < num; i++) 
         {
             int x0 = cast(int)(chan.position);
-            version(POCKETMOD_NO_INTERPOLATION)
-            {
-                float s = sample.data[x0];
-            }
-            else
-            {
+            version(AF_LINEAR) {
                 int x1 = x0 + 1 - loop_length * (x0 + 1 >= loop_end);
                 float t = chan.position - x0;
                 float s = (1.0f - t) * sample.data[x0] + t * sample.data[x1];
+            } else {
+                float s = sample.data[x0];
             }
 
             chan.position += chan.increment;

@@ -20,8 +20,8 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | FLAC  | Yes        | No       | Sample          |
 | OPUS  | Yes (LGPL) | No       | Coarse          |
 | OGG   | Yes        | No       | Sample          |
-| MOD   | Yes        | No       | No              |
-| XM    | Yes        | No       | No              |
+| MOD   | Yes        | No       | Pattern+Row     |
+| XM    | Yes        | No       | Pattern+Row     |
 
 
 Some of these decoders were originally translated by Ketmar, who did the heavy-lifting.
@@ -40,7 +40,13 @@ Some of these decoders were originally translated by Ketmar, who did the heavy-l
 - LGPL v2.1 with OPUS decoding.
 (use DUB subconfigurations) to choose, default is boost.
 
+# Extras
+The following version identifiers can be used to enable/disable decoder level features  
+| Version Identifier | Feature                                                       |
+|--------------------|---------------------------------------------------------------|
+| AF_LINEAR          | Use linear sampling for MOD modules instead of Amiga sampling |
+|                    |                                                               |
 
 # Bugs
 
-- OGG decoding doesn't work, the sound is unusable.
+- framesRemainingInPattern is unimplemented for XM currently.

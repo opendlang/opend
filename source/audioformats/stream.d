@@ -804,18 +804,9 @@ public: // This is also part of the public API
                 assert(false);
 
             case mod:
-
-                // According to http://lclevy.free.fr/mo3/mod.txt
-                // there's 64 lines (aka rows) per pattern.
-                int rows = 64;
-
-                // NOTE: This is untested.
-                int samplesPerLine = cast(int)(cast(float)_modDecoder.ticks_per_line*_modDecoder.samples_per_tick);
-                int samples = (rows-_modDecoder.line)*samplesPerLine;
-                return samples / _numChannels;
-            
+                return pocketmod_count_remaining_samples(_modDecoder);
             case xm:
-                return 0; // NOT IMPLEMENTED
+                return xm_count_remaining_samples(_xmDecoder);
         }
     }
 
