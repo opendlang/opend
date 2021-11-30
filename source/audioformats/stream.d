@@ -809,10 +809,12 @@ public: // This is also part of the public API
                 // there's 64 lines (aka rows) per pattern.
                 int rows = 64;
 
-                // NOTE: This is untested.
+                // NOTE: This is calculated from a single channel
+                // As such do not divide by _numChannels as the unit
+                // is already in frames.
                 int samplesPerLine = cast(int)(cast(float)_modDecoder.ticks_per_line*_modDecoder.samples_per_tick);
-                int samples = (rows-_modDecoder.line)*samplesPerLine;
-                return samples / _numChannels;
+                int frames = (rows-_modDecoder.line)*samplesPerLine;
+                return frames;
             
             case xm:
                 return 0; // NOT IMPLEMENTED
