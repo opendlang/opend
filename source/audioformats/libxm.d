@@ -932,6 +932,11 @@ int xm_create_context_safe(xm_context_t** ctxp, const char* moddata, size_t modd
 	return 0;
 }
 
+int xm_count_remaining_samples(xm_context_t* context) {
+    // TODO: implement
+    return 0;
+}
+
 void xm_free_context(xm_context_t* context) {
 	free(context);
 }

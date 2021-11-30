@@ -806,8 +806,7 @@ public: // This is also part of the public API
             case mod:
                 return pocketmod_count_remaining_samples(_modDecoder);
             case xm:
-
-                return 0; // NOT IMPLEMENTED
+                return xm_count_remaining_samples(_xmDecoder);
         }
     }
 
