@@ -467,6 +467,12 @@ public: // This is also part of the public API
                 {
                     try
                     {
+                        // Can't decoder further than end of the stream.
+                        if (_opusPositionFrame + frames > _lengthInFrames)
+                        {
+                            frames = cast(int)(_lengthInFrames - _opusPositionFrame);
+                        }
+
                         int decoded = 0;
                         while (decoded < frames)
                         {
@@ -502,7 +508,9 @@ public: // This is also part of the public API
                             _opusBuffer = _opusBuffer[samplesToUse..$]; // reduce size of intermediate buffer
                             decoded += framesToUse;
                         }
-                            return decoded;
+                        _opusPositionFrame += decoded;
+                        assert(_opusPositionFrame <= _lengthInFrames);
+                        return decoded;
                     }
                     catch(Exception e)
                     {
@@ -893,13 +901,16 @@ public: // This is also part of the public API
             case opus:
                 version(decodeOPUS)
                 {
+                    if (frame < 0 || frame > _lengthInFrames)
+                        return false;
                     long where = _opusDecoder.ogg.seekPCM(frame);
+                    _opusPositionFrame = where;
                     int toSkip = cast(int)(frame - where);
 
                     // skip remaining samples for sample-accurate seeking
+                    // Note: this also updates _opusPositionFrame
                     int skipped = readSamplesFloat(null, cast(int) toSkip);
                     // TODO: if decoding `toSkip` samples failed, restore previous state?
-                    
                     return skipped == toSkip;
                 }
                 else 
@@ -950,14 +961,11 @@ public: // This is also part of the public API
 
             case opus:
                 version(decodeOPUS)
-                {              
-                    // Note: blocked by issue #22.
-                    // Because seeking in OPUS is not sample-accurate, we don't return a value for tellPosition 
-                    // since it will be inconsistent with the set value anyway.
-                    return -1; 
+                {
+                    return cast(int) _opusPositionFrame; // implemented externally
                 }
                 else 
-                    assert(false);         
+                    assert(false);
 
             case wav:
                 version(decodeWAV)
@@ -1075,6 +1083,7 @@ private:
     {
         OpusFile _opusDecoder;
         short[] _opusBuffer;
+        long _opusPositionFrame;
     }
 
     // Encoder
@@ -1100,6 +1109,7 @@ private:
                 _sampleRate = _opusDecoder.rate; // Note: Opus file are always 48Khz
                 _numChannels = _opusDecoder.channels();
                 _lengthInFrames = _opusDecoder.smpduration();
+                _opusPositionFrame = 0;
                 return;
             }
             catch(Exception e)
