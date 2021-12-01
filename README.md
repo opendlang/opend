@@ -18,7 +18,7 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | WAV   | Yes        | Yes      | Sample          |
 | MP3   | Yes        | No       | Sample          |
 | FLAC  | Yes        | No       | Sample          |
-| OPUS  | Yes (LGPL) | No       | Coarse          |
+| OPUS  | Yes (LGPL) | No       | Sample          |
 | OGG   | Yes        | No       | Sample          |
 | MOD   | Yes        | No       | Pattern+Row     |
 | XM    | Yes        | No       | Pattern+Row     |

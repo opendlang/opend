@@ -491,9 +491,13 @@ public: // This is also part of the public API
 
                             int samplesToUse = framesToUse * _numChannels;
                             int outOffset = decoded*_numChannels;
-                            for (int n = 0; n < samplesToUse; ++n)
+
+                            if (outData !is null) // for seeking, we have the ability in OPUS to call readSamplesFloat with no outData
                             {
-                                outData[outOffset + n] = _opusBuffer[n] / 32767.0f;
+                                for (int n = 0; n < samplesToUse; ++n)
+                                {
+                                    outData[outOffset + n] = _opusBuffer[n] / 32767.0f;
+                                }
                             }
                             _opusBuffer = _opusBuffer[samplesToUse..$]; // reduce size of intermediate buffer
                             decoded += framesToUse;
@@ -882,18 +886,21 @@ public: // This is also part of the public API
             case ogg:
                 version(decodeOGG)
                 {
-                    return stb_vorbis_seek(_oggHandle, frame) == 1;                    
+                    return stb_vorbis_seek(_oggHandle, frame) == 1;
                 }
                 else 
                     assert(false);
             case opus:
                 version(decodeOPUS)
                 {
-                    // Note: drflac seeks 1sec too early for some reason.
-                    // This isn't sample accurate, rather 64ms accurate.
-                    long timeInMs = 1000 + cast(long)(  1000.0 * frame / _sampleRate);
-                    _opusDecoder.seek(timeInMs);
-                    return true;
+                    long where = _opusDecoder.ogg.seekPCM(frame);
+                    int toSkip = cast(int)(frame - where);
+
+                    // skip remaining samples for sample-accurate seeking
+                    int skipped = readSamplesFloat(null, cast(int) toSkip);
+                    // TODO: if decoding `toSkip` samples failed, restore previous state?
+                    
+                    return skipped == toSkip;
                 }
                 else 
                     assert(false);

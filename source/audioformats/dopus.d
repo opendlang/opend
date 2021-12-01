@@ -7954,7 +7954,7 @@ private:
   ubyte* commbuf;
   uint cblen;
   OpusContext c;
-  OggStream ogg;
+  public OggStream ogg;
   OggStream.PageInfo lastpage;
   short[960*3*2] samples;
   float[960*3*2] sbuffer;
