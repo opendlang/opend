@@ -39,7 +39,7 @@ void main(string[] args)
         else
         {
             double seconds = lengthFrames / cast(double) sampleRate;
-            writefln("  * length     = %.3g seconds (%s samples)", seconds, lengthFrames);
+            writefln("  * length     = %.3g seconds (%s frames)", seconds, lengthFrames);
         }
 
         debug(checkSeeking) additionalTests(input);
@@ -78,7 +78,7 @@ debug(checkSeeking)
         if (lengthFrames == audiostreamUnknownLength)
             return;
 
-        int maxFrame = cast(int) lengthFrames;        
+        int maxFrame = cast(int) lengthFrames;
 
         // Check that seeking work
         if (input.canSeek() && !input.isModule())
@@ -97,6 +97,14 @@ debug(checkSeeking)
             res = input.seekPosition(-1);
             assert(!res && input.tellPosition() == 0);
 
+            // Seeking in the middle is of course legal
+            {
+                int where = maxFrame / 2;
+                res = input.seekPosition(where);
+                int here = input.tellPosition();
+                assert(res && here == where);
+            }
+
             // It is legal to seek just before the end.
             if (maxFrame > 0)
             {
@@ -104,7 +112,8 @@ debug(checkSeeking)
                 int pos = input.tellPosition();
                 assert(res && pos == maxFrame - 1);
 
-                if (input.getFormat() != AudioFileFormat.ogg) // TODO: in OGG, can't re-read the stream once finished.
+                AudioFileFormat fmt = input.getFormat();
+                if (fmt != AudioFileFormat.ogg && fmt !=  AudioFileFormat.flac) // TODO: in OGG and FLAC, can't re-read the stream once finished.
                 {
                     // Where the remaining decoding should yield one frame
                     float[] smallbuf = new float[16 * channels];
