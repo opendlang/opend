@@ -212,10 +212,10 @@ struct IOCallbacks
             throw mallocNew!Exception(writeFailureMessage);
     }
 
-    void write_ushort_LE(void* userData, uint value) @nogc
+    void write_ushort_LE(void* userData, ushort value) @nogc
     {
         ubyte[2] v;
-        *cast(uint*)(v.ptr) = value;
+        *cast(ushort*)(v.ptr) = value;
         version(BigEndian)
         {
             ubyte v0 = v[0];
