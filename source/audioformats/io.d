@@ -59,6 +59,16 @@ struct IOCallbacks
         throw mallocNew!Exception("expected ubyte");
     }
 
+    ubyte[16] read_guid(void* userData) @nogc
+    {
+        ubyte[16] b;
+        if (16 == read(&b, 16, userData))
+        {
+            return b;
+        }
+        throw mallocNew!Exception("expected a GUID");
+    }
+
     ushort read_ushort_LE(void* userData) @nogc
     {
         ubyte[2] v;

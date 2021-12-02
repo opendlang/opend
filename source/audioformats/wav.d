@@ -17,6 +17,10 @@ version(decodeWAV)
     {
     public:
     @nogc:
+
+        static immutable ubyte[16] KSDATAFORMAT_SUBTYPE_IEEE_FLOAT = 
+        [3, 0, 0, 0, 0, 0, 16, 0, 128, 0, 0, 170, 0, 56, 155, 113];
+
         this(IOCallbacks* io, void* userData) nothrow
         {
             _io = io;
@@ -72,11 +76,10 @@ version(decodeWAV)
                         throw mallocNew!Exception("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
 
                     _audioFormat = _io.read_ushort_LE(_userData);
-                    if (_audioFormat == WAVE_FORMAT_EXTENSIBLE)
-                        throw mallocNew!Exception("No support for format WAVE_FORMAT_EXTENSIBLE yet."); // Reference: http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx
+                    bool isWFE = _audioFormat == WAVE_FORMAT_EXTENSIBLE;
 
-                    if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE)
-                        throw mallocNew!Exception("Unsupported audio format, only PCM and IEEE float are supported.");
+                    if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE && !isWFE)
+                        throw mallocNew!Exception("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
 
                     _channels = _io.read_ushort_LE(_userData);
 
@@ -94,7 +97,41 @@ version(decodeWAV)
                     if (bytesPerFrame != (bitsPerSample / 8) * _channels)
                         throw mallocNew!Exception("Invalid bytes-per-second, data might be corrupted.");
 
-                    _io.skip(chunkSize - 16, _userData);
+                    // Sometimes there is no cbSize
+                    if (chunkSize >= 18)
+                    {
+                        ushort cbSize = _io.read_ushort_LE(_userData);
+
+                        if (isWFE)
+                        {
+                            if (cbSize >= 22)
+                            {
+                                ushort wReserved = _io.read_ushort_LE(_userData);
+                                uint dwChannelMask = _io.read_uint_LE(_userData);
+                                ubyte[16] SubFormat = _io.read_guid(_userData);
+
+                                if (SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
+                                {
+                                    _audioFormat = FloatingPointIEEE;
+                                }
+                                else
+                                    throw mallocNew!Exception("Unsupported GUID in WAVE_FORMAT_EXTENSIBLE.");
+                            }
+                            else
+                                throw mallocNew!Exception("Unsupported WAVE_FORMAT_EXTENSIBLE.");
+
+                            _io.skip(chunkSize - (18 + 2 + 4 + 16), _userData);
+                        }
+                        else
+                        {
+                            _io.skip(chunkSize - 18, _userData);
+                        }
+                    }
+                    else
+                    {
+                        _io.skip(chunkSize - 16, _userData);
+                    }
+
                 }
                 else if (chunkId == RIFFChunkId!"data")
                 {
