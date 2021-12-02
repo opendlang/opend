@@ -5,6 +5,7 @@ import mir.algebraic: Nullable;
 
 alias BloombergStreamWriter = extern(C) int function(const(char)* data, int length, void* stream);
 
+deprecated("Please use a local alias or IonAlgebraic instead .")
 alias BloombergAlgebraic = Nullable!(
     bool,
     long,
