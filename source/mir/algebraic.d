@@ -330,13 +330,24 @@ template TypeSet(T...)
         alias TypeSet = TypeSet!(staticMap!(TryRemoveConst, T));
 }
 
+// IonNull goes first as well
+private template isIonNull(T)
+{
+    static if (is(T == TaggedType!(U, name), U, string name))
+        enum isIonNull = .isIonNull!U;
+    else
+        enum isIonNull = T.stringof == "IonNull";
+}
+
 private template TypeCmp(A, B)
 {
     enum bool TypeCmp = is(A == B) ? false:
     is(A == typeof(null)) || is(A == TaggedType!(typeof(null), aname), string aname) ? true:
     is(B == typeof(null)) || is(B == TaggedType!(typeof(null), bname), string bname) ? false:
-    is(A == void) || is(A == TaggedType!(void, aname), string aname) ? true:
-    is(B == void) || is(A == TaggedType!(void, bname), string bname) ? false:
+    isIonNull!A ? true:
+    isIonNull!B ? false:
+    is(A == void) || is(A == TaggedType!(void, vaname), string vaname) ? true:
+    is(B == void) || is(A == TaggedType!(void, vbname), string vbname) ? false:
     A.sizeof < B.sizeof ? true:
     A.sizeof > B.sizeof ? false:
     A.mangleof < B.mangleof;
