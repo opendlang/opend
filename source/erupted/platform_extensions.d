@@ -23,6 +23,7 @@ enum KHR_external_fence_win32;
 enum KHR_portability_subset;
 enum KHR_video_encode_queue;
 enum EXT_video_encode_h264;
+enum EXT_video_encode_h265;
 enum EXT_video_decode_h264;
 enum GGP_stream_descriptor_surface;
 enum NV_external_memory_win32;
@@ -52,7 +53,7 @@ alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
 alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive, NV_acquire_winrt_display );
-alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_video_queue, KHR_video_decode_queue, KHR_portability_subset, KHR_video_encode_queue, EXT_video_encode_h264, EXT_video_decode_h264, EXT_video_decode_h265 );
+alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_video_queue, KHR_video_decode_queue, KHR_portability_subset, KHR_video_encode_queue, EXT_video_encode_h264, EXT_video_encode_h265, EXT_video_decode_h264, EXT_video_decode_h265 );
 alias USE_PLATFORM_GGP             = AliasSeq!( GGP_stream_descriptor_surface, GGP_frame_token );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
@@ -223,6 +224,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VkVideoCodecOperationFlagBitsKHR : VkVideoCodecOperationFlagsKHR {
                 VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR             = 0,
                 VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT         = 0x00010000,
+                VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT         = 0x00020000,
                 VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT         = 0x00000001,
                 VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT         = 0x00000002,
                 VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR      = 0x7FFFFFFF
@@ -230,6 +232,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             enum VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR            = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR;
             enum VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
+            enum VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT;
             enum VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT;
             enum VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT;
             enum VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR     = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR;
@@ -906,6 +909,176 @@ mixin template Platform_Extensions( extensions... ) {
             
         }
 
+        // VK_EXT_video_encode_h265 : types and function pointer type aliases
+        else static if( __traits( isSame, extension, EXT_video_encode_h265 )) {
+            enum VK_EXT_video_encode_h265 = 1;
+
+            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 2;
+            enum VK_EXT_VIDEO_ENCODE_H265_EXTENSION_NAME = "VK_EXT_video_encode_h265";
+            
+            alias VkVideoEncodeH265CapabilityFlagsEXT = VkFlags;
+            enum VkVideoEncodeH265CapabilityFlagBitsEXT : VkVideoEncodeH265CapabilityFlagsEXT {
+                VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT            = 0x00000001,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_8X8_BIT_EXT                        = 0x00000002,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT                     = 0x00000004,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT              = 0x00000008,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT           = 0x00000010,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT            = 0x00000020,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT            = 0x00000040,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT             = 0x00000080,
+                VK_VIDEO_ENCODE_H265_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT        = 0x00000100,
+                VK_VIDEO_ENCODE_H2_65_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT                      = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT           = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_8X8_BIT_EXT                       = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_TRANSFORM_8X8_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT                    = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT             = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT          = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT           = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT           = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT            = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT       = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H265_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT                     = VkVideoEncodeH265CapabilityFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT;
+            
+            alias VkVideoEncodeH265InputModeFlagsEXT = VkFlags;
+            enum VkVideoEncodeH265InputModeFlagBitsEXT : VkVideoEncodeH265InputModeFlagsEXT {
+                VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT                = 0x00000001,
+                VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT                = 0x00000002,
+                VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT              = 0x00000004,
+                VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT      = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT               = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT               = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT             = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT     = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT;
+            
+            alias VkVideoEncodeH265OutputModeFlagsEXT = VkFlags;
+            enum VkVideoEncodeH265OutputModeFlagBitsEXT : VkVideoEncodeH265OutputModeFlagsEXT {
+                VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT               = 0x00000001,
+                VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT               = 0x00000002,
+                VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT             = 0x00000004,
+                VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT     = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT              = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT              = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT            = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT    = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT;
+            alias VkVideoEncodeH265CreateFlagsEXT = VkFlags;
+            
+            alias VkVideoEncodeH265CtbSizeFlagsEXT = VkFlags;
+            enum VkVideoEncodeH265CtbSizeFlagBitsEXT : VkVideoEncodeH265CtbSizeFlagsEXT {
+                VK_VIDEO_ENCODE_H265_CTB_SIZE_8_BIT_EXT                      = 0x00000001,
+                VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_EXT                     = 0x00000002,
+                VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_EXT                     = 0x00000004,
+                VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_EXT                     = 0x00000008,
+                VK_VIDEO_ENCODE_H2_65_CTB_SIZE_FLAG_BITS_MAX_ENUM_EXT        = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H265_CTB_SIZE_8_BIT_EXT                     = VkVideoEncodeH265CtbSizeFlagBitsEXT.VK_VIDEO_ENCODE_H265_CTB_SIZE_8_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_EXT                    = VkVideoEncodeH265CtbSizeFlagBitsEXT.VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_EXT                    = VkVideoEncodeH265CtbSizeFlagBitsEXT.VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_EXT                    = VkVideoEncodeH265CtbSizeFlagBitsEXT.VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_CTB_SIZE_FLAG_BITS_MAX_ENUM_EXT       = VkVideoEncodeH265CtbSizeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_CTB_SIZE_FLAG_BITS_MAX_ENUM_EXT;
+            
+            struct VkVideoEncodeH265CapabilitiesEXT {
+                VkStructureType                      sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT;
+                const( void )*                       pNext;
+                VkVideoEncodeH265CapabilityFlagsEXT  flags;
+                VkVideoEncodeH265InputModeFlagsEXT   inputModeFlags;
+                VkVideoEncodeH265OutputModeFlagsEXT  outputModeFlags;
+                VkVideoEncodeH265CtbSizeFlagsEXT     ctbSizes;
+                VkExtent2D                           inputImageDataAlignment;
+                uint8_t                              maxNumL0ReferenceForP;
+                uint8_t                              maxNumL0ReferenceForB;
+                uint8_t                              maxNumL1Reference;
+                uint8_t                              maxNumSubLayers;
+                uint8_t                              qualityLevelCount;
+                VkExtensionProperties                stdExtensionVersion;
+            }
+            
+            struct VkVideoEncodeH265SessionCreateInfoEXT {
+                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_CREATE_INFO_EXT;
+                const( void )*                   pNext;
+                VkVideoEncodeH265CreateFlagsEXT  flags;
+                const( VkExtensionProperties )*  pStdExtensionVersion;
+            }
+            
+            struct VkVideoEncodeH265SessionParametersAddInfoEXT {
+                VkStructureType                             sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT;
+                const( void )*                              pNext;
+                uint32_t                                    vpsStdCount;
+                const( StdVideoH265VideoParameterSet )*     pVpsStd;
+                uint32_t                                    spsStdCount;
+                const( StdVideoH265SequenceParameterSet )*  pSpsStd;
+                uint32_t                                    ppsStdCount;
+                const( StdVideoH265PictureParameterSet )*   pPpsStd;
+            }
+            
+            struct VkVideoEncodeH265SessionParametersCreateInfoEXT {
+                VkStructureType                                         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT;
+                const( void )*                                          pNext;
+                uint32_t                                                maxVpsStdCount;
+                uint32_t                                                maxSpsStdCount;
+                uint32_t                                                maxPpsStdCount;
+                const( VkVideoEncodeH265SessionParametersAddInfoEXT )*  pParametersAddInfo;
+            }
+            
+            struct VkVideoEncodeH265DpbSlotInfoEXT {
+                VkStructureType                            sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT;
+                const( void )*                             pNext;
+                int8_t                                     slotIndex;
+                const( StdVideoEncodeH265ReferenceInfo )*  pStdReferenceInfo;
+            }
+            
+            struct VkVideoEncodeH265ReferenceListsEXT {
+                VkStructureType                                     sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT;
+                const( void )*                                      pNext;
+                uint8_t                                             referenceList0EntryCount;
+                const( VkVideoEncodeH265DpbSlotInfoEXT )*           pReferenceList0Entries;
+                uint8_t                                             referenceList1EntryCount;
+                const( VkVideoEncodeH265DpbSlotInfoEXT )*           pReferenceList1Entries;
+                const( StdVideoEncodeH265ReferenceModifications )*  pReferenceModifications;
+            }
+            
+            struct VkVideoEncodeH265NaluSliceEXT {
+                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_EXT;
+                const( void )*                                pNext;
+                uint32_t                                      ctbCount;
+                const( VkVideoEncodeH265ReferenceListsEXT )*  pReferenceFinalLists;
+                const( StdVideoEncodeH265SliceHeader )*       pSliceHeaderStd;
+            }
+            
+            struct VkVideoEncodeH265VclFrameInfoEXT {
+                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
+                const( void )*                                pNext;
+                const( VkVideoEncodeH265ReferenceListsEXT )*  pReferenceFinalLists;
+                uint32_t                                      naluSliceEntryCount;
+                const( VkVideoEncodeH265NaluSliceEXT )*       pNaluSliceEntries;
+                const( StdVideoEncodeH265PictureInfo )*       pCurrentPictureInfo;
+            }
+            
+            struct VkVideoEncodeH265EmitPictureParametersEXT {
+                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT;
+                const( void )*     pNext;
+                uint8_t            vpsId;
+                uint8_t            spsId;
+                VkBool32           emitVpsEnable;
+                VkBool32           emitSpsEnable;
+                uint32_t           ppsIdEntryCount;
+                const( uint8_t )*  ppsIdEntries;
+            }
+            
+            struct VkVideoEncodeH265ProfileEXT {
+                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT;
+                const( void )*          pNext;
+                StdVideoH265ProfileIdc  stdProfileIdc;
+            }
+            
+        }
+
         // VK_EXT_video_decode_h264 : types and function pointer type aliases
         else static if( __traits( isSame, extension, EXT_video_decode_h264 )) {
             enum VK_EXT_video_decode_h264 = 1;
@@ -1454,11 +1627,6 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_FUCHSIA_BUFFER_COLLECTION_EXTENSION_NAME = "VK_FUCHSIA_buffer_collection";
             
             alias VkImageFormatConstraintsFlagsFUCHSIA = VkFlags;
-            enum VkImageFormatConstraintsFlagBitsFUCHSIA : VkImageFormatConstraintsFlagsFUCHSIA {
-                VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA = 0x7FFFFFFF
-            }
-            
-            enum VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA = VkImageFormatConstraintsFlagBitsFUCHSIA.VK_IMAGE_FORMAT_CONSTRAINTS_FLAG_BITS_MAX_ENUM_FUCHSIA;
             
             alias VkImageConstraintsInfoFlagsFUCHSIA = VkFlags;
             enum VkImageConstraintsInfoFlagBitsFUCHSIA : VkImageConstraintsInfoFlagsFUCHSIA {
