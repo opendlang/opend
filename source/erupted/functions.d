@@ -229,6 +229,10 @@ extern( System ) {
     // VK_KHR_display_swapchain
     alias PFN_vkCreateSharedSwapchainsKHR                                       = VkResult  function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkSwapchainKHR* pSwapchains );
 
+    // VK_KHR_dynamic_rendering
+    alias PFN_vkCmdBeginRenderingKHR                                            = void      function( VkCommandBuffer commandBuffer, const( VkRenderingInfoKHR )* pRenderingInfo );
+    alias PFN_vkCmdEndRenderingKHR                                              = void      function( VkCommandBuffer commandBuffer );
+
     // VK_KHR_external_memory_fd
     alias PFN_vkGetMemoryFdKHR                                                  = VkResult  function( VkDevice device, const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd );
     alias PFN_vkGetMemoryFdPropertiesKHR                                        = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties );
@@ -777,6 +781,10 @@ __gshared {
 
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                                       vkCreateSharedSwapchainsKHR;
+
+    // VK_KHR_dynamic_rendering
+    PFN_vkCmdBeginRenderingKHR                                            vkCmdBeginRenderingKHR;
+    PFN_vkCmdEndRenderingKHR                                              vkCmdEndRenderingKHR;
 
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                                  vkGetMemoryFdKHR;
@@ -1493,6 +1501,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
 
+    // VK_KHR_dynamic_rendering
+    vkCmdBeginRenderingKHR                            = cast( PFN_vkCmdBeginRenderingKHR                            ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderingKHR" );
+    vkCmdEndRenderingKHR                              = cast( PFN_vkCmdEndRenderingKHR                              ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderingKHR" );
+
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
     vkGetMemoryFdPropertiesKHR                        = cast( PFN_vkGetMemoryFdPropertiesKHR                        ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHR" );
@@ -1951,6 +1963,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
+
+    // VK_KHR_dynamic_rendering
+    vkCmdBeginRenderingKHR                            = cast( PFN_vkCmdBeginRenderingKHR                            ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderingKHR" );
+    vkCmdEndRenderingKHR                              = cast( PFN_vkCmdEndRenderingKHR                              ) vkGetDeviceProcAddr( device, "vkCmdEndRenderingKHR" );
 
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );

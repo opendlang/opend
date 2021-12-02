@@ -227,6 +227,10 @@ struct DispatchDevice {
         // VK_KHR_display_swapchain
         vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+        // VK_KHR_dynamic_rendering
+        vkCmdBeginRenderingKHR                            = cast( PFN_vkCmdBeginRenderingKHR                            ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderingKHR" );
+        vkCmdEndRenderingKHR                              = cast( PFN_vkCmdEndRenderingKHR                              ) vkGetDeviceProcAddr( device, "vkCmdEndRenderingKHR" );
+
         // VK_KHR_external_memory_fd
         vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
         vkGetMemoryFdPropertiesKHR                        = cast( PFN_vkGetMemoryFdPropertiesKHR                        ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
@@ -690,6 +694,10 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     VkResult  CreateSharedSwapchainsKHR( uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, VkSwapchainKHR* pSwapchains ) { return vkCreateSharedSwapchainsKHR( vkDevice, swapchainCount, pCreateInfos, pAllocator, pSwapchains ); }
+
+    // VK_KHR_dynamic_rendering
+    void      CmdBeginRenderingKHR( const( VkRenderingInfoKHR )* pRenderingInfo ) { vkCmdBeginRenderingKHR( commandBuffer, pRenderingInfo ); }
+    void      CmdEndRenderingKHR() { vkCmdEndRenderingKHR( commandBuffer ); }
 
     // VK_KHR_external_memory_fd
     VkResult  GetMemoryFdKHR( const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd ) { return vkGetMemoryFdKHR( vkDevice, pGetFdInfo, pFd ); }
@@ -1198,6 +1206,10 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                       vkCreateSharedSwapchainsKHR;
+
+    // VK_KHR_dynamic_rendering
+    PFN_vkCmdBeginRenderingKHR                            vkCmdBeginRenderingKHR;
+    PFN_vkCmdEndRenderingKHR                              vkCmdEndRenderingKHR;
 
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                  vkGetMemoryFdKHR;
