@@ -191,6 +191,7 @@ struct IOCallbacks
 
     void write_float_LE(void* userData, float value) @nogc
     {
+        // BUG: doesn't support BigEndian properly there
         write_uint_LE(userData, *cast(uint*)(&value));
     }
 
