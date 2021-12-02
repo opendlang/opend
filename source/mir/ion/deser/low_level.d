@@ -2,7 +2,7 @@
 +/
 module mir.ion.deser.low_level;
 
-import mir.appender: ScopedBuffer;
+import mir.appender: scopedBuffer, ScopedBuffer;
 import mir.bignum.decimal: Decimal;
 import mir.bignum.integer: BigInt;
 import mir.ion.exception;
@@ -514,23 +514,16 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     alias E = Unqual!(ForeachType!T);
     if (data.descriptor.type == IonTypeCode.list)
     {
-        if (false)
-        {
-            ScopedBuffer!E buffer;
-            if (auto error = deserializeListToScopedBuffer(data, buffer))
-                return error;
-        }
-        return () @trusted {
-            import std.array: uninitializedArray;
-            ScopedBuffer!E buffer = void;
-            buffer.initialize;
-            if (auto error = deserializeListToScopedBuffer(data, buffer))
-                return error;
+        import std.array: uninitializedArray;
+        auto buffer = scopedBuffer!E;
+        if (auto error = deserializeListToScopedBuffer(data, buffer))
+            return error;
+        () @trusted {
             auto ar = uninitializedArray!(E[])(buffer.length);
             buffer.moveDataAndEmplaceTo(ar);
             value = cast(T) ar;
-            return IonErrorCode.none;
         } ();
+        return IonErrorCode.none;
     }
     else
     if (data.descriptor.type == IonTypeCode.null_)
@@ -566,28 +559,21 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     alias E = Unqual!(ForeachType!T);
     if (data.descriptor.type == IonTypeCode.list)
     {
-        if (false)
-        {
-            ScopedBuffer!E buffer;
-            if (auto error = deserializeListToScopedBuffer(data, buffer))
-                return error;
-        }
-        return () @trusted {
-            import core.lifetime: move;
-            import std.traits: TemplateArgsOf;
-            ScopedBuffer!E buffer = void;
-            buffer.initialize;
-            if (auto error = deserializeListToScopedBuffer(data, buffer))
-                return error;
-            auto ar = RCArray!E(buffer.length, false);
+        import core.lifetime: move;
+        import std.traits: TemplateArgsOf;
+        auto buffer = scopedBuffer!E;
+        if (auto error = deserializeListToScopedBuffer(data, buffer))
+            return error;
+        auto ar = RCArray!E(buffer.length, false);
+        () @trusted {
             buffer.moveDataAndEmplaceTo(ar[]);
-            static if (__traits(compiles, value = move(ar)))
-                value = move(ar);
-            else () @trusted {
-                value = ar.opCast!T;
-            } ();
-            return IonErrorCode.none;
         } ();
+        static if (__traits(compiles, value = move(ar)))
+            value = move(ar);
+        else () @trusted {
+            value = ar.opCast!T;
+        } ();
+        return IonErrorCode.none;
     }
     else
     if (data.descriptor.type == IonTypeCode.null_)

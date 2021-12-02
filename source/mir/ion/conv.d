@@ -15,7 +15,7 @@ template serde(T)
     {
         import mir.ion.exception;
         import mir.ion.deser.ion: deserializeIon;
-        import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+        import mir.ion.internal.data_holder: ionPrefix, ionTapeHolder, IonTapeHolder;
         import mir.ion.ser: serializeValue;
         import mir.ion.ser.ion: IonSerializer;
         import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
@@ -26,53 +26,38 @@ template serde(T)
         enum nMax = 4096u;
         enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
 
-        immutable(string)[] symbolTable;
+        const(string)[] symbolTable;
 
-        if (false)
+        import mir.appender : scopedBuffer;
+        auto symbolTableBuffer = scopedBuffer!string;
+        auto tapeHolder = ionTapeHolder!(nMax * 8);
+        tapeHolder.initialize;
+        IonSymbolTable!true table;
+        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
+            ()@trusted { return &tapeHolder; }(),
+            ()@trusted { return &table; }(),
+            serdeTarget);
+        serializeValue(serializer, value);
+
+        // use runtime table
+        if (table.initialized)
         {
-            IonTapeHolder!(nMax * 8) tapeHolder;
-            tapeHolder.initialize;
-            IonSymbolTable!true table;
-            auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
-                ()@trusted { return &tapeHolder; }(),
-                ()@trusted { return &table; }(),
-                serdeTarget,
-            );
-            serializeValue(serializer, value);
-            return deserializeIon!T(symbolTable, IonDescribedValue.init);
-        }
-
-        auto ret () @trusted {
-            import mir.appender : ScopedBuffer;
-            ScopedBuffer!(immutable string) symbolTableBuffer = void;
-            IonTapeHolder!(nMax * 8) tapeHolder = void;
-            symbolTableBuffer.initialize;
-            tapeHolder.initialize;
-            IonSymbolTable!true table;
-            auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table, serdeTarget);
-            serializeValue(serializer, value);
-
-            // use runtime table
-            if (table.initialized)
+            symbolTableBuffer.put(IonSystemSymbolTable_v1);
+            foreach (IonErrorCode error, IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
             {
-                symbolTableBuffer.put(IonSystemSymbolTable_v1);
-                foreach (IonErrorCode error, IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
-                {
-                    assert(!error);
-                    symbolTableBuffer.put(cast(string)symbolValue.trustedGet!(const(char)[]));
-                }
-                symbolTable = symbolTableBuffer.data;
+                assert(!error);
+                symbolTableBuffer.put(cast(string)symbolValue.trustedGet!(const(char)[]));
             }
-            else
-            {
-                static immutable compileTimeTable = IonSystemSymbolTable_v1 ~ keys;
-                symbolTable = compileTimeTable;
-            }
-            IonDescribedValue ionValue;
-            auto error = tapeHolder.data.IonValue.describe(ionValue);
-            return deserializeIon!T(symbolTable, ionValue);
+            symbolTable = symbolTableBuffer.data;
         }
-        return ret();
+        else
+        {
+            static immutable compileTimeTable = IonSystemSymbolTable_v1 ~ keys;
+            symbolTable = compileTimeTable;
+        }
+        IonDescribedValue ionValue;
+        auto error = tapeHolder.data.IonValue.describe(ionValue);
+        return deserializeIon!T(symbolTable, ionValue);
     }
 }
 

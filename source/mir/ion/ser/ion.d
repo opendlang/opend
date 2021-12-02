@@ -304,49 +304,32 @@ Ion serialization function.
 immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
     import mir.utility: _expect;
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
     import mir.ion.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    if (false)
+    auto tapeHolder = ionTapeHolder!(nMax * 8);
+    tapeHolder.initialize;
+    IonSymbolTable!true table;
+    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(()@trusted { return &tapeHolder; }(), ()@trusted { return &table; }(), serdeTarget);
+    serializeValue(serializer, value);
+
+    static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
+
+    // use runtime table
+    if (_expect(table.initialized, false))
     {
-        IonTapeHolder!(nMax * 8) tapeHolder;
-        tapeHolder.initialize;
-        IonSymbolTable!true table;
-        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
-            ()@trusted { return &tapeHolder; }(),
-            ()@trusted { return &table; }(),
-            serdeTarget,
-        );
-        serializeValue(serializer, value);
+        table.finalize; 
+        return () @trusted { return  cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData); } ();
     }
-
-    immutable(ubyte)[] ret () @trusted {
-
-        IonTapeHolder!(nMax * 8) tapeHolder = void;
-        tapeHolder.initialize;
-        IonSymbolTable!true table;
-        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(&tapeHolder, &table, serdeTarget);
-        serializeValue(serializer, value);
-
-        static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
-
-        // use runtime table
-        if (_expect(table.initialized, false))
-        {
-            table.finalize; 
-            return cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
-        }
-        // compile time table
-        else
-        {
-            return cast(immutable) (compiletimePrefixAndTableTapeData ~ tapeHolder.tapeData);
-        }
+    // compile time table
+    else
+    {
+        return () @trusted { return  cast(immutable) (compiletimePrefixAndTableTapeData ~ tapeHolder.tapeData); } ();
     }
-    return ret();
 }
 
 ///

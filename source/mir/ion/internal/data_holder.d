@@ -157,3 +157,13 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
         }
     }
 }
+
+IonTapeHolder!(stackAllocatedLength, useGC) ionTapeHolder(size_t stackAllocatedLength, bool useGC = false)()
+    @trusted
+{
+    typeof(return) ret = void;
+    ret.data = null;
+    ret.currentTapePosition = 0;
+    version(assert) ret.ctrlStack = 0;
+    return ret;
+}

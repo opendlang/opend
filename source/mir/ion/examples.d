@@ -571,7 +571,7 @@ unittest
         }
 
         // opIndexAssign for deserialization
-        void opIndexAssign(int val, string key) pure
+        void opIndexAssign(int val, string key) pure @safe
         {
             sum += val;
         }
@@ -901,7 +901,7 @@ version(mir_ion_test) unittest
     static struct A {
         private int _a;
         const @property:
-        int a() { return _a; }
+        int a() @safe pure { return _a; }
     }
 
     auto stra = A(3);
@@ -1216,7 +1216,6 @@ version(mir_ion_test) unittest
     auto s = ["a", "b"].series([5, 6]).lightConst;
     auto t = `{index:["a","b"],data:[5,6]}`;
     assert(s.serializeText == t, s.serializeText);
-    pragma(msg, typeof(s));
     assert(t.deserializeText!(typeof(s)) == s);
 }
 

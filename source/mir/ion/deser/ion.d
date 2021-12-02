@@ -19,7 +19,7 @@ template deserializeIon(T, bool annotated = false)
     +/
     T deserializeIon()(scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
-        import mir.appender: ScopedBuffer;
+        import mir.appender: scopedBuffer;
         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
@@ -33,30 +33,17 @@ template deserializeIon(T, bool annotated = false)
         static immutable table = createTableChar!(keys, false);
 
         T value;
-        if (false)
+        auto tableMapBuffer = scopedBuffer!(uint, 1024);
+        foreach (key; symbolTable)
         {
-            auto params = DeserializationParams!(TableKind.scopeRuntime, annotated)(ionValue, optionalAnnotations, symbolTable); 
-            if (auto exception = deserializeValue!keys(params, value))
-            {
-            }
+            uint id;
+            if (!table.get(key, id))
+                id = uint.max;
+            tableMapBuffer.put(id);
         }
-        () @trusted {
-
-            ScopedBuffer!(uint, 1024) tableMapBuffer = void;
-            tableMapBuffer.initialize;
-
-            foreach (key; symbolTable)
-            {
-                uint id;
-                if (!table.get(key, id))
-                    id = uint.max;
-                tableMapBuffer.put(id);
-            }
-            auto params = DeserializationParams!(TableKind.scopeRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
-            if (auto exception = deserializeValue!keys(params, value))
-                throw exception;
-            
-        } ();
+        auto params = DeserializationParams!(TableKind.scopeRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
+        if (auto exception = deserializeValue!keys(params, value))
+            throw exception;
         return value;
     }
 
@@ -64,7 +51,7 @@ template deserializeIon(T, bool annotated = false)
     // the same code with GC allocated symbol table
     T deserializeIon()(const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
-        import mir.appender: ScopedBuffer;
+        import mir.appender: scopedBuffer;
         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: MirStringTable;
@@ -82,32 +69,20 @@ template deserializeIon(T, bool annotated = false)
             static immutable table = Table.init;
 
         T value;
-        if (false)
+
+        auto tableMapBuffer = scopedBuffer!(uint, 1024);
+
+        foreach (key; symbolTable)
         {
-            auto params = DeserializationParams!(TableKind.immutableRuntime, annotated)(ionValue, optionalAnnotations, symbolTable);
-            if (auto exception = deserializeValue!keys(params, value))
-            {
-            }
+            uint id;
+            if (!table.get(key, id))
+                id = uint.max;
+            tableMapBuffer.put(id);
         }
-        () @trusted {
 
-            ScopedBuffer!(uint, 1024) tableMapBuffer = void;
-            tableMapBuffer.initialize;
-
-            foreach (key; symbolTable)
-            {
-                uint id;
-                if (!table.get(key, id))
-                    id = uint.max;
-                tableMapBuffer.put(id);
-            }
-
-
-            auto params = DeserializationParams!(TableKind.immutableRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
-            if (auto exception = deserializeValue!keys(params, value))
-                throw exception;
-            
-        } ();
+        auto params = DeserializationParams!(TableKind.immutableRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
+        if (auto exception = deserializeValue!keys(params, value))
+            throw exception;            
         return value;
     }
 

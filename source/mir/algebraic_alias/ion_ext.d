@@ -67,11 +67,11 @@ unittest
 
     // Default
     assert(value._is!IonNull);
+    assert(value.get!IonNull == IonTypeCode.null_.IonNull);
     assert(value.kind == IonExtAlgebraic.Kind.null_);
 
     // Boolean
     value = object["bool"] = true;
-    assert(!value._is!IonNull);
     assert(value == true);
     assert(value.kind == IonExtAlgebraic.Kind.boolean);
     assert(value.get!bool == true);

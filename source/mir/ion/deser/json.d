@@ -28,40 +28,36 @@ private template deserializeJsonImpl(bool file)
 
         enum nMax = 4096u;
         // enum nMax = 64u;
-        enum keys = serdeGetDeserializationKeysRecurse!T;
+        static if (__traits(hasMember, T, "deserializeFromIon"))
+            enum keys = string[].init;
+        else
+            enum keys = serdeGetDeserializationKeysRecurse!T;
+
         alias createTableChar = createTable!char;
         static immutable table = createTableChar!(keys, false);
+
         T value;
 
-        if (false)
+        // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
+        auto tapeHolder = ionTapeHolder!(nMax * 8);
+        tapeHolder.initialize;
+        auto errorInfo = () @trusted { return algo!nMax(table, tapeHolder, text); } ();
+        if (errorInfo.code)
         {
-            auto params = DeserializationParams!(TableKind.compiletime)(); 
-            if (auto exception = deserializeValue!keys(params, value))
-                throw exception;
+            static if (__traits(compiles, () @nogc { throw new Exception(""); }))
+                throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+            else
+                throw errorInfo.code.ionException;
         }
 
-        () @trusted {
-            // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
-            IonTapeHolder!(nMax * 8) tapeHolder = void;
-            tapeHolder.initialize;
-            auto errorInfo = algo!nMax(table, tapeHolder, text);
-            if (errorInfo.code)
-            {
-                static if (__traits(compiles, () @nogc { throw new Exception(""); }))
-                    throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
-                else
-                    throw errorInfo.code.ionException;
-            }
+        IonDescribedValue ionValue;
 
-            IonDescribedValue ionValue;
+        if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
+            throw error.ionException;
 
-            if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
-                throw error.ionException;
-
-            auto params = DeserializationParams!(TableKind.compiletime)(ionValue); 
-            if (auto exception = deserializeValue!keys(params, value))
-                throw exception;
-        } ();
+        auto params = DeserializationParams!(TableKind.compiletime)(ionValue); 
+        if (auto exception = deserializeValue!keys(params, value))
+            throw exception;
 
         return value;
     }

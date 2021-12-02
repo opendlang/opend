@@ -171,7 +171,7 @@ Deserialize aggregate value using compile time symbol table
 +/
 template deserializeValue(string[] symbolTable)
 {
-    import mir.appender: ScopedBuffer;
+    import mir.appender: scopedBuffer, ScopedBuffer;
 
     @safe pure nothrow @nogc
     private bool prepareSymbolId(TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref size_t symbolId)
@@ -408,23 +408,14 @@ template deserializeValue(string[] symbolTable)
             static if (hasScoped && is(Member == D[], D) && !is(Unqual!D == char))
             {
                 alias E = Unqual!D;
-                if (false)
-                {
-                    ScopedBuffer!E buffer;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
-                }
-                return () @trusted {
-                    ScopedBuffer!E buffer = void;
-                    buffer.initialize;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
-                    auto temporal = cast(Member)buffer.data;
-                    static if (hasTransform)
-                        transform(temporal);
-                    __traits(getMember, value, member) = move(temporal);
-                    return null;
-                } ();
+                auto buffer = scopedBuffer!E;
+                if (auto exception = deserializeListToScopedBuffer(params, buffer))
+                    return exception;
+                auto temporal = cast(Member)buffer.data;
+                static if (hasTransform)
+                    transform(temporal);
+                __traits(getMember, value, member) = move(temporal);
+                return null;
             }
             else
             {
@@ -573,24 +564,16 @@ template deserializeValue(string[] symbolTable)
             alias E = Unqual!D;
             if (data.descriptor.type == IonTypeCode.list)
             {
-                if (false)
-                {
-                    ScopedBuffer!E buffer;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
-                }
-
-                return () @trusted {
-                    import std.array: uninitializedArray;
-                    ScopedBuffer!E buffer = void;
-                    buffer.initialize;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
+                import std.array: uninitializedArray;
+                auto buffer = scopedBuffer!E;
+                if (auto exception = deserializeListToScopedBuffer(params, buffer))
+                    return exception;
+                () @trusted {
                     auto ar = uninitializedArray!(E[])(buffer.length);
                     buffer.moveDataAndEmplaceTo(ar);
                     value = cast(T) ar;
-                    return null;
-                }();
+                } ();
+                return null;
             }
             else
             if (data.descriptor.type == IonTypeCode.null_)
@@ -729,27 +712,19 @@ template deserializeValue(string[] symbolTable)
             alias E = Unqual!D;
             if (data.descriptor.type == IonTypeCode.list)
             {
-                if (false)
-                {
-                    ScopedBuffer!E buffer;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
-                }
-
-                return ()@trusted @nogc {
-                    ScopedBuffer!E buffer = void;
-                    buffer.initialize;
-                    if (auto exception = deserializeListToScopedBuffer(params, buffer))
-                        return exception;
-                    auto ar = RCArray!E(buffer.length, false);
+                auto buffer = scopedBuffer!E;
+                if (auto exception = deserializeListToScopedBuffer(params, buffer))
+                    return exception;
+                auto ar = RCArray!E(buffer.length, false);
+                () @trusted {
                     buffer.moveDataAndEmplaceTo(ar[]);
-                    static if (__traits(compiles, value = move(ar)))
-                        value = move(ar);
-                    else () @trusted {
-                        value = ar.opCast!T;
-                    } ();
-                    return null;
                 } ();
+                static if (__traits(compiles, value = move(ar)))
+                    value = move(ar);
+                else () @trusted {
+                    value = ar.opCast!T;
+                } ();
+                return null;
             }
             else
             if (data.descriptor.type == IonTypeCode.null_)
@@ -1568,7 +1543,7 @@ version(mir_ion_test) unittest
         @serdeIgnoreIn
         bool set;
         @serdeScoped
-        @property auto a(int[] a)
+        @property auto a(scope int[] a) @safe
         {
             static immutable d = [1, 2, 3];
             set = a == d;
@@ -1640,7 +1615,7 @@ version(mir_ion_test) unittest
     static struct Q
     {
         int i;
-        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
+        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value) @safe pure @nogc
         {
             i = deserializeIon!int(symbolTable, value);
             return null;
