@@ -11,6 +11,7 @@ endif
 has_cpp_headers = false
 
 sources_list = [
+    'mir/algebraic_alias/ion_ext',
     'mir/ion/conv',
     'mir/ion/deser/ion',
     'mir/ion/deser/json',
