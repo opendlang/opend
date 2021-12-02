@@ -90,8 +90,7 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
 
     enum nMax = 4096u;
 
-    alias TapeHolder = IonTapeHolder!(nMax * 8);
-    TapeHolder tapeHolder = void;
+    IonTapeHolder!(nMax * 8) tapeHolder = void;
     tapeHolder.initialize;
 
     IonSymbolTable!false table = void;

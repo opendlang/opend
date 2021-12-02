@@ -403,9 +403,8 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.ion.ser.json;
-    import mir.ion.deser.ion;
+    import mir.ion.deser.json;
     import mir.ion.value;
-    import mir.ion.conv;
     import mir.algebraic: Variant;
 
     static struct ObjectA
@@ -447,6 +446,7 @@ version(mir_ion_test) unittest
         @safe pure
         IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
         {
+            import mir.ion.deser.ion: deserializeIon;
             import mir.ion.exception;
             foreach (IonErrorCode error, IonDescribedValue elem; value.get!IonList)
             {
@@ -467,7 +467,7 @@ version(mir_ion_test) unittest
 
     string data = q{{"objects":[{"name":"test"},{"value":1.5}]}};
 
-    auto value = data.json2ion.deserializeIon!SomeObject;
+    auto value = data.deserializeDynamicJson!SomeObject;
     assert (value.serializeJson == data, value.serializeJson);
 }
 
@@ -921,8 +921,7 @@ version(mir_ion_test) unittest
             0.999425
         ]
     }};
-    import mir.ion.conv: json2ion;
-    import mir.ion.deser.ion;
+    import mir.ion.deser.json;
     static struct S {
         double[] a;
 
@@ -931,8 +930,8 @@ version(mir_ion_test) unittest
             assert(key == "b");
         }
     }
-    auto value = json.json2ion.deserializeIon!(double[][string]);
-    auto partialStruct = json.json2ion.deserializeIon!S;
+    auto value = json.deserializeJson!(double[][string]);
+    auto partialStruct = json.deserializeJson!S;
 }
 
 ///

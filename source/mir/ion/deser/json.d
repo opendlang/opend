@@ -7,63 +7,93 @@ public import mir.serde;
 version(LDC) import ldc.attributes: optStrategy;
 else private struct optStrategy { string opt; }
 
+private template isSomeMap(T)
+{
+    import mir.algebraic: Algebraic;
+    import mir.string_map: isStringMap;
+    static if (__traits(hasMember, T, "_serdeRecursiveAlgebraic"))
+        enum isSomeMap = true;
+    else
+    static if (is(T : K[V], K, V))
+        enum isSomeMap = true;
+    else
+    static if (isStringMap!T)
+        enum isSomeMap = true;
+    else
+    static if (is(T == Algebraic!Types, Types...))
+        enum isSomeMap = anySatisfy!(.isSomeMap, T.AllowedTypes);
+    else
+        enum isSomeMap = false;
+}
+
 private template deserializeJsonImpl(bool file)
 {
-    // @optStrategy("optsize")
-    T deserializeJsonImpl(T)(scope const(char)[] text)
+    template deserializeJsonImpl(T)
     {
-        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
-        import mir.ion.exception: IonException, ionException;
-        import mir.ion.exception: ionErrorMsg;
-        import mir.ion.internal.data_holder;
-        import mir.ion.internal.stage4_s;
-        import mir.ion.value: IonDescribedValue, IonValue;
-        import mir.serde: serdeGetDeserializationKeysRecurse, SerdeMirException, SerdeException;
-        import mir.string_table: createTable;
-
-        static if (file)
-            alias algo = singleThreadJsonFile;
-        else
-            alias algo = singleThreadJsonText;
-
-        enum nMax = 4096u;
-        // enum nMax = 64u;
-        static if (__traits(hasMember, T, "deserializeFromIon"))
-            enum keys = string[].init;
-        else
-            enum keys = serdeGetDeserializationKeysRecurse!T;
-
-        alias createTableChar = createTable!char;
-        static immutable table = createTableChar!(keys, false);
-
-        T value;
-
-        // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
-        auto tapeHolder = ionTapeHolder!(nMax * 8);
-        tapeHolder.initialize;
-        auto errorInfo = () @trusted { return algo!nMax(table, tapeHolder, text); } ();
-        if (errorInfo.code)
+        static if (isSomeMap!T)
         {
-            static if (__traits(compiles, () @nogc { throw new Exception(""); }))
-                throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
-            else
-                throw errorInfo.code.ionException;
+            static if (file)
+                static assert(0, "Can't deserialize a map-like type from a file");
+            alias deserializeJsonImpl = deserializeDynamicJson!T;
         }
+        else
+        // @optStrategy("optsize")
+        T deserializeJsonImpl(scope const(char)[] text)
+        {
+            import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
+            import mir.ion.exception: IonException, ionException;
+            import mir.ion.exception: ionErrorMsg;
+            import mir.ion.internal.data_holder;
+            import mir.ion.internal.stage4_s;
+            import mir.ion.value: IonDescribedValue, IonValue;
+            import mir.serde: serdeGetDeserializationKeysRecurse, SerdeMirException, SerdeException;
+            import mir.string_table: createTable;
 
-        IonDescribedValue ionValue;
+            static if (file)
+                alias algo = singleThreadJsonFile;
+            else
+                alias algo = singleThreadJsonText;
 
-        if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
-            throw error.ionException;
+            enum nMax = 4096u;
+            // enum nMax = 64u;
+            static if (__traits(hasMember, T, "deserializeFromIon"))
+                enum keys = string[].init;
+            else
+                enum keys = serdeGetDeserializationKeysRecurse!T;
 
-        auto params = DeserializationParams!(TableKind.compiletime)(ionValue); 
-        if (auto exception = deserializeValue!keys(params, value))
-            throw exception;
+            alias createTableChar = createTable!char;
+            static immutable table = createTableChar!(keys, false);
 
-        return value;
+            T value;
+
+            // nMax * 4 is enough. We use larger multiplier to reduce memory allocation count
+            auto tapeHolder = ionTapeHolder!(nMax * 8);
+            tapeHolder.initialize;
+            auto errorInfo = () @trusted { return algo!nMax(table, tapeHolder, text); } ();
+            if (errorInfo.code)
+            {
+                static if (__traits(compiles, () @nogc { throw new Exception(""); }))
+                    throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
+                else
+                    throw errorInfo.code.ionException;
+            }
+
+            IonDescribedValue ionValue;
+
+            if (auto error = IonValue(tapeHolder.tapeData).describe(ionValue))
+                throw error.ionException;
+
+            auto params = DeserializationParams!(TableKind.compiletime)(ionValue); 
+            if (auto exception = deserializeValue!keys(params, value))
+                throw exception;
+
+            return value;
+        }
     }
 }
 
 /++
+Deserialize json string to a type trying to do perform less memort allocations.
 +/
 alias deserializeJson = deserializeJsonImpl!false;
 
@@ -349,3 +379,13 @@ alias deserializeJsonFile = deserializeJsonImpl!true;
 //         return value;
 //     }
 // }
+
+/++
+Deserialize json string to a type
++/
+T deserializeDynamicJson(T)(scope const(char)[] text)
+{
+    import mir.ion.conv: json2ion;
+    import mir.ion.deser.ion: deserializeIon;
+    return text.json2ion.deserializeIon!T;
+}
