@@ -1040,7 +1040,7 @@ private:
             // This is most likely a "blob", and we need every single
             // character to be read correctly, so we will unread this byte.
             t.unread(c);
-            auto decoded = scopedBuffer!(ubyte);
+            auto decoded = scopedBuffer!ubyte;
             IonTextBlob blob = t.readBlob();
             // Since we don't do any whitespace trimming, we need to do that here...
             foreach(b; blob.matchedText) {
@@ -1078,7 +1078,7 @@ T deserializeText(T)(scope const(char)[] text)
     import mir.ion.value;
     import mir.appender : scopedBuffer;
 
-    auto buf = scopedBuffer!(ubyte);
+    auto buf = scopedBuffer!ubyte;
     text2ion(text, buf);
     return deserializeIon!T(buf.data);
 }

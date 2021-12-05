@@ -218,17 +218,18 @@ template deserializeValue(string[] symbolTable)
         }
     }}
 
-    private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, E, size_t bytes)(
+    private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, Buffer)(
         DeserializationParams!(tableKind, annotated) params,
-        ref ScopedBuffer!(E, bytes) buffer)
+        ref Buffer buffer)
     {with(params){
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
             return IonErrorCode.expectedListValue.ionException;
         foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
         {
+            import std.traits: Unqual;
             if (_expect(error, false))
                 return error.ionException;
-            E value;
+            Unqual!(typeof(buffer.data[0])) value;
             if (auto exception = deserializeValue(params.withData(ionElem), value))
                 return exception;
             import core.lifetime: move;
@@ -407,11 +408,20 @@ template deserializeValue(string[] symbolTable)
         {
             static if (hasScoped && is(Member == D[], D) && !is(Unqual!D == char))
             {
-                alias E = Unqual!D;
-                auto buffer = scopedBuffer!E;
+                import std.traits: hasIndirections;
+                static if (!hasIndirections!D)
+                {
+                    alias E = Unqual!D;
+                    auto buffer = scopedBuffer!E;
+                }
+                else
+                {
+                    import std.array: std_appender = appender;
+                    auto buffer = std_appender!(D[]);
+                }
                 if (auto exception = deserializeListToScopedBuffer(params, buffer))
                     return exception;
-                auto temporal = cast(Member)buffer.data;
+                auto temporal = (() @trusted => cast(Member)buffer.data)();
                 static if (hasTransform)
                     transform(temporal);
                 __traits(getMember, value, member) = move(temporal);
@@ -561,18 +571,13 @@ template deserializeValue(string[] symbolTable)
         else
         static if (is(T == D[], D))
         {
-            alias E = Unqual!D;
             if (data.descriptor.type == IonTypeCode.list)
             {
-                import std.array: uninitializedArray;
-                auto buffer = scopedBuffer!E;
+                import std.array: std_appender = appender;
+                auto buffer = std_appender!(D[]);
                 if (auto exception = deserializeListToScopedBuffer(params, buffer))
                     return exception;
-                () @trusted {
-                    auto ar = uninitializedArray!(E[])(buffer.length);
-                    buffer.moveDataAndEmplaceTo(ar);
-                    value = cast(T) ar;
-                } ();
+                value = buffer.data;
                 return null;
             }
             else

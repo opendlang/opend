@@ -489,14 +489,15 @@ version(mir_ion_test) unittest
     assert(value == 'b');
 }
 
-private IonErrorCode deserializeListToScopedBuffer(E, size_t bytes)(IonDescribedValue data, ref ScopedBuffer!(E, bytes) buffer)
+private IonErrorCode deserializeListToScopedBuffer(Buffer)(IonDescribedValue data, ref Buffer buffer)
 {
     auto ionValue = data.trustedGet!IonList;
     foreach (IonErrorCode error, IonDescribedValue ionElem; ionValue)
     {
+        import std.traits: Unqual;
         if (_expect(error, false))
             return error;
-        E value;
+        Unqual!(typeof(buffer.data[0])) value;
         error = deserializeValueImpl(ionElem, value);
         if (_expect(error, false))
             return error;
@@ -514,15 +515,11 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
     alias E = Unqual!(ForeachType!T);
     if (data.descriptor.type == IonTypeCode.list)
     {
-        import std.array: uninitializedArray;
-        auto buffer = scopedBuffer!E;
+        import std.array: std_appender = appender;
+        auto buffer = std_appender!(E[]);
         if (auto error = deserializeListToScopedBuffer(data, buffer))
             return error;
-        () @trusted {
-            auto ar = uninitializedArray!(E[])(buffer.length);
-            buffer.moveDataAndEmplaceTo(ar);
-            value = cast(T) ar;
-        } ();
+        value = buffer.data;
         return IonErrorCode.none;
     }
     else
