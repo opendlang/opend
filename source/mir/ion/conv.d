@@ -10,10 +10,12 @@ Serialize value to binary ion data and deserialize it back to requested type.
 Uses GC allocated string tables.
 +/
 template serde(T)
+    if (!is(immutable T == immutable IonValueStream))
 {
     import mir.serde: SerdeTarget;
     ///
     T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
+        if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ion.exception;
         import mir.ion.deser.ion: deserializeIon;
@@ -61,6 +63,27 @@ template serde(T)
         auto error = tapeHolder.data.IonValue.describe(ionValue);
         return deserializeIon!T(symbolTable, ionValue);
     }
+
+    /// ditto
+    T serde()(IonValueStream stream)
+    {
+        import mir.ion.deser.ion: deserializeIon;
+        return stream.data.deserializeIon!T;
+    }
+}
+
+/// ditto
+template serde(T)
+    if (is(T == IonValueStream))
+{
+    ///
+    import mir.serde: SerdeTarget;
+    T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
+        if (!is(immutable V == immutable IonValueStream))
+    {
+        import mir.ion.ser.ion: serializeIon;
+        return serializeIon(value, serdeTarget).IonValueStream;
+    }
 }
 
 ///
@@ -74,6 +97,7 @@ unittest {
     }
     auto s = S(12.34, "str");
     assert(s.serde!JsonAlgebraic.serde!S == s);
+    assert(s.serde!IonValueStream.serde!S == s);
 }
 
 /++
