@@ -6,34 +6,20 @@ license "BSL-1.0"
 dependency "mir-algorithm" version=">=3.11.4"
 dependency "mir-cpuid" version="~>1.2.6"
 
-configuration "common" {
-    excludedSourceFiles "*/bloomberg*"
-}
-
-configuration "bloomberg" {
-    libs "blpapi3_64" platform="posix"
-    libs "blpapi3_64" platform="windows-x86_64"
-    libs "blpapi3_32" platform="windows-x86_mscoff"
-    versions "bloomberg"
-}
-
 // dflags "-preview=dip1008"
 
 configuration "unittest" {
-    excludedSourceFiles "*/bloomberg*"
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
 configuration "asan-unittest" {
-    excludedSourceFiles "*/bloomberg*"
     dflags "--fsanitize=address" platform="ldc"
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
 configuration "parser-test" {
-    excludedSourceFiles "*/bloomberg*"
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
     versions "mir_ion_parser_test"
