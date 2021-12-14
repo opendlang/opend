@@ -777,7 +777,6 @@ template deserializeValue(string[] symbolTable)
                         value[table[symbolId].idup] = move(temporal);
                     }
                 }
-                return null;
             }
             else
             static if (hasUDA!(T, serdeLikeList))
@@ -796,7 +795,6 @@ template deserializeValue(string[] symbolTable)
                         return exception;
                     value.put(move(temporal));
                 }
-                return null;
             }
             else
             {
@@ -805,8 +803,12 @@ template deserializeValue(string[] symbolTable)
                     return exception;
 
                 value = to!T(move(temporal));
-                return null;
             }
+            static if(__traits(hasMember, T, "serdeFinalize"))
+            {
+                value.serdeFinalize();
+            }
+            return null;
         }
         else
         static if (is(T == enum))
