@@ -133,7 +133,7 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(`{"a":1,"b":2}`.json2ion == data);
@@ -150,7 +150,7 @@ IonValueStream json2ionStream(scope const(char)[] text)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(`{"a":1,"b":2}`.json2ionStream.data == data);
@@ -171,14 +171,14 @@ string ion2json(scope const(ubyte)[] data)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(data.ion2json == `{"a":1,"b":2}`);
     // static assert(data.ion2json == `{"a":1,"b":2}`);
 }
 
-unittest
+version(mir_ion_test) unittest
 {
     import std.stdio;
     assert("".json2ion.ion2text == "");
@@ -199,7 +199,7 @@ string ion2jsonPretty(scope const(ubyte)[] data)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(data.ion2jsonPretty == "{\n\t\"a\": 1,\n\t\"b\": 2\n}");
@@ -244,7 +244,7 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
 }
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(`{"a":1,"b":2}`.text2ion == data);
@@ -263,7 +263,7 @@ IonValueStream text2ionStream(scope const(char)[] text)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(`{a:1,b:2}`.text2ionStream.data == data);
@@ -306,7 +306,7 @@ void text2ion(Appender)(scope const(char)[] text, ref Appender appender)
 }
 ///
 @safe pure @nogc
-unittest
+version(mir_ion_test) unittest
 {
     import mir.appender : scopedBuffer;
     static immutable data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
@@ -330,7 +330,7 @@ string ion2text(scope const(ubyte)[] data)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(data.ion2text == `{a:1,b:2}`);
@@ -339,7 +339,7 @@ unittest
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xea, 0x81, 0x83, 0xde, 0x86, 0x87, 0xb4, 0x83, 0x55, 0x53, 0x44, 0xe6, 0x81, 0x8a, 0x53, 0xc1, 0x04, 0xd2];
     assert(data.ion2text == `USD::123.4`);
@@ -363,9 +363,72 @@ string ion2textPretty(scope const(ubyte)[] data)
 
 ///
 @safe pure
-unittest
+version(mir_ion_test) unittest
 {
     static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
     assert(data.ion2textPretty == "{\n\ta: 1,\n\tb: 2\n}");
     // static assert(data.ion2textPretty == "{\n\ta: 1,\n\tb: 2\n}");
+}
+
+version(Have_msgpack_d)
+{
+    /++
+    Converts Msgpack binary data to Ion binary data.
+
+    This API requires msgpack-d package.
+    +/
+    immutable(ubyte)[] msgpack2ion(scope const(ubyte)[] data) @safe
+    {
+        import mir.ion.ser.ion: serializeIon;
+        import msgpack: unpack;
+        return data.unpack.value.serializeIon;
+    }
+
+    /++
+    Converts Ion binary data to Msgpack binary data.
+
+    This API requires msgpack-d package.
+    +/
+    immutable(ubyte)[] ion2msgpack(scope const(ubyte)[] data) @safe pure
+    {
+        import mir.ion.ser.msgpack: serializeMsgpack;
+        return data.IonValueStream.serializeMsgpack;
+    }
+
+    ///
+    @safe
+    version(mir_ion_test) unittest
+    {
+        foreach(text; [
+            `null`,
+            `true`,
+            `1`,
+            `-2`,
+            `3.0`,
+            `2001-01-02T03:04:05Z`,
+            `[]`,
+            `[1,-2,3.0]`,
+            `[null,true,[1,-2,3.0],2001-01-02T03:04:05Z]`,
+            `{}`,
+            `{d:2001-01-02T03:04:05Z}`,
+        ])
+            assert(text.text2ion.ion2msgpack.msgpack2ion.ion2text == text, text);
+    }
+}
+else
+version (D_Ddoc)
+{
+    /++
+    Converts Msgpack binary data to Ion binary data.
+
+    This API requires msgpack-d package.
+    +/
+    immutable(ubyte)[] msgpack2ion(scope const(ubyte)[] data) @safe;
+
+    /++
+    Converts Ion binary data to Msgpack binary data.
+
+    This API requires msgpack-d package.
+    +/
+    immutable(ubyte)[] ion2msgpack(scope const(ubyte)[] data) @safe pure;
 }

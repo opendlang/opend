@@ -34,19 +34,19 @@ interface ISerializer
     void stringEnd(size_t state);
 
     ///
-    size_t structBegin(size_t length = 0);
+    size_t structBegin(size_t length = size_t.max);
 
     ///
     void structEnd(size_t state);
 
     ///
-    size_t listBegin(size_t length = 0);
+    size_t listBegin(size_t length = size_t.max);
 
     ///
     void listEnd(size_t state);
 
     ///
-    size_t sexpBegin(size_t length = 0);
+    size_t sexpBegin(size_t length = size_t.max);
 
     ///
     void sexpEnd(size_t state);
@@ -188,7 +188,7 @@ final scope class SerializerWrapper(S) : ISerializer
         return serializer.stringEnd(state);
     }
 
-    size_t structBegin(size_t length = 0)
+    size_t structBegin(size_t length = size_t.max)
     {
         return serializer.structBegin(length);
     }
@@ -198,7 +198,7 @@ final scope class SerializerWrapper(S) : ISerializer
         return serializer.structEnd(state);
     }
 
-    size_t listBegin(size_t length = 0)
+    size_t listBegin(size_t length = size_t.max)
     {
         return serializer.listBegin(length);
     }
@@ -208,7 +208,7 @@ final scope class SerializerWrapper(S) : ISerializer
         return serializer.listEnd(state);
     }
 
-    size_t sexpBegin(size_t length = 0)
+    size_t sexpBegin(size_t length = size_t.max)
     {
         return serializer.sexpBegin(length);
     }

@@ -474,7 +474,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
     if (isAggregateType!V && (!isIterable!V || hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic;
-    auto state = serializer.structBegin(size_t.max);
+    auto state = serializer.structBegin;
 
     foreach(member; aliasSeqOf!(SerializableMembers!V))
     {{
@@ -556,7 +556,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                         continue F;
                     }
                 }
-                auto valState = serializer.structBegin();
+                auto valState = serializer.beginStruct(val);
                 static if (__traits(hasMember, val, "byKeyValue"))
                 {
                     foreach (keyElem; val.byKeyValue)
@@ -644,7 +644,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                 continue F;
             }
         }
-        auto valState = serializer.structBegin();
+        auto valState = serializer.beginStruct(value);
 
         static if (__traits(hasMember, value, "byKeyValue"))
         {
@@ -745,13 +745,16 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
             serializer.putNull(nullTypeCodeOf!(typeof(value.get())));
             return;
         }
-        serializeValue(serializer, value.get);
-        return;
+        return serializeValue(serializer, value.get);
+    }
+    else
+    static if (isMsgpackValue!V)
+    {
+        return serializeMsgpackValue(serializer, value);
     }
     else
     {
-        serializeValueImpl(serializer, value);
-        return;
+        return serializeValueImpl(serializer, value);
     }
 }
 
@@ -819,7 +822,7 @@ unittest
     {
         void serialize(S)(ref S serializer) const
         {
-            auto state = serializer.structBegin;
+            auto state = serializer.structBegin(1);
             serializer.putKey("foo");
             serializer.putValue("bar");
             serializer.structEnd(state);
@@ -998,13 +1001,128 @@ auto beginStruct(S, V)(ref S serializer, ref V value)
     }
 }
 
-static if (__traits(compiles, {import mir.ion.ser.bloomberg;}))
+version (Have_mir_bloomberg)
 {
-    public import mir.ion.ser.bloomberg : BloombergElement;
+    import mir.ion.ser.bloomberg : BloombergElement;
     ///
     void serializeValue(S)(ref S serializer, const(BloombergElement)* value)
     {
         import mir.ion.ser.bloomberg : impl = serializeValue;
         return impl(serializer, value);
     }
+}
+
+version (Have_msgpack_d)
+{
+    import msgpack.value : MsgpackValue = Value;
+
+    enum isMsgpackValue(T) = is(immutable T == immutable MsgpackValue);
+
+    private T parseMsgPackExt(T)(scope const(ubyte)[] data)
+        if (__traits(isUnsigned, T))
+    {
+        assert(T.sizeof == data.length);
+        T num = (cast(T[1])cast(ubyte[T.sizeof])data[0 .. T.sizeof])[0];
+        version (LittleEndian)
+        {
+            import core.bitop : bswap;
+            num = bswap(num);
+        }
+        return num;
+    }
+
+    ///
+    void serializeMsgpackValue(S)(ref S serializer, const MsgpackValue value) @trusted
+    {
+        import mir.lob: Blob;
+        import mir.timestamp: Timestamp;
+        final switch (value.type)
+        {
+            case MsgpackValue.Type.nil:
+                serializer.putValue(null);
+                break;
+            case MsgpackValue.Type.boolean:
+                serializer.putValue(value.via.boolean);
+                break;
+            case MsgpackValue.Type.unsigned:
+                serializer.putValue(value.via.uinteger);
+                break;
+            case MsgpackValue.Type.signed:
+                serializer.putValue(value.via.integer);
+                break;
+            case MsgpackValue.Type.floating:
+                serializer.putValue(value.via.floating);
+                break;
+            case MsgpackValue.Type.raw:
+                serializer.putValue(cast(const(char)[])value.via.raw);
+                break;
+            case MsgpackValue.Type.ext:
+                if (value.via.ext.type == -1)
+                {
+                    long sec;
+                    int nanosec = -1;
+
+                    switch (value.via.ext.data.length)
+                    {
+                        case 4:
+                            sec = parseMsgPackExt!uint(value.via.ext.data);
+                            break;
+                        case 8: 
+                            auto data64 = parseMsgPackExt!ulong(value.via.ext.data[0 .. 8]);
+                            nanosec = data64 >> 34;
+                            sec = data64 & 0x00000003ffffffffL;
+                            break;
+                        case 12:
+                            nanosec = parseMsgPackExt!uint(value.via.ext.data[0 .. 4]);
+                            sec = parseMsgPackExt!ulong(value.via.ext.data[4 .. 8]);
+                            break;
+                        default:
+                            goto common;
+                    }
+                    auto ts = Timestamp.fromUnixTime(sec);
+                    if (nanosec >= 0)
+                    {
+                        ts.precision = Timestamp.Precision.fraction;
+                        ts.fractionCoefficient = nanosec;
+                        ts.fractionExponent = -9;
+                    }
+                    serializer.putValue(ts);
+                    break;
+                }
+            common: {
+                auto state = serializer.structBegin(2);
+                serializer.putKey("$msgpackExtType");
+                serializer.putValue(value.via.ext.type);
+                serializer.putKey("$msgpackExtData");
+                serializer.putValue(value.via.ext.data.Blob);
+                serializer.structEnd(state);
+                break;
+            }
+            case MsgpackValue.Type.array:
+            {
+                auto state = serializer.listBegin(value.via.array.length);
+                foreach (elem; value.via.array)
+                {
+                    serializeMsgpackValue(serializer, elem);
+                }
+                serializer.listEnd(state);
+                break;
+            }
+            case MsgpackValue.Type.map:
+            {
+                auto state = serializer.structBegin(value.via.map.length);
+                foreach (key, elem; value.via.map)
+                {
+                    serializer.putKey(key.as!string);
+                    serializeMsgpackValue(serializer, elem);
+                }
+                serializer.structEnd(state);
+                break;
+            }
+        }
+    }
+}
+else
+{
+    enum isMsgpackValue(T) = false;
 }
