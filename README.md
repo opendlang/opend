@@ -42,5 +42,5 @@ As such, please look towards using [asdf](https://github.com/libmir/asdf) until 
  - [ ] Shared Symbol Tables
  - [x] Chunked JSON reader
  - [x] Chunked binary Ion Value Stream reader
- - [ ] MessagePack parsing
- - [ ] Ion to MessagePack
+ - [x] MessagePack parsing (msgpack-d is required)
+ - [x] Ion to MessagePack (msgpack-d is required)
