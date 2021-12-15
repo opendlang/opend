@@ -14,7 +14,7 @@ version(Have_msgpack_d)
     /++
     Msgpack serialization back-end
     +/
-    struct MsgpackSerializer
+    struct MsgpackSerializer()
     {
         import mir.appender: ScopedBuffer;
         import mir.bignum.decimal: Decimal;
@@ -278,8 +278,8 @@ version(Have_msgpack_d)
     unittest
     {
         import mir.ion.ser.script: SerializerWrapper;
-        MsgpackSerializer serializer;
-        auto s = new SerializerWrapper!MsgpackSerializer(serializer);
+        MsgpackSerializer!() serializer;
+        auto s = new SerializerWrapper!(MsgpackSerializer!())(serializer);
     }
 
     import mir.serde: SerdeTarget;
@@ -290,7 +290,7 @@ version(Have_msgpack_d)
         import mir.appender: scopedBuffer;
         import mir.ion.ser: serializeValue;
         auto appender = scopedBuffer!ubyte;
-        auto serializer = appender.MsgpackSerializer;
+        auto serializer = appender.MsgpackSerializer!();
         serializer.serdeTarget = serdeTarget;
         serializeValue(serializer, value);
         return (()@trusted => cast(immutable) appender.data)();

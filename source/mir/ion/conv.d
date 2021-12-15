@@ -377,7 +377,7 @@ version(Have_msgpack_d)
 
     This API requires msgpack-d package.
     +/
-    immutable(ubyte)[] msgpack2ion(scope const(ubyte)[] data) @safe
+    immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data) @safe
     {
         import mir.ion.ser.ion: serializeIon;
         import msgpack: unpack;
@@ -389,7 +389,7 @@ version(Have_msgpack_d)
 
     This API requires msgpack-d package.
     +/
-    immutable(ubyte)[] ion2msgpack(scope const(ubyte)[] data) @safe pure
+    immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data) @safe pure
     {
         import mir.ion.ser.msgpack: serializeMsgpack;
         return data.IonValueStream.serializeMsgpack;
@@ -423,12 +423,12 @@ version (D_Ddoc)
 
     This API requires msgpack-d package.
     +/
-    immutable(ubyte)[] msgpack2ion(scope const(ubyte)[] data) @safe;
+    immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data) @safe;
 
     /++
     Converts Ion binary data to Msgpack binary data.
 
     This API requires msgpack-d package.
     +/
-    immutable(ubyte)[] ion2msgpack(scope const(ubyte)[] data) @safe pure;
+    immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data) @safe pure;
 }
