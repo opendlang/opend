@@ -63,7 +63,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
-    size_t structBegin(size_t length = 0)
+    size_t structBegin(size_t length = size_t.max)
     {
         auto ret = tapeHolder.currentTapePosition;
         tapeHolder.adjustPosition(ionPutStartLength);

@@ -124,7 +124,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    size_t structBegin(size_t length = 0)
+    size_t structBegin(size_t length = size_t.max)
     {
         static if(sep.length)
         {
@@ -152,7 +152,7 @@ struct JsonSerializer(string sep, Appender)
     }
 
     ///
-    size_t listBegin(size_t length = 0)
+    size_t listBegin(size_t length = size_t.max)
     {
         static if(sep.length)
         {

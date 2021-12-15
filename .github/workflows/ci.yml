@@ -23,6 +23,7 @@ jobs:
           compiler: ldc-latest
       - name: Run unittests
         run: |
+          echo 'dependency "msgpack-d" version="*"' >> dub.sdl
           dub test -c asan-unittest --compiler=ldc2
   builder:
     name: 'Build and test on ${{ matrix.arch }}-${{ matrix.os }}/${{ matrix.dc }}'
