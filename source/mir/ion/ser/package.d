@@ -1074,7 +1074,7 @@ version (Have_msgpack_d)
                             break;
                         case 12:
                             nanosec = parseMsgPackExt!uint(value.via.ext.data[0 .. 4]);
-                            sec = parseMsgPackExt!ulong(value.via.ext.data[4 .. 8]);
+                            sec = parseMsgPackExt!ulong(value.via.ext.data[4 .. 12]);
                             break;
                         default:
                             goto common;

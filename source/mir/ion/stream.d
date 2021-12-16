@@ -112,6 +112,7 @@ const:
                     goto C;
                 }
                 resetSymbolTable();
+                continue;
             }
             error = d.parseValue(describedValue);
             // check if describedValue is symbol table

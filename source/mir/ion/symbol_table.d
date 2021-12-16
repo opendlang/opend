@@ -182,6 +182,11 @@ pure nothrow:
     +/
     void finalize() @trusted
     {
+        if (nextKeyPosition == unfinilizedFirstKeyPosition)
+        {
+            nextKeyPosition = 0;
+            return;
+        }
         {
             auto shift = 9;
             auto length = nextKeyPosition - (shift + ionPutStartLength);
