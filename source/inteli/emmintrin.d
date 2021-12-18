@@ -1217,10 +1217,19 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
     {
         return __builtin_ia32_cvtdq2ps(a);
     }
+    else version(LDC)
+    {
+        // See #86 for why we had to resort to LLVM IR.
+        // Plain code below was leading to catastrophic behaviour. 
+        // x86: Generates cvtdq2ps since LDC 1.1.0 -O0
+        // ARM: Generats scvtf.4s since LDC 1.8.0 -O0
+        enum ir = `
+            %r = sitofp <4 x i32> %0 to <4 x float>
+            ret <4 x float> %r`;
+        return cast(__m128) LDCInlineIR!(ir, float4, int4)(a);
+    }
     else
     {
-        // x86: Generates cvtdq2ps since LDC 1.0.0 -O1
-        // ARM: Generats scvtf.4s since LDC 1.8.0 -02
         __m128 res;
         res.ptr[0] = cast(float)a.array[0];
         res.ptr[1] = cast(float)a.array[1];
