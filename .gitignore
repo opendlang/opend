@@ -28,3 +28,4 @@ doc
 docs
 subprojects/*/
 mir-integral-test-test_travis
+dub.selections.json
