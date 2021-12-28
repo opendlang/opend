@@ -334,7 +334,7 @@ unittest
     auto n = 7;
     auto x = new double[n];
     auto w = new double[n];
-    auto work = new double[(n + 1) ^^ 2];
+    auto work = new double[n ^^ 2];
 
     gaussLobattoQuadrature(x, w, work);
 
