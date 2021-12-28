@@ -42,7 +42,7 @@ do {
         x[i] = 0;
         w[i] = T(0.5) * i;
     }
-    return gaussQuadratureImpl!T(x, w, work, mu0, true);
+    return golubWelsch!T(x, w, work, mu0, true);
 }
 
 ///
@@ -122,7 +122,7 @@ do {
         w[i] = 4 * (1 + alpha * m_i) * (1 + beta * m_i) * (1 + s * m_i)
             / ((2 + (s + 1) * m_i) * (2 + (s - 1) * m_i) * (q * q));
     }
-    return gaussQuadratureImpl!T(x, w, work, mu0);
+    return golubWelsch!T(x, w, work, mu0, alpha == beta);
 }
 
 ///
@@ -191,7 +191,7 @@ do {
         x[i] = 2 * i + (1 + alpha);
         w[i] = i * (i + alpha);
     }
-    return gaussQuadratureImpl!T(x, w, work, mu0);
+    return golubWelsch!T(x, w, work, mu0);
 }
 
 ///
@@ -259,7 +259,7 @@ do {
         x[i] = 0;
         w[i] = 1 / (4 - (m_i * m_i));
     }
-    return gaussQuadratureImpl!T(x, w, work, mu0, true);
+    return golubWelsch!T(x, w, work, mu0, true);
 }
 
 ///
@@ -296,7 +296,8 @@ unittest
     }
 }
 
-private size_t gaussQuadratureImpl(T)(
+// The Golub-Welsch algorithm
+private size_t golubWelsch(T)(
     scope T[] alpha_x,
     scope T[] beta_w,
     scope T[] work,
