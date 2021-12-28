@@ -118,9 +118,9 @@ do {
     {
         const m_i = T(1) / i;
         const q = (2 + s * m_i);
-        x[i] = sd * m_i ^^ 2 / (q * (2 + (s + 2) * m_i));
+        x[i] = sd * (m_i * m_i) / (q * (2 + (s + 2) * m_i));
         w[i] = 4 * (1 + alpha * m_i) * (1 + beta * m_i) * (1 + s * m_i)
-            / ((2 + (s + 1) * m_i) * (2 + (s - 1) * m_i) * q ^^ 2);
+            / ((2 + (s + 1) * m_i) * (2 + (s - 1) * m_i) * (q * q));
     }
     return gaussQuadratureImpl!T(x, w, work, mu0);
 }
@@ -257,7 +257,7 @@ do {
     {
         const m_i = T(1) / i;
         x[i] = 0;
-        w[i] = 1 / (4 - m_i ^^ 2);
+        w[i] = 1 / (4 - (m_i * m_i));
     }
     return gaussQuadratureImpl!T(x, w, work, mu0, true);
 }
@@ -316,14 +316,17 @@ do {
         return n;
     foreach (ref b; beta_w[1 .. n])
         b = b.sqrt;
-    auto nq = n ^^ 2;
+    auto nq = n * n;
     import mir.ndslice.slice: sliced;
     import mir.ndslice.topology: canonical;
     import mir.lapack: steqr;
     auto z = work[0 .. nq].sliced(n, n);
     auto info = steqr('I', alpha_x.sliced, beta_w[1 .. $].sliced, z.canonical, work[nq .. $].sliced);
     foreach (i; 0 .. n)
-        beta_w[i] = z[i, 0] ^^ 2 * mu0;
+    {
+        auto zi0 = z[i, 0];
+        beta_w[i] = zi0 * zi0 * mu0;
+    }
     if (symmetrize)
     {
         auto h = n / 2;
