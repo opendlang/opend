@@ -33,7 +33,7 @@ size_t gaussHermiteQuadrature(T)(
 in {
     assert(x.length == w.length);
     if (x.length)
-        assert(work.length >= x.length ^^ 2);
+        assert(work.length >= (x.length + 1) ^^ 2);
 }
 do {
     enum T mu0 = sqrt(PI);
@@ -49,7 +49,6 @@ do {
 unittest
 {
     import mir.math.common;
-    import mir.ndslice.allocation;
 
     auto n = 5;
     auto x = new double[n];
@@ -96,14 +95,14 @@ size_t gaussJacobiQuadrature(T)(
     scope T[] x,
     scope T[] w,
     scope T[] work,
-    T alpha,
-    T beta) @nogc
+    const T alpha,
+    const T beta) @nogc
 in {
     assert(T.infinity > alpha && alpha > -1);
     assert(T.infinity > beta && beta > -1);
     assert(x.length == w.length);
     if (x.length)
-        assert(work.length >= x.length ^^ 2);
+        assert(work.length >= (x.length + 1) ^^ 2);
 }
 do {
     if (x.length == 0)
@@ -129,7 +128,6 @@ do {
 unittest
 {
     import mir.math.common;
-    import mir.ndslice.allocation;
 
     auto n = 5;
     auto x = new double[n];
@@ -180,7 +178,7 @@ in {
     assert(T.infinity > alpha && alpha > -1);
     assert(x.length == w.length);
     if (x.length)
-        assert(work.length >= x.length ^^ 2);
+        assert(work.length >= (x.length + 1) ^^ 2);
 }
 do {
 
@@ -198,7 +196,6 @@ do {
 unittest
 {
     import mir.math.common;
-    import mir.ndslice.allocation;
 
     auto n = 5;
     auto x = new double[n];
@@ -246,7 +243,7 @@ size_t gaussLegendreQuadrature(T)(
 in {
     assert(x.length == w.length);
     if (x.length)
-        assert(work.length >= x.length ^^ 2);
+        assert(work.length >= (x.length + 1) ^^ 2);
 }
 do {
     if (x.length == 0)
@@ -266,7 +263,6 @@ do {
 unittest
 {
     import mir.math.common;
-    import mir.ndslice.allocation;
 
     auto n = 5;
     auto x = new double[n];
@@ -294,6 +290,76 @@ unittest
         assert(x[i].approxEqual(xc[i]));
         assert(w[i].approxEqual(wc[i]));
     }
+}
+
+/++
+Gauss-Lobatto Quadrature
+
+Params:
+    x = (out) user-allocated quadrature nodes in ascending order length of `N`
+    w = (out) user-allocated corresponding quadrature weights length of `N`
+    work = (temp) user-allocated workspace length of greate or equal to `N ^^ 2`
+
+Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
+
++/
+size_t gaussLobattoQuadrature(T)(
+    scope T[] x,
+    scope T[] w,
+    scope T[] work,
+    const T alpha = 0,
+    const T beta = 0,
+    ) @nogc
+in {
+    assert(x.length >= 2);
+    assert(x.length == w.length);
+    assert(work.length >= x.length ^^ 2);
+}
+do {
+    auto ret = gaussJacobiQuadrature!T(x[1 .. $ - 1], w[1 .. $ - 1], work, alpha + 1, beta + 1);
+    x[0] = -1;
+    x[$ - 1] = +1;
+    auto n = x.length;
+    auto a = w[0] = w[$ - 1] = T(2) / (n * (n - 1));
+    foreach (i; 1 .. x.length - 1)
+        w[i] /= 1 - x[i] * x[i];
+    return ret;
+}
+
+///
+unittest
+{
+    import mir.math.common;
+
+    auto n = 7;
+    auto x = new double[n];
+    auto w = new double[n];
+    auto work = new double[(n + 1) ^^ 2];
+
+    gaussLobattoQuadrature(x, w, work);
+
+    static immutable xc =
+       [-1,
+        -sqrt(5.0 / 11 + 2.0 / 11 * sqrt(5.0 / 3)),
+        -sqrt(5.0 / 11 - 2.0 / 11 * sqrt(5.0 / 3)),
+         0.        ,
+        +sqrt(5.0 / 11 - 2.0 / 11 * sqrt(5.0 / 3)),
+        +sqrt(5.0 / 11 + 2.0 / 11 * sqrt(5.0 / 3)),
+         1];
+
+    static immutable wc =
+       [1.0 / 21,
+        (124.0 - 7 * sqrt(15.0)) / 350,
+        (124.0 + 7 * sqrt(15.0)) / 350,
+        256.0 / 525,
+        (124.0 + 7 * sqrt(15.0)) / 350,
+        (124.0 - 7 * sqrt(15.0)) / 350,
+        1.0 / 21];
+
+    foreach (i; 0 .. n)
+        assert(x[i].approxEqual(xc[i]));
+    foreach (i; 0 .. n)
+        assert(w[i].approxEqual(wc[i]));
 }
 
 // The Golub-Welsch algorithm
