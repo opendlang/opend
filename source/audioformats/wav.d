@@ -91,7 +91,7 @@ version(decodeWAV)
                     int bytesPerFrame = _io.read_ushort_LE(_userData);
                     bitsPerSample = _io.read_ushort_LE(_userData);
 
-                    if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32) 
+                    if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32 && bitsPerSample != 64) 
                         throw mallocNew!Exception("Unsupported bitdepth");
 
                     if (bytesPerFrame != (bitsPerSample / 8) * _channels)
