@@ -44,6 +44,20 @@ enum AudioFileFormat
     unknown
 }
 
+/// Output sample format.
+enum AudioSampleFormat
+{
+    fp32, /// 32-bit floating-point
+    fp64  /// 64-bit floating-point
+}
+
+/// An optional struct, passed when encoding a sound.
+struct EncodingOptions
+{
+    /// The desired sample bitdepth to encode with.
+    AudioSampleFormat sampleFormat = AudioSampleFormat.fp32; // defaults to 32-bit float
+}
+
 /// Returns: String representation of an `AudioFileFormat`.
 string convertAudioFileFormatToString(AudioFileFormat fmt)
 {
@@ -134,7 +148,11 @@ public: // This is also part of the public API
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
-    void openToFile(const(char)[] path, AudioFileFormat format, float sampleRate, int numChannels) @nogc
+    void openToFile(const(char)[] path, 
+                    AudioFileFormat format, 
+                    float sampleRate, 
+                    int numChannels, 
+                    EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
         
@@ -151,7 +169,7 @@ public: // This is also part of the public API
         _io.skip          = null;
         _io.flush         = &file_flush;
 
-        startEncoding(format, sampleRate, numChannels);
+        startEncoding(format, sampleRate, numChannels, options);
     }
 
     /// Opens an audio stream that writes to a dynamically growable output buffer.
@@ -163,7 +181,10 @@ public: // This is also part of the public API
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
-    void openToBuffer(AudioFileFormat format, float sampleRate, int numChannels) @nogc
+    void openToBuffer(AudioFileFormat format, 
+                      float sampleRate, 
+                      int numChannels,
+                      EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
 
@@ -180,7 +201,7 @@ public: // This is also part of the public API
         _io.skip          = null;
         _io.flush         = &memory_flush;
 
-        startEncoding(format, sampleRate, numChannels);
+        startEncoding(format, sampleRate, numChannels, options);
     }
 
     /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
@@ -198,7 +219,8 @@ public: // This is also part of the public API
                       size_t maxLength,
                       AudioFileFormat format,
                       float sampleRate, 
-                      int numChannels) @nogc
+                      int numChannels,
+                      EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
 
@@ -215,7 +237,7 @@ public: // This is also part of the public API
         _io.skip          = null;
         _io.flush         = &memory_flush;
 
-        startEncoding(format, sampleRate, numChannels);
+        startEncoding(format, sampleRate, numChannels, options);
     }
 
     ~this() @nogc
@@ -758,6 +780,18 @@ public: // This is also part of the public API
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there
                 assert(false);
+
+            case AudioFileFormat.wav:
+                {
+                    version(encodeWAV)
+                    {
+                        return _wavEncoder.writeSamples(inData, frames);
+                    }
+                    else
+                    {
+                        assert(false, "no support for WAV encoding");
+                    }
+                }
 
             default:
                 // Decode to float buffer, and then convert
@@ -1432,7 +1466,7 @@ private:
         throw mallocNew!Exception("Cannot decode stream: unrecognized encoding.");
     }
 
-    void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
+    void startEncoding(AudioFileFormat format, float sampleRate, int numChannels, EncodingOptions options) @nogc
     { 
         _format = format;
         _sampleRate = sampleRate;
@@ -1456,7 +1490,14 @@ private:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
                 int isampleRate = cast(int)(sampleRate + 0.5f);
-                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels );
+
+                WAVEncoder.Format wavfmt;
+                final switch (options.sampleFormat)
+                {
+                    case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
+                    case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
+                }
+                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt);
                 break;
             }
             case unknown:

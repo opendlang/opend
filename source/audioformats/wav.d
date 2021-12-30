@@ -302,11 +302,18 @@ version(encodeWAV)
     {
     public:
     @nogc:
-        this(IOCallbacks* io, void* userData, int sampleRate, int numChannels)
+        enum Format
+        {
+            fp32le,
+            fp64le,
+        }
+
+        this(IOCallbacks* io, void* userData, int sampleRate, int numChannels, Format format)
         {
             _io = io;
             _userData = userData;
             _channels = numChannels;
+            _format = format;
 
             // Avoids a number of edge cases.
             if (_channels < 0 || _channels > 1024)
@@ -324,13 +331,13 @@ version(encodeWAV)
             _io.write_ushort_LE(_userData, cast(ushort)(_channels));
             _io.write_uint_LE(_userData, sampleRate);
 
-            size_t bytesPerSec = sampleRate * _channels * float.sizeof;
+            size_t bytesPerSec = sampleRate * cast(size_t) frameSize();
             _io.write_uint_LE(_userData,  cast(uint)(bytesPerSec));
 
-            int bytesPerFrame = cast(int)(_channels * float.sizeof);
+            int bytesPerFrame = frameSize();
             _io.write_ushort_LE(_userData, cast(ushort)bytesPerFrame);
 
-            _io.write_ushort_LE(_userData, 32);
+            _io.write_ushort_LE(_userData, cast(ushort)(sampleSize() * 8));
 
             // data sub-chunk
             _dataLengthOffset = _io.tell(_userData) + 4;
@@ -340,15 +347,27 @@ version(encodeWAV)
 
         // read interleaved samples
         // `inSamples` should have enough room for frames * _channels
-        int writeSamples(float* inSamples, int frames) nothrow
+        int writeSamples(T)(T* inSamples, int frames) nothrow
         {
             int n = 0;
             try
             {
                 int samples = frames * _channels;
-                for ( ; n < samples; ++n)
+                
+                final switch(_format)
                 {
-                    _io.write_float_LE(_userData, inSamples[n]);
+                    case Format.fp32le:
+                        for ( ; n < samples; ++n)
+                        {
+                            _io.write_float_LE(_userData, inSamples[n]);
+                        }
+                        break;
+                    case Format.fp64le:
+                        for ( ; n < samples; ++n)
+                        {
+                            _io.write_double_LE(_userData, inSamples[n]);
+                        }
+                        break;
                 }
                 _writtenFrames += frames;
             }
@@ -359,9 +378,23 @@ version(encodeWAV)
             return n;
         }
 
+        int sampleSize()
+        {
+            final switch(_format)
+            {
+                case Format.fp32le: return 4;
+                case Format.fp64le: return 8;
+            }
+        }
+
+        int frameSize()
+        {
+            return sampleSize() * _channels;
+        }
+
         void finalizeEncoding() 
         {
-            size_t bytesOfData = float.sizeof * _channels * _writtenFrames;
+            size_t bytesOfData = frameSize() * _writtenFrames;
 
             // write final number of samples for the 'RIFF' chunk
             {
@@ -380,6 +413,7 @@ version(encodeWAV)
     private:
         void* _userData;
         IOCallbacks* _io;
+        Format _format;
         int _channels;
         int _writtenFrames;
         long _riffLengthOffset, _dataLengthOffset;

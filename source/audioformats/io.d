@@ -201,8 +201,38 @@ struct IOCallbacks
 
     void write_float_LE(void* userData, float value) @nogc
     {
-        // BUG: doesn't support BigEndian properly there
+        // BUG: does it support BigEndian properly here?
         write_uint_LE(userData, *cast(uint*)(&value));
+    }
+
+    void write_double_LE(void* userData, float value) @nogc
+    {
+        // BUG: does it support BigEndian properly here?
+        write_ulong_LE(userData, *cast(ulong*)(&value));
+    }
+
+    void write_ulong_LE(void* userData, ulong value) @nogc
+    {
+        ubyte[8] v;
+        *cast(ulong*)(v.ptr) = value;
+        version(BigEndian)
+        {
+            ubyte v0 = v[0];
+            v[0] = v[7];
+            v[7] = v0;
+            ubyte v1 = v[1];
+            v[1] = v[6];
+            v[6] = v1;
+            ubyte v2 = v[2];
+            v[2] = v[5];
+            v[5] = v2;
+            ubyte v3 = v[3];
+            v[3] = v[4];
+            v[4] = v3;
+        }
+
+        if (8 != write(v.ptr, 8, userData))
+            throw mallocNew!Exception(writeFailureMessage);
     }
 
     void write_uint_LE(void* userData, uint value) @nogc
