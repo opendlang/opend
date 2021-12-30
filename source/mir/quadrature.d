@@ -296,6 +296,8 @@ Params:
     x = (out) user-allocated quadrature nodes in ascending order length of `N`
     w = (out) user-allocated corresponding quadrature weights length of `N`
     work = (temp) user-allocated workspace length of greate or equal to `N ^^ 2`
+    alpha = (optional) parameter '> -1'
+    beta = (optional) parameter '> -1'
 
 Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
 
