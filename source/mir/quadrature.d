@@ -8,7 +8,6 @@ import mir.math.constant: PI, LN2;
 
 @safe pure nothrow:
 
-version(LDC){} else
 @nogc extern(C)
 {
     double lgamma(double);
@@ -109,7 +108,6 @@ do {
         return 0;
     auto s = alpha + beta;
     auto d = beta - alpha;
-    version (LDC) import core.stdc.math: lgamma;
     auto mu0 = exp(double(LN2) * (s + 1) + (lgamma(double(alpha + 1)) + lgamma(double(beta + 1)) - lgamma(double(s + 2))));
     x[0] = d / (s + 2);
     const sd = s * d;
@@ -182,7 +180,6 @@ in {
 }
 do {
 
-    version (LDC) import core.stdc.math: tgamma;
     auto mu0 = tgamma(double(alpha + 1));
     foreach (i; 0 .. x.length)
     {
@@ -320,7 +317,7 @@ do {
     x[0] = -1;
     x[$ - 1] = +1;
     auto n = x.length;
-    auto a = w[0] = w[$ - 1] = T(2) / (n * (n - 1));
+    w[0] = w[$ - 1] = T(2) / (n * (n - 1));
     foreach (i; 1 .. x.length - 1)
         w[i] /= 1 - x[i] * x[i];
     return ret;
