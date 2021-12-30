@@ -632,6 +632,49 @@ public: // This is also part of the public API
         return readSamplesFloat(outData.ptr, cast(int)(outData.length / _numChannels) );
     }
 
+    /// Read interleaved double samples in the given buffer `outData`.
+    /// 
+    /// Params:
+    ///     outData Buffer where to put decoded samples. Samples are arranged in an interleaved fashion.
+    ///             Must have room for `frames` x `getNumChannels()` samples.
+    ///             For a stereo file, the output data will contain LRLRLR... repeated `result` times.
+    ///
+    ///     frames The number of multichannel frames to be read. 
+    ///            A frame is `getNumChannels()` samples.
+    ///
+    /// Note: the only formats to possibly take advantage of double decoding are WAV and FLAC.
+    ///
+    /// Returns: Number of actually read frames. Multiply by `getNumChannels()` to get the number of read samples.
+    ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
+    ///
+    /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
+    int readSamplesDouble(double* outData, int frames) @nogc
+    {
+        assert(isOpenForReading());
+
+        switch(_format)
+        {
+            case AudioFileFormat.unknown:
+                // One shouldn't ever get there
+                assert(false);
+
+            default:
+                // Decode to float buffer, and then convert
+                if (_floatDecodeBuf.length < frames * _numChannels)
+                    _floatDecodeBuf.reallocBuffer(frames * _numChannels);
+                int read = readSamplesFloat(_floatDecodeBuf.ptr, frames);
+                for (int n = 0; n < read * _numChannels; ++n)
+                    outData[n] = _floatDecodeBuf[n];
+                return read;
+        }
+    }
+    ///ditto
+    int readSamplesDouble(double[] outData) @nogc
+    {
+        assert( (outData.length % _numChannels) == 0);
+        return readSamplesDouble(outData.ptr, cast(int)(outData.length / _numChannels) );
+    }
+
     /// Write interleaved float samples to the stream, from the given buffer `inData[0..frames]`.
     /// 
     /// Params:
@@ -678,6 +721,48 @@ public: // This is also part of the public API
     {
         assert( (inData.length % _numChannels) == 0);
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
+    }
+
+    /// Write interleaved double samples to the stream, from the given buffer `inData[0..frames]`.
+    /// 
+    /// Params:
+    ///     inData Buffer of interleaved samples to append to the stream.
+    ///            Must contain `frames` x `getNumChannels()` samples.
+    ///            For a stereo file, `inData` contains LRLRLR... repeated `frames` times.
+    ///
+    ///     frames The number of frames to append to the stream.
+    ///            A frame is `getNumChannels()` samples.
+    ///
+    /// Note: this only does something if the output format is WAV and was setup for 64-bit output.
+    ///
+    /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
+    ///          When that number is less than `frames`, it means the stream had a write error.
+    int writeSamplesDouble(double* inData, int frames) nothrow @nogc
+    {
+        assert(_io && _io.write !is null);
+
+        switch(_format)
+        {
+            case AudioFileFormat.unknown:
+                // One shouldn't ever get there
+                assert(false);
+
+            default:
+                // Decode to float buffer, and then convert
+                if (_floatDecodeBuf.length < frames * _numChannels)
+                    _floatDecodeBuf.reallocBuffer(frames * _numChannels);
+
+                for (int n = 0; n < frames * _numChannels; ++n)
+                    _floatDecodeBuf[n] = inData[n];
+               
+                return writeSamplesFloat(_floatDecodeBuf.ptr, frames);
+        }
+    }
+    ///ditto
+    int writeSamplesDouble(double[] inData) nothrow @nogc
+    {
+        assert( (inData.length % _numChannels) == 0);
+        return writeSamplesDouble(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -1047,6 +1132,8 @@ private:
     float _sampleRate; 
     int _numChannels;
     long _lengthInFrames;
+
+    float[] _floatDecodeBuf;
 
     // Decoders
     version(decodeMP3)
