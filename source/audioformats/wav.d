@@ -195,7 +195,7 @@ version(decodeWAV)
         // read interleaved samples
         // `outData` should have enough room for frames * _channels
         // Returs: Frames actually read.
-        int readSamples(float* outData, int maxFrames) nothrow
+        int readSamples(T)(T* outData, int maxFrames) nothrow
         {
             assert(_framePosition <= _lengthInFrames);
             int available = _lengthInFrames - _framePosition;

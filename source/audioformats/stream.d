@@ -580,7 +580,7 @@ public: // This is also part of the public API
                 version(decodeWAV)
                 {
                     assert(_wavDecoder !is null);
-                    int readFrames = _wavDecoder.readSamples(outData, frames); 
+                    int readFrames = _wavDecoder.readSamples!float(outData, frames); 
                     return readFrames;
                 }
                 else
@@ -654,6 +654,18 @@ public: // This is also part of the public API
 
         switch(_format)
         {
+            case AudioFileFormat.wav:
+                version(decodeWAV)
+                {
+                    assert(_wavDecoder !is null);
+                    int readFrames = _wavDecoder.readSamples!double(outData, frames); 
+                    return readFrames;
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
+
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there
                 assert(false);
