@@ -769,14 +769,17 @@ version(mir_ion_test) unittest
 }
 
 ///
-version(mir_ion_test) unittest
+version(mir_ion_test) @safe pure unittest
 {
     import mir.serde : serdeFallbackStruct;
     import mir.algebraic;
     import mir.ion.deser.text;
+    import mir.ion.deser.json;
     @serdeFallbackStruct struct S { string path; }
     alias V = Variant!(string, S);
-    assert(q{["str", {path: root}]}.deserializeText!(V[]) == [V("str"), V(S("root"))]);
+    static immutable res = [V("str"), V(S("root"))];
+    assert(q{["str", {path: root}]}.deserializeText!(V[]) == res);
+    assert(q{["str", {"path": "root"}]}.deserializeDynamicJson!(V[]) == res);
 }
 
 /// Date serialization
