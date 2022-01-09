@@ -768,6 +768,17 @@ version(mir_ion_test) unittest
     assert(value.serializeJson == `[[],{},""]`, value.serializeJson);
 }
 
+///
+version(mir_ion_test) unittest
+{
+    import mir.serde : serdeFallbackStruct;
+    import mir.algebraic;
+    import mir.ion.deser.text;
+    @serdeFallbackStruct struct S { string path; }
+    alias V = Variant!(string, S);
+    assert(q{["str", {path: root}]}.deserializeText!(V[]) == [V("str"), V(S("root"))]);
+}
+
 /// Date serialization
 version(mir_ion_test) unittest
 {

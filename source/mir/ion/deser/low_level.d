@@ -413,6 +413,15 @@ package template hasLikeStruct(T)
         enum hasLikeStruct = false;
 }
 
+package template hasFallbackStruct(T)
+{
+    import mir.serde: serdeFallbackStruct;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasFallbackStruct = hasUDA!(T, serdeFallbackStruct);
+    else
+        enum hasFallbackStruct = false;
+}
+
 /++
 Deserialize struct/class value with proxy.
 +/

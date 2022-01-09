@@ -1083,7 +1083,7 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
 
-                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct), Types))
+                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct), Types))
                 {
                     case IonTypeCode.struct_:
                     {                        
@@ -1097,8 +1097,13 @@ template deserializeValue(string[] symbolTable)
                             alias isMapType = isAssociativeArray;
                         }
                         else
+                        static if (anySatisfy!(hasLikeStruct, Types))
                         {
                             alias isMapType = hasLikeStruct;
+                        }
+                        else
+                        {
+                            alias isMapType = hasFallbackStruct;
                         }
 
                         alias AATypes = Filter!(isMapType, Types);
