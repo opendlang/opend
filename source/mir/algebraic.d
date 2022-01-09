@@ -2806,7 +2806,7 @@ private template visitLast(alias visitor, args...)
     }
 }
 
-private template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
+template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
 {
     import std.meta: anySatisfy, staticMap, AliasSeq;
 
