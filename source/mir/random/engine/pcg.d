@@ -37,6 +37,20 @@ import std.traits : ReturnType, TemplateArgsOf;
 nothrow:
 @nogc:
 
+ ///
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random /+: isSaturatedRandomEngine, rand+/;
+    import mir.random.engine.pcg : pcg32;
+    import mir.math.common: fabs;
+
+    static assert(isRandomEngine!pcg32);
+    static assert(isSaturatedRandomEngine!pcg32);
+    auto gen = pcg32(1234u);//Seed with constant.
+    assert(gen.rand!double.fabs == 0x1.e5fe29e2942a8p-1);//Generate number from 0 inclusive to 1 exclusive.
+    assert(gen.rand!ulong == 13957536084079755083UL);
+}
+
 /// Select the above mixin templates.
 enum stream_t
 {
