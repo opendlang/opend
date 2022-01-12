@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 201;
+enum VK_HEADER_VERSION = 202;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 2, VK_HEADER_VERSION );
@@ -3466,6 +3466,7 @@ enum VkImageAspectFlagBits : VkImageAspectFlags {
     VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT       = 0x00000100,
     VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT       = 0x00000200,
     VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT       = 0x00000400,
+    VK_IMAGE_ASPECT_NONE_KHR                     = 0,
     VK_IMAGE_ASPECT_PLANE_0_BIT_KHR              = VK_IMAGE_ASPECT_PLANE_0_BIT,
     VK_IMAGE_ASPECT_PLANE_1_BIT_KHR              = VK_IMAGE_ASPECT_PLANE_1_BIT,
     VK_IMAGE_ASPECT_PLANE_2_BIT_KHR              = VK_IMAGE_ASPECT_PLANE_2_BIT,
@@ -3483,6 +3484,7 @@ enum VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT      = VkImageAspectFlagBits.VK_IMAG
 enum VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT      = VkImageAspectFlagBits.VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT;
 enum VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT      = VkImageAspectFlagBits.VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT;
 enum VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT      = VkImageAspectFlagBits.VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT;
+enum VK_IMAGE_ASPECT_NONE_KHR                    = VkImageAspectFlagBits.VK_IMAGE_ASPECT_NONE_KHR;
 enum VK_IMAGE_ASPECT_PLANE_0_BIT_KHR             = VkImageAspectFlagBits.VK_IMAGE_ASPECT_PLANE_0_BIT_KHR;
 enum VK_IMAGE_ASPECT_PLANE_1_BIT_KHR             = VkImageAspectFlagBits.VK_IMAGE_ASPECT_PLANE_1_BIT_KHR;
 enum VK_IMAGE_ASPECT_PLANE_2_BIT_KHR             = VkImageAspectFlagBits.VK_IMAGE_ASPECT_PLANE_2_BIT_KHR;
