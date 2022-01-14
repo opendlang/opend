@@ -564,6 +564,33 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
 
+            case AudioFileFormat.flac:
+            {
+                version(decodeFLAC)
+                {
+                    assert(_flacDecoder !is null);
+
+                    // use second half of the output buffer as temporary integer decoding area
+                    int* integerData = (cast(int*)outData) + frames;
+                    int samples = cast(int) drflac_read_s32(_flacDecoder, frames, integerData);
+
+                    // "Samples are always output as interleaved signed 32-bit PCM."
+                    // Converting to double doesn't loose mantissa, unlike float.
+                    double factor = 1.0 / int.max;
+                    foreach(n; 0..samples)
+                    {
+                        outData[n] = integerData[n]  * factor;
+                    }
+                    int framesDecoded = samples / _numChannels;
+                    _flacPositionFrame += framesDecoded;
+                    return framesDecoded;
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
+            }
+
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there
                 assert(false);
