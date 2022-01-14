@@ -15,11 +15,11 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-version(decodeMP3)  import audioformats.minimp3_ex;
+version(decodeMP3) import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
 version(decodeOGG) import audioformats.stb_vorbis2;
 version(decodeOPUS) import audioformats.dopus;
-version(decodeMOD)  import audioformats.pocketmod;
+version(decodeMOD) import audioformats.pocketmod;
 
 version(decodeWAV) import audioformats.wav;
 else version(encodeWAV) import audioformats.wav;
@@ -243,130 +243,6 @@ public: // This is also part of the public API
     ~this() @nogc
     {
         cleanUp();
-    }
-
-    void cleanUp() @nogc
-    {
-        // Write the last needed bytes if needed
-        finalizeEncodingIfNeeded();
-
-        version(decodeMP3)
-        {
-            if (_mp3DecoderNew !is null)
-            {
-                mp3dec_ex_close(_mp3DecoderNew);
-                free(_mp3DecoderNew);
-                _mp3DecoderNew = null;
-            }
-            if (_mp3io !is null)
-            {
-                free(_mp3io);
-                _mp3io = null;
-            }
-        }
-
-        version(decodeFLAC)
-        {
-            if (_flacDecoder !is null)
-            {
-                drflac_close(_flacDecoder);
-                _flacDecoder = null;
-                _flacPositionFrame = 0;
-            }
-        }
-
-        version(decodeOGG)
-        {
-            if (_oggHandle !is null)
-            {
-                stb_vorbis_close(_oggHandle);
-                _oggHandle = null;
-            }
-            _oggBuffer.reallocBuffer(0);
-        }
-
-        version(decodeOPUS)
-        {
-            if (_opusDecoder !is null)
-            {
-                opusClose(_opusDecoder);
-                _opusDecoder = null;
-            }
-            _opusBuffer = null;
-        }
-
-        version(decodeWAV)
-        {
-            if (_wavDecoder !is null)
-            {
-                destroyFree(_wavDecoder);
-                _wavDecoder = null;
-            }
-        }
-
-        version(decodeXM)
-        {
-            if (_xmDecoder !is null)
-            {
-                xm_free_context(_xmDecoder);
-                _xmDecoder = null;
-            }
-            if (_xmContent != null)
-            {
-                free(_xmContent);
-                _xmContent = null;
-            }
-        }
-
-        version(decodeMOD)
-        {
-            if (_modDecoder !is null)
-            {
-                free(_modDecoder);
-                _modDecoder = null;
-                _modContent.reallocBuffer(0);
-            }
-        }
-
-        version(encodeWAV)
-        {
-            if (_wavEncoder !is null)
-            {
-                destroyFree(_wavEncoder);
-                _wavEncoder = null;
-            }
-        }
-
-        if (_decoderContext)
-        {
-            destroyFree(_decoderContext);
-            _decoderContext = null;
-        }
-
-        if (fileContext !is null)
-        {
-            if (fileContext.file !is null)
-            {
-                int result = fclose(fileContext.file);
-                if (result)
-                    throw mallocNew!Exception("Closing of audio file errored");
-            }
-            destroyFree(fileContext);
-            fileContext = null;
-        }
-
-        if (memoryContext !is null)
-        {
-            // TODO destroy buffer if any is owned
-            destroyFree(memoryContext);
-            memoryContext = null;
-        }
-
-        if (_io !is null)
-        {
-            destroyFree(_io);
-            _io = null;
-        }
     }
 
     /// Returns: File format of this stream.
@@ -1223,6 +1099,130 @@ private:
     version(encodeWAV)
     {
         WAVEncoder _wavEncoder;
+    }
+
+    void cleanUp() @nogc
+    {
+        // Write the last needed bytes if needed
+        finalizeEncodingIfNeeded();
+
+        version(decodeMP3)
+        {
+            if (_mp3DecoderNew !is null)
+            {
+                mp3dec_ex_close(_mp3DecoderNew);
+                free(_mp3DecoderNew);
+                _mp3DecoderNew = null;
+            }
+            if (_mp3io !is null)
+            {
+                free(_mp3io);
+                _mp3io = null;
+            }
+        }
+
+        version(decodeFLAC)
+        {
+            if (_flacDecoder !is null)
+            {
+                drflac_close(_flacDecoder);
+                _flacDecoder = null;
+                _flacPositionFrame = 0;
+            }
+        }
+
+        version(decodeOGG)
+        {
+            if (_oggHandle !is null)
+            {
+                stb_vorbis_close(_oggHandle);
+                _oggHandle = null;
+            }
+            _oggBuffer.reallocBuffer(0);
+        }
+
+        version(decodeOPUS)
+        {
+            if (_opusDecoder !is null)
+            {
+                opusClose(_opusDecoder);
+                _opusDecoder = null;
+            }
+            _opusBuffer = null;
+        }
+
+        version(decodeWAV)
+        {
+            if (_wavDecoder !is null)
+            {
+                destroyFree(_wavDecoder);
+                _wavDecoder = null;
+            }
+        }
+
+        version(decodeXM)
+        {
+            if (_xmDecoder !is null)
+            {
+                xm_free_context(_xmDecoder);
+                _xmDecoder = null;
+            }
+            if (_xmContent != null)
+            {
+                free(_xmContent);
+                _xmContent = null;
+            }
+        }
+
+        version(decodeMOD)
+        {
+            if (_modDecoder !is null)
+            {
+                free(_modDecoder);
+                _modDecoder = null;
+                _modContent.reallocBuffer(0);
+            }
+        }
+
+        version(encodeWAV)
+        {
+            if (_wavEncoder !is null)
+            {
+                destroyFree(_wavEncoder);
+                _wavEncoder = null;
+            }
+        }
+
+        if (_decoderContext)
+        {
+            destroyFree(_decoderContext);
+            _decoderContext = null;
+        }
+
+        if (fileContext !is null)
+        {
+            if (fileContext.file !is null)
+            {
+                int result = fclose(fileContext.file);
+                if (result)
+                    throw mallocNew!Exception("Closing of audio file errored");
+            }
+            destroyFree(fileContext);
+            fileContext = null;
+        }
+
+        if (memoryContext !is null)
+        {
+            // TODO destroy buffer if any is owned
+            destroyFree(memoryContext);
+            memoryContext = null;
+        }
+
+        if (_io !is null)
+        {
+            destroyFree(_io);
+            _io = null;
+        }
     }
 
     void startDecoding() @nogc
