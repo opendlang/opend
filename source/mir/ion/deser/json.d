@@ -21,7 +21,10 @@ private template isSomeMap(T)
         enum isSomeMap = true;
     else
     static if (is(T == Algebraic!Types, Types...))
+    {
+        import std.meta: anySatisfy;
         enum isSomeMap = anySatisfy!(.isSomeMap, T.AllowedTypes);
+    }
     else
         enum isSomeMap = false;
 }
