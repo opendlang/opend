@@ -59,6 +59,9 @@ struct EncodingOptions
 {
     /// The desired sample bitdepth to encode with.
     AudioSampleFormat sampleFormat = AudioSampleFormat.fp32; // defaults to 32-bit float
+
+    /// Enable dither when exporting 8-bit, 16-bit, 24-bit WAV
+    bool enableDither = true;
 }
 
 /// Returns: String representation of an `AudioFileFormat`.
@@ -1530,7 +1533,7 @@ private:
                     case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
                     case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
                 }
-                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt);
+                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither);
                 break;
             }
             case unknown:

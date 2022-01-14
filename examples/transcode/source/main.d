@@ -45,7 +45,12 @@ void main(string[] args)
         debug(checkSeeking) additionalTests(input);
 
         float[] buf = new float[1024 * channels];
-        output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
+
+        EncodingOptions options;
+        options.sampleFormat = AudioSampleFormat.s24;
+        options.enableDither = true;
+
+        output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels, options);
 
         // Chunked encode/decode
         int totalFrames = 0;

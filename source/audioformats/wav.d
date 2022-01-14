@@ -6,9 +6,10 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module audioformats.wav;
 
-import core.stdc.math: round;
-
+import core.stdc.math: round, floor, fabs;
+import core.stdc.stdlib: rand, RAND_MAX;
 import dplug.core.nogc;
+import dplug.core.vec;
 import audioformats.io;
 
 
@@ -318,12 +319,13 @@ version(encodeWAV)
             return fmt <= Format.s24le;
         }
 
-        this(IOCallbacks* io, void* userData, int sampleRate, int numChannels, Format format)
+        this(IOCallbacks* io, void* userData, int sampleRate, int numChannels, Format format, bool enableDither)
         {
             _io = io;
             _userData = userData;
             _channels = numChannels;
             _format = format;
+            _enableDither = enableDither;
 
             // Avoids a number of edge cases.
             if (_channels < 0 || _channels > 1024)
@@ -367,34 +369,35 @@ version(encodeWAV)
                 final switch(_format)
                 {
                     case Format.s8:
+                        ditherInput(inSamples, samples, 127.0f);
                         for ( ; n < samples; ++n)
                         {
-                            float x = inSamples[n];
-                            if (x > 1.0f) x = 1.0f;
-                            if (x < -1.0f) x = -1.0f;
-                            byte b = cast(byte)(128.5 + x * 127.0); // TODO: dither
-                            _io.write_byte(_userData, b);
+                            double x = _ditherBuf[n];
+                            int b = cast(int)(128.5 + x * 127.0); 
+                            _io.write_byte(_userData, cast(byte)b);
                         }
                         break;
 
                     case Format.s16le:
+                        ditherInput(inSamples, samples, 32767.0f);
                         for ( ; n < samples; ++n)
                         {
-                            float x = inSamples[n];
-                            if (x > 1.0f) x = 1.0f;
-                            if (x < -1.0f) x = -1.0f;
-                            short s = cast(short)(round(x * 32767.0)); // TODO: dither
-                            _io.write_short_LE(_userData, s);
+                            double x = _ditherBuf[n];
+                            int s = cast(int)(32768.5 + x * 32767.0);
+                            s -= 32768;
+                            assert(s >= -32767 && s <= 32767);
+                            _io.write_short_LE(_userData, cast(short)s);
                         }
                         break;
 
                     case Format.s24le:
+                        ditherInput(inSamples, samples, 8388607.0f);
                         for ( ; n < samples; ++n)
                         {
-                            float x = inSamples[n];
-                            if (x > 1.0f) x = 1.0f;
-                            if (x < -1.0f) x = -1.0f;
-                            int s = cast(int)(round(x * 8388607.0)); // TODO: dither
+                            double x = _ditherBuf[n];
+                            int s = cast(int)(8388608.5 + x * 8388607.0);
+                            s -= 8388608;
+                            assert(s >= -8388607 && s <= 8388607);
                             _io.write_24bits_LE(_userData, s);
                         }
                         break;
@@ -463,6 +466,24 @@ version(encodeWAV)
         int _channels;
         int _writtenFrames;
         long _riffLengthOffset, _dataLengthOffset;
+
+        bool _enableDither;
+        double[] _ditherBuf;
+        TPDFDither _tpdf;
+
+        void ditherInput(T)(T* inSamples, int frames, double scaleFactor)
+        {
+            if (_ditherBuf.length < frames)
+                _ditherBuf.reallocBuffer(frames);
+
+            for (int n = 0; n < frames; ++n)
+            {
+                _ditherBuf[n] = inSamples[n];
+            }
+
+            if (_enableDither)
+                _tpdf.process(_ditherBuf.ptr, frames, scaleFactor);
+        }
     }
 }
 
@@ -473,3 +494,59 @@ private:
 immutable int LinearPCM = 0x0001;
 immutable int FloatingPointIEEE = 0x0003;
 immutable int WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
+
+
+/+
+MIT License
+
+Copyright (c) 2018 Chris Johnson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
++/
+/// This is TPDF Dither by Chris Johnson / AirWindows
+/// However it was modified since I didn't think the sound was particularly good on 8-bit material.
+struct TPDFDither
+{
+nothrow:
+@nogc:
+
+    void process(double* inoutSamples, int frames, double scaleFactor)
+    {      
+        for (int n = 0; n < frames; ++n)
+        {
+            double x = inoutSamples[n];           
+
+            x *= scaleFactor;
+            //0-1 is now one bit, now we dither
+
+            enum double TUNE0 = 0.25; // could probably be better if tuned interactively
+            enum double TUNE1 = TUNE0*0.5; // ditto
+
+            x += (0.5 - 0.5 * (TUNE0+TUNE1));
+            x += TUNE0 * (rand()/cast(double)RAND_MAX);
+            x += TUNE1 * (rand()/cast(double)RAND_MAX);
+            x = floor(x);
+            //TPDF: two 0-1 random noises
+            x /= scaleFactor;
+            if (x < -1.0) x = -1.0;
+            if (x > 1.0) x = 1.0;
+            inoutSamples[n] = x;
+        }
+    }
+}
