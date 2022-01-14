@@ -216,12 +216,8 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("{");
         }
-        else
-        {
-            appender.put('{');
-        }
+        appender.put('{');
         return popState;
     }
 
@@ -247,12 +243,8 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("[");
         }
-        else
-        {
-            appender.put('[');
-        }
+        appender.put('[');
         return popState;
     }
 
@@ -278,12 +270,8 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("(");
         }
-        else
-        {
-            appender.put('(');
-        }
+        appender.put('(');
         return popState;
     }
 

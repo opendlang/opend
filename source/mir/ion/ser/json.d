@@ -80,6 +80,13 @@ struct JsonSerializer(string sep, Appender)
                 appender.put(',');
             }
         }
+        else
+        {
+            static if(sep.length)
+            {
+                appender.put('\n');
+            }
+        }
     }
 
     private void putEscapedKey(scope const char[] key)
@@ -129,12 +136,8 @@ struct JsonSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("{\n");
         }
-        else
-        {
-            appender.put('{');
-        }
+        appender.put('{');
         return popState;
     }
 
@@ -144,8 +147,11 @@ struct JsonSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep--;
-            appender.put('\n');
-            putSpace;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
         }
         appender.put('}');
         pushState(state);
@@ -157,12 +163,8 @@ struct JsonSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("[\n");
         }
-        else
-        {
-            appender.put('[');
-        }
+        appender.put('[');
         return popState;
     }
 
@@ -172,8 +174,11 @@ struct JsonSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep--;
-            appender.put('\n');
-            putSpace;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
         }
         appender.put(']');
         pushState(state);
