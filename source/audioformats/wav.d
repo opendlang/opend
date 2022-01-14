@@ -6,6 +6,8 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module audioformats.wav;
 
+import core.stdc.math: round;
+
 import dplug.core.nogc;
 import audioformats.io;
 
@@ -304,8 +306,16 @@ version(encodeWAV)
     @nogc:
         enum Format
         {
+            s8,
+            s16le,
+            s24le,
             fp32le,
             fp64le,
+        }
+
+        static bool isFormatLinearPCM(Format fmt)
+        {
+            return fmt <= Format.s24le;
         }
 
         this(IOCallbacks* io, void* userData, int sampleRate, int numChannels, Format format)
@@ -327,7 +337,7 @@ version(encodeWAV)
 
             // 'fmt ' sub-chunk
             _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"fmt ", 0x10);
-            _io.write_ushort_LE(_userData, FloatingPointIEEE);
+            _io.write_ushort_LE(_userData, isFormatLinearPCM(format) ? LinearPCM : FloatingPointIEEE);
             _io.write_ushort_LE(_userData, cast(ushort)(_channels));
             _io.write_uint_LE(_userData, sampleRate);
 
@@ -356,6 +366,39 @@ version(encodeWAV)
                 
                 final switch(_format)
                 {
+                    case Format.s8:
+                        for ( ; n < samples; ++n)
+                        {
+                            float x = inSamples[n];
+                            if (x > 1.0f) x = 1.0f;
+                            if (x < -1.0f) x = -1.0f;
+                            byte b = cast(byte)(128.5 + x * 127.0); // TODO: dither
+                            _io.write_byte(_userData, b);
+                        }
+                        break;
+
+                    case Format.s16le:
+                        for ( ; n < samples; ++n)
+                        {
+                            float x = inSamples[n];
+                            if (x > 1.0f) x = 1.0f;
+                            if (x < -1.0f) x = -1.0f;
+                            short s = cast(short)(round(x * 32767.0)); // TODO: dither
+                            _io.write_short_LE(_userData, s);
+                        }
+                        break;
+
+                    case Format.s24le:
+                        for ( ; n < samples; ++n)
+                        {
+                            float x = inSamples[n];
+                            if (x > 1.0f) x = 1.0f;
+                            if (x < -1.0f) x = -1.0f;
+                            int s = cast(int)(round(x * 8388607.0)); // TODO: dither
+                            _io.write_24bits_LE(_userData, s);
+                        }
+                        break;
+
                     case Format.fp32le:
                         for ( ; n < samples; ++n)
                         {
@@ -382,6 +425,9 @@ version(encodeWAV)
         {
             final switch(_format)
             {
+                case Format.s8:     return 1;
+                case Format.s16le:  return 2;
+                case Format.s24le:  return 3;
                 case Format.fp32le: return 4;
                 case Format.fp64le: return 8;
             }

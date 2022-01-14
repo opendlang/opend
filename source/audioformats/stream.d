@@ -47,6 +47,9 @@ enum AudioFileFormat
 /// Output sample format.
 enum AudioSampleFormat
 {
+    s8,   /// Signed 8-bit PCM
+    s16,  /// Signed 16-bit PCM
+    s24,  /// Signed 24-bit PCM
     fp32, /// 32-bit floating-point
     fp64  /// 64-bit floating-point
 }
@@ -1521,6 +1524,9 @@ private:
                 WAVEncoder.Format wavfmt;
                 final switch (options.sampleFormat)
                 {
+                    case AudioSampleFormat.s8:   wavfmt = WAVEncoder.Format.s8; break;
+                    case AudioSampleFormat.s16:  wavfmt = WAVEncoder.Format.s16le; break;
+                    case AudioSampleFormat.s24:  wavfmt = WAVEncoder.Format.s24le; break;
                     case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
                     case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
                 }
