@@ -50,7 +50,7 @@ struct TextSerializer(string sep, Appender)
 
     static if(sep.length)
     {
-        private size_t deep;
+        private uint deep;
 
         private void putSpace()
         {
@@ -93,6 +93,13 @@ struct TextSerializer(string sep, Appender)
                 appender.put(',');
             }
         }
+        else
+        {
+            static if(sep.length)
+            {
+                appender.put('\n');
+            }
+        }
     }
 
     private void sexpIncState()
@@ -106,6 +113,13 @@ struct TextSerializer(string sep, Appender)
             else
             {
                 appender.put(' ');
+            }
+        }
+        else
+        {
+            static if(sep.length)
+            {
+                appender.put('\n');
             }
         }
     }
@@ -202,7 +216,7 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("{\n");
+            appender.put("{");
         }
         else
         {
@@ -217,8 +231,11 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep--;
-            appender.put('\n');
-            putSpace;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
         }
         appender.put('}');
         pushState(state);
@@ -230,7 +247,7 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("[\n");
+            appender.put("[");
         }
         else
         {
@@ -245,8 +262,11 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep--;
-            appender.put('\n');
-            putSpace;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
         }
         appender.put(']');
         pushState(state);
@@ -258,7 +278,7 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep++;
-            appender.put("(\n");
+            appender.put("(");
         }
         else
         {
@@ -273,8 +293,11 @@ struct TextSerializer(string sep, Appender)
         static if(sep.length)
         {
             deep--;
-            appender.put('\n');
-            putSpace;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
         }
         appender.put(')');
         pushState(state);
@@ -682,7 +705,7 @@ string serializeTextPretty(string sep = "\t", V)(auto ref V value, int serdeTarg
 }
 
 ///
-unittest
+version(mir_ion_test) unittest
 {
     static struct S { int a; }
     assert(S(4).serializeTextPretty!"    " ==
