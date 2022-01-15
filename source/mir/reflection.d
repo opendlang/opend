@@ -9,9 +9,15 @@ module mir.reflection;
 
 import std.meta;
 import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
+import mir.internal.meta: hasUDA;
 
 deprecated
 package alias isSomeStruct = isAggregateType;
+
+/++
+Attribute to force member serialization for static fields, compiletime `enum` members and non-property methods.
++/
+enum reflectSerde;
 
 /++
 Match types like `std.typeconst: Nullable`.
@@ -568,6 +574,17 @@ version(mir_core_test) unittest
     static assert(!isProperty!(S, "y"));
 }
 
+version(mir_core_test) unittest
+{
+    struct S
+    {
+        @reflectSerde enum s = "str";
+        enum t = "str";
+    }
+    static assert(hasUDA!(S, "s", reflectSerde));
+    static assert(!hasUDA!(S, "t", reflectSerde));
+}
+
 /++
 Returns: list of the setter properties.
 
@@ -615,7 +632,7 @@ version(mir_core_test) unittest
 /++
 Returns: list of the serializable (public getters) members.
 +/
-enum string[] SerializableMembers(T) = [Filter!(ApplyLeft!(Serializable, T), FieldsAndProperties!T)];
+enum string[] SerializableMembers(T) = [Filter!(ApplyLeft!(Serializable, T), SerdeFieldsAndProperties!T)];
 
 ///
 version(mir_core_test) unittest
@@ -643,6 +660,9 @@ version(mir_core_test) unittest
 
         package int p;
 
+        enum s = "str";
+        @reflectSerde enum t = "str";
+
         int gm() @property {return 0;}
 
         private int q;
@@ -654,14 +674,14 @@ version(mir_core_test) unittest
         void gs(int) @property {}
     }
 
-    static assert(SerializableMembers!S == ["y", "gf", "f", "gi", "d", "gm", "gc"]);
-    static assert(SerializableMembers!(const S) == ["y", "f", "d", "gc"]);
+    static assert(SerializableMembers!S == ["y", "gf", "f", "gi", "d", "t", "gm", "gc"]);
+    static assert(SerializableMembers!(const S) == ["y", "f", "d", "t", "gc"]);
 }
 
 /++
 Returns: list of the deserializable (public setters) members.
 +/
-enum string[] DeserializableMembers(T) = [Filter!(ApplyLeft!(Deserializable, T), FieldsAndProperties!T)];
+enum string[] DeserializableMembers(T) = [Filter!(ApplyLeft!(Deserializable, T), SerdeFieldsAndProperties!T)];
 
 ///
 version(mir_core_test) unittest
@@ -726,7 +746,7 @@ private template Deserializable(T, string member)
         enum Deserializable = false;
 }
 
-private enum FieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(FieldsAndPropertiesImpl!T)));
+private enum SerdeFieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(SerdeFieldsAndPropertiesImpl!T)));
 
 private template allMembers(T)
 {
@@ -736,22 +756,29 @@ private template allMembers(T)
         alias allMembers = AliasSeq!();
 }
 
-private template FieldsAndPropertiesImpl(T)
+private template SerdeFieldsAndPropertiesImpl(T)
 {
     alias isProperty = ApplyLeft!(.isProperty, T);
     alias hasField = ApplyLeft!(.hasField, T);
     alias isOriginalMember = ApplyLeft!(.isOriginalMember, T);
-    alias isMember = templateAnd!(templateOr!(hasField, isProperty), isOriginalMember);
+    T* aggregate;
+    template hasReflectSerde(string member)
+    {
+        static if (is(typeof(__traits(getMember, *aggregate, member))))
+            enum hasReflectSerde = hasUDA!(T, member, reflectSerde);
+        else
+            enum hasReflectSerde = false;
+    }
+    alias isMember = templateAnd!(templateOr!(hasField, isProperty, hasReflectSerde), isOriginalMember);
     static if (__traits(getAliasThis, T).length)
     {
-        T* aggregate;
         alias A = typeof(__traits(getMember, aggregate, __traits(getAliasThis, T)));
         static if (isAggregateType!T)
-            alias baseMembers = FieldsAndPropertiesImpl!A;
+            alias baseMembers = SerdeFieldsAndPropertiesImpl!A;
         else
             alias baseMembers = AliasSeq!();
         alias members = Erase!(__traits(getAliasThis, T)[0], __traits(allMembers, T));
-        alias FieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isMember, members));
+        alias SerdeFieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isMember, members));
     }
     else
     {
@@ -760,7 +787,7 @@ private template FieldsAndPropertiesImpl(T)
             alias members = staticMap!(allMembers, T.AllowedTypes);
         else
             alias members = allMembers!T;
-        alias FieldsAndPropertiesImpl = AliasSeq!(Filter!(isMember, members));
+        alias SerdeFieldsAndPropertiesImpl = AliasSeq!(Filter!(isMember, members));
     }
 }
 

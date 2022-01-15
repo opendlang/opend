@@ -1,5 +1,56 @@
 module mir.internal.meta;
 
+/++
+    Gets the matching $(DDSUBLINK spec/attribute, uda, user-defined attributes)
+    from the given symbol.
+    If the UDA is a type, then any UDAs of the same type on the symbol will
+    match. If the UDA is a template for a type, then any UDA which is an
+    instantiation of that template will match. And if the UDA is a value,
+    then any UDAs on the symbol which are equal to that value will match.
+    See_Also:
+        $(LREF hasUDA)
+  +/
+template getUDAs(T, string member, alias attribute)
+{
+    import std.meta : Filter, AliasSeq;
+    T* aggregate;
+    alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
+}
+
+/++
+    Determine if a symbol has a given
+    $(DDSUBLINK spec/attribute, uda, user-defined attribute).
+    See_Also:
+        $(LREF getUDAs)
+  +/
+enum hasUDA(T, string member, alias attribute) = getUDAs!(T, member, attribute).length != 0;
+
+
+private template isDesiredUDA(alias attribute)
+{
+    template isDesiredUDA(alias toCheck)
+    {
+        static if (is(typeof(attribute)) && !__traits(isTemplate, attribute))
+        {
+            static if (__traits(compiles, toCheck == attribute))
+                enum isDesiredUDA = toCheck == attribute;
+            else
+                enum isDesiredUDA = false;
+        }
+        else static if (is(typeof(toCheck)))
+        {
+            static if (__traits(isTemplate, attribute))
+                enum isDesiredUDA =  isInstanceOf!(attribute, typeof(toCheck));
+            else
+                enum isDesiredUDA = is(typeof(toCheck) == attribute);
+        }
+        else static if (__traits(isTemplate, attribute))
+            enum isDesiredUDA = isInstanceOf!(attribute, toCheck);
+        else
+            enum isDesiredUDA = is(toCheck == attribute);
+    }
+}
+
 template memberTypeOf(T, string member)
 {
     T* aggregate;
