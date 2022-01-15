@@ -496,8 +496,32 @@ version(mir_ion_test) unittest
 //     assert(v.serializeToJson == `[2.0,"str",{"key":1.0}]`);
 // }
 
+/// reflectSerde support
+version(mir_ion_test) unittest
+{
+    import mir.reflection: reflectSerde;
+    static struct S
+    {
+        @reflectSerde enum s = "str";
+    }
+
+    import mir.ion.ser.text: serializeText;
+    assert(S().serializeText == `{s:"str"}`);
+}
+
+/// serdeIgnoreUnexpectedKeys support
+version(mir_ion_test) unittest
+{
+    import mir.serde: serdeIgnoreUnexpectedKeys;
+    @serdeIgnoreUnexpectedKeys
+    static struct S { int i; }
+
+    import mir.ion.deser.text: deserializeText;
+    assert(`{s:"str",i:4}`.deserializeText!S == S(4));
+}
+
 /// Iterable and serdeLikeList
-unittest
+version(mir_ion_test) unittest
 {
     import mir.ion.deser.text: deserializeText;
     import mir.ion.ser.text: serializeText;
@@ -545,6 +569,11 @@ unittest
         auto opIndex() const { return stringsApp.data; }
     }
 
+    static struct S2 {
+        static prop() @property { return "100"; };
+    }
+
+    assert(S2().serializeText == `{prop:"100"}`, S2().serializeText);
     assert(C([`a`, `b`]).serializeText == `["a","b"]`);
     assert(`["a","b"]`.deserializeText!C.stringsApp.data == [`a`, `b`]);
 }

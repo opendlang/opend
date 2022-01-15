@@ -1305,11 +1305,13 @@ template deserializeValue(string[] symbolTable)
                 else
                 {
                     enum hasUnexpectedKeyHandler = __traits(hasMember, T, "serdeUnexpectedKeyHandler");
+                    enum hasSerdeIgnoreUnexpectedKeys = hasUDA!(T, serdeIgnoreUnexpectedKeys);
 
                     import std.meta: staticMap, aliasSeqOf;
                     static if (hasUDA!(T, serdeRealOrderedIn))
                     {
-                        static assert (!hasUnexpectedKeyHandler, "serdeRealOrderedIn aggregate type attribute is not compatible with `serdeUnexpectedKeyHandler` method");
+                        static assert (!hasUnexpectedKeyHandler, "@serdeRealOrderedIn aggregate type attribute is not compatible with `serdeUnexpectedKeyHandler` method");
+                        static assert (!hasSerdeIgnoreUnexpectedKeys, "@serdeRealOrderedIn aggregate type attribute is not compatible with @hasSerdeIgnoreUnexpectedKeys");
                         static foreach (member; serdeFinalProxyDeserializableMembers!T)
                         {{
                             enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
@@ -1430,6 +1432,7 @@ template deserializeValue(string[] symbolTable)
                                     static if (hasUnexpectedKeyHandler)
                                         value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
                                     else
+                                    static if (!hasSerdeIgnoreUnexpectedKeys)
                                         return unqualException(unexpectedKeyWhenDeserializing!T);
                             }
                         }
