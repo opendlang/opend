@@ -25,6 +25,14 @@ template deserializeIon(T, bool annotated = false)
     +/
     T deserializeIon()(scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
+        T value;
+        deserializeIon(value, symbolTable, ionValue, optionalAnnotations);
+        return value;
+    }
+
+    /// ditto
+    void deserializeIon()(ref T value, scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    {
         import mir.appender: scopedBuffer;
         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
@@ -38,7 +46,6 @@ template deserializeIon(T, bool annotated = false)
         alias createTableChar = createTable!char;
         static immutable table = createTableChar!(keys, false);
 
-        T value;
         auto tableMapBuffer = scopedBuffer!(uint, 1024);
         foreach (key; symbolTable)
         {
@@ -50,12 +57,19 @@ template deserializeIon(T, bool annotated = false)
         auto params = DeserializationParams!(TableKind.scopeRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
         if (auto exception = deserializeValue!keys(params, value))
             throw exception;
-        return value;
     }
 
     /// ditto
     // the same code with GC allocated symbol table
     T deserializeIon()(const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    {
+        T value;
+        deserializeIon(value, symbolTable, ionValue, optionalAnnotations);
+        return value;
+    }
+
+    /// ditto
+    void deserializeIon()(ref T value, const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
@@ -74,8 +88,6 @@ template deserializeIon(T, bool annotated = false)
         else
             static immutable table = Table.init;
 
-        T value;
-
         auto tableMapBuffer = scopedBuffer!(uint, 1024);
 
         foreach (key; symbolTable)
@@ -89,24 +101,33 @@ template deserializeIon(T, bool annotated = false)
         auto params = DeserializationParams!(TableKind.immutableRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
         if (auto exception = deserializeValue!keys(params, value))
             throw exception;            
-        return value;
     }
 
     static if (!annotated)
-    /++
-    +/
-    T deserializeIon()(scope const(ubyte)[] data)
     {
-        import mir.serde: SerdeException;
-        import mir.ion.stream: IonValueStream;
-
-        foreach (symbolTable, ionValue; data.IonValueStream)
+        /++
+        +/
+        T deserializeIon()(scope const(ubyte)[] data)
         {
-            return .deserializeIon!T(symbolTable, ionValue);
+            T value;
+            deserializeIon(value, data);
+            return value;
         }
 
-        static immutable exc = new SerdeException("Ion data doesn't contain a value");
-        throw exc;
+        /// ditto
+        void deserializeIon()(ref T value, scope const(ubyte)[] data)
+        {
+            import mir.serde: SerdeException;
+            import mir.ion.stream: IonValueStream;
+
+            foreach (symbolTable, ionValue; data.IonValueStream)
+            {
+                return .deserializeIon!T(value, symbolTable, ionValue);
+            }
+
+            static immutable exc = new SerdeException("Ion data doesn't contain a value");
+            throw exc;
+        }
     }
 }
 

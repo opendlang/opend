@@ -1067,6 +1067,7 @@ private:
 /++
 Deserialize an Ion Text value to a D value.
 Params:
+    value = (optional) value to deserialize
     text = The text to deserialize
 Returns:
     The deserialized Ion Text value
@@ -1078,9 +1079,22 @@ T deserializeText(T)(scope const(char)[] text)
     import mir.ion.value;
     import mir.appender : scopedBuffer;
 
+    T value;
+    deserializeText!T(value, text);
+    return value;
+}
+
+///ditto
+void deserializeText(T)(ref T value, scope const(char)[] text)
+{
+    import mir.ion.deser.ion;
+    import mir.ion.conv : text2ion;
+    import mir.ion.value;
+    import mir.appender : scopedBuffer;
+
     auto buf = scopedBuffer!ubyte;
     text2ion(text, buf);
-    return deserializeIon!T(buf.data);
+    return deserializeIon!T(value, buf.data);
 }
 
 /// Test struct deserialization
