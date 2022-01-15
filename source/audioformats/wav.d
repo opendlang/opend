@@ -519,8 +519,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 +/
-/// This is TPDF Dither by Chris Johnson / AirWindows
-/// However it was modified since I didn't think the sound was particularly good on 8-bit material.
+/// This is based upon TPDF Dither by Chris Johnson / AirWindows
+/// though the algorithm changed quite a bit, tuned on 8-bit dither by ear.
 struct TPDFDither
 {
 nothrow:
