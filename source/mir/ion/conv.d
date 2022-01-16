@@ -13,8 +13,17 @@ template serde(T)
     if (!is(immutable T == immutable IonValueStream))
 {
     import mir.serde: SerdeTarget;
+
     ///
     T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
+    {
+        T target;
+        serde(target, value, serdeTarget);
+        return target;
+    }
+
+    ///
+    void serde(V)(ref T target, auto ref const V value, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ion.exception;
@@ -64,14 +73,15 @@ template serde(T)
         }
         IonDescribedValue ionValue;
         auto error = tapeHolder.data.IonValue.describe(ionValue);
-        return deserializeIon!T(symbolTable, ionValue);
+        return deserializeIon!T(target, symbolTable, ionValue);
     }
 
     /// ditto
-    T serde()(IonValueStream stream)
+    void serde()(ref T target, IonValueStream stream, int serdeTarget = SerdeTarget.ion)
+        if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ion.deser.ion: deserializeIon;
-        return stream.data.deserializeIon!T;
+        return deserializeIon!T(target, stream.data);
     }
 }
 

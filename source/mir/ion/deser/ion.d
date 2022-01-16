@@ -54,7 +54,8 @@ template deserializeIon(T, bool annotated = false)
                 id = uint.max;
             tableMapBuffer.put(id);
         }
-        auto params = DeserializationParams!(TableKind.scopeRuntime, annotated)(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data);
+        alias DP = DeserializationParams!(TableKind.scopeRuntime, annotated);
+        DP params = (()@trusted => DP(ionValue, optionalAnnotations, symbolTable, tableMapBuffer.data))();
         if (auto exception = deserializeValue!keys(params, value))
             throw exception;
     }

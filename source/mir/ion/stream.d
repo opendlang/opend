@@ -34,7 +34,7 @@ const:
         /++
         +/
         @safe pure @nogc
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value) @safe pure @nogc dg)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value) @safe pure @nogc dg)
         {
             return opApply((IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value) {
                 if (_expect(error, false))
@@ -45,44 +45,44 @@ const:
 
         /// ditto
         @trusted @nogc
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @safe @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted pure
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @safe pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @safe dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure @nogc
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @system pure @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system @nogc
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @system @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @system pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system
-        int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
+        scope int opApply(scope int delegate(const(char[])[] symbolTable, IonDescribedValue value)
         @system dg) { return opApply(cast(EDG) dg); }
     }
 
     /++
     +/
     @trusted pure nothrow @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value) @safe pure nothrow @nogc dg)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value) @safe pure nothrow @nogc dg)
     {
         import mir.appender: ScopedBuffer;
         import mir.ion.symbol_table;
@@ -238,77 +238,77 @@ const:
 
     /// ditto
     @trusted nothrow @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure nothrow
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted nothrow
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @safe dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system pure nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system @nogc
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system
-    int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, const(char[])[] symbolTable, IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
