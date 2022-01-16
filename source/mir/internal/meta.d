@@ -14,7 +14,10 @@ template getUDAs(T, string member, alias attribute)
 {
     import std.meta : Filter, AliasSeq;
     T* aggregate;
-    alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
+    static if (__traits(compiles, __traits(getAttributes, __traits(getMember, *aggregate, member))))
+        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
+    else
+        alias getUDAs = AliasSeq!();
 }
 
 /++
