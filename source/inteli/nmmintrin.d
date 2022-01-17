@@ -76,6 +76,10 @@ uint _mm_crc32_u8 (uint crc, ubyte v) @safe
     {
         return __builtin_ia32_crc32qi(crc, v);
     }
+    else static if (LDC_with_ARM64)
+    {
+        return __crc32cb(crc, v);
+    }
     else
     {
         return CRC32cTable[(crc ^ v) & 0xFF] ^ (crc >> 8); 

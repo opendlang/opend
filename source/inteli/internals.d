@@ -126,7 +126,7 @@ version(LDC)
     else version(AArch64)
     {
         enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = true;
+        enum LDC_with_ARM64 = true; // what we mean here is "Neon"
         enum LDC_with_SSE1 = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
@@ -1100,6 +1100,9 @@ static if (LDC_with_ARM64)
     // VERY USEFUL LINK
     // https://github.com/ldc-developers/llvm-project/blob/ldc-release/11.x/llvm/include/llvm/IR/IntrinsicsAArch64.td
     // Also: https://developer.arm.com/architectures/instruction-sets/intrinsics/
+
+    pragma(LDC_intrinsic, "llvm.aarch64.crc32cb")
+        uint __crc32cb(uint a, uint b);
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
         byte16 vabdq_u8(byte16 a, byte16 b) pure @safe;
