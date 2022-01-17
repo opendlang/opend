@@ -249,8 +249,8 @@ enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
 //
 //  Why is that there? For DMD, we cannot use rint because _MM_SET_ROUNDING_MODE
 //  doesn't change the FPU rounding mode, and isn't expected to do so.
-//  So we devised these rounding function to help having consistent rouding between 
-//  LDC and DMD. It's important that DMD uses what is in MXCSR to round.
+//  So we devised these rounding function to help having consistent rounding between 
+//  LDC and DMD. It's important that DMD uses whatever is in MXCSR to round.
 //
 //  Note: There is no MXCSR in ARM. But there is fpcr/fpscr that implements similar 
 //  functionality.
