@@ -66,7 +66,7 @@ pragma(LDC_intrinsic, "llvm.x86.sse42.crc32.64.64")
 
 /// Starting with the initial value in `crc`, accumulates a CRC32 value 
 /// for unsigned 16-bit integer `v`.
-/// Warning: this is computing CRC32C, not CRC32.
+/// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
 uint _mm_crc32_u16 (uint crc, ushort v) @safe
 {
     static if (GDC_with_SSE42)
@@ -100,10 +100,9 @@ unittest
     assert(C == 0xc7e3fe85);
 }
 
-
 /// Starting with the initial value in `crc`, accumulates a CRC32 value 
 /// for unsigned 32-bit integer `v`.
-/// Warning: this is computing CRC32C, not CRC32.
+/// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
 uint _mm_crc32_u32 (uint crc, uint v) @safe
 {
     static if (GDC_with_SSE42)
@@ -137,10 +136,53 @@ unittest
     assert(C == 0xbc552c27);
 }
 
+/// Starting with the initial value in `crc`, accumulates a CRC32 
+/// value for unsigned 64-bit integer `v`.
+/// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
+ulong _mm_crc32_u64 (ulong crc, ulong v)
+{
+    version(X86_64)
+        enum bool hasX86Intrin = GDC_with_SSE42 || LDC_with_SSE42;
+    else
+        enum bool hasX86Intrin = false; // intrinsics not available in 32-bit
+
+    static if (hasX86Intrin)
+    {
+        return __builtin_ia32_crc32di(crc, v);
+    }
+    else static if (LDC_with_ARM64_CRC)
+    {
+        return __crc32cd(cast(uint)crc, v);
+    }
+    else
+    {
+        // PERF: is there actually a better algorithm? Intel pseudocode
+        // looks shorter.
+        uint crc32 = cast(uint)crc;
+        crc32 = _mm_crc32_u8(crc32, (v >> 0) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 8) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 16) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 24) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 32) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 40) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 48) & 0xff);
+        crc32 = _mm_crc32_u8(crc32, (v >> 56) & 0xff);
+        return crc32;
+    }
+}
+unittest
+{
+    ulong A = _mm_crc32_u64(0x1234567812345678, 0x39C3F0FFCFFBCF07);
+    ulong B = _mm_crc32_u64(0x7654321001234567, 0xFACEFEED);
+    ulong C = _mm_crc32_u64(0xDEADBEEFCAFEBABE, 0x0017C7E3FE850017);
+    assert(A == 0xd66b1074);
+    assert(B == 0xac12f9c6);
+    assert(C == 0xa2d13dd8);
+}
 
 /// Starting with the initial value in `crc`, accumulates a CRC32 value 
 /// for unsigned 8-bit integer `v`.
-/// Warning: this is computing CRC32C, not CRC32.
+/// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
 uint _mm_crc32_u8 (uint crc, ubyte v) @safe
 {
     static if (GDC_with_SSE42)
