@@ -63,6 +63,43 @@ pragma(LDC_intrinsic, "llvm.x86.sse42.crc32.64.64")
     long __builtin_ia32_crc32di(long, long) pure @safe;
 */
 
+
+/// Starting with the initial value in `crc`, accumulates a CRC32 value 
+/// for unsigned 16-bit integer `v`.
+/// Warning: this is computing CRC32C, not CRC32.
+uint _mm_crc32_u16 (uint crc, ushort v) @safe
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_crc32hi(crc, v);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_crc32hi(crc, v);
+    }
+    else static if (LDC_with_ARM64_CRC)
+    {
+        return __crc32ch(crc, v);
+    }
+    else
+    {
+        crc = _mm_crc32_u8(crc, v & 0xff);
+        crc = _mm_crc32_u8(crc, v >> 8);
+        return crc;
+    }
+}
+unittest
+{
+    uint A = _mm_crc32_u16(0x12345678, 0x4512);
+    uint B = _mm_crc32_u16(0x76543210, 0xf50f);
+    uint C = _mm_crc32_u16(0xDEADBEEF, 0x0017);
+    //import core.stdc.stdio;
+    //printf("A = %x, B = %x, C = %x\n", A, B, C);
+    assert(A == 0x39c3f0ff);
+    assert(B == 0xcffbcf07);
+    assert(C == 0xc7e3fe85);
+}
+
 /// Starting with the initial value in `crc`, accumulates a CRC32 value 
 /// for unsigned 8-bit integer `v`.
 /// Warning: this is computing CRC32C, not CRC32.
@@ -76,7 +113,7 @@ uint _mm_crc32_u8 (uint crc, ubyte v) @safe
     {
         return __builtin_ia32_crc32qi(crc, v);
     }
-    else static if (LDC_with_ARM64)
+    else static if (LDC_with_ARM64_CRC)
     {
         return __crc32cb(crc, v);
     }
@@ -97,6 +134,8 @@ unittest
 
 
 static if (LDC_with_SSE42)
+{}
+else static if (LDC_with_ARM64_CRC)
 {}
 else private static immutable uint[256] CRC32cTable =
 [

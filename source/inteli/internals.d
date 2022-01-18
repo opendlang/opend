@@ -112,6 +112,7 @@ version(LDC)
         public import ldc.gccbuiltins_arm;
         enum LDC_with_ARM32 = true;
         enum LDC_with_ARM64 = false;
+        enum LDC_with_ARM64_CRC = false;
         enum LDC_with_SSE1 = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
@@ -126,7 +127,8 @@ version(LDC)
     else version(AArch64)
     {
         enum LDC_with_ARM32 = false;
-        enum LDC_with_ARM64 = true; // what we mean here is "Neon"
+        enum LDC_with_ARM64 = true; // implies "has Neon"
+        enum LDC_with_ARM64_CRC = __traits(targetHasFeature, "crc");
         enum LDC_with_SSE1 = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
@@ -143,6 +145,7 @@ version(LDC)
         public import ldc.gccbuiltins_x86;
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = false;
+        enum LDC_with_ARM64_CRC = false;
         enum LDC_with_SSE1 = __traits(targetHasFeature, "sse");
         enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
         enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
@@ -159,6 +162,7 @@ else
 {
     enum LDC_with_ARM32 = false;
     enum LDC_with_ARM64 = false;
+    enum LDC_with_ARM64_CRC = false;
     enum LDC_with_SSE1 = false;
     enum LDC_with_SSE2 = false;
     enum LDC_with_SSE3 = false;
@@ -1102,7 +1106,16 @@ static if (LDC_with_ARM64)
     // Also: https://developer.arm.com/architectures/instruction-sets/intrinsics/
 
     pragma(LDC_intrinsic, "llvm.aarch64.crc32cb")
-        uint __crc32cb(uint a, uint b);
+        uint __crc32cb(uint a, uint b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.crc32ch")
+        uint __crc32ch(uint a, uint b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.crc32cw")
+        uint __crc32cw(uint a, uint b) pure @safe;
+
+    pragma(LDC_intrinsic, "llvm.aarch64.crc32cd")
+        uint __crc32cd(uint a, ulong b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
         byte16 vabdq_u8(byte16 a, byte16 b) pure @safe;
