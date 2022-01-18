@@ -213,11 +213,37 @@ unittest
 }
 
 
-static if (LDC_with_SSE42)
-{}
+// Utilities for this file
+
+private:
+
+static if (GDC_with_SSE42)
+{
+    version(X86_64)
+        enum bool NeedCRC32CTable = false;
+    else
+        enum bool NeedCRC32CTable = true;
+}
+else static if (LDC_with_SSE42)
+{
+    version(X86_64)
+        enum bool NeedCRC32CTable = false;
+    else
+        enum bool NeedCRC32CTable = true;
+}
 else static if (LDC_with_ARM64_CRC)
-{}
-else private static immutable uint[256] CRC32cTable =
+{
+    enum bool NeedCRC32CTable = false;
+}
+else
+{
+    enum bool NeedCRC32CTable = true;
+}
+
+static if (NeedCRC32CTable)
+{
+
+static immutable uint[256] CRC32cTable =
 [
     0x0, 0xf26b8303, 0xe13b70f7, 0x1350f3f4, 0xc79a971f, 0x35f1141c, 0x26a1e7e8, 0xd4ca64eb,
     0x8ad958cf, 0x78b2dbcc, 0x6be22838, 0x9989ab3b, 0x4d43cfd0, 0xbf284cd3, 0xac78bf27, 0x5e133c24,
@@ -252,3 +278,5 @@ else private static immutable uint[256] CRC32cTable =
     0xf36e6f75, 0x105ec76, 0x12551f82, 0xe03e9c81, 0x34f4f86a, 0xc69f7b69, 0xd5cf889d, 0x27a40b9e,
     0x79b737ba, 0x8bdcb4b9, 0x988c474d, 0x6ae7c44e, 0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351,
 ];
+
+}

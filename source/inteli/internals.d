@@ -1114,7 +1114,7 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.crc32cw")
         uint __crc32cw(uint a, uint b) pure @safe;
 
-    pragma(LDC_intrinsic, "llvm.aarch64.crc32cd")
+    pragma(LDC_intrinsic, "llvm.aarch64.crc32cx")
         uint __crc32cd(uint a, ulong b) pure @safe;
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
