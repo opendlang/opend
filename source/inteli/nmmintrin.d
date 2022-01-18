@@ -100,6 +100,44 @@ unittest
     assert(C == 0xc7e3fe85);
 }
 
+
+/// Starting with the initial value in `crc`, accumulates a CRC32 value 
+/// for unsigned 32-bit integer `v`.
+/// Warning: this is computing CRC32C, not CRC32.
+uint _mm_crc32_u32 (uint crc, uint v) @safe
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_crc32si(crc, v);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_crc32si(crc, v);
+    }
+    else static if (LDC_with_ARM64_CRC)
+    {
+        return __crc32cw(crc, v);
+    }
+    else
+    {
+        crc = _mm_crc32_u8(crc, v & 0xff);
+        crc = _mm_crc32_u8(crc, (v >> 8) & 0xff);
+        crc = _mm_crc32_u8(crc, (v >> 16) & 0xff);
+        crc = _mm_crc32_u8(crc, (v >> 24) & 0xff);
+        return crc;
+    }
+}
+unittest
+{
+    uint A = _mm_crc32_u32(0x12345678, 0x45123563);
+    uint B = _mm_crc32_u32(0x76543210, 0xf50f9993);
+    uint C = _mm_crc32_u32(0xDEADBEEF, 0x00170017);
+    assert(A == 0x22a6ec54);
+    assert(B == 0x7019a6cf);
+    assert(C == 0xbc552c27);
+}
+
+
 /// Starting with the initial value in `crc`, accumulates a CRC32 value 
 /// for unsigned 8-bit integer `v`.
 /// Warning: this is computing CRC32C, not CRC32.
