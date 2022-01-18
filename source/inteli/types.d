@@ -351,7 +351,9 @@ else
     package alias ubyte16 = Vector!(ubyte[16]);
 }
 
-// Emulate ldc.simd cmpMask
+// Emulate ldc.simd cmpMask and other masks.
+// Note: these should be deprecated on non-LDC, 
+// since it's slower to generate that code.
 version(LDC)
 {} 
 else
@@ -406,18 +408,6 @@ else
     }
 
     Vec greaterMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "ogt" comparison
-    {
-        enum size_t Count = Vec.array.length;
-        Vec result;
-        foreach(int i; 0..Count)
-        {
-            bool cond = a.array[i] > b.array[i];
-            result.ptr[i] = cond ? TrueMask!Vec : 0;
-        }
-        return result;
-    }
-
-    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "oge" comparison
     {
         enum size_t Count = Vec.array.length;
         Vec result;
