@@ -294,8 +294,8 @@ unittest
                         | _SIDD_CMP_EQUAL_EACH
                         | _SIDD_NEGATIVE_POLARITY
                         | _SIDD_LEAST_SIGNIFICANT)(mmA, 6, mmB, 6); // only look first six chars
-    import core.stdc.stdio;
     assert(index == 16);
+
     index = _mm_cmpestri!(_SIDD_UBYTE_OPS
                         | _SIDD_CMP_EQUAL_EACH
                         | _SIDD_NEGATIVE_POLARITY
@@ -671,8 +671,6 @@ static if (NeedCRC32CTable)
         0x79b737ba, 0x8bdcb4b9, 0x988c474d, 0x6ae7c44e, 0xbe2da0a5, 0x4c4623a6, 0x5f16d052, 0xad7d5351,
     ];
 }
-
-import core.stdc.stdio;
 
 // Implementation of all the weird SSE4.2 string instructions
 // PERF: This is a slow emulation for now.
