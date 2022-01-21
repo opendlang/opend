@@ -437,8 +437,8 @@ unittest
     assert(res == 1);
 }
 
-/// Compare packed strings in `a` and `b` with lengths `la` and `lb` using the control 
-/// in `imm8`, and returns 1 if any character in a was null, and 0 otherwise.
+/// Returns 1 if "any character in a was null", and 0 otherwise.
+/// Warning: what they mean is it returns 1 if the given length `la` is < Count.
 int _mm_cmpestrs(int imm8)(__m128i a, int la, __m128i b, int lb)
 {
     static if (GDC_with_SSE42)
@@ -454,20 +454,51 @@ int _mm_cmpestrs(int imm8)(__m128i a, int la, __m128i b, int lb)
         // Yes, this intrinsic is there for symmetrical reasons and probably useless.
         // saturates lengths (the Intrinsics Guide doesn't tell this)
         if (la < 0) la = -la;
-        if (lb < 0) lb = -lb;
         if (la > 16) la = 16;
-        if (lb > 16) lb = 16;
         enum int Count = (imm8 & 1) ? 8 : 16;
         return (la < Count);
     }
 }
 unittest
 {
-    __m128i a, b;
-    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, 15, b, 8) == 1);
-    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, 16, b, 8) == 0);
-    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, -15, b, 8) == 1);
-    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, -16, b, 8) == 0);    
+    __m128i a;
+    a = 0;
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, 15, a, 8) == 1);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, 16, a, 8) == 0);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, -15, a, 8) == 1);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(a, -16, a, 8) == 0);
+}
+
+/// Returns 1 if "any character in b was null", and 0 otherwise.
+/// Warning: what they mean is it returns 1 if the given length `lb` is < Count.
+int _mm_cmpestrz(int imm8)(__m128i a, int la, __m128i b, int lb)
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestriz128(cast(ubyte16)a, la, cast(ubyte16)b, lb, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestriz128(cast(byte16)a, la, cast(byte16)b, lb, imm8);
+    }
+    else
+    {
+        // Yes, this intrinsic is there for symmetrical reasons and probably useless.
+        // saturates lengths (the Intrinsics Guide doesn't tell this)
+        if (lb < 0) lb = -lb;
+        if (lb > 16) lb = 16;
+        enum int Count = (imm8 & 1) ? 8 : 16;
+        return (lb < Count);
+    }
+}
+unittest
+{
+    __m128i b;
+    b = 0;
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(b, 15, b, 15) == 1);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(b, 16, b, 16) == 0);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(b, -15, b, -15) == 1);
+    assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(b, -16, b, -16) == 0);
 }
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using the control
