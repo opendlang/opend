@@ -41,8 +41,9 @@ enum int _SIDD_SWORD_OPS = 3;
 /// The resulting mask has bit set at b positions that were found in a.
 enum int _SIDD_CMP_EQUAL_ANY = 0;
 
-/// For each character in `a`, determine if
-/// `b[0] <= c <= b[1] or b[1] <= c <= b[2]...`
+/// For each character in `b`, determine if
+/// `a[0] <= c <= a[1] or a[1] <= c <= a[2]...`
+/// Contrarily to false documentation on the Internet, pairs must be in `a`!
 enum int _SIDD_CMP_RANGES = 4;
 
 /// The strings defined by `a` and `b` are equal
@@ -62,6 +63,7 @@ enum int _SIDD_POSITIVE_POLARITY = 0;
 enum int _SIDD_NEGATIVE_POLARITY = 16;
 
 /// No effect. Do not negate results before the end of the string. (default when using `_SIDD_NEGATIVE_POLARITY`)
+/// You basically never want this.
 enum int _SIDD_MASKED_POSITIVE_POLARITY = 32;
 
 /// Negates results only before the end of the string
@@ -101,7 +103,7 @@ enum int _SIDD_UNIT_MASK = 64;
 ///    Bits [3:2]: Determine comparison type and aggregation method.
 ///      00: Subset: Each character in B is compared for equality with all
 ///          the characters in A.
-///      01: Ranges: Each character in B is compared to A. The comparison
+///      01: Ranges: Each character in B is compared to A pairs. The comparison
 ///          basis is greater than or equal for even-indexed elements in A,
 ///          and less than or equal for odd-indexed elements in A.
 ///      10: Match: Compare each pair of corresponding characters in A and
@@ -117,34 +119,13 @@ enum int _SIDD_UNIT_MASK = 64;
 ///          to the size of \a A or \a B.
 ///
 
-/*
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestri128")
-    int __builtin_ia32_pcmpestri128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestria128")
-    int __builtin_ia32_pcmpestria128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestric128")
-    int __builtin_ia32_pcmpestric128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestrio128")
-    int __builtin_ia32_pcmpestrio128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestris128")
-    int __builtin_ia32_pcmpestris128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestriz128")
-    int __builtin_ia32_pcmpestriz128(byte16, int, byte16, int, byte) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse42.pcmpestrm128")
-    byte16 __builtin_ia32_pcmpestrm128(byte16, int, byte16, int, byte) pure @safe;
-*/
 
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns 1 if `b` "does not contain a null character"
 /// and the resulting mask was zero, and 0 otherwise.
-/// Warning: actually it seems the instruction does accept \0 in input, just the length must be >= count
+/// Warning: actually it seems the instruction does accept \0 in input, just the length must be >= count.
+///          It's not clear for what purpose.
 int _mm_cmpestra(int imm8)(__m128i a, int la, __m128i b, int lb)
 {
     static if (GDC_with_SSE42)
@@ -157,7 +138,7 @@ int _mm_cmpestra(int imm8)(__m128i a, int la, __m128i b, int lb)
     }
     else
     {
-        // saturates lengths (the Intrinsics doesn't tell this)
+        // saturates lengths (the Intrinsics Guide doesn't tell this)
         if (la < 0) la = -la;
         if (lb < 0) lb = -lb;
         if (la > 16) la = 16;
@@ -213,7 +194,7 @@ int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb)
     }
     else
     {
-        // saturates lengths (the Intrinsics doesn't tell this)
+        // saturates lengths (the Intrinsics Guide doesn't tell this)
         if (la < 0) la = -la;
         if (lb < 0) lb = -lb;
         if (la > 16) la = 16;
@@ -243,10 +224,105 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using
 /// the control in `imm8`, and return the generated index.
-/*int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb)
+/// Note: if the mask is all zeroes, the returned index is always `Count` 
+/// (8 or 16 depending on size).
+int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb)
 {
-    assert(0);
-}*/
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestri128(cast(ubyte16)a, la, cast(ubyte16)b, lb, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestri128(cast(byte16)a, la, cast(byte16)b, lb, imm8);
+    }
+    else
+    {
+        // saturates lengths (the Intrinsics Guide doesn't tell this)
+        if (la < 0) la = -la;
+        if (lb < 0) lb = -lb;
+        if (la > 16) la = 16;
+        if (lb > 16) lb = 16;
+
+        int mask;
+        cmpStr!imm8(a, la, b, lb, mask);
+
+        enum int Count = (imm8 & 1) ? 8 : 16;
+        static if (imm8 & _SIDD_MOST_SIGNIFICANT)
+        {
+            // PERF: this is awful, use bit find instructions
+            int tmp = Count-1;
+            while ((tmp >= 0))
+            {
+                if (mask & (1 << tmp))
+                    return tmp;
+                tmp = tmp - 1;
+            }
+            return Count; // Count if not found
+        }
+        else
+        {
+            // least significant bit (default)
+            // PERF: this is awful, use bit find instructions
+            int tmp = 0;
+            while ( (tmp < Count) && !(mask & (1 << tmp)) )
+            {
+                tmp = tmp + 1;
+            }
+            return tmp; // Count if not found
+        }
+    }
+}
+unittest
+{
+    // Find the index of the first difference (at index 6)
+    //                  v 
+    char[16] A = "Hello sun";
+    char[16] B = "Hello moon";
+
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+
+    int index = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                            | _SIDD_CMP_EQUAL_EACH
+                            | _SIDD_NEGATIVE_POLARITY
+                            | _SIDD_LEAST_SIGNIFICANT)(mmA, 9, mmB, 10);
+    assert(index == 6);
+
+    // Those string must compare equal, regardless of what happens after their length.
+    index = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                        | _SIDD_CMP_EQUAL_EACH
+                        | _SIDD_NEGATIVE_POLARITY
+                        | _SIDD_LEAST_SIGNIFICANT)(mmA, 6, mmB, 6); // only look first six chars
+    import core.stdc.stdio;
+    assert(index == 16);
+    index = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                        | _SIDD_CMP_EQUAL_EACH
+                        | _SIDD_NEGATIVE_POLARITY
+                        | _SIDD_MOST_SIGNIFICANT)(mmA, 6, mmB, 6); // only look first six chars
+    assert(index == 16);
+}
+unittest
+{
+    // Identify the last character that isn't an identifier character.
+    //                   v (at index 7)
+    char[16] A = "my_i(en)ifie";
+    char[16] identRanges = "__azAz09";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmI = _mm_loadu_si128(cast(__m128i*)identRanges.ptr);
+    byte16 mask = cast(byte16)_mm_cmpestrm!(_SIDD_UBYTE_OPS
+                                            | _SIDD_CMP_RANGES
+                                            | _SIDD_MASKED_NEGATIVE_POLARITY
+                                            | _SIDD_UNIT_MASK)(mmI, 8, mmA, 12);
+    byte[16] correctM = [0, 0, 0, 0, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(mask.array == correctM);
+
+    int index = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                            | _SIDD_CMP_RANGES
+                            | _SIDD_MASKED_NEGATIVE_POLARITY
+                            | _SIDD_UNIT_MASK)(mmI, 8, mmA, 12);
+    assert(index == 7); // ) is the first char not to be in [__azAz09]
+}
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and return the generated mask.
@@ -633,7 +709,15 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
         bool bInvalid = false;
         for (int j = 0; j < UpperBound; ++j)
         {
-            bool equal = va.array[i] == vb.array[j];
+            static if (Mode == 1) // ranges mode must do >= and <= instead of ==
+            {
+                bool equal = (i & 1) ? (vb.array[j] <= va.array[i]) 
+                                     : (vb.array[j] >= va.array[i]);
+            }
+            else
+            {
+                bool equal = va.array[i] == vb.array[j];
+            }
 
             if (i == la)
                 aInvalid = true;
@@ -685,12 +769,12 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
     else static if (Mode == 1) // ranges
     {
         ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; ++i)
+        for (int i = 0; i < UpperBound; i += 2)
         {
-            for (int j = 0; j < UpperBound; j += 2)
+            for (int j = 0; j < UpperBound; ++j)
             {
-                if (BoolRes[i][j] && BoolRes[i][j+1])
-                    IntRes1 |= (1 << i);
+                if (BoolRes[i][j] && BoolRes[i+1][j])
+                    IntRes1 |= (1 << j);
             }
         }
     }
@@ -716,8 +800,6 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
             }
         }
     }
-
-    //printf("IntRes1 = %x\n", IntRes1);
 
     static if (imm8 & 16)
     {
