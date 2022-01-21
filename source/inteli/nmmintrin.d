@@ -501,13 +501,6 @@ unittest
     assert(_mm_cmpestrs!_SIDD_UBYTE_OPS(b, -16, b, -16) == 0);
 }
 
-/// Compare packed strings in `a` and `b` with lengths `la` and `lb` using the control
-///  in `imm8`, and returns 1 if any character in `b` was null, and 0 otherwise.
-/*int _mm_cmpestrz(int imm8)(__m128i a, int la, __m128i b, int lb)
-{
-    assert(0);
-}*/
-
 /// Compare packed signed 64-bit integers in a and b for greater-than.
 __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) @trusted
 {
