@@ -37,7 +37,8 @@ enum int _SIDD_SWORD_OPS = 3;
 
 // <Comparison options>
 
-/// For each character in `a`, find if it is in `b` (default)
+/// For each character in `b`, find if it is in `a` (default)
+/// The resulting mask has bit set at b positions that were found in a.
 enum int _SIDD_CMP_EQUAL_ANY = 0;
 
 /// For each character in `a`, determine if
@@ -78,10 +79,10 @@ enum int _SIDD_MOST_SIGNIFICANT = 64;
 
 // </Bit returned>
 
-/// **Mask only**: return the bit mask.
+/// **Mask only**: return the bit mask (default).
 enum int _SIDD_BIT_MASK = 0;
 
-/// **Mask only**: return the byte mask.
+/// **Mask only**: return the byte/word mask.
 enum int _SIDD_UNIT_MASK = 64;
 
 /// So SSE4.2 has a lot of hard-to-understand instructions. Here is another explanations.
@@ -249,10 +250,83 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and return the generated mask.
-/*int _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb)
+__m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb)
 {
-    assert(0);
-}*/
+    static if (GDC_with_SSE42)
+    {
+        return cast(__m128i) __builtin_ia32_pcmpestrm128(cast(ubyte16)a, la, cast(ubyte16)b, lb, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return cast(__m128i) __builtin_ia32_pcmpestrm128(cast(byte16)a, la, cast(byte16)b, lb, imm8);
+    }
+    else
+    {
+        // saturates lengths (the Intrinsics doesn't tell this)
+        if (la < 0) la = -la;
+        if (lb < 0) lb = -lb;
+        if (la > 16) la = 16;
+        if (lb > 16) lb = 16;
+
+        int mask;
+        cmpStr!imm8(a, la, b, lb, mask);
+
+        static if (imm8 & _SIDD_UNIT_MASK)
+        {
+            static if (imm8 & 1)
+            {
+                // short (PERF: this is bad)
+                short8 r;
+                foreach(i; 0..8)
+                {
+                    if (mask & (1 << i))
+                        r.ptr[i] = -1;
+                    else
+                        r.ptr[i] = 0;
+                }
+                return cast(__m128i)s;
+            }
+            else
+            {
+                byte16 r;
+                // byte (PERF: this is bad)
+                foreach(i; 0..16)
+                {
+                    if (mask & (1 << i))
+                        r.ptr[i] = -1;
+                    else
+                        r.ptr[i] = 0;
+                }
+                return cast(__m128i)r;
+            }
+        }
+        else
+        {
+            // _SIDD_BIT_MASK
+            return _mm_cvtsi32_si128(mask);
+        }
+    }
+}
+unittest
+{
+    char[16] A = "Hello world!";
+    char[16] B = "aeiou!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+
+    // Find which letters from B where found in A.
+    byte16 R = cast(byte16)_mm_cmpestrm!(_SIDD_UBYTE_OPS 
+                                       | _SIDD_CMP_EQUAL_ANY
+                                       | _SIDD_BIT_MASK)(mmA, -12, mmB, -6);
+    // because 'e', 'o', and '!' were found
+    byte[16] correctR = [42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correctR);
+    byte16 M = cast(byte16) _mm_cmpestrm!(_SIDD_UBYTE_OPS 
+                                        | _SIDD_CMP_EQUAL_ANY
+                                        | _SIDD_UNIT_MASK)(mmA, 12, mmB, 6);
+    byte[16] correctM = [0, -1, 0, -1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(M.array == correctM);
+}
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns bit 0 of the resulting bit mask.
@@ -592,8 +666,6 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
                     else if (aInvalid && bInvalid)
                         equal = true;
             }
-            else 
-                static assert(false);
             BoolRes[i][j] = equal;
         }
     }
@@ -606,7 +678,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
             for (int j = 0; j < UpperBound; ++j)
             {
                 if (BoolRes[i][j])
-                    IntRes1 |= (1 << i);
+                    IntRes1 |= (1 << j);
             }
         }
     }
