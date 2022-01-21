@@ -321,7 +321,7 @@ unittest
                             | _SIDD_CMP_RANGES
                             | _SIDD_MASKED_NEGATIVE_POLARITY
                             | _SIDD_UNIT_MASK)(mmI, 8, mmA, 12);
-    assert(index == 7); // ) is the first char not to be in [__azAz09]
+    assert(index == 7); // ')' is the first char not to be in [__azAz09]
 }
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
@@ -406,10 +406,36 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns bit 0 of the resulting bit mask.
-/*int _mm_cmpestro(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestro(int imm8)(__m128i a, int la, __m128i b, int lb)
 {
-    assert(0);
-}*/
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestrio128(cast(ubyte16)a, la, cast(ubyte16)b, lb, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpestrio128(cast(byte16)a, la, cast(byte16)b, lb, imm8);
+    }
+    else
+    {
+        int4 mask = cast(int4) _mm_cmpestrm!imm8(a, la, b, lb);
+        return mask.array[0] & 1;
+    }
+}
+unittest
+{
+    char[16] A = "Hallo world!";
+    char[16] B = "aeiou!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+
+    // Find which letters from B where found in A.
+    int res = _mm_cmpestro!(_SIDD_UBYTE_OPS 
+                          | _SIDD_CMP_EQUAL_ANY
+                          | _SIDD_BIT_MASK)(mmA, 12, mmB, -6);
+    // because 'a' was found in "Hallo world!"
+    assert(res == 1);
+}
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using the control 
 /// in `imm8`, and returns 1 if any character in a was null, and 0 otherwise.
