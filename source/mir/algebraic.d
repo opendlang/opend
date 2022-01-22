@@ -678,6 +678,7 @@ struct Algebraic(_Types...)
         hasElaborateCopyConstructor,
         hasElaborateDestructor,
         hasMember,
+        isDynamicArray,
         isEqualityComparable,
         isOrderingComparable,
         Largest,
@@ -847,6 +848,71 @@ struct Algebraic(_Types...)
         static if (!__traits(compiles, (){ _Payload[0] arg; }))
         {
             @disable this();
+        }
+
+        static if (allSatisfy!(isDynamicArray, AllowedTypes))
+        {
+            auto length()() const @property
+            {
+                switch (_identifier_)
+                {
+                    static foreach (i, T; AllowedTypes)
+                    {
+                        case i:
+                            return trustedGet!T().length;
+                    }
+                    default: assert(0);
+                }
+            }
+
+            auto length()(size_t length) @property
+            {
+                switch (_identifier_)
+                {
+                    static foreach (i, T; AllowedTypes)
+                    {
+                        case i:
+                            return trustedGet!T().length = length;
+                    }
+                    default: assert(0);
+                }
+            }
+
+            alias opDollar(size_t pos : 0) = length;
+
+            /// Returns: slice type of `Slice!(IotaIterator!size_t)`
+            size_t[2] opSlice(size_t dimension)(size_t i, size_t j) @safe scope const
+                if (dimension == 0)
+            in(i <= j, "Algebraic.opSlice: the left opSlice boundary must be less than or equal to the right bound.")
+            {
+                return [i, j];
+            }
+
+            auto opIndex()(size_t index)
+            {
+                return this.visit!(a => a[index]);
+            }
+
+            auto opIndex()(size_t[2] index)
+            {
+                auto ret = this;
+                S: switch (_identifier_)
+                {
+                    static foreach (i, T; AllowedTypes)
+                    {
+                        case i:
+                            ret.trustedGet!T() = ret.trustedGet!T()[index[0] .. index[1]];
+                            break S;
+                    }
+                    default: assert(0);
+                }
+                return ret;
+            }
+
+            auto opIndexAssign(T)(T value, size_t index)
+            {
+                return this.tryVisit!(a => a[index] = value);
+            }
         }
     }
 
@@ -2192,6 +2258,22 @@ version(mir_core_test) unittest
     assert(y.isNull);
     assert(z.isNull);
     assert(z == y);
+}
+
+/// Array primitives propagation
+@safe pure nothrow version(mir_core_test) unittest
+{
+    Variant!(long[], double[]) array;
+    array = new long[3];
+    array[2] = 100;
+    assert(array == [0L, 0, 100]);
+    assert(array.length == 3);
+    assert(array[2] == 100);
+    array.length = 4;
+    assert(array == [0L, 0, 100, 0]);
+    array = array[2 .. 3];    
+    assert(array.length == 1);
+    assert(array[0] == 100);
 }
 
 /++
