@@ -629,6 +629,54 @@ unittest
                             | _SIDD_NEGATIVE_POLARITY)(mmA, mmC)); // do not match
 }
 
+/// Compare packed strings with implicit lengths in `a` and `b` using the control in
+/// `imm8`, and return the generated mask.
+__m128i _mm_cmpistrm(int imm8)(__m128i a, __m128i b)
+{
+    static if (GDC_with_SSE42)
+    {
+        return cast(__m128i) __builtin_ia32_pcmpistrm128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return cast(__m128i) __builtin_ia32_pcmpistrm128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int la = findLengthShort(a);
+            int lb = findLengthShort(b);
+        }
+        else
+        {
+            int la = findLengthByte(a);
+            int lb = findLengthByte(b);
+        }
+        return _mm_cmpestrm!imm8(a, la, b, lb);
+    }
+}
+unittest
+{
+    char[16] A = "Hello world!";
+    char[16] B = "aeiou!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+
+    // Find which letters from B where found in A.
+    byte16 R = cast(byte16)_mm_cmpistrm!(_SIDD_UBYTE_OPS 
+                                       | _SIDD_CMP_EQUAL_ANY
+                                       | _SIDD_BIT_MASK)(mmA, mmB);
+    // because 'e', 'o', and '!' were found
+    byte[16] correctR = [42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correctR);
+    byte16 M = cast(byte16) _mm_cmpistrm!(_SIDD_UBYTE_OPS 
+                                        | _SIDD_CMP_EQUAL_ANY
+                                        | _SIDD_UNIT_MASK)(mmA, mmB);
+    byte[16] correctM = [0, -1, 0, -1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(M.array == correctM);
+}
+
 /// Starting with the initial value in `crc`, accumulates a CR32 value 
 /// for unsigned 16-bit integer `v`.
 /// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
@@ -1007,6 +1055,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
 
 int findLengthByte(__m128i a) pure
 {
+    // PERF: this is bad
     byte16 b = cast(byte16)a;
 
     for (int i = 0; i < 16; ++i)
@@ -1017,6 +1066,7 @@ int findLengthByte(__m128i a) pure
 
 int findLengthShort(__m128i a) pure
 {
+    // PERF: this is bad
     short8 s = cast(short8)a;
 
     for (int i = 0; i < 8; ++i)
