@@ -320,8 +320,31 @@ unittest
     int index = _mm_cmpestri!(_SIDD_UBYTE_OPS
                             | _SIDD_CMP_RANGES
                             | _SIDD_MASKED_NEGATIVE_POLARITY
-                            | _SIDD_UNIT_MASK)(mmI, 8, mmA, 12);
-    assert(index == 7); // ')' is the first char not to be in [__azAz09]
+                            | _SIDD_MOST_SIGNIFICANT)(mmI, 8, mmA, 12);
+    assert(index == 7); // ')' is the last char not to be in [__azAz09]
+}
+unittest
+{
+    // Find a substring
+    char[16] A = "def";
+    char[16] B = "abcdefghdefff";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+
+    byte16 mask = cast(byte16)_mm_cmpestrm!(_SIDD_UBYTE_OPS
+                                            | _SIDD_CMP_EQUAL_ORDERED
+                                            | _SIDD_UNIT_MASK)(mmA, 3, mmB, 13);
+    byte[16] correctM = [0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0];
+    assert(mask.array == correctM);
+
+    int firstMatch = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                                 | _SIDD_CMP_EQUAL_ORDERED)(mmA, 3, mmB, 13);
+    assert(firstMatch == 3);
+
+    int lastMatch = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                                 | _SIDD_CMP_EQUAL_ORDERED
+                                 | _SIDD_MOST_SIGNIFICANT)(mmA, 3, mmB, 13);
+    assert(lastMatch == 8);
 }
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
@@ -338,7 +361,7 @@ __m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb)
     }
     else
     {
-        // saturates lengths (the Intrinsics doesn't tell this)
+        // saturates lengths (the Intrinsics don't tell this)
         if (la < 0) la = -la;
         if (lb < 0) lb = -lb;
         if (la > 16) la = 16;
@@ -765,7 +788,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
     else
     {
         enum int size = 8;
-        enum UpperBound = 16; 
+        enum UpperBound = 16; // Note: our "UpperBound" is one more than in Intel pseudocode
         alias Vec = byte16;
         alias ResType = ushort;
     }
@@ -818,11 +841,11 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
             else static if (Mode == 3)
             {
                 if (!aInvalid && bInvalid)
-                        equal = false;
-                    else if (aInvalid && !bInvalid)
-                        equal = true;
-                    else if (aInvalid && bInvalid)
-                        equal = true;
+                    equal = false;
+                else if (aInvalid && !bInvalid)
+                    equal = true;
+                else if (aInvalid && bInvalid)
+                    equal = true;
             }
             BoolRes[i][j] = equal;
         }
@@ -861,16 +884,16 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
                 IntRes1 |= (1 << i);
         }
     }
-    else static if (Mode == 3) // equal ordered
+    else static if (Mode == 3) // equal ordered (substring search)
     {
         ResType IntRes1 = SizeMask;
-        for (int i = 0; i < UpperBound; ++i)
+        for (int j = 0; j < UpperBound; ++j)
         {
-            for (int j = 0; j < UpperBound - i; ++j)
+            for (int i = 0; i < UpperBound - j; ++i)
             {
                 int k = i + j;
-                if (!BoolRes[k][j])
-                    IntRes1 &= ~(1 << i);
+                if (!BoolRes[i][k])
+                    IntRes1 &= ~(1 << j);
             }
         }
     }
