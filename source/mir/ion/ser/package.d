@@ -513,16 +513,19 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             {
                 alias f = serdeGetTransformOut!(__traits(getMember, value, member));
                 auto val = f(__traits(getMember, value, member));
+                alias W  = typeof(val);
             }
             else
             static if (hasField!(V, member))
             {
                 auto valPtr = &__traits(getMember, value, member);
-                ref val() @trusted @property { return *valPtr; }
+                alias W  = typeof(*valPtr);
+                ref W val() @trusted @property { return *valPtr; }
             }
             else
             {
                 auto val = __traits(getMember, value, member);
+                alias W  = typeof(val);
             }
 
             static if (__traits(hasMember, S, "putCompiletimeKey"))
@@ -538,8 +541,6 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             {
                 serializer.putKey(key);
             }
-
-            alias W = typeof(val);
 
             static if(hasUDA!(__traits(getMember, value, member), serdeLikeList))
             {

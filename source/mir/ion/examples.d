@@ -302,15 +302,16 @@ version(mir_ion_test) unittest
     
     static struct Cake
     {
-        @serdeIgnoreDefault
-        string name = "Chocolate Cake";
+        @serdeIgnoreDefault string name = "Chocolate Cake";
+        @serdeIgnoreDefault string nullStr;
+        @serdeIgnoreDefault string emptyStr = "";
         int slices = 8;
         float flavor = 1;
         @serdeIgnoreDefault
         Decor dec = Decor(20); // { 20, inf }
     }
     
-    assert(Cake("Normal Cake").serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
+    assert(Cake("Normal Cake", "", null).serializeJson == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
     auto cake = Cake.init;
     cake.dec = Decor.init;
     assert(cake.serializeJson == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"+inf"}}`);
@@ -1245,8 +1246,9 @@ version(mir_ion_test) unittest
     import mir.series;
     auto s = ["a", "b"].series([5, 6]);
     auto t = `{index:["a","b"],data:[5,6]}`;
-    assert(s.serializeText == t, s.serializeText);
-    assert(t.deserializeText!(typeof(s)) == s);
+    auto r = `{index:["b","a"],data:[6,5]}`;
+    assert(s.serializeText == t);
+    assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
 
 // Const series de/serialization
@@ -1257,8 +1259,9 @@ version(mir_ion_test) unittest
     import mir.series;
     auto s = ["a", "b"].series([5, 6]).lightConst;
     auto t = `{index:["a","b"],data:[5,6]}`;
-    assert(s.serializeText == t, s.serializeText);
-    assert(t.deserializeText!(typeof(s)) == s);
+    auto r = `{index:["b","a"],data:[6,5]}`;
+    assert(s.serializeText == t);
+    assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
 
 /// RC Series de/serialization
@@ -1271,8 +1274,9 @@ version(mir_ion_test) unittest
     import mir.small_string;
     auto s = [SmallString!32("a"), SmallString!32("b")].rcslice.series([5, 6].rcslice);
     auto t = `{index:["a","b"],data:[5,6]}`;
-    assert(s.serializeText == t, s.serializeText);
-    assert(t.deserializeText!(typeof(s)) == s);
+    auto r = `{index:["b","a"],data:[6,5]}`;
+    assert(s.serializeText == t);
+    assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
 
 // Const RC Series de/serialization
@@ -1285,6 +1289,7 @@ version(mir_ion_test) unittest
     import mir.small_string;
     auto s = [SmallString!32("a"), SmallString!32("b")].rcslice.series([5, 6].rcslice).lightConst;
     auto t = `{index:["a","b"],data:[5,6]}`;
-    assert(s.serializeText == t, s.serializeText);
-    assert(t.deserializeText!(typeof(s)) == s);
+    auto r = `{index:["b","a"],data:[6,5]}`;
+    assert(s.serializeText == t);
+    assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
