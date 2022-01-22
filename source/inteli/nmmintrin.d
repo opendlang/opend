@@ -581,7 +581,55 @@ unittest
     assert(R.array == correct);
 }
 
-/// Starting with the initial value in `crc`, accumulates a CRC32 value 
+/// Compare packed strings with implicit lengths in `a` and `b` using the control in `imm8`,
+/// and returns 1 if `b` did not contain a null character and the resulting mask was zero, 
+/// and 0 otherwise.
+int _mm_cmpistra(int imm8)(__m128i a, __m128i b)
+{
+    static if (GDC_with_SSE42)
+    {
+        return cast(int) __builtin_ia32_pcmpistria128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistria128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int la = findLengthShort(a);
+            int lb = findLengthShort(b);
+        }
+        else
+        {
+            int la = findLengthByte(a);
+            int lb = findLengthByte(b);
+        }
+        return _mm_cmpestra!imm8(a, la, b, lb);
+    }
+}
+unittest
+{
+    char[16] A = "Maximum\x00one";
+    char[16] B = "Maximum\x00four";
+    char[16] C = "Mbximum\x00length!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    __m128i mmC = _mm_loadu_si128(cast(__m128i*)C.ptr);
+
+    // string matching a-la strcmp, for 16-bytes of data
+    // Use _SIDD_NEGATIVE_POLARITY since mask must be null, and all match must be one
+    assert(0 == _mm_cmpistra!(_SIDD_UBYTE_OPS 
+                            | _SIDD_CMP_EQUAL_EACH
+                            | _SIDD_MASKED_NEGATIVE_POLARITY)(mmA, mmB)); // match, but b is too short
+
+    assert(0 == _mm_cmpistra!(_SIDD_UBYTE_OPS 
+                            | _SIDD_CMP_EQUAL_EACH
+                            | _SIDD_NEGATIVE_POLARITY)(mmA, mmC)); // do not match
+}
+
+/// Starting with the initial value in `crc`, accumulates a CR32 value 
 /// for unsigned 16-bit integer `v`.
 /// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
 uint _mm_crc32_u16 (uint crc, ushort v) @safe
@@ -955,4 +1003,24 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
         ResType IntRes2 = IntRes1;
     }
     intResult = IntRes2;
+}
+
+int findLengthByte(__m128i a) pure
+{
+    byte16 b = cast(byte16)a;
+
+    for (int i = 0; i < 16; ++i)
+        if (b.array[i] == 0)
+            return i;
+    return 16;
+}
+
+int findLengthShort(__m128i a) pure
+{
+    short8 s = cast(short8)a;
+
+    for (int i = 0; i < 8; ++i)
+        if (s.array[i] == 0)
+            return i;
+    return 8;
 }
