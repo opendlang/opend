@@ -911,7 +911,7 @@ struct Algebraic(_Types...)
 
             auto opIndexAssign(T)(T value, size_t index)
             {
-                return this.tryVisit!(a => a[index] = value);
+                return this.tryMatch!((ref array, ref value) => array[index] = value)(value);
             }
         }
     }
@@ -2261,7 +2261,7 @@ version(mir_core_test) unittest
 }
 
 /// Array primitives propagation
-@safe pure nothrow version(mir_core_test) unittest
+@safe pure version(mir_core_test) unittest
 {
     Variant!(long[], double[]) array;
     array = new long[3];
@@ -2274,6 +2274,8 @@ version(mir_core_test) unittest
     array = array[2 .. 3];    
     assert(array.length == 1);
     assert(array[0] == 100);
+    array[0] = 10.Variant!(long, double);
+    assert(array[0] == 10);
 }
 
 /++
