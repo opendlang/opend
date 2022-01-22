@@ -677,6 +677,54 @@ unittest
     assert(M.array == correctM);
 }
 
+/// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
+/// the control in `imm8`, and returns bit 0 of the resulting bit mask.
+int _mm_cmpistro(int imm8)(__m128i a, __m128i b)
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistrio128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistrio128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int la = findLengthShort(a);
+            int lb = findLengthShort(b);
+        }
+        else
+        {
+            int la = findLengthByte(a);
+            int lb = findLengthByte(b);
+        }
+        return _mm_cmpestro!imm8(a, la, b, lb);
+    }
+}
+unittest
+{
+    char[16] A = "Hallo world!";
+    char[16] B = "aeiou!";
+    char[16] C = "Z";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    __m128i mmC = _mm_loadu_si128(cast(__m128i*)C.ptr);
+
+    // Find which letters from B where found in A.
+    int res = _mm_cmpistro!(_SIDD_UBYTE_OPS 
+                          | _SIDD_CMP_EQUAL_ANY
+                          | _SIDD_BIT_MASK)(mmA, mmB);
+    // because 'a' was found in "Hallo world!"
+    assert(res == 1);
+    res = _mm_cmpistro!(_SIDD_UBYTE_OPS 
+                      | _SIDD_CMP_EQUAL_ANY
+                      | _SIDD_BIT_MASK)(mmA, mmC);
+    assert(res == 0); // because 'Z' wasn't found in A
+}
+
 /// Starting with the initial value in `crc`, accumulates a CR32 value 
 /// for unsigned 16-bit integer `v`.
 /// Warning: this is computing CRC-32C (Castagnoli), not CRC-32.
