@@ -741,12 +741,12 @@ int _mm_cmpistrs(int imm8)(__m128i a, __m128i b)
         static if (imm8 & 1)
         {
             int la = findLengthShort(a);
-            return la < 8;
+            return la != 8;
         }
         else
         {
             int la = findLengthByte(a);
-            return la < 16;
+            return la != 16;
         }
     }
 }
@@ -762,6 +762,45 @@ unittest
     assert(_mm_cmpistrs!_SIDD_SBYTE_OPS(mmB, mmB) == 1);
     assert(_mm_cmpistrs!_SIDD_UWORD_OPS(mmC, mmC) == 0);
 }
+
+/// Returns 1 if any character in `b` was null, and 0 otherwise.
+int _mm_cmpistrz(int imm8)(__m128i a, __m128i b)
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistriz128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistriz128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int lb = findLengthShort(b);
+            return lb != 8;
+        }
+        else
+        {
+            int lb = findLengthByte(b);
+            return lb != 16;
+        }
+    }
+}
+unittest
+{
+    char[16] A = "";
+    char[16] B = "hello";
+    char[16] C = "Maximum length!!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    __m128i mmC = _mm_loadu_si128(cast(__m128i*)C.ptr);
+    assert(_mm_cmpistrz!_SIDD_UBYTE_OPS(mmC, mmA) == 1);
+    assert(_mm_cmpistrz!_SIDD_SBYTE_OPS(mmC, mmB) == 1);
+    assert(_mm_cmpistrz!_SIDD_UWORD_OPS(mmA, mmC) == 0);
+}
+
 
 /// Starting with the initial value in `crc`, accumulates a CR32 value 
 /// for unsigned 16-bit integer `v`.
