@@ -325,6 +325,24 @@ unittest
 }
 unittest
 {
+    // testing _SIDD_CMP_RANGES but with signed shorts comparison instead (this only makes sense for _SIDD_CMP_RANGES)
+    short[8] ranges  = [0,  -1,  1000, 2000,    0,    0,    0, 0];
+    short[8] numbers = [-32768, -1000, -1, -0, 0, 1, 1000, 32767];
+    __m128i mmRanges = _mm_loadu_si128(cast(__m128i*)ranges.ptr);
+    __m128i mmNumbers = _mm_loadu_si128(cast(__m128i*)numbers.ptr);
+
+    short8 mask = cast(short8)_mm_cmpestrm!(_SIDD_UWORD_OPS
+                                          | _SIDD_CMP_RANGES
+                                          | _SIDD_UNIT_MASK)(mmRanges, 4, mmNumbers, 8);
+    short[8] correctM = [ -1, -1, -1, -1, -1, -1, -1, -1];
+    mask = cast(short8)_mm_cmpestrm!(_SIDD_SWORD_OPS
+                                   | _SIDD_CMP_RANGES
+                                   | _SIDD_UNIT_MASK)(mmRanges, 4, mmNumbers, 8);
+    short[8] correctZ = [ 0, 0, 0, 0, 0, 0, -1, 0];
+    assert(mask.array == correctZ);
+}
+unittest
+{
     // Find a substring
     char[16] A = "def";
     char[16] B = "abcdefghdefff";
@@ -383,7 +401,7 @@ __m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb)
                     else
                         r.ptr[i] = 0;
                 }
-                return cast(__m128i)s;
+                return cast(__m128i)r;
             }
             else
             {
@@ -784,6 +802,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
         enum UpperBound = 8;
         alias Vec = short8;
         alias ResType = ubyte;
+        alias UnsignedVecType = ushort;
     }
     else
     {
@@ -791,6 +810,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
         enum UpperBound = 16; // Note: our "UpperBound" is one more than in Intel pseudocode
         alias Vec = byte16;
         alias ResType = ushort;
+        alias UnsignedVecType = ubyte;
     }
     enum ResType SizeMask = cast(ResType)-1;
 
@@ -808,8 +828,17 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
         {
             static if (Mode == 1) // ranges mode must do >= and <= instead of ==
             {
-                bool equal = (i & 1) ? (vb.array[j] <= va.array[i]) 
-                                     : (vb.array[j] >= va.array[i]);
+                enum bool signed = (imm8 & 2) != 0;
+                static if (!signed)
+                {
+                    bool equal = (i & 1) ? (cast(UnsignedVecType)vb.array[j] <= cast(UnsignedVecType)va.array[i]) 
+                                         : (cast(UnsignedVecType)vb.array[j] >= cast(UnsignedVecType)va.array[i]);
+                }
+                else
+                {
+                    bool equal = (i & 1) ? (vb.array[j] <= va.array[i]) 
+                                         : (vb.array[j] >= va.array[i]);
+                }
             }
             else
             {
