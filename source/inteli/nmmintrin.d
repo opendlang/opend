@@ -346,8 +346,10 @@ unittest
     // Find a substring
     char[16] A = "def";
     char[16] B = "abcdefghdefff";
+    char[16] C = "no substring";
     __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
     __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    __m128i mmC = _mm_loadu_si128(cast(__m128i*)C.ptr);
 
     byte16 mask = cast(byte16)_mm_cmpestrm!(_SIDD_UBYTE_OPS
                                             | _SIDD_CMP_EQUAL_ORDERED
@@ -363,6 +365,9 @@ unittest
                                  | _SIDD_CMP_EQUAL_ORDERED
                                  | _SIDD_MOST_SIGNIFICANT)(mmA, 3, mmB, 13);
     assert(lastMatch == 8);
+    firstMatch = _mm_cmpestri!(_SIDD_UBYTE_OPS
+                                 | _SIDD_CMP_EQUAL_ORDERED)(mmA, -3, mmC, -12);
+    assert(firstMatch == 16); // no substring found
 }
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
