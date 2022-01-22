@@ -629,6 +629,50 @@ unittest
                             | _SIDD_NEGATIVE_POLARITY)(mmA, mmC)); // do not match
 }
 
+/// Compare packed strings with implicit lengths in `a` and `b` using the control in `imm8`,
+/// and returns 1 if the resulting mask was non-zero, and 0 otherwise.
+int _mm_cmpistrc(int imm8)(__m128i a, __m128i b)
+{
+    static if (GDC_with_SSE42)
+    {
+        return cast(int) __builtin_ia32_pcmpistric128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return cast(int) __builtin_ia32_pcmpistric128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int la = findLengthShort(a);
+            int lb = findLengthShort(b);
+        }
+        else
+        {
+            int la = findLengthByte(a);
+            int lb = findLengthByte(b);
+        }
+        return _mm_cmpestrc!imm8(a, la, b, lb);
+    }
+}
+unittest
+{
+    // Compare two shorter strings
+    {
+        char[16] A = "Hello";
+        char[16] B = "Hello moon";
+        __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+        __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+        assert(0 == _mm_cmpistrc!(_SIDD_UBYTE_OPS  // match gives 0 like strcmp
+                                | _SIDD_CMP_EQUAL_EACH
+                                | _SIDD_NEGATIVE_POLARITY)(mmA, mmA));
+        assert(1 == _mm_cmpistrc!(_SIDD_UBYTE_OPS 
+                                | _SIDD_CMP_EQUAL_EACH
+                                | _SIDD_NEGATIVE_POLARITY)(mmA, mmB));
+    }
+}
+
 /// Compare packed strings with implicit lengths in `a` and `b` using the control in
 /// `imm8`, and return the generated mask.
 __m128i _mm_cmpistrm(int imm8)(__m128i a, __m128i b)
