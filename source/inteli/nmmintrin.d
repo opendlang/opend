@@ -10,6 +10,7 @@ module inteli.nmmintrin;
 public import inteli.types;
 import inteli.internals;
 public import inteli.smmintrin;
+import core.bitop: bsf;
 
 
 // Note: this header will work whether you have SSE4.2 enabled or not.
@@ -1274,22 +1275,40 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult) @
 
 int findLengthByte(__m128i a) pure @safe
 {
-    // PERF: this is bad
-    byte16 b = cast(byte16)a;
-
-    for (int i = 0; i < 16; ++i)
-        if (b.array[i] == 0)
-            return i;
-    return 16;
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i zeroMask = _mm_cmpeq_epi8(a, zero); // 0xff where a byte is zero
+    int mask = _mm_movemask_epi8(zeroMask); // the lowest set bit is the zero index
+    if (mask == 0)
+        return 16;
+    else
+        return bsf(mask);
+}
+unittest
+{
+    char[16] A = "Hel!o";
+    char[16] B = "Maximum length!!";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    assert(findLengthByte(mmA) == 5);
+    assert(findLengthByte(mmB) == 16);
 }
 
 int findLengthShort(__m128i a) pure @safe
 {
-    // PERF: this is bad
-    short8 s = cast(short8)a;
-
-    for (int i = 0; i < 8; ++i)
-        if (s.array[i] == 0)
-            return i;
-    return 8;
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i zeroMask = _mm_cmpeq_epi16(a, zero); // 0xffff where a short is zero
+    int mask = _mm_movemask_epi8(zeroMask); // the lowest set bit is the zero index
+    if (mask == 0)
+        return 8;
+    else
+        return bsf(mask) >> 1;
+}
+unittest
+{
+    short[8] A = [10, 5423, 475, 0, 1, 1, 1, 1 ];
+    short[8] B = [-1, -2, -3, 4, 5, 6, -32768, 1];
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+    assert(findLengthShort(mmA) == 3);
+    assert(findLengthShort(mmB) == 8);
 }
