@@ -16,7 +16,7 @@ public import inteli.smmintrin;
 // With LDC, use "dflags-ldc": ["-mattr=+sse4.2"] or equivalent to actively 
 // generate SSE4.2 instruction (they are often enabled with -O1 or greater).
 
-
+nothrow @nogc:
 
 // <Data size and signedness>
 
@@ -92,7 +92,7 @@ enum int _SIDD_UNIT_MASK = 64;
 /// Alternative explanation of imm8
 ///
 /// imm8 is an 8-bit immediate operand specifying whether the characters are bytes or
-///    words and the type of comparison to perform.
+///    words and the type of comparison to do.
 ///
 ///    Bits [1:0]: Determine source data format.
 ///      00: 16 unsigned bytes
@@ -110,7 +110,7 @@ enum int _SIDD_UNIT_MASK = 64;
 ///          B for equality.
 ///      11: Substring: Search B for substring matches of A.
 ///
-///    Bits [5:4]: Determine whether to perform a one's complement on the bit
+///    Bits [5:4]: Determine whether to do a one's complement on the bit
 ///                mask of the comparison results. \n
 ///      00: No effect. \n
 ///      01: Negate the bit mask. \n
@@ -126,7 +126,7 @@ enum int _SIDD_UNIT_MASK = 64;
 /// and the resulting mask was zero, and 0 otherwise.
 /// Warning: actually it seems the instruction does accept \0 in input, just the length must be >= count.
 ///          It's not clear for what purpose.
-int _mm_cmpestra(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestra(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -182,7 +182,7 @@ unittest
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns 1 if the resulting mask was non-zero,
 /// and 0 otherwise.
-int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -226,7 +226,7 @@ unittest
 /// the control in `imm8`, and return the generated index.
 /// Note: if the mask is all zeroes, the returned index is always `Count` 
 /// (8 or 16 depending on size).
-int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -372,7 +372,7 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and return the generated mask.
-__m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb)
+__m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -452,7 +452,7 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns bit 0 of the resulting bit mask.
-int _mm_cmpestro(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestro(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -485,7 +485,7 @@ unittest
 
 /// Returns 1 if "any character in a was null", and 0 otherwise.
 /// Warning: what they mean is it returns 1 if the given length `la` is < Count.
-int _mm_cmpestrs(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestrs(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -517,7 +517,7 @@ unittest
 
 /// Returns 1 if "any character in b was null", and 0 otherwise.
 /// Warning: what they mean is it returns 1 if the given length `lb` is < Count.
-int _mm_cmpestrz(int imm8)(__m128i a, int la, __m128i b, int lb)
+int _mm_cmpestrz(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -550,7 +550,6 @@ unittest
 /// Compare packed signed 64-bit integers in a and b for greater-than.
 __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) @trusted
 {
-    // PERF: ARM32 not good
     long2 la = cast(long2)a;
     long2 lb = cast(long2)b;
     static if (GDC_with_SSE42)
@@ -560,7 +559,7 @@ __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) @trusted
     else version(LDC)
     {
         // LDC x86: Optimized since LDC 1.1.0 -O1
-        //     arm64: Optimized since LDC 1.8.0 -O1
+        //   arm64: Optimized since LDC 1.8.0 -O1
         // When SSE4.2 is disabled, this gives same sequence than below.
         return cast(__m128i)( greaterMask!long2(la, lb));
     }
@@ -584,7 +583,7 @@ unittest
 /// Compare packed strings with implicit lengths in `a` and `b` using the control in `imm8`,
 /// and returns 1 if `b` did not contain a null character and the resulting mask was zero, 
 /// and 0 otherwise.
-int _mm_cmpistra(int imm8)(__m128i a, __m128i b)
+int _mm_cmpistra(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -631,7 +630,7 @@ unittest
 
 /// Compare packed strings with implicit lengths in `a` and `b` using the control in `imm8`,
 /// and returns 1 if the resulting mask was non-zero, and 0 otherwise.
-int _mm_cmpistrc(int imm8)(__m128i a, __m128i b)
+int _mm_cmpistrc(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -673,9 +672,60 @@ unittest
     }
 }
 
+/// Compare packed strings with implicit lengths in `a` and `b` using the control in `imm8`
+/// and return the generated index.
+/// Note: if the mask is all zeroes, the returned index is always `Count` 
+/// (8 or 16 depending on size).
+int _mm_cmpistri(int imm8)(__m128i a, __m128i b) @trusted
+{
+    static if (GDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistri128(cast(ubyte16)a, cast(ubyte16)b, imm8);
+    }
+    else static if (LDC_with_SSE42)
+    {
+        return __builtin_ia32_pcmpistri128(cast(byte16)a, cast(byte16)b, imm8);
+    }
+    else
+    {
+        static if (imm8 & 1)
+        {
+            int la = findLengthShort(a);
+            int lb = findLengthShort(b);
+        }
+        else
+        {
+            int la = findLengthByte(a);
+            int lb = findLengthByte(b);
+        }
+        return _mm_cmpestri!imm8(a, la, b, lb);
+    }
+}
+unittest
+{
+    // Identify the last character that isn't an identifier character.
+    //                   v (at index 7)
+    char[16] A = "my_i(en)ifie";
+    char[16] identRanges = "__azAz09";
+    __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
+    __m128i mmI = _mm_loadu_si128(cast(__m128i*)identRanges.ptr);
+    byte16 mask = cast(byte16)_mm_cmpistrm!(_SIDD_UBYTE_OPS
+                                            | _SIDD_CMP_RANGES
+                                            | _SIDD_MASKED_NEGATIVE_POLARITY
+                                            | _SIDD_UNIT_MASK)(mmI, mmA);
+    byte[16] correctM = [0, 0, 0, 0, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(mask.array == correctM);
+
+    int index = _mm_cmpistri!(_SIDD_UBYTE_OPS
+                            | _SIDD_CMP_RANGES
+                            | _SIDD_MASKED_NEGATIVE_POLARITY
+                            | _SIDD_MOST_SIGNIFICANT)(mmI, mmA);
+    assert(index == 7); // ')' is the last char not to be in [__azAz09]
+}
+
 /// Compare packed strings with implicit lengths in `a` and `b` using the control in
 /// `imm8`, and return the generated mask.
-__m128i _mm_cmpistrm(int imm8)(__m128i a, __m128i b)
+__m128i _mm_cmpistrm(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -723,7 +773,7 @@ unittest
 
 /// Compare packed strings in `a` and `b` with lengths `la` and `lb` using 
 /// the control in `imm8`, and returns bit 0 of the resulting bit mask.
-int _mm_cmpistro(int imm8)(__m128i a, __m128i b)
+int _mm_cmpistro(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -770,7 +820,7 @@ unittest
 }
 
 /// Returns 1 if any character in `a` was null, and 0 otherwise.
-int _mm_cmpistrs(int imm8)(__m128i a, __m128i b)
+int _mm_cmpistrs(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -808,7 +858,7 @@ unittest
 }
 
 /// Returns 1 if any character in `b` was null, and 0 otherwise.
-int _mm_cmpistrz(int imm8)(__m128i a, __m128i b)
+int _mm_cmpistrz(int imm8)(__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE42)
     {
@@ -1061,7 +1111,7 @@ static if (NeedCRC32CTable)
 
 // Implementation of all the weird SSE4.2 string instructions
 // PERF: This is a slow emulation for now.
-void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
+void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult) @safe
 {
     enum int Mode = (imm8 >> 2) & 3;
 
@@ -1222,7 +1272,7 @@ void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult)
     intResult = IntRes2;
 }
 
-int findLengthByte(__m128i a) pure
+int findLengthByte(__m128i a) pure @safe
 {
     // PERF: this is bad
     byte16 b = cast(byte16)a;
@@ -1233,7 +1283,7 @@ int findLengthByte(__m128i a) pure
     return 16;
 }
 
-int findLengthShort(__m128i a) pure
+int findLengthShort(__m128i a) pure @safe
 {
     // PERF: this is bad
     short8 s = cast(short8)a;
