@@ -1372,7 +1372,7 @@ __m128i cmpstrMask(int imm8)(__m128i a,
     enum bool chars16Bits = imm8 & 1;
     enum int Mode = (imm8 >> 2) & 3;
 
-    static if (Mode == 0) 
+    static if (Mode == 0) // equal any
     {
         __m128i R = _mm_setzero_si128();
         static if (chars16Bits) // 64 comparisons
@@ -1410,6 +1410,64 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         // if only a or b is invalid, consider not equal
         R = _mm_andnot_si128( _mm_xor_si128(aValid, bValid) );
     }  
+    else static if (Mode == 3) // equal ordered
+    {
+        // a is searched in b.
+
+        __m128i R = _mm_set1_epi32(-1); // all b positions possible for containing a
+        static if (chars16Bits)
+        {
+            for (int pos = 0; pos < 8; ++pos)
+            {
+                // compare character k of a, where can it go in b?
+                short charK = (cast(short8)a).array[pos];
+                __m128i mmcharK = _mm_set1_epi16(charK);
+
+                short aValidHere = (cast(short8)aValid).array[pos];
+                __m128i mmAValidHere = _mm_set1_epi16(aValidHere);
+                __m128i mmAInvalidHere = _mm_xor_si128(mmAValidHere, _mm_set1_epi32(-1));
+                __m128i equalMask = _mm_cmpeq_epi16(mmcharK, b);
+
+                // Where A is invalid, the comparison always holds "equal"
+                equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
+
+                // Where B is invalid, and A is valid, the comparison is forced to false
+                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValid, mmAInvalidHere));
+
+                R = _mm_and_si128(equalMask);
+
+                // drop first char of b
+                b = _mm_srli_si128!2(b);
+                bValid = _mm_srli_si128!2(bValid);
+            }
+        }
+        else
+        {
+            for (int pos = 0; pos < 16; ++pos)
+            {
+                // compare character k of a, where can it go in b?
+                byte charK = (cast(byte16)a).array[pos];
+                __m128i mmcharK = _mm_set1_epi8(charK);
+
+                byte aValidHere = (cast(byte16)aValid).array[pos];            
+                __m128i mmAValidHere = _mm_set1_epi8(aValidHere);
+                __m128i mmAInvalidHere = _mm_xor_si128(mmAValidHere, _mm_set1_epi32(-1));
+                __m128i equalMask = _mm_cmpeq_epi8(mmcharK, b);
+
+                // Where A is invalid, the comparison always holds "equal"
+                equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
+
+                // Where B is invalid, and A is valid, the comparison is forced to false
+                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValid, mmAInvalidHere));
+
+                R = _mm_and_si128(equalMask);
+
+                // drop first char of b
+                b = _mm_srli_si128!1(b);
+                bValid = _mm_srli_si128!1(bValid);
+            }
+        }
+    }
     else 
         static assert(0);
 
@@ -1453,12 +1511,6 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 bool equal = va.array[i] == vb.array[j];
             }
 
-            if (i == la)
-                aInvalid = true;
-
-            if (j == lb)
-                bInvalid = true;
-
             bool anyInvalid = aInvalid || bInvalid;
 
             // Override comparisons for invalid characters.
@@ -1467,32 +1519,12 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 if (anyInvalid) equal = false;
             }
            
-            else static if (Mode == 3)
-            {
-                if (!aInvalid && bInvalid)
-                    equal = false;
-                else if (aInvalid && !bInvalid)
-                    equal = true;
-                else if (aInvalid && bInvalid)
-                    equal = true;
-            }
+
             BoolRes[i][j] = equal;
         }
     }
 
-    static if (Mode == 0) // equal any
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; ++i)
-        {
-            for (int j = 0; j < UpperBound; ++j)
-            {
-                if (BoolRes[i][j])
-                    IntRes1 |= (1 << j);
-            }
-        }
-    }
-    else static if (Mode == 1) // ranges
+    static if (Mode == 1) // ranges
     {
         ResType IntRes1 = 0;
         for (int i = 0; i < UpperBound; i += 2)
@@ -1501,28 +1533,6 @@ __m128i cmpstrMask(int imm8)(__m128i a,
             {
                 if (BoolRes[i][j] && BoolRes[i+1][j])
                     IntRes1 |= (1 << j);
-            }
-        }
-    }
-    else static if (Mode == 2) // equal each
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; ++i)
-        {   
-            if (BoolRes[i][i])
-                IntRes1 |= (1 << i);
-        }
-    }
-    else static if (Mode == 3) // equal ordered (substring search)
-    {
-        ResType IntRes1 = SizeMask;
-        for (int j = 0; j < UpperBound; ++j)
-        {
-            for (int i = 0; i < UpperBound - j; ++i)
-            {
-                int k = i + j;
-                if (!BoolRes[i][k])
-                    IntRes1 &= ~(1 << j);
             }
         }
     }
