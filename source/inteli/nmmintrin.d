@@ -10,7 +10,7 @@ module inteli.nmmintrin;
 public import inteli.types;
 import inteli.internals;
 public import inteli.smmintrin;
-import core.bitop: bsf;
+import core.bitop: bsf, bsr;
 
 
 // Note: this header will work whether you have SSE4.2 enabled or not.
@@ -251,26 +251,17 @@ int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
         enum int Count = (imm8 & 1) ? 8 : 16;
         static if (imm8 & _SIDD_MOST_SIGNIFICANT)
         {
-            // PERF: this is awful, use bit find instructions
-            int tmp = Count-1;
-            while ((tmp >= 0))
-            {
-                if (mask & (1 << tmp))
-                    return tmp;
-                tmp = tmp - 1;
-            }
-            return Count; // Count if not found
+            if (mask == 0)
+                return Count;
+            else
+                return bsr(mask);
         }
         else
         {
-            // least significant bit (default)
-            // PERF: this is awful, use bit find instructions
-            int tmp = 0;
-            while ( (tmp < Count) && !(mask & (1 << tmp)) )
-            {
-                tmp = tmp + 1;
-            }
-            return tmp; // Count if not found
+            if (mask == 0)
+                return Count;
+            else
+                return bsf(mask);
         }
     }
 }
