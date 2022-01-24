@@ -155,12 +155,12 @@ unittest
 
     // string matching a-la strcmp, for 16-bytes of data
     // Use _SIDD_NEGATIVE_POLARITY since mask must be null, and all match must be one
- /*   assert(1 == _mm_cmpestra!(_SIDD_UBYTE_OPS 
+    assert(1 == _mm_cmpestra!(_SIDD_UBYTE_OPS 
                             | _SIDD_CMP_EQUAL_EACH
                             | _SIDD_NEGATIVE_POLARITY)(mmA, 16, mmA, 16));
     assert(0 == _mm_cmpestra!(_SIDD_UBYTE_OPS 
                             | _SIDD_CMP_EQUAL_EACH
-                            | _SIDD_NEGATIVE_POLARITY)(mmA, 16, mmB, 16));*/
+                            | _SIDD_NEGATIVE_POLARITY)(mmA, 16, mmB, 16));
 
     // test negative length, this will be clamped to 16
     assert(1 == _mm_cmpestra!(_SIDD_UBYTE_OPS 
@@ -191,7 +191,7 @@ int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
     else
     {
         __m128i mask = cmpstrMaskExplicit!imm8(a, la, b, lb);
-        __m128i equalZero = _mm_cmpeq_epi8(mask, _mm_setzero_si128());
+        __m128i equalZero = _mm_cmpeq_epi8(mask, _mm_setzero_si128()); // ???
         int sigbits = _mm_movemask_epi8(equalZero);
         return (sigbits != 0xffff);
     }
@@ -232,29 +232,32 @@ int _mm_cmpestri(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
     }
     else
     {
-        // saturates lengths (the Intrinsics Guide doesn't tell this)
-        if (la < 0) la = -la;
-        if (lb < 0) lb = -lb;
-        if (la > 16) la = 16;
-        if (lb > 16) lb = 16;
+        __m128i mask = cmpstrMaskExplicit!imm8(a, la, b, lb);
 
-        int mask;
-        cmpStr!imm8(a, la, b, lb, mask);
-
-        enum int Count = (imm8 & 1) ? 8 : 16;
-        static if (imm8 & _SIDD_MOST_SIGNIFICANT)
+        // Convert the unit mask to bit mask
+        static if (imm8 & 1)
         {
-            if (mask == 0)
-                return Count;
-            else
-                return bsr(mask);
+            enum int Count = 8;
+            mask = _mm_packs_epi16(mask, _mm_setzero_si128());
         }
         else
         {
-            if (mask == 0)
+            enum int Count = 16;
+        }
+        int signbits = _mm_movemask_epi8(mask);
+        static if (imm8 & _SIDD_MOST_SIGNIFICANT)
+        {
+            if (signbits == 0)
                 return Count;
             else
-                return bsf(mask);
+                return bsr(signbits);
+        }
+        else
+        {
+            if (signbits == 0)
+                return Count;
+            else
+                return bsf(signbits);
         }
     }
 }
@@ -1066,169 +1069,6 @@ static if (NeedCRC32CTable)
     ];
 }
 
-// Implementation of all the weird SSE4.2 string instructions
-// PERF: This is a slow emulation for now.
-void cmpStr(int imm8)(__m128i a, int la, __m128i b, int lb, out int intResult) @safe
-{
-    enum int Mode = (imm8 >> 2) & 3;
-
-    // 8 or 16-bit characters
-    static if (imm8 & 1)
-    {
-        enum int size = 16;
-        enum UpperBound = 8;
-        alias Vec = short8;
-        alias ResType = ubyte;
-        alias UnsignedVecType = ushort;
-    }
-    else
-    {
-        enum int size = 8;
-        enum UpperBound = 16; // Note: our "UpperBound" is one more than in Intel pseudocode
-        alias Vec = byte16;
-        alias ResType = ushort;
-        alias UnsignedVecType = ubyte;
-    }
-    enum ResType SizeMask = cast(ResType)-1;
-
-    bool[UpperBound][UpperBound] BoolRes;
-    bool aInvalid = false;
-
-    Vec va = cast(Vec)a;
-    Vec vb = cast(Vec)b;
-
-    // compare characters in all pairs
-    for (int i = 0; i < UpperBound; ++i)
-    {
-        bool bInvalid = false;
-        for (int j = 0; j < UpperBound; ++j)
-        {
-            static if (Mode == 1) // ranges mode must do >= and <= instead of ==
-            {
-                enum bool signed = (imm8 & 2) != 0;
-                static if (!signed)
-                {
-                    bool equal = (i & 1) ? (cast(UnsignedVecType)vb.array[j] <= cast(UnsignedVecType)va.array[i]) 
-                                         : (cast(UnsignedVecType)vb.array[j] >= cast(UnsignedVecType)va.array[i]);
-                }
-                else
-                {
-                    bool equal = (i & 1) ? (vb.array[j] <= va.array[i]) 
-                                         : (vb.array[j] >= va.array[i]);
-                }
-            }
-            else
-            {
-                bool equal = va.array[i] == vb.array[j];
-            }
-
-            if (i == la)
-                aInvalid = true;
-
-            if (j == lb)
-                bInvalid = true;
-
-            bool anyInvalid = aInvalid || bInvalid;
-
-            // Override comparisons for invalid characters.
-            static if (Mode == 0 || Mode == 1)
-            {
-                if (anyInvalid) equal = false;
-            }
-            else static if (Mode == 2)
-            {
-                if (!aInvalid && bInvalid)
-                    equal = false;
-                else if (aInvalid && !bInvalid)
-                    equal = false;
-                else if (aInvalid && bInvalid)
-                    equal = true;
-            }
-            else static if (Mode == 3)
-            {
-                if (!aInvalid && bInvalid)
-                    equal = false;
-                else if (aInvalid && !bInvalid)
-                    equal = true;
-                else if (aInvalid && bInvalid)
-                    equal = true;
-            }
-            BoolRes[i][j] = equal;
-        }
-    }
-
-    static if (Mode == 0) // equal any
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; ++i)
-        {
-            for (int j = 0; j < UpperBound; ++j)
-            {
-                if (BoolRes[i][j])
-                    IntRes1 |= (1 << j);
-            }
-        }
-    }
-    else static if (Mode == 1) // ranges
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; i += 2)
-        {
-            for (int j = 0; j < UpperBound; ++j)
-            {
-                if (BoolRes[i][j] && BoolRes[i+1][j])
-                    IntRes1 |= (1 << j);
-            }
-        }
-    }
-    else static if (Mode == 2) // equal each
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; ++i)
-        {   
-            if (BoolRes[i][i])
-                IntRes1 |= (1 << i);
-        }
-    }
-    else static if (Mode == 3) // equal ordered (substring search)
-    {
-        ResType IntRes1 = SizeMask;
-        for (int j = 0; j < UpperBound; ++j)
-        {
-            for (int i = 0; i < UpperBound - j; ++i)
-            {
-                int k = i + j;
-                if (!BoolRes[i][k])
-                    IntRes1 &= ~(1 << j);
-            }
-        }
-    }
-
-    static if (imm8 & 16)
-    {
-        static if (imm8 & _SIDD_MASKED_POSITIVE_POLARITY) // only negate valid
-        {
-            ResType IntRes2 = IntRes1;
-            for (int i = 0; i < UpperBound; ++i)
-            {
-                if (i < lb)
-                    IntRes2 ^= (1 << i);
-            }
-        }
-        else
-        {
-            // negate all
-            ResType IntRes2 = cast(ResType)(~cast(int)IntRes1);
-        }
-    }
-    else
-    {
-        // don't negate
-        ResType IntRes2 = IntRes1;
-    }
-    intResult = IntRes2;
-}
-
 int findLengthByte(__m128i a) pure @safe
 {
     const __m128i zero = _mm_setzero_si128();
@@ -1277,12 +1117,6 @@ static immutable byte[32] MASK_DATA =
      0,  0,  0,  0,  0,  0,  0,  0,
 ];
 
-// Makes a byte validity mask with a given implicit length string.
-__m128i validMask8i(__m128i a) @trusted
-{
-    int len = findLengthByte(a);
-    return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len]);
-}
 // Makes a byte validity mask with a given explicit length string.
 __m128i validMask8e(int len) @trusted
 {
@@ -1292,24 +1126,14 @@ unittest
 {
     char[16] A = "";
     char[16] B = "0123456789abcdef";
-    byte16 MA = cast(byte16) validMask8i(_mm_loadu_si128(cast(__m128i*)A.ptr));
-    byte16 MB = cast(byte16) validMask8i(_mm_loadu_si128(cast(__m128i*)B.ptr));
     byte[16] correctA = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     byte[16] correctB = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
-    assert(MA.array == correctA);
-    assert(MB.array == correctB);
-    MA = cast(byte16) validMask8e(0);
-    MB = cast(byte16) validMask8e(16);
+    byte16 MA = cast(byte16) validMask8e(0);
+    byte16 MB = cast(byte16) validMask8e(16);
     assert(MA.array == correctA);
     assert(MB.array == correctB);
 }
 
-// Makes a short validity mask with a given implicit length string.
-__m128i validMask16i(__m128i a) @trusted
-{
-    int len = findLengthShort(a);
-    return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len*2]);
-}
 // Makes a short validity mask with a given explicit length string.
 __m128i validMask16e(int len) @trusted
 {
@@ -1318,15 +1142,10 @@ __m128i validMask16e(int len) @trusted
 unittest
 {
     short[8] A = [3, 4, 5, 0, 3, 4, 5, 6];
-    short8 MA = cast(short8) validMask16i(_mm_loadu_si128(cast(__m128i*)A.ptr));
     short[8] correctA = [-1, -1, -1, 0, 0, 0, 0, 0];
-    assert(MA.array == correctA);
-    MA = cast(short8) validMask16e(3);
+    short8 MA = cast(short8) validMask16e(3);
     assert(MA.array == correctA);
 }
-
-
-
 
 // Internal implementation for non-SSE4.2
 // Compare 8-bit or 16-bit strings, get a mask.
