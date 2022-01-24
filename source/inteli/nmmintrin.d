@@ -946,8 +946,6 @@ ulong _mm_crc32_u64 (ulong crc, ulong v)
     }
     else
     {
-        // PERF: is there actually a better algorithm? Intel pseudocode
-        // looks shorter.
         uint crc32 = cast(uint)crc;
         crc32 = _mm_crc32_u8(crc32, (v >> 0) & 0xff);
         crc32 = _mm_crc32_u8(crc32, (v >> 8) & 0xff);
