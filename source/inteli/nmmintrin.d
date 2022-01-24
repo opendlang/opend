@@ -145,10 +145,21 @@ int _mm_cmpestra(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
         if (la > 16) la = 16;
         if (lb > 16) lb = 16;
 
-        int r;
-        cmpStr!imm8(a, la, b, lb, r);
+        static if (imm8 & 1)
+        {
+            __m128i aValid = validMask16e(la);
+            __m128i bValid = validMask16e(lb);
+        }
+        else
+        {
+            __m128i aValid = validMask8e(la);
+            __m128i bValid = validMask8e(lb);
+        }
+        __m128i mask = cmpstrMask!imm8(a, aValid, b, bValid);
+        __m128i equalZero = _mm_cmpeq_epi8(mask, _mm_setzero_si128());
+        int sigbits = _mm_movemask_epi8(equalZero);
         enum int Count = (imm8 & 1) ? 8 : 16;
-        return (r == 0) && (lb >= Count);
+        return (sigbits == 0xffff) && (lb >= Count);
     }
 }
 unittest
@@ -201,9 +212,20 @@ int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
         if (la > 16) la = 16;
         if (lb > 16) lb = 16;
 
-        int r;
-        cmpStr!imm8(a, la, b, lb, r);
-        return (r != 0);
+        static if (imm8 & 1)
+        {
+            __m128i aValid = validMask16e(la);
+            __m128i bValid = validMask16e(lb);
+        }
+        else
+        {
+            __m128i aValid = validMask8e(la);
+            __m128i bValid = validMask8e(lb);
+        }
+        __m128i mask = cmpstrMask!imm8(a, aValid, b, bValid);
+        __m128i equalZero = _mm_cmpeq_epi8(mask, _mm_setzero_si128());
+        int sigbits = _mm_movemask_epi8(equalZero);
+        return (sigbits != 0xffff);
     }
 }
 unittest
@@ -214,6 +236,9 @@ unittest
         char[16] B = "Hello moon";
         __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
         __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
+        __m128i mask = _mm_cmpestrm!(_SIDD_UBYTE_OPS  // match gives 0 like strcmp
+                                     | _SIDD_CMP_EQUAL_EACH
+                                     | _SIDD_NEGATIVE_POLARITY)(mmA, 6, mmB, 6);
         assert(0 == _mm_cmpestrc!(_SIDD_UBYTE_OPS  // match gives 0 like strcmp
                                 | _SIDD_CMP_EQUAL_EACH
                                 | _SIDD_NEGATIVE_POLARITY)(mmA, 6, mmB, 6));
@@ -381,43 +406,30 @@ __m128i _mm_cmpestrm(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
         if (lb < 0) lb = -lb;
         if (la > 16) la = 16;
         if (lb > 16) lb = 16;
-
-        int mask;
-        cmpStr!imm8(a, la, b, lb, mask);
+        static if (imm8 & 1)
+        {
+            __m128i aValid = validMask16e(la);
+            __m128i bValid = validMask16e(lb);
+        }
+        else
+        {
+            __m128i aValid = validMask8e(la);
+            __m128i bValid = validMask8e(lb);
+        }
+        __m128i mask = cmpstrMask!imm8(a, aValid, b, bValid);
 
         static if (imm8 & _SIDD_UNIT_MASK)
         {
-            static if (imm8 & 1)
-            {
-                // short (PERF: this is bad)
-                short8 r;
-                foreach(i; 0..8)
-                {
-                    if (mask & (1 << i))
-                        r.ptr[i] = -1;
-                    else
-                        r.ptr[i] = 0;
-                }
-                return cast(__m128i)r;
-            }
-            else
-            {
-                byte16 r;
-                // byte (PERF: this is bad)
-                foreach(i; 0..16)
-                {
-                    if (mask & (1 << i))
-                        r.ptr[i] = -1;
-                    else
-                        r.ptr[i] = 0;
-                }
-                return cast(__m128i)r;
-            }
+            return mask;
         }
         else
         {
             // _SIDD_BIT_MASK
-            return _mm_cvtsi32_si128(mask);
+            static if (imm8 & 1)
+            {
+                mask = _mm_packs_epi16(mask, _mm_setzero_si128());
+            }
+            return _mm_cvtsi32_si128( _mm_movemask_epi8(mask));
         }
     }
 }
@@ -1313,13 +1325,13 @@ static immutable byte[32] MASK_DATA =
 ];
 
 // Makes a byte validity mask with a given implicit length string.
-__m128i validMask8(__m128i a) @trusted
+__m128i validMask8i(__m128i a) @trusted
 {
     int len = findLengthByte(a);
     return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len]);
 }
 // Makes a byte validity mask with a given explicit length string.
-__m128i validMask8(int len) @trusted
+__m128i validMask8e(int len) @trusted
 {
     return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len]);
 }
@@ -1327,36 +1339,36 @@ unittest
 {
     char[16] A = "";
     char[16] B = "0123456789abcdef";
-    byte16 MA = cast(byte16) validMask8(_mm_loadu_si128(cast(__m128i*)A.ptr));
-    byte16 MB = cast(byte16) validMask8(_mm_loadu_si128(cast(__m128i*)B.ptr));
+    byte16 MA = cast(byte16) validMask8i(_mm_loadu_si128(cast(__m128i*)A.ptr));
+    byte16 MB = cast(byte16) validMask8i(_mm_loadu_si128(cast(__m128i*)B.ptr));
     byte[16] correctA = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     byte[16] correctB = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
     assert(MA.array == correctA);
     assert(MB.array == correctB);
-    MA = cast(byte16) validMask8(0);
-    MB = cast(byte16) validMask8(16);
+    MA = cast(byte16) validMask8e(0);
+    MB = cast(byte16) validMask8e(16);
     assert(MA.array == correctA);
     assert(MB.array == correctB);
 }
 
 // Makes a short validity mask with a given implicit length string.
-__m128i validMask16(__m128i a) @trusted
+__m128i validMask16i(__m128i a) @trusted
 {
     int len = findLengthShort(a);
     return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len*2]);
 }
 // Makes a short validity mask with a given explicit length string.
-__m128i validMask16(int len) @trusted
+__m128i validMask16e(int len) @trusted
 {
     return _mm_loadu_si128(cast(__m128i*) &MASK_DATA[16-len*2]);
 }
 unittest
 {
     short[8] A = [3, 4, 5, 0, 3, 4, 5, 6];
-    short8 MA = cast(short8) validMask16(_mm_loadu_si128(cast(__m128i*)A.ptr));
+    short8 MA = cast(short8) validMask16i(_mm_loadu_si128(cast(__m128i*)A.ptr));
     short[8] correctA = [-1, -1, -1, 0, 0, 0, 0, 0];
     assert(MA.array == correctA);
-    MA = cast(short8) validMask16(3);
+    MA = cast(short8) validMask16e(3);
     assert(MA.array == correctA);
 }
 
@@ -1367,7 +1379,7 @@ unittest
 __m128i cmpstrMask(int imm8)(__m128i a, 
                              __m128i aValid, 
                              __m128i b, 
-                             __m128i bValid) @safe
+                             const __m128i bValid) @safe
 {
     enum bool chars16Bits = imm8 & 1;
     enum int Mode = (imm8 >> 2) & 3;
@@ -1403,16 +1415,104 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         }
         R = _mm_and_si128(R, bValid);
     }
+    else static if (Mode == 1) // ranges
+    {
+        enum bool signed = (imm8 & 2) != 0;
+
+        // For each character in b, the returned mask says if it was found in a range-pair in `a`.
+        __m128i R = _mm_setzero_si128();
+        static if (chars16Bits)
+        {
+            __m128i allOnes = _mm_set1_epi32(-1);
+            for (int pos = 0; pos < 8; pos += 2)
+            {
+                short min = (cast(short8)a).array[pos];
+                short max = (cast(short8)a).array[pos+1];
+                static if (signed)
+                {
+                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi16(b, _mm_set1_epi16(min)), allOnes);
+                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi16(b, _mm_set1_epi16(max)), allOnes);
+                }
+                else
+                {
+                    // No SSE way to do 16-bit unsigned comparisons, 
+                    // but flipping the sign bit let us used signed comp
+                    __m128i firstBits = _mm_set1_epi16(-32768);
+                    __m128i reverseB = _mm_xor_si128(b, firstBits);
+                    __m128i reverseMin = _mm_xor_si128(_mm_set1_epi16(min), firstBits);
+                    __m128i reverseMax = _mm_xor_si128(_mm_set1_epi16(max), firstBits);
+                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi16(reverseB, reverseMin), allOnes);
+                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi16(reverseB, reverseMax), allOnes);
+                }
+                __m128i inRange = _mm_and_si128(le, ge);
+
+                // Not considered in range a is invalid here.
+                short aValidHere = (cast(short8)aValid).array[pos+1];
+                __m128i mmAValidHere = _mm_set1_epi16(aValidHere);
+                inRange = _mm_and_si128(inRange, mmAValidHere); 
+
+                R = _mm_or_si128(R, inRange);
+            }            
+        }
+        else // 8-bits
+        {
+            for (int pos = 0; pos < 16; pos += 2)
+            {
+                byte min = (cast(byte16)a).array[pos];
+                byte max = (cast(byte16)a).array[pos+1];
+                __m128i allOnes = _mm_set1_epi32(-1);
+                static if (signed)
+                {
+                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi8(b, _mm_set1_epi8(min)));
+                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi8(b, _mm_set1_epi8(max)));
+                }
+                else
+                {
+                    // No SSE way to do 16-bit unsigned comparisons, 
+                    // but flipping the sign bit let us used signed comp
+                    __m128i firstBits = _mm_set1_epi8(-128);
+                    __m128i reverseB = _mm_xor_si128(b, firstBits);
+                    __m128i reverseMin = _mm_xor_si128(_mm_set1_epi8(min), firstBits);
+                    __m128i reverseMax = _mm_xor_si128(_mm_set1_epi8(max), firstBits);
+                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi8(reverseB, reverseMin), allOnes);
+                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi8(reverseB, reverseMax), allOnes);
+                }
+                __m128i inRange = _mm_and_si128(le, ge);
+
+                // Not considered in range a is invalid here.
+                byte aValidHere = (cast(byte16)aValid).array[pos+1];
+                __m128i mmAValidHere = _mm_set1_epi8(aValidHere);
+                inRange = _mm_and_si128(inRange, mmAValidHere); 
+
+                R = _mm_or_si128(R, inRange);
+            }
+        }
+        // invalid b part is not in range
+        R = _mm_and_si128(R, bValid);
+    }
     else static if (Mode == 2) // equal each, just 16 comparisons not 256
     {
-        __m128i R = _mm_cmpeq_epi8(a, b);
+        static if (chars16Bits)
+        {
+            __m128i R = _mm_cmpeq_epi16(a, b);
+        }
+        else
+        {
+            __m128i R = _mm_cmpeq_epi8(a, b);
+        }
 
         // if only a or b is invalid, consider not equal
-        R = _mm_andnot_si128( _mm_xor_si128(aValid, bValid) );
+        R = _mm_andnot_si128(_mm_xor_si128(aValid, bValid), R);
+
+        // if a and b are both invalid, consider equal
+        __m128i allOnes = _mm_set1_epi32(-1);
+        R = _mm_or_si128(R, _mm_xor_si128(_mm_or_si128(aValid, bValid), allOnes));
     }  
     else static if (Mode == 3) // equal ordered
     {
         // a is searched in b.
+
+        __m128i bValidShift = bValid;
 
         __m128i R = _mm_set1_epi32(-1); // all b positions possible for containing a
         static if (chars16Bits)
@@ -1432,13 +1532,13 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
 
                 // Where B is invalid, and A is valid, the comparison is forced to false
-                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValid, mmAInvalidHere));
+                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValidShift, mmAInvalidHere));
 
                 R = _mm_and_si128(equalMask);
 
                 // drop first char of b
                 b = _mm_srli_si128!2(b);
-                bValid = _mm_srli_si128!2(bValid);
+                bValidShift = _mm_srli_si128!2(bValidShift);
             }
         }
         else
@@ -1458,13 +1558,13 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
 
                 // Where B is invalid, and A is valid, the comparison is forced to false
-                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValid, mmAInvalidHere));
+                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValidShift, mmAInvalidHere));
 
-                R = _mm_and_si128(equalMask);
+                R = _mm_and_si128(R, equalMask);
 
                 // drop first char of b
                 b = _mm_srli_si128!1(b);
-                bValid = _mm_srli_si128!1(bValid);
+                bValidShift = _mm_srli_si128!1(bValidShift);
             }
         }
     }
@@ -1483,59 +1583,5 @@ __m128i cmpstrMask(int imm8)(__m128i a,
             R = _mm_xor_si128(R, _mm_set1_epi32(-1)); // negate all
         }
     }
-
     return R;
-    /+
-    // compare characters in all pairs
-    for (int i = 0; i < UpperBound; ++i)
-    {
-        bool bInvalid = false;
-        for (int j = 0; j < UpperBound; ++j)
-        {
-            static if (Mode == 1) // ranges mode must do >= and <= instead of ==
-            {
-                enum bool signed = (imm8 & 2) != 0;
-                static if (!signed)
-                {
-                    bool equal = (i & 1) ? (cast(UnsignedVecType)vb.array[j] <= cast(UnsignedVecType)va.array[i]) 
-                        : (cast(UnsignedVecType)vb.array[j] >= cast(UnsignedVecType)va.array[i]);
-                }
-                else
-                {
-                    bool equal = (i & 1) ? (vb.array[j] <= va.array[i]) 
-                        : (vb.array[j] >= va.array[i]);
-                }
-            }
-            else
-            {
-                bool equal = va.array[i] == vb.array[j];
-            }
-
-            bool anyInvalid = aInvalid || bInvalid;
-
-            // Override comparisons for invalid characters.
-            static if (Mode == 0 || Mode == 1)
-            {
-                if (anyInvalid) equal = false;
-            }
-           
-
-            BoolRes[i][j] = equal;
-        }
-    }
-
-    static if (Mode == 1) // ranges
-    {
-        ResType IntRes1 = 0;
-        for (int i = 0; i < UpperBound; i += 2)
-        {
-            for (int j = 0; j < UpperBound; ++j)
-            {
-                if (BoolRes[i][j] && BoolRes[i+1][j])
-                    IntRes1 |= (1 << j);
-            }
-        }
-    }
-
-+/
 }
