@@ -191,9 +191,8 @@ int _mm_cmpestrc(int imm8)(__m128i a, int la, __m128i b, int lb) @trusted
     else
     {
         __m128i mask = cmpstrMaskExplicit!imm8(a, la, b, lb);
-        __m128i equalZero = _mm_cmpeq_epi8(mask, _mm_setzero_si128()); // ???
-        int sigbits = _mm_movemask_epi8(equalZero);
-        return (sigbits != 0xffff);
+        int sigbits = _mm_movemask_epi8(mask);
+        return (sigbits != 0);
     }
 }
 unittest
