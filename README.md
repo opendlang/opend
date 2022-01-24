@@ -31,7 +31,7 @@
 | SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse3)   | Yes    | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | SSSE3 | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+ssse3)  | Yes    | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | SSE4.1| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse4.1) | Yes    | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
-| SSE4.2| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse4.2) | WIP (use -mattr=+crc)   | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
+| SSE4.2| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+sse4.2) | Yes (use -mattr=+crc)   | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | BMI2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use -mattr=+bmi2)   | Yes but slow ([#83](https://github.com/AuburnSounds/intel-intrinsics/issues/83))    | Yes but disabled ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
