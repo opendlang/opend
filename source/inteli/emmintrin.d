@@ -2488,6 +2488,16 @@ unittest
     assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 1, 2, -3, -1, -1, 4, 8, 127, 0, -1, -1, 0, -1, -1, 0)));
 }
 
+/// Create mask from the most significant bit of each 16-bit element in `v`. #BONUS
+int _mm_movemask_epi16 (__m128i a) pure @trusted
+{
+    return _mm_movemask_epi8(_mm_packs_epi16(a, _mm_setzero_si128()));
+}
+unittest
+{
+    assert(0x9C == _mm_movemask_epi16(_mm_set_epi16(-1, 1, 2, -3, -32768, -1, 32767, 8)));
+}
+
 /// Set each bit of mask result based on the most significant bit of the corresponding packed double-precision (64-bit) 
 /// loating-point element in `v`.
 int _mm_movemask_pd(__m128d v) pure @safe
