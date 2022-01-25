@@ -1221,15 +1221,14 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         __m128i R = _mm_setzero_si128();
         static if (chars16Bits)
         {
-            __m128i allOnes = _mm_set1_epi32(-1);
             for (int pos = 0; pos < 8; pos += 2)
             {
                 short min = (cast(short8)a).array[pos];
                 short max = (cast(short8)a).array[pos+1];
                 static if (signed)
                 {
-                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi16(b, _mm_set1_epi16(min)), allOnes);
-                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi16(b, _mm_set1_epi16(max)), allOnes);
+                    __m128i ge = ~_mm_cmplt_epi16(b, _mm_set1_epi16(min));
+                    __m128i le = ~_mm_cmpgt_epi16(b, _mm_set1_epi16(max));
                 }
                 else
                 {
@@ -1239,8 +1238,8 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                     __m128i reverseB = _mm_xor_si128(b, firstBits);
                     __m128i reverseMin = _mm_xor_si128(_mm_set1_epi16(min), firstBits);
                     __m128i reverseMax = _mm_xor_si128(_mm_set1_epi16(max), firstBits);
-                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi16(reverseB, reverseMin), allOnes);
-                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi16(reverseB, reverseMax), allOnes);
+                    __m128i ge = ~_mm_cmplt_epi16(reverseB, reverseMin);
+                    __m128i le = ~_mm_cmpgt_epi16(reverseB, reverseMax);
                 }
                 __m128i inRange = _mm_and_si128(le, ge);
 
@@ -1258,7 +1257,6 @@ __m128i cmpstrMask(int imm8)(__m128i a,
             {
                 byte min = (cast(byte16)a).array[pos];
                 byte max = (cast(byte16)a).array[pos+1];
-                __m128i allOnes = _mm_set1_epi32(-1);
                 static if (signed)
                 {
                     __m128i ge = _mm_xor_si128(_mm_cmplt_epi8(b, _mm_set1_epi8(min)));
@@ -1272,8 +1270,8 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                     __m128i reverseB = _mm_xor_si128(b, firstBits);
                     __m128i reverseMin = _mm_xor_si128(_mm_set1_epi8(min), firstBits);
                     __m128i reverseMax = _mm_xor_si128(_mm_set1_epi8(max), firstBits);
-                    __m128i ge = _mm_xor_si128(_mm_cmplt_epi8(reverseB, reverseMin), allOnes);
-                    __m128i le = _mm_xor_si128(_mm_cmpgt_epi8(reverseB, reverseMax), allOnes);
+                    __m128i ge = ~_mm_cmplt_epi8(reverseB, reverseMin);
+                    __m128i le = ~_mm_cmpgt_epi8(reverseB, reverseMax);
                 }
                 __m128i inRange = _mm_and_si128(le, ge);
 
@@ -1303,8 +1301,7 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         R = _mm_andnot_si128(_mm_xor_si128(aValid, bValid), R);
 
         // if a and b are both invalid, consider equal
-        __m128i allOnes = _mm_set1_epi32(-1);
-        R = _mm_or_si128(R, _mm_xor_si128(_mm_or_si128(aValid, bValid), allOnes));
+        R = _mm_or_si128(R, ~_mm_or_si128(aValid, bValid));
     }  
     else static if (Mode == 3) // equal ordered
     {
