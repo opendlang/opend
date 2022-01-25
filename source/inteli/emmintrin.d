@@ -2756,6 +2756,19 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compute the bitwise NOT of 128 bits in `a`. #BONUS
+__m128i _mm_not_si128 (__m128i a) pure @safe
+{
+    return ~a;
+}
+unittest
+{
+    __m128i A = _mm_set1_epi32(-748);
+    int4 notA = cast(int4) _mm_not_si128(A);
+    int[4] correct = [747, 747, 747, 747];
+    assert(notA.array == correct);
+}
+
 /// Compute the bitwise OR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_or_pd (__m128d a, __m128d b) pure @safe
 {
