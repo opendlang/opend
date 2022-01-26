@@ -265,7 +265,7 @@ mixin template MirThrowableImpl()
     Generic multiargument overload.
     Constructs a string using the `print` function.
     +/
-    @nogc @safe pure nothrow this(Args...)(scope auto ref Args args, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null)
+    this(Args...)(scope auto ref Args args, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null)
         if (Args.length > 1)
     {
         static assert (__traits(compiles, {import mir.format;}), "MirThrowableImpl needs mir-algorithm for mir.format and exception formatting.");
