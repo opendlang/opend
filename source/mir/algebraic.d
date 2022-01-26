@@ -893,6 +893,11 @@ struct Algebraic(_Types...)
                 return this.visit!(a => a[index]);
             }
 
+            auto opIndex()(size_t index) const
+            {
+                return this.visit!(a => a[index]);
+            }
+
             auto opIndex()(size_t[2] index)
             {
                 auto ret = this;
