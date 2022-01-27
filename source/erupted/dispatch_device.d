@@ -214,6 +214,44 @@ struct DispatchDevice {
         vkGetBufferOpaqueCaptureAddress                   = cast( PFN_vkGetBufferOpaqueCaptureAddress                   ) vkGetDeviceProcAddr( device, "vkGetBufferOpaqueCaptureAddress" );
         vkGetDeviceMemoryOpaqueCaptureAddress             = cast( PFN_vkGetDeviceMemoryOpaqueCaptureAddress             ) vkGetDeviceProcAddr( device, "vkGetDeviceMemoryOpaqueCaptureAddress" );
 
+        // VK_VERSION_1_3
+        vkCreatePrivateDataSlot                           = cast( PFN_vkCreatePrivateDataSlot                           ) vkGetDeviceProcAddr( device, "vkCreatePrivateDataSlot" );
+        vkDestroyPrivateDataSlot                          = cast( PFN_vkDestroyPrivateDataSlot                          ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlot" );
+        vkSetPrivateData                                  = cast( PFN_vkSetPrivateData                                  ) vkGetDeviceProcAddr( device, "vkSetPrivateData" );
+        vkGetPrivateData                                  = cast( PFN_vkGetPrivateData                                  ) vkGetDeviceProcAddr( device, "vkGetPrivateData" );
+        vkCmdSetEvent2                                    = cast( PFN_vkCmdSetEvent2                                    ) vkGetDeviceProcAddr( device, "vkCmdSetEvent2" );
+        vkCmdResetEvent2                                  = cast( PFN_vkCmdResetEvent2                                  ) vkGetDeviceProcAddr( device, "vkCmdResetEvent2" );
+        vkCmdWaitEvents2                                  = cast( PFN_vkCmdWaitEvents2                                  ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents2" );
+        vkCmdPipelineBarrier2                             = cast( PFN_vkCmdPipelineBarrier2                             ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier2" );
+        vkCmdWriteTimestamp2                              = cast( PFN_vkCmdWriteTimestamp2                              ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp2" );
+        vkQueueSubmit2                                    = cast( PFN_vkQueueSubmit2                                    ) vkGetDeviceProcAddr( device, "vkQueueSubmit2" );
+        vkCmdCopyBuffer2                                  = cast( PFN_vkCmdCopyBuffer2                                  ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2" );
+        vkCmdCopyImage2                                   = cast( PFN_vkCmdCopyImage2                                   ) vkGetDeviceProcAddr( device, "vkCmdCopyImage2" );
+        vkCmdCopyBufferToImage2                           = cast( PFN_vkCmdCopyBufferToImage2                           ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage2" );
+        vkCmdCopyImageToBuffer2                           = cast( PFN_vkCmdCopyImageToBuffer2                           ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer2" );
+        vkCmdBlitImage2                                   = cast( PFN_vkCmdBlitImage2                                   ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2" );
+        vkCmdResolveImage2                                = cast( PFN_vkCmdResolveImage2                                ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2" );
+        vkCmdBeginRendering                               = cast( PFN_vkCmdBeginRendering                               ) vkGetDeviceProcAddr( device, "vkCmdBeginRendering" );
+        vkCmdEndRendering                                 = cast( PFN_vkCmdEndRendering                                 ) vkGetDeviceProcAddr( device, "vkCmdEndRendering" );
+        vkCmdSetCullMode                                  = cast( PFN_vkCmdSetCullMode                                  ) vkGetDeviceProcAddr( device, "vkCmdSetCullMode" );
+        vkCmdSetFrontFace                                 = cast( PFN_vkCmdSetFrontFace                                 ) vkGetDeviceProcAddr( device, "vkCmdSetFrontFace" );
+        vkCmdSetPrimitiveTopology                         = cast( PFN_vkCmdSetPrimitiveTopology                         ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveTopology" );
+        vkCmdSetViewportWithCount                         = cast( PFN_vkCmdSetViewportWithCount                         ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWithCount" );
+        vkCmdSetScissorWithCount                          = cast( PFN_vkCmdSetScissorWithCount                          ) vkGetDeviceProcAddr( device, "vkCmdSetScissorWithCount" );
+        vkCmdBindVertexBuffers2                           = cast( PFN_vkCmdBindVertexBuffers2                           ) vkGetDeviceProcAddr( device, "vkCmdBindVertexBuffers2" );
+        vkCmdSetDepthTestEnable                           = cast( PFN_vkCmdSetDepthTestEnable                           ) vkGetDeviceProcAddr( device, "vkCmdSetDepthTestEnable" );
+        vkCmdSetDepthWriteEnable                          = cast( PFN_vkCmdSetDepthWriteEnable                          ) vkGetDeviceProcAddr( device, "vkCmdSetDepthWriteEnable" );
+        vkCmdSetDepthCompareOp                            = cast( PFN_vkCmdSetDepthCompareOp                            ) vkGetDeviceProcAddr( device, "vkCmdSetDepthCompareOp" );
+        vkCmdSetDepthBoundsTestEnable                     = cast( PFN_vkCmdSetDepthBoundsTestEnable                     ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBoundsTestEnable" );
+        vkCmdSetStencilTestEnable                         = cast( PFN_vkCmdSetStencilTestEnable                         ) vkGetDeviceProcAddr( device, "vkCmdSetStencilTestEnable" );
+        vkCmdSetStencilOp                                 = cast( PFN_vkCmdSetStencilOp                                 ) vkGetDeviceProcAddr( device, "vkCmdSetStencilOp" );
+        vkCmdSetRasterizerDiscardEnable                   = cast( PFN_vkCmdSetRasterizerDiscardEnable                   ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizerDiscardEnable" );
+        vkCmdSetDepthBiasEnable                           = cast( PFN_vkCmdSetDepthBiasEnable                           ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBiasEnable" );
+        vkCmdSetPrimitiveRestartEnable                    = cast( PFN_vkCmdSetPrimitiveRestartEnable                    ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveRestartEnable" );
+        vkGetDeviceBufferMemoryRequirements               = cast( PFN_vkGetDeviceBufferMemoryRequirements               ) vkGetDeviceProcAddr( device, "vkGetDeviceBufferMemoryRequirements" );
+        vkGetDeviceImageMemoryRequirements                = cast( PFN_vkGetDeviceImageMemoryRequirements                ) vkGetDeviceProcAddr( device, "vkGetDeviceImageMemoryRequirements" );
+        vkGetDeviceImageSparseMemoryRequirements          = cast( PFN_vkGetDeviceImageSparseMemoryRequirements          ) vkGetDeviceProcAddr( device, "vkGetDeviceImageSparseMemoryRequirements" );
+
         // VK_KHR_swapchain
         vkCreateSwapchainKHR                              = cast( PFN_vkCreateSwapchainKHR                              ) vkGetDeviceProcAddr( device, "vkCreateSwapchainKHR" );
         vkDestroySwapchainKHR                             = cast( PFN_vkDestroySwapchainKHR                             ) vkGetDeviceProcAddr( device, "vkDestroySwapchainKHR" );
@@ -226,10 +264,6 @@ struct DispatchDevice {
 
         // VK_KHR_display_swapchain
         vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
-
-        // VK_KHR_dynamic_rendering
-        vkCmdBeginRenderingKHR                            = cast( PFN_vkCmdBeginRenderingKHR                            ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderingKHR" );
-        vkCmdEndRenderingKHR                              = cast( PFN_vkCmdEndRenderingKHR                              ) vkGetDeviceProcAddr( device, "vkCmdEndRenderingKHR" );
 
         // VK_KHR_external_memory_fd
         vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
@@ -273,27 +307,8 @@ struct DispatchDevice {
         vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
         // VK_KHR_synchronization2
-        vkCmdSetEvent2KHR                                 = cast( PFN_vkCmdSetEvent2KHR                                 ) vkGetDeviceProcAddr( device, "vkCmdSetEvent2KHR" );
-        vkCmdResetEvent2KHR                               = cast( PFN_vkCmdResetEvent2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdResetEvent2KHR" );
-        vkCmdWaitEvents2KHR                               = cast( PFN_vkCmdWaitEvents2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents2KHR" );
-        vkCmdPipelineBarrier2KHR                          = cast( PFN_vkCmdPipelineBarrier2KHR                          ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier2KHR" );
-        vkCmdWriteTimestamp2KHR                           = cast( PFN_vkCmdWriteTimestamp2KHR                           ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp2KHR" );
-        vkQueueSubmit2KHR                                 = cast( PFN_vkQueueSubmit2KHR                                 ) vkGetDeviceProcAddr( device, "vkQueueSubmit2KHR" );
         vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
         vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
-
-        // VK_KHR_copy_commands2
-        vkCmdCopyBuffer2KHR                               = cast( PFN_vkCmdCopyBuffer2KHR                               ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer2KHR" );
-        vkCmdCopyImage2KHR                                = cast( PFN_vkCmdCopyImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdCopyImage2KHR" );
-        vkCmdCopyBufferToImage2KHR                        = cast( PFN_vkCmdCopyBufferToImage2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage2KHR" );
-        vkCmdCopyImageToBuffer2KHR                        = cast( PFN_vkCmdCopyImageToBuffer2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer2KHR" );
-        vkCmdBlitImage2KHR                                = cast( PFN_vkCmdBlitImage2KHR                                ) vkGetDeviceProcAddr( device, "vkCmdBlitImage2KHR" );
-        vkCmdResolveImage2KHR                             = cast( PFN_vkCmdResolveImage2KHR                             ) vkGetDeviceProcAddr( device, "vkCmdResolveImage2KHR" );
-
-        // VK_KHR_maintenance4
-        vkGetDeviceBufferMemoryRequirementsKHR            = cast( PFN_vkGetDeviceBufferMemoryRequirementsKHR            ) vkGetDeviceProcAddr( device, "vkGetDeviceBufferMemoryRequirementsKHR" );
-        vkGetDeviceImageMemoryRequirementsKHR             = cast( PFN_vkGetDeviceImageMemoryRequirementsKHR             ) vkGetDeviceProcAddr( device, "vkGetDeviceImageMemoryRequirementsKHR" );
-        vkGetDeviceImageSparseMemoryRequirementsKHR       = cast( PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       ) vkGetDeviceProcAddr( device, "vkGetDeviceImageSparseMemoryRequirementsKHR" );
 
         // VK_EXT_debug_marker
         vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -426,20 +441,6 @@ struct DispatchDevice {
         // VK_EXT_line_rasterization
         vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
 
-        // VK_EXT_extended_dynamic_state
-        vkCmdSetCullModeEXT                               = cast( PFN_vkCmdSetCullModeEXT                               ) vkGetDeviceProcAddr( device, "vkCmdSetCullModeEXT" );
-        vkCmdSetFrontFaceEXT                              = cast( PFN_vkCmdSetFrontFaceEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetFrontFaceEXT" );
-        vkCmdSetPrimitiveTopologyEXT                      = cast( PFN_vkCmdSetPrimitiveTopologyEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveTopologyEXT" );
-        vkCmdSetViewportWithCountEXT                      = cast( PFN_vkCmdSetViewportWithCountEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWithCountEXT" );
-        vkCmdSetScissorWithCountEXT                       = cast( PFN_vkCmdSetScissorWithCountEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetScissorWithCountEXT" );
-        vkCmdBindVertexBuffers2EXT                        = cast( PFN_vkCmdBindVertexBuffers2EXT                        ) vkGetDeviceProcAddr( device, "vkCmdBindVertexBuffers2EXT" );
-        vkCmdSetDepthTestEnableEXT                        = cast( PFN_vkCmdSetDepthTestEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDepthTestEnableEXT" );
-        vkCmdSetDepthWriteEnableEXT                       = cast( PFN_vkCmdSetDepthWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetDepthWriteEnableEXT" );
-        vkCmdSetDepthCompareOpEXT                         = cast( PFN_vkCmdSetDepthCompareOpEXT                         ) vkGetDeviceProcAddr( device, "vkCmdSetDepthCompareOpEXT" );
-        vkCmdSetDepthBoundsTestEnableEXT                  = cast( PFN_vkCmdSetDepthBoundsTestEnableEXT                  ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBoundsTestEnableEXT" );
-        vkCmdSetStencilTestEnableEXT                      = cast( PFN_vkCmdSetStencilTestEnableEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetStencilTestEnableEXT" );
-        vkCmdSetStencilOpEXT                              = cast( PFN_vkCmdSetStencilOpEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetStencilOpEXT" );
-
         // VK_NV_device_generated_commands
         vkGetGeneratedCommandsMemoryRequirementsNV        = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV        ) vkGetDeviceProcAddr( device, "vkGetGeneratedCommandsMemoryRequirementsNV" );
         vkCmdPreprocessGeneratedCommandsNV                = cast( PFN_vkCmdPreprocessGeneratedCommandsNV                ) vkGetDeviceProcAddr( device, "vkCmdPreprocessGeneratedCommandsNV" );
@@ -447,12 +448,6 @@ struct DispatchDevice {
         vkCmdBindPipelineShaderGroupNV                    = cast( PFN_vkCmdBindPipelineShaderGroupNV                    ) vkGetDeviceProcAddr( device, "vkCmdBindPipelineShaderGroupNV" );
         vkCreateIndirectCommandsLayoutNV                  = cast( PFN_vkCreateIndirectCommandsLayoutNV                  ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNV" );
         vkDestroyIndirectCommandsLayoutNV                 = cast( PFN_vkDestroyIndirectCommandsLayoutNV                 ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNV" );
-
-        // VK_EXT_private_data
-        vkCreatePrivateDataSlotEXT                        = cast( PFN_vkCreatePrivateDataSlotEXT                        ) vkGetDeviceProcAddr( device, "vkCreatePrivateDataSlotEXT" );
-        vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlotEXT" );
-        vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkSetPrivateDataEXT" );
-        vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkGetPrivateDataEXT" );
 
         // VK_NV_fragment_shading_rate_enums
         vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
@@ -472,10 +467,7 @@ struct DispatchDevice {
 
         // VK_EXT_extended_dynamic_state2
         vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
-        vkCmdSetRasterizerDiscardEnableEXT                = cast( PFN_vkCmdSetRasterizerDiscardEnableEXT                ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizerDiscardEnableEXT" );
-        vkCmdSetDepthBiasEnableEXT                        = cast( PFN_vkCmdSetDepthBiasEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBiasEnableEXT" );
         vkCmdSetLogicOpEXT                                = cast( PFN_vkCmdSetLogicOpEXT                                ) vkGetDeviceProcAddr( device, "vkCmdSetLogicOpEXT" );
-        vkCmdSetPrimitiveRestartEnableEXT                 = cast( PFN_vkCmdSetPrimitiveRestartEnableEXT                 ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveRestartEnableEXT" );
 
         // VK_EXT_color_write_enable
         vkCmdSetColorWriteEnableEXT                       = cast( PFN_vkCmdSetColorWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteEnableEXT" );
@@ -683,6 +675,43 @@ struct DispatchDevice {
     uint64_t  GetBufferOpaqueCaptureAddress( const( VkBufferDeviceAddressInfo )* pInfo ) { return vkGetBufferOpaqueCaptureAddress( vkDevice, pInfo ); }
     uint64_t  GetDeviceMemoryOpaqueCaptureAddress( const( VkDeviceMemoryOpaqueCaptureAddressInfo )* pInfo ) { return vkGetDeviceMemoryOpaqueCaptureAddress( vkDevice, pInfo ); }
 
+    // VK_VERSION_1_3
+    VkResult  CreatePrivateDataSlot( const( VkPrivateDataSlotCreateInfo )* pCreateInfo, VkPrivateDataSlot* pPrivateDataSlot ) { return vkCreatePrivateDataSlot( vkDevice, pCreateInfo, pAllocator, pPrivateDataSlot ); }
+    void      DestroyPrivateDataSlot( VkPrivateDataSlot privateDataSlot ) { vkDestroyPrivateDataSlot( vkDevice, privateDataSlot, pAllocator ); }
+    VkResult  SetPrivateData( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data ) { return vkSetPrivateData( vkDevice, objectType, objectHandle, privateDataSlot, data ); }
+    void      GetPrivateData( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData ) { vkGetPrivateData( vkDevice, objectType, objectHandle, privateDataSlot, pData ); }
+    void      CmdSetEvent2( VkEvent event, const( VkDependencyInfo )* pDependencyInfo ) { vkCmdSetEvent2( commandBuffer, event, pDependencyInfo ); }
+    void      CmdResetEvent2( VkEvent event, VkPipelineStageFlags2 stageMask ) { vkCmdResetEvent2( commandBuffer, event, stageMask ); }
+    void      CmdWaitEvents2( uint32_t eventCount, const( VkEvent )* pEvents, const( VkDependencyInfo )* pDependencyInfos ) { vkCmdWaitEvents2( commandBuffer, eventCount, pEvents, pDependencyInfos ); }
+    void      CmdPipelineBarrier2( const( VkDependencyInfo )* pDependencyInfo ) { vkCmdPipelineBarrier2( commandBuffer, pDependencyInfo ); }
+    void      CmdWriteTimestamp2( VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query ) { vkCmdWriteTimestamp2( commandBuffer, stage, queryPool, query ); }
+    void      CmdCopyBuffer2( const( VkCopyBufferInfo2 )* pCopyBufferInfo ) { vkCmdCopyBuffer2( commandBuffer, pCopyBufferInfo ); }
+    void      CmdCopyImage2( const( VkCopyImageInfo2 )* pCopyImageInfo ) { vkCmdCopyImage2( commandBuffer, pCopyImageInfo ); }
+    void      CmdCopyBufferToImage2( const( VkCopyBufferToImageInfo2 )* pCopyBufferToImageInfo ) { vkCmdCopyBufferToImage2( commandBuffer, pCopyBufferToImageInfo ); }
+    void      CmdCopyImageToBuffer2( const( VkCopyImageToBufferInfo2 )* pCopyImageToBufferInfo ) { vkCmdCopyImageToBuffer2( commandBuffer, pCopyImageToBufferInfo ); }
+    void      CmdBlitImage2( const( VkBlitImageInfo2 )* pBlitImageInfo ) { vkCmdBlitImage2( commandBuffer, pBlitImageInfo ); }
+    void      CmdResolveImage2( const( VkResolveImageInfo2 )* pResolveImageInfo ) { vkCmdResolveImage2( commandBuffer, pResolveImageInfo ); }
+    void      CmdBeginRendering( const( VkRenderingInfo )* pRenderingInfo ) { vkCmdBeginRendering( commandBuffer, pRenderingInfo ); }
+    void      CmdEndRendering() { vkCmdEndRendering( commandBuffer ); }
+    void      CmdSetCullMode( VkCullModeFlags cullMode ) { vkCmdSetCullMode( commandBuffer, cullMode ); }
+    void      CmdSetFrontFace( VkFrontFace frontFace ) { vkCmdSetFrontFace( commandBuffer, frontFace ); }
+    void      CmdSetPrimitiveTopology( VkPrimitiveTopology primitiveTopology ) { vkCmdSetPrimitiveTopology( commandBuffer, primitiveTopology ); }
+    void      CmdSetViewportWithCount( uint32_t viewportCount, const( VkViewport )* pViewports ) { vkCmdSetViewportWithCount( commandBuffer, viewportCount, pViewports ); }
+    void      CmdSetScissorWithCount( uint32_t scissorCount, const( VkRect2D )* pScissors ) { vkCmdSetScissorWithCount( commandBuffer, scissorCount, pScissors ); }
+    void      CmdBindVertexBuffers2( uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets, const( VkDeviceSize )* pSizes, const( VkDeviceSize )* pStrides ) { vkCmdBindVertexBuffers2( commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides ); }
+    void      CmdSetDepthTestEnable( VkBool32 depthTestEnable ) { vkCmdSetDepthTestEnable( commandBuffer, depthTestEnable ); }
+    void      CmdSetDepthWriteEnable( VkBool32 depthWriteEnable ) { vkCmdSetDepthWriteEnable( commandBuffer, depthWriteEnable ); }
+    void      CmdSetDepthCompareOp( VkCompareOp depthCompareOp ) { vkCmdSetDepthCompareOp( commandBuffer, depthCompareOp ); }
+    void      CmdSetDepthBoundsTestEnable( VkBool32 depthBoundsTestEnable ) { vkCmdSetDepthBoundsTestEnable( commandBuffer, depthBoundsTestEnable ); }
+    void      CmdSetStencilTestEnable( VkBool32 stencilTestEnable ) { vkCmdSetStencilTestEnable( commandBuffer, stencilTestEnable ); }
+    void      CmdSetStencilOp( VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp ) { vkCmdSetStencilOp( commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp ); }
+    void      CmdSetRasterizerDiscardEnable( VkBool32 rasterizerDiscardEnable ) { vkCmdSetRasterizerDiscardEnable( commandBuffer, rasterizerDiscardEnable ); }
+    void      CmdSetDepthBiasEnable( VkBool32 depthBiasEnable ) { vkCmdSetDepthBiasEnable( commandBuffer, depthBiasEnable ); }
+    void      CmdSetPrimitiveRestartEnable( VkBool32 primitiveRestartEnable ) { vkCmdSetPrimitiveRestartEnable( commandBuffer, primitiveRestartEnable ); }
+    void      GetDeviceBufferMemoryRequirements( const( VkDeviceBufferMemoryRequirements )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceBufferMemoryRequirements( vkDevice, pInfo, pMemoryRequirements ); }
+    void      GetDeviceImageMemoryRequirements( const( VkDeviceImageMemoryRequirements )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceImageMemoryRequirements( vkDevice, pInfo, pMemoryRequirements ); }
+    void      GetDeviceImageSparseMemoryRequirements( const( VkDeviceImageMemoryRequirements )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements ) { vkGetDeviceImageSparseMemoryRequirements( vkDevice, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements ); }
+
     // VK_KHR_swapchain
     VkResult  CreateSwapchainKHR( const( VkSwapchainCreateInfoKHR )* pCreateInfo, VkSwapchainKHR* pSwapchain ) { return vkCreateSwapchainKHR( vkDevice, pCreateInfo, pAllocator, pSwapchain ); }
     void      DestroySwapchainKHR( VkSwapchainKHR swapchain ) { vkDestroySwapchainKHR( vkDevice, swapchain, pAllocator ); }
@@ -694,10 +723,6 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     VkResult  CreateSharedSwapchainsKHR( uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, VkSwapchainKHR* pSwapchains ) { return vkCreateSharedSwapchainsKHR( vkDevice, swapchainCount, pCreateInfos, pAllocator, pSwapchains ); }
-
-    // VK_KHR_dynamic_rendering
-    void      CmdBeginRenderingKHR( const( VkRenderingInfoKHR )* pRenderingInfo ) { vkCmdBeginRenderingKHR( commandBuffer, pRenderingInfo ); }
-    void      CmdEndRenderingKHR() { vkCmdEndRenderingKHR( commandBuffer ); }
 
     // VK_KHR_external_memory_fd
     VkResult  GetMemoryFdKHR( const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd ) { return vkGetMemoryFdKHR( vkDevice, pGetFdInfo, pFd ); }
@@ -741,25 +766,7 @@ struct DispatchDevice {
     VkResult  GetPipelineExecutableInternalRepresentationsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations ) { return vkGetPipelineExecutableInternalRepresentationsKHR( vkDevice, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations ); }
 
     // VK_KHR_synchronization2
-    void      CmdSetEvent2KHR( VkEvent event, const( VkDependencyInfoKHR )* pDependencyInfo ) { vkCmdSetEvent2KHR( commandBuffer, event, pDependencyInfo ); }
-    void      CmdResetEvent2KHR( VkEvent event, VkPipelineStageFlags2KHR stageMask ) { vkCmdResetEvent2KHR( commandBuffer, event, stageMask ); }
-    void      CmdWaitEvents2KHR( uint32_t eventCount, const( VkEvent )* pEvents, const( VkDependencyInfoKHR )* pDependencyInfos ) { vkCmdWaitEvents2KHR( commandBuffer, eventCount, pEvents, pDependencyInfos ); }
-    void      CmdPipelineBarrier2KHR( const( VkDependencyInfoKHR )* pDependencyInfo ) { vkCmdPipelineBarrier2KHR( commandBuffer, pDependencyInfo ); }
-    void      CmdWriteTimestamp2KHR( VkPipelineStageFlags2KHR stage, VkQueryPool queryPool, uint32_t query ) { vkCmdWriteTimestamp2KHR( commandBuffer, stage, queryPool, query ); }
-    void      CmdWriteBufferMarker2AMD( VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarker2AMD( commandBuffer, stage, dstBuffer, dstOffset, marker ); }
-
-    // VK_KHR_copy_commands2
-    void      CmdCopyBuffer2KHR( const( VkCopyBufferInfo2KHR )* pCopyBufferInfo ) { vkCmdCopyBuffer2KHR( commandBuffer, pCopyBufferInfo ); }
-    void      CmdCopyImage2KHR( const( VkCopyImageInfo2KHR )* pCopyImageInfo ) { vkCmdCopyImage2KHR( commandBuffer, pCopyImageInfo ); }
-    void      CmdCopyBufferToImage2KHR( const( VkCopyBufferToImageInfo2KHR )* pCopyBufferToImageInfo ) { vkCmdCopyBufferToImage2KHR( commandBuffer, pCopyBufferToImageInfo ); }
-    void      CmdCopyImageToBuffer2KHR( const( VkCopyImageToBufferInfo2KHR )* pCopyImageToBufferInfo ) { vkCmdCopyImageToBuffer2KHR( commandBuffer, pCopyImageToBufferInfo ); }
-    void      CmdBlitImage2KHR( const( VkBlitImageInfo2KHR )* pBlitImageInfo ) { vkCmdBlitImage2KHR( commandBuffer, pBlitImageInfo ); }
-    void      CmdResolveImage2KHR( const( VkResolveImageInfo2KHR )* pResolveImageInfo ) { vkCmdResolveImage2KHR( commandBuffer, pResolveImageInfo ); }
-
-    // VK_KHR_maintenance4
-    void      GetDeviceBufferMemoryRequirementsKHR( const( VkDeviceBufferMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceBufferMemoryRequirementsKHR( vkDevice, pInfo, pMemoryRequirements ); }
-    void      GetDeviceImageMemoryRequirementsKHR( const( VkDeviceImageMemoryRequirementsKHR )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetDeviceImageMemoryRequirementsKHR( vkDevice, pInfo, pMemoryRequirements ); }
-    void      GetDeviceImageSparseMemoryRequirementsKHR( const( VkDeviceImageMemoryRequirementsKHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements ) { vkGetDeviceImageSparseMemoryRequirementsKHR( vkDevice, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements ); }
+    void      CmdWriteBufferMarker2AMD( VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarker2AMD( commandBuffer, stage, dstBuffer, dstOffset, marker ); }
 
     // VK_EXT_debug_marker
     VkResult  DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) { return vkDebugMarkerSetObjectTagEXT( vkDevice, pTagInfo ); }
@@ -887,20 +894,6 @@ struct DispatchDevice {
     // VK_EXT_line_rasterization
     void      CmdSetLineStippleEXT( uint32_t lineStippleFactor, uint16_t lineStipplePattern ) { vkCmdSetLineStippleEXT( commandBuffer, lineStippleFactor, lineStipplePattern ); }
 
-    // VK_EXT_extended_dynamic_state
-    void      CmdSetCullModeEXT( VkCullModeFlags cullMode ) { vkCmdSetCullModeEXT( commandBuffer, cullMode ); }
-    void      CmdSetFrontFaceEXT( VkFrontFace frontFace ) { vkCmdSetFrontFaceEXT( commandBuffer, frontFace ); }
-    void      CmdSetPrimitiveTopologyEXT( VkPrimitiveTopology primitiveTopology ) { vkCmdSetPrimitiveTopologyEXT( commandBuffer, primitiveTopology ); }
-    void      CmdSetViewportWithCountEXT( uint32_t viewportCount, const( VkViewport )* pViewports ) { vkCmdSetViewportWithCountEXT( commandBuffer, viewportCount, pViewports ); }
-    void      CmdSetScissorWithCountEXT( uint32_t scissorCount, const( VkRect2D )* pScissors ) { vkCmdSetScissorWithCountEXT( commandBuffer, scissorCount, pScissors ); }
-    void      CmdBindVertexBuffers2EXT( uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets, const( VkDeviceSize )* pSizes, const( VkDeviceSize )* pStrides ) { vkCmdBindVertexBuffers2EXT( commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides ); }
-    void      CmdSetDepthTestEnableEXT( VkBool32 depthTestEnable ) { vkCmdSetDepthTestEnableEXT( commandBuffer, depthTestEnable ); }
-    void      CmdSetDepthWriteEnableEXT( VkBool32 depthWriteEnable ) { vkCmdSetDepthWriteEnableEXT( commandBuffer, depthWriteEnable ); }
-    void      CmdSetDepthCompareOpEXT( VkCompareOp depthCompareOp ) { vkCmdSetDepthCompareOpEXT( commandBuffer, depthCompareOp ); }
-    void      CmdSetDepthBoundsTestEnableEXT( VkBool32 depthBoundsTestEnable ) { vkCmdSetDepthBoundsTestEnableEXT( commandBuffer, depthBoundsTestEnable ); }
-    void      CmdSetStencilTestEnableEXT( VkBool32 stencilTestEnable ) { vkCmdSetStencilTestEnableEXT( commandBuffer, stencilTestEnable ); }
-    void      CmdSetStencilOpEXT( VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp ) { vkCmdSetStencilOpEXT( commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp ); }
-
     // VK_NV_device_generated_commands
     void      GetGeneratedCommandsMemoryRequirementsNV( const( VkGeneratedCommandsMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetGeneratedCommandsMemoryRequirementsNV( vkDevice, pInfo, pMemoryRequirements ); }
     void      CmdPreprocessGeneratedCommandsNV( const( VkGeneratedCommandsInfoNV )* pGeneratedCommandsInfo ) { vkCmdPreprocessGeneratedCommandsNV( commandBuffer, pGeneratedCommandsInfo ); }
@@ -908,12 +901,6 @@ struct DispatchDevice {
     void      CmdBindPipelineShaderGroupNV( VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex ) { vkCmdBindPipelineShaderGroupNV( commandBuffer, pipelineBindPoint, pipeline, groupIndex ); }
     VkResult  CreateIndirectCommandsLayoutNV( const( VkIndirectCommandsLayoutCreateInfoNV )* pCreateInfo, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout ) { return vkCreateIndirectCommandsLayoutNV( vkDevice, pCreateInfo, pAllocator, pIndirectCommandsLayout ); }
     void      DestroyIndirectCommandsLayoutNV( VkIndirectCommandsLayoutNV indirectCommandsLayout ) { vkDestroyIndirectCommandsLayoutNV( vkDevice, indirectCommandsLayout, pAllocator ); }
-
-    // VK_EXT_private_data
-    VkResult  CreatePrivateDataSlotEXT( const( VkPrivateDataSlotCreateInfoEXT )* pCreateInfo, VkPrivateDataSlotEXT* pPrivateDataSlot ) { return vkCreatePrivateDataSlotEXT( vkDevice, pCreateInfo, pAllocator, pPrivateDataSlot ); }
-    void      DestroyPrivateDataSlotEXT( VkPrivateDataSlotEXT privateDataSlot ) { vkDestroyPrivateDataSlotEXT( vkDevice, privateDataSlot, pAllocator ); }
-    VkResult  SetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data ) { return vkSetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, data ); }
-    void      GetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData ) { vkGetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, pData ); }
 
     // VK_NV_fragment_shading_rate_enums
     void      CmdSetFragmentShadingRateEnumNV( VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateEnumNV( commandBuffer, shadingRate, combinerOps ); }
@@ -933,10 +920,7 @@ struct DispatchDevice {
 
     // VK_EXT_extended_dynamic_state2
     void      CmdSetPatchControlPointsEXT( uint32_t patchControlPoints ) { vkCmdSetPatchControlPointsEXT( commandBuffer, patchControlPoints ); }
-    void      CmdSetRasterizerDiscardEnableEXT( VkBool32 rasterizerDiscardEnable ) { vkCmdSetRasterizerDiscardEnableEXT( commandBuffer, rasterizerDiscardEnable ); }
-    void      CmdSetDepthBiasEnableEXT( VkBool32 depthBiasEnable ) { vkCmdSetDepthBiasEnableEXT( commandBuffer, depthBiasEnable ); }
     void      CmdSetLogicOpEXT( VkLogicOp logicOp ) { vkCmdSetLogicOpEXT( commandBuffer, logicOp ); }
-    void      CmdSetPrimitiveRestartEnableEXT( VkBool32 primitiveRestartEnable ) { vkCmdSetPrimitiveRestartEnableEXT( commandBuffer, primitiveRestartEnable ); }
 
     // VK_EXT_color_write_enable
     void      CmdSetColorWriteEnableEXT( uint32_t attachmentCount, const( VkBool32 )* pColorWriteEnables ) { vkCmdSetColorWriteEnableEXT( commandBuffer, attachmentCount, pColorWriteEnables ); }
@@ -973,6 +957,10 @@ struct DispatchDevice {
     void      CmdTraceRaysIndirectKHR( const( VkStridedDeviceAddressRegionKHR )* pRaygenShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pMissShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pHitShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress ) { vkCmdTraceRaysIndirectKHR( commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress ); }
     VkDeviceSize  GetRayTracingShaderGroupStackSizeKHR( VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader ) { return vkGetRayTracingShaderGroupStackSizeKHR( vkDevice, pipeline, group, groupShader ); }
     void      CmdSetRayTracingPipelineStackSizeKHR( uint32_t pipelineStackSize ) { vkCmdSetRayTracingPipelineStackSizeKHR( commandBuffer, pipelineStackSize ); }
+
+    // VK_KHR_dynamic_rendering
+    alias CmdBeginRenderingKHR                                  = CmdBeginRendering;
+    alias CmdEndRenderingKHR                                    = CmdEndRendering;
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                   = GetDeviceGroupPeerMemoryFeatures;
@@ -1023,6 +1011,26 @@ struct DispatchDevice {
     alias GetBufferOpaqueCaptureAddressKHR                      = GetBufferOpaqueCaptureAddress;
     alias GetDeviceMemoryOpaqueCaptureAddressKHR                = GetDeviceMemoryOpaqueCaptureAddress;
 
+    // VK_KHR_synchronization2
+    alias CmdSetEvent2KHR                                       = CmdSetEvent2;
+    alias CmdResetEvent2KHR                                     = CmdResetEvent2;
+    alias CmdWaitEvents2KHR                                     = CmdWaitEvents2;
+    alias CmdPipelineBarrier2KHR                                = CmdPipelineBarrier2;
+    alias CmdWriteTimestamp2KHR                                 = CmdWriteTimestamp2;
+
+    // VK_KHR_copy_commands2
+    alias CmdCopyBuffer2KHR                                     = CmdCopyBuffer2;
+    alias CmdCopyImage2KHR                                      = CmdCopyImage2;
+    alias CmdCopyBufferToImage2KHR                              = CmdCopyBufferToImage2;
+    alias CmdCopyImageToBuffer2KHR                              = CmdCopyImageToBuffer2;
+    alias CmdBlitImage2KHR                                      = CmdBlitImage2;
+    alias CmdResolveImage2KHR                                   = CmdResolveImage2;
+
+    // VK_KHR_maintenance4
+    alias GetDeviceBufferMemoryRequirementsKHR                  = GetDeviceBufferMemoryRequirements;
+    alias GetDeviceImageMemoryRequirementsKHR                   = GetDeviceImageMemoryRequirements;
+    alias GetDeviceImageSparseMemoryRequirementsKHR             = GetDeviceImageSparseMemoryRequirements;
+
     // VK_AMD_draw_indirect_count
     alias CmdDrawIndirectCountAMD                               = CmdDrawIndirectCount;
     alias CmdDrawIndexedIndirectCountAMD                        = CmdDrawIndexedIndirectCount;
@@ -1035,6 +1043,31 @@ struct DispatchDevice {
 
     // VK_EXT_host_query_reset
     alias ResetQueryPoolEXT                                     = ResetQueryPool;
+
+    // VK_EXT_extended_dynamic_state
+    alias CmdSetCullModeEXT                                     = CmdSetCullMode;
+    alias CmdSetFrontFaceEXT                                    = CmdSetFrontFace;
+    alias CmdSetPrimitiveTopologyEXT                            = CmdSetPrimitiveTopology;
+    alias CmdSetViewportWithCountEXT                            = CmdSetViewportWithCount;
+    alias CmdSetScissorWithCountEXT                             = CmdSetScissorWithCount;
+    alias CmdBindVertexBuffers2EXT                              = CmdBindVertexBuffers2;
+    alias CmdSetDepthTestEnableEXT                              = CmdSetDepthTestEnable;
+    alias CmdSetDepthWriteEnableEXT                             = CmdSetDepthWriteEnable;
+    alias CmdSetDepthCompareOpEXT                               = CmdSetDepthCompareOp;
+    alias CmdSetDepthBoundsTestEnableEXT                        = CmdSetDepthBoundsTestEnable;
+    alias CmdSetStencilTestEnableEXT                            = CmdSetStencilTestEnable;
+    alias CmdSetStencilOpEXT                                    = CmdSetStencilOp;
+
+    // VK_EXT_private_data
+    alias CreatePrivateDataSlotEXT                              = CreatePrivateDataSlot;
+    alias DestroyPrivateDataSlotEXT                             = DestroyPrivateDataSlot;
+    alias SetPrivateDataEXT                                     = SetPrivateData;
+    alias GetPrivateDataEXT                                     = GetPrivateData;
+
+    // VK_EXT_extended_dynamic_state2
+    alias CmdSetRasterizerDiscardEnableEXT                      = CmdSetRasterizerDiscardEnable;
+    alias CmdSetDepthBiasEnableEXT                              = CmdSetDepthBiasEnable;
+    alias CmdSetPrimitiveRestartEnableEXT                       = CmdSetPrimitiveRestartEnable;
 
 
     /// member function pointer decelerations
@@ -1194,6 +1227,44 @@ struct DispatchDevice {
     PFN_vkGetBufferOpaqueCaptureAddress                   vkGetBufferOpaqueCaptureAddress;
     PFN_vkGetDeviceMemoryOpaqueCaptureAddress             vkGetDeviceMemoryOpaqueCaptureAddress;
 
+    // VK_VERSION_1_3
+    PFN_vkCreatePrivateDataSlot                           vkCreatePrivateDataSlot;
+    PFN_vkDestroyPrivateDataSlot                          vkDestroyPrivateDataSlot;
+    PFN_vkSetPrivateData                                  vkSetPrivateData;
+    PFN_vkGetPrivateData                                  vkGetPrivateData;
+    PFN_vkCmdSetEvent2                                    vkCmdSetEvent2;
+    PFN_vkCmdResetEvent2                                  vkCmdResetEvent2;
+    PFN_vkCmdWaitEvents2                                  vkCmdWaitEvents2;
+    PFN_vkCmdPipelineBarrier2                             vkCmdPipelineBarrier2;
+    PFN_vkCmdWriteTimestamp2                              vkCmdWriteTimestamp2;
+    PFN_vkQueueSubmit2                                    vkQueueSubmit2;
+    PFN_vkCmdCopyBuffer2                                  vkCmdCopyBuffer2;
+    PFN_vkCmdCopyImage2                                   vkCmdCopyImage2;
+    PFN_vkCmdCopyBufferToImage2                           vkCmdCopyBufferToImage2;
+    PFN_vkCmdCopyImageToBuffer2                           vkCmdCopyImageToBuffer2;
+    PFN_vkCmdBlitImage2                                   vkCmdBlitImage2;
+    PFN_vkCmdResolveImage2                                vkCmdResolveImage2;
+    PFN_vkCmdBeginRendering                               vkCmdBeginRendering;
+    PFN_vkCmdEndRendering                                 vkCmdEndRendering;
+    PFN_vkCmdSetCullMode                                  vkCmdSetCullMode;
+    PFN_vkCmdSetFrontFace                                 vkCmdSetFrontFace;
+    PFN_vkCmdSetPrimitiveTopology                         vkCmdSetPrimitiveTopology;
+    PFN_vkCmdSetViewportWithCount                         vkCmdSetViewportWithCount;
+    PFN_vkCmdSetScissorWithCount                          vkCmdSetScissorWithCount;
+    PFN_vkCmdBindVertexBuffers2                           vkCmdBindVertexBuffers2;
+    PFN_vkCmdSetDepthTestEnable                           vkCmdSetDepthTestEnable;
+    PFN_vkCmdSetDepthWriteEnable                          vkCmdSetDepthWriteEnable;
+    PFN_vkCmdSetDepthCompareOp                            vkCmdSetDepthCompareOp;
+    PFN_vkCmdSetDepthBoundsTestEnable                     vkCmdSetDepthBoundsTestEnable;
+    PFN_vkCmdSetStencilTestEnable                         vkCmdSetStencilTestEnable;
+    PFN_vkCmdSetStencilOp                                 vkCmdSetStencilOp;
+    PFN_vkCmdSetRasterizerDiscardEnable                   vkCmdSetRasterizerDiscardEnable;
+    PFN_vkCmdSetDepthBiasEnable                           vkCmdSetDepthBiasEnable;
+    PFN_vkCmdSetPrimitiveRestartEnable                    vkCmdSetPrimitiveRestartEnable;
+    PFN_vkGetDeviceBufferMemoryRequirements               vkGetDeviceBufferMemoryRequirements;
+    PFN_vkGetDeviceImageMemoryRequirements                vkGetDeviceImageMemoryRequirements;
+    PFN_vkGetDeviceImageSparseMemoryRequirements          vkGetDeviceImageSparseMemoryRequirements;
+
     // VK_KHR_swapchain
     PFN_vkCreateSwapchainKHR                              vkCreateSwapchainKHR;
     PFN_vkDestroySwapchainKHR                             vkDestroySwapchainKHR;
@@ -1206,10 +1277,6 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                       vkCreateSharedSwapchainsKHR;
-
-    // VK_KHR_dynamic_rendering
-    PFN_vkCmdBeginRenderingKHR                            vkCmdBeginRenderingKHR;
-    PFN_vkCmdEndRenderingKHR                              vkCmdEndRenderingKHR;
 
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                  vkGetMemoryFdKHR;
@@ -1253,27 +1320,8 @@ struct DispatchDevice {
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR vkGetPipelineExecutableInternalRepresentationsKHR;
 
     // VK_KHR_synchronization2
-    PFN_vkCmdSetEvent2KHR                                 vkCmdSetEvent2KHR;
-    PFN_vkCmdResetEvent2KHR                               vkCmdResetEvent2KHR;
-    PFN_vkCmdWaitEvents2KHR                               vkCmdWaitEvents2KHR;
-    PFN_vkCmdPipelineBarrier2KHR                          vkCmdPipelineBarrier2KHR;
-    PFN_vkCmdWriteTimestamp2KHR                           vkCmdWriteTimestamp2KHR;
-    PFN_vkQueueSubmit2KHR                                 vkQueueSubmit2KHR;
     PFN_vkCmdWriteBufferMarker2AMD                        vkCmdWriteBufferMarker2AMD;
     PFN_vkGetQueueCheckpointData2NV                       vkGetQueueCheckpointData2NV;
-
-    // VK_KHR_copy_commands2
-    PFN_vkCmdCopyBuffer2KHR                               vkCmdCopyBuffer2KHR;
-    PFN_vkCmdCopyImage2KHR                                vkCmdCopyImage2KHR;
-    PFN_vkCmdCopyBufferToImage2KHR                        vkCmdCopyBufferToImage2KHR;
-    PFN_vkCmdCopyImageToBuffer2KHR                        vkCmdCopyImageToBuffer2KHR;
-    PFN_vkCmdBlitImage2KHR                                vkCmdBlitImage2KHR;
-    PFN_vkCmdResolveImage2KHR                             vkCmdResolveImage2KHR;
-
-    // VK_KHR_maintenance4
-    PFN_vkGetDeviceBufferMemoryRequirementsKHR            vkGetDeviceBufferMemoryRequirementsKHR;
-    PFN_vkGetDeviceImageMemoryRequirementsKHR             vkGetDeviceImageMemoryRequirementsKHR;
-    PFN_vkGetDeviceImageSparseMemoryRequirementsKHR       vkGetDeviceImageSparseMemoryRequirementsKHR;
 
     // VK_EXT_debug_marker
     PFN_vkDebugMarkerSetObjectTagEXT                      vkDebugMarkerSetObjectTagEXT;
@@ -1406,20 +1454,6 @@ struct DispatchDevice {
     // VK_EXT_line_rasterization
     PFN_vkCmdSetLineStippleEXT                            vkCmdSetLineStippleEXT;
 
-    // VK_EXT_extended_dynamic_state
-    PFN_vkCmdSetCullModeEXT                               vkCmdSetCullModeEXT;
-    PFN_vkCmdSetFrontFaceEXT                              vkCmdSetFrontFaceEXT;
-    PFN_vkCmdSetPrimitiveTopologyEXT                      vkCmdSetPrimitiveTopologyEXT;
-    PFN_vkCmdSetViewportWithCountEXT                      vkCmdSetViewportWithCountEXT;
-    PFN_vkCmdSetScissorWithCountEXT                       vkCmdSetScissorWithCountEXT;
-    PFN_vkCmdBindVertexBuffers2EXT                        vkCmdBindVertexBuffers2EXT;
-    PFN_vkCmdSetDepthTestEnableEXT                        vkCmdSetDepthTestEnableEXT;
-    PFN_vkCmdSetDepthWriteEnableEXT                       vkCmdSetDepthWriteEnableEXT;
-    PFN_vkCmdSetDepthCompareOpEXT                         vkCmdSetDepthCompareOpEXT;
-    PFN_vkCmdSetDepthBoundsTestEnableEXT                  vkCmdSetDepthBoundsTestEnableEXT;
-    PFN_vkCmdSetStencilTestEnableEXT                      vkCmdSetStencilTestEnableEXT;
-    PFN_vkCmdSetStencilOpEXT                              vkCmdSetStencilOpEXT;
-
     // VK_NV_device_generated_commands
     PFN_vkGetGeneratedCommandsMemoryRequirementsNV        vkGetGeneratedCommandsMemoryRequirementsNV;
     PFN_vkCmdPreprocessGeneratedCommandsNV                vkCmdPreprocessGeneratedCommandsNV;
@@ -1427,12 +1461,6 @@ struct DispatchDevice {
     PFN_vkCmdBindPipelineShaderGroupNV                    vkCmdBindPipelineShaderGroupNV;
     PFN_vkCreateIndirectCommandsLayoutNV                  vkCreateIndirectCommandsLayoutNV;
     PFN_vkDestroyIndirectCommandsLayoutNV                 vkDestroyIndirectCommandsLayoutNV;
-
-    // VK_EXT_private_data
-    PFN_vkCreatePrivateDataSlotEXT                        vkCreatePrivateDataSlotEXT;
-    PFN_vkDestroyPrivateDataSlotEXT                       vkDestroyPrivateDataSlotEXT;
-    PFN_vkSetPrivateDataEXT                               vkSetPrivateDataEXT;
-    PFN_vkGetPrivateDataEXT                               vkGetPrivateDataEXT;
 
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                 vkCmdSetFragmentShadingRateEnumNV;
@@ -1452,10 +1480,7 @@ struct DispatchDevice {
 
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                     vkCmdSetPatchControlPointsEXT;
-    PFN_vkCmdSetRasterizerDiscardEnableEXT                vkCmdSetRasterizerDiscardEnableEXT;
-    PFN_vkCmdSetDepthBiasEnableEXT                        vkCmdSetDepthBiasEnableEXT;
     PFN_vkCmdSetLogicOpEXT                                vkCmdSetLogicOpEXT;
-    PFN_vkCmdSetPrimitiveRestartEnableEXT                 vkCmdSetPrimitiveRestartEnableEXT;
 
     // VK_EXT_color_write_enable
     PFN_vkCmdSetColorWriteEnableEXT                       vkCmdSetColorWriteEnableEXT;
@@ -1492,6 +1517,10 @@ struct DispatchDevice {
     PFN_vkCmdTraceRaysIndirectKHR                         vkCmdTraceRaysIndirectKHR;
     PFN_vkGetRayTracingShaderGroupStackSizeKHR            vkGetRayTracingShaderGroupStackSizeKHR;
     PFN_vkCmdSetRayTracingPipelineStackSizeKHR            vkCmdSetRayTracingPipelineStackSizeKHR;
+
+    // VK_KHR_dynamic_rendering
+    alias vkCmdBeginRenderingKHR                                  = vkCmdBeginRendering;
+    alias vkCmdEndRenderingKHR                                    = vkCmdEndRendering;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                   = vkGetDeviceGroupPeerMemoryFeatures;
@@ -1542,6 +1571,27 @@ struct DispatchDevice {
     alias vkGetBufferOpaqueCaptureAddressKHR                      = vkGetBufferOpaqueCaptureAddress;
     alias vkGetDeviceMemoryOpaqueCaptureAddressKHR                = vkGetDeviceMemoryOpaqueCaptureAddress;
 
+    // VK_KHR_synchronization2
+    alias vkCmdSetEvent2KHR                                       = vkCmdSetEvent2;
+    alias vkCmdResetEvent2KHR                                     = vkCmdResetEvent2;
+    alias vkCmdWaitEvents2KHR                                     = vkCmdWaitEvents2;
+    alias vkCmdPipelineBarrier2KHR                                = vkCmdPipelineBarrier2;
+    alias vkCmdWriteTimestamp2KHR                                 = vkCmdWriteTimestamp2;
+    alias vkQueueSubmit2KHR                                       = vkQueueSubmit2;
+
+    // VK_KHR_copy_commands2
+    alias vkCmdCopyBuffer2KHR                                     = vkCmdCopyBuffer2;
+    alias vkCmdCopyImage2KHR                                      = vkCmdCopyImage2;
+    alias vkCmdCopyBufferToImage2KHR                              = vkCmdCopyBufferToImage2;
+    alias vkCmdCopyImageToBuffer2KHR                              = vkCmdCopyImageToBuffer2;
+    alias vkCmdBlitImage2KHR                                      = vkCmdBlitImage2;
+    alias vkCmdResolveImage2KHR                                   = vkCmdResolveImage2;
+
+    // VK_KHR_maintenance4
+    alias vkGetDeviceBufferMemoryRequirementsKHR                  = vkGetDeviceBufferMemoryRequirements;
+    alias vkGetDeviceImageMemoryRequirementsKHR                   = vkGetDeviceImageMemoryRequirements;
+    alias vkGetDeviceImageSparseMemoryRequirementsKHR             = vkGetDeviceImageSparseMemoryRequirements;
+
     // VK_AMD_draw_indirect_count
     alias vkCmdDrawIndirectCountAMD                               = vkCmdDrawIndirectCount;
     alias vkCmdDrawIndexedIndirectCountAMD                        = vkCmdDrawIndexedIndirectCount;
@@ -1554,5 +1604,30 @@ struct DispatchDevice {
 
     // VK_EXT_host_query_reset
     alias vkResetQueryPoolEXT                                     = vkResetQueryPool;
+
+    // VK_EXT_extended_dynamic_state
+    alias vkCmdSetCullModeEXT                                     = vkCmdSetCullMode;
+    alias vkCmdSetFrontFaceEXT                                    = vkCmdSetFrontFace;
+    alias vkCmdSetPrimitiveTopologyEXT                            = vkCmdSetPrimitiveTopology;
+    alias vkCmdSetViewportWithCountEXT                            = vkCmdSetViewportWithCount;
+    alias vkCmdSetScissorWithCountEXT                             = vkCmdSetScissorWithCount;
+    alias vkCmdBindVertexBuffers2EXT                              = vkCmdBindVertexBuffers2;
+    alias vkCmdSetDepthTestEnableEXT                              = vkCmdSetDepthTestEnable;
+    alias vkCmdSetDepthWriteEnableEXT                             = vkCmdSetDepthWriteEnable;
+    alias vkCmdSetDepthCompareOpEXT                               = vkCmdSetDepthCompareOp;
+    alias vkCmdSetDepthBoundsTestEnableEXT                        = vkCmdSetDepthBoundsTestEnable;
+    alias vkCmdSetStencilTestEnableEXT                            = vkCmdSetStencilTestEnable;
+    alias vkCmdSetStencilOpEXT                                    = vkCmdSetStencilOp;
+
+    // VK_EXT_private_data
+    alias vkCreatePrivateDataSlotEXT                              = vkCreatePrivateDataSlot;
+    alias vkDestroyPrivateDataSlotEXT                             = vkDestroyPrivateDataSlot;
+    alias vkSetPrivateDataEXT                                     = vkSetPrivateData;
+    alias vkGetPrivateDataEXT                                     = vkGetPrivateData;
+
+    // VK_EXT_extended_dynamic_state2
+    alias vkCmdSetRasterizerDiscardEnableEXT                      = vkCmdSetRasterizerDiscardEnable;
+    alias vkCmdSetDepthBiasEnableEXT                              = vkCmdSetDepthBiasEnable;
+    alias vkCmdSetPrimitiveRestartEnableEXT                       = vkCmdSetPrimitiveRestartEnable;
 }
 
