@@ -3281,7 +3281,7 @@ version(mir_core_test)
 }
 
 /++
-Attribute that denotes that the type refers an error. Can be used with $(LREF some) and $(LREF none).
+Attribute that denotes an error type. Can be used with $(LREF some) and $(LREF none).
 
 See_also: $(LREF Err).
 +/

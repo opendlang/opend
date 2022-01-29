@@ -357,7 +357,7 @@ Returns: The argument (or phase) of `z`.
 +/
 T arg(T)(Complex!T z) @safe pure nothrow @nogc
 {
-    import std.math.trigonometry : atan2;
+    import std.math : atan2;
     return atan2(z.im, z.re);
 }
 
