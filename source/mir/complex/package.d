@@ -377,7 +377,7 @@ Returns: The absolute value (or modulus) of `z`.
 */
 T cabs(T)(Complex!T z) @safe pure nothrow @nogc
 {
-    import std.math.algebraic : hypot;
+    import std.math : hypot;
     return hypot(z.re, z.im);
 }
 
