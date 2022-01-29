@@ -68,6 +68,8 @@ $(T2 isNullable, Checks if the type is instance of $(LREF Algebraic) with a self
 $(T2 isTaggedVariant, Checks if the type is instance of tagged $(LREF Algebraic).)
 $(T2 isTypeSet, Checks if the types are the same as $(LREF TypeSet) of them. )
 $(T2 ValueTypeOfNullable, Gets type of $(LI $(LREF .Algebraic.get.2)) method. )
+$(T2 SomeVariant, Gets subtype of algebraic without types for which $(LREF isErr) is true.)
+$(T2 NoneVariant, Gets subtype of algebraic with types for which $(LREF isErr) is true.)
 $(T2 isErr, Checks if T is a instance of $(LREF Err) or if it is annotated with $(LREF reflectErr).)
 $(T2 isErrVariant, Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.)
 
@@ -3295,6 +3297,11 @@ template isErr(T)
     import std.traits: isAggregateType;
     static if (is(T == enum) || isAggregateType!T)
     {
+        static if (isTaggedType!T)
+        {
+            enum isErr = .isErr!(getTaggedTypeUnderlying!T);
+        }
+        else
         static if (is(immutable T == immutable Err!V, V))
         {
             enum isErr = true;
@@ -3337,4 +3344,38 @@ private template allArgumentsIsNotInstanceOfErr(Args...)
 {
     import std.meta: anySatisfy;
     enum allArgumentsIsNotInstanceOfErr = !anySatisfy!(isErr, Args);
+}
+
+/++
+Gets subtype of algebraic without types for which $(LREF isErr) is true.
++/
+template SomeVariant(T : Algebraic!Types, Types...)
+{
+    import std.meta: Filter, templateNot;
+    alias SomeVariant = Algebraic!(Filter!(templateNot!isErr, Types));
+}
+
+///
+@safe pure version(mir_core_test) unittest
+{
+    @reflectErr static struct ErrorS { }
+    alias V = Variant!(ErrorS, Err!string, long, double, This[]);
+    static assert(is(SomeVariant!V == Variant!(long, double, This[])));
+}
+
+/++
+Gets subtype of algebraic with types for which $(LREF isErr) is true.
++/
+template NoneVariant(T : Algebraic!Types, Types...)
+{
+    import std.meta: Filter;
+    alias NoneVariant = Algebraic!(Filter!(isErr, Types));
+}
+
+///
+@safe pure version(mir_core_test) unittest
+{
+    @reflectErr static struct ErrorS { }
+    alias V = Variant!(ErrorS, Err!string, long, double, This[]);
+    static assert(is(NoneVariant!V == Variant!(ErrorS, Err!string)));
 }
