@@ -34,6 +34,10 @@ $(T8 match, Yes, N/A, No, Yes, 0+, auto, Yes)
 $(T8 optionalMatch, No, No, Yes, Yes, 0+, auto, Yes)
 $(T8 autoMatch, No, No, auto, Yes, 0+, auto, Yes)
 $(T8 tryMatch, No, Yes, No, Yes, 0+, auto, Yes)
+$(LEADINGROWN 8,  Inner handlers. Multiple dispatch and algebraic fusion on return.)
+$(T8 suit, N/A(Yes), N/A, No, Yes, ?, auto, Yes)
+$(T8 some, N/A(Yes), N/A, No, Yes, 0+, auto, Yes)
+$(T8 none, N/A(Yes), N/A, No, Yes, 1+, auto, Yes)
 $(LEADINGROWN 8, Member access)
 $(T8 getMember, Yes, N/A, No, No, 1+, Yes, No)
 $(T8 optionalGetMember, No, No, Yes, No, 1+, Yes, No)
@@ -53,6 +57,8 @@ $(T2plain `typeof(null)`, It is usefull for nullable types. Also, it is used to 
 $(T2 This, Dummy structure that is used to construct self-referencing algebraic types. Example: `Variant!(int, double, string, This*[2])`)
 $(T2plain $(LREF SetAlias)`!setId`, Dummy structure that is used to construct cyclic-referencing lists of algebraic types. )
 $(T2 TaggedType, Dummy type used to associate tags with type. )
+$(T2 Err, Wrapper to denote an error value type. )
+$(T2 reflectErr, Attribute that denotes that the type is an error value type. )
 )
 
 $(BOOKTABLE $(H3 $(LREF Algebraic) Traits),
@@ -62,6 +68,8 @@ $(T2 isNullable, Checks if the type is instance of $(LREF Algebraic) with a self
 $(T2 isTaggedVariant, Checks if the type is instance of tagged $(LREF Algebraic).)
 $(T2 isTypeSet, Checks if the types are the same as $(LREF TypeSet) of them. )
 $(T2 ValueTypeOfNullable, Gets type of $(LI $(LREF .Algebraic.get.2)) method. )
+$(T2 isErr, Checks if T is a instance of $(LREF Err) or if it is annotated with $(LREF reflectErr).)
+$(T2 isErrVariant, Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.)
 
 )
 
@@ -95,6 +103,7 @@ $(LI Copy-constructors and postblit constructors are supported. )
 $(LI `toHash`, `opCmp`. `opEquals`, and `toString` support. )
 $(LI No string or template mixins are used. )
 $(LI Optimised for fast execution. )
+$(LI $(LREF some) / $(LREF none) idiom. )
 )
 
 See_also: $(HTTPS en.wikipedia.org/wiki/Algebra_of_sets, Algebra of sets).
@@ -356,7 +365,7 @@ private template TypeCmp(A, B)
 ///
 version(mir_core_test) unittest
 {
-    struct S {}
+    static struct S {}
     alias C = S;
     alias Int = int;
     static assert(is(TypeSet!(S, int) == TypeSet!(Int, C)));
@@ -452,13 +461,13 @@ version(mir_core_test) unittest
 /// Small types
 @safe pure nothrow @nogc version(mir_core_test) unittest 
 {
-    struct S { ubyte d; }
+    static struct S { ubyte d; }
     static assert(Nullable!(byte, char, S).sizeof == 2);
 }
 
 @safe pure nothrow @nogc version(mir_core_test) unittest 
 {
-    struct S { ubyte[3] d; }
+    static struct S { ubyte[3] d; }
     static assert(Nullable!(ushort, wchar, S).sizeof == 6);
 }
 
@@ -1965,7 +1974,7 @@ unittest
 // test CTFE
 unittest
 {
-    struct S { string s;}
+    static struct S { string s;}
     alias V = Nullable!(double, S);
     enum a = V(1.9);
     static assert (a == 1.9);
@@ -2397,8 +2406,8 @@ alias match(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, 
 version(mir_core_test)
 unittest
 {
-    struct Asteroid { uint size; }
-    struct Spaceship { uint size; }
+    static struct Asteroid { uint size; }
+    static struct Spaceship { uint size; }
     alias SpaceObject = Variant!(Asteroid, Spaceship);
 
     alias collideWith = match!(
@@ -2458,8 +2467,8 @@ version(mir_core_test)
 unittest
 {
     import std.exception: assertThrown;
-    struct Asteroid { uint size; }
-    struct Spaceship { uint size; }
+    static struct Asteroid { uint size; }
+    static struct Spaceship { uint size; }
     alias SpaceObject = Variant!(Asteroid, Spaceship);
 
     alias collideWith = tryMatch!(
@@ -2534,8 +2543,8 @@ alias optionalMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.nulla
 version(mir_core_test)
 unittest
 {
-    struct Asteroid { uint size; }
-    struct Spaceship { uint size; }
+    static struct Asteroid { uint size; }
+    static struct Spaceship { uint size; }
     alias SpaceObject = Variant!(Asteroid, Spaceship);
 
     alias collideWith = optionalMatch!(
@@ -2610,8 +2619,8 @@ alias autoMatch(visitors...) = visitImpl!(naryFun!visitors, Exhaustive.auto_, tr
 version(mir_core_test)
 unittest
 {
-    struct Asteroid { uint size; }
-    struct Spaceship { uint size; }
+    static struct Asteroid { uint size; }
+    static struct Spaceship { uint size; }
     alias SpaceObject = Variant!(Asteroid, Spaceship);
 
     alias collideWith = autoMatch!(
@@ -2861,7 +2870,14 @@ private template nextVisitor(T, alias visitor, alias arg)
     auto ref nextVisitor(NextArgs...)(auto ref NextArgs nextArgs)
     {
         import core.lifetime: forward;
-        return visitor(arg.trustedGet!T, forward!nextArgs);
+
+        static if (__traits(isRef,  arg))
+            return visitor(arg.trustedGet!T, forward!nextArgs);
+        else
+        static if (is(typeof(move(arg.trustedGet!T))))
+            return visitor(move(arg.trustedGet!T), forward!nextArgs);
+        else
+            return visitor((() => arg.trustedGet!T)(), forward!nextArgs);
     }
 }
 
@@ -2874,7 +2890,7 @@ private template nextVisitor(alias visitor, alias arg)
     }
 }
 
-private template visitThis(alias visitor, Exhaustive nextExhaustive, args...)
+private template visitThis(alias visitor, Exhaustive nextExhaustive)
 {
     auto ref visitThis(T, Args...)(auto ref Args args)
     {
@@ -2883,24 +2899,33 @@ private template visitThis(alias visitor, Exhaustive nextExhaustive, args...)
     }
 }
 
-private template visitLast(alias visitor, args...)
+private template visitLast(alias visitor)
 {
-    auto ref visitLast(T, Args...)(auto ref Args args)
+    auto ref visitLast(T, Args...)(auto ref Args args) @trusted
     {
-        import core.lifetime: forward;
+        import core.lifetime: forward, move;
         static if (is(T == void))
             return visitor(forward!(args[1 .. $]));
         else
+        static if (__traits(isRef,  args[0]))
             return visitor(args[0].trustedGet!T, forward!(args[1 .. $]));
+        else
+        static if (is(typeof(move(args[0].trustedGet!T))))
+            return visitor(move(args[0].trustedGet!T), forward!(args[1 .. $]));
+        else
+            return visitor((() => args[0].trustedGet!T)(), forward!(args[1 .. $]));
     }
 }
 
-template visitImpl(alias visitor, Exhaustive exhaustive, bool fused)
+private enum _AcceptAll(Args...) = true;
+
+template visitImpl(alias visitor, Exhaustive exhaustive, bool fused, alias Filter = _AcceptAll)
 {
     import std.meta: anySatisfy, staticMap, AliasSeq;
 
     ///
     auto ref visitImpl(Args...)(auto ref Args args)
+        if (Filter!Args)
     {
         import core.lifetime: forward;
 
@@ -3098,4 +3123,218 @@ unittest
     }
 
     alias B = Nullable!Test;
+}
+
+/++
+Wrapper to denote an error value type.
+
+The type is autostripped by $(LREF none).
+
+See_also: $(LREF reflectErr).
++/
+struct Err(T)
+{
+    T value;
+}
+
+/// ditto
+Err!T err(T)(T value) {
+    import core.lifetime: move;
+    return Err!T(move(value));
+}
+
+/++
+
+See_also: $(LREF some) and $(LREF none).
+
+Params:
+    visitors = visitors to $(LREF match) with.
++/
+alias suit(alias filter, visitors...) = visitImpl!(naryFun!visitors, Exhaustive.compileTime, true, filter);
+
+///
+version(mir_core_test)
+@safe pure nothrow @nogc unittest
+{
+    import std.traits: isDynamicArray, Unqual;
+    import std.meta: templateNot;
+    alias V = Variant!(long, int, string, long[], int[]);
+    alias autoGetElementType = match!(
+        (string s) => "string", // we override the suit handler below for string
+        suit!(isDynamicArray, a => Unqual!(typeof(a[0])).stringof), 
+        suit!(templateNot!isDynamicArray, a => Unqual!(typeof(a)).stringof), 
+    );
+    assert(autoGetElementType(V(string.init)) == "string");
+    assert(autoGetElementType(V((long[]).init)) == "long");
+    assert(autoGetElementType(V((int[]).init)) == "int");
+    assert(autoGetElementType(V(long.init)) == "long");
+    assert(autoGetElementType(V(int.init)) == "int");
+}
+
+///
+version(mir_core_test)
+@safe pure nothrow @nogc unittest
+{
+    import std.traits: allSameType;
+    import std.meta: templateNot;
+
+    static struct Asteroid { uint size; }
+    static struct Spaceship { uint size; }
+    alias SpaceObject = Variant!(Asteroid, Spaceship);
+
+    auto errorMsg = "can't unite an asteroid with a spaceship".err;
+
+    alias unite = match!(
+        suit!(allSameType, (a, b) => typeof(a)(a.size + b.size)),
+        suit!(templateNot!allSameType, (a, b) => errorMsg),
+    );
+
+    auto ea = Asteroid(10);
+    auto es = Spaceship(1);
+    auto oa = SpaceObject(ea);
+    auto os = SpaceObject(es);
+
+    static assert(is(typeof(unite(oa, oa)) == Variant!(Err!string, Asteroid, Spaceship)));
+
+    // Asteroid-Asteroid
+    assert(unite(ea, ea) == Asteroid(20));
+    assert(unite(ea, oa) == Asteroid(20));
+    assert(unite(oa, ea) == Asteroid(20));
+    assert(unite(oa, oa) == Asteroid(20));
+
+    // Asteroid-Spaceship
+    assert(unite(ea, es) == errorMsg);
+    assert(unite(ea, os) == errorMsg);
+    assert(unite(oa, es) == errorMsg);
+    assert(unite(oa, os) == errorMsg);
+
+    // Spaceship-Asteroid
+    assert(unite(es, ea) == errorMsg);
+    assert(unite(es, oa) == errorMsg);
+    assert(unite(os, ea) == errorMsg);
+    assert(unite(os, oa) == errorMsg);
+
+    // Spaceship-Spaceship
+    assert(unite(es, es) == Spaceship(2));
+    assert(unite(es, os) == Spaceship(2));
+    assert(unite(os, es) == Spaceship(2));
+    assert(unite(os, os) == Spaceship(2));
+}
+
+private template unwrapErrImpl(alias arg)
+{
+    static if (is(immutable typeof(arg) == immutable Err!V, V))
+        auto ref unwrapErrImpl() @trusted @property { return arg.value; }
+    else
+        alias unwrapErrImpl = arg;
+}
+
+
+private template unwrapErr(alias fun)
+{
+    auto ref unwrapErr(Args...)(auto ref return Args args) @trusted
+    {
+        import std.meta: staticMap;
+        return fun(staticMap!(unwrapErrImpl, args));
+    }
+}
+
+/++
+$(LREF some) is a variant of $(LREF suit) that forces that type of any argument doesn't satisfy $(LREF isErr) template.
+
+$(LREF none) is a variant of $(LREF suit) that forces that type of all arguments satisfy $(LREF isErr) template. The handler automatically strips the $(LREF Err) wrapper.
+
+See_also: $(LREF suit), $(LREF Err), $(LREF isErr),  $(LREF isErrVariant), and $(LREF reflectErr).
+
+Params:
+    visitors = visitors to $(LREF match) with.
++/
+alias some(visitors...) = suit!(allArgumentsIsNotInstanceOfErr, naryFun!visitors);
+
+/// ditto
+alias none(visitors...) = suit!(anyArgumentIsInstanceOfErr, unwrapErr!(naryFun!visitors));
+
+///
+version(mir_core_test)
+@safe pure nothrow @nogc unittest
+{
+    import mir.conv: to;
+
+    alias orElse(alias fun) = visit!(some!"a", none!fun);
+    alias convertErrToString = orElse!(to!string);
+
+    // can any other type including integer enum
+    @reflectErr
+    static struct ErrorInfo {
+        string msg;
+        auto toString() const { return msg; }
+    }
+
+    alias V = Variant!(Err!string, ErrorInfo, long, double);
+    alias R = typeof(convertErrToString(V.init));
+
+    static assert(is(R == Variant!(string, long, double)), R.stringof);
+    assert(convertErrToString(V(1)) == 1);
+    assert(convertErrToString(V(1.0)) == 1.0);
+    assert(convertErrToString(ErrorInfo("b")) == "b");
+    assert(convertErrToString("Ш".err) == "Ш");
+}
+
+/++
+Attribute that denotes that the type refers an error. Can be used with $(LREF some) and $(LREF none).
+
+See_also: $(LREF Err).
++/
+enum reflectErr;
+
+/++
+Checks if T is a instance of $(LREF Err) or if it is annotated with $(LREF reflectErr).
++/
+template isErr(T)
+{
+    import std.traits: isAggregateType;
+    static if (is(T == enum) || isAggregateType!T)
+    {
+        static if (is(immutable T == immutable Err!V, V))
+        {
+            enum isErr = true;
+        }
+        else
+        {
+            import std.traits: hasUDA;
+            enum isErr = hasUDA!(T, reflectErr);
+        }
+    }
+    else
+    {
+        enum isErr = false;
+    }
+}
+
+/++
+Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.
++/
+template isErrVariant(T)
+{
+    static if (isVariant!T)
+    {
+        import std.meta: anySatisfy;
+        enum isErrVariant = anySatisfy!(isErr, T.AllowedTypes);
+    }
+    else
+    {
+        enum isErrVariant = false;
+    }
+}
+
+private template anyArgumentIsInstanceOfErr(Args...)
+{
+    import std.meta: anySatisfy;
+    enum anyArgumentIsInstanceOfErr = anySatisfy!(isErr, Args);
+}
+
+private template allArgumentsIsNotInstanceOfErr(Args...)
+{
+    import std.meta: anySatisfy;
+    enum allArgumentsIsNotInstanceOfErr = !anySatisfy!(isErr, Args);
 }
