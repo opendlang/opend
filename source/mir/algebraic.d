@@ -2903,7 +2903,7 @@ private template visitThis(alias visitor, Exhaustive nextExhaustive)
 
 private template visitLast(alias visitor)
 {
-    auto ref visitLast(T, Args...)(auto ref Args args) @trusted
+    auto ref visitLast(T, Args...)(auto ref Args args)
     {
         import core.lifetime: forward, move;
         static if (is(T == void))
@@ -3226,7 +3226,7 @@ version(mir_core_test)
 private template unwrapErrImpl(alias arg)
 {
     static if (is(immutable typeof(arg) == immutable Err!V, V))
-        auto ref unwrapErrImpl() @trusted @property { return arg.value; }
+        auto ref unwrapErrImpl() @property { return arg.value; }
     else
         alias unwrapErrImpl = arg;
 }
@@ -3234,7 +3234,7 @@ private template unwrapErrImpl(alias arg)
 
 private template unwrapErr(alias fun)
 {
-    auto ref unwrapErr(Args...)(auto ref return Args args) @trusted
+    auto ref unwrapErr(Args...)(auto ref return Args args)
     {
         import std.meta: staticMap;
         return fun(staticMap!(unwrapErrImpl, args));
