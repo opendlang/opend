@@ -38,6 +38,7 @@ $(LEADINGROWN 8,  Inner handlers. Multiple dispatch and algebraic fusion on retu
 $(T8 suit, N/A(Yes), N/A, No, Yes, ?, auto, Yes)
 $(T8 some, N/A(Yes), N/A, No, Yes, 0+, auto, Yes)
 $(T8 none, N/A(Yes), N/A, No, Yes, 1+, auto, Yes)
+$(T8 assumeOk, Yes(No), No(Yes), No(Yes), Yes(No), 0+, auto, Yes(No))
 $(LEADINGROWN 8, Member access)
 $(T8 getMember, Yes, N/A, No, No, 1+, Yes, No)
 $(T8 optionalGetMember, No, No, Yes, No, 1+, Yes, No)
@@ -2943,12 +2944,11 @@ private enum _AcceptAll(Args...) = true;
 
 template visitImpl(alias visitor, Exhaustive exhaustive, bool fused, alias Filter = _AcceptAll)
 {
-    import std.meta: anySatisfy, staticMap, AliasSeq;
-
     ///
     auto ref visitImpl(Args...)(auto ref Args args)
         if (Filter!Args)
     {
+        import std.meta: anySatisfy, staticMap, AliasSeq;
         import core.lifetime: forward;
 
         static if (!anySatisfy!(isVariant, Args))
@@ -2963,7 +2963,7 @@ template visitImpl(alias visitor, Exhaustive exhaustive, bool fused, alias Filte
                 static if (__traits(compiles, visitor(forward!args)))
                     return visitor(forward!args);
                 else
-                    throw variantMemberException;
+                    return throwMe(variantMemberException);
             }
             else
             static if (exhaustive == Exhaustive.nullable)
@@ -3004,10 +3004,16 @@ template visitImpl(alias visitor, Exhaustive exhaustive, bool fused, alias Filte
             template VariantReturnTypesImpl(T)
             {
                 static if (__traits(compiles, fun!T(forward!args)))
-                    static if (fused && is(typeof(fun!T(forward!args)) : Algebraic!Types, Types...))
-                        alias VariantReturnTypesImpl = TryRemoveConst!(typeof(fun!T(forward!args))).AllowedTypes;
+                {
+                    alias R = typeof(fun!T(forward!args));
+                    static if (fused && isVariant!R)
+                        alias VariantReturnTypesImpl = staticMap!(TryRemoveConst, R.AllowedTypes);
                     else
-                    alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!(typeof(fun!T(forward!args))));
+                    static if (is(immutable R == immutable noreturn))
+                        alias VariantReturnTypesImpl = AliasSeq!();
+                    else
+                        alias VariantReturnTypesImpl = AliasSeq!(TryRemoveConst!R);
+                }
                 else
                 static if (exhaustive == Exhaustive.auto_)
                     alias VariantReturnTypesImpl = AliasSeq!(typeof(null));
@@ -3059,7 +3065,7 @@ template visitImpl(alias visitor, Exhaustive exhaustive, bool fused, alias Filte
                         }
                         else
                         {
-                            throw variantMemberException;
+                            return throwMe(variantMemberException);
                         }
                 }
                 default: assert(0);
@@ -3310,9 +3316,9 @@ unittest
     }
 
     {
-        V v = ErrorInfo("b");
+        V v = ErrorInfo("msg");
         assert(!v.isOk);
-        assert(errToString(v) == "b");
+        assert(errToString(v) == "msg");
     }
 
     {
@@ -3435,4 +3441,111 @@ template NoneVariant(T : Algebraic!Types, Types...)
     @reflectErr static struct ErrorS { }
     alias V = Variant!(ErrorS, Err!string, long, double, This[]);
     static assert(is(NoneVariant!V == Variant!(ErrorS, Err!string)));
+}
+
+private template withNewLine(alias arg)
+{
+    import std.meta: AliasSeq;
+    alias withNewLine = AliasSeq!("\n", arg);
+}
+
+
+private noreturn throwMe(Args...)(auto ref Args args) {
+    static if (Args.length == 1)
+        enum simpleThrow = is(immutable Args[0] : immutable Throwable);
+    else
+        enum simpleThrow = false;
+    static if (simpleThrow)
+    {
+        throw args[0];
+    }
+    else
+    {
+        import mir.exception: MirException;
+        static if (__traits(compiles, { import mir.format: print; }))
+        {
+            import std.meta: staticMap;
+            throw new MirException("assumeOk failure:", staticMap!(withNewLine!args)); 
+        }
+        else
+        {
+            import mir.conv: to;
+            auto msg = "assumeOk failure:";
+            foreach(ref arg; args)
+            {
+                msg ~= "\n";
+                msg ~= arg.to!string;
+            }
+            throw new MirException(msg);
+        }
+    }
+}
+
+version(D_Exceptions)
+/++
+Validates that the result doesn't contain an error value.
+
+Params:
+    visitor = (compiletime) visitor function. Default value is `"a"`.
+    handler = (compiletime) visitor handler to use. Default value is $(LREF match).
+Throws:
+    Throws an exception if at least one parameter passed to
+    `visitor` satisfies $(LREF isErr) traits.
+    If there is only one paramter (common case) and its value is `Throwable`, throws it.
+    Otherwise, _all_ paramters will be printed to the exception message using `mir.format.print`.
++/
+alias assumeOk(alias visitor = "a", alias handler = .match) = handler!(some!visitor, none!throwMe);
+
+///
+version(mir_core_test) version(D_Exceptions)
+unittest
+{
+    import std.exception: collectExceptionMsg;
+    import mir.exception: MirException;
+
+    alias SingleTypeValue = typeof(assumeOk(Variant!(Exception, long).init));
+    static assert(is(SingleTypeValue == long), SingleTypeValue.stringof);
+
+
+    // can any other type including integer enum
+    @reflectErr
+    static struct ErrorInfo {
+        string msg;
+        auto toString() const { return msg; }
+    }
+
+    alias V = Variant!(Err!string, ErrorInfo, Exception, long, double);
+    alias R = typeof(assumeOk(V.init));
+
+    static assert(is(R == Variant!(long, double)), R.stringof);
+
+    {
+        V v = 1;
+        assert(v.isOk);
+        assert(v.assumeOk == 1);
+    }
+
+    {
+        V v = 1.0;
+        assert(v.isOk);
+        assert(v.assumeOk == 1.0);
+    }
+
+    {
+        V v = ErrorInfo("msg");
+        assert(!v.isOk);
+        assert(v.assumeOk.collectExceptionMsg == "assumeOk failure:\nmsg");
+    }
+
+    {
+        V v = "msg".err;
+        assert(!v.isOk);
+        assert(v.assumeOk.collectExceptionMsg == "assumeOk failure:\nmsg");
+    }
+
+    {
+        V v = new Exception("msg");
+        assert(!v.isOk);
+        assert(v.assumeOk.collectExceptionMsg == "msg");
+    }
 }
