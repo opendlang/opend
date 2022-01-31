@@ -71,7 +71,7 @@ $(T2 ValueTypeOfNullable, Gets type of $(LI $(LREF .Algebraic.get.2)) method. )
 $(T2 SomeVariant, Gets subtype of algebraic without types for which $(LREF isErr) is true.)
 $(T2 NoneVariant, Gets subtype of algebraic with types for which $(LREF isErr) is true.)
 $(T2 isErr, Checks if T is a instance of $(LREF Err) or if it is annotated with $(LREF reflectErr).)
-$(T2 isErrVariant, Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.)
+$(T2 isResultVariant, Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.)
 
 )
 
@@ -154,7 +154,7 @@ private static struct _Void()
 /++
 Checks if the type is instance of $(LREF Algebraic).
 +/
-enum bool isVariant(T) = is(T == Algebraic!Types, Types...);
+enum bool isVariant(T) = is(immutable T == immutable Algebraic!Types, Types...);
 
 ///
 @safe pure version(mir_core_test) unittest
@@ -183,7 +183,7 @@ enum bool isTaggedVariant(T) = isVariant!T && is(T.Kind == enum);
 /++
 Checks if the type is instance of $(LREF Algebraic) with a self $(LREF TypeSet) that contains `typeof(null)`.
 +/
-enum bool isNullable(T) = is(T == Algebraic!(typeof(null), Types), Types...);
+enum bool isNullable(T) = is(immutable T == immutable Algebraic!(typeof(null), Types), Types...);
 
 ///
 @safe pure version(mir_core_test) unittest
@@ -1887,6 +1887,26 @@ struct Algebraic(_Types...)
             }
         }
     }
+
+    static if (anySatisfy!(isErr, _Types))
+    {
+        /++
+        Determines if the variant holds value of some none-$(LREF isVariant) type.
+        The property is avaliable only for $(ResultVariant)
+        +/
+        bool isOk() @safe pure nothrow @nogc const @property
+        {
+            switch (_identifier_)
+            {
+                static foreach (i, T; AllowedTypes)
+                {
+                    case i:
+                        return !.isErr!T;
+                }
+                default: assert(0);
+            }
+        }
+    }
 }
 
 /++
@@ -3246,7 +3266,7 @@ $(LREF some) is a variant of $(LREF suit) that forces that type of any argument 
 
 $(LREF none) is a variant of $(LREF suit) that forces that type of all arguments satisfy $(LREF isErr) template. The handler automatically strips the $(LREF Err) wrapper.
 
-See_also: $(LREF suit), $(LREF Err), $(LREF isErr),  $(LREF isErrVariant), and $(LREF reflectErr).
+See_also: $(LREF suit), $(LREF Err), $(LREF isErr),  $(LREF isResultVariant), and $(LREF reflectErr).
 
 Params:
     visitors = visitors to $(LREF match) with.
@@ -3258,12 +3278,12 @@ alias none(visitors...) = suit!(anyArgumentIsInstanceOfErr, unwrapErr!(naryFun!v
 
 ///
 version(mir_core_test)
-@safe pure nothrow @nogc unittest
+unittest
 {
     import mir.conv: to;
 
     alias orElse(alias fun) = visit!(some!"a", none!fun);
-    alias convertErrToString = orElse!(to!string);
+    alias errToString = orElse!(to!string);
 
     // can any other type including integer enum
     @reflectErr
@@ -3272,14 +3292,40 @@ version(mir_core_test)
         auto toString() const { return msg; }
     }
 
-    alias V = Variant!(Err!string, ErrorInfo, long, double);
-    alias R = typeof(convertErrToString(V.init));
+    alias V = Variant!(Err!string, ErrorInfo, Exception, long, double);
+    alias R = typeof(errToString(V.init));
 
     static assert(is(R == Variant!(string, long, double)), R.stringof);
-    assert(convertErrToString(V(1)) == 1);
-    assert(convertErrToString(V(1.0)) == 1.0);
-    assert(convertErrToString(ErrorInfo("b")) == "b");
-    assert(convertErrToString("Ш".err) == "Ш");
+
+    {
+        V v = 1;
+        assert(v.isOk);
+        assert(errToString(v) == 1);
+    }
+
+    {
+        V v = 1.0;
+        assert(v.isOk);
+        assert(errToString(v) == 1.0);
+    }
+
+    {
+        V v = ErrorInfo("b");
+        assert(!v.isOk);
+        assert(errToString(v) == "b");
+    }
+
+    {
+        V v = "msg".err;
+        assert(!v.isOk);
+        assert(errToString(v) == "msg");
+    }
+
+    {
+        V v = new Exception("msg"); enum line = __LINE__;
+        assert(!v.isOk);
+        assert(errToString(v) == "object.Exception@source/mir/algebraic.d(" ~ line.stringof ~ "): msg");
+    }
 }
 
 /++
@@ -3294,7 +3340,7 @@ Checks if T is a instance of $(LREF Err) or if it is annotated with $(LREF refle
 +/
 template isErr(T)
 {
-    import std.traits: isAggregateType;
+    import std.traits: isAggregateType, hasUDA;
     static if (is(T == enum) || isAggregateType!T)
     {
         static if (isTaggedType!T)
@@ -3307,9 +3353,18 @@ template isErr(T)
             enum isErr = true;
         }
         else
+        static if (hasUDA!(T, reflectErr))
         {
-            import std.traits: hasUDA;
-            enum isErr = hasUDA!(T, reflectErr);
+            enum isErr = true;
+        }
+        else
+        version (D_Exceptions)
+        {
+            enum isErr = is(immutable T : immutable Throwable);
+        }
+        else
+        {
+            enum isErr = false;
         }
     }
     else
@@ -3321,18 +3376,20 @@ template isErr(T)
 /++
 Checks if T is a Variant with at least one allowed type that satisfy $(LREF isErr) traits.
 +/
-template isErrVariant(T)
+template isResultVariant(T)
 {
-    static if (isVariant!T)
+    static if (is(immutable T == immutable Algebraic!Types, Types...))
     {
         import std.meta: anySatisfy;
-        enum isErrVariant = anySatisfy!(isErr, T.AllowedTypes);
+        enum isResultVariant = anySatisfy!(isErr, Types);
     }
     else
     {
-        enum isErrVariant = false;
+        enum isResultVariant = false;
     }
 }
+
+deprecated("Use isResultVariant instead") alias isErrVariant = isResultVariant;
 
 private template anyArgumentIsInstanceOfErr(Args...)
 {

@@ -118,7 +118,7 @@ template to(T)
                 }
                 else
                 {
-                    static if (isImplicitlyConvertible!(T, string) && __traits(compiles, () @safe {const(char)[] s =  arg.toString; return s;}))
+                    static if (isImplicitlyConvertible!(T, string) && __traits(compiles, () {const(char)[] s =  arg.toString; return s;}))
                     {
                         auto ret = arg.toString;
                         static if (is(typeof(ret) : string))
