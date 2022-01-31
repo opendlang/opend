@@ -322,6 +322,25 @@ private template _naryAliases(size_t n)
     }
 }
 
+private template stringFun(string fun)
+{
+    /// Specialization for string lambdas
+    @optmath auto ref stringFun(Args...)(auto ref Args args)
+        if (args.length <= 26 && (Args.length == 0) == (fun.length == 0))
+    {
+        import mir.math.common;
+        static if (fun.length)
+        {
+            mixin(_naryAliases!(Args.length));
+            return mixin(fun);
+        }
+        else
+        {
+            return;
+        }
+    }
+}
+
 /++
 Aliases itself to a set of functions.
 
@@ -336,14 +355,7 @@ template naryFun(functions...)
     {
         static if (is(typeof(fun) : string))
         {
-            import mir.math.common;
-            /// Specialization for string lambdas
-            @optmath auto ref naryFun(Args...)(auto ref Args args)
-                if (args.length <= 26)
-            {
-                mixin(_naryAliases!(Args.length));
-                return mixin(fun);
-            }
+            alias naryFun = stringFun!fun;
         }
         else static if (needOpCallAlias!fun)
             alias naryFun = fun.opCall;

@@ -3486,7 +3486,7 @@ version(D_Exceptions)
 Validates that the result doesn't contain an error value.
 
 Params:
-    visitor = (compiletime) visitor function. Default value is `"a"`.
+    visitor = (compiletime) visitor function. Default value is `naryFun!("", "a")`.
     handler = (compiletime) visitor handler to use. Default value is $(LREF match).
 Throws:
     Throws an exception if at least one parameter passed to
@@ -3494,7 +3494,7 @@ Throws:
     If there is only one paramter (common case) and its value is `Throwable`, throws it.
     Otherwise, _all_ paramters will be printed to the exception message using `mir.format.print`.
 +/
-alias assumeOk(alias visitor = "a", alias handler = .match) = handler!(some!visitor, none!throwMe);
+alias assumeOk(alias visitor = naryFun!("", "a"), alias handler = .match) = handler!(some!visitor, none!throwMe);
 
 ///
 version(mir_core_test) version(D_Exceptions)
