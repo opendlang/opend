@@ -54,6 +54,7 @@ version(mir_core_test) unittest
 ///  Attribute for deprecated API
 struct reflectDeprecated(string target)
 {
+    ///
     string info;
 }
 
