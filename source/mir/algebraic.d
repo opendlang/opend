@@ -537,9 +537,9 @@ version(mir_core_test) unittest
         double floating;
         bool boolean;
         typeof(null) null_;
-        string string_;
+        immutable(char)[] string;
         This[] array;
-        This[string] object;
+        This[immutable(char)[]] object;
     }
 
     alias JsonValue = TaggedVariant!JsonUnion;
@@ -570,10 +570,13 @@ version(mir_core_test) unittest
     assert(v.get       !string                  == "Tagged!");
     assert(v.trustedGet!string                  == "Tagged!");
 
-    assert(v.kind == JsonValue.Kind.string_);
+    assert(v.kind == JsonValue.Kind.string);
 
-    assert(v.get       !(JsonValue.Kind.string_) == "Tagged!"); // Kind-based get
-    assert(v.trustedGet!(JsonValue.Kind.string_) == "Tagged!"); // Kind-based trustedGet
+    assert(v.get!"string" == "Tagged!"); // string-based get
+    assert(v.trustedGet!"string" == "Tagged!"); // string-based trustedGet
+
+    assert(v.get!(JsonValue.Kind.string) == "Tagged!"); // Kind-based get
+    assert(v.trustedGet!(JsonValue.Kind.string) == "Tagged!"); // Kind-based trustedGet
 
     v = [JsonValue("str"), JsonValue(4.3)];
 
@@ -1476,8 +1479,12 @@ struct Algebraic(_Types...)
     }
 
     static if (anySatisfy!(isTaggedType, _Types))
-    /// `trustedGet` overload that accept $(LREF .Algebraic.Kind).
-    alias trustedGet(Kind kind) = trustedGet!(AllowedTypes[kind]);
+    {
+        /// `trustedGet` overload that accept $(LREF .Algebraic.Kind).
+        alias trustedGet(Kind kind) = trustedGet!(AllowedTypes[kind]);
+        /// ditto
+        alias trustedGet(string kind) = trustedGet!(__traits(getMember, Kind, kind));
+    }
 
     /++
     Gets an algebraic subset.
@@ -1547,8 +1554,12 @@ struct Algebraic(_Types...)
     }
 
     static if (anySatisfy!(isTaggedType, _Types))
-    /// `get` overload that accept $(LREF .Algebraic.Kind).
-    alias get(Kind kind) = get!(AllowedTypes[kind]);
+    {
+        /// `get` overload that accept $(LREF .Algebraic.Kind).
+        alias get(Kind kind) = get!(AllowedTypes[kind]);
+        /// ditto
+        alias get(string kind) = get!(__traits(getMember, Kind, kind));
+    }
 
     private alias _ReflectionTypes = AllowedTypes[is(AllowedTypes[0] == typeof(null)) .. $];
 
