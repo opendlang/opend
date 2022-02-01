@@ -55,7 +55,17 @@ version(mir_core_test) unittest
 struct reflectDeprecated(string target)
 {
     ///
-    string info;
+    string msg;
+
+    /++
+    Number in an issue tracker. Not mandatory.
+    +/
+    uint issueNumber = uint.max;
+    /++
+    Should be kind of version number if one can be given.
+    Can be something else if that's not possible. Not mandatory.
+    +/
+    string removalTime;
 }
 
 /// Attribute to rename methods, types and functions
