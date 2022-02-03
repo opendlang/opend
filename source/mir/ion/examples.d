@@ -1050,7 +1050,7 @@ version(mir_ion_test) unittest
     assert(`{"integralValue":1.23e+2}`.deserializeJson!S.integralValue == 123);
 }
 
-/// Annotated single variant
+/// Annotated variant
 version(mir_ion_test) unittest
 {
     import mir.algebraic;
