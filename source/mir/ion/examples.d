@@ -1054,19 +1054,30 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.algebraic;
-    import mir.ion.deser.ion;
-    import mir.ion.ser.ion;
+    import mir.ion.deser.json;
+    import mir.ion.deser.text;
+    import mir.ion.ser.json;
     import mir.ion.ser.text;
-    import mir.serde;
 
-    @serdeAlgebraicAnnotation("annotation")
-    static struct S {
+    @serdeAlgebraicAnnotation("s1")
+    static struct S1 {
+        string key;
+    }
+
+    @serdeAlgebraicAnnotation("s2")
+    static struct S2 {
         long key;
     }
-    alias V = Variant!S;
 
-    assert(V(S(123)).serializeText == `annotation::{key:123}`);
-    assert(V(S(123)).serializeIon.deserializeIon!V == S(123));
+    alias V = Variant!(S1, S2);
+    auto v = V(S2(123));
+
+    auto ion = `s2::{key:123}`;
+    auto json = `{"s2":{"key":123}}`;
+    assert(v.serializeText == ion);
+    assert(ion.deserializeText!V == v);
+    assert(v.serializeJson == json);
+    assert(json.deserializeJson!V == v);
 }
 
 /// Annotated arrays

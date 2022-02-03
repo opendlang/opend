@@ -927,6 +927,38 @@ template deserializeValue(string[] symbolTable)
                                 return unqualException(unexpectedAnnotationWhenDeserializing!T);
                     }
                 }
+                else
+                if (data.descriptor.type == IonTypeCode.struct_)
+                {
+                    auto dataStruct = data.trustedGet!IonStruct;
+                    if (dataStruct.walkLength == 1)
+                    {
+                        foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; dataStruct)
+                        {
+                            if (error)
+                                return error.ionException;
+                            auto originalId = symbolId;
+                            if (prepareSymbolId(params, symbolId)) switch (symbolId)
+                            {
+                                static foreach (VT; Types)
+                                static if (serdeHasAlgebraicAnnotation!VT)
+                                {
+                                    case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
+                                    {
+                                        VT object;
+                                        annotatedParams.data = elem;
+                                        if (auto exception = deserializeValue(annotatedParams, object))
+                                            return exception;
+                                        import core.lifetime: move;
+                                        value = move(object);
+                                        return null;
+                                    }
+                                }
+                                default:
+                            }
+                        }
+                    }
+                }
             }
             static if (contains!IonNull)
             {

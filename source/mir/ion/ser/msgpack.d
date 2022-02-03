@@ -8,7 +8,10 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.ser.msgpack;
 
-version(D_Exceptions) static immutable bigIntConvException = new Exception("Overflow when converting BigIntView");
+import mir.ion.exception: IonException;
+
+version(D_Exceptions) private static immutable bigIntConvException = new IonException("Overflow when converting BigIntView");
+version(D_Exceptions) private static immutable msgpackAnnotationException = new IonException("MsgPack can store exactly one annotation.");
 
 version(Have_msgpack_d)
 {
@@ -38,6 +41,7 @@ version(Have_msgpack_d)
 
         /// Mutable value used to choose format specidied or user-defined serialization specializations
         int serdeTarget = SerdeTarget.msgpack;
+        private bool _annotation;
 
     @trusted pure:
 
@@ -120,21 +124,21 @@ version(Have_msgpack_d)
         }
 
         ///
-        alias annotationsBegin = listBegin;
+        auto annotationsBegin()
+        {
+            return size_t(0);
+        }
 
         ///
         void annotationsEnd(size_t state)
         {
-            listEnd(state);
-            putKey("@_value");
+            bool _annotation = false;
         }
 
         ///
         size_t annotationWrapperBegin()
         {
-            auto state = structBegin(2);
-            putKey("@_annotations");
-            return state;
+            return structBegin(1);
         }
 
         ///
@@ -148,7 +152,13 @@ version(Have_msgpack_d)
         }
 
         ///
-        alias putAnnotation = putKey;
+        void putAnnotation(scope const(char)[] annotation)
+        {
+            if (_annotation)
+                throw msgpackAnnotationException;
+            _annotation = true;
+            putKey(annotation);
+        }
 
         ///
         void putSymbol(scope const char[] symbol)

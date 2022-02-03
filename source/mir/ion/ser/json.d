@@ -9,8 +9,9 @@ module mir.ion.ser.json;
 public import mir.serde;
 import mir.ion.exception: IonException;
 
-private static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
-private static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
+version(D_Exceptions) private static immutable jsonAnnotationException = new IonException("JSON can store exactly one annotation.");
+version(D_Exceptions) private static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
+version(D_Exceptions) private static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
 
 /++
 JSON serialization back-end
@@ -32,7 +33,7 @@ struct JsonSerializer(string sep, Appender)
 
     /// Mutable value used to choose format specidied or user-defined serialization specializations
     int serdeTarget = SerdeTarget.json;
-
+    private bool _annotation;
     private size_t state;
 
     static if(sep.length)
@@ -191,7 +192,10 @@ struct JsonSerializer(string sep, Appender)
     alias sexpEnd = listEnd;
 
     ///
-    alias annotationsBegin = listBegin;
+    auto annotationsBegin()
+    {
+        return size_t(0);
+    }
 
     ///
     void putSymbol(scope const char[] symbol)
@@ -202,24 +206,20 @@ struct JsonSerializer(string sep, Appender)
     ///
     void putAnnotation(scope const(char)[] annotation)
     {
-        elemBegin;
-        putValue(annotation);
+        if (_annotation)
+            throw jsonAnnotationException;
+        _annotation = true;
+        putKey(annotation);
     }
 
     ///
     void annotationsEnd(size_t state)
     {
-        listEnd(state);
-        putKey("@_value");
+        bool _annotation = false;
     }
 
     ///
-    size_t annotationWrapperBegin()
-    {
-        auto state = structBegin();
-        putKey("@_annotations");
-        return state;
-    }
+    alias annotationWrapperBegin = structBegin;
 
     ///
     alias annotationWrapperEnd = structEnd;
