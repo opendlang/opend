@@ -19,6 +19,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
+        enum AVXSizedVectorsAreEmulated = false;
 
         import gcc.builtins;
 
@@ -105,6 +106,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = true;
         enum SSESizedVectorsAreEmulated = true;
+        enum AVXSizedVectorsAreEmulated = true;
     }
 }
 else version(LDC)
@@ -117,6 +119,7 @@ else version(LDC)
 
     enum MMXSizedVectorsAreEmulated = false;
     enum SSESizedVectorsAreEmulated = false;
+    enum AVXSizedVectorsAreEmulated = false;
 }
 else version(DigitalMars)
 {
@@ -135,16 +138,19 @@ else version(DigitalMars)
             // Before DMD 2.096, blocked by https://issues.dlang.org/show_bug.cgi?id=21474
             enum SSESizedVectorsAreEmulated = true; 
         }
+
+        enum AVXSizedVectorsAreEmulated = true;
     }
     else
     {
         // Some DMD 32-bit targets don't have D_SIMD
         enum MMXSizedVectorsAreEmulated = true;
         enum SSESizedVectorsAreEmulated = true;
+        enum AVXSizedVectorsAreEmulated = true;
     }
 }
 
-enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated;
+enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated || AVXSizedVectorsAreEmulated;
 
 static if (CoreSimdIsEmulated)
 {
@@ -251,7 +257,8 @@ static if (CoreSimdIsEmulated)
         Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated) );
+                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
+                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
 
             static if (isVector)
             {
@@ -292,7 +299,8 @@ static if (CoreSimdIsEmulated)
         void storeUnaligned(Vec v, BaseType!Vec* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated) );
+                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
+                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
 
             static if (isVector)
             {
@@ -528,6 +536,54 @@ static assert(int4.sizeof == 16);
 static assert(long2.sizeof == 16);
 static assert(double2.sizeof == 16);
 
+
+static if (AVXSizedVectorsAreEmulated)
+{
+    /// AVX-like SIMD types
+
+    struct float8
+    {
+        float[8] array;
+        mixin VectorOps!(float8, float[8]);
+    }
+
+    struct byte32
+    {
+        byte[32] array;
+        mixin VectorOps!(byte32, byte[32]);
+    }
+
+    struct short16
+    {
+        short[16] array;
+        mixin VectorOps!(short16, short[16]);
+    }
+
+    struct int8
+    {
+        int[8] array;
+        mixin VectorOps!(int8, int[8]);
+    }
+
+    struct long4
+    {
+        long[4] array;
+        mixin VectorOps!(long4, long[4]);
+    }
+
+    struct double4
+    {
+        double[4] array;
+        mixin VectorOps!(double4, double[4]);
+    }
+}
+
+static assert(float8.sizeof == 32);
+static assert(byte32.sizeof == 32);
+static assert(short16.sizeof == 32);
+static assert(int8.sizeof == 32);
+static assert(long4.sizeof == 32);
+static assert(double4.sizeof == 32);
 
 
 
