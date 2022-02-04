@@ -149,8 +149,8 @@ __m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11
 }
 unittest
 {
-    short16 A = cast(short16) _mm256_setr_epi8(-1, 0, -21, 21, 42, 127, -42, -128,
-                                               -1, 0, -21, 21, 42, 127, -42, -128);
+    short16 A = cast(short16) _mm256_setr_epi16(-1, 0, -21, 21, 42, 127, -42, -128,
+                                                -1, 0, -21, 21, 42, 127, -42, -128);
     short[16] correct = [-1, 0, -21, 21, 42, 127, -42, -128,
                          -1, 0, -21, 21, 42, 127, -42, -128];
     assert(A.array == correct);
