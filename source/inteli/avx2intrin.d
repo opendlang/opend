@@ -110,8 +110,8 @@ __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
 unittest
 {
     __m256i A = _mm256_setr_epi32( -7, -1, 0, 9, -100, 100, 234, 432 );
-    int[4] correct0 = [ -100, 100, 234, 432 ];
-    int[4] correct1 = [ -7, -1, 0, 9 ];
+    int[4] correct0 = [ -7, -1, 0, 9 ];
+    int[4] correct1 = [ -100, 100, 234, 432 ];
     __m128i R0 = _mm256_extracti128_si256!(0)(A);
     __m128i R1 = _mm256_extracti128_si256!(1)(A);
     assert(R0.array == correct0);
