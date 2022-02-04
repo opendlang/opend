@@ -141,7 +141,7 @@ version(Have_msgpack_d)
         import mir.timestamp: Timestamp;
         import mir.utility: _expect;
         import msgpack.packer: PackerImpl;
-        import std.traits: isNumeric, isUnsigned, isFloatingPoint;
+        import std.traits: isNumeric;
 
         PackerImpl!(ScopedBuffer!ubyte*) packer;
         ScopedBuffer!(ubyte)* buffer;
