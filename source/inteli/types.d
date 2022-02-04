@@ -532,6 +532,9 @@ static assert(double2.sizeof == 16);
 
 
 
+alias __m256 = float8;
+alias __m256i = int8;
+alias __m256d = double4;
 alias __m128 = float4;
 alias __m128i = int4;
 alias __m128d = double2;

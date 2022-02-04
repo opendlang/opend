@@ -9,14 +9,14 @@
     "buildTypes": {
         "unittest-inst": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
-            "dflags-ldc": ["-mattr=+sse3,ssse3,sse4.2"]
+            "dflags-ldc": ["-mattr=+sse3,ssse3,sse4.2,avx,avx2"]
         },
         "unittest-release": {
             "buildOptions": ["unittests", "optimize", "inline"]
         },
         "unittest-release-inst": {
             "buildOptions": ["unittests", "optimize", "inline"],
-            "dflags-ldc": ["-mattr=+sse3,ssse3,sse4.2"]
+            "dflags-ldc": ["-mattr=+sse3,ssse3,sse4.2,avx,avx2"]
         },
         "unittest-arm32": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],

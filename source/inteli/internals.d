@@ -30,6 +30,8 @@ version(GNU)
         enum GDC_with_SSSE3 = false;
         enum GDC_with_SSE41 = false;
         enum GDC_with_SSE42 = false;
+        enum GDC_with_AVX = false;
+        enum GDC_with_AVX2 = false;
         enum GDC_with_SHA = false;
         enum GDC_with_BMI2 = false;
     }
@@ -55,6 +57,8 @@ version(GNU)
         enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSE41 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SSE42 = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_AVX = false; // TODO: we don't have a way to detect that at CT
+        enum GDC_with_AVX2 = false; // TODO: we don't have a way to detect that at CT
         enum GDC_with_SHA = false;
         enum GDC_with_BMI2 = false;
     }
@@ -68,6 +72,8 @@ version(GNU)
         enum GDC_with_SSSE3 = false;
         enum GDC_with_SSE41 = false;
         enum GDC_with_SSE42 = false;
+        enum GDC_with_AVX = false;
+        enum GDC_with_AVX2 = false;
         enum GDC_with_SHA = false;
         enum GDC_with_BMI2 = false;
     }
@@ -82,6 +88,8 @@ else
     enum GDC_with_SSSE3 = false;
     enum GDC_with_SSE41 = false;
     enum GDC_with_SSE42 = false;
+    enum GDC_with_AVX = false;
+    enum GDC_with_AVX2 = false;
     enum GDC_with_SHA = false;
     enum GDC_with_BMI2 = false;
 }
