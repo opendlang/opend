@@ -12,6 +12,106 @@ import mir.ion.exception: IonException;
 
 version(D_Exceptions) private static immutable bigIntConvException = new IonException("Overflow when converting BigIntView");
 version(D_Exceptions) private static immutable msgpackAnnotationException = new IonException("MsgPack can store exactly one annotation.");
+version(D_Exceptions) private static immutable stringTooLargeException = new IonException("Too large of a string for MessagePack");
+
+/++ MessagePack support +/
+
+enum MessagePackFmt : ubyte
+{
+    /++ Integers +/
+    
+    /++ 7-bit positive integer +/
+    fixint = 0x00,
+    /++ 5-bit negative integer (???) +/
+    fixnint = 0xe0,
+    /++ 8-bit unsigned integer +/
+    uint8 = 0xcc,
+    /++ 16-bit unsigned integer +/
+    uint16 = 0xcd,
+    /++ 32-bit unsigned integer +/
+    uint32 = 0xce,
+    /++ 64-bit unsigned integer +/
+    uint64 = 0xcf,
+    /++ 8-bit signed integer +/
+    int8 = 0xd0,
+    /++ 16-bit signed integer +/
+    int16 = 0xd1,
+    /++ 32-bit signed integer +/
+    int32 = 0xd2,
+    /++ 64-bit signed integer +/
+    int64 = 0xd3,
+
+    /++ Maps +/
+
+    /++ Map with a maximum length of 15 key-value pairs +/
+    fixmap = 0x80,
+    /++ Map with a maximum length of 65535 key-value pairs +/
+    map16 = 0xde,
+    /++ Map with a maximum length of 4294967295 key-value pairs +/
+    map32 = 0xdf,
+
+    /++ Arrays +/
+
+    /++ Array with a maximum length of 15 elements +/
+    fixarray = 0x90,
+    /++ Array with a maximum length of 65535 elements +/
+    array16 = 0xdc,
+    /++ Array with a maximum length of 4294967295 elements +/ 
+    array32 = 0xdd,
+    
+    /++ Strings +/
+
+    /++ String with a maximum length of 31 bytes +/
+    fixstr = 0xa0,
+    /++ String with a maximum length of 255 (1 << 8 - 1) bytes +/
+    str8 = 0xd9,
+    /++ String with a maximum length of 65535 (1 << 16 - 1) bytes +/
+    str16 = 0xda,
+    /++ String with a maximum length of 4294967295 (1 << 32 - 1) bytes +/
+    str32 = 0xdb,
+
+    /++ Nil +/
+    nil = 0xc0,
+
+    /++ Boolean values +/
+    false_ = 0xc2,
+    true_ = 0xc3,
+
+    /++ Binary (byte array) +/
+
+    /++ Byte array with a maximum length of 255 bytes +/
+    bin8 = 0xc4,
+    /++ Byte array with a maximum length of 65535 bytes +/
+    bin16 = 0xc5,
+    /++ Byte array with a maximum length of 4294967295 bytes +/
+    bin32 = 0xc6,
+
+    /++ Implementation-specific extensions +/
+    
+    /++ Integer & byte array whose length is 1 byte +/
+    fixext1 = 0xd4,
+    /++ Integer & byte array whose length is 2 bytes +/
+    fixext2 = 0xd5,
+    /++ Integer & byte array whose length is 4 bytes +/ 
+    fixext4 = 0xd6,
+    /++ Integer & byte array whose length is 8 bytes +/
+    fixext8 = 0xd7,
+    /++ Integer & byte array whose length is 16 bytes +/
+    fixext16 = 0xd8,
+    /++ Integer & byte array whose maximum length is 255 bytes +/
+    ext8 = 0xc7,
+    /++ Integer & byte array whose maximum length is 65535 bytes +/
+    ext16 = 0xc8,
+    /++ Integer & byte array whose maximum length is 4294967295 bytes +/
+    ext32 = 0xc9,
+
+    /++ Floats +/
+
+    /++ Single-precision IEEE 754 floating point number +/
+    float32 = 0xca,
+    /++ Double-precision IEEE 754 floating point number +/
+    float64 = 0xcb,
+}
 
 version(Have_msgpack_d)
 {
@@ -33,9 +133,10 @@ version(Have_msgpack_d)
         import mir.timestamp: Timestamp;
         import mir.utility: _expect;
         import msgpack.packer: PackerImpl;
-        import std.traits: isNumeric;
+        import std.traits: isNumeric, isUnsigned, isFloatingPoint;
 
         PackerImpl!(ScopedBuffer!ubyte*) packer;
+        ScopedBuffer!(ubyte)* buffer;
         ScopedBuffer!(char, 128) strBuf;
         ScopedBuffer!(uint, 128) lengths;
 
@@ -47,6 +148,7 @@ version(Have_msgpack_d)
 
         this(ref ScopedBuffer!ubyte buffer)
         {
+            this.buffer = &buffer;
             packer = typeof(packer)(&buffer);
             lengths.initialize;
             strBuf.initialize;
@@ -120,7 +222,7 @@ version(Have_msgpack_d)
         ///
         void stringEnd(size_t state) @trusted
         {
-            packer.pack(strBuf.data);
+            putValue(strBuf.data);
         }
 
         ///
@@ -197,7 +299,7 @@ version(Have_msgpack_d)
         ///
         void putValue(typeof(null))
         {
-            packer.pack(null);
+            buffer.put(MessagePackFmt.nil);
         }
 
         ///
@@ -215,7 +317,41 @@ version(Have_msgpack_d)
         ///
         void putValue(scope const char[] value)
         {
-            packer.pack(value);
+            auto len = value.length;
+            if (len <= 31)
+            {
+                buffer.put(MessagePackFmt.fixstr | cast(ubyte)len);
+            }
+            else if (len < ubyte.max)
+            {
+                buffer.put(MessagePackFmt.str8);
+                buffer.put(cast(ubyte)len);
+            }
+            else if (len <= ushort.max)
+            {
+                buffer.put(MessagePackFmt.str16);
+                buffer.put(cast(ubyte)(len >> 8));
+                buffer.put(cast(ubyte)len);
+            }
+            else if (len <= uint.max)
+            {
+                buffer.put(MessagePackFmt.str32);
+                buffer.put(cast(ubyte)(len >> 24));
+                buffer.put(cast(ubyte)(len >> 16));
+                buffer.put(cast(ubyte)(len >> 8));
+                buffer.put(cast(ubyte)(len));
+            }
+            else
+            {
+                version(D_Exceptions)
+                    throw stringTooLargeException;
+                else
+                    assert(0, "Too large of a string for MessagePack");
+            }
+
+            foreach(c; value) {
+                buffer.put(c);
+            }
         }
 
         ///
@@ -305,6 +441,22 @@ version(Have_msgpack_d)
         serializer.serdeTarget = serdeTarget;
         serializeValue(serializer, value);
         return (()@trusted => cast(immutable) appender.data)();
+    }
+
+    /// Test serializing strings
+    version(mir_ion_msgpack_test) unittest
+    {
+        import std.array : replicate;
+        assert(serializeMsgpack("a") == [0xa1, 0x61]);
+
+        assert(serializeMsgpack("a".replicate(32)) == 
+            cast(ubyte[])[0xd9, 0x20] ~ cast(ubyte[])"a".replicate(32));
+
+        assert(serializeMsgpack("a".replicate(ushort.max)) == 
+            cast(ubyte[])[0xda, 0xff, 0xff] ~ cast(ubyte[])"a".replicate(ushort.max));
+
+        assert(serializeMsgpack("a".replicate(ushort.max + 1)) == 
+            cast(ubyte[])[0xdb, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"a".replicate(ushort.max + 1));
     }
 }
 else
