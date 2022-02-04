@@ -455,7 +455,9 @@ public: // This is also part of the public API
                 version(decodeOGG)
                 {
                     assert(_oggHandle !is null);
-                    return stb_vorbis_get_samples_float_interleaved(_oggHandle, _numChannels, outData, frames * _numChannels);
+                    int framesRead = stb_vorbis_get_samples_float_interleaved(_oggHandle, _numChannels, outData, frames * _numChannels);
+                    _oggPositionFrame += framesRead;
+                    return framesRead;
                 }
                 else
                 {
@@ -934,7 +936,27 @@ public: // This is also part of the public API
             case ogg:
                 version(decodeOGG)
                 {
-                    return stb_vorbis_seek(_oggHandle, frame) == 1;
+                    if (_oggPositionFrame == frame)
+                        return true;
+
+                    if (_oggPositionFrame == _lengthInFrames)
+                    {
+                        // When the OGG stream is finished, and an earlier position is detected, 
+                        // the OGG decoder has to be restarted
+                        assert(_oggHandle !is null);
+                        cleanUpCodecs();
+                        assert(_oggHandle is null);
+                        startDecoding();
+                        assert(_oggHandle !is null);
+                    }
+
+                    if (stb_vorbis_seek(_oggHandle, frame) == 1)
+                    {
+                        _oggPositionFrame = frame;
+                        return true;
+                    }
+                    else
+                      return false;
                 }
                 else 
                     assert(false);
@@ -995,7 +1017,7 @@ public: // This is also part of the public API
                     assert(false);
             case ogg:
                 version(decodeOGG)
-                    return cast(int) stb_vorbis_get_sample_offset(_oggHandle);
+                    return cast(int) _oggPositionFrame;
                 else 
                     assert(false);
 
@@ -1104,7 +1126,8 @@ private:
     version(decodeOGG)
     {
         ubyte[] _oggBuffer; // all allocations from the ogg decoder
-        stb_vorbis* _oggHandle;        
+        stb_vorbis* _oggHandle;
+        long _oggPositionFrame;
     }
     version(decodeWAV)
     {
@@ -1134,7 +1157,9 @@ private:
         WAVEncoder _wavEncoder;
     }
 
-    void cleanUp() @nogc
+    // Clean-up encoder/decoder-related data, but not I/O related things. Useful to restart the decoder.
+    // After callign that, you can call `startDecoder` again.
+    void cleanUpCodecs() @nogc
     {
         // Write the last needed bytes if needed
         finalizeEncodingIfNeeded();
@@ -1170,6 +1195,7 @@ private:
             {
                 stb_vorbis_close(_oggHandle);
                 _oggHandle = null;
+                _oggPositionFrame = 0;
             }
             _oggBuffer.reallocBuffer(0);
         }
@@ -1225,6 +1251,12 @@ private:
                 _wavEncoder = null;
             }
         }
+    }
+
+    // clean-up the whole Stream object so that it can be reused for anything else.
+    void cleanUp() @nogc
+    {
+        cleanUpCodecs();
 
         if (_decoderContext)
         {

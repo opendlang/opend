@@ -118,7 +118,7 @@ debug(checkSeeking)
                 assert(res && pos == maxFrame - 1);
 
                 AudioFileFormat fmt = input.getFormat();
-                if (fmt != AudioFileFormat.ogg && fmt !=  AudioFileFormat.flac) // TODO: in OGG and FLAC, can't re-read the stream once finished.
+                if (fmt !=  AudioFileFormat.flac) // TODO: in FLAC, can't re-read the stream once finished.
                 {
                     // Where the remaining decoding should yield one frame
                     float[] smallbuf = new float[16 * channels];
