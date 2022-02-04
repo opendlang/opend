@@ -105,6 +105,14 @@ enum MessagePackFmt : ubyte
     /++ Integer & byte array whose maximum length is 4294967295 bytes +/
     ext32 = 0xc9,
 
+    /+ Timestamp extension type +/
+    /+ 32-bit timestamp value that stores the number of seconds that have elapsed since the UNIX epoch (1970-01-01 00:00:00 UTC). +/
+    timestamp32 = 0xd6,
+    /+ 64-bit timestamp value that stores the number of seconds / nanoseconds since the UNIX epoch (1970-01-01 00:00:00 UTC). +/
+    timestamp64 = 0xd7,
+    /+ 96-bit timestamp value that stores the number of seconds / nanoseconds since the UNIX epoch (1970-01-01 00:00:00 UTC). +/
+    timestamp96 = 0xc7,
+
     /++ Floats +/
 
     /++ Single-precision IEEE 754 floating point number +/
@@ -268,9 +276,98 @@ version(Have_msgpack_d)
             putValue(symbol);
         }
 
+        void putValue(const ubyte num)
+        {
+            if ((num & 0b1000_0000) == 0)
+            {
+                buffer.put(MessagePackFmt.fixint | num);
+            }
+            else 
+            {
+                buffer.put(MessagePackFmt.uint8);
+                buffer.put(num);
+            }
+        }
+
+        void putValue(const ushort num)
+        {
+            if ((num & 0b1111_1111_0000_0000) == 0)
+            {
+                putValue(cast(ubyte)num);
+            }
+            else
+            {
+                buffer.put(MessagePackFmt.uint16);
+                buffer.put(packMsgPackExt(num));
+            }
+        }
+
+        void putValue(const uint num)
+        {
+            if ((num & 0b1111_1111_1111_1111_1111_1111_0000_0000) == 0)
+            {
+                putValue(cast(ubyte)num);
+            }
+            else if ((num & 0b1111_1111_1111_1111_0000_0000_0000_0000) == 0)
+            {
+                putValue(cast(ushort)num);
+            }
+            else
+            {
+                buffer.put(MessagePackFmt.uint32);
+                buffer.put(packMsgPackExt(num));
+            }
+        }
+
+        void putValue(const ulong num)
+        {
+            if ((num & 0b1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000) == 0)
+            {
+                putValue(cast(ubyte)num);
+            }
+            else if ((num & 0b1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000) == 0)
+            {
+                putValue(cast(ushort)num);
+            }
+            else if ((num & 0b1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000_0000_0000) == 0)
+            {
+                putValue(cast(uint)num);
+            }
+            else
+            {
+                buffer.put(MessagePackFmt.uint64);
+                buffer.put(packMsgPackExt(num));    
+            }
+        }
+
+        void putValue(const float num)
+        {
+            buffer.put(MessagePackFmt.float32);
+            uint v = *cast(uint*)&num;
+            buffer.put(packMsgPackExt(v));
+        }
+
+        void putValue(const double num)
+        {
+            buffer.put(MessagePackFmt.float64);
+            ulong v = *cast(ulong*)&num;
+            buffer.put(packMsgPackExt(v));
+        } 
+
+        void putValue(const real num)
+        {
+            putValue(cast(double)num);
+        }
+
         ///
         void putValue(Num)(const Num num)
-            if (isNumeric!Num && !is(Num == enum))
+            if (isNumeric!Num && !is(Num == enum) 
+                              && !is(Num == ubyte)
+                              && !is(Num == ushort)
+                              && !is(Num == uint)
+                              && !is(Num == float)
+                              && !is(Num == double)
+                              && !is(Num == real))
         {
             packer.pack(num);
         }
@@ -311,7 +408,7 @@ version(Have_msgpack_d)
         ///
         void putValue(bool b)
         {
-            packer.pack(b);
+            buffer.put(0xc2 | b);
         }
 
         ///
@@ -330,16 +427,12 @@ version(Have_msgpack_d)
             else if (len <= ushort.max)
             {
                 buffer.put(MessagePackFmt.str16);
-                buffer.put(cast(ubyte)(len >> 8));
-                buffer.put(cast(ubyte)len);
+                buffer.put(packMsgPackExt(cast(ushort)len));
             }
             else if (len <= uint.max)
             {
                 buffer.put(MessagePackFmt.str32);
-                buffer.put(cast(ubyte)(len >> 24));
-                buffer.put(cast(ubyte)(len >> 16));
-                buffer.put(cast(ubyte)(len >> 8));
-                buffer.put(cast(ubyte)(len));
+                buffer.put(packMsgPackExt(cast(uint)len));
             }
             else
             {
@@ -366,15 +459,20 @@ version(Have_msgpack_d)
             putValue(cast(const(char)[])value.data);
         }
 
-        private ubyte[T.sizeof] packMsgPackExt(T)(T num)
+        private ubyte[T.sizeof] packMsgPackExt(T)(const T num)
             if (__traits(isUnsigned, T))
         {
+            T ret = num;
             version (LittleEndian)
             {
-                import core.bitop : bswap;
-                num = bswap(num);
+                import core.bitop : bswap, byteswap;
+                static if (T.sizeof >= 4) {
+                    ret = bswap(ret);
+                } else static if (T.sizeof == 2) {
+                    ret = byteswap(ret);
+                }
             }
-            return cast(typeof(return))cast(T[1])[num];
+            return cast(typeof(return))cast(T[1])[ret];
         }
 
         ///
@@ -385,16 +483,19 @@ version(Have_msgpack_d)
             if ((sec >> 34) == 0)
             {
                 ulong data64 = (ulong(nanosec) << 34) | sec;
+                // If there are no bits in the top 32 bits, then automatically
+                // write out the smaller data type (in this case, timestamp32) 
                 if ((data64 & 0xffffffff00000000L) == 0)
                 {
-                    // timestamp 32
-                    uint data32 = cast(uint)data64;
-                    packer.packExt(-1, packMsgPackExt(data32));
+                    buffer.put(MessagePackFmt.timestamp32);
+                    buffer.put(cast(ubyte)-1);
+                    buffer.put(packMsgPackExt(cast(uint)data64));
                 }
                 else
                 {
-                    // timestamp 64
-                    packer.packExt(-1, packMsgPackExt(data64));
+                    buffer.put(MessagePackFmt.timestamp64);
+                    buffer.put(cast(ubyte)-1);
+                    buffer.put(packMsgPackExt(data64));
                 }
             }
             else
@@ -403,7 +504,11 @@ version(Have_msgpack_d)
                 ubyte[12] data;
                 data[0 .. 4] = packMsgPackExt(nanosec);
                 data[4 .. 12] = packMsgPackExt(ulong(sec));
-                packer.packExt(-1, data);
+
+                buffer.put(MessagePackFmt.timestamp96);
+                buffer.put(12);
+                buffer.put(cast(ubyte)-1);
+                buffer.put(data);
             }
         }
 
@@ -441,6 +546,46 @@ version(Have_msgpack_d)
         serializer.serdeTarget = serdeTarget;
         serializeValue(serializer, value);
         return (()@trusted => cast(immutable) appender.data)();
+    }
+
+    /// Test serializing booleans
+    version(mir_ion_msgpack_test) unittest
+    {
+        assert(serializeMsgpack(true) == [0xc3]);
+        assert(serializeMsgpack(false) == [0xc2]);
+    }
+
+    /// Test serializing nulls
+    version(mir_ion_msgpack_test) unittest
+    {
+        assert(serializeMsgpack(null) == [0xc0]);
+    }
+
+    /// Test serializing uint64s
+    version(mir_ion_msgpack_test) unittest
+    {
+        assert(serializeMsgpack(cast(ulong)(uint.max)) == [0xce, 0xff, 0xff, 0xff, 0xff]);
+        assert(serializeMsgpack(cast(ulong)(uint.max) + 1) == [0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+        assert(serializeMsgpack(ulong.max) == [0xcf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+    }
+
+    /// Test serializing floats / doubles / reals
+    version(mir_ion_msgpack_test) unittest
+    {
+        assert(serializeMsgpack(float.min_normal) == [0xca, 0x00, 0x80, 0x00, 0x00]);
+        assert(serializeMsgpack(float.max) == [0xca, 0x7f, 0x7f, 0xff, 0xff]);
+        assert(serializeMsgpack(double.min_normal) == [0xcb, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        assert(serializeMsgpack(double.max) == [0xcb, 0x7f, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+    }
+
+    /// Test serializing timestamps
+    version(mir_ion_msgpack_test) unittest
+    {
+        import mir.timestamp : Timestamp;
+        assert(serializeMsgpack(Timestamp(1970, 1, 1, 0, 0, 0)) == [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
+        assert(serializeMsgpack(Timestamp(2038, 1, 19, 3, 14, 7)) == [0xd6, 0xff, 0x7f, 0xff, 0xff, 0xff]);
+        assert(serializeMsgpack(Timestamp(2299, 12, 31, 23, 59, 59)) == [0xd7, 0xff, 0x00, 0x00, 0x00, 0x02, 0x6c, 0xb5, 0xda, 0xff]);
+        assert(serializeMsgpack(Timestamp(3000, 12, 31, 23, 59, 59)) == [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x93, 0x3f, 0xff, 0x7f]);
     }
 
     /// Test serializing strings
