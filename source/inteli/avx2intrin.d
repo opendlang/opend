@@ -60,16 +60,17 @@ __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
     }
     else
     {
-        ushort8 usa = cast(ushort8)a;
-        uint8 r;
-        r.ptr[0] = usa.array[0];
-        r.ptr[1] = usa.array[1];
-        r.ptr[2] = usa.array[2];
-        r.ptr[3] = usa.array[3];
-        r.ptr[4] = usa.array[4];
-        r.ptr[5] = usa.array[5];
-        r.ptr[6] = usa.array[6];
-        r.ptr[7] = usa.array[7];
+        short8 sa = cast(short8)a;
+        int8 r;
+        // Explicit cast to unsigned to get *zero* extension (instead of sign extension).
+        r.ptr[0] = cast(ushort)sa.array[0];
+        r.ptr[1] = cast(ushort)sa.array[1];
+        r.ptr[2] = cast(ushort)sa.array[2];
+        r.ptr[3] = cast(ushort)sa.array[3];
+        r.ptr[4] = cast(ushort)sa.array[4];
+        r.ptr[5] = cast(ushort)sa.array[5];
+        r.ptr[6] = cast(ushort)sa.array[6];
+        r.ptr[7] = cast(ushort)sa.array[7];
         return cast(__m256i)r;
     }
 }
@@ -100,7 +101,7 @@ __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
     }
     else
     {
-        ulong2 ret;
+        long2 ret;
         ret.ptr[0] = (imm8==1) ? a.array[2] : a.array[0];
         ret.ptr[1] = (imm8==1) ? a.array[3] : a.array[1];
         return cast(__m128i) ret;
@@ -237,12 +238,12 @@ unittest
     __m256i A = _mm256_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7, 0, 1, 2, 3, -4, -5, 6, 7);
     short16 B = cast(short16)( _mm256_slli_epi16(A, 1) );
     short16 B2 = cast(short16)( _mm256_slli_epi16(A, 1 + 256) );
-    short[8] expectedB = [ 0, 2, 4, 6, -8, -10, 12, 14, 0, 2, 4, 6, -8, -10, 12, 14 ];
+    short[16] expectedB = [ 0, 2, 4, 6, -8, -10, 12, 14, 0, 2, 4, 6, -8, -10, 12, 14 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
     short16 C = cast(short16)( _mm256_slli_epi16(A, 16) );
-    short[8] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    short[16] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 }
 

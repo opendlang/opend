@@ -138,6 +138,24 @@ unittest
     assert(A.array == correct);
 }
 
+/// Set packed 16-bit integers with the supplied values in reverse order.
+__m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9,  short e8,
+                           short e7,  short e6,  short e5,  short e4,  short e3,  short e2,  short e1,  short e0) pure @trusted
+{
+    pragma(inline, true);
+    short[16] result = [ e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
+                         e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
+    return cast(__m256i)( loadUnaligned!(short16)(result.ptr) );
+}
+unittest
+{
+    short16 A = cast(short16) _mm256_setr_epi8(-1, 0, -21, 21, 42, 127, -42, -128,
+                                               -1, 0, -21, 21, 42, 127, -42, -128);
+    short[16] correct = [-1, 0, -21, 21, 42, 127, -42, -128,
+                         -1, 0, -21, 21, 42, 127, -42, -128];
+    assert(A.array == correct);
+}
+
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
 {
