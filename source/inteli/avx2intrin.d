@@ -101,9 +101,10 @@ __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
     }
     else
     {
+        long4 al = cast(long4) a;
         long2 ret;
-        ret.ptr[0] = (imm8==1) ? a.array[2] : a.array[0];
-        ret.ptr[1] = (imm8==1) ? a.array[3] : a.array[1];
+        ret.ptr[0] = (imm8==1) ? al.array[2] : al.array[0];
+        ret.ptr[1] = (imm8==1) ? al.array[3] : al.array[1];
         return cast(__m128i) ret;
     }
 }
