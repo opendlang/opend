@@ -28,9 +28,19 @@ version(GNU)
             return __builtin_ia32_loadups(pvec);
         }
 
+        float8 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float8))
+        {
+            return __builtin_ia32_loadups256(pvec);
+        }
+
         double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
         {
             return __builtin_ia32_loadupd(pvec);
+        }
+
+        double4 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double4))
+        {
+            return __builtin_ia32_loadupd256(pvec);
         }
 
         byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
@@ -53,14 +63,32 @@ version(GNU)
             return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
         }
 
+        Vec loadUnaligned(Vec)(const(byte)* pvec) @trusted if ( is(Vec == byte32) ||
+                                                                is(Vec == short16) ||
+                                                                is(Vec == int8) ||
+                                                                is(Vec == long4) )
+        {
+            return cast(Vec) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
+        }
+
         void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
         {
             __builtin_ia32_storeups(pvec, v);
         }
 
+        void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float8))
+        {
+            __builtin_ia32_storeups256(pvec, v);
+        }
+
         void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
         {
             __builtin_ia32_storeupd(pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double4))
+        {
+            __builtin_ia32_storeupd256(pvec, v);
         }
 
         void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
@@ -81,6 +109,14 @@ version(GNU)
         void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
         {
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if ( is(Vec == byte32) ||
+                                                                  is(Vec == short16) ||
+                                                                  is(Vec == int8) ||
+                                                                  is(Vec == long4) )
+        {
+            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
         }
 
         // TODO: for performance, replace that anywhere possible by a GDC intrinsic
