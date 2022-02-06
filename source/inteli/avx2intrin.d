@@ -141,7 +141,7 @@ __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
         {
             r.ptr[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];
         }
-        return r;
+        return cast(__m256i) r;
     }
 }
 unittest
@@ -358,9 +358,9 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
         //       D says "It's illegal to shift by the same or more bits
         //       than the size of the quantity being shifted"
         //       and it's UB instead.
-        int8 r = _mm256_setzero_si256();
+        int8 r = cast(int8) _mm256_setzero_si256();
         if (count >= 32)
-            return r;
+            return cast(__m256i) r;
         r.ptr[0] = a_int8.array[0] >>> count;
         r.ptr[1] = a_int8.array[1] >>> count;
         r.ptr[2] = a_int8.array[2] >>> count;
