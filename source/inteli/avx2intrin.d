@@ -185,12 +185,12 @@ __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
             if (diff < 0) diff = -diff;
             t.ptr[i] = cast(ubyte)(diff);
         }
-        int8 r = _mm256_setzero_si256();
+        int8 r = cast(int8) _mm256_setzero_si256();
         r.ptr[0] = t[0]  + t[1]  + t[2]  + t[3]  + t[4]  + t[5]  + t[6]  + t[7];
         r.ptr[2] = t[8]  + t[9]  + t[10] + t[11] + t[12] + t[13] + t[14] + t[15];
         r.ptr[4] = t[16] + t[17] + t[18] + t[19] + t[20] + t[21] + t[22] + t[23];
         r.ptr[6] = t[24] + t[25] + t[26] + t[27] + t[28] + t[29] + t[30] + t[31];
-        return r;
+        return cast(__m256i) r;
     }
 }
 unittest
@@ -266,15 +266,15 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
         //       than the size of the quantity being shifted"
         //       and it's UB instead.
         int8 a_int8 = cast(int8) a;
-        int8 r = _mm256_setzero_si256();
+        int8 r      = cast(int8) _mm256_setzero_si256();
 
         ubyte count = cast(ubyte) imm8;
         if (count > 31)
-            return r;
+            return cast(__m256i) r;
 
         foreach(i; 0..8)
             r.ptr[i] = cast(uint)(a_int8.array[i]) << count;
-        return r;
+        return cast(__m256i) r;
     }
 }
 unittest
@@ -369,7 +369,7 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
         r.ptr[5] = a_int8.array[5] >>> count;
         r.ptr[6] = a_int8.array[6] >>> count;
         r.ptr[7] = a_int8.array[7] >>> count;
-        return r;
+        return cast(__m256i) r;
     }
 }
 unittest
