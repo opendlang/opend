@@ -253,11 +253,11 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
     {
-        return __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
+        return cast(__m256i) __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
     }
     else static if (LDC_with_AVX2)
     {
-        return __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
+        return cast(__m256i) __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
     }
     else
     {
@@ -343,11 +343,11 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
     {
-        return __builtin_ia32_psrldi256(cast(int8)a, cast(ubyte)imm8);
+        return cast(__m256i) __builtin_ia32_psrldi256(cast(int8)a, cast(ubyte)imm8);
     }
     else static if (LDC_with_AVX2)
     {
-        return __builtin_ia32_psrldi256(cast(int8)a, cast(ubyte)imm8);
+        return cast(__m256i) __builtin_ia32_psrldi256(cast(int8)a, cast(ubyte)imm8);
     }
     else
     {
