@@ -1,10 +1,13 @@
 # audio-formats
 Audio format loading for D.
 
-Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
-Can encode WAV to a file or to memory.
+- Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
+- Can encode WAV to a file or to memory.
+- Seeking support
+- `float` and `double` decoding support
+- reduced bitdepth WAV encoding with dithering
 
-It is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
+This package is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
 
 # API
 
