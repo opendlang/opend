@@ -313,8 +313,6 @@ struct drflac_bs {
 
   ReadStruct rs;
 
-  bool stdio; //k8: it is drflac's stdio shit
-
   // The number of unaligned bytes in the L2 cache. This will always be 0 until the end of the stream is hit. At the end of the
   // stream there will be a number of bytes that don't cleanly fit in an L1 cache line, so we use this variable to know whether
   // or not the bistreamer needs to run on a slower path to read those last bytes. This will never be more than (drflac_cache_t).sizeof.
@@ -2650,66 +2648,6 @@ drflac* drflac_open_with_metadata_private (drflac_read_proc onRead, drflac_seek_
 } //nothrow
 
 nothrow {
-alias drflac_file = void*;
-
-size_t drflac__on_read_stdio (void* pUserData, void* bufferOut, size_t bytesToRead) {
-  import core.stdc.stdio;
-  return fread(bufferOut, 1, bytesToRead, cast(FILE*)pUserData);
-}
-
-bool drflac__on_seek_stdio (void* pUserData, int offset, drflac_seek_origin origin) {
-  import core.stdc.stdio;
-  assert(offset > 0 || (offset == 0 && origin == drflac_seek_origin_start));
-  return fseek(cast(FILE*)pUserData, offset, (origin == drflac_seek_origin_current) ? SEEK_CUR : SEEK_SET) == 0;
-}
-
-drflac_file drflac__open_file_handle (const(char)[] filename) {
-  import std.internal.cstring : tempCString;
-  import core.stdc.stdio;
-  FILE* pFile = fopen(filename.tempCString, "rb");
-  if (pFile is null) return null;
-  return cast(drflac_file)pFile;
-}
-
-void drflac__close_file_handle (drflac_file file) {
-  import core.stdc.stdio;
-  fclose(cast(FILE*)file);
-}
-
-deprecated public drflac* drflac_open_file (const(char)[] filename) {
-  
-
-  drflac_file file = drflac__open_file_handle(filename);
-  if (file is null) return null;
-
-  drflac* pFlac = drflac_open(&drflac__on_read_stdio, &drflac__on_seek_stdio, cast(void*)file);
-  if (pFlac is null) {
-    drflac__close_file_handle(file);
-    return null;
-  }
-  pFlac.bs.stdio = true;
-
-  return pFlac;
-}
-
-deprecated  public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drflac_meta_proc onMeta, void* pUserData=null) {
-
-  drflac_file file = drflac__open_file_handle(filename);
-  if (file is null) return null;
-
-  drflac* pFlac = drflac_open_with_metadata_private(&drflac__on_read_stdio, &drflac__on_seek_stdio, onMeta, cast(void*)file, pUserData, true);
-  if (pFlac is null) {
-    drflac__close_file_handle(file);
-    return pFlac;
-  }
-  pFlac.bs.stdio = true;
-
-  return pFlac;
-}
-
-} //nothrow
-
-nothrow {
 
 size_t drflac__on_read_memory (void* pUserData, void* bufferOut, size_t bytesToRead) {
   drflac__memory_stream* memoryStream = cast(drflac__memory_stream*)pUserData;
@@ -2816,25 +2754,10 @@ public drflac* drflac_open_with_metadata (drflac_read_proc onRead, drflac_seek_p
   return drflac_open_with_metadata_private(onRead, onSeek, onMeta, pUserData, pUserData, false);
 }
 
-public void drflac_close (drflac* pFlac) {
-  import core.stdc.stdlib : free;
-  if (pFlac is null) return;
-
-  // If we opened the file with drflac_open_file() we will want to close the file handle. We can know whether or not drflac_open_file()
-  // was used by looking at the callbacks.
-  //if (pFlac.bs.onRead == drflac__on_read_stdio) drflac__close_file_handle(cast(drflac_file)pFlac.bs.pUserData);
-  if (pFlac.bs.stdio) drflac__close_file_handle(cast(drflac_file)pFlac.bs.rs.pUserData);
-
-//#ifndef DR_FLAC_NO_OGG
-  // Need to clean up Ogg streams a bit differently due to the way the bit streaming is chained.
-  if (pFlac.container == drflac_container_ogg) {
-    //assert(pFlac.bs.onRead == drflac__on_read_ogg);
-    drflac_oggbs* oggbs = cast(drflac_oggbs*)(cast(int*)pFlac.pExtraData+pFlac.maxBlockSize*pFlac.channels);
-    //if (oggbs.onRead == drflac__on_read_stdio) drflac__close_file_handle(cast(drflac_file)oggbs.pUserData);
-    if (oggbs.stdio) drflac__close_file_handle(cast(drflac_file)oggbs.rs.pUserData);
-  }
-//#endif
-  free(pFlac);
+public void drflac_close (drflac* pFlac) 
+{
+    import core.stdc.stdlib : free;
+    free(pFlac);
 }
 
 

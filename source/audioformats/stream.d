@@ -430,8 +430,12 @@ public: // This is also part of the public API
                 {
                     assert(_flacDecoder !is null);
 
+                    if (_flacPositionFrame == _lengthInFrames)
+                        return 0; // internally the decoder might be elsewhere
+
                     int* integerData = cast(int*)outData;
-                    int samples = cast(int) drflac_read_s32(_flacDecoder, frames, integerData);
+
+                    int samples = cast(int) drflac_read_s32(_flacDecoder, frames * _numChannels, integerData);
 
                     // "Samples are always output as interleaved signed 32-bit PCM."
                     // Convert to float with type-punning. Note that this looses some precision.
@@ -577,6 +581,9 @@ public: // This is also part of the public API
                 version(decodeFLAC)
                 {
                     assert(_flacDecoder !is null);
+
+                    if (_flacPositionFrame == _lengthInFrames)
+                        return 0; // internally the decoder might be elsewhere
 
                     // use second half of the output buffer as temporary integer decoding area
                     int* integerData = (cast(int*)outData) + frames;
@@ -926,8 +933,16 @@ public: // This is also part of the public API
                 {
                     if (frame < 0 || frame > _lengthInFrames)
                         return false;
-                    bool success = drflac__seek_to_sample__brute_force (_flacDecoder, frame * _numChannels);
-                    if (success)
+                    if (_flacPositionFrame == frame)
+                        return true;
+
+                    // Note: seeking + FLAC is a dark side of that library. 
+                    // I'm not entirely sure we are handling all cases perfectly.
+                    // But weren't able to fault the current situation.
+                    // Would probably be easier to re-tanslate drflac if a problem arised.
+
+                    bool success = drflac_seek_to_sample(_flacDecoder, frame * _numChannels);
+                    if (success || frame == _lengthInFrames) // always succeed if end of stream is requested
                         _flacPositionFrame = frame;
                     return success;
                 }
@@ -1010,8 +1025,7 @@ public: // This is also part of the public API
                 version(decodeFLAC)
                 {
                     // Implemented externally since drflac is impenetrable.
-                    //return cast(int) _flacPositionFrame;
-                    return -1; // doesn't work in last frame though... seekPosition buggy in FLAC?
+                    return cast(int) _flacPositionFrame;
                 }
                 else
                     assert(false);
@@ -1293,9 +1307,12 @@ private:
     void startDecoding() @nogc
     {
         // Create a decoder context
-        _decoderContext = mallocNew!DecoderContext;
-        _decoderContext.userDataIO = userData;
-        _decoderContext.callbacks = _io;
+        if ( _decoderContext is null)
+        {
+            _decoderContext = mallocNew!DecoderContext;
+            _decoderContext.userDataIO = userData;
+            _decoderContext.callbacks = _io;
+        }
 
         version(decodeOPUS)
         {

@@ -118,7 +118,6 @@ debug(checkSeeking)
                 assert(res && pos == maxFrame - 1);
 
                 AudioFileFormat fmt = input.getFormat();
-                if (fmt !=  AudioFileFormat.flac) // TODO: in FLAC, can't re-read the stream once finished.
                 {
                     // Where the remaining decoding should yield one frame
                     float[] smallbuf = new float[16 * channels];
@@ -136,9 +135,16 @@ debug(checkSeeking)
                 }
             }
 
-            // Come back at start.
+            // Come back at start
+, read 16 frames.
             res = input.seekPosition(0);
             assert(res && input.tellPosition() == 0);
+            {
+                float[] smallbuf = new float[16 * channels];
+                int read = input.readSamplesFloat(smallbuf);
+                assert(read == 16);
+            }
+            res = input.seekPosition(0);
         }
     }
 }
