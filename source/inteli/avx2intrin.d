@@ -31,7 +31,7 @@ __m256i _mm256_add_epi32(__m256i a, __m256i b) pure @safe
 unittest
 {
     __m256i A = _mm256_setr_epi32( -7, -1, 0, 9, -100, 100, 234, 432);
-    int8 R = _mm256_add_epi32(A, A);
+    int8 R = cast(int8) _mm256_add_epi32(A, A);
     int[8] correct = [ -14, -2, 0, 18, -200, 200, 468, 864 ];
     assert(R.array == correct);
 }
@@ -46,7 +46,7 @@ unittest
 {
     __m256i A = _mm256_set1_epi32(7);
     __m256i B = _mm256_set1_epi32(14);
-    int8 R = _mm256_and_si256(A, B);
+    int8 R = cast(int8) _mm256_and_si256(A, B);
     int[8] correct = [6, 6, 6, 6, 6, 6, 6, 6];
     assert(R.array == correct);
 }
@@ -148,7 +148,7 @@ unittest
 {
     short16 A = [0, 1, 2, 3, -32768, -32768, 32767, 32767, 0, 1, 2, 3, -32768, -32768, 32767, 32767];
     short16 B = [0, 1, 2, 3, -32768, -32768, 32767, 32767, 0, 1, 2, 3, -32768, -32768, 32767, 32767];
-    int8 R = _mm256_madd_epi16(cast(__m256i)A, cast(__m256i)B);
+    int8 R = cast(int8) _mm256_madd_epi16(cast(__m256i)A, cast(__m256i)B);
     int[8] correct = [1, 13, -2147483648, 2*32767*32767, 1, 13, -2147483648, 2*32767*32767];
     assert(R.array == correct);
 }
@@ -198,7 +198,7 @@ unittest
     __m256i A = _mm256_setr_epi8(3, 4, 6, 8, 12, 14, 18, 20, 24, 30, 32, 38, 42, 44, 48, 54,
                               3, 4, 6, 8, 12, 14, 18, 20, 24, 30, 32, 38, 42, 44, 48, 54); // primes + 1
     __m256i B = _mm256_set1_epi8(1);
-    int8 R = _mm256_sad_epu8(A, B);
+    int8 R = cast(int8) _mm256_sad_epu8(A, B);
     int[8] correct = [2 + 3 + 5 + 7 + 11 + 13 + 17 + 19,
                       0,
                       23 + 29 + 31 + 37 + 41 + 43 + 47 + 53,
@@ -280,17 +280,17 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
 unittest
 {
     __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
-    int8 B = _mm256_slli_epi32(A, 1);
-    int8 B2 = _mm256_slli_epi32(A, 1 + 256);
+    int8 B = cast(int8) _mm256_slli_epi32(A, 1);
+    int8 B2 = cast(int8) _mm256_slli_epi32(A, 1 + 256);
     int[8] expectedB = [ 0, 4, 6, -8, 0, 4, 6, -8 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    int8 C = _mm256_slli_epi32(A, 0);
+    int8 C = cast(int8) _mm256_slli_epi32(A, 0);
     int[8] expectedC = [ 0, 2, 3, -4, 0, 2, 3, -4 ];
     assert(C.array == expectedC);
 
-    int8 D = _mm256_slli_epi32(A, 65);
+    int8 D = cast(int8) _mm256_slli_epi32(A, 65);
     int[8] expectedD = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(D.array == expectedD);
 }
@@ -323,17 +323,17 @@ __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
 unittest
 {
     __m256i A = _mm256_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7, 0, 1, 2, 3, -4, -5, 6, 7);
-    short16 B = _mm256_srli_epi16(A, 1);
-    short16 B2 = _mm256_srli_epi16(A, 1 + 256);
+    short16 B = cast(short16) _mm256_srli_epi16(A, 1);
+    short16 B2 = cast(short16) _mm256_srli_epi16(A, 1 + 256);
     short[16] expectedB = [ 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3, 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    short16 C = _mm256_srli_epi16(A, 16);
+    short16 C = cast(short16) _mm256_srli_epi16(A, 16);
     short[16] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 
-    short16 D = _mm256_srli_epi16(A, 0);
+    short16 D = cast(short16) _mm256_srli_epi16(A, 0);
     short[16] expectedD = [ 0, 1, 2, 3, -4, -5, 6, 7, 0, 1, 2, 3, -4, -5, 6, 7 ];
     assert(D.array == expectedD);
 }
@@ -375,13 +375,13 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
 unittest
 {
     __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
-    int8 B = _mm256_srli_epi32(A, 1);
-    int8 B2 = _mm256_srli_epi32(A, 1 + 256);
+    int8 B = cast(int8) _mm256_srli_epi32(A, 1);
+    int8 B2 = cast(int8) _mm256_srli_epi32(A, 1 + 256);
     int[8] expectedB = [ 0, 1, 1, 0x7FFFFFFE, 0, 1, 1, 0x7FFFFFFE];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    int8 C = _mm256_srli_epi32(A, 255);
+    int8 C = cast(int8) _mm256_srli_epi32(A, 255);
     int[8] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 }
