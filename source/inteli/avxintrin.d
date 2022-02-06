@@ -47,7 +47,7 @@ __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
     }
     else
     {
-        return loadUnaligned!(__m256i)(cast(int*)mem_addr);
+        return loadUnaligned!(__m256i)(cast(long*)mem_addr);
     }
 }
 unittest

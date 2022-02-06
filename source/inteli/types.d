@@ -19,7 +19,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
-        enum AVXSizedVectorsAreEmulated = false;
+        enum AVXSizedVectorsAreEmulated = true; // AVX vector return without AVX enabled changes the ABI
 
         import gcc.builtins;
 
@@ -649,7 +649,7 @@ static assert(double4.sizeof == 32);
 
 
 alias __m256 = float8;
-alias __m256i = int8;
+alias __m256i = long4; // long long __vector with ICC, GCC, and clang
 alias __m256d = double4;
 alias __m128 = float4;
 alias __m128i = int4;

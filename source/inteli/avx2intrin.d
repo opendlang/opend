@@ -46,7 +46,7 @@ unittest
 {
     __m256i A = _mm256_set1_epi32(7);
     __m256i B = _mm256_set1_epi32(14);
-    __m256i R = _mm256_and_si256(A, B);
+    int8 R = _mm256_and_si256(A, B);
     int[8] correct = [6, 6, 6, 6, 6, 6, 6, 6];
     assert(R.array == correct);
 }
@@ -183,7 +183,7 @@ __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
         {
             int diff = cast(ubyte)(ab.array[i]) - cast(ubyte)(bb.array[i]);
             if (diff < 0) diff = -diff;
-            t[i] = cast(ubyte)(diff);
+            t.ptr[i] = cast(ubyte)(diff);
         }
         int8 r = _mm256_setzero_si256();
         r.ptr[0] = t[0]  + t[1]  + t[2]  + t[3]  + t[4]  + t[5]  + t[6]  + t[7];
@@ -198,7 +198,7 @@ unittest
     __m256i A = _mm256_setr_epi8(3, 4, 6, 8, 12, 14, 18, 20, 24, 30, 32, 38, 42, 44, 48, 54,
                               3, 4, 6, 8, 12, 14, 18, 20, 24, 30, 32, 38, 42, 44, 48, 54); // primes + 1
     __m256i B = _mm256_set1_epi8(1);
-    __m256i R = _mm256_sad_epu8(A, B);
+    int8 R = _mm256_sad_epu8(A, B);
     int[8] correct = [2 + 3 + 5 + 7 + 11 + 13 + 17 + 19,
                       0,
                       23 + 29 + 31 + 37 + 41 + 43 + 47 + 53,
@@ -265,6 +265,7 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
         //       D says "It's illegal to shift by the same or more bits
         //       than the size of the quantity being shifted"
         //       and it's UB instead.
+        int8 a_int8 = cast(int8) a;
         int8 r = _mm256_setzero_si256();
 
         ubyte count = cast(ubyte) imm8;
@@ -272,24 +273,24 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
             return r;
 
         foreach(i; 0..8)
-            r.array[i] = cast(uint)(a.array[i]) << count;
+            r.ptr[i] = cast(uint)(a_int8.array[i]) << count;
         return r;
     }
 }
 unittest
 {
     __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
-    __m256i B = _mm256_slli_epi32(A, 1);
-    __m256i B2 = _mm256_slli_epi32(A, 1 + 256);
+    int8 B = _mm256_slli_epi32(A, 1);
+    int8 B2 = _mm256_slli_epi32(A, 1 + 256);
     int[8] expectedB = [ 0, 4, 6, -8, 0, 4, 6, -8 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    __m256i C = _mm256_slli_epi32(A, 0);
+    int8 C = _mm256_slli_epi32(A, 0);
     int[8] expectedC = [ 0, 2, 3, -4, 0, 2, 3, -4 ];
     assert(C.array == expectedC);
 
-    __m256i D = _mm256_slli_epi32(A, 65);
+    int8 D = _mm256_slli_epi32(A, 65);
     int[8] expectedD = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(D.array == expectedD);
 }
@@ -315,24 +316,24 @@ __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
             return cast(__m256i)r;
 
         foreach(i; 0..16)
-            r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> count);
+            r.ptr[i] = cast(short)(cast(ushort)(sa.array[i]) >> count);
         return cast(__m256i)r;
     }
 }
 unittest
 {
     __m256i A = _mm256_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7, 0, 1, 2, 3, -4, -5, 6, 7);
-    short16 B = cast(short16)( _mm256_srli_epi16(A, 1) );
-    short16 B2 = cast(short16)( _mm256_srli_epi16(A, 1 + 256) );
+    short16 B = _mm256_srli_epi16(A, 1);
+    short16 B2 = _mm256_srli_epi16(A, 1 + 256);
     short[16] expectedB = [ 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3, 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    short16 C = cast(short16)( _mm256_srli_epi16(A, 16) );
+    short16 C = _mm256_srli_epi16(A, 16);
     short[16] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 
-    short16 D = cast(short16)( _mm256_srli_epi16(A, 0) );
+    short16 D = _mm256_srli_epi16(A, 0);
     short[16] expectedD = [ 0, 1, 2, 3, -4, -5, 6, 7, 0, 1, 2, 3, -4, -5, 6, 7 ];
     assert(D.array == expectedD);
 }
@@ -351,6 +352,7 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
     else
     {
         ubyte count = cast(ubyte) imm8;
+        int8 a_int8 = cast(int8) a;
 
         // Note: the intrinsics guarantee imm8[0..7] is taken, however
         //       D says "It's illegal to shift by the same or more bits
@@ -359,27 +361,27 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
         int8 r = _mm256_setzero_si256();
         if (count >= 32)
             return r;
-        r.ptr[0] = a.array[0] >>> count;
-        r.ptr[1] = a.array[1] >>> count;
-        r.ptr[2] = a.array[2] >>> count;
-        r.ptr[3] = a.array[3] >>> count;
-        r.ptr[4] = a.array[4] >>> count;
-        r.ptr[5] = a.array[5] >>> count;
-        r.ptr[6] = a.array[6] >>> count;
-        r.ptr[7] = a.array[7] >>> count;
+        r.ptr[0] = a_int8.array[0] >>> count;
+        r.ptr[1] = a_int8.array[1] >>> count;
+        r.ptr[2] = a_int8.array[2] >>> count;
+        r.ptr[3] = a_int8.array[3] >>> count;
+        r.ptr[4] = a_int8.array[4] >>> count;
+        r.ptr[5] = a_int8.array[5] >>> count;
+        r.ptr[6] = a_int8.array[6] >>> count;
+        r.ptr[7] = a_int8.array[7] >>> count;
         return r;
     }
 }
 unittest
 {
     __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
-    __m256i B = _mm256_srli_epi32(A, 1);
-    __m256i B2 = _mm256_srli_epi32(A, 1 + 256);
+    int8 B = _mm256_srli_epi32(A, 1);
+    int8 B2 = _mm256_srli_epi32(A, 1 + 256);
     int[8] expectedB = [ 0, 1, 1, 0x7FFFFFFE, 0, 1, 1, 0x7FFFFFFE];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
-    __m256i C = _mm256_srli_epi32(A, 255);
+    int8 C = _mm256_srli_epi32(A, 255);
     int[8] expectedC = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(C.array == expectedC);
 }
