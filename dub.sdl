@@ -11,13 +11,6 @@ dependency "mir-cpuid" version="~>1.2.6"
 configuration "library" {
 }
 
-configuration "msgpack-unittest" {
-    dependency "msgpack-d" version="~>1.0.3"
-    buildOptions "unittests" "debugMode" "debugInfo"
-    dflags "-lowmem"
-    versions "mir_ion_msgpack_test"
-}
-
 configuration "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"

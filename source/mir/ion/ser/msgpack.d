@@ -678,20 +678,20 @@ immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = Serde
 }
 
 /// Test serializing booleans
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     assert(serializeMsgpack(true) == [0xc3]);
     assert(serializeMsgpack(false) == [0xc2]);
 }
 
 /// Test serializing nulls
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     assert(serializeMsgpack(null) == [0xc0]);
 }
 
 /// Test serializing signed integral types
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     // Bytes
     assert(serializeMsgpack(byte.min) == [0xd0, 0x80]);
@@ -720,7 +720,7 @@ version(mir_ion_msgpack_test) unittest
 }
 
 /// Test serializing unsigned integral types
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     // Unsigned bytes
     assert(serializeMsgpack(ubyte.min) == [0x00]);
@@ -748,7 +748,7 @@ version(mir_ion_msgpack_test) unittest
 }
 
 /// Test serializing floats / doubles / reals
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     assert(serializeMsgpack(float.min_normal) == [0xca, 0x00, 0x80, 0x00, 0x00]);
     assert(serializeMsgpack(float.max) == [0xca, 0x7f, 0x7f, 0xff, 0xff]);
@@ -757,7 +757,7 @@ version(mir_ion_msgpack_test) unittest
 }
 
 /// Test serializing timestamps
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     import mir.timestamp : Timestamp;
     assert(serializeMsgpack(Timestamp(1970, 1, 1, 0, 0, 0)) == [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
@@ -767,39 +767,57 @@ version(mir_ion_msgpack_test) unittest
 }
 
 /// Test serializing strings
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     import std.array : replicate;
     assert(serializeMsgpack("a") == [0xa1, 0x61]);
 
-    assert(serializeMsgpack("a".replicate(32)) == 
-        cast(ubyte[])[0xd9, 0x20] ~ cast(ubyte[])"a".replicate(32));
+    {
+        auto a = "a".replicate(32);
+        assert(serializeMsgpack(a) == 
+            cast(ubyte[])[0xd9, 0x20] ~ cast(ubyte[])a);
+    }
 
-    assert(serializeMsgpack("a".replicate(ushort.max)) == 
-        cast(ubyte[])[0xda, 0xff, 0xff] ~ cast(ubyte[])"a".replicate(ushort.max));
+    {
+        auto a = "a".replicate(ushort.max);
+        assert(serializeMsgpack(a) == 
+            cast(ubyte[])[0xda, 0xff, 0xff] ~ cast(ubyte[])a);
+    }
 
-    assert(serializeMsgpack("a".replicate(ushort.max + 1)) == 
-        cast(ubyte[])[0xdb, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"a".replicate(ushort.max + 1));
+    {
+        auto a = "a".replicate(ushort.max + 1);
+        assert(serializeMsgpack(a) == 
+            cast(ubyte[])[0xdb, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])a);
+    }
 }
 
 /// Test serializing blobs
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     import mir.lob : Blob;
     import std.array : replicate;
 
-    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(32))) ==
-        cast(ubyte[])[0xc4, 0x20] ~ cast(ubyte[])"\xde".replicate(32));
+    {
+        auto de = "\xde".replicate(32);
+        assert(serializeMsgpack(Blob(cast(ubyte[])de)) ==
+            cast(ubyte[])[0xc4, 0x20] ~ cast(ubyte[])de);
+    }
     
-    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max))) ==
-        cast(ubyte[])[0xc5, 0xff, 0xff] ~ cast(ubyte[])"\xde".replicate(ushort.max));
+    {
+        auto de = "\xde".replicate(ushort.max);
+        assert(serializeMsgpack(Blob(cast(ubyte[])de)) ==
+            cast(ubyte[])[0xc5, 0xff, 0xff] ~ cast(ubyte[])de);
+    }
 
-    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max + 1))) ==
-        cast(ubyte[])[0xc6, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"\xde".replicate(ushort.max + 1));
+    {
+        auto de = "\xde".replicate(ushort.max + 1);
+        assert(serializeMsgpack(Blob(cast(ubyte[])de)) ==
+            cast(ubyte[])[0xc6, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])de);
+    }
 }
 
 /// Test serializing arrays
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     // nested arrays
     assert(serializeMsgpack([["foo"], ["bar"], ["baz"]]) == [0x93, 0x91, 0xa3, 0x66, 0x6f, 0x6f, 0x91, 0xa3, 0x62, 0x61, 0x72, 0x91, 0xa3, 0x62, 0x61, 0x7a]);
@@ -808,7 +826,7 @@ version(mir_ion_msgpack_test) unittest
 }
 
 /// Test serializing maps (structs)
-version(mir_ion_msgpack_test) unittest
+version(mir_ion_test) unittest
 {
     static struct Book
     {
