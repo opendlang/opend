@@ -15,6 +15,8 @@ version(D_Exceptions) {
     private static immutable msgpackAnnotationException = new IonException("MsgPack can store exactly one annotation.");
     private static immutable stringTooLargeException = new IonException("Too large of a string for MessagePack");
     private static immutable blobTooLargeException = new IonException("Too large of a blob for MessagePack");
+    private static immutable mapTooLargeException = new IonException("Too large of a map for MessagePack");
+    private static immutable arrayTooLargeException = new IonException("Too large of an array for MessagePack");
 }
 
 /++ MessagePack support +/
@@ -124,632 +126,704 @@ enum MessagePackFmt : ubyte
     float64 = 0xcb,
 }
 
-version(Have_msgpack_d)
+/++
+Msgpack serialization back-end
++/
+struct MsgpackSerializer()
 {
-    /++
-    Msgpack serialization back-end
-    +/
-    struct MsgpackSerializer()
-    {
-        import mir.appender: ScopedBuffer;
-        import mir.bignum.decimal: Decimal;
-        import mir.bignum.integer: BigInt;
-        import mir.bignum.low_level_view: BigIntView, WordEndian;
-        import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
-        import mir.ion.tape;
-        import mir.ion.type_code;
-        import mir.lob;
-        import mir.serde: SerdeTarget;
-        import mir.string_table: createTable, minimalIndexType;
-        import mir.timestamp: Timestamp;
-        import mir.utility: _expect;
-        import msgpack.packer: PackerImpl;
-        import std.traits: isNumeric;
-
-        PackerImpl!(ScopedBuffer!ubyte*) packer;
-        ScopedBuffer!(ubyte)* buffer;
-        ScopedBuffer!(char, 128) strBuf;
-        ScopedBuffer!(uint, 128) lengths;
-
-        /// Mutable value used to choose format specidied or user-defined serialization specializations
-        int serdeTarget = SerdeTarget.msgpack;
-        private bool _annotation;
-
-    @trusted pure:
-
-        this(ref ScopedBuffer!ubyte buffer)
-        {
-            this.buffer = &buffer;
-            packer = typeof(packer)(&buffer);
-            lengths.initialize;
-            strBuf.initialize;
-        }
-
-        size_t aggrBegin(string packerMethod)(size_t length = size_t.max)
-        {
-            lengths.put(0);
-            __traits(getMember, packer, packerMethod)(length == size_t.max ? uint.max : length);
-            return length == size_t.max ? packer.stream.data.length : size_t.max;
-        }
-
-        void aggrEnd(string packerMethod)(size_t state)
-        {
-            import core.stdc.string: memmove;
-            auto length = lengths.data[$ - 1];
-            lengths.popBackN(1);
-            if (state != size_t.max)
-            {
-                if (length < 16)
-                {
-                    auto data = packer.stream.data[state .. $];
-                    memmove(data.ptr - 4, data.ptr, data.length);
-                    packer.stream.popBackN(4);
-                }
-                else
-                if (length < 65536)
-                {
-                    auto data = packer.stream.data[state .. $];
-                    memmove(data.ptr - 2, data.ptr, data.length);
-                    packer.stream.popBackN(2);
-                }
-                auto appLength = packer.stream.length;
-                packer.stream._currentLength = state - 5;
-                __traits(getMember, packer, packerMethod)(length);
-                packer.stream._currentLength = appLength;
-            }
-        }
-
-        ///
-        alias structBegin = aggrBegin!"beginMap";
-        ///
-        alias structEnd = aggrEnd!"beginMap";
-
-        ///
-        alias listBegin = aggrBegin!"beginArray";
-        ///
-        alias listEnd = aggrEnd!"beginArray";
-
-        ///
-        alias sexpBegin = listBegin;
-
-        ///
-        alias sexpEnd = listEnd;
-
-        ///
-        size_t stringBegin()
-        {
-            strBuf.reset;
-            return 0;
-        }
-
-        /++
-        Puts string part. The implementation allows to split string unicode points.
-        +/
-        void putStringPart(scope const(char)[] str)
-        {
-            strBuf.put(str);
-        }
-
-        ///
-        void stringEnd(size_t state) @trusted
-        {
-            putValue(strBuf.data);
-        }
-
-        ///
-        auto annotationsBegin()
-        {
-            return size_t(0);
-        }
-
-        ///
-        void annotationsEnd(size_t state)
-        {
-            bool _annotation = false;
-        }
-
-        ///
-        size_t annotationWrapperBegin()
-        {
-            return structBegin(1);
-        }
-
-        ///
-        alias annotationWrapperEnd = structEnd;
-
-        ///
-        void putKey(scope const char[] key)
-        {
-            elemBegin;
-            putValue(key);
-        }
-
-        ///
-        void putAnnotation(scope const(char)[] annotation)
-        {
-            if (_annotation)
-                throw msgpackAnnotationException;
-            _annotation = true;
-            putKey(annotation);
-        }
-
-        ///
-        void putSymbol(scope const char[] symbol)
-        {
-            putValue(symbol);
-        }
-
-        void putValue(const ubyte num)
-        {
-            if ((num & 0x80) == 0)
-            {
-                buffer.put(MessagePackFmt.fixint | num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.uint8);
-            buffer.put(num);
-        }
-
-        void putValue(const ushort num)
-        {
-            if ((num & 0xff00) == 0)
-            {
-                putValue(cast(ubyte)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.uint16);
-            buffer.put(packMsgPackExt(num));
-        }
-
-        void putValue(const uint num)
-        {
-            if ((num & 0xffffff00) == 0)
-            {
-                putValue(cast(ubyte)num);
-                return;
-            }
-            if ((num & 0xffff0000) == 0)
-            {
-                putValue(cast(ushort)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.uint32);
-            buffer.put(packMsgPackExt(num));
-        }
-
-        void putValue(const ulong num)
-        {
-            if ((num & 0xffffffffffffff00) == 0)
-            {
-                putValue(cast(ubyte)num);
-                return;
-            }
-            if ((num & 0xffffffffffff0000) == 0)
-            {
-                putValue(cast(ushort)num);
-                return;
-            }
-            if ((num & 0xffffffff00000000) == 0)
-            {
-                putValue(cast(uint)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.uint64);
-            buffer.put(packMsgPackExt(num));    
-        }
-
-        void putValue(const byte num)
-        {
-            // check if we're a negative byte
-            if (num & 0x80)
-            {
-                // if this has bit 7 and 6 set, then we can
-                // fit this into a fixnint, so do so here
-                if ((num & (1 << 6)) && (num & (1 << 5)))
-                {
-                    buffer.put(cast(ubyte)(num | MessagePackFmt.fixnint));
-                    return;
-                }
-                // otherwise, write it out as a full int8
-                buffer.put(MessagePackFmt.int8);
-                buffer.put(cast(ubyte)num);
-                return;
-            }
-            // we can always fit a non-negative byte into the
-            // fixint, so just pass it down the chain to handle
-            putValue(cast(ubyte)num);
-        }
-
-        void putValue(const short num)
-        {
-            // check if this can fit into the space of a byte 
-            if (num >= byte.min && num <= byte.max)
-            {
-                putValue(cast(byte)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.int16);
-            buffer.put(packMsgPackExt(cast(ushort)num));
-        }
-
-        void putValue(const int num)
-        {
-            if (num >= short.min && num <= short.max)
-            {
-                putValue(cast(short)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.int32);
-            buffer.put(packMsgPackExt(cast(uint)num));
-        }
-
-        void putValue(const long num)
-        {
-            if (num >= int.min && num <= int.max)
-            {
-                putValue(cast(int)num);
-                return;
-            }
-
-            buffer.put(MessagePackFmt.int64);
-            buffer.put(packMsgPackExt(cast(ulong)num));
-        }
-
-        void putValue(const float num)
-        {
-            buffer.put(MessagePackFmt.float32);
-            // XXX: better way to do this?
-            uint v = *cast(uint*)&num;
-            buffer.put(packMsgPackExt(v));
-        }
-
-        void putValue(const double num)
-        {
-            buffer.put(MessagePackFmt.float64);
-            // XXX: better way to do this?
-            ulong v = *cast(ulong*)&num;
-            buffer.put(packMsgPackExt(v));
-        } 
-
-        void putValue(const real num)
-        {
-            // MessagePack does not support 80-bit floating point numbers,
-            // so we'll have to convert down here (and lose a fair bit of precision).
-            putValue(cast(double)num);
-        }
-
-        ///
-        void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
-        {
-            auto res = cast(long)view;
-            if (res != view)
-                throw bigIntConvException;
-            putValue(res);
-        }
-
-        ///
-        void putValue(size_t size)(auto ref const BigInt!size num)
-        {
-            putValue(num.view);
-        }
-
-        ///
-        void putValue(size_t size)(auto ref const Decimal!size num)
-        {
-            putValue(cast(double) num);
-        }
-
-        ///
-        void putValue(typeof(null))
-        {
-            buffer.put(MessagePackFmt.nil);
-        }
-
-        ///
-        void putNull(IonTypeCode code)
-        {
-            putValue(null);
-        }
-
-        ///
-        void putValue(bool b)
-        {
-            buffer.put(0xc2 | b);
-        }
-
-        ///
-        void putValue(scope const char[] value)
-        {
-            if (value.length <= 31)
-            {
-                buffer.put(MessagePackFmt.fixstr | cast(ubyte)value.length);
-            }
-            else if (value.length <= ubyte.max)
-            {
-                buffer.put(MessagePackFmt.str8);
-                buffer.put(cast(ubyte)value.length);
-            }
-            else if (value.length <= ushort.max)
-            {
-                buffer.put(MessagePackFmt.str16);
-                buffer.put(packMsgPackExt(cast(ushort)value.length));
-            }
-            else if (value.length <= uint.max)
-            {
-                buffer.put(MessagePackFmt.str32);
-                buffer.put(packMsgPackExt(cast(uint)value.length));
-            }
-            else
-            {
-                version(D_Exceptions)
-                    throw stringTooLargeException;
-                else
-                    assert(0, "Too large of a string for MessagePack");
-            }
-
-            buffer.put(cast(ubyte[])value);
-        }
-
-        ///
-        void putValue(Clob value)
-        {
-            putValue(value.data);
-        }
-
-        ///
-        void putValue(Blob value)
-        {
-            if (value.data.length <= ubyte.max)
-            {
-                buffer.put(MessagePackFmt.bin8);
-                buffer.put(cast(ubyte)value.data.length);
-            }
-            else if (value.data.length <= ushort.max)
-            {
-                buffer.put(MessagePackFmt.bin16);
-                buffer.put(packMsgPackExt(cast(ushort)value.data.length));
-            }
-            else if (value.data.length <= uint.max)
-            {
-                buffer.put(MessagePackFmt.bin32);
-                buffer.put(packMsgPackExt(cast(uint)value.data.length));
-            }
-            else
-            {
-                version(D_Exceptions)
-                    throw blobTooLargeException;
-                else
-                    assert(0, "Too big of a blob for MessagePack");
-            }
-
-            buffer.put(value.data);
-        }
-
-        private ubyte[T.sizeof] packMsgPackExt(T)(const T num)
-            if (__traits(isUnsigned, T))
-        {
-            T ret = num;
-            version (LittleEndian)
-            {
-                import core.bitop : bswap, byteswap;
-                static if (T.sizeof >= 4) {
-                    ret = bswap(ret);
-                } else static if (T.sizeof == 2) {
-                    ret = byteswap(ret);
-                }
-            }
-            return cast(typeof(return))cast(T[1])[ret];
-        }
-
-        ///
-        void putValue(Timestamp value)
-        {
-            auto sec = value.toUnixTime;
-            auto nanosec = cast(uint)value.getFraction!9;
-            if ((sec >> 34) == 0)
-            {
-                ulong data64 = (ulong(nanosec) << 34) | sec;
-                // If there are no bits in the top 32 bits, then automatically
-                // write out the smaller data type (in this case, timestamp32) 
-                if ((data64 & 0xffffffff00000000L) == 0)
-                {
-                    buffer.put(MessagePackFmt.timestamp32);
-                    buffer.put(cast(ubyte)-1);
-                    buffer.put(packMsgPackExt(cast(uint)data64));
-                }
-                else
-                {
-                    buffer.put(MessagePackFmt.timestamp64);
-                    buffer.put(cast(ubyte)-1);
-                    buffer.put(packMsgPackExt(data64));
-                }
-            }
-            else
-            {
-                // timestamp 96
-                ubyte[12] data;
-                data[0 .. 4] = packMsgPackExt(nanosec);
-                data[4 .. 12] = packMsgPackExt(ulong(sec));
-
-                buffer.put(MessagePackFmt.timestamp96);
-                buffer.put(12);
-                buffer.put(cast(ubyte)-1);
-                buffer.put(data);
-            }
-        }
-
-        ///
-        void elemBegin()
-        {
-            lengths.data[$ - 1]++;
-        }
-
-        ///
-        alias sexpElemBegin = elemBegin;
-
-        ///
-        void nextTopLevelValue()
-        {
-        }
-    }
-
-    unittest
-    {
-        import mir.ion.ser.script: SerializerWrapper;
-        MsgpackSerializer!() serializer;
-        auto s = new SerializerWrapper!(MsgpackSerializer!())(serializer);
-    }
-
+    import mir.appender: ScopedBuffer;
+    import mir.bignum.decimal: Decimal;
+    import mir.bignum.integer: BigInt;
+    import mir.bignum.low_level_view: BigIntView, WordEndian;
+    import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
+    import mir.ion.tape;
+    import mir.ion.type_code;
+    import mir.lob;
     import mir.serde: SerdeTarget;
+    import mir.string_table: createTable, minimalIndexType;
+    import mir.timestamp: Timestamp;
+    import mir.utility: _expect;
+    import std.traits: isNumeric;
+
+    ScopedBuffer!(ubyte)* buffer;
+    ScopedBuffer!(char, 128) strBuf;
+    ScopedBuffer!(uint, 128) lengths;
+
+    /// Mutable value used to choose format specidied or user-defined serialization specializations
+    int serdeTarget = SerdeTarget.msgpack;
+    private bool _annotation;
+
+@trusted pure:
+
+    this(ref ScopedBuffer!ubyte buffer)
+    {
+        this.buffer = &buffer;
+        lengths.initialize;
+        strBuf.initialize;
+    }
+
+    size_t aggrBegin(string packerMethod)(size_t length = size_t.max)
+    {
+        lengths.put(0);
+        __traits(getMember, this, packerMethod)(length == size_t.max ? uint.max : length);
+        return length == size_t.max ? buffer.data.length : size_t.max;
+    }
+
+    void aggrEnd(string packerMethod)(size_t state)
+    {
+        import core.stdc.string: memmove;
+        auto length = lengths.data[$ - 1];
+        lengths.popBackN(1);
+        if (state != size_t.max)
+        {
+            if (length < 16)
+            {
+                auto data = buffer.data[state .. $];
+                memmove(data.ptr - 4, data.ptr, data.length);
+                buffer.popBackN(4);
+            }
+            else
+            if (length < 65536)
+            {
+                auto data = buffer.data[state .. $];
+                memmove(data.ptr - 2, data.ptr, data.length);
+                buffer.popBackN(2);
+            }
+            auto appLength = buffer.data.length;
+            buffer._currentLength = state - 5;
+            __traits(getMember, this, packerMethod)(length);
+            buffer._currentLength = appLength;
+        }
+    }
+
+    private void beginMap(size_t size)
+    {
+        if (size == size_t.max)
+        {
+            size = uint.max;
+        }
+
+        if (size < 16)
+        {
+            buffer.put(MessagePackFmt.fixmap | cast(ubyte)size);
+        }
+        else if (size <= ushort.max)
+        {
+            buffer.put(MessagePackFmt.map16);
+            buffer.put(packMsgPackExt(cast(ushort)size));
+        }
+        else if (size <= uint.max)
+        {
+            buffer.put(MessagePackFmt.map32);
+            buffer.put(packMsgPackExt(cast(uint)size));
+        }
+        else
+        {
+            version(D_Exceptions)
+                throw mapTooLargeException;
+            else
+                assert(0, "Too large of a map for MessagePack");
+        }
+    }
+
+    private void beginArray(size_t size)
+    {
+        if (size == size_t.max)
+        {
+            size = uint.max;
+        }
+
+        if (size < 16)
+        {
+            buffer.put(MessagePackFmt.fixarray | cast(ubyte)size);
+        }
+        else if (size <= ushort.max)
+        {
+            buffer.put(MessagePackFmt.array16);
+            buffer.put(packMsgPackExt(cast(ushort)size));
+        }
+        else if (size <= uint.max)
+        {
+            buffer.put(MessagePackFmt.array32);
+            buffer.put(packMsgPackExt(cast(uint)size));
+        }
+        else
+        {
+            version(D_Exceptions)
+                throw arrayTooLargeException;
+            else
+                assert(0, "Too large of an array for MessagePack");
+        }
+    }
 
     ///
-    immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
+    alias structBegin = aggrBegin!"beginMap";
+    ///
+    alias structEnd = aggrEnd!"beginMap";
+
+    ///
+    alias listBegin = aggrBegin!"beginArray";
+    ///
+    alias listEnd = aggrEnd!"beginArray";
+
+    ///
+    alias sexpBegin = listBegin;
+
+    ///
+    alias sexpEnd = listEnd;
+
+    ///
+    size_t stringBegin()
     {
-        import mir.appender: scopedBuffer;
-        import mir.ion.ser: serializeValue;
-        auto appender = scopedBuffer!ubyte;
-        auto serializer = appender.MsgpackSerializer!();
-        serializer.serdeTarget = serdeTarget;
-        serializeValue(serializer, value);
-        return (()@trusted => cast(immutable) appender.data)();
+        strBuf.reset;
+        return 0;
     }
 
-    /// Test serializing booleans
-    version(mir_ion_msgpack_test) unittest
+    /++
+    Puts string part. The implementation allows to split string unicode points.
+    +/
+    void putStringPart(scope const(char)[] str)
     {
-        assert(serializeMsgpack(true) == [0xc3]);
-        assert(serializeMsgpack(false) == [0xc2]);
+        strBuf.put(str);
     }
 
-    /// Test serializing nulls
-    version(mir_ion_msgpack_test) unittest
+    ///
+    void stringEnd(size_t state) @trusted
     {
-        assert(serializeMsgpack(null) == [0xc0]);
+        putValue(strBuf.data);
     }
 
-    /// Test serializing signed integral types
-    version(mir_ion_msgpack_test) unittest
+    ///
+    auto annotationsBegin()
     {
-        // Bytes
-        assert(serializeMsgpack(byte.min) == [0xd0, 0x80]);
-        assert(serializeMsgpack(byte.max) == [0x7f]);
-
-        // Shorts
-        assert(serializeMsgpack(short(byte.max) + 1) == [0xd1, 0x00, 0x80]);
-        assert(serializeMsgpack(short.min) == [0xd1, 0x80, 0x00]);
-        assert(serializeMsgpack(short.max) == [0xd1, 0x7f, 0xff]);
-
-        // Integers
-        assert(serializeMsgpack(int(short.max) + 1) == [0xd2, 0x00, 0x00, 0x80, 0x00]);
-        assert(serializeMsgpack(int.min) == [0xd2, 0x80, 0x00, 0x00, 0x00]);
-        assert(serializeMsgpack(int.max) == [0xd2, 0x7f, 0xff, 0xff, 0xff]);
-
-        // Long integers
-        assert(serializeMsgpack(long(int.max) + 1) == [0xd3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00]);
-        assert(serializeMsgpack(long.max) == [0xd3, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
-        assert(serializeMsgpack(long.min) == [0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-
-        // Also make sure that we're actually optimizing for size too
-        assert(serializeMsgpack(int(short.min)) == [0xd1, 0x80, 0x00]);
-        assert(serializeMsgpack(int(short.max)) == [0xd1, 0x7f, 0xff]);
-        assert(serializeMsgpack(int(byte.max)) == [0x7f]);
-        assert(serializeMsgpack(int(-32)) == [0xe0]);
+        return size_t(0);
     }
 
-    /// Test serializing unsigned integral types
-    version(mir_ion_msgpack_test) unittest
+    ///
+    void annotationsEnd(size_t state)
     {
-        // Unsigned bytes
-        assert(serializeMsgpack(ubyte.min) == [0x00]);
-        assert(serializeMsgpack(ubyte((1 << 7) - 1)) == [0x7f]);
-        assert(serializeMsgpack(ubyte((1 << 7))) == [0xcc, 0x80]);
-        assert(serializeMsgpack(ubyte.max) == [0xcc, 0xff]);
-        
-        // Unsigned shorts
-        assert(serializeMsgpack(cast(ushort)(ubyte.max)) == [0xcc, 0xff]);
-        assert(serializeMsgpack(cast(ushort)(ubyte.max + 1)) == [0xcd, 0x01, 0x00]);
-        assert(serializeMsgpack(ushort.min) == [0x00]);
-        assert(serializeMsgpack(ushort.max) == [0xcd, 0xff, 0xff]); 
-
-        // Unsigned integers
-        assert(serializeMsgpack(cast(uint)(ushort.max)) == [0xcd, 0xff, 0xff]);
-        assert(serializeMsgpack(cast(uint)(ushort.max + 1)) == [0xce, 0x00, 0x01, 0x00, 0x00]);
-        assert(serializeMsgpack(uint.min) == [0x00]);
-        assert(serializeMsgpack(uint.max) == [0xce, 0xff, 0xff, 0xff, 0xff]);
-
-        // Long unsigned integers
-        assert(serializeMsgpack(cast(ulong)(uint.max)) == [0xce, 0xff, 0xff, 0xff, 0xff]);
-        assert(serializeMsgpack(cast(ulong)(uint.max) + 1) == [0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
-        assert(serializeMsgpack(ulong.min) == [0x00]);
-        assert(serializeMsgpack(ulong.max) == [0xcf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+        bool _annotation = false;
     }
 
-    /// Test serializing floats / doubles / reals
-    version(mir_ion_msgpack_test) unittest
+    ///
+    size_t annotationWrapperBegin()
     {
-        assert(serializeMsgpack(float.min_normal) == [0xca, 0x00, 0x80, 0x00, 0x00]);
-        assert(serializeMsgpack(float.max) == [0xca, 0x7f, 0x7f, 0xff, 0xff]);
-        assert(serializeMsgpack(double.min_normal) == [0xcb, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        assert(serializeMsgpack(double.max) == [0xcb, 0x7f, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+        return structBegin(1);
     }
 
-    /// Test serializing timestamps
-    version(mir_ion_msgpack_test) unittest
+    ///
+    alias annotationWrapperEnd = structEnd;
+
+    ///
+    void putKey(scope const char[] key)
     {
-        import mir.timestamp : Timestamp;
-        assert(serializeMsgpack(Timestamp(1970, 1, 1, 0, 0, 0)) == [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
-        assert(serializeMsgpack(Timestamp(2038, 1, 19, 3, 14, 7)) == [0xd6, 0xff, 0x7f, 0xff, 0xff, 0xff]);
-        assert(serializeMsgpack(Timestamp(2299, 12, 31, 23, 59, 59)) == [0xd7, 0xff, 0x00, 0x00, 0x00, 0x02, 0x6c, 0xb5, 0xda, 0xff]);
-        assert(serializeMsgpack(Timestamp(3000, 12, 31, 23, 59, 59)) == [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x93, 0x3f, 0xff, 0x7f]);
+        elemBegin;
+        putValue(key);
     }
 
-    /// Test serializing strings
-    version(mir_ion_msgpack_test) unittest
+    ///
+    void putAnnotation(scope const(char)[] annotation)
     {
-        import std.array : replicate;
-        assert(serializeMsgpack("a") == [0xa1, 0x61]);
-
-        assert(serializeMsgpack("a".replicate(32)) == 
-            cast(ubyte[])[0xd9, 0x20] ~ cast(ubyte[])"a".replicate(32));
-
-        assert(serializeMsgpack("a".replicate(ushort.max)) == 
-            cast(ubyte[])[0xda, 0xff, 0xff] ~ cast(ubyte[])"a".replicate(ushort.max));
-
-        assert(serializeMsgpack("a".replicate(ushort.max + 1)) == 
-            cast(ubyte[])[0xdb, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"a".replicate(ushort.max + 1));
+        if (_annotation)
+            throw msgpackAnnotationException;
+        _annotation = true;
+        putKey(annotation);
     }
 
-    /// Test serializing blobs
-    version(mir_ion_msgpack_test) unittest
+    ///
+    void putSymbol(scope const char[] symbol)
     {
-        import mir.lob : Blob;
-        import std.array : replicate;
-
-        assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(32))) ==
-            cast(ubyte[])[0xc4, 0x20] ~ cast(ubyte[])"\xde".replicate(32));
-        
-        assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max))) ==
-            cast(ubyte[])[0xc5, 0xff, 0xff] ~ cast(ubyte[])"\xde".replicate(ushort.max));
-
-        assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max + 1))) ==
-            cast(ubyte[])[0xc6, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"\xde".replicate(ushort.max + 1));
+        putValue(symbol);
     }
 
+    void putValue(const ubyte num)
+    {
+        if ((num & 0x80) == 0)
+        {
+            buffer.put(MessagePackFmt.fixint | num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.uint8);
+        buffer.put(num);
+    }
+
+    void putValue(const ushort num)
+    {
+        if ((num & 0xff00) == 0)
+        {
+            putValue(cast(ubyte)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.uint16);
+        buffer.put(packMsgPackExt(num));
+    }
+
+    void putValue(const uint num)
+    {
+        if ((num & 0xffffff00) == 0)
+        {
+            putValue(cast(ubyte)num);
+            return;
+        }
+        if ((num & 0xffff0000) == 0)
+        {
+            putValue(cast(ushort)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.uint32);
+        buffer.put(packMsgPackExt(num));
+    }
+
+    void putValue(const ulong num)
+    {
+        if ((num & 0xffffffffffffff00) == 0)
+        {
+            putValue(cast(ubyte)num);
+            return;
+        }
+        if ((num & 0xffffffffffff0000) == 0)
+        {
+            putValue(cast(ushort)num);
+            return;
+        }
+        if ((num & 0xffffffff00000000) == 0)
+        {
+            putValue(cast(uint)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.uint64);
+        buffer.put(packMsgPackExt(num));    
+    }
+
+    void putValue(const byte num)
+    {
+        // check if we're a negative byte
+        if (num & 0x80)
+        {
+            // if this has bit 7 and 6 set, then we can
+            // fit this into a fixnint, so do so here
+            if ((num & (1 << 6)) && (num & (1 << 5)))
+            {
+                buffer.put(cast(ubyte)(num | MessagePackFmt.fixnint));
+                return;
+            }
+            // otherwise, write it out as a full int8
+            buffer.put(MessagePackFmt.int8);
+            buffer.put(cast(ubyte)num);
+            return;
+        }
+        // we can always fit a non-negative byte into the
+        // fixint, so just pass it down the chain to handle
+        putValue(cast(ubyte)num);
+    }
+
+    void putValue(const short num)
+    {
+        // check if this can fit into the space of a byte 
+        if (num >= byte.min && num <= byte.max)
+        {
+            putValue(cast(byte)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.int16);
+        buffer.put(packMsgPackExt(cast(ushort)num));
+    }
+
+    void putValue(const int num)
+    {
+        if (num >= short.min && num <= short.max)
+        {
+            putValue(cast(short)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.int32);
+        buffer.put(packMsgPackExt(cast(uint)num));
+    }
+
+    void putValue(const long num)
+    {
+        if (num >= int.min && num <= int.max)
+        {
+            putValue(cast(int)num);
+            return;
+        }
+
+        buffer.put(MessagePackFmt.int64);
+        buffer.put(packMsgPackExt(cast(ulong)num));
+    }
+
+    void putValue(const float num)
+    {
+        buffer.put(MessagePackFmt.float32);
+        // XXX: better way to do this?
+        uint v = *cast(uint*)&num;
+        buffer.put(packMsgPackExt(v));
+    }
+
+    void putValue(const double num)
+    {
+        buffer.put(MessagePackFmt.float64);
+        // XXX: better way to do this?
+        ulong v = *cast(ulong*)&num;
+        buffer.put(packMsgPackExt(v));
+    } 
+
+    void putValue(const real num)
+    {
+        // MessagePack does not support 80-bit floating point numbers,
+        // so we'll have to convert down here (and lose a fair bit of precision).
+        putValue(cast(double)num);
+    }
+
+    ///
+    void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
+    {
+        auto res = cast(long)view;
+        if (res != view)
+            throw bigIntConvException;
+        putValue(res);
+    }
+
+    ///
+    void putValue(size_t size)(auto ref const BigInt!size num)
+    {
+        putValue(num.view);
+    }
+
+    ///
+    void putValue(size_t size)(auto ref const Decimal!size num)
+    {
+        putValue(cast(double) num);
+    }
+
+    ///
+    void putValue(typeof(null))
+    {
+        buffer.put(MessagePackFmt.nil);
+    }
+
+    ///
+    void putNull(IonTypeCode code)
+    {
+        putValue(null);
+    }
+
+    ///
+    void putValue(bool b)
+    {
+        buffer.put(0xc2 | b);
+    }
+
+    ///
+    void putValue(scope const char[] value)
+    {
+        if (value.length <= 31)
+        {
+            buffer.put(MessagePackFmt.fixstr | cast(ubyte)value.length);
+        }
+        else if (value.length <= ubyte.max)
+        {
+            buffer.put(MessagePackFmt.str8);
+            buffer.put(cast(ubyte)value.length);
+        }
+        else if (value.length <= ushort.max)
+        {
+            buffer.put(MessagePackFmt.str16);
+            buffer.put(packMsgPackExt(cast(ushort)value.length));
+        }
+        else if (value.length <= uint.max)
+        {
+            buffer.put(MessagePackFmt.str32);
+            buffer.put(packMsgPackExt(cast(uint)value.length));
+        }
+        else
+        {
+            version(D_Exceptions)
+                throw stringTooLargeException;
+            else
+                assert(0, "Too large of a string for MessagePack");
+        }
+
+        buffer.put(cast(ubyte[])value);
+    }
+
+    ///
+    void putValue(Clob value)
+    {
+        putValue(value.data);
+    }
+
+    ///
+    void putValue(Blob value)
+    {
+        if (value.data.length <= ubyte.max)
+        {
+            buffer.put(MessagePackFmt.bin8);
+            buffer.put(cast(ubyte)value.data.length);
+        }
+        else if (value.data.length <= ushort.max)
+        {
+            buffer.put(MessagePackFmt.bin16);
+            buffer.put(packMsgPackExt(cast(ushort)value.data.length));
+        }
+        else if (value.data.length <= uint.max)
+        {
+            buffer.put(MessagePackFmt.bin32);
+            buffer.put(packMsgPackExt(cast(uint)value.data.length));
+        }
+        else
+        {
+            version(D_Exceptions)
+                throw blobTooLargeException;
+            else
+                assert(0, "Too big of a blob for MessagePack");
+        }
+
+        buffer.put(value.data);
+    }
+
+    private ubyte[T.sizeof] packMsgPackExt(T)(const T num)
+        if (__traits(isUnsigned, T))
+    {
+        T ret = num;
+        version (LittleEndian)
+        {
+            import core.bitop : bswap, byteswap;
+            static if (T.sizeof >= 4) {
+                ret = bswap(ret);
+            } else static if (T.sizeof == 2) {
+                ret = byteswap(ret);
+            }
+        }
+        return cast(typeof(return))cast(T[1])[ret];
+    }
+
+    ///
+    void putValue(Timestamp value)
+    {
+        auto sec = value.toUnixTime;
+        auto nanosec = cast(uint)value.getFraction!9;
+        if ((sec >> 34) == 0)
+        {
+            ulong data64 = (ulong(nanosec) << 34) | sec;
+            // If there are no bits in the top 32 bits, then automatically
+            // write out the smaller data type (in this case, timestamp32) 
+            if ((data64 & 0xffffffff00000000L) == 0)
+            {
+                buffer.put(MessagePackFmt.timestamp32);
+                buffer.put(cast(ubyte)-1);
+                buffer.put(packMsgPackExt(cast(uint)data64));
+            }
+            else
+            {
+                buffer.put(MessagePackFmt.timestamp64);
+                buffer.put(cast(ubyte)-1);
+                buffer.put(packMsgPackExt(data64));
+            }
+        }
+        else
+        {
+            // timestamp 96
+            ubyte[12] data;
+            data[0 .. 4] = packMsgPackExt(nanosec);
+            data[4 .. 12] = packMsgPackExt(ulong(sec));
+
+            buffer.put(MessagePackFmt.timestamp96);
+            buffer.put(12);
+            buffer.put(cast(ubyte)-1);
+            buffer.put(data);
+        }
+    }
+
+    ///
+    void elemBegin()
+    {
+        lengths.data[$ - 1]++;
+    }
+
+    ///
+    alias sexpElemBegin = elemBegin;
+
+    ///
+    void nextTopLevelValue()
+    {
+    }
 }
-else
+
+unittest
 {
-    pragma(msg, "msgpack-d backend isn't connected");
+    import mir.ion.ser.script: SerializerWrapper;
+    MsgpackSerializer!() serializer;
+    auto s = new SerializerWrapper!(MsgpackSerializer!())(serializer);
+}
 
-    version(D_Ddoc) {
-        /++
-        +/
-        immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = SerdeTarget.ion) {}
+import mir.serde: SerdeTarget;
 
+///
+immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
+{
+    import mir.appender: scopedBuffer;
+    import mir.ion.ser: serializeValue;
+    auto appender = scopedBuffer!ubyte;
+    auto serializer = appender.MsgpackSerializer!();
+    serializer.serdeTarget = serdeTarget;
+    serializeValue(serializer, value);
+    return (()@trusted => cast(immutable) appender.data)();
+}
+
+/// Test serializing booleans
+version(mir_ion_msgpack_test) unittest
+{
+    assert(serializeMsgpack(true) == [0xc3]);
+    assert(serializeMsgpack(false) == [0xc2]);
+}
+
+/// Test serializing nulls
+version(mir_ion_msgpack_test) unittest
+{
+    assert(serializeMsgpack(null) == [0xc0]);
+}
+
+/// Test serializing signed integral types
+version(mir_ion_msgpack_test) unittest
+{
+    // Bytes
+    assert(serializeMsgpack(byte.min) == [0xd0, 0x80]);
+    assert(serializeMsgpack(byte.max) == [0x7f]);
+
+    // Shorts
+    assert(serializeMsgpack(short(byte.max) + 1) == [0xd1, 0x00, 0x80]);
+    assert(serializeMsgpack(short.min) == [0xd1, 0x80, 0x00]);
+    assert(serializeMsgpack(short.max) == [0xd1, 0x7f, 0xff]);
+
+    // Integers
+    assert(serializeMsgpack(int(short.max) + 1) == [0xd2, 0x00, 0x00, 0x80, 0x00]);
+    assert(serializeMsgpack(int.min) == [0xd2, 0x80, 0x00, 0x00, 0x00]);
+    assert(serializeMsgpack(int.max) == [0xd2, 0x7f, 0xff, 0xff, 0xff]);
+
+    // Long integers
+    assert(serializeMsgpack(long(int.max) + 1) == [0xd3, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00]);
+    assert(serializeMsgpack(long.max) == [0xd3, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+    assert(serializeMsgpack(long.min) == [0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+    // Also make sure that we're actually optimizing for size too
+    assert(serializeMsgpack(int(short.min)) == [0xd1, 0x80, 0x00]);
+    assert(serializeMsgpack(int(short.max)) == [0xd1, 0x7f, 0xff]);
+    assert(serializeMsgpack(int(byte.max)) == [0x7f]);
+    assert(serializeMsgpack(int(-32)) == [0xe0]);
+}
+
+/// Test serializing unsigned integral types
+version(mir_ion_msgpack_test) unittest
+{
+    // Unsigned bytes
+    assert(serializeMsgpack(ubyte.min) == [0x00]);
+    assert(serializeMsgpack(ubyte((1 << 7) - 1)) == [0x7f]);
+    assert(serializeMsgpack(ubyte((1 << 7))) == [0xcc, 0x80]);
+    assert(serializeMsgpack(ubyte.max) == [0xcc, 0xff]);
+    
+    // Unsigned shorts
+    assert(serializeMsgpack(cast(ushort)(ubyte.max)) == [0xcc, 0xff]);
+    assert(serializeMsgpack(cast(ushort)(ubyte.max + 1)) == [0xcd, 0x01, 0x00]);
+    assert(serializeMsgpack(ushort.min) == [0x00]);
+    assert(serializeMsgpack(ushort.max) == [0xcd, 0xff, 0xff]); 
+
+    // Unsigned integers
+    assert(serializeMsgpack(cast(uint)(ushort.max)) == [0xcd, 0xff, 0xff]);
+    assert(serializeMsgpack(cast(uint)(ushort.max + 1)) == [0xce, 0x00, 0x01, 0x00, 0x00]);
+    assert(serializeMsgpack(uint.min) == [0x00]);
+    assert(serializeMsgpack(uint.max) == [0xce, 0xff, 0xff, 0xff, 0xff]);
+
+    // Long unsigned integers
+    assert(serializeMsgpack(cast(ulong)(uint.max)) == [0xce, 0xff, 0xff, 0xff, 0xff]);
+    assert(serializeMsgpack(cast(ulong)(uint.max) + 1) == [0xcf, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+    assert(serializeMsgpack(ulong.min) == [0x00]);
+    assert(serializeMsgpack(ulong.max) == [0xcf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+}
+
+/// Test serializing floats / doubles / reals
+version(mir_ion_msgpack_test) unittest
+{
+    assert(serializeMsgpack(float.min_normal) == [0xca, 0x00, 0x80, 0x00, 0x00]);
+    assert(serializeMsgpack(float.max) == [0xca, 0x7f, 0x7f, 0xff, 0xff]);
+    assert(serializeMsgpack(double.min_normal) == [0xcb, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    assert(serializeMsgpack(double.max) == [0xcb, 0x7f, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+}
+
+/// Test serializing timestamps
+version(mir_ion_msgpack_test) unittest
+{
+    import mir.timestamp : Timestamp;
+    assert(serializeMsgpack(Timestamp(1970, 1, 1, 0, 0, 0)) == [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
+    assert(serializeMsgpack(Timestamp(2038, 1, 19, 3, 14, 7)) == [0xd6, 0xff, 0x7f, 0xff, 0xff, 0xff]);
+    assert(serializeMsgpack(Timestamp(2299, 12, 31, 23, 59, 59)) == [0xd7, 0xff, 0x00, 0x00, 0x00, 0x02, 0x6c, 0xb5, 0xda, 0xff]);
+    assert(serializeMsgpack(Timestamp(3000, 12, 31, 23, 59, 59)) == [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x93, 0x3f, 0xff, 0x7f]);
+}
+
+/// Test serializing strings
+version(mir_ion_msgpack_test) unittest
+{
+    import std.array : replicate;
+    assert(serializeMsgpack("a") == [0xa1, 0x61]);
+
+    assert(serializeMsgpack("a".replicate(32)) == 
+        cast(ubyte[])[0xd9, 0x20] ~ cast(ubyte[])"a".replicate(32));
+
+    assert(serializeMsgpack("a".replicate(ushort.max)) == 
+        cast(ubyte[])[0xda, 0xff, 0xff] ~ cast(ubyte[])"a".replicate(ushort.max));
+
+    assert(serializeMsgpack("a".replicate(ushort.max + 1)) == 
+        cast(ubyte[])[0xdb, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"a".replicate(ushort.max + 1));
+}
+
+/// Test serializing blobs
+version(mir_ion_msgpack_test) unittest
+{
+    import mir.lob : Blob;
+    import std.array : replicate;
+
+    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(32))) ==
+        cast(ubyte[])[0xc4, 0x20] ~ cast(ubyte[])"\xde".replicate(32));
+    
+    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max))) ==
+        cast(ubyte[])[0xc5, 0xff, 0xff] ~ cast(ubyte[])"\xde".replicate(ushort.max));
+
+    assert(serializeMsgpack(Blob(cast(ubyte[])"\xde".replicate(ushort.max + 1))) ==
+        cast(ubyte[])[0xc6, 0x00, 0x01, 0x00, 0x00] ~ cast(ubyte[])"\xde".replicate(ushort.max + 1));
+}
+
+/// Test serializing arrays
+version(mir_ion_msgpack_test) unittest
+{
+    // nested arrays
+    assert(serializeMsgpack([["foo"], ["bar"], ["baz"]]) == [0x93, 0x91, 0xa3, 0x66, 0x6f, 0x6f, 0x91, 0xa3, 0x62, 0x61, 0x72, 0x91, 0xa3, 0x62, 0x61, 0x7a]);
+    assert(serializeMsgpack([0xDEADBEEF, 0xCAFEBABE, 0xAAAA_AAAA]) == [0x93, 0xce, 0xde, 0xad, 0xbe, 0xef, 0xce, 0xca, 0xfe, 0xba, 0xbe, 0xce, 0xaa, 0xaa, 0xaa, 0xaa]);
+    assert(serializeMsgpack(["foo", "bar", "baz"]) == [0x93, 0xa3, 0x66, 0x6f, 0x6f, 0xa3, 0x62, 0x61, 0x72, 0xa3, 0x62, 0x61, 0x7a]);
+}
+
+/// Test serializing maps (structs)
+version(mir_ion_msgpack_test) unittest
+{
+    static struct Book
+    {
+        string title;
+        bool wouldRecommend;
+        string description;
+        uint numberOfNovellas;
+        double price;
+        float weight;
+        string[] tags;
     }
+
+    Book book = Book("A Hero of Our Time", true, "", 5, 7.99, 6.88, ["russian", "novel", "19th century"]);
+
+    // This will probably break if you modify how any of the data types
+    // are serialized.
+    assert(serializeMsgpack(book) == [0x87,0xa5,0x74,0x69,0x74,0x6c,0x65,0xb2,0x41,0x20,0x48,0x65,0x72,0x6f,0x20,0x6f,0x66,0x20,0x4f,0x75,0x72,0x20,0x54,0x69,0x6d,0x65,0xae,0x77,0x6f,0x75,0x6c,0x64,0x52,0x65,0x63,0x6f,0x6d,0x6d,0x65,0x6e,0x64,0xc3,0xab,0x64,0x65,0x73,0x63,0x72,0x69,0x70,0x74,0x69,0x6f,0x6e,0xa0,0xb0,0x6e,0x75,0x6d,0x62,0x65,0x72,0x4f,0x66,0x4e,0x6f,0x76,0x65,0x6c,0x6c,0x61,0x73,0x05,0xa5,0x70,0x72,0x69,0x63,0x65,0xcb,0x40,0x1f,0xf5,0xc2,0x8f,0x5c,0x28,0xf6,0xa6,0x77,0x65,0x69,0x67,0x68,0x74,0xca,0x40,0xdc,0x28,0xf6,0xa4,0x74,0x61,0x67,0x73,0x93,0xa7,0x72,0x75,0x73,0x73,0x69,0x61,0x6e,0xa5,0x6e,0x6f,0x76,0x65,0x6c,0xac,0x31,0x39,0x74,0x68,0x20,0x63,0x65,0x6e,0x74,0x75,0x72,0x79]);
 }
