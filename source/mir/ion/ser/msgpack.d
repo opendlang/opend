@@ -674,22 +674,6 @@ immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = Serde
     return (()@trusted => app.data.idup)();
 }
 
-debug {
-    void hexdmp(T)(T arr)
-    {
-        import std.stdio;
-        writef("[");
-        foreach (i, v; arr)
-        {
-            writef("0x%.2x", v);
-            if (i + 1 < arr.length) {
-                writef(",");
-            }
-        }
-        writef("]\n");
-    }
-}
-
 /// Test serializing booleans
 version(mir_ion_test) unittest
 {
