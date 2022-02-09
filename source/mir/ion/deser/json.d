@@ -26,7 +26,16 @@ private template isSomeMap(T)
         enum isSomeMap = anySatisfy!(.isSomeMap, T.AllowedTypes);
     }
     else
+    static if (is(T : U[], U))
+        enum isSomeMap = .isSomeMap!U;
+    else
         enum isSomeMap = false;
+}
+
+unittest
+{
+    import mir.algebraic_alias.json;
+    static assert (isSomeMap!(JsonAlgebraic[]));
 }
 
 private template deserializeJsonImpl(bool file)
