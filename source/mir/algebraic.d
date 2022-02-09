@@ -3341,7 +3341,7 @@ unittest
     {
         V v = new Exception("msg"); enum line = __LINE__;
         assert(!v.isOk);
-        assert(errToString(v) == "object.Exception@source/mir/algebraic.d(" ~ line.stringof ~ "): msg");
+        assert(errToString(v) == "object.Exception@" ~ __FILE__ ~ "(" ~ line.stringof ~ "): msg");
     }
 }
 
