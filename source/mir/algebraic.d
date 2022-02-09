@@ -3476,7 +3476,7 @@ private noreturn throwMe(Args...)(auto ref Args args) {
         static if (__traits(compiles, { import mir.format: print; }))
         {
             import std.meta: staticMap;
-            throw new MirException("assumeOk failure:", staticMap!(withNewLine!args)); 
+            throw new MirException("assumeOk failure:", staticMap!(withNewLine, args)); 
         }
         else
         {
