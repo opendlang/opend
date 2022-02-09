@@ -956,3 +956,69 @@ version(mir_ion_test) unittest
 
     assert(serializeMsgpack(new MyExampleClass("foo bar baz")) == [0xd9,0x21,0x48,0x65,0x6c,0x6c,0x6f,0x21,0x20,0x53,0x74,0x72,0x69,0x6e,0x67,0x20,0x70,0x61,0x73,0x73,0x65,0x64,0x3a,0x20,0x66,0x6f,0x6f,0x20,0x62,0x61,0x72,0x20,0x62,0x61,0x7a,0xc0]);
 }
+
+/// Test excessively large struct
+static if (size_t.sizeof > uint.sizeof)
+version(mir_ion_test) unittest
+{
+    static class HugeStruct
+    {
+        void serialize(S)(ref S serializer) const
+        {
+            auto state = serializer.structBegin(size_t(uint.max) + 1);
+        }
+    }
+
+    bool caught = false;
+    try
+    {
+        serializeMsgpack(new HugeStruct());
+    }
+    catch (IonException e)
+    {
+        caught = true;
+    }
+
+    assert(caught);
+}
+
+/// Test excessively large array
+static if (size_t.sizeof > uint.sizeof)
+version(mir_ion_test) unittest
+{
+    static class HugeArray
+    {
+        void serialize(S)(ref S serializer) const
+        {
+            auto state = serializer.listBegin(size_t(uint.max) + 1); 
+        }
+    }
+
+    bool caught = false;
+    try 
+    {
+        serializeMsgpack(new HugeArray());
+    }
+    catch (IonException e)
+    {
+        caught = true;
+    }
+
+    assert(caught);
+}
+
+/// Test invalidly large BigInt
+version(mir_ion_test) unittest
+{
+    import mir.bignum.integer : BigInt;
+    bool caught = false;
+    try
+    {
+        serializeMsgpack(BigInt!4.fromHexString("c39b18a9f06fd8e962d99935cea0707f79a222050aaeaaaed17feb7aa76999d7"));
+    }
+    catch (IonException e)
+    {
+        caught = true;
+    }
+    assert(caught);
+}
