@@ -478,7 +478,7 @@ public:
     }
 
     /// Returns text metrics for this piece of text (single line assumed), in glyph units.
-    OpenTypeTextMetrics measureText(string text)
+    OpenTypeTextMetrics measureText(const(char)[] text)
     {
         OpenTypeTextMetrics result;
         double sum = 0;

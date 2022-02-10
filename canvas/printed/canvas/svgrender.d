@@ -139,7 +139,7 @@ public:
                       _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
-    override TextMetrics measureText(string text)
+    override TextMetrics measureText(const(char)[] text)
     {
         string svgFamilyName;
         OpenTypeFont font;
@@ -151,7 +151,7 @@ public:
         return metrics;
     }
 
-    override void fillText(string text, float x, float y)
+    override void fillText(const(char)[] text, float x, float y)
     {
         string svgFamilyName;
         OpenTypeFont font;

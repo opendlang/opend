@@ -132,7 +132,7 @@ final class PDFDocument : IRenderingContext2D
         _fontStyle = style;
     }
 
-    override TextMetrics measureText(string text)
+    override TextMetrics measureText(const(char)[] text)
     {
         string fontPDFName;
         object_id fontObjectId;
@@ -145,7 +145,7 @@ final class PDFDocument : IRenderingContext2D
         return metrics;
     }
 
-    override void fillText(string text, float x, float y)
+    override void fillText(const(char)[] text, float x, float y)
     {
         string fontPDFName;
         object_id fontObjectId;
@@ -1069,7 +1069,7 @@ private:
         _bytes ~= s.representation;
     }
 
-    void outStringForDisplay(string s)
+    void outStringForDisplay(const(char)[] s)
     {
         // TODO: selection of shortest encoding instead of always UTF16-BE
 

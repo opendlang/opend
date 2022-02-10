@@ -108,7 +108,7 @@ interface IRenderingContext2D
     void strokeRect(float x, float y, float width, float height);
 
     /// Draw filled text.
-    void fillText(string text, float x, float y);
+    void fillText(const(char)[] text, float x, float y);
 
     // PATHS
     /// The context always has a current default path.
@@ -168,7 +168,7 @@ interface IRenderingContext2D
 
     /// Returns a `TextMetrics` struct that contains information about the measured text
     /// (such as its width, for example).
-    TextMetrics measureText(string text);
+    TextMetrics measureText(const(char)[] text);
 }
 
 enum TextAlign
@@ -235,7 +235,7 @@ Brush brush(int r, int g, int b)
 }
 
 ///ditto
-Brush brush(string htmlColor)
+Brush brush(const(char)[] htmlColor)
 {
     return Brush(htmlColor);
 }
@@ -260,7 +260,7 @@ struct Brush
         rgba[3] = cast(ubyte)a;
     }
 
-    this(string htmlColor)
+    this(const(char)[] htmlColor)
     {
         import printed.htmlcolors;
         rgba = parseHTMLColor(htmlColor);
