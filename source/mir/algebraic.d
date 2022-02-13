@@ -2368,6 +2368,15 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
     assert(variant.to!string == (MIR_ALGORITHM ? "6" : "int"));
 }
 
+version(mir_core_test)
+unittest
+{
+    Nullable!() value;
+    alias visitHandler = visit!((typeof(null)) => null, err);
+    auto d = visitHandler(value);
+    assert(d == value);
+}
+
 /++
 Behaves as $(LREF visit) but doesn't enforce at compile time that all types can be handled by the visiting functions.
 Throws: Exception if `naryFun!visitors` can't be called with provided arguments
@@ -2926,28 +2935,42 @@ private template nextVisitor(alias visitor, alias arg)
 
 private template visitThis(alias visitor, Exhaustive nextExhaustive)
 {
-    auto ref visitThis(T, Args...)(auto ref Args args)
+    template visitThis(T)
     {
-        import core.lifetime: forward;
-        return .visitImpl!(nextVisitor!(T, visitor, forward!(args[0])), nextExhaustive, true)(forward!(args[1 .. $]));
+        auto ref visitThis(Args...)(auto ref Args args)
+        {
+            import core.lifetime: forward;
+            return .visitImpl!(nextVisitor!(T, visitor, forward!(args[0])), nextExhaustive, true)(forward!(args[1 .. $]));
+        }
     }
 }
 
 private template visitLast(alias visitor)
 {
-    auto ref visitLast(T, Args...)(auto ref Args args)
+    template visitLast(T)
     {
-        import core.lifetime: forward, move;
         static if (is(T == void))
-            return visitor(forward!(args[1 .. $]));
+        {
+            auto ref visitLast(Args...)(auto ref Args args)
+            {
+                import core.lifetime: forward;
+                return visitor(forward!(args[1 .. $]));
+            }
+        }
         else
-        static if (__traits(isRef,  args[0]))
-            return visitor(args[0].trustedGet!T, forward!(args[1 .. $]));
-        else
-        static if (is(typeof(move(args[0].trustedGet!T))))
-            return visitor(move(args[0].trustedGet!T), forward!(args[1 .. $]));
-        else
-            return visitor((() => args[0].trustedGet!T)(), forward!(args[1 .. $]));
+        {
+            auto ref visitLast(Args...)(auto ref Args args)
+            {
+                import core.lifetime: forward, move;
+                static if (__traits(isRef,  args[0]))
+                    return visitor(args[0].trustedGet!T, forward!(args[1 .. $]));
+                else
+                static if (is(typeof(move(args[0].trustedGet!T))))
+                    return visitor(move(args[0].trustedGet!T), forward!(args[1 .. $]));
+                else
+                    return visitor((() => args[0].trustedGet!T)(), forward!(args[1 .. $]));
+            }
+        }
     }
 }
 
@@ -3177,9 +3200,39 @@ struct Err(T)
 }
 
 /// ditto
-Err!T err(T)(T value) {
+auto err(T)(T value) {
     import core.lifetime: move;
-    return Err!T(move(value));
+    static if (isErr!T)
+        return move(value);
+    else
+        return Err!T(move(value));
+}
+
+///
+unittest
+{
+    @reflectErr static struct E {}
+    static assert(is(typeof("str".err) == Err!string));
+    static assert(is(typeof(E().err) == E));
+    static assert(is(typeof(new Exception("str").err) == Exception));
+}
+
+/// Strips out !(LREF Err) wrapper from the type.
+template stripErr(T)
+{
+    static if (is(immutable T : immutable Err!U, U))
+        alias stripErr = U;
+    else
+        alias stripErr = T;
+}
+
+///
+version(mir_core_test)
+unittest
+{
+    static assert(is(stripErr!Exception == Exception));
+    static assert(is(stripErr!string == string));
+    static assert(is(stripErr!(Err!string) == string));
 }
 
 /++
@@ -3459,7 +3512,6 @@ private template withNewLine(alias arg)
     import std.meta: AliasSeq;
     alias withNewLine = AliasSeq!("\n", arg);
 }
-
 
 private noreturn throwMe(Args...)(auto ref Args args) {
     static if (Args.length == 1)
