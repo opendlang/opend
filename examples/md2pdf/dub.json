@@ -1,0 +1,10 @@
+{
+	"name": "mdpdf",
+    "description": "Convert Markdown to PDF (WIP)",
+	"dependencies": {
+		"printed:flow": { "path": "../.."},
+		"colorize": "~>1.0",
+		"commonmark-d": "~>1.0",
+		"arsd-official:dom": "~>10.0"
+	}
+}
