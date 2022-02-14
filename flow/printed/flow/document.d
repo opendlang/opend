@@ -117,36 +117,13 @@ class FlowDocument : IFlowDocument
     // \n is a special character for forcing a line break.
     override void text(const(char)[] s)
     {
-        size_t start = 0;
-        size_t end = 0;
+        // TODO: preserve spaces in <pre>, CSS white-space: pre;
+        string[] words = splitIntoWords(s);
 
-        int index = 0;
-
-        foreach(char ch; s)
+        foreach(size_t i, word; words)
         {
-            if (ch == ' ')
-            {
-                if (start != end)
-                    outputWord(s[start..end]);
-                start = index;
-                end = index + 1;
-            }
-            else if (ch == '\n')
-            {
-                if (start != end)
-                    outputWord(s[start..end]);
-                br();
-                start = index + 1;
-                end = index + 1;
-            }
-            else
-            {
-                end = index + 1;
-            }
-            ++index;
-        } 
-        if (start != end && end <= s.length)
-            outputWord(s[start..end]);
+            outputWord(word);
+        }
     }
 
     override void br()
@@ -332,21 +309,25 @@ private:
         _cursorY = _o.pageTopMarginMm;
     }
 
+    // Insert word s, + a whitespace ' ' afterwards.
     void outputWord(const(char)[] s)
     {
-        TextMetrics m = _r.measureText(s);
+        // TODO: fix TextMetric to return both horizontal advance, and extent
 
-        float width = m.width; // TODO: fix TextMetric to return both
-        float horzAdvance = m.width;
+        TextMetrics metricsWithoutSpace = _r.measureText(s);
+        TextMetrics metricsWithSpace = _r.measureText(s ~ ' ');
 
-        // Will it fit?
+        float width = metricsWithoutSpace.width; 
+        float horzAdvance = metricsWithSpace.width;
+
+        // Will it fit? Trailing space doesn't cause breaking a line.
         bool fit = _cursorX + width < _W - _o.pageRightMarginMm;
         if (!fit)
             br();
 
         _r.fillText(s, _cursorX, _cursorY);
         _lastBoxX = _cursorX + width;
-        _lastBoxY = _cursorY; // TODO: should be bottom-most point of the word, instead of baseline
+        _lastBoxY = _cursorY; // MAYDO: should be bottom-most point of the word, instead of baseline? Not sure.
 
         _cursorX += horzAdvance;
         if (_cursorX >= _W - _o.pageRightMarginMm)
@@ -401,6 +382,16 @@ private:
     {
         pushState();
 
+        // Update state
+        State* state = &currentState();
+        state.fontSize *= style.fontSizeEm;
+        if (style.fontFace !is null) state.fontFace = style.fontFace;
+        if (style.fontWeight != -1) state.fontWeight = style.fontWeight; 
+        if (style.fontStyle != -1) state.fontStyle = style.fontStyle;
+        if (style.color != "") state.color = style.color;
+        applyCurrentState();
+
+        // Margins: this must be done after fontSize is updated.
         if (style.display == DisplayStyle.block)
         {
             // ensure top margin
@@ -413,15 +404,6 @@ private:
             checkPageEnded();
             _cursorX = _o.pageLeftMarginMm; // Always set at beginning of a line.
         }
-
-        // Update state
-        State* state = &currentState();
-        state.fontSize *= style.fontSizeEm;
-        if (style.fontFace !is null) state.fontFace = style.fontFace;
-        if (style.fontWeight != -1) state.fontWeight = style.fontWeight; 
-        if (style.fontStyle != -1) state.fontStyle = style.fontStyle;
-        if (style.color != "") state.color = style.color;
-        applyCurrentState();
     }
 
     void applyCurrentState()
@@ -441,9 +423,67 @@ private:
         {
             // ensure bottom margin
             float desiredMarginBottom = currentState().fontSize * style.marginBottomEm;
+            _cursorX = _o.pageLeftMarginMm;
             _cursorY = _lastBoxY + desiredMarginBottom;
             checkPageEnded();
         }
         popState();
     }
+}
+
+// Whitespace processing in normal HTML mode:
+// " - Any sequence of collapsible spaces and tabs immediately preceding or 
+//      following a segment break is removed.
+//   - Collapsible segment breaks are transformed for rendering according to 
+//     the segment break transformation rules.
+//   - Every collapsible tab is converted to a collapsible space (U+0020).
+//   - Any collapsible space immediately following another collapsible space—even 
+//     one outside the boundary of the inline containing that space, provided both
+//     spaces are within the same inline formatting context—is collapsed to have 
+//     zero advance width. (It is invisible, but retains its soft wrap opportunity, 
+//     if any.)
+// What we do as a simplifcation => collapse strings of white space into a single char ' '.
+string[] splitIntoWords(const(char)[] sentence)
+{
+    // PERF: this is rather bad
+
+    bool isWhitespace(char ch)
+    {
+        return ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r';
+    }
+
+    int index = 0;
+    char peek() { return sentence[index]; }
+    void next() { index++; }
+    bool empty() { return index >= sentence.length; }
+
+    bool stateInWord = false;
+
+    string[] res;
+
+    void parseWord()
+    {
+        assert(!empty);
+        while(!empty && isWhitespace(peek))
+            next;
+        if (empty) return;
+        assert(!isWhitespace(peek));
+
+        // start of word is here
+        string word;
+        while(!empty && !isWhitespace(peek))
+        {
+            word ~= peek;
+            next;
+        }
+        // word parsed here, push it
+        res ~= word;
+    }
+
+    while (!empty)
+    {
+        parseWord;
+    }
+    assert(empty);
+    return res;
 }

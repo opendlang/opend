@@ -50,7 +50,7 @@ public:
 struct StyleOptions
 {
     string color = "black";                    /// Default text color.
-    float fontSizePt = 11.0f;                  /// Default font size, in points.
+    float fontSizePt = 10.0f;                  /// Default font size, in points.
     string fontFace = "Helvetica";             /// Default font face.
     FontWeight fontWeight = FontWeight.normal; /// Default font weight.
     FontStyle fontStyle = FontStyle.normal;    /// Default font italic-ness
