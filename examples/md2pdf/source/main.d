@@ -113,6 +113,7 @@ int main(string[] args)
             // Enter the node
             switch(elem.tagName)
             {
+                case "p": doc.enterParagraph(); break;
                 case "b": case "strong": doc.enterBold(); break;
                 case "i": case "em": doc.enterEmph(); break;
                 case "code": doc.enterCode(); break;
@@ -123,6 +124,9 @@ int main(string[] args)
                 case "h4": doc.enterH4(); break;
                 case "h5": doc.enterH5(); break;
                 case "h6": doc.enterH6(); break;
+                case "ol": doc.enterOrderedList(); break;
+                case "ul": doc.enterUnorderedList(); break;
+                case "li": doc.enterListItem(); break;
                 default:
                     break;
             }
@@ -141,9 +145,8 @@ int main(string[] args)
             // Exit the node
             switch(elem.tagName)
             {
-                case "html": 
-                    doc.finalize(); 
-                    break;
+                case "html": doc.finalize(); break;
+                case "p": doc.exitParagraph(); break;
                 case "b": case "strong": doc.exitBold(); break;
                 case "i": case "em": doc.exitEmph(); break;
                 case "code": doc.exitCode(); break;
@@ -154,7 +157,10 @@ int main(string[] args)
                 case "h4": doc.exitH4(); break;
                 case "h5": doc.exitH5(); break;
                 case "h6": doc.exitH6(); break;
-                case "br": doc.br(); break;
+                case "br": doc.br(); break; // MAYDO: not sure where a HTML br tag with text inside would put the line break
+                case "ol": doc.exitOrderedList(); break;
+                case "ul": doc.exitUnorderedList(); break;
+                case "li": doc.exitListItem(); break;
                 default:
                     break;
             }

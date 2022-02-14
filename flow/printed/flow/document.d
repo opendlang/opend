@@ -6,6 +6,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module printed.flow.document;
 
+import std.conv: to;
 import printed.canvas.irenderer;
 import printed.flow.style;
 
@@ -90,6 +91,24 @@ interface IFlowDocument
     /// Exit </code>.
     void exitCode();
 
+    /// Enter <ol>.
+    void enterOrderedList();
+
+    /// Exit </ol>.
+    void exitOrderedList();
+
+    /// Enter <ul>.
+    void enterUnorderedList();
+
+    /// Exit </ul>.
+    void exitUnorderedList();
+
+    /// Enter <li>.
+    void enterListItem();
+
+    /// Exit </li>.
+    void exitListItem();
+
     /// You MUST make that call before getting the bytes output of the renderer.
     /// No subsequent can be made with that `IFlowDocument`.
     void finalize();
@@ -107,7 +126,16 @@ class FlowDocument : IFlowDocument
         _o = options;
 
         // Create default state (will be _stateStack[0] throughout)
-        _stateStack ~= State(_o.color, _o.fontSizePt, _o.fontFace, _o.fontWeight, _o.fontStyle);
+        int listItemNumber = 0;
+        float leftMarginMm = _o.pageLeftMarginMm;
+        _stateStack ~= State(_o.color, 
+                             _o.fontSizePt, 
+                             _o.fontFace, 
+                             _o.fontWeight, 
+                             _o.fontStyle, 
+                             ListStyleType.disc,
+                             listItemNumber,
+                             leftMarginMm);
 
         decoratePage();
         resetCursorTopLeft();
@@ -128,7 +156,7 @@ class FlowDocument : IFlowDocument
 
     override void br()
     {
-        _cursorX = _o.pageLeftMarginMm;
+        _cursorX = currentState.leftMargin;
 
         TextMetrics m = _r.measureText("A");
         _cursorY += m.lineGap;
@@ -253,6 +281,36 @@ class FlowDocument : IFlowDocument
         exitStyle(_o.code);
     }
 
+    override void enterOrderedList()
+    {
+        enterStyle(_o.ol);
+    }
+
+    override void exitOrderedList()
+    {
+        exitStyle(_o.ol);
+    }
+
+    override void enterUnorderedList()
+    {
+        enterStyle(_o.ul);
+    }
+
+    override void exitUnorderedList()
+    {
+        exitStyle(_o.ul);
+    }
+
+    override void enterListItem()
+    {
+        enterStyle(_o.li);
+    }
+
+    override void exitListItem()
+    {
+        exitStyle(_o.li);
+    }
+
     override void finalize()
     {
         _finalized = true;
@@ -305,7 +363,7 @@ private:
     {
         _lastBoxX = 0;
         _lastBoxY = 0;
-        _cursorX = _o.pageLeftMarginMm;
+        _cursorX = currentState.leftMargin;
         _cursorY = _o.pageTopMarginMm;
     }
 
@@ -347,6 +405,9 @@ private:
         string fontFace;
         FontWeight fontWeight;
         FontStyle fontStyle;
+        ListStyleType listStyleType;
+        int listItemNumber;
+        float leftMargin; // margin applied by every item, in millimeters
     }
 
     State[] _stateStack;
@@ -373,27 +434,48 @@ private:
         _r.restore();
 
         // Apply former state to context
-        applyCurrentState();
+        updateRendererStateWithStyleState();
     }
 
     // Apply a TagStyle to the given state.
     // Set context values with the given state.
     void enterStyle(const(TagStyle) style)
     {
+        if (style.display == DisplayStyle.listItem)
+        {
+            currentState().listItemNumber += 1;
+        }
+
         pushState();
 
-        // Update state
+        if (style.listStyleType != ListStyleType.inherit)
+        {
+            // if it's a <ul> or <ol> tag, reset item number.
+            currentState().listItemNumber = 0;
+        }
+
+        // Update state, applying style.
         State* state = &currentState();
         state.fontSize *= style.fontSizeEm;
         if (style.fontFace !is null) state.fontFace = style.fontFace;
         if (style.fontWeight != -1) state.fontWeight = style.fontWeight; 
         if (style.fontStyle != -1) state.fontStyle = style.fontStyle;
         if (style.color != "") state.color = style.color;
-        applyCurrentState();
+        if (style.listStyleType != ListStyleType.inherit) state.listStyleType = style.listStyleType;
+        // margin left
+        {
+            state.leftMargin += style.marginLeftMm;
+            _cursorX += style.marginLeftMm;
+        }
+
+        updateRendererStateWithStyleState();
 
         // Margins: this must be done after fontSize is updated.
-        if (style.display == DisplayStyle.block)
+        if (style.hasBlockDisplay())
         {
+            // Can't be less than a line break.
+            br();
+
             // ensure top margin
             float desiredMarginMin = currentState().fontSize * style.marginTopEm;
             float marginTop = _cursorY - _lastBoxY;
@@ -402,11 +484,22 @@ private:
                 _cursorY += (desiredMarginMin - marginTop);
             }   
             checkPageEnded();
-            _cursorX = _o.pageLeftMarginMm; // Always set at beginning of a line.
+            _cursorX = currentState.leftMargin; // Always set at beginning of a line.
+        }
+
+        // list-item display
+        if (style.display == DisplayStyle.listItem)
+        {
+            final switch(state.listStyleType)
+            {
+                case ListStyleType.inherit: break;
+                case ListStyleType.disc: text("- "); break;
+                case ListStyleType.decimal: text(to!string(state.listItemNumber) ~ ". "); break;
+            }
         }
     }
 
-    void applyCurrentState()
+    void updateRendererStateWithStyleState()
     {
         // Update rendering with top state values.
         State* state = &currentState();
@@ -419,11 +512,14 @@ private:
 
     void exitStyle(const(TagStyle) style)
     {
-        if (style.display == DisplayStyle.block)
+        if (style.hasBlockDisplay())
         {
+            // Can't be less than a line break.
+            br();
+
             // ensure bottom margin
             float desiredMarginBottom = currentState().fontSize * style.marginBottomEm;
-            _cursorX = _o.pageLeftMarginMm;
+            _cursorX = currentState.leftMargin;
             _cursorY = _lastBoxY + desiredMarginBottom;
             checkPageEnded();
         }
@@ -453,7 +549,11 @@ string[] splitIntoWords(const(char)[] sentence)
     }
 
     int index = 0;
-    char peek() { return sentence[index]; }
+    char peek() 
+    { 
+       // assert(sentence[index] != '\n');
+        return sentence[index]; 
+    }
     void next() { index++; }
     bool empty() { return index >= sentence.length; }
 
@@ -487,3 +587,5 @@ string[] splitIntoWords(const(char)[] sentence)
     assert(empty);
     return res;
 }
+
+

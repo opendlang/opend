@@ -12,8 +12,17 @@ import printed.canvas.irenderer;
 /// Only outside display is considered.
 enum DisplayStyle
 {
-    inline,  /// Insert in same line flow.
-    block    /// Insert line-break before and after.
+    inline,   /// Insert in same line flow.
+    block,    /// Insert line-break before and after.
+    listItem, /// Same as block but also display ListStyleType
+}
+
+/// More or less similar to CSS list-style-type 
+enum ListStyleType
+{
+    inherit,
+    disc,
+    decimal
 }
 
 struct TagStyle
@@ -38,10 +47,17 @@ public:
     FontStyle fontStyle = cast(FontStyle)-1;
 
     /// Margins, in em (unused)
-    float marginTopEm = 0;    /// Only used when DisplayStyle.block
-    float marginRightEm = 0;  /// Unused
-    float marginBottomEm = 0; /// Only used when DisplayStyle.block
-    float marginLeftEm = 0;   /// Unused
+    float marginTopEm = 0;    /// Only used when hasBlockDisplay() 
+    float marginRightMm = 0;  /// Unused.
+    float marginBottomEm = 0; /// Only used when hasBlockDisplay()
+    float marginLeftMm = 0;   /// Warning: in mm not em.
+
+    ListStyleType listStyleType;
+
+    bool hasBlockDisplay() pure const
+    {
+        return display == DisplayStyle.block || display == DisplayStyle.listItem;
+    }
 }
 
 /// Style options for various tags.
@@ -66,16 +82,20 @@ struct StyleOptions
     /// This is called before anything else is drawn on a page.
     void delegate (IRenderingContext2D context, int pageCount) onEnterPage = null;
 
-    TagStyle p      = TagStyle("", DisplayStyle.block,  1.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.12, 0, 1.12, 0);
-    TagStyle strong = TagStyle("", DisplayStyle.inline, 1.0f,  null, FontWeight.bold,    cast(FontStyle)-1,  0, 0, 0, 0);
-    TagStyle em     = TagStyle("", DisplayStyle.inline, 1.0f,  null, cast(FontWeight)-1, FontStyle.italic,   0, 0, 0, 0);
-    TagStyle h1     = TagStyle("", DisplayStyle.block,  2.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.67, 0, 0.67, 0);
-    TagStyle h2     = TagStyle("", DisplayStyle.block,  1.5f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.75, 0, 0.75, 0);
-    TagStyle h3     = TagStyle("", DisplayStyle.block, 1.17f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.83, 0, 0.83, 0);
-    TagStyle h4     = TagStyle("", DisplayStyle.block,  1.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.12, 0, 1.12, 0);
-    TagStyle h5     = TagStyle("", DisplayStyle.block, 0.83f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.5, 0, 1.5, 0);
-    TagStyle h6     = TagStyle("", DisplayStyle.block, 0.75f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.67, 0, 1.67, 0);
+    TagStyle p      = TagStyle("", DisplayStyle.block,  1.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.12, 0, 1.12, 0, ListStyleType.inherit);
+    TagStyle strong = TagStyle("", DisplayStyle.inline, 1.0f,  null, FontWeight.bold,    cast(FontStyle)-1,     0, 0,    0, 0, ListStyleType.inherit);
+    TagStyle em     = TagStyle("", DisplayStyle.inline, 1.0f,  null, cast(FontWeight)-1, FontStyle.italic,      0, 0,    0, 0, ListStyleType.inherit);
+    TagStyle h1     = TagStyle("", DisplayStyle.block,  2.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.67, 0, 0.67, 0, ListStyleType.inherit);
+    TagStyle h2     = TagStyle("", DisplayStyle.block,  1.5f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.75, 0, 0.75, 0, ListStyleType.inherit);
+    TagStyle h3     = TagStyle("", DisplayStyle.block, 1.17f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  0.83, 0, 0.83, 0, ListStyleType.inherit);
+    TagStyle h4     = TagStyle("", DisplayStyle.block,  1.0f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.12, 0, 1.12, 0, ListStyleType.inherit);
+    TagStyle h5     = TagStyle("", DisplayStyle.block, 0.83f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.50, 0,  1.5, 0, ListStyleType.inherit);
+    TagStyle h6     = TagStyle("", DisplayStyle.block, 0.75f,  null, cast(FontWeight)-1, cast(FontStyle)-1,  1.67, 0, 1.67, 0, ListStyleType.inherit);
 
-    TagStyle pre    = TagStyle("", DisplayStyle.inline, 1.0f,"Courier New",cast(FontWeight)-1,cast(FontStyle)-1,0, 0, 0, 0);
-    TagStyle code   = TagStyle("", DisplayStyle.inline, 1.0f,"Courier New",cast(FontWeight)-1, cast(FontStyle)-1,  0, 0, 0, 0);
+    TagStyle pre    = TagStyle("", DisplayStyle.inline, 1.0f,"Courier New",cast(FontWeight)-1,cast(FontStyle)-1,0, 0,    0, 0, ListStyleType.inherit);
+    TagStyle code   = TagStyle("", DisplayStyle.inline, 1.0f,"Courier New",cast(FontWeight)-1, cast(FontStyle)-1,0,0,    0, 0, ListStyleType.inherit);
+
+    TagStyle ol     = TagStyle("", DisplayStyle.block, 1.0f, null,cast(FontWeight)-1, cast(FontStyle)-1,     1.12, 0, 1.12, 0, ListStyleType.decimal);
+    TagStyle ul     = TagStyle("", DisplayStyle.block, 1.0f, null,cast(FontWeight)-1, cast(FontStyle)-1,     1.12, 0, 1.12, 0, ListStyleType.disc);
+    TagStyle li     = TagStyle("", DisplayStyle.listItem,1.0f, null,cast(FontWeight)-1, cast(FontStyle)-1,      0, 0,    0, 10.5, ListStyleType.inherit);
 }
