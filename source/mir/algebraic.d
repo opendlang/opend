@@ -3190,7 +3190,7 @@ unittest
 /++
 Wrapper to denote an error value type.
 
-The type is autostripped by $(LREF none).
+The wrapper is autostripped by $(LREF none).
 
 See_also: $(LREF reflectErr).
 +/
