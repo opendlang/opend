@@ -3194,9 +3194,21 @@ The type is autostripped by $(LREF none).
 
 See_also: $(LREF reflectErr).
 +/
-struct Err(T)
+template Err(T)
 {
-    T value;
+    static if (!isErr!T)
+    {
+        ///
+        struct Err
+        {
+            ///
+            T value;
+        }
+    }
+    else
+    {
+        alias Err = T;
+    }
 }
 
 /// ditto
@@ -3212,6 +3224,12 @@ auto err(T)(T value) {
 unittest
 {
     @reflectErr static struct E {}
+
+    static assert(is(Err!string == Err!string));
+    static assert(is(Err!(Err!string) == Err!string));
+    static assert(is(Err!E == E));
+    static assert(is(Err!Exception == Exception));
+
     static assert(is(typeof("str".err) == Err!string));
     static assert(is(typeof(E().err) == E));
     static assert(is(typeof(new Exception("str").err) == Exception));
