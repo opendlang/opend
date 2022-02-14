@@ -3235,7 +3235,7 @@ unittest
     static assert(is(typeof(new Exception("str").err) == Exception));
 }
 
-/// Strips out !(LREF Err) wrapper from the type.
+/// Strips out $(LREF Err) wrapper from the type.
 template stripErr(T)
 {
     static if (is(immutable T : immutable Err!U, U))
