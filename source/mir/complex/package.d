@@ -357,7 +357,7 @@ Returns: The argument (or phase) of `z`.
 +/
 T arg(T)(Complex!T z) @safe pure nothrow @nogc
 {
-    import std.math : atan2;
+    import std.math.trigonometry : atan2;
     return atan2(z.im, z.re);
 }
 
@@ -377,7 +377,7 @@ Returns: The absolute value (or modulus) of `z`.
 */
 T cabs(T)(Complex!T z) @safe pure nothrow @nogc
 {
-    import std.math : hypot;
+    import std.math.algebraic : hypot;
     return hypot(z.re, z.im);
 }
 
