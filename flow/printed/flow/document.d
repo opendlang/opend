@@ -462,6 +462,7 @@ private:
         if (style.fontStyle != -1) state.fontStyle = style.fontStyle;
         if (style.color != "") state.color = style.color;
         if (style.listStyleType != ListStyleType.inherit) state.listStyleType = style.listStyleType;
+
         // margin left
         {
             state.leftMargin += style.marginLeftMm;
@@ -473,11 +474,15 @@ private:
         // Margins: this must be done after fontSize is updated.
         if (style.hasBlockDisplay())
         {
-            // Can't be less than a line break.
-            br();
-
             // ensure top margin
-            float desiredMarginMin = currentState().fontSize * style.marginTopEm;
+            float desiredMarginMin = convertPointsToMillimeters(currentState().fontSize * style.marginTopEm);
+   
+            // Can't be less than a line break.
+            // TODO: not the same thing here, margin is about extent, lineGap is about baseline
+            float lineBreakGap = _r.measureText("A").lineGap;
+            if (desiredMarginMin < lineBreakGap)
+                desiredMarginMin = lineBreakGap;
+
             float marginTop = _cursorY - _lastBoxY;
             if (marginTop < desiredMarginMin)
             {
@@ -514,13 +519,17 @@ private:
     {
         if (style.hasBlockDisplay())
         {
-            // Can't be less than a line break.
-            br();
-
             // ensure bottom margin
-            float desiredMarginBottom = currentState().fontSize * style.marginBottomEm;
+            float desiredMarginBottomMm = convertPointsToMillimeters(currentState().fontSize * style.marginBottomEm);
+            
+            // Can't be less than a line break.
+            // TODO: not the same thing here, margin is about extent, lineGap is about baseline
+            float lineBreakGap = _r.measureText("A").lineGap;
+            if (desiredMarginBottomMm < lineBreakGap)
+                desiredMarginBottomMm = lineBreakGap;
+
             _cursorX = currentState.leftMargin;
-            _cursorY = _lastBoxY + desiredMarginBottom;
+            _cursorY = _lastBoxY + desiredMarginBottomMm;
             checkPageEnded();
         }
         popState();
