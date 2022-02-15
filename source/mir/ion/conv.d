@@ -102,6 +102,7 @@ template serde(T)
 ///
 version(mir_ion_test)
 unittest {
+    import mir.ion.stream: IonValueStream;
     import mir.algebraic_alias.json: JsonAlgebraic;
     static struct S
     {
@@ -467,10 +468,10 @@ version(Have_msgpack_d)
         return data.IonValueStream.serializeMsgpack;
     }
 
-    ///
     @safe
     version(mir_ion_test) unittest
     {
+        import mir.ion.conv: ion2msgpack, msgpack2ion, ion2text;
         foreach(text; [
             `null`,
             `true`,
