@@ -1,45 +1,4 @@
 version: 2.1
-
-jobs:
-  test_aarch64:
-    machine:
-      image: ubuntu-2004:202101-01
-    environment:
-      ARCH: AARCH64
-      LDC_VERSION: 1.28.1
-    resource_class: arm.medium
-    steps:
-      - checkout
-      - run: 
-          name: Pull install script
-          command: |
-            curl -fsSL -A "Travis-CI" --connect-timeout 5 --speed-time 30 --speed-limit 1024 "https://dlang.org/install.sh" -O ;
-      - run:
-          name: Pull install script (fallback)
-          command: |
-            curl -fsSL -A "Travis-CI" --connect-timeout 5 --speed-time 30 --speed-limit 1024 "https://github.com/dlang/installer/raw/stable/script/install.sh" -O ;
-          when: on_fail
-      - run: 
-          name: Setup env for LDC
-          command: |
-            echo "source $(CURL_USER_AGENT=\"Travis-CI\" bash install.sh ldc-$LDC_VERSION --activate)" > ~/.bashrc
-      - run: ldc2 --version
-      - run: dub --help | tail -n 1
-      - run: bash -e test_travis.sh
-  test_example:
-    docker:
-      - image: libmir/circle-dlang
-    steps:
-      - checkout
-      - run:
-          name: Test meson example
-          command: |
-            cd meson-example
-            meson build --default-library=static --buildtype=debug
-            ninja -C build
-            gcc test.c build/libion_meson_example.so
-            LD_LIBRARY_PATH=build ./a.out
-
 orbs:
   mirci: libmir/upload_docs@0.3.0
 

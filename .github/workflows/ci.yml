@@ -56,7 +56,7 @@ jobs:
         run: sudo apt-get install gcc-multilib
       - id: build
         name: Test building
-        run: bash -e test_travis.sh
+        run: dub test --arch=$ARCH --build=unittest-cov
       - id: coverage
         name: Upload coverage data
         run: bash <(curl -s https://codecov.io/bash)
