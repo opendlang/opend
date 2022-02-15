@@ -313,6 +313,11 @@ final class PDFDocument : IRenderingContext2D
         setNonStrokeAlpha(c[3]);
     }
 
+    override void fillStyle(const(char)[] color)
+    {
+        fillStyle(brush(color));
+    }
+
     override void strokeStyle(Brush brush)
     {
         ubyte[4] c = brush.toRGBAColor();
@@ -321,6 +326,11 @@ final class PDFDocument : IRenderingContext2D
         outFloat(c[2] / 255.0f);
         output(" RG");
         setStrokeAlpha(c[3]);
+    }
+
+    override void strokeStyle(const(char)[] color)
+    {
+        strokeStyle(brush(color));
     }
 
     override void setLineDash(float[] segments = [])

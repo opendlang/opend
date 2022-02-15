@@ -100,9 +100,19 @@ public:
         _currentFill = brush.toSVGColor();
     }
 
+    override void fillStyle(const(char)[] color)
+    {
+        fillStyle(brush(color));
+    }
+
     override void strokeStyle(Brush brush)
     {
         _currentStroke = brush.toSVGColor();
+    }
+
+    override void strokeStyle(const(char)[] color)
+    {
+        strokeStyle(brush(color));
     }
 
     override void setLineDash(float[] segments = [])

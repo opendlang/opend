@@ -70,13 +70,17 @@ interface IRenderingContext2D
 
     /// Changes the current fill brush.
     /// Params:
-    ///    color Any HTML color string.
+    ///    color Any HTML color string, or a `Brush` if you want to save the parsing cost.
     void fillStyle(Brush brush);
+    ///ditto
+    void fillStyle(const(char)[] color); // equivalent to `fillStyle(brush(color));`
 
     /// Changes the current stroke brush.
     /// Params:
     ///    color Any HTML color string.
     void strokeStyle(Brush brush);
+    ///ditto
+    void strokeStyle(const(char)[] color); // equivalent to `strokeStyle(brush(color));`
 
     // DASHED LINES
 
