@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/dub/l/mir-ion.svg)](http://code.dlang.org/packages/mir-ion)
 [![codecov](https://codecov.io/gh/libmir/mir-ion/branch/master/graph/badge.svg?token=MF9yMpCZbO)](https://codecov.io/gh/libmir/mir-ion)
 ![Build Status](https://img.shields.io/github/workflow/status/libmir/mir-ion/CI)
-[![CircleCI](https://circleci.com/gh/libmir/mir-ion.svg?style=svg)](https://circleci.com/gh/libmir/mir-ion)
+[![CircleCI](https://circleci.com/gh/libmir/mir-ion/tree/master.svg?style=svg)](https://circleci.com/gh/libmir/mir-ion/tree/master)
 ![Ion Test Status](https://img.shields.io/github/workflow/status/libmir/mir-ion/Integration%20Testing/master?label=Ion%20Test%20Data)
 
 # Mir Ion
