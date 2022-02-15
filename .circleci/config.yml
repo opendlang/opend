@@ -1,4 +1,20 @@
 version: 2.1
+
+jobs:
+  test_example:
+    docker:
+      - image: libmir/circle-dlang
+    steps:
+      - checkout
+      - run:
+          name: Test meson example
+          command: |
+            cd meson-example
+            meson build --default-library=static --buildtype=debug
+            ninja -C build
+            gcc test.c build/libion_meson_example.so
+            LD_LIBRARY_PATH=build ./a.out
+
 orbs:
   mirci: libmir/upload_docs@0.3.0
 
@@ -6,7 +22,6 @@ workflows:
   version: 2
   build-deploy:
     jobs:
-      - test_aarch64
       - test_example
       - mirci/test_and_build_docs:
           filters:
