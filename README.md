@@ -17,11 +17,6 @@ Additionally, for examples of the Ion format, you can check the [Ion Cookbook](h
 ## Exceptions
 Mir Ion internals are `@nogc` and almost all are preallocated. If DIP1008 is enabled, then the parsing exception will contains additional information about error location in the file and last occured key.
 
-## Status
-This package is considered experimental, under active/early development, and the API is subject to change.
-
-As such, please look towards using [asdf](https://github.com/libmir/asdf) until further notice.
-
 ## Feature Status
 
  - [x] Binary Ion Value parsing and skip-scan iteration.
