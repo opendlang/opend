@@ -6,7 +6,7 @@ jobs:
       image: ubuntu-2004:202101-01
     environment:
       ARCH: AARCH64
-      LDC_VERSION: 1.26.0
+      LDC_VERSION: 1.28.1
     resource_class: arm.medium
     steps:
       - checkout
@@ -41,7 +41,7 @@ jobs:
             LD_LIBRARY_PATH=build ./a.out
 
 orbs:
-  mirci: libmir/upload_docs@0.1.4
+  mirci: libmir/upload_docs@0.3.0
 
 workflows:
   version: 2
