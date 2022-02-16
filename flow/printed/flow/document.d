@@ -498,7 +498,22 @@ private:
             final switch(state.listStyleType)
             {
                 case ListStyleType.inherit: break;
-                case ListStyleType.disc: text("- "); break;
+                case ListStyleType.disc: 
+                {
+                    float emSizeMm = convertPointsToMillimeters( currentState().fontSize );
+                    float discRadius = 0.17 * emSizeMm;
+                    float discOffsetY = -0.23f * emSizeMm;
+
+                    // TODO: implement a disc with a disc, not a rectangle
+                    float x = _cursorX + discRadius;
+                    float y = _cursorY + discOffsetY;
+                    _r.fillRect(x - discRadius, y - discRadius, discRadius * 2, discRadius * 2);
+
+                    float advance = _r.measureText("1. ").width;
+
+                    _cursorX += advance;
+                    break;
+                }
                 case ListStyleType.decimal: text(to!string(state.listItemNumber) ~ ". "); break;
             }
         }
