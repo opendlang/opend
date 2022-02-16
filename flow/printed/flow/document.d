@@ -8,9 +8,10 @@ module printed.flow.document;
 
 import std.conv: to;
 import printed.canvas.irenderer;
+import printed.canvas.image;
 import printed.flow.style;
 
-/// A Flow Document produces output without any bo model, in a streamed manner.
+/// A Flow Document produces output without any box model, in a streamed manner.
 /// If something fits, it is included.
 
 /// The interface is thought to be able to render Markdown (without embedded HTML).
@@ -23,7 +24,7 @@ interface IFlowDocument
     void br();
 
     /// Next page.
-    void pageSkip(); 
+    void pageSkip();
 
     /// Enter <h1> title.
     void enterH1();
@@ -108,6 +109,12 @@ interface IFlowDocument
 
     /// Exit </li>.
     void exitListItem();
+
+    /// Enter <img>.
+    void enterImage(const(char)[] relativePath);
+
+    /// Exit </img>.
+    void exitImage();
 
     /// You MUST make that call before getting the bytes output of the renderer.
     /// No subsequent can be made with that `IFlowDocument`.
@@ -310,6 +317,37 @@ class FlowDocument : IFlowDocument
     override void exitListItem()
     {
         exitStyle(_o.li);
+    }
+
+    void enterImage(const(char)[] relativePath)
+    {
+        enterStyle(_o.img);
+        Image image = loadImageLazily(relativePath);
+
+        // hard-wired center in page
+        float w = image.printWidth();
+        float h = image.printHeight();
+        
+        float maxWidth = _W - _o.pageLeftMarginMm -  _o.pageRightMarginMm;
+
+        // Can't exceed available page width.
+        if (w > maxWidth)
+        {
+            h *= (maxWidth / w);
+            w = maxWidth;
+        }
+
+        if (remainPageHeight() < h) 
+            pageSkip();
+        
+        _r.drawImage(image, (_W - w) / 2, _cursorY, w, h);
+        _cursorY += h;
+        _lastBoxY = _cursorY;
+    }
+
+    void exitImage()
+    {
+        exitStyle(_o.img);
     }
 
     override void finalize()
@@ -548,6 +586,24 @@ private:
             checkPageEnded();
         }
         popState();
+    }
+
+    alias ImageKey = const(char)[];
+
+    Image[ ImageKey ] _imageCache;
+
+    Image loadImageLazily(ImageKey relativePath)
+    {
+        if (relativePath !in _imageCache)
+        {
+            _imageCache[relativePath] = new Image(relativePath);
+        }
+        return _imageCache[relativePath]; 
+    }
+
+    float remainPageHeight()
+    {
+        return _H - _o.pageBottomMarginMm - _cursorY;
     }
 }
 
