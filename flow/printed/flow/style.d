@@ -76,6 +76,8 @@ struct StyleOptions
     float pageTopMarginMm    = 25.4; /// Top margin, in millimeters.
     float pageBottomMarginMm = 36.7; /// Bottom margin, in millimeters.
 
+    float paragraphTextIndentMm = 5; /// <p> first line text indentation, in millimeters.
+
     /// An empty callback you can override to decorate each page of the document.
     /// You cannot call other `FlowDocument` function from inside this callback.
     /// `pageCount` is the page number, starting with 1.

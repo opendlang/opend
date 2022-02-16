@@ -254,6 +254,7 @@ class FlowDocument : IFlowDocument
     override void enterParagraph()
     {
         enterStyle(_o.p);
+        _cursorX += _o.paragraphTextIndentMm;
     }
 
     override void exitParagraph()
@@ -510,7 +511,6 @@ private:
                     _r.fillRect(x - discRadius, y - discRadius, discRadius * 2, discRadius * 2);
 
                     float advance = _r.measureText("1. ").width;
-
                     _cursorX += advance;
                     break;
                 }
