@@ -95,7 +95,7 @@ int main(string[] args)
         auto pdf = new PDFDocument(widthMm, heightMm);
 
         StyleOptions style;
-        style.fontFace = "Jost";
+        style.fontFace = "Lato";
         style.strong.fontWeight = FontWeight.semiBold;
         style.code.color = "rgb(160,95,9)";
         style.pre.color = "rgb(160,95,9)";
