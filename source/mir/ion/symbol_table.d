@@ -59,7 +59,7 @@ enum IonSystemSymbol : ubyte
     ion_shared_symbol_table,
 }
 
-package string[] removeSystemSymbols(const(string)[] keys) @safe pure nothrow
+package(mir) string[] removeSystemSymbols(const(string)[] keys) @safe pure nothrow
 {
     string[] ret;
     F: foreach (key; keys) switch(key)
@@ -495,7 +495,7 @@ version(mir_ion_test) unittest
     table.finalize;
 }
 
-package(mir.ion) auto findKey()(const string[] symbolTable, string key)
+package(mir) auto findKey()(const string[] symbolTable, string key)
 {
     import mir.algorithm.iteration: findIndex;
     auto ret = symbolTable.findIndex!(a => a == key);

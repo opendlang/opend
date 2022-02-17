@@ -1,6 +1,6 @@
 /++
 +/
-module mir.ion.deser.low_level;
+module mir.deser.low_level;
 
 import mir.appender: scopedBuffer, ScopedBuffer;
 import mir.bignum.decimal: Decimal;

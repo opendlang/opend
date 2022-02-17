@@ -301,7 +301,7 @@ version(mir_ion_test) unittest
     static assert(IonErrorCode.none.ionException is null);
 }
 
-package auto unqualException(T)(T exception) @trusted pure nothrow @nogc
+package(mir) auto unqualException(T)(T exception) @trusted pure nothrow @nogc
     // if (is(T : const Exception))
 {
     return cast() exception;

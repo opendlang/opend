@@ -3,10 +3,10 @@ Helpers to skip over a given Ion Text token.
 
 Authors: Harrison Ford
 +/
-module mir.ion.deser.text.skippers;
+module mir.deser.text.skippers;
 
-import mir.ion.deser.text.tokenizer;
-import mir.ion.deser.text.tokens;
+import mir.deser.text.tokenizer;
+import mir.deser.text.tokens;
 import mir.ion.type_code;
 
 /+
@@ -103,7 +103,7 @@ bool skipSingleLineComment(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over single-line comments.
 version(mir_ion_parser_test) unittest 
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("single-line comment\r\nok");
     assert(t.skipSingleLineComment());
 
@@ -114,7 +114,7 @@ version(mir_ion_parser_test) unittest
 /// Test skipping of a single-line comment on the last line
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("single-line comment");
     assert(t.skipSingleLineComment());
     t.testRead(0);
@@ -145,14 +145,14 @@ bool skipBlockComment(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping of an invalid comment
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
     auto t = tokenizeString("this is a string that never ends");
     assert(!t.skipBlockComment());
 }
 /// Test skipping of a multi-line comment
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("this is/ a\nmulti-line /** comment.**/ok");
     assert(t.skipBlockComment());
 
@@ -189,7 +189,7 @@ bool skipComment(ref IonTokenizer t) @safe @nogc pure
 /// Test single-line skipping
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("/comment\nok");
     assert(t.skipComment());
     t.testRead('o');
@@ -199,7 +199,7 @@ version(mir_ion_parser_test) unittest
 /// Test block skipping
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString("*comm\nent*/ok");
     assert(t.skipComment());
     t.testRead('o');
@@ -209,7 +209,7 @@ version(mir_ion_parser_test) unittest
 /// Test false-alarm skipping
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString, testRead;
+    import mir.deser.text.tokenizer : tokenizeString, testRead;
     auto t = tokenizeString(" 0)");
     assert(!t.skipComment());
     t.testRead(' ');
@@ -268,8 +268,8 @@ char skipNumber(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over numbers
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -306,8 +306,8 @@ char skipBinary(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over binary numbers
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -341,8 +341,8 @@ char skipHex(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over hex numbers
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char expected) {
         auto t = tokenizeString(ts);
@@ -496,8 +496,8 @@ char skipTimestamp(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over timestamps
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -556,7 +556,7 @@ char skipDoubleColon(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over double-colons
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer;
+    import mir.deser.text.tokenizer;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -605,7 +605,7 @@ char skipSymbol(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over symbols
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -660,8 +660,8 @@ char skipSymbolQuoted(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over quoted symbols
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -701,7 +701,7 @@ char skipSymbolOperator(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over symbol operators
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -751,8 +751,8 @@ char skipString(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over strings
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
  
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -840,7 +840,7 @@ char skipLongString(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over long strings
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -863,7 +863,7 @@ char skipBlob(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over blobs
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
 
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -907,7 +907,7 @@ char skipStruct(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over structs
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
  
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -944,7 +944,7 @@ char skipSexp(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over S-expressions
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
  
     void test(string ts, char result) {
         auto t = tokenizeString(ts);
@@ -980,7 +980,7 @@ char skipList(ref IonTokenizer t) @safe @nogc pure
 /// Test skipping over lists
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokenizer : tokenizeString;
  
     void test(string ts, char result) {
         auto t = tokenizeString(ts);

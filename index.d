@@ -1,6 +1,6 @@
 Ddoc
 
-$(P JSON Parsing and Serialization library.)
+$(P Ion, JSON, MsgPack Parsing and Serialization library.)
 
 $(P The following table is a quick reference guide for which Mir Ion modules to
 use for a given category of functionality.)
@@ -12,8 +12,8 @@ $(BOOKTABLE ,
         $(TH Description)
     )
     $(LEADINGROW Primary API)
-    $(TR $(TDNW $(MREF mir,ion,ser)) $(TD Serialization API ))
-    $(TR $(TDNW $(MREF mir,ion,deser)) $(TD Deserialization API ))
+    $(TR $(TDNW $(MREF mir,ser)) $(TD Serialization API ))
+    $(TR $(TDNW $(MREF mir,deser)) $(TD Deserialization API ))
     $(LEADINGROW Support API)
     $(TR $(TDNW $(MREF mir,ion,exception)) $(TD Mir Ion Exceptions ))
     $(TR $(TDNW $(MREF mir,ion,tape)) $(TD Ion low-level output API ))

@@ -27,10 +27,10 @@ template serde(T)
         if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ion.exception;
-        import mir.ion.deser.ion: deserializeIon;
+        import mir.deser.ion: deserializeIon;
         import mir.ion.internal.data_holder: ionPrefix, ionTapeHolder, IonTapeHolder;
-        import mir.ion.ser: serializeValue, isMsgpackValue;
-        import mir.ion.ser.ion: IonSerializer;
+        import mir.ser: serializeValue, isMsgpackValue;
+        import mir.ser.ion: IonSerializer;
         import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
         import mir.ion.value: IonValue, IonDescribedValue, IonList;
         import mir.serde: serdeGetSerializationKeysRecurse;
@@ -80,7 +80,7 @@ template serde(T)
     void serde()(ref T target, IonValueStream stream, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
-        import mir.ion.deser.ion: deserializeIon;
+        import mir.deser.ion: deserializeIon;
         return deserializeIon!T(target, stream.data);
     }
 }
@@ -94,7 +94,7 @@ template serde(T)
     T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
-        import mir.ion.ser.ion: serializeIon;
+        import mir.ser.ion: serializeIon;
         return serializeIon(value, serdeTarget).IonValueStream;
     }
 }
@@ -179,7 +179,7 @@ string ion2json(scope const(ubyte)[] data)
     @safe pure
 {
     pragma(inline, false);
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     return data.IonValueStream.serializeJson;
 }
 
@@ -207,7 +207,7 @@ string ion2jsonPretty(scope const(ubyte)[] data)
     @safe pure
 {
     pragma(inline, false);
-    import mir.ion.ser.json: serializeJsonPretty;
+    import mir.ser.json: serializeJsonPretty;
     return data.IonValueStream.serializeJsonPretty;
 }
 
@@ -233,9 +233,9 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
-    import mir.ion.ser.ion : IonSerializer;
+    import mir.ser.ion : IonSerializer;
     import mir.serde : SerdeTarget;
-    import mir.ion.deser.text : IonTextDeserializer;
+    import mir.deser.text : IonTextDeserializer;
     enum nMax = 4096;
     IonTapeHolder!(nMax * 8, true) tapeHolder = void;
     tapeHolder.initialize;
@@ -297,9 +297,9 @@ void text2ion(Appender)(scope const(char)[] text, ref Appender appender)
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
-    import mir.ion.ser.ion : IonSerializer;
+    import mir.ser.ion : IonSerializer;
     import mir.serde : SerdeTarget;
-    import mir.ion.deser.text : IonTextDeserializer;
+    import mir.deser.text : IonTextDeserializer;
     enum nMax = 4096;
     IonTapeHolder!(nMax * 8) tapeHolder = void;
     tapeHolder.initialize;
@@ -338,7 +338,7 @@ string ion2text(scope const(ubyte)[] data)
     @safe pure
 {
     pragma(inline, false);
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.text: serializeText;
     return data.IonValueStream.serializeText;
 }
 
@@ -371,7 +371,7 @@ string ion2textPretty(scope const(ubyte)[] data)
     @safe pure
 {
     pragma(inline, false);
-    import mir.ion.ser.text: serializeTextPretty;
+    import mir.ser.text: serializeTextPretty;
     return data.IonValueStream.serializeTextPretty;
 }
 
@@ -393,7 +393,7 @@ version(Have_msgpack_d)
     +/
     immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data) @safe
     {
-        import mir.ion.ser.ion: serializeIon;
+        import mir.ser.ion: serializeIon;
         import msgpack: unpack;
         return data.unpack.value.serializeIon;
     }
@@ -447,8 +447,8 @@ version(Have_msgpack_d)
 
         foreach (i, ts; testStrings)
         {
-            import mir.ion.ser.ion;
-            import mir.ion.deser.ion;
+            import mir.ser.ion;
+            import mir.deser.ion;
             import mir.timestamp;
             auto mp = testData[i];
             auto ion = mp.msgpack2ion;
@@ -464,7 +464,7 @@ version(Have_msgpack_d)
     +/
     immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data) @safe pure
     {
-        import mir.ion.ser.msgpack: serializeMsgpack;
+        import mir.ser.msgpack: serializeMsgpack;
         return data.IonValueStream.serializeMsgpack;
     }
 

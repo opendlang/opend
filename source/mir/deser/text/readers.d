@@ -3,11 +3,11 @@ Helpers for reading values from a given Ion token.
 
 Authors: Harrison Ford
 +/
-module mir.ion.deser.text.readers;
+module mir.deser.text.readers;
 
-import mir.ion.deser.text.skippers;
-import mir.ion.deser.text.tokenizer;
-import mir.ion.deser.text.tokens;
+import mir.deser.text.skippers;
+import mir.deser.text.tokenizer;
+import mir.deser.text.tokens;
 
 private bool isValidDchar(dchar c) pure nothrow @safe @nogc
 {
@@ -52,8 +52,8 @@ auto readValue(IonTokenType token)(ref IonTokenizer t) @nogc @safe pure
 }
 ///
 version(mir_ion_parser_test) unittest {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void testVal(IonTokenType token)(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -136,8 +136,8 @@ dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
 // Test reading a unicode escape
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException;
 
     void test(string ts, dchar expected) {
         auto t = tokenizeString(ts);
@@ -268,8 +268,8 @@ IonTextSymbol readSymbol(ref IonTokenizer t) @safe pure @nogc
 // Test reading a symbol
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenizerException, IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenizerException, IonTokenType;
 
     void test(string ts, string expected, IonTokenType after) {
         import std.exception : assertNotThrown;
@@ -345,8 +345,8 @@ IonTextQuotedSymbol readSymbolQuoted(ref IonTokenizer t) @nogc @safe pure
 // Test reading quoted symbols
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -582,8 +582,8 @@ auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t
 // Test reading a string
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -635,8 +635,8 @@ IonTextString readLongString(ref IonTokenizer t) @safe @nogc pure
 // Test reading a long string
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -755,8 +755,8 @@ IonTextClob readClob(bool longClob = false)(ref IonTokenizer t) @safe @nogc pure
 // Test reading a short clob
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -901,8 +901,8 @@ IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
 // Test reading numbers
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
     import mir.ion.type_code : IonTypeCode;
 
     void test(string ts, string expected, IonTypeCode type, char after) {
@@ -1021,8 +1021,8 @@ const(char)[] readBinary(ref IonTokenizer t) @safe @nogc pure
 // Test reading a binary number
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -1053,8 +1053,8 @@ const(char)[] readHex(ref IonTokenizer t) @safe @nogc pure
 // Test reading a hex number
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
@@ -1211,8 +1211,8 @@ IonTextTimestamp readTimestamp(ref IonTokenizer t) @safe @nogc pure
 // Test reading timestamps
 version(mir_ion_parser_test) unittest
 {
-    import mir.ion.deser.text.tokenizer : tokenizeString;
-    import mir.ion.deser.text.tokens : IonTokenType;
+    import mir.deser.text.tokenizer : tokenizeString;
+    import mir.deser.text.tokens : IonTokenType;
 
     void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);

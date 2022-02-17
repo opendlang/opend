@@ -5,8 +5,8 @@ module mir.ion.examples;
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.conv: to;
 
     static struct S
@@ -34,8 +34,8 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     static struct MyNullable
     {
@@ -127,8 +127,8 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
+    import mir.ser.ion;
+    import mir.ser.json;
     import mir.ion.stream;
 
     IonValueStream[string] map;
@@ -144,9 +144,9 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.conv: to;
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.ion;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.ion.conv;
 
     static struct Foo
@@ -178,9 +178,9 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.ion;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.ion.conv;
 
     static struct S
@@ -198,8 +198,8 @@ version(mir_ion_test) unittest
 /// Proxy for members
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     struct S
     {
@@ -216,8 +216,8 @@ version(mir_ion_test) unittest
 ///
 pure version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.serde: serdeKeys;
     static struct S
     {
@@ -230,8 +230,8 @@ pure version(mir_ion_test) unittest
 ///
 pure version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.serde: serdeKeys, serdeKeyOut;
     static struct S
     {
@@ -245,8 +245,8 @@ pure version(mir_ion_test) unittest
 ///
 pure version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import std.exception: assertThrown;
 
     struct S
@@ -261,8 +261,8 @@ pure version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     static struct S
     {
@@ -275,8 +275,8 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import std.exception: assertThrown;
 
     static struct S
@@ -291,8 +291,8 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     static struct Decor
     {
@@ -351,8 +351,8 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.serde: serdeIgnoreOut;
 
     static struct S
@@ -367,8 +367,8 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     static struct S
     {
@@ -384,8 +384,8 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
 
     import std.uuid: UUID;
 
@@ -403,8 +403,8 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import mir.ion.value;
     import mir.algebraic: Variant;
 
@@ -435,7 +435,7 @@ version(mir_ion_test) unittest
 
         void serialize(S)(ref S serializer) const
         {
-            import mir.ion.ser: serializeValue;
+            import mir.ser: serializeValue;
             // mir.algebraic has builtin support for serialization.
             // For other algebraic libraies one can use thier visitor handlers.
             serializeValue(serializer, array);
@@ -447,7 +447,7 @@ version(mir_ion_test) unittest
         @safe pure
         IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
         {
-            import mir.ion.deser.ion: deserializeIon;
+            import mir.deser.ion: deserializeIon;
             import mir.ion.exception;
             foreach (IonErrorCode error, IonDescribedValue elem; value.get!IonList)
             {
@@ -506,7 +506,7 @@ version(mir_ion_test) unittest
         @reflectSerde enum s = "str";
     }
 
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.text: serializeText;
     assert(S().serializeText == `{s:"str"}`);
 }
 
@@ -517,15 +517,15 @@ version(mir_ion_test) unittest
     @serdeIgnoreUnexpectedKeys
     static struct S { int i; }
 
-    import mir.ion.deser.text: deserializeText;
+    import mir.deser.text: deserializeText;
     assert(`{s:"str",i:4}`.deserializeText!S == S(4));
 }
 
 /// Iterable and serdeLikeList
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text: deserializeText;
-    import mir.ion.ser.text: serializeText;
+    import mir.deser.text: deserializeText;
+    import mir.ser.text: serializeText;
     import mir.serde: serdeIgnoreOut, serdeLikeList, serdeProxy, serdeKeys;
     import std.array: Appender;
 
@@ -582,8 +582,8 @@ version(mir_ion_test) unittest
 /// serdeLikeStruct
 unittest
 {
-    import mir.ion.ser.text: serializeText;
-    import mir.ion.deser.text: deserializeText;
+    import mir.ser.text: serializeText;
+    import mir.deser.text: deserializeText;
     import mir.serde: serdeLikeStruct, serdeProxy;
 
     // opApply for serialization & and opIndexAssign for deserialization
@@ -664,8 +664,8 @@ unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     import std.range;
     import std.algorithm;
     import std.conv;
@@ -705,8 +705,8 @@ version(mir_ion_test) unittest
 
     auto toto = Toto(5);
 
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.deser.json: deserializeJson;
+    import mir.ser.json: serializeJson;
+    import mir.deser.json: deserializeJson;
 
     auto description = toto.serializeJson!Toto;
     assert(description == q{{"a":[[0,1,2],[3,4,5]],"b":[5,5]}});
@@ -737,8 +737,8 @@ version(mir_ion_test) unittest
 
     auto toto = Toto(5);
 
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.deser.json: deserializeJson;
+    import mir.ser.json: serializeJson;
+    import mir.deser.json: deserializeJson;
     import mir.format: stringBuf;
 
     stringBuf buffer;
@@ -771,7 +771,7 @@ See_also: $(GMREF mir-core, mir,algebraic), $(GMREF mir-algorithm, mir,string_ma
 version(mir_ion_test) unittest
 {
     import mir.string_map;
-    import mir.ion.deser.ion: deserializeIon;
+    import mir.deser.ion: deserializeIon;
     import mir.ion.conv: json2ion, ion2text;
     import mir.algebraic: Nullable, This; // Nullable, Variant, or TaggedVariant
     alias MyJsonAlgebraic = Nullable!(bool, string, double[], StringMap!This);
@@ -793,7 +793,7 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.algebraic_alias.json;
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     auto value = [JsonAlgebraic[].init.JsonAlgebraic, StringMap!JsonAlgebraic.init.JsonAlgebraic, string.init.JsonAlgebraic];
     assert(value.serializeJson == `[[],{},""]`, value.serializeJson);
 }
@@ -803,8 +803,8 @@ version(mir_ion_test) @safe pure unittest
 {
     import mir.serde : serdeFallbackStruct;
     import mir.algebraic;
-    import mir.ion.deser.text;
-    import mir.ion.deser.json;
+    import mir.deser.text;
+    import mir.deser.json;
     @serdeFallbackStruct struct S { string path; }
     alias V = Variant!(string, S);
     static immutable res = [V("str"), V(S("root"))];
@@ -817,9 +817,9 @@ version(mir_ion_test) unittest
 {
     import mir.date;
     import mir.ion.conv: ion2text;
-    import mir.ion.ser.ion: serializeIon;
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.ion: serializeIon;
+    import mir.ser.json: serializeJson;
+    import mir.ser.text: serializeText;
     assert(Date(2021, 4, 24).serializeIon.ion2text == `2021-04-24`);
     assert(Date(2021, 4, 24).serializeText == `2021-04-24`);
     assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
@@ -829,8 +829,8 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.algebraic;
-    import mir.ion.deser.ion: deserializeIon;
-    import mir.ion.ser.ion: serializeIon;
+    import mir.deser.ion: deserializeIon;
+    import mir.ser.ion: serializeIon;
     import mir.lob;
     import mir.string_map;
     import mir.timestamp;
@@ -850,11 +850,11 @@ version(mir_ion_test) unittest
 {
     import core.time : hnsecs, minutes;
     import mir.ion.conv: ion2text;
-    import mir.ion.ser.ion: serializeIon;
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.ser.text: serializeText;
-    import mir.ion.deser.ion: deserializeIon;
-    import mir.ion.deser.json: deserializeJson;
+    import mir.ser.ion: serializeIon;
+    import mir.ser.json: serializeJson;
+    import mir.ser.text: serializeText;
+    import mir.deser.ion: deserializeIon;
+    import mir.deser.json: deserializeJson;
     import std.datetime.date : Date, DateTime;
     import std.datetime.systime : SysTime;
     import std.datetime.timezone : SimpleTimeZone;
@@ -883,14 +883,14 @@ version(mir_ion_test) unittest
 
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     auto s = q{"n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn"}.deserializeJson!string;
     assert(s == "n2. Clone theproject_n_n        git clone git://github.com/rej\n2. Clone the project_n_n        git clone git://github.com/rejn", s);
 }
 
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     assert(q{"n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn"}
         .deserializeJson!string == 
              "n2. Clone theproject_n_n        git clone git://github.com/rej\"). Clone the project_n_n        git clone git://github.com/rejn");
@@ -900,8 +900,8 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     int[3] value = [1, 2, 3];
     assert(`[1,2,3]`.deserializeJson!(int[3]) == value);
     assert(value.serializeJson == `[1,2,3]`);
@@ -911,8 +911,8 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     static struct S { int v; }
     S[3] value = [S(1), S(2), S(3)];
     auto text = `[{"v":1},{"v":2},{"v":3}]`;
@@ -930,8 +930,8 @@ version(mir_ion_test) unittest
         alias ar this;
     }
 
-    import mir.ion.ser.json;
-    import mir.ion.deser.json;
+    import mir.ser.json;
+    import mir.deser.json;
     auto value = J([1, 2, 3]);
     assert(value.serializeJson == `[1,2,3]`);
     assert(`[1,2,3]`.deserializeJson!J == value);
@@ -940,7 +940,7 @@ version(mir_ion_test) unittest
 
 version(mir_ion_test) unittest
 {
-    import mir.ion.ser.text;
+    import mir.ser.text;
 
     static struct A {
         private int _a;
@@ -965,7 +965,7 @@ version(mir_ion_test) unittest
             0.999425
         ]
     }};
-    import mir.ion.deser.json;
+    import mir.deser.json;
     static struct S {
         double[] a;
 
@@ -986,7 +986,7 @@ version(mir_ion_test) unittest
         "data": 0.0001
     }};
 
-    import mir.ion.deser.json;
+    import mir.deser.json;
     import mir.series;
 
     alias T = Observation!(double, double);
@@ -1029,9 +1029,9 @@ version(mir_ion_test) unittest
     response["data"] = Json(new MyHugeRESTString("First chunk."));
 
     import mir.ion.conv: ion2text;
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
-    import mir.ion.ser.text;
+    import mir.ser.ion;
+    import mir.ser.json;
+    import mir.ser.text;
 
     assert(response.serializeJson == `{"type":"response","data":"First chunk. Another chunk."}`);
     assert(response.serializeText == `{type:"response",data:"First chunk. Another chunk."}`);
@@ -1041,7 +1041,7 @@ version(mir_ion_test) unittest
 /// Float proxy for integer types
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     static struct S {
         @serdeProxy!double
         long integralValue;
@@ -1054,10 +1054,10 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.algebraic;
-    import mir.ion.deser.json;
-    import mir.ion.deser.text;
-    import mir.ion.ser.json;
-    import mir.ion.ser.text;
+    import mir.deser.json;
+    import mir.deser.text;
+    import mir.ser.json;
+    import mir.ser.text;
 
     @serdeAlgebraicAnnotation("s1")
     static struct S1 {
@@ -1084,9 +1084,9 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.algebraic;
-    import mir.ion.deser.ion;
-    import mir.ion.ser.ion;
-    import mir.ion.ser.text;
+    import mir.deser.ion;
+    import mir.ser.ion;
+    import mir.ser.text;
     import mir.serde;
 
     @serdeAlgebraicAnnotation("annotation")
@@ -1104,7 +1104,7 @@ version(mir_ion_test) unittest
 version(mir_ion_test) @nogc unittest
 {
     import mir.ion.conv: text2ion;
-    import mir.ion.deser.ion;
+    import mir.deser.ion;
     import mir.serde;
 
     @serdeScoped
@@ -1179,8 +1179,8 @@ version(unittest) private
 
     version(mir_ion_test) unittest
     {
-        import mir.ion.ser.json;
-        import mir.ion.deser.json;
+        import mir.ser.json;
+        import mir.deser.json;
 
         assert(serializeJson(E.bar) == `"BAR"`);
         assert(`"N/A"`.deserializeJson!E == E.none);
@@ -1195,7 +1195,7 @@ version(mir_ion_test) unittest
     import mir.algebraic_alias.ion;
     import mir.algebraic;
     import mir.annotated;
-    import mir.ion.deser.text;
+    import mir.deser.text;
     import mir.ion.type_code;
     import mir.ion.value: IonNull;
     import mir.small_string;
@@ -1214,8 +1214,8 @@ version(mir_ion_test) unittest
 
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text;
-    import mir.ion.ser.text;
+    import mir.deser.text;
+    import mir.ser.text;
     enum CaseSensitive
     {
         no,
@@ -1245,15 +1245,15 @@ version(mir_ion_test) unittest
     import mir.ndslice.topology: iota, as;
     auto range = as!char(3.iota + 'a');
     assert(range == "abc");
-    import mir.ion.ser.text;
+    import mir.ser.text;
     assert(range.serializeText == `"abc"`);
 }
 
 /// Series de/serialization
 @safe version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text;
-    import mir.ion.ser.text;
+    import mir.deser.text;
+    import mir.ser.text;
     import mir.series;
     auto s = ["a", "b"].series([5, 6]);
     auto t = `{index:["a","b"],data:[5,6]}`;
@@ -1265,8 +1265,8 @@ version(mir_ion_test) unittest
 // Const series de/serialization
 @safe version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text;
-    import mir.ion.ser.text;
+    import mir.deser.text;
+    import mir.ser.text;
     import mir.series;
     auto s = ["a", "b"].series([5, 6]).lightConst;
     auto t = `{index:["a","b"],data:[5,6]}`;
@@ -1278,8 +1278,8 @@ version(mir_ion_test) unittest
 /// RC Series de/serialization
 @safe version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text;
-    import mir.ion.ser.text;
+    import mir.deser.text;
+    import mir.ser.text;
     import mir.ndslice.allocation: rcslice;
     import mir.series;
     import mir.small_string;
@@ -1293,8 +1293,8 @@ version(mir_ion_test) unittest
 // Const RC Series de/serialization
 @safe version(mir_ion_test) unittest
 {
-    import mir.ion.deser.text;
-    import mir.ion.ser.text;
+    import mir.deser.text;
+    import mir.ser.text;
     import mir.ndslice.allocation: rcslice;
     import mir.series;
     import mir.small_string;

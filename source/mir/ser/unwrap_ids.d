@@ -1,6 +1,6 @@
 /++
 +/
-module mir.ion.ser.unwrap_ids;
+module mir.ser.unwrap_ids;
 
 import mir.ion.exception;
 
