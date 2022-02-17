@@ -13,6 +13,8 @@ import printed.flow.style;
 
 /// A Flow Document produces output without any box model, in a streamed manner.
 /// If something fits, it is included.
+/// Honestly, it's already complicated and having boxes and defering rendering is probably better
+/// for better results.
 
 /// The interface is thought to be able to render Markdown (without embedded HTML).
 interface IFlowDocument

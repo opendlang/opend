@@ -177,8 +177,6 @@ final class PDFDocument : IRenderingContext2D
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
 
-
-
         // save CTM
         outDelim();
         output('q');
