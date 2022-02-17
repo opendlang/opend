@@ -127,6 +127,12 @@ int main(string[] args)
                 case "ol": doc.enterOrderedList(); break;
                 case "ul": doc.enterUnorderedList(); break;
                 case "li": doc.enterListItem(); break;
+                case "img": 
+                {
+                    string src = elem.getAttribute("src");
+                    doc.enterImage(src); 
+                    break;
+                }
                 default:
                     break;
             }
@@ -161,6 +167,7 @@ int main(string[] args)
                 case "ol": doc.exitOrderedList(); break;
                 case "ul": doc.exitUnorderedList(); break;
                 case "li": doc.exitListItem(); break;
+                case "img": doc.exitImage(); break;
                 default:
                     break;
             }

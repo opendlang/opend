@@ -33,4 +33,14 @@ _italic text_
       1. hopefully in the future
       2. nested links may have strange margins
   1. Tables
-  1. Images
+
+
+
+  **Text indent** is a must-have feature of any Markdown to PDF convert. It conveys
+  space, and allow text to breath. At the same time, it is tricky to get right, and is
+  disabled by default in your HTML browser.
+
+
+## Image embedding
+
+![Alt Text](image.jpg)
