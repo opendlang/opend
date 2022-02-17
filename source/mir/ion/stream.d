@@ -25,7 +25,7 @@ const:
     //
     void toString(W)(scope ref W w) scope
     {
-        import mir.ion.ser.json: serializeJson;
+        import mir.ser.json: serializeJson;
         return serializeJson(w, this);
     }
 
@@ -329,7 +329,7 @@ const:
             }
             else
             {
-                import mir.ion.ser.unwrap_ids;
+                import mir.ser.unwrap_ids;
                 auto unwrappedSerializer = unwrapSymbolIds(serializer, symbolTable);
             }
             value.serialize(unwrappedSerializer);
@@ -340,7 +340,7 @@ const:
     @safe pure
     unittest
     {
-        import mir.ion.ser.json;
+        import mir.ser.json;
         const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
         auto json = data.IonValueStream.serializeJson;
         assert(json == `{"a":1,"b":2}`);

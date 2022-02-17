@@ -6,7 +6,7 @@ This module requires msgpack-d package.
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.deser.msgpack;
+module mir.deser.msgpack;
 
 version(Have_msgpack_d)
 {

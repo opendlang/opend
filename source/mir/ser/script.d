@@ -1,7 +1,7 @@
 /++
 The module can be used for scripting languages to register a universal type serializer in the type system.
 +/
-module mir.ion.ser.script;
+module mir.ser.script;
 
 /++
 Unified serializer interface.
@@ -352,8 +352,8 @@ unittest
 
         void serialize(S)(ref S serializer) const @safe
         {
-            import mir.ion.ser: serializeValue;
-            import mir.ion.ser.script: SerializerWrapper;
+            import mir.ser: serializeValue;
+            import mir.ser.script: SerializerWrapper;
             scope wserializer = new SerializerWrapper!S(serializer);
             auto iserializer = wserializer.ISerializer;
             serializeValue(iserializer, value);
@@ -366,9 +366,9 @@ unittest
     }
 
     import mir.ion.conv;
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
-    import mir.ion.ser.text;
+    import mir.ser.ion;
+    import mir.ser.json;
+    import mir.ser.text;
     import mir.ion.stream;
     import std.datetime.date;
 
@@ -392,7 +392,7 @@ unittest
 
         void serialize(ISerializer serializer) const @safe
         {
-            import mir.ion.ser: serializeValue;
+            import mir.ser: serializeValue;
             serializeValue(serializer, value);
         }
     }
@@ -403,9 +403,9 @@ unittest
     }
 
     import mir.ion.conv;
-    import mir.ion.ser.ion;
-    import mir.ion.ser.json;
-    import mir.ion.ser.text;
+    import mir.ser.ion;
+    import mir.ser.json;
+    import mir.ser.text;
     import mir.ion.stream;
     import std.datetime.date;
 

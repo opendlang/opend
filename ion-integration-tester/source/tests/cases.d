@@ -1,6 +1,6 @@
 module tests.cases;
 import tests.data;
-import mir.ion.ser.text;
+import mir.ser.text;
 import mir.ion.stream;
 import mir.ion.conv;
 

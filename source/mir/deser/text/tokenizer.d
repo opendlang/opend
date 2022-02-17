@@ -3,11 +3,11 @@ Tokenizer to split up the contents of an Ion Text file into tokens
 
 Authors: Harrison Ford
 +/
-module mir.ion.deser.text.tokenizer;
+module mir.deser.text.tokenizer;
 
-import mir.ion.deser.text.readers;
-import mir.ion.deser.text.skippers;
-import mir.ion.deser.text.tokens;
+import mir.deser.text.readers;
+import mir.deser.text.skippers;
+import mir.deser.text.tokens;
 import mir.ion.internal.data_holder : IonTapeHolder;
 
 /+
@@ -46,8 +46,8 @@ if (is(Input : const(wchar)[]) || is(Input : const(dchar)[])) {
 
 // UTF-16 string
 version(mir_ion_parser_test) unittest {
-    import mir.ion.deser.text.tokens : IonTokenType;
-    import mir.ion.deser.text.readers : readString;
+    import mir.deser.text.tokens : IonTokenType;
+    import mir.deser.text.readers : readString;
     auto t = tokenizeString(`"hello𐐷world"`w);
     assert(t.nextToken());
     assert(t.currentToken == IonTokenType.TokenString);
@@ -55,8 +55,8 @@ version(mir_ion_parser_test) unittest {
 }
 // UTF-32 string
 version(mir_ion_parser_test) unittest {
-    import mir.ion.deser.text.tokens : IonTokenType;
-    import mir.ion.deser.text.readers : readString;
+    import mir.deser.text.tokens : IonTokenType;
+    import mir.deser.text.readers : readString;
     auto t = tokenizeString(`"hello𐐷world"`d);
     assert(t.nextToken());
     assert(t.currentToken == IonTokenType.TokenString);
@@ -264,7 +264,7 @@ struct IonTokenizer {
     {
         import std.exception : assertThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : IonTokenizerException;
+        import mir.deser.text.tokens : IonTokenizerException;
 
         auto t = tokenizeString("abc\r\ndef");
         
@@ -323,7 +323,7 @@ struct IonTokenizer {
     version(mir_ion_parser_test) unittest
     {
         import std.exception : assertThrown;
-        import mir.ion.deser.text.tokens : IonTokenizerException;
+        import mir.deser.text.tokens : IonTokenizerException;
 
         auto t = tokenizeString("abc");
 
@@ -450,7 +450,7 @@ struct IonTokenizer {
     {
         import std.exception : assertNotThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : IonTokenizerException;
+        import mir.deser.text.tokens : IonTokenizerException;
         void test(string txt, char expectedChar) {
             auto t = tokenizeString(txt);
             assertNotThrown!IonTokenizerException(
@@ -485,7 +485,7 @@ struct IonTokenizer {
     {
         import std.exception : assertNotThrown;
         import mir.exception : enforce;
-        import mir.ion.deser.text.tokens : IonTokenizerException;
+        import mir.deser.text.tokens : IonTokenizerException;
         void test(string txt, char expectedChar)() {
             auto t = tokenizeString(txt);
             assertNotThrown!IonTokenizerException(
@@ -723,7 +723,7 @@ struct IonTokenizer {
     // Test scanning for numbers 
     version(mir_ion_parser_test) unittest
     {
-        import mir.ion.deser.text.tokens : IonTokenType;
+        import mir.deser.text.tokens : IonTokenType;
 
         void test(string txt, IonTokenType expectedToken) {
             auto t = tokenizeString(txt);
@@ -948,7 +948,7 @@ struct IonTokenizer {
         true if the character is the "stop" character.
     +/
     bool isStopChar(char c) @safe @nogc pure {
-        if (mir.ion.deser.text.tokens.isStopChar(c)) { // make sure
+        if (mir.deser.text.tokens.isStopChar(c)) { // make sure
             return true;
         }
 
@@ -1012,7 +1012,7 @@ struct IonTokenizer {
     // Text expect()
     version(mir_ion_parser_test) unittest
     {
-        import mir.ion.deser.text.tokens : IonTokenizerException, isHexDigit;
+        import mir.deser.text.tokens : IonTokenizerException, isHexDigit;
 
         void testIsHex(string ts) {
             auto t = tokenizeString(ts);

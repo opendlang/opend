@@ -1,6 +1,6 @@
 module meson_test;
 
-import mir.ion.deser.json;
+import mir.deser.json;
 import mir.rc.array;
 import mir.serde;
 import mir.small_string;

@@ -6,7 +6,7 @@ This module requires msgpack-d package.
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.deser.ion;
+module mir.deser.ion;
 
 private alias AliasSeq(T...) = T;
 
@@ -34,7 +34,7 @@ template deserializeIon(T, bool annotated = false)
     void deserializeIon()(ref T value, scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
-        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
 
@@ -73,7 +73,7 @@ template deserializeIon(T, bool annotated = false)
     void deserializeIon()(ref T value, const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
-        import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: MirStringTable;
 

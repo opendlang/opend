@@ -6,7 +6,7 @@ This module requires msgpack-d package.
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.ser.msgpack;
+module mir.ser.msgpack;
 
 import mir.ion.exception: IonException;
 import mir.serde: SerdeTarget;
@@ -629,7 +629,7 @@ struct MsgpackSerializer(Appender)
 version(mir_ion_test) unittest
 {
     import mir.appender : ScopedBuffer;
-    import mir.ion.ser.script: SerializerWrapper;
+    import mir.ser.script: SerializerWrapper;
     MsgpackSerializer!(ScopedBuffer!ubyte) serializer;
     auto s = new SerializerWrapper!(MsgpackSerializer!(ScopedBuffer!ubyte))(serializer);
 }
@@ -637,7 +637,7 @@ version(mir_ion_test) unittest
 ///
 void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
-    import mir.ion.ser : serializeValue;
+    import mir.ser : serializeValue;
     auto serializer = appender.MsgpackSerializer!(Appender);
     serializer.serdeTarget = serdeTarget;
     serializeValue(serializer, value);

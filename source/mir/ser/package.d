@@ -5,10 +5,10 @@ Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 Authros: Ilya Yaroshenko
 +/
-module mir.ion.ser;
+module mir.ser;
 
 import mir.conv;
-import mir.ion.deser;
+import mir.deser;
 import mir.ion.internal.basic_types;
 import mir.ion.type_code;
 import mir.reflection;
@@ -27,7 +27,7 @@ void serializeValue(S)(ref S serializer, typeof(null))
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(serializeJson(null) == `null`, serializeJson(null));
 }
 
@@ -42,7 +42,7 @@ void serializeValue(S, V)(ref S serializer, auto ref const V value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
 
     assert(serializeJson(2.40f) == `2.4`);
     assert(serializeJson(float.nan) == `"nan"`);
@@ -69,7 +69,7 @@ void serializeValue(S, V : char)(ref S serializer, const V value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(serializeJson(true) == `true`);
 }
 
@@ -91,10 +91,10 @@ void serializeValue(S, V)(ref S serializer, in V value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.ser.ion: serializeIon;
-    import mir.ion.ser.text: serializeText;
-    import mir.ion.deser.ion: deserializeIon;
+    import mir.ser.json: serializeJson;
+    import mir.ser.ion: serializeIon;
+    import mir.ser.text: serializeText;
+    import mir.deser.ion: deserializeIon;
     import mir.small_string;
     import mir.rc.array;
     enum Key { bar, @serdeKeys("FOO", "foo") foo }
@@ -122,7 +122,7 @@ void serializeValue(S)(ref S serializer, scope const(char)[] value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(serializeJson("\t \" \\") == `"\t \" \\"`, serializeJson("\t \" \\"));
 }
 
@@ -243,7 +243,7 @@ unittest
     auto filtered1 = ar.filter!"a.i & 1";
     auto filtered2 = ar.filter!"!(a.i & 1)";
 
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(serializeJson(filtered1) == `[{"i":1},{"i":3},{"i":17}]`);
     assert(serializeJson(filtered2) == `[{"i":4}]`);
 }
@@ -251,7 +251,7 @@ unittest
 ///
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     uint[2] ar = [1, 2];
     assert(serializeJson(ar) == `[1,2]`);
     assert(serializeJson(ar[]) == `[1,2]`);
@@ -280,8 +280,8 @@ void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.json: serializeJson;
+    import mir.ser.text: serializeText;
     uint[string] ar = ["a" : 1];
     assert(serializeJson(ar) == `{"a":1}`);
     assert(serializeText(ar) == `{a:1}`);
@@ -312,7 +312,7 @@ void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     enum E { a, b }
     uint[E] ar = [E.a : 1];
     assert(serializeJson(ar) == `{"a":1}`);
@@ -347,7 +347,7 @@ void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     uint[short] ar = [256 : 1];
     assert(serializeJson(ar) == `{"256":1}`);
     ar.remove(256);
@@ -680,7 +680,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         else
         static if (__traits(hasMember, soverloads, "script"))
         {
-            import mir.ion.ser.script: SerializerWrapper;
+            import mir.ser.script: SerializerWrapper;
             scope wserializer = new SerializerWrapper!S(serializer);
             auto iserializer = wserializer.ISerializer;
             value.serialize(iserializer);
@@ -761,7 +761,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
 
 private template getSerializeOverloads(S, alias value)
 {
-    import mir.ion.ser.script: ISerializer;
+    import mir.ser.script: ISerializer;
     static foreach (i, so; __traits(getOverloads, value, "serialize"))
     {
         static if (!__traits(isTemplate, value.serialize))
@@ -787,8 +787,8 @@ unittest
 {
     import mir.bignum.integer;
     import mir.date;
-    import mir.ion.ser.json: serializeJson;
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.json: serializeJson;
+    import mir.ser.text: serializeText;
     assert(Date(2021, 4, 24).serializeJson == `"2021-04-24"`);
     assert(BigInt!2(123).serializeJson == `123`);
     assert(Date(2021, 4, 24).serializeText == `2021-04-24`);
@@ -811,7 +811,7 @@ unittest
         alias s this; 
     }
 
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(C(4, S(3)).serializeJson == `{"u":3,"b":4}`);
 }
 
@@ -830,7 +830,7 @@ unittest
         }
     }
 
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     assert(serializeJson(S()) == `{"foo":"bar"}`);
 }
 
@@ -838,7 +838,7 @@ unittest
 version(mir_ion_test)
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     import mir.algebraic: Nullable;
 
     struct Nested
@@ -924,8 +924,8 @@ unittest
 
 
     import mir.ion.conv: ion2text;
-    import mir.ion.ser.ion: serializeIon;
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.ion: serializeIon;
+    import mir.ser.text: serializeText;
 
     () {
         Nullable!S value = S("LIBOR", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
@@ -933,7 +933,7 @@ unittest
         assert(value.serializeText == text);
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
-        import mir.ion.deser.ion: deserializeIon;
+        import mir.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S.serializeText == text);
     } ();
 
@@ -942,7 +942,7 @@ unittest
         static immutable text = `$a::Rate::USD::GBP::{number:nan,s:null.string}`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
-        import mir.ion.deser.ion: deserializeIon;
+        import mir.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S2.serializeText == text);
     } ();
 
@@ -951,7 +951,7 @@ unittest
         static immutable text = `USD::3`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text, binary.ion2text);
-        import mir.ion.deser.ion: deserializeIon;
+        import mir.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S.serializeText == text);
     } ();
 }
@@ -1004,11 +1004,11 @@ auto beginStruct(S, V)(ref S serializer, ref V value)
 
 version (Have_mir_bloomberg)
 {
-    import mir.ion.ser.bloomberg : BloombergElement;
+    import mir.ser.bloomberg : BloombergElement;
     ///
     void serializeValue(S)(ref S serializer, const(BloombergElement)* value)
     {
-        import mir.ion.ser.bloomberg : impl = serializeValue;
+        import mir.ser.bloomberg : impl = serializeValue;
         return impl(serializer, value);
     }
 }

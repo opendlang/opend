@@ -4,9 +4,9 @@ $(H4 High level deserialization API)
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.deser;
+module mir.deser;
 
-import mir.ion.deser.low_level;
+import mir.deser.low_level;
 import mir.ion.exception;
 import mir.ion.symbol_table;
 import mir.ion.type_code;
@@ -1558,7 +1558,7 @@ version(mir_ion_test) unittest
 ///
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     import std.uuid;
 
     static struct S
@@ -1576,7 +1576,7 @@ version(mir_ion_test) unittest
 {
     import mir.bignum.integer;
     import mir.date;
-    import mir.ion.deser.json: deserializeJson;
+    import mir.deser.json: deserializeJson;
     assert(`"2021-04-24"`.deserializeJson!Date == Date(2021, 4, 24));
     assert(`123`.deserializeJson!(BigInt!2) == BigInt!2(123));
 }
@@ -1596,7 +1596,7 @@ version(mir_ion_test) unittest
             set = a == d;
         }
     }
-    import mir.ion.deser.json: deserializeJson;
+    import mir.deser.json: deserializeJson;
     auto s = `{"a":[1, 2, 3]}`.deserializeJson!S;
     assert(s.set);
 }
@@ -1617,8 +1617,8 @@ version(mir_ion_test) unittest
         int number;
     }
 
-    import mir.ion.deser.json: deserializeJson;
-    import mir.ion.ser.json: serializeJson;
+    import mir.deser.json: deserializeJson;
+    import mir.ser.json: serializeJson;
     assert(`{"number":3, "kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
     assert(`{"number":3, "kind":"cancel"}`.deserializeJson!S.number == 0);
     assert(`{"number":3, "kind":"request"}`.deserializeJson!S.number == 3);
@@ -1642,8 +1642,8 @@ version(mir_ion_test) unittest
         int number;
     }
 
-    import mir.ion.deser.json: deserializeJson;
-    import mir.ion.ser.json: serializeJson;
+    import mir.deser.json: deserializeJson;
+    import mir.ser.json: serializeJson;
     assert(`{"kind":"cancel"}`.deserializeJson!S.kind == Kind.cancel);
     assert(`{"kind":"cancel","number":3}`.deserializeJson!S.number == 0); // ignores number
     assert(`{"kind":"request","number":3}`.deserializeJson!S.number == 3);
@@ -1653,11 +1653,11 @@ version(mir_ion_test) unittest
 
 version(mir_ion_test) unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     import mir.algebraic : Nullable;
     import mir.ion.value : IonDescribedValue;
     import mir.ion.exception : IonException;
-    import mir.ion.deser.ion : deserializeIon;
+    import mir.deser.ion : deserializeIon;
 
     static struct Q
     {

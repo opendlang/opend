@@ -224,7 +224,7 @@ struct IonValue
     unittest
     {
         import mir.ion.stream;
-        import mir.ion.ser.json;
+        import mir.ser.json;
         assert(IonValueStream([0x11]).serializeJson == "true");
     }
 }
@@ -1778,7 +1778,7 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        import mir.ion.ser: beginList;
+        import mir.ser: beginList;
         auto state = serializer.beginList(this);
         foreach (value; this)
         {
@@ -1976,7 +1976,7 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        import mir.ion.ser: beginSexp;
+        import mir.ser: beginSexp;
         auto state = serializer.beginSexp(this);
         foreach (value; this)
         {
@@ -2227,7 +2227,7 @@ const:
     +/
     void serialize(S)(ref S serializer) const
     {
-        import mir.ion.ser: beginStruct;
+        import mir.ser: beginStruct;
         auto state = serializer.beginStruct(this);
         foreach (symbolID, value; this)
         {

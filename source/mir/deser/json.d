@@ -1,6 +1,6 @@
 /++
 +/
-module mir.ion.deser.json;
+module mir.deser.json;
 
 public import mir.serde;
 
@@ -60,7 +60,7 @@ private template deserializeJsonImpl(bool file)
             }
             else
             {
-                import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
+                import mir.deser: deserializeValue, DeserializationParams, TableKind;
                 import mir.ion.exception: IonException, ionException;
                 import mir.ion.exception: ionErrorMsg;
                 import mir.ion.internal.data_holder;
@@ -309,7 +309,7 @@ alias deserializeJsonFile = deserializeJsonImpl!true;
 //     T deserializeJsonImpl(T)(scope const(char)[] text)
 //     {
 //         import mir.exception: MirException;
-//         import mir.ion.deser: deserializeValue, DeserializationParams, TableKind;
+//         import mir.deser: deserializeValue, DeserializationParams, TableKind;
 //         import mir.ion.exception: ionErrorMsg;
 //         import mir.ion.exception: IonException, ionException;
 //         import mir.ion.internal.data_holder;
@@ -411,6 +411,6 @@ T deserializeDynamicJson(T)(scope const(char)[] text)
 void deserializeDynamicJson(T)(ref T value, scope const(char)[] text)
 {
     import mir.ion.conv: json2ion;
-    import mir.ion.deser.ion: deserializeIon;
+    import mir.deser.ion: deserializeIon;
     return deserializeIon!T(value, text.json2ion);
 }

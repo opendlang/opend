@@ -4,7 +4,7 @@ $(H4 High level (text) Ion serialization API)
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.ser.text;
+module mir.ser.text;
 
 public import mir.serde;
 
@@ -541,7 +541,7 @@ unittest
 
 unittest
 {
-    import mir.ion.ser.text: serializeText;
+    import mir.ser.text: serializeText;
     import mir.format: stringBuf;
     import mir.small_string;
 
@@ -627,7 +627,7 @@ unittest
 ///
 unittest
 {
-    import mir.ion.deser.ion;
+    import mir.deser.ion;
 
     static struct S
     {
@@ -664,7 +664,7 @@ unittest
 ///
 unittest
 {
-    import mir.ion.deser.ion;
+    import mir.deser.ion;
     import std.range;
     import std.algorithm;
     import std.conv;
@@ -731,7 +731,7 @@ template serializeTextPretty(string sep = "\t")
     void serializeTextPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
         if (isOutputRange!(Appender, const(char)[]))
     {
-        import mir.ion.ser: serializeValue;
+        import mir.ser: serializeValue;
         auto serializer = textSerializer!sep((()@trusted => &appender)(), serdeTarget);
         serializeValue(serializer, value);
     }

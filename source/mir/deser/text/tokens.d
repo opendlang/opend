@@ -3,7 +3,7 @@ Token definitions for parsing Ion Text.
 
 Authors: Harrison Ford
 +/
-module mir.ion.deser.text.tokens;
+module mir.deser.text.tokens;
 import mir.ion.type_code : IonTypeCode;
 /+
 Ion Token Types

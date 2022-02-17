@@ -4,7 +4,7 @@ $(H4 High level Ion serialization API)
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.ser.ion;
+module mir.ser.ion;
 
 public import mir.serde;
 
@@ -305,7 +305,7 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarg
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
-    import mir.ion.ser: serializeValue, isMsgpackValue;
+    import mir.ser: serializeValue, isMsgpackValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
     enum nMax = 4096u;
@@ -380,7 +380,7 @@ unittest
 //     auto ref T value,
 //     int serdeTarget = serdeTarget.ion)
 // {
-//     import mir.ion.ser: serializeValue;
+//     import mir.ser: serializeValue;
 //     import mir.ion.symbol_table;
 
 //     enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
@@ -463,7 +463,7 @@ unittest
 // ///
 // unittest
 // {
-//     import mir.ion.deser.ion;
+//     import mir.deser.ion;
 
 //     static struct S
 //     {
@@ -492,7 +492,7 @@ unittest
 // ///
 // unittest
 // {
-//     import mir.ion.deser.ion;
+//     import mir.deser.ion;
 //     import std.range;
 //     import std.algorithm;
 //     import std.conv;

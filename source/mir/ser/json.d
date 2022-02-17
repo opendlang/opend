@@ -4,7 +4,7 @@ $(H4 High level JSON serialization API)
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
-module mir.ion.ser.json;
+module mir.ser.json;
 
 public import mir.serde;
 import mir.ion.exception: IonException;
@@ -392,7 +392,7 @@ unittest
 
 unittest
 {
-    import mir.ion.ser.json: serializeJson;
+    import mir.ser.json: serializeJson;
     import mir.format: stringBuf;
     import mir.small_string;
 
@@ -478,7 +478,7 @@ unittest
 ///
 unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
 
     static struct S
     {
@@ -515,7 +515,7 @@ unittest
 ///
 unittest
 {
-    import mir.ion.deser.json;
+    import mir.deser.json;
     import std.range;
     import std.algorithm;
     import std.conv;
@@ -561,7 +561,7 @@ template serializeJsonPretty(string sep = "\t")
     void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
         if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))
     {
-        import mir.ion.ser: serializeValue;
+        import mir.ser: serializeValue;
         auto serializer = jsonSerializer!sep((()@trusted => &appender)(), serdeTarget);
         serializeValue(serializer, value);
     }

@@ -4,15 +4,15 @@ Ion Text Deserialization API
 Heavily influenced (and compatible) with upstream Ion implementations (compatible with ion-go)
 Authors: Harrison Ford
 +/
-module mir.ion.deser.text;
-import mir.ion.deser.text.readers;
-import mir.ion.deser.text.skippers;
-import mir.ion.deser.text.tokenizer;
-import mir.ion.deser.text.tokens;
+module mir.deser.text;
+import mir.deser.text.readers;
+import mir.deser.text.skippers;
+import mir.deser.text.tokenizer;
+import mir.deser.text.tokens;
 import mir.ion.symbol_table;
 import mir.ion.type_code;
 import mir.ion.tape;
-import mir.ion.ser.ion;
+import mir.ser.ion;
 import mir.serde;
 import mir.format; // Quoted symbol support
 import mir.ion.internal.data_holder;
@@ -1074,7 +1074,7 @@ Returns:
 +/
 T deserializeText(T)(scope const(char)[] text)
 {
-    import mir.ion.deser.ion;
+    import mir.deser.ion;
     import mir.ion.conv : text2ion;
     import mir.ion.value;
     import mir.appender : scopedBuffer;
@@ -1087,7 +1087,7 @@ T deserializeText(T)(scope const(char)[] text)
 ///ditto
 void deserializeText(T)(ref T value, scope const(char)[] text)
 {
-    import mir.ion.deser.ion;
+    import mir.deser.ion;
     import mir.ion.conv : text2ion;
     import mir.ion.value;
     import mir.appender : scopedBuffer;
@@ -1186,7 +1186,7 @@ version(mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         const(char)[] output = ionData.text2ion.IonValueStream.serializeText;
@@ -1553,7 +1553,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
@@ -1577,7 +1577,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
@@ -1596,7 +1596,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
@@ -1617,7 +1617,7 @@ version (mir_ion_parser_test) unittest
 version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, const(char)[] expected)
     {
@@ -1640,7 +1640,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
@@ -1657,7 +1657,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
@@ -1680,7 +1680,7 @@ version (mir_ion_parser_test) unittest
 {
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
-    import mir.ion.ser.text;
+    import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
