@@ -680,7 +680,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         else
         static if (__traits(hasMember, soverloads, "script"))
         {
-            import mir.ser.script: SerializerWrapper;
+            import mir.ser.interfaces: SerializerWrapper;
             scope wserializer = new SerializerWrapper!S(serializer);
             auto iserializer = wserializer.ISerializer;
             value.serialize(iserializer);
@@ -761,7 +761,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
 
 private template getSerializeOverloads(S, alias value)
 {
-    import mir.ser.script: ISerializer;
+    import mir.ser.interfaces: ISerializer;
     static foreach (i, so; __traits(getOverloads, value, "serialize"))
     {
         static if (!__traits(isTemplate, value.serialize))

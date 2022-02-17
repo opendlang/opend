@@ -629,7 +629,7 @@ struct MsgpackSerializer(Appender)
 version(mir_ion_test) unittest
 {
     import mir.appender : ScopedBuffer;
-    import mir.ser.script: SerializerWrapper;
+    import mir.ser.interfaces: SerializerWrapper;
     MsgpackSerializer!(ScopedBuffer!ubyte) serializer;
     auto s = new SerializerWrapper!(MsgpackSerializer!(ScopedBuffer!ubyte))(serializer);
 }

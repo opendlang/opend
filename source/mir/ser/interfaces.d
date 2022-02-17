@@ -1,7 +1,7 @@
 /++
 The module can be used for scripting languages to register a universal type serializer in the type system.
 +/
-module mir.ser.script;
+module mir.ser.interfaces;
 
 /++
 Unified serializer interface.
@@ -353,7 +353,7 @@ unittest
         void serialize(S)(ref S serializer) const @safe
         {
             import mir.ser: serializeValue;
-            import mir.ser.script: SerializerWrapper;
+            import mir.ser.interfaces: SerializerWrapper;
             scope wserializer = new SerializerWrapper!S(serializer);
             auto iserializer = wserializer.ISerializer;
             serializeValue(iserializer, value);

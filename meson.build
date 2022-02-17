@@ -35,10 +35,10 @@ sources_list = [
     'mir/ion/tape',
     'mir/ion/type_code',
     'mir/ion/value',
+    'mir/ser/interfaces',
     'mir/ser/ion',
     'mir/ser/json',
     'mir/ser/package',
-    'mir/ser/script',
     'mir/ser/text',
     'mir/ser/unwrap_ids',
 ]
