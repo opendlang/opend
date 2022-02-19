@@ -443,22 +443,20 @@ private:
     // Insert word s, + a whitespace ' ' afterwards.
     void outputWord(const(char)[] s)
     {
-        // TODO: fix TextMetric to return both horizontal advance, and extent
-
         TextMetrics metricsWithoutSpace = _r.measureText(s);
         TextMetrics metricsWithSpace = _r.measureText(s ~ ' ');
 
-        float width = metricsWithoutSpace.width; 
+        float bbright = metricsWithoutSpace.width; // TODO: have correct actualBoundingBoxRight; 
         float horzAdvance = metricsWithSpace.width;
 
         // Will it fit? Trailing space doesn't cause breaking a line.
-        bool fit = _cursorX + width < _W - _o.pageRightMarginMm;
+        bool fit = _cursorX + bbright < _W - _o.pageRightMarginMm;
         if (!fit)
             br();
 
         _r.fillText(s, _cursorX, _cursorY);
-        _lastBoxX = _cursorX + width;
-        _lastBoxY = _cursorY; // MAYDO: should be bottom-most point of the word, instead of baseline? Not sure.
+        _lastBoxX = _cursorX + bbright;
+        _lastBoxY = _cursorY + metricsWithoutSpace.fontBoundingBoxDescent;
 
         _cursorX += horzAdvance;
         if (_cursorX >= _W - _o.pageRightMarginMm)
@@ -552,13 +550,9 @@ private:
             // ensure top margin
             float desiredMarginMin = convertPointsToMillimeters(currentState().fontSize * style.marginTopEm);
    
-            // Can't be less than a line break.
-            // TODO: not the same thing here, margin is about extent, lineGap is about baseline
-            float lineBreakGap = _r.measureText("A").lineGap;
-            if (desiredMarginMin < lineBreakGap)
-                desiredMarginMin = lineBreakGap;
-
-            float marginTop = _cursorY - _lastBoxY;
+            // What would be the top-margin if a 'A' were to be drawn here?
+            auto m = _r.measureText("A");
+            float marginTop = _cursorY - m.fontBoundingBoxAscent - _lastBoxY;
             if (marginTop < desiredMarginMin)
             {
                 _cursorY += (desiredMarginMin - marginTop);
