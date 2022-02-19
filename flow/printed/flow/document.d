@@ -605,15 +605,17 @@ private:
         {
             // ensure bottom margin
             float desiredMarginBottomMm = convertPointsToMillimeters(currentState().fontSize * style.marginBottomEm);
-            
-            // Can't be less than a line break.
-            // TODO: not the same thing here, margin is about extent, lineGap is about baseline
-            float lineBreakGap = _r.measureText("A").lineGap;
-            if (desiredMarginBottomMm < lineBreakGap)
-                desiredMarginBottomMm = lineBreakGap;
+
+            // What would be the bottom-margin if a 'A' were to be drawn here?
+            auto m = _r.measureText("A");
+            float marginBottom = _cursorY - m.fontBoundingBoxAscent - _lastBoxY;
+
+            float insertGap = 0;
+            if (desiredMarginBottomMm > marginBottom)
+                insertGap = (desiredMarginBottomMm - marginBottom);
 
             _cursorX = currentState.leftMargin;
-            _cursorY = _lastBoxY + desiredMarginBottomMm;
+            _cursorY += insertGap;
             checkPageEnded();
         }
         popState();
