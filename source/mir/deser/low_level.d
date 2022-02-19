@@ -15,6 +15,7 @@ import mir.small_string;
 import mir.timestamp;
 import mir.utility: _expect;
 import mir.serde: serdeGetFinalProxy;
+import mir.lob : Clob, Blob;
 
 import std.traits:
     isArray,
@@ -34,6 +35,9 @@ template isFirstOrderSerdeType(T)
 
     static if (isAggregateType!T)
     {
+        static if (is(T == Clob) || is(T == Blob))
+            enum isFirstOrderSerdeType = true;
+        else
         static if (isBigInt!T)
             enum isFirstOrderSerdeType = true;
         else
@@ -212,6 +216,58 @@ version(mir_ion_test) unittest
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value.sign);
     assert(value.view.unsigned == 7);
+}
+
+/++
+Deserialize Blob value.
++/
+IonErrorCode deserializeValueImpl()(IonDescribedValue data, ref Blob value)
+    pure @safe nothrow
+{
+    Blob ionValue;
+    if (auto error = data.get(ionValue))
+        return error;
+    value = ionValue.data.dup.Blob;
+    return IonErrorCode.none;
+}
+
+///
+version(mir_ion_test) unittest
+{
+    import mir.deser.ion : deserializeIon;
+    import mir.lob : Blob;
+    import mir.ser.ion : serializeIon;
+
+    static struct BlobWrapper { Blob blob; }
+    auto blob = BlobWrapper(Blob([0xF0, 0x00, 0xBA, 0x50]));
+    auto serdeBlob = serializeIon(blob).deserializeIon!BlobWrapper;
+    assert(serdeBlob == blob);
+}
+
+/++
+Deserialize Clob value.
++/
+IonErrorCode deserializeValueImpl()(IonDescribedValue data, ref Clob value)
+    pure @safe nothrow
+{
+    Clob ionValue;
+    if (auto error = data.get(ionValue))
+        return error;
+    value = ionValue.data.dup.Clob;
+    return IonErrorCode.none;
+}
+
+///
+version(mir_ion_test) unittest
+{
+    import mir.deser.ion : deserializeIon;
+    import mir.lob : Clob;
+    import mir.ser.ion : serializeIon;
+
+    static struct ClobWrapper { Clob clob; }
+    auto clob = ClobWrapper(Clob("abcd"));
+    auto serdeClob = serializeIon(clob).deserializeIon!ClobWrapper;
+    assert(serdeClob == clob);
 }
 
 /++
