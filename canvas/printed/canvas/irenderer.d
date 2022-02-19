@@ -292,11 +292,13 @@ struct Brush
 
 // Utility functions
 
+/// Convert points to millimeters.
 float convertPointsToMillimeters(float pt) pure nothrow @nogc @safe
 {
     return pt * 0.35277777778f;
 }
 
+/// Convert millimeters to points.
 float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
 {
     return pt * 2.83464567f;
