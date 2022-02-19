@@ -95,10 +95,7 @@ int main(string[] args)
         auto pdf = new PDFDocument(widthMm, heightMm);
 
         StyleOptions style;
-        style.fontFace = "Lato";
-        style.strong.fontWeight = FontWeight.semiBold;
-        style.code.color = "rgb(160,95,9)";
-        style.pre.color = "rgb(160,95,9)";
+        style.fontFace = "Arial";
 
         IFlowDocument doc = new FlowDocument(pdf, style);
 

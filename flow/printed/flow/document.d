@@ -154,10 +154,10 @@ class FlowDocument : IFlowDocument
                              _o.fontFace, 
                              _o.fontWeight, 
                              _o.fontStyle, 
+                             _o.textAlign,
                              ListStyleType.disc,
                              listItemNumber,
                              leftMarginMm);
-
         decoratePage();
         resetCursorTopLeft();
     }    
@@ -478,6 +478,7 @@ private:
         string fontFace;
         FontWeight fontWeight;
         FontStyle fontStyle;
+        TextAlign textAlign;
         ListStyleType listStyleType;
         int listItemNumber;
         float leftMargin; // margin applied by every item, in millimeters
@@ -533,6 +534,7 @@ private:
         if (style.fontFace !is null) state.fontFace = style.fontFace;
         if (style.fontWeight != -1) state.fontWeight = style.fontWeight; 
         if (style.fontStyle != -1) state.fontStyle = style.fontStyle;
+        if (style.textAlign != -1) state.textAlign = style.textAlign;
         if (style.color != "") state.color = style.color;
         if (style.listStyleType != ListStyleType.inherit) state.listStyleType = style.listStyleType;
 
@@ -600,6 +602,7 @@ private:
         _r.fontWeight(state.fontWeight);
         _r.fontStyle(state.fontStyle);
         _r.fontFace(state.fontFace);
+        _r.textAlign(state.textAlign);
     }
 
     void exitStyle(const(TagStyle) style)
