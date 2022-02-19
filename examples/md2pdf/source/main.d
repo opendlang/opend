@@ -114,8 +114,10 @@ int main(string[] args)
             switch(elem.tagName)
             {
                 case "p": doc.enterParagraph(); break;
-                case "b": case "strong": doc.enterBold(); break;
-                case "i": case "em": doc.enterEmph(); break;
+                case "b": doc.enterB(); break;
+                case "strong": doc.enterStrong(); break;
+                case "i": doc.enterI(); break;
+                case "em": doc.enterEm(); break;
                 case "code": doc.enterCode(); break;
                 case "pre": doc.enterPre(); break;
                 case "h1": doc.enterH1(); break;
@@ -153,8 +155,10 @@ int main(string[] args)
             {
                 case "html": doc.finalize(); break;
                 case "p": doc.exitParagraph(); break;
-                case "b": case "strong": doc.exitBold(); break;
-                case "i": case "em": doc.exitEmph(); break;
+                case "b": doc.exitB(); break;
+                case "strong": doc.exitStrong(); break;
+                case "i": doc.exitI(); break;
+                case "em": doc.exitEm(); break;
                 case "code": doc.exitCode(); break;
                 case "pre": doc.exitPre(); break;
                 case "h1": doc.exitH1(); break;

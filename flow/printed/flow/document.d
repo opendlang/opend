@@ -15,8 +15,8 @@ import printed.flow.style;
 /// If something fits, it is included.
 /// Honestly, it's already complicated and having boxes and defering rendering is probably better
 /// for better results.
-
-/// The interface is thought to be able to render Markdown (without embedded HTML).
+/// For example, this rendere can't ever support hyphenation or text justifying.
+/// The interface is thought to be able to render Markdown quickly.
 interface IFlowDocument
 {
     /// Output text.
@@ -64,17 +64,29 @@ interface IFlowDocument
     /// Exit </h6> title.
     void exitH6();
 
+    /// Enter <b>.
+    void enterB();
+
+    /// Exit </b>.
+    void exitB();
+
     /// Enter <strong>.
-    void enterBold();
+    void enterStrong();
 
     /// Exit </strong>.
-    void exitBold();
+    void exitStrong();
+
+    /// Enter <i>.
+    void enterI();
+
+    /// Exit </i>.
+    void exitI();
 
     /// Enter <em>.
-    void enterEmph();
+    void enterEm();
 
     /// Exit </em>.
-    void exitEmph();
+    void exitEm();
 
     /// Enter <p>.
     void enterParagraph();
@@ -240,22 +252,42 @@ class FlowDocument : IFlowDocument
         exitStyle(_o.h6);
     }
 
-    override void enterBold()
+    override void enterB()
+    {
+        enterStyle(_o.b);
+    }
+
+    override void exitB()
+    {
+        exitStyle(_o.b);
+    }
+
+    override void enterStrong()
     {
         enterStyle(_o.strong);
     }
 
-    override void exitBold()
+    override void exitStrong()
     {
         exitStyle(_o.strong);
     }
 
-    override void enterEmph()
+    override void enterI()
+    {
+        enterStyle(_o.i);
+    }
+
+    override void exitI()
+    {
+        exitStyle(_o.i);
+    }
+
+    override void enterEm()
     {
         enterStyle(_o.em);
     }
 
-    override void exitEmph()
+    override void exitEm()
     {
         exitStyle(_o.em);
     }
