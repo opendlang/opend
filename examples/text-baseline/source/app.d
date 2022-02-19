@@ -19,7 +19,8 @@ void main(string[] args)
         with(renderer)
         {
             lineWidth = 0.1f;
-            strokeStyle = Brush("red");
+            strokeStyle = "red";
+            fontSize = 11;
 
             beginPath(pageWidth/2, 20);
             lineTo(pageWidth/2, pageHeight-20);
@@ -41,14 +42,31 @@ void main(string[] args)
                             TextBaseline.bottom
                         ])
                 {
+                    float x = pageWidth*0.5f;
                     float y = cast(int)i * 15 + 20 + cast(int)j * 80;
                     textAlign = alignment;
                     textBaseline = baseline;
+                    strokeStyle = "red";
                     beginPath(20, y);
                     lineTo(pageWidth-20, y);
                     stroke();
+
                     string text = format("Abcdefghijklmnop (align '%s', baseline '%s')", alignment, baseline);
-                    fillText(text, pageWidth*0.5f, y);
+
+                    // Get text metrics for this block of text, and displays its bounding box.
+                    // This should enclose the text.
+                    TextMetrics m = measureText(text);
+                    strokeStyle = "green";
+                    strokeRect(x - m.actualBoundingBoxLeft,
+                               y - m.fontBoundingBoxAscent,
+                               m.actualBoundingBoxWidth,
+                               m.fontBoundingBoxHeight);
+
+                    // Draw text
+                    fillText(text, x, y);
+
+                    // Draw anchor
+                    fillRect(x-0.5, y-0.5, 1, 1);
                 }
             }
         }

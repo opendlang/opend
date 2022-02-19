@@ -149,6 +149,8 @@ public:
                       _currentStroke, convertFloatToText(_currentLineWidth), _dashSegments, _dashOffset));
     }
 
+
+
     override TextMetrics measureText(const(char)[] text)
     {
         string svgFamilyName;
@@ -156,8 +158,34 @@ public:
         getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);
         OpenTypeTextMetrics otMetrics = font.measureText(text);
         TextMetrics metrics;
-        metrics.width = _fontSize * otMetrics.horzAdvance * font.invUPM(); // convert to millimeters
-        metrics.lineGap = _fontSize * font.lineGap() * font.invUPM();
+
+        float scale = _fontSize * font.invUPM(); // convert from glyph to millimeters
+        float baseline = font.getBaselineOffset(cast(FontBaseline)_textBaseline) * scale;
+
+        // TODO: extent or advance? keep in sync with fillText
+        float horzAdvance = otMetrics.horzAdvance * scale; 
+        float horzOffset = 0;
+        final switch(_textAlign) with (TextAlign)
+        {
+            case start:
+            case left:
+                break;
+            case end:
+            case right:
+                horzOffset -= horzAdvance;
+                break;
+            case center:
+                horzOffset -= horzAdvance * 0.5f;
+        }
+
+        metrics.width                  = otMetrics.horzAdvance * scale; // convert to millimeters
+        metrics.actualBoundingBoxLeft  = -horzOffset + otMetrics.xmin * scale;
+        metrics.actualBoundingBoxRight = -horzOffset + otMetrics.xmax * scale;
+        metrics.actualBoundingBoxWidth = (otMetrics.xmax - otMetrics.xmin) * scale;
+        metrics.fontBoundingBoxAscent  = -baseline + font.ascent() * scale;
+        metrics.fontBoundingBoxDescent = -baseline - font.descent() * scale;
+        metrics.fontBoundingBoxHeight  = (font.ascent() - font.descent()) * scale;
+        metrics.lineGap                = font.lineGap() * scale;
         return metrics;
     }
 

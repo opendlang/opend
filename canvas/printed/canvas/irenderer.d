@@ -194,7 +194,8 @@ enum TextAlign
     center
 }
 
-enum TextBaseline
+/// Text reference baseline.
+enum TextBaseline // Note: MUST be kept in sync with FontBaseline
 {
     top,
     hanging,
@@ -203,7 +204,7 @@ enum TextBaseline
     bottom
 }
 
-/// Font weight
+/// Font weight.
 enum FontWeight : int
 {
     thinest = 0, // Note: thinest doesn't exist in PostScript
@@ -301,15 +302,53 @@ float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
     return pt * 2.83464567f;
 }
 
-
 /// The `TextMetrics` interface represents the dimensions of a piece of text,
 /// as created by the `measureText()` method.
+/// Reference: https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics
 struct TextMetrics
 {
-    float width;   /// Suggested horizontal advance to the next block of text.
-    float lineGap; /// Suggested offset to the next line, baseline to baseline.
-}
+    /// Suggested horizontal advance to the next block of text.
+    /// This is the so-called "text's advance width".
+    float width;
 
+    /// The distance parallel to the baseline from the alignment point given by 
+    /// TextAlign attribute to the left side of the bounding rectangle of the 
+    /// given text. Positive numbers indicating a distance going left from the 
+    /// given alignment point.
+    /// TODO: currently imprecise.
+    float actualBoundingBoxLeft;
+
+    /// The distance parallel to the baseline from the alignment point given by 
+    /// TextAlign attribute to the right side of the bounding rectangle of the 
+    /// given text. Positive numbers indicating a distance going right from the 
+    /// given alignment point.
+    /// TODO: currently can't be relied upon.
+    float actualBoundingBoxRight;
+
+    /// Distance between left side and right side of the given text.
+    /// TODO: currently can't be relied upon.
+    float actualBoundingBoxWidth;
+
+    /// The distance from the horizontal line indicated by the textBaseline 
+    /// attribute to the ascent metric of the font. 
+    /// Positive numbers indicating a distance going up from the given baseline.
+    /// Note: doesn't depend upon specific input text in `measureText`.
+    float fontBoundingBoxAscent;
+
+    /// The distance from the horizontal line indicated by the textBaseline 
+    /// attribute to the descent metric of the font. 
+    /// Positive numbers indicating a distance going down from the given baseline.
+    /// Note: doesn't depend upon specific input text in `measureText`.
+    float fontBoundingBoxDescent;
+
+    /// Distance between ascent and descent baselines in the font.
+    /// Note: doesn't depend upon specific input text in `measureText`.
+    float fontBoundingBoxHeight;
+
+    /// Suggested offset to the next line, baseline to baseline.
+    /// Note: doesn't depend upon specific input text in `measureText`.
+    float lineGap;
+}
 
 /// Allows to customize rendering, for format-specific features.
 struct RenderOptions

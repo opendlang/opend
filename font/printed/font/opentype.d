@@ -59,6 +59,12 @@ struct OpenTypeTextMetrics
 {
     /// The text's advance width, in glyph units.
     float horzAdvance;
+
+    /// The text leftmost extent, in glyph units.
+    float xmin;
+
+    /// The text rightmost extent, in glyph units.
+    float xmax;
 }
 
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
@@ -481,10 +487,18 @@ public:
     OpenTypeTextMetrics measureText(const(char)[] text)
     {
         OpenTypeTextMetrics result;
-        double sum = 0;
-        foreach(dchar ch; text)
-            sum += horizontalAdvance(ch);
-        result.horzAdvance = sum;
+        float adv = 0;
+        float advButLastChar = 0;
+        foreach(dchar ch; text) // Note: auto-decoding there
+        {
+            advButLastChar = adv;
+            adv += horizontalAdvance(ch);
+        }
+
+        // TODO: only works if the font is left to right
+        result.horzAdvance = adv;
+        result.xmin = _boundingBox[0]; // TODO: compute from each glyph bounding box
+        result.xmax = advButLastChar + _boundingBox[2]; // TODO: compute from each glyph bounding box
         return result;
     }
 
