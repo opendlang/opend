@@ -495,7 +495,6 @@ private:
     {
         assert(_stateStack.length != 0);
         _stateStack ~= _stateStack[$-1];
-        _r.save();
     }
 
     // Pop (context information + fontSize).
@@ -503,7 +502,6 @@ private:
     {
         assert(_stateStack.length >= 2);
         _stateStack = _stateStack[0..$-1];
-        _r.restore();
 
         // Apply former state to context
         updateRendererStateWithStyleState();
