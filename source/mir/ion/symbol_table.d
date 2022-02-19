@@ -361,7 +361,7 @@ pure nothrow:
         // add key
         if (_expect(nextKeyPosition + key.length + 16 > keySpace.length, false))
         {
-            auto newLength = keySpace.length * 2;
+            auto newLength = max(nextKeyPosition + key.length + 16, keySpace.length * 2);
             static if (gc)
             {
                 keySpace.length = newLength;
