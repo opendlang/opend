@@ -28,13 +28,13 @@ jobs:
   builder:
     name: 'Build and test on ${{ matrix.arch }}-${{ matrix.os }}/${{ matrix.dc }}'
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ contains(matrix.dc, 'master') || contains(matrix.dc, 'beta') }}
+    continue-on-error: ${{ contains(matrix.dc, 'beta') }}
     env:
       ARCH: ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
-        dc: [ldc-latest, ldc-beta, dmd-latest, dmd-master, dmd-beta]
+        dc: [ldc-latest, ldc-beta, dmd-latest, dmd-beta]
         os: [ubuntu-latest, windows-latest]
         arch: [x86, x86_64]
         include:
