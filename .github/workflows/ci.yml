@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         dc: [ldc-latest, ldc-beta, dmd-latest, dmd-master, dmd-beta]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         arch: [x86, x86_64]
         include:
           - dc: ldc-latest
@@ -52,11 +52,10 @@ jobs:
         with:
           compiler: ${{ matrix.dc }}
       - name: Install multi-lib for 32-bit systems
-        if: matrix.arch == 'x86'
+        if: matrix.arch == 'x86' && matrix.os == 'ubuntu-latest'
         run: sudo apt-get install gcc-multilib
       - id: build
         name: Test building
         run: dub test --arch=$ARCH --build=unittest-cov
       - id: coverage
-        name: Upload coverage data
-        run: bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v2
