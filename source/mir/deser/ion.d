@@ -34,11 +34,11 @@ template deserializeIon(T, bool annotated = false)
     void deserializeIon()(ref T value, scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
-        import mir.deser: deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
 
-        static if (__traits(hasMember, T, "deserializeFromIon"))
+        static if (hasDeserializeFromIon!T)
             enum keys = string[].init;
         else
             enum keys = serdeGetDeserializationKeysRecurse!T;
@@ -73,11 +73,11 @@ template deserializeIon(T, bool annotated = false)
     void deserializeIon()(ref T value, const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
-        import mir.deser: deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: MirStringTable;
 
-        static if (__traits(hasMember, T, "deserializeFromIon"))
+        static if (hasDeserializeFromIon!T)
             static immutable keys = string[].init;
         else
             static immutable keys = serdeGetDeserializationKeysRecurse!T;

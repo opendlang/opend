@@ -60,7 +60,7 @@ private template deserializeJsonImpl(bool file)
             }
             else
             {
-                import mir.deser: deserializeValue, DeserializationParams, TableKind;
+                import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
                 import mir.ion.exception: IonException, ionException;
                 import mir.ion.exception: ionErrorMsg;
                 import mir.ion.internal.data_holder;
@@ -76,7 +76,7 @@ private template deserializeJsonImpl(bool file)
 
                 enum nMax = 4096u;
                 // enum nMax = 64u;
-                static if (__traits(hasMember, T, "deserializeFromIon"))
+                static if (hasDeserializeFromIon!T)
                     enum keys = string[].init;
                 else
                     enum keys = serdeGetDeserializationKeysRecurse!T;

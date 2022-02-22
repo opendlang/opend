@@ -666,7 +666,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         serializer.structEnd(valState);
     }
     else
-    static if(__traits(hasMember, V, "serialize"))
+    static if(staticIndexOf!("serialize", __traits(allMembers, V)) >= 0)
     {
         alias soverloads = getSerializeOverloads!(S, V);
         static if (__traits(hasMember, soverloads, "best") || !__traits(hasMember, soverloads, "script"))

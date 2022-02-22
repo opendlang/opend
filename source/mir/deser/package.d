@@ -166,6 +166,16 @@ struct DeserializationParams(TableKind tableKind, bool annotated = false)
 
 package static immutable tableInsance(string[] symbolTable) = symbolTable;
 
+package template hasDeserializeFromIon(T)
+{
+    import std.traits: isAggregateType;
+    import std.meta: staticIndexOf;
+    static if (isAggregateType!T)
+        enum hasDeserializeFromIon = staticIndexOf!("deserializeFromIon", __traits(allMembers, T)) >= 0;
+    else
+        enum hasDeserializeFromIon = false;
+}
+
 /++
 Deserialize aggregate value using compile time symbol table
 +/
@@ -469,7 +479,7 @@ template deserializeValue(string[] symbolTable)
             return .deserializeValue_(params, value);
         }
         else
-        static if (__traits(hasMember, value, "deserializeFromIon"))
+        static if (hasDeserializeFromIon!T)
         {
             return value.deserializeFromIon(table, data);
         }
