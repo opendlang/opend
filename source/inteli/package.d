@@ -18,6 +18,8 @@ public import inteli.smmintrin;  // SSE4.1
 public import inteli.nmmintrin;  // SSE4.2
 public import inteli.shaintrin;  // SHA
 public import inteli.bmi2intrin; // BMI2
+public import inteli.avxintrin;  // AVX
+public import inteli.avx2intrin; // AVX2
 
 public import inteli.math; // Bonus
 

@@ -19,6 +19,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
+        enum AVXSizedVectorsAreEmulated = true; // AVX vector return without AVX enabled changes the ABI
 
         import gcc.builtins;
 
@@ -27,9 +28,19 @@ version(GNU)
             return __builtin_ia32_loadups(pvec);
         }
 
+        float8 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float8))
+        {
+            return __builtin_ia32_loadups256(pvec);
+        }
+
         double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
         {
             return __builtin_ia32_loadupd(pvec);
+        }
+
+        double4 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double4))
+        {
+            return __builtin_ia32_loadupd256(pvec);
         }
 
         byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
@@ -37,9 +48,19 @@ version(GNU)
             return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
         }
 
+        byte32 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte32))
+        {
+            return cast(byte32) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
+        }
+
         short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
         {
             return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        short16 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short16))
+        {
+            return cast(short16) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
         }
 
         int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
@@ -47,9 +68,19 @@ version(GNU)
             return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
         }
 
+        int8 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int8))
+        {
+            return cast(int8) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
+        }
+
         long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
         {
             return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        long4 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long4))
+        {
+            return cast(long4) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
         }
 
         void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
@@ -57,9 +88,19 @@ version(GNU)
             __builtin_ia32_storeups(pvec, v);
         }
 
+        void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float8))
+        {
+            __builtin_ia32_storeups256(pvec, v);
+        }
+
         void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
         {
             __builtin_ia32_storeupd(pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double4))
+        {
+            __builtin_ia32_storeupd256(pvec, v);
         }
 
         void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
@@ -67,9 +108,19 @@ version(GNU)
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
+        void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte32))
+        {
+            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
+        }
+
         void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
         {
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short16))
+        {
+            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
         }
 
         void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
@@ -77,9 +128,19 @@ version(GNU)
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
+        void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int8))
+        {
+            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
+        }
+
         void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
         {
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long4))
+        {
+            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
         }
 
         // TODO: for performance, replace that anywhere possible by a GDC intrinsic
@@ -105,6 +166,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = true;
         enum SSESizedVectorsAreEmulated = true;
+        enum AVXSizedVectorsAreEmulated = true;
     }
 }
 else version(LDC)
@@ -117,6 +179,7 @@ else version(LDC)
 
     enum MMXSizedVectorsAreEmulated = false;
     enum SSESizedVectorsAreEmulated = false;
+    enum AVXSizedVectorsAreEmulated = false;
 }
 else version(DigitalMars)
 {
@@ -135,16 +198,19 @@ else version(DigitalMars)
             // Before DMD 2.096, blocked by https://issues.dlang.org/show_bug.cgi?id=21474
             enum SSESizedVectorsAreEmulated = true; 
         }
+
+        enum AVXSizedVectorsAreEmulated = true;
     }
     else
     {
         // Some DMD 32-bit targets don't have D_SIMD
         enum MMXSizedVectorsAreEmulated = true;
         enum SSESizedVectorsAreEmulated = true;
+        enum AVXSizedVectorsAreEmulated = true;
     }
 }
 
-enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated;
+enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated || AVXSizedVectorsAreEmulated;
 
 static if (CoreSimdIsEmulated)
 {
@@ -251,7 +317,8 @@ static if (CoreSimdIsEmulated)
         Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated) );
+                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
+                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
 
             static if (isVector)
             {
@@ -292,7 +359,8 @@ static if (CoreSimdIsEmulated)
         void storeUnaligned(Vec v, BaseType!Vec* pvec) @trusted
         {
             enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated) );
+                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
+                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
 
             static if (isVector)
             {
@@ -529,9 +597,60 @@ static assert(long2.sizeof == 16);
 static assert(double2.sizeof == 16);
 
 
+static if (AVXSizedVectorsAreEmulated)
+{
+    /// AVX-like SIMD types
+
+    struct float8
+    {
+        float[8] array;
+        mixin VectorOps!(float8, float[8]);
+    }
+
+    struct byte32
+    {
+        byte[32] array;
+        mixin VectorOps!(byte32, byte[32]);
+    }
+
+    struct short16
+    {
+        short[16] array;
+        mixin VectorOps!(short16, short[16]);
+    }
+
+    struct int8
+    {
+        int[8] array;
+        mixin VectorOps!(int8, int[8]);
+    }
+
+    struct long4
+    {
+        long[4] array;
+        mixin VectorOps!(long4, long[4]);
+    }
+
+    struct double4
+    {
+        double[4] array;
+        mixin VectorOps!(double4, double[4]);
+    }
+}
+
+static assert(float8.sizeof == 32);
+static assert(byte32.sizeof == 32);
+static assert(short16.sizeof == 32);
+static assert(int8.sizeof == 32);
+static assert(long4.sizeof == 32);
+static assert(double4.sizeof == 32);
 
 
 
+
+alias __m256 = float8;
+alias __m256i = long4; // long long __vector with ICC, GCC, and clang
+alias __m256d = double4;
 alias __m128 = float4;
 alias __m128i = int4;
 alias __m128d = double2;
