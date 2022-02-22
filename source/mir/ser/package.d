@@ -666,6 +666,37 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         serializer.structEnd(valState);
     }
     else
+    static if (is(Unqual!V == Algebraic!TypeSet, TypeSet...))
+    {
+        enum isSimpleNullable = isNullable!V && V.AllowedTypes.length == 2;
+        value.visit!(
+            (auto ref v) {
+                alias A = typeof(v);
+                static if (serdeHasAlgebraicAnnotation!A && !isSimpleNullable)
+                {
+                    auto wrapperState = serializer.annotationWrapperBegin;
+                    auto annotationsState = serializer.annotationsBegin;
+                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
+                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
+                    else
+                    static if (__traits(hasMember, S, "putAnnotationPtr"))
+                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
+                    else
+                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
+                    serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
+                }
+                else
+                {
+                    static if (is(immutable A == immutable typeof(null)))
+                        serializer.putNull(nullTypeCodeOf!(V.AllowedTypes[1]));
+                    else
+                        serializeValue(serializer, v);
+                }
+            }
+        );
+        return;
+    }
+    else
     static if(staticIndexOf!("serialize", __traits(allMembers, V)) >= 0)
     {
         alias soverloads = getSerializeOverloads!(S, V);
@@ -705,37 +736,6 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
         auto wrapperState = serializer.annotationWrapperBegin;
         auto annotationsState = serializer.annotationsBegin;
         serializeAnnotatedValue(serializer, value, annotationsState, wrapperState);
-        return;
-    }
-    else
-    static if (is(Unqual!V == Algebraic!TypeSet, TypeSet...))
-    {
-        enum isSimpleNullable = isNullable!V && V.AllowedTypes.length == 2;
-        value.visit!(
-            (auto ref v) {
-                alias A = typeof(v);
-                static if (serdeHasAlgebraicAnnotation!A && !isSimpleNullable)
-                {
-                    auto wrapperState = serializer.annotationWrapperBegin;
-                    auto annotationsState = serializer.annotationsBegin;
-                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
-                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
-                    else
-                    static if (__traits(hasMember, S, "putAnnotationPtr"))
-                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
-                    else
-                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
-                    serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
-                }
-                else
-                {
-                    static if (is(immutable A == immutable typeof(null)))
-                        serializer.putNull(nullTypeCodeOf!(V.AllowedTypes[1]));
-                    else
-                        serializeValue(serializer, v);
-                }
-            }
-        );
         return;
     }
     else
