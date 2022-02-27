@@ -370,14 +370,36 @@ version(mir_ion_test) unittest
     import mir.ser.json;
     import mir.deser.json;
 
+    static struct CustomType
+    {
+        int a;
+
+        // can be part of a type as well (only omits on property keys)
+        bool serdeIgnoreOut() const
+        {
+            return a < 0;
+        }
+
+        // and use custom serializer to serialize as int
+        void serialize(S)(ref S serializer) const
+        {
+            import mir.ser : serializeValue;
+
+            serializeValue(serializer, a);
+        }
+    }
+
     static struct S
     {
         @serdeIgnoreOutIf!`a < 0`
         int a;
+
+        // b is not output if the serdeIgnoreOut property in its type evaluates to false.
+        CustomType b;
     }
 
-    assert(serializeJson(S(3)) == `{"a":3}`, serializeJson(S(3)));
-    assert(serializeJson(S(-3)) == `{}`);
+    assert(serializeJson(S(3, CustomType(2))) == `{"a":3,"b":2}`, serializeJson(S(3, CustomType(2))));
+    assert(serializeJson(S(-3, CustomType(-2))) == `{}`);
 }
 
 ///
