@@ -509,6 +509,12 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
                     continue;
             }
 
+            static if(__traits(hasMember, typeof(__traits(getMember, value, member)), "serdeIgnoreOut"))
+            {
+                if (__traits(getMember, __traits(getMember, value, member), "serdeIgnoreOut"))
+                    continue;
+            }
+
             static if(hasUDA!(__traits(getMember, value, member), serdeTransformOut))
             {
                 alias f = serdeGetTransformOut!(__traits(getMember, value, member));
