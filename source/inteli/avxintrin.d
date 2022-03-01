@@ -37,7 +37,7 @@ unittest
     assert(_mm256_extract_epi32(A, 7 + 32) == -6);
 }
 
-/// Load 128-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
+/// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     pragma(inline, true);
@@ -180,3 +180,9 @@ __m256i _mm256_setzero_si256() pure @trusted
     return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
 }
 
+/// Store 256-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
+pragma(inline, true)
+void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
+{
+    storeUnaligned!__m256i(a, cast(long*)mem_addr);
+}
