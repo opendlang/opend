@@ -1304,3 +1304,12 @@ version(mir_ion_test) unittest
     assert(s.serializeText == t);
     assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
+
+version(mir_ion_test)
+unittest
+{
+    import std.exception: assertThrown;
+    import mir.deser.json;
+    static struct S {}
+    ",".deserializeJson!S.assertThrown!Exception;
+}
