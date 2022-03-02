@@ -444,6 +444,9 @@ value_start: {
             }
         }
 
+        if (startC == ',')
+            goto unexpected_comma;
+
         version(none)
         {                    
             size_t numberLength; 
@@ -586,6 +589,9 @@ errorReadingFile:
     goto ret_final;
 cant_insert_key:
     errorCode = IonErrorCode.symbolTableCantInsertKey;
+    goto ret_final;
+unexpected_comma:
+    errorCode = IonErrorCode.unexpectedComma;
     goto ret_final;
 unexpectedEnd:
     errorCode = IonErrorCode.jsonUnexpectedEnd;
