@@ -48,6 +48,10 @@ void main(string[] args)
         context.fillRect(w-10, 0, 10, 10);
         context.fillRect(0, h-10, 10, 10);
         context.fillRect(w-10, h-10, 10, 10);
+
+        // test if fillStyle preserved by newPage
+        context.newPage();
+        context.fillRect(0, 0, 10, 10);
     }
 
     /// Draw the result of each specific renderer.

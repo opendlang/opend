@@ -334,12 +334,17 @@ final class PDFDocument : IRenderingContext2D
 
     override void fillStyle(Brush brush)
     {
-        ubyte[4] c = brush.toRGBAColor();
-        outFloat(c[0] / 255.0f);
-        outFloat(c[1] / 255.0f);
-        outFloat(c[2] / 255.0f);
-        output(" rg");
-        setNonStrokeAlpha(c[3]);
+        _fillStyle = brush;
+        if (_fillStyle != _pdfFillStyle)
+        {
+            ubyte[4] c = brush.toRGBAColor();
+            outFloat(c[0] / 255.0f);
+            outFloat(c[1] / 255.0f);
+            outFloat(c[2] / 255.0f);
+            output(" rg");
+            setNonStrokeAlpha(c[3]);
+            _pdfFillStyle = brush;
+        }
     }
 
     override void fillStyle(const(char)[] color)
@@ -349,12 +354,17 @@ final class PDFDocument : IRenderingContext2D
 
     override void strokeStyle(Brush brush)
     {
-        ubyte[4] c = brush.toRGBAColor();
-        outFloat(c[0] / 255.0f);
-        outFloat(c[1] / 255.0f);
-        outFloat(c[2] / 255.0f);
-        output(" RG");
-        setStrokeAlpha(c[3]);
+        _strokeStyle = brush;
+        if (_strokeStyle != _pdfStrokeStyle)
+        {
+            ubyte[4] c = brush.toRGBAColor();
+            outFloat(c[0] / 255.0f);
+            outFloat(c[1] / 255.0f);
+            outFloat(c[2] / 255.0f);
+            output(" RG");
+            setStrokeAlpha(c[3]);
+            _pdfStrokeStyle = brush;
+        }
     }
 
     override void strokeStyle(const(char)[] color)
@@ -898,6 +908,13 @@ private:
         transform(scale, 0.0f,
                   0.0f, -1 * scale,
                   0.0f, scale * _pageHeightMm);
+
+        _pdfFillStyle = Brush(0, 0, 0);
+        _pdfStrokeStyle = Brush(0, 0, 0);
+
+        // Restore existing state (Note: not necessary the first page, should be cached).
+        fillStyle(_fillStyle);
+        strokeStyle(_strokeStyle);
     }
 
     byte_offset _currentStreamStart;
@@ -1399,6 +1416,15 @@ private:
     /// Associates with each open font information about
     /// the PDF embedding of that font.
     FontPDFInfo[OpenTypeFont] _fontPDFInfos;
+
+    // <state stack>
+    // Currently only one level deep for restoring state on a new page.
+    Brush _fillStyle = Brush(0, 0, 0); // the default fillStyle in PDF is black.
+    Brush _strokeStyle = Brush(0, 0, 0); // the default strokeStyle in PDF is black.
+
+    Brush _pdfFillStyle; // currently set PDF fill style, in order to cache commands
+    Brush _pdfStrokeStyle; // currently set PDF stroke style, in order to cache commands
+    // </state stack>
 }
 
 private:

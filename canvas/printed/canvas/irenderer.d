@@ -68,14 +68,14 @@ interface IRenderingContext2D
 
     // COLOURS
 
-    /// Changes the current fill brush.
+    /// Changes the current fill brush (Default = "black").
     /// Params:
     ///    color Any HTML color string, or a `Brush` if you want to save the parsing cost.
     void fillStyle(Brush brush);
     ///ditto
     void fillStyle(const(char)[] color); // equivalent to `fillStyle(brush(color));`
 
-    /// Changes the current stroke brush.
+    /// Changes the current stroke brush (Default = "black").
     /// Params:
     ///    color Any HTML color string.
     void strokeStyle(Brush brush);
