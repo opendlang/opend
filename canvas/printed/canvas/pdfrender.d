@@ -316,6 +316,9 @@ final class PDFDocument : IRenderingContext2D
         // Note: image has to be flipped vertically, since PDF is bottom to up
         scale(width, -height);
 
+        // Set opacity to 100%, fillStyle should not influence image alpha.
+        setNonStrokeAlpha(255);
+
         outName(imageName);
         output(" Do");
 
