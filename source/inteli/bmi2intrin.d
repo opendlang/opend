@@ -51,7 +51,15 @@ ulong _bzhi_u64 (ulong a, uint index)
     static if (BMI2_builtins)
     {
         if (!__ctfe)
-            return __builtin_ia32_bzhi_di(a, index);
+        {
+            version(X86_64)
+            {
+                // This instruction not available in 32-bit x86.
+                return __builtin_ia32_bzhi_di(a, index);
+            }
+            else
+                return bzhi!ulong(a, index);
+        }
         else
             return bzhi!ulong(a, index);
     }
