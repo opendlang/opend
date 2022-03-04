@@ -218,7 +218,15 @@ ulong _pdep_u64 (ulong a, ulong mask)
     static if (BMI2_builtins)
     {
         if (!__ctfe)
-            return __builtin_ia32_pdep_di(a, mask);
+        {
+            version(X86_64)
+            {
+                // This instruction not available in 32-bit x86.
+                return __builtin_ia32_pdep_di(a, mask);
+            }
+            else
+                return pdep!ulong(a, mask);
+        }
         else
             return pdep!ulong(a, mask);
     }
@@ -292,14 +300,23 @@ ulong _pext_u64 (ulong a, ulong mask)
     static if (BMI2_builtins)
     {
         if (!__ctfe)
-            return __builtin_ia32_pext_di(a, mask);
+        {
+            version(X86_64)
+            {
+                // This instruction not available in 32-bit x86.
+                return __builtin_ia32_pext_di(a, mask);
+            }
+            else
+                return pext!ulong(a, mask);
+        }
         else
             return pext!ulong(a, mask);
     }
     else
     {
         return pext!ulong(a, mask);
-    }}
+    }
+}
 unittest
 {
     static assert (_pext_u64(0x1234_5678_8765_4321, 0x0F0F_0F0F_0F0F_0F0F) == 0x2468_7531);
