@@ -40,14 +40,25 @@ unittest
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
+    // PERF DMD
     pragma(inline, true);
     static if (GDC_with_AVX)
     {
-        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char*))mem_addr);
+        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) mem_addr);
+    }
+    else version(LDC)
+    {
+        return loadUnaligned!(__m256i)(cast(long*)mem_addr);
     }
     else
     {
-        return loadUnaligned!(__m256i)(cast(long*)mem_addr);
+        const(long)* p = cast(const(long)*)mem_addr; 
+        long4 r;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[2];
+        r.ptr[3] = p[3];
+        return r;
     }
 }
 unittest
@@ -118,12 +129,27 @@ __m256i _mm256_setr_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte
                           byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9,  byte e8,
                           byte e7,  byte e6,  byte e5,  byte e4,  byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
+    // PERF GDC, not checked
     pragma(inline, true);
     byte[32] result = [ e31,  e30,  e29,  e28,  e27,  e26,  e25,  e24,
                         e23,  e22,  e21,  e20,  e19,  e18,  e17,  e16,
                         e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
                         e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
-    return cast(__m256i)( loadUnaligned!(byte32)(result.ptr) );
+    static if (GDC_with_AVX)
+    {
+        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i)( loadUnaligned!(byte32)(result.ptr) );
+    }
+    else
+    {
+        byte32 r;
+        for(int n = 0; n < 32; ++n)
+            r.ptr[n] = result[n];
+        return cast(__m256i)r;
+    }
 }
 unittest
 {
@@ -145,7 +171,21 @@ __m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11
     pragma(inline, true);
     short[16] result = [ e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
                          e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
-    return cast(__m256i)( loadUnaligned!(short16)(result.ptr) );
+    static if (GDC_with_AVX)
+    {
+         return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i)( loadUnaligned!(short16)(result.ptr) );
+    }
+    else
+    {
+        short16 r;
+        for(int n = 0; n < 16; ++n)
+            r.ptr[n] = result[n];
+        return cast(__m256i)r;
+    }
 }
 unittest
 {
@@ -161,7 +201,21 @@ __m256i _mm256_setr_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e
 {
     pragma(inline, true);
     int[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
-    return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
+    static if (GDC_with_AVX)
+    {
+        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
+    }
+    else
+    {
+        int8 r;
+        for(int n = 0; n < 8; ++n)
+            r.ptr[n] = result[n];
+        return cast(__m256i)r;
+    }
 }
 unittest
 {
@@ -174,15 +228,36 @@ unittest
 /// Return vector of type `__m256i` with all elements set to zero.
 __m256i _mm256_setzero_si256() pure @trusted
 {
+    // PERF: nothing was checked
     pragma(inline, true);
-    // Note: using loadUnaligned has better -O0 codegen compared to .ptr
-    int[8] result = [0, 0, 0, 0, 0, 0, 0, 0];
-    return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
+    
+    version(LDC)
+    {
+        int[8] result = [0, 0, 0, 0, 0, 0, 0, 0];
+        return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
+    }
+    else
+    {
+        __m256i r;
+        r = 0;
+        return r;
+    }
 }
 
 /// Store 256-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
 pragma(inline, true)
 void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
 {
-    storeUnaligned!__m256i(a, cast(long*)mem_addr);
+    // PERF: DMD and GDC
+    version(LDC)
+    {
+        storeUnaligned!__m256i(a, cast(long*)mem_addr);
+    }
+    else
+    {
+        long4 v = cast(long4)a;
+        long* p = cast(long*)mem_addr;
+        for(int n = 0; n < 4; ++n)
+            p[n] = v[n];
+    }
 }

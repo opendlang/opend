@@ -2491,9 +2491,21 @@ unittest
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    pragma(inline, true);
-    float[4] result = [e3, e2, e1, e0];
-    return loadUnaligned!(float4)(result.ptr);
+    pragma(inline, true);        
+    version(LDC)
+    {
+        float[4] result = [e3, e2, e1, e0];
+        return loadUnaligned!(float4)(result.ptr);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = e3;
+        r.ptr[1] = e2;
+        r.ptr[2] = e1;
+        r.ptr[3] = e0;
+        return r;
+    }
 }
 unittest
 {

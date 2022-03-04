@@ -42,7 +42,7 @@ version(GNU)
         //   https://gcc.gnu.org/onlinedocs/gcc/Simple-Constraints.html  (binding variables to registers)
         //   https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html (x86 specific register short names)
 
-        public import core.simd;
+        public import core.simd: byte16, short8, int4, float4, double2;
 
         // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
         // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 

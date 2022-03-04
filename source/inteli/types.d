@@ -19,7 +19,9 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
-        enum AVXSizedVectorsAreEmulated = true; // AVX vector return without AVX enabled changes the ABI
+
+        // TODO: use D_AVX and D_AVX2 eventually to detect AVX?
+        enum AVXSizedVectorsAreEmulated = true;
 
         import gcc.builtins;
 
@@ -28,19 +30,9 @@ version(GNU)
             return __builtin_ia32_loadups(pvec);
         }
 
-        float8 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float8))
-        {
-            return __builtin_ia32_loadups256(pvec);
-        }
-
         double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
         {
             return __builtin_ia32_loadupd(pvec);
-        }
-
-        double4 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double4))
-        {
-            return __builtin_ia32_loadupd256(pvec);
         }
 
         byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
@@ -48,19 +40,9 @@ version(GNU)
             return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
         }
 
-        byte32 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte32))
-        {
-            return cast(byte32) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
-        }
-
         short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
         {
             return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
-        short16 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short16))
-        {
-            return cast(short16) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
         }
 
         int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
@@ -68,19 +50,9 @@ version(GNU)
             return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
         }
 
-        int8 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int8))
-        {
-            return cast(int8) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
-        }
-
         long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
         {
             return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
-        long4 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long4))
-        {
-            return cast(long4) __builtin_ia32_loaddqu256(cast(const(char)*) pvec);
         }
 
         void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
@@ -88,19 +60,9 @@ version(GNU)
             __builtin_ia32_storeups(pvec, v);
         }
 
-        void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float8))
-        {
-            __builtin_ia32_storeups256(pvec, v);
-        }
-
         void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
         {
             __builtin_ia32_storeupd(pvec, v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double4))
-        {
-            __builtin_ia32_storeupd256(pvec, v);
         }
 
         void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
@@ -108,19 +70,9 @@ version(GNU)
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
-        void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte32))
-        {
-            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
-        }
-
         void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
         {
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short16))
-        {
-            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
         }
 
         void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
@@ -128,19 +80,9 @@ version(GNU)
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
         }
 
-        void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int8))
-        {
-            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
-        }
-
         void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
         {
             __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long4))
-        {
-            __builtin_ia32_storedqu256(cast(char*)pvec, cast(ubyte32)v);
         }
 
         // TODO: for performance, replace that anywhere possible by a GDC intrinsic
@@ -211,6 +153,12 @@ else version(DigitalMars)
 }
 
 enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated || AVXSizedVectorsAreEmulated;
+
+version(GNU)
+    enum bool DefineGenericLoadStoreUnaligned = false;
+else
+    enum bool DefineGenericLoadStoreUnaligned = CoreSimdIsEmulated;
+
 
 static if (CoreSimdIsEmulated)
 {
@@ -310,7 +258,21 @@ static if (CoreSimdIsEmulated)
         v.array[index] = e;
         return v;
     }
+}
+else
+{
+    public import core.simd;
 
+    // GDC cannot convert implicitely __vector from signed to unsigned, but LDC can
+    // And LDC sometimes need those unsigned vector types for some intrinsics.
+    // For internal use only.
+    package alias ushort8 = Vector!(ushort[8]);
+    package alias ubyte8  = Vector!(ubyte[8]);
+    package alias ubyte16 = Vector!(ubyte[16]);
+}
+
+static if (DefineGenericLoadStoreUnaligned)
+{
     template loadUnaligned(Vec)
     {
         // Note: can't be @safe with this signature
@@ -389,7 +351,7 @@ static if (CoreSimdIsEmulated)
         }
     }
 
-    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
+    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe if (Vec.sizeof < 32)
     {
         enum size_t Count = Vec.array.length;
         static assert(mask.length == Count);
@@ -406,17 +368,6 @@ static if (CoreSimdIsEmulated)
         }
         return r;
     }
-}
-else
-{
-    public import core.simd;
-
-    // GDC cannot convert implicitely __vector from signed to unsigned, but LDC can
-    // And LDC sometimes need those unsigned vector types for some intrinsics.
-    // For internal use only.
-    package alias ushort8 = Vector!(ushort[8]);
-    package alias ubyte8  = Vector!(ubyte[8]);
-    package alias ubyte16 = Vector!(ubyte[16]);
 }
 
 // Emulate ldc.simd cmpMask and other masks.
