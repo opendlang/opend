@@ -1335,3 +1335,30 @@ unittest
     static struct S {}
     ",".deserializeJson!S.assertThrown!Exception;
 }
+
+@safe pure version(mir_ion_test) unittest
+{
+    import mir.algebraic: Nullable;
+    import mir.ser.text: serializeText;
+    import mir.deser.text: deserializeText;
+    import mir.serde: serdeDiscriminatedField;
+
+    @serdeDiscriminatedField("tag", "data")
+    static struct D
+    {
+        int num;
+    }
+
+    @serdeDiscriminatedField("tag", "gr")
+    static struct G
+    {
+        string val;
+    }
+
+    alias V = Nullable!(string, D, G);
+
+    assert(D(123).serializeText == `{tag:data,num:123}`);
+    assert(V(D(123)).serializeText == `{tag:data,num:123}`);
+    assert(`{tag:data,num:123}`.deserializeText!V == D(123));
+    assert(`{val:"str",tag:gr}`.deserializeText!V == G("str"));
+}

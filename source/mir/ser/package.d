@@ -476,6 +476,29 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
     import mir.algebraic;
     auto state = serializer.structBegin;
 
+    static if (hasUDA!(V, serdeDiscriminatedField))
+    {{
+        enum udas = getUDAs!(V, serdeDiscriminatedField);
+        static assert (udas.length == 1);
+        enum key = udas[0].field;
+
+        static if (__traits(hasMember, S, "putCompiletimeKey"))
+        {
+            serializer.putCompiletimeKey!key;
+        }
+        else
+        static if (__traits(hasMember, S, "putKeyPtr"))
+        {
+            serializer.putKeyPtr(key.ptr);
+        }
+        else
+        {
+            serializer.putKey(key);
+        }
+
+        serializer.putSymbol(udas[0].tag);
+    }}
+
     foreach(member; aliasSeqOf!(SerializableMembers!V))
     {{
         enum key = serdeGetKeyOut!(__traits(getMember, value, member));

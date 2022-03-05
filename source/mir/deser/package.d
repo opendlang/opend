@@ -15,7 +15,7 @@ import mir.serde: serdeGetFinalProxy;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
-import std.traits: ForeachType, hasUDA, Unqual, isSomeChar, EnumMembers, TemplateArgsOf;
+import std.traits: ForeachType, hasUDA, Unqual, isSomeChar, EnumMembers, TemplateArgsOf, getUDAs;
 
 private alias AliasSeq(T...) = T;
 
@@ -466,7 +466,7 @@ template deserializeValue(string[] symbolTable)
         import mir.rc.array: RCArray, RCI;
         import mir.reflection: isStdNullable;
         import mir.string_map : isStringMap;
-        import std.meta: anySatisfy, Filter, templateAnd, templateNot, templateOr;
+        import std.meta: anySatisfy, Filter, templateAnd, templateNot, templateOr, ApplyRight;
         import std.traits: isArray, isSomeString, isAssociativeArray;
 
         static if (tableKind)
@@ -474,11 +474,6 @@ template deserializeValue(string[] symbolTable)
         else
             alias table = tableInsance!symbolTable;
 
-        static if (isFirstOrderSerdeType!T)
-        {
-            return .deserializeValue_(params, value);
-        }
-        else
         static if (hasDeserializeFromIon!T)
         {
             return value.deserializeFromIon(table, data);
@@ -1125,7 +1120,7 @@ template deserializeValue(string[] symbolTable)
                     }
                 }
 
-                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct), Types))
+                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct, hasDiscriminatedField), Types))
                 {
                     case IonTypeCode.struct_:
                     {                        
@@ -1144,18 +1139,75 @@ template deserializeValue(string[] symbolTable)
                             alias isMapType = hasLikeStruct;
                         }
                         else
+                        static if (anySatisfy!(hasFallbackStruct, Types))
                         {
                             alias isMapType = hasFallbackStruct;
                         }
+                        else
+                        static if (anySatisfy!(hasDiscriminatedField, Types))
+                        {
+                            alias isMapType = hasDiscriminatedField;
+                        }
+                        else
+                        {
+                            static assert(0);
+                        }
 
-                        alias AATypes = Filter!(isMapType, Types);
-                        static assert(AATypes.length == 1, AATypes.stringof);
-                        AATypes[0] object;
-                        if (auto exception = deserializeValue(params, object))
-                            return exception;
-                        import core.lifetime: move;
-                        value = move(object);
-                        return retNull;
+                        alias DiscriminatedFieldTypes = Filter!(hasDiscriminatedField, Types);
+                        static if (DiscriminatedFieldTypes.length)
+                        {
+                            enum discriminatedField = getUDAs!(DiscriminatedFieldTypes[0], serdeDiscriminatedField)[0].field;
+                            foreach (DFT; DiscriminatedFieldTypes[1 .. $])
+                            {{
+                                enum df = getUDAs!(DFT, serdeDiscriminatedField)[0].field;
+                                static assert (df == discriminatedField, "Discriminated field doesn't match: " ~ discriminatedField ~ " and " ~ df);
+                            }}
+
+                            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; data.trustedGet!IonStruct)
+                            {
+                                if (error)
+                                    return error.ionException;
+                                if (symbolId >= table.length)
+                                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                                if (table[symbolId] == discriminatedField)
+                                {
+                                    const(char)[] tag;
+                                    if (auto exception = deserializeScoped(params.withData(elem), tag))
+                                        return exception;
+                                    switch (tag)
+                                    {
+                                        foreach (DFT; DiscriminatedFieldTypes)
+                                        {
+                                            case getUDAs!(DFT, serdeDiscriminatedField)[0].tag: {
+                                                DFT object;
+                                                if (auto exception = deserializeValue(params, object))
+                                                    return exception;
+                                                import core.lifetime: move;
+                                                value = move(object);
+                                                return retNull;
+                                            }
+                                        }
+                                        default:
+                                    }
+                                }
+                            }
+                        }
+
+                        static if (__traits(isSame, isMapType, hasDiscriminatedField))
+                        {
+                            goto default;
+                        }
+                        else
+                        {
+                            alias AATypes = Filter!(isMapType, Types);
+                            static assert(AATypes.length == 1, AATypes.stringof);
+                            AATypes[0] object;
+                            if (auto exception = deserializeValue(params, object))
+                                return exception;
+                            import core.lifetime: move;
+                            value = move(object);
+                            return retNull;
+                        }
                     }
                 }
 
@@ -1471,6 +1523,14 @@ template deserializeValue(string[] symbolTable)
                                 }}
                                 Default:
                                 default:
+                                    static if (hasDiscriminatedField!T)
+                                    {
+                                        if (originalId < table.length && table[originalId] == getUDAs!(T, serdeDiscriminatedField)[0].field)
+                                        {
+                                            break;
+                                        }
+                                    }
+
                                     static if (hasUnexpectedKeyHandler)
                                         value.serdeUnexpectedKeyHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
                                     else
