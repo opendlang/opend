@@ -3,7 +3,7 @@ description "Fast, Expressive, and Easy to use Ion, JSON, Msgpack Serialization 
 authors "Ilya Yaroshenko" "Yannick Koechlin"
 copyright "Tamedia Digital, 2016-, Symmetry Investments and Kaleidic Associates, 2020-"
 license "BSL-1.0"
-dependency "mir-algorithm" version=">=3.12.9"
+dependency "mir-algorithm" version=">=3.12.17"
 dependency "mir-cpuid" version="~>1.2.6"
 
 // dflags "-preview=dip1008"

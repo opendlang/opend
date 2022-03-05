@@ -469,6 +469,15 @@ package template hasLikeStruct(T)
         enum hasLikeStruct = false;
 }
 
+package template hasDiscriminatedField(T)
+{
+    import mir.serde: serdeDiscriminatedField;
+    static if (is(T == enum) || isAggregateType!T)
+        enum hasDiscriminatedField = hasUDA!(T, serdeDiscriminatedField);
+    else
+        enum hasDiscriminatedField = false;
+}
+
 package template hasFallbackStruct(T)
 {
     import mir.serde: serdeFallbackStruct;

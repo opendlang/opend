@@ -3,14 +3,16 @@
 module mir.deser.json;
 
 public import mir.serde;
+import mir.algebraic: Algebraic;
+import mir.deser.low_level: hasDiscriminatedField;
+import mir.string_map: isStringMap;
+import std.traits: hasUDA, isAggregateType;
 
 version(LDC) import ldc.attributes: optStrategy;
 else private struct optStrategy { string opt; }
 
 private template isSomeMap(T)
 {
-    import mir.algebraic: Algebraic;
-    import mir.string_map: isStringMap;
     static if (__traits(hasMember, T, "_serdeRecursiveAlgebraic"))
         enum isSomeMap = true;
     else
@@ -29,7 +31,7 @@ private template isSomeMap(T)
     static if (is(T : U[], U))
         enum isSomeMap = .isSomeMap!U;
     else
-        enum isSomeMap = false;
+        enum isSomeMap = hasDiscriminatedField!T;
 }
 
 unittest
