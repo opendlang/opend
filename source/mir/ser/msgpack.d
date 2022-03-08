@@ -631,7 +631,7 @@ version(mir_ion_test) unittest
     import mir.appender : ScopedBuffer;
     import mir.ser.interfaces: SerializerWrapper;
     MsgpackSerializer!(ScopedBuffer!ubyte) serializer;
-    auto s = new SerializerWrapper!(MsgpackSerializer!(ScopedBuffer!ubyte))(serializer);
+    scope s = new SerializerWrapper!(MsgpackSerializer!(ScopedBuffer!ubyte))(serializer);
 }
 
 ///
