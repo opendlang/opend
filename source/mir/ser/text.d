@@ -696,10 +696,7 @@ string serializeTextPretty(string sep = "\t", V)(auto ref V value, int serdeTarg
 version(mir_ion_test) unittest
 {
     static struct S { int a; }
-    assert(S(4).serializeTextPretty!"    " ==
-q{{
-    a: 4
-}});
+    assert(S(4).serializeTextPretty!"    " == "{\n    a: 4\n}");
 }
 
 /++
