@@ -29,7 +29,7 @@ template serde(T)
         import mir.ion.exception;
         import mir.deser.ion: deserializeIon;
         import mir.ion.internal.data_holder: ionPrefix, ionTapeHolder, IonTapeHolder;
-        import mir.ser: serializeValue, isMsgpackValue;
+        import mir.ser: serializeValue;
         import mir.ser.ion: IonSerializer;
         import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
         import mir.ion.value: IonValue, IonDescribedValue, IonList;
@@ -37,10 +37,7 @@ template serde(T)
         import mir.utility: _expect;
 
         enum nMax = 4096u;
-        static if (isMsgpackValue!T)
-            enum keys = string[].init;
-        else
-            enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
+        enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
 
         const(string)[] symbolTable;
 
@@ -384,124 +381,144 @@ version(mir_ion_test) unittest
     // static assert(data.ion2textPretty == "{\n\ta: 1,\n\tb: 2\n}");
 }
 
-version(Have_msgpack_d)
+void msgpack2ion(Appender)(scope const(ubyte)[] data, ref Appender appender)
+    @trusted pure @nogc
 {
-    /++
-    Converts Msgpack binary data to Ion binary data.
-
-    This API requires msgpack-d package.
-    +/
-    immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data) @safe
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.symbol_table: IonSymbolTable;
+    import mir.ion.internal.data_holder: ionPrefix;
+    import mir.ser.ion : IonSerializer;
+    import mir.serde : SerdeTarget;
+    import mir.deser.msgpack : MsgpackValueStream;
+    enum nMax = 4096;
+    IonTapeHolder!(nMax * 8) tapeHolder = void;
+    tapeHolder.initialize;
+    IonSymbolTable!false table;
+    auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
+  
+    data.MsgpackValueStream.serialize(ser);
+  
+    appender.put(ionPrefix);
+    if (table.initialized)
     {
-        import mir.ser.ion: serializeIon;
-        import msgpack: unpack;
-        return data.unpack.value.serializeIon;
+        table.finalize;
+        appender.put(table.tapeData);
+    }
+    appender.put(tapeHolder.tapeData);
+}
+
+/++
+Converts MessagePack binary data to Ion binary data.
++/
+@safe pure
+immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data)
+{
+    import mir.appender : scopedBuffer;
+    auto buf = scopedBuffer!ubyte;
+    data.msgpack2ion(buf);
+    return buf.data.idup;
+}
+
+@safe pure @nogc
+version(mir_ion_test) unittest
+{
+    import mir.appender : scopedBuffer;
+    import mir.deser.ion : deserializeIon;
+    static struct S
+    {
+        bool compact;
+        int schema;
     }
 
-    @safe
-    version(mir_ion_test) unittest
+    auto buf = scopedBuffer!ubyte();
+    static immutable ubyte[] data = [0x82, 0xa7, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74, 0xc3, 0xa6, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x04];
+    data.msgpack2ion(buf);
+    assert(buf.data.deserializeIon!S == S(true, 4));
+}
+  
+@safe pure
+version(mir_ion_test) unittest
+{
+    static immutable testStrings = [
+        "2018-01-02T03:04:05Z",
+        "2018-01-02T03:04:05.678901234Z",
+        "2038-01-19T03:14:07.999999999Z",
+        "2038-01-19T03:14:08Z",
+        "2038-01-19T03:14:08.000000001Z",
+        "2106-02-07T06:28:15Z",
+        "2106-02-07T06:28:15.999999999Z",
+        "2106-02-07T06:28:16.000000000Z",
+        "2514-05-30T01:53:03.999999999Z",
+        "2514-05-30T01:53:04.000000000Z",
+        "1969-12-31T23:59:59.000000000Z",
+        "1969-12-31T23:59:59.999999999Z",
+        "1970-01-01T00:00:00Z",
+        "1970-01-01T00:00:00.000000001Z",
+        "1970-01-01T00:00:01Z",
+        "1899-12-31T23:59:59.999999999Z",
+        "1900-01-01T00:00:00.000000000Z",
+        "0000-01-01T00:00:00.000000000Z",
+        "9999-12-31T23:59:59.999999999Z",
+    ];
+
+    static immutable ubyte[][] testData = [
+        [0xd6, 0xff, 0x5a, 0x4a, 0xf6, 0xa5],
+        [0xd7, 0xff, 0xa1, 0xdc, 0xd7, 0xc8, 0x5a, 0x4a, 0xf6, 0xa5],
+        [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0x7f, 0xff, 0xff, 0xff],
+        [0xd6, 0xff, 0x80, 0x00, 0x00, 0x00],
+        [0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00, 0x00],
+        [0xd6, 0xff, 0xff, 0xff, 0xff, 0xff],
+        [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0xff, 0xff, 0xff, 0xff],
+        [0xd7, 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00],
+        [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xff, 0xff, 0xff, 0xff, 0xff],
+        [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00],
+        [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+        [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+        [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00],
+        [0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00],
+        [0xd6, 0xff, 0x00, 0x00, 0x00, 0x01],
+        [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x7f],
+        [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x80],
+        [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xf1, 0x86, 0x8b, 0x84, 0x00],
+        [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0x00, 0x00, 0x00, 0x3a, 0xff, 0xf4, 0x41, 0x7f],
+    ];
+
+    foreach (i, ts; testStrings)
     {
-        static immutable testStrings = [
-            "2018-01-02T03:04:05Z",
-            "2018-01-02T03:04:05.678901234Z",
-            "2038-01-19T03:14:07.999999999Z",
-            "2038-01-19T03:14:08Z",
-            "2038-01-19T03:14:08.000000001Z",
-            "2106-02-07T06:28:15Z",
-            "2106-02-07T06:28:15.999999999Z",
-            "2106-02-07T06:28:16.000000000Z",
-            "2514-05-30T01:53:03.999999999Z",
-            "2514-05-30T01:53:04.000000000Z",
-            "1969-12-31T23:59:59.000000000Z",
-            "1969-12-31T23:59:59.999999999Z",
-            "1970-01-01T00:00:00Z",
-            "1970-01-01T00:00:00.000000001Z",
-            "1970-01-01T00:00:01Z",
-            "1899-12-31T23:59:59.999999999Z",
-            "1900-01-01T00:00:00.000000000Z",
-            "0000-01-01T00:00:00.000000000Z",
-            "9999-12-31T23:59:59.999999999Z",
-        ];
-
-        static immutable ubyte[][] testData = [
-            [0xd6, 0xff, 0x5a, 0x4a, 0xf6, 0xa5],
-            [0xd7, 0xff, 0xa1, 0xdc, 0xd7, 0xc8, 0x5a, 0x4a, 0xf6, 0xa5],
-            [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0x7f, 0xff, 0xff, 0xff],
-            [0xd6, 0xff, 0x80, 0x00, 0x00, 0x00],
-            [0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00, 0x00],
-            [0xd6, 0xff, 0xff, 0xff, 0xff, 0xff],
-            [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0xff, 0xff, 0xff, 0xff],
-            [0xd7, 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00],
-            [0xd7, 0xff, 0xee, 0x6b, 0x27, 0xff, 0xff, 0xff, 0xff, 0xff],
-            [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00],
-            [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-            [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-            [0xd6, 0xff, 0x00, 0x00, 0x00, 0x00],
-            [0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00],
-            [0xd6, 0xff, 0x00, 0x00, 0x00, 0x01],
-            [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x7f],
-            [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x80],
-            [0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xf1, 0x86, 0x8b, 0x84, 0x00],
-            [0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0x00, 0x00, 0x00, 0x3a, 0xff, 0xf4, 0x41, 0x7f],
-        ];
-
-        foreach (i, ts; testStrings)
-        {
-            import mir.ser.ion;
-            import mir.deser.ion;
-            import mir.timestamp;
-            auto mp = testData[i];
-            auto ion = mp.msgpack2ion;
-            assert(ion.ion2text == ts, ts ~ " " ~ ion.ion2text);
-            assert(ts.Timestamp.serializeIon.ion2msgpack == mp);
-        }
-    }
-
-    /++
-    Converts Ion binary data to Msgpack binary data.
-
-    This API requires msgpack-d package.
-    +/
-    immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data) @safe pure
-    {
-        import mir.ser.msgpack: serializeMsgpack;
-        return data.IonValueStream.serializeMsgpack;
-    }
-
-    @safe
-    version(mir_ion_test) unittest
-    {
-        import mir.ion.conv: ion2msgpack, msgpack2ion, ion2text;
-        foreach(text; [
-            `null`,
-            `true`,
-            `1`,
-            `-2`,
-            `3.0`,
-            `2001-01-02T03:04:05Z`,
-            `[]`,
-            `[1,-2,3.0]`,
-            `[null,true,[1,-2,3.0],2001-01-02T03:04:05Z]`,
-            `{}`,
-            `{d:2001-01-02T03:04:05Z}`,
-        ])
-            assert(text.text2ion.ion2msgpack.msgpack2ion.ion2text == text, text);
+        import mir.ser.ion : serializeIon;
+        import mir.timestamp : Timestamp;
+        auto mp = testData[i];
+        auto ion = mp.msgpack2ion;
+        assert(ion.ion2text == ts, ts ~ " " ~ ion.ion2text);
+        assert(ts.Timestamp.serializeIon.ion2msgpack == mp);
     }
 }
-else
-version (D_Ddoc)
+  
+/++
+Converts Ion binary data to MessagePack binary data.
++/
+@safe pure
+immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data)
 {
-    /++
-    Converts Msgpack binary data to Ion binary data.
+    import mir.ser.msgpack: serializeMsgpack;
+    return data.IonValueStream.serializeMsgpack;
+}
 
-    This API requires msgpack-d package.
-    +/
-    immutable(ubyte)[] msgpack2ion()(scope const(ubyte)[] data) @safe;
-
-    /++
-    Converts Ion binary data to Msgpack binary data.
-
-    This API requires msgpack-d package.
-    +/
-    immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data) @safe pure;
+@safe pure
+version(mir_ion_test) unittest
+{
+    foreach(text; [
+        `null`,
+        `true`,
+        `1`,
+        `-2`,
+        `3.0`,
+        `2001-01-02T03:04:05Z`,
+        `[]`,
+        `[1,-2,3.0]`,
+        `[null,true,[1,-2,3.0],2001-01-02T03:04:05Z]`,
+        `{}`,
+        `{d:2001-01-02T03:04:05Z}`,
+    ])
+        assert(text.text2ion.ion2msgpack.msgpack2ion.ion2text == text, text);
 }

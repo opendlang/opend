@@ -305,14 +305,11 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarg
 {
     import mir.utility: _expect;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
-    import mir.ser: serializeValue, isMsgpackValue;
+    import mir.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
     enum nMax = 4096u;
-    static if (isMsgpackValue!T)
-        enum keys = string[].init;
-    else
-        enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
+    enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
     auto tapeHolder = ionTapeHolder!(nMax * 8);
     tapeHolder.initialize;

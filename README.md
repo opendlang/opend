@@ -37,5 +37,5 @@ Mir Ion internals are `@nogc` and almost all are preallocated. If DIP1008 is ena
  - [ ] Shared Symbol Tables
  - [x] Chunked JSON reader
  - [x] Chunked binary Ion Value Stream reader
- - [x] MessagePack parsing (msgpack-d is required)
- - [x] Ion to MessagePack (msgpack-d is required)
+ - [x] MessagePack parsing
+ - [x] Ion to MessagePack

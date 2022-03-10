@@ -23,7 +23,6 @@ jobs:
           compiler: ldc-latest
       - name: Run unittests
         run: |
-          echo 'dependency "msgpack-d" version="*"' >> dub.sdl
           dub test -c asan-unittest --compiler=ldc2
   builder:
     name: 'Build and test on ${{ matrix.arch }}-${{ matrix.os }}/${{ matrix.dc }}'
@@ -53,7 +52,7 @@ jobs:
           compiler: ${{ matrix.dc }}
       - name: Install multi-lib for 32-bit systems
         if: matrix.arch == 'x86' && matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install gcc-multilib
+        run: sudo apt-get update && sudo apt-get install gcc-multilib
       - id: build
         name: Test building
         run: dub test --arch=$ARCH --build=unittest-cov

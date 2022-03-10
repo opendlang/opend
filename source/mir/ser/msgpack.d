@@ -1,8 +1,6 @@
 /++
 $(H4 High level Msgpack serialization API)
 
-This module requires msgpack-d package.
-
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
@@ -957,8 +955,11 @@ version(mir_ion_test) unittest
 /// Test excessively large struct
 @safe pure
 static if (size_t.sizeof > uint.sizeof)
+version(D_Exceptions)
 version(mir_ion_test) unittest
 {
+    import mir.ion.exception : IonException;
+
     static class HugeStruct
     {
         void serialize(S)(ref S serializer) const
@@ -983,8 +984,11 @@ version(mir_ion_test) unittest
 /// Test excessively large array
 @safe pure
 static if (size_t.sizeof > uint.sizeof)
+version(D_Exceptions)
 version(mir_ion_test) unittest
 {
+    import mir.ion.exception : IonException;
+
     static class HugeArray
     {
         void serialize(S)(ref S serializer) const
@@ -1008,9 +1012,12 @@ version(mir_ion_test) unittest
 
 /// Test invalidly large BigInt
 @safe pure
+version(D_Exceptions)
 version(mir_ion_test) unittest
 {
+    import mir.ion.exception : IonException;
     import mir.bignum.integer : BigInt;
+
     bool caught = false;
     try
     {
