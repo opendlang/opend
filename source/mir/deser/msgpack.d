@@ -625,22 +625,26 @@ struct MsgpackValueStream
 }
 
 ///
-void deserializeMsgpack(T)(ref T value, scope const(ubyte)[] data)
+template deserializeMsgpack(T)
 {
-    import mir.appender : scopedBuffer;
-    import mir.deser.ion : deserializeIon;
-    import mir.ion.conv : msgpack2ion;
-    auto buf = scopedBuffer!ubyte();
-    data.msgpack2ion(buf);
-    return deserializeIon!T(value, buf.data);
-}
+    ///
+    void deserializeMsgpack(ref T value, scope const(ubyte)[] data)
+    {
+        import mir.appender : scopedBuffer;
+        import mir.deser.ion : deserializeIon;
+        import mir.ion.conv : msgpack2ion;
+        auto buf = scopedBuffer!ubyte();
+        data.msgpack2ion(buf);
+        return deserializeIon!T(value, buf.data);
+    }
 
-///
-T deserializeMsgpack(T)(scope const(ubyte)[] data)
-{
-    T value;
-    deserializeMsgpack!T(value, data);
-    return value;
+    ///
+    T deserializeMsgpack()(scope const(ubyte)[] data)
+    {
+        T value;
+        deserializeMsgpack(value, data);
+        return value;
+    }
 }
 
 /// Test round-trip serialization/deserialization of signed integral types
