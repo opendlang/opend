@@ -745,10 +745,7 @@ unittest
     stringBuf buffer;
     static struct S { int a; }
     serializeTextPretty!"    "(buffer, S(4));
-    assert(buffer.data ==
-`{
-    a: 4
-}`);
+    assert(buffer.data == "{\n    a: 4\n}");
 }
 
 /++

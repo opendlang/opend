@@ -584,24 +584,18 @@ template serializeJsonPretty(string sep = "\t")
 unittest
 {
     static struct S { int a; }
-    assert(S(4).serializeJsonPretty!"    " ==
-q{{
-    "a": 4
-}});
+    assert(S(4).serializeJsonPretty!"    " == "{\n    \"a\": 4\n}");
 }
 
 ///
-// @safe pure nothrow @nogc
+@safe pure nothrow @nogc
 unittest
 {
     import mir.format: stringBuf;
     stringBuf buffer;
     static struct S { int a; }
     serializeJsonPretty!"    "(buffer, S(4));
-    assert(buffer.data ==
-`{
-    "a": 4
-}`);
+    assert(buffer.data == "{\n    \"a\": 4\n}");
 }
 
 /++
