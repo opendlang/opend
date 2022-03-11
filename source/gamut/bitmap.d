@@ -1,4 +1,4 @@
-﻿/// Bitmap Management functions.
+﻿/// Bitmap management and information functions.
 module gamut.bitmap;
 
 import core.memory: pureMalloc, pureRealloc, pureFree;
@@ -6,12 +6,31 @@ import gamut.types;
 
 nothrow @nogc @safe:
 
+// TODO: for security, disallow image above a certain width and height, handle that as error
+//       check for overflow in image creation WxH
 
 struct FIBITMAP
 {
 private:
+
+    FREE_IMAGE_TYPE _type;
     ubyte* _data = null;
+
+    int _width;
+    int _height;
+    int _bpp;
+
+    uint _red_mask;
+    uint _green_mask;
+    uint _blue_mask;
 }
+
+
+// ================================================================================================
+//
+//                                  BITMAP MANAGEMENT FUNCTIONS
+//
+// ================================================================================================
 
 /// If you want to create a new bitmap in memory from scratch, without loading a pre-made 
 /// bitmap from disc, you use this function. `FreeImage_Allocate` takes a width and height 
@@ -28,7 +47,12 @@ private:
 /// bitmap is palletised it will contain a completely black palette. You can access, and 
 /// hence populate the palette by using the function FreeImage_GetPalette.
 /// For 8-bit images only, FreeImage_Allocate will build a default greyscale palette. 
-FIBITMAP* FreeImage_Allocate(int width, int height, int bpp, uint red_mask = 0, uint green_mask = 0, uint blue_mask = 0) pure @trusted
+FIBITMAP* FreeImage_Allocate(int width, 
+                             int height, 
+                             int bpp, 
+                             uint red_mask = 0, 
+                             uint green_mask = 0, 
+                             uint blue_mask = 0) pure @trusted
 {
     return FreeImage_AllocateT(FIT_BITMAP, width, height, bpp, red_mask, green_mask, blue_mask);
 }
@@ -39,23 +63,29 @@ FIBITMAP* FreeImage_Allocate(int width, int height, int bpp, uint red_mask = 0, 
 /// Transform applied to a 8-bit greyscale image: the result is a complex image). 
 /// A special parameter, an enum named `FREE_IMAGE_TYPE`, is used to specify the bitmap 
 /// type of a FIBITMAP.
-FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type, int width, int height, 
-                              int bpp = 8, uint red_mask = 0, uint green_mask = 0, uint blue_mask = 0) pure @trusted
+FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type, 
+                              int width, 
+                              int height, 
+                              int bpp = 8, 
+                              uint red_mask = 0, 
+                              uint green_mask = 0, 
+                              uint blue_mask = 0) pure @trusted
 {
     FIBITMAP* bitmap = cast(FIBITMAP*) pureMalloc(FIBITMAP.sizeof);
     if (!bitmap) 
         return null;
-    *bitmap = FIBITMAP.init;
+    bitmap._type = type;
     ubyte* data = pureReallocatePixelData(null, type, width, height, bpp);    
     if (data == null)
     {
         pureFree(bitmap);
     }
+    bitmap._width = width;
+    bitmap._height = height;
     bitmap._data = data;
+    bitmap._bpp = bpp; // Store even if not significant
     return bitmap;
 }
-
-
 
 /// FreeImage_Allocate
 
@@ -66,18 +96,38 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type, int width, int height,
 
 /// FreeImage_LoadU
 
-
 /// FreeImage_LoadFromHandle
 
 /// FreeImage_Save
 
 /// FreeImage_SaveU
 
+/// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
+FIBITMAP* FreeImage_Clone(FIBITMAP *dib) pure
+{
+    assert(dib._type != FIT_UNKNOWN); // MAYDO: clone of FIT_UNKNOWN?
 
-/// FreeImage_Clone
+    if (dib is null)
+        return null;
 
+    FREE_IMAGE_TYPE type = dib._type;
+    int width            = dib._width;
+    int height           = dib._height;
+    int bpp              = dib._bpp;
+    
+    uint red_mask = dib._red_mask;
+    uint green_mask = dib._green_mask;
+    uint blue_mask = dib._blue_mask;
 
-/// FreeImage_Unload
+    FIBITMAP* bitmap = FreeImage_AllocateT(dib._type, width, height, bpp, red_mask, green_mask, blue_mask);
+
+    if (!bitmap) 
+        return null;
+
+    // TODO: copy pixels
+    
+    return bitmap;
+}
 
 /// Deletes a previously loaded `FIBITMAP` from memory.
 void FreeImage_Unload(FIBITMAP *dib) pure @system
@@ -93,6 +143,96 @@ void FreeImage_Unload(FIBITMAP *dib) pure @system
     }
 }
 
+// ================================================================================================
+//
+//                                  BITMAP MANAGEMENT FUNCTIONS
+//
+// ================================================================================================
+
+
+
+FREE_IMAGE_TYPE FreeImage_GetImageType(FIBITMAP *dib) pure
+{
+    return dib._type;
+}
+
+/// Returns the number of colors used in a bitmap. This function returns the palette-size for 
+/// palletised bitmaps, and 0 for high-colour bitmaps.
+int FreeImage_GetPaletteSize(FIBITMAP *dib) pure
+{
+    return 0; // 
+}
+deprecated("Use instead FreeImage_GetPaletteSize") 
+    alias FreeImage_GetColorsUsed = FreeImage_GetPaletteSize; ///ditto
+
+/// Returns the size of one pixel in the bitmap in bits. For example when each pixel takes 32-bits 
+/// of space in the bitmap, this function returns 32. Possible bit depths are 1, 4, 8, 16, 24, 32 
+/// for standard bitmaps and 16-, 32-, 48-, 64-, 96- and 128-bit for non standard bitmaps.
+int FreeImage_GetBPP(FIBITMAP *dib) pure
+{
+    assert(dib._type != FIT_UNKNOWN);
+
+    if (dib._type == FIT_BITMAP)
+    {
+        return dib._bpp;
+    }
+    else
+        return 8 * bytesForImageType(dib._type);
+}
+
+/// Returns the width of the bitmap in pixel units.
+int FreeImage_GetWidth(FIBITMAP *dib) pure
+{
+    return dib._width;
+}
+
+/// Returns the height of the bitmap in pixel units.
+int FreeImage_GetHeight(FIBITMAP *dib) pure
+{
+    return dib._height;
+}
+
+/// Returns a bit pattern describing the red color component of a pixel in a FIBITMAP, returns 0 
+/// otherwise. 
+uint FreeImage_GetRedMask(FIBITMAP *dib) pure
+{
+    return dib._red_mask;
+}
+
+/// Returns a bit pattern describing the green color component of a pixel in a FIBITMAP, returns 0
+/// otherwise. 
+uint FreeImage_GetGreenMask(FIBITMAP *dib) pure
+{
+    return dib._green_mask;
+}
+
+/// Returns a bit pattern describing the blue color component of a pixel in a FIBITMAP, returns 0 
+/// otherwise. 
+uint FreeImage_GetBlueMask(FIBITMAP *dib) pure
+{
+    return dib._blue_mask;
+}
+
+/// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
+/// possibly some metadata). 
+/// Header only bitmap can be loaded using the FIF_LOAD_NOPIXELS load flag (see Table 3). 
+/// This load flag will tell the decoder to read header data and available metadata and skip pixel 
+/// data decoding. The memory size of the dib is thus reduced to the size of its members, 
+/// excluding the pixel buffer. Reading metadata only information is fast since no pixel decoding 
+/// occurs. 
+/// Header only bitmap can be used with Bitmap information functions, Metadata iterator. They 
+/// cannot be used with any pixel processing function or by saving function.
+bool FreeImage_HasPixels(FIBITMAP *dib) pure
+{
+    return dib._data != null;
+}
+
+// ================================================================================================
+//
+//                                           INTERNALS
+//
+// ================================================================================================
+
 
 private:
 
@@ -103,14 +243,14 @@ bool isValidBPPStandardBitmap(int bpp) pure
 }
 
 // Size of one pixel for type FIT_BITMAP + bpp
-size_t bytesForBPPStandardBitmap(int bpp) pure
+int bytesForBPPStandardBitmap(int bpp) pure
 {
     if (bpp < 8) return 1;
     else return (bpp >> 3);
 }
 
 // Size of one pixel for type
-size_t bytesForImageType(FREE_IMAGE_TYPE type) pure
+int bytesForImageType(FREE_IMAGE_TYPE type) pure
 {
     assert(type != FIT_UNKNOWN && type != FIT_BITMAP);
 
@@ -138,7 +278,7 @@ ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, 
     size_t bytesPerPixel;
     if (type == FIT_UNKNOWN)
     {
-        error:
+    error:
         pureFree(oldData);
         return null;
     }
@@ -163,4 +303,18 @@ ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, 
         data[0..bytes] = 0; 
     }
     return data;
+}
+
+unittest
+{
+    FIBITMAP *bitmap = FreeImage_AllocateT(FIT_RGB16, 257, 183);
+    if (bitmap) 
+    {
+        // bitmap successfully created!
+        assert(FreeImage_GetType(bitmap) == FIT_RGB16);
+        assert(FreeImage_GetWidth(bitmap));
+        assert(FreeImage_GetHeight(bitmap));
+        assert(FreeImage_GetBPP(bitmap) == 48);
+        FreeImage_Unload(bitmap);
+    }
 }
