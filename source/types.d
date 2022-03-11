@@ -2,9 +2,35 @@ module gamut.types;
 
 // Various public types
 
-enum ImageFormat
+
+alias FREE_IMAGE_FORMAT = int;
+
+enum : FREE_IMAGE_FORMAT
 {
-	unknown,
-	png, // Portable Network Graphics (*.PNG)
-	jpeg // Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
+	FIF_UNKNOWN = -1, /// Unknown format (returned value only, never use it as input value)
+	FIF_BMP     =  0, /// Windows or OS/2 Bitmap File (*.BMP)
+	FIF_GIF     =  1, /// Graphics Interchange Format (*.GIF)
+	FIF_JPEG    =  2, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
+	FIF_PNG     =  3, /// Portable Network Graphics (*.PNG)
+	FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
+}
+
+
+alias FREE_IMAGE_TYPE = int;
+
+enum : FREE_IMAGE_TYPE
+{
+    FIT_UNKNOWN,    /// Unknown format (returned value only, never use it as input value)
+    FIT_BITMAP,     /// Standard image: 1-, 4-, 8-, 16-, 24-, 32-bit
+    FIT_UINT16,     /// Array of unsigned short: unsigned 16-bit
+    FIT_INT16,      /// Array of short: signed 16-bit
+    FIT_UINT32,     /// Array of unsigned long: unsigned 32-bit
+    FIT_INT32,      /// Array of long: signed 32-bit
+    FIT_FLOAT,      /// Array of float: 32-bit IEEE floating point
+    FIT_DOUBLE,     /// Array of double: 64-bit IEEE floating point
+    FIT_COMPLEX,    /// Array of FICOMPLEX: 2 x 64-bit IEEE floating point
+    FIT_RGB16,      /// 48-bit RGB image: 3 x unsigned 16-bit
+    FIT_RGBA16,     /// 64-bit RGBA image: 4 x unsigned 16-bit
+    FIT_RGBF,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
+    FIT_RGBAF,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
