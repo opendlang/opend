@@ -1,8 +1,15 @@
-﻿/// Bitmap management and information functions.
+﻿/**
+Bitmap management and information functions.
+
+Copyright: Copyright Guillaume Piolat 2022
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module gamut.bitmap;
 
+import core.stdc.stdio;
 import core.memory: pureMalloc, pureRealloc, pureFree;
 import gamut.types;
+import gamut.io;
 
 nothrow @nogc @safe:
 
@@ -87,20 +94,59 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type,
     return bitmap;
 }
 
-/// FreeImage_Allocate
+/// Load flags
+enum int
+   PNG_DEFAULT = 0;
 
+/// This function decodes a bitmap, allocates memory for it and then returns it as a FIBITMAP. 
+/// The first parameter defines the type of bitmap to be loaded. For example, when FIF_BMP is 
+/// passed, a BMP file is loaded into memory (an overview of possible FREE_IMAGE_FORMAT 
+/// constants is available in Table 1). The second parameter tells FreeImage the file it has to 
+/// decode. The last parameter is used to change the behaviour or enable a feature in the bitmap 
+/// plugin. Each plugin has its own set of parameters.
+FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filenameZ, int flags = 0) @system
+{
+    assert(fif != FIF_UNKNOWN);
+    
+    FILE* f = fopen(filenameZ, "rb");
+    if (f is null)
+        return null;
 
-/// FreeImage_AllocateT
+    FreeImageIO io;
 
-/// FreeImage_Load
+    FIBITMAP* bitmap = FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)f, flags);
+    
+    if (0 != fclose(f))
+    {
+        FreeImage_Unload(bitmap);
+        return null;
+    }
 
-/// FreeImage_LoadU
+    return bitmap;
+}
+///ditto
+deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeImage_LoadU = FreeImage_Load; 
 
-/// FreeImage_LoadFromHandle
+/// FreeImage has the unique feature to load a bitmap from an arbitrary source. This source 
+/// might for example be a cabinet file, a zip file or an Internet stream.
+/// FreeImageIO is a structure that contains 4 function pointers: one to read from a source, one 
+/// to write to a source, one to seek in the source and one to tell where in the source we 
+/// currently are. When you populate the FreeImageIO structure with pointers to functions and 
+/// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
+/// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
+/// this to differentiate between different contexts, e.g. different files or different Internet streams.
+FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
+{
+    return null;
+}
 
 /// FreeImage_Save
 
-/// FreeImage_SaveU
+deprecated("Use FreeImage_Save instead, it was made Unicode-aware") alias FreeImage_SaveU = FreeImage_Save;
+FIBITMAP* FreeImage_Save(FIBITMAP *dib) pure
+{
+    return null; // TODO
+}
 
 /// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
 FIBITMAP* FreeImage_Clone(FIBITMAP *dib) pure
@@ -124,7 +170,7 @@ FIBITMAP* FreeImage_Clone(FIBITMAP *dib) pure
     if (!bitmap) 
         return null;
 
-    // TODO: copy pixels
+    // TODO: copy pixels if any
     
     return bitmap;
 }

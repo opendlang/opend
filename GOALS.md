@@ -1,6 +1,6 @@
 
 Goals:
-- fast, -betterC, nothrow, @nogc, @safe, image library
+- fast, -betterC, nothrow, @nogc, @safe, pure(?), image library
 - easiest API for basic image manipulation
 - decoders for PNG and JPEG
 - writer for PNG
