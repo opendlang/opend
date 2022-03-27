@@ -43,6 +43,17 @@ sources_list = [
     'mir/ser/package',
     'mir/ser/text',
     'mir/ser/unwrap_ids',
+    'mir/ion/ser/script',
+    'mir/ion/ser/ion',
+    'mir/ion/ser/json',
+    'mir/ion/ser/msgpack',
+    'mir/ion/ser/package',
+    'mir/ion/ser/text',
+    'mir/ion/deser/ion',
+    'mir/ion/deser/json',
+    'mir/ion/deser/msgpack',
+    'mir/ion/deser/package',
+    'mir/ion/deser/text',
 ]
 
 sources = []
