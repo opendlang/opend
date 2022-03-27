@@ -556,7 +556,7 @@ JSON serialization function with pretty formatting and custom output range.
 +/
 template serializeJsonPretty(string sep = "\t")
 {
-    import mir.primitives: isOutputRange; 
+    import mir.primitives: isOutputRange;
     ///
     void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
         if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))

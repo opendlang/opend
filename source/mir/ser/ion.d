@@ -6,6 +6,7 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ser.ion;
 
+import mir.primitives: isOutputRange;
 public import mir.serde;
 
 /++
@@ -375,7 +376,7 @@ unittest
 // void serializeIon(TapeHolder, T)(
 //     TapeHolder* tapeHolder,
 //     auto ref T value,
-//     int serdeTarget = serdeTarget.ion)
+//     int serdeTarget = SerdeTarget.ion)
 // {
 //     import mir.ser: serializeValue;
 //     import mir.ion.symbol_table;
@@ -506,23 +507,70 @@ unittest
 //     assert(serializeIon(s) == `{"a":"str_str_str_str_str"}`);
 // }
 
-// /++
-// Ion serialization for custom outputt range.
-// +/
-// void serializeIon(Appender, V)(ref Appender appender, auto ref V value)
-// {
-// }
+/++
+Ion serialization for custom outputt range.
++/
+void serializeIon(Appender, T)(ref Appender appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
+    if (isOutputRange!(Appender, const(ubyte)[]) && !is(T == SerdeTarget))
+{
+    import mir.utility: _expect;
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
+    import mir.ser: serializeValue;
+    import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
-// ///
-// @safe pure nothrow @nogc
-// unittest
-// {
-//     import mir.format: stringBuf;
-//     // stringBuf buffer;
-//     // static struct S { int a; }
-//     // serializeIon(buffer, S(4));
-//     // assert(buffer.data == `{"a":4}`);
-// }
+    enum nMax = 4096u;
+    enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
+
+    auto tapeHolder = ionTapeHolder!(nMax * 8);
+    tapeHolder.initialize;
+    IonSymbolTable!false table;
+    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, false)(()@trusted { return &tapeHolder; }(), ()@trusted { return &table; }(), serdeTarget);
+    serializeValue(serializer, value);
+
+    appender.put(ionPrefix);
+
+    // use runtime table
+    if (_expect(table.initialized, false))
+    {
+        table.finalize; 
+        appender.put(table.tapeData);
+    }
+    // compile time table
+    else
+    {
+        appender.put(serializer.compiletimeTableTape);
+    }
+    appender.put(tapeHolder.tapeData);
+}
+
+///
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.appender: scopedBuffer;
+
+    static struct S
+    {
+        string s;
+        double aaaa;
+        int bbbb;
+    }
+
+    auto s = S("str", 1.23, 123);
+
+    static immutable ubyte[] data = [
+        0xe0, 0x01, 0x00, 0xea, 0xee, 0x92, 0x81, 0x83,
+        0xde, 0x8e, 0x87, 0xbc, 0x81, 0x73, 0x84, 0x61,
+        0x61, 0x61, 0x61, 0x84, 0x62, 0x62, 0x62, 0x62,
+        0xde, 0x92, 0x8a, 0x83, 0x73, 0x74, 0x72, 0x8b,
+        0x48, 0x3f, 0xf3, 0xae, 0x14, 0x7a, 0xe1, 0x47,
+        0xae, 0x8c, 0x21, 0x7b,
+    ];
+
+    auto buffer = scopedBuffer!ubyte;
+    serializeIon(buffer, s);
+    assert (data == buffer.data);
+}
 
 /++
 Creates Ion serialization back-end.
@@ -531,7 +579,7 @@ Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
 template ionSerializer(string sep = "")
 {
     ///
-    auto ionSerializer(Appender)(return Appender* appender, int serdeTarget = serdeTarget.ion)
+    auto ionSerializer(Appender)(return Appender* appender, int serdeTarget = SerdeTarget.ion)
     {
         return IonSerializer!(sep, Appender)(appender, serdeTarget);
     }
