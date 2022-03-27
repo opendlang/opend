@@ -119,7 +119,7 @@ struct IonSymbolTable(bool gc)
 pure nothrow:
 
     static if (!gc)
-    ~this()
+    ~this() @trusted
     {
         if (entries != initialStackSpace.ptr)
             free(entries);
