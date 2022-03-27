@@ -79,7 +79,7 @@ void serializeValue(S, V)(ref S serializer, in V value)
 {
     static if (hasUDA!(V, serdeProxy))
     {
-        serializer.serializeValue(to!(serdeGetProxy!V)(value));
+        serializer.serializeWithProxy!(serdeGetProxy!V)(value);
     }
     else
     {
@@ -608,7 +608,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
             else
             static if(hasUDA!(__traits(getMember, value, member), serdeProxy))
             {
-                serializer.serializeValue(to!(serdeGetProxy!(__traits(getMember, value, member)))(val));
+                serializer.serializeWithProxy!(serdeGetProxy!(__traits(getMember, value, member)))(val);
             }
             else
             {
@@ -622,6 +622,23 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
     }
 
     serializer.structEnd(state);
+}
+
+private template serializeWithProxy(Proxy)
+{
+    void serializeWithProxy(S, V)(ref S serializer, auto ref V value)
+    {
+        static if (is(Proxy == const(char)[]) || is(Proxy == string) || is(Proxy == char[]))
+        {
+            import mir.format: stringBuf, print, getData;
+            static if (__traits(compiles, serializeValue(serializer, stringBuf() << value << getData)))
+                serializeValue(serializer, stringBuf() << value << getData);
+            else
+                serializeValue(serializer, to!Proxy(value));
+        }
+        else
+            serializeValue(serializer, to!Proxy(value));
+    }
 }
 
 /// Struct and class type serialization
@@ -750,7 +767,7 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
     else
     static if (hasUDA!(V, serdeProxy))
     {
-        serializeValue(serializer, to!(serdeGetProxy!V)(value));
+        serializer.serializeWithProxy!(serdeGetProxy!V)(value);
         return;
     }
     else
