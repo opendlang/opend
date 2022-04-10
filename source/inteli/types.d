@@ -133,8 +133,11 @@ else version(DigitalMars)
 
         static if (__VERSION__ >= 2099)
         {
-            // Trying out D_IMD finally, with DMD 2.099
-            enum SSESizedVectorsAreEmulated = false;
+            // Trying out D_SIMD finally, with DMD 2.099
+            //enum SSESizedVectorsAreEmulated = false;
+
+            // It didn't work, maybe one day.
+            enum SSESizedVectorsAreEmulated = true;
         }
         else
         {
