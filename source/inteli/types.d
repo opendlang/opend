@@ -131,13 +131,14 @@ else version(DigitalMars)
     {
         enum MMXSizedVectorsAreEmulated = true;
 
-        static if (__VERSION__ >= 2096)
+        static if (__VERSION__ >= 2099)
         {
-            enum SSESizedVectorsAreEmulated = true; // Still doesn't work well in DMD 2.096 because of DMD bugs
+            // Trying out D_IMD finally, with DMD 2.099
+            enum SSESizedVectorsAreEmulated = false;
         }
         else
         {
-            // Before DMD 2.096, blocked by https://issues.dlang.org/show_bug.cgi?id=21474
+            // Basically blockd by DMD backend issues, tagged codegen, backend, or SIMD in Bugzilla.
             enum SSESizedVectorsAreEmulated = true; 
         }
 
