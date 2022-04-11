@@ -235,7 +235,7 @@ static if (CoreSimdIsEmulated)
                 return dest;
             }
 
-        ref inout(BaseType) opIndex(size_t i) inout pure nothrow @safe @nogc
+        ref inout(BaseType) opIndex(size_t i) inout return pure nothrow @safe @nogc
         {
             return array[i];
         }
