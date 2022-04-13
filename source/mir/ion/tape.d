@@ -348,7 +348,8 @@ size_t ionPutUIntField(T)(scope ubyte* ptr, const T num)
 {
     T value = num;
     auto c = cast(size_t)ctlzp(value);
-    value <<= c & 0xF8;
+    enum ubyte cm = 0xF8 & (value.sizeof * 8 - 1);
+    value <<= c & cm;
     c >>>= 3;
     *cast(ubyte[T.sizeof]*)ptr = byteData(value);
     return T.sizeof - c;
@@ -502,14 +503,15 @@ size_t ionPutIntField(T)(scope ubyte* ptr, const T num, bool sign)
     T value = num;
     static if (T.sizeof >= 4)
     {
-        auto c = cast(size_t)ctlzp(value);
+        auto c = cast(uint)ctlzp(value);
         bool s = (c & 0x7) == 0;
         *ptr = sign << 7;
         ptr += s;
-        value <<= c & 0xF8;
+        enum ubyte cm = 0xF8 & (value.sizeof * 8 - 1);
+        value <<= c & cm;
         c >>>= 3;
         value |= T(sign) << (T.sizeof * 8 - 1);
-        c = T.sizeof - c + s - (value == 0);
+        c = uint(T.sizeof) - c + s - (value == 0);
         *cast(ubyte[T.sizeof]*)ptr = byteData(value);
         return c;
     }
@@ -530,7 +532,7 @@ version(mir_ion_test) unittest
     foreach(T; AliasSeq!(ubyte, ushort, uint, ulong))
     {
         data[] = 0;
-        assert(ionPutIntField!T(data.ptr, 0, false) == 0);
+        assert(ionPutIntField!T(data.ptr, 0, false) == 0, T.stringof);
 
         data[] = 0;
         assert(ionPutIntField!T(data.ptr, 0, true) == 1);

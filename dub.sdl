@@ -17,6 +17,11 @@ configuration "unittest" {
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
+buildType "unittest-release" {
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+    versions "mir_ion_test" "mir_ion_parser_test"
+}
+
 configuration "asan-unittest" {
     dflags "--fsanitize=address" platform="ldc"
     versions "mir_ion_test" "mir_ion_parser_test"
