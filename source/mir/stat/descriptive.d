@@ -5,7 +5,7 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: John Michael Hall, Ilya Yaroshenko
 
-Copyright: 2020 Mir Stat Authors.
+Copyright: 2022 Mir Stat Authors.
 
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
@@ -188,19 +188,21 @@ unittest
     static assert(is(quantileType!(float[], QuantileAlgo.type9) == float));
 }
 
-version(mir_stat_test_builtincomplex)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type1) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type2) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type3) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type4) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type5) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type6) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type7) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type8) == cfloat));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.type9) == cfloat));
+    import mir.complex: Complex;
+
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type1) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type2) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type3) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type4) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type5) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type6) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type7) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type8) == Complex!float));
+    static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
 version(mir_stat_test)
@@ -235,16 +237,30 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
-version(mir_stat_test_builtincomplex)
+version(mir_stat_test_mircomplex)
 @safe pure nothrow @nogc
 unittest
 {
+    import mir.complex: Complex;
     static struct Foo {
-        cfloat x;
+        Complex!float x;
         alias x this;
     }
 
-    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == cfloat));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == Complex!float));
+}
+
+version(mir_stat_test_stdcomplex)
+@safe pure nothrow @nogc
+unittest
+{
+    import std.complex: Complex;
+    static struct Foo {
+        Complex!float x;
+        alias x this;
+    }
+
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == Complex!float));
 }
 
 @fmamath private @safe pure nothrow @nogc
@@ -1582,17 +1598,21 @@ template dispersion(
 }
 
 /// Simple examples
-version(mir_stat_test)
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.complex: Complex;
+    import mir.complex.math: capproxEqual = approxEqual;
     import mir.functional: naryFun;
+    import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
+
+    alias C = Complex!double;
 
     assert(dispersion([1.0, 2, 3]).approxEqual(2.0 / 3));
 
-    assert(dispersion([1.0 + 3i, 2, 3]).approxEqual((-4.0 - 6i) / 3));
+    assert(dispersion([C(1.0, 3), C(2), C(3)]).capproxEqual(C(-4, -6) / 3));
 
     assert(dispersion!(mean!float, "a * a", mean!float)([0, 1, 2, 3, 4, 5].sliced(3, 2)).approxEqual(17.5 / 6));
 
@@ -1713,16 +1733,32 @@ unittest
     assert(x.dispersion!(mean!float, square, mean!float).approxEqual(50.91667 / 12));
 }
 
-// built-in complex test
-version(mir_stat_test_builtincomplex)
+// mir.complex test
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.complex: Complex;
+    import mir.complex.math: approxEqual;
     import mir.ndslice.slice: sliced;
 
-    auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
-    assert(x.dispersion.approxEqual((0.0 + 10.0i) / 4));
+    alias C = Complex!double;
+
+    auto x = [C(1.0, 2), C(2.0, 3), C(3.0, 4), C(4.0, 5)].sliced;
+    assert(x.dispersion.approxEqual(C(0.0, 10.0) / 4));
+}
+
+// std.complex test
+version(mir_stat_test_stdcomplex)
+@safe pure nothrow
+unittest
+{
+    import mir.ndslice.slice: sliced;
+    import std.complex: complex;
+    import std.math.operations: isClose;
+
+    auto x = [complex(1.0, 2), complex(2, 3), complex(3, 4), complex(4, 5)].sliced;
+    assert(x.dispersion.isClose(complex(0.0, 10.0) / 4));
 }
 
 /++
@@ -1730,16 +1766,16 @@ Dispersion works for complex numbers and other user-defined types (provided that
 the `centralTendency`, `transform`, and `summary` functions are defined for those
 types)
 +/
-version(mir_stat_test)
+version(mir_stat_test_stdcomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
     import std.complex: Complex;
+    import std.math.operations: isClose;
 
     auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
-    assert(x.dispersion.approxEqual(Complex!double(0, 10) / 4));
+    assert(x.dispersion.isClose(Complex!double(0, 10) / 4));
 }
 
 /// Compute mean tensors along specified dimention of tensors
@@ -5076,39 +5112,42 @@ unittest
     assert(v.moment.approxEqual(54.76562 / 12));
 }
 
-// Raw Moment: test built-in complex
-version(mir_stat_test_builtincomplex)
+// mir.complex test
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.complex;
+    import mir.complex.math: approxEqual;
     import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
 
-    auto a = [1.0 + 3i, 2, 3].sliced;
+    alias C = Complex!double;
+
+    auto a = [C(1, 3), C(2), C(3)].sliced;
     auto x = a.center;
 
-    MomentAccumulator!(cdouble, 2, Summation.naive) v;
+    MomentAccumulator!(C, 2, Summation.naive) v;
     v.put(x);
-    assert(v.moment.approxEqual((-4.0 - 6i) / 3));
+    assert(v.moment.approxEqual(C(-4, -6) / 3));
 }
 
 // Raw Moment: test std.complex
-version(mir_stat_test)
+version(mir_stat_test_stdcomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
     import std.complex: Complex;
+    import std.math.operations: isClose;
 
     auto a = [Complex!double(1.0, 3), Complex!double(2.0, 0), Complex!double(3.0, 0)].sliced;
     auto x = a.center;
 
     MomentAccumulator!(Complex!double, 2, Summation.naive) v;
     v.put(x);
-    assert(v.moment.approxEqual(Complex!double(-4.0, -6.0) / 3));
+    assert(v.moment.isClose(Complex!double(-4.0, -6.0) / 3));
 }
 
 /// Central moment
@@ -5457,32 +5496,35 @@ unittest
     static assert(is(typeof(z) == double));
 }
 
-// rawMoment built-in complex
-version(mir_stat_test_builtincomplex)
+// mir.complex test
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.complex: Complex;
+    import mir.complex.math: approxEqual;
     import mir.ndslice.slice: sliced;
 
-    auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
-    assert(x.rawMoment!2.approxEqual((-24 + 80.0i)/ 4));
+    alias C = Complex!double;
+
+    auto x = [C(1, 2), C(2, 3), C(3, 4), C(4, 5)].sliced;
+    assert(x.rawMoment!2.approxEqual(C(-24, 80) / 4));
 }
 
 /++
 rawMoment works for complex numbers and other user-defined types (that are either
 implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test)
+version(mir_stat_test_stdcomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
     import std.complex: Complex;
+    import std.math.operations: isClose;
 
     auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
-    assert(x.rawMoment!2.approxEqual(Complex!double(-24, 80)/ 4));
+    assert(x.rawMoment!2.isClose(Complex!double(-24, 80)/ 4));
 }
 
 /// Arbitrary raw moment
@@ -5704,16 +5746,19 @@ unittest
     static assert(is(typeof(z) == double));
 }
 
-// centralMoment on built-in types
-version(mir_stat_test_builtincomplex)
+// mir.complex test
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.complex: Complex;
+    import mir.complex.math: approxEqual;
     import mir.ndslice.slice: sliced;
 
-    auto x = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i].sliced;
-    assert(x.centralMoment!2.approxEqual((0.0 + 10.0i) / 4));
+    alias C = Complex!double;
+
+    auto x = [C(1, 2), C(2, 3), C(3, 4), C(4, 5)].sliced;
+    assert(x.centralMoment!2.approxEqual(C(0, 10) / 4));
 }
 
 /++
@@ -5724,12 +5769,12 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
     import std.complex: Complex;
+    import std.math.operations: isClose;
 
     auto x = [Complex!double(1, 2), Complex!double(2, 3), Complex!double(3, 4), Complex!double(4, 5)].sliced;
-    assert(x.centralMoment!2.approxEqual(Complex!double(0, 10) / 4));
+    assert(x.centralMoment!2.isClose(Complex!double(0, 10) / 4));
 }
 
 /// Arbitrary central moment

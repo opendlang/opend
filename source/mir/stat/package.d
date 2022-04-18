@@ -5,7 +5,7 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: John Michael Hall, Ilya Yaroshenko
 
-Copyright: 2020 Mir Stat Authors.
+Copyright: 2022 Mir Stat Authors.
 
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
