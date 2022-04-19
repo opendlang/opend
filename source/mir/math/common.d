@@ -617,7 +617,7 @@ bool approxEqual(T)(const T lhs, const T rhs, float maxRelDiff = 0x1p-20f, float
         && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
 }
 
-deprecated("Use mir.complex.approxEqual instead"):
+deprecated("Use mir.complex.math.approxEqual instead"):
 
 /// ditto
 bool approxEqual(T)(const T lhs, const T rhs, double maxRelDiff = 0x1p-20f, double maxAbsDiff = 0x1p-20f)
