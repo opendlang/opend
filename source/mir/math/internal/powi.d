@@ -62,11 +62,13 @@ Unqual!T powi(T)(T x, size_t i)
     }
 }
 
-version(mir_stat_test_builtincomplex)
+version(mir_stat_test_mircomplex)
 @safe pure nothrow
 unittest
 {
-    cdouble x = 1.0 + 2.0i;
+    import mir.complex;
+    alias C = Complex!double;
+    auto x = C(1, 2);
     assert(x.powi(0) == 0);
     assert(x.powi(1) == x);
 }
