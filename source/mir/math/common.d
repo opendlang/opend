@@ -126,6 +126,7 @@ enum
 
 version(LDC)
 {
+    import ldc.intrinsics: LLVM_version;
     nothrow @nogc pure @safe:
 
     pragma(LDC_intrinsic, "llvm.sqrt.f#")
@@ -140,9 +141,22 @@ version(LDC)
     ///
     T cos(T)(in T val) if (isFloatingPoint!T);
 
-    pragma(LDC_intrinsic, "llvm.powi.f#")
-    ///
-    T powi(T)(in T val, int power) if (isFloatingPoint!T);
+    static if (LLVM_version >= 1300)
+        pragma(LDC_intrinsic, "llvm.powi.f#.i32")
+        ///
+        T powi(T)(in T val, int power) if (isFloatingPoint!T);
+    else 
+        pragma(LDC_intrinsic, "llvm.powi.f#")
+        ///
+        T powi(T)(in T val, int power) if (isFloatingPoint!T);
+
+    version(mir_core_test)
+    unittest
+    {
+        assert(powi(3.0, int(2)) == 9);
+        float f = 3;
+        assert(powi(f, int(2)) == 9);
+    }
 
     pragma(LDC_intrinsic, "llvm.pow.f#")
     ///
@@ -617,7 +631,7 @@ bool approxEqual(T)(const T lhs, const T rhs, float maxRelDiff = 0x1p-20f, float
         && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
 }
 
-deprecated("Use mir.complex.math.approxEqual instead"):
+deprecated("Use mir.complex.approxEqual instead"):
 
 /// ditto
 bool approxEqual(T)(const T lhs, const T rhs, double maxRelDiff = 0x1p-20f, double maxAbsDiff = 0x1p-20f)
