@@ -1,4 +1,4 @@
-project('mir-stat', 'd', version : '0.0.0', license: 'BSL-1.0')
+project('mir-stat', 'd', version : '0.0.10', license: 'BSL-1.0')
 
 description = 'Dlang Statistical Package'
 
@@ -11,6 +11,11 @@ sources_list = [
     'mir/stat/descriptive',
     'mir/stat/package',
     'mir/stat/transform',
+    'mir/stat/distribution/package',
+    'mir/stat/distribution/cdf',
+    'mir/stat/distribution/pdf',
+    'mir/stat/distribution/invcdf',
+    'mir/stat/distribution/normal',
 ]
 
 sources = []
