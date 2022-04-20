@@ -2,8 +2,8 @@ name "mir-stat"
 description "Dlang Statistical Package"
 
 authors "John Michael Hall" "Ilya Yaroshenko"
-copyright "Copyright © 2020, Mir Stat Authors."
-license "BSL-1.0"
+copyright "Copyright © 2022, Mir Stat Authors."
+license "Apache-2.0"
 
 dependency "mir-algorithm" version=">=3.12.30"
 

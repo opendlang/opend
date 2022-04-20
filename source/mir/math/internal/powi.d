@@ -1,9 +1,9 @@
 /++
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2020 Mir Stat Authors.
+Copyright: 2022 Mir Stat Authors.
 +/
 
 module mir.math.internal.powi;
