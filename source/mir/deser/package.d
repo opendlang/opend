@@ -975,7 +975,7 @@ template deserializeValue(string[] symbolTable)
                 }
             }
             else
-            static if (isNullable!T)
+            static if (contains!(typeof(null)))
             {
                 // TODO: check that descriptor.type correspond underlaying type
                 if (data.descriptor.L == 0xF)
@@ -984,7 +984,7 @@ template deserializeValue(string[] symbolTable)
                     return retNull;
                 }
             }
-            static if (isNullable!T && T.AllowedTypes.length == 2)
+            static if ((contains!(typeof(null)) || contains!IonNull) && T.AllowedTypes.length == 2)
             {
                 T.AllowedTypes[1] payload;
                 if (auto exception = deserializeValue(params, payload))
@@ -1579,6 +1579,14 @@ template deserializeValue(string[] symbolTable)
 
     ///
     alias deserializeValue = .deserializeValue_;
+}
+
+version(mir_ion_test)
+unittest
+{
+    import mir.algebraic_alias.json : JsonAlgebraic;
+    import mir.deser.json : deserializeJson;
+    auto v = deserializeJson!JsonAlgebraic(`{"a":[1,"world",false,null]}`);
 }
 
 ///

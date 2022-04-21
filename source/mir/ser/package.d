@@ -939,13 +939,19 @@ unittest
     {
     }
 
+    @serdeAlgebraicAnnotation("$E")
+    enum E { e1, e2 }
+
     @serdeAlgebraicAnnotation("$S")
     static struct S
     {
         @serdeAnnotation
         string sid;
 
-        alias Data = Nullable!(A, C, long);
+        @serdeAnnotation
+        string sid2;
+
+        alias Data = Nullable!(A, C, long, E);
 
         alias data this;
 
@@ -969,8 +975,18 @@ unittest
     import mir.ser.text: serializeText;
 
     () {
-        Nullable!S value = S("LIBOR", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
-        static immutable text = `LIBOR::$a::Rate::USD::GBP::{number:nan,s:null.string}`;
+        Nullable!S value = S("LIBOR", "S", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
+        static immutable text = `LIBOR::S::$a::Rate::USD::GBP::{number:nan,s:null.string}`;
+        assert(value.serializeText == text);
+        auto binary = value.serializeIon;
+        assert(binary.ion2text == text);
+        import mir.deser.ion: deserializeIon;
+        assert(binary.deserializeIon!S.serializeText == text);
+    } ();
+
+    () {
+        S value = S("LIBOR", "S", S.Data(E.e2));
+        static immutable text = `LIBOR::S::$E::e2`;
         assert(value.serializeText == text);
         auto binary = value.serializeIon;
         assert(binary.ion2text == text);
@@ -988,15 +1004,14 @@ unittest
     } ();
 
     () {
-        auto value = S("USD", S.Data(3));
-        static immutable text = `USD::3`;
+        auto value = S("USD", "S", S.Data(3));
+        static immutable text = `USD::S::3`;
         auto binary = value.serializeIon;
         assert(binary.ion2text == text, binary.ion2text);
         import mir.deser.ion: deserializeIon;
         assert(binary.deserializeIon!S.serializeText == text);
     } ();
 }
-
 
 /++
 +/
