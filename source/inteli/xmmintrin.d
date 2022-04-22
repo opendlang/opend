@@ -1389,11 +1389,14 @@ unittest
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
     pragma(inline, true);
+
+    // Disabled because of https://issues.dlang.org/show_bug.cgi?id=23046
+    /*
     static if (DMD_with_DSIMD)
     {
         return cast(__m128) __simd(XMM.LODLPS, a, *cast(const(__m128)*)mem_addr); 
     }
-    else
+    else */
     {
         // x86: movlpd/movlps generated with all LDC -01
         long2 la = cast(long2)a;
