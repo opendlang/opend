@@ -111,7 +111,7 @@ https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 Without that Intel documentation, it's impractical to write sizeable SIMD code.
 
 
-### Who is using it? `intel-intrinsics`
+### Who is using it?
 
 - `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d), twice as fast as Cairo
 - [18x faster SHA-256 vs Phobos](https://github.com/AuburnSounds/intel-intrinsics/blob/master/examples/sha256/source/main.d) with `intel-intrinsics`
