@@ -3958,7 +3958,9 @@ deprecated("Use _mm_srli_epi64 instead.") __m128i _mm_srl_epi64 (__m128i a, __m1
     }
     else
     {
-        long2 r = void;
+        // Workaround for https://issues.dlang.org/show_bug.cgi?id=23047
+        // => avoid void initialization.
+        long2 r;
         long2 sa = cast(long2)a;
         long2 lc = cast(long2)count;
         int bits = cast(int)(lc.array[0]);
