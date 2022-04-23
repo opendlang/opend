@@ -1952,11 +1952,16 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @trusted
     }
     else version(DigitalMars)
     {
+        // PERF Disabled because of https://issues.dlang.org/show_bug.cgi?id=23048
+        /*
         static if (DMD_with_DSIMD)
         {
+
             return cast(__m128d)__simd(XMM.LODUPD, *mem_addr);
         }
-        else static if (SSESizedVectorsAreEmulated)
+        else
+        */
+        static if (SSESizedVectorsAreEmulated)
         {
             // Since this vector is emulated, it doesn't have alignement constraints
             // and as such we can just cast it.
