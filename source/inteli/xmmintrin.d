@@ -2135,11 +2135,13 @@ unittest
 /// The maximum relative error for this approximation is less than 1.5*2^-12.
 __m128 _mm_rcp_ss (__m128 a) pure @trusted
 {
-    static if (DMD_with_DSIMD)
+    // Disabled, see https://issues.dlang.org/show_bug.cgi?id=23049
+    /*static if (DMD_with_DSIMD)
     {
         return cast(__m128) __simd(XMM.RCPSS, a);
     }
-    else static if (GDC_with_SSE)
+    else*/
+    static if (GDC_with_SSE)
     {
         return __builtin_ia32_rcpss(a);
     }
