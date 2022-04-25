@@ -1459,7 +1459,7 @@ __m128 _mm_loadu_ps(const(float)* mem_addr) pure @trusted
     {
         static if (DMD_with_DSIMD)
         {
-            return cast(__m128)__simd(XMM.LODUPS, *mem_addr);
+            return cast(__m128)__simd(XMM.LODUPS, *cast(const(float4*))mem_addr);
         }
         else static if (SSESizedVectorsAreEmulated)
         {

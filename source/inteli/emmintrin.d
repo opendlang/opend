@@ -1952,16 +1952,13 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @trusted
     }
     else version(DigitalMars)
     {
-        // PERF Disabled because of https://issues.dlang.org/show_bug.cgi?id=23048
-        /*
+        // Apparently inside __simd you can use aligned dereferences without fear.
+        // That was issue 23048 on dlang's Bugzilla.
         static if (DMD_with_DSIMD)
         {
-
-            return cast(__m128d)__simd(XMM.LODUPD, *mem_addr);
+            return cast(__m128d)__simd(XMM.LODUPD, *cast(double2*)mem_addr);
         }
-        else
-        */
-        static if (SSESizedVectorsAreEmulated)
+        else static if (SSESizedVectorsAreEmulated)
         {
             // Since this vector is emulated, it doesn't have alignement constraints
             // and as such we can just cast it.

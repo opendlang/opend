@@ -131,9 +131,9 @@ else version(DigitalMars)
     {
         enum MMXSizedVectorsAreEmulated = true;
 
-        static if (__VERSION__ >= 2099)
+        static if (__VERSION__ >= 2100)
         {
-            // Trying out D_SIMD finally, with DMD 2.099
+            // Trying out D_SIMD finally, with DMD 2.100
             //enum SSESizedVectorsAreEmulated = false;
 
             // It didn't work, maybe one day.
@@ -289,6 +289,7 @@ static if (DefineGenericLoadStoreUnaligned)
             static if (isVector)
             {
                 // PERF DMD
+                // BUG: code is wrong, should cast to Vec, see https://github.com/dlang/druntime/pull/3808/commits/b5670753248ec3b1631a0eb8ca76a27e8d6a39b9
                 /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
                 static if (DMD_with_DSIMD && Vec.sizeof == 8)
                 {
@@ -331,6 +332,7 @@ static if (DefineGenericLoadStoreUnaligned)
             static if (isVector)
             {
                 // PERF DMD
+                // BUG: code is wrong, should cast to Vec, see https://github.com/dlang/druntime/pull/3808/commits/b5670753248ec3b1631a0eb8ca76a27e8d6a39b9
                 /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
                 static if (DMD_with_DSIMD && Vec.sizeof == 8)
                 {
