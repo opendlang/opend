@@ -36,7 +36,7 @@ void main()
     }
 }
 
-ubyte[32] sha256Of_intrin(scope const(ubyte)[] data)
+ubyte[32] sha256Of_intrin(scope const(ubyte)[] data) nothrow @nogc
 {
     uint[8] state = 
     [
@@ -87,7 +87,7 @@ enum SHA256_BLOCKSIZE = 512/8;
 
 
 // Based on http://software.intel.com/en-us/articles/intel-sha-extensions and code by Sean Gulley.
-size_t SHA256_HashMultipleBlocks_SHANI(ref uint[8] state, scope const(ubyte)[] data_arr)
+size_t SHA256_HashMultipleBlocks_SHANI(ref uint[8] state, scope const(ubyte)[] data_arr) nothrow @nogc
 {
     assert(data_arr);
 
