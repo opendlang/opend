@@ -27,10 +27,6 @@
         "unittest-arm64": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
             "dflags-ldc": ["-mtriple=arm64-apple-macos"]
-        },
-        "unittest-wasm": {
-            "buildOptions": ["unittests", "debugMode", "debugInfo", "betterC"],
-            "dflags-ldc": ["-mtriple=wasm64-unknown-unknown-wasm"]
         }
     }
 }
