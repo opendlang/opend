@@ -91,7 +91,7 @@ int FreeImage_GetFIFCount() @trusted
     scope(exit) g_pluginMutex.unlock();
 
     int registered = 0;
-    for(FREE_IMAGE_FORMAT fif = 0; fif <= FREE_IMAGE_FORMAT.max; ++fif)
+    for(FREE_IMAGE_FORMAT fif = 0; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
     {
         if (g_plugins[fif].isRegistered)
             registered++;
@@ -179,7 +179,7 @@ FREE_IMAGE_FORMAT FreeImage_RegisterLocalPlugin(FI_InitProc proc_address,
 private:
 
 // For now, all plugin resides in a static __gshared part of the memory.
-__gshared Plugin[FIF_TIFF.max] g_plugins;
+__gshared Plugin[FREE_IMAGE_FORMAT_NUM] g_plugins;
 
 __gshared Mutex g_pluginMutex; // protects g_plugins
 

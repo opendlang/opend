@@ -20,6 +20,9 @@ enum : FREE_IMAGE_FORMAT
 	FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
 }
 
+/// Number of internally-supported formats. Equal to 1 + maximum internal format (here: FIF_TIFF).
+enum FREE_IMAGE_FORMAT_NUM = 5; 
+
 
 alias FREE_IMAGE_TYPE = int;
 
