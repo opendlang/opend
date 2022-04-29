@@ -137,6 +137,12 @@ deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeIm
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
 FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
 {
+    if (fif == FIF_PNG)
+    {
+
+
+
+    }
     return null;
 }
 

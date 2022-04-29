@@ -5,6 +5,7 @@ import gamut;
 void main(string[] args)
 {
     FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "material.png", PNG_DEFAULT);
+    assert(bitmap);
 
     if (bitmap) 
     {
