@@ -1,0 +1,1 @@
+module gamut.plugins.png;
