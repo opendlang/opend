@@ -39,3 +39,4 @@ enum : FREE_IMAGE_TYPE
     FIT_RGBF,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
     FIT_RGBAF,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
+

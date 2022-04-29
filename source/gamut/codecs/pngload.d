@@ -3,6 +3,7 @@
 /// This port only support PNG loading, 8-bit and 16-bit.
 module gamut.codecs.pngload;
 
+version(decodePNG):
 
 /* stb_image - v2.27 - public domain image loader - http://nothings.org/stb
 no warranty implied; use at your own risk

@@ -7,6 +7,8 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.plugin;
 
 import gamut.types;
+import gamut.bitmap;
+import gamut.io;
 import gamut.internals.mutex;
 
 nothrow @nogc @safe:
@@ -30,6 +32,22 @@ main FREEIMAGE.DLL, in external DLLs, and even directly in an application that d
 FreeImage."
 */
 
+extern(Windows)
+{
+    /// Function that initialize a `Plugin` structure.
+    alias FI_InitProc = void function (Plugin *plugin, int format_id);
+
+    /// Function that loads a image from this format.
+    alias FI_LoadProc = FIBITMAP* function(FreeImageIO *io, fi_handle handle, int page, int flags, void *data);
+
+    /// Function that saves an image from this format.
+    alias FI_SaveProc = bool function(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data);
+
+    /// Function that detects this format.
+    alias FI_ValidateProc = bool function(FreeImageIO *io, fi_handle handle);
+}
+
+
 struct Plugin
 {
     /// A non-registered plugin simply does not exist. Used because internal plugins are
@@ -44,14 +62,20 @@ struct Plugin
     bool supportsWrite = false;    
     bool supportsNoPixels = false;
     bool supportsICCProfiles = false;
-}
 
-/// Function that initialize a `Plugin` structure.
-extern(Windows)
-{
-    alias FI_InitProc = void function (Plugin *plugin, int format_id);
-}
+    /// Type string for the bitmap. For example, a plugin that loads BMPs returns the string "BMP".
+    const(char)* format;
 
+    /// Descriptive string for the bitmap type. For example, a plugin that loads BMPs may return 
+    /// "Windows or OS/2 Bitmap"
+    const(char)* description;
+
+    /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
+    const(char)* extensionList;
+
+    /// Comma-separated list of MIME types for the plugin. Example = PNG gives "image/png".
+    const(char)* mimeTypes;
+}
 
 // ================================================================================================
 //

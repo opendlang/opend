@@ -9,15 +9,23 @@ module gamut.general;
 
 import gamut.types;
 import gamut.plugin;
+import gamut.internals.mutex;
 
 nothrow @nogc @safe:
 
 /// Initialises the library. 
 /// When the `load_local_plugins_only` parameter is TRUE, FreeImage won’t make use of external plugins.
 /// You must call this function exactly once at the start of your program.
-void FreeImage_Initialise(bool load_local_plugins_only)
+void FreeImage_Initialise(bool load_local_plugins_only) @trusted
 {
-    FreeImage_registerInternalPlugins();
+    g_libraryMutex.lockLazy();
+    scope(exit) g_libraryMutex.unlock();
+
+    if (!g_libraryInitialized)
+    {
+        g_libraryInitialized = true;
+        FreeImage_registerInternalPlugins();
+    }
 }
 
 /// Deinitialises the library.
@@ -57,3 +65,9 @@ void FreeImage_SetOutputMessage(FreeImage_OutputMessageFunction omf)
 }
 
 shared FreeImage_OutputMessageFunction g_omf = null;
+
+
+private:
+
+__gshared Mutex g_libraryMutex; // protects g_libraryInitialized
+__gshared g_libraryInitialized = false;
