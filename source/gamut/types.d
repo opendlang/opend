@@ -1,8 +1,13 @@
+/// Various public types
 module gamut.types;
 
-// Various public types
+/// TRUE constant. To avoid name clashes, was renamed to FI_TRUE.
+enum int FI_TRUE = 1;
 
+/// FALSE constant. To avoid name clashes, was renamed to FI_FALSE.
+enum int FI_FALSE = 0;
 
+/// Image codec.
 alias FREE_IMAGE_FORMAT = int;
 
 enum : FREE_IMAGE_FORMAT

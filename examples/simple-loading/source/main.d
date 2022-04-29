@@ -1,8 +1,8 @@
 import gamut;
 
+import gamut.internals.mutex;
 
-
-void main(string[] args)
+void main(string[] args) @trusted
 {
     FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "material.png", PNG_DEFAULT);
     assert(bitmap);

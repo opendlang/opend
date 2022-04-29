@@ -8,19 +8,20 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.general;
 
 import gamut.types;
+import gamut.plugin;
 
 nothrow @nogc @safe:
 
 /// Initialises the library. 
 /// When the `load_local_plugins_only` parameter is TRUE, FreeImage won’t make use of external plugins.
 /// You must call this function exactly once at the start of your program.
-void FreeImage_Initialise(bool load_local_plugins_only) pure
+void FreeImage_Initialise(bool load_local_plugins_only)
 {
-    // Note: no support for external plugins.
+    FreeImage_registerInternalPlugins();
 }
 
 /// Deinitialises the library.
-/// You must call this function exactly once at the  end of your program to clean up allocated resources 
+/// You must call this function exactly once at the end of your program to clean up allocated resources 
 /// in the FreeImage library.
 void FreeImage_DeInitialise() pure
 {

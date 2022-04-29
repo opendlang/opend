@@ -7,6 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.plugin;
 
 import gamut.types;
+import gamut.internals.mutex;
 
 nothrow @nogc @safe:
 
@@ -31,16 +32,25 @@ FreeImage."
 
 struct Plugin
 {
-    bool supportsRead = false;
-    bool supportsWrite = false;
+    /// A non-registered plugin simply does not exist. Used because internal plugins are
+    /// stored statically.
     bool isRegistered = false;
+
+    /// A disabled plugin cannot be used to import and export bitmaps, nor  will it identify 
+    /// bitmaps. 
+    bool isEnabled = false;
+
+    bool supportsRead = false;
+    bool supportsWrite = false;    
     bool supportsNoPixels = false;
     bool supportsICCProfiles = false;
-
 }
 
 /// Function that initialize a `Plugin` structure.
-alias FI_InitProc = void function (Plugin *plugin, int format_id);
+extern(Windows)
+{
+    alias FI_InitProc = void function (Plugin *plugin, int format_id);
+}
 
 
 // ================================================================================================
@@ -49,29 +59,85 @@ alias FI_InitProc = void function (Plugin *plugin, int format_id);
 //
 // ================================================================================================
 
-/**
-Retrieves the number of `FREE_IMAGE_FORMAT` identifiers being currently registered. In 
-FreeImage `FREE_IMAGE_FORMAT` became, through evolution, synonymous with plugin.
-*/
+/// Retrieves the number of `FREE_IMAGE_FORMAT` identifiers being currently registered. In 
+/// FreeImage `FREE_IMAGE_FORMAT` became, through evolution, synonymous with plugin.
 int FreeImage_GetFIFCount() @trusted
 {
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+
     int registered = 0;
     for(FREE_IMAGE_FORMAT fif = 0; fif <= FREE_IMAGE_FORMAT.max; ++fif)
     {
-        // TODO: race here
         if (g_plugins[fif].isRegistered)
             registered++;
     }
     return registered;
 }
 
+/// Enables or disables a plugin. A disabled plugin cannot be used to import and export bitmaps, 
+/// nor will it identify bitmaps. 
+/// When called, this function returns the previous plugin state (FI_TRUE / 1 or FI_FALSE / 0), or
+/// –1 if the plugin doesn’t exist.
+int FreeImage_SetPluginEnabled(FREE_IMAGE_FORMAT fif, bool enable) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
 
-/**
-Registers a new plugin to be used in FreeImage. The plugin is residing directly in the 
-application driving FreeImage. The first parameter is a pointer to a function that is used to 
-initialise the plugin. The initialization function is responsible for filling in a Plugin structure and 
-storing a system-assigned format identification number used for message logging.
-*/
+    bool registered = g_plugins[fif].isRegistered;
+    if (!registered)
+        return -1; // doesn't exist
+
+   bool wasEnabled = g_plugins[fif].isEnabled;
+   g_plugins[fif].isEnabled = enable;
+   return wasEnabled ? FI_TRUE : FI_FALSE;
+}
+
+/// Returns FI_TRUE when the plugin is enabled, FI_FALSE when the plugin is disabled, -1 otherwise.
+int FreeImage_IsPluginEnabled(FREE_IMAGE_FORMAT fif) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+
+    bool registered = g_plugins[fif].isRegistered;
+    if (!registered)
+        return -1; // doesn't exist
+    return g_plugins[fif].isEnabled ? FI_TRUE : FI_FALSE;
+}
+
+/// Returns FI_TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 
+/// load bitmaps, FI_FALSE otherwise.
+bool FreeImage_FIFSupportsReading(FREE_IMAGE_FORMAT fif) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();    
+    bool registered = g_plugins[fif].isRegistered;
+    bool enabled = g_plugins[fif].isEnabled;
+    bool supportsRead = g_plugins[fif].supportsRead;
+
+    // Note: is being enabled mandatory? Not sure from documentation.
+    return registered && enabled && supportsRead;
+}
+
+/// Returns TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 
+/// save bitmaps, FALSE otherwise.
+bool FreeImage_FIFSupportsWriting(FREE_IMAGE_FORMAT fif) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();    
+    bool registered = g_plugins[fif].isRegistered;
+    bool enabled = g_plugins[fif].isEnabled;
+    bool supportsWrite = g_plugins[fif].supportsWrite;
+
+    // Note: is being enabled mandatory? Not sure from documentation.
+    return registered && enabled && supportsWrite;
+}
+
+
+/// Registers a new plugin to be used in FreeImage. The plugin is residing directly in the 
+/// application driving FreeImage. The first parameter is a pointer to a function that is used to
+/// initialise the plugin. The initialization function is responsible for filling in a Plugin 
+/// structure and storing a system-assigned format identification number used for message logging.
 FREE_IMAGE_FORMAT FreeImage_RegisterLocalPlugin(FI_InitProc proc_address, 
                                                 const(char) *format = null, 
                                                 const(char) *description = null,
@@ -91,8 +157,9 @@ private:
 // For now, all plugin resides in a static __gshared part of the memory.
 __gshared Plugin[FIF_TIFF.max] g_plugins;
 
+__gshared Mutex g_pluginMutex; // protects g_plugins
+
 // Register one internal format.
-// Warning! Race condition on g_plugins.
 void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
                                       FI_InitProc proc,
                                       const(char) *format = null, 
@@ -100,13 +167,24 @@ void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
                                       const(char)* extension = null,
                                       const(char)* regexpr = null) @trusted
 {
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
     Plugin* p = &g_plugins[fif];
     proc(p, fif);
+
+    // Begin its life enabled, and registered.
+    p.isEnabled = true;
+    p.isRegistered = true;
 }
 
-void FreeImage_internalInitializePlugins()
+package void FreeImage_registerInternalPlugins()
 {
-    //FreeImage_RegisterInternalPlugin(
+    FreeImage_RegisterInternalPlugin(FIF_PNG,
+                                     &InitProc_PNG,
+                                     null,
+                                     null,
+                                     null,
+                                     null);
 
     //FIF_BMP     =  0, /// Windows or OS/2 Bitmap File (*.BMP)
         //FIF_GIF     =  1, /// Graphics Interchange Format (*.GIF)
@@ -115,6 +193,8 @@ void FreeImage_internalInitializePlugins()
         //FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
 }
 
+extern(Windows)
+{
 
 void InitProc_BMP (Plugin *plugin, int format_id)
 {
@@ -134,10 +214,13 @@ void InitProc_JPEG (Plugin *plugin, int format_id)
 void InitProc_PNG (Plugin *plugin, int format_id)
 {
     assert(format_id == FIF_PNG);
+    plugin.supportsRead = true;    
 }
 
 void InitProc_TIFF (Plugin *plugin, int format_id)
 {
     assert(format_id == FIF_TIFF);
+}
+
 }
 
