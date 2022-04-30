@@ -94,7 +94,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_xlib_surface = 1;
 
             enum VK_KHR_XLIB_SURFACE_SPEC_VERSION = 6;
-            enum VK_KHR_XLIB_SURFACE_EXTENSION_NAME = "VK_KHR_xlib_surface";
+            enum const( char )* VK_KHR_XLIB_SURFACE_EXTENSION_NAME = "VK_KHR_xlib_surface";
             
             alias VkXlibSurfaceCreateFlagsKHR = VkFlags;
             
@@ -115,7 +115,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_xcb_surface = 1;
 
             enum VK_KHR_XCB_SURFACE_SPEC_VERSION = 6;
-            enum VK_KHR_XCB_SURFACE_EXTENSION_NAME = "VK_KHR_xcb_surface";
+            enum const( char )* VK_KHR_XCB_SURFACE_EXTENSION_NAME = "VK_KHR_xcb_surface";
             
             alias VkXcbSurfaceCreateFlagsKHR = VkFlags;
             
@@ -136,7 +136,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_wayland_surface = 1;
 
             enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 6;
-            enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
+            enum const( char )* VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
             
             alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
             
@@ -157,7 +157,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_android_surface = 1;
 
             enum VK_KHR_ANDROID_SURFACE_SPEC_VERSION = 6;
-            enum VK_KHR_ANDROID_SURFACE_EXTENSION_NAME = "VK_KHR_android_surface";
+            enum const( char )* VK_KHR_ANDROID_SURFACE_EXTENSION_NAME = "VK_KHR_android_surface";
             
             alias VkAndroidSurfaceCreateFlagsKHR = VkFlags;
             
@@ -176,7 +176,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_win32_surface = 1;
 
             enum VK_KHR_WIN32_SURFACE_SPEC_VERSION = 6;
-            enum VK_KHR_WIN32_SURFACE_EXTENSION_NAME = "VK_KHR_win32_surface";
+            enum const( char )* VK_KHR_WIN32_SURFACE_EXTENSION_NAME = "VK_KHR_win32_surface";
             
             alias VkWin32SurfaceCreateFlagsKHR = VkFlags;
             
@@ -200,7 +200,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionParametersKHR} );
             
             enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 2;
-            enum VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
+            enum const( char )* VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
             
             enum VkQueryResultStatusKHR {
                 VK_QUERY_RESULT_STATUS_ERROR_KHR             = -1,
@@ -471,7 +471,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_video_decode_queue = 1;
 
             enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 2;
-            enum VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
+            enum const( char )* VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
             
             alias VkVideoDecodeFlagsKHR = VkFlags;
             enum VkVideoDecodeFlagBitsKHR : VkVideoDecodeFlagsKHR {
@@ -507,7 +507,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_external_memory_win32 = 1;
 
             enum VK_KHR_EXTERNAL_MEMORY_WIN32_SPEC_VERSION = 1;
-            enum VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME = "VK_KHR_external_memory_win32";
+            enum const( char )* VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME = "VK_KHR_external_memory_win32";
             
             struct VkImportMemoryWin32HandleInfoKHR {
                 VkStructureType                     sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
@@ -547,7 +547,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_win32_keyed_mutex = 1;
 
             enum VK_KHR_WIN32_KEYED_MUTEX_SPEC_VERSION = 1;
-            enum VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME = "VK_KHR_win32_keyed_mutex";
+            enum const( char )* VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME = "VK_KHR_win32_keyed_mutex";
             
             struct VkWin32KeyedMutexAcquireReleaseInfoKHR {
                 VkStructureType           sType = VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR;
@@ -568,7 +568,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_external_semaphore_win32 = 1;
 
             enum VK_KHR_EXTERNAL_SEMAPHORE_WIN32_SPEC_VERSION = 1;
-            enum VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME = "VK_KHR_external_semaphore_win32";
+            enum const( char )* VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME = "VK_KHR_external_semaphore_win32";
             
             struct VkImportSemaphoreWin32HandleInfoKHR {
                 VkStructureType                        sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
@@ -613,7 +613,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_external_fence_win32 = 1;
 
             enum VK_KHR_EXTERNAL_FENCE_WIN32_SPEC_VERSION = 1;
-            enum VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME = "VK_KHR_external_fence_win32";
+            enum const( char )* VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME = "VK_KHR_external_fence_win32";
             
             struct VkImportFenceWin32HandleInfoKHR {
                 VkStructureType                    sType = VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR;
@@ -649,7 +649,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_portability_subset = 1;
 
             enum VK_KHR_PORTABILITY_SUBSET_SPEC_VERSION = 1;
-            enum VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME = "VK_KHR_portability_subset";
+            enum const( char )* VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME = "VK_KHR_portability_subset";
             
             struct VkPhysicalDevicePortabilitySubsetFeaturesKHR {
                 VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
@@ -684,7 +684,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_KHR_video_encode_queue = 1;
 
             enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 3;
-            enum VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_encode_queue";
+            enum const( char )* VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_encode_queue";
             
             alias VkVideoEncodeFlagsKHR = VkFlags;
             enum VkVideoEncodeFlagBitsKHR : VkVideoEncodeFlagsKHR {
@@ -765,7 +765,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_video_encode_h264 = 1;
 
             enum VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION = 3;
-            enum VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME = "VK_EXT_video_encode_h264";
+            enum const( char )* VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME = "VK_EXT_video_encode_h264";
             
             alias VkVideoEncodeH264CapabilityFlagsEXT = VkFlags;
             enum VkVideoEncodeH264CapabilityFlagBitsEXT : VkVideoEncodeH264CapabilityFlagsEXT {
@@ -974,34 +974,34 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_encode_h265 )) {
             enum VK_EXT_video_encode_h265 = 1;
 
-            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 3;
-            enum VK_EXT_VIDEO_ENCODE_H265_EXTENSION_NAME = "VK_EXT_video_encode_h265";
+            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 4;
+            enum const( char )* VK_EXT_VIDEO_ENCODE_H265_EXTENSION_NAME = "VK_EXT_video_encode_h265";
             
             alias VkVideoEncodeH265CapabilityFlagsEXT = VkFlags;
             
             alias VkVideoEncodeH265InputModeFlagsEXT = VkFlags;
             enum VkVideoEncodeH265InputModeFlagBitsEXT : VkVideoEncodeH265InputModeFlagsEXT {
                 VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT                = 0x00000001,
-                VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT                = 0x00000002,
+                VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_SEGMENT_BIT_EXT        = 0x00000002,
                 VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT              = 0x00000004,
                 VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT      = 0x7FFFFFFF
             }
             
             enum VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT               = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_FRAME_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT               = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_SEGMENT_BIT_EXT       = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_SLICE_SEGMENT_BIT_EXT;
             enum VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT             = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_INPUT_MODE_NON_VCL_BIT_EXT;
             enum VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT     = VkVideoEncodeH265InputModeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT;
             
             alias VkVideoEncodeH265OutputModeFlagsEXT = VkFlags;
             enum VkVideoEncodeH265OutputModeFlagBitsEXT : VkVideoEncodeH265OutputModeFlagsEXT {
                 VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT               = 0x00000001,
-                VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT               = 0x00000002,
+                VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_SEGMENT_BIT_EXT       = 0x00000002,
                 VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT             = 0x00000004,
                 VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT     = 0x7FFFFFFF
             }
             
             enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT              = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_FRAME_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT              = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_BIT_EXT;
+            enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_SEGMENT_BIT_EXT      = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_SLICE_SEGMENT_BIT_EXT;
             enum VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT            = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H265_OUTPUT_MODE_NON_VCL_BIT_EXT;
             enum VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT    = VkVideoEncodeH265OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT;
             alias VkVideoEncodeH265CreateFlagsEXT = VkFlags;
@@ -1094,21 +1094,21 @@ mixin template Platform_Extensions( extensions... ) {
                 const( StdVideoEncodeH265ReferenceModifications )*  pReferenceModifications;
             }
             
-            struct VkVideoEncodeH265NaluSliceEXT {
-                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_EXT;
-                const( void )*                                pNext;
-                uint32_t                                      ctbCount;
-                const( VkVideoEncodeH265ReferenceListsEXT )*  pReferenceFinalLists;
-                const( StdVideoEncodeH265SliceHeader )*       pSliceHeaderStd;
+            struct VkVideoEncodeH265NaluSliceSegmentEXT {
+                VkStructureType                                 sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT;
+                const( void )*                                  pNext;
+                uint32_t                                        ctbCount;
+                const( VkVideoEncodeH265ReferenceListsEXT )*    pReferenceFinalLists;
+                const( StdVideoEncodeH265SliceSegmentHeader )*  pSliceSegmentHeaderStd;
             }
             
             struct VkVideoEncodeH265VclFrameInfoEXT {
-                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
-                const( void )*                                pNext;
-                const( VkVideoEncodeH265ReferenceListsEXT )*  pReferenceFinalLists;
-                uint32_t                                      naluSliceEntryCount;
-                const( VkVideoEncodeH265NaluSliceEXT )*       pNaluSliceEntries;
-                const( StdVideoEncodeH265PictureInfo )*       pCurrentPictureInfo;
+                VkStructureType                                 sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
+                const( void )*                                  pNext;
+                const( VkVideoEncodeH265ReferenceListsEXT )*    pReferenceFinalLists;
+                uint32_t                                        naluSliceSegmentEntryCount;
+                const( VkVideoEncodeH265NaluSliceSegmentEXT )*  pNaluSliceSegmentEntries;
+                const( StdVideoEncodeH265PictureInfo )*         pCurrentPictureInfo;
             }
             
             struct VkVideoEncodeH265EmitPictureParametersEXT {
@@ -1171,7 +1171,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_video_decode_h264 = 1;
 
             enum VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION = 3;
-            enum VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME = "VK_EXT_video_decode_h264";
+            enum const( char )* VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME = "VK_EXT_video_decode_h264";
             
             alias VkVideoDecodeH264PictureLayoutFlagsEXT = VkFlags;
             enum VkVideoDecodeH264PictureLayoutFlagBitsEXT : VkVideoDecodeH264PictureLayoutFlagsEXT {
@@ -1253,7 +1253,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_GGP_stream_descriptor_surface = 1;
 
             enum VK_GGP_STREAM_DESCRIPTOR_SURFACE_SPEC_VERSION = 1;
-            enum VK_GGP_STREAM_DESCRIPTOR_SURFACE_EXTENSION_NAME = "VK_GGP_stream_descriptor_surface";
+            enum const( char )* VK_GGP_STREAM_DESCRIPTOR_SURFACE_EXTENSION_NAME = "VK_GGP_stream_descriptor_surface";
             
             alias VkStreamDescriptorSurfaceCreateFlagsGGP = VkFlags;
             
@@ -1272,7 +1272,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_NV_external_memory_win32 = 1;
 
             enum VK_NV_EXTERNAL_MEMORY_WIN32_SPEC_VERSION = 1;
-            enum VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME = "VK_NV_external_memory_win32";
+            enum const( char )* VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME = "VK_NV_external_memory_win32";
             
             struct VkImportMemoryWin32HandleInfoNV {
                 VkStructureType                    sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV;
@@ -1296,7 +1296,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_NV_win32_keyed_mutex = 1;
 
             enum VK_NV_WIN32_KEYED_MUTEX_SPEC_VERSION = 2;
-            enum VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME = "VK_NV_win32_keyed_mutex";
+            enum const( char )* VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME = "VK_NV_win32_keyed_mutex";
             
             struct VkWin32KeyedMutexAcquireReleaseInfoNV {
                 VkStructureType           sType = VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV;
@@ -1317,7 +1317,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_NN_vi_surface = 1;
 
             enum VK_NN_VI_SURFACE_SPEC_VERSION = 1;
-            enum VK_NN_VI_SURFACE_EXTENSION_NAME = "VK_NN_vi_surface";
+            enum const( char )* VK_NN_VI_SURFACE_EXTENSION_NAME = "VK_NN_vi_surface";
             
             alias VkViSurfaceCreateFlagsNN = VkFlags;
             
@@ -1336,7 +1336,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_acquire_xlib_display = 1;
 
             enum VK_EXT_ACQUIRE_XLIB_DISPLAY_SPEC_VERSION = 1;
-            enum VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME = "VK_EXT_acquire_xlib_display";
+            enum const( char )* VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME = "VK_EXT_acquire_xlib_display";
             
             alias PFN_vkAcquireXlibDisplayEXT                                           = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display );
             alias PFN_vkGetRandROutputDisplayEXT                                        = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay );
@@ -1347,7 +1347,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_MVK_ios_surface = 1;
 
             enum VK_MVK_IOS_SURFACE_SPEC_VERSION = 3;
-            enum VK_MVK_IOS_SURFACE_EXTENSION_NAME = "VK_MVK_ios_surface";
+            enum const( char )* VK_MVK_IOS_SURFACE_EXTENSION_NAME = "VK_MVK_ios_surface";
             
             alias VkIOSSurfaceCreateFlagsMVK = VkFlags;
             
@@ -1366,7 +1366,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_MVK_macos_surface = 1;
 
             enum VK_MVK_MACOS_SURFACE_SPEC_VERSION = 3;
-            enum VK_MVK_MACOS_SURFACE_EXTENSION_NAME = "VK_MVK_macos_surface";
+            enum const( char )* VK_MVK_MACOS_SURFACE_EXTENSION_NAME = "VK_MVK_macos_surface";
             
             alias VkMacOSSurfaceCreateFlagsMVK = VkFlags;
             
@@ -1385,7 +1385,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_ANDROID_external_memory_android_hardware_buffer = 1;
 
             enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 4;
-            enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME = "VK_ANDROID_external_memory_android_hardware_buffer";
+            enum const( char )* VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME = "VK_ANDROID_external_memory_android_hardware_buffer";
             
             struct VkAndroidHardwareBufferUsageANDROID {
                 VkStructureType  sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID;
@@ -1453,7 +1453,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_video_decode_h265 = 1;
 
             enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 1;
-            enum VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME = "VK_EXT_video_decode_h265";
+            enum const( char )* VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME = "VK_EXT_video_decode_h265";
             
             alias VkVideoDecodeH265CreateFlagsEXT = VkFlags;
             
@@ -1515,7 +1515,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_GGP_frame_token = 1;
 
             enum VK_GGP_FRAME_TOKEN_SPEC_VERSION = 1;
-            enum VK_GGP_FRAME_TOKEN_EXTENSION_NAME = "VK_GGP_frame_token";
+            enum const( char )* VK_GGP_FRAME_TOKEN_EXTENSION_NAME = "VK_GGP_frame_token";
             
             struct VkPresentFrameTokenGGP {
                 VkStructureType  sType = VK_STRUCTURE_TYPE_PRESENT_FRAME_TOKEN_GGP;
@@ -1530,7 +1530,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_FUCHSIA_imagepipe_surface = 1;
 
             enum VK_FUCHSIA_IMAGEPIPE_SURFACE_SPEC_VERSION = 1;
-            enum VK_FUCHSIA_IMAGEPIPE_SURFACE_EXTENSION_NAME = "VK_FUCHSIA_imagepipe_surface";
+            enum const( char )* VK_FUCHSIA_IMAGEPIPE_SURFACE_EXTENSION_NAME = "VK_FUCHSIA_imagepipe_surface";
             
             alias VkImagePipeSurfaceCreateFlagsFUCHSIA = VkFlags;
             
@@ -1549,7 +1549,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_metal_surface = 1;
 
             enum VK_EXT_METAL_SURFACE_SPEC_VERSION = 1;
-            enum VK_EXT_METAL_SURFACE_EXTENSION_NAME = "VK_EXT_metal_surface";
+            enum const( char )* VK_EXT_METAL_SURFACE_EXTENSION_NAME = "VK_EXT_metal_surface";
             
             alias VkMetalSurfaceCreateFlagsEXT = VkFlags;
             
@@ -1568,7 +1568,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_full_screen_exclusive = 1;
 
             enum VK_EXT_FULL_SCREEN_EXCLUSIVE_SPEC_VERSION = 4;
-            enum VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME = "VK_EXT_full_screen_exclusive";
+            enum const( char )* VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME = "VK_EXT_full_screen_exclusive";
             
             enum VkFullScreenExclusiveEXT {
                 VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT                 = 0,
@@ -1619,7 +1619,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_NV_acquire_winrt_display = 1;
 
             enum VK_NV_ACQUIRE_WINRT_DISPLAY_SPEC_VERSION = 1;
-            enum VK_NV_ACQUIRE_WINRT_DISPLAY_EXTENSION_NAME = "VK_NV_acquire_winrt_display";
+            enum const( char )* VK_NV_ACQUIRE_WINRT_DISPLAY_EXTENSION_NAME = "VK_NV_acquire_winrt_display";
             
             alias PFN_vkAcquireWinrtDisplayNV                                           = VkResult  function( VkPhysicalDevice physicalDevice, VkDisplayKHR display );
             alias PFN_vkGetWinrtDisplayNV                                               = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay );
@@ -1630,7 +1630,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_directfb_surface = 1;
 
             enum VK_EXT_DIRECTFB_SURFACE_SPEC_VERSION = 1;
-            enum VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME = "VK_EXT_directfb_surface";
+            enum const( char )* VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME = "VK_EXT_directfb_surface";
             
             alias VkDirectFBSurfaceCreateFlagsEXT = VkFlags;
             
@@ -1651,7 +1651,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_FUCHSIA_external_memory = 1;
 
             enum VK_FUCHSIA_EXTERNAL_MEMORY_SPEC_VERSION = 1;
-            enum VK_FUCHSIA_EXTERNAL_MEMORY_EXTENSION_NAME = "VK_FUCHSIA_external_memory";
+            enum const( char )* VK_FUCHSIA_EXTERNAL_MEMORY_EXTENSION_NAME = "VK_FUCHSIA_external_memory";
             
             struct VkImportMemoryZirconHandleInfoFUCHSIA {
                 VkStructureType                     sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA;
@@ -1682,7 +1682,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_FUCHSIA_external_semaphore = 1;
 
             enum VK_FUCHSIA_EXTERNAL_SEMAPHORE_SPEC_VERSION = 1;
-            enum VK_FUCHSIA_EXTERNAL_SEMAPHORE_EXTENSION_NAME = "VK_FUCHSIA_external_semaphore";
+            enum const( char )* VK_FUCHSIA_EXTERNAL_SEMAPHORE_EXTENSION_NAME = "VK_FUCHSIA_external_semaphore";
             
             struct VkImportSemaphoreZirconHandleInfoFUCHSIA {
                 VkStructureType                        sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA;
@@ -1711,7 +1711,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkBufferCollectionFUCHSIA} );
             
             enum VK_FUCHSIA_BUFFER_COLLECTION_SPEC_VERSION = 2;
-            enum VK_FUCHSIA_BUFFER_COLLECTION_EXTENSION_NAME = "VK_FUCHSIA_buffer_collection";
+            enum const( char )* VK_FUCHSIA_BUFFER_COLLECTION_EXTENSION_NAME = "VK_FUCHSIA_buffer_collection";
             
             alias VkImageFormatConstraintsFlagsFUCHSIA = VkFlags;
             
@@ -1831,7 +1831,7 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_QNX_screen_surface = 1;
 
             enum VK_QNX_SCREEN_SURFACE_SPEC_VERSION = 1;
-            enum VK_QNX_SCREEN_SURFACE_EXTENSION_NAME = "VK_QNX_screen_surface";
+            enum const( char )* VK_QNX_SCREEN_SURFACE_EXTENSION_NAME = "VK_QNX_screen_surface";
             
             alias VkScreenSurfaceCreateFlagsQNX = VkFlags;
             
