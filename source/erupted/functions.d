@@ -527,6 +527,10 @@ extern( System ) {
     // VK_EXT_pageable_device_local_memory
     alias PFN_vkSetDeviceMemoryPriorityEXT                                      = void      function( VkDevice device, VkDeviceMemory memory, float priority );
 
+    // VK_VALVE_descriptor_set_host_mapping
+    alias PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      = void      function( VkDevice device, const( VkDescriptorSetBindingReferenceVALVE )* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping );
+    alias PFN_vkGetDescriptorSetHostMappingVALVE                                = void      function( VkDevice device, VkDescriptorSet descriptorSet, void** ppData );
+
     // VK_KHR_acceleration_structure
     alias PFN_vkCreateAccelerationStructureKHR                                  = VkResult  function( VkDevice device, const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure );
     alias PFN_vkDestroyAccelerationStructureKHR                                 = void      function( VkDevice device, VkAccelerationStructureKHR accelerationStructure, const( VkAllocationCallbacks )* pAllocator );
@@ -1069,6 +1073,10 @@ __gshared {
 
     // VK_EXT_pageable_device_local_memory
     PFN_vkSetDeviceMemoryPriorityEXT                                      vkSetDeviceMemoryPriorityEXT;
+
+    // VK_VALVE_descriptor_set_host_mapping
+    PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      vkGetDescriptorSetLayoutHostMappingInfoVALVE;
+    PFN_vkGetDescriptorSetHostMappingVALVE                                vkGetDescriptorSetHostMappingVALVE;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1786,6 +1794,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetInstanceProcAddr( instance, "vkSetDeviceMemoryPriorityEXT" );
 
+    // VK_VALVE_descriptor_set_host_mapping
+    vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
+    vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetHostMappingVALVE" );
+
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureKHR" );
     vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureKHR" );
@@ -2240,6 +2252,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );
+
+    // VK_VALVE_descriptor_set_host_mapping
+    vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
+    vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetHostMappingVALVE" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );

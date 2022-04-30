@@ -470,8 +470,21 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_decode_queue )) {
             enum VK_KHR_video_decode_queue = 1;
 
-            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 2;
+            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 3;
             enum const( char )* VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
+            
+            alias VkVideoDecodeCapabilityFlagsKHR = VkFlags;
+            enum VkVideoDecodeCapabilityFlagBitsKHR : VkVideoDecodeCapabilityFlagsKHR {
+                VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR                       = 0,
+                VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR   = 0x00000001,
+                VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR   = 0x00000002,
+                VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR            = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR                      = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR;
+            enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR;
+            enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR;
+            enum VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR           = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR;
             
             alias VkVideoDecodeFlagsKHR = VkFlags;
             enum VkVideoDecodeFlagBitsKHR : VkVideoDecodeFlagsKHR {
@@ -483,6 +496,12 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_DECODE_DEFAULT_KHR                 = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_DEFAULT_KHR;
             enum VK_VIDEO_DECODE_RESERVED_0_BIT_KHR          = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_RESERVED_0_BIT_KHR;
             enum VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR      = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR;
+            
+            struct VkVideoDecodeCapabilitiesKHR {
+                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+                void*                            pNext;
+                VkVideoDecodeCapabilityFlagsKHR  flags;
+            }
             
             struct VkVideoDecodeInfoKHR {
                 VkStructureType                    sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;

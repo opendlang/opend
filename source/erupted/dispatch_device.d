@@ -479,6 +479,10 @@ struct DispatchDevice {
         // VK_EXT_pageable_device_local_memory
         vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );
 
+        // VK_VALVE_descriptor_set_host_mapping
+        vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
+        vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetHostMappingVALVE" );
+
         // VK_KHR_acceleration_structure
         vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
         vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
@@ -931,6 +935,10 @@ struct DispatchDevice {
 
     // VK_EXT_pageable_device_local_memory
     void      SetDeviceMemoryPriorityEXT( VkDeviceMemory memory, float priority ) { vkSetDeviceMemoryPriorityEXT( vkDevice, memory, priority ); }
+
+    // VK_VALVE_descriptor_set_host_mapping
+    void      GetDescriptorSetLayoutHostMappingInfoVALVE( const( VkDescriptorSetBindingReferenceVALVE )* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping ) { vkGetDescriptorSetLayoutHostMappingInfoVALVE( vkDevice, pBindingReference, pHostMapping ); }
+    void      GetDescriptorSetHostMappingVALVE( VkDescriptorSet descriptorSet, void** ppData ) { vkGetDescriptorSetHostMappingVALVE( vkDevice, descriptorSet, ppData ); }
 
     // VK_KHR_acceleration_structure
     VkResult  CreateAccelerationStructureKHR( const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, VkAccelerationStructureKHR* pAccelerationStructure ) { return vkCreateAccelerationStructureKHR( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
@@ -1491,6 +1499,10 @@ struct DispatchDevice {
 
     // VK_EXT_pageable_device_local_memory
     PFN_vkSetDeviceMemoryPriorityEXT                      vkSetDeviceMemoryPriorityEXT;
+
+    // VK_VALVE_descriptor_set_host_mapping
+    PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      vkGetDescriptorSetLayoutHostMappingInfoVALVE;
+    PFN_vkGetDescriptorSetHostMappingVALVE                vkGetDescriptorSetHostMappingVALVE;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                  vkCreateAccelerationStructureKHR;
