@@ -10,6 +10,7 @@
         "unittest-inst": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
             "dflags-ldc": ["-mcpu=native"],
+            "dflags-dmd": ["-mcpu=native"],
             "dflags-gdc": ["-march=native"]
         },
         "unittest-release": {
@@ -18,6 +19,7 @@
         "unittest-release-inst": {
             "buildOptions": ["unittests", "optimize", "inline"],
             "dflags-ldc": ["-mcpu=native"],
+            "dflags-dmd": ["-mcpu=native"],
             "dflags-gdc": ["-march=native"]
         },
         "unittest-arm32": {
