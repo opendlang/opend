@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 211;
+enum VK_HEADER_VERSION = 212;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
