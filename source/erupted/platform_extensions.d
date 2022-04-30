@@ -1529,7 +1529,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
             enum VK_ANDROID_external_memory_android_hardware_buffer = 1;
 
-            enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 4;
+            enum VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION = 5;
             enum const( char )* VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME = "VK_ANDROID_external_memory_android_hardware_buffer";
             
             struct VkAndroidHardwareBufferUsageANDROID {

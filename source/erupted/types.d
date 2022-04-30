@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 207;
+enum VK_HEADER_VERSION = 208;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -3915,7 +3915,15 @@ enum VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR                     = VkImageUsageF
 enum VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI                   = VkImageUsageFlagBits.VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI;
 enum VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV                    = VkImageUsageFlagBits.VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV;
 enum VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM                           = VkImageUsageFlagBits.VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
+
 alias VkInstanceCreateFlags = VkFlags;
+enum VkInstanceCreateFlagBits : VkInstanceCreateFlags {
+    VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR     = 0x00000001,
+    VK_INSTANCE_CREATE_FLAG_BITS_MAX_ENUM                = 0x7FFFFFFF
+}
+
+enum VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR    = VkInstanceCreateFlagBits.VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+enum VK_INSTANCE_CREATE_FLAG_BITS_MAX_ENUM               = VkInstanceCreateFlagBits.VK_INSTANCE_CREATE_FLAG_BITS_MAX_ENUM;
 
 alias VkMemoryHeapFlags = VkFlags;
 enum VkMemoryHeapFlagBits : VkMemoryHeapFlags {
@@ -10081,6 +10089,13 @@ alias VkFormatFeatureFlags2KHR = VkFormatFeatureFlags2;
 alias VkFormatFeatureFlagBits2KHR = VkFormatFeatureFlagBits2;
 
 alias VkFormatProperties3KHR = VkFormatProperties3;
+
+
+// - VK_KHR_portability_enumeration -
+enum VK_KHR_portability_enumeration = 1;
+
+enum VK_KHR_PORTABILITY_ENUMERATION_SPEC_VERSION = 1;
+enum const( char )* VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME = "VK_KHR_portability_enumeration";
 
 
 // - VK_KHR_maintenance4 -
