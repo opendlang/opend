@@ -127,25 +127,21 @@ else version(DigitalMars)
 {
     public import core.simd;
 
+    // Note: turning this true is desirable,
+    // and leads to many bugs being discovered upstream.
+    // Last attemps to enable this: DMD 2.100-b1
+    // When this turn true, make it depend on __VERSION__.
+    // 30.04.2022 = all tests pass, with DMD core.simd actually used. Promising.
+    enum bool tryToEnableCoreSimdWithDMD = false;
+
     version(D_SIMD)
     {
         enum MMXSizedVectorsAreEmulated = true;
-
-        static if (__VERSION__ >= 2100)
-        {
-            // Trying out D_SIMD finally, with DMD 2.100
-            //enum SSESizedVectorsAreEmulated = false;
-
-            // It didn't work, maybe one day.
-            enum SSESizedVectorsAreEmulated = true;
-        }
+        enum SSESizedVectorsAreEmulated = !tryToEnableCoreSimdWithDMD;
+        version(D_AVX)
+            enum AVXSizedVectorsAreEmulated = !tryToEnableCoreSimdWithDMD;
         else
-        {
-            // Basically blockd by DMD backend issues, tagged codegen, backend, or SIMD in Bugzilla.
-            enum SSESizedVectorsAreEmulated = true; 
-        }
-
-        enum AVXSizedVectorsAreEmulated = true;
+            enum AVXSizedVectorsAreEmulated = true;
     }
     else
     {
@@ -594,7 +590,10 @@ static if (AVXSizedVectorsAreEmulated)
         mixin VectorOps!(double4, double[4]);
     }
 }
-
+else
+{
+    public import core.simd;    
+}
 static assert(float8.sizeof == 32);
 static assert(byte32.sizeof == 32);
 static assert(short16.sizeof == 32);

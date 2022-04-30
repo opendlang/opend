@@ -92,7 +92,10 @@ unittest
 /// Broadcast 16-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi16 (short a) pure @trusted
 {
-    version(DigitalMars) // workaround https://issues.dlang.org/show_bug.cgi?id=21469
+    // workaround https://issues.dlang.org/show_bug.cgi?id=21469
+    // It used to ICE, now the codegen is just wrong.
+    // TODO report this backend issue.
+    version(DigitalMars) 
     {
         short16 v = a;
         return cast(__m256i) v;
@@ -113,8 +116,18 @@ unittest
 /// Broadcast 32-bit integer `a` to all elements.
 __m256i _mm256_set1_epi32 (int a) pure @trusted
 {
-    pragma(inline, true);
-    return cast(__m256i)(int8(a));
+    // Bad codegen else in DMD.
+    // TODO report this backend issue.
+    version(DigitalMars) 
+    {
+        int8 v = a;
+        return cast(__m256i) v;
+    }
+    else
+    {
+        pragma(inline, true);
+        return cast(__m256i)(int8(a));
+    }
 }
 unittest
 {
