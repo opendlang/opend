@@ -2747,11 +2747,12 @@ unittest
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
     pragma(inline, true);
-    static if (DMD_with_DSIMD)
+    // PERF: this crash DMD 2.100, TODO check if fixed later, as similar thing was reported
+    /*static if (DMD_with_DSIMD)
     {
-        cast(void) __simd(XMM.STOHPS, *cast(float4*)p, a);
+        cast(void) __simd_sto(XMM.STOHPS, *cast(float4*)p, a);
     }
-    else
+    else */
     {
         long2 la = cast(long2)a;
         (*p).ptr[0] = la.array[1];
@@ -2769,11 +2770,13 @@ unittest
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
     pragma(inline, true);
+    // PERF: this crash DMD 2.100, TODO check if fixed later, as similar thing was reported
+    /*
     static if (DMD_with_DSIMD)
     {
-        cast(void) __simd(XMM.STOLPS, *cast(float4*)p, a);
+        cast(void) __simd_sto(XMM.STOLPS, *cast(float4*)p, a);
     }
-    else
+    else */
     {
         long2 la = cast(long2)a;
         (*p).ptr[0] = la.array[0];
@@ -2816,10 +2819,17 @@ unittest
 
 /// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
-void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe // TODO should not be trusted
+void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // TODO should not be trusted
 {
     pragma(inline, true);
-    storeUnaligned!(float4)(a, mem_addr);
+    static if (DMD_with_DSIMD)
+    {
+        cast(void) __simd_sto(XMM.STOUPS, *cast(void16*)(cast(float*)mem_addr), a);
+    }
+    else
+    {
+        storeUnaligned!(float4)(a, mem_addr);
+    }
 }
 
 /// Store 64-bits of integer data from `a` into memory using a non-temporal memory hint.
