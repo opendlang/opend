@@ -1777,6 +1777,7 @@ unittest
 /// copy the upper 2 elements from `a` to the upper 2 elements of dst.
 __m128 _mm_movehl_ps (__m128 a, __m128 b) pure @trusted
 {
+    // PERF DMD
     // Disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
     /*
     static if (DMD_with_DSIMD)
@@ -1804,6 +1805,7 @@ unittest
 /// copy the lower 2 elements from `a` to the lower 2 elements of result
 __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @trusted
 {    
+    // PERF DMD
     // Disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
     /*
     static if (DMD_with_DSIMD)
@@ -2666,6 +2668,7 @@ __m128 _mm_sqrt_ss(__m128 a) @trusted
     {
         return __builtin_ia32_sqrtss(a);
     }
+    // PERF DMD
     // TODO: report this crash in dmd -b unittest-release
     /*else static if (DMD_with_DSIMD)
     {
@@ -2951,7 +2954,12 @@ __m128 _mm_undefined_ps() pure @safe
 /// Unpack and interleave single-precision (32-bit) floating-point elements from the high half `a` and `b`.
 __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
 {
-    version(LDC)
+    // PERF GDC use intrinsic
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.UNPCKHPS, a, b);
+    }
+    else version(LDC)
     {
         // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
         return shufflevectorLDC!(__m128, 2, 6, 3, 7)(a, b);
@@ -2978,7 +2986,12 @@ unittest
 /// Unpack and interleave single-precision (32-bit) floating-point elements from the low half of `a` and `b`.
 __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
 {
-    version(LDC)
+    // PERF GDC use intrinsic
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.UNPCKLPS, a, b);
+    }
+    else version(LDC)
     {
         // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
         return shufflevectorLDC!(__m128, 0, 4, 1, 5)(a, b);
