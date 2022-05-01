@@ -2622,6 +2622,10 @@ __m128 _mm_sqrt_ps(__m128 a) @trusted
     {
         return __builtin_ia32_sqrtps(a);
     }
+    else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.SQRTPS, a);
+    }
     else version(LDC)
     {
         // Disappeared with LDC 1.11
@@ -2662,6 +2666,11 @@ __m128 _mm_sqrt_ss(__m128 a) @trusted
     {
         return __builtin_ia32_sqrtss(a);
     }
+    // TODO: report this crash in dmd -b unittest-release
+    /*else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.SQRTSS, a);
+    }*/
     else version(LDC)
     {
         a.ptr[0] = llvm_sqrt(a.array[0]);
@@ -2712,11 +2721,18 @@ unittest
 void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // TODO: shouldn't be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
-    __m128 r;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = a.array[0];
-    r.ptr[2] = a.array[0];
-    r.ptr[3] = a.array[0];
+    static if (DMD_with_DSIMD)
+    {
+        __m128 r = cast(__m128) __simd(XMM.SHUFPS, a, a, 0);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[0];
+        r.ptr[2] = a.array[0];
+        r.ptr[3] = a.array[0];
+    }
     *aligned = r;
 }
 unittest
@@ -2730,6 +2746,7 @@ unittest
 /// Store the upper 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
+    // PERF: DMD can't be done with __simd + LODHPS, report that
     pragma(inline, true);
     long2 la = cast(long2)a;
     (*p).ptr[0] = la.array[1];
@@ -2745,6 +2762,7 @@ unittest
 /// Store the lower 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
+    // PERF: DMD can't be done with __simd + LODLPS, report that
     pragma(inline, true);
     long2 la = cast(long2)a;
     (*p).ptr[0] = la.array[0];
@@ -2762,11 +2780,18 @@ unittest
 void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // TODO should not be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
-    __m128 r;
-    r.ptr[0] = a.array[3];
-    r.ptr[1] = a.array[2];
-    r.ptr[2] = a.array[1];
-    r.ptr[3] = a.array[0];
+    static if (DMD_with_DSIMD)
+    {
+        __m128 r = cast(__m128) __simd(XMM.SHUFPS, a, a, 27);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[3];
+        r.ptr[1] = a.array[2];
+        r.ptr[2] = a.array[1];
+        r.ptr[3] = a.array[0];
+    }
     *aligned = r;
 }
 unittest
