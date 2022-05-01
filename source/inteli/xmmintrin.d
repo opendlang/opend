@@ -2527,9 +2527,10 @@ unittest
 __m128 _mm_setzero_ps() pure @trusted
 {
     pragma(inline, true);
-    float4 r;
-    r = 0.0f;
-    return r;
+
+    // Note: for all compilers, this performs best in debug builds, and in DMD -O
+    int4 r; 
+    return cast(__m128)r;
 }
 unittest
 {
@@ -2565,6 +2566,7 @@ void _mm_sfence() @trusted
     }
     else static if (DMD_with_asm)
     {
+        // PERF: can't be inlined in DMD, probably because of that assembly.
         asm nothrow @nogc pure @safe
         {
             sfence;
@@ -2585,6 +2587,7 @@ unittest
 /// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
 __m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @safe
 {
+    // PERF DMD + D_SIMD
     return cast(__m64) shufflevector!(short4, ( (imm8 >> 0) & 3 ),
                                               ( (imm8 >> 2) & 3 ),
                                               ( (imm8 >> 4) & 3 ),
@@ -2602,7 +2605,14 @@ unittest
 /// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
 {
-    return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.SHUFPS, a, b, imm8);
+    }
+    else
+    {
+        return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
+    }
 }
 
 /// Compute the square root of packed single-precision (32-bit) floating-point elements in `a`.
