@@ -129,10 +129,16 @@ else version(DigitalMars)
 
     // Note: turning this true is desirable,
     // and leads to many bugs being discovered upstream.
-    // Last attemps to enable this: DMD 2.100-b1
-    // When this turn true, make it depend on __VERSION__.
-    // 30.04.2022 = all tests pass, with DMD core.simd actually used. Promising.
-    enum bool tryToEnableCoreSimdWithDMD = false;
+    // the fact that it works relies on many workardounds.
+    // in particular intel-intrinsics with this on is a honeypot for DMD backend bugs.
+    static if (__VERSION__ >= 2100)
+    {
+        enum bool tryToEnableCoreSimdWithDMD = true;
+    }
+    else
+    {
+        enum bool tryToEnableCoreSimdWithDMD = false;
+    }
 
     version(D_SIMD)
     {
