@@ -2746,10 +2746,16 @@ unittest
 /// Store the upper 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
-    // PERF: DMD can't be done with __simd + LODHPS, report that
     pragma(inline, true);
-    long2 la = cast(long2)a;
-    (*p).ptr[0] = la.array[1];
+    static if (DMD_with_DSIMD)
+    {
+        cast(void) __simd(XMM.STOHPS, *cast(float4*)p, a);
+    }
+    else
+    {
+        long2 la = cast(long2)a;
+        (*p).ptr[0] = la.array[1];
+    }
 }
 unittest
 {
@@ -2762,10 +2768,16 @@ unittest
 /// Store the lower 2 single-precision (32-bit) floating-point elements from `a` into memory.
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
-    // PERF: DMD can't be done with __simd + LODLPS, report that
     pragma(inline, true);
-    long2 la = cast(long2)a;
-    (*p).ptr[0] = la.array[0];
+    static if (DMD_with_DSIMD)
+    {
+        cast(void) __simd(XMM.STOLPS, *cast(float4*)p, a);
+    }
+    else
+    {
+        long2 la = cast(long2)a;
+        (*p).ptr[0] = la.array[0];
+    }
 }
 unittest
 {
