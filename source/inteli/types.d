@@ -131,9 +131,13 @@ else version(DigitalMars)
     // and leads to many bugs being discovered upstream.
     // the fact that it works relies on many workardounds.
     // in particular intel-intrinsics with this on is a honeypot for DMD backend bugs.
+    // What happends next is that contributors end up on a DMD bug in their PR.
+    //
+    // Failed attempts: xxx
+    //
     static if (__VERSION__ >= 2100)
     {
-        enum bool tryToEnableCoreSimdWithDMD = true;
+        enum bool tryToEnableCoreSimdWithDMD = false;
     }
     else
     {
