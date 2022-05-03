@@ -197,6 +197,11 @@ private string joinStrings()(string[] strs)
     return null;
 }
 
+private auto copyArg(alias a)()
+{
+    return a;
+}
+
 /++
 Takes multiple functions and adjoins them together. The result is a
 $(LREF RefTuple) with one element per passed-in function. Upon
@@ -218,10 +223,10 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
             {
                 template _adjoin(size_t i)
                 {
-                    static if (__traits(compiles, &fun[i](forward!args)))
-                        enum _adjoin = "Ref!(typeof(fun[" ~ i.stringof ~ "](forward!args)))(fun[" ~ i.stringof ~ "](forward!args)), ";
+                    static if (__traits(compiles, &(fun[i](staticMap!(copyArg, args)))))
+                        enum _adjoin = "Ref!(typeof(fun[" ~ i.stringof ~ "](staticMap!(copyArg, args))))(fun[" ~ i.stringof ~ "](args)), ";
                     else
-                        enum _adjoin = "fun[" ~ i.stringof ~ "](forward!args), ";
+                        enum _adjoin = "fun[" ~ i.stringof ~ "](args), ";
                 }
 
                 import mir.internal.utility;
@@ -241,6 +246,14 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
     auto x = adjoin!(f1, f2)(5);
     assert(is(typeof(x) == RefTuple!(bool, int)));
     assert(x.a == true && x.b == 2);
+}
+
+@safe version(mir_core_test) unittest
+{
+    alias f = pipe!(adjoin!("a", "a * a"), "a[0]");
+    static assert(is(typeof(f(3)) == int));
+    auto d = 4;
+    static assert(is(typeof(f(d)) == int));
 }
 
 @safe version(mir_core_test) unittest
