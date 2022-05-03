@@ -37,6 +37,9 @@ extern(Windows)
     /// Function that initialize a `Plugin` structure.
     alias FI_InitProc = void function (Plugin *plugin, int format_id);
 
+
+    // <need to be setup by FI_InitProc>
+
     /// Function that loads a image from this format.
     alias FI_LoadProc = FIBITMAP* function(FreeImageIO *io, fi_handle handle, int page, int flags, void *data);
 
@@ -45,6 +48,12 @@ extern(Windows)
 
     /// Function that detects this format.
     alias FI_ValidateProc = bool function(FreeImageIO *io, fi_handle handle);
+
+    /// Function that return a comma-separated list of MIME types.
+    /// Example = PNG gives "image/png".
+    alias FI_MIMEProc = const(char)* function();
+
+    // </need to be setup by FI_InitProc>
 }
 
 
@@ -58,11 +67,6 @@ struct Plugin
     /// bitmaps. 
     bool isEnabled = false;
 
-    bool supportsRead = false;
-    bool supportsWrite = false;    
-    bool supportsNoPixels = false;
-    bool supportsICCProfiles = false;
-
     /// Type string for the bitmap. For example, a plugin that loads BMPs returns the string "BMP".
     const(char)* format;
 
@@ -73,8 +77,33 @@ struct Plugin
     /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
     const(char)* extensionList;
 
-    /// Comma-separated list of MIME types for the plugin. Example = PNG gives "image/png".
-    const(char)* mimeTypes;
+    /// Regular expression.
+    const(char)* regexpr;
+
+    //
+    // <TO BE FILLED BY THE FI_InitProc FOR THE FORMAT>
+    //
+
+    /// Does this plugin support reading?
+    bool supportsRead = false;
+
+    /// Does this plugin support writing?
+    bool supportsWrite = false;    
+
+    /// Does this plugin support loading no pixels?
+    bool supportsNoPixels = false;
+
+    /// Does this plugin support ICC profiles?
+    bool supportsICCProfiles = false;
+
+    FI_LoadProc loadProc = null;
+    FI_SaveProc saveProc = null;
+    FI_ValidateProc validateProc = null;
+    FI_MIMEProc mimeProc = null;
+
+    //
+    // </TO BE FILLED BY THE FI_InitProc FOR THE FORMAT>
+    //
 }
 
 // ================================================================================================
@@ -184,12 +213,12 @@ __gshared Plugin[FREE_IMAGE_FORMAT_NUM] g_plugins;
 __gshared Mutex g_pluginMutex; // protects g_plugins
 
 // Register one internal format.
-void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
-                                      FI_InitProc proc,
-                                      const(char) *format = null, 
-                                      const(char) *description = null,
-                                      const(char)* extension = null,
-                                      const(char)* regexpr = null) @trusted
+package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
+                                              FI_InitProc proc,
+                                              const(char)* format = null, 
+                                              const(char)* description = null,
+                                              const(char)* extension = null,
+                                              const(char)* regexpr = null) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
@@ -199,52 +228,25 @@ void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
     // Begin its life enabled, and registered.
     p.isEnabled = true;
     p.isRegistered = true;
+
+    p.format = format;
+    p.description = description;
+    p.extensionList = extension;
+    p.regexpr = regexpr;
+
+    /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
+    const(char)* extensionList;
+
+    /// Regular expression.
+    const(char)* regExpr;
 }
 
 package void FreeImage_registerInternalPlugins()
 {
-    FreeImage_RegisterInternalPlugin(FIF_PNG,
-                                     &InitProc_PNG,
-                                     null,
-                                     null,
-                                     null,
-                                     null);
-
-    //FIF_BMP     =  0, /// Windows or OS/2 Bitmap File (*.BMP)
-        //FIF_GIF     =  1, /// Graphics Interchange Format (*.GIF)
-        //FIF_JPEG    =  2, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
-        //FIF_PNG     =  3, /// Portable Network Graphics (*.PNG)
-        //FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
-}
-
-extern(Windows)
-{
-
-void InitProc_BMP (Plugin *plugin, int format_id)
-{
-    assert(format_id == FIF_BMP);
-}
-
-void InitProc_GIF (Plugin *plugin, int format_id)
-{
-    assert(format_id == FIF_GIF);
-}
-
-void InitProc_JPEG (Plugin *plugin, int format_id)
-{
-    assert(format_id == FIF_JPEG);
-}
-
-void InitProc_PNG (Plugin *plugin, int format_id)
-{
-    assert(format_id == FIF_PNG);
-    plugin.supportsRead = true;    
-}
-
-void InitProc_TIFF (Plugin *plugin, int format_id)
-{
-    assert(format_id == FIF_TIFF);
-}
-
+    version(decodePNG)
+    {
+        import gamut.plugins.png;
+        registerPNG();
+    }
 }
 
