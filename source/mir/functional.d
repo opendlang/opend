@@ -78,10 +78,17 @@ struct Ref(T)
     ref inout(T) __value() inout @property { return *__ptr; }
     ///
     alias __value this;
+
     ///
-    bool opEquals(scope Ref!T rhs) const scope
+    bool opEquals(ref scope const T rhs) const scope
     {
-        return __value == rhs.__value;
+        return __value == rhs;
+    }
+
+    ///
+    bool opEquals(scope const T rhs) const scope
+    {
+        return __value == rhs;
     }
 
     static if (__traits(hasMember, T, "toHash") || __traits(isScalar, T))
