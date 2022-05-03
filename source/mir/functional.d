@@ -185,6 +185,59 @@ V unref(V)(V value)
         return value;
 }
 
+private template autoExpandAndForwardElem(alias value)
+{
+
+}
+
+template autoExpandAndForward(alias value)
+    if (is(typeof(value) : RefTuple!Types, Types...))
+{
+
+    import core.lifetime: move;
+    enum isLazy = __traits(isRef,  value) || __traits(isOut,  value) || __traits(isLazy, value);
+    template autoExpandAndForwardElem(size_t i)
+    {
+        alias T = typeof(value.expand[i]);
+        static if (isRef!T)
+        {
+            ref autoExpandAndForwardElem()
+            {
+                return *value.expand[i].__ptr;
+            }
+        }
+        else
+        {
+            static if (isLazy)
+                @property ref autoExpandAndForwardElem(){ pragma(inline, true); return value.expand[i]; }
+            else
+            static if (is(typeof(move(value.expand[i]))))
+                @property auto autoExpandAndForwardElem(){ pragma(inline, true); return move(value.expand[i]); }
+            else
+                @property auto autoExpandAndForwardElem(){ pragma(inline, true); return value.expand[i]; }
+        }
+    }
+
+    import mir.internal.utility: Iota;
+    import std.meta: staticMap;
+    alias autoExpandAndForward = staticMap!(autoExpandAndForwardElem, Iota!(value.expand.length));
+}
+
+version(mir_core_test) unittest
+{
+    long v;
+    auto tup = refTuple(v._ref, 2.3);
+
+    auto f(ref long a, double b)
+    {
+        assert(b == 2.3);
+        assert(a == v);
+        assert(&a == &v);
+    }
+
+    f(autoExpandAndForward!tup);
+}
+
 private string joinStrings()(string[] strs)
 {
     if (strs.length)
@@ -223,8 +276,8 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
             {
                 template _adjoin(size_t i)
                 {
-                    static if (__traits(compiles, &(fun[i](staticMap!(copyArg, args)))))
-                        enum _adjoin = "Ref!(typeof(fun[" ~ i.stringof ~ "](staticMap!(copyArg, args))))(fun[" ~ i.stringof ~ "](args)), ";
+                    static if (__traits(compiles, &(fun[i](forward!args))))
+                        enum _adjoin = "Ref!(typeof(fun[" ~ i.stringof ~ "](forward!args)))(fun[" ~ i.stringof ~ "](args)), ";
                     else
                         enum _adjoin = "fun[" ~ i.stringof ~ "](args), ";
                 }
@@ -253,7 +306,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
     alias f = pipe!(adjoin!("a", "a * a"), "a[0]");
     static assert(is(typeof(f(3)) == int));
     auto d = 4;
-    static assert(is(typeof(f(d)) == int));
+    static assert(is(typeof(f(d)) == Ref!int));
 }
 
 @safe version(mir_core_test) unittest
@@ -608,7 +661,7 @@ private template _pipe(size_t n)
         enum _pipe = "f[" ~ i.stringof ~ "](" ~ ._pipe!i ~ ")";
     }
     else
-        enum _pipe = "args";
+        enum _pipe = "forward!args";
 }
 
 private template _unpipe(alias fun)
