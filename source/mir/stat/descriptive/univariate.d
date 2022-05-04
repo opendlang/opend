@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for descriptive statistics.
+This module contains algorithms for univariate descriptive statistics.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -16,7 +16,7 @@ T3=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
 
-module mir.stat.descriptive;
+module mir.stat.descriptive.univariate;
 
 public import mir.math.stat:
     gmean,
@@ -130,7 +130,7 @@ enum QuantileAlgo {
     type9
 }
 
-package template quantileType(T, QuantileAlgo quantileAlgo)
+package(mir.stat) template quantileType(T, QuantileAlgo quantileAlgo)
 {
     static if (quantileAlgo == QuantileAlgo.type1 ||
                quantileAlgo == QuantileAlgo.type3)
@@ -237,7 +237,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -250,7 +250,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == Complex!float));
 }
 
-version(mir_stat_test_stdcomplex)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1598,7 +1598,7 @@ template dispersion(
 }
 
 /// Simple examples
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1734,7 +1734,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1749,7 +1749,7 @@ unittest
 }
 
 // std.complex test
-version(mir_stat_test_stdcomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1766,7 +1766,7 @@ Dispersion works for complex numbers and other user-defined types (provided that
 the `centralTendency`, `transform`, and `summary` functions are defined for those
 types)
 +/
-version(mir_stat_test_stdcomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5113,7 +5113,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5133,7 +5133,7 @@ unittest
 }
 
 // Raw Moment: test std.complex
-version(mir_stat_test_stdcomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5497,7 +5497,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5515,7 +5515,7 @@ unittest
 rawMoment works for complex numbers and other user-defined types (that are either
 implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test_stdcomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5747,7 +5747,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
