@@ -56,6 +56,7 @@ extern(Windows)
     // </need to be setup by FI_InitProc>
 }
 
+// TODO: add usage count, so that a plugin can be unloaded after use in case is it disabled.
 
 struct Plugin
 {
@@ -205,12 +206,35 @@ FREE_IMAGE_FORMAT FreeImage_RegisterLocalPlugin(FI_InitProc proc_address,
 // INTERNALS
 //
 
-private:
+package:
 
-// For now, all plugin resides in a static __gshared part of the memory.
-__gshared Plugin[FREE_IMAGE_FORMAT_NUM] g_plugins;
 
-__gshared Mutex g_pluginMutex; // protects g_plugins
+// Acquire plugin in a thread-safe manner. Once acquired, the plugin cannot be unloaded/disabled.
+// Call `FreeImage_PluginRelease` once done.
+
+// Returns: null if no plugin is registered for this format, or if it is disabled for reading.
+Plugin* FreeImage_PluginAcquireForReading(FREE_IMAGE_FORMAT fif) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+    bool registered = g_plugins[fif].isRegistered;
+    bool enabled = g_plugins[fif].isEnabled;
+    bool supportsRead = g_plugins[fif].supportsRead;
+    
+    if ( !(registered && enabled && supportsRead) )
+        return null;
+
+    // TODO: actually do something for atomicity.
+    return &g_plugins[fif];
+}
+
+// Return 0 if properly release. assert(false) else, as it is a programming error.
+int FreeImage_PluginRelease(Plugin* plugin)
+{
+    // TODO: have a counter and use it.
+    return 0;
+}
+
 
 // Register one internal format.
 package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
@@ -219,27 +243,27 @@ package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
                                               const(char)* description = null,
                                               const(char)* extension = null,
                                               const(char)* regexpr = null) @trusted
-{
-    g_pluginMutex.lockLazy();
-    scope(exit) g_pluginMutex.unlock();
-    Plugin* p = &g_plugins[fif];
-    proc(p, fif);
+                                              {
+                                                g_pluginMutex.lockLazy();
+                                                scope(exit) g_pluginMutex.unlock();
+                                                Plugin* p = &g_plugins[fif];
+                                                proc(p, fif);
 
-    // Begin its life enabled, and registered.
-    p.isEnabled = true;
-    p.isRegistered = true;
+                                                // Begin its life enabled, and registered.
+                                                p.isEnabled = true;
+                                                p.isRegistered = true;
 
-    p.format = format;
-    p.description = description;
-    p.extensionList = extension;
-    p.regexpr = regexpr;
+                                                p.format = format;
+                                                p.description = description;
+                                                p.extensionList = extension;
+                                                p.regexpr = regexpr;
 
-    /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
-    const(char)* extensionList;
+                                                /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
+                                                const(char)* extensionList;
 
-    /// Regular expression.
-    const(char)* regExpr;
-}
+                                                /// Regular expression.
+                                                const(char)* regExpr;
+                                              }
 
 package void FreeImage_registerInternalPlugins()
 {
@@ -249,4 +273,15 @@ package void FreeImage_registerInternalPlugins()
         registerPNG();
     }
 }
+
+
+private:
+
+
+// For now, all plugin resides in a static __gshared part of the memory.
+__gshared Plugin[FREE_IMAGE_FORMAT_NUM] g_plugins;
+
+__gshared Mutex g_pluginMutex; // protects g_plugins
+
+
 

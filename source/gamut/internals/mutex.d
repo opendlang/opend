@@ -46,20 +46,20 @@ nothrow @nogc @safe:
     }
 
     /// Lock mutex, with lazy interlocked initialization if needed.
-    void lockLazy() @system
+    void lockLazy() @trusted
     {
         initialize();
         (cast(DRuntimeMutex)_mutex).lock_nothrow();
     }
 
     /// Lock mutex. Rentrant.
-    void lock() @system
+    void lock() @trusted
     {
         (cast(DRuntimeMutex)_mutex).lock_nothrow();
     }
 
     /// Unlock mutex.
-    void unlock() @system
+    void unlock() @trusted
     {
         (cast(DRuntimeMutex)_mutex).unlock_nothrow();
     }

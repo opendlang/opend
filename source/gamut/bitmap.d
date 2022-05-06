@@ -10,6 +10,7 @@ import core.stdc.stdio;
 import core.memory: pureMalloc, pureRealloc, pureFree;
 import gamut.types;
 import gamut.io;
+import gamut.plugin;
 
 nothrow @nogc @safe:
 
@@ -113,6 +114,10 @@ FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filenameZ, int flag
         return null;
 
     FreeImageIO io;
+    io.read = &file_read;
+    io.write = null;
+    io.seek = &file_seek;
+    io.tell = &file_tell;
 
     FIBITMAP* bitmap = FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)f, flags);
     
@@ -136,14 +141,18 @@ deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeIm
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
 FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
-{
-    if (fif == FIF_PNG)
-    {
+{  
+    Plugin* plugin = FreeImage_PluginAcquireForReading(fif);
+    if (plugin is null)
+        return null;
 
+    scope(exit) FreeImage_PluginRelease(plugin);
 
-
-    }
-    return null;
+    int page = 0;
+    void *data = null;
+    assert(plugin.loadProc); // else, do not mark it as suitable for reading
+    FIBITMAP* loaded = plugin.loadProc(io, handle, page, flags, data);
+    return loaded;
 }
 
 /// FreeImage_Save
