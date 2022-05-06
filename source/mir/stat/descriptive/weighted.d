@@ -3,7 +3,7 @@ This module contains algorithms for descriptive statistics with weights.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
-Authors: John Michael Hall, Ilya Yaroshenko
+Authors: John Michael Hall
 
 Copyright: 2022 Mir Stat Authors.
 
