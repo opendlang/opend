@@ -5,16 +5,16 @@ authors "John Michael Hall" "Ilya Yaroshenko"
 copyright "Copyright © 2022, Mir Stat Authors."
 license "Apache-2.0"
 
-dependency "mir-algorithm" version=">=3.12.30"
+dependency "mir-algorithm" version=">=3.12.36"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_stat_test" "mir_stat_test_mircomplex" "mir_stat_test_stdcomplex"
+    versions "mir_stat_test"
     dflags "-lowmem"
 }
 buildType "unittest-cov" {
     buildOptions "unittests" "coverage" "debugMode" "debugInfo"
-    versions "mir_stat_test" "mir_stat_test_complex" "mir_stat_test_stdcomplex"
+    versions "mir_stat_test"
     dflags "-lowmem"
 }
 buildType "unittest-release" {

@@ -8,7 +8,9 @@ has_cpp_headers = false
 
 sources_list = [
     'mir/math/internal/powi',
-    'mir/stat/descriptive',
+    'mir/stat/descriptive/package',
+    'mir/stat/descriptive/univariate',
+    'mir/stat/descriptive/weighted',
     'mir/stat/package',
     'mir/stat/transform',
     'mir/stat/distribution/package',
