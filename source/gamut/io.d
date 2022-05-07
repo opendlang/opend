@@ -1,3 +1,9 @@
+/**
+I/O streams in FreeImage.
+
+Copyright: Copyright Guillaume Piolat 2022
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module gamut.io;
 
 import core.stdc.stdio;
@@ -26,14 +32,12 @@ struct FreeImageIO
 
 alias fi_handle = void*;
 
-extern(C)
+extern(C) @system
 {
-    @system
-    {
-        alias ReadProc = uint function(void* buffer, int size, int count, fi_handle handle);
-        alias WriteProc = uint function(void* buffer, int size, int count, fi_handle handle);
-    }
-
+    
+    alias ReadProc = uint function(void* buffer, int size, int count, fi_handle handle);
+    alias WriteProc = uint function(void* buffer, int size, int count, fi_handle handle);
+    
     // Origin: position from which offset is added
     //   SEEK_SET = beginning of file.
     //   SEEK_CUR = Current position of file pointer.

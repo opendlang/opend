@@ -142,9 +142,9 @@ int FreeImage_SetPluginEnabled(FREE_IMAGE_FORMAT fif, bool enable) @trusted
     if (!registered)
         return -1; // doesn't exist
 
-   bool wasEnabled = g_plugins[fif].isEnabled;
-   g_plugins[fif].isEnabled = enable;
-   return wasEnabled ? FI_TRUE : FI_FALSE;
+    bool wasEnabled = g_plugins[fif].isEnabled;
+    g_plugins[fif].isEnabled = enable;
+    return wasEnabled ? FI_TRUE : FI_FALSE;
 }
 
 /// Returns FI_TRUE when the plugin is enabled, FI_FALSE when the plugin is disabled, -1 otherwise.
