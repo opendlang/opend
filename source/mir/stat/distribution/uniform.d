@@ -24,13 +24,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformPDF(T)(T x, T lower = 0, T upper = 1)
+T uniformPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution.");
-    assert(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution.");
-    assert(lower < upper, "lower must be less than upper");
-
     return 1.0L / (upper - lower);
 }
 
@@ -55,13 +54,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformCDF(T)(T x, T lower = 0, T upper = 1)
+T uniformCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution.");
-    assert(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution.");
-    assert(lower < upper, "lower must be less than upper");
-
     return (x - lower) / (upper - lower);
 }
 
@@ -86,13 +84,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformCCDF(T)(T x, T lower = 0, T upper = 1)
+T uniformCCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution.");
-    assert(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution.");
-    assert(lower < upper, "lower must be less than upper");
-
     return (upper - x) / (upper - lower);
 }
 
@@ -117,13 +114,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformInvCDF(T)(T p, T lower = 0, T upper = 1)
+T uniformInvCDF(T)(const T p, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(p >= 0, "p must be greater than or equal to 0")
+    in(p <= 1, "p must be less than or equal to 1")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(p >= 0, "p must be greater than or equal to 0.");
-    assert(p <= 1, "p must be less than or equal to 1.");
-    assert(lower < upper, "lower must be less than upper");
-
     return lower + p * (upper - lower);
 }
 
@@ -148,13 +144,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformLPDF(T)(T x, T lower = 0, T upper = 1)
+T uniformLPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution.");
-    assert(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution.");
-    assert(lower < upper, "lower must be less than upper");
-
     import mir.math.common: log;
 
     return -log(upper - lower);
@@ -183,13 +178,12 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
-T uniformLuPDF(T)(T x, T lower = 0, T upper = 1)
+T uniformLuPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
+    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in(lower < upper, "lower must be less than upper")
 {
-    assert(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution.");
-    assert(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution.");
-    assert(lower < upper, "lower must be less than upper");
-
     return cast(T) 1;
 }
 
