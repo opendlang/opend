@@ -24,6 +24,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
@@ -54,6 +55,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
@@ -84,6 +86,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformCCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
@@ -114,6 +117,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformInvCDF(T)(const T p, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(p >= 0, "p must be greater than or equal to 0")
@@ -144,6 +148,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformLPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
@@ -178,6 +183,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
 +/
+@safe pure nothrow @nogc
 T uniformLuPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
     in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
