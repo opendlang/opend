@@ -169,36 +169,3 @@ unittest {
     assert(0.5.uniformLPDF(0.0, 1.5).approxEqual(-log(1.5)));
     assert(1.5.uniformLPDF(1.0, 3.0).approxEqual(-log(2.0)));
 }
-
-/++
-Computes the uniform log unnormalized probability distribution function (LuPDF)
-
-This removes constants that would typically get dropped in estimation.
-
-Params:
-    x = value to evaluate LuPDF
-    lower = lower bound
-    upper = upper bound
-
-See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, uniform probability distribution)
-+/
-@safe pure nothrow @nogc
-T uniformLuPDF(T)(const T x, const T lower = 0, const T upper = 1)
-    if (isFloatingPoint!T)
-    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
-{
-    return cast(T) 1;
-}
-
-///
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest {
-    import mir.math.common: approxEqual, log;
-    assert(0.5.uniformLuPDF == 1);
-    assert(0.5.uniformLuPDF(0.0, 1.5) == 1);
-    assert(2.5.uniformLuPDF(1.0, 3.0) == 1);
-}
