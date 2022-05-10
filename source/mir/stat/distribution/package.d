@@ -11,5 +11,7 @@ Copyright: 2022 Mir Stat Authors.
 
 module mir.stat.distribution;
 
+///
 public import mir.stat.distribution.normal;
+///
 public import mir.stat.distribution.uniform;

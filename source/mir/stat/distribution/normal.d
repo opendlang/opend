@@ -19,4 +19,5 @@ License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 module mir.stat.distribution.normal;
 
+///
 public import mir.math.func.normal: normalPDF, normalCDF, normalInvCDF;
