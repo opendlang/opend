@@ -12,3 +12,4 @@ Copyright: 2022 Mir Stat Authors.
 module mir.stat.distribution.invcdf;
 
 public import mir.stat.distribution.normal: normalInvCDF;
+public import mir.stat.distribution.uniform: uniformInvCDF;
