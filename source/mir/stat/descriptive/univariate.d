@@ -18,6 +18,7 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat.descriptive.univariate;
 
+///
 public import mir.math.stat:
     gmean,
     GMeanAccumulator,
@@ -32,7 +33,7 @@ public import mir.math.stat:
     variance,
     VarianceAccumulator,
     VarianceAlgo;
-
+///
 public import mir.math.sum: Summation;
 
 import mir.internal.utility: isFloatingPoint;

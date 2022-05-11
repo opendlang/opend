@@ -18,6 +18,9 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat;
 
+///
 public import mir.stat.descriptive;
+///
 public import mir.stat.transform;
+///
 public import mir.stat.distribution;
