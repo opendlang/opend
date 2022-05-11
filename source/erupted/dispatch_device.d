@@ -310,6 +310,9 @@ struct DispatchDevice {
         vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
         vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
 
+        // VK_KHR_ray_tracing_maintenance1
+        vkCmdTraceRaysIndirect2KHR                        = cast( PFN_vkCmdTraceRaysIndirect2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysIndirect2KHR" );
+
         // VK_EXT_debug_marker
         vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
         vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -452,6 +455,9 @@ struct DispatchDevice {
         // VK_NV_fragment_shading_rate_enums
         vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
 
+        // VK_EXT_image_compression_control
+        vkGetImageSubresourceLayout2EXT                   = cast( PFN_vkGetImageSubresourceLayout2EXT                   ) vkGetDeviceProcAddr( device, "vkGetImageSubresourceLayout2EXT" );
+
         // VK_EXT_vertex_input_dynamic_state
         vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
@@ -464,6 +470,9 @@ struct DispatchDevice {
 
         // VK_NV_external_memory_rdma
         vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
+
+        // VK_EXT_pipeline_properties
+        vkGetPipelinePropertiesEXT                        = cast( PFN_vkGetPipelinePropertiesEXT                        ) vkGetDeviceProcAddr( device, "vkGetPipelinePropertiesEXT" );
 
         // VK_EXT_extended_dynamic_state2
         vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
@@ -772,6 +781,9 @@ struct DispatchDevice {
     // VK_KHR_synchronization2
     void      CmdWriteBufferMarker2AMD( VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarker2AMD( commandBuffer, stage, dstBuffer, dstOffset, marker ); }
 
+    // VK_KHR_ray_tracing_maintenance1
+    void      CmdTraceRaysIndirect2KHR( VkDeviceAddress indirectDeviceAddress ) { vkCmdTraceRaysIndirect2KHR( commandBuffer, indirectDeviceAddress ); }
+
     // VK_EXT_debug_marker
     VkResult  DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) { return vkDebugMarkerSetObjectTagEXT( vkDevice, pTagInfo ); }
     VkResult  DebugMarkerSetObjectNameEXT( const( VkDebugMarkerObjectNameInfoEXT )* pNameInfo ) { return vkDebugMarkerSetObjectNameEXT( vkDevice, pNameInfo ); }
@@ -909,6 +921,9 @@ struct DispatchDevice {
     // VK_NV_fragment_shading_rate_enums
     void      CmdSetFragmentShadingRateEnumNV( VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps ) { vkCmdSetFragmentShadingRateEnumNV( commandBuffer, shadingRate, combinerOps ); }
 
+    // VK_EXT_image_compression_control
+    void      GetImageSubresourceLayout2EXT( VkImage image, const( VkImageSubresource2EXT )* pSubresource, VkSubresourceLayout2EXT* pLayout ) { vkGetImageSubresourceLayout2EXT( vkDevice, image, pSubresource, pLayout ); }
+
     // VK_EXT_vertex_input_dynamic_state
     void      CmdSetVertexInputEXT( uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions ) { vkCmdSetVertexInputEXT( commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions ); }
 
@@ -921,6 +936,9 @@ struct DispatchDevice {
 
     // VK_NV_external_memory_rdma
     VkResult  GetMemoryRemoteAddressNV( const( VkMemoryGetRemoteAddressInfoNV )* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress ) { return vkGetMemoryRemoteAddressNV( vkDevice, pMemoryGetRemoteAddressInfo, pAddress ); }
+
+    // VK_EXT_pipeline_properties
+    VkResult  GetPipelinePropertiesEXT( const( VkPipelineInfoEXT )* pPipelineInfo, VkBaseOutStructure* pPipelineProperties ) { return vkGetPipelinePropertiesEXT( vkDevice, pPipelineInfo, pPipelineProperties ); }
 
     // VK_EXT_extended_dynamic_state2
     void      CmdSetPatchControlPointsEXT( uint32_t patchControlPoints ) { vkCmdSetPatchControlPointsEXT( commandBuffer, patchControlPoints ); }
@@ -1331,6 +1349,9 @@ struct DispatchDevice {
     PFN_vkCmdWriteBufferMarker2AMD                        vkCmdWriteBufferMarker2AMD;
     PFN_vkGetQueueCheckpointData2NV                       vkGetQueueCheckpointData2NV;
 
+    // VK_KHR_ray_tracing_maintenance1
+    PFN_vkCmdTraceRaysIndirect2KHR                        vkCmdTraceRaysIndirect2KHR;
+
     // VK_EXT_debug_marker
     PFN_vkDebugMarkerSetObjectTagEXT                      vkDebugMarkerSetObjectTagEXT;
     PFN_vkDebugMarkerSetObjectNameEXT                     vkDebugMarkerSetObjectNameEXT;
@@ -1473,6 +1494,9 @@ struct DispatchDevice {
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                 vkCmdSetFragmentShadingRateEnumNV;
 
+    // VK_EXT_image_compression_control
+    PFN_vkGetImageSubresourceLayout2EXT                   vkGetImageSubresourceLayout2EXT;
+
     // VK_EXT_vertex_input_dynamic_state
     PFN_vkCmdSetVertexInputEXT                            vkCmdSetVertexInputEXT;
 
@@ -1485,6 +1509,9 @@ struct DispatchDevice {
 
     // VK_NV_external_memory_rdma
     PFN_vkGetMemoryRemoteAddressNV                        vkGetMemoryRemoteAddressNV;
+
+    // VK_EXT_pipeline_properties
+    PFN_vkGetPipelinePropertiesEXT                        vkGetPipelinePropertiesEXT;
 
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                     vkCmdSetPatchControlPointsEXT;

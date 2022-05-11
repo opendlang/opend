@@ -326,6 +326,9 @@ extern( System ) {
     alias PFN_vkCmdWriteBufferMarker2AMD                                        = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
     alias PFN_vkGetQueueCheckpointData2NV                                       = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData );
 
+    // VK_KHR_ray_tracing_maintenance1
+    alias PFN_vkCmdTraceRaysIndirect2KHR                                        = void      function( VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress );
+
     // VK_EXT_debug_report
     alias PFN_vkCreateDebugReportCallbackEXT                                    = VkResult  function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
     alias PFN_vkDestroyDebugReportCallbackEXT                                   = void      function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -500,6 +503,9 @@ extern( System ) {
     // VK_NV_fragment_shading_rate_enums
     alias PFN_vkCmdSetFragmentShadingRateEnumNV                                 = void      function( VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR[2] combinerOps );
 
+    // VK_EXT_image_compression_control
+    alias PFN_vkGetImageSubresourceLayout2EXT                                   = void      function( VkDevice device, VkImage image, const( VkImageSubresource2EXT )* pSubresource, VkSubresourceLayout2EXT* pLayout );
+
     // VK_EXT_vertex_input_dynamic_state
     alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
 
@@ -512,6 +518,9 @@ extern( System ) {
 
     // VK_NV_external_memory_rdma
     alias PFN_vkGetMemoryRemoteAddressNV                                        = VkResult  function( VkDevice device, const( VkMemoryGetRemoteAddressInfoNV )* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress );
+
+    // VK_EXT_pipeline_properties
+    alias PFN_vkGetPipelinePropertiesEXT                                        = VkResult  function( VkDevice device, const( VkPipelineInfoEXT )* pPipelineInfo, VkBaseOutStructure* pPipelineProperties );
 
     // VK_EXT_extended_dynamic_state2
     alias PFN_vkCmdSetPatchControlPointsEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t patchControlPoints );
@@ -873,6 +882,9 @@ __gshared {
     PFN_vkCmdWriteBufferMarker2AMD                                        vkCmdWriteBufferMarker2AMD;
     PFN_vkGetQueueCheckpointData2NV                                       vkGetQueueCheckpointData2NV;
 
+    // VK_KHR_ray_tracing_maintenance1
+    PFN_vkCmdTraceRaysIndirect2KHR                                        vkCmdTraceRaysIndirect2KHR;
+
     // VK_EXT_debug_report
     PFN_vkCreateDebugReportCallbackEXT                                    vkCreateDebugReportCallbackEXT;
     PFN_vkDestroyDebugReportCallbackEXT                                   vkDestroyDebugReportCallbackEXT;
@@ -1047,6 +1059,9 @@ __gshared {
     // VK_NV_fragment_shading_rate_enums
     PFN_vkCmdSetFragmentShadingRateEnumNV                                 vkCmdSetFragmentShadingRateEnumNV;
 
+    // VK_EXT_image_compression_control
+    PFN_vkGetImageSubresourceLayout2EXT                                   vkGetImageSubresourceLayout2EXT;
+
     // VK_EXT_vertex_input_dynamic_state
     PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
 
@@ -1059,6 +1074,9 @@ __gshared {
 
     // VK_NV_external_memory_rdma
     PFN_vkGetMemoryRemoteAddressNV                                        vkGetMemoryRemoteAddressNV;
+
+    // VK_EXT_pipeline_properties
+    PFN_vkGetPipelinePropertiesEXT                                        vkGetPipelinePropertiesEXT;
 
     // VK_EXT_extended_dynamic_state2
     PFN_vkCmdSetPatchControlPointsEXT                                     vkCmdSetPatchControlPointsEXT;
@@ -1625,6 +1643,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarker2AMD" );
     vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointData2NV" );
 
+    // VK_KHR_ray_tracing_maintenance1
+    vkCmdTraceRaysIndirect2KHR                        = cast( PFN_vkCmdTraceRaysIndirect2KHR                        ) vkGetInstanceProcAddr( instance, "vkCmdTraceRaysIndirect2KHR" );
+
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
     vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -1767,6 +1788,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_NV_fragment_shading_rate_enums
     vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetInstanceProcAddr( instance, "vkCmdSetFragmentShadingRateEnumNV" );
 
+    // VK_EXT_image_compression_control
+    vkGetImageSubresourceLayout2EXT                   = cast( PFN_vkGetImageSubresourceLayout2EXT                   ) vkGetInstanceProcAddr( instance, "vkGetImageSubresourceLayout2EXT" );
+
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
 
@@ -1779,6 +1803,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_NV_external_memory_rdma
     vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetInstanceProcAddr( instance, "vkGetMemoryRemoteAddressNV" );
+
+    // VK_EXT_pipeline_properties
+    vkGetPipelinePropertiesEXT                        = cast( PFN_vkGetPipelinePropertiesEXT                        ) vkGetInstanceProcAddr( instance, "vkGetPipelinePropertiesEXT" );
 
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetPatchControlPointsEXT" );
@@ -2084,6 +2111,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdWriteBufferMarker2AMD                        = cast( PFN_vkCmdWriteBufferMarker2AMD                        ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
     vkGetQueueCheckpointData2NV                       = cast( PFN_vkGetQueueCheckpointData2NV                       ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
 
+    // VK_KHR_ray_tracing_maintenance1
+    vkCmdTraceRaysIndirect2KHR                        = cast( PFN_vkCmdTraceRaysIndirect2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysIndirect2KHR" );
+
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
     vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -2226,6 +2256,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_NV_fragment_shading_rate_enums
     vkCmdSetFragmentShadingRateEnumNV                 = cast( PFN_vkCmdSetFragmentShadingRateEnumNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetFragmentShadingRateEnumNV" );
 
+    // VK_EXT_image_compression_control
+    vkGetImageSubresourceLayout2EXT                   = cast( PFN_vkGetImageSubresourceLayout2EXT                   ) vkGetDeviceProcAddr( device, "vkGetImageSubresourceLayout2EXT" );
+
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
@@ -2238,6 +2271,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_NV_external_memory_rdma
     vkGetMemoryRemoteAddressNV                        = cast( PFN_vkGetMemoryRemoteAddressNV                        ) vkGetDeviceProcAddr( device, "vkGetMemoryRemoteAddressNV" );
+
+    // VK_EXT_pipeline_properties
+    vkGetPipelinePropertiesEXT                        = cast( PFN_vkGetPipelinePropertiesEXT                        ) vkGetDeviceProcAddr( device, "vkGetPipelinePropertiesEXT" );
 
     // VK_EXT_extended_dynamic_state2
     vkCmdSetPatchControlPointsEXT                     = cast( PFN_vkCmdSetPatchControlPointsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetPatchControlPointsEXT" );
