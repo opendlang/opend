@@ -6,13 +6,13 @@ Authors: John Michael Hall
 Copyright: 2022 Mir Stat Authors.
 +/
 
-module mir.math.internal.logBeta;
+module mir.math.internal.log_beta;
 
 import mir.internal.utility: isFloatingPoint;
 
 package(mir)
 @safe pure nothrow @nogc
-T logBeta(T)(const T alpha, const T beta)
+T log_beta(T)(const T alpha, const T beta)
     if (isFloatingPoint!T)
 {
     import std.mathspecial: logGamma;
@@ -27,6 +27,6 @@ unittest
     import mir.math.common: approxEqual, log;
     import std.mathspecial: beta;
 
-    assert(logBeta(1.0, 2).approxEqual(log(beta(1.0, 2))));
-    assert(logBeta(0.5, 4).approxEqual(log(beta(0.5, 4))));
+    assert(log_beta(1.0, 2).approxEqual(log(beta(1.0, 2))));
+    assert(log_beta(0.5, 4).approxEqual(log(beta(0.5, 4))));
 }

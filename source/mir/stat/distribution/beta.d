@@ -174,9 +174,9 @@ T betaLPDF(T)(const T x, const T alpha, const T beta)
     in(beta > 0, "beta must be greater than zero")
 {
     import mir.math.common: log;
-    import mir.math.internal.logBeta: logBeta;
+    import mir.math.internal.log_beta: log_beta;
 
-    return (alpha - 1) * log(x) + (beta - 1) * log(1 - x) - logBeta(alpha, beta);
+    return (alpha - 1) * log(x) + (beta - 1) * log(1 - x) - log_beta(alpha, beta);
 }
 
 ///
