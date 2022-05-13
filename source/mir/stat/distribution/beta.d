@@ -165,7 +165,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
 +/
-@safe nothrow @nogc
+@safe pure nothrow @nogc
 T betaLPDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
     in(x >= 0, "x must be greater than or equal to 0")
@@ -175,14 +175,14 @@ T betaLPDF(T)(const T x, const T alpha, const T beta)
 {
     import mir.math.common: log;
     import mir.math.internal.log_beta: log_beta;
-    import core.stdc.tgmath: log1p;
+    import std.math.exponential: log1p;
 
     return (alpha - 1) * log(x) + (beta - 1) * log1p(-x) - log_beta(alpha, beta);
 }
 
 ///
 version(mir_stat_test)
-@safe nothrow @nogc
+@safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, log;
 
