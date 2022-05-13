@@ -114,10 +114,7 @@ FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filenameZ, int flag
         return null;
 
     FreeImageIO io;
-    io.read = &file_read;
-    io.write = null;
-    io.seek = &file_seek;
-    io.tell = &file_tell;
+    setupFreeImageIOForFile(io);
 
     FIBITMAP* bitmap = FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)f, flags);
     

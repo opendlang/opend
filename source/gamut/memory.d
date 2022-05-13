@@ -7,12 +7,14 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.memory;
 
 import core.stdc.stdlib;
+import core.stdc.string: memcpy;
 import gamut.types;
 import gamut.bitmap;
+import gamut.io;
 
 nothrow @nogc @safe:
 
-// TODO: provide ability to provide the FIMEMORY? To avoid an allocation.
+// TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
 
 
 /// Called memory-file in FreeImage 
@@ -31,6 +33,9 @@ struct FIMEMORY
 
     // Length of buffer.
     size_t bytes = 0;
+
+    // Current pointer in the buffer.
+    size_t offset = 0;
 }
 
 
@@ -74,6 +79,7 @@ void FreeImage_CloseMemory(FIMEMORY *stream) @system
     assert (stream !is null);
     if (stream.owned)
     {
+        *stream = FIMEMORY.init; // poison data
         free(stream.data);
     }
     free(stream);
@@ -90,19 +96,15 @@ void FreeImage_CloseMemory(FIMEMORY *stream) @system
 /// Some bitmap loaders can receive parameters to change the loading behaviour. 
 /// When the parameter is not available or unused you can pass the value 0 or 
 /// <TYPE_OF_BITMAP>_DEFAULT (e.g. BMP_DEFAULT, ICO_DEFAULT, etc).
-FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int flags = 0)
+FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int flags = 0) @trusted
 {
     assert(fif != FIF_UNKNOWN);
-    if (stream is null)
-        return null;       
+    assert (stream !is null);
 
-  /*  FreeImageIO io;
-    io.read = &FreeImage_ReadMemory;
-    io.write = &FreeImage_WriteMemory;
-    io.seek = &FreeImage_SeekMemory;
-    io.tell = &FreeImage_TellMemory; */
+    FreeImageIO io;
+    setupFreeImageIOForMemory(io);
 
-    return FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)f, flags);
+    return FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)stream, flags);
 }
 
 // FreeImage_SaveToMemory
@@ -113,15 +115,105 @@ FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int 
 /// This pointer is invalidated when you call `FreeImage_SaveToMemory`.
 bool FreeImage_AcquireMemory(FIMEMORY *stream, ubyte** data, size_t* size_in_bytes)
 {
+    assert(stream);
     *data = stream.data;
-    *size_in_byte = size_in_bytes;
+    *size_in_bytes = stream.bytes;
     return true;
 }
 
-// FreeImage_TellMemory
-// FreeImage_SeekMemory
-// FreeImage_ReadMemory
-// FreeImage_WriteMemory
+extern(C)
+{
+
+    /// Gets the current position of a memory pointer. Upon entry, stream is the target memory 
+    /// stream. The function returns the current file position if successful, -1 otherwise.
+    long FreeImage_TellMemory(FIMEMORY *stream)
+    {
+        assert (stream !is null);
+        return stream.offset;
+    }
+
+    /// Moves the memory pointer to a specified location. 
+    /// The `FreeImage_SeekMemory` function moves the memory file pointer (if any) associated with 
+    /// stream to a new location that is offset bytes from origin. The next operation on the stream 
+    /// takes place at the new location. On a stream managed by Gamut, the next operation can 
+    /// be either a read or a write.
+    ///
+    /// Params:
+    ///     stream Pointer to the target memory stream.
+    ///     offset Number of bytes from origin.
+    ///     origin Initial position. Must be `SEEK_CUR`, `SEEK_END`, or `SEEK_SET`.
+    /// 
+    /// Returns: `true` if successful.
+    bool FreeImage_SeekMemory(FIMEMORY *stream, long offset, int origin)
+    {
+        assert (stream !is null);
+
+        long baseOffset;
+        if (origin == SEEK_CUR)
+        {
+            baseOffset = stream.offset;
+        }
+        else if (origin == SEEK_END)
+        {
+            baseOffset = stream.bytes;
+        }
+        else if (origin == SEEK_SET)
+        {
+            baseOffset = 0;
+        }
+        long newOffset = baseOffset + offset;
+
+        // It is valid to seek from 0 to bytes.
+        //  0________________N-1 N      N+1
+        //  ^ ok                 ^ ok   ^ not ok
+        bool success = newOffset >= 0 && newOffset <= stream.bytes;
+    
+        if (!success)
+            return false;
+
+        stream.offset = newOffset;
+        return true;
+    }
+
+    /// Reads data from a memory stream.
+    /// The `FreeImage_ReadMemory` function reads up to `count` items of `size` bytes from the input 
+    /// memory stream and stores them in buffer. The memory pointer associated with stream is 
+    /// increased by the number of bytes actually read. 
+    /// The function returns the number of full items actually read, which may be less than `count` if an 
+    /// error occurs or if the end of the stream is encountered before reaching count. 
+    uint FreeImage_ReadMemory(void *buffer, uint size, uint count, FIMEMORY *stream) @system
+    {
+        assert (stream !is null);
+
+        long available = stream.bytes - stream.offset;
+        assert (available >= 0); // cursor not allowed to be after eof
+
+        long needed = cast(long)size * cast(long)count;
+
+        uint toRead;
+        if (available >= needed)
+            toRead = count;
+        else
+            toRead = cast(uint)( cast(size_t)available / size );
+
+        memcpy(buffer, &stream.data[stream.offset], toRead * cast(size_t)size);
+        return toRead;
+    }
+
+    // TODO FreeImage_WriteMemory
+
+}
 
 // FreeImage_LoadMultiBitmapFromMemory
 // FreeImage_SaveMultiBitmapToMemory
+
+
+private:
+
+void setupFreeImageIOForMemory(ref FreeImageIO io) @trusted
+{
+    io.read  = cast(ReadProc)  &FreeImage_ReadMemory;
+    io.write = cast(WriteProc) null;
+    io.seek  = cast(SeekProc)  &FreeImage_SeekMemory;
+    io.tell  = cast(TellProc)  &FreeImage_TellMemory;
+}

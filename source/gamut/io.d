@@ -30,13 +30,41 @@ struct FreeImageIO
 	TellProc tell;
 }
 
+
+// Note: there is a #difference there: unlike in FreeImage, tell is returning long, not c_long.
+// TODO: remove that oddity, so that we can use fseek/ftell/fread/fwrite directly. use c_long throughout.
+
 alias fi_handle = void*;
 
 extern(C) @system
 {
-    
-    alias ReadProc = uint function(void* buffer, int size, int count, fi_handle handle);
-    alias WriteProc = uint function(void* buffer, int size, int count, fi_handle handle);
+    /// I/O read function, modelled on fread.
+    ///
+    /// Some details from the Linux man pages:
+    ///
+    /// "On success, fread() and fwrite() return the number of items read
+    ///  or written.  This number equals the number of bytes transferred
+    ///  only when size is 1.  If an error occurs, or the end of the file
+    ///  is reached, the return value is a short item count (or zero).
+    ///
+    ///  The file position indicator for the stream is advanced by the
+    ///  number of bytes successfully read or written.
+    ///
+    ///  fread() does not distinguish between end-of-file and error, and
+    ///  callers must use feof() and ferror() to determine which
+    ///  occurred.
+    ///
+    /// Params:
+    ///    buffer Where to read. Must be able to hold `size` * `count` bytes.
+    ///    size Size of elements to read in stream.
+    ///    count Number of elements to read in stream.
+    ///
+    /// Returns: 
+    ///    Number of item successfully read. If return value != `count`, there was an error.
+    alias ReadProc = uint function(void* buffer, uint size, uint count, fi_handle handle);
+
+
+    alias WriteProc = uint function(void* buffer, uint size, uint count, fi_handle handle);
     
     // Origin: position from which offset is added
     //   SEEK_SET = beginning of file.
@@ -49,14 +77,22 @@ extern(C) @system
     @system alias TellProc = long function(fi_handle handle);
 }
 
-extern(C)
+package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
 {
-    uint file_read(scope void* buffer, int size, int count, fi_handle handle) @system
+    io.read  = cast(ReadProc)  &file_read;
+    io.write = cast(WriteProc) &file_write;
+    io.seek  = cast(SeekProc)  &file_seek;
+    io.tell  = cast(TellProc)  &file_tell;
+}
+
+extern(C) private
+{
+    uint file_read(scope void* buffer, uint size, uint count, fi_handle handle) @system
     {
         return cast(uint) fread(buffer, size, count, cast(FILE*)handle);
     }
 
-    uint file_write(scope void* buffer, int size, int count, fi_handle handle) @system
+    uint file_write(scope void* buffer, uint size, uint count, fi_handle handle) @system
     {
         return cast(uint) fwrite(buffer, size, count, cast(FILE*)handle);
     }
@@ -74,4 +110,3 @@ extern(C)
         return cast(long) ftell(cast(FILE*)handle);
     }
 }
-
