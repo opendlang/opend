@@ -190,6 +190,9 @@ extern(C)
 
         long needed = cast(long)size * cast(long)count;
 
+        // Limitations: it is forbidden to ask more than 0x7fffffff bytes at once.
+        assert(needed <= 0x7fff_ffff);
+
         uint toRead;
         if (available >= needed)
             toRead = count;
@@ -216,4 +219,14 @@ void setupFreeImageIOForMemory(ref FreeImageIO io) @trusted
     io.write = cast(WriteProc) null;
     io.seek  = cast(SeekProc)  &FreeImage_SeekMemory;
     io.tell  = cast(TellProc)  &FreeImage_TellMemory;
+    io.eof   = cast(EofProc)   &FreeImage_EofMemory;
+}
+
+extern(C)
+{
+    int FreeImage_EofMemory(FIMEMORY *stream) @system
+    {
+        assert(stream);
+        return (stream.offset >= stream.bytes) ? 1 : 0;
+    }
 }

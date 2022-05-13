@@ -117,10 +117,13 @@ of the credits.
 */
 
 import core.stdc.string: memcpy, memset;
+import core.stdc.stdlib: malloc, free, realloc;
 import core.atomic;
 
 import std.math: ldexp, pow, abs;
 //import dplug.core.vec;
+
+
 
 nothrow @nogc:
 
@@ -381,7 +384,7 @@ alias stbi_us = ushort;
 
 struct stbi_io_callbacks
 {
-nothrow @nogc:
+nothrow @nogc @system:
     // fill 'data' with 'size' bytes.  return number of bytes actually read
     int function(void *user,char *data,int size) read;   
 
@@ -408,22 +411,22 @@ uint stbi_lrot(uint x, int y)
 
 void* STBI_MALLOC(size_t size)
 {
-    return _mm_malloc(size, 1);
+    return malloc(size);
 }
 
 void* STBI_REALLOC(void* p, size_t new_size)
 {
-    return _mm_realloc(p, new_size, 1);
+    return realloc(p, new_size);
 }
 
 void* STBI_REALLOC_SIZED(void *ptr, size_t old_size, size_t new_size)
 {
-    return _mm_realloc(ptr, new_size, 1);
+    return realloc(ptr, new_size);
 }
 
 void STBI_FREE(void* p)
 {
-    _mm_free(p);
+    free(p);
 }
 
 //alias STBI_MALLOC = malloc;
@@ -2426,4 +2429,10 @@ version(decodePNG)
         return stbi__png_is16(&s) != 0;
     }
 
+    bool stbi__png_is16(stbi_io_callbacks* clbk, void* user) // #BONUS
+    {
+        stbi__context s;
+        stbi__start_callbacks(&s, clbk, user);
+        return stbi__png_is16(&s) != 0;
+    }
 }

@@ -23,11 +23,28 @@ nothrow @nogc:
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
 struct FreeImageIO
-{	
-	ReadProc read;
-	WriteProc write;
-	SeekProc seek;
-	TellProc tell;
+{
+    ReadProc  read;
+    WriteProc write;
+    SeekProc  seek;
+    TellProc  tell;
+    EofProc   eof;
+
+    /// Skip bytes.
+    /// Returns: true if it was possible to skip those bytes. false if there was an I/O error, or end of file.
+    /// Limitations: `nbytes` must be from 0 to 0x7fffffff
+    bool skipBytes(fi_handle handle, int nbytes) nothrow @nogc @trusted
+    {
+        assert(nbytes >= 0 && nbytes <= 0x7fffffff);
+        return seek(handle, nbytes, SEEK_CUR) == 0;
+    }
+
+    /// Seek to beginning of the I/O stream.
+    /// Returns: true if successful.
+    bool rewind(fi_handle handle) nothrow @nogc @trusted
+    {
+        return seek(handle, 0, SEEK_SET) == 0;
+    }
 }
 
 
@@ -61,6 +78,8 @@ extern(C) @system
     ///
     /// Returns: 
     ///    Number of item successfully read. If return value != `count`, there was an error.
+    ///
+    /// Limitations: it is forbidden to ask more than 0x7fffffff bytes at once.
     alias ReadProc = uint function(void* buffer, uint size, uint count, fi_handle handle);
 
 
@@ -71,10 +90,15 @@ extern(C) @system
     //   SEEK_CUR = Current position of file pointer.
     //   SEEK_END = end of file.
     // This function returns zero if successful, or else it returns a non-zero value.
-    @system alias SeekProc = int function(fi_handle handle, long offset, int origin);
+    alias SeekProc = int function(fi_handle handle, long offset, int origin);
 
     // Tells where we are in the file. -1 if error.
-    @system alias TellProc = long function(fi_handle handle);
+    alias TellProc = long function(fi_handle handle);
+
+    /// From Linux man:
+    /// "The function `feof()` tests the end-of-file indicator for the stream pointed to by stream, 
+    ///  returning nonzero if it is set."
+    alias EofProc = int function(fi_handle handle);
 }
 
 package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
@@ -83,6 +107,7 @@ package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
     io.write = cast(WriteProc) &file_write;
     io.seek  = cast(SeekProc)  &file_seek;
     io.tell  = cast(TellProc)  &file_tell;
+    io.eof   = cast(EofProc)   &file_eof;
 }
 
 extern(C) private
@@ -108,5 +133,10 @@ extern(C) private
     long file_tell(fi_handle handle) @system
     {
         return cast(long) ftell(cast(FILE*)handle);
+    }
+
+    int file_eof(fi_handle handle) @system
+    {
+        return feof(cast(FILE*)handle);
     }
 }

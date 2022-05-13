@@ -7,7 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.bitmap;
 
 import core.stdc.stdio;
-import core.memory: pureMalloc, pureRealloc, pureFree;
+import core.stdc.stdlib: malloc, realloc, free;
 import gamut.types;
 import gamut.io;
 import gamut.plugin;
@@ -19,7 +19,7 @@ nothrow @nogc @safe:
 
 struct FIBITMAP
 {
-private:
+package:
 
     FREE_IMAGE_TYPE _type;
     ubyte* _data = null;
@@ -60,7 +60,7 @@ FIBITMAP* FreeImage_Allocate(int width,
                              int bpp, 
                              uint red_mask = 0, 
                              uint green_mask = 0, 
-                             uint blue_mask = 0) pure @trusted
+                             uint blue_mask = 0) @trusted
 {
     return FreeImage_AllocateT(FIT_BITMAP, width, height, bpp, red_mask, green_mask, blue_mask);
 }
@@ -77,16 +77,16 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type,
                               int bpp = 8, 
                               uint red_mask = 0, 
                               uint green_mask = 0, 
-                              uint blue_mask = 0) pure @trusted
+                              uint blue_mask = 0) @trusted
 {
-    FIBITMAP* bitmap = cast(FIBITMAP*) pureMalloc(FIBITMAP.sizeof);
+    FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
     if (!bitmap) 
         return null;
     bitmap._type = type;
     ubyte* data = pureReallocatePixelData(null, type, width, height, bpp);    
     if (data == null)
     {
-        pureFree(bitmap);
+        free(bitmap);
     }
     bitmap._width = width;
     bitmap._height = height;
@@ -161,7 +161,7 @@ FIBITMAP* FreeImage_Save(FIBITMAP *dib) pure
 }
 
 /// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
-FIBITMAP* FreeImage_Clone(FIBITMAP *dib) pure
+FIBITMAP* FreeImage_Clone(FIBITMAP *dib)
 {
     assert(dib._type != FIT_UNKNOWN); // MAYDO: clone of FIT_UNKNOWN?
 
@@ -183,21 +183,22 @@ FIBITMAP* FreeImage_Clone(FIBITMAP *dib) pure
         return null;
 
     // TODO: copy pixels if any
+    assert(false);
     
-    return bitmap;
+  //  return bitmap;
 }
 
 /// Deletes a previously loaded `FIBITMAP` from memory.
-void FreeImage_Unload(FIBITMAP *dib) pure @system
+void FreeImage_Unload(FIBITMAP *dib) @system
 {
     if (dib)
     {
         if (dib._data)
         {
-            pureFree(dib._data);
+            free(dib._data);
             dib._data = null;
         }
-        pureFree(dib);
+        free(dib);
     }
 }
 
@@ -331,13 +332,13 @@ int bytesForImageType(FREE_IMAGE_TYPE type) pure
 }
 
 
-ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, int height, int bpp) pure @system
+ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, int height, int bpp) @system
 {
     size_t bytesPerPixel;
     if (type == FIT_UNKNOWN)
     {
     error:
-        pureFree(oldData);
+        free(oldData);
         return null;
     }
     else if (type == FIT_BITMAP)
@@ -353,7 +354,7 @@ ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, 
     }
 
     size_t bytes = width * height * bytesPerPixel;
-    ubyte* data = cast(ubyte*) pureRealloc(oldData, bytes); // TODO: not sure what to do with oldData if realloc fails
+    ubyte* data = cast(ubyte*) realloc(oldData, bytes); // TODO: not sure what to do with oldData if realloc fails
 
     if (data)
     {
