@@ -1,5 +1,4 @@
-- les callbacks doivent utiliser c_long
-- éliminer les callbacks trampoline comme file_read
+- GAMUT: loading PNG depuis mémoire marche pas.
 
 ## Limitations
 
