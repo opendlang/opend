@@ -46,7 +46,7 @@ extern(Windows)
         if (!bitmap) 
             return null;
 
-        bool is16bit = (stbi__png_is16(&stb_callback, &ioh));
+        bool is16bit = false;//(stbi__png_is16(&stb_callback, &ioh));
 
         ubyte* decoded;
         int width, height, components;
@@ -54,7 +54,9 @@ extern(Windows)
 
         // rewind stream
         if (!io.rewind(handle))
+        {
             goto error;
+        }
 
         if (is16bit)
         {
@@ -64,6 +66,9 @@ extern(Windows)
         {
             decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requiredComp);
         }
+
+        if (decoded is null)
+            goto error;
 
         bitmap._width = width;
         bitmap._height = height;
@@ -134,8 +139,12 @@ static struct IOAndHandle
 int stb_read(void *user, char *data, int size) @system
 {
     IOAndHandle* ioh = cast(IOAndHandle*) user;
-    uint bytesRead = ioh.io.read(data, 1, size, ioh.handle);
-    return bytesRead;
+
+    // Cannot ask more than 0x7fff_ffff bytes at once.
+    assert(size <= 0x7fffffff);
+
+    size_t bytesRead = ioh.io.read(data, 1, size, ioh.handle);
+    return cast(int) bytesRead;
 }
 
 // skip the next 'n' bytes, or 'unget' the last -n bytes if negative

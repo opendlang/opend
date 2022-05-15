@@ -2192,6 +2192,14 @@ version(decodePNG)
 
         for (;;) {
             stbi__pngchunk c = stbi__get_chunk_header(s);
+
+            import core.stdc.stdio;
+            printf("%c%c%c%c\n", cast(char)( (c.type>> 24) & 255),
+                         cast(char)( (c.type>> 16) & 255),
+                         cast(char)( (c.type>> 8) & 255),
+                         cast(char)( (c.type>> 0) & 255));
+            uint aaaa = c.type;
+            printf("%d\n", aaaa);
             switch (c.type) {
                 case STBI__PNG_TYPE('C','g','B','I'):
                     is_iphone = 1;
@@ -2269,20 +2277,40 @@ version(decodePNG)
                 }
 
                 case STBI__PNG_TYPE('I','D','A','T'): {
-                    if (first) return 0; //stbi__err("first not IHDR", "Corrupt PNG");
-                    if (pal_img_n && !pal_len) return 0; //stbi__err("no PLTE","Corrupt PNG");
-                    if (scan == STBI__SCAN_header) { s.img_n = pal_img_n; return 1; }
-                    if (cast(int)(ioff + c.length) < cast(int)ioff) return 0;
+                    if (first) 
+                    {
+                        return 0; //stbi__err("first not IHDR", "Corrupt PNG");
+                    }
+                    if (pal_img_n && !pal_len) 
+                    {
+                        return 0; //stbi__err("no PLTE","Corrupt PNG");
+                    }
+                    if (scan == STBI__SCAN_header) 
+                    { 
+                        s.img_n = pal_img_n; 
+                        return 1; 
+                    }
+                    if (cast(int)(ioff + c.length) < cast(int)ioff)
+                    {
+                        return 0;
+                    }
                     if (ioff + c.length > idata_limit) {
                         stbi__uint32 idata_limit_old = idata_limit;
                         stbi_uc *p;
                         if (idata_limit == 0) idata_limit = c.length > 4096 ? c.length : 4096;
                         while (ioff + c.length > idata_limit)
                             idata_limit *= 2;
-                        p = cast(stbi_uc *) STBI_REALLOC_SIZED(z.idata, idata_limit_old, idata_limit); if (p == null) return 0; //stbi__err("outofmem", "Out of memory");
+                        p = cast(stbi_uc *) STBI_REALLOC_SIZED(z.idata, idata_limit_old, idata_limit); 
+                        if (p == null) 
+                        {
+                            return 0; //stbi__err("outofmem", "Out of memory");
+                        }
                         z.idata = p;
                     }
-                    if (!stbi__getn(s, z.idata+ioff,c.length)) return 0; //stbi__err("outofdata","Corrupt PNG");
+                    if (!stbi__getn(s, z.idata+ioff,c.length)) 
+                    {
+                        return 0; //stbi__err("outofdata","Corrupt PNG");
+                    }
                     ioff += c.length;
                     break;
                 }
@@ -2291,23 +2319,38 @@ version(decodePNG)
                     stbi__uint32 raw_len, bpl;
                     if (first) return 0; //stbi__err("first not IHDR", "Corrupt PNG");
                     if (scan != STBI__SCAN_load) return 1;
-                    if (z.idata == null) return 0; //stbi__err("no IDAT","Corrupt PNG");
+                    if (z.idata == null) 
+                    {
+                        return 0; //stbi__err("no IDAT","Corrupt PNG");
+                    }
                     // initial guess for decoded data size to avoid unnecessary reallocs
                     bpl = (s.img_x * z.depth + 7) / 8; // bytes per line, per component
                     raw_len = bpl * s.img_y * s.img_n /* pixels */ + s.img_y /* filter mode per row */;
                     z.expanded = cast(stbi_uc *) stbi_zlib_decode_malloc_guesssize_headerflag(cast(char *) z.idata, ioff, raw_len, cast(int *) &raw_len, !is_iphone);
-                    if (z.expanded == null) return 0; // zlib should set error
+                    if (z.expanded == null) 
+                    {
+                        return 0; // zlib should set error
+                    }
                     STBI_FREE(z.idata); z.idata = null;
                     if ((req_comp == s.img_n+1 && req_comp != 3 && !pal_img_n) || has_trans)
                         s.img_out_n = s.img_n+1;
                     else
                         s.img_out_n = s.img_n;
-                    if (!stbi__create_png_image(z, z.expanded, raw_len, s.img_out_n, z.depth, color, interlace)) return 0;
+                    if (!stbi__create_png_image(z, z.expanded, raw_len, s.img_out_n, z.depth, color, interlace))
+                    {
+                        return 0;
+                    }
                     if (has_trans) {
                         if (z.depth == 16) {
-                            if (!stbi__compute_transparency16(z, tc16.ptr, s.img_out_n)) return 0;
+                            if (!stbi__compute_transparency16(z, tc16.ptr, s.img_out_n))
+                            {
+                                return 0;
+                            }
                         } else {
-                            if (!stbi__compute_transparency(z, tc.ptr, s.img_out_n)) return 0;
+                            if (!stbi__compute_transparency(z, tc.ptr, s.img_out_n))
+                            {
+                                return 0;
+                            }
                         }
                     }
 
@@ -2317,7 +2360,9 @@ version(decodePNG)
                         s.img_out_n = pal_img_n;
                         if (req_comp >= 3) s.img_out_n = req_comp;
                         if (!stbi__expand_png_palette(z, palette.ptr, pal_len, s.img_out_n))
+                        {
                             return 0;
+                        }
                     } else if (has_trans) {
                         // non-paletted image with tRNS . source image has (constant) alpha
                         ++s.img_n;
@@ -2330,7 +2375,10 @@ version(decodePNG)
 
                 default:
                     // if critical, fail
-                    if (first) return 0; //stbi__err("first not IHDR", "Corrupt PNG");
+                    if (first)
+                    {
+                        return 0; //stbi__err("first not IHDR", "Corrupt PNG");
+                    }
                     if ((c.type & (1 << 29)) == 0) 
                     {
                         return 0; //stbi__err("invalid_chunk", "PNG not supported: unknown PNG chunk type");

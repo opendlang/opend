@@ -1,1 +1,6 @@
+- les callbacks doivent utiliser c_long
+- éliminer les callbacks trampoline comme file_read
 
+## Limitations
+
+- files of size larger than 2^31-1 bytes are not supported.

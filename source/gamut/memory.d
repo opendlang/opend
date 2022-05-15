@@ -14,6 +14,9 @@ import gamut.io;
 
 nothrow @nogc @safe:
 
+
+
+
 // TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
 
 
@@ -126,10 +129,15 @@ extern(C)
 
     /// Gets the current position of a memory pointer. Upon entry, stream is the target memory 
     /// stream. The function returns the current file position if successful, -1 otherwise.
-    long FreeImage_TellMemory(FIMEMORY *stream)
+    c_long FreeImage_TellMemory(FIMEMORY *stream) @system
     {
         assert (stream !is null);
-        return stream.offset;
+
+        // Files larger than 0x7fffffff bytes not supported, return errors.
+        if (stream.offset > GAMUT_MAX_POSSIBLE_MEMORY_OFFSET)
+            return -1;
+
+        return cast(c_long) stream.offset;
     }
 
     /// Moves the memory pointer to a specified location. 
@@ -144,7 +152,7 @@ extern(C)
     ///     origin Initial position. Must be `SEEK_CUR`, `SEEK_END`, or `SEEK_SET`.
     /// 
     /// Returns: `true` if successful.
-    bool FreeImage_SeekMemory(FIMEMORY *stream, long offset, int origin)
+    int FreeImage_SeekMemory(FIMEMORY *stream, c_long offset, int origin) @system
     {
         assert (stream !is null);
 
@@ -162,6 +170,7 @@ extern(C)
             baseOffset = 0;
         }
         long newOffset = baseOffset + offset;
+        assert(newOffset < cast(long)GAMUT_MAX_POSSIBLE_MEMORY_OFFSET);
 
         // It is valid to seek from 0 to bytes.
         //  0________________N-1 N      N+1
@@ -169,10 +178,10 @@ extern(C)
         bool success = newOffset >= 0 && newOffset <= stream.bytes;
     
         if (!success)
-            return false;
+            return -1;
 
         stream.offset = newOffset;
-        return true;
+        return 0;
     }
 
     /// Reads data from a memory stream.
@@ -181,23 +190,24 @@ extern(C)
     /// increased by the number of bytes actually read. 
     /// The function returns the number of full items actually read, which may be less than `count` if an 
     /// error occurs or if the end of the stream is encountered before reaching count. 
-    uint FreeImage_ReadMemory(void *buffer, uint size, uint count, FIMEMORY *stream) @system
+    size_t FreeImage_ReadMemory(void *buffer, size_t size, size_t count, FIMEMORY *stream) @system
     {
         assert (stream !is null);
 
-        long available = stream.bytes - stream.offset;
+        size_t available = stream.bytes - stream.offset;
         assert (available >= 0); // cursor not allowed to be after eof
 
-        long needed = cast(long)size * cast(long)count;
+        assert(size <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+        assert(count <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+        long needed = cast(long)size * cast(long)count; // won't overflow
 
-        // Limitations: it is forbidden to ask more than 0x7fffffff bytes at once.
-        assert(needed <= 0x7fff_ffff);
+        assert(needed <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
 
-        uint toRead;
+        size_t toRead;
         if (available >= needed)
             toRead = count;
         else
-            toRead = cast(uint)( cast(size_t)available / size );
+            toRead = available / size;
 
         memcpy(buffer, &stream.data[stream.offset], toRead * cast(size_t)size);
         return toRead;
@@ -212,6 +222,7 @@ extern(C)
 
 
 private:
+
 
 void setupFreeImageIOForMemory(ref FreeImageIO io) @trusted
 {
