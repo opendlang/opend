@@ -93,6 +93,9 @@ unittest {
     assert(9.0.normalCCDF(1, 4).approxEqual(1 - normalCDF(9.0, 1, 4)));
 }
 
+///
+enum real LOGSQRT2PI = 0.91893853320467274178032973640561764L; // log(sqrt(2pi))
+
 /++
 Computes the normal log probability distribution function (LPDF)
 
@@ -117,10 +120,9 @@ T normalLPDF(T)(const T x, const T mean, const T stdDev)
 T normalLPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
-    import mir.math.common: log, pow;
-    import mir.math.func.normal: SQRT2PI;
+    import mir.math.common: pow;
 
-    return -0.5 * pow(x, 2) - log(T(SQRT2PI));
+    return -0.5 * pow(x, 2) - T(LOGSQRT2PI);
 }
 
 ///

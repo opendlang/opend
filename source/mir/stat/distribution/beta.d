@@ -173,11 +173,10 @@ T betaLPDF(T)(const T x, const T alpha, const T beta)
     in(alpha > 0, "alpha must be greater than zero")
     in(beta > 0, "beta must be greater than zero")
 {
-    import mir.math.common: log;
     import mir.math.internal.log_beta: logBeta;
-    import std.math.exponential: log1p;
+    import mir.math.internal.xlogy: xlogy, xlog1py;
 
-    return (alpha - 1) * log(x) + (beta - 1) * log1p(-x) - logBeta(alpha, beta);
+    return xlogy(alpha - 1, x) + xlog1py(beta - 1, -x) - logBeta(alpha, beta);
 }
 
 ///
