@@ -14,6 +14,8 @@ module mir.stat.distribution.cdf;
 ///
 public import mir.stat.distribution.beta: betaCDF;
 ///
+public import mir.stat.distribution.betaProportion: betaProportionCDF;
+///
 public import mir.stat.distribution.normal: normalCDF;
 ///
 public import mir.stat.distribution.uniform: uniformCDF;
