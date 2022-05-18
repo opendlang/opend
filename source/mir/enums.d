@@ -225,12 +225,36 @@ T unsafeEnumFromIndex(T)(size_t index)
     
     static if (fastConv)
     {
-        return cast(T) index;
+        return cast(T) index + enumMembers!T[0];
     }
     else
     {
         return enumMembers!T[index];
     }
+}
+
+///
+unittest
+{
+    enum Linear
+    {
+        one = 1,
+        two = 2
+    }
+
+    assert(unsafeEnumFromIndex!Linear(0) == Linear.one);
+    assert(unsafeEnumFromIndex!Linear(1) == Linear.two);
+
+    enum Mixed
+    {
+        one = 1,
+        oneAgain = 1,
+        two = 2
+    }
+
+    assert(unsafeEnumFromIndex!Mixed(0) == Mixed.one);
+    assert(unsafeEnumFromIndex!Mixed(1) == Mixed.one);
+    assert(unsafeEnumFromIndex!Mixed(2) == Mixed.two);
 }
 
 /++
