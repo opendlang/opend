@@ -14,7 +14,7 @@ module mir.stat.distribution.invcdf;
 ///
 public import mir.stat.distribution.beta: betaInvCDF;
 ///
-public import mir.stat.distribution.betaProportion: betaProportionInvCDF;
+public import mir.stat.distribution.beta_proportion: betaProportionInvCDF;
 ///
 public import mir.stat.distribution.normal: normalInvCDF;
 ///

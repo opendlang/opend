@@ -9,7 +9,7 @@ Copyright: 2022 Mir Stat Authors.
 
 +/
 
-module mir.stat.distribution.betaProportion;
+module mir.stat.distribution.beta_proportion;
 
 import mir.internal.utility: isFloatingPoint;
 

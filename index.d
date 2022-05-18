@@ -21,7 +21,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,cdf)) $(TD Cumulative Distribution Functions (WIP) ))
     $(TR $(TDNW $(MREF mir,stat,distribution,invcdf)) $(TD Inverse Cumulative Distribution Functions (WIP) ))
     $(TR $(TDNW $(MREF mir,stat,distribution,beta)) $(TD Beta Probability Distribution ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,betaProportion)) $(TD Beta Proportion Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,beta_proportion)) $(TD Beta Proportion Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Uniform Probability Distribution ))
 )

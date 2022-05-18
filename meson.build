@@ -20,7 +20,7 @@ sources_list = [
     'mir/stat/distribution/pdf',
     'mir/stat/distribution/invcdf',
     'mir/stat/distribution/beta',
-    'mir/stat/distribution/betaProportion',
+    'mir/stat/distribution/beta_proportion',
     'mir/stat/distribution/normal',
     'mir/stat/distribution/uniform',
 ]

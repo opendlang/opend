@@ -14,7 +14,7 @@ module mir.stat.distribution;
 ///
 public import mir.stat.distribution.beta;
 ///
-public import mir.stat.distribution.betaProportion;
+public import mir.stat.distribution.beta_proportion;
 ///
 public import mir.stat.distribution.normal;
 ///
