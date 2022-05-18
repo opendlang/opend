@@ -234,8 +234,14 @@ T unsafeEnumFromIndex(T)(size_t index)
 }
 
 /++
+Params:
+    T = enum type to introspect
+    key = some string that corresponds to some key name of the given enum
+    index = resulting enum index if this method returns true.
+Returns:
+    boolean whether the key was found in the enum keys and if so, index is set.
 +/
-template getEnumIndexFromKey(T, bool caseInsesetive = true, getKeysTemplate...)
+template getEnumIndexFromKey(T, bool caseInsensitive = true, getKeysTemplate...)
     if (is(T == enum) && getKeysTemplate.length <= 1)
 {
     ///
@@ -276,7 +282,7 @@ template getEnumIndexFromKey(T, bool caseInsesetive = true, getKeysTemplate...)
         {
             enum indexLength = keys.length + 1;
             alias ct = createTable!C;
-            static immutable table = ct!(keys, caseInsesetive);
+            static immutable table = ct!(keys, caseInsensitive);
             static immutable indices = ()
             {
                 minimalSignedIndexType!indexLength[indexLength] indices;
@@ -284,7 +290,7 @@ template getEnumIndexFromKey(T, bool caseInsesetive = true, getKeysTemplate...)
                 foreach (i, member; EnumMembers!T)
                 foreach (key; keysOf!(EnumMembers!T[i]))
                 {
-                    static if (caseInsesetive)
+                    static if (caseInsensitive)
                     {
                         key = key.dup.fastToUpperInPlace;
                     }
@@ -293,15 +299,6 @@ template getEnumIndexFromKey(T, bool caseInsesetive = true, getKeysTemplate...)
 
                 return indices;
             } ();
-
-            static if (!caseInsesetive && keys.length <= 6 && keys[$ - 1].length <= 32)
-            {
-                
-            }
-            else
-            {
-                
-            }
 
             uint stringId = void;
             if (_expect(table.get(key, stringId), true))
@@ -312,4 +309,54 @@ template getEnumIndexFromKey(T, bool caseInsesetive = true, getKeysTemplate...)
             return false;
         }
     }
+}
+
+///
+unittest
+{
+    enum Short
+    {
+        hello,
+        world
+    }
+
+    enum Long
+    {
+        This,
+        Is,
+        An,
+        Enum,
+        With,
+        Lots,
+        Of,
+        Very,
+        Long,
+        EntriesThatArePartiallyAlsoVeryLongInStringLengthAsWeNeedToTestALotOfDifferentCasesThatCouldHappenInRealWorldCode_tm
+    }
+
+    uint i;
+    assert(getEnumIndexFromKey!Short("hello", i));
+    assert(i == 0);
+    assert(getEnumIndexFromKey!Short("world", i));
+    assert(i == 1);
+    assert(!getEnumIndexFromKey!Short("foo", i));
+
+    assert(getEnumIndexFromKey!Short("HeLlO", i));
+    assert(i == 0);
+    assert(getEnumIndexFromKey!Short("WoRLd", i));
+    assert(i == 1);
+
+    assert(!getEnumIndexFromKey!(Short, false)("HeLlO", i));
+    assert(!getEnumIndexFromKey!(Short, false)("WoRLd", i));
+
+    assert(getEnumIndexFromKey!Long("Is", i));
+    assert(i == 1);
+    assert(getEnumIndexFromKey!Long("Long", i));
+    assert(i == 8);
+    assert(getEnumIndexFromKey!Long("EntriesThatArePartiallyAlsoVeryLongInStringLengthAsWeNeedToTestALotOfDifferentCasesThatCouldHappenInRealWorldCode_tm", i));
+    assert(i == 9);
+    assert(!getEnumIndexFromKey!Long("EntriesThatArePartiallyAlsoVeryLongInStringLengthAsWeNeedToTestALotOfDifferentCasesThatCouldHappenInRealWorldCodeatm", i));
+
+    assert(!getEnumIndexFromKey!(Long, false)("EntriesThatArePartiallyAlsoVeryLongInStringLengthAsWeNeedToTestALotOfDifferentCasesThatCouldHappenInRealWorldCode_tM", i));
+    assert(!getEnumIndexFromKey!(Long, false)("entriesThatArePartiallyAlsoVeryLongInStringLengthAsWeNeedToTestALotOfDifferentCasesThatCouldHappenInRealWorldCode_tm", i));
 }
