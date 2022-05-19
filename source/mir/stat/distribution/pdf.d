@@ -14,6 +14,8 @@ module mir.stat.distribution.pdf;
 ///
 public import mir.stat.distribution.beta: betaPDF;
 ///
+public import mir.stat.distribution.beta_proportion: betaProportionPDF;
+///
 public import mir.stat.distribution.normal: normalPDF;
 ///
 public import mir.stat.distribution.uniform: uniformPDF;
