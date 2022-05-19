@@ -17,6 +17,18 @@ import std.traits;
 
 public import mir.serde;
 
+static immutable cannotSerializeVoidMsg = "Can't serialize none (void) value of the algebraic type";
+version (D_Exceptions)
+    private static immutable cannotSerializeVoid = new Exception(cannotSerializeVoidMsg);
+
+private noreturn throwCannotSerializeVoid() @safe pure @nogc
+{
+    version (D_Exceptions)
+        throw cannotSerializeVoid;
+    else
+        assert(0, cannotSerializeVoidMsg);
+}
+
 /// `null` value serialization
 void serializeValue(S)(ref S serializer, typeof(null))
 {
@@ -455,7 +467,8 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
                         serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
                 }
                 serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
-            }
+            },
+            throwCannotSerializeVoid,
         );
     }
     else
@@ -738,7 +751,8 @@ void serializeValue(S, V)(ref S serializer, auto ref V value)
                     else
                         serializeValue(serializer, v);
                 }
-            }
+            },
+            throwCannotSerializeVoid,
         );
         return;
     }
