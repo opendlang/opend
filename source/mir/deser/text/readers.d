@@ -25,7 +25,7 @@ Params:
 Returns:
     The string contents of the token given
 +/
-auto readValue(IonTokenType token)(ref IonTokenizer t) @nogc @safe pure
+auto readValue(IonTokenType token)(return ref IonTokenizer t) @nogc @safe pure
 {
     import std.traits : EnumMembers;
     import std.string : chompPrefix;
@@ -75,7 +75,7 @@ Params:
 Returns:
     a UTF-32 code-point
 +/
-dchar readEscapedClobChar(ref IonTokenizer t) @nogc @safe pure {
+dchar readEscapedClobChar(return ref IonTokenizer t) @nogc @safe pure {
     return readEscapedChar!(true)(t);
 }
 
@@ -90,7 +90,7 @@ Returns:
 Throws:
     IonTokenizerException if an invalid escape value was found.
 +/
-dchar readEscapedChar(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure 
+dchar readEscapedChar(bool isClob = false)(return ref IonTokenizer t) @nogc @safe pure 
 {
     dchar readHexEscapeLiteral(int length)() @nogc @safe pure { 
         dchar codePoint = 0, val;
@@ -172,7 +172,7 @@ Returns:
     A string containing the UTF-32 escape sequence, or nothing if we read a new-line.
     The length of the string is not well-defined, it can change depending on the escape sequence.
 +/
-size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
+size_t readEscapeSeq(bool isClob = false)(return ref IonTokenizer t) @nogc @safe pure
 {
     const(char) esc = t.peekOne();
     if (esc == '\r') {
@@ -240,7 +240,7 @@ size_t readEscapeSeq(bool isClob = false)(ref IonTokenizer t) @nogc @safe pure
     Returns:
         A string containing the un-quoted symbol from the input range in the tokenizer.
 +/
-IonTextSymbol readSymbol(ref IonTokenizer t) @safe pure @nogc
+IonTextSymbol readSymbol(return ref IonTokenizer t) @safe pure @nogc
 {
     IonTextSymbol val;
     size_t end = 0, endPos = 0;
@@ -299,7 +299,7 @@ Params:
 Returns:
     A string containing the quoted symbol.
 +/
-IonTextQuotedSymbol readSymbolQuoted(ref IonTokenizer t) @nogc @safe pure
+IonTextQuotedSymbol readSymbolQuoted(return ref IonTokenizer t) @nogc @safe pure
 {
     IonTextQuotedSymbol val;
     val.isFinal = true;
@@ -399,7 +399,7 @@ Params:
 Returns:
     A string containing any symbol operators that were able to be read.
 +/
-IonTextSymbolOperator readSymbolOperator(ref IonTokenizer t) @safe @nogc pure
+IonTextSymbolOperator readSymbolOperator(return ref IonTokenizer t) @safe @nogc pure
 {
     IonTextSymbolOperator val;
     size_t startIndex = t.position;
@@ -423,7 +423,7 @@ Params:
 Returns:
     The string's content from the input range.
 +/
-auto readString(bool longString = false, bool isClob = false)(ref IonTokenizer t) @safe @nogc pure
+auto readString(bool longString = false, bool isClob = false)(return ref IonTokenizer t) @safe @nogc pure
 {
     static if (isClob) {
         IonTextClob val;
@@ -628,7 +628,7 @@ Params:
 Returns:
     A string holding the contents of any long strings found.
 +/
-IonTextString readLongString(ref IonTokenizer t) @safe @nogc pure
+IonTextString readLongString(return ref IonTokenizer t) @safe @nogc pure
 {
     return readString!(true)(t);
 }
@@ -724,7 +724,7 @@ Returns:
     An untyped array containing the contents of the clob. This array is guaranteed to have no UTF-8/UTF-32 characters -- only ASCII characters.
 +/
 
-IonTextClob readClob(bool longClob = false)(ref IonTokenizer t) @safe @nogc pure
+IonTextClob readClob(bool longClob = false)(return ref IonTokenizer t) @safe @nogc pure
 {
     // Always read out bytes, as clobs are octet-based (and not necessarily a string)
     auto data = readString!(longClob, true)(t);
@@ -779,7 +779,7 @@ Params:
 Returns:
     An untyped array holding the contents of the clob.
 +/
-IonTextClob readLongClob(ref IonTokenizer t) @safe @nogc pure
+IonTextClob readLongClob(return ref IonTokenizer t) @safe @nogc pure
 {
     return readClob!(true)(t);
 }
@@ -793,7 +793,7 @@ Params:
 Returns:
     An untyped array containing the Base64 contents of the blob.
 +/
-IonTextBlob readBlob(ref IonTokenizer t) @safe @nogc pure
+IonTextBlob readBlob(return ref IonTokenizer t) @safe @nogc pure
 {
     IonTextBlob val;
     size_t startIndex = t.position, endIndex = t.position;
@@ -823,7 +823,7 @@ Returns:
     See the examples below on how to access the type/value.
 +/
 
-IonTextNumber readNumber(ref IonTokenizer t) @safe @nogc pure
+IonTextNumber readNumber(return ref IonTokenizer t) @safe @nogc pure
 {
     import mir.ion.type_code : IonTypeCode;
     IonTextNumber num;
@@ -934,7 +934,7 @@ Params:
 Returns:
     A character located after it has read every single digit in a sequence.
 +/
-const(char)[] readDigits(ref IonTokenizer t, char leader) @safe @nogc pure
+const(char)[] readDigits(return ref IonTokenizer t, char leader) @safe @nogc pure
 {
     immutable char c = leader;
     if (!isDigit(c)) {
@@ -955,7 +955,7 @@ Params:
 Returns:
     A character located after it has read every single digit in a sequence.
 +/
-const(char)[] readRadixDigits(alias isValid = isDigit)(ref IonTokenizer t) 
+const(char)[] readRadixDigits(alias isValid = isDigit)(return ref IonTokenizer t) 
 {
     import mir.functional : naryFun;
     size_t startIndex = t.position;
@@ -983,7 +983,7 @@ Params:
 Returns:
     A string containing the full radix number (including the leading 0 and marker).
 +/
-const(char)[] readRadix(alias isMarker, alias isValid)(ref IonTokenizer t) @safe @nogc pure
+const(char)[] readRadix(alias isMarker, alias isValid)(return ref IonTokenizer t) @safe @nogc pure
 {
     size_t startIndex = t.position;
     char c = t.readInput();
@@ -1014,7 +1014,7 @@ Params:
 Returns:
     A string containing the entire binary number read.
 +/
-const(char)[] readBinary(ref IonTokenizer t) @safe @nogc pure
+const(char)[] readBinary(return ref IonTokenizer t) @safe @nogc pure
 {
     return readRadix!("a == 'b' || a == 'B'", "a == '0' || a == '1'")(t);
 }
@@ -1046,7 +1046,7 @@ Params:
 Returns:
     A string containing the entire hex number read.
 +/
-const(char)[] readHex(ref IonTokenizer t) @safe @nogc pure
+const(char)[] readHex(return ref IonTokenizer t) @safe @nogc pure
 {
     return readRadix!("a == 'x' || a == 'X'", isHexDigit)(t);
 }
@@ -1093,7 +1093,7 @@ Returns:
     A string containing the entire timestamp read from the input stream.
 +/
 
-IonTextTimestamp readTimestamp(ref IonTokenizer t) @safe @nogc pure 
+IonTextTimestamp readTimestamp(return ref IonTokenizer t) @safe @nogc pure 
 {
     IonTextTimestamp val;
     size_t startIndex = t.position;

@@ -621,7 +621,7 @@ IonDeserializerException ionDeserializerException(IonDeserializerErrorCode code)
 
     static immutable IonDeserializerException[] exceptions =
         [EnumMembers!IonDeserializerErrorCode]
-        .map!(code => code ? new IonDeserializerException(code) : null)
+        .map!(code => code ? new immutable IonDeserializerException(code) : null)
         .array;
     return unqualException(exceptions[code - IonDeserializerErrorCode.min]);
 }
@@ -721,7 +721,7 @@ IonTokenizerException ionTokenizerException(IonTokenizerErrorCode code) @safe pu
 
     static immutable IonTokenizerException[] exceptions =
         [EnumMembers!IonTokenizerErrorCode]
-        .map!(code => code ? new IonTokenizerException(code) : null)
+        .map!(code => code ? new immutable IonTokenizerException(code) : null)
         .array;
     return unqualException(exceptions[code - IonErrorCode.min]);
 }

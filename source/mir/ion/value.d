@@ -2051,7 +2051,7 @@ struct IonStruct
     const(ubyte)[] data;
 
     private alias DG = int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = int delegate(size_t symbolID, IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(size_t symbolID, IonDescribedValue value) @safe pure @nogc;
 
     ///
     bool sorted()
@@ -2303,7 +2303,7 @@ struct IonStructWithSymbols
     const(char[])[] symbolTable;
 
     private alias DG = int delegate(IonErrorCode error, scope const(char)[], IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = int delegate(scope const(char)[], IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(scope const(char)[], IonDescribedValue value) @safe pure @nogc;
 
     ///
     bool sorted()

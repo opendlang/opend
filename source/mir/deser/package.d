@@ -23,25 +23,6 @@ public import mir.serde;
 
 private enum isSmallString(T) = is(T == SmallString!N, size_t N);
 
-private string unexpectedIonTypeCode(string msg = "Unexpected Ion type code")(IonTypeCode code)
-    @safe pure nothrow @nogc
-{
-    import std.traits: EnumMembers;
-    import mir.conv: to;
-    static immutable exc(IonTypeCode code) = msg ~ " " ~ code.to!string;
-
-    switch (code)
-    {
-        foreach (member; EnumMembers!IonTypeCode)
-        {case member:
-            return unqualException(exc!(T, member));
-        }
-        default:
-            static immutable ret = "Wrong encoding of Ion type code";
-            return ret;
-    }
-}
-
 package template hasScoped(T)
 {
     import std.traits: isAggregateType;
@@ -457,7 +438,7 @@ template deserializeValue(string[] symbolTable)
         value = value to deserialize
     Returns: `IonException`
     +/
-    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
+    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value) @safe
         if (!isFirstOrderSerdeType!T)
     {with(params){
         import mir.algebraic: isVariant, isNullable;

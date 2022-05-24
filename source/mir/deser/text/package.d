@@ -108,28 +108,28 @@ struct IonTextDeserializer(Serializer)
     Params:
         text = The text to deserialize
     +/
-        void opCall(scope const(char)[] text) @safe pure
+    void opCall(scope const(char)[] text) @trusted pure
+    {
+        t = IonTokenizer(text);
+        while (!t.isEOF())
         {
-            t = IonTokenizer(text);
-            while (!t.isEOF()) 
-            {
-                assert(t.nextToken(), "hit eof when tokenizer says we're not at an EOF??");
+            assert(t.nextToken(), "hit eof when tokenizer says we're not at an EOF??");
 
-                switch (state) with (State)
-                {
-                    case afterValue:
-                    case beforeFieldName:
-                    case beforeAnnotations:
-                        handleState(state);
-                        break;
-                    default:
-                        version(D_Exceptions)
-                            throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
-                        else
-                            assert(0, "unexpected state");
-                }
+            switch (state) with (State)
+            {
+                case afterValue:
+                case beforeFieldName:
+                case beforeAnnotations:
+                    handleState(state);
+                    break;
+                default:
+                    version(D_Exceptions)
+                        throw IonDeserializerErrorCode.unexpectedState.ionDeserializerException;
+                    else
+                        assert(0, "unexpected state");
             }
         }
+    }
 
 private:
 

@@ -8,7 +8,7 @@ module mir.ser.text;
 
 public import mir.serde;
 
-private bool isIdentifier(scope const char[] str) @safe pure nothrow @nogc @property
+private bool isIdentifier(scope const char[] str) @trusted pure nothrow @nogc @property
 {
     import mir.algorithm.iteration: all;
     return str.length

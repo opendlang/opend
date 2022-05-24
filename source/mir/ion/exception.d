@@ -6,7 +6,7 @@ module mir.ion.exception;
 import mir.array.allocation: array;
 import mir.ndslice.topology: map;
 import mir.serde: SerdeException;
-import std.traits: EnumMembers;
+import std.traits: EnumMembers, Unqual;
 
 /++
 Ion Error Codes
@@ -304,7 +304,7 @@ version(mir_ion_test) unittest
     static assert(IonErrorCode.none.ionException is null);
 }
 
-package(mir) auto unqualException(T)(T exception) @trusted pure nothrow @nogc
+package(mir) Unqual!T unqualException(T)(return T exception) @trusted pure nothrow @nogc
     // if (is(T : const Exception))
 {
     return cast() exception;

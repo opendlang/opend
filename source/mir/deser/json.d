@@ -52,7 +52,7 @@ private template deserializeJsonImpl(bool file)
         }
 
         // @optStrategy("optsize")
-        void deserializeJsonImpl(ref T value, scope const(char)[] text)
+        void deserializeJsonImpl(ref T value, scope const(char)[] text) @safe
         {
             static if (isSomeMap!T)
             {
