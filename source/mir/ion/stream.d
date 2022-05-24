@@ -315,7 +315,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         bool following;
         foreach (symbolTable, value; this)

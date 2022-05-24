@@ -6,7 +6,7 @@ license "BSL-1.0"
 dependency "mir-algorithm" version=">=3.12.17"
 dependency "mir-cpuid" version="~>1.2.6"
 
-// dflags "-preview=dip1008"
+// dflags "-preview=dip1000"
 
 configuration "library" {
 }

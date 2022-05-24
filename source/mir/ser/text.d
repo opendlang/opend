@@ -784,7 +784,7 @@ template textSerializer(string sep = "")
 
     ser.structEnd(state0);
 
-    assert(buffer.data == `{'null':null,array:[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`, buffer.data);
+    assert(buffer.data == `{'null':null,array:[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`);
 }
 
 ///

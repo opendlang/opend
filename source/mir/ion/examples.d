@@ -375,13 +375,13 @@ version(mir_ion_test) unittest
         int a;
 
         // can be part of a type as well (only omits on property keys)
-        bool serdeIgnoreOut() const
+        auto serdeIgnoreOut() const
         {
             return a < 0;
         }
 
         // and use custom serializer to serialize as int
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             import mir.ser : serializeValue;
 
@@ -455,7 +455,7 @@ version(mir_ion_test) unittest
             return array;
         }
 
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             import mir.ser: serializeValue;
             // mir.algebraic has builtin support for serialization.
@@ -614,7 +614,7 @@ unittest
         private int sum;
 
         // opApply is used for serialization
-        int opApply(int delegate(scope const char[] key, ref const int val) pure @safe dg) pure @safe
+        int opApply(scope int delegate(scope const char[] key, ref const int val) pure @safe dg) pure @safe
         {
             { int var = 1; if (auto r = dg("a", var)) return r; }
             { int var = 2; if (auto r = dg("b", var)) return r; }
@@ -1029,7 +1029,7 @@ version(mir_ion_test) unittest
             this.s = s;
         }
 
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.stringBegin;
             // putStringPart is usefull in the loop and with buffers

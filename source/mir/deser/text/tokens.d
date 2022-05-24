@@ -321,15 +321,16 @@ Params:
 Returns:
     true if the symbol requires quotes around it.
 +/
-bool symbolNeedsQuotes(const(char)[] symbol) @safe @nogc pure {
+bool symbolNeedsQuotes(scope const(char)[] symbol) @safe @nogc pure {
     static foreach(member; ION_QUOTED_SYMBOLS) {
         if (symbol == member) return true;
     }
 
-    if (!isIdentifierStart(symbol[0])) return true;
-    for (auto i = 0; i < symbol.length; i++) {
-        if (!isIdentifierPart(symbol[i])) return true;
-    }
+    if (!isIdentifierStart(symbol[0]))
+        return true;
+    foreach (char c; symbol)
+        if (!isIdentifierPart(c))
+            return true;
     return false;
 }
 

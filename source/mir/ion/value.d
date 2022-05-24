@@ -146,7 +146,7 @@ struct IonNull
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         serializer.putNull(code);
     }
@@ -214,7 +214,7 @@ struct IonValue
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         describe.serialize(serializer);
     }
@@ -435,7 +435,7 @@ struct IonDescribedValue
     }
 
     // Issue 21681 workaround
-    private void serializeDummy(S)(ref S serializer) const
+    private void serializeDummy(S)(scope ref S serializer) const
     {
         final switch (descriptor.type) with (IonTypeCode)
         {
@@ -482,7 +482,7 @@ struct IonDescribedValue
     }
 
     // Issue 21681 workaround
-    private void serializeImpl(S)(ref S serializer) const @safe pure nothrow @nogc
+    private void serializeImpl(S)(scope ref S serializer) const @safe pure nothrow @nogc
     {
         return invokeAssumingAllAttributes(()
         {
@@ -545,7 +545,7 @@ struct IonDescribedValue
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const @safe
+    void serialize(S)(scope ref S serializer) const @safe
     {
         // Issue 21681 workaround
         serializeImpl(serializer);
@@ -954,7 +954,7 @@ struct IonInt
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         BigIntView!(const ubyte, WordEndian.big) f = field;
         serializer.putValue(f);
@@ -1059,7 +1059,7 @@ struct IonFloat
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         if (data.length == 8)
         {
@@ -1188,7 +1188,7 @@ struct IonDescribedDecimal
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         Decimal!256 decimal = void;
         if (auto error = this.get(decimal))
@@ -1273,7 +1273,7 @@ struct IonDecimal
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         this.get!IonDescribedDecimal.serialize(serializer);
     }
@@ -1453,7 +1453,7 @@ struct IonTimestamp
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         serializer.putValue(this.get!Timestamp);
     }
@@ -1549,7 +1549,7 @@ struct IonSymbolID
     Params:
         serializer = serializer with `putSymbolId` primitive.
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         size_t id;
         if (auto overflow = representation.get(id))
@@ -1776,7 +1776,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         import mir.ser: beginList;
         auto state = serializer.beginList(this);
@@ -1974,7 +1974,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         import mir.ser: beginSexp;
         auto state = serializer.beginSexp(this);
@@ -2225,7 +2225,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         import mir.ser: beginStruct;
         auto state = serializer.beginStruct(this);
@@ -2507,7 +2507,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         ionStruct.serialize(serializer);
     }
@@ -2584,7 +2584,7 @@ struct IonAnnotationWrapper
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         IonAnnotations annotations;
         auto value = unwrap(annotations);
@@ -2804,7 +2804,7 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         IonAnnotations annotations;
 

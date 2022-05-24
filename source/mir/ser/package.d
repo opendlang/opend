@@ -30,7 +30,7 @@ private noreturn throwCannotSerializeVoid() @safe pure @nogc
 }
 
 /// `null` value serialization
-void serializeValue(S)(ref S serializer, typeof(null))
+void serializeValue(S)(scope ref S serializer, typeof(null))
 {
     serializer.putValue(null);
 }
@@ -44,7 +44,7 @@ unittest
 }
 
 /// Number serialization
-void serializeValue(S, V)(ref S serializer, auto ref const V value)
+void serializeValue(S, V)(scope ref S serializer, auto ref const V value)
     if (isNumeric!V && !is(V == enum))
 {
     serializer.putValue(value);
@@ -63,14 +63,14 @@ unittest
 }
 
 /// Boolean serialization
-void serializeValue(S, V)(ref S serializer, const V value)
+void serializeValue(S, V)(scope ref S serializer, const V value)
     if (is(V == bool) && !is(V == enum))
 {
     serializer.putValue(value);
 }
 
 /// Char serialization
-void serializeValue(S, V : char)(ref S serializer, const V value)
+void serializeValue(S, V : char)(scope ref S serializer, const V value)
     if (is(V == char) && !is(V == enum))
 {
     char[1] v = value;
@@ -86,7 +86,7 @@ unittest
 }
 
 /// Enum serialization
-void serializeValue(S, V)(ref S serializer, in V value)
+void serializeValue(S, V)(scope ref S serializer, in V value)
     if(is(V == enum))
 {
     static if (hasUDA!(V, serdeProxy))
@@ -120,7 +120,7 @@ unittest
 }
 
 /// String serialization
-void serializeValue(S)(ref S serializer, scope const(char)[] value)
+void serializeValue(S)(scope ref S serializer, scope const(char)[] value)
 {
     if(value is null)
     {
@@ -139,7 +139,7 @@ unittest
 }
 
 /// Array serialization
-void serializeValue(S, T)(ref S serializer, T[] value)
+void serializeValue(S, T)(scope ref S serializer, T[] value)
     if(!isSomeChar!T)
 {
     if(value is null)
@@ -192,7 +192,7 @@ package template hasFields(T)
 }
 
 /// Input range serialization
-void serializeValue(S, V)(ref S serializer, auto ref V value)
+void serializeValue(S, V)(scope ref S serializer, auto ref V value)
     if (isIterable!V &&
         (!hasProxy!V || hasLikeList!V) &&
         !isDynamicArray!V &&
@@ -272,7 +272,7 @@ unittest
 }
 
 /// String-value associative array serialization
-void serializeValue(S, T)(ref S serializer, auto ref T[string] value)
+void serializeValue(S, T)(scope ref S serializer, auto ref T[string] value)
 {
     if(value is null)
     {
@@ -303,7 +303,7 @@ unittest
 }
 
 /// Enumeration-value associative array serialization
-void serializeValue(S, V : const T[K], T, K)(ref S serializer, V value)
+void serializeValue(S, V : const T[K], T, K)(scope ref S serializer, V value)
     if(is(K == enum))
 {
     if(value is null)
@@ -334,7 +334,7 @@ unittest
 }
 
 /// integral typed value associative array serialization
-void serializeValue(S,  V : const T[K], T, K)(ref S serializer, V value)
+void serializeValue(S,  V : const T[K], T, K)(scope ref S serializer, V value)
     if (isIntegral!K && !is(K == enum))
 {
     if(value is null)
@@ -423,7 +423,7 @@ unittest
     static assert(nullTypeCodeOf!long == IonTypeCode.nInt);
 }
 
-private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, size_t annotationsState, size_t wrapperState)
+private void serializeAnnotatedValue(S, V)(scope ref S serializer, auto ref V value, size_t annotationsState, size_t wrapperState)
 {
     import mir.algebraic: isVariant;
     static if (serdeGetAnnotationMembersOut!V.length)
@@ -483,7 +483,7 @@ private void serializeAnnotatedValue(S, V)(ref S serializer, auto ref V value, s
 }
 
 /// Struct and class type serialization
-void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
+void serializeValueImpl(S, V)(scope ref S serializer, auto ref V value)
     if (isAggregateType!V && (!isIterable!V || hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic;
@@ -639,7 +639,7 @@ void serializeValueImpl(S, V)(ref S serializer, auto ref V value)
 
 private template serializeWithProxy(Proxy)
 {
-    void serializeWithProxy(S, V)(ref S serializer, auto ref V value)
+    void serializeWithProxy(S, V)(scope ref S serializer, auto ref V value)
     {
         static if (is(Proxy == const(char)[]) || is(Proxy == string) || is(Proxy == char[]))
         {
@@ -647,15 +647,27 @@ private template serializeWithProxy(Proxy)
             static if (__traits(compiles, serializeValue(serializer, stringBuf() << value << getData)))
                 serializeValue(serializer, stringBuf() << value << getData);
             else
+            {
                 serializeValue(serializer, to!Proxy(value));
+            }
         }
         else
-            serializeValue(serializer, to!Proxy(value));
+        {
+            static if (isImplicitlyConvertible!(V, Proxy))
+            {
+                Proxy proxy = value;
+                serializeValue(serializer, proxy);
+            }
+            else
+            {
+                serializeValue(serializer, to!Proxy(value));
+            }
+        }
     }
 }
 
 /// Struct and class type serialization
-void serializeValue(S, V)(ref S serializer, auto ref V value)
+void serializeValue(S, V)(scope ref S serializer, auto ref V value)
     if (isAggregateType!V && (!isIterable!V ||  hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic: Algebraic, isVariant, isNullable, visit;
@@ -876,7 +888,7 @@ unittest
 {
     struct S
     {
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.structBegin(1);
             serializer.putKey("foo");
@@ -1029,7 +1041,7 @@ unittest
 
 /++
 +/
-auto beginList(S, V)(ref S serializer, ref V value)
+auto beginList(S, V)(scope ref S serializer, ref V value)
 {
     static if (__traits(compiles, serializer.listBegin))
     {
@@ -1044,7 +1056,7 @@ auto beginList(S, V)(ref S serializer, ref V value)
 
 /++
 +/
-auto beginSexp(S, V)(ref S serializer, ref V value)
+auto beginSexp(S, V)(scope ref S serializer, ref V value)
 {
     static if (__traits(compiles, serializer.sexpBegin))
     {
@@ -1059,7 +1071,7 @@ auto beginSexp(S, V)(ref S serializer, ref V value)
 
 /++
 +/
-auto beginStruct(S, V)(ref S serializer, ref V value)
+auto beginStruct(S, V)(scope ref S serializer, ref V value)
 {
     static if (__traits(compiles, serializer.structBegin))
     {
@@ -1076,7 +1088,7 @@ version (Have_mir_bloomberg)
 {
     import mir.ser.bloomberg : BloombergElement;
     ///
-    void serializeValue(S)(ref S serializer, const(BloombergElement)* value)
+    void serializeValue(S)(scope ref S serializer, const(BloombergElement)* value)
     {
         import mir.ser.bloomberg : impl = serializeValue;
         return impl(serializer, value);

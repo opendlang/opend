@@ -153,6 +153,8 @@ struct MsgpackSerializer(Appender)
             strBuf.initialize;
         }
 
+scope:
+
         size_t aggrBegin(string packerMethod)(size_t length = size_t.max)
         {
             lengths.put(0);
@@ -633,7 +635,7 @@ version(mir_ion_test) unittest
 }
 
 ///
-void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
+void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion) @safe
 {
     import mir.ser : serializeValue;
     auto serializer = appender.MsgpackSerializer!(Appender);
@@ -936,7 +938,7 @@ version(mir_ion_test) unittest
             this.text = text;
         }
 
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.stringBegin;
             serializer.putStringPart("Hello! ");
@@ -962,7 +964,7 @@ version(mir_ion_test) unittest
 
     static class HugeStruct
     {
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.structBegin(size_t(uint.max) + 1);
         }
@@ -991,7 +993,7 @@ version(mir_ion_test) unittest
 
     static class HugeArray
     {
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.listBegin(size_t(uint.max) + 1); 
         }

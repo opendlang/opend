@@ -166,12 +166,12 @@ interface ISerializer
 /++
 Serializer interface wrapper for common serializers.
 +/
-final scope class SerializerWrapper(S) : ISerializer
+final class SerializerWrapper(S) : ISerializer
 {
     private S* serializer;
 
     ///
-    this(return ref S serializer) @trusted pure nothrow @nogc
+    this(return scope ref S serializer) @trusted pure nothrow @nogc
     {
         this.serializer = &serializer;
     }
@@ -350,7 +350,7 @@ unittest
     {
         T value;
 
-        void serialize(S)(ref S serializer) const @safe
+        void serialize(S)(scope ref S serializer) const @safe
         {
             import mir.ser: serializeValue;
             import mir.ser.interfaces: SerializerWrapper;

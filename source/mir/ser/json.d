@@ -40,7 +40,7 @@ struct JsonSerializer(string sep, Appender)
     {
         private size_t deep;
 
-        private void putSpace()
+        private void putSpace() scope
         {
             for(auto k = deep; k; k--)
             {
@@ -55,6 +55,8 @@ struct JsonSerializer(string sep, Appender)
             }
         }
     }
+
+scope:
 
     private void pushState(size_t state)
     {
@@ -373,10 +375,7 @@ struct JsonSerializer(string sep, Appender)
 /++
 JSON serialization function.
 +/
-string serializeJson(V)(auto ref V value, int serdeTarget = SerdeTarget.json)
-{
-    return serializeJsonPretty!""(value, serdeTarget);
-}
+alias serializeJson = serializeJsonPretty!"";
 
 ///
 unittest
@@ -535,12 +534,6 @@ unittest
 /++
 JSON serialization for custom outputt range.
 +/
-void serializeJson(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
-{
-    return serializeJsonPretty!""(appender, value, serdeTarget);
-}
-
-///
 @safe pure nothrow @nogc
 unittest
 {
@@ -637,7 +630,7 @@ template jsonSerializer(string sep = "")
 
     ser.structEnd(state0);
 
-    assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`, buffer.data);
+    assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e+7,"\t","\r","\n",1234567890]}`);
 }
 
 ///

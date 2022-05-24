@@ -49,7 +49,7 @@ private static T unpackMsgPackVal(T)(scope ref const(ubyte)[] data)
 }
 
 @safe pure
-private static void handleMsgPackElement(S)(ref S serializer, MessagePackFmt type, scope ref const(ubyte)[] data)
+private static void handleMsgPackElement(S)(scope ref S serializer, MessagePackFmt type, scope ref const(ubyte)[] data)
 {
     size_t length = 0;
     switch (type) 
@@ -607,7 +607,7 @@ struct MsgpackValueStream
 {
     const(ubyte)[] data;
 
-    void serialize(S)(ref S serializer) const
+    void serialize(S)(scope ref S serializer) const
     {
         auto window = data[0 .. $];
         bool following = false;
@@ -628,7 +628,7 @@ struct MsgpackValueStream
 template deserializeMsgpack(T)
 {
     ///
-    void deserializeMsgpack(ref T value, scope const(ubyte)[] data)
+    void deserializeMsgpack(ref T value, scope const(ubyte)[] data) @safe
     {
         import mir.appender : scopedBuffer;
         import mir.deser.ion : deserializeIon;
@@ -929,7 +929,7 @@ unittest
     {
         ubyte[] arg;
 
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.structBegin();
             serializer.putKey("arg");
@@ -959,7 +959,7 @@ unittest
         @serdeAllowMultiple
         ubyte asdf;
 
-        void serialize(S)(ref S serializer) const
+        void serialize(S)(scope ref S serializer) const
         {
             auto state = serializer.structBegin();
             foreach (i; 0 .. (ushort.max + 1))
