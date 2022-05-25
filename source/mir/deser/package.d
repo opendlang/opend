@@ -438,7 +438,7 @@ template deserializeValue(string[] symbolTable)
         value = value to deserialize
     Returns: `IonException`
     +/
-    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value) @safe
+    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
         if (!isFirstOrderSerdeType!T)
     {with(params){
         import mir.algebraic: isVariant, isNullable;
