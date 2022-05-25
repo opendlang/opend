@@ -119,6 +119,8 @@ enum IonErrorCode
     expectedIonStructForAnAssociativeArrayDeserialization,
     ///
     unexpectedComma,
+    ///
+    emptyIonInput,
 }
 
 ///
@@ -192,6 +194,7 @@ string ionErrorMsg()(IonErrorCode code) @property
         "can't convert annotation to enum",
         "expected IonStruct for an associative array deserialization",
         "unexpected comma",
+        "Ion data doesn't contain a value",
     ];
     return msgs[code - IonErrorCode.min];
 }

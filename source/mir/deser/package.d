@@ -176,7 +176,7 @@ template deserializeValue(string[] symbolTable)
         return symbolId < symbolTable.length;
     }
 
-    @trusted pure nothrow @nogc private IonException deserializeScoped(C, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref C[] value)
+    @trusted pure nothrow @nogc private IonException deserializeScoped(C, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, scope ref C[] value)
         if (is(immutable C == immutable char))
     {with(params){
 
