@@ -290,9 +290,10 @@ Params:
 Returns:
     $(LREF IonException)
 +/
-IonException ionException()(IonErrorCode code) @property
+IonException ionException(IonErrorCode code) @property
 @trusted pure nothrow @nogc
 {
+    pragma(inline, true);
     return cast(IonException) exceptionsArray[code - IonErrorCode.min];
 }
 

@@ -702,7 +702,7 @@ version(mir_ion_test) unittest
 /++
 Ion serialization for custom outputt range.
 +/
-void serializeText(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
+void serializeText(Appender, V)(scope ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
 {
     return serializeTextPretty!""(appender, value, serdeTarget);
 }
@@ -725,7 +725,7 @@ template serializeTextPretty(string sep = "\t")
 {
     import std.range.primitives: isOutputRange; 
     ///
-    void serializeTextPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
+    void serializeTextPretty(Appender, V)(scope ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
         if (isOutputRange!(Appender, const(char)[]))
     {
         import mir.ser: serializeValue;

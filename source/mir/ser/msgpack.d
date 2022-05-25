@@ -635,7 +635,7 @@ version(mir_ion_test) unittest
 }
 
 ///
-void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion) @safe
+void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
     import mir.ser : serializeValue;
     auto serializer = appender.MsgpackSerializer!(Appender);

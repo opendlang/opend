@@ -29,7 +29,7 @@ template deserializeIon(T, bool annotated = false)
     }
 
     /// ditto
-    void deserializeIon()(ref T value, scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    void deserializeIon()(scope ref T value, scope const char[][] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
         import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
@@ -68,7 +68,7 @@ template deserializeIon(T, bool annotated = false)
     }
 
     /// ditto
-    void deserializeIon()(ref T value, const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    void deserializeIon()(scope ref T value, const string[] symbolTable, IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
         import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
@@ -114,7 +114,7 @@ template deserializeIon(T, bool annotated = false)
         }
 
         /// ditto
-        void deserializeIon()(ref T value, scope const(ubyte)[] data)
+        void deserializeIon()(scope ref T value, scope const(ubyte)[] data)
         {
             import mir.serde: SerdeException;
             import mir.ion.stream: IonValueStream;
@@ -134,4 +134,6 @@ version(mir_ion_test)
 unittest
 {
     alias d = deserializeIon!(int[string]);
+    import mir.ion.value;
+    alias deserNull = deserializeIon!IonNull;
 }

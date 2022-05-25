@@ -288,7 +288,7 @@ Params:
     text = The text to convert
     appender = A buffer that will receive the Ion binary data
 +/
-void text2ion(Appender)(scope const(char)[] text, ref Appender appender)
+void text2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     @trusted pure @nogc
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
@@ -381,7 +381,7 @@ version(mir_ion_test) unittest
     // static assert(data.ion2textPretty == "{\n\ta: 1,\n\tb: 2\n}");
 }
 
-void msgpack2ion(Appender)(scope const(ubyte)[] data, ref Appender appender)
+void msgpack2ion(Appender)(scope const(ubyte)[] data, scope ref Appender appender)
     @trusted pure @nogc
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;

@@ -466,7 +466,7 @@ version(mir_ion_test) unittest
         /++
         Returns: error msg if any
         +/
-        @trusted pure
+        @trusted pure scope
         IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
         {
             import mir.deser.ion: deserializeIon;
@@ -991,7 +991,7 @@ version(mir_ion_test) unittest
     static struct S {
         double[] a;
 
-        void serdeUnexpectedKeyHandler(scope const(char)[] key) @safe pure nothrow @nogc
+        void serdeUnexpectedKeyHandler(scope const(char)[] key) scope @safe pure nothrow @nogc
         {
             assert(key == "b");
         }

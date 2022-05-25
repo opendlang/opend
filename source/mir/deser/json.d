@@ -52,7 +52,7 @@ private template deserializeJsonImpl(bool file)
         }
 
         // @optStrategy("optsize")
-        void deserializeJsonImpl(ref T value, scope const(char)[] text)
+        void deserializeJsonImpl(scope ref T value, scope const(char)[] text)
         {
             static if (isSomeMap!T)
             {
@@ -410,7 +410,7 @@ T deserializeDynamicJson(T)(scope const(char)[] text)
 }
 
 ///ditto
-void deserializeDynamicJson(T)(ref T value, scope const(char)[] text)
+void deserializeDynamicJson(T)(scope ref T value, scope const(char)[] text)
 {
     import mir.ion.conv: json2ion;
     import mir.deser.ion: deserializeIon;

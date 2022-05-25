@@ -103,7 +103,7 @@ unittest
 /++
 Deserialize `null` value
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == typeof(null)))
 {
@@ -125,7 +125,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize boolean value
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == bool))
 {
@@ -147,7 +147,7 @@ pure version(mir_ion_test) unittest
 /++
 Deserialize integral value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (isIntegral!T && !is(T == enum))
 {
@@ -192,7 +192,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize big integer value.
 +/
-IonErrorCode deserializeValueImpl(T : BigInt!maxSize64, size_t maxSize64)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T : BigInt!maxSize64, size_t maxSize64)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
 {
     IonInt ionValue;
@@ -281,7 +281,7 @@ $(TABLE
     $(TR $(TD `-inf`))
 )
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (isFloatingPoint!T)
 {
@@ -372,7 +372,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize decimal value.
 +/
-IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSize)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSize)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
 {
     IonDecimal ionValue;
@@ -403,7 +403,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize timestamp value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == Timestamp))
 {
@@ -424,7 +424,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 }
 
 ///ditto
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     // pure @safe nothrow @nogc
     if (!(hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T) && is(typeof(Timestamp.init.opCast!T)))
 {
@@ -490,7 +490,7 @@ package template hasFallbackStruct(T)
 /++
 Deserialize struct/class value with proxy.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     if (hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T)
 {
     import std.traits: Select;
@@ -506,7 +506,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
 /++
 Deserialize enum value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     if (is(T == enum) && !hasProxy!T)
 {
     import mir.serde: serdeParseEnum;
@@ -537,7 +537,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize ascii value from ion string.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     pure @safe nothrow
     if (is(T == char))
 {
@@ -583,7 +583,7 @@ private IonErrorCode deserializeListToScopedBuffer(Buffer)(IonDescribedValue dat
 
 
 ///
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     if (is(T == E[], E) && !isSomeChar!E)
 {
     alias E = Unqual!(ForeachType!T);
@@ -624,7 +624,7 @@ version(mir_ion_test) unittest
 }
 
 ///
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, ref T value)
+IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
     if (is(T == RCArray!E, E) && !isSomeChar!E)
 {
     alias E = Unqual!(ForeachType!T);

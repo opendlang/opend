@@ -628,7 +628,7 @@ struct MsgpackValueStream
 template deserializeMsgpack(T)
 {
     ///
-    void deserializeMsgpack(ref T value, scope const(ubyte)[] data) @safe
+    void deserializeMsgpack(scope ref T value, scope const(ubyte)[] data)
     {
         import mir.appender : scopedBuffer;
         import mir.deser.ion : deserializeIon;

@@ -510,7 +510,7 @@ unittest
 /++
 Ion serialization for custom outputt range.
 +/
-void serializeIon(Appender, T)(ref Appender appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
+void serializeIon(Appender, T)(scope ref Appender appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
     if (isOutputRange!(Appender, const(ubyte)[]) && !is(T == SerdeTarget))
 {
     import mir.utility: _expect;

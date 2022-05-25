@@ -1085,7 +1085,7 @@ T deserializeText(T)(scope const(char)[] text)
 }
 
 ///ditto
-void deserializeText(T)(ref T value, scope const(char)[] text)
+void deserializeText(T)(scope ref T value, scope const(char)[] text)
 {
     import mir.deser.ion;
     import mir.ion.conv : text2ion;

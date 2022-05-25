@@ -318,7 +318,7 @@ struct IonDescribedValue
         value = (out) Ion Typed Value
     Returns: $(SUBREF exception, IonErrorCode)
     +/
-    IonErrorCode get(T)(ref T value)
+    IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
         if (isIonType!T || is(T == IonInt))
     {

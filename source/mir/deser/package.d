@@ -33,13 +33,13 @@ package template hasScoped(T)
         enum hasScoped = false;
 }
 
-IonException deserializeValue_(T)(IonDescribedValue data, ref T value)
+IonException deserializeValue_(T)(IonDescribedValue data, scope ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
+IonException deserializeValue_(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, scope ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValue_!T(params.data, value);
@@ -229,7 +229,7 @@ template deserializeValue(string[] symbolTable)
         return null;
     }}
 
-    private IonException deserializeValueMember(string member, T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value, ref SerdeFlags!T requiredFlags)
+    private IonException deserializeValueMember(string member, T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, scope ref T value, scope ref SerdeFlags!T requiredFlags)
     {with(params){
         import core.lifetime: move;
         import mir.conv: to;
@@ -438,7 +438,7 @@ template deserializeValue(string[] symbolTable)
         value = value to deserialize
     Returns: `IonException`
     +/
-    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref T value)
+    IonException deserializeValue(T, TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, scope ref T value)
         if (!isFirstOrderSerdeType!T)
     {with(params){
         import mir.algebraic: isVariant, isNullable;
@@ -615,7 +615,7 @@ template deserializeValue(string[] symbolTable)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
                 auto elemParams = params.withData(elem);
-                if (auto errorMsg = deserializeValue(elemParams, value.require(table[symbolId].to!K)))
+                if (auto errorMsg = deserializeValue(elemParams, ref () @trusted {return value.require(table[symbolId].to!K);} ()))
                     return errorMsg;
             }
             return null;
@@ -1721,7 +1721,7 @@ version(mir_ion_test) unittest
     static struct Q
     {
         int i;
-        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value) @safe pure @nogc
+        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value) scope @safe pure @nogc
         {
             i = deserializeIon!int(symbolTable, value);
             return null;
