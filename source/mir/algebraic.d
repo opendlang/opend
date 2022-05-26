@@ -1622,7 +1622,7 @@ struct Algebraic(_Types...)
 
     static if (_ReflectionTypes.length)
     this(this This, Args...)(auto ref Args args)
-        if (Args.length && (Args.length > 1 || !isVariant!(Args[0])))
+        if (Args.length && (Args.length > 1 || !isLikeVariant!(Args[0])))
     {
         import std.traits: CopyTypeQualifiers;
         import core.lifetime: forward;
@@ -3686,4 +3686,30 @@ unittest
         assert(!v.isOk);
         assert(v.assumeOk.collectExceptionMsg == "msg");
     }
+}
+
+version(mir_core_test)
+unittest
+{
+    struct RequestToken
+    {
+        Variant!(long, string) value;
+        alias value this;
+
+        this(T)(T v)
+        {
+            value = typeof(value)(v);
+        }
+    }
+
+    Variant!(int, RequestToken) v = RequestToken.init;
+
+    auto r = v.match!(
+        (int v) {
+            return assert(false);
+        },
+        ret => ret
+    );
+
+    static assert(is(typeof(r) == Variant!(long, string)));
 }
