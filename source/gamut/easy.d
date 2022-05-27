@@ -35,7 +35,7 @@ public:
         CString cstr = CString(path);
         
         // TODO: scan type
-        _bitmap = FreeImage_Load(FIF_PNG, cstr.storage, flags);
+        _bitmap = FreeImage_Load(FIF_JPEG, cstr.storage, flags);
 
         // TODO: deal with failure
 
@@ -54,7 +54,7 @@ public:
         scope(exit) FreeImage_CloseMemory(stream);
 
         // TODO: scan type
-        _bitmap = FreeImage_LoadFromMemory(FIF_PNG, stream, flags);
+        _bitmap = FreeImage_LoadFromMemory(FIF_JPEG, stream, flags);
 
         // TODO: deal with failure here
 

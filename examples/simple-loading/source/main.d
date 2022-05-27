@@ -16,22 +16,18 @@ void main(string[] args) @safe
     Image image;
 
     long tBefore = getTickMs();
-    image.loadFromFile("material.png");
+    image.loadFromFile("diffuse.jpg");
     long tAfter = getTickMs();
 
-    writefln("Loaded material.png from file, in %s ms", tAfter - tBefore);
+    writefln("Loaded diffuse.jpg from file, in %s ms", tAfter - tBefore);
     writefln("  => width x height = %s x %s", image.width, image.height);
-    assert(image.width == 1252);
-    assert(image.height == 974);
 
-    void[] data = std.file.read("material.png");
+    void[] data = std.file.read("diffuse.jpg");
     tBefore = getTickMs();
     bool success = image.loadFromMemory( data );
     tAfter = getTickMs();
     assert(success);
 
-    writefln("Loaded material.png from memory, in %s ms", tAfter - tBefore);
+    writefln("Loaded diffuse.jpg from memory, in %s ms", tAfter - tBefore);
     writefln("  => width x height = %s x %s", image.width, image.height);
-    assert(image.width == 1252);
-    assert(image.height == 974);
 }

@@ -243,27 +243,21 @@ package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
                                               const(char)* description = null,
                                               const(char)* extension = null,
                                               const(char)* regexpr = null) @trusted
-                                              {
-                                                g_pluginMutex.lockLazy();
-                                                scope(exit) g_pluginMutex.unlock();
-                                                Plugin* p = &g_plugins[fif];
-                                                proc(p, fif);
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+    Plugin* p = &g_plugins[fif];
+    proc(p, fif);
 
-                                                // Begin its life enabled, and registered.
-                                                p.isEnabled = true;
-                                                p.isRegistered = true;
+    // Begin its life enabled, and registered.
+    p.isEnabled = true;
+    p.isRegistered = true;
 
-                                                p.format = format;
-                                                p.description = description;
-                                                p.extensionList = extension;
-                                                p.regexpr = regexpr;
-
-                                                /// Comma-separated list of extension. A JPEG plugin would return "jpeg,jif,jfif".
-                                                const(char)* extensionList;
-
-                                                /// Regular expression.
-                                                const(char)* regExpr;
-                                              }
+    p.format = format;
+    p.description = description;
+    p.extensionList = extension;
+    p.regexpr = regexpr;
+}
 
 package void FreeImage_registerInternalPlugins()
 {
@@ -271,6 +265,12 @@ package void FreeImage_registerInternalPlugins()
     {
         import gamut.plugins.png;
         registerPNG();
+    }
+
+    version(decodeJPEG)
+    {
+        import gamut.plugins.jpeg;
+        registerJPEG();
     }
 }
 

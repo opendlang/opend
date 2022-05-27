@@ -44,6 +44,7 @@
 module gamut.codecs.jpegload;
 
 import core.stdc.string : memcpy, memset;
+import core.stdc.stdlib : malloc, free;
 import inteli.emmintrin;
 
 nothrow:
@@ -70,12 +71,12 @@ private:
 
 void *jpgd_malloc (size_t nSize) 
 { 
-    return _mm_malloc(nSize, 1);
+    return malloc(nSize);
 }
 
 void jpgd_free (void *p) 
 { 
-    _mm_free(p);
+    free(p);
 }
 
 // Success/failure error codes.
