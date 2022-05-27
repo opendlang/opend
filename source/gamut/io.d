@@ -106,6 +106,12 @@ extern(C) @system
     alias EofProc = int function(fi_handle handle);
 }
 
+package struct WrappedIO
+{
+    FreeImageIO* wrapped; /// I/O object being wrapped.
+    fi_handle handle;     /// Original handle.
+}
+
 package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
 {
     io.read  = cast(ReadProc) &fread;
@@ -113,4 +119,68 @@ package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
     io.seek  = cast(SeekProc) &fseek;
     io.tell  = cast(TellProc) &ftell;
     io.eof   = cast(EofProc) &feof;
+}
+
+// Wraps an I/O object and adds logging to it. Instead of a handle, pass a FreeImageIO* pointer.
+package void setupFreeImageIOForLogging(ref FreeImageIO io) @trusted
+{
+    io.read  = &debug_fread;
+    io.write = &debug_fwrite;
+    io.seek  = &debug_fseek;
+    io.tell  = &debug_ftell;
+    io.eof   = &debug_feof;
+}
+
+extern(C) @system
+{
+    // Note: these functions expect a `WrappedIO` to be passed as handle.
+    import core.stdc.stdio;
+
+    size_t debug_fwrite (void* buffer, size_t size, size_t count, fi_handle handle)
+    {
+        WrappedIO* wio = cast(WrappedIO*) handle;
+        printf("Write %lld elements of %lld bytes\n", count, size);
+        size_t r = wio.wrapped.write(buffer, size, count, wio.handle);
+        printf("  => written %lld elements\n", r);
+        return r;
+    }
+
+    size_t debug_fread (void* buffer, size_t size, size_t count, fi_handle handle)
+    {
+        WrappedIO* wio = cast(WrappedIO*) handle;
+        printf("Read %lld elements of %lld bytes\n", count, size);
+        size_t r = wio.wrapped.read(buffer, size, count, wio.handle);
+        printf("  => read %lld elements\n", r);
+        return r;
+    }
+
+    int debug_fseek(fi_handle handle, c_long offset, int origin)
+    {
+        WrappedIO* wio = cast(WrappedIO*) handle;
+        printf("Seek to offset %d, mode %d\n", offset, origin);
+        int r = wio.wrapped.seek(wio.handle, offset, origin);
+        if (r == 0)
+            printf("  => success\n", r);
+        else
+            printf(" => failure\n");
+        return r;
+    }
+
+    c_long debug_ftell(fi_handle handle)
+    {
+        WrappedIO* wio = cast(WrappedIO*) handle;
+        printf("Tell offset\n");
+        c_long r = wio.wrapped.tell(wio.handle);
+        printf("  => offset is %lld\n", cast(long)r);
+        return r;
+    }
+
+    int debug_feof(fi_handle handle)
+    {
+        WrappedIO* wio = cast(WrappedIO*) handle;
+        printf("Is feof?\n");
+        int r = wio.wrapped.eof(wio.handle);
+        printf("  => returned %d\n", r);
+        return r;
+    }
 }

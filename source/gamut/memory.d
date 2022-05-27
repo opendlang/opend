@@ -209,7 +209,9 @@ extern(C)
         else
             toRead = available / size;
 
-        memcpy(buffer, &stream.data[stream.offset], toRead * cast(size_t)size);
+        size_t bytes = toRead * cast(size_t)size;
+        memcpy(buffer, &stream.data[stream.offset], bytes);
+        stream.offset += bytes;
         return toRead;
     }
 

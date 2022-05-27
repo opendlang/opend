@@ -459,16 +459,6 @@ struct stbi__context
 }
 
 
-// initialize a memory-decode context
-void stbi__start_mem(stbi__context *s, const(stbi_uc)* buffer, int len)
-{
-    s.io.read = null;
-    s.read_from_callbacks = 0;
-    s.callback_already_read = 0;
-    s.img_buffer = s.img_buffer_original = cast(stbi_uc *) buffer;
-    s.img_buffer_end = s.img_buffer_original_end = cast(stbi_uc *) buffer+len;
-}
-
 // initialize a callback-based context
 void stbi__start_callbacks(stbi__context *s, stbi_io_callbacks *c, void *user)
 {
@@ -727,25 +717,11 @@ void stbi__float_postprocess(float *result, int *x, int *y, int *comp, int req_c
 {
 }
 
-stbi_us *stbi_load_16_from_memory(const(stbi_uc)*buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels)
-{
-    stbi__context s;
-    stbi__start_mem(&s,buffer,len);
-    return stbi__load_and_postprocess_16bit(&s,x,y,channels_in_file,desired_channels);
-}
-
 stbi_us *stbi_load_16_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *channels_in_file, int desired_channels)
 {
     stbi__context s;
     stbi__start_callbacks(&s, cast(stbi_io_callbacks *)clbk, user); // const_cast here
     return stbi__load_and_postprocess_16bit(&s,x,y,channels_in_file,desired_channels);
-}
-
-stbi_uc *stbi_load_from_memory(const(stbi_uc)*buffer, int len, int *x, int *y, int *comp, int req_comp)
-{
-    stbi__context s;
-    stbi__start_mem(&s,buffer,len);
-    return stbi__load_and_postprocess_8bit(&s,x,y,comp,req_comp);
 }
 
 stbi_uc *stbi_load_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *comp, int req_comp)
@@ -2468,13 +2444,6 @@ version(decodePNG)
             return 0;
         }
         return 1;
-    }
-
-    bool stbi__png_is16(const(ubyte)[] buffer) // #BONUS
-    {
-        stbi__context s;
-        stbi__start_mem(&s, buffer.ptr, cast(int)buffer.length);
-        return stbi__png_is16(&s) != 0;
     }
 
     bool stbi__png_is16(stbi_io_callbacks* clbk, void* user) // #BONUS

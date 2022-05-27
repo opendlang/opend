@@ -138,7 +138,14 @@ deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeIm
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
 FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
-{  
+{
+    // I/O logging, useful for debug purpose
+    /*FreeImageIO io2;
+    WrappedIO wio;
+    wio.wrapped = io;
+    wio.handle = handle;
+    setupFreeImageIOForLogging(io2);*/
+
     Plugin* plugin = FreeImage_PluginAcquireForReading(fif);
     if (plugin is null)
         return null;
