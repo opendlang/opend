@@ -2168,14 +2168,7 @@ version(decodePNG)
 
         for (;;) {
             stbi__pngchunk c = stbi__get_chunk_header(s);
-
-            import core.stdc.stdio;
-            printf("%c%c%c%c\n", cast(char)( (c.type>> 24) & 255),
-                         cast(char)( (c.type>> 16) & 255),
-                         cast(char)( (c.type>> 8) & 255),
-                         cast(char)( (c.type>> 0) & 255));
             uint aaaa = c.type;
-            printf("%d\n", aaaa);
             switch (c.type) {
                 case STBI__PNG_TYPE('C','g','B','I'):
                     is_iphone = 1;

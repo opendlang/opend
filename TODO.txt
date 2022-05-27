@@ -1,5 +1,5 @@
 - GAMUT: loading PNG depuis mémoire marche pas.
 
-## Limitations
+## Known Limitations
 
 - files of size larger than 2^31-1 bytes are not supported.
