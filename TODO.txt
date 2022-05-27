@@ -1,4 +1,4 @@
-- GAMUT: loading PNG depuis mémoire marche pas.
+- GAMUT: JPEG loading respecting original content
 
 ## Known Limitations
 
