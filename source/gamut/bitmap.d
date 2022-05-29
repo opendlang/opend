@@ -105,11 +105,11 @@ enum int
 /// constants is available in Table 1). The second parameter tells FreeImage the file it has to 
 /// decode. The last parameter is used to change the behaviour or enable a feature in the bitmap 
 /// plugin. Each plugin has its own set of parameters.
-FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filenameZ, int flags = 0) @system
+FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filename, int flags = 0) @system
 {
     assert(fif != FIF_UNKNOWN);
     
-    FILE* f = fopen(filenameZ, "rb");
+    FILE* f = fopen(filename, "rb");
     if (f is null)
         return null;
 
@@ -159,12 +159,42 @@ FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_ha
     return loaded;
 }
 
-/// FreeImage_Save
+deprecated("Use FreeImage_Save instead, it was made Unicode-aware") 
+    alias FreeImage_SaveU = FreeImage_Save;
 
-deprecated("Use FreeImage_Save instead, it was made Unicode-aware") alias FreeImage_SaveU = FreeImage_Save;
-FIBITMAP* FreeImage_Save(FIBITMAP *dib) pure
+/// This function saves a previously loaded `FIBITMAP` to a file. The first parameter defines the 
+/// type of the bitmap to be saved. For example, when `FIF_BMP` is passed, a BMP file is saved.
+/// The second parameter is the name of the bitmap to be saved. If the file already exists it is 
+/// overwritten. Note that some bitmap save plugins have restrictions on the bitmap types they 
+/// can save.
+bool FreeImage_Save(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, const(char)* filename, int flags = 0) @trusted
 {
-    return null; // TODO
+    assert(fif != FIF_UNKNOWN);
+
+    FILE* f = fopen(filename, "wb");
+    if (f is null)
+        return false;
+
+    FreeImageIO io;
+    setupFreeImageIOForFile(io);
+    bool r = FreeImage_SaveToHandle(fif, dib, &io, cast(fi_handle)f, flags);
+    fclose(f); // TODO: not sure what to do if fclose fails here.
+    return r;
+}
+
+bool FreeImage_SaveToHandle(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, 
+                            FreeImageIO *io, fi_handle handle, int flags = 0)
+{
+    Plugin* plugin = FreeImage_PluginAcquireForWriting(fif);
+    if (plugin is null)
+        return false;
+
+    scope(exit) FreeImage_PluginRelease(plugin);
+
+    void* data = null; // probalby exist to pass metadata stuff
+    assert(plugin.saveProc); // else, do not mark it as suitable for writing
+    bool r = plugin.saveProc(io, dib, handle, 0, flags, data);
+    return r;
 }
 
 /// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.

@@ -15,8 +15,6 @@ import gamut.io;
 nothrow @nogc @safe:
 
 
-
-
 // TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
 
 
@@ -110,7 +108,23 @@ FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int 
     return FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)stream, flags);
 }
 
-// FreeImage_SaveToMemory
+/// This function does for memory streams what FreeImage_Save does for file streams. 
+/// `FreeImage_SaveToMemory` saves a previously loaded `FIBITMAP` to a memory file managed 
+/// by FreeImage. The first parameter defines the type of the bitmap to be saved. For example, 
+/// when `FIF_BMP` is passed, a BMP file is saved. The second parameter is the 
+/// memory stream where the bitmap must be saved. When the memory file pointer point to the 
+/// beginning of the memory file, any existing data is overwritten. Otherwise, you can save 
+/// multiple images on the same stream.
+bool FreeImage_SaveToMemory(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, FIMEMORY *stream, int flags = 0) @trusted
+{
+    assert(fif != FIF_UNKNOWN);
+    assert (stream !is null);
+
+    FreeImageIO io;
+    setupFreeImageIOForMemory(io);
+
+    return FreeImage_SaveToHandle(fif, dib, &io, cast(fi_handle)stream, flags);
+}
 
 /// Provides a direct buffer access to a memory stream. Upon entry, stream is the target memory 
 /// stream, returned value data is a pointer to the memory buffer, returned value size_in_bytes is 
@@ -233,6 +247,24 @@ void setupFreeImageIOForMemory(ref FreeImageIO io) pure @trusted
     io.seek  = cast(SeekProc)  &FreeImage_SeekMemory;
     io.tell  = cast(TellProc)  &FreeImage_TellMemory;
     io.eof   = cast(EofProc)   &FreeImage_EofMemory;
+}
+
+// Return internal data pointer (allocated with malloc/free)
+// stream doesn't own it anymore, the caller does instead.
+ubyte[] FreeImage_ReleaseMemory(FIMEMORY *stream) @trusted
+{
+    assert (stream !is null);
+    if (stream.owned)
+    {
+        stream.owned = false;
+        ubyte* data = stream.data;
+        if (data is null)
+            return null;
+        stream.data = null;
+        return data[0..stream.bytes];
+    }
+    else
+        return null;
 }
 
 private:

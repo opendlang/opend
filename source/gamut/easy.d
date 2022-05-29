@@ -14,6 +14,8 @@ import gamut.filetype;
 import gamut.plugin;
 import gamut.internals.cstring;
 
+public import gamut.types: FREE_IMAGE_FORMAT;
+
 nothrow @nogc @safe:
 
 /// Image type.
@@ -81,6 +83,49 @@ public:
         return loadFromMemory(cast(const(ubyte)[])bytes, flags);
     }
 
+    /// Save the image into a file.
+    /// Returns: `true` if file successfully written.
+    bool saveToFile(const(char)[] path, int flags = 0) @trusted
+    {
+        assert(isValid()); // else, nothing to save
+        initializeFreeImageLazilyIfFirstCall();
+        CString cstr = CString(path);
+
+        FREE_IMAGE_FORMAT fif = FreeImage_GetFIFFromFilename(cstr.storage);
+        if (fif == FIF_UNKNOWN)
+            return false; // couldn't recognize format from path.
+
+        return FreeImage_Save(fif, _bitmap, cstr.storage, flags);
+    }
+    /// Save the image into a file, but provide a file format.
+    /// Returns: `true` if file successfully written.
+    bool saveToFile(FREE_IMAGE_FORMAT fif, const(char)[] path, int flags = 0) @trusted
+    {
+        assert(isValid()); // else, nothing to save
+        initializeFreeImageLazilyIfFirstCall();
+        CString cstr = CString(path);
+        return FreeImage_Save(fif, _bitmap, cstr.storage, flags);
+    }
+
+    /// Saves the image into a new memory location.
+    /// The returned data must be released with a call to `free`.
+    /// Returns: `null` if saving failed.
+    ubyte[] saveToMemory(FREE_IMAGE_FORMAT fif, int flags = 0) @trusted
+    {
+        assert(isValid()); // else, nothing to save
+        initializeFreeImageLazilyIfFirstCall();
+
+        // PERF: a way to have FIMEMORY in a local instead of heap.
+        // Open stream for read/write access.
+        FIMEMORY* stream = FreeImage_OpenMemory();
+        scope(exit) FreeImage_CloseMemory(stream);
+        if (!FreeImage_SaveToMemory(fif, _bitmap, stream, flags))
+        {
+            return null;
+        }
+        return FreeImage_ReleaseMemory(stream);
+    }
+
     /// Returns: Width of image in pixels.
     int width() pure
     {
@@ -93,6 +138,13 @@ public:
     {
         assert(_bitmap !is null);
         return FreeImage_GetHeight(_bitmap);
+    }
+
+    /// Returns: `true` if this Image has an internal bitmap.
+    ///          That means that loading/initialization succeeded.
+    bool isValid()
+    {
+        return _bitmap !is null;
     }
 
 private:

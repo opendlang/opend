@@ -241,6 +241,21 @@ Plugin* FreeImage_PluginAcquireForReading(FREE_IMAGE_FORMAT fif) @trusted
     return &g_plugins[fif];
 }
 
+Plugin* FreeImage_PluginAcquireForWriting(FREE_IMAGE_FORMAT fif) @trusted
+{
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+    bool registered = g_plugins[fif].isRegistered;
+    bool enabled = g_plugins[fif].isEnabled;
+    bool supportsWrite = g_plugins[fif].supportsWrite;
+
+    if ( !(registered && enabled && supportsWrite) )
+        return null;
+
+    // TODO: actually do something for atomicity.
+    return &g_plugins[fif];
+}
+
 // Return 0 if properly release. assert(false) else, as it is a programming error.
 int FreeImage_PluginRelease(Plugin* plugin)
 {
