@@ -6,12 +6,20 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.plugin;
 
+import core.stdc.string;
 import gamut.types;
 import gamut.bitmap;
 import gamut.io;
 import gamut.internals.mutex;
 
 nothrow @nogc @safe:
+
+
+/// Note sure how many of those constant I want.
+version(decodePNG)
+    version = encodeOrDecodePNG;
+else version(encodePNG)
+    version = encodeOrDecodePNG;
 
 /**
 "Through average use you won’t probably notice it, FreeImage is plugin driven. Each bitmap 
@@ -165,9 +173,49 @@ int FreeImage_IsPluginEnabled(FREE_IMAGE_FORMAT fif) @trusted
 
 /// This function takes a filename or a file-extension and returns the plugin that can read/write 
 /// files with that extension in the form of a `FREE_IMAGE_FORMAT` identifier.
-FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename)
+FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
 {
-    // TODO
+    // find extension inside filename
+    size_t ilen = strlen(filename);
+    size_t pos = ilen;
+    assert(filename[pos] == 0);
+    while(pos > 0 && filename[pos] != '.')
+        pos = pos - 1;
+    if (filename[pos] == '.') 
+        pos++;
+
+    const(char)* fextension = filename + pos; // ex: "jpg", "png"...
+
+    g_pluginMutex.lockLazy();
+    scope(exit) g_pluginMutex.unlock();
+
+    for(FREE_IMAGE_FORMAT fif = 0; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
+    {
+        if (g_plugins[fif].isRegistered)
+        {
+            // Is fextension in the list?
+
+            const(char)* str = g_plugins[fif].extensionList;
+
+            while(true)
+            {
+                const(char)* end = str;
+                while (*end != ',' && *end != '\0')
+                    end++;
+                size_t sublen = end - str;
+                if (sublen == 0)
+                    break;
+
+                if (strncmp(fextension, str, sublen) == 0)
+                    return fif;
+
+                if (*end == '\0') // last extension for this format
+                    break;
+
+                str = end + 1;
+            }
+        }
+    }
     return FIF_UNKNOWN;
 }
 
@@ -289,7 +337,7 @@ package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
 
 package void FreeImage_registerInternalPlugins()
 {
-    version(decodePNG)
+    version(encodeOrDecodePNG)
     {
         import gamut.plugins.png;
         registerPNG();

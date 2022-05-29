@@ -1,8 +1,10 @@
 - GAMUT: JPEG loading respecting original content
-- PNG write support
+
 - QOI support
 
 ## Known Limitations
 
 - files of size larger than 2^31-1 bytes are not supported.
-
+- unlike FreeImage, scan lines are not aligned to 32-bit boundaries.
+- `FreeImage_GetLine` returns a signed number of bytes.
+- `FreeImage_GetPitch` return a signed number of bytes.

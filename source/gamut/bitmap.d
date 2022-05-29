@@ -288,6 +288,31 @@ int FreeImage_GetHeight(FIBITMAP *dib) pure
     return dib._height;
 }
 
+/// Return width of the bitmap, in bytes.
+int FreeImage_GetWidthInBytes(FIBITMAP *dib) pure
+{
+    assert(dib._type != FIT_UNKNOWN);
+
+    if (dib._type == FIT_BITMAP)
+    {
+        return dib._width * (dib._bpp / 8);
+    }
+    else
+        return dib._width * bytesForImageType(dib._type);
+}
+
+/// Returns the offset between two consecutive scanlines, in bytes.
+/// Warning: unlike in FreeImage, scanlines are not always aligned on 32-bit boundaries.
+int FreeImage_GetPitch(FIBITMAP *dib) pure
+{
+    // No support for arbitrary pitch right now, only dense supported.
+    // TODO: add a pitch field in FIBITMAP.
+    return FreeImage_GetWidthInBytes(dib);
+}
+
+deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeImage_GetWidthInBytes if you mean that.") 
+    alias FreeImage_GetLine = FreeImage_GetWidthInBytes;
+
 /// Returns a bit pattern describing the red color component of a pixel in a FIBITMAP, returns 0 
 /// otherwise. 
 uint FreeImage_GetRedMask(FIBITMAP *dib) pure

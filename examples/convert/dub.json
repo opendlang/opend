@@ -1,0 +1,10 @@
+{
+    "name": "convert",
+    "description": "Decode an image, reencodes it in another format.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    }
+}

@@ -8,6 +8,7 @@ import gamut.bitmap;
 import gamut.io;
 import gamut.plugin;
 import gamut.codecs.pngload;
+import gamut.codecs.stb_image_write;
 
 // PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
 
@@ -111,10 +112,11 @@ extern(Windows)
     void InitProc_PNG (Plugin *plugin, int format_id)
     {
         assert(format_id == FIF_PNG);
-        plugin.supportsRead = true;    
+        plugin.supportsRead = true;
+        plugin.supportsWrite = true;
 
         plugin.loadProc = &Load_PNG;
-        plugin.saveProc = null;
+        plugin.saveProc = &Save_PNG;
         plugin.validateProc = &Validate_PNG;
         plugin.mimeProc = &MIME_PNG;
     }
@@ -128,6 +130,48 @@ extern(Windows)
     {
         static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
         return fileIsStartingWithSignature(io, handle, pngSignature);
+    }
+
+    bool Save_PNG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
+    {
+        if (page != 0)
+            return false;
+
+        if (!FreeImage_HasPixels(dib))
+            return false; // no pixel data
+
+        if (dib._type != FIT_BITMAP)
+            return false; // no support for say, 16-bit
+
+        int channels = 0;
+        switch (dib._bpp)
+        {
+            case 8:   channels = 1; break;
+            case 16:  channels = 2; break;
+            case 24:  channels = 3; break;
+            case 32:  channels = 4; break;
+            default: break;
+        }
+        if (channels == 0)
+            return false; // unsupported number of channels
+
+        int width = dib._width;
+        int height = dib._height;
+        int pitch = FreeImage_GetPitch(dib);
+        int len;
+        ubyte* pixels = dib._data;
+        ubyte *img = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
+        if (img == null)
+            return false;
+
+        scope(exit) free(img);
+
+        // Write to output at once.
+        // PERF: adapt stb_image_write.h to output in our own buffer directly.
+        if (len != io.write(img, 1, len, handle))
+            return false;
+
+        return true;
     }
 }
 
