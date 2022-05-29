@@ -115,7 +115,7 @@ extern(Windows)
 
         plugin.loadProc = &Load_PNG;
         plugin.saveProc = null;
-        plugin.validateProc = null;
+        plugin.validateProc = &Validate_PNG;
         plugin.mimeProc = &MIME_PNG;
     }
 
@@ -124,6 +124,11 @@ extern(Windows)
         return "image/png".ptr;
     }
 
+    bool Validate_PNG(FreeImageIO *io, fi_handle handle) @trusted
+    {
+        static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+        return fileIsStartingWithSignature(io, handle, pngSignature);
+    }
 }
 
 private:

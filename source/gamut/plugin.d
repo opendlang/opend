@@ -41,12 +41,15 @@ extern(Windows)
     // <need to be setup by FI_InitProc>
 
     /// Function that loads a image from this format.
+    /// I/O rewinding: this function must be given an I/O cursor at the start of the the format.
+    ///                It doesn't have to preserve that I/O cursor.
     alias FI_LoadProc = FIBITMAP* function(FreeImageIO *io, fi_handle handle, int page, int flags, void *data);
 
     /// Function that saves an image from this format.
     alias FI_SaveProc = bool function(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data);
 
     /// Function that detects this format.
+    /// I/O rewinding: this function must preserve the I/O cursor.
     alias FI_ValidateProc = bool function(FreeImageIO *io, fi_handle handle);
 
     /// Function that return a comma-separated list of MIME types.

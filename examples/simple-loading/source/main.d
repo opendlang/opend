@@ -22,12 +22,12 @@ void main(string[] args) @safe
     writefln("Loaded diffuse.jpg from file, in %s ms", tAfter - tBefore);
     writefln("  => width x height = %s x %s", image.width, image.height);
 
-    void[] data = std.file.read("diffuse.jpg");
+    void[] data = std.file.read("material.png");
     tBefore = getTickMs();
     bool success = image.loadFromMemory( data );
     tAfter = getTickMs();
     assert(success);
 
-    writefln("Loaded diffuse.jpg from memory, in %s ms", tAfter - tBefore);
+    writefln("Loaded material.png from memory, in %s ms", tAfter - tBefore);
     writefln("  => width x height = %s x %s", image.width, image.height);
 }

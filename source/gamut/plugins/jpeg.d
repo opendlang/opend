@@ -59,7 +59,7 @@ extern(Windows)
 
         plugin.loadProc = &Load_JPEG;
         plugin.saveProc = null;
-        plugin.validateProc = null;
+        plugin.validateProc = &Validate_JPEG;
         plugin.mimeProc = &MIME_JPEG;
     }
 
@@ -68,6 +68,11 @@ extern(Windows)
         return "image/jpeg".ptr;
     }
 
+    bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
+    {
+        static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
+        return fileIsStartingWithSignature(io, handle, jpegSignature);
+    }
 }
 
 

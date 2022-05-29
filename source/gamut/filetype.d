@@ -38,8 +38,7 @@ FREE_IMAGE_FORMAT FreeImage_GetFileType(const(char)*filename, int size = 0) @tru
 /// identify a bitmap type. Now the bitmap bits are retrieved from an arbitrary place.
 FREE_IMAGE_FORMAT FreeImage_GetFileTypeFromHandle(FreeImageIO *io, fi_handle handle, int size = 0) // Note: size unnused
 {
-    int count = FreeImage_GetFIFCount();
-    for (int fif = 0; fif < count; ++fif)
+    for (int fif = 0; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
     {
         if (FreeImage_ValidateFromHandle(fif, io, handle))
             return fif;

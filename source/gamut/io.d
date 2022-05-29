@@ -53,6 +53,13 @@ struct FreeImageIO
     {
         return seek(handle, 0, SEEK_SET) == 0;
     }
+
+    /// Seek to asolute position in the I/O stream.
+    /// Useful because some function need to preserve it.
+    bool seekAbsolute(fi_handle handle, c_long offset) nothrow @nogc @trusted
+    {
+        return seek(handle, offset, SEEK_SET) == 0;
+    }
 }
 
 
@@ -129,6 +136,24 @@ package void setupFreeImageIOForLogging(ref FreeImageIO io) @trusted
     io.seek  = &debug_fseek;
     io.tell  = &debug_ftell;
     io.eof   = &debug_feof;
+}
+
+package bool fileIsStartingWithSignature(FreeImageIO *io, fi_handle handle, immutable ubyte[] signature)
+{
+    assert(signature.length <= 16);
+
+    // save I/O cursor
+    c_long offset = io.tell(handle);
+
+    ubyte[16] header;
+    bool enoughBytes = (signature.length == io.read(header.ptr, 1, signature.length, handle));
+    bool match = enoughBytes && (signature == header[0..signature.length]);
+
+    // restore I/O cursor
+    if (!io.seekAbsolute(handle, offset))
+        return false; // TODO: that rare error should propagae somehow
+
+    return match;
 }
 
 extern(C) @system
