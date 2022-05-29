@@ -92,7 +92,7 @@ unittest
     {
         import mir.exception;
         import mir.format;
-        stringBuf buf;
+        auto buffer = stringBuf();
         try throw new MirException(buf.print( "Hi D", 2, "!").data);
         catch(Exception e) assert(e.msg == "Hi D2!");
     }
@@ -270,7 +270,7 @@ mixin template MirThrowableImpl()
     {
         static assert (__traits(compiles, {import mir.format;}), "MirThrowableImpl needs mir-algorithm for mir.format and exception formatting.");
         import mir.format;
-        stringBuf buf;
+        auto buf = stringBuf();
         this(buf.print(args).data, file, line, nextInChain);
     }
 }
