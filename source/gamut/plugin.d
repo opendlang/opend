@@ -159,6 +159,16 @@ int FreeImage_IsPluginEnabled(FREE_IMAGE_FORMAT fif) @trusted
     return g_plugins[fif].isEnabled ? FI_TRUE : FI_FALSE;
 }
 
+
+/// This function takes a filename or a file-extension and returns the plugin that can read/write 
+/// files with that extension in the form of a `FREE_IMAGE_FORMAT` identifier.
+FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename)
+{
+    // TODO
+    return FIF_UNKNOWN;
+}
+
+
 /// Returns FI_TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 
 /// load bitmaps, FI_FALSE otherwise.
 bool FreeImage_FIFSupportsReading(FREE_IMAGE_FORMAT fif) @trusted

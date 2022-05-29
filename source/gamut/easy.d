@@ -10,11 +10,14 @@ import gamut.bitmap;
 import gamut.general;
 import gamut.types;
 import gamut.memory;
+import gamut.filetype;
+import gamut.plugin;
 import gamut.internals.cstring;
 
 nothrow @nogc @safe:
 
-/// Image type. Wraps FIBitmap.
+/// Image type.
+/// Internally, it wraps FIBitmap.
 struct Image
 {
 nothrow @nogc @safe:
@@ -33,11 +36,19 @@ public:
         cleanupBitmapIfAny();
 
         CString cstr = CString(path);
-        
-        // TODO: scan type
-        _bitmap = FreeImage_Load(FIF_JPEG, cstr.storage, flags);
 
-        // TODO: deal with failure
+        // Deduce format.
+        FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(cstr.storage, 0);
+        if (fif == FIF_UNKNOWN) 
+        {
+            fif = FreeImage_GetFIFFromFilename(cstr.storage); // try to guess the file format from the file extension
+        }
+
+        // check that the plugin has reading capabilities ...
+        if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) 
+        {
+            _bitmap = FreeImage_Load(fif, cstr.storage, flags);
+        }
 
         return _bitmap !is null;
     }
@@ -53,10 +64,14 @@ public:
         FIMEMORY* stream = FreeImage_OpenMemory(bytes.ptr, bytes.length);
         scope(exit) FreeImage_CloseMemory(stream);
 
-        // TODO: scan type
-        _bitmap = FreeImage_LoadFromMemory(FIF_JPEG, stream, flags);
+        // Deduce format.
+        FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(stream, 0);
 
-        // TODO: deal with failure here
+        // check that the plugin has reading capabilities ...
+        if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) 
+        {
+            _bitmap = FreeImage_LoadFromMemory(fif, stream, flags);
+        }
 
         return _bitmap !is null;
     }

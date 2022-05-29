@@ -223,10 +223,10 @@ extern(C)
 // FreeImage_SaveMultiBitmapToMemory
 
 
-private:
+package:
 
 
-void setupFreeImageIOForMemory(ref FreeImageIO io) @trusted
+void setupFreeImageIOForMemory(ref FreeImageIO io) pure @trusted
 {
     io.read  = cast(ReadProc)  &FreeImage_ReadMemory;
     io.write = cast(WriteProc) null;
@@ -234,6 +234,8 @@ void setupFreeImageIOForMemory(ref FreeImageIO io) @trusted
     io.tell  = cast(TellProc)  &FreeImage_TellMemory;
     io.eof   = cast(EofProc)   &FreeImage_EofMemory;
 }
+
+private:
 
 extern(C)
 {

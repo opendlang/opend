@@ -216,7 +216,7 @@ void FreeImage_Unload(FIBITMAP *dib) @system
 // ================================================================================================
 
 
-
+/// Returns the data type of a bitmap.
 FREE_IMAGE_TYPE FreeImage_GetImageType(FIBITMAP *dib) pure
 {
     return dib._type;
@@ -371,16 +371,16 @@ ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, 
     return data;
 }
 
-@trusted unittest 
+@safe unittest 
 {
     FIBITMAP *bitmap = FreeImage_AllocateT(FIT_RGB16, 257, 183);
     if (bitmap) 
     {
         // bitmap successfully created!
-     /*   assert(FreeImage_GetType(bitmap) == FIT_RGB16);
-        assert(FreeImage_GetWidth(bitmap));
-        assert(FreeImage_GetHeight(bitmap));
-        assert(FreeImage_GetBPP(bitmap) == 48); */
+        assert(FreeImage_GetType(bitmap) == FIT_RGB16);
+        assert(FreeImage_GetWidth(bitmap) == 257);
+        assert(FreeImage_GetHeight(bitmap) == 183);
+        assert(FreeImage_GetBPP(bitmap) == 48);
         FreeImage_Unload(bitmap);
     }
 }
