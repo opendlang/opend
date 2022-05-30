@@ -225,7 +225,7 @@ T unsafeEnumFromIndex(T)(size_t index)
     
     static if (fastConv)
     {
-        return cast(T) index + enumMembers!T[0];
+        return cast(T) (index + enumMembers!T[0]);
     }
     else
     {
@@ -234,6 +234,7 @@ T unsafeEnumFromIndex(T)(size_t index)
 }
 
 ///
+version(mir_core_test)
 unittest
 {
     enum Linear
@@ -242,6 +243,7 @@ unittest
         two = 2
     }
 
+    static assert(is(typeof(unsafeEnumFromIndex!Linear(0)) == Linear));
     assert(unsafeEnumFromIndex!Linear(0) == Linear.one);
     assert(unsafeEnumFromIndex!Linear(1) == Linear.two);
 
