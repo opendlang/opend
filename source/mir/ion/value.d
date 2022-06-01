@@ -730,37 +730,40 @@ version(mir_ion_test) unittest
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test: should;
     alias AliasSeq(T...) = T;
+    import mir.stdio;
     foreach (T; AliasSeq!(byte, short, int, long, ubyte, ushort, uint, ulong))
     {
-        assert(IonValue([0x20]).describe.get!IonUInt.getErrorCode!T == 0);
-        assert(IonValue([0x21, 0x00]).describe.get!IonUInt.getErrorCode!T == 0);
+        debug dump(T.stringof);
+        IonValue([0x20]).describe.get!IonUInt.getErrorCode!T.should == 0;
+        IonValue([0x21, 0x00]).describe.get!IonUInt.getErrorCode!T.should == 0;
 
-        assert(IonValue([0x21, 0x07]).describe.get!IonUInt.get!T == 7);
-        assert(IonValue([0x2E, 0x81, 0x07]).describe.get!IonUInt.get!T == 7);
-        assert(IonValue([0x2A, 0,0,0, 0,0,0, 0,0,0, 0x07]).describe.get!IonUInt.get!T == 7);
+        IonValue([0x21, 0x07]).describe.get!IonUInt.get!T.should == 7;
+        IonValue([0x2E, 0x81, 0x07]).describe.get!IonUInt.get!T.should == 7;
+        IonValue([0x2A, 0,0,0, 0,0,0, 0,0,0, 0x07]).describe.get!IonUInt.get!T.should == 7;
     }
 
-    assert(IonValue([0x21, 0x7F]).describe.get!IonUInt.get!byte == byte.max);
-    assert(IonValue([0x22, 0x7F, 0xFF]).describe.get!IonUInt.get!short == short.max);
-    assert(IonValue([0x24, 0x7F, 0xFF,0xFF,0xFF]).describe.get!IonUInt.get!int == int.max);
-    assert(IonValue([0x28, 0x7F, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!long == long.max);
-    assert(IonValue([0x2A, 0,0, 0x7F, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!long == long.max);
+    IonValue([0x21, 0x7F]).describe.get!IonUInt.get!byte.should == byte.max;
+    IonValue([0x22, 0x7F, 0xFF]).describe.get!IonUInt.get!short.should == short.max;
+    IonValue([0x24, 0x7F, 0xFF,0xFF,0xFF]).describe.get!IonUInt.get!int.should == int.max;
+    IonValue([0x28, 0x7F, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!long.should == long.max;
+    IonValue([0x2A, 0,0, 0x7F, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!long.should == long.max;
 
-    assert(IonValue([0x21, 0xFF]).describe.get!IonUInt.get!ubyte == ubyte.max);
-    assert(IonValue([0x22, 0xFF, 0xFF]).describe.get!IonUInt.get!ushort == ushort.max);
-    assert(IonValue([0x24, 0xFF, 0xFF,0xFF,0xFF]).describe.get!IonUInt.get!uint == uint.max);
-    assert(IonValue([0x28, 0xFF, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!ulong == ulong.max);
-    assert(IonValue([0x2A, 0,0, 0xFF, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!ulong == ulong.max);
+    IonValue([0x21, 0xFF]).describe.get!IonUInt.get!ubyte.should == ubyte.max;
+    IonValue([0x22, 0xFF, 0xFF]).describe.get!IonUInt.get!ushort.should == ushort.max;
+    IonValue([0x24, 0xFF, 0xFF,0xFF,0xFF]).describe.get!IonUInt.get!uint.should == uint.max;
+    IonValue([0x28, 0xFF, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!ulong.should == ulong.max;
+    IonValue([0x2A, 0,0, 0xFF, 0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF]).describe.get!IonUInt.get!ulong.should == ulong.max;
 
-    assert(IonValue([0x21, 0x80]).describe.get!IonUInt.getErrorCode!byte == IonErrorCode.overflowInIntegerValue);
-    assert(IonValue([0x22, 0x80, 0]).describe.get!IonUInt.getErrorCode!short == IonErrorCode.overflowInIntegerValue);
-    assert(IonValue([0x24, 0x80, 0,0,0]).describe.get!IonUInt.getErrorCode!int == IonErrorCode.overflowInIntegerValue);
+    IonValue([0x21, 0x80]).describe.get!IonUInt.getErrorCode!byte.should == IonErrorCode.overflowInIntegerValue;
+    IonValue([0x22, 0x80, 0]).describe.get!IonUInt.getErrorCode!short.should == IonErrorCode.overflowInIntegerValue;
+    IonValue([0x24, 0x80, 0,0,0]).describe.get!IonUInt.getErrorCode!int.should == IonErrorCode.overflowInIntegerValue;
 
-    assert(IonValue([0x22, 1, 0]).describe.get!IonUInt.getErrorCode!ubyte == IonErrorCode.overflowInIntegerValue);
-    assert(IonValue([0x23, 1, 0,0]).describe.get!IonUInt.getErrorCode!ushort == IonErrorCode.overflowInIntegerValue);
-    assert(IonValue([0x25, 1, 0,0,0,0]).describe.get!IonUInt.getErrorCode!uint == IonErrorCode.overflowInIntegerValue);
-    assert(IonValue([0x29, 1, 0,0,0,0,0,0,0,0]).describe.get!IonUInt.getErrorCode!ulong == IonErrorCode.overflowInIntegerValue);
+    IonValue([0x22, 1, 0]).describe.get!IonUInt.getErrorCode!ubyte.should == IonErrorCode.overflowInIntegerValue;
+    IonValue([0x23, 1, 0,0]).describe.get!IonUInt.getErrorCode!ushort.should == IonErrorCode.overflowInIntegerValue;
+    IonValue([0x25, 1, 0,0,0,0]).describe.get!IonUInt.getErrorCode!uint.should == IonErrorCode.overflowInIntegerValue;
+    IonValue([0x29, 1, 0,0,0,0,0,0,0,0]).describe.get!IonUInt.getErrorCode!ulong.should == IonErrorCode.overflowInIntegerValue;
 }
 
 /++

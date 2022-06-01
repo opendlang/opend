@@ -1184,13 +1184,14 @@ version(mir_ion_parser_test) unittest
 /// Test that strings are being de-serialized properly
 version(mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         const(char)[] output = ionData.text2ion.IonValueStream.serializeText;
-        assert(output == expected);
+        output.should == expected;
     }
 
     test(`"hello"`, `"hello"`);
@@ -1346,6 +1347,7 @@ version (mir_ion_parser_test) unittest
 /// Test that infinity & negative infinity are deserialized properly.
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.value : IonFloat;
     import mir.ion.conv : text2ion;
     import mir.ion.stream;
@@ -1353,7 +1355,7 @@ version (mir_ion_parser_test) unittest
     {
         foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonFloat);
-            assert(v.get!float == expected);
+            v.get!float.should == expected;
         }
     }
 
@@ -1383,6 +1385,7 @@ version (mir_ion_parser_test) unittest
 /// Test that signed / unsigned integers and decimals and floats are all deserialized properly.
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.value;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
@@ -1390,7 +1393,7 @@ version (mir_ion_parser_test) unittest
     {
         foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonUInt);
-            assert(v.get!ulong == expected);
+            v.get!ulong.should == expected;
         }
     }
 
@@ -1398,7 +1401,7 @@ version (mir_ion_parser_test) unittest
     {
         foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonNInt);
-            assert(v.get!long == expected);
+            v.get!long.should == expected;
         }
     }
 
@@ -1406,7 +1409,7 @@ version (mir_ion_parser_test) unittest
     {
         foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonDecimal);
-            assert(v.get!double == expected);
+            v.get!double.should == expected;
         }
     }
 
@@ -1414,7 +1417,7 @@ version (mir_ion_parser_test) unittest
     {
         foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonFloat);
-            assert(v.get!float == expected);
+            v.get!float.should == expected;
         }
     }
 
@@ -1551,13 +1554,14 @@ version (mir_ion_parser_test) unittest
 /// Test that structs are getting de-serialized properly 
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`{"test":"world", test: false, 'test': usd::123.456, '''test''': "asdf"}`,
@@ -1575,13 +1579,14 @@ version (mir_ion_parser_test) unittest
 /// Test that sexps are getting de-serialized properly.
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`(this is a sexp list)`, "(this is a sexp list)");
@@ -1594,13 +1599,14 @@ version (mir_ion_parser_test) unittest
 /// Test that arrays are getting de-serialized properly.
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`[hello, world]`, `[hello,world]`);
@@ -1616,13 +1622,14 @@ version (mir_ion_parser_test) unittest
 /// Test that annotations work with symbols
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ser.text;
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`'test'::'hello'::'world'`, "test::hello::world");
@@ -1638,13 +1645,14 @@ version (mir_ion_parser_test) unittest
 /// Test that annotations work with floats
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`usd::10.50e0`, "usd::10.5");
@@ -1655,13 +1663,14 @@ version (mir_ion_parser_test) unittest
 /// Test that annotations work with decimals 
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`Types::Speed::MetersPerSecondSquared::9.81`, "Types::Speed::MetersPerSecondSquared::9.81");
@@ -1678,13 +1687,14 @@ version (mir_ion_parser_test) unittest
 /// Test that annotations work with strings
 version (mir_ion_parser_test) unittest
 {
+    import mir.test: should;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ser.text;
     void test(const(char)[] ionData, const(char)[] expected)
     {
         auto v = ionData.text2ion.IonValueStream.serializeText;
-        assert(v == expected);
+        v.should == expected;
     }
 
     test(`Password::"Super Secure Password"`, `Password::"Super Secure Password"`);
