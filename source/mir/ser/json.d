@@ -20,7 +20,6 @@ struct JsonSerializer(string sep, Appender)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
-    import mir.bignum.low_level_view: BigIntView, WordEndian;
     import mir.ion.type_code;
     import mir.lob;
     import mir.timestamp;
@@ -289,18 +288,6 @@ scope:
     }
 
     ///
-    void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
-    {
-        BigInt!256 num = void;
-        if (auto overflow = num.copyFrom(view))
-        {
-            static immutable exc = new SerdeException("JsonSerializer: overflow when converting " ~ typeof(view).stringof ~ " to " ~ typeof(num).stringof);
-            throw exc;
-        }
-        putValue(num);
-    }
-
-    ///
     void putValue(size_t size)(auto ref const BigInt!size num)
     {
         num.toString(appender);
@@ -396,7 +383,7 @@ unittest
     import mir.small_string;
 
     SmallString!8 smll = SmallString!8("ciaociao");
-    stringBuf buffer;
+    auto buffer = stringBuf;
 
     serializeJson(buffer, smll);
     assert(buffer.data == `"ciaociao"`);
@@ -538,7 +525,7 @@ JSON serialization for custom outputt range.
 unittest
 {
     import mir.format: stringBuf;
-    stringBuf buffer;
+    auto buffer = stringBuf;
     static struct S { int a; }
     serializeJson(buffer, S(4));
     assert(buffer.data == `{"a":4}`);
@@ -585,7 +572,7 @@ unittest
 unittest
 {
     import mir.format: stringBuf;
-    stringBuf buffer;
+    auto buffer = stringBuf;
     static struct S { int a; }
     serializeJsonPretty!"    "(buffer, S(4));
     assert(buffer.data == "{\n    \"a\": 4\n}");
@@ -610,7 +597,7 @@ template jsonSerializer(string sep = "")
     import mir.format: stringBuf;
     import mir.bignum.integer;
 
-    stringBuf buffer;
+    auto buffer = stringBuf;
     auto ser = jsonSerializer((()@trusted=>&buffer)(), 3);
     auto state0 = ser.structBegin;
 

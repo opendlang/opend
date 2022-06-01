@@ -507,6 +507,7 @@ immutable(ubyte)[] ion2msgpack()(scope const(ubyte)[] data)
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     foreach(text; [
         `null`,
         `true`,
@@ -520,5 +521,5 @@ version(mir_ion_test) unittest
         `{}`,
         `{d:2001-01-02T03:04:05Z}`,
     ])
-        assert(text.text2ion.ion2msgpack.msgpack2ion.ion2text == text, text);
+        text.text2ion.ion2msgpack.msgpack2ion.ion2text.should == text;
 }

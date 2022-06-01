@@ -11,7 +11,11 @@ dependency "mir-cpuid" version="~>1.2.6"
 configuration "library" {
 }
 
-configuration "unittest" {
+configuration "silly" {
+    dependency "silly" version="~>1.1.1"
+}
+
+buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
     versions "mir_ion_test" "mir_ion_parser_test"
@@ -22,12 +26,12 @@ buildType "unittest-release" {
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
-configuration "asan-unittest" {
+buildType "asan-unittest" {
     dflags "--fsanitize=address" platform="ldc"
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
-configuration "parser-test" {
+buildType "parser-test" {
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
     versions "mir_ion_parser_test"

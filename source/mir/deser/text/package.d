@@ -253,7 +253,7 @@ private:
                 // This code is very similar to the string handling code,
                 // but we put the data on a scoped buffer rather then using the serializer
                 // to put a string by parts.
-                stringBuf buf;
+                auto buf = stringBuf;
                 IonTextString v;
                 if (t.currentToken == TokenString)
                 {
@@ -348,7 +348,7 @@ private:
                         }
                         ser.putKey(val.matchedText);
                     } else {
-                        stringBuf buf;
+                        auto buf = stringBuf;
                         buf.put(val.matchedText);
                         while (!val.isFinal) {
                             val = t.readValue!(tok);
@@ -599,7 +599,7 @@ private:
     {
         // The use of a scoped buffer is inevitable, as quoted symbols
         // may contain UTF code points, which we read out separately
-        stringBuf buf;
+        auto buf = stringBuf;
         const(char)[] symbolText;
 
         if (t.currentToken == IonTokenType.TokenSymbol)
@@ -846,7 +846,7 @@ private:
             return;
         }
 
-        Decimal!256 dec = void;
+        Decimal!128 dec = void;
         DecimalExponentKey exponentKey;
         // special values are handled within the tokenizer and emit different token types
         // i.e. nan == IonTokenType.TokenFloatNaN, +inf == IonTokenType.TokenFloatInf, etc
@@ -952,7 +952,7 @@ private:
     void onBinaryNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenBinary);
-        BigInt!256 val = void;
+        BigInt!128 val = void;
         if (v[0] == '-')
         {
             val.fromBinaryStringImpl!(char, true)(v[3 .. $]); // skip over the negative + 0b
@@ -969,7 +969,7 @@ private:
     void onHexNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenHex);
-        BigInt!256 val = void;
+        BigInt!128 val = void;
         if (v[0] == '-')
         {
             val.fromHexStringImpl!(char, true)(v[3 .. $]); // skip over the negative + 0x
@@ -1005,7 +1005,7 @@ private:
     void onLob() @safe pure
     {
         import mir.lob;
-        stringBuf buf;
+        auto buf = stringBuf;
 
         char c = t.skipLobWhitespace();
         if (c == '"')

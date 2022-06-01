@@ -5,8 +5,6 @@ AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
 module mir.ion.value;
 
 import mir.bignum.decimal: Decimal;
-import mir.bignum.low_level_view;
-import mir.bignum.low_level_view: BigUIntView;
 import mir.ion.exception;
 import mir.ion.type_code;
 import mir.lob;
@@ -421,12 +419,12 @@ struct IonDescribedValue
         else
         static if (is(T == IonUInt) || is(T == IonNInt) || is(T == IonSymbolID))
         {
-            return T(BigUIntView!(const ubyte, WordEndian.big)(data));
+            return T(data);
         }
         else
         static if (is(T == IonInt))
         {
-            return T(BigIntView!(const ubyte, WordEndian.big)(data, descriptor.type & 1));
+            return T(descriptor.type & 1, data);
         }
         else
         {
@@ -653,17 +651,17 @@ Ion non-negative integer number.
 struct IonUInt
 {
     ///
-    BigUIntView!(const ubyte, WordEndian.big) field;
+    const(ubyte)[] data;
 
 
-    /++
-    Returns: true if the integer isn't `null.int` and equals to `rhs`.
-    +/
-    bool opEquals(ulong rhs)
-        @safe pure nothrow @nogc const
-    {
-        return field == rhs;
-    }
+    // /++
+    // Returns: true if the integer isn't `null.int` and equals to `rhs`.
+    // +/
+    // bool opEquals(ulong rhs)
+    //     @safe pure nothrow @nogc const
+    // {
+    //     return field == rhs;
+    // }
 
     /++
     Params:
@@ -676,12 +674,12 @@ struct IonUInt
     {
         static if (isUnsigned!T)
         {
-            return field.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
+            return data.IonSymbolID.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
         }
         else
         {
-            if (auto overflow = field.get(*cast(Unsigned!T*)&value))
-                return IonErrorCode.overflowInIntegerValue;
+            if (auto error = this.get(*cast(Unsigned!T*)&value))
+                return error.overflowInIntegerValue;
             if (_expect(value < 0, false))
                 return IonErrorCode.overflowInIntegerValue;
             return IonErrorCode.none;
@@ -720,12 +718,13 @@ struct IonUInt
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     assert(IonValue([0x2F]).describe.get!IonNull == IonNull(IonTypeCode.uInt));
     assert(IonValue([0x21, 0x07]).describe.get!IonUInt.get!int == 7);
 
     int v;
     assert(IonValue([0x22, 0x01, 0x04]).describe.get!IonUInt.get(v) == IonErrorCode.none);
-    assert(v == 260);
+    v.should == 260;
 }
 
 @safe pure
@@ -770,18 +769,18 @@ Ion negative integer number.
 struct IonNInt
 {
     ///
-    BigUIntView!(const ubyte, WordEndian.big) field;
+    const(ubyte)[] data;
 
-    /++
-    Returns: true if the integer isn't `null.int` and equals to `rhs`.
-    +/
-    bool opEquals(long rhs)
-        @safe pure nothrow @nogc const
-    {
-        if (rhs >= 0)
-            return false;
-        return IonUInt(field) == -rhs;
-    }
+    // /++
+    // Returns: true if the integer isn't `null.int` and equals to `rhs`.
+    // +/
+    // bool opEquals(long rhs)
+    //     @safe pure nothrow @nogc const
+    // {
+    //     if (rhs >= 0)
+    //         return false;
+    //     return IonUInt(data) == -rhs;
+    // }
 
     /++
     Params:
@@ -798,7 +797,7 @@ struct IonNInt
         }
         else
         {
-            if (auto overflow = field.get(*cast(Unsigned!T*)&value))
+            if (auto overflow = data.IonUInt.get(*cast(Unsigned!T*)&value))
                 return IonErrorCode.overflowInIntegerValue;
             value = cast(T)(0-value);
             if (_expect(value >= 0, false))
@@ -839,12 +838,13 @@ struct IonNInt
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     assert(IonValue([0x3F]).describe.get!IonNull == IonNull(IonTypeCode.nInt));
     assert(IonValue([0x31, 0x07]).describe.get!IonNInt.get!int == -7);
 
     long v;
     assert(IonValue([0x32, 0x01, 0x04]).describe.get!IonNInt.get(v) == IonErrorCode.none);
-    assert(v == -260);
+    v.should == -260;
 
     // IonNInt can't store zero according to the Ion Binary format specification.
     assert(IonValue([0x30]).describe.get!IonNInt.getErrorCode!byte == IonErrorCode.overflowInIntegerValue);
@@ -890,7 +890,9 @@ Ion signed integer number.
 struct IonInt
 {
     ///
-    BigIntView!(const ubyte, WordEndian.big) field;
+    bool sign;
+    ///
+    const(ubyte)[] data;
 
 
     /++
@@ -904,19 +906,19 @@ struct IonInt
     {
         static if (isUnsigned!T)
         {
-            if (_expect(field.sign, false))
+            if (_expect(sign, false))
                 return IonErrorCode.overflowInIntegerValue;
         }
 
-        if (auto overflow = field.unsigned.get(*cast(Unsigned!T*)&value))
+        if (auto overflow = data.IonUInt.get(*cast(Unsigned!T*)&value))
             return IonErrorCode.overflowInIntegerValue;
 
         static if (isSigned!T)
         {
             auto nvalue = cast(T)(0-value);
-            if (_expect((nvalue > 0) | (nvalue == 0) & field.sign , false))
+            if (_expect((nvalue > 0) | (nvalue == 0) & sign , false))
                 return IonErrorCode.overflowInIntegerValue;
-            if (field.sign)
+            if (sign)
                 value = nvalue;
         }
 
@@ -956,7 +958,8 @@ struct IonInt
     +/
     void serialize(S)(scope ref S serializer) const
     {
-        BigIntView!(const ubyte, WordEndian.big) f = field;
+        import mir.bignum.integer: BigInt;
+        auto f = BigInt!128.fromBigEndian(data, sign);
         serializer.putValue(f);
     }
 }
@@ -966,6 +969,7 @@ struct IonInt
 version(mir_ion_test) unittest
 {
     import mir.ion.exception;
+    import mir.test;
 
     assert(IonValue([0x2F]).describe.get!IonNull == IonNull(IonTypeCode.uInt));
     assert(IonValue([0x21, 0x07]).describe.get!IonInt.get!int == 7);
@@ -973,7 +977,7 @@ version(mir_ion_test) unittest
 
     int v;
     assert(IonValue([0x22, 0x01, 0x04]).describe.get!IonInt.get(v) == IonErrorCode.none);
-    assert(v == 260);
+    v.should == 260;
 }
 
 /// test with $(LREF IonNInt)s
@@ -981,13 +985,14 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.ion.exception;
+    import mir.test;
 
     assert(IonValue([0x3F]).describe.get!IonNull == IonNull(IonTypeCode.nInt));
     assert(IonValue([0x31, 0x07]).describe.get!IonInt.get!int == -7);
 
     long v;
     assert(IonValue([0x32, 0x01, 0x04]).describe.get!IonInt.get(v) == IonErrorCode.none);
-    assert(v == -260);
+    v.should == -260;
 
     // IonNInt can't store zero according to the Ion Binary format specification.
     assert(IonValue([0x30]).describe.get!IonInt.getErrorCode!byte == IonErrorCode.overflowInIntegerValue);
@@ -1120,23 +1125,30 @@ struct IonDescribedDecimal
     IonErrorCode get(size_t maxW64bitSize)(scope ref Decimal!maxW64bitSize value)
         @safe pure nothrow @nogc const
     {
-        const length = coefficient.data.length;
         enum maxLength = maxW64bitSize * 8;
-        if (_expect(length > maxLength, false))
+        if (!value.coefficient.copyFromBigEndian(coefficient.data))
             return IonErrorCode.overflowInDecimalValue;
         value.exponent = exponent;
-        value.coefficient.length = cast(uint) (length / size_t.sizeof + (length % size_t.sizeof != 0));
-        value.coefficient.sign = false;
         if (value.coefficient.length == 0)
             return IonErrorCode.none;
-        value.coefficient.view.unsigned.mostSignificant = 0;
-        auto lhs = value.coefficient.view.unsigned.opCast!(BigUIntView!ubyte).leastSignificantFirst[0 .. length];
-        import mir.ndslice.topology: retro;
-        lhs[] = coefficient.data.retro;
         if (bool sign = coefficient.data[0] >> 7)
         {
             value.coefficient.sign = true;
-            lhs[$ - 1] &= 0x7F;
+            import mir.ndslice.topology: bitwise;
+            assert(value
+                .coefficient
+                .coefficients
+                .bitwise[coefficient.data.length * 8 - 1]);
+            value
+                .coefficient
+                .coefficients
+                .bitwise[coefficient.data.length * 8 - 1] = false;
+            assert(!value
+                .coefficient
+                .coefficients
+                .bitwise[coefficient.data.length * 8 - 1]);
+            if (value.coefficient.coefficients[$ - 1] == 0)
+                value.coefficient.length--;
         }
         return IonErrorCode.none;
     }
@@ -1150,7 +1162,7 @@ struct IonDescribedDecimal
         @safe pure nothrow @nogc const
         if (isFloatingPoint!T && isMutable!T)
     {
-        Decimal!256 decimal = void;
+        Decimal!128 decimal = void;
         if (auto ret = this.get(decimal))
             return ret;
         value = cast(T) decimal;
@@ -1180,7 +1192,7 @@ struct IonDescribedDecimal
         @trusted pure nothrow @nogc const
         if (isFloatingPoint!T)
     {
-        Decimal!256 decimal = void;
+        Decimal!128 decimal = void;
         return get!T(decimal);
     }
 
@@ -1190,7 +1202,7 @@ struct IonDescribedDecimal
     +/
     void serialize(S)(scope ref S serializer) const
     {
-        Decimal!256 decimal = void;
+        Decimal!128 decimal = void;
         if (auto error = this.get(decimal))
             throw error.ionException;
         serializer.putValue(decimal);
@@ -1283,6 +1295,7 @@ struct IonDecimal
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     // null.decimal
     assert(IonValue([0x5F]).describe.get!IonNull == IonNull(IonTypeCode.decimal));
 
@@ -1291,7 +1304,7 @@ version(mir_ion_test) unittest
     assert(describedDecimal.coefficient.get!int == -12332422);
 
     describedDecimal = IonValue([0x56, 0x00, 0xcb, 0x80, 0xbc, 0x2d, 0x86]).describe.get!IonDecimal.get;
-    assert(describedDecimal.get!double == -12332422e75);
+    describedDecimal.get!double.should == -12332422e75;
 
     assert(IonValue([0x50]).describe.get!IonDecimal.get!double == 0);
     assert(IonValue([0x51, 0x83]).describe.get!IonDecimal.get!double == 0);
@@ -1505,7 +1518,7 @@ If L is zero then the symbol ID is zero and the length and symbol ID fields are 
 struct IonSymbolID
 {
     ///
-    BigUIntView!(const ubyte, WordEndian.big) representation;
+    const(ubyte)[] data;
 
     /++
     Params:
@@ -1516,7 +1529,24 @@ struct IonSymbolID
         @safe pure nothrow @nogc const
         if (isUnsigned!T)
     {
-        return representation.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
+        auto d = data[];
+
+        while (_expect(d.length && d[0] == 0, false))
+            d = d[1 .. $];
+
+        if (_expect(d.length > value.sizeof, false))
+            return IonErrorCode.overflowInIntegerValue;
+
+        value = 0;
+
+        while (d.length)
+        {
+            value <<= 8;
+            value |= d[0];
+            d = d[1 .. $];
+        }
+
+        return IonErrorCode.none;
     }
 
     /++
@@ -1552,8 +1582,8 @@ struct IonSymbolID
     void serialize(S)(scope ref S serializer) const
     {
         size_t id;
-        if (auto overflow = representation.get(id))
-            throw IonErrorCode.overflowInSymbolId.ionException;
+        if (auto err = get(id))
+            throw err.ionException;
         serializer.putSymbolId(id);
     }
 }
@@ -1562,12 +1592,13 @@ struct IonSymbolID
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     assert(IonValue([0x7F]).describe.get!IonNull == IonNull(IonTypeCode.symbol));
     assert(IonValue([0x71, 0x07]).describe.get!IonSymbolID.get == 7);
 
     size_t v;
     assert(IonValue([0x72, 0x01, 0x04]).describe.get!IonSymbolID.get(v) == IonErrorCode.none);
-    assert(v == 260);
+    v.should == 260;
 }
 
 @safe pure

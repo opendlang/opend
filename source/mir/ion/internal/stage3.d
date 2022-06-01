@@ -31,15 +31,12 @@ void stage3(alias fetchNext, Table)(ref Stage3State stage, ref Table symbolTable
 {
     version(LDC) pragma(inline, true);
 
-    import mir.bignum.decimal: Decimal, DecimalExponentKey;
 
     enum stackLength = 1024;
     size_t currentTapePositionSkip;
     sizediff_t stackPos = stackLength;
     sizediff_t stackPosSkip = -1;
     size_t[stackLength] stack = void;
-    enum w64Length = 1;
-    Decimal!w64Length decimal = void;
 
     with(stage){
 
@@ -482,40 +479,14 @@ value_start: {
             index += numberLength;
         }
 
-        DecimalExponentKey exponentKey;
-
-        enum bool allowSpecialValues = false;
-        enum bool allowDotOnBounds = false;
-        enum bool allowDExponent = false;
-        enum bool allowStartingPlus = false;
-        enum bool allowUnderscores = false;
-        enum bool allowLeadingZeros = false;
-        enum bool allowExponent = true;
-        enum bool checkEmpty = false;
-
-        if (!decimal.fromStringImpl!(
-            char,
-            allowSpecialValues,
-            allowDotOnBounds,
-            allowDExponent,
-            allowStartingPlus,
-            allowUnderscores,
-            allowLeadingZeros,
-            allowExponent,
-            checkEmpty,
-        )(numberStringView, exponentKey))
+        import mir.bignum.internal.parse: parseJsonNumberImpl;
+        auto result = numberStringView.parseJsonNumberImpl;
+        if (!result.success)
             goto unexpected_decimal_value;
 
-        if (!exponentKey) // integer
+        if (!result.key) // integer
         {
-            auto unsignedView = decimal.coefficient.view.unsigned;
-            static if (w64Length > 1)
-            {
-                if (_expect(unsignedView.coefficients.length > ulong.sizeof / size_t.sizeof, false))
-                    goto integerOverflow;
-            }
-            auto word = cast(ulong) unsignedView;
-            currentTapePosition += ionPut(tape.ptr + currentTapePosition, word, word && decimal.coefficient.sign);
+            currentTapePosition += ionPut(tape.ptr + currentTapePosition, result.coefficient, result.coefficient && result.sign);
             goto next;
             // // else
             // {
@@ -531,8 +502,12 @@ value_start: {
         // }
         else
         {
+            import mir.bignum.internal.dec2float: decimalToFloatImpl;
+            auto fp = decimalToFloatImpl!double(result.coefficient, result.exponent);
+            if (result.sign)
+                fp = -fp;
             // sciencific
-            currentTapePosition += ionPut(tape.ptr + currentTapePosition, decimal.opCast!(double, true));
+            currentTapePosition += ionPut(tape.ptr + currentTapePosition, fp);
             goto next;
         }
     }

@@ -18,7 +18,8 @@ struct S
 interface ISerializer
 {
     import mir.bignum.decimal: Decimal;
-    import mir.bignum.low_level_view: BigIntView, WordEndian;
+    import mir.bignum.integer: BigInt;
+    import mir.bignum.low_level_view: BigIntView;
     import mir.ion.type_code: IonTypeCode;
     import mir.lob: Blob, Clob;
     import mir.timestamp : Timestamp;
@@ -127,10 +128,10 @@ interface ISerializer
     void putValue(real value);
 
     ///
-    void putValue(BigIntView!(const ubyte, WordEndian.big) value);
+    void putValue(ref const BigInt!128 value);
 
     ///
-    void putValue(ref const Decimal!256 value);
+    void putValue(ref const Decimal!128 value);
 
     ///
     void putValue(typeof(null));
@@ -283,12 +284,12 @@ final class SerializerWrapper(S) : ISerializer
         return serializer.putValue(value);
     }
 
-    void putValue(BigIntView!(const ubyte, WordEndian.big) value)
+    void putValue(ref const BigInt!128 value)
     {
         return serializer.putValue(value);
     }
 
-    void putValue(ref const Decimal!256 value)
+    void putValue(ref const Decimal!128 value)
     {
         return serializer.putValue(value);
     }

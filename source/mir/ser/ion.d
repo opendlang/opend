@@ -16,7 +16,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
-    import mir.bignum.low_level_view: BigIntView, WordEndian;
+    import mir.bignum.low_level_view: BigIntView;
     import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
     import mir.ion.tape;
     import mir.ion.type_code;
@@ -215,7 +215,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
-    void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
+    void putValue(W)(BigIntView!W view)
     {
         auto len = view.unsigned.coefficients.length;
         tapeHolder.reserve(len * size_t.sizeof + 16);
@@ -591,7 +591,7 @@ template ionSerializer(string sep = "")
     // import mir.format: stringBuf;
     // import mir.bignum.integer;
 
-    // stringBuf buffer;
+    // auto buffer = stringBuf;
     // auto ser = ionSerializer((()@trusted=>&buffer)());
     // auto state0 = ser.structBegin;
 

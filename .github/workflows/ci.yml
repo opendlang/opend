@@ -30,7 +30,7 @@ jobs:
             ubuntu-latest-build-
       - name: Run unittests
         run: |
-          dub test -c asan-unittest --compiler=ldc2
+          dub test -b asan-unittest --compiler=ldc2
 
   setup:
     name: 'Load job configuration'

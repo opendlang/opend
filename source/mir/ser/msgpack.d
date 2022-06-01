@@ -10,7 +10,7 @@ import mir.ion.exception: IonException;
 import mir.serde: SerdeTarget;
 
 version(D_Exceptions) {
-    private static immutable bigIntConvException = new IonException("Overflow when converting BigIntView");
+    private static immutable bigIntConvException = new IonException("Overflow when converting BigInt");
     private static immutable msgpackAnnotationException = new IonException("MsgPack can store exactly one annotation.");
     private static immutable stringTooLargeException = new IonException("Too large of a string for MessagePack");
     private static immutable blobTooLargeException = new IonException("Too large of a blob for MessagePack");
@@ -125,7 +125,6 @@ struct MsgpackSerializer(Appender)
         import mir.appender: ScopedBuffer;
         import mir.bignum.decimal: Decimal;
         import mir.bignum.integer: BigInt;
-        import mir.bignum.low_level_view: BigIntView, WordEndian;
         import mir.ion.symbol_table: IonSymbolTable, IonSystemSymbolTable_v1;
         import mir.ion.tape;
         import mir.ion.type_code;
@@ -451,18 +450,12 @@ scope:
         }
 
         ///
-        void putValue(W, WordEndian endian)(BigIntView!(W, endian) view)
-        {
-            auto res = cast(long)view;
-            if (res != view)
-                throw bigIntConvException;
-            putValue(res);
-        }
-
-        ///
         void putValue(size_t size)(auto ref const BigInt!size num)
         {
-            putValue(num.view);
+            auto res = cast(long)num;
+            if (res != num)
+                throw bigIntConvException;
+            putValue(res);
         }
 
         ///

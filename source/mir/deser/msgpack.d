@@ -167,7 +167,7 @@ private static void handleMsgPackElement(S)(scope ref S serializer, MessagePackF
 
                 MessagePackFmt keyType = cast(MessagePackFmt)data[0];
                 data = data[1 .. $];
-                stringBuf keyBuf;
+                auto keyBuf = stringBuf;
                 uint keyLength = 0;
                 switch (keyType)
                 {

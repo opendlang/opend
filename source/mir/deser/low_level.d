@@ -198,7 +198,7 @@ IonErrorCode deserializeValueImpl(T : BigInt!maxSize64, size_t maxSize64)(IonDes
     IonInt ionValue;
     if (auto error = data.get(ionValue))
         return error;
-    if (value.copyFrom(ionValue.field))
+    if (!value.copyFromBigEndian(ionValue.data, ionValue.sign))
         return IonErrorCode.integerOverflow;
     return IonErrorCode.none;
 }
@@ -211,7 +211,7 @@ version(mir_ion_test) unittest
     import mir.bignum.integer;
 
     auto data = IonValue([0x31, 0x07]).describe;
-    BigInt!256 value = void; // 256x64
+    BigInt!128 value = void; // 256x64
 
     assert(deserializeValueImpl(data, value) == IonErrorCode.none);
     assert(value.sign);
@@ -302,7 +302,11 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
             IonInt ionValue;
             if (auto error = data.get(ionValue))
                 return error;
-            value = cast(T) ionValue.field;
+            import mir.bignum.integer;
+            BigInt!128 integer = void;
+            if(!integer.copyFromBigEndian(ionValue.data, ionValue.sign))
+                return IonErrorCode.overflowInIntegerValue;
+            value = cast(T) integer;
             return IonErrorCode.none;
         }
         else
@@ -312,7 +316,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
                 return error;
 
             import mir.bignum.decimal;
-            Decimal!256 decimal = void;
+            Decimal!128 decimal = void;
             DecimalExponentKey exponentKey;
 
             enum bool allowSpecialValues = true;
@@ -391,7 +395,7 @@ version(mir_ion_test) unittest
     import mir.ion.exception;
     import mir.bignum.decimal;
 
-    Decimal!256 value; // 256x64 bits
+    Decimal!128 value; // 256x64 bits
 
     // from ion decimal
     auto data = IonValue([0x56, 0x00, 0xcb, 0x80, 0xbc, 0x2d, 0x86]).describe;
@@ -442,7 +446,7 @@ version(mir_ion_test) unittest
     import mir.ion.exception;
     import mir.bignum.decimal;
 
-    Decimal!256 value; // 256x64 bits
+    Decimal!128 value; // 256x64 bits
 
     // from ion decimal
     auto data = IonValue([0x56, 0x00, 0xcb, 0x80, 0xbc, 0x2d, 0x86]).describe;

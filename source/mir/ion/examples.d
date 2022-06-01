@@ -763,7 +763,7 @@ version(mir_ion_test) unittest
     import mir.deser.json: deserializeJson;
     import mir.format: stringBuf;
 
-    stringBuf buffer;
+    auto buffer = stringBuf;
     serializeJson(buffer, toto);
     auto description = buffer.data;
     assert(description == q{{"a":[[0,1,2],[3,4,5]],"b":[5,5]}});
@@ -1365,4 +1365,23 @@ unittest
     assert(V(D(123)).serializeText == `{tag:data,num:123}`);
     assert(`{tag:data,num:123}`.deserializeText!V == D(123));
     assert(`{val:"str",tag:gr}`.deserializeText!V == G("str"));
+}
+
+
+///
+version(mir_ion_test)
+unittest
+{
+    import mir.ser.text;
+    import mir.deser.text;
+
+    @serdeProxy!int
+    enum Foo
+    {
+        a = 1,
+        b = 2
+    }
+
+    assert((cast(Foo)6).serializeText == "6", Foo.b.serializeText);
+    assert("6".deserializeText!Foo == 6);
 }

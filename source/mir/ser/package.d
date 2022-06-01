@@ -211,7 +211,7 @@ void serializeValue(S, V)(scope ref S serializer, auto ref V value)
     static if (isSomeChar!(ForeachType!V))
     {
         import mir.format: stringBuf;
-        stringBuf buf;
+        auto buf = stringBuf;
         foreach (elem; value)
             buf.put(elem);
         serializer.putValue(buf.data);
