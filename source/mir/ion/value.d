@@ -670,7 +670,7 @@ struct IonUInt
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
-        if (isIntegral!T)
+        if (isIntegral!T && T.sizeof >= 4)
     {
         static if (isUnsigned!T)
         {
@@ -686,6 +686,23 @@ struct IonUInt
                 return IonErrorCode.overflowInIntegerValue;
             return IonErrorCode.none;
         }
+    }
+
+    /// ditto
+    IonErrorCode get(T)(scope ref T value)
+        @trusted pure nothrow @nogc const
+        if (isIntegral!T && T.sizeof < 4)
+    {
+        static if (isUnsigned!T)
+            uint ext;
+        else
+            int ext;
+        if (auto error = this.get(ext))
+            return error;
+        if (cast(T)ext != ext)
+            return IonErrorCode.overflowInIntegerValue;
+        value = cast(T)ext;
+        return IonErrorCode.none;
     }
 
     version (D_Exceptions)
@@ -794,7 +811,7 @@ struct IonNInt
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
-        if (isIntegral!T)
+        if (isIntegral!T && T.sizeof >= 4)
     {
         static if (isUnsigned!T)
         {
@@ -805,11 +822,28 @@ struct IonNInt
             Unsigned!T uvalue;
             if (auto overflow = data.IonUInt.get(uvalue))
                 return IonErrorCode.overflowInIntegerValue;
-            value = cast(T)(0 - uvalue);
+            value = -uvalue;
             if (_expect(value >= 0, false))
                 return IonErrorCode.overflowInIntegerValue;
             return IonErrorCode.none;
         }
+    }
+
+    /// ditto
+    IonErrorCode get(T)(scope ref T value)
+        @trusted pure nothrow @nogc const
+        if (isIntegral!T && T.sizeof < 4)
+    {
+        static if (isUnsigned!T)
+            uint ext;
+        else
+            int ext;
+        if (auto error = this.get(ext))
+            return error;
+        if (cast(T)ext != ext)
+            return IonErrorCode.overflowInIntegerValue;
+        value = cast(T)ext;
+        return IonErrorCode.none;
     }
 
     version (D_Exceptions)
@@ -900,7 +934,6 @@ struct IonInt
     ///
     const(ubyte)[] data;
 
-
     /++
     Params:
         value = (out) signed or unsigned integer
@@ -908,7 +941,7 @@ struct IonInt
     +/
     IonErrorCode get(T)(scope ref T value)
         @trusted pure nothrow @nogc const
-        if (isIntegral!T)
+        if (isIntegral!T && T.sizeof >= 4)
     {
         static if (isUnsigned!T)
         {
@@ -924,7 +957,7 @@ struct IonInt
         {
             if (sign)
             {
-                value = cast(T)(0 - value);
+                value = -value;
                 if (value >= 0)
                     return IonErrorCode.overflowInIntegerValue;
             }
@@ -935,6 +968,23 @@ struct IonInt
             }
         }
 
+        return IonErrorCode.none;
+    }
+
+    /// ditto
+    IonErrorCode get(T)(scope ref T value)
+        @trusted pure nothrow @nogc const
+        if (isIntegral!T && T.sizeof < 4)
+    {
+        static if (isUnsigned!T)
+            uint ext;
+        else
+            int ext;
+        if (auto error = this.get(ext))
+            return error;
+        if (cast(T)ext != ext)
+            return IonErrorCode.overflowInIntegerValue;
+        value = cast(T)ext;
         return IonErrorCode.none;
     }
 
@@ -1561,7 +1611,7 @@ struct IonSymbolID
 
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
-        if (isUnsigned!T)
+        if (isUnsigned!T && T.sizeof >= 4)
     {
         auto d = data[];
 
@@ -1580,6 +1630,20 @@ struct IonSymbolID
             d = d[1 .. $];
         }
 
+        return IonErrorCode.none;
+    }
+
+    /// ditto
+    IonErrorCode get(T)(scope ref T value)
+        @trusted pure nothrow @nogc const
+        if (isUnsigned!T && T.sizeof < 4)
+    {
+        uint ext;
+        if (auto error = this.get(ext))
+            return error;
+        if (cast(T)ext != ext)
+            return IonErrorCode.overflowInIntegerValue;
+        value = cast(T)ext;
         return IonErrorCode.none;
     }
 
