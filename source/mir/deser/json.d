@@ -76,7 +76,7 @@ private template deserializeJsonImpl(bool file)
                 else
                     alias algo = singleThreadJsonText;
 
-                enum nMax = 4096u;
+                enum nMax = 4096u * 4;
                 // enum nMax = 64u;
                 static if (hasDeserializeFromIon!T)
                     enum keys = string[].init;
