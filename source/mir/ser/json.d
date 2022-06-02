@@ -505,6 +505,7 @@ unittest
     import std.range;
     import std.algorithm;
     import std.conv;
+    import mir.test;
 
     static struct S
     {
@@ -514,7 +515,7 @@ unittest
     }
 
     auto s = deserializeJson!S(`{"a":3}`);
-    assert(s.a == 5);
+    s.a.should == 5;
     assert(serializeJson(s) == `{"a":"str_str_str_str_str"}`);
 }
 

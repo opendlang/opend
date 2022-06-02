@@ -674,12 +674,14 @@ struct IonUInt
     {
         static if (isUnsigned!T)
         {
-            return data.IonSymbolID.get(value) ? IonErrorCode.overflowInIntegerValue : IonErrorCode.none;
+            return data.IonSymbolID.get(value);
         }
         else
         {
-            if (auto error = this.get(*cast(Unsigned!T*)&value))
-                return error.overflowInIntegerValue;
+            Unsigned!T uvalue;
+            if (auto error = this.get(uvalue))
+                return error;
+            value = uvalue;
             if (_expect(value < 0, false))
                 return IonErrorCode.overflowInIntegerValue;
             return IonErrorCode.none;
@@ -800,9 +802,10 @@ struct IonNInt
         }
         else
         {
-            if (auto overflow = data.IonUInt.get(*cast(Unsigned!T*)&value))
+            Unsigned!T uvalue;
+            if (auto overflow = data.IonUInt.get(uvalue))
                 return IonErrorCode.overflowInIntegerValue;
-            value = cast(T)(0-value);
+            value = cast(T)(0 - uvalue);
             if (_expect(value >= 0, false))
                 return IonErrorCode.overflowInIntegerValue;
             return IonErrorCode.none;
@@ -909,20 +912,27 @@ struct IonInt
     {
         static if (isUnsigned!T)
         {
-            if (_expect(sign, false))
+            if (sign)
                 return IonErrorCode.overflowInIntegerValue;
         }
 
-        if (auto overflow = data.IonUInt.get(*cast(Unsigned!T*)&value))
+        Unsigned!T uvalue;
+        if (auto overflow = data.IonUInt.get(uvalue))
             return IonErrorCode.overflowInIntegerValue;
-
+        value = uvalue;
         static if (isSigned!T)
         {
-            auto nvalue = cast(T)(0-value);
-            if (_expect((nvalue > 0) | (nvalue == 0) & sign , false))
-                return IonErrorCode.overflowInIntegerValue;
             if (sign)
-                value = nvalue;
+            {
+                value = cast(T)(0 - value);
+                if (value >= 0)
+                    return IonErrorCode.overflowInIntegerValue;
+            }
+            else
+            {
+                if (value < 0)
+                    return IonErrorCode.overflowInIntegerValue;
+            }
         }
 
         return IonErrorCode.none;
@@ -1528,6 +1538,27 @@ struct IonSymbolID
         value = (out) symbol id
     Returns: $(SUBREF exception, IonErrorCode)
     +/
+    // IonErrorCode get(T)(scope ref T value)
+    //     @trusted pure nothrow @nogc const
+    //     if (isUnsigned!T)
+    // {
+    //     pragma(inline, true);
+
+    //     auto d = data[];
+
+    //     value = 0;
+    //     while (d.length)
+    //     {
+    //         enum c = T.max >> 8;
+    //         if (value > c)
+    //             return IonErrorCode.overflowInIntegerValue;
+    //         value <<= 8;
+    //         value |= d[0];
+    //         d = d[1 .. $];
+    //     }
+    //     return IonErrorCode.none;
+    // }
+
     IonErrorCode get(T)(scope ref T value)
         @safe pure nothrow @nogc const
         if (isUnsigned!T)
