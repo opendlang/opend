@@ -754,7 +754,6 @@ version(mir_ion_test) unittest
     import mir.stdio;
     foreach (T; AliasSeq!(byte, short, int, long, ubyte, ushort, uint, ulong))
     {
-        debug dump(T.stringof);
         IonValue([0x20]).describe.get!IonUInt.getErrorCode!T.should == 0;
         IonValue([0x21, 0x00]).describe.get!IonUInt.getErrorCode!T.should == 0;
 
