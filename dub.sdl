@@ -18,12 +18,13 @@ configuration "silly" {
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     dflags "-lowmem"
-    versions "mir_ion_test" 
-    versions "mir_ion_parser_test"
+    // versions "mir_ion_test" 
+    versions "mir_ion_value_test" 
+    // versions "mir_ion_parser_test"
 }
 
 buildType "unittest-release" {
-    buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "debugInfo" //"noBoundsCheck"
     versions "mir_ion_test" "mir_ion_parser_test"
 }
 
