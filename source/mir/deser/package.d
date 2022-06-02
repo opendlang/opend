@@ -283,7 +283,7 @@ template deserializeValue(string[] symbolTable)
         {
             if (data.descriptor.type == IonTypeCode.list)
             {
-                foreach (error, ionElem; data.trustedGet!IonList)
+                foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
                 {
                     if (_expect(error, false))
                         return error.ionException;
@@ -323,7 +323,7 @@ template deserializeValue(string[] symbolTable)
         {
             if (data.descriptor.type == IonTypeCode.struct_)
             {
-                foreach (error, symbolId, ionElem; data.trustedGet!IonStruct)
+                foreach (IonErrorCode error, size_t symbolId, IonDescribedValue ionElem; data.trustedGet!IonStruct)
                 {
                     if (_expect(error, false))
                         return error.ionException;
@@ -464,7 +464,7 @@ template deserializeValue(string[] symbolTable)
         {
             if (data.descriptor.type == IonTypeCode.list)
             {
-                foreach (error, ionElem; data.trustedGet!IonList)
+                foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
                 {
                     if (_expect(error, false))
                         return error.ionException;

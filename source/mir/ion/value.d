@@ -1683,7 +1683,7 @@ struct IonList
 
     /++
     Returns: true if the sexp is `null.sexp`, `null`, or `()`.
-    Note: a NOP padding makes in the struct makes it non-empty.
+    Note: a NOP padding makes in the struct non-empty.
     +/
     bool empty()
         @safe pure nothrow @nogc const @property
@@ -1838,6 +1838,48 @@ const:
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
+    For iteration with $(LREF IonDescribedValue) elements.
+    Throws: `IonException`
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 1)
+    {
+        foreach (IonErrorCode error, IonDescribedValue value; this)
+        {
+            if (_expect(error, false))
+                throw error.ionException;
+            if (auto ret = dg(value))
+                return ret;
+        }
+        return 0;
+    }
+
+    /++
+    For iteration with `IonErrorCode` and $(LREF IonDescribedValue) pairs.
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 2)
+    {
+        version(LDC)
+            pragma(inline, true);
+        pragma (msg, ParameterTypeTuple!Dg); // foreach with 2 parameters
+        auto d = data[];
+        while (d.length)
+        {
+            IonDescribedValue describedValue;
+            auto error = parseValue(d, describedValue);
+            if (error == IonErrorCode.nop)
+                continue;
+            if (auto ret = dg(error, describedValue))
+                return ret;
+            assert(!error, "User provided delegate MUST break the iteration when error has non-zero value.");
+        }
+        return 0;
+    }
+
+    /++
     Params:
         serializer = serializer
     +/
@@ -1845,7 +1887,7 @@ const:
     {
         import mir.ser: beginList;
         auto state = serializer.beginList(this);
-        foreach (value; this)
+        foreach (IonDescribedValue value; this)
         {
             serializer.elemBegin;
             value.serializeImpl(serializer);
@@ -2036,6 +2078,48 @@ const:
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
+    For iteration with $(LREF IonDescribedValue) elements.
+    Throws: `IonException`
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 1)
+    {
+        foreach (IonErrorCode error, IonDescribedValue value; this)
+        {
+            if (_expect(error, false))
+                throw error.ionException;
+            if (auto ret = dg(value))
+                return ret;
+        }
+        return 0;
+    }
+
+    /++
+    For iteration with `IonErrorCode` and $(LREF IonDescribedValue) pairs.
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 2)
+    {
+        version(LDC)
+            pragma(inline, true);
+        pragma (msg, ParameterTypeTuple!Dg); // foreach with 2 parameters
+        auto d = data[];
+        while (d.length)
+        {
+            IonDescribedValue describedValue;
+            auto error = parseValue(d, describedValue);
+            if (error == IonErrorCode.nop)
+                continue;
+            if (auto ret = dg(error, describedValue))
+                return ret;
+            assert(!error, "User provided delegate MUST break the iteration when error has non-zero value.");
+        }
+        return 0;
+    }
+
+    /++
     Params:
         serializer = serializer
     +/
@@ -2043,7 +2127,7 @@ const:
     {
         import mir.ser: beginSexp;
         auto state = serializer.beginSexp(this);
-        foreach (value; this)
+        foreach (IonDescribedValue value; this)
         {
             serializer.sexpElemBegin;
             value.serializeImpl(serializer);
@@ -2287,6 +2371,54 @@ const:
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
+    For iteration with $(LREF IonDescribedValue) pairs.
+    Throws: `IonException`
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 2)
+    {
+        foreach (IonErrorCode error, size_t symbolID, IonDescribedValue value; this)
+        {
+            if (_expect(error, false))
+                throw error.ionException;
+            if (auto ret = dg(symbolID, value))
+                return ret;
+        }
+        return 0;
+    }
+
+    /++
+    For iteration with `size_t` (symbol ID), `IonErrorCode`, and $(LREF IonDescribedValue) triplets.
+    +/
+    version(GenericOpApply)
+    int opApply(Dg)(scope Dg dg)
+        if (ParameterTypeTuple!Dg.length == 3)
+    {
+        version(LDC)
+            pragma(inline, true);
+        pragma (msg, ParameterTypeTuple!Dg); // foreach with 2 parameters
+        auto d = data[];
+        while (d.length)
+        {
+            size_t symbolID;
+            IonDescribedValue describedValue;
+            auto error = parseVarUInt(d, symbolID);
+            if (!error)
+            {
+                error = parseValue(d, describedValue);
+                if (error == IonErrorCode.nop)
+                    continue;
+            }
+            import core.lifetime: move;
+            if (auto ret = dg(move(error), move(symbolID), move(describedValue)))
+                return ret;
+            assert(!error, "User provided delegate MUST break the iteration when error has non-zero value.");
+        }
+        return 0;
+    }
+
+    /++
     Params:
         serializer = serializer
     +/
@@ -2294,7 +2426,7 @@ const:
     {
         import mir.ser: beginStruct;
         auto state = serializer.beginStruct(this);
-        foreach (symbolID, value; this)
+        foreach (size_t symbolID, IonDescribedValue value; this)
         {
             serializer.putKeyId(symbolID);
             value.serializeImpl(serializer);
