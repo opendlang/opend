@@ -628,10 +628,10 @@ version(mir_ion_test) unittest
 }
 
 ///
-void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
+void serializeMsgpack(Appender, T)(ref Appender appender, auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
     import mir.ser : serializeValue;
-    auto serializer = appender.MsgpackSerializer!(Appender);
+    auto serializer = ((()@trusted => &appender)()).MsgpackSerializer!(Appender);
     serializer.serdeTarget = serdeTarget;
     serializeValue(serializer, value);
 }
@@ -639,9 +639,9 @@ void serializeMsgpack(Appender, T)(Appender* appender, auto ref T value, int ser
 ///
 immutable(ubyte)[] serializeMsgpack(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
-    import mir.appender : scopedBuffer;
+    import mir.appender : ScopedBuffer, scopedBuffer;
     auto app = scopedBuffer!ubyte;
-    serializeMsgpack!(typeof(app), T)(()@trusted{return &app;}(), value, serdeTarget);
+    serializeMsgpack!(ScopedBuffer!ubyte, T)(app, value, serdeTarget);
     return (()@trusted => app.data.idup)();
 }
 

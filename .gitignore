@@ -60,3 +60,4 @@ v2.096.0.tar.gz
 tool*
 putValue
 mir-ion-test-parser-test
+benchmark/ion_benchmark

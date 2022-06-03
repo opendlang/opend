@@ -885,7 +885,7 @@ unittest
 
     auto buf = scopedBuffer!ubyte();
     Book book = Book(true, 5, 7.99, 6.88);
-    serializeMsgpack((() @trusted => &buf)(), book);
+    serializeMsgpack(buf, book);
     assert(buf.data.deserializeMsgpack!Book() == book);
 }
 

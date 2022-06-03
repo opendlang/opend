@@ -151,6 +151,55 @@ version(mir_ion_test) unittest
 }
 
 /++
+Convert an JSON value to a Ion Value Stream.
+
+This function is the @nogc version of json2ion.
+Params:
+    text = The JSON to convert
+    appender = A buffer that will receive the Ion binary data
++/
+void json2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
+    @trusted pure
+{
+    import mir.exception: MirException;
+    import mir.ion.exception: ionErrorMsg;
+    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.stage4_s;
+    import mir.ion.symbol_table: IonSymbolTable;
+    import mir.ser.ion : IonSerializer;
+    import mir.serde : SerdeTarget;
+
+    enum nMax = 4096;
+    IonTapeHolder!(nMax * 8) tapeHolder = void;
+    tapeHolder.initialize;
+    IonSymbolTable!false table = void;
+    table.initialize;
+
+    auto error = singleThreadJsonText!nMax(table, tapeHolder, text);
+    if (error.code)
+        throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+
+    appender.put(ionPrefix);
+    if (table.initialized)
+    {
+        table.finalize;
+        appender.put(table.tapeData);
+    }
+    appender.put(tapeHolder.tapeData);
+}
+
+///
+@safe pure
+version(mir_ion_test) unittest
+{
+    import mir.appender : scopedBuffer;
+    static immutable data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    auto buf = scopedBuffer!ubyte;
+    json2ion(`{"a":1,"b":2}`, buf);
+    assert(buf.data == data);
+}
+
+/++
 Converts JSON Value Stream to binary Ion data wrapped to $(SUBREF stream, IonValueStream).
 +/
 IonValueStream json2ionStream(scope const(char)[] text)
@@ -289,7 +338,7 @@ Params:
     appender = A buffer that will receive the Ion binary data
 +/
 void text2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
-    @trusted pure @nogc
+    @trusted
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
@@ -300,7 +349,8 @@ void text2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     enum nMax = 4096;
     IonTapeHolder!(nMax * 8) tapeHolder = void;
     tapeHolder.initialize;
-    IonSymbolTable!false table;
+    IonSymbolTable!false table = void;
+    table.initialize;
     auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
 
     auto deser = IonTextDeserializer!(typeof(ser))(&ser);
@@ -382,7 +432,7 @@ version(mir_ion_test) unittest
 }
 
 void msgpack2ion(Appender)(scope const(ubyte)[] data, scope ref Appender appender)
-    @trusted pure @nogc
+    @trusted
 {
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
@@ -393,7 +443,8 @@ void msgpack2ion(Appender)(scope const(ubyte)[] data, scope ref Appender appende
     enum nMax = 4096;
     IonTapeHolder!(nMax * 8) tapeHolder = void;
     tapeHolder.initialize;
-    IonSymbolTable!false table;
+    IonSymbolTable!false table = void;
+    table.initialize;
     auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
   
     data.MsgpackValueStream.serialize(ser);
