@@ -21,9 +21,11 @@ Mir Ion supports JSON de/serialization out of the box. On the other hand, you ma
 
 ## Benchmarks
 
-## Apple M1
+### [kostya/benchmarks](https://github.com/kostya/benchmarks#json)
 
-###  Twitter
+## ARM64
+
+###  Twitter data set
 
 Test data from [nativejson-benchmark](https://github.com/miloyip/nativejson-benchmark/blob/master/data/twitter.json)
 
@@ -50,10 +52,7 @@ os: 64bit osx
 -------------------------------------------------
 ```
 
-### [kostya/benchmarks](https://github.com/kostya/benchmarks#json)
-
-
-### Kostya-like
+### Kostya data et
 
 Test data from [kostya/benchmarks](https://github.com/kostya/benchmarks).
 
