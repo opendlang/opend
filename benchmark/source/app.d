@@ -31,26 +31,44 @@ void main(string[] args)
 
         import std.system: os;
         auto report = json.benchmarkData(count);
-        auto speedJson = report.json_input_size * 10 / report.json_to_ion.total!"usecs" / 10.0;
-        auto speedMsgpackVsJson = report.json_input_size * 10 / report.msgpack_to_ion.total!"usecs" / 10.0;
-        auto speedMsgpack = report.msgpack_size * 10 / report.msgpack_to_ion.total!"usecs" / 10.0;
-        auto speedIon = report.ion_size * 10 / report.ion_to_ion.total!"usecs" / 10.0;
-        auto speedIonVsJson = report.json_input_size * 10 / report.ion_to_ion.total!"usecs" / 10.0;
-        auto speedIonVsMsgpack = report.msgpack_size * 10 / report.ion_to_ion.total!"usecs" / 10.0;
-        auto compressionJson = (report.json_input_size * 1000 / report.ion_size - 1000) / 10;
-        auto compressionMsgpack = (report.msgpack_size * 1000 / report.ion_size - 1000) / 10;
+        auto speedJson = report.json_input_size / report.json_to_ion.total!"usecs" / 1000.0;
+        auto speedMsgpackVsJson = report.json_input_size / report.msgpack_to_ion.total!"usecs" / 1000.0;
+        auto speedMsgpack = report.msgpack_size / report.msgpack_to_ion.total!"usecs" / 1000.0;
+        auto speedIon = report.ion_size / report.ion_to_ion.total!"usecs" / 1000.0;
+        auto speedIonVsJson = report.json_input_size / report.ion_to_ion.total!"usecs" / 1000.0;
+        auto speedIonVsMsgpack = report.msgpack_size / report.ion_to_ion.total!"usecs" / 1000.0;
+
+        auto speedParsing = report.ion_size / report.ion_parsgin.total!"usecs" / 1000.0;
+        auto speedParsingVsJson = report.json_input_size / report.ion_parsgin.total!"usecs" / 1000.0;
+
+        auto speedIonWriting = report.ion_size / report.ion_writing.total!"usecs" / 1000.0;
+        auto speedIonWritingVsJson = report.json_input_size / report.ion_writing.total!"usecs" / 1000.0;
+
+        auto compressionJson = (report.json_minimized_size * 100 / report.ion_size - 100) / 100.0;
+        auto compressionMsgpack = (report.msgpack_size * 100 / report.ion_size - 100) / 100.0;
+
+        auto speedMemcpy = report.json_input_size / report.memcpy.total!"usecs" / 1000.0;
+
         dout
-            << "-------------------------------------------------" << endl
-            << "JSON     --> Ion  " << speedJson << " MB/s" << endl
-            << "- - - - - - - - - - - - - - - - - - - - - - - - -" << endl
-            << "MsgPack  --> Ion  " << speedMsgpack << " MB/s" << endl
-            << "  is the same as  " << speedMsgpackVsJson << " MB/s of JSON" << endl
-            << "- - - - - - - - - - - - - - - - - - - - - - - - -" << endl
-            << "Ion      --> Ion  " << speedIon << " MB/s" << "         (full cycle)" << endl
-            << "  is the same as  " << speedIonVsJson << " MB/s of JSON" << endl
-            << "- - - - - - - - - - - - - - - - - - - - - - - - -" << endl
-            << "JSON    vs Ion data size " << "+" << compressionJson << "%" << endl
-            << "MsgPack vs Ion data size " << "+" << compressionMsgpack << "%" << endl
+            << "The benchmark for binary Ion format," << endl
+            << "Mir Ion" << endl
+            << "--------------------------------------------------" << endl
+            << "Binary Ion parsing      " << speedParsing << " GB/s" << " (estimated)" << endl
+            << "     is equivalent of   " << speedParsingVsJson << " GB/s for JSON" << endl
+            << endl
+            << "Binary Ion writing      " << speedIonWriting << " GB/s" << endl
+            << "     is equivalent of   " << speedIonWritingVsJson << " GB/s for JSON" << endl
+            << endl
+            << "JSON    -> binary Ion   " << speedJson << " GB/s" << endl
+            << endl
+            << "MsgPack -> binary Ion   " << speedMsgpack << " GB/s" << endl
+            << "     is equivalent of   " << speedMsgpackVsJson << " GB/s for JSON" << endl
+            // << endl
+            // << "memcpy of the JSON file " << speedMemcpy << " GB/s" << "         " << endl
+            << endl
+            << endl
+            << "Ion is " << compressionJson << "% smaller then minimized JSON" << endl
+            << "   and " << compressionMsgpack << "% smaller then MsgPack" << endl
             << "- - - - - - - - - - - - - - - - - - - - - - - - -" << endl
             << "processed file: " << jsonFileName << endl 
             << "number of iterations: " << count << endl 
@@ -58,7 +76,7 @@ void main(string[] args)
             // << "details (in the text ion format): " << endl
             // // << "- - - - - - - - - - - - - - - - - - - - - - - - -" << endl
             // << report.serializeTextPretty << endl
-            << "-------------------------------------------------"
+            << "--------------------------------------------------"
             << endl;
     }
 }

@@ -323,15 +323,15 @@ const:
             if (following)
                 serializer.nextTopLevelValue;
             following = true;
-            static if (__traits(hasMember, serializer, "putKeyId"))
-            {
-                alias unwrappedSerializer = serializer;
-            }
-            else
-            {
+            // static if (__traits(hasMember, serializer, "putKeyId"))
+            // {
+            //     alias unwrappedSerializer = serializer;
+            // }
+            // else
+            // {
                 import mir.ser.unwrap_ids;
                 auto unwrappedSerializer = unwrapSymbolIds(serializer, symbolTable);
-            }
+            // }
             value.serialize(unwrappedSerializer);
         }
     }

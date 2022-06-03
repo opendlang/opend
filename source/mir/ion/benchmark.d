@@ -31,20 +31,31 @@ struct Report
     Duration ion_to_msgpack;
     /// Avg duration per call
     Duration msgpack_to_ion;
+    /// Avg duration per call
+    Duration ion_parsgin;
+    /// Avg duration per call
+    Duration ion_writing;
+    /// Avg duration per call for JSON
+    Duration memcpy;
 }
 
 ///
 Report benchmarkData(string json, uint count)
 {
-    import mir.ion.conv;
+    import mir.algebraic_alias.json;
     import mir.appender: scopedBuffer;
+    import mir.ion.conv;
     import mir.ion.stream;
+    import mir.deser.ion: deserializeIon;
 
     auto jsonBuffer = scopedBuffer!char;
     auto ionBuffer = scopedBuffer!ubyte;
     auto binaryBuffer = scopedBuffer!ubyte;
 
     import std.datetime.stopwatch: benchmark;
+    json.json2ion(ionBuffer);
+    auto data = ionBuffer.data.deserializeIon!JsonAlgebraic;
+    auto memory = jsonBuffer.prepare(json.length);
 
     auto res = count.benchmark!(
         () { // JSON -> Ion
@@ -70,6 +81,15 @@ Report benchmarkData(string json, uint count)
             ionBuffer.shrinkTo(0);
             binaryBuffer.data.msgpack2ion(ionBuffer);
         },
+        () { // Data -> Ion
+            import mir.ser.ion: serializeIon;
+            ionBuffer.shrinkTo(0);
+            serializeIon(ionBuffer, data);
+        },
+        () { // memcpy
+            import core.stdc.string: memcpy;
+            memcpy(memory.ptr, json.ptr, json.length);
+        },
     );
 
     Report report;
@@ -79,6 +99,9 @@ Report benchmarkData(string json, uint count)
     report.ion_to_json = res[2] / count;
     report.ion_to_msgpack = res[3] / count;
     report.msgpack_to_ion = res[4] / count;
+    report.ion_writing = res[5] / count;
+    report.ion_parsgin = report.ion_to_ion - report.ion_writing;
+    report.memcpy = res[6] / count;
 
     report.json_input_size = json.length;
     report.json_minimized_size = jsonBuffer.data.length;
