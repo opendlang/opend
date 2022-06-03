@@ -4,11 +4,11 @@ version (LDC) import ldc.attributes;
 import mir.bitop;
 import mir.ion.internal.simd;
 
-version (ARM)
-    version = ARM_Any;
-
-version (AArch64)
-    version = ARM_Any;
+version (LDC)
+{
+    version (AArch64)
+        version = Neon;
+}
 
 version (X86)
     version = X86_Any;
@@ -18,6 +18,11 @@ version (X86_64)
 
 @system pure nothrow @nogc:
 
+version (Neon)
+{
+    alias stage2 = stage2_impl_neon;
+}
+else
 void stage2(
     size_t n,
     scope const(ubyte[64])* vector,
@@ -255,6 +260,49 @@ private void stage2_impl_generic(
             }
         }
         *pairedMask++ = maskPair;
+    }
+    while(--n);
+}
+
+version (LDC) version (AArch64)
+private void stage2_impl_neon(
+    size_t n,
+    scope const(ubyte[64])* vector,
+    scope ulong[2]* pairedMask,
+    )
+{
+    pragma(inline, false);
+    __vector(ubyte[16]) whiteSpaceMask0 = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00, 0x00, 0x0B, 0x0C, 0x00, 0x0E, 0x0F, 0x10,
+    ];
+    __vector(ubyte[16]) whiteSpaceMask1 = [
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x00,
+    ];
+    // , 2C : 3A [ 5B ] 5D { 7B } 7D
+    __vector(ubyte[16]) operatorMask = [
+        ',', '}', 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, ':', '{',
+    ];
+
+    alias equal = equalMaskB!(__vector(ubyte[16]));
+
+    do
+    {
+        import mir.internal.utility;
+        auto v =  cast(__vector(ubyte[16])[4])*vector++;
+        align(16) ushort[4][2] result;
+        import mir.stdio;
+        import mir.ndslice.topology: bitwise, as;
+        static foreach (i; Iota!(v.length))
+        {{
+            __vector(ubyte[16]) vim1 = v[i] - 1;
+            __vector(ubyte[16]) mar1 = neon_tbx2_v16i8(v[i], whiteSpaceMask0, whiteSpaceMask1, vim1);
+            ushort meq1 = equal(mar1, v[i]);
+            result[1][i] = cast(ushort) ~cast(uint) meq1;
+
+            auto a = neon_tbl1_v16i8(operatorMask, (v[i] - ',') & 0x8F);
+            result[0][i] = equal(v[i] | ubyte(0x20), a);
+        }}
+        *pairedMask++ = cast(ulong[2]) result;
     }
     while(--n);
 }

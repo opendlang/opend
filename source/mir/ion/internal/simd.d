@@ -57,6 +57,18 @@ version (AArch64)
     {
         pragma(LDC_intrinsic, "llvm.aarch64.neon.addp.v16i8")
             __vector(ubyte[16]) __builtin_vpadd_u32(__vector(ubyte[16]), __vector(ubyte[16]));
+
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.tbl2.v16i8")
+            __vector(ubyte[16]) neon_tbl2_v16i8(__vector(ubyte[16]), __vector(ubyte[16]), __vector(ubyte[16]));
+
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.tbl1.v16i8")
+            __vector(ubyte[16]) neon_tbl1_v16i8(__vector(ubyte[16]), __vector(ubyte[16]));
+
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.tbx2.v16i8")
+            __vector(ubyte[16]) neon_tbx2_v16i8(__vector(ubyte[16]), __vector(ubyte[16]), __vector(ubyte[16]),  __vector(ubyte[16]));
+
+        pragma(LDC_intrinsic, "llvm.aarch64.neon.tbx1.v16i8")
+            __vector(ubyte[16]) neon_tbx1_v16i8(__vector(ubyte[16]), __vector(ubyte[16]),  __vector(ubyte[16]));
     }
     
     version (GNU)

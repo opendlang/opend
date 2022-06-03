@@ -426,7 +426,7 @@ pure nothrow:
     }
 }
 
-version(mir_ion_test) unittest
+version(mir_ion_test_table) unittest
 {
     IonSymbolTable!false table = void;
     table.initialize;
