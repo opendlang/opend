@@ -63,6 +63,9 @@ extern(Windows)
         if (!bitmap) 
             goto error2;
 
+         if (width > GAMUT_MAX_WIDTH || height > GAMUT_MAX_HEIGHT)
+            goto error;
+
         bitmap._width = width;
         bitmap._height = height;
         bitmap._data = decoded.ptr;

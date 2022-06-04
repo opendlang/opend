@@ -1,7 +1,7 @@
 {
     "name": "gamut",
     "description": "image library",
-    "license": "BSL-1.0",
+    "license": "BSL-1.0+MIT",
 
     "dependencies":
     {
@@ -11,11 +11,12 @@
     "configurations": [
         {
             "name": "boost",
-            "versions": ["decodeJPEG", "decodePNG", "encodePNG"]
+          "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", 
+                                      "encodePNG" ]
         },
         {
             "name": "game",
-            "versions": ["decodeJPEG", "decodePNG"]
+          "versions": [ "decodeJPEG", "decodePNG", "decodeQOI" ]
         }
     ]
 }

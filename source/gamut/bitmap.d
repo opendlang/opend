@@ -16,6 +16,10 @@ import gamut.types;
 import gamut.io;
 import gamut.plugin;
 
+
+enum GAMUT_MAX_WIDTH = 16384;
+enum GAMUT_MAX_HEIGHT = 16384;
+
 nothrow @nogc @safe:
 
 // TODO: for security, disallow image above a certain width and height, handle that as error
@@ -97,16 +101,24 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type,
 
     ubyte* data = cast(ubyte*) realloc(null, bytes);
     if (data == null)
-    {
-        free(bitmap);
-        return null; // failed
-    }
+        goto error;
+
+    if (width > GAMUT_MAX_WIDTH)
+        return null;
+
+    if (height > GAMUT_MAX_HEIGHT)
+        return null;
+
     bitmap._width = width;
     bitmap._height = height;
     bitmap._data = data;
     bitmap._bpp = bpp;
     bitmap._pitch = pitch;
     return bitmap;
+
+    error:
+        free(bitmap);
+        return null; // failed
 }
 
 /// Load flags
@@ -324,8 +336,7 @@ int FreeImage_GetWidthInBytes(FIBITMAP *dib) pure
 int FreeImage_GetPitch(FIBITMAP *dib) pure
 {
     // No support for arbitrary pitch right now, only dense supported.
-    // TODO: add a pitch field in FIBITMAP.
-    return FreeImage_GetWidthInBytes(dib);
+    return dib._pitch;
 }
 
 deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeImage_GetWidthInBytes if you mean that.") 

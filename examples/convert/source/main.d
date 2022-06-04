@@ -92,6 +92,7 @@ int main(string[] args)
     catch(Exception e)
     {
         writefln("error: %s", e.message);
+        usage();
         return 1;
     }
 }

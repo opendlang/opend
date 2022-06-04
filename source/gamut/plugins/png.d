@@ -80,10 +80,14 @@ extern(Windows)
         if (decoded is null)
             goto error;
 
+        if (width > GAMUT_MAX_WIDTH || height > GAMUT_MAX_HEIGHT)
+            goto error;
+
         bitmap._width = width;
         bitmap._height = height;
         bitmap._data = decoded; // works because codec.pngload and gamut both use malloc/free
         bitmap._bpp = (is16bit ? 16 : 8) * components; // store even if not significant
+        bitmap._pitch = width * components;
 
         if (!is16bit)
         {
