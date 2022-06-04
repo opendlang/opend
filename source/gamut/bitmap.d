@@ -10,6 +10,7 @@ See the differences in DIFFERENCES.md
 module gamut.bitmap;
 
 import core.stdc.stdio;
+import core.stdc.string: memcpy;
 import core.stdc.stdlib: malloc, realloc, free;
 import gamut.types;
 import gamut.io;
@@ -31,6 +32,10 @@ package:
     int _height;
     int _bpp;
 
+    /// Pitch in bytes between lines.
+    int _pitch; 
+
+    // Notes: masks are only valid if _type == FIT_BITMAP and _bpp = 16 or 24 or 32
     uint _red_mask;
     uint _green_mask;
     uint _blue_mask;
@@ -82,19 +87,25 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type,
                               uint green_mask = 0, 
                               uint blue_mask = 0) @trusted
 {
+    assert(type != FIT_UNKNOWN);
     FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
     if (!bitmap) 
         return null;
     bitmap._type = type;
-    ubyte* data = pureReallocatePixelData(null, type, width, height, bpp);    
+    int pitch = pitchForImage(type, width, bpp);
+    size_t bytes = height * pitch; // TODO: avoid overflow here
+
+    ubyte* data = cast(ubyte*) realloc(null, bytes);
     if (data == null)
     {
         free(bitmap);
+        return null; // failed
     }
     bitmap._width = width;
     bitmap._height = height;
     bitmap._data = data;
-    bitmap._bpp = bpp; // Store even if not significant
+    bitmap._bpp = bpp;
+    bitmap._pitch = pitch;
     return bitmap;
 }
 
@@ -181,8 +192,7 @@ bool FreeImage_Save(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, const(char)* filename,
     FreeImageIO io;
     setupFreeImageIOForFile(io);
     bool r = FreeImage_SaveToHandle(fif, dib, &io, cast(fi_handle)f, flags);
-    fclose(f); // TODO: not sure what to do if fclose fails here.
-    return r;
+    return fclose(f) == 0;
 }
 
 bool FreeImage_SaveToHandle(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, 
@@ -201,7 +211,7 @@ bool FreeImage_SaveToHandle(FREE_IMAGE_FORMAT fif, FIBITMAP *dib,
 }
 
 /// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
-FIBITMAP* FreeImage_Clone(FIBITMAP *dib)
+FIBITMAP* FreeImage_Clone(FIBITMAP *dib) @trusted
 {
     assert(dib._type != FIT_UNKNOWN); // MAYDO: clone of FIT_UNKNOWN?
 
@@ -218,14 +228,19 @@ FIBITMAP* FreeImage_Clone(FIBITMAP *dib)
     uint blue_mask = dib._blue_mask;
 
     FIBITMAP* bitmap = FreeImage_AllocateT(dib._type, width, height, bpp, red_mask, green_mask, blue_mask);
-
     if (!bitmap) 
         return null;
 
-    // TODO: copy pixels if any
-    assert(false);
-    
-  //  return bitmap;
+    // The bitmaps do not necessarily have the same pitch here.
+    assert(bitmap._pitch == dib._pitch);
+    assert(bitmap._height == dib._height);
+    int bytes = height * dib._pitch; // TODO: avoid overflow here
+    memcpy(bitmap._data, dib._data, bytes); // Copy whole image.
+
+
+    // TODO: copy thumbnail, copy meta-data.
+
+    return bitmap;
 }
 
 /// Deletes a previously loaded `FIBITMAP` from memory.
@@ -318,23 +333,35 @@ deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeIma
 
 /// Returns a bit pattern describing the red color component of a pixel in a FIBITMAP, returns 0 
 /// otherwise. 
+/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
 uint FreeImage_GetRedMask(FIBITMAP *dib) pure
 {
-    return dib._red_mask;
+    if (hasValidRGBMask(dib))
+        return dib._red_mask;
+    else
+        return 0;
 }
 
 /// Returns a bit pattern describing the green color component of a pixel in a FIBITMAP, returns 0
 /// otherwise. 
+/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
 uint FreeImage_GetGreenMask(FIBITMAP *dib) pure
 {
-    return dib._green_mask;
+    if (hasValidRGBMask(dib))
+        return dib._green_mask;
+    else
+        return 0;
 }
 
 /// Returns a bit pattern describing the blue color component of a pixel in a FIBITMAP, returns 0 
 /// otherwise. 
+/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
 uint FreeImage_GetBlueMask(FIBITMAP *dib) pure
 {
-    return dib._blue_mask;
+    if (hasValidRGBMask(dib))
+        return dib._blue_mask;
+    else
+        return 0;
 }
 
 /// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
@@ -373,6 +400,13 @@ int bytesForBPPStandardBitmap(int bpp) pure
     else return (bpp >> 3);
 }
 
+bool hasValidRGBMask(const(FIBITMAP)* bitmap) pure
+{
+    if (bitmap._type == FIT_BITMAP)
+        return false;
+    return (bitmap._bpp == 16 || bitmap._bpp == 24 || bitmap._bpp == 32);
+}
+
 // Size of one pixel for type
 int bytesForImageType(FREE_IMAGE_TYPE type) pure
 {
@@ -387,6 +421,7 @@ int bytesForImageType(FREE_IMAGE_TYPE type) pure
         case FIT_FLOAT:   return 4;
         case FIT_DOUBLE:  return 8;
         case FIT_COMPLEX: return 16;
+        case FIT_LA16:    return 4;
         case FIT_RGB16:   return 6;
         case FIT_RGBA16:  return 8;
         case FIT_RGBF:    return 12;
@@ -396,38 +431,25 @@ int bytesForImageType(FREE_IMAGE_TYPE type) pure
     }
 }
 
-
-ubyte* pureReallocatePixelData(ubyte* oldData, FREE_IMAGE_TYPE type, int width, int height, int bpp) @system
+/// Suggest a length of line, in bytes, including padding (FUTURE: with given alignment).
+/// Length must be enough to hold all pixel data for this line.
+int pitchForImage(FREE_IMAGE_TYPE type, int width, int bpp)
 {
-    size_t bytesPerPixel;
-    if (type == FIT_UNKNOWN)
+    int bytesPerPixel;
+    assert (type != FIT_UNKNOWN);
+    if (type == FIT_BITMAP)
     {
-    error:
-        free(oldData);
-        return null;
-    }
-    else if (type == FIT_BITMAP)
-    {
-        if (!isValidBPPStandardBitmap(bpp))
-            goto error;
-
+        assert(isValidBPPStandardBitmap(bpp));
         bytesPerPixel = bytesForBPPStandardBitmap(bpp);        
     }
     else
     {
         bytesPerPixel = bytesForImageType(bpp);
     }
-
-    size_t bytes = width * height * bytesPerPixel;
-    ubyte* data = cast(ubyte*) realloc(oldData, bytes); // TODO: not sure what to do with oldData if realloc fails
-
-    if (data)
-    {
-        // Fill with zeroes
-        data[0..bytes] = 0; 
-    }
-    return data;
+    return width * bytesPerPixel; //  no alignment
 }
+
+
 
 @safe unittest 
 {

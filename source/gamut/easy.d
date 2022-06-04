@@ -15,6 +15,7 @@ import gamut.types;
 import gamut.memory;
 import gamut.filetype;
 import gamut.plugin;
+import gamut.conversion;
 import gamut.internals.cstring;
 
 public import gamut.types: FREE_IMAGE_FORMAT;
@@ -23,10 +24,13 @@ nothrow @nogc @safe:
 
 /// Image type.
 /// Internally, it wraps FIBitmap.
+/// Image has disabled copy ctor and postblit, to avoid accidental allocations.
 struct Image
 {
 nothrow @nogc @safe:
 public:
+
+    @disable this(this);
 
     ~this()
     {
@@ -149,6 +153,23 @@ public:
     bool isValid()
     {
         return _bitmap !is null;
+    }
+
+    /// Returns: a clone of the image, but with RGBA 8-bit components.
+    Image convertToRGBA8()
+    {
+        assert(isValid());
+        FIBITMAP* converted = FreeImage_ConvertTo32Bits(_bitmap);
+        Image r;
+        r._bitmap = converted;
+        return r;
+    }
+
+    /// Returns: a clone of the image, but with 16-bit components.
+    Image convertToRGBA16()
+    {
+        assert(isValid());
+        assert(false); // TODO
     }
 
 private:
