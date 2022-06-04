@@ -2,13 +2,17 @@ name "mir-ion"
 description "Fast, Expressive, and Easy to use Ion, JSON, Msgpack Serialization Library with optional SIMD Optimization."
 authors "Ilya Yaroshenko" "Yannick Koechlin"
 copyright "Tamedia Digital, 2016-, Symmetry Investments and Kaleidic Associates, 2020-"
-license "BSL-1.0"
+license "Apache-2.0"
 dependency "mir-algorithm" version="~>3.13.2"
 dependency "mir-cpuid" version="~>1.2.6"
 
 // dflags "-preview=dip1000"
 
 configuration "library" {
+}
+
+configuration "boson" {
+    versions "MirDecimalJson"
 }
 
 configuration "silly" {
@@ -22,7 +26,6 @@ buildType "unittest" {
     versions "mir_ion_value_test" 
     versions "mir_ion_parser_test"
 }
-
 buildType "unittest-release" {
     buildOptions "unittests" "releaseMode" "optimize" "inline" "debugInfo" //"noBoundsCheck"
     versions "mir_ion_test" "mir_ion_parser_test" "mir_ion_test_table"
