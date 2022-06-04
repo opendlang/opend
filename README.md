@@ -40,8 +40,8 @@ MsgPack -> binary Ion   0.707 GB/s
      is equivalent of   1.109 GB/s for JSON
 
 
-Ion is 0.96% smaller then minimized JSON
-   and 0.69% smaller then MsgPack
+Ion is 96% smaller then minimized JSON
+   and 69% smaller then MsgPack
 - - - - - - - - - - - - - - - - - - - - - - - - -
 processed file: benchmark/twitter.json
 number of iterations: 2000
@@ -64,8 +64,8 @@ MsgPack -> binary Ion   0.275 GB/s
      is equivalent of   0.978 GB/s for JSON
 
 
-Ion is 1.34% smaller then minimized JSON
-   and 0.19% smaller then MsgPack
+Ion is 134% smaller then minimized JSON
+   and 19% smaller then MsgPack
 - - - - - - - - - - - - - - - - - - - - - - - - -
 processed file: /tmp/1.json
 number of iterations: 10

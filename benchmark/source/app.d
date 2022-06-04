@@ -44,8 +44,8 @@ void main(string[] args)
         auto speedIonWriting = report.ion_size / report.ion_writing.total!"usecs" / 1000.0;
         auto speedIonWritingVsJson = report.json_input_size / report.ion_writing.total!"usecs" / 1000.0;
 
-        auto compressionJson = (report.json_minimized_size * 100 / report.ion_size - 100) / 100.0;
-        auto compressionMsgpack = (report.msgpack_size * 100 / report.ion_size - 100) / 100.0;
+        auto compressionJson = (report.json_minimized_size * 100 / report.ion_size - 100);
+        auto compressionMsgpack = (report.msgpack_size * 100 / report.ion_size - 100);
 
         auto speedMemcpy = report.json_input_size / report.memcpy.total!"usecs" / 1000.0;
 
