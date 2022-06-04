@@ -26,7 +26,7 @@ enum : FREE_IMAGE_FORMAT
     FIF_JPEG    =  2, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
     FIF_PNG     =  3, /// Portable Network Graphics (*.PNG)
     FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
-    FIF_QOI     =  24  /// Quite OK Image format (*.QOI)
+    FIF_QOI     =  24 /// Quite OK Image format (*.QOI)
 }
 
 /// Number of internally-supported formats. Equal to 1 + maximum internal format (here: FIF_QOI).
@@ -46,6 +46,7 @@ enum : FREE_IMAGE_TYPE
     FIT_FLOAT,      /// Array of float: 32-bit IEEE floating point
     FIT_DOUBLE,     /// Array of double: 64-bit IEEE floating point
     FIT_COMPLEX,    /// Array of FICOMPLEX: 2 x 64-bit IEEE floating point
+    FIT_LA16,       /// 32-bit Luminance Alpha image: 2 x unsigned 16-bit
     FIT_RGB16,      /// 48-bit RGB image: 3 x unsigned 16-bit
     FIT_RGBA16,     /// 64-bit RGBA image: 4 x unsigned 16-bit
     FIT_RGBF,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point

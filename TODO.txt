@@ -1,3 +1,4 @@
 - GAMUT: JPEG loading respecting original content
 - QOI support
-
+- [ ] Greyscale JPEG loading
+- [ ] 16-bit load of PNG

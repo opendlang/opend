@@ -56,7 +56,7 @@ extern(Windows)
         if (!bitmap) 
             return null;
 
-        bool is16bit = false;//(stbi__png_is16(&stb_callback, &ioh));
+        bool is16bit = stbi__png_is16(&stb_callback, &ioh);
 
         ubyte* decoded;
         int width, height, components;
@@ -93,13 +93,11 @@ extern(Windows)
         {
             if (components == 1)
             {
-                bitmap._type = FIT_RGB16;
+                bitmap._type = FIT_UINT16;
             }
             else if (components == 2)
             {
-                // No support for that in Freeimage.
-                free(decoded);
-                goto error;
+                bitmap._type = FIT_LA16;
             }
             else if (components == 3)
             {
@@ -175,7 +173,7 @@ extern(Windows)
 
         scope(exit) free(img);
 
-        // Write to output at once.
+        // Write all output at once. This is rather bad, could be done progressively.
         // PERF: adapt stb_image_write.h to output in our own buffer directly.
         if (len != io.write(img, 1, len, handle))
             return false;
