@@ -1,3 +1,12 @@
+/**
+@nogc nothrow mutex with thread-safe lazy init.
+
+Copyright: Copyright Guillaume Piolat 2022
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+
+Note: This library is re-implemented in D from FreeImage documentation (FreeImage3180.pdf).
+      See the differences in DIFFERENCES.md
+*/
 module gamut.internals.mutex;
 
 import core.atomic;
@@ -73,7 +82,7 @@ private:
         if (m is null)
             return;
 
-        // In general destorying classes like this is not
+        // In general destroying classes like this is not
         // safe, but since we know that the only base class
         // of Mutex is Object and it doesn't have a dtor
         // we can simply call the non-virtual __dtor() here.

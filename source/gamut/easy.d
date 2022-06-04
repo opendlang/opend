@@ -3,6 +3,9 @@ Easy API, for nicer D code. It replaces the FreeImage API, much like FreeImagePl
 
 Copyright: Copyright Guillaume Piolat 2022
 License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+
+Note: This library is re-implemented in D from FreeImage documentation (FreeImage3180.pdf).
+See the differences in DIFFERENCES.md
 */
 module gamut.easy;
 
@@ -141,7 +144,8 @@ public:
     }
 
     /// Returns: `true` if this Image has an internal bitmap.
-    ///          That means that loading/initialization succeeded.
+    ///          That means that loading/initialization succeeded. It doesn't mean that it
+    ///          has pixels, since the bitmap contains optional: pixels, thumbnail, and meta-data.
     bool isValid()
     {
         return _bitmap !is null;
