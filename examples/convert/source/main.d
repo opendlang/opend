@@ -70,7 +70,7 @@ int main(string[] args)
             throw new Exception("Couldn't open file " ~ input);
         }
 
-        Image converted;
+        /*Image converted;
         if (bitness == 8)
         {
             converted = image.convertToRGBA8();
@@ -80,7 +80,7 @@ int main(string[] args)
         {
             converted = image.convertToRGBA16();
             result = &converted;
-        }
+        }*/
 
         bool r = result.saveToFile(output);  
         if (!r)
