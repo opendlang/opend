@@ -20,5 +20,6 @@ Like FreeImage, it is based around a monomorphic image type, that can do it all.
 
 ## Why?
 
-and all design decisions have already been made.
+FreeImage API is good and covers most use cases.
 `easy.d` provides a wrapper around FIBITMAP to ease the API further.
+A pure D library simplifies your build.
