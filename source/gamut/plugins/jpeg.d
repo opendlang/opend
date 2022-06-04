@@ -31,33 +31,52 @@ extern(Windows)
 {
     FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
     {
-        // TODO: a way to decompress JPEG directly to RGBA8?
-        // TODO: grayscale JPEG.
-        // TODO: do NOT mandata a particular channel number. Just respect original content.
-
         JPEGIOHandle jio;
         jio.wrapped = io;
         jio.handle = handle;
 
-        int requestedComp = 3;
+        int requestedComp = -1; // keep original
+
+        int forceFlags = 0;
+        if (flags & JPEG_GREYSCALE) forceFlags++;
+        if (flags & JPEG_RGB) forceFlags++;
+        if (flags & JPEG_RGBA) forceFlags++;
+
+        if (forceFlags > 1)
+            return null; // JPEG_GREYSCALE, JPEG_RGB and JPEG_RGBA are mutually exclusive.
+
+        if (flags & JPEG_GREYSCALE) requestedComp = 1;
+        if (flags & JPEG_RGB)       requestedComp = 3;
+        if (flags & JPEG_RGBA)      requestedComp = 4;
+
         int width, height, actualComp;
         ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
         if (decoded is null)
             return null;
 
-        FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
+        FIBITMAP* bitmap = null;
+
+        if (actualComp != 1 && actualComp != 3 && actualComp != 4)
+            goto error2;
+
+        bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
         if (!bitmap) 
-            return null;
+            goto error2;
 
         bitmap._width = width;
         bitmap._height = height;
         bitmap._data = decoded.ptr;
-        bitmap._bpp = 8 * requestedComp;
+        bitmap._pitch = width * actualComp;
+        bitmap._bpp = 8 * actualComp;
         bitmap._type = FIT_BITMAP;
         return bitmap;
 
-        error:
-            free(bitmap);
+    error:
+        free(bitmap);
+
+    error2:
+        free(decoded.ptr);
+
         return null;
     }
 

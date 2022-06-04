@@ -53,3 +53,19 @@ enum : FREE_IMAGE_TYPE
     FIT_RGBAF,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
+
+// Load flags
+
+enum int JPEG_DEFAULT = 0;    /// Default JPEG loading.
+
+/// Load the JPEG in grayscale, faster than loading as RGB24 then converting to greyscale.
+/// Can't be used with either `JPEG_RGB` or `JPEG_RGBA`.
+enum int JPEG_GREYSCALE = 1;
+
+/// Load the JPEG in RGB8, can be faster than loading a greyscale JPEG then converting to RGB8.
+/// Can't be used with either `JPEG_GREYSCALE` or `JPEG_RGBA`.
+enum int JPEG_RGB = 2;
+
+/// Load the JPEG in RGBA8, can be faster than loading a JPEG then converting to RGBA8.
+/// Can't be used with either `JPEG_GREYSCALE` or `JPEG_RGB`.
+enum int JPEG_RGBA = 4;
