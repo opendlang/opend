@@ -31,9 +31,6 @@ Test data from [nativejson-benchmark](https://github.com/miloyip/nativejson-benc
 
 ```
 -------------------------------------------------
-Binary Ion parsing      4.32 GB/s (estimated)
-     is equivalent of   11.482 GB/s for JSON
-
 Binary Ion writing      0.517 GB/s
      is equivalent of   1.375 GB/s for JSON
 

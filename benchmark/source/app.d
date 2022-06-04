@@ -53,9 +53,6 @@ void main(string[] args)
             << "The benchmark for binary Ion format," << endl
             << "Mir Ion" << endl
             << "--------------------------------------------------" << endl
-            << "Binary Ion parsing      " << speedParsing << " GB/s" << " (estimated)" << endl
-            << "     is equivalent of   " << speedParsingVsJson << " GB/s for JSON" << endl
-            << endl
             << "Binary Ion writing      " << speedIonWriting << " GB/s" << endl
             << "     is equivalent of   " << speedIonWritingVsJson << " GB/s for JSON" << endl
             << endl
