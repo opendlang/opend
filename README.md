@@ -1,21 +1,24 @@
 # gamut
 
-`gamut` is a partial re-implementation of FreeImage in D.
-It recreates the library through its documentation (FreeImage3180.pdf).
+`gamut` is an image decoding/encoding library for D.
+
+It is a very partial re-implementation of FreeImage in D, recreating it from its documentation (FreeImage3180.pdf).
 
 `gamut` tries to have the fastest and most memory-conscious image decoders available in pure D code.
 It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 
 Like FreeImage, it is based around a monomorphic image type, that can do it all.
 
-## Status
+## Decoding
 
-- [x] Read 8-bit PNG 
-- [x] Read 16-bit PNG
-- [x] Write 8-bit PNG
-- [ ] Read 8-bit JPEG (no grayscale yet)
-- [ ] Read / Write QOI
-- [ ] Paletted loading
+- PNG: 8-bit and 16-bit, greyscale/LA/RGB/RGBA
+- JPEG: 8-bit, greyscale/RGB/RGBA, baseline and progressive
+- QOI: 8-bit, RGB/RGBA
+
+## Encoding
+
+- PNG. 8-bit, RGB/RGBA
+- QOI: 8-bit, RGB/RGBA
 
 
 ## Why?
