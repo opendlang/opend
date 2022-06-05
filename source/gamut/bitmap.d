@@ -464,7 +464,7 @@ int pitchForImage(FREE_IMAGE_TYPE type, int width, int bpp)
     if (bitmap) 
     {
         // bitmap successfully created!
-        assert(FreeImage_GetType(bitmap) == FIT_RGB16);
+        assert(FreeImage_GetImageType(bitmap) == FIT_RGB16);
         assert(FreeImage_GetWidth(bitmap) == 257);
         assert(FreeImage_GetHeight(bitmap) == 183);
         assert(FreeImage_GetBPP(bitmap) == 48);

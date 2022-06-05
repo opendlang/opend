@@ -10,13 +10,23 @@
 
     "configurations": [
         {
-            "name": "boost",
-          "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", 
-                                      "encodePNG" ]
+            "name": "boost+mit",
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", 
+                                        "encodePNG", "encodeQOI" ]
         },
         {
-            "name": "game",
-          "versions": [ "decodeJPEG", "decodePNG", "decodeQOI" ]
+            "name": "boost",
+            "versions": [ "decodeJPEG", "decodePNG", 
+                                        "encodePNG" ]
+        },
+        {
+            "name": "just-decode",
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI" ]
+        },
+        {
+            "name": "no-codecs",
+            "comment": "this is just for testing",
+            "versions": [  ]
         }
     ]
 }
