@@ -1,0 +1,12 @@
+Generally I'd like to:
+- keep LZ4 decoding speed
+- improves compression efficiency
+- support 10-bit,
+- support YUV?
+- stay one-pass
+- experiment with lossy for increasing compression
+- increase complexity and slow down encoding
+
+From discussions:
+- pretty clear LZ4 improves things
+- pretty clear using a FIFO improves things

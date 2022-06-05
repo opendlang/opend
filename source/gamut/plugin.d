@@ -226,6 +226,12 @@ FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
     }
     return FIF_UNKNOWN;
 }
+unittest
+{
+    import gamut.general;
+    FreeImage_Initialise(true);
+    assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jpg") == FIF_JPEG);
+}
 
 
 /// Returns FI_TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 

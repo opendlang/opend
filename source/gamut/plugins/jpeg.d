@@ -17,13 +17,14 @@ import gamut.bitmap;
 import gamut.io;
 import gamut.plugin;
 import gamut.codecs.jpegload;
+import gamut.codecs.stb_image_write;
 
 void registerJPEG() @trusted
 {
     FreeImage_RegisterInternalPlugin(FIF_JPEG, &InitProc_JPEG,
                                      "JPEG".ptr,
                                      "Independent JPEG Group".ptr,
-                                     "jpeg,jif,jfif".ptr,
+                                     "jpg,jpeg,jif,jfif".ptr,
                                      null);
 }
 
@@ -86,10 +87,10 @@ extern(Windows)
     void InitProc_JPEG (Plugin *plugin, int format_id)
     {
         assert(format_id == FIF_JPEG);
-        plugin.supportsRead = true;    
-
+        plugin.supportsRead = true;
+        plugin.supportsWrite = true;
         plugin.loadProc = &Load_JPEG;
-        plugin.saveProc = null;
+        plugin.saveProc = &Save_JPEG;
         plugin.validateProc = &Validate_JPEG;
         plugin.mimeProc = &MIME_JPEG;
     }
@@ -104,8 +105,46 @@ extern(Windows)
         static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
         return fileIsStartingWithSignature(io, handle, jpegSignature);
     }
-}
 
+    bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
+    {
+        if (page != 0)
+            return false;
+
+        if (!FreeImage_HasPixels(dib))
+            return false; // no pixel data
+
+        if (dib._type != FIT_BITMAP)
+            return false;
+
+        int components;
+
+        switch (dib._bpp)
+        {
+            case 8:  components = 1; break;
+            case 16: return false; // stb would throw away alpha
+            case 24: components = 3; break;
+            case 32: return false; // stb would throw away alpha
+            default:
+                return false;
+        }
+
+        JPEGIOHandle jio;
+        jio.wrapped = io;
+        jio.handle = handle;
+
+        void* userPointer = cast(void*)&jio;
+
+        int quality = 90; // TODO: option to choose that.
+
+        int res = stbi_write_jpg_to_func(&stb_stream_write, userPointer, 
+                                         dib._width, 
+                                         dib._height, 
+                                         components, 
+                                         dib._data, quality);
+
+        return res == 1 && !jio.errored;
+    }
 
     /// Input stream interface.
     /// This function is called when the internal input buffer is empty.
@@ -116,7 +155,9 @@ extern(Windows)
     ///   userData - user context for being used as closure.
     ///   Returns -1 on error, otherwise return the number of bytes actually written to the buffer (which may be 0).
     ///   Notes: This delegate will be called in a loop until you set *pEOF_flag to true or the internal buffer is full.
-    alias JpegStreamReadFunc = int function(void* pBuf, int max_bytes_to_read, bool* pEOF_flag, void* userData);
+   // alias JpegStreamReadFunc = int function(void* pBuf, int max_bytes_to_read, bool* pEOF_flag, void* userData);
+
+}
 
 private:
 
@@ -125,6 +166,10 @@ struct JPEGIOHandle
 {
     FreeImageIO* wrapped;
     fi_handle handle;
+
+    // stb_image_write doesn't check errors for write, so keep a flag and start ignoring output if
+    // an I/O error occurs.
+    bool errored = false;
 }
 
 /// This function is called when the internal input buffer is empty.
@@ -139,4 +184,17 @@ int stream_read_jpeg(void* pBuf, int max_bytes_to_read, bool* pEOF_flag, void* u
     }
     assert(read >= 0 && read <= 0x7fff_ffff);
     return cast(int) read;
+}
+
+// Note: context is a user pointer on a JPEGIOHandle.
+void stb_stream_write(void *context, const(void)* data, int size) @system
+{    
+    JPEGIOHandle* jio = cast(JPEGIOHandle*) context;
+
+    if (jio.errored)
+        return;
+
+    size_t written = jio.wrapped.write(data, 1, size, jio.handle);
+    if (written != size)
+        jio.errored = true; // poison the JPEGIOHandleB
 }

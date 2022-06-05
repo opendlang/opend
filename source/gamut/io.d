@@ -98,7 +98,7 @@ extern(C) @system
     /// Limitations: it is forbidden to ask more than 0x7fffffff bytes at once.
     alias ReadProc = size_t function(void* buffer, size_t size, size_t count, fi_handle handle);
 
-    alias WriteProc = size_t function(void* buffer, size_t size, size_t count, fi_handle handle);
+    alias WriteProc = size_t function(const(void)* buffer, size_t size, size_t count, fi_handle handle);
     
     // Origin: position from which offset is added
     //   SEEK_SET = beginning of file.
@@ -164,7 +164,7 @@ extern(C) @system
     // Note: these functions expect a `WrappedIO` to be passed as handle.
     import core.stdc.stdio;
 
-    size_t debug_fwrite (void* buffer, size_t size, size_t count, fi_handle handle)
+    size_t debug_fwrite (const(void)* buffer, size_t size, size_t count, fi_handle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Write %lld elements of %lld bytes\n", count, size);

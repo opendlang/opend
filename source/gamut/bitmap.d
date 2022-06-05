@@ -447,7 +447,7 @@ int pitchForImage(FREE_IMAGE_TYPE type, int width, int bpp)
     if (type == FIT_BITMAP)
     {
         assert(isValidBPPStandardBitmap(bpp));
-        bytesPerPixel = bytesForBPPStandardBitmap(bpp);        
+        bytesPerPixel = bytesForBPPStandardBitmap(bpp);
     }
     else
     {
@@ -456,9 +456,7 @@ int pitchForImage(FREE_IMAGE_TYPE type, int width, int bpp)
     return width * bytesPerPixel; //  no alignment
 }
 
-
-
-@safe unittest 
+@trusted unittest 
 {
     FIBITMAP *bitmap = FreeImage_AllocateT(FIT_RGB16, 257, 183);
     if (bitmap) 

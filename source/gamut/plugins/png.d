@@ -171,6 +171,8 @@ extern(Windows)
         int pitch = FreeImage_GetPitch(dib);
         int len;
         ubyte* pixels = dib._data;
+
+        // PERF: use stb_image_write stbi_write_png_to_func instead.
         ubyte *img = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
         if (img == null)
             return false;
