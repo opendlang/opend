@@ -18,6 +18,7 @@ Like FreeImage, it is based around a monomorphic image type, that can do it all.
 ## Encoding
 
 - PNG. 8-bit, RGB/RGBA
+- JPEG: 8-bit, greyscale/RGB, baseline
 - QOI: 8-bit, RGB/RGBA
 
 

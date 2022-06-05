@@ -231,6 +231,7 @@ unittest
     import gamut.general;
     FreeImage_Initialise(true);
     assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jpg") == FIF_JPEG);
+    assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jfif") == FIF_JPEG);
 }
 
 
