@@ -12,6 +12,7 @@ module gamut.plugins.qoi;
 nothrow @nogc @safe:
 
 import core.stdc.stdlib: malloc, free, realloc;
+import core.stdc.string: memcpy;
 import gamut.types;
 import gamut.bitmap;
 import gamut.io;
@@ -99,7 +100,7 @@ extern(Windows)
     {
         assert(format_id == FIF_QOI);
         plugin.supportsRead = true;
-        plugin.supportsWrite = false;
+        plugin.supportsWrite = true;
 
         plugin.loadProc = &Load_QOI;
         plugin.saveProc = &Save_QOI;
@@ -109,7 +110,8 @@ extern(Windows)
 
     const(char)* MIME_QOI() @trusted
     {
-        return "image/qoi".ptr; // TODO: proper MIME
+        // Discussion: https://github.com/phoboslab/qoi/issues/167#issuecomment-1117240154
+        return "image/qoi".ptr;
     }
 
     bool Validate_QOI(FreeImageIO *io, fi_handle handle) @trusted
@@ -120,7 +122,56 @@ extern(Windows)
 
     bool Save_QOI(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
     {
-        assert(false);
-        // TODO
+        if (page != 0)
+            return false;
+
+        if (!FreeImage_HasPixels(dib))
+            return false; // no pixel data
+
+        if (dib._type != FIT_BITMAP)
+            return false; // no support for say, 16-bit
+
+        qoi_desc desc;
+        desc.width = dib._width;
+        desc.height = dib._height;
+        desc.colorspace = QOI_SRGB; // TODO: support other colorspace somehow, or at least fail if not SRGB
+        
+        switch (dib._bpp)
+        {
+            case 24: desc.channels = 3; break;
+            case 32: desc.channels = 4; break;
+            default: 
+                return false; // not supported
+        }
+
+        // PERF: remove that intermediate copy, whose sole purpose is being gap-free
+        // <temp>
+        int len = desc.width * desc.height * desc.channels;
+        ubyte* continuous = cast(ubyte*) malloc(len);
+        if (!continuous)
+            return false;
+        scope(exit) free(continuous);
+        // removes holes
+        for (int y = 0; y < desc.height; ++y)
+        {
+            ubyte* source = dib._data + y * dib._pitch;
+            ubyte* dest   = continuous + y * desc.width * desc.channels;
+            int lineBytes = desc.channels * desc.width;
+            memcpy(dest, source, lineBytes);
+        }
+        // </temp>
+        
+        int qoilen;
+        ubyte* encoded = cast(ubyte*) qoi_encode(continuous, &desc, &qoilen);
+        if (encoded == null)
+            return false;
+        scope(exit) free(encoded);
+
+        // Write all output at once. This is rather bad, could be done progressively.
+        // PERF: adapt qoi writer to output in our own buffer directly.
+        if (qoilen != io.write(encoded, 1, qoilen, handle))
+            return false;
+
+        return true;
     }
 }

@@ -16,14 +16,10 @@ import gamut.types;
 import gamut.io;
 import gamut.plugin;
 
-
-enum GAMUT_MAX_WIDTH = 16384;
-enum GAMUT_MAX_HEIGHT = 16384;
+enum GAMUT_MAX_WIDTH = 16384;  /// No FIBITMAP can exceed this width in gamut.
+enum GAMUT_MAX_HEIGHT = 16384; /// No FIBITMAP can exceed this height in gamut.
 
 nothrow @nogc @safe:
-
-// TODO: for security, disallow image above a certain width and height, handle that as error
-//       check for overflow in image creation WxH
 
 struct FIBITMAP
 {
