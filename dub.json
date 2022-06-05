@@ -12,12 +12,12 @@
         {
             "name": "boost+mit",
             "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", 
-                                        "encodePNG", "encodeQOI" ]
+                          "encodeJPEG"  "encodePNG", "encodeQOI" ]
         },
         {
             "name": "boost",
             "versions": [ "decodeJPEG", "decodePNG", 
-                                        "encodePNG" ]
+                          "encodeJPEG", "encodePNG" ]
         },
         {
             "name": "just-decode",

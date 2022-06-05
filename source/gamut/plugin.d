@@ -29,6 +29,11 @@ version(decodeQOI)
 else version(encodeQOI)
     version = encodeOrDecodeQOI;
 
+version(decodeJPEG)
+    version = encodeOrDecodeJPEG;
+else version(encodeJPEG)
+    version = encodeOrDecodeJPEG;
+
 /**
 "Through average use you won’t probably notice it, FreeImage is plugin driven. Each bitmap 
 loader/saver is in fact a plugin module that is linked inside the integrated plugin manager. 
@@ -358,7 +363,7 @@ package void FreeImage_registerInternalPlugins()
         registerPNG();
     }
 
-    version(decodeJPEG)
+    version(encodeOrDecodeJPEG)
     {
         import gamut.plugins.jpeg;
         registerJPEG();
