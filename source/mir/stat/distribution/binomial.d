@@ -122,7 +122,7 @@ unittest {
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.bignum.fp: fp_log;
+    import mir.bignum.fp: Fp, fp_log;
     import mir.conv: to;
     import mir.math.common: approxEqual, exp, log;
 
@@ -195,7 +195,7 @@ unittest {
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.bignum.fp: fp_log;
+    import mir.bignum.fp: Fp, fp_log;
     import mir.math.common: approxEqual;
 
     enum uint val = 1_000_000;

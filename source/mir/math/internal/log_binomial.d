@@ -110,7 +110,7 @@ T logBinomialCoefficient(T = double)(ulong n, uint k)
 @safe pure nothrow @nogc
 version(mir_stat_test)
 unittest {
-    import mir.bignum.fp: fp_log;
+    import mir.bignum.fp: Fp, fp_log;
     import mir.math.numeric: binomialCoefficient;
     import mir.math.common: approxEqual, log;
 
