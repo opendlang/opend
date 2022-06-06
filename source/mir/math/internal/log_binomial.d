@@ -13,9 +13,10 @@ import mir.internal.utility: isFloatingPoint;
 
 private enum size_t logFactorialAlternative = 2500;
 
-private
+///
 T logFactorial(T = double)(ulong count, ulong start = 1)
-    in (start)
+    if (isFloatingPoint!T)
+    in (start, "start must be larger than zero")
 {
     import mir.bignum.fp: fp_log;
     import mir.math.numeric: factorial;
@@ -80,9 +81,10 @@ unittest {
 
 private enum size_t logBinomialCoefficientAlternative = 2500;
 
+///
 T logBinomialCoefficient(T = double)(ulong n, uint k)
     if (isFloatingPoint!T)
-    in(k <= n)
+    in (k <= n, "k must be less than or equal to n")
 {
     import mir.math.common: log;
     import mir.bignum.fp: fp_log;

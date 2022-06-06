@@ -17,8 +17,10 @@ import mir.internal.utility: isFloatingPoint;
 /++
 Computes the binomial probability mass function (PMF).
 
-This function is designed to output floating point values. For large values of
-`n`, `lp_binomialPMF` may be more likely to provide accurate values. 
+This function can control the type of the function output through the template
+parameter `T`. By default, `T` is set equal to `double`, but other floating
+point types or extended precision floating point types (e.g. `Fp!128`) can be
+used. For large values of `n`, `Fp!128` is recommended.
 
 Params:
     k = value to evaluate PMF (e.g. number of "heads")
@@ -31,9 +33,9 @@ See_also:
 @safe pure nothrow @nogc
 T binomialPMF(T = double, U)(const uint k, const uint n, const U p)
     if (isFloatingPoint!U)
-    in(k <= n, "k must be less than or equal to n")
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     static if (isFloatingPoint!T) {
         import mir.math.common: pow;
@@ -150,9 +152,9 @@ See_also:
 +/
 T binomialLPMF(T)(uint k, uint n, const T p)
     if (isFloatingPoint!T)
-    in(k <= n, "k must be less than or equal to n")
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.bignum.fp: fp_log;
     import mir.math.internal.xlogy: xlogy, xlog1py;
