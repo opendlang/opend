@@ -257,9 +257,11 @@ unittest
     foreach(i, ref e; x)
         e = i + 1;
 
-    assert(x.sweep!(f, "-").all!approxEqual([-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]));
-    assert(x.sweep!"-"(3.5).all!approxEqual([-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]));
-    assert(x.sweep!(f, "+").all!approxEqual([4.5, 5.5, 6.5, 7.5, 8.5, 9.5]));
+    static immutable result1 = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
+    assert(x.sweep!(f, "-").all!approxEqual(result1));
+    assert(x.sweep!"-"(3.5).all!approxEqual(result1));
+    static immutable result2 = [4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
+    assert(x.sweep!(f, "+").all!approxEqual(result2));
 }
 
 /++
@@ -480,8 +482,9 @@ unittest
     foreach(i, ref e; x)
         e = i + 1;
 
-    assert(x.scale.all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
-    assert(x.scale(3.5, 1.87083).all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
+    static immutable result = [-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306];
+    assert(x.scale.all!approxEqual(result));
+    assert(x.scale(3.5, 1.87083).all!approxEqual(result));
 }
 
 /++
@@ -705,8 +708,10 @@ unittest
     foreach(i, ref e; x)
         e = i + 1;
 
-    assert(x.zscore.all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
-    assert(x.zscore(true).all!approxEqual([-1.46385, -0.87831, -0.29277, 0.29277, 0.87831, 1.46385]));
+    static immutable result1 = [-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306];
+    assert(x.zscore.all!approxEqual(result1));
+    static immutable result2 = [-1.46385, -0.87831, -0.29277, 0.29277, 0.87831, 1.46385];
+    assert(x.zscore(true).all!approxEqual(result2));
 }
 
 /++
@@ -986,5 +991,6 @@ unittest
     foreach(i, ref e; x)
         e = value[i];
 
-    assert(x.robustScale.all!approxEqual([14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000]));
+    static immutable result = [14.583333, 0.583333, -0.083333, 0.083333, 0.416667, -0.083333, 0.583333, -0.583333, -1.583333, -18.750000];
+    assert(x.robustScale.all!approxEqual(result));
 }
