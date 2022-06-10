@@ -32,8 +32,6 @@ alias FI_SaveProc = bool function(FreeImageIO *io, FIBITMAP *dib, fi_handle hand
 /// I/O rewinding: this function must preserve the I/O cursor.
 alias FI_ValidateProc = bool function(FreeImageIO *io, fi_handle handle);
 
-// TODO: add usage count, so that a plugin can be unloaded after use in case is it disabled.
-
 struct Plugin
 {
     /// Type string for the bitmap. For example, a plugin that loads BMPs returns the string "BMP".
