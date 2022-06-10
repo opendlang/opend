@@ -62,7 +62,12 @@ extern(Windows)
 
         ubyte* decoded;
         int width, height, components;
-        int requiredComp = 0; // keep original number of channels.
+
+        int requestedComp = computeRequestedImageComponents(flags);
+        if (requestedComp == 0) // error
+            return null;
+        if (requestedComp == -1)
+            requestedComp = 0; // auto
 
         // rewind stream
         if (!io.rewind(handle))
@@ -72,11 +77,11 @@ extern(Windows)
 
         if (is16bit)
         {
-            decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requiredComp);
+            decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
         }
         else
         {
-            decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requiredComp);
+            decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
         }
 
         if (decoded is null)

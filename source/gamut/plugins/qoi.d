@@ -50,6 +50,12 @@ extern(Windows)
         if (buf is null)
             return null;
 
+        int requestedComp = computeRequestedImageComponents(flags);
+        if (requestedComp == 0) // error
+            return null;
+        if (requestedComp == -1)
+            requestedComp = 0; // auto
+
         FIBITMAP* bitmap = null;
         ubyte* decoded;
         qoi_desc desc;
@@ -58,7 +64,7 @@ extern(Windows)
         if (len != io.read(buf, 1, len, handle))
             goto error;
         
-        decoded = cast(ubyte*) qoi_decode(buf, len, &desc, 0);
+        decoded = cast(ubyte*) qoi_decode(buf, len, &desc, requestedComp);
         if (decoded is null)
             goto error;        
 

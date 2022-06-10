@@ -37,19 +37,9 @@ extern(Windows)
         jio.wrapped = io;
         jio.handle = handle;
 
-        int requestedComp = -1; // keep original
-
-        int forceFlags = 0;
-        if (flags & JPEG_GREYSCALE) forceFlags++;
-        if (flags & JPEG_RGB) forceFlags++;
-        if (flags & JPEG_RGBA) forceFlags++;
-
-        if (forceFlags > 1)
-            return null; // JPEG_GREYSCALE, JPEG_RGB and JPEG_RGBA are mutually exclusive.
-
-        if (flags & JPEG_GREYSCALE) requestedComp = 1;
-        if (flags & JPEG_RGB)       requestedComp = 3;
-        if (flags & JPEG_RGBA)      requestedComp = 4;
+        int requestedComp = computeRequestedImageComponents(flags);
+        if (requestedComp == 0)
+            return null; // Invalid flags.
 
         int width, height, actualComp;
         ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
