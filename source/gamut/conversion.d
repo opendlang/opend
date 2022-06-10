@@ -18,6 +18,7 @@ nothrow @nogc @safe:
 /// For 48-bit RGB images, conversion is done by dividing each 16-bit channel by 256 and by 
 /// setting the alpha channel to an opaque value (0xFF). For 64-bit RGBA images, conversion is 
 /// done by dividing each 16-bit channel by 256. A NULL value is returned for other nonstandard bitmap types.
+
 FIBITMAP* FreeImage_ConvertTo32Bits(FIBITMAP *dib)
 {
     assert(dib != null);
@@ -25,10 +26,6 @@ FIBITMAP* FreeImage_ConvertTo32Bits(FIBITMAP *dib)
     // No pixels => a clone could be fine...
     // TODO: clone or crash?
     assert(FreeImage_HasPixels(dib));
-
-    // Already 32-bit, return a clone regardless of mask.
-    if (dib._type == FIT_BITMAP && dib._bpp == 32)
-        return FreeImage_Clone(dib);    
 
     assert(false);
 }

@@ -34,11 +34,6 @@ package:
 
     /// Pitch in bytes between lines.
     int _pitch; 
-
-    // Notes: masks are only valid if _type == FIT_BITMAP and _bpp = 16 or 24 or 32
-    uint _red_mask;
-    uint _green_mask;
-    uint _blue_mask;
 }
 
 
@@ -48,56 +43,18 @@ package:
 //
 // ================================================================================================
 
-/// If you want to create a new bitmap in memory from scratch, without loading a pre-made 
-/// bitmap from disc, you use this function. `FreeImage_Allocate` takes a width and height 
-/// parameter, and a bpp parameter to specify the bit depth of the image and returns a 
-/// FIBITMAP. The optional last three parameters (red_mask, green_mask and blue_mask) are 
-/// used to tell FreeImage the bit-layout of the color components in the bitmap, e.g. where in a 
-/// pixel the red, green and blue components are stored. To give you an idea about how to 
-/// interpret the color masks: when red_mask is 0xFF000000 this means that the last 8 bits in 
-/// one pixel are used for the color red. When green_mask is 0x000000FF, it means that the first 
-/// 8 bits in a pixel are used for the color green.
+/// Allocate a black image.
 ///
-/// Note: FreeImage_Allocate allocates an empty bitmap, i.e. a bitmap that is filled completely 
-/// with zeroes. Zero in a bitmap is usually interpreted as black. This means that if your 
-/// bitmap is palletised it will contain a completely black palette. You can access, and 
-/// hence populate the palette by using the function FreeImage_GetPalette.
-/// For 8-bit images only, FreeImage_Allocate will build a default greyscale palette. 
-FIBITMAP* FreeImage_Allocate(int width, 
-                             int height, 
-                             int bpp, 
-                             uint red_mask = 0, 
-                             uint green_mask = 0, 
-                             uint blue_mask = 0) @trusted
-{
-    return FreeImage_AllocateT(FIT_BITMAP, width, height, bpp, red_mask, green_mask, blue_mask);
-}
-
-/// While most imaging applications only deal with photographic images, many scientific 
-/// applications need to deal with high resolution images (e.g. 16-bit greyscale images), with real 
-/// valued pixels or even with complex pixels (think for example about the result of a Fast Fourier 
-/// Transform applied to a 8-bit greyscale image: the result is a complex image). 
-/// A special parameter, an enum named `FREE_IMAGE_TYPE`, is used to specify the bitmap 
-/// type of a FIBITMAP.
-FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type, 
-                              int width, 
-                              int height, 
-                              int bpp = 8, 
-                              uint red_mask = 0, 
-                              uint green_mask = 0, 
-                              uint blue_mask = 0) @trusted
+/// Params:
+///     type The pixel format of the image. 
+///     width The width of the image.
+///     height The height of the image.
+///
+/// Returns:
+///     A newly allocated `FIBITMAP`, or `null` if an error occured.
+FIBITMAP* FreeImage_Allocate(FREE_IMAGE_TYPE type, int width, int height) @trusted
 {
     assert(type != FIT_UNKNOWN);
-    FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
-    if (!bitmap) 
-        return null;
-    bitmap._type = type;
-    int pitch = pitchForImage(type, width, bpp);
-    size_t bytes = height * pitch; // TODO: avoid overflow here
-
-    ubyte* data = cast(ubyte*) realloc(null, bytes);
-    if (data == null)
-        goto error;
 
     if (width > GAMUT_MAX_WIDTH)
         return null;
@@ -105,10 +62,20 @@ FIBITMAP* FreeImage_AllocateT(FREE_IMAGE_TYPE type,
     if (height > GAMUT_MAX_HEIGHT)
         return null;
 
+    FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
+    if (!bitmap) 
+        return null;
+    bitmap._type = type;
+    int pitch = pitchForImage(type, width);
+    size_t bytes = height * pitch;
+
+    ubyte* data = cast(ubyte*) realloc(null, bytes);
+    if (data == null)
+        goto error;
+
     bitmap._width = width;
     bitmap._height = height;
     bitmap._data = data;
-    bitmap._bpp = bpp;
     bitmap._pitch = pitch;
     return bitmap;
 
@@ -229,13 +196,8 @@ FIBITMAP* FreeImage_Clone(FIBITMAP *dib) @trusted
     FREE_IMAGE_TYPE type = dib._type;
     int width            = dib._width;
     int height           = dib._height;
-    int bpp              = dib._bpp;
-    
-    uint red_mask = dib._red_mask;
-    uint green_mask = dib._green_mask;
-    uint blue_mask = dib._blue_mask;
 
-    FIBITMAP* bitmap = FreeImage_AllocateT(dib._type, width, height, bpp, red_mask, green_mask, blue_mask);
+    FIBITMAP* bitmap = FreeImage_Allocate(dib._type, width, height);
     if (!bitmap) 
         return null;
 
@@ -287,19 +249,11 @@ int FreeImage_GetPaletteSize(FIBITMAP *dib) pure
 deprecated("Use instead FreeImage_GetPaletteSize") 
     alias FreeImage_GetColorsUsed = FreeImage_GetPaletteSize; ///ditto
 
-/// Returns the size of one pixel in the bitmap in bits. For example when each pixel takes 32-bits 
-/// of space in the bitmap, this function returns 32. Possible bit depths are 1, 4, 8, 16, 24, 32 
-/// for standard bitmaps and 16-, 32-, 48-, 64-, 96- and 128-bit for non standard bitmaps.
+/// Returns: Size of one pixel in the bitmap, in bits.
 int FreeImage_GetBPP(FIBITMAP *dib) pure
 {
     assert(dib._type != FIT_UNKNOWN);
-
-    if (dib._type == FIT_BITMAP)
-    {
-        return dib._bpp;
-    }
-    else
-        return 8 * bytesForImageType(dib._type);
+    return 8 * bytesForImageType(dib._type);
 }
 
 /// Returns the width of the bitmap in pixel units.
@@ -318,13 +272,7 @@ int FreeImage_GetHeight(FIBITMAP *dib) pure
 int FreeImage_GetWidthInBytes(FIBITMAP *dib) pure
 {
     assert(dib._type != FIT_UNKNOWN);
-
-    if (dib._type == FIT_BITMAP)
-    {
-        return dib._width * (dib._bpp / 8);
-    }
-    else
-        return dib._width * bytesForImageType(dib._type);
+    return dib._width * bytesForImageType(dib._type);
 }
 
 /// Returns the offset between two consecutive scanlines, in bytes.
@@ -338,38 +286,6 @@ int FreeImage_GetPitch(FIBITMAP *dib) pure
 deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeImage_GetWidthInBytes if you mean that.") 
     alias FreeImage_GetLine = FreeImage_GetWidthInBytes;
 
-/// Returns a bit pattern describing the red color component of a pixel in a FIBITMAP, returns 0 
-/// otherwise. 
-/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
-uint FreeImage_GetRedMask(FIBITMAP *dib) pure
-{
-    if (hasValidRGBMask(dib))
-        return dib._red_mask;
-    else
-        return 0;
-}
-
-/// Returns a bit pattern describing the green color component of a pixel in a FIBITMAP, returns 0
-/// otherwise. 
-/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
-uint FreeImage_GetGreenMask(FIBITMAP *dib) pure
-{
-    if (hasValidRGBMask(dib))
-        return dib._green_mask;
-    else
-        return 0;
-}
-
-/// Returns a bit pattern describing the blue color component of a pixel in a FIBITMAP, returns 0 
-/// otherwise. 
-/// This is only valid for FIF_BITMAP with a bpp of 16, 24, or 32.
-uint FreeImage_GetBlueMask(FIBITMAP *dib) pure
-{
-    if (hasValidRGBMask(dib))
-        return dib._blue_mask;
-    else
-        return 0;
-}
 
 /// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
 /// possibly some metadata). 
@@ -394,33 +310,15 @@ bool FreeImage_HasPixels(FIBITMAP *dib) pure
 
 private:
 
-/// Valid BPP for standard bitmaps FIT_BITMAPS.
-bool isValidBPPStandardBitmap(int bpp) pure
-{
-    return bpp == 1 || bpp == 4 || bpp == 8 || bpp == 16 || bpp == 24 || bpp == 32;
-}
-
-// Size of one pixel for type FIT_BITMAP + bpp
-int bytesForBPPStandardBitmap(int bpp) pure
-{
-    if (bpp < 8) return 1;
-    else return (bpp >> 3);
-}
-
-bool hasValidRGBMask(const(FIBITMAP)* bitmap) pure
-{
-    if (bitmap._type == FIT_BITMAP)
-        return false;
-    return (bitmap._bpp == 16 || bitmap._bpp == 24 || bitmap._bpp == 32);
-}
-
 // Size of one pixel for type
 int bytesForImageType(FREE_IMAGE_TYPE type) pure
 {
-    assert(type != FIT_UNKNOWN && type != FIT_BITMAP);
+    assert(type != FIT_UNKNOWN);
 
     switch(type)
     {
+        case FIT_UINT8:   return 1;
+        case FIT_INT8:    return 1;
         case FIT_UINT16:  return 2;
         case FIT_INT16:   return 2;
         case FIT_UINT32:  return 4;
@@ -428,8 +326,11 @@ int bytesForImageType(FREE_IMAGE_TYPE type) pure
         case FIT_FLOAT:   return 4;
         case FIT_DOUBLE:  return 8;
         case FIT_COMPLEX: return 16;
+        case FIT_LA8:     return 2;
         case FIT_LA16:    return 4;
+        case FIT_RGB8:    return 3;
         case FIT_RGB16:   return 6;
+        case FIT_RGBA8:   return 4;
         case FIT_RGBA16:  return 8;
         case FIT_RGBF:    return 12;
         case FIT_RGBAF:   return 16;
@@ -440,20 +341,9 @@ int bytesForImageType(FREE_IMAGE_TYPE type) pure
 
 /// Suggest a length of line, in bytes, including padding (FUTURE: with given alignment).
 /// Length must be enough to hold all pixel data for this line.
-int pitchForImage(FREE_IMAGE_TYPE type, int width, int bpp)
+int pitchForImage(FREE_IMAGE_TYPE type, int width)
 {
-    int bytesPerPixel;
-    assert (type != FIT_UNKNOWN);
-    if (type == FIT_BITMAP)
-    {
-        assert(isValidBPPStandardBitmap(bpp));
-        bytesPerPixel = bytesForBPPStandardBitmap(bpp);
-    }
-    else
-    {
-        bytesPerPixel = bytesForImageType(bpp);
-    }
-    return width * bytesPerPixel; //  no alignment
+    return width * bytesForImageType(type); //  no alignment
 }
 
 @trusted unittest 

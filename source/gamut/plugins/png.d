@@ -88,12 +88,26 @@ extern(Windows)
         bitmap._width = width;
         bitmap._height = height;
         bitmap._data = decoded; // works because codec.pngload and gamut both use malloc/free
-        bitmap._bpp = (is16bit ? 16 : 8) * components; // store even if not significant
         bitmap._pitch = width * components;
 
         if (!is16bit)
         {
-            bitmap._type = FIT_BITMAP;
+            if (components == 1)
+            {
+                bitmap._type = FIT_UINT8;
+            }
+            else if (components == 2)
+            {
+                bitmap._type = FIT_LA8;
+            }
+            else if (components == 3)
+            {
+                bitmap._type = FIT_RGB8;
+            }
+            else if (components == 4)
+            {
+                bitmap._type = FIT_RGBA8;
+            }
         }
         else
         {
@@ -160,20 +174,16 @@ extern(Windows)
         if (!FreeImage_HasPixels(dib))
             return false; // no pixel data
 
-        if (dib._type != FIT_BITMAP)
-            return false; // no support for say, 16-bit
-
         int channels = 0;
-        switch (dib._bpp)
+        switch (dib._type)
         {
-            case 8:   channels = 1; break;
-            case 16:  channels = 2; break;
-            case 24:  channels = 3; break;
-            case 32:  channels = 4; break;
-            default: break;
+            case FIT_UINT8:  channels = 1; break;
+            case FIT_LA8:    channels = 2; break;
+            case FIT_RGB8:   channels = 3; break;
+            case FIT_RGBA8:  channels = 4; break;
+            default:
+                return false;
         }
-        if (channels == 0)
-            return false; // unsupported number of channels
 
         int width = dib._width;
         int height = dib._height;

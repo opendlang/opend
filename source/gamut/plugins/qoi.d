@@ -74,12 +74,11 @@ extern(Windows)
         bitmap._data = decoded;
         bitmap._width = desc.width;
         bitmap._height = desc.height;
-        
-        bitmap._type = FIT_BITMAP;
+
         if (desc.channels == 3)
-            bitmap._bpp = 24;
+            bitmap._type = FIT_RGB8;
         else if (desc.channels == 4)
-            bitmap._bpp = 32;
+            bitmap._type = FIT_RGBA8;
         else
             goto error3;
 
@@ -136,18 +135,16 @@ extern(Windows)
         if (!FreeImage_HasPixels(dib))
             return false; // no pixel data
 
-        if (dib._type != FIT_BITMAP)
-            return false; // no support for say, 16-bit
 
         qoi_desc desc;
         desc.width = dib._width;
         desc.height = dib._height;
         desc.colorspace = QOI_SRGB; // TODO: support other colorspace somehow, or at least fail if not SRGB
         
-        switch (dib._bpp)
+        switch (dib._type)
         {
-            case 24: desc.channels = 3; break;
-            case 32: desc.channels = 4; break;
+            case FIT_RGB8:  desc.channels = 3; break;
+            case FIT_RGBA8: desc.channels = 4; break;
             default: 
                 return false; // not supported
         }

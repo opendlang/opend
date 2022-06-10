@@ -72,8 +72,13 @@ extern(Windows)
         bitmap._height = height;
         bitmap._data = decoded.ptr;
         bitmap._pitch = width * actualComp;
-        bitmap._bpp = 8 * actualComp;
-        bitmap._type = FIT_BITMAP;
+        switch (actualComp)
+        {
+            case 1: bitmap._type = FIT_UINT8; break;
+            case 3: bitmap._type = FIT_RGB8; break;
+            case 4: bitmap._type = FIT_RGBA8; break;
+            default:
+        }        
         return bitmap;
 
     error:
@@ -123,17 +128,19 @@ extern(Windows)
         if (!FreeImage_HasPixels(dib))
             return false; // no pixel data
 
-        if (dib._type != FIT_BITMAP)
-            return false;
-
         int components;
 
-        switch (dib._bpp)
+        switch (dib._type)
         {
-            case 8:  components = 1; break;
-            case 16: return false; // stb would throw away alpha
-            case 24: components = 3; break;
-            case 32: return false; // stb would throw away alpha
+            case FIT_UINT8:
+                components = 1; break;
+            case FIT_LA8:
+                return false; // stb would throw away alpha
+            case FIT_RGB8: 
+                components = 3; 
+                break;
+            case FIT_RGBA8: 
+                return false; // stb would throw away alpha
             default:
                 return false;
         }

@@ -6,10 +6,5 @@
     "dependencies": 
     {
         "gamut": { "path": "../.." }
-    },
-
-    "subConfigurations":
-    {
-        "gamut": "just-decode"
     }
 }

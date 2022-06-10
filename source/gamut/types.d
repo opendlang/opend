@@ -29,25 +29,34 @@ enum : FREE_IMAGE_FORMAT
 /// Number of internally-supported formats. Equal to 1 + maximum internal format (here: FIF_QOI).
 package enum int FREE_IMAGE_FORMAT_NUM = 25; 
 
-
+/// Image format.
 alias FREE_IMAGE_TYPE = int;
 
 enum : FREE_IMAGE_TYPE
 {
-    FIT_UNKNOWN,    /// Unknown format (returned value only, never use it as input value)
-    FIT_BITMAP,     /// Standard image: 1-, 4-, 8-, 16-, 24-, 32-bit
-    FIT_UINT16,     /// Array of unsigned short: unsigned 16-bit
-    FIT_INT16,      /// Array of short: signed 16-bit
-    FIT_UINT32,     /// Array of unsigned long: unsigned 32-bit
-    FIT_INT32,      /// Array of long: signed 32-bit
-    FIT_FLOAT,      /// Array of float: 32-bit IEEE floating point
-    FIT_DOUBLE,     /// Array of double: 64-bit IEEE floating point
-    FIT_COMPLEX,    /// Array of FICOMPLEX: 2 x 64-bit IEEE floating point
-    FIT_LA16,       /// 32-bit Luminance Alpha image: 2 x unsigned 16-bit
-    FIT_RGB16,      /// 48-bit RGB image: 3 x unsigned 16-bit
-    FIT_RGBA16,     /// 64-bit RGBA image: 4 x unsigned 16-bit
-    FIT_RGBF,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
-    FIT_RGBAF,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
+    FIT_UNKNOWN = -1,/// Unknown format (returned value only, never use it as input value)
+    
+    FIT_UINT8 = 0,   /// Array of ushort: unsigned 8-bit
+    FIT_INT8,        /// Array of short: signed 8-bit
+    FIT_UINT16,      /// Array of ushort: unsigned 16-bit
+    FIT_INT16,       /// Array of short: signed 16-bit
+    FIT_UINT32,      /// Array of uint: unsigned 32-bit
+    FIT_INT32,       /// Array of int: signed 32-bit
+    FIT_FLOAT,       /// Array of float: 32-bit IEEE floating point
+    FIT_DOUBLE,      /// Array of double: 64-bit IEEE floating point
+    FIT_COMPLEX,     /// Array of FICOMPLEX: 2 x 64-bit IEEE floating point
+
+    FIT_LA8,         /// 16-bit Luminance Alpha image: 2 x unsigned 8-bit
+    FIT_LA16,        /// 32-bit Luminance Alpha image: 2 x unsigned 16-bit
+
+    FIT_RGB8,        /// 24-bit RGB image: 3 x unsigned 8-bit
+    FIT_RGB16,       /// 48-bit RGB image: 3 x unsigned 16-bit
+
+    FIT_RGBA8,       /// 32-bit RGBA image: 4 x unsigned 8-bit
+    FIT_RGBA16,      /// 64-bit RGBA image: 4 x unsigned 16-bit
+
+    FIT_RGBF,        /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
+    FIT_RGBAF,       /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
 
