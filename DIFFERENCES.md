@@ -1,13 +1,14 @@
 ## Differences from original FreeImage
 
+- Intended API is to use `Image` only, for everything.
 - `FI_BITMAP` doesn't exist, it's all specialized formats.
    * Consequently, BPP doesn't exist either as a concept in Gamut.
    * Consequently, red/green/blue masks do not exist either.
 
 - Lacks support for most formats.
+- No plugin system, format support is statically defined by DUB configurations.
+  Gamut is a static library only. Plugin callbacks are extern(D) instead of extern(Windows).
 - Add support for vanilla QOI format.
-
-
 - no bitmap can have a width or height larger than 16384.
 - Files of size larger than 2^31-1 bytes are not supported.
 - Unlike in FreeImage, scan lines in FIBITMAP are not aligned to 32-bit boundaries.
