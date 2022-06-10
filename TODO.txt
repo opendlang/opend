@@ -1,0 +1,5 @@
+
+- Merge Image and FIBITMAP, make a normal D struct.
+
+- Implement QOI+LZ4 as a format.
+- All format plugins are static

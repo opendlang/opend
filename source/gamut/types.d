@@ -49,6 +49,15 @@ enum ImageType
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
+// Limits
+
+/// No FIBITMAP can exceed this width in gamut.
+enum GAMUT_MAX_IMAGE_WIDTH = 16384;  
+
+/// No FIBITMAP can exceed this height in gamut.
+enum GAMUT_MAX_IMAGE_HEIGHT = 16384; 
+
+
 
 // Load flags
 

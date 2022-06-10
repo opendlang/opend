@@ -87,7 +87,7 @@ extern(Windows)
         if (decoded is null)
             goto error;
 
-        if (width > GAMUT_MAX_WIDTH || height > GAMUT_MAX_HEIGHT)
+        if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
             goto error;
 
         bitmap._width = width;

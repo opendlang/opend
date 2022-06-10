@@ -16,8 +16,6 @@ import gamut.types;
 import gamut.io;
 import gamut.plugin;
 
-enum GAMUT_MAX_WIDTH = 16384;  /// No FIBITMAP can exceed this width in gamut.
-enum GAMUT_MAX_HEIGHT = 16384; /// No FIBITMAP can exceed this height in gamut.
 
 nothrow @nogc @safe:
 
@@ -56,10 +54,10 @@ FIBITMAP* FreeImage_Allocate(ImageType type, int width, int height) @trusted
 {
     assert(type != ImageType.unknown);
 
-    if (width > GAMUT_MAX_WIDTH)
+    if (width > GAMUT_MAX_IMAGE_WIDTH)
         return null;
 
-    if (height > GAMUT_MAX_HEIGHT)
+    if (height > GAMUT_MAX_IMAGE_HEIGHT)
         return null;
 
     FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);

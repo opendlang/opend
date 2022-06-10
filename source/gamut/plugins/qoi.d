@@ -68,7 +68,7 @@ extern(Windows)
         if (decoded is null)
             goto error;        
 
-        if (desc.width > GAMUT_MAX_WIDTH || desc.height > GAMUT_MAX_HEIGHT)
+        if (desc.width > GAMUT_MAX_IMAGE_WIDTH || desc.height > GAMUT_MAX_IMAGE_HEIGHT)
             goto error2;
 
         // TODO: support desc.colorspace information
