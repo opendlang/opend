@@ -24,7 +24,7 @@ version(encodePNG) import gamut.codecs.stb_image_write;
 
 void registerPNG() @trusted
 {
-    FreeImage_RegisterInternalPlugin(FIF_PNG, &InitProc_PNG,
+    FreeImage_RegisterInternalPlugin(ImageFormat.PNG, &InitProc_PNG,
                                      "PNG".ptr,
                                      "Portable Network Graphics".ptr,
                                      "png".ptr,
@@ -94,38 +94,38 @@ extern(Windows)
         {
             if (components == 1)
             {
-                bitmap._type = FIT_UINT8;
+                bitmap._type = ImageType.uint8;
             }
             else if (components == 2)
             {
-                bitmap._type = FIT_LA8;
+                bitmap._type = ImageType.la8;
             }
             else if (components == 3)
             {
-                bitmap._type = FIT_RGB8;
+                bitmap._type = ImageType.rgb8;
             }
             else if (components == 4)
             {
-                bitmap._type = FIT_RGBA8;
+                bitmap._type = ImageType.rgba8;
             }
         }
         else
         {
             if (components == 1)
             {
-                bitmap._type = FIT_UINT16;
+                bitmap._type = ImageType.uint16;
             }
             else if (components == 2)
             {
-                bitmap._type = FIT_LA16;
+                bitmap._type = ImageType.la16;
             }
             else if (components == 3)
             {
-                bitmap._type = FIT_RGB16;
+                bitmap._type = ImageType.rgb16;
             }
             else if (components == 4)
             {
-                bitmap._type = FIT_RGBA16;
+                bitmap._type = ImageType.rgba16;
             }
         }
 
@@ -138,7 +138,7 @@ extern(Windows)
 
     void InitProc_PNG (Plugin *plugin, int format_id)
     {
-        assert(format_id == FIF_PNG);
+        assert(format_id == ImageFormat.PNG);
 
         version(decodePNG)
             plugin.loadProc = &Load_PNG;
@@ -177,10 +177,10 @@ extern(Windows)
         int channels = 0;
         switch (dib._type)
         {
-            case FIT_UINT8:  channels = 1; break;
-            case FIT_LA8:    channels = 2; break;
-            case FIT_RGB8:   channels = 3; break;
-            case FIT_RGBA8:  channels = 4; break;
+            case ImageType.uint8:  channels = 1; break;
+            case ImageType.la8:    channels = 2; break;
+            case ImageType.rgb8:   channels = 3; break;
+            case ImageType.rgba8:  channels = 4; break;
             default:
                 return false;
         }

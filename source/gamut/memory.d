@@ -100,9 +100,9 @@ void FreeImage_CloseMemory(FIMEMORY *stream) @system
 /// Some bitmap loaders can receive parameters to change the loading behaviour. 
 /// When the parameter is not available or unused you can pass the value 0 or 
 /// <TYPE_OF_BITMAP>_DEFAULT (e.g. BMP_DEFAULT, ICO_DEFAULT, etc).
-FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int flags = 0) @trusted
+FIBITMAP* FreeImage_LoadFromMemory(ImageFormat fif, FIMEMORY *stream, int flags = 0) @trusted
 {
-    assert(fif != FIF_UNKNOWN);
+    assert(fif != ImageFormat.unknown);
     assert (stream !is null);
 
     FreeImageIO io;
@@ -118,9 +118,9 @@ FIBITMAP* FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT fif, FIMEMORY *stream, int 
 /// memory stream where the bitmap must be saved. When the memory file pointer point to the 
 /// beginning of the memory file, any existing data is overwritten. Otherwise, you can save 
 /// multiple images on the same stream.
-bool FreeImage_SaveToMemory(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, FIMEMORY *stream, int flags = 0) @trusted
+bool FreeImage_SaveToMemory(ImageFormat fif, FIBITMAP *dib, FIMEMORY *stream, int flags = 0) @trusted
 {
-    assert(fif != FIF_UNKNOWN);
+    assert(fif != ImageFormat.unknown);
     assert (stream !is null);
 
     FreeImageIO io;

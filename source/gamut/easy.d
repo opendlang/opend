@@ -18,7 +18,7 @@ import gamut.plugin;
 import gamut.conversion;
 import gamut.internals.cstring;
 
-public import gamut.types: FREE_IMAGE_FORMAT;
+public import gamut.types: ImageFormat;
 
 nothrow @nogc @safe:
 
@@ -47,14 +47,13 @@ public:
         CString cstr = CString(path);
 
         // Deduce format.
-        FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(cstr.storage, 0);
-        if (fif == FIF_UNKNOWN) 
+        ImageFormat fif = FreeImage_GetFileType(cstr.storage, 0);
+        if (fif == ImageFormat.unknown) 
         {
             fif = FreeImage_GetFIFFromFilename(cstr.storage); // try to guess the file format from the file extension
         }
-
         // check that the plugin has reading capabilities ...
-        if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) 
+        if ((fif != ImageFormat.unknown) && FreeImage_FIFSupportsReading(fif)) 
         {
             _bitmap = FreeImage_Load(fif, cstr.storage, flags);
         }
@@ -74,10 +73,10 @@ public:
         scope(exit) FreeImage_CloseMemory(stream);
 
         // Deduce format.
-        FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(stream, 0);
+        ImageFormat fif = FreeImage_GetFileTypeFromMemory(stream, 0);
 
         // check that the plugin has reading capabilities ...
-        if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) 
+        if ((fif != ImageFormat.unknown) && FreeImage_FIFSupportsReading(fif)) 
         {
             _bitmap = FreeImage_LoadFromMemory(fif, stream, flags);
         }
@@ -98,15 +97,15 @@ public:
         initializeFreeImageLazilyIfFirstCall();
         CString cstr = CString(path);
 
-        FREE_IMAGE_FORMAT fif = FreeImage_GetFIFFromFilename(cstr.storage);
-        if (fif == FIF_UNKNOWN)
+        ImageFormat fif = FreeImage_GetFIFFromFilename(cstr.storage);
+        if (fif == ImageFormat.unknown)
             return false; // couldn't recognize format from path.
 
         return FreeImage_Save(fif, _bitmap, cstr.storage, flags);
     }
     /// Save the image into a file, but provide a file format.
     /// Returns: `true` if file successfully written.
-    bool saveToFile(FREE_IMAGE_FORMAT fif, const(char)[] path, int flags = 0) @trusted
+    bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) @trusted
     {
         assert(isValid()); // else, nothing to save
         initializeFreeImageLazilyIfFirstCall();
@@ -117,7 +116,7 @@ public:
     /// Saves the image into a new memory location.
     /// The returned data must be released with a call to `free`.
     /// Returns: `null` if saving failed.
-    ubyte[] saveToMemory(FREE_IMAGE_FORMAT fif, int flags = 0) @trusted
+    ubyte[] saveToMemory(ImageFormat fif, int flags = 0) @trusted
     {
         assert(isValid()); // else, nothing to save
         initializeFreeImageLazilyIfFirstCall();

@@ -139,7 +139,7 @@ int FreeImage_GetFIFCount() @trusted
     scope(exit) g_pluginMutex.unlock();
 
     int registered = 0;
-    for(FREE_IMAGE_FORMAT fif = 0; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
+    for(ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
     {
         if (g_plugins[fif].isRegistered)
             registered++;
@@ -151,7 +151,7 @@ int FreeImage_GetFIFCount() @trusted
 /// nor will it identify bitmaps. 
 /// When called, this function returns the previous plugin state (FI_TRUE / 1 or FI_FALSE / 0), or
 /// –1 if the plugin doesn’t exist.
-int FreeImage_SetPluginEnabled(FREE_IMAGE_FORMAT fif, bool enable) @trusted
+int FreeImage_SetPluginEnabled(ImageFormat fif, bool enable) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
@@ -162,11 +162,11 @@ int FreeImage_SetPluginEnabled(FREE_IMAGE_FORMAT fif, bool enable) @trusted
 
     bool wasEnabled = g_plugins[fif].isEnabled;
     g_plugins[fif].isEnabled = enable;
-    return wasEnabled ? FI_TRUE : FI_FALSE;
+    return wasEnabled ? 1 : 0;
 }
 
 /// Returns FI_TRUE when the plugin is enabled, FI_FALSE when the plugin is disabled, -1 otherwise.
-int FreeImage_IsPluginEnabled(FREE_IMAGE_FORMAT fif) @trusted
+int FreeImage_IsPluginEnabled(ImageFormat fif) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
@@ -174,13 +174,13 @@ int FreeImage_IsPluginEnabled(FREE_IMAGE_FORMAT fif) @trusted
     bool registered = g_plugins[fif].isRegistered;
     if (!registered)
         return -1; // doesn't exist
-    return g_plugins[fif].isEnabled ? FI_TRUE : FI_FALSE;
+    return g_plugins[fif].isEnabled ? 1 : 0;
 }
 
 
 /// This function takes a filename or a file-extension and returns the plugin that can read/write 
 /// files with that extension in the form of a `FREE_IMAGE_FORMAT` identifier.
-FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
+ImageFormat FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
 {
     // find extension inside filename
     size_t ilen = strlen(filename);
@@ -196,7 +196,7 @@ FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
 
-    for(FREE_IMAGE_FORMAT fif = 0; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
+    for(ImageFormat fif = ImageFormat.first; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
     {
         if (g_plugins[fif].isRegistered)
         {
@@ -223,7 +223,7 @@ FREE_IMAGE_FORMAT FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
             }
         }
     }
-    return FIF_UNKNOWN;
+    return ImageFormat.unknown;
 }
 unittest
 {
@@ -234,9 +234,8 @@ unittest
 }
 
 
-/// Returns FI_TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 
-/// load bitmaps, FI_FALSE otherwise.
-bool FreeImage_FIFSupportsReading(FREE_IMAGE_FORMAT fif) @trusted
+/// Returns: `true` if the plugin can load bitmaps.
+bool FreeImage_FIFSupportsReading(ImageFormat fif) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();    
@@ -248,9 +247,8 @@ bool FreeImage_FIFSupportsReading(FREE_IMAGE_FORMAT fif) @trusted
     return registered && enabled && supportsRead;
 }
 
-/// Returns TRUE if the plugin belonging to the given FREE_IMAGE_FORMAT can be used to 
-/// save bitmaps, FALSE otherwise.
-bool FreeImage_FIFSupportsWriting(FREE_IMAGE_FORMAT fif) @trusted
+/// Returns: `true` if the plugin can save bitmaps.
+bool FreeImage_FIFSupportsWriting(ImageFormat fif) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();    
@@ -267,11 +265,11 @@ bool FreeImage_FIFSupportsWriting(FREE_IMAGE_FORMAT fif) @trusted
 /// application driving FreeImage. The first parameter is a pointer to a function that is used to
 /// initialise the plugin. The initialization function is responsible for filling in a Plugin 
 /// structure and storing a system-assigned format identification number used for message logging.
-FREE_IMAGE_FORMAT FreeImage_RegisterLocalPlugin(FI_InitProc proc_address, 
-                                                const(char) *format = null, 
-                                                const(char) *description = null,
-                                                const(char)* extension = null,
-                                                const(char)* regexpr = null)
+ImageFormat FreeImage_RegisterLocalPlugin(FI_InitProc proc_address, 
+                                          const(char) *format = null, 
+                                          const(char) *description = null,
+                                          const(char)* extension = null,
+                                          const(char)* regexpr = null)
 {
     // Custom plugins not supported yet.
     assert(false);
@@ -288,7 +286,7 @@ package:
 // Call `FreeImage_PluginRelease` once done.
 
 // Returns: null if no plugin is registered for this format, or if it is disabled for reading.
-Plugin* FreeImage_PluginAcquireForReading(FREE_IMAGE_FORMAT fif) @trusted
+Plugin* FreeImage_PluginAcquireForReading(ImageFormat fif) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
@@ -303,7 +301,7 @@ Plugin* FreeImage_PluginAcquireForReading(FREE_IMAGE_FORMAT fif) @trusted
     return &g_plugins[fif];
 }
 
-Plugin* FreeImage_PluginAcquireForWriting(FREE_IMAGE_FORMAT fif) @trusted
+Plugin* FreeImage_PluginAcquireForWriting(ImageFormat fif) @trusted
 {
     g_pluginMutex.lockLazy();
     scope(exit) g_pluginMutex.unlock();
@@ -327,7 +325,7 @@ int FreeImage_PluginRelease(Plugin* plugin)
 
 
 // Register one internal format.
-package void FreeImage_RegisterInternalPlugin(FREE_IMAGE_FORMAT fif,
+package void FreeImage_RegisterInternalPlugin(ImageFormat fif,
                                               FI_InitProc proc,
                                               const(char)* format = null, 
                                               const(char)* description = null,
@@ -375,7 +373,7 @@ private:
 
 
 // For now, all plugin resides in a static __gshared part of the memory.
-__gshared Plugin[FREE_IMAGE_FORMAT_NUM] g_plugins;
+__gshared Plugin[ImageFormat.max+1] g_plugins;
 
 __gshared Mutex g_pluginMutex; // protects g_plugins
 

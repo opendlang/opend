@@ -25,7 +25,7 @@ struct FIBITMAP
 {
 package:
 
-    FREE_IMAGE_TYPE _type;
+    ImageType _type;
     ubyte* _data = null;
 
     int _width;
@@ -52,9 +52,9 @@ package:
 ///
 /// Returns:
 ///     A newly allocated `FIBITMAP`, or `null` if an error occured.
-FIBITMAP* FreeImage_Allocate(FREE_IMAGE_TYPE type, int width, int height) @trusted
+FIBITMAP* FreeImage_Allocate(ImageType type, int width, int height) @trusted
 {
-    assert(type != FIT_UNKNOWN);
+    assert(type != ImageType.unknown);
 
     if (width > GAMUT_MAX_WIDTH)
         return null;
@@ -94,9 +94,9 @@ enum int
 /// constants is available in Table 1). The second parameter tells FreeImage the file it has to 
 /// decode. The last parameter is used to change the behaviour or enable a feature in the bitmap 
 /// plugin. Each plugin has its own set of parameters.
-FIBITMAP* FreeImage_Load(FREE_IMAGE_FORMAT fif, const(char)* filename, int flags = 0) @system
+FIBITMAP* FreeImage_Load(ImageFormat fif, const(char)* filename, int flags = 0) @system
 {
-    assert(fif != FIF_UNKNOWN);
+    assert(fif != ImageFormat.unknown);
     
     FILE* f = fopen(filename, "rb");
     if (f is null)
@@ -126,7 +126,7 @@ deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeIm
 /// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
-FIBITMAP* FreeImage_LoadFromHandle(FREE_IMAGE_FORMAT fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
+FIBITMAP* FreeImage_LoadFromHandle(ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
 {
     // I/O logging, useful for debug purpose
     /*FreeImageIO io2;
@@ -156,9 +156,9 @@ deprecated("Use FreeImage_Save instead, it was made Unicode-aware")
 /// The second parameter is the name of the bitmap to be saved. If the file already exists it is 
 /// overwritten. Note that some bitmap save plugins have restrictions on the bitmap types they 
 /// can save.
-bool FreeImage_Save(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, const(char)* filename, int flags = 0) @trusted
+bool FreeImage_Save(ImageFormat fif, FIBITMAP *dib, const(char)* filename, int flags = 0) @trusted
 {
-    assert(fif != FIF_UNKNOWN);
+    assert(fif != ImageFormat.unknown);
 
     FILE* f = fopen(filename, "wb");
     if (f is null)
@@ -170,7 +170,7 @@ bool FreeImage_Save(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, const(char)* filename,
     return fclose(f) == 0;
 }
 
-bool FreeImage_SaveToHandle(FREE_IMAGE_FORMAT fif, FIBITMAP *dib, 
+bool FreeImage_SaveToHandle(ImageFormat fif, FIBITMAP *dib, 
                             FreeImageIO *io, fi_handle handle, int flags = 0)
 {
     Plugin* plugin = FreeImage_PluginAcquireForWriting(fif);
@@ -188,14 +188,14 @@ bool FreeImage_SaveToHandle(FREE_IMAGE_FORMAT fif, FIBITMAP *dib,
 /// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
 FIBITMAP* FreeImage_Clone(FIBITMAP *dib) @trusted
 {
-    assert(dib._type != FIT_UNKNOWN); // MAYDO: clone of FIT_UNKNOWN?
+    assert(dib._type != ImageType.unknown); // MAYDO: clone of FIT_UNKNOWN?
 
     if (dib is null)
         return null;
 
-    FREE_IMAGE_TYPE type = dib._type;
-    int width            = dib._width;
-    int height           = dib._height;
+    ImageType type = dib._type;
+    int width      = dib._width;
+    int height     = dib._height;
 
     FIBITMAP* bitmap = FreeImage_Allocate(dib._type, width, height);
     if (!bitmap) 
@@ -235,7 +235,7 @@ void FreeImage_Unload(FIBITMAP *dib) @system
 
 
 /// Returns the data type of a bitmap.
-FREE_IMAGE_TYPE FreeImage_GetImageType(FIBITMAP *dib) pure
+ImageType FreeImage_GetImageType(FIBITMAP *dib) pure
 {
     return dib._type;
 }
@@ -252,7 +252,7 @@ deprecated("Use instead FreeImage_GetPaletteSize")
 /// Returns: Size of one pixel in the bitmap, in bits.
 int FreeImage_GetBPP(FIBITMAP *dib) pure
 {
-    assert(dib._type != FIT_UNKNOWN);
+    assert(dib._type != ImageType.unknown);
     return 8 * bytesForImageType(dib._type);
 }
 
@@ -271,7 +271,7 @@ int FreeImage_GetHeight(FIBITMAP *dib) pure
 /// Return width of the bitmap, in bytes.
 int FreeImage_GetWidthInBytes(FIBITMAP *dib) pure
 {
-    assert(dib._type != FIT_UNKNOWN);
+    assert(dib._type != ImageType.unknown);
     return dib._width * bytesForImageType(dib._type);
 }
 
@@ -311,37 +311,33 @@ bool FreeImage_HasPixels(FIBITMAP *dib) pure
 private:
 
 // Size of one pixel for type
-int bytesForImageType(FREE_IMAGE_TYPE type) pure
+int bytesForImageType(ImageType type) pure
 {
-    assert(type != FIT_UNKNOWN);
-
-    switch(type)
+    final switch(type)
     {
-        case FIT_UINT8:   return 1;
-        case FIT_INT8:    return 1;
-        case FIT_UINT16:  return 2;
-        case FIT_INT16:   return 2;
-        case FIT_UINT32:  return 4;
-        case FIT_INT32:   return 4;
-        case FIT_FLOAT:   return 4;
-        case FIT_DOUBLE:  return 8;
-        case FIT_COMPLEX: return 16;
-        case FIT_LA8:     return 2;
-        case FIT_LA16:    return 4;
-        case FIT_RGB8:    return 3;
-        case FIT_RGB16:   return 6;
-        case FIT_RGBA8:   return 4;
-        case FIT_RGBA16:  return 8;
-        case FIT_RGBF:    return 12;
-        case FIT_RGBAF:   return 16;
-        default:
-            assert(false);
+        case ImageType.uint8:   return 1;
+        case ImageType.int8:    return 1;
+        case ImageType.uint16:  return 2;
+        case ImageType.int16:   return 2;
+        case ImageType.uint32:  return 4;
+        case ImageType.int32:   return 4;
+        case ImageType.f32:     return 4;
+        case ImageType.f64:     return 8;
+        case ImageType.la8:     return 2;
+        case ImageType.la16:    return 4;
+        case ImageType.rgb8:    return 3;
+        case ImageType.rgb16:   return 6;
+        case ImageType.rgba8:   return 4;
+        case ImageType.rgba16:  return 8;
+        case ImageType.rgbf32:  return 12;
+        case ImageType.rgbaf32: return 16;
+        case ImageType.unknown: assert(false);
     }
 }
 
 /// Suggest a length of line, in bytes, including padding (FUTURE: with given alignment).
 /// Length must be enough to hold all pixel data for this line.
-int pitchForImage(FREE_IMAGE_TYPE type, int width)
+int pitchForImage(ImageType type, int width)
 {
     return width * bytesForImageType(type); //  no alignment
 }

@@ -21,7 +21,7 @@ import gamut.codecs.stb_image_write;
 
 void registerJPEG() @trusted
 {
-    FreeImage_RegisterInternalPlugin(FIF_JPEG, &InitProc_JPEG,
+    FreeImage_RegisterInternalPlugin(ImageFormat.JPEG, &InitProc_JPEG,
                                      "JPEG".ptr,
                                      "Independent JPEG Group".ptr,
                                      "jpg,jpeg,jif,jfif".ptr,
@@ -74,9 +74,9 @@ extern(Windows)
         bitmap._pitch = width * actualComp;
         switch (actualComp)
         {
-            case 1: bitmap._type = FIT_UINT8; break;
-            case 3: bitmap._type = FIT_RGB8; break;
-            case 4: bitmap._type = FIT_RGBA8; break;
+            case 1: bitmap._type = ImageType.uint8; break;
+            case 3: bitmap._type = ImageType.rgb8; break;
+            case 4: bitmap._type = ImageType.rgba8; break;
             default:
         }        
         return bitmap;
@@ -92,7 +92,7 @@ extern(Windows)
 
     void InitProc_JPEG (Plugin *plugin, int format_id)
     {
-        assert(format_id == FIF_JPEG);
+        assert(format_id == ImageFormat.JPEG);
 
         version(decodeJPEG)
             plugin.loadProc = &Load_JPEG;
@@ -132,14 +132,12 @@ extern(Windows)
 
         switch (dib._type)
         {
-            case FIT_UINT8:
+            case ImageType.uint8:
                 components = 1; break;
-            case FIT_LA8:
-                return false; // stb would throw away alpha
-            case FIT_RGB8: 
+            case ImageType.rgb8:
                 components = 3; 
                 break;
-            case FIT_RGBA8: 
+            case ImageType.rgba8:
                 return false; // stb would throw away alpha
             default:
                 return false;

@@ -52,7 +52,7 @@ const(char)* FreeImage_GetCopyrightMessage() pure
 
 extern(C)
 {
-    alias FreeImage_OutputMessageFunction = void function(FREE_IMAGE_FORMAT fif, const(char)* message);
+    alias FreeImage_OutputMessageFunction = void function(ImageFormat fif, const(char)* message);
 }
 
 /// When a certain bitmap cannot be loaded or saved there is usually an explanation for it. For 

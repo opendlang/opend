@@ -21,7 +21,7 @@ import gamut.codecs.qoi;
 
 void registerQOI() @trusted
 {
-    FreeImage_RegisterInternalPlugin(FIF_QOI, &InitProc_QOI,
+    FreeImage_RegisterInternalPlugin(ImageFormat.QOI, &InitProc_QOI,
                                      "QOI".ptr,
                                      "Quite OK Image format".ptr,
                                      "qoi".ptr,
@@ -76,9 +76,9 @@ extern(Windows)
         bitmap._height = desc.height;
 
         if (desc.channels == 3)
-            bitmap._type = FIT_RGB8;
+            bitmap._type = ImageType.rgb8;
         else if (desc.channels == 4)
-            bitmap._type = FIT_RGBA8;
+            bitmap._type = ImageType.rgba8;
         else
             goto error3;
 
@@ -98,7 +98,7 @@ extern(Windows)
 
     void InitProc_QOI (Plugin *plugin, int format_id)
     {
-        assert(format_id == FIF_QOI);
+        assert(format_id == ImageFormat.QOI);
 
         version(decodeQOI)
             plugin.loadProc = &Load_QOI;
@@ -143,8 +143,8 @@ extern(Windows)
         
         switch (dib._type)
         {
-            case FIT_RGB8:  desc.channels = 3; break;
-            case FIT_RGBA8: desc.channels = 4; break;
+            case ImageType.rgb8:  desc.channels = 3; break;
+            case ImageType.rgba8: desc.channels = 4; break;
             default: 
                 return false; // not supported
         }
