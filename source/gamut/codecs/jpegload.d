@@ -47,6 +47,8 @@ import core.stdc.string : memcpy, memset;
 import core.stdc.stdlib : malloc, free;
 import inteli.emmintrin;
 
+version(decodeJPEG):
+
 nothrow:
 @nogc:
 

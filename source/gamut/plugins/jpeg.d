@@ -30,6 +30,7 @@ void registerJPEG() @trusted
 
 extern(Windows)
 {
+    version(decodeJPEG)
     FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
     {
         JPEGIOHandle jio;
@@ -87,10 +88,17 @@ extern(Windows)
     void InitProc_JPEG (Plugin *plugin, int format_id)
     {
         assert(format_id == FIF_JPEG);
-        plugin.supportsRead = true;
-        plugin.supportsWrite = true;
-        plugin.loadProc = &Load_JPEG;
-        plugin.saveProc = &Save_JPEG;
+
+        version(decodeJPEG)
+            plugin.loadProc = &Load_JPEG;
+        else
+            plugin.loadProc = null;
+
+        version(encodeJPEG)
+            plugin.saveProc = &Save_JPEG;
+        else
+            plugin.saveProc = null;
+
         plugin.validateProc = &Validate_JPEG;
         plugin.mimeProc = &MIME_JPEG;
     }
@@ -106,6 +114,7 @@ extern(Windows)
         return fileIsStartingWithSignature(io, handle, jpegSignature);
     }
 
+    version(encodeJPEG)
     bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
     {
         if (page != 0)

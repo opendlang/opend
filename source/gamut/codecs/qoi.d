@@ -290,6 +290,7 @@ failed) or a pointer to the encoded data on success. On success the out_len
 is set to the size in bytes of the encoded data.
 
 The returned qoi data should be free()d after use. */
+version(encodeQOI)
 void *qoi_encode(const(void)* data, const(qoi_desc)* desc, int *out_len) 
 {
     int i, max_size, p, run;
@@ -434,6 +435,7 @@ failed) or a pointer to the decoded pixels. On success, the qoi_desc struct
 is filled with the description from the file header.
 
 The returned pixel data should be free()d after use. */
+version(decodeQOI)
 void *qoi_decode(const void *data, int size, qoi_desc *desc, int channels) 
 {
     const(ubyte)* bytes;

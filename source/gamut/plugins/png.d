@@ -16,8 +16,9 @@ import gamut.types;
 import gamut.bitmap;
 import gamut.io;
 import gamut.plugin;
-import gamut.codecs.pngload;
-import gamut.codecs.stb_image_write;
+
+version(decodePNG) import gamut.codecs.pngload;
+version(encodePNG) import gamut.codecs.stb_image_write;
 
 // PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
 
@@ -32,6 +33,7 @@ void registerPNG() @trusted
 
 extern(Windows)
 {
+    version(decodePNG)
     FIBITMAP* Load_PNG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
     {
         IOAndHandle ioh;
@@ -123,11 +125,17 @@ extern(Windows)
     void InitProc_PNG (Plugin *plugin, int format_id)
     {
         assert(format_id == FIF_PNG);
-        plugin.supportsRead = true;
-        plugin.supportsWrite = true;
 
-        plugin.loadProc = &Load_PNG;
-        plugin.saveProc = &Save_PNG;
+        version(decodePNG)
+            plugin.loadProc = &Load_PNG;
+        else
+            plugin.loadProc = null;
+
+        version(encodePNG) 
+            plugin.saveProc = &Save_PNG;
+        else
+            plugin.saveProc = null;
+
         plugin.validateProc = &Validate_PNG;
         plugin.mimeProc = &MIME_PNG;
     }
@@ -143,6 +151,7 @@ extern(Windows)
         return fileIsStartingWithSignature(io, handle, pngSignature);
     }
 
+    version(encodePNG)
     bool Save_PNG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
     {
         if (page != 0)

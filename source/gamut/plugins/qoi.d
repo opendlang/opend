@@ -30,6 +30,7 @@ void registerQOI() @trusted
 
 extern(Windows)
 {
+    version(decodeQOI)
     FIBITMAP* Load_QOI(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
     {
         // Read all available bytes from input
@@ -99,11 +100,17 @@ extern(Windows)
     void InitProc_QOI (Plugin *plugin, int format_id)
     {
         assert(format_id == FIF_QOI);
-        plugin.supportsRead = true;
-        plugin.supportsWrite = true;
 
-        plugin.loadProc = &Load_QOI;
-        plugin.saveProc = &Save_QOI;
+        version(decodeQOI)
+            plugin.loadProc = &Load_QOI;
+        else
+            plugin.loadProc = null;
+
+        version(encodeQOI)
+            plugin.saveProc = &Save_QOI;
+        else
+            plugin.saveProc = null;
+
         plugin.validateProc = &Validate_QOI;
         plugin.mimeProc = &MIME_QOI;
     }
@@ -120,6 +127,7 @@ extern(Windows)
         return fileIsStartingWithSignature(io, handle, qoiSignature);
     }
 
+    version(encodeQOI)
     bool Save_QOI(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
     {
         if (page != 0)

@@ -98,6 +98,13 @@ LICENSE
 
 */
 
+version(encodePNG)
+    version = compileSTBImageWrite;
+version(encodeJPEG)
+    version = compileSTBImageWrite;
+
+version(compileSTBImageWrite):
+
 import std.math: abs;
 import core.stdc.stdlib: malloc, realloc, free;
 import core.stdc.string: memcpy, memmove;

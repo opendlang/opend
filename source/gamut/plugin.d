@@ -109,20 +109,14 @@ struct Plugin
     // <TO BE FILLED BY THE FI_InitProc FOR THE FORMAT>
     //
 
-    /// Does this plugin support reading?
-    bool supportsRead = false;
-
-    /// Does this plugin support writing?
-    bool supportsWrite = false;    
-
     /// Does this plugin support loading no pixels?
     bool supportsNoPixels = false;
 
     /// Does this plugin support ICC profiles?
     bool supportsICCProfiles = false;
 
-    FI_LoadProc loadProc = null;
-    FI_SaveProc saveProc = null;
+    FI_LoadProc loadProc = null; // null => no read supported
+    FI_SaveProc saveProc = null; // null => no write supported
     FI_ValidateProc validateProc = null;
     FI_MIMEProc mimeProc = null;
 
@@ -248,7 +242,7 @@ bool FreeImage_FIFSupportsReading(FREE_IMAGE_FORMAT fif) @trusted
     scope(exit) g_pluginMutex.unlock();    
     bool registered = g_plugins[fif].isRegistered;
     bool enabled = g_plugins[fif].isEnabled;
-    bool supportsRead = g_plugins[fif].supportsRead;
+    bool supportsRead = g_plugins[fif].loadProc !is null;
 
     // Note: is being enabled mandatory? Not sure from documentation.
     return registered && enabled && supportsRead;
@@ -262,7 +256,7 @@ bool FreeImage_FIFSupportsWriting(FREE_IMAGE_FORMAT fif) @trusted
     scope(exit) g_pluginMutex.unlock();    
     bool registered = g_plugins[fif].isRegistered;
     bool enabled = g_plugins[fif].isEnabled;
-    bool supportsWrite = g_plugins[fif].supportsWrite;
+    bool supportsWrite = g_plugins[fif].saveProc !is null;
 
     // Note: is being enabled mandatory? Not sure from documentation.
     return registered && enabled && supportsWrite;
@@ -300,7 +294,7 @@ Plugin* FreeImage_PluginAcquireForReading(FREE_IMAGE_FORMAT fif) @trusted
     scope(exit) g_pluginMutex.unlock();
     bool registered = g_plugins[fif].isRegistered;
     bool enabled = g_plugins[fif].isEnabled;
-    bool supportsRead = g_plugins[fif].supportsRead;
+    bool supportsRead = g_plugins[fif].loadProc !is null;
     
     if ( !(registered && enabled && supportsRead) )
         return null;
@@ -315,7 +309,7 @@ Plugin* FreeImage_PluginAcquireForWriting(FREE_IMAGE_FORMAT fif) @trusted
     scope(exit) g_pluginMutex.unlock();
     bool registered = g_plugins[fif].isRegistered;
     bool enabled = g_plugins[fif].isEnabled;
-    bool supportsWrite = g_plugins[fif].supportsWrite;
+    bool supportsWrite = g_plugins[fif].saveProc !is null;
 
     if ( !(registered && enabled && supportsWrite) )
         return null;

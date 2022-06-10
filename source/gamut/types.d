@@ -21,12 +21,9 @@ alias FREE_IMAGE_FORMAT = int;
 enum : FREE_IMAGE_FORMAT
 {
     FIF_UNKNOWN = -1, /// Unknown format (returned value only, never use it as input value)
-    FIF_BMP     =  0, /// Windows or OS/2 Bitmap File (*.BMP)
-    FIF_GIF     =  1, /// Graphics Interchange Format (*.GIF)
-    FIF_JPEG    =  2, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
-    FIF_PNG     =  3, /// Portable Network Graphics (*.PNG)
-    FIF_TIFF    =  4, /// Tagged Image File Format (*.TIF, *.TIFF)
-    FIF_QOI     =  24 /// Quite OK Image format (*.QOI)
+    FIF_JPEG    =  0, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
+    FIF_PNG     =  1, /// Portable Network Graphics (*.PNG)
+    FIF_QOI     =  2  /// Quite OK Image format (*.QOI)
 }
 
 /// Number of internally-supported formats. Equal to 1 + maximum internal format (here: FIF_QOI).
