@@ -84,16 +84,13 @@ bool FreeImage_Validate(ImageFormat fif, const(char)* filename) @trusted
 
 deprecated("Use FreeImage_Validate instead, it supports Unicode") alias FreeImage_ValidateU = FreeImage_Validate;
 
-bool FreeImage_ValidateFromHandle(ImageFormat fif, FreeImageIO *io, fi_handle handle)
+bool FreeImage_ValidateFromHandle(ImageFormat fif, FreeImageIO *io, fi_handle handle) @trusted
 {
     assert(fif != ImageFormat.unknown);
-    Plugin* plugin = FreeImage_PluginAcquireForReading(fif);
-    if (plugin)
-    {
-        scope(exit) FreeImage_PluginRelease(plugin);
-        if (plugin.validateProc(io, handle))
-            return true;
-    }
+    const(Plugin)* plugin = &g_plugins[fif];
+    assert(plugin.validateProc !is null);
+    if (plugin.validateProc(io, handle))
+        return true;
     return false;
 }
 

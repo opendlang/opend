@@ -19,148 +19,121 @@ import gamut.plugin;
 import gamut.codecs.jpegload;
 import gamut.codecs.stb_image_write;
 
-void registerJPEG() @trusted
+
+Plugin makeJPEGPlugin()
 {
-    FreeImage_RegisterInternalPlugin(ImageFormat.JPEG, &InitProc_JPEG,
-                                     "JPEG".ptr,
-                                     "Independent JPEG Group".ptr,
-                                     "jpg,jpeg,jif,jfif".ptr,
-                                     null);
+    Plugin p;
+    p.format = "JPEG";
+    p.extensionList = "jpg,jpeg,jif,jfif";
+    p.mimeTypes = "image/jpeg";
+    version(decodeJPEG)
+        p.loadProc = &Load_JPEG;
+    else
+        p.loadProc = null;
+    version(encodeJPEG)
+        p.saveProc = &Save_JPEG;
+    else
+        p.saveProc = null;
+    p.validateProc = &Validate_JPEG;
+    return p;
 }
 
-extern(Windows)
+
+version(decodeJPEG)
+FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
-    version(decodeJPEG)
-    FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
-    {
-        JPEGIOHandle jio;
-        jio.wrapped = io;
-        jio.handle = handle;
+    JPEGIOHandle jio;
+    jio.wrapped = io;
+    jio.handle = handle;
 
-        int requestedComp = computeRequestedImageComponents(flags);
-        if (requestedComp == 0)
-            return null; // Invalid flags.
+    int requestedComp = computeRequestedImageComponents(flags);
+    if (requestedComp == 0)
+        return null; // Invalid flags.
 
-        int width, height, actualComp;
-        ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
-        if (decoded is null)
-            return null;
-
-        FIBITMAP* bitmap = null;
-
-        if (actualComp != 1 && actualComp != 3 && actualComp != 4)
-            goto error2;
-
-        bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
-        if (!bitmap) 
-            goto error2;
-
-         if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
-            goto error;
-
-        bitmap._width = width;
-        bitmap._height = height;
-        bitmap._data = decoded.ptr;
-        bitmap._pitch = width * actualComp;
-        switch (actualComp)
-        {
-            case 1: bitmap._type = ImageType.uint8; break;
-            case 3: bitmap._type = ImageType.rgb8; break;
-            case 4: bitmap._type = ImageType.rgba8; break;
-            default:
-        }        
-        return bitmap;
-
-    error:
-        free(bitmap);
-
-    error2:
-        free(decoded.ptr);
-
+    int width, height, actualComp;
+    ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
+    if (decoded is null)
         return null;
-    }
 
-    void InitProc_JPEG (Plugin *plugin, int format_id)
+    FIBITMAP* bitmap = null;
+
+    if (actualComp != 1 && actualComp != 3 && actualComp != 4)
+        goto error2;
+
+    bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
+    if (!bitmap) 
+        goto error2;
+
+        if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
+        goto error;
+
+    bitmap._width = width;
+    bitmap._height = height;
+    bitmap._data = decoded.ptr;
+    bitmap._pitch = width * actualComp;
+    switch (actualComp)
     {
-        assert(format_id == ImageFormat.JPEG);
+        case 1: bitmap._type = ImageType.uint8; break;
+        case 3: bitmap._type = ImageType.rgb8; break;
+        case 4: bitmap._type = ImageType.rgba8; break;
+        default:
+    }        
+    return bitmap;
 
-        version(decodeJPEG)
-            plugin.loadProc = &Load_JPEG;
-        else
-            plugin.loadProc = null;
+error:
+    free(bitmap);
 
-        version(encodeJPEG)
-            plugin.saveProc = &Save_JPEG;
-        else
-            plugin.saveProc = null;
+error2:
+    free(decoded.ptr);
 
-        plugin.validateProc = &Validate_JPEG;
-        plugin.mimeProc = &MIME_JPEG;
-    }
+    return null;
+}
 
-    const(char)* MIME_JPEG() @trusted
+bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
+{
+    static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
+    return fileIsStartingWithSignature(io, handle, jpegSignature);
+}
+
+version(encodeJPEG)
+bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
+{
+    if (page != 0)
+        return false;
+
+    if (!FreeImage_HasPixels(dib))
+        return false; // no pixel data
+
+    int components;
+
+    switch (dib._type)
     {
-        return "image/jpeg".ptr;
-    }
-
-    bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
-    {
-        static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
-        return fileIsStartingWithSignature(io, handle, jpegSignature);
-    }
-
-    version(encodeJPEG)
-    bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
-    {
-        if (page != 0)
+        case ImageType.uint8:
+            components = 1; break;
+        case ImageType.rgb8:
+            components = 3; 
+            break;
+        case ImageType.rgba8:
+            return false; // stb would throw away alpha
+        default:
             return false;
-
-        if (!FreeImage_HasPixels(dib))
-            return false; // no pixel data
-
-        int components;
-
-        switch (dib._type)
-        {
-            case ImageType.uint8:
-                components = 1; break;
-            case ImageType.rgb8:
-                components = 3; 
-                break;
-            case ImageType.rgba8:
-                return false; // stb would throw away alpha
-            default:
-                return false;
-        }
-
-        JPEGIOHandle jio;
-        jio.wrapped = io;
-        jio.handle = handle;
-
-        void* userPointer = cast(void*)&jio;
-
-        int quality = 90; // TODO: option to choose that.
-
-        int res = stbi_write_jpg_to_func(&stb_stream_write, userPointer, 
-                                         dib._width, 
-                                         dib._height, 
-                                         components, 
-                                         dib._data, quality);
-
-        return res == 1 && !jio.errored;
     }
 
-    /// Input stream interface.
-    /// This function is called when the internal input buffer is empty.
-    /// Parameters:
-    ///   pBuf - input buffer
-    ///   max_bytes_to_read - maximum bytes that can be written to pBuf
-    ///   pEOF_flag - set this to true if at end of stream (no more bytes remaining)
-    ///   userData - user context for being used as closure.
-    ///   Returns -1 on error, otherwise return the number of bytes actually written to the buffer (which may be 0).
-    ///   Notes: This delegate will be called in a loop until you set *pEOF_flag to true or the internal buffer is full.
-   // alias JpegStreamReadFunc = int function(void* pBuf, int max_bytes_to_read, bool* pEOF_flag, void* userData);
+    JPEGIOHandle jio;
+    jio.wrapped = io;
+    jio.handle = handle;
 
+    void* userPointer = cast(void*)&jio;
+
+    int quality = 90; // TODO: option to choose that.
+
+    int res = stbi_write_jpg_to_func(&stb_stream_write, userPointer, 
+                                        dib._width, 
+                                        dib._height, 
+                                        components, 
+                                        dib._data, quality);
+
+    return res == 1 && !jio.errored;
 }
 
 private:

@@ -28,7 +28,6 @@ package:
 
     int _width;
     int _height;
-    int _bpp;
 
     /// Pitch in bytes between lines.
     int _pitch; 
@@ -133,15 +132,13 @@ FIBITMAP* FreeImage_LoadFromHandle(ImageFormat fif, FreeImageIO* io, fi_handle h
     wio.handle = handle;
     setupFreeImageIOForLogging(io2);*/
 
-    Plugin* plugin = FreeImage_PluginAcquireForReading(fif);
-    if (plugin is null)
-        return null;
-
-    scope(exit) FreeImage_PluginRelease(plugin);
+    assert(fif != ImageFormat.unknown);
+    const(Plugin)* plugin = &g_plugins[fif];
 
     int page = 0;
     void *data = null;
-    assert(plugin.loadProc); // else, do not mark it as suitable for reading
+    if (!plugin.loadProc)
+        return  null;
     FIBITMAP* loaded = plugin.loadProc(io, handle, page, flags, data);
     return loaded;
 }
@@ -169,16 +166,12 @@ bool FreeImage_Save(ImageFormat fif, FIBITMAP *dib, const(char)* filename, int f
 }
 
 bool FreeImage_SaveToHandle(ImageFormat fif, FIBITMAP *dib, 
-                            FreeImageIO *io, fi_handle handle, int flags = 0)
+                            FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
 {
-    Plugin* plugin = FreeImage_PluginAcquireForWriting(fif);
-    if (plugin is null)
-        return false;
-
-    scope(exit) FreeImage_PluginRelease(plugin);
-
+    const(Plugin)* plugin = &g_plugins[fif];
     void* data = null; // probalby exist to pass metadata stuff
-    assert(plugin.saveProc); // else, do not mark it as suitable for writing
+    if (plugin.saveProc is null)
+        return false;
     bool r = plugin.saveProc(io, dib, handle, 0, flags, data);
     return r;
 }

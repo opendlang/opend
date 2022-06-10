@@ -20,14 +20,6 @@ nothrow @nogc @safe:
 /// You must call this function exactly once at the start of your program.
 void FreeImage_Initialise(bool load_local_plugins_only) @trusted
 {
-    g_libraryMutex.lockLazy();
-    scope(exit) g_libraryMutex.unlock();
-
-    if (!g_libraryInitialized)
-    {
-        g_libraryInitialized = true;
-        FreeImage_registerInternalPlugins();
-    }
 }
 
 /// Deinitialises the library.
@@ -69,7 +61,3 @@ void FreeImage_SetOutputMessage(FreeImage_OutputMessageFunction omf)
 shared FreeImage_OutputMessageFunction g_omf = null;
 
 
-private:
-
-__gshared Mutex g_libraryMutex; // protects g_libraryInitialized
-__gshared g_libraryInitialized = false;

@@ -20,196 +20,180 @@ import gamut.plugin;
 version(decodePNG) import gamut.codecs.pngload;
 version(encodePNG) import gamut.codecs.stb_image_write;
 
-// PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
-
-void registerPNG() @trusted
+Plugin makePNGPlugin()
 {
-    FreeImage_RegisterInternalPlugin(ImageFormat.PNG, &InitProc_PNG,
-                                     "PNG".ptr,
-                                     "Portable Network Graphics".ptr,
-                                     "png".ptr,
-                                     null);
+    Plugin p;
+    p.format = "PNG";
+    p.extensionList = "png";
+    p.mimeTypes = "image/png";
+    version(decodePNG)
+        p.loadProc = &Load_PNG;
+    else
+        p.loadProc = null;
+    version(encodePNG)
+        p.saveProc = &Save_PNG;
+    else
+        p.saveProc = null;
+    p.validateProc = &Validate_PNG;
+    return p;
 }
 
-extern(Windows)
+
+// PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
+
+version(decodePNG)
+FIBITMAP* Load_PNG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
-    version(decodePNG)
-    FIBITMAP* Load_PNG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
-    {
-        IOAndHandle ioh;
-        ioh.io = io;
-        ioh.handle = handle;
+    IOAndHandle ioh;
+    ioh.io = io;
+    ioh.handle = handle;
 
-        stbi_io_callbacks stb_callback;
-        stb_callback.read = &stb_read;
-        stb_callback.skip = &stb_skip;
-        stb_callback.eof = &stb_eof;
+    stbi_io_callbacks stb_callback;
+    stb_callback.read = &stb_read;
+    stb_callback.skip = &stb_skip;
+    stb_callback.eof = &stb_eof;
 
 
-        // "FreeImage uses the RGB(A) color model to represent color images in memory. A 8-bit 
-        // greyscale image has a single channel, often called the black channel. A 24-bit image is made 
-        // up of three 8-bit channels: one for each of the red, green and blue colors. For 32-bit images, 
-        // a fourth 8-bit channel, called alpha channel, is used to create and store masks, which let you 
-        // manipulate, isolate, and protect specific parts of an image. Unlike the others channels, the 
-        // alpha channel doesn’t convey color information, in a physical sense."
+    // "FreeImage uses the RGB(A) color model to represent color images in memory. A 8-bit 
+    // greyscale image has a single channel, often called the black channel. A 24-bit image is made 
+    // up of three 8-bit channels: one for each of the red, green and blue colors. For 32-bit images, 
+    // a fourth 8-bit channel, called alpha channel, is used to create and store masks, which let you 
+    // manipulate, isolate, and protect specific parts of an image. Unlike the others channels, the 
+    // alpha channel doesn’t convey color information, in a physical sense."
 
 
-        FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
-        if (!bitmap) 
-            return null;
-
-        bool is16bit = stbi__png_is16(&stb_callback, &ioh);
-
-        ubyte* decoded;
-        int width, height, components;
-
-        int requestedComp = computeRequestedImageComponents(flags);
-        if (requestedComp == 0) // error
-            return null;
-        if (requestedComp == -1)
-            requestedComp = 0; // auto
-
-        // rewind stream
-        if (!io.rewind(handle))
-        {
-            goto error;
-        }
-
-        if (is16bit)
-        {
-            decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
-        }
-        else
-        {
-            decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
-        }
-
-        if (decoded is null)
-            goto error;
-
-        if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
-            goto error;
-
-        bitmap._width = width;
-        bitmap._height = height;
-        bitmap._data = decoded; // works because codec.pngload and gamut both use malloc/free
-        bitmap._pitch = width * components;
-
-        if (!is16bit)
-        {
-            if (components == 1)
-            {
-                bitmap._type = ImageType.uint8;
-            }
-            else if (components == 2)
-            {
-                bitmap._type = ImageType.la8;
-            }
-            else if (components == 3)
-            {
-                bitmap._type = ImageType.rgb8;
-            }
-            else if (components == 4)
-            {
-                bitmap._type = ImageType.rgba8;
-            }
-        }
-        else
-        {
-            if (components == 1)
-            {
-                bitmap._type = ImageType.uint16;
-            }
-            else if (components == 2)
-            {
-                bitmap._type = ImageType.la16;
-            }
-            else if (components == 3)
-            {
-                bitmap._type = ImageType.rgb16;
-            }
-            else if (components == 4)
-            {
-                bitmap._type = ImageType.rgba16;
-            }
-        }
-
-        return bitmap;
-
-        error:
-            free(bitmap);
+    FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
+    if (!bitmap) 
         return null;
+
+    bool is16bit = stbi__png_is16(&stb_callback, &ioh);
+
+    ubyte* decoded;
+    int width, height, components;
+
+    int requestedComp = computeRequestedImageComponents(flags);
+    if (requestedComp == 0) // error
+        return null;
+    if (requestedComp == -1)
+        requestedComp = 0; // auto
+
+    // rewind stream
+    if (!io.rewind(handle))
+    {
+        goto error;
     }
 
-    void InitProc_PNG (Plugin *plugin, int format_id)
+    if (is16bit)
     {
-        assert(format_id == ImageFormat.PNG);
-
-        version(decodePNG)
-            plugin.loadProc = &Load_PNG;
-        else
-            plugin.loadProc = null;
-
-        version(encodePNG) 
-            plugin.saveProc = &Save_PNG;
-        else
-            plugin.saveProc = null;
-
-        plugin.validateProc = &Validate_PNG;
-        plugin.mimeProc = &MIME_PNG;
+        decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
+    }
+    else
+    {
+        decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp);
     }
 
-    const(char)* MIME_PNG() @trusted
+    if (decoded is null)
+        goto error;
+
+    if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
+        goto error;
+
+    bitmap._width = width;
+    bitmap._height = height;
+    bitmap._data = decoded; // works because codec.pngload and gamut both use malloc/free
+    bitmap._pitch = width * components;
+
+    if (!is16bit)
     {
-        return "image/png".ptr;
-    }
-
-    bool Validate_PNG(FreeImageIO *io, fi_handle handle) @trusted
-    {
-        static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-        return fileIsStartingWithSignature(io, handle, pngSignature);
-    }
-
-    version(encodePNG)
-    bool Save_PNG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
-    {
-        if (page != 0)
-            return false;
-
-        if (!FreeImage_HasPixels(dib))
-            return false; // no pixel data
-
-        int channels = 0;
-        switch (dib._type)
+        if (components == 1)
         {
-            case ImageType.uint8:  channels = 1; break;
-            case ImageType.la8:    channels = 2; break;
-            case ImageType.rgb8:   channels = 3; break;
-            case ImageType.rgba8:  channels = 4; break;
-            default:
-                return false;
+            bitmap._type = ImageType.uint8;
         }
-
-        int width = dib._width;
-        int height = dib._height;
-        int pitch = FreeImage_GetPitch(dib);
-        int len;
-        ubyte* pixels = dib._data;
-
-        // PERF: use stb_image_write stbi_write_png_to_func instead.
-        ubyte *img = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
-        if (img == null)
-            return false;
-
-        scope(exit) free(img);
-
-        // Write all output at once. This is rather bad, could be done progressively.
-        // PERF: adapt stb_image_write.h to output in our own buffer directly.
-        if (len != io.write(img, 1, len, handle))
-            return false;
-
-        return true;
+        else if (components == 2)
+        {
+            bitmap._type = ImageType.la8;
+        }
+        else if (components == 3)
+        {
+            bitmap._type = ImageType.rgb8;
+        }
+        else if (components == 4)
+        {
+            bitmap._type = ImageType.rgba8;
+        }
     }
+    else
+    {
+        if (components == 1)
+        {
+            bitmap._type = ImageType.uint16;
+        }
+        else if (components == 2)
+        {
+            bitmap._type = ImageType.la16;
+        }
+        else if (components == 3)
+        {
+            bitmap._type = ImageType.rgb16;
+        }
+        else if (components == 4)
+        {
+            bitmap._type = ImageType.rgba16;
+        }
+    }
+
+    return bitmap;
+
+    error:
+        free(bitmap);
+    return null;
+}
+
+bool Validate_PNG(FreeImageIO *io, fi_handle handle) @trusted
+{
+    static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return fileIsStartingWithSignature(io, handle, pngSignature);
+}
+
+version(encodePNG)
+bool Save_PNG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
+{
+    if (page != 0)
+        return false;
+
+    if (!FreeImage_HasPixels(dib))
+        return false; // no pixel data
+
+    int channels = 0;
+    switch (dib._type)
+    {
+        case ImageType.uint8:  channels = 1; break;
+        case ImageType.la8:    channels = 2; break;
+        case ImageType.rgb8:   channels = 3; break;
+        case ImageType.rgba8:  channels = 4; break;
+        default:
+            return false;
+    }
+
+    int width = dib._width;
+    int height = dib._height;
+    int pitch = FreeImage_GetPitch(dib);
+    int len;
+    ubyte* pixels = dib._data;
+
+    // PERF: use stb_image_write stbi_write_png_to_func instead.
+    ubyte *img = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
+    if (img == null)
+        return false;
+
+    scope(exit) free(img);
+
+    // Write all output at once. This is rather bad, could be done progressively.
+    // PERF: adapt stb_image_write.h to output in our own buffer directly.
+    if (len != io.write(img, 1, len, handle))
+        return false;
+
+    return true;
 }
 
 private:
