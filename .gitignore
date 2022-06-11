@@ -2,3 +2,5 @@
 dub.selections.json
 __*
 *.exe
+*.[oa]
+*-test-library
