@@ -49,7 +49,7 @@ os: 64bit osx
 -------------------------------------------------
 ```
 
-### Kostya data et
+### Kostya data set
 
 Test data from [kostya/benchmarks](https://github.com/kostya/benchmarks).
 
