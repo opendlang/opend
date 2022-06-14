@@ -291,12 +291,6 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    size_t annotationsBegin()
-    {
-        return 0;
-    }
-
-    ///
     void putAnnotation(scope const(char)[] annotation)
     {
         putSymbol(annotation);
@@ -311,10 +305,11 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    void annotationsEnd(size_t state)
+    size_t annotationsEnd(size_t state)
     {
         static if (sep.length)
             appender.put(' ');
+        return state;
     }
 
     ///
@@ -324,7 +319,7 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    void annotationWrapperEnd(size_t pos)
+    void annotationWrapperEnd(size_t, size_t)
     {
         static if (sep.length)
             appender.put(' ');

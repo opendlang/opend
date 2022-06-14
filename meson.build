@@ -30,7 +30,6 @@ sources_list = [
     'mir/ion/internal/stage1',
     'mir/ion/internal/stage2',
     'mir/ion/internal/stage3',
-    'mir/ion/internal/stage4_s',
     'mir/ion/stream',
     'mir/ion/symbol_table',
     'mir/ion/tape',

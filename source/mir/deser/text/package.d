@@ -16,7 +16,7 @@ import mir.ser.ion;
 import mir.serde;
 import mir.format; // Quoted symbol support
 import mir.ion.internal.data_holder;
-import mir.ion.internal.stage4_s : IonErrorInfo;
+import mir.ion.internal.stage3 : IonErrorInfo;
 import mir.bignum.integer;
 import std.traits : hasUDA, getUDAs;
 
@@ -133,8 +133,15 @@ struct IonTextDeserializer(Serializer)
 
 private:
 
+    static void __bar()
+    {
+        typeof(this).init.ser.putAnnotation("symbolText");
+    }
+
+    static assert(__traits(compiles, (){__bar();}));
+
     // import std.traits: 
-    static if (__traits(compiles, () @nogc { typeof(this).init.onString(); } ()))
+    static if (__traits(compiles, ()@nogc{__bar();}))
     {
         void handleState(State s) @safe pure @nogc { handleStateImpl(s); }
         void handleToken(IonTokenType t) @safe pure @nogc { handleTokenImpl(t); }
@@ -663,7 +670,6 @@ private:
             }
 
             size_t wrapperStart = ser.annotationWrapperBegin();
-            size_t arrayStart = ser.annotationsBegin();
             ser.putAnnotation(symbolText);
 
             while (t.nextToken())
@@ -713,18 +719,18 @@ private:
                     else
                     {
                         // if not, this is where we end
-                        ser.annotationsEnd(arrayStart);
+                        auto arrayStart = ser.annotationsEnd(wrapperStart);
                         ser.putSymbol(buf.data);
-                        ser.annotationWrapperEnd(wrapperStart);
+                        ser.annotationWrapperEnd(arrayStart, wrapperStart);
                         break;
                     }
                 }
                 else
-                {   
+                {
                     // if the current token is a value type (a non-symbol), then we should also end the annotation array
-                    ser.annotationsEnd(arrayStart);
+                    auto arrayStart = ser.annotationsEnd(wrapperStart);
                     handleToken(t.currentToken);
-                    ser.annotationWrapperEnd(wrapperStart);
+                    ser.annotationWrapperEnd(arrayStart, wrapperStart);
                     break;
                 }
             }
@@ -1552,7 +1558,8 @@ version (mir_ion_parser_test) unittest
 }
 
 /// Test that structs are getting de-serialized properly 
-version (mir_ion_parser_test) unittest
+version (mir_ion_parser_test)
+unittest
 {
     import mir.test: should;
     import mir.ion.stream;
@@ -1563,6 +1570,9 @@ version (mir_ion_parser_test) unittest
         auto v = ionData.text2ion.IonValueStream.serializeText;
         v.should == expected;
     }
+
+    test(`1`, `1`);
+    test(`test::1`, `test::1`);
 
     test(`{"test":"world", test: false, 'test': usd::123.456, '''test''': "asdf"}`,
          `{test:"world",test:false,test:usd::123.456,test:"asdf"}`);

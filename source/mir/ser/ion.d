@@ -9,11 +9,28 @@ module mir.ser.ion;
 import mir.primitives: isOutputRange;
 public import mir.serde;
 
-/++
-Ion serialization back-end
-+/
-struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC = true)
+import mir.ion.symbol_table: IonSymbolTable;
+
+@trusted pure nothrow @nogc
+IonSerializer!(bufferStackSize, compiletimeSymbolTable, tableGC)
+    ionSerializer
+    (uint bufferStackSize, string[] compiletimeSymbolTable = null, bool tableGC)
+    ()
 {
+    import core.lifetime: move;
+    typeof(return) ret = void;
+
+    ret.buffer.allData = null;
+    ret.buffer.currentTapePosition = 0;
+    version(assert) ret.buffer.ctrlStack = 0;
+
+    // ret.initialize(runtimeTable, serdeTarget);
+    return ret;
+}
+
+struct IonSerializer(uint bufferStackSize, string[] compiletimeSymbolTable, bool tableGC = true)
+{
+    import mir.appender: ScopedBuffer;
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
     import mir.bignum.low_level_view: BigIntView;
@@ -42,11 +59,12 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
         foreach (key; compiletimeSymbolTable)
             table.insert(key);
         table.finalize;
-        return table.tapeData;
+        return table.data;
     } ();
 
     ///
-    TapeHolder* tapeHolder;
+    import mir.ion.internal.data_holder;
+    IonTapeHolder!(bufferStackSize) buffer = void;
 
     ///
     IonSymbolTable!tableGC* runtimeTable;
@@ -54,21 +72,107 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     /// Mutable value used to choose format specidied or user-defined serialization specializations
     int serdeTarget = SerdeTarget.ion;
 
-@trusted:
+nothrow pure @trusted:
 
-    private void putEnd(size_t state, IonTypeCode typeCode)
+    void initialize(ref IonSymbolTable!tableGC runtimeTable, int serdeTarget = SerdeTarget.ion) @trusted
     {
-        size_t totalElementLength = tapeHolder.currentTapePosition - (state + ionPutStartLength);
-        tapeHolder.reserve(128 + 3);
-        tapeHolder.currentTapePosition = state + ionPutEnd(tapeHolder.data.ptr + state, typeCode, totalElementLength);
+        buffer.initialize;
+        this.runtimeTable = &runtimeTable;
+        this.serdeTarget = serdeTarget;
+        version (thunderbolt)
+            buffer._currentLength = 15;
+    }
+
+    void initializeNoTable(int serdeTarget = SerdeTarget.ion) @trusted
+    {
+        pragma(inline, true);
+        buffer.initialize;
+        this.runtimeTable = null;
+        this.serdeTarget = serdeTarget;
+        version (thunderbolt)
+            buffer._currentLength = 15;
+    }
+
+    void finalize() @trusted
+    {
+        import mir.ion.thunderbolt;
+
+        version (thunderbolt)
+        {
+            auto reserve = buffer.reserve(15);
+            if (__ctfe)
+                reserve[] = 0;
+            auto joy = buffer.data.ptr +  15;
+            auto ion = joy + 15;
+            auto length = buffer._currentLength - 15;
+            buffer._currentLength += 15;
+
+            debug
+            {
+                // d.printHexArray(joy[0 .. length]);
+                // d << endl;
+            }
+
+            auto status = thunderbolt(ion, joy, length);
+
+            debug
+            {
+                // d.printHexArray(ion[0 .. length]);
+                // d << endl;
+            }
+
+            assert(!status);
+        }
+        else
+        {
+
+        }
+    }
+
+    inout(ubyte)[] data() inout scope return
+    {
+        version (thunderbolt)
+        {
+           return buffer.data[30 .. $];
+        }
+        else
+        {
+            return buffer.data;
+        }
+    }
+
+scope:
+
+    private void putEnd(size_t beginPosition, IonTypeCode typeCode)
+    {
+        version (thunderbolt)
+        {
+            buffer.reserve(11);
+            auto length = buffer._currentLength - beginPosition;
+            buffer._currentLength = beginPosition + joyPutEnd(buffer.data.ptr + beginPosition, typeCode, length);
+        }
+        else
+        {
+            buffer.reserve(128 + 3);
+            auto length = buffer._currentLength - beginPosition - ionPutStartLength;
+            buffer._currentLength = beginPosition + ionPutEnd(buffer.data.ptr + beginPosition, typeCode, length);
+        }
     }
 
     ///
     size_t structBegin(size_t length = size_t.max)
     {
-        auto ret = tapeHolder.currentTapePosition;
-        tapeHolder.adjustPosition(ionPutStartLength);
-        return ret;
+        version (thunderbolt)
+        {
+            return buffer._currentLength;
+        }
+        else
+        {
+            auto ret = buffer._currentLength;
+            buffer.reserve(ionPutStartLength);
+            buffer._currentLength += ionPutStartLength;
+            return ret;
+        }
     }
 
     ///
@@ -103,9 +207,7 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     +/
     void putStringPart(scope const(char)[] str)
     {
-        tapeHolder.reserve(str.length);
-        (tapeHolder.data.ptr + tapeHolder.currentTapePosition)[0 .. str.length] = cast(const(ubyte)[])str;
-        tapeHolder.currentTapePosition += str.length;
+        buffer.put(cast(const ubyte[]) str);
     }
 
     ///
@@ -115,29 +217,46 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     }
 
     ///
-    size_t annotationsBegin()
+    auto annotationsEnd(size_t state)
     {
-        auto ret = tapeHolder.currentTapePosition;
-        tapeHolder.adjustPosition(ionPutAnnotationsListStartLength);
+        version (thunderbolt)
+        {
+            return buffer._currentLength;
+        }
+        else
+        {
+            size_t length = buffer._currentLength - (state + ionPutStartLength + ionPutAnnotationsListStartLength);
+            if (_expect(length >= 0x80, false))
+                buffer.reserve(9);
+            return buffer._currentLength = state + ionPutStartLength + ionPutAnnotationsListEnd(buffer.data.ptr + state + ionPutStartLength, length);
+        }
+    }
+
+    ///
+    version (thunderbolt)
+    alias annotationWrapperBegin = structBegin;
+    else
+    size_t annotationWrapperBegin(size_t length = size_t.max)
+    {
+        auto ret = buffer._currentLength;
+        buffer.reserve(ionPutStartLength + ionPutAnnotationsListStartLength);
+        buffer._currentLength += ionPutStartLength + ionPutAnnotationsListStartLength;
         return ret;
     }
 
     ///
-    void annotationsEnd(size_t state)
+    void annotationWrapperEnd(size_t annotationsState, size_t state)
     {
-        size_t totalElementLength = tapeHolder.currentTapePosition - (state + ionPutAnnotationsListStartLength);
-        if (_expect(totalElementLength >= 0x80, false))
-            tapeHolder.reserve(9);
-        tapeHolder.currentTapePosition = state + ionPutAnnotationsListEnd(tapeHolder.data.ptr + state, totalElementLength);
-    }
-
-    ///
-    alias annotationWrapperBegin = structBegin;
-
-    ///
-    void annotationWrapperEnd(size_t state)
-    {
-        putEnd(state, IonTypeCode.annotations);
+        version (thunderbolt)
+        {
+            assert(state < annotationsState);
+            buffer._currentLength += joyPutVarUInt(buffer.reserve(22).ptr, annotationsState - state);
+            buffer._currentLength = state + joyPutEnd(buffer.data.ptr + state, IonTypeCode.annotations, buffer._currentLength - state);
+        }
+        else
+        {
+            putEnd(state, IonTypeCode.annotations);
+        }
     }
 
     ///
@@ -172,31 +291,57 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
         }
     }
 
+    static if (tableGC)
     ///
-    void putKey()(scope const char[] key)
+    void putKey(scope const char[] key)
+    {
+        putKeyId(_getId(key));
+    }
+    else
+    ///
+    void putKey(scope const char[] key) @nogc
     {
         putKeyId(_getId(key));
     }
 
+    static if (tableGC)
     ///
-    alias putAnnotation = putKey;
+    void putAnnotation(scope const char[] key)
+    {
+        putAnnotationId(_getId(key));
+    }
+    else
+    ///
+    void putAnnotation(scope const char[] key) @nogc
+    {
+        putAnnotationId(_getId(key));
+    }
 
     ///
     void putKeyId(T)(const T id)
         if (__traits(isUnsigned, T))
     {
-        tapeHolder.reserve(19);
-        tapeHolder.currentTapePosition += ionPutVarUInt(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
+        version (thunderbolt)
+            buffer._currentLength += joyPutVarUInt(buffer.reserve(11).ptr, id);
+        else
+            buffer._currentLength += ionPutVarUInt(buffer.reserve(11).ptr, id);
     }
 
     ///
-    alias putAnnotationId = putKeyId;
+    ///
+    void putAnnotationId(T)(const T id)
+        if (__traits(isUnsigned, T))
+    {
+        buffer._currentLength += ionPutVarUInt(buffer.reserve(11).ptr, id);
+    }
 
     ///
     void putSymbolId(size_t id)
     {
-        tapeHolder.reserve(19);
-        tapeHolder.currentTapePosition += ionPutSymbolId(tapeHolder.data.ptr + tapeHolder.currentTapePosition, id);
+        version (thunderbolt)
+            buffer._currentLength += joyPutSymbolId(buffer.reserve(9).ptr, id);
+        else
+            buffer._currentLength += ionPutSymbolId(buffer.reserve(9).ptr, id);
     }
 
     ///
@@ -210,16 +355,19 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
-        tapeHolder.reserve(Num.sizeof + 2 + 1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, num);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(Num.sizeof + 1).ptr, num);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(Num.sizeof + 1).ptr, num);
     }
 
     ///
     void putValue(W)(BigIntView!W view)
     {
-        auto len = view.unsigned.coefficients.length;
-        tapeHolder.reserve(len * size_t.sizeof + 16);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, view);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(view.unsigned.coefficients.length * W.sizeof + 12).ptr, view);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(view.unsigned.coefficients.length * W.sizeof + 12).ptr, view);
     }
 
     ///
@@ -231,10 +379,10 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
-        auto view = num.view;
-        auto len = view.coefficient.coefficients.length + 1; // +1 for exponent
-        tapeHolder.reserve(len * size_t.sizeof + 16);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, view);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(num.coefficient.coefficients.length * size_t.sizeof + 23).ptr, num.view);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(num.coefficient.coefficients.length * size_t.sizeof + 23).ptr, num.view);
     }
 
     ///
@@ -246,43 +394,49 @@ struct IonSerializer(TapeHolder, string[] compiletimeSymbolTable, bool tableGC =
     ///
     void putNull(IonTypeCode code)
     {
-        tapeHolder.reserve(1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, null, code);
+        buffer._currentLength += ionPut(buffer.reserve(1).ptr, null, code);
     }
 
     ///
     void putValue(bool b)
     {
-        tapeHolder.reserve(1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, b);
+        buffer._currentLength += ionPut(buffer.reserve(1).ptr, b);
     }
 
     ///
     void putValue(scope const char[] value)
     {
-        tapeHolder.reserve(value.length + size_t.sizeof + 1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(value.length + size_t.sizeof + 1).ptr, value);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(value.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(Clob value)
     {
-        tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(Blob value)
     {
-        tapeHolder.reserve(value.data.length + size_t.sizeof + 1);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(Timestamp value)
     {
-        tapeHolder.reserve(20);
-        tapeHolder.currentTapePosition += ionPut(tapeHolder.data.ptr + tapeHolder.currentTapePosition, value);
+        version (thunderbolt)
+            buffer._currentLength += joyPut(buffer.reserve(20).ptr, value);
+        else
+            buffer._currentLength += ionPut(buffer.reserve(20).ptr, value);
     }
 
     ///
@@ -305,18 +459,19 @@ Ion serialization function.
 immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarget.ion)
 {
     import mir.utility: _expect;
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
     import mir.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    auto tapeHolder = ionTapeHolder!(nMax * 8);
-    tapeHolder.initialize;
     IonSymbolTable!true table;
-    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(()@trusted { return &tapeHolder; }(), ()@trusted { return &table; }(), serdeTarget);
+    auto serializer = ionSerializer!(nMax * 8, keys, true);
+    serializer.initialize(table, serdeTarget);
+
     serializeValue(serializer, value);
+    serializer.finalize;
 
     static immutable ubyte[] compiletimePrefixAndTableTapeData = ionPrefix ~ serializer.compiletimeTableTape;
 
@@ -324,16 +479,17 @@ immutable(ubyte)[] serializeIon(T)(auto ref T value, int serdeTarget = SerdeTarg
     if (_expect(table.initialized, false))
     {
         table.finalize; 
-        return () @trusted { return  cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData); } ();
+        return () @trusted { return  cast(immutable) (ionPrefix ~ table.data ~ serializer.data); } ();
     }
     // compile time table
     else
     {
-        return () @trusted { return  cast(immutable) (compiletimePrefixAndTableTapeData ~ tapeHolder.tapeData); } ();
+        return () @trusted { return  cast(immutable) (compiletimePrefixAndTableTapeData ~ serializer.data); } ();
     }
 }
 
 ///
+version(mir_ion_ser_test)
 unittest
 {
     static struct S
@@ -354,12 +510,14 @@ unittest
         0xae, 0x8c, 0x21, 0x7b,
     ];
 
-    assert (s.serializeIon == data);
+    import mir.test;
+    s.serializeIon.should == data;
     enum staticData = s.serializeIon;
     static assert (staticData == data);
 }
 
 ///
+version(mir_ion_ser_test)
 unittest
 {
     import mir.serde: SerdeTarget;
@@ -370,143 +528,6 @@ unittest
     assert(data == binaryDataAB || data == binaryDataBA);
 }
 
-// /++
-// Ion low-level serialization function.
-// +/
-// void serializeIon(TapeHolder, T)(
-//     TapeHolder* tapeHolder,
-//     auto ref T value,
-//     int serdeTarget = SerdeTarget.ion)
-// {
-//     import mir.ser: serializeValue;
-//     import mir.ion.symbol_table;
-
-//     enum keys = IonSystemSymbolTable_v1 ~ serdeGetSerializationKeysRecurse!T;
-//     auto serializer = IonSerializer!(TapeHolder, keys)(tapeHolder, null, serdeTarget);
-//     serializeValue(serializer, value);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.serde: serdeIgnoreDefault;
-
-//     static struct Decor
-//     {
-//         int candles; // 0
-//         float fluff = float.infinity; // inf 
-//     }
-    
-//     static struct Cake
-//     {
-//         @serdeIgnoreDefault
-//         string name = "Chocolate Cake";
-//         int slices = 8;
-//         float flavor = 1;
-//         @serdeIgnoreDefault
-//         Decor dec = Decor(20); // { 20, inf }
-//     }
-    
-//     assert(Cake("Normal Cake").serializeIon == `{"name":"Normal Cake","slices":8,"flavor":1.0}`);
-//     auto cake = Cake.init;
-//     cake.dec = Decor.init;
-//     assert(cake.serializeIon == `{"slices":8,"flavor":1.0,"dec":{"candles":0,"fluff":"+inf"}}`);
-//     assert(cake.dec.serializeIon == `{"candles":0,"fluff":"+inf"}`);
-    
-//     static struct A
-//     {
-//         @serdeIgnoreDefault
-//         string str = "Banana";
-//         int i = 1;
-//     }
-//     assert(A.init.serializeIon == `{"i":1}`);
-    
-//     static struct S
-//     {
-//         @serdeIgnoreDefault
-//         A a;
-//     }
-//     assert(S.init.serializeIon == `{}`);
-//     assert(S(A("Berry")).serializeIon == `{"a":{"str":"Berry","i":1}}`);
-    
-//     static struct D
-//     {
-//         S s;
-//     }
-//     assert(D.init.serializeIon == `{"s":{}}`);
-//     assert(D(S(A("Berry"))).serializeIon == `{"s":{"a":{"str":"Berry","i":1}}}`);
-//     assert(D(S(A(null, 0))).serializeIon == `{"s":{"a":{"str":null,"i":0}}}`);
-    
-//     static struct F
-//     {
-//         D d;
-//     }
-//     assert(F.init.serializeIon == `{"d":{"s":{}}}`);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.serde: serdeIgnoreIn;
-
-//     static struct S
-//     {
-//         @serdeIgnoreIn
-//         string s;
-//     }
-//     // assert(`{"s":"d"}`.deserializeIon!S.s == null, `{"s":"d"}`.deserializeIon!S.s);
-//     assert(S("d").serializeIon == `{"s":"d"}`);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.deser.ion;
-
-//     static struct S
-//     {
-//         @serdeIgnoreOut
-//         string s;
-//     }
-//     assert(`{"s":"d"}`.deserializeIon!S.s == "d");
-//     assert(S("d").serializeIon == `{}`);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.serde: serdeIgnoreOutIf;
-
-//     static struct S
-//     {
-//         @serdeIgnoreOutIf!`a < 0`
-//         int a;
-//     }
-
-//     assert(serializeIon(S(3)) == `{"a":3}`, serializeIon(S(3)));
-//     assert(serializeIon(S(-3)) == `{}`);
-// }
-
-// ///
-// unittest
-// {
-//     import mir.deser.ion;
-//     import std.range;
-//     import std.algorithm;
-//     import std.conv;
-
-//     static struct S
-//     {
-//         @serdeTransformIn!"a += 2"
-//         @serdeTransformOut!(a =>"str".repeat.take(a).joiner("_").to!string)
-//         int a;
-//     }
-
-//     auto s = deserializeIon!S(`{"a":3}`);
-//     assert(s.a == 5);
-//     assert(serializeIon(s) == `{"a":"str_str_str_str_str"}`);
-// }
-
 /++
 Ion serialization for custom outputt range.
 +/
@@ -514,18 +535,19 @@ void serializeIon(Appender, T)(scope ref Appender appender, auto ref T value, in
     if (isOutputRange!(Appender, const(ubyte)[]) && !is(T == SerdeTarget))
 {
     import mir.utility: _expect;
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder, ionTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
     import mir.ser: serializeValue;
     import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols;
 
     enum nMax = 4096u;
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
-    auto tapeHolder = ionTapeHolder!(nMax * 8);
-    tapeHolder.initialize;
-    IonSymbolTable!false table;
-    auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, false)(()@trusted { return &tapeHolder; }(), ()@trusted { return &table; }(), serdeTarget);
+    auto table = () @trusted { IonSymbolTable!false ret = void; ret.initializeNull; return ret; }();
+    auto serializer = ionSerializer!(nMax * 8, keys, false);
+    serializer.initialize(table, serdeTarget);
+
     serializeValue(serializer, value);
+    serializer.finalize;
 
     appender.put(ionPrefix);
 
@@ -533,20 +555,22 @@ void serializeIon(Appender, T)(scope ref Appender appender, auto ref T value, in
     if (_expect(table.initialized, false))
     {
         table.finalize; 
-        appender.put(table.tapeData);
+        appender.put(table.data);
     }
     // compile time table
     else
     {
         appender.put(serializer.compiletimeTableTape);
     }
-    appender.put(tapeHolder.tapeData);
+    appender.put(serializer.data);
 }
 
 ///
+version(mir_ion_ser_test)
 @safe pure nothrow @nogc
 unittest
 {
+    import mir.test;
     import mir.appender: scopedBuffer;
 
     static struct S
@@ -569,88 +593,5 @@ unittest
 
     auto buffer = scopedBuffer!ubyte;
     serializeIon(buffer, s);
-    assert (data == buffer.data);
+    buffer.data.should == data;
 }
-
-/++
-Creates Ion serialization back-end.
-Use `sep` equal to `"\t"` or `"    "` for pretty formatting.
-+/
-template ionSerializer(string sep = "")
-{
-    ///
-    auto ionSerializer(Appender)(return Appender* appender, int serdeTarget = SerdeTarget.ion)
-    {
-        return IonSerializer!(sep, Appender)(appender, serdeTarget);
-    }
-}
-
-///
-// @safe pure nothrow @nogc unittest
-// {
-    // import mir.format: stringBuf;
-    // import mir.bignum.integer;
-
-    // auto buffer = stringBuf;
-    // auto ser = ionSerializer((()@trusted=>&buffer)());
-    // auto state0 = ser.structBegin;
-
-    //     ser.putEscapedKey("null");
-    //     ser.putValue(null);
-
-    //     ser.putEscapedKey("array");
-    //     auto state1 = ser.listBegin();
-    //         ser.elemBegin; ser.putValue(null);
-    //         ser.elemBegin; ser.putValue(123);
-    //         ser.elemBegin; ser.putValue(12300000.123);
-    //         ser.elemBegin; ser.putValue("\t");
-    //         ser.elemBegin; ser.putValue("\r");
-    //         ser.elemBegin; ser.putValue("\n");
-    //         ser.elemBegin; ser.putValue(BigInt!2(1234567890));
-    //     ser.listEnd(state1);
-
-    // ser.structEnd(state0);
-
-    // assert(buffer.data == `{"null":null,"array":[null,123,1.2300000123e7,"\t","\r","\n",1234567890]}`);
-// }
-
-///
-// unittest
-// {
-//     import std.array;
-//     import mir.bignum.integer;
-
-//     auto app = appender!string;
-//     auto ser = ionSerializer!"    "(&app);
-//     auto state0 = ser.structBegin;
-
-//         ser.putEscapedKey("null");
-//         ser.putValue(null);
-
-//         ser.putEscapedKey("array");
-//         auto state1 = ser.listBegin();
-//             ser.elemBegin; ser.putValue(null);
-//             ser.elemBegin; ser.putValue(123);
-//             ser.elemBegin; ser.putValue(12300000.123);
-//             ser.elemBegin; ser.putValue("\t");
-//             ser.elemBegin; ser.putValue("\r");
-//             ser.elemBegin; ser.putValue("\n");
-//             ser.elemBegin; ser.putValue(BigInt!2("1234567890"));
-//         ser.listEnd(state1);
-
-//     ser.structEnd(state0);
-
-//     assert(app.data ==
-// `{
-//     "null": null,
-//     "array": [
-//         null,
-//         123,
-//         1.2300000123e7,
-//         "\t",
-//         "\r",
-//         "\n",
-//         1234567890
-//     ]
-// }`);
-// }

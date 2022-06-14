@@ -31,10 +31,11 @@ private static void* validatePtr()(return void* ptr)
 struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
 {
     ///
-    ubyte[] data;
+    ubyte[] allData;
 
     ///
     size_t currentTapePosition;
+    alias _currentLength = currentTapePosition;
 
     private align(16) ubyte[stackAllocatedLength] stackData = void;
 
@@ -43,15 +44,17 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
     version(assert) ubyte[32] ctrlStack;
 
     ///
-    inout(ubyte)[] tapeData() inout @property
+    inout(ubyte)[] data() inout @property
     {
+        version(LDC) pragma(inline, true);
         version(assert) assert(ctrlStack == ctrlStack.init);
-        return data[0 .. currentTapePosition];
+        return allData[0 .. currentTapePosition];
     }
 
     ///
     void adjustPosition(size_t length)
     {
+        version(LDC) pragma(inline, true);
         reserve(length);
         currentTapePosition += length;
     }
@@ -65,17 +68,28 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
     ~this()
         @trusted pure nothrow @nogc
     {
+        version(LDC) pragma(inline, true);
         version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: free;
         static if (!useGC)
-            if (data.ptr != stackData.ptr)
-                free(data.ptr);
+            if (allData.ptr != stackData.ptr)
+                free(allData.ptr);
+    }
+
+    ///
+    void put(scope const(ubyte)[] data)
+    {
+        version(LDC) pragma(inline, true);
+        import core.stdc.string;
+        memcpy(reserve(data.length).ptr, data.ptr, data.length);
+        currentTapePosition += data.length;
     }
 
     ///
     void initialize() @trusted
     {
-        data = stackData;
+        version(LDC) pragma(inline, true);
+        allData = stackData;
         currentTapePosition = 0;
         version(assert) ctrlStack = 0;
     }
@@ -84,85 +98,89 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
     void extend(size_t newSize)
         @trusted pure nothrow
     {
+        version(LDC) pragma(inline, true);
         version(assert) assert(ctrlStack == ctrlStack.init);
         import mir.internal.memory: malloc, realloc;
         import core.stdc.string: memcpy;
 
-        if (newSize > data.length)
+        if (newSize > allData.length)
         {
             import mir.utility: max;
-            newSize = max(newSize, data.length * 2);
+            newSize = max(newSize, allData.length * 2);
             sizediff_t shift;
-            if (data.ptr != stackData.ptr)
+            if (allData.ptr != stackData.ptr)
             {
                 static if (useGC)
-                    data.length = newSize;
+                    allData.length = newSize;
                 else
-                    data = cast(ubyte[]) realloc(data.ptr, newSize).validatePtr[0 .. newSize];
+                    allData = cast(ubyte[]) realloc(allData.ptr, newSize).validatePtr[0 .. newSize];
             }
             else
             {
                 static if (useGC)
                 {
                     auto ptr = new ubyte[newSize];
-                    ptr[0 .. data.length] = data;
-                    data = ptr;
+                    ptr[0 .. allData.length] = allData;
+                    allData = ptr;
                 }
                 else
                 {
                     auto ptr = cast(ubyte*) malloc(newSize).validatePtr;
                     memcpy(ptr, stackData.ptr, stackData.length);
-                    data = ptr[0 .. newSize];
+                    allData = ptr[0 .. newSize];
                 }
             }
         }
     }
 
     ///
-    void reserve(size_t size)
+    auto reserve(size_t size)
     {
+        version(LDC) pragma(inline, true);
         version(assert) assert(ctrlStack == ctrlStack.init);
-        assert(currentTapePosition <= data.length);
+        assert(currentTapePosition <= allData.length);
 
         import mir.utility: max;
 
         import mir.internal.memory: malloc, realloc;
         import core.stdc.string: memcpy;
 
-        if (currentTapePosition + size > data.length)
+        if (currentTapePosition + size > allData.length)
         {
-            auto newSize = data.length + max(size, data.length);
-            if (data.ptr != stackData.ptr)
+            auto newSize = allData.length + max(size, allData.length);
+            if (allData.ptr != stackData.ptr)
             {
                 static if (useGC)
-                    data.length = newSize;
+                    allData.length = newSize;
                 else
-                    data = cast(ubyte[]) realloc(data.ptr, newSize).validatePtr[0 .. newSize];
+                    allData = cast(ubyte[]) realloc(allData.ptr, newSize).validatePtr[0 .. newSize];
             }
             else
             {
                 static if (useGC)
                 {
                     auto ptr = new ubyte[newSize];
-                    ptr[0 .. data.length] = data;
-                    data = ptr;
+                    ptr[0 .. allData.length] = allData;
+                    allData = ptr;
                 }
                 else
                 {
                     auto ptr = malloc(newSize).validatePtr;
                     memcpy(ptr, stackData.ptr, stackData.length);
-                    data = cast(ubyte[])ptr[0 .. newSize];
+                    allData = cast(ubyte[])ptr[0 .. newSize];
                 }
             }
         }
+        return allData[currentTapePosition .. currentTapePosition + size];
     }
 }
 
 IonTapeHolder!(stackAllocatedLength, useGC) ionTapeHolder(size_t stackAllocatedLength, bool useGC = false)()
     @trusted
 {
+    version(LDC) pragma(inline, true);
     typeof(return) ret = void;
-    ret.data = null;
+    ret.allData = null;
     ret.currentTapePosition = 0;
     version(assert) ret.ctrlStack = 0;
     return ret;

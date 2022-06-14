@@ -728,23 +728,34 @@ unittest
 {
     import std.array : replicate;
     import mir.ser.msgpack : serializeMsgpack;
+    import mir.test;
 
     assert("foobar".serializeMsgpack.deserializeMsgpack!string == "foobar");
     assert("bazfoo".serializeMsgpack.deserializeMsgpack!string == "bazfoo");
 
     {
         auto str = "a".replicate(32);
-        assert(serializeMsgpack(str).deserializeMsgpack!string == str);
+        serializeMsgpack(str).deserializeMsgpack!string.should == str;
+    }
+
+    {
+        auto str = "a".replicate(ubyte.max);
+        serializeMsgpack(str).deserializeMsgpack!string.should == str;
+    }
+
+    {
+        auto str = "a".replicate(ubyte.max + 1);
+        serializeMsgpack(str).deserializeMsgpack!string.should == str;
     }
 
     {
         auto str = "a".replicate(ushort.max);
-        assert(serializeMsgpack(str).deserializeMsgpack!string == str);
+        serializeMsgpack(str).deserializeMsgpack!string.should == str;
     }
 
     {
         auto str = "a".replicate(ushort.max + 1);
-        assert(serializeMsgpack(str).deserializeMsgpack!string == str);
+        serializeMsgpack(str).deserializeMsgpack!string.should == str;
     }
 }
 

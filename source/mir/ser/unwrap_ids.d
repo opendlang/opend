@@ -65,7 +65,7 @@ struct UnwrapSymbolIdsSerializer(Serializer, SymbolMap)
 +/
 UnwrapSymbolIdsSerializer!(Serializer, SymbolMap)
     unwrapSymbolIds(Serializer, SymbolMap)
-    (scope return ref Serializer serializer, SymbolMap symbolMap)
+    (return ref Serializer serializer, SymbolMap symbolMap)
     @trusted
 {
     return typeof(return)(&serializer, symbolMap);

@@ -423,7 +423,7 @@ unittest
     static assert(nullTypeCodeOf!long == IonTypeCode.nInt);
 }
 
-private void serializeAnnotatedValue(S, V)(scope ref S serializer, auto ref V value, size_t annotationsState, size_t wrapperState)
+private void serializeAnnotatedValue(S, V)(scope ref S serializer, auto ref V value, size_t wrapperState)
 {
     import mir.algebraic: isVariant;
     static if (serdeGetAnnotationMembersOut!V.length)
@@ -447,7 +447,7 @@ private void serializeAnnotatedValue(S, V)(scope ref S serializer, auto ref V va
             enum aliasThisMember = __traits(getAliasThis, V)[0];
         else
             enum aliasThisMember = "value";
-        serializeAnnotatedValue(serializer, __traits(getMember, value, aliasThisMember), annotationsState, wrapperState);
+        serializeAnnotatedValue(serializer, __traits(getMember, value, aliasThisMember), wrapperState);
     }
     else
     static if (isVariant!V)
@@ -466,19 +466,19 @@ private void serializeAnnotatedValue(S, V)(scope ref S serializer, auto ref V va
                     else
                         serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
                 }
-                serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
+                serializeAnnotatedValue(serializer, v, wrapperState);
             },
             throwCannotSerializeVoid,
         );
     }
     else
     {
-        serializer.annotationsEnd(annotationsState);
+        auto annotationsState = serializer.annotationsEnd(wrapperState);
         static if (serdeGetAnnotationMembersOut!V.length)
             serializeValueImpl(serializer, value);
         else
             serializeValue(serializer, value);
-        serializer.annotationWrapperEnd(wrapperState);
+        serializer.annotationWrapperEnd(annotationsState, wrapperState);
     }
 }
 
@@ -746,7 +746,6 @@ void serializeValue(S, V)(scope ref S serializer, auto ref V value)
                 static if (serdeHasAlgebraicAnnotation!A && !isSimpleNullable)
                 {
                     auto wrapperState = serializer.annotationWrapperBegin;
-                    auto annotationsState = serializer.annotationsBegin;
                     static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
                         serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
                     else
@@ -754,7 +753,7 @@ void serializeValue(S, V)(scope ref S serializer, auto ref V value)
                         serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
                     else
                         serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
-                    serializeAnnotatedValue(serializer, v, annotationsState, wrapperState);
+                    serializeAnnotatedValue(serializer, v, wrapperState);
                 }
                 else
                 {
@@ -806,8 +805,7 @@ void serializeValue(S, V)(scope ref S serializer, auto ref V value)
     static if (serdeGetAnnotationMembersOut!V.length)
     {
         auto wrapperState = serializer.annotationWrapperBegin;
-        auto annotationsState = serializer.annotationsBegin;
-        serializeAnnotatedValue(serializer, value, annotationsState, wrapperState);
+        serializeAnnotatedValue(serializer, value, wrapperState);
         return;
     }
     else

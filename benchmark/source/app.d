@@ -6,11 +6,11 @@ import std.getopt;
 
 void main(string[] args)
 {
-    version (assert)
-    {
-        dout << "please compile with --build=release" <<  endl;
-    }
-    else
+    // version (assert)
+    // {
+    //     dout << "please compile with --build=release" <<  endl;
+    // }
+    // else
     {
         string jsonFileName;
         uint count;

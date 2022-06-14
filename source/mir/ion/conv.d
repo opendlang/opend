@@ -30,27 +30,25 @@ template serde(T)
         import mir.deser.ion: deserializeIon;
         import mir.ion.internal.data_holder: ionPrefix, ionTapeHolder, IonTapeHolder;
         import mir.ser: serializeValue;
-        import mir.ser.ion: IonSerializer;
+        import mir.ser.ion: ionSerializer;
         import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
         import mir.ion.value: IonValue, IonDescribedValue, IonList;
         import mir.serde: serdeGetSerializationKeysRecurse;
         import mir.utility: _expect;
 
-        enum nMax = 4096u;
+        enum nMax = 4096;
         enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
 
         const(string)[] symbolTable;
 
         import mir.appender : scopedBuffer;
         auto symbolTableBuffer = scopedBuffer!string;
-        auto tapeHolder = ionTapeHolder!(nMax * 8);
-        tapeHolder.initialize;
-        IonSymbolTable!true table;
-        auto serializer = IonSerializer!(IonTapeHolder!(nMax * 8), keys, true)(
-            ()@trusted { return &tapeHolder; }(),
-            ()@trusted { return &table; }(),
-            serdeTarget);
+
+        auto table = () @trusted { IonSymbolTable!false ret = void; ret.initializeNull; return ret; }();
+        auto serializer = ionSerializer!(nMax * 8, keys, false);
+        serializer.initialize(table);
         serializeValue(serializer, value);
+        serializer.finalize;
 
         // use runtime table
         if (table.initialized)
@@ -69,7 +67,8 @@ template serde(T)
             symbolTable = compileTimeTable;
         }
         IonDescribedValue ionValue;
-        auto error = tapeHolder.data.IonValue.describe(ionValue);
+        auto error = serializer.data.IonValue.describe(ionValue);
+        assert(!error);
         return deserializeIon!T(target, symbolTable, ionValue);
     }
 
@@ -120,34 +119,25 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
     pragma(inline, false);
     import mir.exception: MirException;
     import mir.ion.exception: ionErrorMsg;
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
-    import mir.ion.internal.stage4_s;
-    import mir.ion.symbol_table: IonSymbolTable;
-    import mir.utility: _expect;
+    import mir.ion.internal.stage3;
 
-    enum nMax = 4096u;
-
-    IonTapeHolder!(nMax * 8) tapeHolder = void;
-    tapeHolder.initialize;
-
-    IonSymbolTable!false table = void;
-    table.initialize;
-    auto error = singleThreadJsonText!nMax(table, tapeHolder, text);
-    if (error.code)
-        throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
-
-    return ()@trusted {
-        table.finalize;
-        return cast(immutable(ubyte)[])(ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
-    }();
+    immutable(ubyte)[] ret;
+    stage3(text, (error, data)
+    {
+        if (error.code)
+            throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+        ret = data.idup;
+    });
+    return ret;
 }
 
 ///
 @safe pure
 version(mir_ion_test) unittest
 {
-    static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
-    assert(`{"a":1,"b":2}`.json2ion == data);
+    import mir.test;
+    static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x62, 0x81, 0x61, 0xd6, 0x8b, 0x21, 0x01, 0x8a, 0x21, 0x02];
+    `{"a":1,"b":2}`.json2ion.should == data;
 }
 
 /++
@@ -159,44 +149,40 @@ Params:
     appender = A buffer that will receive the Ion binary data
 +/
 void json2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
-    @trusted pure
+    @trusted pure @nogc
 {
     import mir.exception: MirException;
-    import mir.ion.exception: ionErrorMsg;
+    import mir.ion.exception: ionErrorMsg, ionException;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
-    import mir.ion.internal.stage4_s;
-    import mir.ion.symbol_table: IonSymbolTable;
-    import mir.ser.ion : IonSerializer;
-    import mir.serde : SerdeTarget;
+    import mir.ion.internal.stage3;
 
-    enum nMax = 4096;
-    IonTapeHolder!(nMax * 8) tapeHolder = void;
-    tapeHolder.initialize;
-    IonSymbolTable!false table = void;
-    table.initialize;
-
-    auto error = singleThreadJsonText!nMax(table, tapeHolder, text);
-    if (error.code)
-        throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
-
-    appender.put(ionPrefix);
-    if (table.initialized)
+    stage3(text, (error, data)
     {
-        table.finalize;
-        appender.put(table.tapeData);
-    }
-    appender.put(tapeHolder.tapeData);
+        if (error.code)
+        {
+            static if (__traits(compiles, ()@nogc { throw new Exception(""); }))
+            {
+                throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+            }
+            else
+            {
+                throw error.code.ionException;
+            }
+        }
+        appender.put(data);
+    });
 }
 
 ///
 @safe pure
 version(mir_ion_test) unittest
 {
+    import mir.test;
     import mir.appender : scopedBuffer;
-    static immutable data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x62, 0x81, 0x61, 0xd6, 0x8b, 0x21, 0x01, 0x8a, 0x21, 0x02];
     auto buf = scopedBuffer!ubyte;
-    json2ion(`{"a":1,"b":2}`, buf);
-    assert(buf.data == data);
+    json2ion(` { "a" : 1, "b" : 2 } `, buf);
+    buf.data.should == data;
 }
 
 /++
@@ -212,7 +198,7 @@ IonValueStream json2ionStream(scope const(char)[] text)
 @safe pure
 version(mir_ion_test) unittest
 {
-    static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+    static immutable ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x62, 0x81, 0x61, 0xd6, 0x8b, 0x21, 0x01, 0x8a, 0x21, 0x02];
     assert(`{"a":1,"b":2}`.json2ionStream.data == data);
 }
 
@@ -279,27 +265,27 @@ immutable(ubyte)[] text2ion(scope const(char)[] text)
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
-    import mir.ser.ion : IonSerializer;
+    import mir.ser.ion : ionSerializer;
     import mir.serde : SerdeTarget;
     import mir.deser.text : IonTextDeserializer;
     enum nMax = 4096;
-    IonTapeHolder!(nMax * 8, true) tapeHolder = void;
-    tapeHolder.initialize;
+
     IonSymbolTable!true table;
-    auto ser = IonSerializer!(typeof(tapeHolder), null, true)(&tapeHolder, &table, SerdeTarget.ion);
+    auto serializer = ionSerializer!(nMax * 8, null, true);
+    serializer.initialize(table);
 
-    auto deser = IonTextDeserializer!(typeof(ser))(&ser);
-
+    auto deser = IonTextDeserializer!(typeof(serializer))(&serializer);
     deser(text);
+    serializer.finalize;
 
     if (table.initialized)
     {
         table.finalize;
-        return cast(immutable) (ionPrefix ~ table.tapeData ~ tapeHolder.tapeData);
+        return cast(immutable) (ionPrefix ~ table.data ~ serializer.data);
     }
     else
     {
-        return cast(immutable) (ionPrefix ~ tapeHolder.tapeData);
+        return cast(immutable) (ionPrefix ~ serializer.data);
     }
 }
 ///
@@ -343,27 +329,28 @@ void text2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
-    import mir.ser.ion : IonSerializer;
+    import mir.ser.ion : ionSerializer;
     import mir.serde : SerdeTarget;
     import mir.deser.text : IonTextDeserializer;
     enum nMax = 4096;
-    IonTapeHolder!(nMax * 8) tapeHolder = void;
-    tapeHolder.initialize;
     IonSymbolTable!false table = void;
     table.initialize;
-    auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
 
-    auto deser = IonTextDeserializer!(typeof(ser))(&ser);
+    auto serializer = ionSerializer!(nMax * 8, null, false);
+    serializer.initialize(table);
+
+    auto deser = IonTextDeserializer!(typeof(serializer))(&serializer);
 
     deser(text);
+    serializer.finalize;
 
     appender.put(ionPrefix);
     if (table.initialized)
     {
         table.finalize;
-        appender.put(table.tapeData);
+        appender.put(table.data);
     }
-    appender.put(tapeHolder.tapeData);
+    appender.put(serializer.data);
 }
 ///
 @safe pure @nogc
@@ -437,25 +424,26 @@ void msgpack2ion(Appender)(scope const(ubyte)[] data, scope ref Appender appende
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
-    import mir.ser.ion : IonSerializer;
+    import mir.ser.ion : ionSerializer;
     import mir.serde : SerdeTarget;
     import mir.deser.msgpack : MsgpackValueStream;
     enum nMax = 4096;
-    IonTapeHolder!(nMax * 8) tapeHolder = void;
-    tapeHolder.initialize;
+
     IonSymbolTable!false table = void;
     table.initialize;
-    auto ser = IonSerializer!(typeof(tapeHolder), null, false)(&tapeHolder, &table, SerdeTarget.ion);
-  
-    data.MsgpackValueStream.serialize(ser);
-  
+    auto serializer = ionSerializer!(nMax * 8, null, false);
+    serializer.initialize(table);
+
+    data.MsgpackValueStream.serialize(serializer);
+    serializer.finalize;
+
     appender.put(ionPrefix);
     if (table.initialized)
     {
         table.finalize;
-        appender.put(table.tapeData);
+        appender.put(table.data);
     }
-    appender.put(tapeHolder.tapeData);
+    appender.put(serializer.data);
 }
 
 /++

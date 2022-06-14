@@ -8,7 +8,6 @@ module mir.deser.text.tokenizer;
 import mir.deser.text.readers;
 import mir.deser.text.skippers;
 import mir.deser.text.tokens;
-import mir.ion.internal.data_holder : IonTapeHolder;
 
 /+
 Create a tokenizer for a given UTF-8 string.

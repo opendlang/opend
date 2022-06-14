@@ -74,6 +74,209 @@ package(mir) string[] removeSystemSymbols(const(string)[] keys) @safe pure nothr
     return ret;
 }
 
+struct IonSymbolTableSequental
+{
+    import mir.ser.ion: IonSerializer;
+    import mir.ndslice.slice;
+    import core.stdc.string;
+    import core.stdc.stdio;
+
+    static struct Entry
+    {
+        ulong* data;
+        uint[] ids;
+    }
+
+    ulong[] temporalStorage;
+    Entry[] entries;
+    uint nextID = IonSystemSymbol.max + 1;
+    IonSerializer!(1024, null, false) serializer = void;
+    enum size_t annotationWrapperState = 0;
+    enum size_t annotationsState = 5;
+    enum size_t structState = 5;
+    enum size_t listState = 9;
+
+@trusted pure nothrow @nogc:
+
+    // $ion_symbol_table::
+    // {
+    //     symbols:[ ... ]
+    // }
+    void initialize()(size_t n = 64)
+    {
+        pragma(inline, true);
+        auto llen = n / ulong.sizeof + (n % ulong.sizeof != 0);
+        auto temporalStoragePtr = cast(ulong*) malloc(llen * ulong.sizeof);
+        this.temporalStorage = temporalStoragePtr[0 .. llen];
+        auto entriesPtr = cast(Entry*) malloc(n * Entry.sizeof);
+        this.entries = entriesPtr[0 .. n];
+        this.entries[] = Entry.init;
+        this.nextID = IonSystemSymbol.max + 1;
+        this.serializer.initializeNoTable;
+
+        auto annotationWrapperState = serializer.annotationWrapperBegin;
+        assert(annotationWrapperState == this.annotationWrapperState);
+        serializer.putAnnotationId(IonSystemSymbol.ion_symbol_table);
+        auto annotationsState = serializer.annotationsEnd(annotationWrapperState);
+        assert(annotationsState == this.annotationsState);
+        auto structState = serializer.structBegin();
+        assert(structState == this.structState);
+        serializer.putKeyId(IonSystemSymbol.symbols);
+        auto listState = serializer.listBegin();
+        assert(listState == this.listState);
+    }
+
+    void finalize()()
+    {
+        pragma(inline, true);
+        if (nextID > IonSystemSymbol.max + 1)
+        {
+            serializer.listEnd(listState);
+            serializer.structEnd(structState);
+            serializer.annotationWrapperEnd(annotationsState, annotationWrapperState);
+        }
+        else
+        {
+            serializer.buffer._currentLength = 0;
+        }
+
+        temporalStorage.ptr.free;
+        foreach(ref e; entries)
+        {
+            e.data.free;
+            e.ids.ptr.free;
+        }
+        entries.ptr.free;
+    }
+
+    uint insert()(scope const(char)[] str)
+    {
+        pragma(inline, true);
+        auto n = str.length;
+        auto llen = n / ulong.sizeof + (n % ulong.sizeof != 0);
+        if (_expect(n > entries.length, false))
+        {
+            auto oldLength = entries.length;
+            auto temporalStoragePtr = cast(ulong*) realloc(temporalStorage.ptr, llen * ulong.sizeof);
+            this.temporalStorage = temporalStoragePtr[0 .. llen];
+            this.temporalStorage.ptr[0] = 0;
+            auto entriesPtr = cast(Entry*) realloc(entries.ptr, n * Entry.sizeof);
+            this.entries = entriesPtr[0 .. n];
+            this.entries[oldLength .. $] = Entry.init;
+        }
+        temporalStorage.ptr[0] = 0;
+        memcpy(cast(ubyte*)(temporalStorage.ptr + llen) - str.length, str.ptr, str.length);
+
+        // {
+        //     auto tempPtr0 = cast(ubyte*)(temporalStorage.ptr + llen) - str.length;
+        //     foreach (i; 0 .. str.length)
+        //         tempPtr0[i] = str[i];
+        // }
+
+        with(entries[n])
+        {
+            if (_expect(ids.length == 0, false))
+            {
+                auto idsPtr = cast(uint*)malloc(uint.sizeof);
+                ids = idsPtr[0 .. 1];
+                if (llen)
+                {
+                    data = cast(ulong*) malloc(ulong.sizeof * llen);
+                    memcpy(data, temporalStorage.ptr, llen * ulong.sizeof);
+                }
+                goto R;
+            }
+            if (llen == 0)
+                return ids[0];
+            {
+                sizediff_t i = ids.length - 1;
+                L: do
+                {
+                    sizediff_t j = llen - 1;
+                    auto datai = data + i * llen;
+                    for(;;)
+                    {
+                        if (datai[j] == temporalStorage[j])
+                        {
+                            if (--j >= 0)
+                                continue;
+                            return ids.ptr[i];
+                        }
+                        break;
+                    }
+                }
+                while (--i >= 0);
+            }
+
+            {
+                auto idsPtr = cast(uint*)realloc(ids.ptr, (ids.length + 1) * uint.sizeof);
+                ids = idsPtr[0 .. ids.length + 1];
+                data = cast(ulong*) realloc(data, ids.length * ulong.sizeof * llen);
+                memcpy(data + llen * (ids.length - 1), temporalStorage.ptr, llen * ulong.sizeof);
+            }
+        R:
+            serializer.putValue(str);
+            return ids.ptr[ids.length - 1] = nextID++;
+        }
+    }
+}
+
+unittest
+{
+    import mir.test;
+    import mir.ion.conv: text2ion;
+
+    {
+        IonSymbolTableSequental symbolTable = void;
+        symbolTable.initialize;
+        symbolTable.finalize;
+        symbolTable.serializer.data.should == [];
+    }
+
+
+    {
+        IonSymbolTableSequental symbolTable = void;
+        symbolTable.initialize;
+        symbolTable.insert(`id`);
+        symbolTable.finalize;
+        symbolTable.serializer.data.should == [0xE8, 0x81, 0x83, 0xD5, 0x87, 0xB3, 0x82, 0x69, 0x64];
+    }
+
+    {
+        IonSymbolTableSequental symbolTable = void;
+        symbolTable.initialize;
+        symbolTable.insert(`id`);
+        symbolTable.insert(`id`);
+        symbolTable.insert(`id`);
+        symbolTable.insert(`id`);
+        symbolTable.finalize;
+        symbolTable.serializer.data.should == [0xE8, 0x81, 0x83, 0xD5, 0x87, 0xB3, 0x82, 0x69, 0x64];
+    }
+
+    {
+        IonSymbolTableSequental symbolTable = void;
+        symbolTable.initialize;
+        auto d = symbolTable.insert(`id`);
+        auto D = symbolTable.insert(`qwertyuioplkjhgfdszxcvbnm`);
+        assert(symbolTable.insert(`id`) == d);
+        assert(symbolTable.insert(`qwertyuioplkjhgfdszxcvbnm`) == D);
+        symbolTable.finalize;
+        symbolTable.serializer.data.should == [0xEE, 0xA5, 0x81, 0x83, 0xDE, 0xA1, 0x87, 0xBE, 0x9E, 0x82, 0x69, 0x64, 0x8E, 0x99, 0x71, 0x77, 0x65, 0x72, 0x74, 0x79, 0x75, 0x69, 0x6F, 0x70, 0x6C, 0x6B, 0x6A, 0x68, 0x67, 0x66, 0x64, 0x73, 0x7A, 0x78, 0x63, 0x76, 0x62, 0x6E, 0x6D];
+    }
+
+    {
+        IonSymbolTableSequental symbolTable = void;
+        symbolTable.initialize;
+        auto d = symbolTable.insert(`id`);
+        assert(symbolTable.insert(`qwertyuioOlkjhgfdszxcvbnm`) == d + 1);
+        assert(symbolTable.insert(`ID`) == d + 2);
+        assert(symbolTable.insert(`qwertyuioplkjhgfdszxcvbnm`) == d + 3);
+        symbolTable.finalize;
+        symbolTable.serializer.data.should == `[id, qwertyuioOlkjhgfdszxcvbnm, ID, qwertyuioplkjhgfdszxcvbnm]`.text2ion[4 .. $ - 9];
+    }
+}
+
+
 /++
 +/
 struct IonSymbolTable(bool gc)
@@ -83,6 +286,7 @@ struct IonSymbolTable(bool gc)
         int probeCount = -1;
         uint hash;
         uint keyPosition;
+        uint keyLength;
         uint value;
 
     @safe pure nothrow @nogc @property:
@@ -136,7 +340,7 @@ pure nothrow:
     }
 
     ///
-    void initialize()
+    void initializeNull() @property
     {
         entries = null;
         nextKeyPosition = 0;
@@ -145,7 +349,12 @@ pure nothrow:
         elementCount = 0;
         startId = IonSystemSymbol.max + 1;
         keySpace = null;
+    }
 
+    ///
+    void initialize()
+    {
+        initializeNull;
         static if (gc)
         {
             entries = new Entry[initialLength + initialMaxProbe].ptr;
@@ -206,34 +415,20 @@ pure nothrow:
         }
     }
 
-    inout(ubyte)[] tapeData() inout @property
+    inout(ubyte)[] data() inout @property
     {
         return keySpace[0 .. nextKeyPosition];
     }
 
-    private const(char)[] getStringKey(uint keyPosition) scope const
-    {
-        version (LDC) pragma(inline, true);
-        import mir.ion.value;
-        uint length;
-        uint s = keySpace[keyPosition++];
-        assert(s >> 4 == 8); //string
-        s &= 0xF;
-        if (s < 0xE)
-            return cast(const(char)[])keySpace[keyPosition .. s + keyPosition];
-        auto data = keySpace[keyPosition .. $];
-        parseVarUInt!false(data, length);
-        return cast(const(char)[])data[0 .. length];
-    }
-
-    private inout(Entry)[] data() inout @property
+    private inout(Entry)[] currentEntries() inout @property
     {
         return entries[0 .. lengthMinusOne + 1 + maxProbe];
     }
 
     private void grow()
     {
-        auto currentEntries = data[0 .. $-1];
+        pragma(inline, false);
+        auto currentEntries = this.currentEntries[0 .. $-1];
 
         lengthMinusOne = lengthMinusOne * 2 + 1;
         maxProbe++;
@@ -249,8 +444,8 @@ pure nothrow:
                 assert(0);
         }
 
-        data[] = Entry.init;
-        data[$ - 1].probeCount = 0;
+        this.currentEntries[] = Entry.init;
+        this.currentEntries[$ - 1].probeCount = 0;
 
         foreach (i, ref entry; currentEntries)
         {
@@ -297,34 +492,10 @@ pure nothrow:
     }
 
     ///
-    uint find(scope const(char)[] key) const
-    {
-        return find(key, cast(uint)hashOf(key));
-    }
-
-    ///
-    uint find(scope const(char)[] key, uint hash) const
-    {
-        auto current = entries + (hash & lengthMinusOne);
-        for (size_t probeCount; ;)
-        {
-            if (current[probeCount].probeCount < probeCount)
-            {
-                return 0;
-            }
-            probeCount++;
-            if (hash != current[probeCount - 1].hash)
-                continue;
-            if (key == getStringKey(current[probeCount - 1].keyPosition))
-                return current[probeCount - 1].value;
-        }
-    }
-
-    ///
     uint insert(scope const(char)[] key)
     {
-        pragma(inline, false);
-        uint ret = insert(key, cast(uint)hashOf(key));
+        pragma(inline, true);
+        uint ret = insert(key, cast(uint)dlang_hll_murmurhash(key));
         return ret;
     }
 
@@ -332,6 +503,7 @@ pure nothrow:
     uint insert(scope const(char)[] key, uint hash)
     {
     L0:
+        pragma(inline, true);
         auto current = entries + (hash & lengthMinusOne);
         int probeCount;
         for (;;)
@@ -341,7 +513,9 @@ pure nothrow:
             probeCount++;
             if (hash != current[probeCount - 1].hash)
                 continue;
-            if (key == getStringKey(current[probeCount - 1].keyPosition))
+            auto pos = current[probeCount - 1].keyPosition;
+            auto len = current[probeCount - 1].keyLength;
+            if (key == keySpace[pos .. pos + len])
                 return current[probeCount - 1].value;
         }
 
@@ -350,13 +524,6 @@ pure nothrow:
             grow();
             goto L0;
         }
-
-        Entry entry;
-        entry.probeCount = probeCount;
-        entry.hash = hash;
-        entry.value = elementCount++ + startId;
-        entry.keyPosition = nextKeyPosition;
-        current += entry.probeCount;
 
         // add key
         if (_expect(nextKeyPosition + key.length + 16 > keySpace.length, false))
@@ -387,6 +554,14 @@ pure nothrow:
             }
         }
         nextKeyPosition += cast(uint) ionPut(keySpace.ptr + nextKeyPosition, key);
+
+        Entry entry;
+        entry.probeCount = probeCount;
+        entry.hash = hash;
+        entry.value = elementCount++ + startId;
+        entry.keyPosition = nextKeyPosition - cast(uint)key.length;
+        entry.keyLength = cast(uint)key.length;
+        current += entry.probeCount;
 
         auto ret = entry.value;
 
@@ -426,61 +601,6 @@ pure nothrow:
     }
 }
 
-version(mir_ion_test_table) unittest
-{
-    IonSymbolTable!false table = void;
-    table.initialize;
-
-    import mir.format;
-
-    foreach(i; IonSystemSymbol.max + 1 ..10_000_000)
-    {
-        auto key = stringBuf() << i;
-        auto j = table.insert(key.data);
-        assert(i == j);
-        auto k = table.find(key.data);
-        assert (i == k);
-        if (i == 9 || i == 99 || i == 999 || i == 9_999 || i == 99_999 || i == 999_999 || i == 9_999_999)
-        {
-            foreach (l; IonSystemSymbol.max + 1 .. i + 1)
-            {
-                auto vkey = stringBuf() << l;
-                assert(table.find(vkey.data));
-            }
-        }
-    }
-
-    table.finalize;
-}
-
-
-version(mir_ion_test) unittest
-{
-    IonSymbolTable!true table;
-    table.initialize;
-
-    import mir.format;
-
-    foreach(i; IonSystemSymbol.max + 1 ..10_000_00)
-    {
-        auto key = stringBuf() << i;
-        auto j = table.insert(key.data);
-        assert(i == j);
-        auto k = table.find(key.data);
-        assert (i == k);
-        if (i == 9 || i == 99 || i == 999 || i == 9_999 || i == 99_999 || i == 999_999 || i == 9_999_999)
-        {
-            foreach (l; IonSystemSymbol.max + 1 .. i + 1)
-            {
-                auto vkey = stringBuf() << l;
-                assert(table.find(vkey.data));
-            }
-        }
-    }
-
-    table.finalize;
-}
-
 version(mir_ion_test) unittest
 {
     IonSymbolTable!true table;
@@ -501,4 +621,61 @@ package(mir) auto findKey()(const string[] symbolTable, string key)
     auto ret = symbolTable.findIndex!(a => a == key);
     assert(ret != size_t.max, "Missing key: " ~ key);
     return ret;
+}
+
+private:
+
+pragma(inline, true)
+uint dlang_hll_murmurhash(scope const(char)[] data)
+    @trusted pure nothrow @nogc
+{
+    if (__ctfe)
+        return cast(uint) hashOf(data);
+    return murmur3_32(cast(const ubyte*)data.ptr, data.length);
+}
+
+
+pragma(inline, true)
+    @safe pure nothrow @nogc
+static uint murmur_32_scramble(uint k) {
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    return k;
+}
+pragma(inline, true)
+    @trusted pure nothrow @nogc
+uint murmur3_32(const(ubyte)* key, size_t len, uint seed = 0)
+{
+	uint h = seed;
+    uint k;
+    /* Read in groups of 4. */
+    for (size_t i = len >> 2; i; i--) {
+        import core.stdc.string;
+        // Here is a source of differing results across endiannesses.
+        // A swap here has no effects on hash properties though.
+        k = *cast(const uint*) key;
+        key += 4;
+        h ^= murmur_32_scramble(k);
+        h = (h << 13) | (h >> 19);
+        h = h * 5 + 0xe6546b64;
+    }
+    /* Read the rest. */
+    k = 0;
+    for (size_t i = len & 3; i; i--) {
+        k <<= 8;
+        k |= key[i - 1];
+    }
+    // A swap is *not* necessary here because the preceding loop already
+    // places the low bytes in the low places according to whatever endianness
+    // we use. Swaps only apply when the memory is copied in a chunk.
+    h ^= murmur_32_scramble(k);
+    /* Finalize. */
+	h ^= len;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return h;
 }

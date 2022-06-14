@@ -270,9 +270,16 @@ struct IonDescriptor
         @safe pure nothrow @nogc
     {
         assert(reference);
-        this.type = cast(IonTypeCode)((*reference) >> 4);
+        this(*reference);
+    }
+
+    /// ditto
+    this(ubyte value)
+        @safe pure nothrow @nogc
+    {
+        this.type = cast(IonTypeCode)(value >> 4);
         assert(type <= IonTypeCode.max);
-        this.L = cast(uint)((*reference) & 0xF);
+        this.L = cast(uint)(value & 0xF);
     }
 
     /// T
@@ -751,7 +758,6 @@ version(mir_ion_test) unittest
 {
     import mir.test: should;
     alias AliasSeq(T...) = T;
-    import mir.stdio;
     foreach (T; AliasSeq!(byte, short, int, long, ubyte, ushort, uint, ulong))
     {
         IonValue([0x20]).describe.get!IonUInt.getErrorCode!T.should == 0;
@@ -2850,13 +2856,17 @@ struct IonAnnotationWrapper
         auto value = unwrap(annotations);
 
         auto state = serializer.annotationWrapperBegin;
+        foreach(symbolID; annotations)
         {
-            annotations.serialize(serializer);
-            value.serializeImpl(serializer);
-            if (false)
-                value.serializeDummy(serializer);
+            serializer.putAnnotationId(symbolID);
         }
-        serializer.annotationWrapperEnd(state);
+        auto annotationsState = serializer.annotationsEnd(state);
+
+        value.serializeImpl(serializer);
+        if (false)
+            value.serializeDummy(serializer);
+
+        serializer.annotationWrapperEnd(annotationsState, state);
     }
 }
 
@@ -3059,22 +3069,6 @@ const:
     @system
     int opApply(scope int delegate(IonErrorCode error, size_t symbolID)
     @system dg) { return opApply(cast(DG) dg); }
-
-    /++
-    Params:
-        serializer = serializer
-    +/
-    void serialize(S)(scope ref S serializer) const
-    {
-        IonAnnotations annotations;
-
-        auto state = serializer.annotationsBegin;
-        foreach(symbolID; this)
-        {
-            serializer.putAnnotationId(symbolID);
-        }
-        serializer.annotationsEnd(state);
-    }
 }
 
 package IonErrorCode parseVarUInt(bool checkInput = true, U)(scope ref const(ubyte)[] data, scope out U result)
