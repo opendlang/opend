@@ -3396,13 +3396,25 @@ private template unwrapErrImpl(alias arg)
         alias unwrapErrImpl = arg;
 }
 
-
 private template unwrapErr(alias fun)
 {
     auto ref unwrapErr(Args...)(auto ref return Args args)
     {
         import std.meta: staticMap;
-        return fun(staticMap!(unwrapErrImpl, args));
+        import std.format: format;
+        enum expr = () {
+            string ret = `fun(`;
+            foreach(i, T; Args)
+            {
+                static if (is(immutable T == immutable Err!V, V))
+                    ret ~= `args[` ~ i.stringof ~ `].value, `;
+                else
+                    ret ~= `args[` ~ i.stringof ~ `], `;
+            }
+            ret ~= `)`;
+            return ret;
+        }();
+        return mixin(expr);
     }
 }
 
