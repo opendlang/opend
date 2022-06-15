@@ -10,6 +10,8 @@ See the differences in DIFFERENCES.md
 module gamut.io;
 
 import core.stdc.stdio;
+import core.stdc.string: memcpy;
+import core.stdc.stdlib: malloc, free;
 public import core.stdc.config: c_long;
 public import core.stdc.stdio: SEEK_SET, SEEK_CUR, SEEK_END;
 
@@ -128,7 +130,7 @@ package:
 
     /// Setup the IOStream for reading a file. The passed `IOHandle` will need to be a `FILE*`.
     /// For internal Gamut usage.
-    void setupForFileIO() @trusted
+    void setupForFileIO() pure @trusted
     {
         read  = cast(ReadProc) &fread;
         write = cast(WriteProc) &fwrite;
@@ -137,10 +139,21 @@ package:
         eof   = cast(EofProc) &feof;
     }
 
+    /// Setup the IOStream for using a  a file. The passed `IOHandle` will need to be a `FILE*`.
+    /// For internal Gamut usage.
+    void setupForMemoryIO() pure @trusted
+    {
+        read  = cast(ReadProc)  &mread;
+        write = cast(WriteProc) null;
+        seek  = cast(SeekProc)  &mseek;
+        tell  = cast(TellProc)  &mtell;
+        eof   = cast(EofProc)   &meof;
+    }
+
     /// Setup the IOStream for wrapping another IOStream and logging what happens.
     /// The passed `IOHandle` will need to be a `WrappedIO`.
     /// For internal Gamut usage.
-    debug void setupSetupForLogging(ref IOStream io) @trusted
+    debug void setupSetupForLogging(ref IOStream io) pure @trusted
     {
         io.read  = &debug_fread;
         io.write = &debug_fwrite;
@@ -150,8 +163,7 @@ package:
     }
 }
 
-
-package struct WrappedIO
+debug package struct WrappedIO
 {
     IOStream* wrapped; /// I/O object being wrapped.
     IOHandle handle;   /// Original handle.
@@ -175,7 +187,7 @@ package bool fileIsStartingWithSignature(IOStream *io, IOHandle handle, immutabl
     return match;
 }
 
-debug extern(C) @system
+debug extern(C) @system private
 {
     // Note: these functions expect a `WrappedIO` to be passed as handle.
     import core.stdc.stdio;
@@ -227,4 +239,189 @@ debug extern(C) @system
         printf("  => returned %d\n", r);
         return r;
     }
+}
+
+
+package:
+
+// TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
+
+
+/// Called memory-file in FreeImage 
+/// This is basically an owned buffer, with capacity, optionally borrowed.
+struct MemoryFile
+{
+    // If the memory is owned by FIMEMORY, or borrowed.
+    bool owned = false;
+
+    // If can only read from buffer.
+    bool readOnly = false;
+
+    // Pointer to data (owned or borrowed).
+    // if owned, the buffer is allocated with malloc/free/realloc
+    ubyte* data = null;
+
+    // Length of buffer.
+    size_t bytes = 0;
+
+    // Current pointer in the buffer.
+    size_t offset = 0;
+}
+
+
+/// Open a memory stream. The function returns a pointer to the opened memory stream.
+/// When called with default arguments (null), this function opens a memory stream for read/write
+/// access. The stream will support loading and saving of FIBITMAP in a memory file (managed 
+/// internally by FreeImage). It will also support seeking and telling in the memory file. 
+/// This function can also be used to wrap a memory buffer provided by the application driving
+/// FreeImage. A buffer containing image data is given as function arguments `data` (start of the 
+/// and size_in_bytes (buffer size in bytes). A memory buffer wrapped by FreeImage is 
+/// read only. Images can be loaded but cannot be saved.                                                                    buffer) and size_in_bytes (buffer size in bytes). A memory buffer wrapped by FreeImage is 
+MemoryFile* FreeImage_OpenMemory(const(ubyte)* data = null, size_t size_in_bytes = 0) @system
+{
+    MemoryFile* stream = cast(MemoryFile*) malloc(MemoryFile.sizeof);
+    if (stream is null)
+        return stream;
+
+    *stream = MemoryFile.init;
+    if (data == null)
+    {
+        stream.owned = true;
+        return stream;
+    }
+    else
+    {
+        stream.owned = false;
+        stream.readOnly = true;
+        stream.data = cast(ubyte*) data; // const_cast here
+        stream.bytes = size_in_bytes;
+    }
+    return stream;
+}
+
+/// Close and free an opened memory stream. 
+/// When the stream is managed by FreeImage, the memory file is destroyed. Otherwise 
+/// (wrapped buffer), it’s destruction is left to the application driving FreeImage.
+/// You always need to call this function once you’re done with a memory stream 
+/// (whatever the way you opened the stream), or you will have a memory leak.
+void FreeImage_CloseMemory(MemoryFile *stream) @system
+{
+    assert (stream !is null);
+    if (stream.owned)
+    {
+        *stream = MemoryFile.init; // poison data
+        free(stream.data);
+    }
+    free(stream);
+}
+
+
+
+/// Provides a direct buffer access to a memory stream. Upon entry, stream is the target memory 
+/// stream, returned value data is a pointer to the memory buffer, returned value size_in_bytes is 
+/// the buffer size in bytes. The function returns TRUE if successful, FALSE otherwise.
+/// This pointer is invalidated when you call `FreeImage_SaveToMemory`.
+bool FreeImage_AcquireMemory(MemoryFile *stream, ubyte** data, size_t* size_in_bytes)
+{
+    assert(stream);
+    *data = stream.data;
+    *size_in_bytes = stream.bytes;
+    return true;
+}
+
+extern(C) @system
+{
+    c_long mtell(MemoryFile *stream)
+    {
+        assert (stream !is null);
+
+        // Files larger than 0x7fffffff bytes not supported, return errors.
+        if (stream.offset > GAMUT_MAX_POSSIBLE_MEMORY_OFFSET)
+            return -1;
+
+        return cast(c_long) stream.offset;
+    }
+
+    int mseek(MemoryFile *stream, c_long offset, int origin)
+    {
+        assert (stream !is null);
+
+        long baseOffset;
+        if (origin == SEEK_CUR)
+        {
+            baseOffset = stream.offset;
+        }
+        else if (origin == SEEK_END)
+        {
+            baseOffset = stream.bytes;
+        }
+        else if (origin == SEEK_SET)
+        {
+            baseOffset = 0;
+        }
+        long newOffset = baseOffset + offset;
+        assert(newOffset < cast(long)GAMUT_MAX_POSSIBLE_MEMORY_OFFSET);
+
+        // It is valid to seek from 0 to bytes.
+        //  0________________N-1 N      N+1
+        //  ^ ok                 ^ ok   ^ not ok
+        bool success = newOffset >= 0 && newOffset <= stream.bytes;
+
+        if (!success)
+            return -1;
+
+        stream.offset = newOffset;
+        return 0;
+    }
+
+    size_t mread(void *buffer, size_t size, size_t count, MemoryFile *stream)
+    {
+        assert (stream !is null);
+
+        size_t available = stream.bytes - stream.offset;
+        assert (available >= 0); // cursor not allowed to be after eof
+
+        assert(size <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+        assert(count <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+        long needed = cast(long)size * cast(long)count; // won't overflow
+
+        assert(needed <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+
+        size_t toRead;
+        if (available >= needed)
+            toRead = count;
+        else
+            toRead = available / size;
+
+        size_t bytes = toRead * cast(size_t)size;
+        memcpy(buffer, &stream.data[stream.offset], bytes);
+        stream.offset += bytes;
+        return toRead;
+    }
+
+    // TODO mwrite
+    
+    int meof(MemoryFile *stream)
+    {
+        assert(stream);
+        return (stream.offset >= stream.bytes) ? 1 : 0;
+    }
+}
+
+// Return internal data pointer (allocated with malloc/free)
+// stream doesn't own it anymore, the caller does instead.
+ubyte[] FreeImage_ReleaseMemory(MemoryFile *stream) @trusted
+{
+    assert (stream !is null);
+    if (stream.owned)
+    {
+        stream.owned = false;
+        ubyte* data = stream.data;
+        if (data is null)
+            return null;
+        stream.data = null;
+        return data[0..stream.bytes];
+    }
+    else
+        return null;
 }

@@ -21,7 +21,6 @@ import core.stdc.stdio;
 
 import gamut.types;
 import gamut.io;
-import gamut.memory;
 import gamut.plugin;
 
 
@@ -58,11 +57,11 @@ ImageFormat FreeImage_GetFileTypeFromHandle(IOStream *io, IOHandle handle, int s
 /// Uses a memory handle to identify a bitmap type. The bitmap bits are retrieved from an 
 /// arbitrary place (see the chapter on Memory I/O streams for more information on memory 
 /// handles)
-ImageFormat FreeImage_GetFileTypeFromMemory(FIMEMORY* stream, int size = 0) @trusted // Note: size unnused
+ImageFormat FreeImage_GetFileTypeFromMemory(MemoryFile* stream, int size = 0) @trusted // Note: size unnused
 {
     assert (stream !is null);
     IOStream io;
-    setupIOStreamForMemory(io);
+    io.setupForMemoryIO();
     return FreeImage_GetFileTypeFromHandle(&io, cast(IOHandle)stream, size);
 }
 
@@ -95,10 +94,10 @@ bool FreeImage_ValidateFromHandle(ImageFormat fif, IOStream *io, IOHandle handle
 }
 
 /// Uses a memory handle to identify a bitmap type.
-bool FreeImage_ValidateFromMemory(ImageFormat fif, FIMEMORY* stream) @trusted
+bool FreeImage_ValidateFromMemory(ImageFormat fif, MemoryFile* stream) @trusted
 {
     assert (stream !is null);
     IOStream io;
-    setupIOStreamForMemory(io);
+    io.setupForMemoryIO();
     return FreeImage_ValidateFromHandle(fif, &io, cast(IOHandle)stream);
 }

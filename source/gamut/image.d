@@ -13,10 +13,9 @@ import core.stdc.stdlib: free;
 import gamut.bitmap;
 import gamut.general;
 import gamut.types;
-import gamut.memory;
+import gamut.io;
 import gamut.filetype;
 import gamut.plugin;
-import gamut.conversion;
 import gamut.internals.cstring;
 import gamut.internals.errors;
 
@@ -25,7 +24,6 @@ public import gamut.types: ImageFormat;
 nothrow @nogc @safe:
 
 /// Image type.
-/// Internally, it wraps FIBitmap.
 /// Image has disabled copy ctor and postblit, to avoid accidental allocations.
 struct Image
 {
@@ -61,22 +59,6 @@ public:
         return hasData() && false; // not supported yet.
     }
 
-
-
-    /// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
-    /// possibly some metadata). 
-    /// Header only bitmap can be loaded using the FIF_LOAD_NOPIXELS load flag (see Table 3). 
-    /// This load flag will tell the decoder to read header data and available metadata and skip pixel 
-    /// data decoding. The memory size of the dib is thus reduced to the size of its members, 
-    /// excluding the pixel buffer. Reading metadata only information is fast since no pixel decoding 
-    /// occurs. 
-    /// Header only bitmap can be used with Bitmap information functions, Metadata iterator. They 
-    /// cannot be used with any pixel processing function or by saving function.
-    bool FreeImage_HasPixels(const(Image) *dib) pure
-    {
-        return dib._data != null;
-    }
-
     /// Load an image from a file location.
     /// Returns: true if successfull.
     bool loadFromFile(const(char)[] path, int flags = 0) @trusted
@@ -106,7 +88,7 @@ public:
         cleanupBitmapIfAny();
 
         // PERF: a way to have FIMEMORY in a local instead of heap.
-        FIMEMORY* stream = FreeImage_OpenMemory(bytes.ptr, bytes.length);
+        MemoryFile* stream = FreeImage_OpenMemory(bytes.ptr, bytes.length);
         scope(exit) FreeImage_CloseMemory(stream);
 
         // Deduce format.
@@ -157,7 +139,7 @@ public:
 
         // PERF: a way to have FIMEMORY in a local instead of heap.
         // Open stream for read/write access.
-        FIMEMORY* stream = FreeImage_OpenMemory();
+        MemoryFile* stream = FreeImage_OpenMemory();
         scope(exit) FreeImage_CloseMemory(stream);
         if (!FreeImage_SaveToMemory(this, fif, stream, flags))
         {

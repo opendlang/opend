@@ -21,6 +21,46 @@ import gamut.internals.cstring;
 
 nothrow @nogc @safe:
 
+
+/// This function does for memory streams what FreeImage_Load does for file streams. 
+/// FreeImage_LoadFromMemory decodes a bitmap, allocates memory for it and then returns it 
+/// as a FIBITMAP. The first parameter defines the type of bitmap to be loaded. For example, 
+/// when FIF_BMP is passed, a BMP file is loaded into memory (an overview of possible 
+/// FREE_IMAGE_FORMAT constants is available in Table 1). The second parameter tells 
+/// FreeImage the memory stream it has to decode. The last parameter is used to change the 
+/// behaviour or enable a feature in the bitmap plugin. Each plugin has its own set of 
+/// parameters.
+/// Some bitmap loaders can receive parameters to change the loading behaviour. 
+/// When the parameter is not available or unused you can pass the value 0 or 
+/// <TYPE_OF_BITMAP>_DEFAULT (e.g. BMP_DEFAULT, ICO_DEFAULT, etc).
+void FreeImage_LoadFromMemory(ref Image image, ImageFormat fif, MemoryFile *stream, int flags = 0) @trusted
+{
+    assert(fif != ImageFormat.unknown);
+    assert (stream !is null);
+
+    IOStream io;
+    io.setupForMemoryIO();
+    FreeImage_LoadFromHandle(image, fif, &io, cast(IOHandle)stream, flags);
+}
+
+/// This function does for memory streams what FreeImage_Save does for file streams. 
+/// `FreeImage_SaveToMemory` saves a previously loaded `FIBITMAP` to a memory file managed 
+/// by FreeImage. The first parameter defines the type of the bitmap to be saved. For example, 
+/// when `FIF_BMP` is passed, a BMP file is saved. The second parameter is the 
+/// memory stream where the bitmap must be saved. When the memory file pointer point to the 
+/// beginning of the memory file, any existing data is overwritten. Otherwise, you can save 
+/// multiple images on the same stream.
+bool FreeImage_SaveToMemory(ref Image image, ImageFormat fif, MemoryFile *stream, int flags = 0) @trusted
+{
+    assert(fif != ImageFormat.unknown);
+    assert (stream !is null);
+
+    IOStream io;
+    io.setupForMemoryIO();
+
+    return FreeImage_SaveToHandle(image, fif, &io, cast(IOHandle)stream, flags);
+}
+
 /// This function decodes a bitmap, allocates memory for it and then returns it as a FIBITMAP. 
 /// The first parameter defines the type of bitmap to be loaded. For example, when FIF_BMP is 
 /// passed, a BMP file is loaded into memory (an overview of possible FREE_IMAGE_FORMAT 
