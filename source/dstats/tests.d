@@ -2950,7 +2950,7 @@ unittest {
         c[1][1] = uniform(0U, 51U);
         double naiveAns = naive(c);
         double fastAns = fisherExact(c);
-        assert(approxEqual(naiveAns, fastAns), text(c, naiveAns, fastAns));
+        assert(approxEqual(naiveAns, fastAns), text(c, " - ", naiveAns, " - ", fastAns));
     }
 
     auto res = fisherExact([[19000, 80000], [20000, 90000]]);
