@@ -18,6 +18,7 @@ import gamut.filetype;
 import gamut.plugin;
 import gamut.conversion;
 import gamut.internals.cstring;
+import gamut.internals.errors;
 
 public import gamut.types: ImageFormat;
 
@@ -55,14 +56,9 @@ public:
         // check that the plugin has reading capabilities ...
         if ((fif != ImageFormat.unknown) && gamutSupportsInputFormat(fif)) 
         {
-            FreeImage_Load(_bitmap, fif, cstr.storage, flags);
+            FreeImage_Load(this, fif, cstr.storage, flags);
         }
-
-        import core.stdc.stdio;
-        printf("bitmap = %p\n", &_bitmap);
-
-
-        return !_bitmap.errored();
+        return !errored();
     }
 
     /// Load an image from a memory location.
@@ -81,10 +77,10 @@ public:
         // check that the plugin has reading capabilities ...
         if ((fif != ImageFormat.unknown) && gamutSupportsInputFormat(fif)) 
         {
-            FreeImage_LoadFromMemory(_bitmap, fif, stream, flags);
+            FreeImage_LoadFromMemory(this, fif, stream, flags);
         }
 
-        return !_bitmap.errored();
+        return !errored();
     }
     ///ditto
     bool loadFromMemory(const(void)[] bytes, int flags = 0) @trusted
@@ -96,22 +92,22 @@ public:
     /// Returns: `true` if file successfully written.
     bool saveToFile(const(char)[] path, int flags = 0) @trusted
     {
-        assert(!_bitmap.errored); // else, nothing to save
+        assert(!errored); // else, nothing to save
         CString cstr = CString(path);
 
         ImageFormat fif = FreeImage_GetFIFFromFilename(cstr.storage);
         if (fif == ImageFormat.unknown)
             return false; // couldn't recognize format from path.
 
-        return FreeImage_Save(_bitmap, fif, cstr.storage, flags);
+        return FreeImage_Save(this, fif, cstr.storage, flags);
     }
     /// Save the image into a file, but provide a file format.
     /// Returns: `true` if file successfully written.
     bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) @trusted
     {
-        assert(!_bitmap.errored); // else, nothing to save
+        assert(!errored); // else, nothing to save
         CString cstr = CString(path);
-        return FreeImage_Save(_bitmap, fif, cstr.storage, flags);
+        return FreeImage_Save(this, fif, cstr.storage, flags);
     }
 
     /// Saves the image into a new memory location.
@@ -119,13 +115,13 @@ public:
     /// Returns: `null` if saving failed.
     ubyte[] saveToMemory(ImageFormat fif, int flags = 0) @trusted
     {
-        assert(!_bitmap.errored); // else, nothing to save
+        assert(!errored); // else, nothing to save
 
         // PERF: a way to have FIMEMORY in a local instead of heap.
         // Open stream for read/write access.
         FIMEMORY* stream = FreeImage_OpenMemory();
         scope(exit) FreeImage_CloseMemory(stream);
-        if (!FreeImage_SaveToMemory(_bitmap, fif, stream, flags))
+        if (!FreeImage_SaveToMemory(this, fif, stream, flags))
         {
             return null;
         }
@@ -136,36 +132,17 @@ public:
     ///          `GAMUT_UNKNOWN_WIDTH` if not available.
     int width() pure
     {
-        assert(!_bitmap.errored);
-        return _bitmap._width;
+        assert(!errored);
+        return _width;
     }
 
     /// Returns: Height of image in pixels.
     ///          `GAMUT_UNKNOWN_WIDTH` if not available.
     int height() pure
     {
-        assert(!_bitmap.errored);
-        return _bitmap._height;
+        assert(!errored);
+        return _height;
     }
-
-    /// Returns: a clone of the image, but with RGBA 8-bit components.
-  /+  Image convertToRGBA8()
-    {
-        assert(!_bitmap.errored);
-    /*    FIBITMAP* converted = FreeImage_ConvertTo32Bits(&_bitmap);
-        Image r;
-        r._bitmap = converted;
-        return r;*/
-    } +/
-
-    bool errored()
-    {
-        return _bitmap.errored();
-    }
-
-
-    // <Error management>
-    // Note: Errors are only about input errors not usage bugs (they replace `Exception` but not `Error`).
 
     /// Was there an error as a result of calling a public method of `Image`?
     /// It is now unusable.
@@ -201,7 +178,6 @@ package:
         assert(!errored);
     }
 
-private:
 
     /// The type of the data pointed to.
     ImageType _type = ImageType.unknown;
@@ -227,15 +203,47 @@ private:
     /// Must be zero-terminated.
     const(char)* _error = kStrImageNotInitialized; 
 
+
+private:
+
     void cleanupBitmapIfAny() @trusted
     {   
-        if (_bitmap._data)
+        if (_data)
         {
-            import core.stdc.stdio;
-            printf("bitmap = %p\n", &_bitmap);
-            printf("data = %p\n", _bitmap._data);
-            free(_bitmap._data);
-            _bitmap._data = null;
+            free(_data);
+            _data = null;
         }
     }
+}
+
+
+
+// Return: 
+//   -1 => keep input number of components
+//    0 => error
+//    1/2/3/4 => forced number of components.
+package int computeRequestedImageComponents(int loadFlags) pure nothrow @nogc @safe
+{
+    int requestedComp = -1; // keep original
+
+    int forceFlags = 0;
+    if (loadFlags & LOAD_GREYSCALE)
+    {
+        forceFlags++;
+        requestedComp = 1;
+    }
+    if (loadFlags & LOAD_RGB)
+    {
+        forceFlags++;
+        requestedComp = 3;
+    }
+    if (loadFlags & LOAD_RGBA)
+    {
+        forceFlags++;
+        requestedComp = 4;
+    }
+    if (forceFlags > 1)
+        return 0; // LOAD_GREYSCALE, LOAD_RGB and LOAD_RGBA are mutually exclusive => error
+
+    return requestedComp;
 }

@@ -16,7 +16,9 @@ import core.stdc.string: memcpy;
 import gamut.types;
 import gamut.bitmap;
 import gamut.io;
+import gamut.image;
 import gamut.plugin;
+import gamut.internals.errors;
 
 version(decodeQOI)
     import gamut.codecs.qoi;

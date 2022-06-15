@@ -14,10 +14,12 @@ nothrow @nogc @safe:
 import core.stdc.stdlib: malloc, free, realloc;
 import gamut.types;
 import gamut.bitmap;
+import gamut.image;
 import gamut.io;
 import gamut.plugin;
 import gamut.codecs.jpegload;
 import gamut.codecs.stb_image_write;
+import gamut.internals.errors;
 
 
 Plugin makeJPEGPlugin()
@@ -40,7 +42,7 @@ Plugin makeJPEGPlugin()
 
 
 version(decodeJPEG)
-void Load_JPEG(ref FIBITMAP image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+void Load_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
     JPEGIOHandle jio;
     jio.wrapped = io;
@@ -95,7 +97,7 @@ bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
 }
 
 version(encodeJPEG)
-bool Save_JPEG(ref FIBITMAP image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+bool Save_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;

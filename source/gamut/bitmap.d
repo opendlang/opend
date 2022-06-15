@@ -14,6 +14,7 @@ import core.stdc.string: memcpy;
 import core.stdc.stdlib: malloc, realloc, free;
 import gamut.types;
 import gamut.io;
+import gamut.image;
 import gamut.plugin;
 import gamut.internals.cstring;
 
@@ -26,7 +27,7 @@ nothrow @nogc @safe:
 /// constants is available in Table 1). The second parameter tells FreeImage the file it has to 
 /// decode. The last parameter is used to change the behaviour or enable a feature in the bitmap 
 /// plugin. Each plugin has its own set of parameters.
-void FreeImage_Load(ref FIBITMAP image, ImageFormat fif, const(char)* filename, int flags = 0) @system
+void FreeImage_Load(ref Image image, ImageFormat fif, const(char)* filename, int flags = 0) @system
 {
     assert(fif != ImageFormat.unknown);
     
@@ -57,7 +58,7 @@ void FreeImage_Load(ref FIBITMAP image, ImageFormat fif, const(char)* filename, 
 /// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
-void FreeImage_LoadFromHandle(ref FIBITMAP image, ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
+void FreeImage_LoadFromHandle(ref Image image, ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
 {
     // I/O logging, useful for debug purpose
     FreeImageIO io2;
@@ -87,7 +88,7 @@ void FreeImage_LoadFromHandle(ref FIBITMAP image, ImageFormat fif, FreeImageIO* 
 /// The second parameter is the name of the bitmap to be saved. If the file already exists it is 
 /// overwritten. Note that some bitmap save plugins have restrictions on the bitmap types they 
 /// can save.
-bool FreeImage_Save(ref FIBITMAP dib, ImageFormat fif, const(char)* filename, int flags = 0) @trusted
+bool FreeImage_Save(ref Image dib, ImageFormat fif, const(char)* filename, int flags = 0) @trusted
 {
     assert(fif != ImageFormat.unknown);
 
@@ -101,7 +102,7 @@ bool FreeImage_Save(ref FIBITMAP dib, ImageFormat fif, const(char)* filename, in
     return fclose(f) == 0;
 }
 
-bool FreeImage_SaveToHandle(ref FIBITMAP dib, ImageFormat fif, FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
+bool FreeImage_SaveToHandle(ref Image dib, ImageFormat fif, FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
 {
     const(Plugin)* plugin = &g_plugins[fif];
     void* data = null; // probably exist to pass metadata stuff
@@ -122,44 +123,18 @@ bool FreeImage_SaveToHandle(ref FIBITMAP dib, ImageFormat fif, FreeImageIO *io, 
 
 
 /// Returns the data type of a bitmap.
-ImageType FreeImage_GetImageType(FIBITMAP *dib) pure
+ImageType FreeImage_GetImageType(Image *dib) pure
 {
     return dib._type;
 }
 
-/// Returns the number of colors used in a bitmap. This function returns the palette-size for 
-/// palletised bitmaps, and 0 for high-colour bitmaps.
-int FreeImage_GetPaletteSize(FIBITMAP *dib) pure
-{
-    return 0; // 
-}
-deprecated("Use instead FreeImage_GetPaletteSize") 
-    alias FreeImage_GetColorsUsed = FreeImage_GetPaletteSize; ///ditto
-
-/// Returns: Size of one pixel in the bitmap, in bits.
-int FreeImage_GetBPP(FIBITMAP *dib) pure
-{
-    assert(dib._type != ImageType.unknown);
-    return 8 * bytesForImageType(dib._type);
-}
-
-/// Return width of the bitmap, in bytes.
-int FreeImage_GetWidthInBytes(FIBITMAP *dib) pure
-{
-    assert(dib._type != ImageType.unknown);
-    return dib._width * bytesForImageType(dib._type);
-}
-
 /// Returns the offset between two consecutive scanlines, in bytes.
 /// Warning: unlike in FreeImage, scanlines are not always aligned on 32-bit boundaries.
-int FreeImage_GetPitch(FIBITMAP *dib) pure
+int FreeImage_GetPitch(Image *dib) pure
 {
     // No support for arbitrary pitch right now, only dense supported.
     return dib._pitch;
 }
-
-deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeImage_GetWidthInBytes if you mean that.") 
-    alias FreeImage_GetLine = FreeImage_GetWidthInBytes;
 
 
 /// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
@@ -171,7 +146,7 @@ deprecated("FreeImage_GetLine returns the number of bytes in a line. Use FreeIma
 /// occurs. 
 /// Header only bitmap can be used with Bitmap information functions, Metadata iterator. They 
 /// cannot be used with any pixel processing function or by saving function.
-bool FreeImage_HasPixels(FIBITMAP *dib) pure
+bool FreeImage_HasPixels(Image *dib) pure
 {
     return dib._data != null;
 }
@@ -226,7 +201,6 @@ int pitchForImage(ImageType type, int width)
         assert(FreeImage_GetImageType(bitmap) == FIT_RGB16);
         assert(FreeImage_GetWidth(bitmap) == 257);
         assert(FreeImage_GetHeight(bitmap) == 183);
-        assert(FreeImage_GetBPP(bitmap) == 48);
         FreeImage_Unload(bitmap);
     }
 }

@@ -17,6 +17,7 @@ import gamut.bitmap;
 import gamut.io;
 import gamut.plugin;
 import gamut.image;
+import gamut.internals.errors;
 
 version(decodePNG) import gamut.codecs.pngload;
 version(encodePNG) import gamut.codecs.stb_image_write;
@@ -182,7 +183,7 @@ bool Save_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
 
     int width = image._width;
     int height = image._height;
-    int pitch = FreeImage_GetPitch(&image);
+    int pitch = image._pitch;
     int len;
     ubyte* pixels = image._data;
 

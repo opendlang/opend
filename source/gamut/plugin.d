@@ -12,6 +12,7 @@ module gamut.plugin;
 import core.stdc.string;
 import gamut.types;
 import gamut.bitmap;
+import gamut.image;
 import gamut.io;
 
 import gamut.plugins.jpeg;
