@@ -23,55 +23,11 @@ enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ = 0x7fff_ffff;   /// Can't read
 enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE = 0x7fff_ffff;  /// Can't write more bytes than this at once
 
 
-/// FreeImage has the unique feature to load a bitmap from an arbitrary source. This source 
-/// might for example be a cabinet file, a zip file or an Internet stream. Handling of these arbitrary 
-/// sources is not directly handled in the FREEIMAGE.DLL, but can be easily added by using a 
-/// FreeImageIO structure as defined in FREEIMAGE.H.
-/// FreeImageIO is a structure that contains 4 function pointers: one to read from a source, one 
-/// to write to a source, one to seek in the source and one to tell where in the source we 
-/// currently are. When you populate the FreeImageIO structure with pointers to functions and 
-/// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
-/// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
-/// this to differentiate between different contexts, e.g. different files or different Internet streams.
-struct FreeImageIO
-{
-    ReadProc  read;
-    WriteProc write;
-    SeekProc  seek;
-    TellProc  tell;
-    EofProc   eof;
-
-    /// Skip bytes.
-    /// Returns: true if it was possible to skip those bytes. false if there was an I/O error, or end of file.
-    /// Limitations: `nbytes` must be from 0 to 0x7fffffff
-    bool skipBytes(fi_handle handle, int nbytes) nothrow @nogc @trusted
-    {
-        assert(nbytes >= 0 && nbytes <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
-        return seek(handle, nbytes, SEEK_CUR) == 0;
-    }
-
-    /// Seek to beginning of the I/O stream.
-    /// Returns: true if successful.
-    bool rewind(fi_handle handle) nothrow @nogc @trusted
-    {
-        return seek(handle, 0, SEEK_SET) == 0;
-    }
-
-    /// Seek to asolute position in the I/O stream.
-    /// Useful because some function need to preserve it.
-    bool seekAbsolute(fi_handle handle, c_long offset) nothrow @nogc @trusted
-    {
-        return seek(handle, offset, SEEK_SET) == 0;
-    }
-}
-
-
-alias fi_handle = void*;
 
 // Note: those function pointers made to be binary compatible with ftell/fseek/fwrite/fread/feof.
 extern(C) @system
 {
-    /// I/O read function, modelled on fread.
+    /// A function with same signature and semantics than `fread`.
     ///
     /// Some details from the Linux man pages:
     ///
@@ -85,7 +41,7 @@ extern(C) @system
     ///
     ///  fread() does not distinguish between end-of-file and error, and
     ///  callers must use feof() and ferror() to determine which
-    ///  occurred.
+    ///  occurred. (well, ferror not available in gamut).
     ///
     /// Params:
     ///    buffer Where to read. Must be able to hold `size` * `count` bytes.
@@ -96,52 +52,112 @@ extern(C) @system
     ///    Number of item successfully read. If return value != `count`, there was an error.
     ///
     /// Limitations: it is forbidden to ask more than 0x7fffffff bytes at once.
-    alias ReadProc = size_t function(void* buffer, size_t size, size_t count, fi_handle handle);
+    alias ReadProc = size_t function(void* buffer, size_t size, size_t count, IOHandle handle);
 
-    alias WriteProc = size_t function(const(void)* buffer, size_t size, size_t count, fi_handle handle);
-    
-    // Origin: position from which offset is added
-    //   SEEK_SET = beginning of file.
-    //   SEEK_CUR = Current position of file pointer.
-    //   SEEK_END = end of file.
-    // This function returns zero if successful, or else it returns a non-zero value.
-    alias SeekProc = int function(fi_handle handle, c_long offset, int origin);
+    /// A function with same signature and semantics than `fwrite`.
+    alias WriteProc = size_t function(const(void)* buffer, size_t size, size_t count, IOHandle handle);
 
-    // Tells where we are in the file. -1 if error.
-    alias TellProc = c_long function(fi_handle handle);
+    /// A function with same signature and semantics than `fseek`.
+    /// Origin: position from which offset is added
+    ///   SEEK_SET = beginning of file.
+    ///   SEEK_CUR = Current position of file pointer.
+    ///   SEEK_END = end of file.
+    /// This function returns zero if successful, or else it returns a non-zero value.
+    alias SeekProc = int function(IOHandle handle, c_long offset, int origin);
 
+    /// A function with same signature and semantics than `ftell`.
+    /// Tells where we are in the file. -1 if error.
+    alias TellProc = c_long function(IOHandle handle);
+
+    /// A function with same signature and semantics than `feof`.
     /// From Linux man:
     /// "The function `feof()` tests the end-of-file indicator for the stream pointed to by stream, 
     ///  returning nonzero if it is set."
-    alias EofProc = int function(fi_handle handle);
+    alias EofProc = int function(IOHandle handle);
 }
+
+
+/// Can be a `FILE*` handle, a `FIMEMORY`, a `WrappedIO`...
+/// identifies the I/O stream.
+alias IOHandle = void*;
+
+/// I/O abstraction, to support load/write from a file, from memory, or from user-provided callbacks.
+struct IOStream
+{
+nothrow @nogc @safe:
+
+    /// A function with semantics and signature similar to `fread`.
+    ReadProc  read;
+
+    /// A function with semantics and signature similar to `fwrite`.
+    WriteProc write;
+
+    /// A function with semantics and signature similar to `fseek`.
+    SeekProc  seek;
+
+    /// A function with semantics and signature similar to `ftell`.
+    TellProc  tell;
+
+    /// A function with semantics and signature similar to `feof`.
+    EofProc   eof;
+
+    /// Skip bytes.
+    /// Returns: true if it was possible to skip those bytes. false if there was an I/O error, or end of file.
+    /// Limitations: `nbytes` must be from 0 to 0x7fffffff
+    bool skipBytes(IOHandle handle, int nbytes) nothrow @nogc @trusted
+    {
+        assert(nbytes >= 0 && nbytes <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ);
+        return seek(handle, nbytes, SEEK_CUR) == 0;
+    }
+
+    /// Seek to beginning of the I/O stream.
+    /// Returns: true if successful.
+    bool rewind(IOHandle handle) nothrow @nogc @trusted
+    {
+        return seek(handle, 0, SEEK_SET) == 0;
+    }
+
+    /// Seek to asolute position in the I/O stream.
+    /// Useful because some function need to preserve it.
+    bool seekAbsolute(IOHandle handle, c_long offset) nothrow @nogc @trusted
+    {
+        return seek(handle, offset, SEEK_SET) == 0;
+    }
+
+package:
+
+    /// Setup the IOStream for reading a file. The passed `IOHandle` will need to be a `FILE*`.
+    /// For internal Gamut usage.
+    void setupForFileIO() @trusted
+    {
+        read  = cast(ReadProc) &fread;
+        write = cast(WriteProc) &fwrite;
+        seek  = cast(SeekProc) &fseek;
+        tell  = cast(TellProc) &ftell;
+        eof   = cast(EofProc) &feof;
+    }
+
+    /// Setup the IOStream for wrapping another IOStream and logging what happens.
+    /// The passed `IOHandle` will need to be a `WrappedIO`.
+    /// For internal Gamut usage.
+    debug void setupSetupForLogging(ref IOStream io) @trusted
+    {
+        io.read  = &debug_fread;
+        io.write = &debug_fwrite;
+        io.seek  = &debug_fseek;
+        io.tell  = &debug_ftell;
+        io.eof   = &debug_feof;
+    }
+}
+
 
 package struct WrappedIO
 {
-    FreeImageIO* wrapped; /// I/O object being wrapped.
-    fi_handle handle;     /// Original handle.
+    IOStream* wrapped; /// I/O object being wrapped.
+    IOHandle handle;   /// Original handle.
 }
 
-package void setupFreeImageIOForFile(ref FreeImageIO io) @trusted
-{
-    io.read  = cast(ReadProc) &fread;
-    io.write = cast(WriteProc) &fwrite;
-    io.seek  = cast(SeekProc) &fseek;
-    io.tell  = cast(TellProc) &ftell;
-    io.eof   = cast(EofProc) &feof;
-}
-
-// Wraps an I/O object and adds logging to it. Instead of a handle, pass a FreeImageIO* pointer.
-package void setupFreeImageIOForLogging(ref FreeImageIO io) @trusted
-{
-    io.read  = &debug_fread;
-    io.write = &debug_fwrite;
-    io.seek  = &debug_fseek;
-    io.tell  = &debug_ftell;
-    io.eof   = &debug_feof;
-}
-
-package bool fileIsStartingWithSignature(FreeImageIO *io, fi_handle handle, immutable ubyte[] signature)
+package bool fileIsStartingWithSignature(IOStream *io, IOHandle handle, immutable ubyte[] signature)
 {
     assert(signature.length <= 16);
 
@@ -154,17 +170,17 @@ package bool fileIsStartingWithSignature(FreeImageIO *io, fi_handle handle, immu
 
     // restore I/O cursor
     if (!io.seekAbsolute(handle, offset))
-        return false; // TODO: that rare error should propagae somehow
+        return false; // TODO: that rare error should propagate somehow
 
     return match;
 }
 
-extern(C) @system
+debug extern(C) @system
 {
     // Note: these functions expect a `WrappedIO` to be passed as handle.
     import core.stdc.stdio;
 
-    size_t debug_fwrite (const(void)* buffer, size_t size, size_t count, fi_handle handle)
+    size_t debug_fwrite (const(void)* buffer, size_t size, size_t count, IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Write %lld elements of %lld bytes\n", count, size);
@@ -173,7 +189,7 @@ extern(C) @system
         return r;
     }
 
-    size_t debug_fread (void* buffer, size_t size, size_t count, fi_handle handle)
+    size_t debug_fread (void* buffer, size_t size, size_t count, IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Read %lld elements of %lld bytes\n", count, size);
@@ -182,7 +198,7 @@ extern(C) @system
         return r;
     }
 
-    int debug_fseek(fi_handle handle, c_long offset, int origin)
+    int debug_fseek(IOHandle handle, c_long offset, int origin)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Seek to offset %d, mode %d\n", offset, origin);
@@ -194,7 +210,7 @@ extern(C) @system
         return r;
     }
 
-    c_long debug_ftell(fi_handle handle)
+    c_long debug_ftell(IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Tell offset\n");
@@ -203,7 +219,7 @@ extern(C) @system
         return r;
     }
 
-    int debug_feof(fi_handle handle)
+    int debug_feof(IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
         printf("Is feof?\n");

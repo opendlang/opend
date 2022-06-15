@@ -36,16 +36,16 @@ ImageFormat FreeImage_GetFileType(const(char)*filename, int size = 0) @trusted /
     FILE* f = fopen(filename, "rb");
     if (f is null)
         return ImageFormat.unknown;
-    FreeImageIO io;
-    setupFreeImageIOForFile(io);
-    ImageFormat type = FreeImage_GetFileTypeFromHandle(&io, cast(fi_handle)f, size);    
+    IOStream io;
+    io.setupForFileIO();
+    ImageFormat type = FreeImage_GetFileTypeFromHandle(&io, cast(IOHandle)f, size);    
     fclose(f); // TODO: Note sure what to do if fclose fails here.
     return type;
 }
 
-/// Uses the FreeImageIO structure as described in the topic Bitmap management functions to 
+/// Uses the IOStream structure as described in the topic Bitmap management functions to 
 /// identify a bitmap type. Now the bitmap bits are retrieved from an arbitrary place.
-ImageFormat FreeImage_GetFileTypeFromHandle(FreeImageIO *io, fi_handle handle, int size = 0) // Note: size unnused
+ImageFormat FreeImage_GetFileTypeFromHandle(IOStream *io, IOHandle handle, int size = 0) // Note: size unnused
 {
     for (ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
     {
@@ -61,9 +61,9 @@ ImageFormat FreeImage_GetFileTypeFromHandle(FreeImageIO *io, fi_handle handle, i
 ImageFormat FreeImage_GetFileTypeFromMemory(FIMEMORY* stream, int size = 0) @trusted // Note: size unnused
 {
     assert (stream !is null);
-    FreeImageIO io;
-    setupFreeImageIOForMemory(io);
-    return FreeImage_GetFileTypeFromHandle(&io, cast(fi_handle)stream, size);
+    IOStream io;
+    setupIOStreamForMemory(io);
+    return FreeImage_GetFileTypeFromHandle(&io, cast(IOHandle)stream, size);
 }
 
 /// Orders FreeImage to read the bitmap signature and compare this signature to the input fif 
@@ -75,21 +75,21 @@ bool FreeImage_Validate(ImageFormat fif, const(char)* filename) @trusted
     if (f is null)
         return false;
 
-    FreeImageIO io;
-    setupFreeImageIOForFile(io);
-    bool b = FreeImage_ValidateFromHandle(fif, &io, cast(fi_handle)f);
+    IOStream io;
+    io.setupForFileIO();
+    bool b = FreeImage_ValidateFromHandle(fif, &io, cast(IOHandle)f);
     fclose(f); // TODO: Note sure what to do if fclose fails here.
     return b;
 }
 
 deprecated("Use FreeImage_Validate instead, it supports Unicode") alias FreeImage_ValidateU = FreeImage_Validate;
 
-bool FreeImage_ValidateFromHandle(ImageFormat fif, FreeImageIO *io, fi_handle handle) @trusted
+bool FreeImage_ValidateFromHandle(ImageFormat fif, IOStream *io, IOHandle handle) @trusted
 {
     assert(fif != ImageFormat.unknown);
     const(Plugin)* plugin = &g_plugins[fif];
-    assert(plugin.validateProc !is null);
-    if (plugin.validateProc(io, handle))
+    assert(plugin.detectProc !is null);
+    if (plugin.detectProc(io, handle))
         return true;
     return false;
 }
@@ -98,7 +98,7 @@ bool FreeImage_ValidateFromHandle(ImageFormat fif, FreeImageIO *io, fi_handle ha
 bool FreeImage_ValidateFromMemory(ImageFormat fif, FIMEMORY* stream) @trusted
 {
     assert (stream !is null);
-    FreeImageIO io;
-    setupFreeImageIOForMemory(io);
-    return FreeImage_ValidateFromHandle(fif, &io, cast(fi_handle)stream);
+    IOStream io;
+    setupIOStreamForMemory(io);
+    return FreeImage_ValidateFromHandle(fif, &io, cast(IOHandle)stream);
 }

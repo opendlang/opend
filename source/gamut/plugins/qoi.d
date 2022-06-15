@@ -42,16 +42,16 @@ Plugin makeQOIPlugin()
         p.saveProc = &Save_QOI;
     else
         p.saveProc = null;
-    p.validateProc = &Validate_QOI;
+    p.detectProc = &Validate_QOI;
     return p;
 }
 
 
 version(decodeQOI)
-void Load_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+void Load_QOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     // Read all available bytes from input
-    // PERF: qoi_decode should understand FreeImageIO directly.
+    // PERF: qoi_decode should understand IOStream directly.
     // This is temporary.
 
     // Find length of input
@@ -101,12 +101,12 @@ void Load_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     {
         image.error(kStrImageDecodingFailed);
         return;
-    }
-    scope(exit) free(decoded);
+    }    
 
     if (desc.width > GAMUT_MAX_IMAGE_WIDTH || desc.height > GAMUT_MAX_IMAGE_HEIGHT)
     {
         image.error(kStrImageTooLarge);
+        free(decoded);
         return;
     }
 
@@ -130,21 +130,17 @@ void Load_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
 }
 
 
-bool Validate_QOI(FreeImageIO *io, fi_handle handle) @trusted
+bool Validate_QOI(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[4] qoiSignature = [0x71, 0x6f, 0x69, 0x66]; // "qoif"
     return fileIsStartingWithSignature(io, handle, qoiSignature);
 }
 
 version(encodeQOI)
-bool Save_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+bool Save_QOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;
-
-    if (!FreeImage_HasPixels(&image))
-        return false; // no pixel data
-
 
     qoi_desc desc;
     desc.width = image._width;
@@ -160,6 +156,7 @@ bool Save_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     }
 
     // PERF: remove that intermediate copy, whose sole purpose is being gap-free
+    //       the qoi encoder cannot read pixel using a pitch
     // <temp>
     int len = desc.width * desc.height * desc.channels;
     ubyte* continuous = cast(ubyte*) malloc(len);
@@ -169,7 +166,7 @@ bool Save_QOI(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     // removes holes
     for (int y = 0; y < desc.height; ++y)
     {
-        ubyte* source = image._data + y * image._pitch;
+        const(ubyte)* source = image._data + y * image._pitch;
         ubyte* dest   = continuous + y * desc.width * desc.channels;
         int lineBytes = desc.channels * desc.width;
         memcpy(dest, source, lineBytes);

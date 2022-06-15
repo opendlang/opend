@@ -36,13 +36,13 @@ Plugin makeJPEGPlugin()
         p.saveProc = &Save_JPEG;
     else
         p.saveProc = null;
-    p.validateProc = &Validate_JPEG;
+    p.detectProc = &Validate_JPEG;
     return p;
 }
 
 
 version(decodeJPEG)
-void Load_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+void Load_JPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     JPEGIOHandle jio;
     jio.wrapped = io;
@@ -61,19 +61,19 @@ void Load_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int
     {
         image.error(kStrImageDecodingFailed);
         return;
-    }
-
-    scope(exit) free(decoded.ptr);
+    }    
 
     if (actualComp != 1 && actualComp != 3 && actualComp != 4)
     {
         image.error(kStrImageWrongComponents);
+        free(decoded.ptr);
         return;
     }
 
     if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
     {
         image.error(kStrImageTooLarge);
+        free(decoded.ptr);
         return;
     }
 
@@ -90,20 +90,17 @@ void Load_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int
     }
 }
 
-bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
+bool Validate_JPEG(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
     return fileIsStartingWithSignature(io, handle, jpegSignature);
 }
 
 version(encodeJPEG)
-bool Save_JPEG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+bool Save_JPEG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;
-
-    if (!FreeImage_HasPixels(&image))
-        return false; // no pixel data
 
     int components;
 
@@ -142,8 +139,8 @@ private:
 
 struct JPEGIOHandle
 {
-    FreeImageIO* wrapped;
-    fi_handle handle;
+    IOStream* wrapped;
+    IOHandle handle;
 
     // stb_image_write doesn't check errors for write, so keep a flag and start ignoring output if
     // an I/O error occurs.

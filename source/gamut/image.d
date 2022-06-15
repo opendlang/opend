@@ -32,11 +32,49 @@ struct Image
 nothrow @nogc @safe:
 public:
 
-    @disable this(this); // Non-copyable. This would clone the image, and be expensive.
-
-    ~this()
+    /// An image can have data (usually pixels), or not.
+    /// "Data" refers to pixel content, that can be in a decoded form (RGBA8), but also in more
+    /// complicated forms such as planar, compressed, etc.
+    bool hasData() pure const
     {
-        cleanupBitmapIfAny();
+        return _data !is null;        
+    }
+
+    /// An image can have plain pixels, which means:
+    ///   1. it has data
+    ///   2. those are in a plain decoded format (not a compressed texture, not planar, etc).
+    bool hasPlainPixels() pure const
+    {
+        return hasData() && true; // all formats are plain, for now.
+    }
+
+    /// A planar image is for example YUV420.
+    /// If the image is planar, its lines are not accessible like that.
+    bool isPlanar() pure const
+    {
+        return hasData() && false; // not supported yet.
+    }
+
+    /// A compressed image doesn't have its pixels available.
+    bool isCompressed() pure const
+    {
+        return hasData() && false; // not supported yet.
+    }
+
+
+
+    /// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
+    /// possibly some metadata). 
+    /// Header only bitmap can be loaded using the FIF_LOAD_NOPIXELS load flag (see Table 3). 
+    /// This load flag will tell the decoder to read header data and available metadata and skip pixel 
+    /// data decoding. The memory size of the dib is thus reduced to the size of its members, 
+    /// excluding the pixel buffer. Reading metadata only information is fast since no pixel decoding 
+    /// occurs. 
+    /// Header only bitmap can be used with Bitmap information functions, Metadata iterator. They 
+    /// cannot be used with any pixel processing function or by saving function.
+    bool FreeImage_HasPixels(const(Image) *dib) pure
+    {
+        return dib._data != null;
     }
 
     /// Load an image from a file location.
@@ -151,6 +189,16 @@ public:
         return _error !is null;
     }
 
+
+    @disable this(this); // Non-copyable. This would clone the image, and be expensive.
+
+
+    /// Destructor. Everything is reclaimed.
+    ~this()
+    {
+        cleanupBitmapIfAny();
+    }
+
 package:
 
     // Available only inside gamut.
@@ -166,18 +214,11 @@ package:
 
     /// Set the image in an errored state, with `msg` as a message.
     /// Note: `msg` MUST be zero-terminated.
-    void error(const(char)[] msg) pure
+    deprecated alias error = setError;
+    void setError(const(char)[] msg) pure
     {
         _error = assumeZeroTerminated(msg);
     }
-
-    void assumeValid() pure const
-    {
-        // If you fail here, it means you should have checked against input errors 
-        // before decoding the image.
-        assert(!errored);
-    }
-
 
     /// The type of the data pointed to.
     ImageType _type = ImageType.unknown;
@@ -208,7 +249,7 @@ private:
 
     void cleanupBitmapIfAny() @trusted
     {   
-        if (_data)
+        if (_data !is null)
         {
             free(_data);
             _data = null;

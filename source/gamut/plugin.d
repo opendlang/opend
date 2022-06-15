@@ -24,14 +24,14 @@ nothrow @nogc @safe:
 /// Function that loads a image from this format.
 /// I/O rewinding: this function must be given an I/O cursor at the start of the the format.
 ///                It doesn't have to preserve that I/O cursor.
-alias FI_LoadProc = void function(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data);
+alias LoadImageProc = void function(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data);
 
 /// Saves an image from this format.
-alias FI_SaveProc = bool function(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data);
+alias SaveImageProc = bool function(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data);
 
 /// Function that detects this format.
-/// I/O rewinding: this function must preserve the I/O cursor.
-alias FI_ValidateProc = bool function(FreeImageIO *io, fi_handle handle);
+/// I/O rewinding: this function must preserve the I/O cursor by contract.
+alias DetectImageFormatProc = bool function(IOStream *io, IOHandle handle);
 
 struct Plugin
 {
@@ -44,9 +44,9 @@ struct Plugin
     /// MIME types, the first one being the best one.
     const(char)* mimeTypes;
 
-    FI_LoadProc loadProc = null; // null => no read supported
-    FI_SaveProc saveProc = null; // null => no write supported
-    FI_ValidateProc validateProc = null;
+    LoadImageProc loadProc = null; // null => no read supported
+    SaveImageProc saveProc = null; // null => no write supported
+    DetectImageFormatProc detectProc = null;
 }
 
 // ================================================================================================

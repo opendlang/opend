@@ -38,9 +38,9 @@ void FreeImage_Load(ref Image image, ImageFormat fif, const(char)* filename, int
         return;
     }
 
-    FreeImageIO io;
-    setupFreeImageIOForFile(io);
-    FreeImage_LoadFromHandle(image, fif, &io, cast(fi_handle)f, flags);
+    IOStream io;
+    io.setupForFileIO();
+    FreeImage_LoadFromHandle(image, fif, &io, cast(IOHandle)f, flags);
     
     if (0 != fclose(f))
     {
@@ -52,20 +52,21 @@ void FreeImage_Load(ref Image image, ImageFormat fif, const(char)* filename, int
 
 /// FreeImage has the unique feature to load a bitmap from an arbitrary source. This source 
 /// might for example be a cabinet file, a zip file or an Internet stream.
-/// FreeImageIO is a structure that contains 4 function pointers: one to read from a source, one 
+/// IOStream is a structure that contains 4 function pointers: one to read from a source, one 
 /// to write to a source, one to seek in the source and one to tell where in the source we 
-/// currently are. When you populate the FreeImageIO structure with pointers to functions and 
+/// currently are. When you populate the IOStream structure with pointers to functions and 
 /// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
-void FreeImage_LoadFromHandle(ref Image image, ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
+void FreeImage_LoadFromHandle(ref Image image, ImageFormat fif, IOStream* io, IOHandle handle, int flags = 0) @system
 {
     // I/O logging, useful for debug purpose
-    FreeImageIO io2;
+    /*IOStream io2;
     WrappedIO wio;
     wio.wrapped = io;
     wio.handle = handle;
-    setupFreeImageIOForLogging(io2);
+    io2.setupForLogging(io2);
+    */
 
     assert(fif != ImageFormat.unknown);
     const(Plugin)* plugin = &g_plugins[fif];
@@ -88,27 +89,30 @@ void FreeImage_LoadFromHandle(ref Image image, ImageFormat fif, FreeImageIO* io,
 /// The second parameter is the name of the bitmap to be saved. If the file already exists it is 
 /// overwritten. Note that some bitmap save plugins have restrictions on the bitmap types they 
 /// can save.
-bool FreeImage_Save(ref Image dib, ImageFormat fif, const(char)* filename, int flags = 0) @trusted
+bool FreeImage_Save(ref const(Image) image, ImageFormat fif, const(char)* filename, int flags = 0) @trusted
 {
+    if (!image.hasPlainPixels)
+        return false; // no data that is pixels, impossible to save that.
+
     assert(fif != ImageFormat.unknown);
 
     FILE* f = fopen(filename, "wb");
     if (f is null)
         return false;
 
-    FreeImageIO io;
-    setupFreeImageIOForFile(io);
-    bool r = FreeImage_SaveToHandle(dib, fif, &io, cast(fi_handle)f, flags);
+    IOStream io;
+    io.setupForFileIO();
+    bool r = FreeImage_SaveToHandle(image, fif, &io, cast(IOHandle)f, flags);
     return fclose(f) == 0;
 }
 
-bool FreeImage_SaveToHandle(ref Image dib, ImageFormat fif, FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
+bool FreeImage_SaveToHandle(ref const(Image) image, ImageFormat fif, IOStream *io, IOHandle handle, int flags = 0) @trusted
 {
     const(Plugin)* plugin = &g_plugins[fif];
     void* data = null; // probably exist to pass metadata stuff
     if (plugin.saveProc is null)
         return false;
-    bool r = plugin.saveProc(dib, io, handle, 0, flags, data);
+    bool r = plugin.saveProc(image, io, handle, 0, flags, data);
     return r;
 }
 
@@ -137,19 +141,7 @@ int FreeImage_GetPitch(Image *dib) pure
 }
 
 
-/// Returns FALSE if the bitmap does not contain pixel data (i.e. if it contains only header and 
-/// possibly some metadata). 
-/// Header only bitmap can be loaded using the FIF_LOAD_NOPIXELS load flag (see Table 3). 
-/// This load flag will tell the decoder to read header data and available metadata and skip pixel 
-/// data decoding. The memory size of the dib is thus reduced to the size of its members, 
-/// excluding the pixel buffer. Reading metadata only information is fast since no pixel decoding 
-/// occurs. 
-/// Header only bitmap can be used with Bitmap information functions, Metadata iterator. They 
-/// cannot be used with any pixel processing function or by saving function.
-bool FreeImage_HasPixels(Image *dib) pure
-{
-    return dib._data != null;
-}
+
 
 // ================================================================================================
 //

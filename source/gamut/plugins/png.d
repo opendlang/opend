@@ -36,7 +36,7 @@ Plugin makePNGPlugin()
         p.saveProc = &Save_PNG;
     else
         p.saveProc = null;
-    p.validateProc = &Validate_PNG;
+    p.detectProc = &Validate_PNG;
     return p;
 }
 
@@ -44,7 +44,7 @@ Plugin makePNGPlugin()
 // PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
 
 version(decodePNG)
-void Load_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+void Load_PNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     IOAndHandle ioh;
     ioh.io = io;
@@ -97,22 +97,18 @@ void Load_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     {
         image.error(kStrImageDecodingFailed);
         return;
-    }
-
-    scope(exit) free(decoded);
+    }    
 
     if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
     {
         image.error(kStrImageTooLarge);
+        free(decoded);
         return;
     }
 
     image._width = width;
     image._height = height;
     image._data = decoded; // works because codec.pngload and gamut both use malloc/free
-
-    import core.stdc.stdio;
-    printf("data = %p\n", decoded);
     image._pitch = width * components;
 
     if (!is16bit)
@@ -155,20 +151,17 @@ void Load_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     }
 }
 
-bool Validate_PNG(FreeImageIO *io, fi_handle handle) @trusted
+bool Validate_PNG(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
     return fileIsStartingWithSignature(io, handle, pngSignature);
 }
 
 version(encodePNG)
-bool Save_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+bool Save_PNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;
-
-    if (!FreeImage_HasPixels(&image))
-        return false; // no pixel data
 
     int channels = 0;
     switch (image._type)
@@ -185,7 +178,7 @@ bool Save_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
     int height = image._height;
     int pitch = image._pitch;
     int len;
-    ubyte* pixels = image._data;
+    const(ubyte)* pixels = image._data;
 
     // PERF: use stb_image_write stbi_write_png_to_func instead.
     ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
@@ -204,11 +197,11 @@ bool Save_PNG(ref Image image, FreeImageIO *io, fi_handle handle, int page, int 
 
 private:
 
-// Need to give both a FreeImageIO* and a fi_handle to STB callbacks.
+// Need to give both a IOStream* and a IOHandle to STB callbacks.
 static struct IOAndHandle
 {
-    FreeImageIO* io;
-    fi_handle handle;
+    IOStream* io;
+    IOHandle handle;
 }
 
 // fill 'data' with 'size' bytes.  return number of bytes actually read

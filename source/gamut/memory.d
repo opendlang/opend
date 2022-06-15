@@ -106,10 +106,10 @@ void FreeImage_LoadFromMemory(ref Image image, ImageFormat fif, FIMEMORY *stream
     assert(fif != ImageFormat.unknown);
     assert (stream !is null);
 
-    FreeImageIO io;
-    setupFreeImageIOForMemory(io);
+    IOStream io;
+    setupIOStreamForMemory(io);
 
-    FreeImage_LoadFromHandle(image, fif, &io, cast(fi_handle)stream, flags);
+    FreeImage_LoadFromHandle(image, fif, &io, cast(IOHandle)stream, flags);
 }
 
 /// This function does for memory streams what FreeImage_Save does for file streams. 
@@ -124,10 +124,10 @@ bool FreeImage_SaveToMemory(ref Image image, ImageFormat fif, FIMEMORY *stream, 
     assert(fif != ImageFormat.unknown);
     assert (stream !is null);
 
-    FreeImageIO io;
-    setupFreeImageIOForMemory(io);
+    IOStream io;
+    setupIOStreamForMemory(io);
 
-    return FreeImage_SaveToHandle(image, fif, &io, cast(fi_handle)stream, flags);
+    return FreeImage_SaveToHandle(image, fif, &io, cast(IOHandle)stream, flags);
 }
 
 /// Provides a direct buffer access to a memory stream. Upon entry, stream is the target memory 
@@ -244,7 +244,7 @@ extern(C)
 package:
 
 
-void setupFreeImageIOForMemory(ref FreeImageIO io) pure @trusted
+void setupIOStreamForMemory(ref IOStream io) pure @trusted
 {
     io.read  = cast(ReadProc)  &FreeImage_ReadMemory;
     io.write = cast(WriteProc) null;
