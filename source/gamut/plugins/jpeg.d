@@ -40,7 +40,7 @@ Plugin makeJPEGPlugin()
 
 
 version(decodeJPEG)
-FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
+void Load_JPEG(ref FIBITMAP image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
     JPEGIOHandle jio;
     jio.wrapped = io;
@@ -48,45 +48,44 @@ FIBITMAP* Load_JPEG(FreeImageIO *io, fi_handle handle, int page, int flags, void
 
     int requestedComp = computeRequestedImageComponents(flags);
     if (requestedComp == 0)
-        return null; // Invalid flags.
+    {
+        image.error(kStrInvalidFlags);
+        return;
+    }
 
     int width, height, actualComp;
     ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
     if (decoded is null)
-        return null;
+    {
+        image.error(kStrImageDecodingFailed);
+        return;
+    }
 
-    FIBITMAP* bitmap = null;
+    scope(exit) free(decoded.ptr);
 
     if (actualComp != 1 && actualComp != 3 && actualComp != 4)
-        goto error2;
+    {
+        image.error(kStrImageWrongComponents);
+        return;
+    }
 
-    bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
-    if (!bitmap) 
-        goto error2;
+    if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
+    {
+        image.error(kStrImageTooLarge);
+        return;
+    }
 
-        if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
-        goto error;
-
-    bitmap._width = width;
-    bitmap._height = height;
-    bitmap._data = decoded.ptr;
-    bitmap._pitch = width * actualComp;
+    image._width = width;
+    image._height = height;
+    image._data = decoded.ptr;
+    image._pitch = width * actualComp;
     switch (actualComp)
     {
-        case 1: bitmap._type = ImageType.uint8; break;
-        case 3: bitmap._type = ImageType.rgb8; break;
-        case 4: bitmap._type = ImageType.rgba8; break;
+        case 1: image._type = ImageType.uint8; break;
+        case 3: image._type = ImageType.rgb8; break;
+        case 4: image._type = ImageType.rgba8; break;
         default:
-    }        
-    return bitmap;
-
-error:
-    free(bitmap);
-
-error2:
-    free(decoded.ptr);
-
-    return null;
+    }
 }
 
 bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
@@ -96,17 +95,17 @@ bool Validate_JPEG(FreeImageIO *io, fi_handle handle) @trusted
 }
 
 version(encodeJPEG)
-bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int flags, void *data) @trusted
+bool Save_JPEG(ref FIBITMAP image, FreeImageIO *io, fi_handle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;
 
-    if (!FreeImage_HasPixels(dib))
+    if (!FreeImage_HasPixels(&image))
         return false; // no pixel data
 
     int components;
 
-    switch (dib._type)
+    switch (image._type)
     {
         case ImageType.uint8:
             components = 1; break;
@@ -128,10 +127,10 @@ bool Save_JPEG(FreeImageIO *io, FIBITMAP *dib, fi_handle handle, int page, int f
     int quality = 90; // TODO: option to choose that.
 
     int res = stbi_write_jpg_to_func(&stb_stream_write, userPointer, 
-                                        dib._width, 
-                                        dib._height, 
+                                        image._width, 
+                                        image._height, 
                                         components, 
-                                        dib._data, quality);
+                                        image._data, quality);
 
     return res == 1 && !jio.errored;
 }

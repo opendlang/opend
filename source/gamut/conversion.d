@@ -19,6 +19,7 @@ nothrow @nogc @safe:
 /// setting the alpha channel to an opaque value (0xFF). For 64-bit RGBA images, conversion is 
 /// done by dividing each 16-bit channel by 256. A NULL value is returned for other nonstandard bitmap types.
 
+/+
 FIBITMAP* FreeImage_ConvertTo32Bits(FIBITMAP *dib)
 {
     assert(dib != null);
@@ -28,4 +29,4 @@ FIBITMAP* FreeImage_ConvertTo32Bits(FIBITMAP *dib)
     assert(FreeImage_HasPixels(dib));
 
     assert(false);
-}
+}+/

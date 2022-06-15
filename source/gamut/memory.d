@@ -14,6 +14,7 @@ import core.stdc.string: memcpy;
 import gamut.types;
 import gamut.bitmap;
 import gamut.io;
+import gamut.image;
 
 nothrow @nogc @safe:
 
@@ -100,7 +101,7 @@ void FreeImage_CloseMemory(FIMEMORY *stream) @system
 /// Some bitmap loaders can receive parameters to change the loading behaviour. 
 /// When the parameter is not available or unused you can pass the value 0 or 
 /// <TYPE_OF_BITMAP>_DEFAULT (e.g. BMP_DEFAULT, ICO_DEFAULT, etc).
-FIBITMAP* FreeImage_LoadFromMemory(ImageFormat fif, FIMEMORY *stream, int flags = 0) @trusted
+void FreeImage_LoadFromMemory(ref Image image, ImageFormat fif, FIMEMORY *stream, int flags = 0) @trusted
 {
     assert(fif != ImageFormat.unknown);
     assert (stream !is null);
@@ -108,7 +109,7 @@ FIBITMAP* FreeImage_LoadFromMemory(ImageFormat fif, FIMEMORY *stream, int flags 
     FreeImageIO io;
     setupFreeImageIOForMemory(io);
 
-    return FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)stream, flags);
+    FreeImage_LoadFromHandle(image, fif, &io, cast(fi_handle)stream, flags);
 }
 
 /// This function does for memory streams what FreeImage_Save does for file streams. 
@@ -118,7 +119,7 @@ FIBITMAP* FreeImage_LoadFromMemory(ImageFormat fif, FIMEMORY *stream, int flags 
 /// memory stream where the bitmap must be saved. When the memory file pointer point to the 
 /// beginning of the memory file, any existing data is overwritten. Otherwise, you can save 
 /// multiple images on the same stream.
-bool FreeImage_SaveToMemory(ImageFormat fif, FIBITMAP *dib, FIMEMORY *stream, int flags = 0) @trusted
+bool FreeImage_SaveToMemory(ref Image image, ImageFormat fif, FIMEMORY *stream, int flags = 0) @trusted
 {
     assert(fif != ImageFormat.unknown);
     assert (stream !is null);
@@ -126,7 +127,7 @@ bool FreeImage_SaveToMemory(ImageFormat fif, FIBITMAP *dib, FIMEMORY *stream, in
     FreeImageIO io;
     setupFreeImageIOForMemory(io);
 
-    return FreeImage_SaveToHandle(fif, dib, &io, cast(fi_handle)stream, flags);
+    return FreeImage_SaveToHandle(image, fif, &io, cast(fi_handle)stream, flags);
 }
 
 /// Provides a direct buffer access to a memory stream. Upon entry, stream is the target memory 

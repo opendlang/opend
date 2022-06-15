@@ -65,10 +65,10 @@ int main(string[] args)
         Image* result = &image;
 
         image.loadFromFile(input);
-        if (!image.isValid)
+    /*    if (image.errored)
         {
             throw new Exception("Couldn't open file " ~ input);
-        }
+        } */
 
         /*Image converted;
         if (bitness == 8)
@@ -82,11 +82,11 @@ int main(string[] args)
             result = &converted;
         }*/
 
-        bool r = result.saveToFile(output);  
+/*      bool r = result.saveToFile(output);  
         if (!r)
         {
             throw new Exception("Couldn't save file " ~ output);
-        }
+        }*/
         return 0;
     }
     catch(Exception e)

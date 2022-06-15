@@ -775,13 +775,13 @@ private:
 
       Element_Type[NUM_COLS][NUM_ROWS] v;
 
-      this() (in auto ref Matrix44 m) {
+      this() (in Matrix44 m) {
         foreach (immutable r; 0..NUM_ROWS) v[r][] = m.v[r][];
       }
 
       ref inout(Element_Type) at (int r, int c) inout { pragma(inline, true); return v.ptr[r].ptr[c]; }
 
-      ref Matrix44 opOpAssign(string op:"+") (in auto ref Matrix44 a) {
+      ref Matrix44 opOpAssign(string op:"+") (in Matrix44 a) {
         foreach (int r; 0..NUM_ROWS) {
           at(r, 0) += a.at(r, 0);
           at(r, 1) += a.at(r, 1);
@@ -791,7 +791,7 @@ private:
         return this;
       }
 
-      ref Matrix44 opOpAssign(string op:"-") (in auto ref Matrix44 a) {
+      ref Matrix44 opOpAssign(string op:"-") (in Matrix44 a) {
         foreach (int r; 0..NUM_ROWS) {
           at(r, 0) -= a.at(r, 0);
           at(r, 1) -= a.at(r, 1);
@@ -801,7 +801,7 @@ private:
         return this;
       }
 
-      Matrix44 opBinary(string op:"+") (in auto ref Matrix44 b) const {
+      Matrix44 opBinary(string op:"+") (in Matrix44 b) const {
         alias a = this;
         Matrix44 ret;
         foreach (int r; 0..NUM_ROWS) {
@@ -813,7 +813,7 @@ private:
         return ret;
       }
 
-      Matrix44 opBinary(string op:"-") (in auto ref Matrix44 b) const {
+      Matrix44 opBinary(string op:"-") (in Matrix44 b) const {
         alias a = this;
         Matrix44 ret;
         foreach (int r; 0..NUM_ROWS) {
@@ -825,7 +825,7 @@ private:
         return ret;
       }
 
-      static void add_and_store() (jpgd_block_t* pDst, in auto ref Matrix44 a, in auto ref Matrix44 b) {
+      static void add_and_store() (jpgd_block_t* pDst, in Matrix44 a, in Matrix44 b) {
         foreach (int r; 0..4) {
           pDst[0*8 + r] = cast(jpgd_block_t)(a.at(r, 0) + b.at(r, 0));
           pDst[1*8 + r] = cast(jpgd_block_t)(a.at(r, 1) + b.at(r, 1));
@@ -834,7 +834,7 @@ private:
         }
       }
 
-      static void sub_and_store() (jpgd_block_t* pDst, in auto ref Matrix44 a, in auto ref Matrix44 b) {
+      static void sub_and_store() (jpgd_block_t* pDst, in Matrix44 a, in Matrix44 b) {
         foreach (int r; 0..4) {
           pDst[0*8 + r] = cast(jpgd_block_t)(a.at(r, 0) - b.at(r, 0));
           pDst[1*8 + r] = cast(jpgd_block_t)(a.at(r, 1) - b.at(r, 1));

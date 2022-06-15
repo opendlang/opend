@@ -1,5 +1,8 @@
 
-- Merge Image and FIBITMAP, make a normal D struct.
+- 1. Image contains a FIBITMAP directly
+- 2. Image contains the FIBITMAP fields directly.
+- 3. deprecated and delete FIBITMAP.
+
 
 - Implement QOI+LZ4 as a format.
-- All format plugins are static
+- All format plugins are static-

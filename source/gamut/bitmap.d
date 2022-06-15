@@ -15,75 +15,10 @@ import core.stdc.stdlib: malloc, realloc, free;
 import gamut.types;
 import gamut.io;
 import gamut.plugin;
+import gamut.internals.cstring;
 
 
 nothrow @nogc @safe:
-
-struct FIBITMAP
-{
-package:
-
-    ImageType _type;
-    ubyte* _data = null;
-
-    int _width;
-    int _height;
-
-    /// Pitch in bytes between lines.
-    int _pitch; 
-}
-
-
-// ================================================================================================
-//
-//                                  BITMAP MANAGEMENT FUNCTIONS
-//
-// ================================================================================================
-
-/// Allocate a black image.
-///
-/// Params:
-///     type The pixel format of the image. 
-///     width The width of the image.
-///     height The height of the image.
-///
-/// Returns:
-///     A newly allocated `FIBITMAP`, or `null` if an error occured.
-FIBITMAP* FreeImage_Allocate(ImageType type, int width, int height) @trusted
-{
-    assert(type != ImageType.unknown);
-
-    if (width > GAMUT_MAX_IMAGE_WIDTH)
-        return null;
-
-    if (height > GAMUT_MAX_IMAGE_HEIGHT)
-        return null;
-
-    FIBITMAP* bitmap = cast(FIBITMAP*) malloc(FIBITMAP.sizeof);
-    if (!bitmap) 
-        return null;
-    bitmap._type = type;
-    int pitch = pitchForImage(type, width);
-    size_t bytes = height * pitch;
-
-    ubyte* data = cast(ubyte*) realloc(null, bytes);
-    if (data == null)
-        goto error;
-
-    bitmap._width = width;
-    bitmap._height = height;
-    bitmap._data = data;
-    bitmap._pitch = pitch;
-    return bitmap;
-
-    error:
-        free(bitmap);
-        return null; // failed
-}
-
-/// Load flags
-enum int
-   PNG_DEFAULT = 0;
 
 /// This function decodes a bitmap, allocates memory for it and then returns it as a FIBITMAP. 
 /// The first parameter defines the type of bitmap to be loaded. For example, when FIF_BMP is 
@@ -91,29 +26,28 @@ enum int
 /// constants is available in Table 1). The second parameter tells FreeImage the file it has to 
 /// decode. The last parameter is used to change the behaviour or enable a feature in the bitmap 
 /// plugin. Each plugin has its own set of parameters.
-FIBITMAP* FreeImage_Load(ImageFormat fif, const(char)* filename, int flags = 0) @system
+void FreeImage_Load(ref FIBITMAP image, ImageFormat fif, const(char)* filename, int flags = 0) @system
 {
     assert(fif != ImageFormat.unknown);
     
     FILE* f = fopen(filename, "rb");
     if (f is null)
-        return null;
+    {
+        image.error("Couldn't open image file");
+        return;
+    }
 
     FreeImageIO io;
     setupFreeImageIOForFile(io);
-
-    FIBITMAP* bitmap = FreeImage_LoadFromHandle(fif, &io, cast(fi_handle)f, flags);
+    FreeImage_LoadFromHandle(image, fif, &io, cast(fi_handle)f, flags);
     
     if (0 != fclose(f))
     {
-        FreeImage_Unload(bitmap);
-        return null;
+        // TODO cleanup BITMAP/Image
+        //FreeImage_Unload(image);
+        image.error("Closing image file with fclose() failed");
     }
-
-    return bitmap;
 }
-///ditto
-deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeImage_LoadU = FreeImage_Load; 
 
 /// FreeImage has the unique feature to load a bitmap from an arbitrary source. This source 
 /// might for example be a cabinet file, a zip file or an Internet stream.
@@ -123,35 +57,37 @@ deprecated("Use FreeImage_Load instead, it was made Unicode-aware") alias FreeIm
 /// pass that structure to FreeImage_LoadFromHandle, FreeImage will call your functions to 
 /// read, seek and tell in a file. The handle-parameter (third parameter from the left) is used in 
 /// this to differentiate between different contexts, e.g. different files or different Internet streams.
-FIBITMAP* FreeImage_LoadFromHandle(ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
+void FreeImage_LoadFromHandle(ref FIBITMAP image, ImageFormat fif, FreeImageIO* io, fi_handle handle, int flags = 0) @system
 {
     // I/O logging, useful for debug purpose
-    /*FreeImageIO io2;
+    FreeImageIO io2;
     WrappedIO wio;
     wio.wrapped = io;
     wio.handle = handle;
-    setupFreeImageIOForLogging(io2);*/
+    setupFreeImageIOForLogging(io2);
 
     assert(fif != ImageFormat.unknown);
     const(Plugin)* plugin = &g_plugins[fif];
 
+    // Erase that former error if assertions disabled.
+    image.clearError();
+
     int page = 0;
     void *data = null;
     if (!plugin.loadProc)
-        return  null;
-    FIBITMAP* loaded = plugin.loadProc(io, handle, page, flags, data);
-    return loaded;
+    {
+        image.error("Cannot load image format with this build");
+        return;
+    }
+    plugin.loadProc(image, io, handle, page, flags, data);
 }
-
-deprecated("Use FreeImage_Save instead, it was made Unicode-aware") 
-    alias FreeImage_SaveU = FreeImage_Save;
 
 /// This function saves a previously loaded `FIBITMAP` to a file. The first parameter defines the 
 /// type of the bitmap to be saved. For example, when `FIF_BMP` is passed, a BMP file is saved.
 /// The second parameter is the name of the bitmap to be saved. If the file already exists it is 
 /// overwritten. Note that some bitmap save plugins have restrictions on the bitmap types they 
 /// can save.
-bool FreeImage_Save(ImageFormat fif, FIBITMAP *dib, const(char)* filename, int flags = 0) @trusted
+bool FreeImage_Save(ref FIBITMAP dib, ImageFormat fif, const(char)* filename, int flags = 0) @trusted
 {
     assert(fif != ImageFormat.unknown);
 
@@ -161,62 +97,22 @@ bool FreeImage_Save(ImageFormat fif, FIBITMAP *dib, const(char)* filename, int f
 
     FreeImageIO io;
     setupFreeImageIOForFile(io);
-    bool r = FreeImage_SaveToHandle(fif, dib, &io, cast(fi_handle)f, flags);
+    bool r = FreeImage_SaveToHandle(dib, fif, &io, cast(fi_handle)f, flags);
     return fclose(f) == 0;
 }
 
-bool FreeImage_SaveToHandle(ImageFormat fif, FIBITMAP *dib, 
-                            FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
+bool FreeImage_SaveToHandle(ref FIBITMAP dib, ImageFormat fif, FreeImageIO *io, fi_handle handle, int flags = 0) @trusted
 {
     const(Plugin)* plugin = &g_plugins[fif];
-    void* data = null; // probalby exist to pass metadata stuff
+    void* data = null; // probably exist to pass metadata stuff
     if (plugin.saveProc is null)
         return false;
-    bool r = plugin.saveProc(io, dib, handle, 0, flags, data);
+    bool r = plugin.saveProc(dib, io, handle, 0, flags, data);
     return r;
 }
 
-/// Makes an exact reproduction of an existing bitmap, including metadata and attached profile if any.
-FIBITMAP* FreeImage_Clone(FIBITMAP *dib) @trusted
-{
-    assert(dib._type != ImageType.unknown); // MAYDO: clone of FIT_UNKNOWN?
-
-    if (dib is null)
-        return null;
-
-    ImageType type = dib._type;
-    int width      = dib._width;
-    int height     = dib._height;
-
-    FIBITMAP* bitmap = FreeImage_Allocate(dib._type, width, height);
-    if (!bitmap) 
-        return null;
-
-    // The bitmaps do not necessarily have the same pitch here.
-    assert(bitmap._pitch == dib._pitch);
-    assert(bitmap._height == dib._height);
-    int bytes = height * dib._pitch; // TODO: avoid overflow here
-    memcpy(bitmap._data, dib._data, bytes); // Copy whole image.
 
 
-    // TODO: copy thumbnail, copy meta-data.
-
-    return bitmap;
-}
-
-/// Deletes a previously loaded `FIBITMAP` from memory.
-void FreeImage_Unload(FIBITMAP *dib) @system
-{
-    if (dib)
-    {
-        if (dib._data)
-        {
-            free(dib._data);
-            dib._data = null;
-        }
-        free(dib);
-    }
-}
 
 // ================================================================================================
 //
@@ -245,18 +141,6 @@ int FreeImage_GetBPP(FIBITMAP *dib) pure
 {
     assert(dib._type != ImageType.unknown);
     return 8 * bytesForImageType(dib._type);
-}
-
-/// Returns the width of the bitmap in pixel units.
-int FreeImage_GetWidth(FIBITMAP *dib) pure
-{
-    return dib._width;
-}
-
-/// Returns the height of the bitmap in pixel units.
-int FreeImage_GetHeight(FIBITMAP *dib) pure
-{
-    return dib._height;
 }
 
 /// Return width of the bitmap, in bytes.

@@ -17,5 +17,5 @@ module gamut;
 ///
 /// Gamut is a clean-room implementation: no software code from FreeImage was ever looked at, only
 /// documentation.
-public import gamut.easy;
+public import gamut.image;
 public import gamut.types;
