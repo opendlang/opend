@@ -1508,27 +1508,27 @@ package:
 
 // If SciD is available, it is used for matrix storage and operations
 // such as Cholesky decomposition.  Otherwise, some old, crappy routines
-// that were around since before SciD are used.  
+// that were around since before SciD are used.
 version(scid) {
     import scid.matvec, scid.linalg, scid.exception;
-    
+
     alias ExternalMatrixView!double DoubleMatrix;
-    
+
     DoubleMatrix doubleMatrix(
-        size_t nRows, 
+        size_t nRows,
         size_t nColumns,
         RegionAllocator alloc
     ) {
         return DoubleMatrix(nRows, nColumns, alloc);
     }
-    
+
     void choleskySolve(DoubleMatrix a, double[] b, double[] x) {
         choleskyDestructive(a);
         auto ans = externalVectorView(x);
         auto vec = externalVectorView(b);
         scid.linalg.choleskySolve(a, vec, ans);
     }
-    
+
     void invert(DoubleMatrix from, DoubleMatrix to) {
         try {
             to[] = inv(from);
@@ -1538,44 +1538,44 @@ version(scid) {
             }
         }
     }
-        
+
 } else {
     version = noscid;
-    
+
     struct DoubleMatrix {
         double[][] arrayOfArrays;
         //alias arrayOfArraysFun this;
-        
+
         const pure nothrow @property {
             size_t rows() {
                 return arrayOfArrays.length;
             }
-            
+
             size_t columns() {
-                return (arrayOfArrays.length) ? 
+                return (arrayOfArrays.length) ?
                     (arrayOfArrays[0].length) : 0;
             }
-        }                    
-        
+        }
+
         ref double opIndex(size_t i, size_t j) {
             return arrayOfArrays[i][j];
         }
     }
-    
+
     DoubleMatrix doubleMatrix(
-        size_t nRows, 
+        size_t nRows,
         size_t nColumns,
         RegionAllocator alloc
     ) {
         return DoubleMatrix(
             alloc.uninitializedArray!(double[][])(nRows, nColumns)
         );
-    }    
-    
+    }
+
     void invert(DoubleMatrix from, DoubleMatrix to) {
         invert(from.arrayOfArrays, to.arrayOfArrays);
     }
-    
+
     // Uses Gauss-Jordan elim. w/ row pivoting to invert from.  Stores the results
     // in to and leaves from in an undefined state.
     package void invert(double[][] from, double[][] to) {
