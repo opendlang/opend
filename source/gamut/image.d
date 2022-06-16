@@ -12,7 +12,6 @@ module gamut.image;
 import core.stdc.stdio;
 import core.stdc.stdlib: free;
 
-import gamut.bitmap;
 import gamut.types;
 import gamut.io;
 import gamut.filetype;
@@ -154,7 +153,7 @@ public:
 
         IOStream io;
         io.setupForMemoryIO();
-        loadFromHandle(fif, io, cast(IOHandle)&mem, flags);
+        loadFromStream(fif, io, cast(IOHandle)&mem, flags);
 
         return !errored();
     }
@@ -175,7 +174,7 @@ public:
         if (fif == ImageFormat.unknown)
             return false; // couldn't recognize format from path.
 
-        return save(fif, cstr.storage, flags);
+        return saveToFileInternal(fif, cstr.storage, flags);
     }
     /// Save the image into a file, but provide a file format.
     /// Returns: `true` if file successfully written.
@@ -183,7 +182,7 @@ public:
     {
         assert(!errored); // else, nothing to save
         CString cstr = CString(path);
-        return save(fif, cstr.storage, flags);
+        return saveToFileInternal(fif, cstr.storage, flags);
     }
 
     /// Saves the image into a new memory location.
@@ -197,18 +196,18 @@ public:
         // Open stream for read/write access.
         MemoryFile mem;
         mem.initEmpty();
-        if (!saveToMemoryInternal(fif, mem, flags))
-        {
+
+        IOStream io;
+        io.setupForMemoryIO();
+        if (saveToStream(fif, io, cast(IOHandle)&mem, flags))
+            return mem.releaseData();
+        else
             return null;
-        }
-        return mem.releaseData();
     }
 
     //
     // </SAVING AND LOADING IMAGES>
     //
-
- 
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
 
@@ -262,8 +261,7 @@ package:
     /// Once an error has occured, continuing to use the image is Undefined Behaviour.
     /// Must be zero-terminated.
     /// By default, a T.init image is errored().
-    const(char)* _error = kStrImageNotInitialized; 
-
+    const(char)* _error = kStrImageNotInitialized;
 
 private:
 
@@ -274,14 +272,6 @@ private:
             free(_data);
             _data = null;
         }
-    }
-
-
-    bool saveToMemoryInternal(ImageFormat fif, ref MemoryFile stream, int flags = 0) const @trusted
-    {        
-        IOStream io;
-        io.setupForMemoryIO();
-        return saveToHandle(fif, io, cast(IOHandle)&stream, flags);
     }
 
     void loadFromFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) @system
@@ -295,7 +285,7 @@ private:
 
         IOStream io;
         io.setupForFileIO();
-        loadFromHandle(fif, io, cast(IOHandle)f, flags);
+        loadFromStream(fif, io, cast(IOHandle)f, flags);
 
         if (0 != fclose(f))
         {
@@ -304,7 +294,7 @@ private:
         }
     }
 
-    void loadFromHandle(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) @system
+    void loadFromStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) @system
     {
         // By loading an image, we agreed to forget about past mistakes.
         clearError();
@@ -327,23 +317,23 @@ private:
         plugin.loadProc(this, &io, handle, page, flags, data);
     }
 
-    bool save(ImageFormat fif, const(char)* filename, int flags = 0) const @trusted
+    bool saveToFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) const @trusted
     {
-        if (!hasPlainPixels)
-            return false; // no data that is pixels, impossible to save that.
-
         FILE* f = fopen(filename, "wb");
         if (f is null)
             return false;
 
         IOStream io;
         io.setupForFileIO();
-        bool r = saveToHandle(fif, io, cast(IOHandle)f, flags);
+        bool r = saveToStream(fif, io, cast(IOHandle)f, flags);
         return fclose(f) == 0;
     }
 
-    bool saveToHandle(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
+    bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
     {
+        if (!hasPlainPixels)
+            return false; // no data that is pixels, impossible to save that.
+
         const(ImageFormatPlugin)* plugin = &g_plugins[fif];
         void* data = null; // probably exist to pass metadata stuff
         if (plugin.saveProc is null)
@@ -351,10 +341,7 @@ private:
         bool r = plugin.saveProc(this, &io, handle, 0, flags, data);
         return r;
     }
-
-
 }
-
 
 
 // Return: 

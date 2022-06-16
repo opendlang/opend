@@ -14,7 +14,6 @@ nothrow @nogc @safe:
 import core.stdc.stdlib: malloc, free, realloc;
 import core.stdc.string: memcpy;
 import gamut.types;
-import gamut.bitmap;
 import gamut.io;
 import gamut.image;
 import gamut.plugin;
