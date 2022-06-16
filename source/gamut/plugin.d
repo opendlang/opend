@@ -51,16 +51,13 @@ struct ImageFormatPlugin
     DetectImageFormatProc detectProc = null;
 }
 
-// ================================================================================================
-//
-//                                     PLUGIN FUNCTIONS
-//
-// ================================================================================================
-
 /// This function takes a filename or a file-extension and returns the plugin that can read/write 
 /// files with that extension in the form of a `FREE_IMAGE_FORMAT` identifier.
-ImageFormat FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
+ImageFormat identifyImageFormatFromFilename(const(char) *filename) @trusted
 {
+    if (filename is null)
+        return ImageFormat.unknown;
+
     // find extension inside filename
     size_t ilen = strlen(filename);
     size_t pos = ilen;
@@ -99,10 +96,8 @@ ImageFormat FreeImage_GetFIFFromFilename(const(char) *filename) @trusted
 }
 unittest
 {
-    import gamut.general;
-    FreeImage_Initialise(true);
-    assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jpg") == FIF_JPEG);
-    assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jfif") == FIF_JPEG);
+    assert(identifyImageFormatFromFilename("mysueprduperphoto.jpg") == ImageFormat.JPEG);
+    assert(identifyImageFormatFromFilename("mysueprduperphoto.jfif") == ImageFormat.JPEG);
 }
 
 package:

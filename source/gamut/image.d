@@ -9,7 +9,9 @@ See the differences in DIFFERENCES.md
 */
 module gamut.image;
 
+import core.stdc.stdio;
 import core.stdc.stdlib: free;
+
 import gamut.bitmap;
 import gamut.types;
 import gamut.io;
@@ -28,6 +30,57 @@ struct Image
 {
 nothrow @nogc @safe:
 public:
+
+
+    //
+    // <GETTING DIMENSIONS>
+    //  
+
+    /// Returns: Width of image in pixels.
+    ///          `GAMUT_UNKNOWN_WIDTH` if not available.
+    int width() pure
+    {
+        assert(!errored);
+        return _width;
+    }
+
+    /// Returns: Height of image in pixels.
+    ///          `GAMUT_UNKNOWN_WIDTH` if not available.
+    int height() pure
+    {
+        assert(!errored);
+        return _height;
+    }  
+
+    /// Get the image pitch (byte distance between rows), in bytes.
+    /// This pitch can perfectly be negative.
+    int pitchInBytes(Image *dib) pure const
+    {
+        return _pitch;
+    }
+
+    //
+    // </GETTING DIMENSIONS>
+    //
+
+
+    //
+    // <GETTING STATUS AND CAPABILITIES>
+    //
+
+    /// Get the image type.
+    /// See_also: `ImageType`.
+    ImageType type() pure const
+    {
+        return _type;
+    }
+
+    /// Was there an error as a result of calling a public method of `Image`?
+    /// It is now unusable.
+    bool errored() pure const
+    {
+        return _error !is null;
+    }
 
     /// An image can have data (usually pixels), or not.
     /// "Data" refers to pixel content, that can be in a decoded form (RGBA8), but also in more
@@ -58,19 +111,14 @@ public:
         return hasData() && false; // not supported yet.
     }
 
-    /// Get the image type.
-    ImageType type() pure const
-    {
-        return _type;
-    }
+    //
+    // </GETTING STATUS AND CAPABILITIES>
+    //
 
-    /// Get the image pitch (byte distance between rows), in bytes.
-    /// This pitch can perfectly be negative.
-    int pitchInBytes(Image *dib) pure const
-    {
-        return _pitch;
-    }
 
+    //
+    // <SAVING AND LOADING IMAGES>
+    //
 
     /// Load an image from a file location.
     /// Returns: true if successfull.
@@ -84,10 +132,10 @@ public:
         ImageFormat fif = FreeImage_GetFileType(cstr.storage, 0);
         if (fif == ImageFormat.unknown) 
         {
-            fif = FreeImage_GetFIFFromFilename(cstr.storage); // try to guess the file format from the file extension
+            fif = identifyImageFormatFromFilename(cstr.storage); // try to guess the file format from the file extension
         }
         
-        FreeImage_Load(this, fif, cstr.storage, flags);
+        loadFromFileInternal(fif, cstr.storage, flags);
         return !errored();
     }
 
@@ -103,7 +151,11 @@ public:
 
         // Deduce format.
         ImageFormat fif = FreeImage_GetFileTypeFromMemory(&mem, 0);
-        FreeImage_LoadFromMemory(this, fif, &mem, flags);
+
+        IOStream io;
+        io.setupForMemoryIO();
+        loadFromHandle(fif, io, cast(IOHandle)&mem, flags);
+
         return !errored();
     }
     ///ditto
@@ -119,11 +171,11 @@ public:
         assert(!errored); // else, nothing to save
         CString cstr = CString(path);
 
-        ImageFormat fif = FreeImage_GetFIFFromFilename(cstr.storage);
+        ImageFormat fif = identifyImageFormatFromFilename(cstr.storage);
         if (fif == ImageFormat.unknown)
             return false; // couldn't recognize format from path.
 
-        return FreeImage_Save(this, fif, cstr.storage, flags);
+        return save(fif, cstr.storage, flags);
     }
     /// Save the image into a file, but provide a file format.
     /// Returns: `true` if file successfully written.
@@ -131,13 +183,13 @@ public:
     {
         assert(!errored); // else, nothing to save
         CString cstr = CString(path);
-        return FreeImage_Save(this, fif, cstr.storage, flags);
+        return save(fif, cstr.storage, flags);
     }
 
     /// Saves the image into a new memory location.
     /// The returned data must be released with a call to `free`.
     /// Returns: `null` if saving failed.
-    ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const  @trusted
+    ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const @trusted
     {
         assert(!errored); // else, nothing to save
 
@@ -145,36 +197,18 @@ public:
         // Open stream for read/write access.
         MemoryFile mem;
         mem.initEmpty();
-        if (!FreeImage_SaveToMemory(this, fif, &mem, flags))
+        if (!saveToMemoryInternal(fif, mem, flags))
         {
             return null;
         }
         return mem.releaseData();
     }
 
-    /// Returns: Width of image in pixels.
-    ///          `GAMUT_UNKNOWN_WIDTH` if not available.
-    int width() pure
-    {
-        assert(!errored);
-        return _width;
-    }
+    //
+    // </SAVING AND LOADING IMAGES>
+    //
 
-    /// Returns: Height of image in pixels.
-    ///          `GAMUT_UNKNOWN_WIDTH` if not available.
-    int height() pure
-    {
-        assert(!errored);
-        return _height;
-    }
-
-    /// Was there an error as a result of calling a public method of `Image`?
-    /// It is now unusable.
-    public bool errored() pure const
-    {
-        return _error !is null;
-    }
-
+ 
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
 
@@ -243,6 +277,80 @@ private:
     }
 
 
+    bool saveToMemoryInternal(ImageFormat fif, ref MemoryFile stream, int flags = 0) const @trusted
+    {        
+        IOStream io;
+        io.setupForMemoryIO();
+        return saveToHandle(fif, io, cast(IOHandle)&stream, flags);
+    }
+
+    void loadFromFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) @system
+    {
+        FILE* f = fopen(filename, "rb");
+        if (f is null)
+        {
+            error(kStrCannotOpenFile);
+            return;
+        }
+
+        IOStream io;
+        io.setupForFileIO();
+        loadFromHandle(fif, io, cast(IOHandle)f, flags);
+
+        if (0 != fclose(f))
+        {
+            // TODO cleanup image?
+            error(kStrFileCloseFailed);
+        }
+    }
+
+    void loadFromHandle(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) @system
+    {
+        // By loading an image, we agreed to forget about past mistakes.
+        clearError();
+
+        if (fif == ImageFormat.unknown)
+        {
+            error(kStrImageFormatUnidentified);
+            return;
+        }
+
+        const(ImageFormatPlugin)* plugin = &g_plugins[fif];   
+
+        int page = 0;
+        void *data = null;
+        if (plugin.loadProc is null)
+        {        
+            error(kStrImageFormatNoLoadSupport);
+            return;
+        }
+        plugin.loadProc(this, &io, handle, page, flags, data);
+    }
+
+    bool save(ImageFormat fif, const(char)* filename, int flags = 0) const @trusted
+    {
+        if (!hasPlainPixels)
+            return false; // no data that is pixels, impossible to save that.
+
+        FILE* f = fopen(filename, "wb");
+        if (f is null)
+            return false;
+
+        IOStream io;
+        io.setupForFileIO();
+        bool r = saveToHandle(fif, io, cast(IOHandle)f, flags);
+        return fclose(f) == 0;
+    }
+
+    bool saveToHandle(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
+    {
+        const(ImageFormatPlugin)* plugin = &g_plugins[fif];
+        void* data = null; // probably exist to pass metadata stuff
+        if (plugin.saveProc is null)
+            return false;
+        bool r = plugin.saveProc(this, &io, handle, 0, flags, data);
+        return r;
+    }
 
 
 }
