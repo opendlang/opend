@@ -86,7 +86,7 @@ deprecated("Use FreeImage_Validate instead, it supports Unicode") alias FreeImag
 bool FreeImage_ValidateFromHandle(ImageFormat fif, IOStream *io, IOHandle handle) @trusted
 {
     assert(fif != ImageFormat.unknown);
-    const(Plugin)* plugin = &g_plugins[fif];
+    const(ImageFormatPlugin)* plugin = &g_plugins[fif];
     assert(plugin.detectProc !is null);
     if (plugin.detectProc(io, handle))
         return true;

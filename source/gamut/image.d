@@ -58,6 +58,20 @@ public:
         return hasData() && false; // not supported yet.
     }
 
+    /// Get the image type.
+    ImageType type() pure const
+    {
+        return _type;
+    }
+
+    /// Get the image pitch (byte distance between rows), in bytes.
+    /// This pitch can perfectly be negative.
+    int pitchInBytes(Image *dib) pure const
+    {
+        return _pitch;
+    }
+
+
     /// Load an image from a file location.
     /// Returns: true if successfull.
     bool loadFromFile(const(char)[] path, int flags = 0) @trusted
@@ -72,11 +86,8 @@ public:
         {
             fif = FreeImage_GetFIFFromFilename(cstr.storage); // try to guess the file format from the file extension
         }
-        // check that the plugin has reading capabilities ...
-        if ((fif != ImageFormat.unknown) && gamutSupportsInputFormat(fif)) 
-        {
-            FreeImage_Load(this, fif, cstr.storage, flags);
-        }
+        
+        FreeImage_Load(this, fif, cstr.storage, flags);
         return !errored();
     }
 
@@ -92,13 +103,7 @@ public:
 
         // Deduce format.
         ImageFormat fif = FreeImage_GetFileTypeFromMemory(&mem, 0);
-
-        // check that the plugin has reading capabilities ...
-        if ((fif != ImageFormat.unknown) && gamutSupportsInputFormat(fif)) 
-        {
-            FreeImage_LoadFromMemory(this, fif, &mem, flags);
-        }
-
+        FreeImage_LoadFromMemory(this, fif, &mem, flags);
         return !errored();
     }
     ///ditto
@@ -195,8 +200,7 @@ package:
 
     /// Set the image in an errored state, with `msg` as a message.
     /// Note: `msg` MUST be zero-terminated.
-    deprecated alias error = setError;
-    void setError(const(char)[] msg) pure
+    void error(const(char)[] msg) pure
     {
         _error = assumeZeroTerminated(msg);
     }
@@ -223,6 +227,7 @@ package:
     /// Pointer to last known error. `null` means "no errors".
     /// Once an error has occured, continuing to use the image is Undefined Behaviour.
     /// Must be zero-terminated.
+    /// By default, a T.init image is errored().
     const(char)* _error = kStrImageNotInitialized; 
 
 
@@ -236,6 +241,10 @@ private:
             _data = null;
         }
     }
+
+
+
+
 }
 
 
@@ -268,4 +277,32 @@ package int computeRequestedImageComponents(int loadFlags) pure nothrow @nogc @s
         return 0; // LOAD_GREYSCALE, LOAD_RGB and LOAD_RGBA are mutually exclusive => error
 
     return requestedComp;
+}
+
+private:
+
+
+// Size of one pixel for type
+int bytesForImageType(ImageType type) pure
+{
+    final switch(type)
+    {
+        case ImageType.uint8:   return 1;
+        case ImageType.int8:    return 1;
+        case ImageType.uint16:  return 2;
+        case ImageType.int16:   return 2;
+        case ImageType.uint32:  return 4;
+        case ImageType.int32:   return 4;
+        case ImageType.f32:     return 4;
+        case ImageType.f64:     return 8;
+        case ImageType.la8:     return 2;
+        case ImageType.la16:    return 4;
+        case ImageType.rgb8:    return 3;
+        case ImageType.rgb16:   return 6;
+        case ImageType.rgba8:   return 4;
+        case ImageType.rgba16:  return 8;
+        case ImageType.rgbf32:  return 12;
+        case ImageType.rgbaf32: return 16;
+        case ImageType.unknown: assert(false);
+    }
 }

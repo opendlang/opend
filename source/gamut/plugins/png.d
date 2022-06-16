@@ -22,9 +22,9 @@ import gamut.internals.errors;
 version(decodePNG) import gamut.codecs.pngload;
 version(encodePNG) import gamut.codecs.stb_image_write;
 
-Plugin makePNGPlugin()
+ImageFormatPlugin makePNGPlugin()
 {
-    Plugin p;
+    ImageFormatPlugin p;
     p.format = "PNG";
     p.extensionList = "png";
     p.mimeTypes = "image/png";

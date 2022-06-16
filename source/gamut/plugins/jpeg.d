@@ -22,9 +22,9 @@ import gamut.codecs.stb_image_write;
 import gamut.internals.errors;
 
 
-Plugin makeJPEGPlugin()
+ImageFormatPlugin makeJPEGPlugin()
 {
-    Plugin p;
+    ImageFormatPlugin p;
     p.format = "JPEG";
     p.extensionList = "jpg,jpeg,jif,jfif";
     p.mimeTypes = "image/jpeg";

@@ -33,7 +33,9 @@ alias SaveImageProc = bool function(ref const(Image) image, IOStream *io, IOHand
 /// I/O rewinding: this function must preserve the I/O cursor by contract.
 alias DetectImageFormatProc = bool function(IOStream *io, IOHandle handle);
 
-struct Plugin
+deprecated alias Plugin = ImageFormatPlugin;
+
+struct ImageFormatPlugin
 {
     /// Type string for the bitmap. For example, a plugin that loads BMPs returns the string "BMP".
     const(char)* format;
@@ -103,29 +105,12 @@ unittest
     assert(FreeImage_GetFIFFromFilename("mysueprduperphoto.jfif") == FIF_JPEG);
 }
 
-
-bool gamutSupportsInputFormat(ImageFormat fif) @trusted
-{
-    bool supportsRead = g_plugins[fif].loadProc !is null;
-    return supportsRead;
-}
-
-bool gamutSupportsOutputFormat(ImageFormat fif) @trusted
-{    
-    return g_plugins[fif].saveProc !is null;
-}
-
-//
-// INTERNALS
-//
-
-
 package:
 
 
 
 // For now, all plugin resides in a static __gshared part of the memory.
-static immutable __gshared Plugin[ImageFormat.max+1] g_plugins =
+static immutable __gshared ImageFormatPlugin[ImageFormat.max+1] g_plugins =
 [
     makeJPEGPlugin(),
     makePNGPlugin(),

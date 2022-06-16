@@ -19,4 +19,9 @@ static immutable string kStrImageWrongComponents = "Invalid number of component 
 static immutable string kStrImageDecodingIOFailure = "I/O failure while decoding image";
 static immutable string kStrImageDecodingMallocFailure = "Allocation failure while decoding image";
 static immutable string kStrImageNotInitialized = "Uninitialized image";
+static immutable string kStrCannotOpenFile = "Cannot open file";
+static immutable string kStrFileCloseFailed = "fclose() failed";
+static immutable string kStrImageFormatUnidentified = "Unidentified image format";
+static immutable string kStrImageFormatNoLoadSupport = "Cannot decode this image format in this build";
+static immutable string kStrImageFormatNoWriteSupport = "Cannot encode this image format in this build";
 

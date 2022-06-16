@@ -25,9 +25,9 @@ version(decodeQOI)
 else version(encodeQOI)
     import gamut.codecs.qoi;
 
-Plugin makeQOIPlugin()
+ImageFormatPlugin makeQOIPlugin()
 {
-    Plugin p;
+    ImageFormatPlugin p;
     p.format = "QOI";
     p.extensionList = "qoi";
 
