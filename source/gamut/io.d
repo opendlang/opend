@@ -139,7 +139,7 @@ package:
         eof   = cast(EofProc) &feof;
     }
 
-    /// Setup the IOStream for using a  a file. The passed `IOHandle` will need to be a `FILE*`.
+    /// Setup the IOStream for using a  a file. The passed `IOHandle` will need to be a `MemoryFile*`.
     /// For internal Gamut usage.
     void setupForMemoryIO() pure @trusted
     {
@@ -246,87 +246,67 @@ package:
 
 // TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
 
-
-/// Called memory-file in FreeImage 
 /// This is basically an owned buffer, with capacity, optionally borrowed.
+/// The original things being that it can both be used for reading and writing.
 struct MemoryFile
 {
-    // If the memory is owned by FIMEMORY, or borrowed.
+public nothrow @nogc @safe:
+
+    /// If the memory is owned by MemoryFile, or borrowed.
     bool owned = false;
 
-    // If can only read from buffer.
+    /// If can only read from buffer.
     bool readOnly = false;
 
-    // Pointer to data (owned or borrowed).
-    // if owned, the buffer is allocated with malloc/free/realloc
+    /// Pointer to data (owned or borrowed).
+    /// if owned, the buffer is guaranteed to be allocated with malloc/free/realloc.
     ubyte* data = null;
 
-    // Length of buffer.
+    /// Length of buffer.
     size_t bytes = 0;
 
-    // Current pointer in the buffer.
+    /// Current pointer in the buffer.
     size_t offset = 0;
-}
 
-
-/// Open a memory stream. The function returns a pointer to the opened memory stream.
-/// When called with default arguments (null), this function opens a memory stream for read/write
-/// access. The stream will support loading and saving of FIBITMAP in a memory file (managed 
-/// internally by FreeImage). It will also support seeking and telling in the memory file. 
-/// This function can also be used to wrap a memory buffer provided by the application driving
-/// FreeImage. A buffer containing image data is given as function arguments `data` (start of the 
-/// and size_in_bytes (buffer size in bytes). A memory buffer wrapped by FreeImage is 
-/// read only. Images can be loaded but cannot be saved.                                                                    buffer) and size_in_bytes (buffer size in bytes). A memory buffer wrapped by FreeImage is 
-MemoryFile* FreeImage_OpenMemory(const(ubyte)* data = null, size_t size_in_bytes = 0) @system
-{
-    MemoryFile* stream = cast(MemoryFile*) malloc(MemoryFile.sizeof);
-    if (stream is null)
-        return stream;
-
-    *stream = MemoryFile.init;
-    if (data == null)
+    // Return internal data pointer (allocated with malloc/free)
+    // stream doesn't own it anymore, the caller does instead.
+    // Can only be called if that buffer is owned is the first place.
+    ubyte[] releaseData() @trusted
     {
-        stream.owned = true;
-        return stream;
+        assert (owned);
+        owned = false;
+        if (data is null)
+            return null;
+        ubyte* v = data;
+        data = null;
+        return v[0..bytes];
     }
-    else
+
+    @disable this(this);
+
+    ~this() @trusted
     {
-        stream.owned = false;
-        stream.readOnly = true;
-        stream.data = cast(ubyte*) data; // const_cast here
-        stream.bytes = size_in_bytes;
+        if (owned)
+        {
+            free(data);
+            data = null;
+        }
     }
-    return stream;
-}
 
-/// Close and free an opened memory stream. 
-/// When the stream is managed by FreeImage, the memory file is destroyed. Otherwise 
-/// (wrapped buffer), it’s destruction is left to the application driving FreeImage.
-/// You always need to call this function once you’re done with a memory stream 
-/// (whatever the way you opened the stream), or you will have a memory leak.
-void FreeImage_CloseMemory(MemoryFile *stream) @system
-{
-    assert (stream !is null);
-    if (stream.owned)
+    /// Initialize empty buffer for writing.
+    /// Must be a T.init object.
+    void initEmpty()
     {
-        *stream = MemoryFile.init; // poison data
-        free(stream.data);
+        owned = true;
     }
-    free(stream);
-}
 
-
-
-/// Provides a direct buffer access to a memory stream. Upon entry, stream is the target memory 
-/// stream, returned value data is a pointer to the memory buffer, returned value size_in_bytes is 
-/// the buffer size in bytes. The function returns TRUE if successful, FALSE otherwise.
-/// This pointer is invalidated when you call `FreeImage_SaveToMemory`.
-bool FreeImage_AcquireMemory(MemoryFile *stream, ubyte** data, size_t* size_in_bytes)
-{
-    assert(stream);
-    *data = stream.data;
-    *size_in_bytes = stream.bytes;
-    return true;
+    void initFromExistingSlice(const(ubyte)[] arr) @system
+    {
+        owned = false;
+        readOnly = true;
+        data = cast(ubyte*) arr.ptr; // const_cast here
+        bytes = arr.length;
+    }
 }
 
 extern(C) @system
@@ -406,22 +386,4 @@ extern(C) @system
         assert(stream);
         return (stream.offset >= stream.bytes) ? 1 : 0;
     }
-}
-
-// Return internal data pointer (allocated with malloc/free)
-// stream doesn't own it anymore, the caller does instead.
-ubyte[] FreeImage_ReleaseMemory(MemoryFile *stream) @trusted
-{
-    assert (stream !is null);
-    if (stream.owned)
-    {
-        stream.owned = false;
-        ubyte* data = stream.data;
-        if (data is null)
-            return null;
-        stream.data = null;
-        return data[0..stream.bytes];
-    }
-    else
-        return null;
 }

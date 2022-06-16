@@ -11,7 +11,6 @@ module gamut.image;
 
 import core.stdc.stdlib: free;
 import gamut.bitmap;
-import gamut.general;
 import gamut.types;
 import gamut.io;
 import gamut.filetype;
@@ -88,16 +87,16 @@ public:
         cleanupBitmapIfAny();
 
         // PERF: a way to have FIMEMORY in a local instead of heap.
-        MemoryFile* stream = FreeImage_OpenMemory(bytes.ptr, bytes.length);
-        scope(exit) FreeImage_CloseMemory(stream);
+        MemoryFile mem;
+        mem.initFromExistingSlice(bytes);
 
         // Deduce format.
-        ImageFormat fif = FreeImage_GetFileTypeFromMemory(stream, 0);
+        ImageFormat fif = FreeImage_GetFileTypeFromMemory(&mem, 0);
 
         // check that the plugin has reading capabilities ...
         if ((fif != ImageFormat.unknown) && gamutSupportsInputFormat(fif)) 
         {
-            FreeImage_LoadFromMemory(this, fif, stream, flags);
+            FreeImage_LoadFromMemory(this, fif, &mem, flags);
         }
 
         return !errored();
@@ -123,7 +122,7 @@ public:
     }
     /// Save the image into a file, but provide a file format.
     /// Returns: `true` if file successfully written.
-    bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) @trusted
+    bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) const @trusted
     {
         assert(!errored); // else, nothing to save
         CString cstr = CString(path);
@@ -133,19 +132,19 @@ public:
     /// Saves the image into a new memory location.
     /// The returned data must be released with a call to `free`.
     /// Returns: `null` if saving failed.
-    ubyte[] saveToMemory(ImageFormat fif, int flags = 0) @trusted
+    ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const  @trusted
     {
         assert(!errored); // else, nothing to save
 
         // PERF: a way to have FIMEMORY in a local instead of heap.
         // Open stream for read/write access.
-        MemoryFile* stream = FreeImage_OpenMemory();
-        scope(exit) FreeImage_CloseMemory(stream);
-        if (!FreeImage_SaveToMemory(this, fif, stream, flags))
+        MemoryFile mem;
+        mem.initEmpty();
+        if (!FreeImage_SaveToMemory(this, fif, &mem, flags))
         {
             return null;
         }
-        return FreeImage_ReleaseMemory(stream);
+        return mem.releaseData();
     }
 
     /// Returns: Width of image in pixels.

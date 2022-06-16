@@ -50,7 +50,7 @@ void FreeImage_LoadFromMemory(ref Image image, ImageFormat fif, MemoryFile *stre
 /// memory stream where the bitmap must be saved. When the memory file pointer point to the 
 /// beginning of the memory file, any existing data is overwritten. Otherwise, you can save 
 /// multiple images on the same stream.
-bool FreeImage_SaveToMemory(ref Image image, ImageFormat fif, MemoryFile *stream, int flags = 0) @trusted
+bool FreeImage_SaveToMemory(ref const(Image) image, ImageFormat fif, MemoryFile *stream, int flags = 0) @trusted
 {
     assert(fif != ImageFormat.unknown);
     assert (stream !is null);
