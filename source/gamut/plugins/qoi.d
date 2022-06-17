@@ -141,6 +141,7 @@ bool Save_QOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     qoi_desc desc;
     desc.width = image._width;
     desc.height = image._height;
+    desc.pitchBytes = image._pitch;
     desc.colorspace = QOI_SRGB; // TODO: support other colorspace somehow, or at least fail if not SRGB
         
     switch (image._type)
@@ -150,27 +151,9 @@ bool Save_QOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
         default: 
             return false; // not supported
     }
-
-    // PERF: remove that intermediate copy, whose sole purpose is being gap-free
-    //       the qoi encoder cannot read pixel using a pitch
-    // <temp>
-    int len = desc.width * desc.height * desc.channels;
-    ubyte* continuous = cast(ubyte*) malloc(len);
-    if (!continuous)
-        return false;
-    scope(exit) free(continuous);
-    // removes holes
-    for (int y = 0; y < desc.height; ++y)
-    {
-        const(ubyte)* source = image._data + y * image._pitch;
-        ubyte* dest   = continuous + y * desc.width * desc.channels;
-        int lineBytes = desc.channels * desc.width;
-        memcpy(dest, source, lineBytes);
-    }
-    // </temp>
         
     int qoilen;
-    ubyte* encoded = cast(ubyte*) qoi_encode(continuous, &desc, &qoilen);
+    ubyte* encoded = cast(ubyte*) qoi_encode(image._data, &desc, &qoilen);
     if (encoded == null)
         return false;
     scope(exit) free(encoded);
