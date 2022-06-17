@@ -1,9 +1,8 @@
 /**
-Bridge FreeImage and PNG codec.
+PNG support.
 
 Copyright: Copyright Guillaume Piolat 2022
 License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-
 */
 module gamut.plugins.png;
 
@@ -51,14 +50,6 @@ void Load_PNG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     stb_callback.read = &stb_read;
     stb_callback.skip = &stb_skip;
     stb_callback.eof = &stb_eof;
-
-
-    // "FreeImage uses the RGB(A) color model to represent color images in memory. A 8-bit 
-    // greyscale image has a single channel, often called the black channel. A 24-bit image is made 
-    // up of three 8-bit channels: one for each of the red, green and blue colors. For 32-bit images, 
-    // a fourth 8-bit channel, called alpha channel, is used to create and store masks, which let you 
-    // manipulate, isolate, and protect specific parts of an image. Unlike the others channels, the 
-    // alpha channel doesn’t convey color information, in a physical sense."
 
     bool is16bit = stbi__png_is16(&stb_callback, &ioh);
 

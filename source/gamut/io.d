@@ -1,11 +1,8 @@
 /**
-I/O streams in FreeImage.
+I/O streams.
 
 Copyright: Copyright Guillaume Piolat 2022
 License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-
-Note: This library is re-implemented in D from FreeImage documentation (FreeImage3180.pdf).
-See the differences in DIFFERENCES.md
 */
 module gamut.io;
 
@@ -19,11 +16,10 @@ nothrow @nogc:
 
 
 // Limits of I/O in gamut.
-// This is because FreeImage callbakcs are modelled upon C stdlib functions, some of those use c_long or int.
+// Callbacks are modelled upon C stdlib functions, some of those use c_long or int. So, 32-bit is a possibility.
 enum size_t GAMUT_MAX_POSSIBLE_MEMORY_OFFSET = 0x7fff_ffff;       /// Can't open file larger than this much bytes
 enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ = 0x7fff_ffff;   /// Can't read more bytes than this at once
 enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE = 0x7fff_ffff;  /// Can't write more bytes than this at once
-
 
 
 // Note: those function pointers made to be binary compatible with ftell/fseek/fwrite/fread/feof.
