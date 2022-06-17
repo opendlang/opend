@@ -244,8 +244,6 @@ debug extern(C) @system private
 
 package:
 
-// TODO: provide ability to provide the FIMEMORY location? To avoid an allocation.
-
 /// This is basically an owned buffer, with capacity, optionally borrowed.
 /// The original things being that it can both be used for reading and writing.
 struct MemoryFile

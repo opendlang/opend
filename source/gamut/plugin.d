@@ -32,8 +32,6 @@ alias SaveImageProc = bool function(ref const(Image) image, IOStream *io, IOHand
 /// I/O rewinding: this function must preserve the I/O cursor by contract.
 alias DetectImageFormatProc = bool function(IOStream *io, IOHandle handle);
 
-deprecated alias Plugin = ImageFormatPlugin;
-
 struct ImageFormatPlugin
 {
     /// Type string for the bitmap. For example, a plugin that loads BMPs returns the string "BMP".

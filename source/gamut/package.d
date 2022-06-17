@@ -19,3 +19,4 @@ module gamut;
 /// documentation.
 public import gamut.image;
 public import gamut.types;
+public import gamut.io;

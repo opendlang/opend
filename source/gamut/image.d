@@ -14,7 +14,6 @@ import core.stdc.stdlib: free;
 
 import gamut.types;
 import gamut.io;
-import gamut.filetype;
 import gamut.plugin;
 import gamut.internals.cstring;
 import gamut.internals.errors;
@@ -128,7 +127,7 @@ public:
         CString cstr = CString(path);
 
         // Deduce format.
-        ImageFormat fif = FreeImage_GetFileType(cstr.storage, 0);
+        ImageFormat fif = identifyFormatFromFile(cstr.storage);
         if (fif == ImageFormat.unknown) 
         {
             fif = identifyImageFormatFromFilename(cstr.storage); // try to guess the file format from the file extension
@@ -149,7 +148,7 @@ public:
         mem.initFromExistingSlice(bytes);
 
         // Deduce format.
-        ImageFormat fif = FreeImage_GetFileTypeFromMemory(&mem, 0);
+        ImageFormat fif = identifyFormatFromMemoryFile(mem);
 
         IOStream io;
         io.setupForMemoryIO();
@@ -171,9 +170,7 @@ public:
         CString cstr = CString(path);
 
         ImageFormat fif = identifyImageFormatFromFilename(cstr.storage);
-        if (fif == ImageFormat.unknown)
-            return false; // couldn't recognize format from path.
-
+        
         return saveToFileInternal(fif, cstr.storage, flags);
     }
     /// Save the image into a file, but provide a file format.
@@ -207,6 +204,48 @@ public:
 
     //
     // </SAVING AND LOADING IMAGES>
+    //
+
+
+    // 
+    // <FILE FORMAT IDENTIFICATION>
+    //
+
+    /// Identify the format of an image by minimally reading it.
+    /// Read first bytes of a file to identify it.
+    /// You can use a filename, a memory location, or your own `IOStream`.
+    /// Returns: Its `ImageFormat`, or `ImageFormat.unknown` in case of identification failure or input error.
+    static ImageFormat identifyFormatFromFile(const(char)*filename) @trusted
+    {
+        FILE* f = fopen(filename, "rb");
+        if (f is null)
+            return ImageFormat.unknown;
+        IOStream io;
+        io.setupForFileIO();
+        ImageFormat type = identifyFormatFromStream(io, cast(IOHandle)f);    
+        fclose(f); // TODO: Note sure what to do if fclose fails here.
+        return type;
+    }
+    ///ditto
+    static ImageFormat identifyFormatFromMemory(const(ubyte)[] bytes) @trusted
+    {
+        MemoryFile mem;
+        mem.initFromExistingSlice(bytes);
+        return identifyFormatFromMemoryFile(mem);
+    }
+    ///ditto
+    static ImageFormat identifyFormatFromStream(ref IOStream io, IOHandle handle)
+    {
+        for (ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
+        {
+            if (detectFormatFromStream(fif, io, handle))
+                return fif;
+        }
+        return ImageFormat.unknown;
+    }
+
+    // 
+    // </FILE FORMAT IDENTIFICATION>
     //
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
@@ -331,6 +370,12 @@ private:
 
     bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
     {
+        if (fif == ImageFormat.unknown)
+        {
+            // No format given for save.
+            return false;
+        }
+
         if (!hasPlainPixels)
             return false; // no data that is pixels, impossible to save that.
 
@@ -340,6 +385,23 @@ private:
             return false;
         bool r = plugin.saveProc(this, &io, handle, 0, flags, data);
         return r;
+    }
+
+    static ImageFormat identifyFormatFromMemoryFile(ref MemoryFile mem) @trusted
+    {
+        IOStream io;
+        io.setupForMemoryIO();
+        return identifyFormatFromStream(io, cast(IOHandle)&mem);
+    }  
+
+    static bool detectFormatFromStream(ImageFormat fif, ref IOStream io, IOHandle handle) @trusted
+    {
+        assert(fif != ImageFormat.unknown);
+        const(ImageFormatPlugin)* plugin = &g_plugins[fif];
+        assert(plugin.detectProc !is null);
+        if (plugin.detectProc(&io, handle))
+            return true;
+        return false;
     }
 }
 
