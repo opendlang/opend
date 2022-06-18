@@ -1,1 +1,3 @@
+- write to memory
 - Implement QOI+LZ4 as a format.
+- printed uses gamut
