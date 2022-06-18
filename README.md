@@ -21,9 +21,3 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - JPEG: 8-bit, greyscale/RGB, baseline
 - QOI: 8-bit, RGB/RGBA
 
-
-## Why?
-
-FreeImage API is good and covers most use cases.
-`easy.d` provides a wrapper around FIBITMAP to ease the API further.
-A pure D library simplifies your build.
