@@ -276,48 +276,6 @@ struct MirStringTable(size_t length, size_t maxKeyLength, bool caseInsensetive =
     }
 }
 
-package auto fastToUpper(C)(const C a)
-{   // std.ascii may not be inlined
-    return 'a' <= a && a <= 'z' ? cast(C)(a ^ 0x20) : a;
-}
-
-package @safe pure nothrow @nogc
-C[] fastToUpperInPlace(C)(scope return C[] a)
-{
-    foreach(ref C e; a)
-        e = e.fastToUpper;
-    return a;
-}
-
-package immutable(C)[][] prepareStringTableKeys(bool caseInsensetive = false, C)(immutable(C)[][] keys)
-{
-    static if (caseInsensetive)
-    {
-        foreach (ref key; keys)
-        {
-            auto upper = cast(immutable) key.dup.fastToUpperInPlace;
-            if (upper != key)
-                key = upper;
-        }
-    }
-    import mir.utility: simpleSort;
-    return keys.simpleSort!smallerStringFirst;
-}
-
-package template createTable(C)
-    if (is(C == char) || is(C == wchar) || is(C == dchar))
-{
-    auto createTable(immutable(C)[][] keys, bool caseInsensetive = false)()
-    {
-        static immutable C[][] sortedKeys = prepareStringTableKeys!caseInsensetive(keys);
-        alias Table = MirStringTable!(sortedKeys.length, sortedKeys.length ? sortedKeys[$ - 1].length : 0, caseInsensetive, C);
-        static if (sortedKeys.length)
-            return Table(sortedKeys[0 .. sortedKeys.length]);
-        else
-            return Table.init;
-    }
-}
-
 ///
 @safe pure nothrow @nogc
 version(mir_core_test) unittest
@@ -443,4 +401,46 @@ version(mir_core_test) unittest
     assert(smallerStringFirst("aa", "bb") == true);
     assert(smallerStringFirst("aa", "aa") == false);
     assert(smallerStringFirst("aaa", "aa") == false);
+}
+
+package auto fastToUpper(C)(const C a)
+{   // std.ascii may not be inlined
+    return 'a' <= a && a <= 'z' ? cast(C)(a ^ 0x20) : a;
+}
+
+package @safe pure nothrow @nogc
+C[] fastToUpperInPlace(C)(scope return C[] a)
+{
+    foreach(ref C e; a)
+        e = e.fastToUpper;
+    return a;
+}
+
+package immutable(C)[][] prepareStringTableKeys(bool caseInsensetive = false, C)(immutable(C)[][] keys)
+{
+    static if (caseInsensetive)
+    {
+        foreach (ref key; keys)
+        {
+            auto upper = cast(immutable) key.dup.fastToUpperInPlace;
+            if (upper != key)
+                key = upper;
+        }
+    }
+    import mir.utility: simpleSort;
+    return keys.simpleSort!smallerStringFirst;
+}
+
+package template createTable(C)
+    if (is(C == char) || is(C == wchar) || is(C == dchar))
+{
+    auto createTable(immutable(C)[][] keys, bool caseInsensetive = false)()
+    {
+        static immutable C[][] sortedKeys = prepareStringTableKeys!caseInsensetive(keys);
+        alias Table = MirStringTable!(sortedKeys.length, sortedKeys.length ? sortedKeys[$ - 1].length : 0, caseInsensetive, C);
+        static if (sortedKeys.length)
+            return Table(sortedKeys[0 .. sortedKeys.length]);
+        else
+            return Table.init;
+    }
 }
