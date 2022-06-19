@@ -182,11 +182,11 @@ public:
     /// Saves the image into a new memory location.
     /// The returned data must be released with a call to `free`.
     /// Returns: `null` if saving failed.
+    /// Warning: this is NOT GC-allocated.
     ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const @trusted
     {
         assert(!errored); // else, nothing to save
 
-        // PERF: a way to have FIMEMORY in a local instead of heap.
         // Open stream for read/write access.
         MemoryFile mem;
         mem.initEmpty();

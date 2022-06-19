@@ -8,7 +8,7 @@ module gamut.io;
 
 import core.stdc.stdio;
 import core.stdc.string: memcpy;
-import core.stdc.stdlib: malloc, free;
+import core.stdc.stdlib: malloc, free, realloc;
 public import core.stdc.config: c_long;
 public import core.stdc.stdio: SEEK_SET, SEEK_CUR, SEEK_END;
 
@@ -140,7 +140,7 @@ package:
     void setupForMemoryIO() pure @trusted
     {
         read  = cast(ReadProc)  &mread;
-        write = cast(WriteProc) null;
+        write = cast(WriteProc) &mwrite;
         seek  = cast(SeekProc)  &mseek;
         tell  = cast(TellProc)  &mtell;
         eof   = cast(EofProc)   &meof;
@@ -253,7 +253,7 @@ public nothrow @nogc @safe:
     bool readOnly = false;
 
     /// Pointer to data (owned or borrowed).
-    /// if owned, the buffer is guaranteed to be allocated with malloc/free/realloc.
+    /// if `owned`, the buffer is guaranteed to be allocated with malloc/free/realloc.
     ubyte* data = null;
 
     /// Length of buffer.
@@ -261,6 +261,9 @@ public nothrow @nogc @safe:
 
     /// Current pointer in the buffer.
     size_t offset = 0;
+
+    /// Size of the underlying allocation, meaningful if `owned`.
+    size_t capacity = 0;
 
     // Return internal data pointer (allocated with malloc/free)
     // stream doesn't own it anymore, the caller does instead.
@@ -273,7 +276,7 @@ public nothrow @nogc @safe:
             return null;
         ubyte* v = data;
         data = null;
-        return v[0..bytes];
+        return v[0..offset];
     }
 
     @disable this(this);
@@ -294,12 +297,33 @@ public nothrow @nogc @safe:
         owned = true;
     }
 
+    /// Initialize buffer as reading a slice.
+    /// Must be a T.init object.
     void initFromExistingSlice(const(ubyte)[] arr) @system
     {
         owned = false;
         readOnly = true;
         data = cast(ubyte*) arr.ptr; // const_cast here
         bytes = arr.length;
+    }
+
+    // Resize internal buffer so that it exceeds numBytes.
+    // Such buffers are grow-only.
+    void ensureCapacity(size_t numBytes) @trusted
+    {
+        assert(owned);
+
+        if (capacity >= numBytes)
+            return;
+
+        // Take greater of numBytes and 2 x current capacity, as the new capacity.
+        size_t newCapacity = numBytes;
+        size_t doubleCap = 1 + 2 * capacity;
+        if (doubleCap > newCapacity)
+            newCapacity = doubleCap;
+
+        capacity = newCapacity;
+        data = cast(ubyte*) realloc(data, newCapacity);
     }
 }
 
@@ -373,7 +397,18 @@ extern(C) @system
         return toRead;
     }
 
-    // TODO mwrite
+    size_t mwrite(void *buffer, size_t size, size_t count, MemoryFile *stream)
+    {
+        assert (stream !is null);
+        assert(size <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE);
+        assert(count <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE);
+        size_t bytes = cast(size_t)size * cast(size_t)count; // won't overflow
+        assert(bytes <= GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE);
+        stream.ensureCapacity(stream.offset + bytes);
+        memcpy(&stream.data[stream.offset], buffer, bytes);
+        stream.offset += bytes;
+        return count;
+    }
     
     int meof(MemoryFile *stream)
     {
