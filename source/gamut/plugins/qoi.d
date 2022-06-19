@@ -47,7 +47,6 @@ version(decodeQOI)
 void Load_QOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     // Read all available bytes from input
-    // PERF: qoi_decode should understand IOStream directly.
     // This is temporary.
 
     // Find length of input
