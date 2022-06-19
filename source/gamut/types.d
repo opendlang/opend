@@ -6,6 +6,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.types;
 
+nothrow @nogc:
 
 /// Image format.
 enum ImageFormat
@@ -16,9 +17,6 @@ enum ImageFormat
     PNG     =  1, /// Portable Network Graphics (*.PNG)
     QOI     =  2  /// Quite OK Image format (*.QOI)
 }
-
-/// Number of internally-supported formats. Equal to 1 + maximum internal format (here: FIF_QOI).
-package enum int FREE_IMAGE_FORMAT_NUM = cast(int)(ImageFormat.QOI) + 1; 
 
 /// Image format.
 enum ImageType
@@ -44,6 +42,31 @@ enum ImageType
 
     rgbf32,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
+}
+
+// Size of one pixel for type
+int bytesForImageType(ImageType type) pure @safe
+{
+    final switch(type)
+    {
+        case ImageType.uint8:   return 1;
+        case ImageType.int8:    return 1;
+        case ImageType.uint16:  return 2;
+        case ImageType.int16:   return 2;
+        case ImageType.uint32:  return 4;
+        case ImageType.int32:   return 4;
+        case ImageType.f32:     return 4;
+        case ImageType.f64:     return 8;
+        case ImageType.la8:     return 2;
+        case ImageType.la16:    return 4;
+        case ImageType.rgb8:    return 3;
+        case ImageType.rgb16:   return 6;
+        case ImageType.rgba8:   return 4;
+        case ImageType.rgba16:  return 8;
+        case ImageType.rgbf32:  return 12;
+        case ImageType.rgbaf32: return 16;
+        case ImageType.unknown: assert(false);
+    }
 }
 
 // Limits

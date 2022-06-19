@@ -7,7 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.image;
 
 import core.stdc.stdio;
-import core.stdc.stdlib: free;
+import core.stdc.stdlib: malloc, free, realloc;
 
 import gamut.types;
 import gamut.io;
@@ -108,6 +108,41 @@ public:
 
     //
     // </GETTING STATUS AND CAPABILITIES>
+    //
+
+
+    //
+    // <INITIALIZE>
+    //
+
+    /// Clear the image and initialize a new image, 
+    void initEmpty(ImageType type, int width, int height)
+    {
+        cleanupBitmapUnlessOwned();
+        clearError();
+
+        if (width < 0 || height < 0)
+        {
+            error(kStrIllegalNegativeDimension);
+            return;
+        }
+
+        if (width >= GAMUT_MAX_IMAGE_WIDTH || height  >= GAMUT_MAX_IMAGE_WIDTH)
+        {
+            error(kStrImageTooLarge);
+            return;
+        }
+
+        int pitch = computePitch(type, width);
+        if (!setStorage(type, width, height, pitch))
+        {
+            error(kStrOutOfMemory);
+            return;
+        }
+    }
+
+    //
+    // </INITIALIZE>
     //
 
 
@@ -243,6 +278,29 @@ public:
     // 
     // </FILE FORMAT IDENTIFICATION>
     //
+    void convertTo(ImageType targetType)
+    {
+
+        if (_type == targetType)
+            return;
+
+
+
+    }
+
+    //
+    // <CONVERSION>
+    //
+
+    /// Convert the image to the following format.
+    /// This can destruct channels, loose precision, etc.
+
+
+
+
+    //
+    // </CONVERSION>
+    //
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
 
@@ -262,7 +320,6 @@ package:
     /// the Image in a clean-up state.
     void clearError() pure
     {
-        assert(_error); // Can't clear error if there wasn't any in the first place.
         _error = null;
     }
 
@@ -300,6 +357,13 @@ package:
 
 private:
 
+    /// Compute a suitable pitch when making an image.
+    /// FUTURE some flags that change alignment constraints?
+    int computePitch(ImageType type, int width)
+    {
+        return width * bytesForImageType(type);
+    }
+
     void cleanupBitmapIfAny() @trusted
     {   
         if (_data !is null)
@@ -307,6 +371,35 @@ private:
             free(_data);
             _data = null;
         }
+    }
+
+    void cleanupBitmapUnlessOwned() @trusted
+    {
+        // TODO owned image can reuse their allocation, but not
+        //      borrowed images.
+    }
+
+    /// Discard ancient data, and reallocate stuff.
+    /// Returns true on success, false on OOM.
+    bool setStorage(ImageType type, int width, int  height, int pitch) @trusted
+    {
+        assert(pitch >= 0); // TODO support negative pitch
+        assert( bytesForImageType(type) * width <= pitch);
+
+        int destBytes = width * pitch;
+
+        // PERF: all gamut using same heap? to reuse allocation.
+        _data = cast(ubyte*) realloc(_data, destBytes);
+        _type = type;
+
+        if (destBytes != 0 && _data is null) // realloc is allowed to return null if zero bytes required.
+            return false;
+
+        _width = width;
+        _height = height;
+        _pitch = pitch;
+
+        return true;
     }
 
     void loadFromFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) @system
@@ -434,28 +527,159 @@ package int computeRequestedImageComponents(int loadFlags) pure nothrow @nogc @s
 
 private:
 
+/*
 
-// Size of one pixel for type
-int bytesForImageType(ImageType type) pure
+
+/// Convert between formats. Returns new data.
+/// Returns: null on failure.
+ubyte* convertType(ubyte *data, 
+                   ImageType inputType, 
+                   ImageType outputType, 
+                   int width, 
+                   int height, 
+                   int pitchBytes)
 {
-    final switch(type)
+    if (inputType == outputType) 
+        return data;
+   
+    // TODO: security there
+    int destPitch = width * bytesForImageType(outputType);
+    int destBytes = height * destPitch;
+
+    ubyte* dest = cast(ubyte*) malloc(destBytes);
+    if (dest == null)
+        return null;
+
+
+
+
+    good = cast(ubyte*) stbi__malloc_mad3(req_comp, x, y, 0);
+    if (good == null) 
     {
-        case ImageType.uint8:   return 1;
-        case ImageType.int8:    return 1;
-        case ImageType.uint16:  return 2;
-        case ImageType.int16:   return 2;
-        case ImageType.uint32:  return 4;
-        case ImageType.int32:   return 4;
-        case ImageType.f32:     return 4;
-        case ImageType.f64:     return 8;
-        case ImageType.la8:     return 2;
-        case ImageType.la16:    return 4;
-        case ImageType.rgb8:    return 3;
-        case ImageType.rgb16:   return 6;
-        case ImageType.rgba8:   return 4;
-        case ImageType.rgba16:  return 8;
-        case ImageType.rgbf32:  return 12;
-        case ImageType.rgbaf32: return 16;
-        case ImageType.unknown: assert(false);
+        STBI_FREE(data);
+        return null;
     }
-}
+
+    for (j = 0; j < cast(int) y; ++j) 
+    {
+        ubyte *src  = data + j * x * img_n   ;
+        ubyte *dest = good + j * x * req_comp;
+
+        // convert source image with img_n components to one with req_comp components;
+        // avoid switch per pixel, so use switch per scanline and massive macros
+        switch (img_n * 8 + req_comp) 
+        {
+            case 1 * 8 + 2:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 1, dest += 2)
+                    {
+                        dest[0] = src[0]; 
+                        dest[1] = 255;
+                    }
+                } 
+                break;
+            case 1 * 8 + 3:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 1, dest += 3)
+                    {
+                        dest[0] = dest[1] = dest[2] = src[0];
+                    }
+                } 
+                break;
+            case 1 * 8 + 4:
+                for(i = x - 1; i >= 0; --i, src += 1, dest += 4)
+                { 
+                    dest[0] = dest[1] = dest[2] = src[0]; 
+                    dest[3] = 255;                     
+                } 
+                break;
+            case 2 * 8 + 1:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 2, dest += 1)
+                    {
+                        dest[0] = src[0];
+                    }
+                } 
+                break;
+            case 2 * 8 + 3:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 2, dest += 3)
+                    {
+                        dest[0] = dest[1] = dest[2] = src[0]; 
+                    }
+                } 
+                break;
+            case 2 * 8 + 4:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 2, dest += 4)
+                    {
+                        dest[0] = dest[1] = dest[2] = src[0]; 
+                        dest[3] = src[1]; 
+                    }
+                } 
+                break;
+            case 3 * 8 + 4:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 3, dest += 4)
+                    {
+                        dest[0] = src[0];
+                        dest[1] = src[1];
+                        dest[2] = src[2];
+                        dest[3] = 255;
+                    }
+                } 
+                break;
+            case 3 * 8 + 1:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 3, dest += 1)
+                    {
+                        dest[0] = stbi__compute_y(src[0],src[1],src[2]); 
+                    }
+                } 
+                break;
+            case 3 * 8 + 2:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 3, dest += 2)
+                    {
+                        dest[0] = stbi__compute_y(src[0],src[1],src[2]);
+                        dest[1] = 255;
+                    }
+                } 
+                break;
+
+            case 4 * 8 + 1:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 4, dest += 1)
+                    {
+                        dest[0] = stbi__compute_y(src[0],src[1],src[2]);
+                    }
+                }
+                break;
+
+            case 4 * 8 + 2:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 4, dest += 2)
+                    {
+                        dest[0] = stbi__compute_y(src[0],src[1],src[2]); 
+                        dest[1] = src[3];
+                    }
+                }
+                break;
+            case 4 * 8 + 3:
+                { 
+                    for(i = x - 1; i >= 0; --i, src += 4, dest += 3)
+                    {
+                        dest[0] = src[0]; 
+                        dest[1] = src[1]; 
+                        dest[2] = src[2];        
+                    }
+                }
+                break;
+            default: 
+                assert(0); 
+        }
+    }
+
+    STBI_FREE(data);
+    return good;
+}*/

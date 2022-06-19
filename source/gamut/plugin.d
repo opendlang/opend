@@ -45,8 +45,6 @@ struct ImageFormatPlugin
     DetectImageFormatProc detectProc = null;
 }
 
-/// This function takes a filename or a file-extension and returns the plugin that can read/write 
-/// files with that extension in the form of a `FREE_IMAGE_FORMAT` identifier.
 ImageFormat identifyImageFormatFromFilename(const(char) *filename) @trusted
 {
     if (filename is null)
@@ -63,7 +61,7 @@ ImageFormat identifyImageFormatFromFilename(const(char) *filename) @trusted
 
     const(char)* fextension = filename + pos; // ex: "jpg", "png"...
 
-    for(ImageFormat fif = ImageFormat.first; fif < FREE_IMAGE_FORMAT_NUM; ++fif)
+    for(ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
     {
             // Is fextension in the list?
         const(char)* str = g_plugins[fif].extensionList;
