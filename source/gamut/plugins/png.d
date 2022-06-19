@@ -25,14 +25,14 @@ ImageFormatPlugin makePNGPlugin()
     p.extensionList = "png";
     p.mimeTypes = "image/png";
     version(decodePNG)
-        p.loadProc = &Load_PNG;
+        p.loadProc = &loadPNG;
     else
         p.loadProc = null;
     version(encodePNG)
-        p.saveProc = &Save_PNG;
+        p.saveProc = &savePNG;
     else
         p.saveProc = null;
-    p.detectProc = &Validate_PNG;
+    p.detectProc = &detectPNG;
     return p;
 }
 
@@ -40,7 +40,7 @@ ImageFormatPlugin makePNGPlugin()
 // PERF: STB callbacks could disappear in favor of our own callbakcs, to avoid one step.
 
 version(decodePNG)
-void Load_PNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     IOAndHandle ioh;
     ioh.io = io;
@@ -139,14 +139,14 @@ void Load_PNG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     }
 }
 
-bool Validate_PNG(IOStream *io, IOHandle handle) @trusted
+bool detectPNG(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[8] pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
     return fileIsStartingWithSignature(io, handle, pngSignature);
 }
 
 version(encodePNG)
-bool Save_PNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;

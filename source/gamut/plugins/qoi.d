@@ -31,20 +31,20 @@ ImageFormatPlugin makeQOIPlugin()
     p.mimeTypes = "image/qoi";
 
     version(decodeQOI)
-        p.loadProc = &Load_QOI;
+        p.loadProc = &loadQOI;
     else
         p.loadProc = null;
     version(encodeQOI)
-        p.saveProc = &Save_QOI;
+        p.saveProc = &saveQOI;
     else
         p.saveProc = null;
-    p.detectProc = &Validate_QOI;
+    p.detectProc = &detectQOI;
     return p;
 }
 
 
 version(decodeQOI)
-void Load_QOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     // Read all available bytes from input
     // This is temporary.
@@ -125,14 +125,14 @@ void Load_QOI(ref Image image, IOStream *io, IOHandle handle, int page, int flag
 }
 
 
-bool Validate_QOI(IOStream *io, IOHandle handle) @trusted
+bool detectQOI(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[4] qoiSignature = [0x71, 0x6f, 0x69, 0x66]; // "qoif"
     return fileIsStartingWithSignature(io, handle, qoiSignature);
 }
 
 version(encodeQOI)
-bool Save_QOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+bool saveQOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;

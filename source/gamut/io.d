@@ -265,9 +265,9 @@ public nothrow @nogc @safe:
     /// Size of the underlying allocation, meaningful if `owned`.
     size_t capacity = 0;
 
-    // Return internal data pointer (allocated with malloc/free)
-    // stream doesn't own it anymore, the caller does instead.
-    // Can only be called if that buffer is owned is the first place.
+    /// Return internal data pointer (allocated with malloc/free)
+    /// stream doesn't own it anymore, the caller does instead.
+    /// Can only be called if that buffer is owned is the first place.
     ubyte[] releaseData() @trusted
     {
         assert (owned);

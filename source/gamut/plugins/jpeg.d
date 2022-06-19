@@ -25,20 +25,20 @@ ImageFormatPlugin makeJPEGPlugin()
     p.extensionList = "jpg,jpeg,jif,jfif";
     p.mimeTypes = "image/jpeg";
     version(decodeJPEG)
-        p.loadProc = &Load_JPEG;
+        p.loadProc = &loadJPEG;
     else
         p.loadProc = null;
     version(encodeJPEG)
-        p.saveProc = &Save_JPEG;
+        p.saveProc = &saveJPEG;
     else
         p.saveProc = null;
-    p.detectProc = &Validate_JPEG;
+    p.detectProc = &detectJPEG;
     return p;
 }
 
 
 version(decodeJPEG)
-void Load_JPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     JPEGIOHandle jio;
     jio.wrapped = io;
@@ -86,14 +86,14 @@ void Load_JPEG(ref Image image, IOStream *io, IOHandle handle, int page, int fla
     }
 }
 
-bool Validate_JPEG(IOStream *io, IOHandle handle) @trusted
+bool detectJPEG(IOStream *io, IOHandle handle) @trusted
 {
     static immutable ubyte[2] jpegSignature = [0xFF, 0xD8];
     return fileIsStartingWithSignature(io, handle, jpegSignature);
 }
 
 version(encodeJPEG)
-bool Save_JPEG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
+bool saveJPEG(ref const(Image) image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
     if (page != 0)
         return false;

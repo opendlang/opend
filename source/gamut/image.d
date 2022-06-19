@@ -140,7 +140,6 @@ public:
     {
         cleanupBitmapIfAny();
 
-        // PERF: a way to have FIMEMORY in a local instead of heap.
         MemoryFile mem;
         mem.initFromExistingSlice(bytes);
 
