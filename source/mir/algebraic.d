@@ -1289,7 +1289,8 @@ struct Algebraic(_Types...)
                             return "null";
                         else
                         static if (__traits(compiles, { auto s = to!string(trustedGet!T);}))
-                            return to!string(trustedGet!T);
+                            // should be passed by value to workaround compiler bug
+                            return to!string((()=>trustedGet!T)());
                         else
                             return AllowedTypes[i].stringof;
                 }

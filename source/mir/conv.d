@@ -121,7 +121,7 @@ template to(T)
                     static if (isImplicitlyConvertible!(T, string) && __traits(compiles, () {const(char)[] s =  arg.toString; return s;}))
                     {
                         auto ret = arg.toString;
-                        static if (is(typeof(ret) : string))
+                        static if (is(typeof(ret) == string))
                             return ret;
                         else
                             return ret.idup;
@@ -141,8 +141,8 @@ template to(T)
                             }
                             else
                             {
-                                import mir.appender: ScopedBuffer;
-                                ScopedBuffer!(Unqual!(ForeachType!T)) buffer;
+                                import mir.appender: scopedBuffer;
+                                auto buffer = scopedBuffer!(Unqual!(ForeachType!T));
                             }
                             buffer.print(arg);
                             static if (isMutable!(ForeachType!(T)))
