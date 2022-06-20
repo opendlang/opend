@@ -115,8 +115,13 @@ public:
     // <INITIALIZE>
     //
 
-    /// Clear the image and initialize a new image, 
-    void initEmpty(ImageType type, int width, int height)
+    /// Clear the image and initialize a new image, with given dimensions.
+    this(int width, int height, ImageType type = ImageType.rgba8)
+    {
+        setCanvasSize(width, height, type);
+    }
+    ///ditto
+    void setCanvasSize(int width, int height, ImageType type = ImageType.rgba8)
     {
         cleanupBitmapUnlessOwned();
         clearError();
@@ -138,6 +143,41 @@ public:
         {
             error(kStrOutOfMemory);
             return;
+        }
+    }
+
+    /// Clone an existing image.
+    Image clone() const
+    {
+        Image r;
+        r.setCanvasSize(_width, _height, _type);
+        if (r.errored)
+            return r;
+
+        copyPixelsTo(r);
+        return r;
+    }
+
+    /// Copy pixels to  an image with same size and type.
+    void copyPixelsTo(ref Image img) const @trusted
+    {
+        assert(img._width  == _width);
+        assert(img._height == _height);
+        assert(img._type   == _type);
+
+        // PERF: if same pitch, do a single memcpy
+        //       caution with negative pitch
+
+        int scanlineLen = _width * bytesForImageType(type);
+
+        const(ubyte)* dataSrc = _data;
+        ubyte* dataDst = img._data;
+
+        for (int y = 0; y < _height; ++y)
+        {
+            dataDst[0..scanlineLen] = dataSrc[0..scanlineLen];
+            dataSrc += _pitch;
+            dataDst += img._pitch;
         }
     }
 
@@ -492,6 +532,7 @@ private:
             return true;
         return false;
     }
+
 }
 
 
