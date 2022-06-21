@@ -30,6 +30,7 @@ template deserializeJson(T)
         version (LDC) pragma(inline, true);
         import mir.ion.internal.stage3;
         import mir.deser.ion: deserializeIon;
+        import mir.exception: MirException;
         import mir.ion.exception: ionException, ionErrorMsg;
 
         stage3(text, (error, data)
@@ -38,7 +39,7 @@ template deserializeJson(T)
             {
                 static if (__traits(compiles, ()@nogc { throw new Exception(""); }))
                 {
-                    throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+                    throw new MirException(error.code.ionErrorMsg, ". location = ", error.location);
                 }
                 else
                 {
