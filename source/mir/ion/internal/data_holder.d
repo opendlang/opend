@@ -81,7 +81,11 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
     {
         version(LDC) pragma(inline, true);
         import core.stdc.string;
-        memcpy(reserve(data.length).ptr, data.ptr, data.length);
+        auto target = reserve(data.length).ptr;
+        if (__ctfe)
+            target[0 ..data.length] = data;
+        else
+            memcpy(target, data.ptr, data.length);
         currentTapePosition += data.length;
     }
 
