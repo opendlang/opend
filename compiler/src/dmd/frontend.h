@@ -432,11 +432,12 @@ struct Visibility final
     {
         undefined = 0u,
         none = 1u,
-        private_ = 2u,
-        package_ = 3u,
-        protected_ = 4u,
-        public_ = 5u,
-        export_ = 6u,
+        privateThis = 2u,
+        private_ = 3u,
+        package_ = 4u,
+        protected_ = 5u,
+        public_ = 6u,
+        export_ = 7u,
     };
 
     Kind kind;

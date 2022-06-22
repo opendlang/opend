@@ -781,6 +781,7 @@ extern (C++) final class Module : Package
             const bool doUnittests = global.params.parsingUnittestsRequired();
             scope p = new Parser!AST(this, buf, cast(bool) docfile, global.errorSink, &global.compileEnv, doUnittests);
             p.transitionIn = global.params.v.vin;
+            p.allowPrivateThis = global.params.privateThis;
             p.nextToken();
             p.parseModuleDeclaration();
             md = p.md;

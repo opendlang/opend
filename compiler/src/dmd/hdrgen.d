@@ -3243,9 +3243,10 @@ extern (D) string visibilityToString(Visibility.Kind kind) nothrow pure @safe
 {
     with (Visibility.Kind)
     {
-        immutable string[7] a = [
+        immutable string[8] a = [
                 none       : "none",
                 private_   : "private",
+                privateThis: "private(this)",
                 package_   : "package",
                 protected_ : "protected",
                 public_    : "public",

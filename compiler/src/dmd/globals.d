@@ -204,6 +204,7 @@ extern (C++) struct Param
     FeatureState dtorFields;     // destruct fields of partially constructed objects
                                  // https://issues.dlang.org/show_bug.cgi?id=14246
     FeatureState systemVariables; // limit access to variables marked @system from @safe code
+    bool privateThis;             // add `private(this)`, limiting access to this class/struct/union
 
     CHECKENABLE useInvariants  = CHECKENABLE._default;  // generate class invariant checks
     CHECKENABLE useIn          = CHECKENABLE._default;  // generate precondition checks

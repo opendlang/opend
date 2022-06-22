@@ -6755,6 +6755,7 @@ struct ASTBase
         {
             undefined,
             none,
+            privateThis,
             private_,
             package_,
             protected_,
@@ -6808,6 +6809,8 @@ struct ASTBase
             return null;
         case Visibility.Kind.none:
             return "none";
+        case Visibility.Kind.privateThis:
+            return "private(this)";
         case Visibility.Kind.private_:
             return "private";
         case Visibility.Kind.package_:
