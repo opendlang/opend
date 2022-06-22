@@ -158,7 +158,7 @@ import test_allocator;
 
 
 @("opSliceAssign")
-@safe unittest {
+@system unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
 
     vec[] = "haha";
@@ -169,14 +169,14 @@ import test_allocator;
 }
 
 @("opSliceOpAssign")
-@safe unittest {
+@system unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[] ~= "oops";
     vec.range.should == ["foooops", "baroops", "quuxoops", "totooops"];
 }
 
 @("opSliceOpAssign range")
-@safe unittest {
+@system unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[1..3] ~= "oops";
     vec.range.should == ["foo", "baroops", "quuxoops", "toto"];
