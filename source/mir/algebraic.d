@@ -806,7 +806,7 @@ struct Algebraic(_Types...)
         static foreach (int i, P; _Payload)
             mixin(`alias _member_` ~ i.stringof ~ ` = payload[` ~ i.stringof ~ `];`);
 
-        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
+        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))) || is(AllowedTypes == AliasSeq!void))
             ubyte[0] bytes;
         else
             ubyte[Largest!_Payload.sizeof] bytes;
@@ -1224,7 +1224,10 @@ struct Algebraic(_Types...)
                 static foreach (i, T; AllowedTypes)
                 {
                     case i:
-                        return this.trustedGet!T == rhs.trustedGet!T;
+                        static if (is(T == void))
+                            return rhs._is!void;
+                        else
+                            return this.trustedGet!T == rhs.trustedGet!T;
                 }
                 default: assert(0);
             }
