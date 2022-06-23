@@ -18,6 +18,8 @@ public import mir.stat.distribution.beta;
 ///
 public import mir.stat.distribution.beta_proportion;
 ///
+public import mir.stat.distribution.binomial;
+///
 public import mir.stat.distribution.normal;
 ///
 public import mir.stat.distribution.uniform;

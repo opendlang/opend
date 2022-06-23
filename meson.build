@@ -9,6 +9,7 @@ has_cpp_headers = false
 sources_list = [
     'mir/math/internal/powi',
     'mir/math/internal/log_beta',
+    'mir/math/internal/log_binomial',
     'mir/math/internal/xlogy',
     'mir/stat/descriptive/package',
     'mir/stat/descriptive/univariate',
@@ -22,6 +23,7 @@ sources_list = [
     'mir/stat/distribution/bernoulli',
     'mir/stat/distribution/beta',
     'mir/stat/distribution/beta_proportion',
+    'mir/stat/distribution/binomial',
     'mir/stat/distribution/normal',
     'mir/stat/distribution/uniform',
 ]

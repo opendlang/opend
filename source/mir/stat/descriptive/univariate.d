@@ -905,8 +905,9 @@ unittest
     assert(x.sliced.quantile(0.5).approxEqual(5.20));
 
     static immutable qtile = [0.25, 0.75];
+    static immutable result = [3.250, 8.500];
 
-    assert(x.sliced.quantile(qtile).all!approxEqual([3.250, 8.500]));
+    assert(x.sliced.quantile(qtile).all!approxEqual(result));
 }
 
 // withAsSlice test
@@ -930,8 +931,9 @@ unittest
     auto qtile = RCArray!double(2);
     qtile[0] = 0.25;
     qtile[1] = 0.75;
+    static immutable result = [3.250, 8.500];
 
-    assert(x.quantile(qtile).all!approxEqual([3.250, 8.500]));
+    assert(x.quantile(qtile).all!approxEqual(result));
 }
 
 //x.length = 20, qtile at tenths

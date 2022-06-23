@@ -24,7 +24,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
 +/
 @safe pure nothrow @nogc
-T bernoulliPDF(T)(const bool x, const T p)
+T bernoulliPMF(T)(const bool x, const T p)
     if (isFloatingPoint!T)
     in(p >= 0, "p must be greater than or equal to 0")
     in(p <= 1, "p must be less than or equal to 1")
@@ -38,11 +38,11 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual;
 
-    assert(true.bernoulliPDF(0.5) == 0.5);
-    assert(false.bernoulliPDF(0.5) == 0.5);
+    assert(true.bernoulliPMF(0.5) == 0.5);
+    assert(false.bernoulliPMF(0.5) == 0.5);
 
-    assert(true.bernoulliPDF(0.7).approxEqual(0.7));
-    assert(false.bernoulliPDF(0.7).approxEqual(0.3));
+    assert(true.bernoulliPMF(0.7).approxEqual(0.7));
+    assert(false.bernoulliPMF(0.7).approxEqual(0.3));
 }
 
 /++
@@ -179,9 +179,9 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual, log;
 
-    assert(true.bernoulliLPMF(0.5).approxEqual(log(bernoulliPDF(true, 0.5))));
-    assert(false.bernoulliLPMF(0.5).approxEqual(log(bernoulliPDF(false, 0.5))));
+    assert(true.bernoulliLPMF(0.5).approxEqual(log(bernoulliPMF(true, 0.5))));
+    assert(false.bernoulliLPMF(0.5).approxEqual(log(bernoulliPMF(false, 0.5))));
 
-    assert(true.bernoulliLPMF(0.7).approxEqual(log(bernoulliPDF(true, 0.7))));
-    assert(false.bernoulliLPMF(0.7).approxEqual(log(bernoulliPDF(false, 0.7))));
+    assert(true.bernoulliLPMF(0.7).approxEqual(log(bernoulliPMF(true, 0.7))));
+    assert(false.bernoulliLPMF(0.7).approxEqual(log(bernoulliPMF(false, 0.7))));
 }
