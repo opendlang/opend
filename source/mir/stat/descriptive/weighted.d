@@ -30,8 +30,8 @@ private void putter2(Slices, T, U, Summation summation1, Summation summation2)
     } else {
         do
         {
-            import mir.ndslice.internal: frontOf;
-            frontOf!(slices)[0].putter2(seed1, seed2);
+            import mir.ndslice.internal: frontOf2;
+            frontOf2!(slices)[0].putter2(seed1, seed2);
             slices.popFront;
         }
         while(!slices.empty);
