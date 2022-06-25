@@ -551,6 +551,12 @@ void serializeValueImpl(S, V)(scope ref S serializer, auto ref V value)
                     continue;
             }
 
+            static if(__traits(hasMember, typeof(__traits(getMember, value, member)), "_void"))
+            {
+                if (__traits(getMember, value, member) == typeof(__traits(getMember, value, member))._void)
+                    continue;
+            }
+
             static if(hasUDA!(__traits(getMember, value, member), serdeTransformOut))
             {
                 alias f = serdeGetTransformOut!(__traits(getMember, value, member));
