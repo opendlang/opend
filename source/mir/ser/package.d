@@ -553,7 +553,7 @@ void serializeValueImpl(S, V)(scope ref S serializer, auto ref V value)
 
             static if(__traits(hasMember, typeof(__traits(getMember, value, member)), "_void"))
             {
-                if (__traits(getMember, value, member) == typeof(__traits(getMember, value, member))._void)
+                if (__traits(getMember, value, member)._is!void)
                     continue;
             }
 
