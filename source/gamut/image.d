@@ -318,25 +318,186 @@ public:
     // 
     // </FILE FORMAT IDENTIFICATION>
     //
-    void convertTo(ImageType targetType)
-    {
 
-        if (_type == targetType)
-            return;
-
-
-
-    }
 
     //
     // <CONVERSION>
     //
 
+    /// Convert the image to one channel equivalent, using a greyscale transformation.
+    void convertToGreyScale()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = uint8; break;
+            case uint16:  t = uint16; break;
+            case f32:     t = f32; break;
+            case la8:     t = uint8; break;
+            case la16:    t = uint16; break;
+            case laf32:   t = f32; break;
+            case rgb8:    t = uint8; break;
+            case rgb16:   t = uint16; break;
+            case rgbf32:  t = f32; break;
+            case rgba8:   t = uint8; break;
+            case rgba16:  t = uint16; break;
+            case rgbaf32: t = f32; break;
+        }
+        convertTo(t);
+    }
+
+    void convertToRGB()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = rgb8; break;
+            case uint16:  t = rgb16; break;
+            case f32:     t = rgbf32; break;
+            case la8:     t = rgb8; break;
+            case la16:    t = rgb16; break;
+            case laf32:   t = rgbf32; break;
+            case rgb8:    t = rgb8; break;
+            case rgb16:   t = rgb16; break;
+            case rgbf32:  t = rgbf32; break;
+            case rgba8:   t = rgb8; break;
+            case rgba16:  t = rgb16; break;
+            case rgbaf32: t = rgbf32; break;
+        }
+        convertTo(t);
+    }
+
+    void convertToRGBA()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = rgba8; break;
+            case uint16:  t = rgba16; break;
+            case f32:     t = rgbaf32; break;
+            case la8:     t = rgba8; break;
+            case la16:    t = rgba16; break;
+            case laf32:    t = rgbaf32; break;
+            case rgb8:    t = rgba8; break;
+            case rgb16:   t = rgba16; break;
+            case rgbf32:  t = rgbaf32; break;
+            case rgba8:   t = rgba8; break;
+            case rgba16:  t = rgba16; break;
+            case rgbaf32: t = rgbaf32; break;
+        }
+        convertTo(t);
+    }
+
+    void convertTo8Bit()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = uint8; break;
+            case uint16:  t = uint8; break;
+            case f32:     t = uint8; break;
+            case la8:     t = la8; break;
+            case la16:    t = la8; break;
+            case laf32:   t = la8; break;
+            case rgb8:    t = rgb8; break;
+            case rgb16:   t = rgb8; break;
+            case rgbf32:  t = rgb8; break;
+            case rgba8:   t = rgba8; break;
+            case rgba16:  t = rgba8; break;
+            case rgbaf32: t = rgba8; break;
+        }
+        convertTo(t);
+    }
+
+    void convertTo16Bit()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = uint16; break;
+            case uint16:  t = uint16; break;
+            case f32:     t = uint16; break;
+            case la8:     t = la16; break;
+            case la16:    t = la16; break;
+            case laf32:   t = la16; break;
+            case rgb8:    t = rgb16; break;
+            case rgb16:   t = rgb16; break;
+            case rgbf32:  t = rgb16; break;
+            case rgba8:   t = rgba16; break;
+            case rgba16:  t = rgba16; break;
+            case rgbaf32: t = rgba16; break;
+        }
+        convertTo(t);
+    }
+
+    void convertToFP32()
+    {
+        ImageType t = ImageType.unknown;
+        final switch(_type) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:   t = f32; break;
+            case uint16:  t = f32; break;
+            case f32:     t = f32; break;
+            case la8:     t = laf32; break;
+            case la16:    t = laf32; break;
+            case laf32:   t = laf32; break;
+            case rgb8:    t = rgbf32; break;
+            case rgb16:   t = rgbf32; break;
+            case rgbf32:  t = rgbf32; break;
+            case rgba8:   t = rgbaf32; break;
+            case rgba16:  t = rgbaf32; break;
+            case rgbaf32: t = rgbaf32; break;
+        }
+        convertTo(t);
+    }
+
+
     /// Convert the image to the following format.
     /// This can destruct channels, loose precision, etc.
+    void convertTo(ImageType targetType)
+    {
+        assert(!errored()); // this should have been caught before.
+        if (targetType == ImageType.unknown)
+        {
+            error(kStrUnsupportedTypeConversion);
+            return;
+        }
 
+        if (_type == targetType)
+            return; // success, same type alread
 
+        if (!hasData())
+            return; // success, no pixel data, so everything was "converted"
 
+        if (width() == 0 || height() == 0)
+        {
+            return; // image dimension is zero, everything fine
+        }
+
+        ubyte* source = _data;
+
+        int destPitch = computePitch(targetType, width);
+
+        // Do not use realloc to avoid invalidating previous data.
+        // PERF: can do this, if not owned.
+        bool err;
+        ubyte* dest = allocStorage(null, targetType, width, height, destPitch, err);
+        if (err)
+        {
+            error(kStrOutOfMemory);
+            return;
+        }
+
+        // TODO: actual conversion here
+
+        _data = dest;
+    }
 
     //
     // </CONVERSION>
@@ -423,23 +584,43 @@ private:
     /// Returns true on success, false on OOM.
     bool setStorage(ImageType type, int width, int  height, int pitch) @trusted
     {
-        assert(pitch >= 0); // TODO support negative pitch
-        assert( bytesForImageType(type) * width <= pitch);
+        bool err;
+        ubyte* newStorage = allocStorage(_data, type, width, height, pitch, err);
 
-        int destBytes = width * pitch;
-
-        // PERF: all gamut using same heap? to reuse allocation.
-        _data = cast(ubyte*) realloc(_data, destBytes);
-        _type = type;
-
-        if (destBytes != 0 && _data is null) // realloc is allowed to return null if zero bytes required.
+        if (err)
             return false;
 
+        _data = newStorage;
+        _type = type;
         _width = width;
         _height = height;
         _pitch = pitch;
-
         return true;
+    }
+
+    /// Discard ancient data, and reallocate stuff.
+    /// Returns true in *errored.
+    /// Note: that you can request zero byte, and realloc would still give a non-null pointer, 
+    /// that you would have to keep. This is a success case.
+    static ubyte* allocStorage(void* existingData, ImageType type, int width, int  height, int pitch, out bool err) @trusted
+    {       
+        int size = storageSize(type, width, height, pitch);
+        // PERF: all gamut using same heap? to reuse allocation.
+        ubyte* res = cast(ubyte*) realloc(existingData, size);
+
+        err = false;
+        if (size != 0 && res is null) // realloc is allowed to return null if zero bytes required.
+            err = true;
+
+        return res;
+    }
+
+    /// The size of the allocation needed for this storage.
+    static int storageSize(ImageType type, int width, int  height, int pitch)
+    {
+        assert(pitch >= 0); // TODO support negative pitch
+        assert( bytesForImageType(type) * width <= pitch);
+        return width * pitch;
     }
 
     void loadFromFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) @system

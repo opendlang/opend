@@ -23,24 +23,19 @@ enum ImageType
 {
     unknown = -1, /// Unknown format (returned value only, never use it as input value)
     uint8 = 0,    /// Array of ushort: unsigned 8-bit
-    int8,         /// Array of short: signed 8-bit
     uint16,       /// Array of ushort: unsigned 16-bit
-    int16,        /// Array of short: signed 16-bit
-    uint32,       /// Array of uint: unsigned 32-bit
-    int32,        /// Array of int: signed 32-bit
     f32,          /// Array of float: 32-bit IEEE floating point
-    f64,          /// Array of double: 64-bit IEEE floating point
-
+    
     la8,          /// 16-bit Luminance Alpha image: 2 x unsigned 8-bit
     la16,         /// 32-bit Luminance Alpha image: 2 x unsigned 16-bit
+    laf32,        /// 64-bit Luminance Alpha image: 2 x 32-bit IEEE floating point
 
     rgb8,         /// 24-bit RGB image: 3 x unsigned 8-bit
     rgb16,        /// 48-bit RGB image: 3 x unsigned 16-bit
+    rgbf32,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
 
     rgba8,        /// 32-bit RGBA image: 4 x unsigned 8-bit
-    rgba16,       /// 64-bit RGBA image: 4 x unsigned 16-bit
-
-    rgbf32,       /// 96-bit RGB float image: 3 x 32-bit IEEE floating point
+    rgba16,       /// 64-bit RGBA image: 4 x unsigned 16-bit    
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
@@ -50,15 +45,11 @@ int bytesForImageType(ImageType type) pure @safe
     final switch(type)
     {
         case ImageType.uint8:   return 1;
-        case ImageType.int8:    return 1;
         case ImageType.uint16:  return 2;
-        case ImageType.int16:   return 2;
-        case ImageType.uint32:  return 4;
-        case ImageType.int32:   return 4;
         case ImageType.f32:     return 4;
-        case ImageType.f64:     return 8;
         case ImageType.la8:     return 2;
         case ImageType.la16:    return 4;
+        case ImageType.laf32:   return 8;
         case ImageType.rgb8:    return 3;
         case ImageType.rgb16:   return 6;
         case ImageType.rgba8:   return 4;
