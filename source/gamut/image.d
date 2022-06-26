@@ -82,7 +82,7 @@ public:
     /// complicated forms such as planar, compressed, etc.
     bool hasData() pure const
     {
-        return _data !is null;        
+        return _data !is null;
     }
 
     /// An image can have plain pixels, which means:
@@ -90,20 +90,20 @@ public:
     ///   2. those are in a plain decoded format (not a compressed texture, not planar, etc).
     bool hasPlainPixels() pure const
     {
-        return hasData() && true; // all formats are plain, for now.
+        return hasData() && imageTypeIsPlain(_type); // Note: all formats are plain, for now.
     }
 
     /// A planar image is for example YUV420.
     /// If the image is planar, its lines are not accessible like that.
     bool isPlanar() pure const
     {
-        return hasData() && imageTypeIsPlanar(_type); // not supported yet.
+        return hasData() && imageTypeIsPlanar(_type);
     }
 
     /// A compressed image doesn't have its pixels available.
     bool isCompressed() pure const
     {
-        return hasData() && imageTypeIsCompressed(_type); // not supported yet.
+        return hasData() && imageTypeIsCompressed(_type);
     }
 
     //
@@ -324,7 +324,7 @@ public:
     // <CONVERSION>
     //
 
-    /// Convert the image to one channel equivalent, using a greyscale transformation.
+    /// Convert the image to one channel equivalent, using a greyscale transformation (all channels weighted equally).
     void convertToGreyScale()
     {
         ImageType t = ImageType.unknown;
@@ -347,6 +347,7 @@ public:
         convertTo(t);
     }
 
+    /// Convert the image to a RGB equivalent, using duplication and/or alpha-stripping.
     void convertToRGB()
     {
         ImageType t = ImageType.unknown;
@@ -369,6 +370,8 @@ public:
         convertTo(t);
     }
 
+    /// Convert the image to a RGBA equivalent, using duplication.
+    /// If the image had no alpha, it received a fully opaqua alpha value.
     void convertToRGBA()
     {
         ImageType t = ImageType.unknown;
@@ -391,6 +394,7 @@ public:
         convertTo(t);
     }
 
+    /// Convert the image bit-depth to 8-bit per component.
     void convertTo8Bit()
     {
         ImageType t = ImageType.unknown;
@@ -413,6 +417,7 @@ public:
         convertTo(t);
     }
 
+    /// Convert the image bit-depth to 16-bit per component.
     void convertTo16Bit()
     {
         ImageType t = ImageType.unknown;
@@ -435,6 +440,7 @@ public:
         convertTo(t);
     }
 
+    /// Convert the image bit-depth to 32-bit float per component.
     void convertToFP32()
     {
         ImageType t = ImageType.unknown;
@@ -729,7 +735,6 @@ private:
             return true;
         return false;
     }
-
 }
 
 

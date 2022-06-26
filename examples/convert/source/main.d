@@ -65,6 +65,7 @@ int main(string[] args)
         Image* result = &image;
 
         image.loadFromFile(input);
+        image.convertTo8Bit();
         if (image.errored)
         {
             throw new Exception("Couldn't open file " ~ input);

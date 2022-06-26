@@ -40,6 +40,12 @@ enum ImageType
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
+/// Returns: `true` if this `ImageType` is "plain", meaning that it's 1/2/3/4 channel of L/LA/RGB/RGBA data.
+bool imageTypeIsPlain(ImageType t) pure
+{
+    return true;
+}
+
 /// Returns: `true` if this `ImageType` is planar, meaning the data is best iterated by the user.
 bool imageTypeIsPlanar(ImageType t) pure
 {
