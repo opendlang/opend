@@ -7,6 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.types;
 
 nothrow @nogc:
+@safe:
 
 /// Image format.
 enum ImageFormat
@@ -39,8 +40,20 @@ enum ImageType
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
-// Size of one pixel for type
-int bytesForImageType(ImageType type) pure @safe
+/// Returns: `true` if this `ImageType` is planar, meaning the data is best iterated by the user.
+bool imageTypeIsPlanar(ImageType t) pure
+{
+    return false; // No support yet in gamut.
+}
+
+/// Returns: `true` if this `ImageType` is compressed, meaning the data is inscrutable until decoded.
+bool imageTypeIsCompressed(ImageType t) pure
+{
+    return false; // No support yet in gamut.
+}
+
+/// Size of one pixel for given image type `type`.
+int imageTypePixelSize(ImageType type) pure
 {
     final switch(type)
     {

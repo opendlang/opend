@@ -97,13 +97,13 @@ public:
     /// If the image is planar, its lines are not accessible like that.
     bool isPlanar() pure const
     {
-        return hasData() && false; // not supported yet.
+        return hasData() && imageTypeIsPlanar(_type); // not supported yet.
     }
 
     /// A compressed image doesn't have its pixels available.
     bool isCompressed() pure const
     {
-        return hasData() && false; // not supported yet.
+        return hasData() && imageTypeIsCompressed(_type); // not supported yet.
     }
 
     //
@@ -168,7 +168,7 @@ public:
         // PERF: if same pitch, do a single memcpy
         //       caution with negative pitch
 
-        int scanlineLen = _width * bytesForImageType(type);
+        int scanlineLen = _width * imageTypePixelSize(type);
 
         const(ubyte)* dataSrc = _data;
         ubyte* dataDst = img._data;
@@ -460,7 +460,7 @@ public:
 
     /// Convert the image to the following format.
     /// This can destruct channels, loose precision, etc.
-    void convertTo(ImageType targetType)
+    void convertTo(ImageType targetType) @trusted
     {
         assert(!errored()); // this should have been caught before.
         if (targetType == ImageType.unknown)
@@ -481,7 +481,7 @@ public:
         }
 
         ubyte* source = _data;
-
+        int sourcePitch = _pitch;
         int destPitch = computePitch(targetType, width);
 
         // Do not use realloc to avoid invalidating previous data.
@@ -494,9 +494,25 @@ public:
             return;
         }
 
-        // TODO: actual conversion here
+        // Need an intermediate buffer.
+        // PERF: eventually, find a way to bypass that if supported.
+        ImageType interType = intermediateConversionType(_type, targetType);
+        ubyte* interBuf = cast(ubyte*) malloc( width * imageTypePixelSize(interType));
+        scope(exit) free(interBuf);
 
-        _data = dest;
+        bool ok = convertInternal(_type, source, sourcePitch, 
+                                  targetType, dest, destPitch,
+                                  width, height,
+                                  interType, interBuf);
+        if (!ok)
+        {
+            error(kStrUnsupportedTypeConversion);
+            return;
+        }
+
+        _data = dest; // LEAK, should free existing bitmap if owned
+        _type = targetType;
+        _pitch = destPitch;
     }
 
     //
@@ -562,7 +578,7 @@ private:
     /// FUTURE some flags that change alignment constraints?
     int computePitch(ImageType type, int width)
     {
-        return width * bytesForImageType(type);
+        return width * imageTypePixelSize(type);
     }
 
     void cleanupBitmapIfAny() @trusted
@@ -619,7 +635,7 @@ private:
     static int storageSize(ImageType type, int width, int  height, int pitch)
     {
         assert(pitch >= 0); // TODO support negative pitch
-        assert( bytesForImageType(type) * width <= pitch);
+        assert( imageTypePixelSize(type) * width <= pitch);
         return width * pitch;
     }
 
@@ -749,159 +765,392 @@ package int computeRequestedImageComponents(int loadFlags) pure nothrow @nogc @s
 
 private:
 
-/*
 
 
-/// Convert between formats. Returns new data.
-/// Returns: null on failure.
-ubyte* convertType(ubyte *data, 
-                   ImageType inputType, 
-                   ImageType outputType, 
-                   int width, 
-                   int height, 
-                   int pitchBytes)
+// FUTURE: this will also manage color conversion.
+ImageType intermediateConversionType(ImageType srcType, ImageType destType)
 {
-    if (inputType == outputType) 
-        return data;
-   
-    // TODO: security there
-    int destPitch = width * bytesForImageType(outputType);
-    int destBytes = height * destPitch;
+    return ImageType.rgbaf32; // PERF: smaller intermediate types
+}
 
-    ubyte* dest = cast(ubyte*) malloc(destBytes);
-    if (dest == null)
-        return null;
+// This converts scanline per scanline, using an intermediate format to lessen the number of conversions.
+bool convertInternal(ImageType srcType, const(ubyte)* src, int srcPitch, 
+                     ImageType destType, ubyte* dest, int destPitch,
+                     int width, int height,
+                     ImageType interType, ubyte* interBuf) @system
+{
+    assert(srcType != destType);
+    assert(srcType != ImageType.unknown && destType != ImageType.unknown);
 
+    if (imageTypeIsPlanar(srcType) || imageTypeIsPlanar(destType))
+        return false; // No support
+    if (imageTypeIsCompressed(srcType) || imageTypeIsCompressed(destType))
+        return false; // No support
 
-
-
-    good = cast(ubyte*) stbi__malloc_mad3(req_comp, x, y, 0);
-    if (good == null) 
+    // For each scanline
+    for (int y = 0; y < height; ++y)
     {
-        STBI_FREE(data);
-        return null;
+        convertToIntermediateScanline(srcType, src, interType, interBuf, width);
+        convertFromIntermediate(interType, interBuf, destType, dest, width);
+        src += srcPitch;
+        dest += destPitch;
     }
+    return true;
+}
 
-    for (j = 0; j < cast(int) y; ++j) 
+
+/// See_also: OpenGL ES specification 2.3.5.1 and 2.3.5.2 for details about converting from 
+/// floating-point to integers, and the other way around.
+void convertToIntermediateScanline(ImageType srcType, const(ubyte)* src, ImageType dstType, ubyte* dest, int width) @system
+{
+    if (dstType == ImageType.rgbaf32)
     {
-        ubyte *src  = data + j * x * img_n   ;
-        ubyte *dest = good + j * x * req_comp;
+        float* outp = cast(float*) dest;
 
-        // convert source image with img_n components to one with req_comp components;
-        // avoid switch per pixel, so use switch per scanline and massive macros
-        switch (img_n * 8 + req_comp) 
+        final switch(srcType) with (ImageType)
         {
-            case 1 * 8 + 2:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 1, dest += 2)
-                    {
-                        dest[0] = src[0]; 
-                        dest[1] = 255;
-                    }
-                } 
-                break;
-            case 1 * 8 + 3:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 1, dest += 3)
-                    {
-                        dest[0] = dest[1] = dest[2] = src[0];
-                    }
-                } 
-                break;
-            case 1 * 8 + 4:
-                for(i = x - 1; i >= 0; --i, src += 1, dest += 4)
-                { 
-                    dest[0] = dest[1] = dest[2] = src[0]; 
-                    dest[3] = 255;                     
-                } 
-                break;
-            case 2 * 8 + 1:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 2, dest += 1)
-                    {
-                        dest[0] = src[0];
-                    }
-                } 
-                break;
-            case 2 * 8 + 3:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 2, dest += 3)
-                    {
-                        dest[0] = dest[1] = dest[2] = src[0]; 
-                    }
-                } 
-                break;
-            case 2 * 8 + 4:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 2, dest += 4)
-                    {
-                        dest[0] = dest[1] = dest[2] = src[0]; 
-                        dest[3] = src[1]; 
-                    }
-                } 
-                break;
-            case 3 * 8 + 4:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 3, dest += 4)
-                    {
-                        dest[0] = src[0];
-                        dest[1] = src[1];
-                        dest[2] = src[2];
-                        dest[3] = 255;
-                    }
-                } 
-                break;
-            case 3 * 8 + 1:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 3, dest += 1)
-                    {
-                        dest[0] = stbi__compute_y(src[0],src[1],src[2]); 
-                    }
-                } 
-                break;
-            case 3 * 8 + 2:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 3, dest += 2)
-                    {
-                        dest[0] = stbi__compute_y(src[0],src[1],src[2]);
-                        dest[1] = 255;
-                    }
-                } 
-                break;
-
-            case 4 * 8 + 1:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 4, dest += 1)
-                    {
-                        dest[0] = stbi__compute_y(src[0],src[1],src[2]);
-                    }
+            case unknown: assert(false);
+            case uint8:
+            {
+                const(ubyte)* s = src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = s[x] / 255.0f;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
                 }
                 break;
-
-            case 4 * 8 + 2:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 4, dest += 2)
-                    {
-                        dest[0] = stbi__compute_y(src[0],src[1],src[2]); 
-                        dest[1] = src[3];
-                    }
+            }
+            case uint16:
+            {
+                const(ushort)* s = cast(const(ushort)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = s[x] / 65535.0f;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
                 }
                 break;
-            case 4 * 8 + 3:
-                { 
-                    for(i = x - 1; i >= 0; --i, src += 4, dest += 3)
-                    {
-                        dest[0] = src[0]; 
-                        dest[1] = src[1]; 
-                        dest[2] = src[2];        
-                    }
+            }
+            case f32:
+            {
+                const(float)* s = cast(const(float)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = s[x];
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
                 }
                 break;
-            default: 
-                assert(0); 
+            }
+            case la8:
+            {
+                const(ubyte)* s = src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = *s++ / 255.0f;
+                    float a = *s++ / 255.0f;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
+            case la16:
+            {
+                const(ushort)* s = cast(const(ushort)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = *s++ / 65535.0f;
+                    float a = *s++ / 65535.0f;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
+            case laf32:
+            {
+                const(float)* s = cast(const(float)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = *s++;
+                    float a = *s++;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
+            case rgb8:
+            {
+                const(ubyte)* s = src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++ / 255.0f;
+                    float g = *s++ / 255.0f;
+                    float b = *s++ / 255.0f;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
+                }
+                break;
+            }
+            case rgb16:
+            {
+                const(ushort)* s = cast(const(ushort)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++ / 65535.0f;
+                    float g = *s++ / 65535.0f;
+                    float b = *s++ / 65535.0f;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
+                }
+                break;
+            }
+            case rgbf32:
+            {
+                const(float)* s = cast(const(float)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++;
+                    float g = *s++;
+                    float b = *s++;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = 1.0f;
+                }
+                break;
+            }
+            case rgba8:
+            {
+                const(ubyte)* s = src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++ / 255.0f;
+                    float g = *s++ / 255.0f;
+                    float b = *s++ / 255.0f;
+                    float a = *s++ / 255.0f;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
+            case rgba16:
+            {
+                const(ushort)* s = cast(const(ushort)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++ / 65535.0f;
+                    float g = *s++ / 65535.0f;
+                    float b = *s++ / 65535.0f;
+                    float a = *s++ / 65535.0f;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
+            case rgbaf32:
+            {
+                const(float)* s = cast(const(float)*) src;
+                for (int x = 0; x < width; ++x)
+                {
+                    float r = *s++;
+                    float g = *s++;
+                    float b = *s++;
+                    float a = *s++;
+                    *outp++ = r;
+                    *outp++ = g;
+                    *outp++ = b;
+                    *outp++ = a;
+                }
+                break;
+            }
         }
     }
+    else
+        assert(false);
 
-    STBI_FREE(data);
-    return good;
-}*/
+}
+
+void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dstType, ubyte* dest, int width) @system
+{
+    if (srcType == ImageType.rgbaf32)
+    {    
+        float* inp = cast(float*) src;
+
+        final switch(srcType) with (ImageType)
+        {
+            case unknown: assert(false);
+            case uint8:
+            {
+                ubyte* s = dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte b = cast(ubyte)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 255.0f / 3.0f);
+                    *s++ = b;
+                }
+                break;
+            }
+            case uint16:
+            {
+                ushort* s = cast(ushort*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ushort b = cast(ushort)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 65535.0f / 3.0f);
+                    *s++ = b;
+                }
+                break;
+            }
+            case f32:
+            {
+                float* s = cast(float*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) / 3.0f;
+                    *s++ = b;
+                }
+                break;
+            }
+            case la8:
+            {
+                ubyte* s = dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte b = cast(ubyte)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 255.0f / 3.0f);
+                    ubyte a = cast(ubyte)(0.5f + inp[4*x+3] * 255.0f);
+                    *s++ = b;
+                    *s++ = a;
+                }
+                break;
+            }
+            case la16:
+            {
+                ushort* s = cast(ushort*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ushort b = cast(ushort)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 65535.0f / 3.0f);
+                    ushort a = cast(ushort)(0.5f + inp[4*x+3] * 65535.0f);
+                    *s++ = b;
+                    *s++ = a;
+                }
+                break;
+            }
+            case laf32:
+            {
+                float* s = cast(float*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    float b = (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) / 3.0f;
+                    float a = inp[4*x+3];
+                    *s++ = b;
+                    *s++ = a;
+                }
+                break;
+            }
+            case rgb8:
+            {
+                ubyte* s = dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte r = cast(ubyte)(0.5f + inp[4*x+0] * 255.0f);
+                    ubyte g = cast(ubyte)(0.5f + inp[4*x+1] * 255.0f);
+                    ubyte b = cast(ubyte)(0.5f + inp[4*x+2] * 255.0f);
+                    *s++ = r;
+                    *s++ = g;
+                    *s++ = b;
+                }
+                break;
+            }
+            case rgb16:
+            {
+                ushort* s = cast(ushort*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ushort r = cast(ushort)(0.5f + inp[4*x+0] * 65535.0f);
+                    ushort g = cast(ushort)(0.5f + inp[4*x+1] * 65535.0f);
+                    ushort b = cast(ushort)(0.5f + inp[4*x+2] * 65535.0f);
+                    *s++ = r;
+                    *s++ = g;
+                    *s++ = b;
+                }
+                break;
+            }
+            case rgbf32:
+            {
+                float* s = cast(float*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    *s++ = inp[4*x+0];
+                    *s++ = inp[4*x+1];
+                    *s++ = inp[4*x+2];
+                }
+                break;
+            }
+            case rgba8:
+            {
+                ubyte* s = dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte r = cast(ubyte)(0.5f + inp[4*x+0] * 255.0f);
+                    ubyte g = cast(ubyte)(0.5f + inp[4*x+1] * 255.0f);
+                    ubyte b = cast(ubyte)(0.5f + inp[4*x+2] * 255.0f);
+                    ubyte a = cast(ubyte)(0.5f + inp[4*x+3] * 255.0f);
+                    *s++ = r;
+                    *s++ = g;
+                    *s++ = b;
+                    *s++ = a;
+                }
+                break;
+            }
+            case rgba16:
+            {
+                ushort* s = cast(ushort*)dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    ushort r = cast(ushort)(0.5f + inp[4*x+0] * 65535.0f);
+                    ushort g = cast(ushort)(0.5f + inp[4*x+1] * 65535.0f);
+                    ushort b = cast(ushort)(0.5f + inp[4*x+2] * 65535.0f);
+                    ushort a = cast(ushort)(0.5f + inp[4*x+3] * 65535.0f);
+                    *s++ = r;
+                    *s++ = g;
+                    *s++ = b;
+                    *s++ = a;
+                }
+                break;
+            }
+            case rgbaf32:
+            {
+                float* s = cast(float*) dest;
+                for (int x = 0; x < width; ++x)
+                {
+                    *s++ = inp[4*x+0];
+                    *s++ = inp[4*x+1];
+                    *s++ = inp[4*x+2];
+                    *s++ = inp[4*x+3];
+                }
+                break;
+            }
+        }
+    }
+    else
+        assert(false);
+}
