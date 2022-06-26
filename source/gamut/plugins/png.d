@@ -97,7 +97,7 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._width = width;
     image._height = height;
     image._data = decoded; // works because codec.pngload and gamut both use malloc/free
-    image._pitch = width * components; // BUG 16-bit support here
+    image._pitch = width * components * (is16bit ? 2 : 1);
 
     if (!is16bit)
     {

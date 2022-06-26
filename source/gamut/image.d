@@ -398,7 +398,8 @@ public:
     void convertTo8Bit()
     {
         ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
+        ImageType type = _type;
+        final switch(type) with (ImageType)
         {
             case unknown: assert(false);
             case uint8:   t = uint8; break;
@@ -516,7 +517,7 @@ public:
             return;
         }
 
-        _data = dest; // LEAK, should free existing bitmap if owned
+        _data = dest; // TODO LEAK, should free existing bitmap if owned
         _type = targetType;
         _pitch = destPitch;
     }
@@ -697,7 +698,8 @@ private:
         IOStream io;
         io.setupForFileIO();
         bool r = saveToStream(fif, io, cast(IOHandle)f, flags);
-        return fclose(f) == 0;
+        bool fcloseOK = fclose(f) == 0;
+        return r && fcloseOK;
     }
 
     bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
@@ -1002,7 +1004,7 @@ void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dst
     {    
         float* inp = cast(float*) src;
 
-        final switch(srcType) with (ImageType)
+        final switch(dstType) with (ImageType)
         {
             case unknown: assert(false);
             case uint8:
