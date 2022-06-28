@@ -70,6 +70,7 @@ bool stage12(
     return backwardEscapeBit;
 }
 
+extern(C)
 struct Stage3Result
 {
     ubyte[] tape;
@@ -77,13 +78,13 @@ struct Stage3Result
 }
 
 @trusted pure nothrow @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope Stage3Handle handle,
 )
 {
     version (LDC) pragma(inline, false);
-    with(stage3(text))
+    with(mir_json2ion(text))
     {
         version (measure) StopWatch swh;
         version (measure) assumePure(&swh.start)();
@@ -95,8 +96,9 @@ void stage3(
     }
 }
 
+extern(C)
 @trusted pure nothrow @nogc
-Stage3Result stage3(
+Stage3Result mir_json2ion(
     scope const(char)[] text,
 )
 {
@@ -644,147 +646,147 @@ private __gshared immutable byte[256] uniFlags = [
 ];
 
 @trusted pure nothrow
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe pure nothrow handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 @trusted pure @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe pure @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @trusted pure
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe pure handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @trusted nothrow @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe nothrow @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @trusted nothrow
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe nothrow handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 @trusted @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @trusted
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @safe handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @system pure nothrow @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system pure nothrow @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 @system pure nothrow
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system pure nothrow handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 @system pure @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system pure @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @system pure
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system pure handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @system nothrow @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system nothrow @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @system nothrow
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system nothrow handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 @system @nogc
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system @nogc handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
 @system
-void stage3(
+void mir_json2ion(
     scope const(char)[] text,
     scope void delegate(IonErrorInfo, scope const ubyte[]) @system handle,
 )
 {
-    stage3(text, cast(Stage3Handle) handle);
+    mir_json2ion(text, cast(Stage3Handle) handle);
 }
 
 
@@ -825,7 +827,7 @@ version(none) unittest
         IonTapeHolder!(nMax * 4) tapeHolder = void;
         tapeHolder.initialize;
 
-        auto errorInfo = stage3!nMax(tapeHolder, text);
+        auto errorInfo = mir_json2ion!nMax(tapeHolder, text);
         if (errorInfo.code)
             throw new SerdeMirException(errorInfo.code.ionErrorMsg, ". location = ", errorInfo.location, ", last input key = ", errorInfo.key);
 

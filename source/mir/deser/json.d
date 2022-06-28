@@ -33,7 +33,7 @@ template deserializeJson(T)
         import mir.exception: MirException;
         import mir.ion.exception: ionException, ionErrorMsg;
 
-        stage3(text, (error, data)
+        mir_json2ion(text, (error, data)
         {
             if (error.code)
             {

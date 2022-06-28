@@ -3,6 +3,7 @@ Conversion utilities.
 +/
 module mir.ion.conv;
 
+public import mir.ion.internal.stage3: mir_json2ion;
 import mir.ion.stream: IonValueStream;
 
 /++
@@ -119,10 +120,9 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
     pragma(inline, false);
     import mir.exception: MirException;
     import mir.ion.exception: ionErrorMsg;
-    import mir.ion.internal.stage3;
 
     immutable(ubyte)[] ret;
-    stage3(text, (error, data)
+    mir_json2ion(text, (error, data)
     {
         if (error.code)
             throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
@@ -154,9 +154,8 @@ void json2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     import mir.exception: MirException;
     import mir.ion.exception: ionErrorMsg, ionException;
     import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
-    import mir.ion.internal.stage3;
 
-    stage3(text, (error, data)
+    mir_json2ion(text, (error, data)
     {
         if (error.code)
         {
