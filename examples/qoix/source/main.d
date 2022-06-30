@@ -2,6 +2,8 @@ module main;
 
 import std.stdio;
 import std.file;
+import std.conv;
+import std.string;
 import std.algorithm;
 import gamut;
 import core.stdc.stdlib: free;
@@ -25,6 +27,8 @@ int main(string[] args)
     {
         Image image;
         image.loadFromFile(f);
+        if (image.errored)
+            throw new Exception(to!string(image.errorMessage));
 
         int width = image.width;
         int height = image.height;
