@@ -77,6 +77,12 @@ public:
         return _error !is null;
     }
 
+    /// The error message (null if no error currently held).
+    const(char)* errorMessage() pure const
+    {
+        return _error;
+    }
+
     /// An image can have data (usually pixels), or not.
     /// "Data" refers to pixel content, that can be in a decoded form (RGBA8), but also in more
     /// complicated forms such as planar, compressed, etc.
@@ -132,7 +138,7 @@ public:
             return;
         }
 
-        if (width >= GAMUT_MAX_IMAGE_WIDTH || height  >= GAMUT_MAX_IMAGE_WIDTH)
+        if (!imageIsValidSize(width, height))
         {
             error(kStrImageTooLarge);
             return;
@@ -551,6 +557,7 @@ package:
     /// Note: `msg` MUST be zero-terminated.
     void error(const(char)[] msg) pure
     {
+        assert(msg !is null);
         _error = assumeZeroTerminated(msg);
     }
 

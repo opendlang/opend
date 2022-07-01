@@ -98,7 +98,7 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }    
 
-    if (desc.width > GAMUT_MAX_IMAGE_WIDTH || desc.height > GAMUT_MAX_IMAGE_HEIGHT)
+    if (!imageIsValidSize(desc.width, desc.height))
     {
         image.error(kStrImageTooLarge);
         free(decoded);

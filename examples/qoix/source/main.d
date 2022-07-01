@@ -25,8 +25,16 @@ int main(string[] args)
 
     foreach(f; files)
     {
+        writeln();
+        writeln(f);
+
         Image image;
         image.loadFromFile(f);
+        if (image.errored)
+            throw new Exception(to!string(image.errorMessage));
+        if (image.type == ImageType.uint8)
+            image.convertTo(ImageType.rgb8);
+
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
@@ -40,8 +48,7 @@ int main(string[] args)
         double png_encode_mpps = (width * height * 1.0e-6) / (png_encode_ms * 0.001);
         double png_decode_mpps = (width * height * 1.0e-6) / (png_decode_ms * 0.001);
 
-        writeln();
-        writeln(f);
+
         writefln("       decode ms   encode ms   decode mpps   encode mpps   size kb   rate");
         writefln("png     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", png_decode_ms, png_encode_ms, png_decode_mpps, png_encode_mpps, png_size_kb, 1.0);
 

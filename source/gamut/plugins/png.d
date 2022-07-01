@@ -87,7 +87,7 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }    
 
-    if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
+    if (!imageIsValidSize(width, height))
     {
         image.error(kStrImageTooLarge);
         free(decoded);

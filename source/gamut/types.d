@@ -89,11 +89,30 @@ enum GAMUT_INVALID_IMAGE_WIDTH = -1;
 enum GAMUT_INVALID_IMAGE_HEIGHT = -1; 
 
 
-/// No FIBITMAP can exceed this width in gamut.
-enum GAMUT_MAX_IMAGE_WIDTH = 16384;  
+/// No `Image` can exceed this width in gamut.
+enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;  
 
-/// No FIBITMAP can exceed this height in gamut.
-enum GAMUT_MAX_IMAGE_HEIGHT = 16384; 
+/// No `Image` can exceed this height in gamut.
+enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
+
+/// No `Image` can have a width x height product that exceed this value of 67 Mpixels.
+enum int GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT = 67108864;
+
+/// Check if these image dimensions are valid in Gamut.
+bool imageIsValidSize(int width, int height) pure
+{
+    if (width < 0 || height < 0)
+        return false;
+
+    if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
+        return false;
+
+    long pixels = cast(long)width * cast(long)height;
+    if (pixels > GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT)
+        return false;
+
+    return true;
+}
 
 
 
