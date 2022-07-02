@@ -11,8 +11,8 @@
     "configurations": [
         {
             "name": "boost+mit",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", 
-                          "encodeJPEG", "encodePNG", "encodeQOI" ]
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",
+                          "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", ]
         },
         {
             "name": "boost",
@@ -21,7 +21,7 @@
         },
         {
             "name": "just-decode",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI" ]
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX" ]
         },
         {
             "name": "no-codecs",

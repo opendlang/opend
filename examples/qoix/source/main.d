@@ -64,8 +64,19 @@ int main(string[] args)
 
         writefln("qoi     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", qoi_decode_ms, qoi_encode_ms, qoi_decode_mpps, qoi_encode_mpps, qoi_size_kb, qoi_rate);
 
+        ubyte[] qoix_encoded;
+        double qoix_encode_ms = measure( { qoix_encoded = image.saveToMemory(ImageFormat.QOIX); } );
+        double qoix_size_kb = qoix_encoded.length / 1024.0;
+        double qoix_decode_ms = measure( { image.loadFromMemory(qoix_encoded); } );
+        double qoix_encode_mpps = (width * height * 1.0e-6) / (qoix_encode_ms * 0.001);
+        double qoix_decode_mpps = (width * height * 1.0e-6) / (qoix_decode_ms * 0.001);
+        double qoix_rate = qoix_size_kb / png_size_kb;
+
+        writefln("qoix    %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", qoi_decode_ms, qoi_encode_ms, qoi_decode_mpps, qoi_encode_mpps, qoi_size_kb, qoi_rate);
+
         free(qoi_encoded.ptr);
-        free(png_encoded.ptr);
+        free(qoix_encoded.ptr);
+        free(png_encoded.ptr
     }
 
 

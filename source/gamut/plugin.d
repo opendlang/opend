@@ -14,6 +14,7 @@ import gamut.io;
 import gamut.plugins.jpeg;
 import gamut.plugins.png;
 import gamut.plugins.qoi;
+import gamut.plugins.qoix;
 
 nothrow @nogc @safe:
 
@@ -101,5 +102,6 @@ static immutable __gshared ImageFormatPlugin[ImageFormat.max+1] g_plugins =
 [
     makeJPEGPlugin(),
     makePNGPlugin(),
-    makeQOIPlugin()
+    makeQOIPlugin(),
+    makeQOIXPlugin(),
 ];

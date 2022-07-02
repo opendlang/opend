@@ -16,7 +16,8 @@ enum ImageFormat
     first   =  0,
     JPEG    =  0, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
     PNG     =  1, /// Portable Network Graphics (*.PNG)
-    QOI     =  2  /// Quite OK Image format (*.QOI)
+    QOI     =  2, /// Quite OK Image format (*.QOI)
+    QOIX    =  3  /// Quite OK Image format, eXtended as in Gamut (*.QOIX)
 }
 
 /// Image format.
