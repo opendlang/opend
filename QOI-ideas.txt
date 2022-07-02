@@ -10,3 +10,22 @@ Generally I'd like to:
 From discussions:
 - pretty clear LZ4 improves things
 - pretty clear using a FIFO improves things
+
+Interesting predictor:
+  - left/last encoded pixel
+  - encoded pixel on top of current
+  - average of top and left
+  - top-left pixel
+  - top-right pixel
+  - with 2 to 2 average, that makes 10 (with all of the above)
+  - 128 entries tables 
+  Avec les moyennes, ca fait 10
+
+Add to prediction, possibilities:
+  - with 4 bits, the bits sets the last bit of the predictor
+  - with -2 to 1 6-bit offset
+  - 3 3 2 bit offsets
+  - worst case: full values, 4 x 8-bits
+
+Il faudrait faire des stats sur différences inter-pixel typiques, et tout ça par prédicteur.
+Améliorer la prédictione est indépendant d'améliorer l'encodage du diff.

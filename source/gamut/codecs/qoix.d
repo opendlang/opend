@@ -237,12 +237,12 @@ struct qoix_desc
 alias QOIX_MALLOC = malloc;
 alias QOIX_FREE = free;
 
-enum int QOIX_OP_INDEX = 0x00; /* 00xxxxxx */
-enum int QOIX_OP_DIFF  = 0x40; /* 01xxxxxx */
-enum int QOIX_OP_LUMA  = 0x80; /* 10xxxxxx */
-enum int QOIX_OP_RUN   = 0xc0; /* 11xxxxxx */
-enum int QOIX_OP_RGB   = 0xfe; /* 11111110 */
-enum int QOIX_OP_RGBA  = 0xff; /* 11111111 */
+enum int QOIX_OP_INDEX = 0x00; /* 00xxxxxx */ // Predicteur dans la table, sans diff
+enum int QOIX_OP_DIFF  = 0x40; /* 01xxxxxx */ // Predicteur last, diff
+enum int QOIX_OP_LUMA  = 0x80; /* 10xxxxxx */ // Predicteur last, diff un peu plus gros
+enum int QOIX_OP_RUN   = 0xc0; /* 11xxxxxx */ // Répétition prédicteur last
+enum int QOIX_OP_RGB   = 0xfe; /* 11111110 */ // Pas de prédicteur, absolu
+enum int QOIX_OP_RGBA  = 0xff; /* 11111111 */ // Pas de prédicteur, absolu
 
 enum int QOIX_MASK_2   = 0xc0; /* 11000000 */
 
@@ -346,6 +346,24 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
     px_prev.rgba.a = 255;
     px = px_prev;
 
+    // Number of _pixels_ encoded with those modes.
+    int numQOIX_OP_INDEX = 0;
+    int numQOIX_OP_DIFF = 0;
+    int numQOIX_OP_LUMA = 0;
+    int numQOIX_OP_RUN = 0;
+    int numQOIX_OP_RGB = 0;
+    int numQOIX_OP_RGBA = 0;
+
+    // Number of _bytes_ used by those modes
+    int bytesQOIX_OP_INDEX = 0;
+    int bytesQOIX_OP_DIFF = 0;
+    int bytesQOIX_OP_LUMA = 0;
+    int bytesQOIX_OP_RUN = 0;
+    int bytesQOIX_OP_RGB = 0;
+    int bytesQOIX_OP_RGBA = 0;
+
+
+
     px_len = desc.width * desc.height * desc.channels;
     px_end = px_len - desc.channels;
     channels = desc.channels;
@@ -370,6 +388,8 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
                 run++;
                 if (run == 62 || px_pos == px_end) {
                     bytes[p++] = cast(ubyte)(QOIX_OP_RUN | (run - 1));
+                    numQOIX_OP_RUN += run;
+                    bytesQOIX_OP_RUN++;
                     run = 0;
                 }
             }
@@ -378,6 +398,8 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
 
                 if (run > 0) {
                     bytes[p++] = cast(ubyte)(QOIX_OP_RUN | (run - 1));
+                    numQOIX_OP_RUN += run;
+                    bytesQOIX_OP_RUN++;
                     run = 0;
                 }
 
@@ -385,6 +407,7 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
 
                 if (index[index_pos].v == px.v) {
                     bytes[p++] = cast(ubyte)(QOIX_OP_INDEX | index_pos);
+                    numQOIX_OP_INDEX++;
                 }
                 else {
                     index[index_pos] = px;
@@ -401,6 +424,7 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
                             vg > -3 && vg < 2 &&
                             vb > -3 && vb < 2
                             ) {
+                                numQOIX_OP_DIFF++;
                                 bytes[p++] = cast(ubyte)(QOIX_OP_DIFF | (vr + 2) << 4 | (vg + 2) << 2 | (vb + 2));
                             }
                         else if (
@@ -408,10 +432,12 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
                                  vg   > -33 && vg   < 32 &&
                                  vg_b >  -9 && vg_b <  8
                                  ) {
+                                    numQOIX_OP_LUMA++;
                                     bytes[p++] = cast(ubyte)(QOIX_OP_LUMA     | (vg   + 32));
                                     bytes[p++] = cast(ubyte)( (vg_r + 8) << 4 | (vg_b +  8) );
                                  }
                         else {
+                            numQOIX_OP_RGB++;
                             bytes[p++] = QOIX_OP_RGB;
                             bytes[p++] = px.rgba.r;
                             bytes[p++] = px.rgba.g;
@@ -419,6 +445,7 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
                         }
                     }
                     else {
+                        numQOIX_OP_RGBA++;
                         bytes[p++] = QOIX_OP_RGBA;
                         bytes[p++] = px.rgba.r;
                         bytes[p++] = px.rgba.g;
@@ -439,6 +466,25 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
         bytes[p++] = qoix_padding[i];
     }
 
+    // Report
+    {
+        bytesQOIX_OP_INDEX = 1 * numQOIX_OP_INDEX;
+        bytesQOIX_OP_DIFF = 1 * numQOIX_OP_DIFF;
+        bytesQOIX_OP_LUMA = 2 * numQOIX_OP_LUMA;
+        //bytesQOIX_OP_RUN
+        bytesQOIX_OP_RGB = 4 * numQOIX_OP_RGB;
+        bytesQOIX_OP_RGBA = 5 * numQOIX_OP_RGBA;
+
+        import core.stdc.stdio;
+        double total = numQOIX_OP_RUN + numQOIX_OP_DIFF + numQOIX_OP_LUMA + numQOIX_OP_RUN + numQOIX_OP_RGB + numQOIX_OP_RGBA;
+        double totalBytes = bytesQOIX_OP_INDEX + bytesQOIX_OP_DIFF + bytesQOIX_OP_LUMA + bytesQOIX_OP_RUN + bytesQOIX_OP_RGB + bytesQOIX_OP_RGBA;
+        printf(" * OP_INDEX = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_INDEX / total, 100.0 * bytesQOIX_OP_INDEX / totalBytes);
+        printf(" * OP_DIFF  = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_DIFF / total, 100.0 * bytesQOIX_OP_DIFF / totalBytes);
+        printf(" * OP_LUMA  = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_LUMA / total, 100.0 * bytesQOIX_OP_LUMA / totalBytes);
+        printf(" * OP_RUN   = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_RUN / total, 100.0 * bytesQOIX_OP_RUN / totalBytes);
+        printf(" * OP_RGB   = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_RGB / total, 100.0 * bytesQOIX_OP_RGB / totalBytes);
+        printf(" * OP_RGBA  = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_RGBA / total, 100.0 * bytesQOIX_OP_RGBA / totalBytes);
+    }
     *out_len = p;
     return bytes;
 }
