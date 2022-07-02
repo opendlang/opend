@@ -11,6 +11,11 @@ From discussions:
 - pretty clear LZ4 improves things
 - pretty clear using a FIFO improves things
 
+
+## Doesn't work:
+- 63 entries instead of 64 in the cache
+- tweaking hash function
+
 Interesting predictor:
   - left/last encoded pixel
   - encoded pixel on top of current
