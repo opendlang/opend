@@ -1,2 +1,9 @@
 
 - printed uses gamut
+- future: compressed texture respresented as is in Image.
+  Functions just for them:
+     blockWidth / blockHeight / blockScanline
+  Function they can't use: 
+     scanline
+
+- QOIX should be more like QOI2 from the QOI bikeshed github. Because it improves a lot over QOI, use FIFO, etc.

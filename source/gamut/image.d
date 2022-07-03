@@ -33,7 +33,7 @@ public:
 
     /// Returns: Width of image in pixels.
     ///          `GAMUT_UNKNOWN_WIDTH` if not available.
-    int width() pure
+    int width() pure const
     {
         assert(!errored);
         return _width;
@@ -41,7 +41,7 @@ public:
 
     /// Returns: Height of image in pixels.
     ///          `GAMUT_UNKNOWN_WIDTH` if not available.
-    int height() pure
+    int height() pure const
     {
         assert(!errored);
         return _height;
@@ -52,6 +52,17 @@ public:
     int pitchInBytes(Image *dib) pure const
     {
         return _pitch;
+    }
+
+    /// Returns a pointer to the `y` nth line of pixels.
+    /// Only possible if the image has plain pixels.
+    /// What is points to, dependes on the image `type()`.
+    /// Returns: The scanline start. You can read `pitchInBytes` bytes from there.
+    inout(ubyte)* scanline(int y) inout @trusted
+    {
+        assert(hasPlainPixels());
+        assert(y >= 0 && y < _height);
+        return _data + _pitch * y;
     }
 
     //
@@ -101,12 +112,14 @@ public:
 
     /// A planar image is for example YUV420.
     /// If the image is planar, its lines are not accessible like that.
+    /// Currently not supported.
     bool isPlanar() pure const
     {
         return hasData() && imageTypeIsPlanar(_type);
     }
 
     /// A compressed image doesn't have its pixels available.
+    /// Currently not supported.
     bool isCompressed() pure const
     {
         return hasData() && imageTypeIsCompressed(_type);

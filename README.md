@@ -20,4 +20,5 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - PNG. 8-bit, RGB/RGBA
 - JPEG: 8-bit, greyscale/RGB, baseline
 - QOI: 8-bit, RGB/RGBA
+- DDS: BC7 encoded, 8-bit, RGB/RGBA
 
