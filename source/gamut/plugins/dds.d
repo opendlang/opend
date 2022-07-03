@@ -65,8 +65,8 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     // Encode to blocks. How many 4x4 block do we need?
     int width = image.width();
     int height = image.height();
-    int block_W = (image.width + 3) & ~3;
-    int block_H = (image.height + 3) & ~3;
+    int block_W = (image.width + 3) / 4;
+    int block_H = (image.height + 3) / 4;
     int numBlocks = block_W * block_H;
 
 
@@ -138,14 +138,16 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
             {
                 for (int ly = 0; ly < 4; ++ly)
                 {
-                    if (y + ly < height)
+                    if (y*4 + ly < height)
                     {
-                        const(ubyte)* line = image.scanline(y + ly);
-                        const(ubyte)* pixel = &line[x * channels];
+                        const(ubyte)* line = image.scanline(y*4 + ly);
+                        const(ubyte)* pixel = &line[x * 4 * channels];
+
+                        assert(x*4 < width);
 
                         int avail_x = 4;
-                        if (x + 4 > width) 
-                            avail_x = width - x;
+                        if (x*4 + 4 > width) 
+                            avail_x = width - x*4;
 
                         switch (channels)
                         {
@@ -196,8 +198,6 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
                             default:
                                 assert(false);
                         }
-
-                        
                     }
                 }
             }
@@ -215,8 +215,6 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     return true;
 }
 
-// "DDS "
-enum uint cDDSFileSignature = 0x20534444;
 
 struct DDCOLORKEY
 {

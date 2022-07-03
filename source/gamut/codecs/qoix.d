@@ -467,6 +467,7 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
     }
 
     // Report
+    /*
     {
         bytesQOIX_OP_INDEX = 1 * numQOIX_OP_INDEX;
         bytesQOIX_OP_DIFF = 1 * numQOIX_OP_DIFF;
@@ -485,6 +486,7 @@ void *qoix_encode(const(ubyte)* data, const(qoix_desc)* desc, int *out_len)
         printf(" * OP_RGB   = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_RGB / total, 100.0 * bytesQOIX_OP_RGB / totalBytes);
         printf(" * OP_RGBA  = %8.1f%% of pixels, %8.1f%% of size\n", 100.0 * numQOIX_OP_RGBA / total, 100.0 * bytesQOIX_OP_RGBA / totalBytes);
     }
+    */
     *out_len = p;
     return bytes;
 }

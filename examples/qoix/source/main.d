@@ -77,6 +77,17 @@ int main(string[] args)
 
         writefln("qoix    %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", qoix_decode_ms, qoix_encode_ms, qoix_decode_mpps, qoix_encode_mpps, qoix_size_kb, qoix_rate);
 
+        ubyte[] dds_encoded;
+        double dds_encode_ms = measure( { dds_encoded = image.saveToMemory(ImageFormat.DDS); } );
+        double dds_size_kb = dds_encoded.length / 1024.0;
+        double dds_decode_ms = double.nan;
+        double dds_encode_mpps = (width * height * 1.0e-6) / (dds_encode_ms * 0.001);
+        double dds_decode_mpps = double.nan;
+        double dds_rate = dds_size_kb / png_size_kb;
+
+        writefln("dds     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", dds_decode_ms, dds_encode_ms, dds_decode_mpps, dds_encode_mpps, dds_size_kb, dds_rate);
+
+        free(dds_encoded.ptr);
         free(qoi_encoded.ptr);
         free(qoix_encoded.ptr);
         free(png_encoded.ptr);
