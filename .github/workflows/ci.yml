@@ -6,22 +6,27 @@ jobs:
     name: Dub Test
     strategy:
       matrix:
-        os: [ubuntu-20.04]
-        dc: [dmd-2.097.1, ldc-1.27.0]
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        dc: [dmd-2.100.0, ldc-1.28.0]
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
 
       - name: Install D compiler
-        uses: dlang-community/setup-dlang@v1.0.5
+        uses: dlang-community/setup-dlang@v1.1.1
         with:
           compiler: ${{ matrix.dc }}
 
-      - name: Run tests
+      - name: Run tests on Posix
+        if: runner.os != 'Windows'
         run: dub test -q --build=unittest-cov -c asan
+
+      - name: Run tests on Windows
+        if: runner.os == 'Windows'
+        run: dub test -q --build=unittest-cov
 
       - name: Build binary
         run: dub build -q
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v2
