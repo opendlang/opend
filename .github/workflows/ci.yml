@@ -18,8 +18,13 @@ jobs:
         with:
           compiler: ${{ matrix.dc }}
 
-      - name: Run tests
+      - name: Run tests on Posix
+        if: runner.os != 'Windows'
         run: dub test -q --build=unittest-cov -c asan
+
+      - name: Run tests on Windows
+        if: runner.os == 'Windows'
+        run: dub test -q --build=unittest-cov
 
       - name: Build binary
         run: dub build -q
