@@ -19,3 +19,5 @@ public import mir.stat.distribution.beta_proportion: betaProportionCDF;
 public import mir.stat.distribution.normal: normalCDF;
 ///
 public import mir.stat.distribution.uniform: uniformCDF;
+///
+public import mir.stat.distribution.gev: gevCDF;

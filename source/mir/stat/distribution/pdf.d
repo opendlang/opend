@@ -23,3 +23,5 @@ public import mir.stat.distribution.binomial: binomialPMF;
 public import mir.stat.distribution.normal: normalPDF;
 ///
 public import mir.stat.distribution.uniform: uniformPDF;
+///
+public import mir.stat.distribution.gev: gevPDF;
