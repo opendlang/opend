@@ -23,3 +23,5 @@ public import mir.stat.distribution.binomial;
 public import mir.stat.distribution.normal;
 ///
 public import mir.stat.distribution.uniform;
+///
+public import mir.stat.distribution.gev;
