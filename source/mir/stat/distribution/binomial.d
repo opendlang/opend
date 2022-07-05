@@ -31,7 +31,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
 @safe pure nothrow @nogc
-T binomialPMF(T = double, U)(const uint k, const uint n, const U p)
+T binomialPMF(T = double, U)(const size_t k, const size_t n, const U p)
     if (isFloatingPoint!U)
     in (k <= n, "k must be less than or equal to n")
     in (p >= 0, "p must be greater than or equal to 0")
@@ -43,16 +43,10 @@ T binomialPMF(T = double, U)(const uint k, const uint n, const U p)
 
         return binomial(n, k) * pow(p, k) * pow(1 - p, n - k);
     } else static if (is(T == Fp!size, size_t size)) {
-           import mir.math.numeric: binomialCoefficient;
+        import mir.math.internal.fp_powi: fp_powi;
+        import mir.math.numeric: binomialCoefficient;
 
-            T output = binomialCoefficient(n, k);
-            for (size_t i; i < k; i++) {
-                output *= T(p);
-            }
-            for (size_t i; i < (n - k); i++) {
-                output *= T(1 - p);
-            }
-            return output;
+        return binomialCoefficient(n, cast(const uint) k) * fp_powi(T(p), k) * fp_powi(T(1 - p), n - k);
     } else {
         static assert(0, "binomialPMF requires either a floating point type or mir.bignum.fp.Fp type");
     }
@@ -126,7 +120,7 @@ unittest {
     import mir.conv: to;
     import mir.math.common: approxEqual, exp, log;
 
-    enum uint val = 1_000_000;
+    enum size_t val = 1_000_000;
 
     assert(0.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(0, val + 5, 0.75)));
     assert(1.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(1, val + 5, 0.75)));
@@ -150,17 +144,16 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
-T binomialLPMF(T)(uint k, uint n, const T p)
+T binomialLPMF(T)(const size_t k, const size_t n, const T p)
     if (isFloatingPoint!T)
     in (k <= n, "k must be less than or equal to n")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    import mir.bignum.fp: fp_log;
     import mir.math.internal.xlogy: xlogy, xlog1py;
     import mir.math.internal.log_binomial: logBinomialCoefficient;
 
-    return logBinomialCoefficient(n, k) + xlogy(k, p) + xlog1py((n - k), -p);
+    return logBinomialCoefficient(n, cast(const uint) k) + xlogy(k, p) + xlog1py((n - k), -p);
 }
 
 ///
@@ -198,7 +191,7 @@ unittest {
     import mir.bignum.fp: Fp, fp_log;
     import mir.math.common: approxEqual;
 
-    enum uint val = 1_000_000;
+    enum size_t val = 1_000_000;
 
     assert(0.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(0, val + 5, 0.75).fp_log!double));
     assert(1.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(1, val + 5, 0.75).fp_log!double));
