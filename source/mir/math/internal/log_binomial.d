@@ -11,7 +11,7 @@ module mir.math.internal.log_binomial;
 import mir.bignum.fp: Fp;
 import mir.internal.utility: isFloatingPoint;
 
-private enum size_t logFactorialAlternative = 2500;
+private enum size_t logFactorialAlternative = 1 << 11;
 
 ///
 T logFactorial(T = double)(ulong count, ulong start = 1)
@@ -79,7 +79,7 @@ unittest {
     assert(logFactorial(x, x / 2).approxEqual(logGamma(cast(double) x + x / 2) - fp_log!double(factorial(x / 2 - 1))));
 }
 
-private enum size_t logBinomialCoefficientAlternative = 2500;
+private enum size_t logBinomialCoefficientAlternative = 1 << 11;
 
 ///
 T logBinomialCoefficient(T = double)(ulong n, uint k)
