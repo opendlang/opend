@@ -14,20 +14,36 @@ module mir.stat.distribution.binomial;
 import mir.bignum.fp: Fp;
 import mir.internal.utility: isFloatingPoint;
 
-/++
-Computes the binomial probability mass function (PMF).
 
-Params:
-    k = value to evaluate PMF (e.g. number of "heads")
-    n = number of trials
-    p = `true` probability
+/++
+Algorithms used to calculate binomial dstribution.
+
+`BinomialAlgo.direct` can be more time-consuming for large values of the number
+of events (`k`) or the number of trials (`n`). Additional algorithms are
+provided to the user to choose the trade-off between running time and accuracy.
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
+enum BinomialAlgo {
+    /++
+    Direct
+    +/
+    direct,
+    /++
+    Approximates poisson distribution with normal distribution
+    +/
+    approxNormal,
+    /++
+    Approximates poisson distribution with normal distribution (including continuity correction)
+    +/
+    approxNormalContinuityCorrection
+}
+
+private
 @safe pure nothrow @nogc
-T binomialPMF(T)(const size_t k, const size_t n, const T p)
-    if (isFloatingPoint!T)
+T binomialPMFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
     in (k <= n, "k must be less than or equal to n")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
@@ -36,6 +52,67 @@ T binomialPMF(T)(const size_t k, const size_t n, const T p)
     import mir.combinatorics: binomial;
 
     return binomial(n, k) * pow(p, k) * pow(1 - p, n - k);
+}
+
+private
+@safe pure nothrow @nogc
+T binomialPMFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.approxNormal)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalPDF;
+
+    return normalPDF(k, n * p, sqrt(n * p * (1 - p)));
+}
+
+private
+@safe pure nothrow @nogc
+T binomialPMFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalCDF;
+
+    return normalCDF(cast(T) k + 0.5, n * p, sqrt(n * p * (1 - p))) - normalCDF(cast(T) k - 0.5, n * p, sqrt(n * p * (1 - p)));
+}
+
+/++
+Computes the binomial probability mass function (PMF).
+
+
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
++/
+@safe pure nothrow @nogc
+template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct) {
+    /++
+    Params:
+    k = value to evaluate PMF (e.g. number of "heads")
+    n = number of trials
+    p = `true` probability
+    +/
+    T binomialPMF(T)(const size_t k, const size_t n, const T p)
+        if (isFloatingPoint!T)
+        in (k <= n, "k must be less than or equal to n")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
+    {
+        return binomialPMFImpl!(T, binomialAlgo)(k, n, p);
+    }
+}
+
+/// ditto
+@safe pure nothrow @nogc
+template binomialPMF(string poissonAlgo)
+{
+    mixin("alias binomialPMF = .binomialPMF!(BinomialAlgo." ~ binomialAlgo ~ ");");
 }
 
 ///
