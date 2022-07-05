@@ -17,11 +17,6 @@ import mir.internal.utility: isFloatingPoint;
 /++
 Computes the binomial probability mass function (PMF).
 
-This function can control the type of the function output through the template
-parameter `T`. By default, `T` is set equal to `double`, but other floating
-point types or extended precision floating point types (e.g. `Fp!128`) can be
-used. For large values of `n`, `Fp!128` is recommended.
-
 Params:
     k = value to evaluate PMF (e.g. number of "heads")
     n = number of trials
@@ -31,25 +26,16 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
 @safe pure nothrow @nogc
-T binomialPMF(T = double, U)(const size_t k, const size_t n, const U p)
-    if (isFloatingPoint!U)
+T binomialPMF(T)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T)
     in (k <= n, "k must be less than or equal to n")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    static if (isFloatingPoint!T) {
-        import mir.math.common: pow;
-        import mir.combinatorics: binomial;
+    import mir.math.common: pow;
+    import mir.combinatorics: binomial;
 
-        return binomial(n, k) * pow(p, k) * pow(1 - p, n - k);
-    } else static if (is(T == Fp!size, size_t size)) {
-        import mir.math.internal.fp_powi: fp_powi;
-        import mir.math.numeric: binomialCoefficient;
-
-        return binomialCoefficient(n, cast(const uint) k) * fp_powi(T(p), k) * fp_powi(T(1 - p), n - k);
-    } else {
-        static assert(0, "binomialPMF requires either a floating point type or mir.bignum.fp.Fp type");
-    }
+    return binomial(n, k) * pow(p, k) * pow(1 - p, n - k);
 }
 
 ///
@@ -82,37 +68,39 @@ unittest {
     assert(5.binomialPMF(5, 0.75).approxEqual(binomial(5, 5) * pow(0.75, 5) * pow(0.25, 0)));
 }
 
-// using Fp!128, p = 0.5
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest {
-    import mir.conv: to;
-    import mir.math.common: approxEqual;
+/++
+Computes the binomial probability mass function (PMF).
 
-    assert(0.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(0, 5, 0.5)));
-    assert(1.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(1, 5, 0.5)));
-    assert(2.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(2, 5, 0.5)));
-    assert(3.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(3, 5, 0.5)));
-    assert(4.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(4, 5, 0.5)));
-    assert(5.binomialPMF!(Fp!128)(5, 0.5).to!double.approxEqual(binomialPMF(5, 5, 0.5)));
+////
+// TODO: Fixup
+////
+This function can control the type of the function output through the template
+parameter `T`. By default, `T` is set equal to `double`, but other floating
+point types or extended precision floating point types (e.g. `Fp!128`) can be
+used. For large values of `n`, `Fp!128` is recommended.
+
+Params:
+    k = value to evaluate PMF (e.g. number of "heads")
+    n = number of trials
+    p = `true` probability
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
++/
+@safe pure nothrow @nogc
+T fp_binomialPMF(T)(const size_t k, const size_t n, const T p)
+    if (is(T == Fp!size, size_t size))
+    in (k <= n, "k must be less than or equal to n")
+    in (cast(double) p >= 0, "p must be greater than or equal to 0")
+    in (cast(double) p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.internal.fp_powi: fp_powi;
+    import mir.math.numeric: binomialCoefficient;
+
+    return binomialCoefficient(n, cast(const uint) k) * fp_powi(p, k) * fp_powi(T(1 - cast(double) p), n - k);
 }
 
-// using Fp!128, p = 0.75
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest {
-    import mir.conv: to;
-    import mir.math.common: approxEqual;
-
-    assert(0.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(0, 5, 0.75)));
-    assert(1.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(1, 5, 0.75)));
-    assert(2.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(2, 5, 0.75)));
-    assert(3.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(3, 5, 0.75)));
-    assert(4.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(4, 5, 0.75)));
-    assert(5.binomialPMF!(Fp!128)(5, 0.75).to!double.approxEqual(binomialPMF(5, 5, 0.75)));
-}
-
-/// binomialPMF!(Fp!128) provides accurate values for large values of `n`
+/// fp_binomialPMF provides accurate values for large values of `n`
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
@@ -122,15 +110,45 @@ unittest {
 
     enum size_t val = 1_000_000;
 
-    assert(0.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(0, val + 5, 0.75)));
-    assert(1.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(1, val + 5, 0.75)));
-    assert(2.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(2, val + 5, 0.75)));
-    assert(5.binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(5, val + 5, 0.75)));
-    assert((val / 2).binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(val / 2, val + 5, 0.75)));
-    assert((val - 5).binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(val - 5, val + 5, 0.75)));
-    assert((val - 2).binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(val - 2, val + 5, 0.75)));
-    assert((val - 1).binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(val - 1, val + 5, 0.75)));
-    assert((val - 0).binomialPMF!(Fp!128)(val + 5, 0.75).fp_log!double.approxEqual(binomialLPMF(val, val + 5, 0.75)));
+    assert(0.fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(0, val + 5, 0.75)));
+    assert(1.fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(1, val + 5, 0.75)));
+    assert(2.fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(2, val + 5, 0.75)));
+    assert(5.fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(5, val + 5, 0.75)));
+    assert((val / 2).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val / 2, val + 5, 0.75)));
+    assert((val - 5).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val - 5, val + 5, 0.75)));
+    assert((val - 2).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val - 2, val + 5, 0.75)));
+    assert((val - 1).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val - 1, val + 5, 0.75)));
+    assert((val - 0).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val, val + 5, 0.75)));
+}
+
+// using Fp!128, p = 0.5
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.conv: to;
+    import mir.math.common: approxEqual;
+
+    assert(0.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(0, 5, 0.5)));
+    assert(1.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(1, 5, 0.5)));
+    assert(2.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(2, 5, 0.5)));
+    assert(3.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(3, 5, 0.5)));
+    assert(4.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(4, 5, 0.5)));
+    assert(5.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(5, 5, 0.5)));
+}
+
+// using Fp!128, p = 0.75
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.conv: to;
+    import mir.math.common: approxEqual;
+
+    assert(0.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(0, 5, 0.75)));
+    assert(1.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(1, 5, 0.75)));
+    assert(2.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(2, 5, 0.75)));
+    assert(3.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(3, 5, 0.75)));
+    assert(4.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(4, 5, 0.75)));
+    assert(5.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(5, 5, 0.75)));
 }
 
 /++
@@ -193,14 +211,14 @@ unittest {
 
     enum size_t val = 1_000_000;
 
-    assert(0.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(0, val + 5, 0.75).fp_log!double));
-    assert(1.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(1, val + 5, 0.75).fp_log!double));
-    assert(2.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(2, val + 5, 0.75).fp_log!double));
-    assert(5.binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(5, val + 5, 0.75).fp_log!double));
-    assert((val / 2).binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(val / 2, val + 5, 0.75).fp_log!double));
-    assert((val - 5).binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(val - 5, val + 5, 0.75).fp_log!double));
-    assert((val - 2).binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(val - 2, val + 5, 0.75).fp_log!double));
-    assert((val - 1).binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(val - 1, val + 5, 0.75).fp_log!double));
-    assert((val - 0).binomialLPMF(val + 5, 0.75).approxEqual(binomialPMF!(Fp!128)(val, val + 5, 0.75).fp_log!double));
+    assert(0.binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(0, val + 5, Fp!128(0.75)).fp_log!double));
+    assert(1.binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(1, val + 5, Fp!128(0.75)).fp_log!double));
+    assert(2.binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(2, val + 5, Fp!128(0.75)).fp_log!double));
+    assert(5.binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(5, val + 5, Fp!128(0.75)).fp_log!double));
+    assert((val / 2).binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(val / 2, val + 5, Fp!128(0.75)).fp_log!double));
+    assert((val - 5).binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(val - 5, val + 5, Fp!128(0.75)).fp_log!double));
+    assert((val - 2).binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(val - 2, val + 5, Fp!128(0.75)).fp_log!double));
+    assert((val - 1).binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(val - 1, val + 5, Fp!128(0.75)).fp_log!double));
+    assert((val - 0).binomialLPMF(val + 5, 0.75).approxEqual(fp_binomialPMF(val, val + 5, Fp!128(0.75)).fp_log!double));
     
 }
