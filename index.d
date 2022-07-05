@@ -25,6 +25,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,beta_proportion)) $(TD Beta Proportion Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,binomial)) $(TD Binomial Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Uniform Probability Distribution ))
 )
 
