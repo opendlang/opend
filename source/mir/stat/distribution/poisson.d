@@ -69,19 +69,25 @@ T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 private
 @safe pure nothrow @nogc
 T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
-    if (isFloatingPoint!T && 
-        (poissonAlgo == PoissonAlgo.approxNormal || 
-         poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection))
+    if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.approxNormal)
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     import mir.math.common: sqrt;
     import mir.stat.distribution.normal: normalPDF;
 
-    T l = k;
-    static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
-    }
-    return normalPDF(l, lambda, sqrt(lambda));
+    return normalPDF(k, lambda, sqrt(lambda));
+}
+
+private
+@safe pure nothrow @nogc
+T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
+    if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection)
+    in (lambda > 0, "lambda must be greater than or equal to 0")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalCDF;
+
+    return normalCDF(cast(T) k + 0.5, lambda, sqrt(lambda)) - normalCDF(cast(T) k - 0.5, lambda, sqrt(lambda));
 }
 
 /++
@@ -165,10 +171,10 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, sqrt;
-    import mir.stat.distribution.normal: normalPDF;
+    import mir.stat.distribution.normal: normalCDF, normalPDF;
     for (size_t i; i < 20; i++) {
         assert(i.poissonPMF!"approxNormal"(5.0).approxEqual(normalPDF(i, 5.0, sqrt(5.0))));
-        assert(i.poissonPMF!"approxNormalContinuityCorrection"(5.0).approxEqual(normalPDF(i + 0.5, 5.0, sqrt(5.0))));
+        assert(i.poissonPMF!"approxNormalContinuityCorrection"(5.0).approxEqual(normalCDF(i + 0.5, 5.0, sqrt(5.0)) - normalCDF(i - 0.5, 5.0, sqrt(5.0))));
     }
 }
 
