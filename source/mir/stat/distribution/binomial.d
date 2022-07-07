@@ -13,7 +13,7 @@ module mir.stat.distribution.binomial;
 
 import mir.bignum.fp: Fp;
 import mir.internal.utility: isFloatingPoint;
-
+import mir.stat.distribution.poisson: PoissonAlgo;
 
 /++
 Algorithms used to calculate binomial dstribution.
@@ -40,7 +40,12 @@ enum BinomialAlgo {
     Approximates poisson distribution with normal distribution (including continuity correction). More 
     accurate than `BinomialAlgo.approxNormal`.
     +/
-    approxNormalContinuityCorrection
+    approxNormalContinuityCorrection,
+    /++
+    Approximates poisson distribution with poisson distribution (also requires specifying poissonAlgo). 
+    Generally a better approximation when `n >= 20` and `p <= 0.05` or when `n >= 100` and `np <= 10`.
+    +/
+    approxPoisson
 }
 
 private
@@ -85,16 +90,34 @@ T binomialPMFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, 
     return normalCDF(cast(T) k + 0.5, n * p, sqrt(n * p * (1 - p))) - normalCDF(cast(T) k - 0.5, n * p, sqrt(n * p * (1 - p)));
 }
 
+private
+@safe pure nothrow @nogc
+T binomialPMFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.approxPoisson)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.stat.distribution.poisson: poissonPMF;
+
+    return poissonPMF!poissonAlgo(k, n * p);
+}
+
 /++
 Computes the binomial probability mass function (PMF).
 
+Additional algorithms may be provided for calculating PMF that allow trading off
+time and accuracy. If `approxPoisson` is provided, the default is `PoissonAlgo.gamma`
 
+Params:
+    binomialAlgo = algorithm for calculating PMF (default: BinomialAlgo.direct)
+    poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
 @safe pure nothrow @nogc
-template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct) {
+template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct, PoissonAlgo poissonAlgo = PoissonAlgo.gamma) {
     /++
     Params:
     k = value to evaluate PMF (e.g. number of "heads")
@@ -107,15 +130,18 @@ template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct) {
         in (p >= 0, "p must be greater than or equal to 0")
         in (p <= 1, "p must be less than or equal to 1")
     {
-        return binomialPMFImpl!(T, binomialAlgo)(k, n, p);
+        static if (binomialAlgo != BinomialAlgo.approxPoisson)
+            return binomialPMFImpl!(T, binomialAlgo)(k, n, p);
+        else
+            return binomialPMFImpl!(T, binomialAlgo, poissonAlgo)(k, n, p);
     }
 }
 
 /// ditto
 @safe pure nothrow @nogc
-template binomialPMF(string poissonAlgo)
+template binomialPMF(string binomialAlgo, string poissonAlgo = "gamma")
 {
-    mixin("alias binomialPMF = .binomialPMF!(BinomialAlgo." ~ binomialAlgo ~ ");");
+    mixin("alias binomialPMF = .binomialPMF!(BinomialAlgo." ~ binomialAlgo ~ ", PoissonAlgo." ~ poissonAlgo ~ ");");
 }
 
 ///
@@ -123,29 +149,44 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, pow;
-    import mir.combinatorics: binomial;
 
-    assert(0.binomialPMF(5, 0.5).approxEqual(binomial(5, 0) * pow(0.5, 5)));
-    assert(1.binomialPMF(5, 0.5).approxEqual(binomial(5, 1) * pow(0.5, 5)));
-    assert(2.binomialPMF(5, 0.5).approxEqual(binomial(5, 2) * pow(0.5, 5)));
-    assert(3.binomialPMF(5, 0.5).approxEqual(binomial(5, 3) * pow(0.5, 5)));
-    assert(4.binomialPMF(5, 0.5).approxEqual(binomial(5, 4) * pow(0.5, 5)));
-    assert(5.binomialPMF(5, 0.5).approxEqual(binomial(5, 5) * pow(0.5, 5)));
+    assert(4.binomialPMF(6, 2.0 / 3).approxEqual(15.0 * pow(2.0 / 3, 4) * pow(1.0 / 3, 2)));
+    // For large values of `n` with `p` not too extreme, can approximate with normal distribution
+    assert(550_000.binomialPMF!"approxNormal"(1_000_000, 0.55).approxEqual(0.0008019042));
+    // Or closer with continuity correction
+    assert(550_000.binomialPMF!"approxNormalContinuityCorrection"(1_000_000, 0.55).approxEqual(0.000801904));
+    // Poisson approximation is better when `p` is low
+    assert(10_000.binomialPMF!"approxPoisson"(1_000_000, 0.01).approxEqual(0.00398939));
 }
 
-// p = 0.75
+// p = 0.25, 0.5, 0.75
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, pow;
     import mir.combinatorics: binomial;
 
-    assert(0.binomialPMF(5, 0.75).approxEqual(binomial(5, 0) * pow(0.75, 0) * pow(0.25, 5)));
-    assert(1.binomialPMF(5, 0.75).approxEqual(binomial(5, 1) * pow(0.75, 1) * pow(0.25, 4)));
-    assert(2.binomialPMF(5, 0.75).approxEqual(binomial(5, 2) * pow(0.75, 2) * pow(0.25, 3)));
-    assert(3.binomialPMF(5, 0.75).approxEqual(binomial(5, 3) * pow(0.75, 3) * pow(0.25, 2)));
-    assert(4.binomialPMF(5, 0.75).approxEqual(binomial(5, 4) * pow(0.75, 4) * pow(0.25, 1)));
-    assert(5.binomialPMF(5, 0.75).approxEqual(binomial(5, 5) * pow(0.75, 5) * pow(0.25, 0)));
+    for (size_t i; i <= 5; i++) {
+        assert(i.binomialPMF(5, 0.25).approxEqual(binomial(5, i) * pow(0.25, i) * pow(0.75, 5 - i)));
+        assert(i.binomialPMF(5, 0.50).approxEqual(binomial(5, i) * pow(0.50, 5)));
+        assert(i.binomialPMF(5, 0.75).approxEqual(binomial(5, i) * pow(0.75, i) * pow(0.25, 5 - i)));
+    }
+}
+
+// test BinomialAlgo.approxNormal / approxNormalContinuityCorrection / approxPoisson
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual, sqrt;
+    import mir.stat.distribution.normal: normalCDF, normalPDF;
+    import mir.stat.distribution.poisson: poissonPMF;
+    
+    for (size_t i; i < 5; i++) {
+        assert(i.binomialPMF!"approxNormal"(5, 0.75).approxEqual(normalPDF(i, 5.0 * 0.75, sqrt(5.0 * 0.75 * 0.25))));
+        assert(i.binomialPMF!"approxNormalContinuityCorrection"(5, 0.75).approxEqual(normalCDF(i + 0.5, 5.0 * 0.75, sqrt(5.0 * 0.75 * 0.25)) - normalCDF(i - 0.5, 5.0 * 0.75, sqrt(5.0 * 0.75 * 0.25))));
+        assert(i.binomialPMF!"approxPoisson"(5, 0.75).approxEqual(poissonPMF!"gamma"(i, 5 * 0.75)));
+        assert(i.binomialPMF!("approxPoisson", "direct")(5, 0.75).approxEqual(poissonPMF(i, 5 * 0.75)));
+    }
 }
 
 /++
