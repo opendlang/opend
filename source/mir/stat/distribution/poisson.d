@@ -34,11 +34,13 @@ enum PoissonAlgo {
     +/
     gamma,
     /++
-    Approximates poisson distribution with normal distribution
+    Approximates poisson distribution with normal distribution. Generally a better approximation when
+    `lambda > 1000`.
     +/
     approxNormal,
     /++
-    Approximates poisson distribution with normal distribution (including continuity correction)
+    Approximates poisson distribution with normal distribution (including continuity correction). More 
+    accurate than `PoissonAlgo.approxNormal`. Generally a better approximation when `lambda > 10`.
     +/
     approxNormalContinuityCorrection
 }

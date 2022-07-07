@@ -31,11 +31,14 @@ enum BinomialAlgo {
     +/
     direct,
     /++
-    Approximates poisson distribution with normal distribution
+    Approximates poisson distribution with normal distribution. Generally a better approximation when
+    `n > 20` and `p` is far from 0 or 1, but a variety of rules of thumb can help determine when it is 
+    appropriate to use.
     +/
     approxNormal,
     /++
-    Approximates poisson distribution with normal distribution (including continuity correction)
+    Approximates poisson distribution with normal distribution (including continuity correction). More 
+    accurate than `BinomialAlgo.approxNormal`.
     +/
     approxNormalContinuityCorrection
 }
