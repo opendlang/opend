@@ -117,7 +117,9 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
 +/
 @safe pure nothrow @nogc
-template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct, PoissonAlgo poissonAlgo = PoissonAlgo.gamma) {
+template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
+                     PoissonAlgo poissonAlgo = PoissonAlgo.gamma)
+{
     /++
     Params:
     k = value to evaluate PMF (e.g. number of "heads")
@@ -159,7 +161,7 @@ unittest {
     assert(10_000.binomialPMF!"approxPoisson"(1_000_000, 0.01).approxEqual(0.00398939));
 }
 
-// p = 0.25, 0.5, 0.75
+// test multiple
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
@@ -264,6 +266,322 @@ unittest {
     assert(3.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(3, 5, 0.75)));
     assert(4.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(4, 5, 0.75)));
     assert(5.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(5, 5, 0.75)));
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCDFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: pow;
+
+    if (k == n) {
+        return 1;
+    } else if (k == 0) {
+        return pow(1 - p, n);
+    } else if (k <= n / 2 + 1) {
+        T result = 0;
+
+        foreach (size_t i; 0 .. (k + 1)) {
+            result += binomialPMFImpl!(T, binomialAlgo)(i, n, p);
+        }
+
+        return result;
+    } else {
+        return 1 - binomialCDFImpl!(T, binomialAlgo)(n - k - 1, n, 1 - p);
+    }
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCDFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T &&
+        (binomialAlgo == BinomialAlgo.approxNormal || 
+         binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection))
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalCDF;
+
+    T l = k;
+    static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
+        l += 0.5;
+    }
+    return normalCDF(l, n * p, sqrt(n * p * (1 - p)));
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.approxPoisson)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.stat.distribution.poisson: poissonCDF;
+
+    return poissonCDF!poissonAlgo(k, n * p);
+}
+
+/++
+Computes the binomial cumulative distribution function (CDF).
+
+Additional algorithms may be provided for calculating CDF that allow trading off
+time and accuracy. If `approxPoisson` is provided, the default is `PoissonAlgo.gamma`
+
+Params:
+    binomialAlgo = algorithm for calculating CDF (default: BinomialAlgo.direct)
+    poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
++/
+@safe pure nothrow @nogc
+template binomialCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
+                     PoissonAlgo poissonAlgo = PoissonAlgo.gamma)
+{
+    /++
+    Params:
+    k = value to evaluate CDF (e.g. number of "heads")
+    n = number of trials
+    p = `true` probability
+    +/
+    T binomialCDF(T)(const size_t k, const size_t n, const T p)
+        if (isFloatingPoint!T)
+        in (k <= n, "k must be less than or equal to n")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
+    {
+        static if (binomialAlgo != BinomialAlgo.approxPoisson)
+            return binomialCDFImpl!(T, binomialAlgo)(k, n, p);
+        else
+            return binomialCDFImpl!(T, binomialAlgo, poissonAlgo)(k, n, p);
+    }
+}
+
+/// ditto
+@safe pure nothrow @nogc
+template binomialCDF(string binomialAlgo, string poissonAlgo = "gamma")
+{
+    mixin("alias binomialCDF = .binomialCDF!(BinomialAlgo." ~ binomialAlgo ~ ", PoissonAlgo." ~ poissonAlgo ~ ");");
+}
+
+///
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual, pow;
+
+    assert(4.binomialCDF(6, 2.0 / 3).approxEqual(binomialPMF(0, 6, 2.0 / 3) + binomialPMF(1, 6, 2.0 / 3) + binomialPMF(2, 6, 2.0 / 3) + binomialPMF(3, 6, 2.0 / 3) + binomialPMF(4, 6, 2.0 / 3)));
+    // For large values of `n` with `p` not too extreme, can approximate with normal distribution
+    assert(550_000.binomialCDF!"approxNormal"(1_000_000, 0.55).approxEqual(0.5));
+    // Or closer with continuity correction
+    assert(550_000.binomialCDF!"approxNormalContinuityCorrection"(1_000_000, 0.55).approxEqual(0.500401));
+    // Poisson approximation is better when `p` is low
+    assert(10_000.binomialCDF!"approxPoisson"(1_000_000, 0.01).approxEqual(0.5026596));
+}
+
+// test multiple direct
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+    
+    static double sumOfbinomialPMFs(T)(size_t k, size_t n, T p) {
+        double result = 0.0;
+        for (size_t i; i <= k; i++) {
+            result += binomialPMF(i, n, p);
+        }
+        return result;
+    }
+
+    // n = 5
+    for (size_t i; i <= 5; i++) {
+        assert(i.binomialCDF(5, 0.25).approxEqual(sumOfbinomialPMFs(i, 5, 0.25)));
+        assert(i.binomialCDF(5, 0.50).approxEqual(sumOfbinomialPMFs(i, 5, 0.50)));
+        assert(i.binomialCDF(5, 0.75).approxEqual(sumOfbinomialPMFs(i, 5, 0.75)));
+    }
+
+    // n = 6
+    for (size_t i; i <= 6; i++) {
+        assert(i.binomialCDF(6, 0.25).approxEqual(sumOfbinomialPMFs(i, 6, 0.25)));
+        assert(i.binomialCDF(6, 0.5).approxEqual(sumOfbinomialPMFs(i, 6, 0.5)));
+        assert(i.binomialCDF(6, 0.75).approxEqual(sumOfbinomialPMFs(i, 6, 0.75)));
+    }
+}
+
+// test BinomialAlgo.approxNormal / approxNormalContinuityCorrection / approxPoisson
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual, sqrt;
+    import mir.stat.distribution.normal: normalCDF;
+    import mir.stat.distribution.poisson: poissonCDF;
+    
+    for (size_t i; i < 5; i++) {
+        assert(i.binomialCDF!"approxNormal"(5, 0.75).approxEqual(normalCDF(i, 5.0 * 0.75, sqrt(5.0 * 0.75 * 0.25))));
+        assert(i.binomialCDF!"approxNormalContinuityCorrection"(5, 0.75).approxEqual(normalCDF(i + 0.5, 5.0 * 0.75, sqrt(5.0 * 0.75 * 0.25))));
+        assert(i.binomialCDF!"approxPoisson"(5, 0.75).approxEqual(poissonCDF!"gamma"(i, 5 * 0.75)));
+        assert(i.binomialCDF!("approxPoisson", "direct")(5, 0.75).approxEqual(poissonCDF(i, 5 * 0.75)));
+    }
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCCDFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: pow;
+
+    if (k == n) {
+        return 0;
+    } else if (k == 0) {
+        return 1 - pow(1 - p, n);
+    } else if (k >= n / 2) {
+        T result = 0;
+
+        foreach (size_t i; (k + 1) .. (n + 1)) {
+            result += binomialPMFImpl!(T, binomialAlgo)(i, n, p);
+        }
+
+        return result;
+    } else {
+        return 1 - binomialCCDFImpl!(T, binomialAlgo)(n - k - 1, n, 1 - p);
+    }
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCCDFImpl(T, BinomialAlgo binomialAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T &&
+        (binomialAlgo == BinomialAlgo.approxNormal || 
+         binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection))
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalCCDF;
+
+    T l = k;
+    static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
+        l += 0.5;
+    }
+    return normalCCDF(l, n * p, sqrt(n * p * (1 - p)));
+}
+
+private
+@safe pure nothrow @nogc
+T binomialCCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const size_t k, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.approxPoisson)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.stat.distribution.poisson: poissonCCDF;
+
+    return poissonCCDF!poissonAlgo(k, n * p);
+}
+
+/++
+Computes the binomial complementary cumulative distribution function (CCDF).
+
+Additional algorithms may be provided for calculating CCDF that allow trading off
+time and accuracy. If `approxPoisson` is provided, the default is `PoissonAlgo.gamma`
+
+Params:
+    binomialAlgo = algorithm for calculating CCDF (default: BinomialAlgo.direct)
+    poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
++/
+@safe pure nothrow @nogc
+template binomialCCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
+                      PoissonAlgo poissonAlgo = PoissonAlgo.gamma)
+{
+    /++
+    Params:
+    k = value to evaluate CCDF (e.g. number of "heads")
+    n = number of trials
+    p = `true` probability
+    +/
+    T binomialCCDF(T)(const size_t k, const size_t n, const T p)
+        if (isFloatingPoint!T)
+        in (k <= n, "k must be less than or equal to n")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
+    {
+        static if (binomialAlgo != BinomialAlgo.approxPoisson)
+            return binomialCCDFImpl!(T, binomialAlgo)(k, n, p);
+        else
+            return binomialCCDFImpl!(T, binomialAlgo, poissonAlgo)(k, n, p);
+    }
+}
+
+/// ditto
+@safe pure nothrow @nogc
+template binomialCCDF(string binomialAlgo, string poissonAlgo = "gamma")
+{
+    mixin("alias binomialCCDF = .binomialCCDF!(BinomialAlgo." ~ binomialAlgo ~ ", PoissonAlgo." ~ poissonAlgo ~ ");");
+}
+
+///
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual, pow;
+
+    assert(4.binomialCCDF(6, 2.0 / 3).approxEqual(binomialPMF(5, 6, 2.0 / 3) + binomialPMF(6, 6, 2.0 / 3)));
+    // For large values of `n` with `p` not too extreme, can approximate with normal distribution
+    assert(550_000.binomialCCDF!"approxNormal"(1_000_000, 0.55).approxEqual(0.5));
+    // Or closer with continuity correction
+    assert(550_000.binomialCCDF!"approxNormalContinuityCorrection"(1_000_000, 0.55).approxEqual(0.499599));
+    // Poisson approximation is better when `p` is low
+    assert(10_000.binomialCCDF!"approxPoisson"(1_000_000, 0.01).approxEqual(0.4973404));
+}
+
+// test multiple
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+
+    // n = 5
+    for (size_t i; i <= 5; i++) {
+        assert(i.binomialCCDF(5, 0.25).approxEqual(1 - binomialCDF(i, 5, 0.25)));
+        assert(i.binomialCCDF(5, 0.50).approxEqual(1 - binomialCDF(i, 5, 0.50)));
+        assert(i.binomialCCDF(5, 0.75).approxEqual(1 - binomialCDF(i, 5, 0.75)));
+    }
+
+    // n = 6
+    for (size_t i; i <= 6; i++) {
+        assert(i.binomialCCDF(6, 0.25).approxEqual(1 - binomialCDF(i, 6, 0.25)));
+        assert(i.binomialCCDF(6, 0.5).approxEqual(1 - binomialCDF(i, 6, 0.5)));
+        assert(i.binomialCCDF(6, 0.75).approxEqual(1 - binomialCDF(i, 6, 0.75)));
+    }
+}
+
+// test approxNormal / approxNormalContinuityCorrection / approxPoisson
+version(mir_stat_test_binomialCDFs)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+
+    for (size_t i; i <= 5; i++) {
+        assert(i.binomialCCDF!"approxNormal"(5, 0.25).approxEqual(1 - binomialCDF!"approxNormal"(i, 5, 0.25)));
+        assert(i.binomialCCDF!"approxNormalContinuityCorrection"(5, 0.25).approxEqual(1 - binomialCDF!"approxNormalContinuityCorrection"(i, 5, 0.25)));
+        assert(i.binomialCCDF!"approxPoisson"(5, 0.25).approxEqual(1 - binomialCDF!"approxPoisson"(i, 5, 0.25)));
+        assert(i.binomialCCDF!("approxPoisson", "direct")(5, 0.25).approxEqual(1 - binomialCDF!("approxPoisson", "direct")(i, 5, 0.25)));
+    }
 }
 
 /++

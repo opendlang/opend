@@ -9,7 +9,7 @@ dependency "mir-algorithm" version=">=3.14.1"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_stat_test"
+    versions "mir_stat_test_binomialCDFs"
     dflags "-lowmem"
 }
 buildType "unittest-cov" {
