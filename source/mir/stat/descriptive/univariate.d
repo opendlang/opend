@@ -1458,7 +1458,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.medianAbsoluteDeviation.approxEqual(1.25));
 }
@@ -1472,7 +1472,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.medianAbsoluteDeviation.approxEqual(1.25));
 }
@@ -1631,7 +1631,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.dispersion.approxEqual(54.76562 / 12));
 }
@@ -1689,7 +1689,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
               
     alias square = naryFun!"a * a";
 
@@ -1913,18 +1913,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
 
     ///
-    size_t count() @property
-    {
-        return varianceAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return varianceAccumulator.mean;
-    }
-
-    ///
     Summator!(T, summation) sumOfCubes;
 
     ///
@@ -1944,8 +1932,22 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         sumOfCubes.put(x * x * x);
     }
 
+const:
+
     ///
-    F skewness(F = T)(bool isPopulation) @property
+    size_t count() @property
+    {
+        return varianceAccumulator.count;
+    }
+
+    ///
+    F mean(F = T)() @property
+    {
+        return varianceAccumulator.mean;
+    }
+
+    ///
+    F skewness(F = T)(bool isPopulation)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
@@ -1980,9 +1982,10 @@ unittest
     import mir.math.common: approxEqual, pow;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
+    import mir.test;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -1995,6 +1998,13 @@ unittest
     assert(v.skewness(PopulationTrueCT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
     assert(v.skewness(PopulationFalseRT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
     assert(v.skewness(PopulationFalseCT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
+
+    auto zsk = v.skewnessTestImpl!double;
+    zsk.shouldApprox == 1.7985465327962042;
+    import mir.stat.distribution.normal: normalCCDF;
+    auto p = zsk.normalCCDF * 2;
+    p.shouldApprox == 0.07209044155600682;
+    
 
     v.put(4.0);
     assert(v.skewness(PopulationTrueRT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
@@ -2026,18 +2036,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     MeanAccumulator!(T, summation) meanAccumulator;
-
-    ///
-    size_t count() @property
-    {
-        return meanAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return meanAccumulator.mean;
-    }
 
     ///
     Summator!(T, summation) centeredSumOfSquares;
@@ -2084,8 +2082,22 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         centeredSumOfSquares.put(v.centeredSumOfSquares.sum + delta * delta * (cast(T) v.count * oldCount) / (cast(T) count));
     }
 
+const:
+
     ///
-    F skewness(F = T)(bool isPopulation) @property
+    size_t count() @property
+    {
+        return meanAccumulator.count;
+    }
+
+    ///
+    F mean(F = T)() @property
+    {
+        return meanAccumulator.mean;
+    }
+
+    ///
+    F skewness(F = T)(bool isPopulation)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
@@ -2095,14 +2107,14 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         if (isPopulation == false) {
             assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
 
-            F varS = centeredSumOfSquares.sum / (cast(F) (count - 1));
+            F varS = centeredSumOfSquares.sum / (F(count - 1));
             assert(varS > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
 
             F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
 
             return (centeredSumOfCubes.sum / cast(F) count) / (varS * varS.sqrt) * mult;
         } else {
-            F varP = centeredSumOfSquares.sum / (cast(F) count);
+            F varP = centeredSumOfSquares.sum / F(count);
             assert(varP > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
 
             return (centeredSumOfCubes.sum / cast(F) count) / (varP * varP.sqrt);
@@ -2120,7 +2132,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -2199,7 +2211,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     size_t count;
 
     ///
-    Summator!(T, summation) scaledSumOfCubes;
+    T scaledSumOfCubes;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -2219,9 +2231,10 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
         assert(varianceAccumulator.variance(true) > 0, "SkewnessAccumulator.this: must divide by positive standard deviation");
 
-        scaledSumOfCubes.put(slice.move.
+        import mir.math.sum: sum;
+        scaledSumOfCubes = sum!(T, summation)(slice.move.
             vmap(LeftOp!("-", T)(varianceAccumulator.mean)).
-            vmap(LeftOp!("/", T)(varianceAccumulator.variance(true).sqrt)).
+            vmap(LeftOp!("*", T)(1 / varianceAccumulator.variance(true).sqrt)).
             map!(naryFun!"a * a * a"));
     }
 
@@ -2239,8 +2252,10 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         this(withAsSlice.asSlice);
     }
 
+const:
+
     ///
-    F skewness(F = T)(bool isPopulation) @property
+    F skewness(F = T)(bool isPopulation)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
@@ -2252,9 +2267,9 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
             F mult = (cast(F) sqrt(cast(F) (count * (count - 1)))) / (cast(F) (count - 2));
 
-            return cast(F) scaledSumOfCubes.sum / cast(F) count * mult;
+            return cast(F) scaledSumOfCubes / cast(F) count * mult;
         } else {
-            return cast(F) scaledSumOfCubes.sum / cast(F) count;
+            return cast(F) scaledSumOfCubes / cast(F) count;
         }
     }
 }
@@ -2269,7 +2284,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -2306,10 +2321,10 @@ unittest
         e = a[i];
 
     auto v = SkewnessAccumulator!(double, SkewnessAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfCubes.sum.approxEqual(12.000999));
+    assert(v.scaledSumOfCubes.approxEqual(12.000999));
 
     auto w = SkewnessAccumulator!(double, SkewnessAlgo.threePass, Summation.naive)(x);
-    assert(w.scaledSumOfCubes.sum.approxEqual(12.000999));
+    assert(w.scaledSumOfCubes.approxEqual(12.000999));
 }
 
 // check dynamic array
@@ -2324,10 +2339,10 @@ unittest
                   2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     auto v = SkewnessAccumulator!(double, SkewnessAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfCubes.sum.approxEqual(12.000999));
+    assert(v.scaledSumOfCubes.approxEqual(12.000999));
 
     auto w = SkewnessAccumulator!(double, SkewnessAlgo.threePass, Summation.naive)(x);
-    assert(w.scaledSumOfCubes.sum.approxEqual(12.000999));
+    assert(w.scaledSumOfCubes.approxEqual(12.000999));
 }
 
 ///
@@ -2352,18 +2367,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
-
-    ///
-    size_t count() @property
-    {
-        return varianceAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return cast(F) 0;
-    }
 
     ///
     Summator!(T, summation) centeredSumOfCubes;
@@ -2392,8 +2395,22 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         centeredSumOfCubes.put(v.centeredSumOfCubes.sum);
     }
 
+const:
+
     ///
-    F skewness(F = T)(bool isPopulation) @property
+    size_t count() @property
+    {
+        return varianceAccumulator.count;
+    }
+
+    ///
+    F mean(F = T)() @property
+    {
+        return cast(F) 0;
+    }
+
+    ///
+    F skewness(F = T)(bool isPopulation)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
@@ -2621,7 +2638,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.skewness.approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
 }
@@ -2910,7 +2927,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.skewness.approxEqual(1.149008));
     assert(x.skewness(true).approxEqual(1.000083));
@@ -2997,6 +3014,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
 
+    ///
     alias skewnessAccumulator this;
 
     ///
@@ -3021,8 +3039,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         sumOfQuarts.put(x4);
     }
 
+const:
+
     ///
-    F kurtosis(F = T)(bool isPopulation, bool isRaw) @property
+    F kurtosis(F = T)(bool isPopulation, bool isRaw)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
@@ -3064,7 +3084,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -3124,25 +3144,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
     ///
-    MeanAccumulator!(T, summation) meanAccumulator;
+    SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
 
     ///
-    size_t count() @property
-    {
-        return meanAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return meanAccumulator.mean;
-    }
-
-    ///
-    Summator!(T, summation) centeredSumOfSquares;
-
-    ///
-    Summator!(T, summation) centeredSumOfCubes;
+    alias skewnessAccumulator this;
 
     ///
     Summator!(T, summation) centeredSumOfQuarts;
@@ -3164,14 +3169,14 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         if (count > 0) {
             deltaOld -= meanAccumulator.mean;
         }
-        meanAccumulator.put(x);
+        skewnessAccumulator.meanAccumulator.put(x);
         T deltaNew = x - meanAccumulator.mean;
         centeredSumOfQuarts.put((deltaOld * deltaOld * deltaOld * deltaOld) * (cast(T) ((count - 1) * (count * count - 3 * count + 3))) / (cast(T) (count * count * count)) +
                                 cast(T) 6 * deltaOld * deltaOld * centeredSumOfSquares.sum / (cast(T) (count * count)) -
                                 cast(T) 4 * deltaOld * (centeredSumOfCubes.sum / (cast(T) count)));
-        centeredSumOfCubes.put((deltaOld * deltaOld * deltaOld) * cast(T) (count - 1) * (count - 2) / (cast(T) (count * count)) -
+        skewnessAccumulator.centeredSumOfCubes.put((deltaOld * deltaOld * deltaOld) * cast(T) (count - 1) * (count - 2) / (cast(T) (count * count)) -
                                cast(T) 3 * deltaOld * centeredSumOfSquares.sum / (cast(T) count));
-        centeredSumOfSquares.put(deltaOld * deltaNew);
+        skewnessAccumulator.centeredSumOfSquares.put(deltaOld * deltaNew);
     }
 
     ///
@@ -3182,19 +3187,21 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         if (oldCount > 0) {
             delta -= meanAccumulator.mean;
         }
-        meanAccumulator.put!T(v.meanAccumulator);
+        skewnessAccumulator.meanAccumulator.put!T(v.meanAccumulator);
         centeredSumOfQuarts.put(v.centeredSumOfQuarts.sum + 
                                delta * delta * delta * delta * (cast(T) ((v.count * oldCount) * (oldCount * oldCount - v.count * oldCount + v.count * v.count))) / (cast(T) (count * count * count)) +
                                cast(T) 6 * delta * delta * (cast(T) (oldCount * oldCount) * v.centeredSumOfSquares.sum + cast(T) (v.count * v.count) * centeredSumOfSquares.sum) / (cast(T) (count * count)) +
                                cast(T) 4 * delta * (cast(T) oldCount * v.centeredSumOfCubes.sum - cast(T) v.count * centeredSumOfCubes.sum) / (cast(T) count));
-        centeredSumOfCubes.put(v.centeredSumOfCubes.sum + 
+        skewnessAccumulator.centeredSumOfCubes.put(v.centeredSumOfCubes.sum + 
                                delta * delta * delta * cast(T) v.count * cast(T) oldCount * cast(T) (oldCount - v.count) / cast(T) (count * count) +
                                cast(T) 3 * delta * (cast(T) oldCount * v.centeredSumOfSquares.sum - cast(T) v.count * centeredSumOfSquares.sum) / cast(T) count);
-        centeredSumOfSquares.put(v.centeredSumOfSquares.sum + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
+        skewnessAccumulator.centeredSumOfSquares.put(v.centeredSumOfSquares.sum + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
     }
 
+const:
+
     ///
-    F kurtosis(F = T)(bool isPopulation, bool isRaw) @property
+    F kurtosis(F = T)(bool isPopulation, bool isRaw)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
@@ -3202,18 +3209,18 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         if (isPopulation == false) {
             assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
 
-            F varS = (cast(F) centeredSumOfSquares.sum) / (cast(F) (count - 1));
+            F varS = F(skewnessAccumulator.centeredSumOfSquares.sum) / (count - 1);
             assert(varS > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
-            F mult1 = (cast(F) (count * (count + 1))) / (cast(F) (count - 1) * (count - 2) * (count - 3));
+            F mult1 = (cast(F) (count * (count + 1))) / (F(count - 1) * (count - 2) * (count - 3));
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
-            F excessKurtosis = (cast(F) centeredSumOfQuarts.sum) / (varS * varS) * mult1 - cast(F) 3 * mult2;
+            F excessKurtosis = F(centeredSumOfQuarts.sum) / (varS * varS) * mult1 - cast(F) 3 * mult2;
             return excessKurtosis + 3 * isRaw;
         } else {
-            F varP = (cast(F) centeredSumOfSquares.sum) / (cast(F) count);
+            F varP = F(skewnessAccumulator.centeredSumOfSquares.sum) / count;
             assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
-            F rawKurtosis = ((cast(F) centeredSumOfQuarts.sum) / (cast(F) count)) / (varP * varP);
+            F rawKurtosis = F(centeredSumOfQuarts.sum) / count / (varP * varP);
             return rawKurtosis - 3 * !isRaw;
         }
     }
@@ -3228,7 +3235,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -3332,10 +3339,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
 
         assert(varianceAccumulator.variance(true) > 0, "KurtosisAccumulator.this: must divide by positive standard deviation");
 
-        scaledSumOfQuarts.put(slice.move.
+        import mir.math.sum: sum;
+        scaledSumOfQuarts = sum!(T, summation)(slice.move.
             vmap(LeftOp!("-", T)(varianceAccumulator.mean)).
-            vmap(LeftOp!("/", T)(varianceAccumulator.variance(true).sqrt)).
-            map!(naryFun!"a * a * a * a"));
+            vmap(LeftOp!("*", T)(1 / varianceAccumulator.variance(true).sqrt)).
+            map!(naryFun!"(a * a) * (a * a)"));
     }
 
     ///
@@ -3356,10 +3364,12 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     size_t count;
 
     ///
-    Summator!(T, summation) scaledSumOfQuarts;
+    T scaledSumOfQuarts;
+
+const:
 
     ///
-    F kurtosis(F = T)(bool isPopulation, bool isRaw) @property
+    F kurtosis(F = T)(bool isPopulation, bool isRaw)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
@@ -3370,10 +3380,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
             F mult1 = (cast(F) ((count - 1) * (count + 1))) / (cast(F) (count - 2) * (count - 3));
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
 
-            F excessKurtosis = (cast(F) scaledSumOfQuarts.sum / cast(F) count) * mult1 - 3 * mult2;
+            F excessKurtosis = (cast(F) scaledSumOfQuarts / cast(F) count) * mult1 - 3 * mult2;
             return excessKurtosis + 3 * isRaw;
         } else {
-            return scaledSumOfQuarts.sum / cast(F) count - 3 * !isRaw;
+            return scaledSumOfQuarts / cast(F) count - 3 * !isRaw;
         }
     }  
 }
@@ -3387,7 +3397,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     enum PopulationTrueCT = true;
     enum PopulationFalseCT = false;
@@ -3398,7 +3408,7 @@ unittest
     bool RawTrueRT = true;
     bool RawFalseRT = false;
 
-    auto v = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x);
+    KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive) v = x;
     assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual(38.062853 / 12));
     assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual(38.062853 / 12));
     assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual(38.062853 / 12 - 3.0));
@@ -3408,7 +3418,7 @@ unittest
     assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
     assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
 
-    auto w = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x);
+    KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive) w = x;
     assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual(38.062853 / 12));
     assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual(38.062853 / 12));
     assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual(38.062853 / 12 - 3.0));
@@ -3435,11 +3445,11 @@ unittest
     foreach(i, ref e; x)
         e = a[i];
 
-    auto v = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfQuarts.sum.approxEqual(38.062853));
+    KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive) v = x;
+    assert(v.scaledSumOfQuarts.approxEqual(38.062853));
 
-    auto w = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x);
-    assert(w.scaledSumOfQuarts.sum.approxEqual(38.062853));
+    KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive) w = x;
+    assert(w.scaledSumOfQuarts.approxEqual(38.062853));
 }
 
 // check dynamic slice
@@ -3453,11 +3463,11 @@ unittest
     double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
                   2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    auto v = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfQuarts.sum.approxEqual(38.062853));
+    KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive) v = x;
+    assert(v.scaledSumOfQuarts.approxEqual(38.062853));
 
-    auto w = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x);
-    assert(w.scaledSumOfQuarts.sum.approxEqual(38.062853));
+    KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive) w = x;
+    assert(w.scaledSumOfQuarts.approxEqual(38.062853));
 }
 
 ///
@@ -3482,18 +3492,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
 
     ///
     VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
-
-    ///
-    size_t count() @property
-    {
-        return varianceAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return cast(F) 0;
-    }
 
     ///
     Summator!(T, summation) centeredSumOfQuarts;
@@ -3522,8 +3520,22 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         centeredSumOfQuarts.put(v.centeredSumOfQuarts.sum);
     }
 
+const:
+
     ///
-    F kurtosis(F = T)(bool isPopulation, bool isRaw) @property
+    size_t count() @property
+    {
+        return varianceAccumulator.count;
+    }
+
+    ///
+    F mean(F = T)() @property
+    {
+        return cast(F) 0;
+    }
+
+    ///
+    F kurtosis(F = T)(bool isPopulation, bool isRaw)
         if (isFloatingPoint!F)
     {
         assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
@@ -3534,10 +3546,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
             F varS = varianceAccumulator.variance!F(false);
             assert(varS > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
-            F mult1 = (cast(F) (count * (count + 1))) / (cast(F) (count - 1) * (count - 2) * (count - 3));
+            F mult1 = (cast(F) (count * (count + 1))) / (F(count - 1) * (count - 2) * (count - 3));
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
 
-            F excessKurtosis = (cast(F) centeredSumOfQuarts.sum) / (varS * varS) * mult1 - 3 * mult2;
+            F excessKurtosis = F(centeredSumOfQuarts.sum) / (varS * varS) * mult1 - 3 * mult2;
             return excessKurtosis + 3 * isRaw;
         } else {
             F varP = varianceAccumulator.variance!F(true);
@@ -3774,7 +3786,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.kurtosis.approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
 }
@@ -4080,7 +4092,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.kurtosis.approxEqual(1.006470));
     assert(x.kurtosis(false, true).approxEqual(4.006470));
@@ -4107,6 +4119,75 @@ unittest
     assert(y.kurtosis!"assumeZeroMean"(false, true).approxEqual(4.006470));
     assert(y.kurtosis!"assumeZeroMean"(true).approxEqual(0.171904));
     assert(y.kurtosis!"assumeZeroMean"(true, true).approxEqual(3.171904));
+}
+
+/++
+Tests that a sample comes from a normal distribution.
+
+Params:
+    kurtosisAlgo = algorithm for calculating skewness and kurtosis (default: KurtosisAlgo.online)
+    summation = algorithm for calculating sums (default: Summation.appropriate)
+Returns:
+    The kurtosis of the input, must be floating point
+References:
+    D’Agostino, R. B. (1971), “An omnibus test of normality for moderate and large sample size”, Biometrika, 58, 341-348;
+    D’Agostino, R. and Pearson, E. S. (1973), “Tests for departure from normality”, Biometrika, 60, 613-622
++/
+template dAgostinoPearsonTest(
+    KurtosisAlgo kurtosisAlgo = KurtosisAlgo.online, 
+    Summation summation = Summation.appropriate)
+{
+    import std.traits: isIterable;
+
+    /++
+    Params:
+        r = range, must be finite iterable
+        p = null hypothesis probability
+    +/
+    @fmamath F dAgostinoPearsonTest(Range, F)(Range r, out F p)
+        if(isFloatingPoint!F && isIterable!Range)
+    {
+        import core.lifetime: move;
+        KurtosisAccumulator!(F, kurtosisAlgo, ResolveSummationType!(summation, Range, F)) kurtosisAccumulator = r;
+        auto kurtosisStat = kurtosisTestImpl!F(kurtosisAccumulator);
+
+        static if (kurtosisAlgo == KurtosisAlgo.naive || kurtosisAlgo == KurtosisAlgo.online)
+            alias skewnessAccumulator = kurtosisAccumulator;
+        else
+            SkewnessAccumulator!(F, kurtosisAlgo, ResolveSummationType!(summation, Range, F)) skewnessAccumulator = r.move;
+
+        auto skewnessStat = skewnessTestImpl!F(skewnessAccumulator);
+        auto stat = skewnessStat * skewnessStat + kurtosisStat * kurtosisStat;
+        import mir.stat.distribution.chi2: chi2CCDF;
+        p = chi2CCDF(stat, 2);
+        return stat;
+    }
+}
+
+/// ditto
+template dAgostinoPearsonTest(string kurtosisAlgo, string summation = "appropriate")
+{
+    mixin("alias dAgostinoPearsonTest = .dAgostinoPearsonTest!(KurtosisAlgo." ~ kurtosisAlgo ~ ", Summation." ~ summation ~ ");");
+}
+
+///
+unittest
+{
+    import mir.math.common: approxEqual, pow;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    double p;
+    x.dAgostinoPearsonTest(p).shouldApprox == 4.151936053369771;
+    p.shouldApprox == 0.12543494432988342;
+
+    p = p.nan;
+    x.dAgostinoPearsonTest!"threePass"(p).shouldApprox == 4.151936053369771;
+    p.shouldApprox == 0.12543494432988342;
 }
 
 ///
@@ -4620,7 +4701,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.coefficientOfVariation.approxEqual(2.231299 / 2.437500));
 }
@@ -4871,7 +4952,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
                     );
             } else static if (N == 2) {
                 summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).map!(a => a * a)
+                        vmap(LeftOp!("-", T)(m)).map!"a * a"
                     );
             } else {
                 summator.put(r.move.
@@ -4908,18 +4989,18 @@ struct MomentAccumulator(T, size_t N, Summation summation)
             {
                 summator.put(r.move.
                         vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("/", T)(s))
+                        vmap(LeftOp!("*", T)(1 / s))
                     );
             } else static if (N == 2) {
                 summator.put(r.move.
                         vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("/", T)(s)).
-                        map!(a => a * a)
+                        vmap(LeftOp!("*", T)(1 / s)).
+                        map!"a * a"
                     );
             } else {
                 summator.put(r.move.
                         vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("/", T)(s)).
+                        vmap(LeftOp!("*", T)(1 / s)).
                         map!(a => a.powi(N))
                     );
             }
@@ -5088,7 +5169,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     MomentAccumulator!(double, 2, Summation.naive) v;
     auto m = mean(x);
@@ -5144,7 +5225,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     MomentAccumulator!(double, 1, Summation.naive) v;
     auto m = mean(x);
@@ -5163,7 +5244,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 3, Summation.naive) v;
@@ -5220,7 +5301,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 2, Summation.naive) v;
@@ -5239,7 +5320,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 1, Summation.naive) v;
@@ -5618,7 +5699,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.centralMoment!2.approxEqual(54.76562 / 12));
 }
@@ -5749,7 +5830,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.centralMoment!1.approxEqual(0.0 / 12));
 }
@@ -5919,7 +6000,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.standardizedMoment!3.approxEqual(12.000999 / 12));
 }
@@ -6068,7 +6149,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.standardizedMoment!1.approxEqual(0.0 / 12));
 }
@@ -6240,7 +6321,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.moment!(3, "standardized").approxEqual(12.000999 / 12));
 }
@@ -6315,4 +6396,81 @@ unittest
                           2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.sliced.moment!(3, "standardized").approxEqual(12.000999 / 12));
+}
+
+private F skewnessTestImpl(F, Accumulator)(ref const Accumulator acc)
+    if (isFloatingPoint!F)
+{
+    import mir.math.common: sqrt, log;
+    auto b2 = acc.skewness!F(true);
+    auto n = acc.count;
+    assert(n > 7, "skewnessTestImpl: count must be larger than seven");
+    auto y = b2 * sqrt((F(n + 1) * (n + 3)) / (6 * (n - 2)));
+    auto beta2 = 3 * (F(n) * n + 27 * n - 70) * (n + 1) * (n + 3) / (F(n - 2) * (n + 5) * (n + 7) * (n + 9));
+    auto w2 = -1 + sqrt(2 * (beta2 - 1));
+    auto delta = 1 / sqrt(0.5f * log(w2));
+    auto alpha = sqrt(2 / (w2 - 1));
+    auto y_alpha = y / alpha;
+    return delta * log(y_alpha + sqrt(y_alpha * y_alpha + 1));
+}
+
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, pow;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+    SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v = x;
+
+    auto zsk = v.skewnessTestImpl!double;
+    zsk.shouldApprox == 1.7985465327962042;
+    import mir.stat.distribution.normal: normalCCDF;
+    auto p = zsk.normalCCDF * 2;
+    p.shouldApprox == 0.07209044155600682;
+}
+
+private F kurtosisTestImpl(F, Accumulator)(ref const Accumulator acc)
+    if (isFloatingPoint!F)
+{
+    import mir.math.common: copysign, sqrt, fabs, pow;
+    auto b2 = acc.kurtosis!F(true, true);
+    auto n = acc.count;
+    assert(n > 7, "kurtosisTestImpl: count must be larger than seven");
+    auto varb2 = F(24) * n * (F(n - 2) * (n - 3)) / (F(n + 1) * (n + 1) * F((n + 3) * (n + 5)));
+    auto x = (b2 - 3 * (n - 1) / F(n + 1)) / sqrt(varb2);
+  
+    auto beta1sqrt = 6 * (F(n) * n - 5 * n + 2) / (F(n + 7) * (n + 9)) * sqrt((6 * (n + 3) * F(n + 5)) / (n * F(n - 2) * (n - 3)));
+  
+    auto a = 6 + 8 / beta1sqrt * (2 / beta1sqrt + sqrt(1 + 4 / (beta1sqrt * beta1sqrt)));
+    auto t1 = 1 - 2 / (9 * a);
+    auto denom = 1 + x * sqrt(2 / (a - 4));
+    auto t2 = pow((1 - 2 / a) / denom.fabs, 1 / F(3)).copysign(denom);
+
+    assert(denom);
+    return (t1 - t2) * sqrt(F(4.5) * a);
+}
+
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, pow;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v = x;
+
+    auto zku = v.kurtosisTestImpl!double;
+    zku.shouldApprox == 0.9576880612895426;
+    import mir.stat.distribution.normal: normalCCDF;
+    auto p = zku.normalCCDF * 2;
+    p.shouldApprox == 0.3382200786902009;
 }
