@@ -218,7 +218,7 @@ T fp_binomialPMF(T)(const size_t k, const size_t n, const T p)
 }
 
 /// fp_binomialPMF provides accurate values for large values of `n`
-version(mir_stat_test)
+version(mir_stat_test_fp)
 @safe pure nothrow @nogc
 unittest {
     import mir.bignum.fp: Fp, fp_log;
@@ -372,7 +372,7 @@ template binomialCDF(string binomialAlgo, string poissonAlgo = "gamma")
 }
 
 ///
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, pow;
@@ -387,7 +387,7 @@ unittest {
 }
 
 // test multiple direct
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual;
@@ -416,7 +416,7 @@ unittest {
 }
 
 // test BinomialAlgo.approxNormal / approxNormalContinuityCorrection / approxPoisson
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, sqrt;
@@ -535,7 +535,7 @@ template binomialCCDF(string binomialAlgo, string poissonAlgo = "gamma")
 }
 
 ///
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, pow;
@@ -550,7 +550,7 @@ unittest {
 }
 
 // test multiple
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual;
@@ -571,7 +571,7 @@ unittest {
 }
 
 // test approxNormal / approxNormalContinuityCorrection / approxPoisson
-version(mir_stat_test_binomialCDFs)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual;
@@ -588,29 +588,46 @@ private
 @safe pure nothrow @nogc
 size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size_t n, const T p)
     if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
-    in (k <= n, "k must be less than or equal to n")
+    in (prob >= 0, "prob must be greater than or equal to 0")
+    in (prob <= 1, "prob must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    /*
-    import mir.math.common: pow;
-
-    if (k == n) {
-        return 1;
-    } else if (k == 0) {
-        return pow(1 - p, n);
-    } else if (k <= n / 2 + 1) {
-        T result = 0;
-
-        foreach (size_t i; 0 .. (k + 1)) {
-            result += binomialPMFImpl!(T, binomialAlgo)(i, n, p);
-        }
-
-        return result;
-    } else {
-        return 1 - binomialCDFImpl!(T, binomialAlgo)(n - k - 1, n, 1 - p);
+    if (p == 0) {
+        return 0;
+    } else if (p == 1) {
+        return n;
     }
-    */
+
+    size_t guess = 0;
+    if ((n > 20 && (p > 0.25 && p < 0.75)) ||
+        (n * p > 9 * (1 - p) && n * (1 - p) > 9 * p) ||
+        (n * p >= 5 && n * (1 - p) >= 5)) {
+        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxNormalContinuityCorrection)(prob, n, p);
+    } else if ((n >= 20 && p <= 0.05) ||
+               (n >= 100 && n * p <= 10)) {
+        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxPoisson, PoissonAlgo.approxNormalContinuityCorrection)(prob, n, p);
+    }
+    T cdfGuess = binomialCDF!(binomialAlgo)(guess, n, p);
+
+    if (prob <= cdfGuess) {
+        if (guess == 0) {
+            return guess;
+        }
+        for (size_t i = (guess - 1); guess >= 0; i--) {
+            cdfGuess -= binomialPMF!(binomialAlgo)(i + 1, n, p);
+            if (prob > cdfGuess) {
+                guess = i + 1;
+                break;
+            }
+        }
+    } else {
+        while(prob > cdfGuess) {
+            guess++;
+            cdfGuess += binomialPMF!(binomialAlgo)(guess, n, p);
+        }
+    }
+    return guess;
 }
 
 private
@@ -619,21 +636,24 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     if (isFloatingPoint!T &&
         (binomialAlgo == BinomialAlgo.approxNormal || 
          binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection))
-    in (k <= n, "k must be less than or equal to n")
+    in (prob >= 0, "prob must be greater than or equal to 0")
+    in (prob <= 1, "prob must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    import mir.math.common: ceil, sqrt;
+    import mir.math.common: floor, sqrt;
     import mir.stat.distribution.normal: normalInvCDF;
 
-    if (p == 0) {
+    if (prob == 0) {
         return 0;
+    } else if (prob == 1) {
+        return n;
     }
     auto result = normalInvCDF(prob, n * p, sqrt(n * p * (1 - p)));
     static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
         result = result - 0.5;
     }
-    return cast(size_t) ceil(result);
+    return cast(size_t) floor(result);
 }
 
 private
@@ -641,11 +661,12 @@ private
 size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const T prob, const size_t n, const T p)
     if (isFloatingPoint!T &&
         binomialAlgo == BinomialAlgo.approxPoisson && poissonAlgo != PoissonAlgo.gamma)
-    in (k <= n, "k must be less than or equal to n")
+    in (prob >= 0, "prob must be greater than or equal to 0")
+    in (prob <= 1, "prob must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    import mir.stat.distribution.poisson: poissonCDF;
+    import mir.stat.distribution.poisson: poissonInvCDF;
 
     return poissonInvCDF!poissonAlgo(prob, n * p);
 }
@@ -678,7 +699,8 @@ template binomialInvCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
     +/
     size_t binomialInvCDF(T)(const T prob, const size_t n, const T p)
         if (isFloatingPoint!T)
-        in (k <= n, "k must be less than or equal to n")
+        in (prob >= 0, "prob must be greater than or equal to 0")
+        in (prob <= 1, "prob must be less than or equal to 1")
         in (p >= 0, "p must be greater than or equal to 0")
         in (p <= 1, "p must be less than or equal to 1")
     {
@@ -691,9 +713,88 @@ template binomialInvCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
 
 /// ditto
 @safe pure nothrow @nogc
-template binomialCDF(string binomialAlgo, string poissonAlgo = "direct")
+template binomialInvCDF(string binomialAlgo, string poissonAlgo = "direct")
 {
     mixin("alias binomialInvCDF = .binomialInvCDF!(BinomialAlgo." ~ binomialAlgo ~ ", PoissonAlgo." ~ poissonAlgo ~ ");");
+}
+
+///
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    assert(0.15.binomialInvCDF(6, 2.0 / 3) == 3);
+    // For large values of `n` with `p` not too extreme, can approximate with normal distribution
+    assert(0.5.binomialInvCDF!"approxNormal"(1_000_000, 0.55) == 550_000);
+    // Or closer with continuity correction
+    assert(0.500401.binomialInvCDF!"approxNormalContinuityCorrection"(1_000_000, 0.55) == 550_000);
+    // Poisson approximation is better when `p` is low
+    assert(0.5026596.binomialInvCDF!"approxPoisson"(1_000_000, 0.01) == 10_000);
+}
+
+// test BinomialAlgo.direct
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+
+    assert(0.binomialInvCDF(5, 0.6) == 0);
+    assert(1.binomialInvCDF(5, 0.6) == 5);
+    for (double x = 0.05; x < 1; x = x + 0.05) {
+        size_t value = x.binomialInvCDF(5, 0.6);
+        assert(value.binomialCDF(5, 0.6) >= x);
+        assert((value - 1).binomialCDF(5, 0.6) < x);
+    }
+}
+
+// test Binomial.direct, alternate guess paths
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+
+    static immutable int[] ns =    [  25,  37,  34,    25,  105];
+    static immutable double[] ps = [0.55, 0.2, 0.15, 0.05, 0.025];
+
+    size_t value;
+    for (size_t i; i < 1; i++) {
+        for (double x = 0.01; x < 1; x = x + 0.01) {
+            value = x.binomialInvCDF(ns[i], ps[i]);
+            assert(value.binomialCDF(ns[i], ps[i]) >= x);
+            assert((value - 1).binomialCDF(ns[i], ps[i]) < x);
+        }
+    }
+}
+
+// test Binomial.approxNormal / approxNormalContinuityCorrection
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: floor, sqrt;
+    import mir.stat.distribution.normal: normalInvCDF;
+
+    assert(0.binomialInvCDF!"approxNormal"(1000, 0.55) == 0);
+    assert(0.binomialInvCDF!"approxNormalContinuityCorrection"(1000, 0.55) == 0);
+    assert(1.binomialInvCDF!"approxNormal"(1000, 0.55) == 1_000);
+    assert(1.binomialInvCDF!"approxNormalContinuityCorrection"(1000, 0.55) == 1_000);
+    double checkValue;
+    for (double x = 0.05; x < 1; x = x + 0.05) {
+        checkValue = normalInvCDF(x, 1_000 * 0.55, sqrt(1000 * 0.55 * 0.45));
+        assert(x.binomialInvCDF!"approxNormal"(1_000, 0.55) == floor(checkValue));
+        assert(x.binomialInvCDF!"approxNormalContinuityCorrection"(1_000, 0.55) == floor(checkValue - 0.5));
+    }
+}
+
+// test Binomial.approxPoisson
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.stat.distribution.poisson: poissonInvCDF;
+
+    assert(0.binomialInvCDF!"approxPoisson"(20, 0.25) == 0);
+    for (double x = 0.05; x < 1; x = x + 0.05) {
+        assert(x.binomialInvCDF!"approxPoisson"(20, 0.25) == poissonInvCDF(x, 20 * 0.25));
+        assert(x.binomialInvCDF!("approxPoisson", "approxNormalContinuityCorrection")(1_000, 0.55) == poissonInvCDF!"approxNormalContinuityCorrection"(x, 1000 * 0.55));
+    }
 }
 
 /++
@@ -748,7 +849,7 @@ unittest {
 }
 
 /// Accurate values for large values of `n`
-version(mir_stat_test)
+version(mir_stat_test_fp)
 @safe pure nothrow @nogc
 unittest {
     import mir.bignum.fp: Fp, fp_log;

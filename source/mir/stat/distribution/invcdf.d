@@ -18,6 +18,8 @@ public import mir.stat.distribution.beta: betaInvCDF;
 ///
 public import mir.stat.distribution.beta_proportion: betaProportionInvCDF;
 ///
+public import mir.stat.distribution.binomial: binomialInvCDF;
+///
 public import mir.stat.distribution.normal: normalInvCDF;
 ///
 public import mir.stat.distribution.poisson: poissonInvCDF;
