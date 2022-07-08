@@ -268,7 +268,7 @@ T poissonCDFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 
     T l = k;
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
+        l += 0.5;
     }
     return normalCDF(l, lambda, sqrt(lambda));
 }
@@ -393,7 +393,7 @@ T poissonCCDFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 
     T l = k;
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
+        l += 0.5;
     }
     return normalCCDF(l, lambda, sqrt(lambda));
 }
