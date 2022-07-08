@@ -17,6 +17,8 @@ import gamut.image;
 import gamut.plugin;
 import gamut.internals.errors;
 
+version = lz4EncodedQOIX;
+
 version(decodeQOIX)
     import gamut.codecs.qoi2avg;
 else version(encodeQOIX)
@@ -90,8 +92,12 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         image.error(kStrImageDecodingIOFailure);
         return;
     }
-        
-    decoded = cast(ubyte*) qoi_decode(buf, len, &desc, requestedComp);
+
+    version(lz4EncodedQOIX)        
+        decoded = cast(ubyte*) qoix_lz4_decode(buf, len, &desc, requestedComp);
+    else
+        decoded = cast(ubyte*) qoix_decode(buf, len, &desc, requestedComp);
+
     if (decoded is null)
     {
         image.error(kStrImageDecodingFailed);
@@ -152,7 +158,12 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     }
         
     int qoilen;
-    ubyte* encoded = cast(ubyte*) qoi_encode(image._data, &desc, &qoilen);
+
+    version(lz4EncodedQOIX)        
+        ubyte* encoded = cast(ubyte*) qoix_lz4_encode(image._data, &desc, &qoilen);
+    else
+        ubyte* encoded = cast(ubyte*) qoix_encode(image._data, &desc, &qoilen);
+
     if (encoded == null)
         return false;
     scope(exit) free(encoded);

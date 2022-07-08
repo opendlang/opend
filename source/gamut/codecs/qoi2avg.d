@@ -4,6 +4,7 @@ nothrow @nogc:
 
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34
+/// Called "QOIX" in Gmaut, since it has a few extensions again, such as LZ4.
 
 /* 
 
@@ -45,13 +46,14 @@ See the function declaration below for the signature and more information.
 
 -- Data Format
 
-A QOI file has a 14 byte header, followed by any number of data "chunks" and an
+A QOIX file has a 15 byte header, followed by any number of data "chunks" and an
 8-byte end marker.
 
 struct qoi_header_t {
 	char     magic[4];   // magic bytes "qoi2"
 	uint32_t width;      // image width in pixels (BE)
 	uint32_t height;     // image height in pixels (BE)
+    uint8_t  version_;   // Major version of QOIX format.
 	uint8_t  channels;   // 3 = RGB, 4 = RGBA
 	uint8_t  colorspace; // 0 = sRGB with linear alpha, 1 = all channels linear
 };
@@ -280,8 +282,8 @@ enum int QOI_OP_RGB    = 0xfd; /* 11111101 */
 enum int QOI_OP_RGBA   = 0xfe; /* 11111110 */
 enum int QOI_OP_END    = 0xff; /* 11111111 */
 
-enum uint QOI_MAGIC = 0x716F6978; // "qoix"
-enum QOI_HEADER_SIZE = 14;
+enum uint QOIX_MAGIC = 0x716F6978; // "qoix"
+enum QOI_HEADER_SIZE = 15;
 
 /* To not have to linearly search through the color index array, we use a hash 
 of the color value to quickly lookup the index position in a hash table. */
@@ -338,7 +340,7 @@ failed) or a pointer to the encoded data on success. On success the out_len
 is set to the size in bytes of the encoded data.
 
 The returned qoi data should be free()d after use. */
-void *qoi_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
+ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
 	int i, max_size, stride, p, run;
 	int px_len, px_end, px_pos, channels;
@@ -367,9 +369,10 @@ void *qoi_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 		return null;
 	}
 
-	qoi_write_32(bytes, &p, QOI_MAGIC);
+	qoi_write_32(bytes, &p, QOIX_MAGIC);
 	qoi_write_32(bytes, &p, desc.width);
 	qoi_write_32(bytes, &p, desc.height);
+	bytes[p++] = 1; // Put a version number :)
 	bytes[p++] = desc.channels;
 	bytes[p++] = desc.colorspace;
 
@@ -533,7 +536,7 @@ failed) or a pointer to the decoded pixels. On success, the qoi_desc struct
 is filled with the description from the file header.
 
 The returned pixel data should be free()d after use. */
-void *qoi_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
+ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 	const(ubyte)* bytes;
 	uint header_magic;
 	ubyte *pixels;
@@ -556,6 +559,7 @@ void *qoi_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 	header_magic = qoi_read_32(bytes, &p);
 	desc.width = qoi_read_32(bytes, &p);
 	desc.height = qoi_read_32(bytes, &p);
+	int qoix_version = bytes[p++];
 	desc.channels = bytes[p++];
 	desc.colorspace = bytes[p++];
 
@@ -563,7 +567,8 @@ void *qoi_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 		desc.width == 0 || desc.height == 0 || 
 		desc.channels < 3 || desc.channels > 4 ||
 		desc.colorspace > 1 ||
-		header_magic != QOI_MAGIC ||
+		qoix_version > 1 ||
+		header_magic != QOIX_MAGIC ||
 		desc.height >= QOI_PIXELS_MAX / desc.width
 	) {
 		return null;
@@ -681,43 +686,67 @@ void *qoi_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
 	return pixels;
 }
-/+
-void* qoilz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
+
+/// Encode in QOIX + LZ4
+ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
-    // Encode to QOI
+    // Encode to QOIX
     int qoilen;
-    void* resqoi = qoi_encode(data, desc, &qoilen);
+    ubyte* qoix = qoix_encode(data, desc, &qoilen);
 
-    ubyte[] qoiData = (cast(ubyte*)resqoi)[0..qoilen];
-    int maxsize = LZ4_compressBound(qoilen);
+	if (qoix is null)
+		return null;
+	scope(exit) free(qoix);
 
-    // Encode QOI in LZ4
+	ubyte[] qoixHeader = qoix[0..QOI_HEADER_SIZE];
+    ubyte[] qoixData = qoix[QOI_HEADER_SIZE..qoilen];
+	int datalen = cast(int) qoixData.length;
+    int maxsize = LZ4_compressBound(datalen + QOI_HEADER_SIZE);
+
+    // Encode QOI in LZ4, except the header.
+
     ubyte* lz4Data = cast(ubyte*) malloc(maxsize);
-    int lz4Size = LZ4_compress(cast(char*)qoiData, cast(char*)lz4Data, qoilen);
+	lz4Data[0..QOI_HEADER_SIZE] = qoix[0..QOI_HEADER_SIZE];
+    int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[QOI_HEADER_SIZE], 
+                               cast(char*)&lz4Data[QOI_HEADER_SIZE], 
+                               datalen);
 
-    free(resqoi);
-
-    *out_len = lz4Size;
+    *out_len = lz4Size + QOI_HEADER_SIZE;
     return lz4Data;
 }
 
-void* qoilz4_decode(const(void)* data, int size, qoi_desc *desc, int channels) 
+ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
 {
+	if (size < QOI_HEADER_SIZE)
+		return null;
+
     // Decode LZ4
     long osz = cast(long)(size * 3.1);
-    if (osz > int.max)
+    if (osz + QOI_HEADER_SIZE > int.max)
     {
-        assert(false, "too large a buffer for at-once LZ4 decompression");
+		return null; // too large a buffer for at-once LZ4 decompression
     }
 
-    ubyte* decompLZ4 = cast(ubyte*) malloc(osz);
-    int qoilen = LZ4_decompress_safe(cast(char*)data, cast(char*)decompLZ4, size, cast(int)osz);
+    ubyte* decQOIX = null;
+    
+    decQOIX = cast(ubyte*) malloc(osz);
 
-    assert(qoilen >= 0);
-    // Now decompLZ4[0..qoilen] is our QOI image
+	decQOIX[0..QOI_HEADER_SIZE] = data[0..QOI_HEADER_SIZE];
 
-    void* image = qoi_decode(decompLZ4, qoilen, desc, channels);
-    free(decompLZ4);
+    int qoilen = LZ4_decompress_safe(cast(char*)&data[QOI_HEADER_SIZE], 
+                                     cast(char*)&decQOIX[QOI_HEADER_SIZE], 
+                                     size - QOI_HEADER_SIZE, 
+                                     cast(int)(osz - QOI_HEADER_SIZE));
+
+    if (qoilen < 0)
+	{
+		free(decQOIX);
+		return null;
+    }
+
+    // Now decompQOIX is a QOIX image.
+    ubyte* image = qoix_decode(decQOIX, qoilen + QOI_HEADER_SIZE, desc, channels);
+    scope(exit) free(decQOIX);
+
     return image;
 }
-+/
