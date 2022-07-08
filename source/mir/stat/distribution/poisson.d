@@ -482,8 +482,8 @@ private
 @safe pure nothrow @nogc
 size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.direct)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     if (p == 0) {
@@ -520,8 +520,8 @@ private
 @safe pure nothrow @nogc
 T poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const size_t k)
     if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.gamma)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
 {
     import std.mathspecial: gammaIncompleteComplInverse;
 
@@ -537,8 +537,8 @@ size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     if (isFloatingPoint!T && 
         (poissonAlgo == PoissonAlgo.approxNormal || 
          poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection))
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     import mir.math.common: ceil, sqrt;
@@ -585,8 +585,8 @@ template poissonInvCDF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
     +/
     size_t poissonInvCDF(T)(const T p, const T lambda)
         if (isFloatingPoint!T)
-        in(p >= 0, "p must be greater than or equal to 0")
-        in(p <= 1, "p must be less than or equal to 1")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
         in (lambda > 0, "lambda must be greater than or equal to 0")
     {
         return poissonInvCDFImpl!(T, poissonAlgo)(p, lambda);
@@ -605,8 +605,8 @@ template poissonInvCDF(PoissonAlgo poissonAlgo)
     +/
     T poissonInvCDF(T)(const T p, const size_t k)
         if (isFloatingPoint!T)
-        in(p >= 0, "p must be greater than or equal to 0")
-        in(p <= 1, "p must be less than or equal to 1")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
     {
         return poissonInvCDFImpl!(T, poissonAlgo)(p, k);
     }
