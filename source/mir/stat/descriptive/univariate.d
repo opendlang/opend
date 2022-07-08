@@ -1886,43 +1886,7 @@ See_also:
     $(WEB en.wikipedia.org/wiki/Skewness, Skewness),
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
 +/
-enum SkewnessAlgo
-{
-    /++
-    Similar to Welford's algorithm for updating variance, but adjusted for
-    skewness. Can also `put` another SkewnessAccumulator of the same type, which
-    uses the parallel algorithm from Terriberry that extends the work of Chan et
-    al. 
-    +/
-    online,
-
-    /++
-    Calculates skewness using
-    (E(x^^3) - 3 * mu * sigma ^^ 2 + mu ^^ 3) / (sigma ^^ 3) (alowing for
-    adjustments for population/sample skewness). This algorithm can be
-    numerically unstable.
-    +/
-    naive,
-
-    /++
-    Calculates skewness using a two-pass algorithm whereby the input is first
-    scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.online))
-    and then the sum of cubes is calculated from that. 
-    +/
-    twoPass,
-
-    /++
-    Calculates skewness using a three-pass algorithm whereby the input is first
-    scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.twoPass))
-    and then the sum of cubes is calculated from that. 
-    +/
-    threePass,
-
-    /++
-    Calculates skewness assuming the mean of the input is zero. 
-    +/
-    assumeZeroMean,
-}
+alias SkewnessAlgo = KurtosisAlgo;
 
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
@@ -1992,13 +1956,13 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         F varP = varianceAccumulator.variance!F(true);
         assert(varP > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
 
-        F avg_centeredSumOfCubes = cast(F) sumOfCubes.sum / cast(F) count - cast(F) 3 * mu * varP - (mu ^^ 3);
+        F avg_centeredSumOfCubes = cast(F) sumOfCubes.sum / cast(F) count - cast(F) 3 * mu * varP - (mu * mu * mu);
 
         if (isPopulation == false) {
             F varS = varianceAccumulator.variance!F(false);
             assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
 
-            F mult = (cast(F) (count * count)) / (cast(F) (count - 1) * (count - 2));
+            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
 
             return avg_centeredSumOfCubes / (varS * varS.sqrt) * mult;
         } else {
@@ -2134,7 +2098,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
             F varS = centeredSumOfSquares.sum / (cast(F) (count - 1));
             assert(varS > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
 
-            F mult = (cast(F) (count * count)) / (cast(F) (count - 1) * (count - 2));
+            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
 
             return (centeredSumOfCubes.sum / cast(F) count) / (varS * varS.sqrt) * mult;
         } else {
@@ -2443,7 +2407,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
             F var = varianceAccumulator.variance!F(false);
             assert(var > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
 
-            F mult = (cast(F) (count * count)) / (cast(F) (count - 1) * (count - 2));
+            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
 
             return avg_centeredSumOfCubes / (var * var.sqrt) * mult;
         } else {
@@ -2971,7 +2935,7 @@ See_also:
 enum KurtosisAlgo
 {
     /++
-    Similar to Welford's algorithm for updating variance, but adjusted for
+    Similar to Welford's algorithm for updating variance, but adjusted for skewness and
     kurtosis. Can also `put` another KurtosisAccumulator of the same type, which
     uses the parallel algorithm from Terriberry that extends the work of Chan et
     al. 
@@ -2980,27 +2944,32 @@ enum KurtosisAlgo
     /++
     Calculates kurtosis using
     (E(x^^4) - 4 * E(x) * E(x ^^ 3) + 6 * (E(x) ^^ 2) E(X ^^ 2) + 3 E(x) ^^ 4) / sigma ^ 2 
-    (allowing for adjustments for population/sample kurtosis). This algorithm
-    can be numerically unstable.
+    (allowing for adjustments for population/sample kurtosis). 
+
+    Calculates skewness using
+    (E(x^^3) - 3 * mu * sigma ^^ 2 + mu ^^ 3) / (sigma ^^ 3) (alowing for
+    adjustments for population/sample skewness).
+    
+    This algorithm can be numerically unstable.
     +/
     naive,
 
     /++
-    Calculates kurtosis using a two-pass algorithm whereby the input is first
+    Calculates skewness and kurtosis using a two-pass algorithm whereby the input is first
     scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.online))
     and then the sum of quarts is calculated from that. 
     +/
     twoPass,
 
     /++
-    Calculates kurtosis using a three-pass algorithm whereby the input is first
+    Calculates skewness and kurtosis using a three-pass algorithm whereby the input is first
     scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.twoPass))
     and then the sum of quarts is calculated from that. 
     +/
     threePass,
 
     /++
-    Calculates kurtosis assuming the mean of the input is zero. 
+    Calculates skewness and kurtosis assuming the mean of the input is zero. 
     +/
     assumeZeroMean,
 }
@@ -3026,25 +2995,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
     ///
-    MeanAccumulator!(T, summation) meanAccumulator;
+    SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
 
-    ///
-    size_t count() @property
-    {
-        return meanAccumulator.count;
-    }
-
-    ///
-    F mean(F = T)() @property
-    {
-        return meanAccumulator.mean;
-    }
-
-    ///
-    Summator!(T, summation) sumOfSquares;
-
-    ///
-    Summator!(T, summation) sumOfCubes;
+    alias skewnessAccumulator this;
 
     ///
     Summator!(T, summation) sumOfQuarts;
@@ -3062,12 +3015,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     void put()(T x)
     {
-        meanAccumulator.put(x);
-        T square = x * x;
-        sumOfSquares.put(square);
-        T cube = square * x;
-        sumOfCubes.put(cube);
-        sumOfQuarts.put(cube * x);
+        skewnessAccumulator.put(x);
+        auto x2 = x * x;
+        auto x4 = x2 * x2;
+        sumOfQuarts.put(x4);
     }
 
     ///
@@ -3076,36 +3027,30 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     {
         assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
 
-        F mu = meanAccumulator.mean!F;
-        F avg_sumOfSquares = cast(F) sumOfSquares.sum / cast(F) count;
-        F varP = avg_sumOfSquares - mu ^^ 2;
+        F mu = skewnessAccumulator.varianceAccumulator.meanAccumulator.mean!F;
+        F avg_sumOfSquares = cast(F) skewnessAccumulator.varianceAccumulator.sumOfSquares.sum / count;
+        F varP = avg_sumOfSquares - mu * mu;
         assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
-        F avg_sumOfCubes = cast(F) sumOfCubes.sum / cast(F) count;
-        F avg_sumOfQuarts = cast(F) sumOfQuarts.sum / cast(F) count;
+        auto  mu2 = mu * mu;
+        auto  mu4 = mu2 * mu2;
+        F avg_sumOfCubes = cast(F) skewnessAccumulator.sumOfCubes.sum / count;
+        F avg_sumOfQuarts = cast(F) sumOfQuarts.sum / count;
         F fourthCentralMoment = avg_sumOfQuarts - 
             4 * mu * avg_sumOfCubes + 
-            6 * mu ^^ 2 * avg_sumOfSquares - 
-            3 * (mu ^^ 4);
+            6 * mu2 * avg_sumOfSquares - 
+            3 * mu4;
         F kurt = fourthCentralMoment / (varP * varP);
 
         if (isPopulation == false) {
             assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
 
-            F mult1 = (cast(F) ((count - 1) * (count + 1))) / (cast(F) (count - 2) * (count - 3));
-            F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
-            F excessKurtosis = kurt * mult1 - cast(F) 3 * mult2;
-            if (isRaw) {
-                return excessKurtosis + cast(F) 3;
-            } else {
-                return excessKurtosis;
-            }
+            F mult1 = F((count - 1) * (count + 1)) / ((count - 2) * (count - 3));
+            F mult2 = F((count - 1) * (count - 1)) / ((count - 2) * (count - 3));
+            F excessKurtosis = kurt * mult1 - 3 * mult2;
+            return excessKurtosis + 3 * isRaw;
         } else {
-            if (isRaw) {
-                return kurt;
-            } else {
-                return kurt - cast(F) 3;
-            }
+            return kurt - 3 * !isRaw;
         }
     }
 }
@@ -3132,6 +3077,7 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
     v.put(x);
+
     assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
     assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
     assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
@@ -3140,6 +3086,8 @@ unittest
     assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
     assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
     assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
+
+    assert(v.skewness(PopulationTrueRT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
 
     v.put(4.0);
     assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0)));
@@ -3150,6 +3098,8 @@ unittest
     assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
     assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
     assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
+
+    assert(v.skewness(PopulationTrueRT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
 }
 
 ///
@@ -3258,22 +3208,13 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
             F mult1 = (cast(F) (count * (count + 1))) / (cast(F) (count - 1) * (count - 2) * (count - 3));
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
             F excessKurtosis = (cast(F) centeredSumOfQuarts.sum) / (varS * varS) * mult1 - cast(F) 3 * mult2;
-            if (isRaw) {
-                return excessKurtosis + cast(F) 3;
-            } else {
-                return excessKurtosis;
-            }
+            return excessKurtosis + 3 * isRaw;
         } else {
             F varP = (cast(F) centeredSumOfSquares.sum) / (cast(F) count);
             assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
             F rawKurtosis = ((cast(F) centeredSumOfQuarts.sum) / (cast(F) count)) / (varP * varP);
-
-            if (isRaw) {
-                return rawKurtosis;
-            } else {
-                return rawKurtosis - cast(F) 3;
-            }
+            return rawKurtosis - 3 * !isRaw;
         }
     }
 }
@@ -3430,17 +3371,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
 
             F excessKurtosis = (cast(F) scaledSumOfQuarts.sum / cast(F) count) * mult1 - 3 * mult2;
-            if (isRaw) {
-                return excessKurtosis + cast(F) 3;
-            } else {
-                return excessKurtosis;
-            }
+            return excessKurtosis + 3 * isRaw;
         } else {
-            if (isRaw) {
-                return scaledSumOfQuarts.sum / cast(F) count;
-            } else {
-                return scaledSumOfQuarts.sum / cast(F) count - cast(F) 3;
-            }
+            return scaledSumOfQuarts.sum / cast(F) count - 3 * !isRaw;
         }
     }  
 }
@@ -3605,21 +3538,13 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
             F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
 
             F excessKurtosis = (cast(F) centeredSumOfQuarts.sum) / (varS * varS) * mult1 - 3 * mult2;
-            if (isRaw) {
-                return excessKurtosis + cast(F) 3;
-            } else {
-                return excessKurtosis;
-            }
+            return excessKurtosis + 3 * isRaw;
         } else {
             F varP = varianceAccumulator.variance!F(true);
             assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
 
             F rawKurtosis = (cast(F) centeredSumOfQuarts.sum / cast(F) count) / (varP * varP);
-            if (isRaw) {
-                return rawKurtosis;
-            } else {
-                return rawKurtosis - cast(F) 3;
-            }
+            return rawKurtosis - 3 * !isRaw;
         }
     }
 }
