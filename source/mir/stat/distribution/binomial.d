@@ -584,6 +584,118 @@ unittest {
     }
 }
 
+private
+@safe pure nothrow @nogc
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size_t n, const T p)
+    if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    /*
+    import mir.math.common: pow;
+
+    if (k == n) {
+        return 1;
+    } else if (k == 0) {
+        return pow(1 - p, n);
+    } else if (k <= n / 2 + 1) {
+        T result = 0;
+
+        foreach (size_t i; 0 .. (k + 1)) {
+            result += binomialPMFImpl!(T, binomialAlgo)(i, n, p);
+        }
+
+        return result;
+    } else {
+        return 1 - binomialCDFImpl!(T, binomialAlgo)(n - k - 1, n, 1 - p);
+    }
+    */
+}
+
+private
+@safe pure nothrow @nogc
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size_t n, const T p)
+    if (isFloatingPoint!T &&
+        (binomialAlgo == BinomialAlgo.approxNormal || 
+         binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection))
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.math.common: ceil, sqrt;
+    import mir.stat.distribution.normal: normalInvCDF;
+
+    if (p == 0) {
+        return 0;
+    }
+    auto result = normalInvCDF(prob, n * p, sqrt(n * p * (1 - p)));
+    static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
+        result = result - 0.5;
+    }
+    return cast(size_t) ceil(result);
+}
+
+private
+@safe pure nothrow @nogc
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const T prob, const size_t n, const T p)
+    if (isFloatingPoint!T &&
+        binomialAlgo == BinomialAlgo.approxPoisson && poissonAlgo != PoissonAlgo.gamma)
+    in (k <= n, "k must be less than or equal to n")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+{
+    import mir.stat.distribution.poisson: poissonCDF;
+
+    return poissonInvCDF!poissonAlgo(prob, n * p);
+}
+
+/++
+Computes the binomial inverse cumulative distribution function (InvCDF).
+
+Additional algorithms may be provided for calculating InvCDF that allow trading off
+time and accuracy. If `approxPoisson` is provided, the default is
+`PoissonAlgo.direct`, which is different from `binomialPMF` and `binomialCDF`
+`PoissonAlgo.gamma` is not supported.
+
+Params:
+    binomialAlgo = algorithm for calculating CDF (default: BinomialAlgo.direct)
+    poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.direct)
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
++/
+@safe pure nothrow @nogc
+template binomialInvCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
+                        PoissonAlgo poissonAlgo = PoissonAlgo.direct)
+    if (poissonAlgo != PoissonAlgo.gamma)
+{
+    /++
+    Params:
+    prob = value to evaluate InvCDF
+    n = number of trials
+    p = `true` probability
+    +/
+    size_t binomialInvCDF(T)(const T prob, const size_t n, const T p)
+        if (isFloatingPoint!T)
+        in (k <= n, "k must be less than or equal to n")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
+    {
+        static if (binomialAlgo != BinomialAlgo.approxPoisson)
+            return binomialInvCDFImpl!(T, binomialAlgo)(prob, n, p);
+        else
+            return binomialInvCDFImpl!(T, binomialAlgo, poissonAlgo)(prob, n, p);
+    }
+}
+
+/// ditto
+@safe pure nothrow @nogc
+template binomialCDF(string binomialAlgo, string poissonAlgo = "direct")
+{
+    mixin("alias binomialInvCDF = .binomialInvCDF!(BinomialAlgo." ~ binomialAlgo ~ ", PoissonAlgo." ~ poissonAlgo ~ ");");
+}
+
 /++
 Computes the binomial log probability mass function (LPMF)
 
