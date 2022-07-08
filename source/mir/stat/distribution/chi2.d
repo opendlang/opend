@@ -7,7 +7,6 @@ Authors: Ilia Ki
 
 Copyright: 2022 Mir Stat Authors.
 +/
-
 module mir.stat.distribution.chi2;
 
 import mir.internal.utility: isFloatingPoint;
