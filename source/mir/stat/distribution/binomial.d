@@ -190,15 +190,9 @@ unittest {
 }
 
 /++
-Computes the binomial probability mass function (PMF).
-
-////
-// TODO: Fixup
-////
-This function can control the type of the function output through the template
-parameter `T`. By default, `T` is set equal to `double`, but other floating
-point types or extended precision floating point types (e.g. `Fp!128`) can be
-used. For large values of `n`, `Fp!128` is recommended.
+Computes the  binomial probability mass function (PMF) directly with extended 
+floating point types (e.g. `Fp!128`), which provides additional accuracy for
+large values of `k`, `n`, or `p`. 
 
 Params:
     k = value to evaluate PMF (e.g. number of "heads")
