@@ -7,7 +7,7 @@ import gamut;
 void usage()
 {
     writeln();
-    writeln("Usage: convert [-i input.png|jpg] [-bitness {8|16|auto}] output.png\n");
+    writeln("Usage: convert [-i input.ext] [-bitness {8|16|auto}] output.ext\n");
     writeln();
     writeln("Params:");
     writeln("  -i           Specify an input file");
@@ -65,8 +65,12 @@ int main(string[] args)
         Image* result = &image;
 
         image.loadFromFile(input);
-        image.convertTo8Bit();
-      //  image.convertToRGB();
+
+        if (bitness == 8)
+            image.convertTo8Bit();
+        else if (bitness == 16)
+            image.convertTo16Bit();
+
         if (image.errored)
         {
             throw new Exception("Couldn't open file " ~ input);

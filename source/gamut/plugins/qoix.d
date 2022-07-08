@@ -18,9 +18,9 @@ import gamut.plugin;
 import gamut.internals.errors;
 
 version(decodeQOIX)
-    import gamut.codecs.qoix;
+    import gamut.codecs.qoi2avg;
 else version(encodeQOIX)
-    import gamut.codecs.qoix;
+    import gamut.codecs.qoi2avg;
 
 ImageFormatPlugin makeQOIXPlugin()
 {
@@ -82,7 +82,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         requestedComp = 0; // auto
 
     ubyte* decoded;
-    qoix_desc desc;
+    qoi_desc desc;
 
     // read all input at once.
     if (len != io.read(buf, 1, len, handle))
@@ -91,7 +91,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
         
-    decoded = cast(ubyte*) qoix_decode(buf, len, &desc, requestedComp);
+    decoded = cast(ubyte*) qoi_decode(buf, len, &desc, requestedComp);
     if (decoded is null)
     {
         image.error(kStrImageDecodingFailed);
@@ -137,11 +137,11 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     if (page != 0)
         return false;
 
-    qoix_desc desc;
+    qoi_desc desc;
     desc.width = image._width;
     desc.height = image._height;
     desc.pitchBytes = image._pitch;
-    desc.colorspace = QOIX_SRGB;
+    desc.colorspace = QOI_SRGB;
         
     switch (image._type)
     {
@@ -152,7 +152,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     }
         
     int qoilen;
-    ubyte* encoded = cast(ubyte*) qoix_encode(image._data, &desc, &qoilen);
+    ubyte* encoded = cast(ubyte*) qoi_encode(image._data, &desc, &qoilen);
     if (encoded == null)
         return false;
     scope(exit) free(encoded);
