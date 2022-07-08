@@ -18,6 +18,8 @@ sources_list = [
     'mir/stat/transform',
     'mir/stat/distribution/package',
     'mir/stat/distribution/cdf',
+    'mir/stat/distribution/chi2',
+    'mir/stat/distribution/gamma',
     'mir/stat/distribution/pdf',
     'mir/stat/distribution/invcdf',
     'mir/stat/distribution/bernoulli',
