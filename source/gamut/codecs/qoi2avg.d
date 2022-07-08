@@ -262,6 +262,7 @@ struct qoi_desc
 
 import core.stdc.stdlib: malloc, free;
 import core.stdc.string: memset;
+import gamut.codecs.lz4;
 
 alias QOI_MALLOC = malloc;
 alias QOI_FREE = free;
@@ -680,4 +681,43 @@ void *qoi_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
 	return pixels;
 }
+/+
+void* qoilz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
+{
+    // Encode to QOI
+    int qoilen;
+    void* resqoi = qoi_encode(data, desc, &qoilen);
 
+    ubyte[] qoiData = (cast(ubyte*)resqoi)[0..qoilen];
+    int maxsize = LZ4_compressBound(qoilen);
+
+    // Encode QOI in LZ4
+    ubyte* lz4Data = cast(ubyte*) malloc(maxsize);
+    int lz4Size = LZ4_compress(cast(char*)qoiData, cast(char*)lz4Data, qoilen);
+
+    free(resqoi);
+
+    *out_len = lz4Size;
+    return lz4Data;
+}
+
+void* qoilz4_decode(const(void)* data, int size, qoi_desc *desc, int channels) 
+{
+    // Decode LZ4
+    long osz = cast(long)(size * 3.1);
+    if (osz > int.max)
+    {
+        assert(false, "too large a buffer for at-once LZ4 decompression");
+    }
+
+    ubyte* decompLZ4 = cast(ubyte*) malloc(osz);
+    int qoilen = LZ4_decompress_safe(cast(char*)data, cast(char*)decompLZ4, size, cast(int)osz);
+
+    assert(qoilen >= 0);
+    // Now decompLZ4[0..qoilen] is our QOI image
+
+    void* image = qoi_decode(decompLZ4, qoilen, desc, channels);
+    free(decompLZ4);
+    return image;
+}
++/
