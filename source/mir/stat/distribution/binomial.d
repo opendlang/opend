@@ -238,34 +238,17 @@ unittest {
     assert((val - 0).fp_binomialPMF(val + 5, Fp!128(0.75)).fp_log!double.approxEqual(binomialLPMF(val, val + 5, 0.75)));
 }
 
-// using Fp!128, p = 0.5
+// using Fp!128
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.conv: to;
     import mir.math.common: approxEqual;
 
-    assert(0.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(0, 5, 0.5)));
-    assert(1.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(1, 5, 0.5)));
-    assert(2.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(2, 5, 0.5)));
-    assert(3.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(3, 5, 0.5)));
-    assert(4.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(4, 5, 0.5)));
-    assert(5.fp_binomialPMF(5, Fp!128(0.5)).to!double.approxEqual(binomialPMF(5, 5, 0.5)));
-}
-
-// using Fp!128, p = 0.75
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest {
-    import mir.conv: to;
-    import mir.math.common: approxEqual;
-
-    assert(0.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(0, 5, 0.75)));
-    assert(1.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(1, 5, 0.75)));
-    assert(2.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(2, 5, 0.75)));
-    assert(3.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(3, 5, 0.75)));
-    assert(4.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(4, 5, 0.75)));
-    assert(5.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(5, 5, 0.75)));
+    for (size_t i; i <= 5; i++) {
+        assert(i.fp_binomialPMF(5, Fp!128(0.50)).to!double.approxEqual(binomialPMF(i, 5, 0.50)));
+        assert(i.fp_binomialPMF(5, Fp!128(0.75)).to!double.approxEqual(binomialPMF(i, 5, 0.75)));
+    }
 }
 
 private
@@ -826,26 +809,10 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual, exp;
 
-    assert(0.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(0, 5, 0.5)));
-    assert(1.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(1, 5, 0.5)));
-    assert(2.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(2, 5, 0.5)));
-    assert(3.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(3, 5, 0.5)));
-    assert(4.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(4, 5, 0.5)));
-    assert(5.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(5, 5, 0.5)));
-}
-
-// test with p = 0.75
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest {
-    import mir.math.common: approxEqual, exp;
-
-    assert(0.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(0, 5, 0.75)));
-    assert(1.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(1, 5, 0.75)));
-    assert(2.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(2, 5, 0.75)));
-    assert(3.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(3, 5, 0.75)));
-    assert(4.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(4, 5, 0.75)));
-    assert(5.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(5, 5, 0.75)));
+    for (size_t i; i <= 5; i++) {
+        assert(i.binomialLPMF(5, 0.5).exp.approxEqual(binomialPMF(i, 5, 0.5)));
+        assert(i.binomialLPMF(5, 0.75).exp.approxEqual(binomialPMF(i, 5, 0.75)));
+    }
 }
 
 /// Accurate values for large values of `n`
