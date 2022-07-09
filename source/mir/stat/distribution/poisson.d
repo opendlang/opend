@@ -34,11 +34,13 @@ enum PoissonAlgo {
     +/
     gamma,
     /++
-    Approximates poisson distribution with normal distribution
+    Approximates poisson distribution with normal distribution. Generally a better approximation when
+    `lambda > 1000`.
     +/
     approxNormal,
     /++
-    Approximates poisson distribution with normal distribution (including continuity correction)
+    Approximates poisson distribution with normal distribution (including continuity correction). More 
+    accurate than `PoissonAlgo.approxNormal`. Generally a better approximation when `lambda > 10`.
     +/
     approxNormalContinuityCorrection
 }
@@ -69,19 +71,25 @@ T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 private
 @safe pure nothrow @nogc
 T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
-    if (isFloatingPoint!T && 
-        (poissonAlgo == PoissonAlgo.approxNormal || 
-         poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection))
+    if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.approxNormal)
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     import mir.math.common: sqrt;
     import mir.stat.distribution.normal: normalPDF;
 
-    T l = k;
-    static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
-    }
-    return normalPDF(l, lambda, sqrt(lambda));
+    return normalPDF(k, lambda, sqrt(lambda));
+}
+
+private
+@safe pure nothrow @nogc
+T poissonPMFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
+    if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection)
+    in (lambda > 0, "lambda must be greater than or equal to 0")
+{
+    import mir.math.common: sqrt;
+    import mir.stat.distribution.normal: normalCDF;
+
+    return normalCDF(cast(T) k + 0.5, lambda, sqrt(lambda)) - normalCDF(cast(T) k - 0.5, lambda, sqrt(lambda));
 }
 
 /++
@@ -165,10 +173,10 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual, sqrt;
-    import mir.stat.distribution.normal: normalPDF;
+    import mir.stat.distribution.normal: normalCDF, normalPDF;
     for (size_t i; i < 20; i++) {
         assert(i.poissonPMF!"approxNormal"(5.0).approxEqual(normalPDF(i, 5.0, sqrt(5.0))));
-        assert(i.poissonPMF!"approxNormalContinuityCorrection"(5.0).approxEqual(normalPDF(i + 0.5, 5.0, sqrt(5.0))));
+        assert(i.poissonPMF!"approxNormalContinuityCorrection"(5.0).approxEqual(normalCDF(i + 0.5, 5.0, sqrt(5.0)) - normalCDF(i - 0.5, 5.0, sqrt(5.0))));
     }
 }
 
@@ -204,17 +212,9 @@ unittest {
     import mir.conv: to;
     import mir.math.common: approxEqual, exp;
 
-    assert(0.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(0, 5.0)));
-    assert(1.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(1, 5.0)));
-    assert(2.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(2, 5.0)));
-    assert(3.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(3, 5.0)));
-    assert(4.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(4, 5.0)));
-    assert(5.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(5, 5.0)));
-    assert(6.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(6, 5.0)));
-    assert(7.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(7, 5.0)));
-    assert(8.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(8, 5.0)));
-    assert(9.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(9, 5.0)));
-    assert(10.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(10, 5.0)));
+    for (size_t i; i <= 10; i++) {
+        assert(i.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(i, 5.0)));
+    }
 }
 
 private
@@ -260,7 +260,7 @@ T poissonCDFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 
     T l = k;
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
+        l += 0.5;
     }
     return normalCDF(l, lambda, sqrt(lambda));
 }
@@ -385,7 +385,7 @@ T poissonCCDFImpl(T, PoissonAlgo poissonAlgo)(const size_t k, const T lambda)
 
     T l = k;
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
-        l = k + 0.5;
+        l += 0.5;
     }
     return normalCCDF(l, lambda, sqrt(lambda));
 }
@@ -427,7 +427,7 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual;
-    
+
     assert(3.poissonCCDF(6.0).approxEqual(1.0 - (poissonPMF(0, 6.0) + poissonPMF(1, 6.0) + poissonPMF(2, 6.0) + poissonPMF(3, 6.0))));
     // Can compute directly with upper incomplete gamma function
     assert(3.poissonCCDF!"gamma"(6.0).approxEqual(poissonCCDF(3, 6.0)));
@@ -474,8 +474,8 @@ private
 @safe pure nothrow @nogc
 size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.direct)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     if (p == 0) {
@@ -512,8 +512,8 @@ private
 @safe pure nothrow @nogc
 T poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const size_t k)
     if (isFloatingPoint!T && poissonAlgo == PoissonAlgo.gamma)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
 {
     import std.mathspecial: gammaIncompleteComplInverse;
 
@@ -529,11 +529,11 @@ size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     if (isFloatingPoint!T && 
         (poissonAlgo == PoissonAlgo.approxNormal || 
          poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection))
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p < 1, "p must be less than 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p < 1, "p must be less than 1")
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
-    import mir.math.common: ceil, sqrt;
+    import mir.math.common: floor, sqrt;
     import mir.stat.distribution.normal: normalInvCDF;
 
     if (p == 0) {
@@ -543,7 +543,7 @@ size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
         result = result - 0.5;
     }
-    return cast(size_t) ceil(result);
+    return cast(size_t) floor(result);
 }
 
 /++
@@ -577,8 +577,8 @@ template poissonInvCDF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
     +/
     size_t poissonInvCDF(T)(const T p, const T lambda)
         if (isFloatingPoint!T)
-        in(p >= 0, "p must be greater than or equal to 0")
-        in(p <= 1, "p must be less than or equal to 1")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
         in (lambda > 0, "lambda must be greater than or equal to 0")
     {
         return poissonInvCDFImpl!(T, poissonAlgo)(p, lambda);
@@ -597,8 +597,8 @@ template poissonInvCDF(PoissonAlgo poissonAlgo)
     +/
     T poissonInvCDF(T)(const T p, const size_t k)
         if (isFloatingPoint!T)
-        in(p >= 0, "p must be greater than or equal to 0")
-        in(p <= 1, "p must be less than or equal to 1")
+        in (p >= 0, "p must be greater than or equal to 0")
+        in (p <= 1, "p must be less than or equal to 1")
     {
         return poissonInvCDFImpl!(T, poissonAlgo)(p, k);
     }
@@ -623,7 +623,7 @@ unittest {
     // For large values of k or lambda, can approximate with normal distribution
     assert(0.5.poissonInvCDF!"approxNormal"(1_000_000.0) == 1_000_000);
     // Or closer with continuity correction
-    assert(0.5.poissonInvCDF!"approxNormalContinuityCorrection"(1_000_000.0) == 1_000_000);
+    assert(0.5009974.poissonInvCDF!"approxNormalContinuityCorrection"(1_000_000.0) == 1_000_002);
 }
 
 // test PoissonAlgo.direct
@@ -671,7 +671,7 @@ unittest {
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.math.common: ceil, sqrt;
+    import mir.math.common: floor, sqrt;
     import mir.stat.distribution.normal: normalInvCDF;
 
     assert(0.poissonInvCDF!"approxNormal"(5.0) == 0);
@@ -679,8 +679,8 @@ unittest {
     double checkValue;
     for (double x = 0.05; x < 1; x = x + 0.05) {
         checkValue = normalInvCDF(x, 5.0, sqrt(5.0));
-        assert(x.poissonInvCDF!"approxNormal"(5.0) == ceil(checkValue));
-        assert(x.poissonInvCDF!"approxNormalContinuityCorrection"(5.0) == ceil(checkValue - 0.5));
+        assert(x.poissonInvCDF!"approxNormal"(5.0) == floor(checkValue));
+        assert(x.poissonInvCDF!"approxNormalContinuityCorrection"(5.0) == floor(checkValue - 0.5));
     }
 }
 
@@ -711,15 +711,7 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual, exp;
 
-    assert(0.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(0, 5.0)));
-    assert(1.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(1, 5.0)));
-    assert(2.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(2, 5.0)));
-    assert(3.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(3, 5.0)));
-    assert(4.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(4, 5.0)));
-    assert(5.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(5, 5.0)));
-    assert(6.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(6, 5.0)));
-    assert(7.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(7, 5.0)));
-    assert(8.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(8, 5.0)));
-    assert(9.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(9, 5.0)));
-    assert(10.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(10, 5.0)));
+    for (size_t i; i <= 10; i++) {
+        assert(i.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(i, 5.0)));
+    }
 }

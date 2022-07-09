@@ -50,7 +50,7 @@ Unqual!T powi(T)(T x, size_t i)
     if (!isFloatingPoint!(Unqual!(T)) && !is(Unqual!(T) : double))
 {
     if (i == 0) {
-        return cast(Unqual!T) 0;
+        return cast(Unqual!T) 1;
     } else if (i == 1) {
         return cast(Unqual!T) x;
     } else {
@@ -69,7 +69,7 @@ unittest
     import mir.complex;
     alias C = Complex!double;
     auto x = C(1, 2);
-    assert(x.powi(0) == 0);
+    assert(x.powi(0) == 1);
     assert(x.powi(1) == x);
 }
 
@@ -79,6 +79,6 @@ unittest
 {
     import std.complex: Complex;
     Complex!double x = Complex!double(1.0, 2.0);
-    assert(x.powi(0) == 0);
+    assert(x.powi(0) == 1);
     assert(x.powi(1) == x);
 }

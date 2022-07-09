@@ -12,9 +12,13 @@ Copyright: 2022 Mir Stat Authors.
 module mir.stat.distribution.cdf;
 
 ///
+public import mir.stat.distribution.bernoulli: bernoulliCDF;
+///
 public import mir.stat.distribution.beta: betaCDF;
 ///
 public import mir.stat.distribution.beta_proportion: betaProportionCDF;
+///
+public import mir.stat.distribution.binomial: binomialCDF;
 ///
 public import mir.stat.distribution.normal: normalCDF;
 ///
