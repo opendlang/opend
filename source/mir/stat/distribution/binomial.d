@@ -576,9 +576,9 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    if (p == 0) {
+    if (prob == 0) {
         return 0;
-    } else if (p == 1) {
+    } else if (prob == 1) {
         return n;
     }
 
@@ -625,14 +625,29 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.common: floor, sqrt;
-    import mir.stat.distribution.normal: normalInvCDF;
+    import mir.stat.distribution.normal: normalCDF, normalInvCDF;
 
-    if (prob == 0) {
+    T mu = n * p;
+    T std = sqrt(mu * (1 - p));
+
+    // Handles case where prob is small or large, better than just using probLowerBound = 0 or probUpperBound = 0
+    T probLowerBound = 0;
+    T probUpperBound = 1;
+    T lowerValue = 0;
+    T upperValue = n;
+    static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
+        lowerValue += 0.5;
+        upperValue -= 0.5;
+    }
+    probLowerBound = normalCDF(lowerValue, mu, std);
+    probUpperBound = normalCDF(upperValue, mu, std);
+    if (prob <= probLowerBound) {
         return 0;
-    } else if (prob == 1) {
+    } else if (prob >= probUpperBound) {
         return n;
     }
-    auto result = normalInvCDF(prob, n * p, sqrt(n * p * (1 - p)));
+
+    auto result = normalInvCDF(prob, mu, std);
     static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
         result = result - 0.5;
     }
@@ -718,8 +733,6 @@ unittest {
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.math.common: approxEqual;
-
     assert(0.binomialInvCDF(5, 0.6) == 0);
     assert(1.binomialInvCDF(5, 0.6) == 5);
     for (double x = 0.05; x < 1; x = x + 0.05) {
@@ -735,15 +748,16 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual;
 
-    static immutable int[] ns =    [  25,  37,  34,    25,  105];
-    static immutable double[] ps = [0.55, 0.2, 0.15, 0.05, 0.025];
+    static immutable int[] ns =    [  25,  37,  34,    25,     25,   105];
+    static immutable double[] ps = [0.55, 0.2, 0.15, 0.05, 1.0e-8, 0.025];
 
     size_t value;
-    for (size_t i; i < 1; i++) {
+    for (size_t i; i < 6; i++) {
         for (double x = 0.01; x < 1; x = x + 0.01) {
             value = x.binomialInvCDF(ns[i], ps[i]);
             assert(value.binomialCDF(ns[i], ps[i]) >= x);
-            assert((value - 1).binomialCDF(ns[i], ps[i]) < x);
+            if (value > 1)
+                assert((value - 1).binomialCDF(ns[i], ps[i]) < x);
         }
     }
 }
