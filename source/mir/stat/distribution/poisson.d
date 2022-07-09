@@ -212,17 +212,9 @@ unittest {
     import mir.conv: to;
     import mir.math.common: approxEqual, exp;
 
-    assert(0.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(0, 5.0)));
-    assert(1.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(1, 5.0)));
-    assert(2.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(2, 5.0)));
-    assert(3.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(3, 5.0)));
-    assert(4.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(4, 5.0)));
-    assert(5.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(5, 5.0)));
-    assert(6.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(6, 5.0)));
-    assert(7.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(7, 5.0)));
-    assert(8.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(8, 5.0)));
-    assert(9.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(9, 5.0)));
-    assert(10.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(10, 5.0)));
+    for (size_t i; i <= 10; i++) {
+        assert(i.fp_poissonPMF(Fp!128(5.0)).to!double.approxEqual(poissonPMF(i, 5.0)));
+    }
 }
 
 private
@@ -435,7 +427,7 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
     import mir.math.common: approxEqual;
-    
+
     assert(3.poissonCCDF(6.0).approxEqual(1.0 - (poissonPMF(0, 6.0) + poissonPMF(1, 6.0) + poissonPMF(2, 6.0) + poissonPMF(3, 6.0))));
     // Can compute directly with upper incomplete gamma function
     assert(3.poissonCCDF!"gamma"(6.0).approxEqual(poissonCCDF(3, 6.0)));
@@ -719,15 +711,7 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual, exp;
 
-    assert(0.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(0, 5.0)));
-    assert(1.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(1, 5.0)));
-    assert(2.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(2, 5.0)));
-    assert(3.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(3, 5.0)));
-    assert(4.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(4, 5.0)));
-    assert(5.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(5, 5.0)));
-    assert(6.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(6, 5.0)));
-    assert(7.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(7, 5.0)));
-    assert(8.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(8, 5.0)));
-    assert(9.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(9, 5.0)));
-    assert(10.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(10, 5.0)));
+    for (size_t i; i <= 10; i++) {
+        assert(i.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(i, 5.0)));
+    }
 }
