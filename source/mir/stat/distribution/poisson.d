@@ -518,7 +518,7 @@ T poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const size_t k)
     import std.mathspecial: gammaIncompleteComplInverse;
 
     if (p == 0) {
-        return 0;
+        return T.infinity;
     }
     return gammaIncompleteComplInverse(k + 1, p); 
 }
@@ -534,12 +534,21 @@ size_t poissonInvCDFImpl(T, PoissonAlgo poissonAlgo)(const T p, const T lambda)
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
     import mir.math.common: floor, sqrt;
-    import mir.stat.distribution.normal: normalInvCDF;
+    import mir.stat.distribution.normal: normalCDF, normalInvCDF;
 
-    if (p == 0) {
+    T std = sqrt(lambda);
+
+    // Handles case where p is small better than just using pLowerBound = 0
+    T pLowerBound = 0;
+    T lowerValue = 0;
+    static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection)
+        lowerValue += 0.5;
+    pLowerBound = normalCDF(lowerValue, lambda, std);
+    if (p <= pLowerBound) { 
         return 0;
     }
-    auto result = normalInvCDF(p, lambda, sqrt(lambda));
+
+    auto result = normalInvCDF(p, lambda, std);
     static if (poissonAlgo == PoissonAlgo.approxNormalContinuityCorrection) {
         result = result - 0.5;
     }
@@ -630,8 +639,6 @@ unittest {
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.math.common: approxEqual;
-
     assert(0.poissonInvCDF(5.0) == 0);
     for (double x = 0.05; x < 1; x = x + 0.05) {
         size_t value = x.poissonInvCDF(5.0);
@@ -640,12 +647,18 @@ unittest {
     }
 }
 
+// test PoissonAlgo.direct, large lambda branch, check small p
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    double x = 1.0e-9;
+    assert(x.poissonInvCDF(20.0) == 0);
+}
+
 // test PoissonAlgo.direct, large lambda branch
 version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest {
-    import mir.math.common: approxEqual;
-
     assert(0.poissonInvCDF(25.0) == 0);
     for (double x = 0.01; x < 1; x = x + 0.01) {
         size_t value = x.poissonInvCDF(25.0);
@@ -660,6 +673,7 @@ version(mir_stat_test)
 unittest {
     import mir.math.common: approxEqual;
 
+    assert(0.0.poissonInvCDF!"gamma"(5) == double.infinity);
     for (double x = 0.05; x < 1; x = x + 0.05) {
         for (size_t i; i < 10; i++) {
             assert(poissonCDF!"gamma"(i, poissonInvCDF!"gamma"(x, i)).approxEqual(x));
