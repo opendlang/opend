@@ -32,6 +32,8 @@ Params:
 +/
 T gevPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
+    in (xi <= 0 || x > mu - sigma / xi)
+    in (xi >= 0 || x < mu - sigma / xi)
 {
     auto s = (x - mu) / sigma;
     if (xi.fabs <= T.min_normal)
@@ -68,6 +70,8 @@ Params:
 +/
 T gevCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
+    in (xi <= 0 || x > mu - sigma / xi)
+    in (xi >= 0 || x < mu - sigma / xi)
 {
     auto s = (x - mu) / sigma;
     if (xi.fabs <= T.min_normal)
@@ -101,6 +105,8 @@ Params:
 +/
 T gevInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
+    in (xi <= 0 || x > mu - sigma / xi)
+    in (xi >= 0 || x < mu - sigma / xi)
 {
     auto logp = log(p);
     if (xi.fabs <= T.min_normal)
