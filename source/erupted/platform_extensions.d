@@ -200,7 +200,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionKHR} );
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionParametersKHR} );
             
-            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 3;
+            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 4;
             enum const( char )* VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
             
             enum VkQueryResultStatusKHR {
@@ -321,7 +321,7 @@ mixin template Platform_Extensions( extensions... ) {
             struct VkQueueFamilyQueryResultStatusProperties2KHR {
                 VkStructureType  sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR;
                 void*            pNext;
-                VkBool32         supported;
+                VkBool32         queryResultStatusSupport;
             }
             
             struct VkVideoQueueFamilyProperties2KHR {
@@ -332,7 +332,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             struct VkVideoProfileKHR {
                 VkStructureType                   sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR;
-                void*                             pNext;
+                const( void )*                    pNext;
                 VkVideoCodecOperationFlagBitsKHR  videoCodecOperation;
                 VkVideoChromaSubsamplingFlagsKHR  chromaSubsampling;
                 VkVideoComponentBitDepthFlagsKHR  lumaBitDepth;
@@ -341,7 +341,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             struct VkVideoProfilesKHR {
                 VkStructureType              sType = VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
-                void*                        pNext;
+                const( void )*               pNext;
                 uint32_t                     profileCount;
                 const( VkVideoProfileKHR )*  pProfiles;
             }
@@ -361,16 +361,20 @@ mixin template Platform_Extensions( extensions... ) {
             }
             
             struct VkPhysicalDeviceVideoFormatInfoKHR {
-                VkStructureType               sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
-                void*                         pNext;
-                VkImageUsageFlags             imageUsage;
-                const( VkVideoProfilesKHR )*  pVideoProfiles;
+                VkStructureType    sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
+                void*              pNext;
+                VkImageUsageFlags  imageUsage;
             }
             
             struct VkVideoFormatPropertiesKHR {
-                VkStructureType  sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
-                void*            pNext;
-                VkFormat         format;
+                VkStructureType     sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+                void*               pNext;
+                VkFormat            format;
+                VkComponentMapping  componentMapping;
+                VkImageCreateFlags  imageCreateFlags;
+                VkImageType         imageType;
+                VkImageTiling       imageTiling;
+                VkImageUsageFlags   imageUsageFlags;
             }
             
             struct VkVideoPictureResourceKHR {
