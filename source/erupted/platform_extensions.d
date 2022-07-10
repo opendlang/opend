@@ -38,6 +38,7 @@ enum GGP_frame_token;
 enum FUCHSIA_imagepipe_surface;
 enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
+enum EXT_metal_objects;
 enum NV_acquire_winrt_display;
 enum EXT_directfb_surface;
 enum FUCHSIA_external_memory;
@@ -60,7 +61,7 @@ alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
 alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface, FUCHSIA_external_memory, FUCHSIA_external_semaphore, FUCHSIA_buffer_collection );
-alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
+alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface, EXT_metal_objects );
 alias USE_PLATFORM_DIRECTFB_EXT    = AliasSeq!( EXT_directfb_surface );
 alias USE_PLATFORM_SCREEN_QNX      = AliasSeq!( QNX_screen_surface );
 
@@ -1721,6 +1722,116 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           = VkResult  function( VkDevice device, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes );
         }
 
+        // VK_EXT_metal_objects : types and function pointer type aliases
+        else static if( __traits( isSame, extension, EXT_metal_objects )) {
+            enum VK_EXT_metal_objects = 1;
+
+            enum VK_EXT_METAL_OBJECTS_SPEC_VERSION = 1;
+            enum const( char )* VK_EXT_METAL_OBJECTS_EXTENSION_NAME = "VK_EXT_metal_objects";
+            
+            alias VkExportMetalObjectTypeFlagsEXT = VkFlags;
+            enum VkExportMetalObjectTypeFlagBitsEXT : VkExportMetalObjectTypeFlagsEXT {
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT             = 0x00000001,
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_COMMAND_QUEUE_BIT_EXT      = 0x00000002,
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_BUFFER_BIT_EXT             = 0x00000004,
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_TEXTURE_BIT_EXT            = 0x00000008,
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_IOSURFACE_BIT_EXT          = 0x00000010,
+                VK_EXPORT_METAL_OBJECT_TYPE_METAL_SHARED_EVENT_BIT_EXT       = 0x00000020,
+                VK_EXPORT_METAL_OBJECT_TYPE_FLAG_BITS_MAX_ENUM_EXT           = 0x7FFFFFFF
+            }
+            
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT            = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_COMMAND_QUEUE_BIT_EXT     = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_COMMAND_QUEUE_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_BUFFER_BIT_EXT            = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_BUFFER_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_TEXTURE_BIT_EXT           = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_TEXTURE_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_IOSURFACE_BIT_EXT         = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_IOSURFACE_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_METAL_SHARED_EVENT_BIT_EXT      = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_METAL_SHARED_EVENT_BIT_EXT;
+            enum VK_EXPORT_METAL_OBJECT_TYPE_FLAG_BITS_MAX_ENUM_EXT          = VkExportMetalObjectTypeFlagBitsEXT.VK_EXPORT_METAL_OBJECT_TYPE_FLAG_BITS_MAX_ENUM_EXT;
+            
+            struct VkExportMetalObjectCreateInfoEXT {
+                VkStructureType                     sType = VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
+                const( void )*                      pNext;
+                VkExportMetalObjectTypeFlagBitsEXT  exportObjectType;
+            }
+            
+            struct VkExportMetalObjectsInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT;
+                const( void )*   pNext;
+            }
+            
+            struct VkExportMetalDeviceInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT;
+                const( void )*   pNext;
+                MTLDevice_id     mtlDevice;
+            }
+            
+            struct VkExportMetalCommandQueueInfoEXT {
+                VkStructureType     sType = VK_STRUCTURE_TYPE_EXPORT_METAL_COMMAND_QUEUE_INFO_EXT;
+                const( void )*      pNext;
+                VkQueue             queue;
+                MTLCommandQueue_id  mtlCommandQueue;
+            }
+            
+            struct VkExportMetalBufferInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_EXPORT_METAL_BUFFER_INFO_EXT;
+                const( void )*   pNext;
+                VkDeviceMemory   memory;
+                MTLBuffer_id     mtlBuffer;
+            }
+            
+            struct VkImportMetalBufferInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_IMPORT_METAL_BUFFER_INFO_EXT;
+                const( void )*   pNext;
+                MTLBuffer_id     mtlBuffer;
+            }
+            
+            struct VkExportMetalTextureInfoEXT {
+                VkStructureType        sType = VK_STRUCTURE_TYPE_EXPORT_METAL_TEXTURE_INFO_EXT;
+                const( void )*         pNext;
+                VkImage                image;
+                VkImageView            imageView;
+                VkBufferView           bufferView;
+                VkImageAspectFlagBits  plane;
+                MTLTexture_id          mtlTexture;
+            }
+            
+            struct VkImportMetalTextureInfoEXT {
+                VkStructureType        sType = VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT;
+                const( void )*         pNext;
+                VkImageAspectFlagBits  plane;
+                MTLTexture_id          mtlTexture;
+            }
+            
+            struct VkExportMetalIOSurfaceInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_EXPORT_METAL_IO_SURFACE_INFO_EXT;
+                const( void )*   pNext;
+                VkImage          image;
+                IOSurfaceRef     ioSurface;
+            }
+            
+            struct VkImportMetalIOSurfaceInfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_IMPORT_METAL_IO_SURFACE_INFO_EXT;
+                const( void )*   pNext;
+                IOSurfaceRef     ioSurface;
+            }
+            
+            struct VkExportMetalSharedEventInfoEXT {
+                VkStructureType    sType = VK_STRUCTURE_TYPE_EXPORT_METAL_SHARED_EVENT_INFO_EXT;
+                const( void )*     pNext;
+                VkSemaphore        semaphore;
+                VkEvent            event;
+                MTLSharedEvent_id  mtlSharedEvent;
+            }
+            
+            struct VkImportMetalSharedEventInfoEXT {
+                VkStructureType    sType = VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT;
+                const( void )*     pNext;
+                MTLSharedEvent_id  mtlSharedEvent;
+            }
+            
+            alias PFN_vkExportMetalObjectsEXT                                           = void      function( VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo );
+        }
+
         // VK_NV_acquire_winrt_display : types and function pointer type aliases
         else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
             enum VK_NV_acquire_winrt_display = 1;
@@ -2084,6 +2195,11 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
             }
 
+            // VK_EXT_metal_objects : function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                PFN_vkExportMetalObjectsEXT                                           vkExportMetalObjectsEXT;
+            }
+
             // VK_NV_acquire_winrt_display : function pointer decelerations
             else static if( __traits( isSame, extension, NV_acquire_winrt_display )) {
                 PFN_vkAcquireWinrtDisplayNV                                           vkAcquireWinrtDisplayNV;
@@ -2313,6 +2429,11 @@ mixin template Platform_Extensions( extensions... ) {
                 vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModes2EXT" );
             }
 
+            // VK_EXT_metal_objects : load instance based device level function definitions
+            else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                vkExportMetalObjectsEXT                           = cast( PFN_vkExportMetalObjectsEXT                           ) vkGetInstanceProcAddr( instance, "vkExportMetalObjectsEXT" );
+            }
+
             // VK_FUCHSIA_external_memory : load instance based device level function definitions
             else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
                 vkGetMemoryZirconHandleFUCHSIA                    = cast( PFN_vkGetMemoryZirconHandleFUCHSIA                    ) vkGetInstanceProcAddr( instance, "vkGetMemoryZirconHandleFUCHSIA" );
@@ -2406,6 +2527,11 @@ mixin template Platform_Extensions( extensions... ) {
                 vkAcquireFullScreenExclusiveModeEXT               = cast( PFN_vkAcquireFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
                 vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
                 vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+            }
+
+            // VK_EXT_metal_objects : load device based device level function definitions
+            else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                vkExportMetalObjectsEXT                           = cast( PFN_vkExportMetalObjectsEXT                           ) vkGetDeviceProcAddr( device, "vkExportMetalObjectsEXT" );
             }
 
             // VK_FUCHSIA_external_memory : load device based device level function definitions
@@ -2519,6 +2645,11 @@ mixin template Platform_Extensions( extensions... ) {
                     vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
                 }
 
+                // VK_EXT_metal_objects : load dispatch device member function definitions
+                else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                    vkExportMetalObjectsEXT                           = cast( PFN_vkExportMetalObjectsEXT                           ) vkGetDeviceProcAddr( device, "vkExportMetalObjectsEXT" );
+                }
+
                 // VK_FUCHSIA_external_memory : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, FUCHSIA_external_memory )) {
                     vkGetMemoryZirconHandleFUCHSIA                    = cast( PFN_vkGetMemoryZirconHandleFUCHSIA                    ) vkGetDeviceProcAddr( device, "vkGetMemoryZirconHandleFUCHSIA" );
@@ -2604,6 +2735,11 @@ mixin template Platform_Extensions( extensions... ) {
                 VkResult  AcquireFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkAcquireFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
                 VkResult  ReleaseFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkReleaseFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
                 VkResult  GetDeviceGroupSurfacePresentModes2EXT( const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes ) { return vkGetDeviceGroupSurfacePresentModes2EXT( vkDevice, pSurfaceInfo, pModes ); }
+            }
+
+            // VK_EXT_metal_objects : dispatch device convenience member functions
+            else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                void      ExportMetalObjectsEXT( VkExportMetalObjectsInfoEXT* pMetalObjectsInfo ) { vkExportMetalObjectsEXT( vkDevice, pMetalObjectsInfo ); }
             }
 
             // VK_FUCHSIA_external_memory : dispatch device convenience member functions
@@ -2757,6 +2893,11 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkAcquireFullScreenExclusiveModeEXT                               vkAcquireFullScreenExclusiveModeEXT;
                 PFN_vkReleaseFullScreenExclusiveModeEXT                               vkReleaseFullScreenExclusiveModeEXT;
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
+            }
+
+            // VK_EXT_metal_objects : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_metal_objects )) {
+                PFN_vkExportMetalObjectsEXT                                           vkExportMetalObjectsEXT;
             }
 
             // VK_NV_acquire_winrt_display : dispatch device member function pointer decelerations
