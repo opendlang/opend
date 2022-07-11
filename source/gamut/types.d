@@ -139,3 +139,13 @@ enum int LOAD_RGB = 2;
 /// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_RGBA = 4; 
 
+
+// Encode flags
+
+/// Do nothing particular.
+/// Supported by: JPEG, PNG, DDS, QOI, QOIX.
+enum int ENCODE_NORMAL = 0;
+
+/// Internal use, this is to test a variation of a compiler.
+/// Supported by: JPEG, PNG, DDS, QOI, QOIX.
+enum int ENCODE_CHALLENGER = 4;

@@ -3,6 +3,7 @@ module main;
 import std.stdio;
 import std.file;
 import std.conv;
+import std.path;
 import std.string;
 import std.algorithm;
 import gamut;
@@ -63,12 +64,21 @@ int main(string[] args)
         writefln("       decode mpps   encode mpps      bit-per-pixel");
         writefln("          %8.2f      %8.2f           %8.5f", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel);
         N += 1;
+
+        // Check encoding is properly done.
+        {
+            Image image2;
+            image2.loadFromMemory(qoix_encoded);
+            string path = "output/" ~ baseName(f) ~ ".png";
+            image2.saveToFile(path, ImageFormat.PNG);
+        }
     }
     mean_encode_mpps /= N;
     mean_decode_mpps /= N;
     mean_bpp /= N;
     writefln("\nTOTAL  decode mpps   encode mpps      bit-per-pixel");
     writefln("          %8.2f      %8.2f           %8.5f", mean_decode_mpps, mean_encode_mpps, mean_bpp);
+   
 
     return 0;
 }
