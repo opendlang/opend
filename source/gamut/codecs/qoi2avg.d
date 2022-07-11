@@ -460,9 +460,9 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
 					if (px_pos >= stride) 
                     {
-						px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0]) >> 1;
-						px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1]) >> 1;
-						px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2]) >> 1;
+						px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
+						px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
+						px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
 					}
 
 					byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -599,9 +599,9 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 		else if (p < chunks_len) {
 			px_ref.v = px.v;
 			if (px_pos >= stride) {
-				px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0]) >> 1;
-				px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1]) >> 1;
-				px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2]) >> 1;
+				px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
+				px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
+				px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
 			}
 
 			int b1 = bytes[p++];
