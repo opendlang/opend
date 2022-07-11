@@ -39,28 +39,6 @@ int main(string[] args)
         int width = image.width;
         int height = image.height;
 
-        ubyte[] png_encoded;
-        double png_encode_ms = measure( { png_encoded = image.saveToMemory(ImageFormat.PNG); } );
-        double png_size_kb = png_encoded.length / 1024.0;
-        double png_decode_ms = measure( { image.loadFromMemory(png_encoded); } );
-        double png_encode_mpps = (width * height * 1.0e-6) / (png_encode_ms * 0.001);
-        double png_decode_mpps = (width * height * 1.0e-6) / (png_decode_ms * 0.001);
-
-
-        writefln("       decode ms   encode ms   decode mpps   encode mpps   size kb");
-        writefln("png     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f", png_decode_ms, png_encode_ms, png_decode_mpps, png_encode_mpps, png_size_kb);
-
-        image.loadFromFile(f);
-
-        ubyte[] qoi_encoded;
-        double qoi_encode_ms = measure( { qoi_encoded = image.saveToMemory(ImageFormat.QOI); } );
-        double qoi_size_kb = qoi_encoded.length / 1024.0;
-        double qoi_decode_ms = measure( { image.loadFromMemory(qoi_encoded); } );
-        double qoi_encode_mpps = (width * height * 1.0e-6) / (qoi_encode_ms * 0.001);
-        double qoi_decode_mpps = (width * height * 1.0e-6) / (qoi_decode_ms * 0.001);
-
-        writefln("qoi     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f", qoi_decode_ms, qoi_encode_ms, qoi_decode_mpps, qoi_encode_mpps, qoi_size_kb);
-
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
@@ -71,19 +49,9 @@ int main(string[] args)
         double qoix_encode_mpps = (width * height * 1.0e-6) / (qoix_encode_ms * 0.001);
         double qoix_decode_mpps = (width * height * 1.0e-6) / (qoix_decode_ms * 0.001);
 
-        writefln("qoix    %8.1f    %8.1f      %8.2f      %8.2f  %8.2f", qoix_decode_ms, qoix_encode_ms, qoix_decode_mpps, qoix_encode_mpps, qoix_size_kb);
-
-      /+  ubyte[] dds_encoded;
-        double dds_encode_ms = measure( { dds_encoded = image.saveToMemory(ImageFormat.DDS); } );
-        double dds_size_kb = dds_encoded.length / 1024.0;
-        double dds_decode_ms = double.nan;
-        double dds_encode_mpps = (width * height * 1.0e-6) / (dds_encode_ms * 0.001);
-        double dds_decode_mpps = double.nan;
-        double dds_rate = dds_size_kb / png_size_kb;
-
-        writefln("dds     %8.1f    %8.1f      %8.2f      %8.2f  %8.2f   %4.1f", dds_decode_ms, dds_encode_ms, dds_decode_mpps, dds_encode_mpps, dds_size_kb, dds_rate);
-
-        free(dds_encoded.ptr);  +/
+        writefln("       decode mpps   encode mpps   size kb");
+        writefln("qoix    %8.2f      %8.2f  %8.2f", qoix_decode_mpps, qoix_encode_mpps, qoix_size_kb);
+   
         
         free(qoi_encoded.ptr);
         free(qoix_encoded.ptr);

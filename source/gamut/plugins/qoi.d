@@ -148,7 +148,10 @@ bool saveQOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         case ImageType.rgb8:  desc.channels = 3; break;
         case ImageType.rgba8: desc.channels = 4; break;
         default: 
-            return false; // not supported
+            {
+                int a = 0;
+                return false; // not supported
+            }
     }
         
     int qoilen;
