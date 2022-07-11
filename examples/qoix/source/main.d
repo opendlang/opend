@@ -21,6 +21,11 @@ int main(string[] args)
     // Encore all image in test suite in QOI
     auto files = filter!`endsWith(a.name,".png")`(dirEntries("test-images",SpanMode.depth));
 
+    double mean_encode_mpps = 0;
+    double mean_decode_mpps = 0;
+    double mean_bpp = 0;
+
+    int N = 0;
     foreach(f; files)
     {
         writeln();
@@ -44,19 +49,27 @@ int main(string[] args)
 
         ubyte[] qoix_encoded;
         double qoix_encode_ms = measure( { qoix_encoded = image.saveToMemory(ImageFormat.QOIX); } );
+        scope(exit) free(qoix_encoded.ptr);
         double qoix_size_kb = qoix_encoded.length / 1024.0;
         double qoix_decode_ms = measure( { image.loadFromMemory(qoix_encoded); } );
         double qoix_encode_mpps = (width * height * 1.0e-6) / (qoix_encode_ms * 0.001);
         double qoix_decode_mpps = (width * height * 1.0e-6) / (qoix_decode_ms * 0.001);
+        double bit_per_pixel = (qoix_encoded.length * 8.0) / (width * height);
 
-        writefln("       decode mpps   encode mpps   size kb");
-        writefln("qoix    %8.2f      %8.2f  %8.2f", qoix_decode_mpps, qoix_encode_mpps, qoix_size_kb);
-   
-        
-        free(qoi_encoded.ptr);
-        free(qoix_encoded.ptr);
-        free(png_encoded.ptr);
+        mean_encode_mpps += qoix_encode_mpps;
+        mean_decode_mpps += qoix_decode_mpps;
+        mean_bpp += bit_per_pixel;
+
+        writefln("       decode mpps   encode mpps      bit-per-pixel");
+        writefln("          %8.2f      %8.2f           %8.5f", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel);
+        N += 1;
     }
+    mean_encode_mpps /= N;
+    mean_decode_mpps /= N;
+    mean_bpp /= N;
+    writefln("\nTOTAL  decode mpps   encode mpps      bit-per-pixel");
+    writefln("          %8.2f      %8.2f           %8.5f", mean_decode_mpps, mean_encode_mpps, mean_bpp);
+
     return 0;
 }
 

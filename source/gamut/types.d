@@ -121,17 +121,21 @@ bool imageIsValidSize(int width, int height) pure
 // Load flags
 
 /// No loading options.
+/// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_NORMAL = 0; 
 
 /// Load the image in grayscale, faster than loading as RGB24 then converting to greyscale.
 /// Can't be used with either `LOAD_RGB` or `LOAD_RGBA`.
+/// Supported by: JPEG, PNG.
 enum int LOAD_GREYSCALE = 1;
 
 /// Load the image in RGB8/RGB16, faster than loading as RGB8 then converting to greyscale.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
+/// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_RGB = 2; 
 
 /// Load the image in RGBA8/RGBA16, faster than loading as RGBA8 then converting to greyscale.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
+/// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_RGBA = 4; 
 
