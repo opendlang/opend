@@ -27,6 +27,7 @@ sources_list = [
     'mir/stat/distribution/beta',
     'mir/stat/distribution/beta_proportion',
     'mir/stat/distribution/binomial',
+    'mir/stat/distribution/exponential',
     'mir/stat/distribution/normal',
     'mir/stat/distribution/poisson',
     'mir/stat/distribution/uniform',
