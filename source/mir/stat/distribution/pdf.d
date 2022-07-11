@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion: betaProportionPDF;
 ///
 public import mir.stat.distribution.binomial: binomialPMF;
 ///
+public import mir.stat.distribution.exponential: exponentialPDF;
+///
 public import mir.stat.distribution.normal: normalPDF;
 ///
 public import mir.stat.distribution.poisson: poissonPMF;
