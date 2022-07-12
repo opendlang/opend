@@ -14,7 +14,7 @@ Incompatible adaptation of QOI format - https://phoboslab.org
 
 -- LICENSE: The MIT License(MIT)
 Copyright(c) 2021 Dominic Szablewski (original QOI format)
-Copyright(c) 2021 wbd73 @ GIthub (compression improvements)
+Copyright(c) 2021 wbd73 @ GitHub (compression improvements)
 Copyright(c) 2022 Guillaume Piolat (D translation, add pitch support)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
