@@ -77,7 +77,7 @@ if(isIterable!(T)) {
 
 unittest {
     double uniform3 = entropyCounts([4, 4, 4].dup);
-    assert(approxEqual(uniform3, log2(3)));
+    assert(approxEqual(uniform3, log2(3.0)));
     double uniform4 = entropyCounts([5, 5, 5, 5].dup);
     assert(approxEqual(uniform4, 2));
     assert(entropyCounts([2,2].dup)==1);
@@ -381,23 +381,23 @@ unittest {
     { // Generic version.
         int[] foo = [1, 1, 1, 2, 2, 2, 3, 3, 3];
         double entropyFoo = entropy(foo);
-        assert(approxEqual(entropyFoo, log2(3)));
+        assert(approxEqual(entropyFoo, log2(3.0)));
         int[] bar = [1, 2, 3, 1, 2, 3, 1, 2, 3];
         auto stuff = joint(foo, bar);
         double jointEntropyFooBar = entropy(joint(foo, bar));
-        assert(approxEqual(jointEntropyFooBar, log2(9)));
+        assert(approxEqual(jointEntropyFooBar, log2(9.0)));
     }
     { // byte specialization
         byte[] foo = [-1, -1, -1, 2, 2, 2, 3, 3, 3];
         double entropyFoo = entropy(foo);
-        assert(approxEqual(entropyFoo, log2(3)));
+        assert(approxEqual(entropyFoo, log2(3.0)));
         string bar = "ACTGGCTA";
         assert(entropy(bar) == 2);
     }
     { // NeedsHeap version.
         string[] arr = ["1", "1", "1", "2", "2", "2", "3", "3", "3"];
         auto m = map!("a")(arr);
-        assert(approxEqual(entropy(m), log2(3)));
+        assert(approxEqual(entropy(m), log2(3.0)));
     }
 }
 

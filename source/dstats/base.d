@@ -73,7 +73,7 @@ shared static this() {
     double[] sfTemp = new double[staticFacTableLen];
     sfTemp[0] = 0;
     for(uint i = 1; i < staticFacTableLen; i++) {
-        sfTemp[i] = sfTemp[i - 1] + log(i);
+        sfTemp[i] = sfTemp[i - 1] + log(cast(double)i);
     }
     logFactorialTable = assumeUnique(sfTemp);
 }

@@ -2223,7 +2223,7 @@ if(isInputRange!U && isInputRange!F &&
     double[] logs = alloc.uninitializedArray!(double[])(N + 1);
     logs[0] = 0;
     foreach(i; 1..logs.length) {
-        logs[i] = log(i);
+        logs[i] = log(cast(double)i);
     }
 
     double nFact = logFactorial(N);

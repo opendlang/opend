@@ -863,7 +863,7 @@ unittest {
         writeln("100k samples from geometric.(", p, "):");
         writeln("\tMean Expected: ", 1 / p,
                 "  Observed:  ", mean(observ));
-        writeln("\tMedian Expected: ", ceil(-log(2) / log(1 - p)),
+        writeln("\tMedian Expected: ", ceil(-log(2.0) / log(1 - p)),
                 " Observed:  ", median(observ));
         writeln("\tStdev Expected:  ", sqrt((1 - p) / (p * p)),
                 "  Observed:  ", stdev(observ));
