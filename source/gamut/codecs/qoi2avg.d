@@ -4,7 +4,7 @@ nothrow @nogc:
 
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34
-/// Called "QOIX" in Gmaut, since it has a few extensions again, such as LZ4.
+/// Called "QOIX" in Gamut, since it has a few extensions again, such as LZ4.
 
 /* 
 
