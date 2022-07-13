@@ -561,7 +561,7 @@ Computes the poisson inverse cumulative distrivution function (InvCDF).
 For algorithms `PoissonAlgo.direct`, `PoissonAlgo.approxNormal`, and 
 `PoissonAlgo.approxNormalContinuityCorrection`, the inverse CDF returns the 
 number of events (`k`) given the probability (`p`) and rate of occurence
-(`lambda`). For the `Poisson.gamma` algorith, the inverse CDF returns the rate
+(`lambda`). For the `Poisson.gamma` algorithm, the inverse CDF returns the rate
 of occurence (`lambda`) given the probability (`p`) and the number of events (`k`).
 
 For `PoissonAlgo.direct`, if the value of `lambda` is larger than 16, then an
@@ -702,7 +702,7 @@ unittest {
 Computes the poisson log probability mass function (LogPMF).
 
 Params:
-    k = value to evaluate PMF (e.g. number of "heads")
+    k = value to evaluate LogPMF (e.g. number of "heads")
     lambda = expected rate of occurence
 
 See_also:

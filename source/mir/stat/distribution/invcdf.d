@@ -22,11 +22,13 @@ public import mir.stat.distribution.binomial: binomialInvCDF;
 ///
 public import mir.stat.distribution.exponential: exponentialInvCDF;
 ///
+public import mir.stat.distribution.gamma: gammaInvCDF;
+///
+public import mir.stat.distribution.gev: gevInvCDF;
+///
 public import mir.stat.distribution.normal: normalInvCDF;
 ///
 public import mir.stat.distribution.poisson: poissonInvCDF;
 ///
 public import mir.stat.distribution.uniform: uniformInvCDF;
-///
-public import mir.stat.distribution.gev: gevInvCDF;
 

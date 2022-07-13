@@ -22,10 +22,12 @@ public import mir.stat.distribution.binomial: binomialPMF;
 ///
 public import mir.stat.distribution.exponential: exponentialPDF;
 ///
+public import mir.stat.distribution.gamma: gammaPDF;
+///
+public import mir.stat.distribution.gev: gevPDF;
+///
 public import mir.stat.distribution.normal: normalPDF;
 ///
 public import mir.stat.distribution.poisson: poissonPMF;
 ///
 public import mir.stat.distribution.uniform: uniformPDF;
-///
-public import mir.stat.distribution.gev: gevPDF;
