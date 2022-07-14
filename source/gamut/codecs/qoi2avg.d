@@ -696,6 +696,10 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 }
 
 /// Encode in QOIX + LZ4
+/// File format:
+///   QOIX header (15 bytes)
+///   Original data size (4 bytes)
+///   LZ4 encoded opcodes
 ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
     // Encode to QOIX
@@ -709,42 +713,50 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	ubyte[] qoixHeader = qoix[0..QOI_HEADER_SIZE];
     ubyte[] qoixData = qoix[QOI_HEADER_SIZE..qoilen];
 	int datalen = cast(int) qoixData.length;
-    int maxsize = LZ4_compressBound(datalen + QOI_HEADER_SIZE);
+    int maxsize = LZ4_compressBound(datalen);
 
     // Encode QOI in LZ4, except the header.
 
-    ubyte* lz4Data = cast(ubyte*) malloc(maxsize);
+    ubyte* lz4Data = cast(ubyte*) malloc(QOI_HEADER_SIZE + 4 + maxsize); // PERF: realloc this to fit memory to actually used
+
 	lz4Data[0..QOI_HEADER_SIZE] = qoix[0..QOI_HEADER_SIZE];
+
+	int p = QOI_HEADER_SIZE;
+	qoi_write_32(lz4Data, &p, datalen);
+
     int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[QOI_HEADER_SIZE], 
-                               cast(char*)&lz4Data[QOI_HEADER_SIZE], 
+                               cast(char*)&lz4Data[QOI_HEADER_SIZE + 4], 
                                datalen);
 
-    *out_len = lz4Size + QOI_HEADER_SIZE;
+    *out_len = QOI_HEADER_SIZE + 4 + lz4Size;
     return lz4Data;
 }
 
+/// Decodes a QOIX + LZ4
+/// File format:
+///   QOIX header (15 bytes)
+///   Original data size (4 bytes)
+///   LZ4 encoded opcodes
 ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
 {
-	if (size < QOI_HEADER_SIZE)
+	if (size < QOI_HEADER_SIZE + 4)
 		return null;
 
-    // Decode LZ4
-    long osz = cast(long)(size * 3.1);
-    if (osz + QOI_HEADER_SIZE > int.max)
-    {
-		return null; // too large a buffer for at-once LZ4 decompression
-    }
+	// Read original size of data.
+	int p = QOI_HEADER_SIZE;
+	int orig = qoi_read_32(data, &p);
 
-    ubyte* decQOIX = null;
-    
-    decQOIX = cast(ubyte*) malloc(osz);
+	if (orig < 0)
+		return null; // too large, corrupted.
+
+	// Allocate decoding buffer.
+    ubyte* decQOIX = cast(ubyte*) malloc(QOI_HEADER_SIZE + orig);
 
 	decQOIX[0..QOI_HEADER_SIZE] = data[0..QOI_HEADER_SIZE];
 
-    int qoilen = LZ4_decompress_safe(cast(char*)&data[QOI_HEADER_SIZE], 
+    int qoilen = LZ4_decompress_fast(cast(char*)&data[QOI_HEADER_SIZE + 4], 
                                      cast(char*)&decQOIX[QOI_HEADER_SIZE], 
-                                     size - QOI_HEADER_SIZE, 
-                                     cast(int)(osz - QOI_HEADER_SIZE));
+                                     orig);
 
     if (qoilen < 0)
 	{
@@ -753,7 +765,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     }
 
     // Now decompQOIX is a QOIX image.
-    ubyte* image = qoix_decode(decQOIX, qoilen + QOI_HEADER_SIZE, desc, channels);
+    ubyte* image = qoix_decode(decQOIX, QOI_HEADER_SIZE + qoilen, desc, channels);
     scope(exit) free(decQOIX);
 
     return image;

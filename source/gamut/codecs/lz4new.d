@@ -676,7 +676,7 @@ enum : dictIssue_directive
 }
 
 // TODO: remove, this is deprecated in original.
-int LZ4_compress(const char* src, char* dest, int srcSize)
+public int LZ4_compress(const char* src, char* dest, int srcSize)
 {
     return LZ4_compress_default(src, dest, srcSize, LZ4_compressBound(srcSize));
 }
@@ -684,12 +684,12 @@ int LZ4_compress(const char* src, char* dest, int srcSize)
 /*************************************
 *  Local Utils
 **************************************/
-int LZ4_versionNumber() 
+public int LZ4_versionNumber() 
 { 
     return LZ4_VERSION_NUMBER; 
 }
 
-const(char)* LZ4_versionString() 
+public const(char)* LZ4_versionString() 
 { 
     return LZ4_VERSION_STRING; 
 }
@@ -703,7 +703,7 @@ inputSize  : max supported value is LZ4_MAX_INPUT_SIZE
 return : maximum output size in a "worst case" scenario
 or 0, if input size is incorrect (too large or negative)
 */
-int LZ4_compressBound(int isize)  
+public int LZ4_compressBound(int isize)  
 {
     assert( cast(uint)(isize) <= cast(uint)LZ4_MAX_INPUT_SIZE);
     return isize + (isize/255) + 16;
