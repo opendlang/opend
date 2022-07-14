@@ -675,6 +675,11 @@ enum : dictIssue_directive
     dictSmall 
 }
 
+// TODO: remove, this is deprecated in original.
+int LZ4_compress(const char* src, char* dest, int srcSize)
+{
+    return LZ4_compress_default(src, dest, srcSize, LZ4_compressBound(srcSize));
+}
 
 /*************************************
 *  Local Utils
