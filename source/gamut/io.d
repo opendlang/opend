@@ -212,7 +212,7 @@ debug extern(C) @system private
     int debug_fseek(IOHandle handle, c_long offset, int origin)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
-        printf("Seek to offset %lld, mode %d\n", offset, origin);
+        printf("Seek to offset %lld, mode %d\n", cast(long) offset, origin);
         int r = wio.wrapped.seek(wio.handle, offset, origin);
         if (r == 0)
             printf("  => success\n", r);
