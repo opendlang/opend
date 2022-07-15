@@ -59,7 +59,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    int len = io.tell(handle);
+    int len = cast(int) io.tell(handle); // works, see io.d for why
 
     if (!io.rewind(handle))
     {

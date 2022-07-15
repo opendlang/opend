@@ -17,10 +17,11 @@ nothrow @nogc:
 
 // Limits of I/O in gamut.
 // Callbacks are modelled upon C stdlib functions, some of those use c_long or int. So, 32-bit is a possibility.
-enum size_t GAMUT_MAX_POSSIBLE_MEMORY_OFFSET = 0x7fff_ffff;       /// Can't open file larger than this much bytes
+enum size_t GAMUT_MAX_POSSIBLE_MEMORY_OFFSET = 0x7fff_fffe;       /// Can't open file larger than this much bytes
 enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_READ = 0x7fff_ffff;   /// Can't read more bytes than this at once
 enum size_t GAMUT_MAX_POSSIBLE_SIMULTANEOUS_WRITE = 0x7fff_ffff;  /// Can't write more bytes than this at once
 
+static assert(GAMUT_MAX_POSSIBLE_MEMORY_OFFSET + 1 <= cast(long) int.max);
 
 // Note: those function pointers made to be binary compatible with ftell/fseek/fwrite/fread/feof.
 extern(C) @system
@@ -61,10 +62,12 @@ extern(C) @system
     ///   SEEK_CUR = Current position of file pointer.
     ///   SEEK_END = end of file.
     /// This function returns zero if successful, or else it returns a non-zero value.
+    /// Note: c_long offsets in gamut can always be cast to int without loss.
     alias SeekProc = int function(IOHandle handle, c_long offset, int origin);
 
     /// A function with same signature and semantics than `ftell`.
     /// Tells where we are in the file. -1 if error.
+    /// Note: c_long offsets in gamut can always be cast to int without loss.
     alias TellProc = c_long function(IOHandle handle);
 
     /// A function with same signature and semantics than `feof`.
@@ -209,7 +212,7 @@ debug extern(C) @system private
     int debug_fseek(IOHandle handle, c_long offset, int origin)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
-        printf("Seek to offset %d, mode %d\n", offset, origin);
+        printf("Seek to offset %lld, mode %d\n", offset, origin);
         int r = wio.wrapped.seek(wio.handle, offset, origin);
         if (r == 0)
             printf("  => success\n", r);
