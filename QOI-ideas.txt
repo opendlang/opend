@@ -1,11 +1,8 @@
 Generally I'd like to:
-- keep LZ4 decoding speed
-- improves compression efficiency
-- support 10-bit,
+- improves compression efficiency => follow "QOIR" repo, already not bad
+- support 10-bit => type punning
 - support YUV?
-- stay one-pass
 - experiment with lossy for increasing compression
 - increase complexity and slow down encoding
 
-From discussions:
-- pretty clear LZ4 improves things
+- technically, you could have 4 parallel slices encoding/decoding at once with SIMD.
