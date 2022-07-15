@@ -5,12 +5,7 @@ nothrow @nogc:
 import core.stdc.stdlib: malloc, free;
 import core.stdc.string: memset;
 
-version = newLZ4Translation;
-
-version(newLZ4Translation)
-    import gamut.codecs.lz4new;
-else
-    import gamut.codecs.lz4;
+import gamut.codecs.lz4;
 
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34

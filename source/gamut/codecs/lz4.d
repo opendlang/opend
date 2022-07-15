@@ -82,14 +82,17 @@ struct LZ4_streamDecode_t
 
 //**********************************************************
 
-private bool likely(bool v)
+version(LDC)
 {
-	return (v!=false);
+    // GP: When measured, did not make a difference tbh.
+    import ldc.intrinsics;
+    bool likely(bool b) { return llvm_expect!bool(b, true); }
+    bool unlikely(bool b) { return llvm_expect!bool(b, false); }
 }
-
-private bool unlikely(bool v)
+else
 {
-	return (v!=false);
+    bool likely(bool b) { return b; } // PERF: use the hint
+    bool unlikely(bool b) { return b; } // PERF: use the hint
 }
 
 /* *************************************
@@ -188,48 +191,26 @@ private void LZ4_wildCopy(void* dstPtr, const(void)* srcPtr, void* dstEnd)
 	do { LZ4_copy8(d,s); d+=8; s+=8; } while (d<e);
 }
 
+/**************************************/
+
+private uint LZ4_NbCommonBytes (size_t val)
+{
+    import core.bitop: bsf;
+    assert(val != 0);
+    return bsf(val) >> 3; 
+}
+unittest
+{
+    assert(LZ4_NbCommonBytes(4) == 0);
+    assert(LZ4_NbCommonBytes(256) == 1);
+    assert(LZ4_NbCommonBytes(65534) == 2);
+    assert(LZ4_NbCommonBytes(0xffffff) == 2);
+    assert(LZ4_NbCommonBytes(0x1000000) == 3);
+}
+
 /* *******************************
    Common functions
 ********************************/
-private uint LZ4_NbCommonBytes (size_t val_)
-{
-	version(LittleEndian)
-	{
-		version(X86_64)
-		{
-			long val = val_;
-			immutable(int[64]) DeBruijnBytePos = [ 0, 0, 0, 0, 0, 1, 1, 2, 0, 3, 1, 3, 1, 4, 2, 7, 0, 2, 3, 6, 1, 5, 3, 5, 1, 3, 4, 4, 2, 5, 6, 7, 7, 0, 1, 2, 3, 3, 4, 6, 2, 6, 5, 5, 3, 4, 5, 6, 7, 1, 2, 4, 6, 4, 4, 5, 7, 2, 6, 5, 7, 6, 7, 7 ];
-			ulong idx = cast(ulong)( ( val & (-val)) * 0x0218A392CDABBD3F )>>58;
-			return DeBruijnBytePos[idx];
-		}
-		else /* 32 bits */
-		{
-			int val = val_;
-			immutable(int[32]) DeBruijnBytePos = [ 0, 0, 3, 0, 3, 1, 3, 0, 3, 2, 2, 1, 3, 2, 0, 1, 3, 3, 1, 2, 2, 2, 2, 0, 3, 1, 2, 0, 1, 0, 1, 1 ];
-			return DeBruijnBytePos[(cast(uint)((val & -val) * 0x077CB531u)) >> 27];
-		}
-	}
-	else   /* Big Endian CPU */
-	{
-		version(X86_64)
-		{
-			ulong val=val_;
-			uint r;
-			if (!(val>>32)) { r=4; } else { r=0; val>>=32; }
-			if (!(val>>16)) { r+=2; val>>=8; } else { val>>=24; }
-			r += (!val);
-			return r;
-		}
-		else /* 32 bits */
-		{
-			uint val=val_;
-			uint r;
-			if (!(val>>16)) { r=2; val>>=8; } else { r=0; val>>=24; }
-			r += (!val);
-			return r;
-		}
-	}
-}
 
 private uint LZ4_count(const(ubyte)* pIn, const(ubyte)* pMatch, const(ubyte)* pInLimit)
 {
