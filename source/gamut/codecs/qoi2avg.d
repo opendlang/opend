@@ -356,7 +356,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	if (
 		data == null || out_len == null || desc == null ||
 		desc.width == 0 || desc.height == 0 ||
-		desc.channels < 3 || desc.channels > 4 ||
+		desc.channels < 1 || desc.channels > 4 ||
 		desc.colorspace > 1 ||
 		desc.height >= QOI_PIXELS_MAX / desc.width
 	) {
@@ -376,7 +376,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	qoi_write_32(bytes, &p, desc.width);
 	qoi_write_32(bytes, &p, desc.height);
 	bytes[p++] = 1; // Put a version number :)
-	bytes[p++] = desc.channels;
+	bytes[p++] = desc.channels; // 1, 2, 3, or 4
 	bytes[p++] = desc.colorspace;
 
 	//pixels = cast(const(ubyte)*) data;
@@ -404,14 +404,30 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         {
 			px_ref.v = px.v;
 
-            if (channels == 4) 
+			switch(channels)
             {
-                px = *cast(qoi_rgba_t *)(&line[posx * 4]);
-            }
-            else {				
-                px.rgba.r = line[posx * 3 + 0];
-                px.rgba.g = line[posx * 3 + 1];
-                px.rgba.b = line[posx * 3 + 2];
+				default:
+				case 4:
+                    px = *cast(qoi_rgba_t *)(&line[posx * 4]);
+					break;
+				case 3:		
+					px.rgba.r = line[posx * 3 + 0];
+					px.rgba.g = line[posx * 3 + 1];
+					px.rgba.b = line[posx * 3 + 2];
+					break;
+				case 2:
+					ubyte grey = line[posx * 2 + 0];
+					px.rgba.r = grey;
+					px.rgba.g = grey;
+					px.rgba.b = grey;
+					px.rgba.a = line[posx * 2 + 1];
+					break;
+				case 1:
+					ubyte grey = line[posx * 1 + 0];
+					px.rgba.r = grey;
+					px.rgba.g = grey;
+					px.rgba.b = grey;
+					break;
             }
 
 			if (px.v == px_ref.v) {
@@ -463,9 +479,25 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
 					if (px_pos >= stride) 
                     {
-						px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-						px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
-						px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
+						switch(channels)
+                        {
+                            default:
+                            case 4:                               
+                            case 3:		
+                                px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
+                                px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
+                                px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
+                                break;
+                            case 2:                                
+                            case 1:
+								
+								assert(px_ref.rgba.r == px_ref.rgba.g && px_ref.rgba.g == px_ref.rgba.b); // in those cases, the predictor is grey
+                                ubyte grey = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
+                                px.rgba.r = grey;
+                                px.rgba.g = grey;
+                                px.rgba.b = grey;
+                                break;
+                        }						
 					}
 
 					byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -568,7 +600,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
 	if (
 		desc.width == 0 || desc.height == 0 || 
-		desc.channels < 3 || desc.channels > 4 ||
+		desc.channels < 1 || desc.channels > 4 ||
 		desc.colorspace > 1 ||
 		qoix_version > 1 ||
 		header_magic != QOIX_MAGIC ||
@@ -602,9 +634,25 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 		else if (p < chunks_len) {
 			px_ref.v = px.v;
 			if (px_pos >= stride) {
-				px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
-				px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
-				px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
+
+				switch(channels)
+                {
+                    default:
+                    case 4:                               
+                    case 3:		
+                        px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
+                        px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
+                        px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
+                        break;
+                    case 2:                                
+                    case 1:
+						assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
+						ubyte grey = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
+						px_ref.rgba.r = grey;
+                        px_ref.rgba.g = grey;
+                        px_ref.rgba.b = grey;
+                        break;
+                }
 			}
 
 			int b1 = bytes[p++];
@@ -676,13 +724,26 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 			}
 		}
 
-		if (channels == 4) { 
+		switch(channels)
+        {
+		default:
+		case 4:
 			*cast(qoi_rgba_t*)(pixels + px_pos) = px;
-		}
-		else {
+			break;
+		case 3:
 			pixels[px_pos + 0] = px.rgba.r;
 			pixels[px_pos + 1] = px.rgba.g;
 			pixels[px_pos + 2] = px.rgba.b;
+			break;
+		case 2:
+			assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
+			pixels[px_pos + 0] = px.rgba.r;
+			pixels[px_pos + 1] = px.rgba.a;
+			break;
+		case 1:
+			assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
+			pixels[px_pos + 0] = px.rgba.r;
+			break;
 		}
  		px_pos += channels;
 	}

@@ -36,8 +36,7 @@ int main(string[] args)
         image.loadFromFile(f);
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
-        if (image.type == ImageType.uint8)
-            image.convertTo(ImageType.rgb8);
+
 
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
@@ -50,6 +49,10 @@ int main(string[] args)
 
         ubyte[] qoix_encoded;
         double qoix_encode_ms = measure( { qoix_encoded = image.saveToMemory(ImageFormat.QOIX); } );
+
+        if (qoix_encoded is null)
+            throw new Exception("encoding failed");
+
         scope(exit) free(qoix_encoded.ptr);
         double qoix_size_kb = qoix_encoded.length / 1024.0;
         double qoix_decode_ms = measure( { image.loadFromMemory(qoix_encoded); } );

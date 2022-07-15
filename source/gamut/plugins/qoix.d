@@ -112,7 +112,11 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._width = desc.width;
     image._height = desc.height;
 
-    if (desc.channels == 3)
+    if (desc.channels == 1)
+        image._type = ImageType.uint8;
+    else if (desc.channels == 2)
+        image._type = ImageType.la8;
+    else if (desc.channels == 3)
         image._type = ImageType.rgb8;
     else if (desc.channels == 4)
         image._type = ImageType.rgba8;
@@ -143,9 +147,11 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     desc.height = image._height;
     desc.pitchBytes = image._pitch;
     desc.colorspace = QOI_SRGB;
-        
+
     switch (image._type)
     {
+        case ImageType.uint8: desc.channels = 1; break;
+        case ImageType.la8:   desc.channels = 2; break;
         case ImageType.rgb8:  desc.channels = 3; break;
         case ImageType.rgba8: desc.channels = 4; break;
         default: 
