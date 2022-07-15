@@ -564,6 +564,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	return bytes;
 }
 
+// PERF: can speedup decoding by maing separate path for channels = 1 and channels = 2 (or a new codec lol)
+
 /* Decode a QOI image from memory.
 
 The function either returns null on failure (invalid parameters or malloc 
@@ -583,7 +585,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
 	if (
 		data == null || desc == null ||
-		(channels != 0 && channels != 3 && channels != 4) ||
+		(channels < 0 && channels > 4) ||
 		size < QOI_HEADER_SIZE + cast(int)(qoi_padding.sizeof)
 	) {
 		return null;
