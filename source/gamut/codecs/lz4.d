@@ -99,6 +99,7 @@ else
    Reading and writing into memory
 **************************************/
 
+// Bug: this is wrong on arm64
 private bool LZ4_64bits()
 {
 	version(X86_64)
@@ -161,7 +162,7 @@ private ulong LZ4_read64(const(void)* memPtr)
 
 private size_t LZ4_read_ARCH(const(void)* p)
 {
-	version(X86_64)
+	version(X86_64) // BUG: this shouldn't work on arm64
 	{
 		return cast(size_t)LZ4_read64(p);
 	}

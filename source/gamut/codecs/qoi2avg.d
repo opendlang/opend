@@ -2,7 +2,7 @@ module gamut.codecs.qoi2avg;
 
 nothrow @nogc:
 
-import core.stdc.stdlib: malloc, free;
+import core.stdc.stdlib: realloc, malloc, free;
 import core.stdc.string: memset;
 
 import gamut.codecs.lz4;
@@ -712,7 +712,7 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     // Encode QOI in LZ4, except the header.
 
-    ubyte* lz4Data = cast(ubyte*) malloc(QOI_HEADER_SIZE + 4 + maxsize); // PERF: realloc this to fit memory to actually used
+    ubyte* lz4Data = cast(ubyte*) malloc(QOI_HEADER_SIZE + 4 + maxsize); 
 
 	lz4Data[0..QOI_HEADER_SIZE] = qoix[0..QOI_HEADER_SIZE];
 
@@ -723,11 +723,12 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                                cast(char*)&lz4Data[QOI_HEADER_SIZE + 4], 
                                datalen);
 
+	if (lz4Size < 0)
+		return null;
 
     *out_len = QOI_HEADER_SIZE + 4 + lz4Size;
 
-	ubyte[] total = lz4Data[0..*out_len];
-
+	lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
     return lz4Data;
 }
 

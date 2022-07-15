@@ -483,27 +483,27 @@ public:
         convertTo(t);
     }
 
-
     /// Convert the image to the following format.
     /// This can destruct channels, loose precision, etc.
-    void convertTo(ImageType targetType) @trusted
+    /// Returns: true on success.
+    bool convertTo(ImageType targetType) @trusted
     {
         assert(!errored()); // this should have been caught before.
         if (targetType == ImageType.unknown)
         {
             error(kStrUnsupportedTypeConversion);
-            return;
+            return false;
         }
 
         if (_type == targetType)
-            return; // success, same type alread
+            return true; // success, same type alread
 
         if (!hasData())
-            return; // success, no pixel data, so everything was "converted"
+            return true; // success, no pixel data, so everything was "converted"
 
         if (width() == 0 || height() == 0)
         {
-            return; // image dimension is zero, everything fine
+            return true; // image dimension is zero, everything fine
         }
 
         ubyte* source = _data;
@@ -517,7 +517,7 @@ public:
         if (err)
         {
             error(kStrOutOfMemory);
-            return;
+            return false;
         }
 
         // Need an intermediate buffer.
@@ -533,12 +533,66 @@ public:
         if (!ok)
         {
             error(kStrUnsupportedTypeConversion);
-            return;
+            return false;
         }
 
         _data = dest; // TODO LEAK, should free existing bitmap if owned
         _type = targetType;
         _pitch = destPitch;
+        return true;
+    }
+
+    /// Reinterpret cast the image content.
+    /// For example if you want to consider a RGBA8 image to be uint8, but with a 4x larger width.
+    /// This doesn't allocates new data storage.
+    ///
+    /// Warning: This fails if the cast is impossible, for example casting a uint8 image to RGBA8 only
+    /// works if the width is a multiple of 4.
+    ///
+    /// So it is a bit like casting slices in D.
+    bool castTo(ImageType targetType) @trusted
+    {
+        assert(!errored()); // this should have been caught before.
+        if (targetType == ImageType.unknown)
+        {
+            error(kStrInvalidImageTypeCast);
+            return false;
+        }
+
+        if (_type == targetType)
+            return true; // success, nothing to do
+
+        if (!hasData())
+        {
+            _type = targetType;
+            return true; // success, no pixel data, so everything was "cast"
+        }
+
+        if (width() == 0 || height() == 0)
+        {
+            return true; // image dimension is zero, everything fine
+        }
+
+        // Basically, you can cast if the source type size is a multiple of the dest type.
+        int srcBytes = imageTypePixelSize(_type);
+        int destBytes = imageTypePixelSize(_type);
+
+        // Byte length of source line.
+        int sourceLineSize = width * srcBytes;
+        assert(sourceLineSize >= 0);
+
+        // Is it dividable by destBytes? If yes, cast is successful.
+        if ( (sourceLineSize % destBytes) == 0)
+        {
+            _width = sourceLineSize / destBytes;
+            _type = targetType;
+            return true;
+        }
+        else
+        {
+            error(kStrInvalidImageTypeCast);
+            return false;
+        }
     }
 
     //
@@ -591,7 +645,8 @@ package:
     int _height = GAMUT_INVALID_IMAGE_HEIGHT;
 
     /// Pitch in bytes between lines, when a pitch makes sense.
-    int _pitch; 
+    /// FUTURE: negative pitch for costless vertical flip.
+    int _pitch = 0; 
 
     /// Pointer to last known error. `null` means "no errors".
     /// Once an error has occured, continuing to use the image is Undefined Behaviour.
@@ -828,7 +883,10 @@ bool convertInternal(ImageType srcType, const(ubyte)* src, int srcPitch,
 
 /// See_also: OpenGL ES specification 2.3.5.1 and 2.3.5.2 for details about converting from 
 /// floating-point to integers, and the other way around.
-void convertToIntermediateScanline(ImageType srcType, const(ubyte)* src, ImageType dstType, ubyte* dest, int width) @system
+void convertToIntermediateScanline(ImageType srcType, 
+                                   const(ubyte)* src, 
+                                   ImageType dstType, 
+                                   ubyte* dest, int width) @system
 {
     if (dstType == ImageType.rgbaf32)
     {
@@ -1022,7 +1080,7 @@ void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dst
 {
     if (srcType == ImageType.rgbaf32)
     {    
-        float* inp = cast(float*) src;
+        const(float)* inp = cast(const(float)*) src;
 
         final switch(dstType) with (ImageType)
         {
