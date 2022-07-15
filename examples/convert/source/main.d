@@ -6,12 +6,13 @@ import gamut;
 
 void usage()
 {
-    writeln();
-    writeln("Usage: convert [-i input.ext] [-bitness {8|16|auto}] output.ext\n");
-    writeln();
+    writeln("Convert image from one format to another.");
+    writeln;
+    writeln("Usage: convert input.ext output.ext [-bitness {8|16|auto}]\n");
+    writeln;
     writeln("Params:");
     writeln("  -i           Specify an input file");
-    writeln("  -bitness     Change bitness of file");
+    writeln("  -b/--bitness Change bitness of file");
     writeln("  -h           Shows this help");
     writeln;
 }
@@ -28,14 +29,7 @@ int main(string[] args)
         for(int i = 1; i < args.length; ++i)
         {
             string arg = args[i];
-            if (arg == "-i")
-            {
-                if (input)
-                    throw new Exception("Multiple input files provided");
-                ++i;
-                input = args[i];
-            }
-            else if (arg == "-bitness")
+            if (arg == "-b" || arg == "--bitness")
             {
                 ++i;
                 if (args[i] == "8") bitness = 8;
@@ -49,13 +43,19 @@ int main(string[] args)
             }
             else
             {
-                if (output)
-                    throw new Exception("Multiple ouput filesprovided");
-                output = arg;
+                if (input)
+                {
+                    if (output)
+                        throw new Exception("Too many files provided");
+                    else
+                        output = arg;
+                }
+                else
+                    input = arg;
             }
         }
 
-        if (help)
+        if (help || input is null || output is null)
         {
             usage();
             return 0;
@@ -66,21 +66,28 @@ int main(string[] args)
 
         image.loadFromFile(input);
 
-        if (bitness == 8)
-            image.convertTo8Bit();
-        else if (bitness == 16)
-            image.convertTo16Bit();
-
         if (image.errored)
         {
             throw new Exception("Couldn't open file " ~ input);
         }
+
+        writefln("Opened %s", input);
+        writefln(" - width  = %s", image.width);
+        writefln(" - height = %s", image.height);
+        writefln(" - type   = %s", image.type);
+
+        if (bitness == 8)
+            image.convertTo8Bit();
+        else if (bitness == 16)
+            image.convertTo16Bit();      
 
         bool r = result.saveToFile(output);  
         if (!r)
         {
             throw new Exception("Couldn't save file " ~ output);
         }
+
+        writefln(" => Written to %s", output);
         return 0;
     }
     catch(Exception e)
