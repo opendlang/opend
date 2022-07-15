@@ -177,7 +177,7 @@ public:
         return r;
     }
 
-    /// Copy pixels to  an image with same size and type.
+    /// Copy pixels to an image with same size and type.
     void copyPixelsTo(ref Image img) const @trusted
     {
         assert(img._width  == _width);

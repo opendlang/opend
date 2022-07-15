@@ -724,11 +724,15 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	int p = QOI_HEADER_SIZE;
 	qoi_write_32(lz4Data, &p, datalen);
 
-    int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[QOI_HEADER_SIZE], 
+    int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[0], 
                                cast(char*)&lz4Data[QOI_HEADER_SIZE + 4], 
                                datalen);
 
+
     *out_len = QOI_HEADER_SIZE + 4 + lz4Size;
+
+	ubyte[] total = lz4Data[0..*out_len];
+
     return lz4Data;
 }
 
@@ -754,7 +758,9 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
 
 	decQOIX[0..QOI_HEADER_SIZE] = data[0..QOI_HEADER_SIZE];
 
-    int qoilen = LZ4_decompress_fast(cast(char*)&data[QOI_HEADER_SIZE + 4], 
+	const(ubyte)[] lz4Data = data[QOI_HEADER_SIZE + 4 ..size];
+
+    int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
                                      cast(char*)&decQOIX[QOI_HEADER_SIZE], 
                                      orig);
 
@@ -764,8 +770,10 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
 		return null;
     }
 
+	// Note: here we ignore the return value qoilen, since it seems to be the compressed decoded size... not sure why.
+
     // Now decompQOIX is a QOIX image.
-    ubyte* image = qoix_decode(decQOIX, QOI_HEADER_SIZE + qoilen, desc, channels);
+    ubyte* image = qoix_decode(decQOIX, QOI_HEADER_SIZE + orig, desc, channels);
     scope(exit) free(decQOIX);
 
     return image;

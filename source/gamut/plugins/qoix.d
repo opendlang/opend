@@ -18,7 +18,7 @@ import gamut.plugin;
 import gamut.internals.errors;
 
 // Currently buggy.
-//version = lz4EncodedQOIX;
+version = lz4EncodedQOIX;
 
 version(decodeQOIX)
     import gamut.codecs.qoi2avg;
