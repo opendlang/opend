@@ -64,8 +64,8 @@ int main(string[] args)
         mean_decode_mpps += qoix_decode_mpps;
         mean_bpp += bit_per_pixel;
 
-        writefln("       decode mpps   encode mpps      bit-per-pixel");
-        writefln("          %8.2f      %8.2f           %8.5f", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel);
+        writefln("       decode mpps   encode mpps      bit-per-pixel        size");
+        writefln("          %8.2f      %8.2f           %8.5f     %9.1f kb", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel, qoix_size_kb);
         N += 1;
 
         // Check encoding is properly done.

@@ -7,6 +7,9 @@ import core.stdc.string: memset;
 
 import gamut.codecs.lz4;
 
+
+version = doNotEncodeGreyscale;
+
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34
 /// Called "QOIX" in Gamut, since it has a few extensions again, such as LZ4.
@@ -395,6 +398,27 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     px_len = desc.width * desc.height * channels;
     px_end = px_len - channels;
 
+    version(doNotEncodeGreyscale)
+    {
+        if (channels == 1 || channels == 2)
+        {
+            // channels 1 and 2 => no encoding, LZ4 will do better than LZ4 + QOI
+            // copy pixels just like that.
+
+            for (int posy = 0; posy < desc.height; ++posy)
+            {
+                const(ubyte)* line = data + desc.pitchBytes * posy;
+
+                for (int posx = 0; posx < desc.width * channels; ++posx)
+                {
+                    bytes[p++] = *line++;
+                }
+            }
+            *out_len = px_len;
+            return bytes;
+        }
+    }
+
     for (int posy = 0; posy < desc.height; ++posy)
     {
         const(ubyte)* line = data + desc.pitchBytes * posy;
@@ -621,6 +645,26 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     pixels = cast(ubyte *) QOI_MALLOC(px_len);
     if (!pixels) {
         return null;
+    }
+
+    version(doNotEncodeGreyscale)
+    {
+        if (channels == 1 || channels == 2)
+        {
+            // channels 1 and 2 => no encoding, LZ4 will do better than LZ4 + QOI
+
+            int q = 0;
+            for (int posy = 0; posy < desc.height; ++posy)
+            {
+                const(ubyte)* line = &bytes[p] + desc.pitchBytes * posy;
+
+                for (int posx = 0; posx < desc.width * channels; ++posx)
+                {
+                    pixels[q++] = *line++;
+                }
+            }
+            return pixels;
+        }
     }
 
     memset(index.ptr, 0, 64 * qoi_rgba_t.sizeof);
