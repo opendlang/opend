@@ -24,6 +24,8 @@ public import mir.stat.distribution.normal;
 ///
 public import mir.stat.distribution.uniform;
 ///
+public import mir.stat.distribution.geometric;
+///
 public import mir.stat.distribution.gev;
 ///
 public import mir.stat.distribution.gamma;

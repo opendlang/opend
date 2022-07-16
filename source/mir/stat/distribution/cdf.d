@@ -26,6 +26,8 @@ public import mir.stat.distribution.exponential: exponentialCDF;
 ///
 public import mir.stat.distribution.gamma: gammaCDF;
 ///
+public import mir.stat.distribution.geometric: geometricCDF;
+///
 public import mir.stat.distribution.gev: gevCDF;
 ///
 public import mir.stat.distribution.normal: normalCDF;
