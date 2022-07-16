@@ -482,22 +482,21 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         switch(channels)
                         {
                             default:
-                            case 4:                               
-                            case 3:     
+                            case 4:
+                            case 3:
                                 px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
                                 px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
                                 px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
                                 break;
-                            case 2:                                
+                            case 2:
+                            case 1:
                                 assert(px_ref.rgba.r == px_ref.rgba.g && px_ref.rgba.g == px_ref.rgba.b); // in those cases, the predictor is grey
                                 ubyte grey = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-                                px.rgba.r = grey;
-                                px.rgba.g = grey;
-                                px.rgba.b = grey;
+                                px_ref.rgba.r = grey;
+                                px_ref.rgba.g = grey;
+                                px_ref.rgba.b = grey;
                                 break;
-                            case 1:
-                                break;
-                        }                       
+                        }
                     }
 
                     byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -523,7 +522,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         px.rgba.g == px.rgba.b
                     ) {
                         bytes[p++] = QOI_OP_GRAY;
-                        bytes[p++] = px.rgba.g;                 
+                        bytes[p++] = px.rgba.g;
                     }
                     else if (
                         vg_r >=  -8 && vg_r <=  7 && 
@@ -641,17 +640,15 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
                 switch(channels)
                 {
-                    case 4:                               
-                    case 3:     
+                    case 4:
+                    case 3:
                         px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
                         px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
                         px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
                         break;
 
+                    case 2:
                     case 1:
-                        break;
-
-                    case 2:                    
                     default:
                         assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
                         ubyte grey = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
