@@ -467,8 +467,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 					if (va) {
 						if (va >= -4 && va <= 3){
 							bytes[p++] = cast(ubyte)(QOI_OP_ADIFF | (va + 4));
-						} else {
-							bytes[p++] = QOI_OP_RGBA;
+						} else { 
+							bytes[p++] = QOI_OP_RGBA; // make a grey + alpha opcode?
 							bytes[p++] = px.rgba.r;
 							bytes[p++] = px.rgba.g;
 							bytes[p++] = px.rgba.b;
@@ -489,14 +489,14 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                                 px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
                                 break;
                             case 2:                                
-                            case 1:
-								
-								assert(px_ref.rgba.r == px_ref.rgba.g && px_ref.rgba.g == px_ref.rgba.b); // in those cases, the predictor is grey
+                            	assert(px_ref.rgba.r == px_ref.rgba.g && px_ref.rgba.g == px_ref.rgba.b); // in those cases, the predictor is grey
                                 ubyte grey = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
                                 px.rgba.r = grey;
                                 px.rgba.g = grey;
                                 px.rgba.b = grey;
                                 break;
+							case 1:
+								break;
                         }						
 					}
 
@@ -564,7 +564,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 	return bytes;
 }
 
-// PERF: can speedup decoding by maing separate path for channels = 1 and channels = 2 (or a new codec lol)
+// PERF: can speedup decoding by making separate path for channels = 1 and channels = 2 (or a new codec lol)
 
 /* Decode a QOI image from memory.
 
@@ -599,7 +599,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 	int qoix_version = bytes[p++];
 	desc.channels = bytes[p++];
 	desc.colorspace = bytes[p++];
-
+	
 	if (
 		desc.width == 0 || desc.height == 0 || 
 		desc.channels < 1 || desc.channels > 4 ||
@@ -616,6 +616,8 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 	}
 
 	stride = desc.width * channels;
+	desc.pitchBytes = stride; // FUTURE: force a given pitch?
+
 	px_len = desc.width * desc.height * channels;
 	pixels = cast(ubyte *) QOI_MALLOC(px_len);
 	if (!pixels) {
@@ -639,15 +641,18 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
 				switch(channels)
                 {
-                    default:
                     case 4:                               
                     case 3:		
                         px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
                         px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
                         px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
                         break;
-                    case 2:                                
-                    case 1:
+
+					case 1:
+						break;
+
+                    case 2:                    
+					default:
 						assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
 						ubyte grey = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
 						px_ref.rgba.r = grey;
@@ -655,7 +660,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                         px_ref.rgba.b = grey;
                         break;
                 }
-			}
+			} 
 
 			int b1 = bytes[p++];
 			if (b1 < 0x80) {  		/* QOI_OP_LUMA */
