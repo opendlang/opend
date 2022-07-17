@@ -456,6 +456,10 @@ struct stbi__context
 
     stbi_uc *img_buffer, img_buffer_end;
     stbi_uc *img_buffer_original, img_buffer_original_end;
+
+    float ppmX;
+    float ppmY;
+    float pixelAspectRatio;
 }
 
 
@@ -717,18 +721,28 @@ void stbi__float_postprocess(float *result, int *x, int *y, int *comp, int req_c
 {
 }
 
-stbi_us *stbi_load_16_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *channels_in_file, int desired_channels)
+stbi_us *stbi_load_16_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *channels_in_file, 
+                                     int desired_channels,float* ppmX, float* ppmY, float* pixelRatio)
 {
     stbi__context s;
     stbi__start_callbacks(&s, cast(stbi_io_callbacks *)clbk, user); // const_cast here
-    return stbi__load_and_postprocess_16bit(&s,x,y,channels_in_file,desired_channels);
+    stbi_us* res = stbi__load_and_postprocess_16bit(&s,x,y,channels_in_file,desired_channels);
+    *ppmX = s.ppmX;
+    *ppmY = s.ppmY;
+    *pixelRatio = s.pixelAspectRatio;
+    return res;
 }
 
-stbi_uc *stbi_load_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *comp, int req_comp)
+stbi_uc *stbi_load_from_callbacks(const(stbi_io_callbacks)*clbk, void *user, int *x, int *y, int *comp, int req_comp,
+                                  float* ppmX, float* ppmY, float* pixelRatio)
 {
     stbi__context s;
     stbi__start_callbacks(&s, cast(stbi_io_callbacks *) clbk, user); // const_cast here
-    return stbi__load_and_postprocess_8bit(&s,x,y,comp,req_comp);
+    stbi_uc* res = stbi__load_and_postprocess_8bit(&s,x,y,comp,req_comp);
+    *ppmX = s.ppmX;
+    *ppmY = s.ppmY;
+    *pixelRatio = s.pixelAspectRatio;
+    return res;
 }
 
 version(enableLinear)
@@ -2162,6 +2176,10 @@ version(decodePNG)
         z.idata = null;
         z.out_ = null;
 
+        s.ppmX = -1;
+        s.ppmY = -1;
+        s.pixelAspectRatio = -1;
+
         if (!stbi__check_png_header(s)) return 0;
 
         if (scan == STBI__SCAN_type) return 1;
@@ -2174,6 +2192,19 @@ version(decodePNG)
                     is_iphone = 1;
                     stbi__skip(s, c.length);
                     break;
+
+                case STBI__PNG_TYPE('p','H','Y','s'):
+                    s.ppmX = stbi__get32be(s);
+                    s.ppmY = stbi__get32be(s);
+                    s.pixelAspectRatio = s.ppmX / s.ppmY;
+                    ubyte unit = stbi__get8(s);
+                    if (unit != 1)                    
+                    {
+                        s.ppmX = -1; // only contains an aspect ratio, but no physical resolution
+                        s.ppmY = -1;
+                    }
+                    break;
+
                 case STBI__PNG_TYPE('I','H','D','R'): {
                     int comp,filter;
                     if (!first) return 0; //stbi__err("multiple IHDR","Corrupt PNG");

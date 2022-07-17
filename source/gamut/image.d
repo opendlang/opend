@@ -65,6 +65,53 @@ public:
         return _data + _pitch * y;
     }
 
+    /// Returns: Horizontal resolution in Dots Per Inch (DPI).
+    ///          `GAMUT_UNKNOWN_RESOLUTION` if unknown.
+    float dotsPerInchX() pure const
+    {
+        if (_resolutionY == GAMUT_UNKNOWN_RESOLUTION || _pixelAspectRatio == GAMUT_UNKNOWN_ASPECT_RATIO)
+            return GAMUT_UNKNOWN_RESOLUTION;
+        return _resolutionY * _pixelAspectRatio;
+    }
+
+    /// Returns: Vertical resolution in Dots Per Inch (DPI).
+    ///          `GAMUT_UNKNOWN_RESOLUTION` if unknown.
+    float dotsPerInchY() pure const
+    {
+        return _resolutionY;
+    }
+
+    /// Returns: Pixel Aspect Ratio for the image (PAR).
+    ///          `GAMUT_UNKNOWN_ASPECT_RATIO` if unknown.
+    ///
+    /// This is physical width of a pixel / physical height of a pixel.
+    ///
+    /// Reference: https://en.wikipedia.org/wiki/Pixel_aspect_ratio
+    float pixelAspectRatio() pure const
+    {
+        return _pixelAspectRatio;
+    }
+
+    /// Returns: Horizontal resolution in Pixels Per Meters (PPM).
+    ///          `GAMUT_UNKNOWN_RESOLUTION` if unknown.
+    float pixelsPerMeterX() pure const
+    {
+        float dpi = dotsPerInchX();
+        if (dpi == GAMUT_UNKNOWN_RESOLUTION)
+            return GAMUT_UNKNOWN_RESOLUTION;
+        return convertMetersToInches(dpi);
+    }
+
+    /// Returns: Vertical resolution in Pixels Per Meters (PPM).
+    ///          `GAMUT_UNKNOWN_RESOLUTION` if unknown.
+    float pixelsPerMeterY() pure const
+    {
+        float dpi = dotsPerInchY();
+        if (dpi == GAMUT_UNKNOWN_RESOLUTION)
+            return GAMUT_UNKNOWN_RESOLUTION;
+        return convertMetersToInches(dpi);
+    }
+
     //
     // </GETTING DIMENSIONS>
     //
@@ -654,6 +701,13 @@ package:
     /// By default, a T.init image is errored().
     const(char)* _error = kStrImageNotInitialized;
 
+    /// Pixel aspect ratio.
+    /// https://en.wikipedia.org/wiki/Pixel_aspect_ratio
+    float _pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
+
+    /// Physical image resolution in vertical pixel-per-inch.
+    float _resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+
 private:
 
     /// Compute a suitable pitch when making an image.
@@ -813,7 +867,6 @@ private:
         return false;
     }
 }
-
 
 // Return: 
 //   -1 => keep input number of components

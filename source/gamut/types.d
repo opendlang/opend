@@ -90,14 +90,32 @@ enum GAMUT_INVALID_IMAGE_WIDTH = -1;
 /// When images have an unknown height.
 enum GAMUT_INVALID_IMAGE_HEIGHT = -1; 
 
+/// When images have an unknown DPI resolution;
+enum GAMUT_UNKNOWN_RESOLUTION = -1;
 
-/// No `Image` can exceed this width in gamut.
+/// When images have an unknown physical pixel ratio.
+/// Explanation: it is possible to have a known pixel ratio, but an unknown DPI (eg: PNG).
+enum GAMUT_UNKNOWN_ASPECT_RATIO = -1;
+
+
+float convertMetersToInches(float x) pure
+{
+    return x * 39.37007874f;
+}
+
+float convertInchesToMeters(float x) pure
+{
+    return x / 39.37007874f;
+}
+
+
+/// No Gamut `Image` can exceed this width in gamut.
 enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;  
 
-/// No `Image` can exceed this height in gamut.
+/// No Gamut `Image` can exceed this height in gamut.
 enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
 
-/// No `Image` can have a width x height product that exceed this value of 67 Mpixels.
+/// No Gamut `Image` can have a width x height product that exceed this value of 67 Mpixels.
 enum int GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT = 67108864;
 
 /// Check if these image dimensions are valid in Gamut.
@@ -137,7 +155,11 @@ enum int LOAD_RGB = 2;
 /// Load the image in RGBA8/RGBA16, faster than loading as RGBA8 then converting to greyscale.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum int LOAD_RGBA = 4; 
+enum int LOAD_RGBA = 4;
+
+/// Only decode metadata, not the pixels themselves.
+/// Supported by: none yet.
+enum int LOAD_NOPIXELS = 8;
 
 
 // Encode flags
