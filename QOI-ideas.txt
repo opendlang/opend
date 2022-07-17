@@ -1,8 +1,7 @@
 Generally I'd like to:
-- improves compression efficiency => follow "QOIR" repo, already not bad
-- support 10-bit => type punning
-- support YUV?
-- experiment with lossy for increasing compression
-- increase complexity and slow down encoding
+- support 10-bit => type punning probably, because QOI opcodes not really designed for more bits
+- support L and LA better => QOI not adapted for this use case, must break down tokens to smaller values
+   * another codec for uint8 images?
+   * technically, you could have 4 parallel slices encoding/decoding at once with SIMD.
 
-- technically, you could have 4 parallel slices encoding/decoding at once with SIMD.
+- experiment with lossy for increasing compression
