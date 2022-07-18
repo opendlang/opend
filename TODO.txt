@@ -1,8 +1,2 @@
-- QOIX can encode LA et uint8
-- QOIX can encode 16-bit, typecasting to LA. Original Gamut type stored in header.
-  printed uses gamut
-- future: compressed texture respresented as is in Image.
-  Functions just for them:
-     blockWidth / blockHeight / blockScanline
-  Function they can't use: 
-     scanline
+- printed uses gamut
+
