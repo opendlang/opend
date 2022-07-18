@@ -47,6 +47,8 @@ int main(string[] args)
 
         Image image;  
         image.loadFromFile(input);
+        if (image.errored)
+            throw new Exception(image.errorMessage().idup);
 
         writefln("X resolution (DPI) = %s", image.dotsPerInchX());
         writefln("Y resolution (DPI) = %s", image.dotsPerInchY());

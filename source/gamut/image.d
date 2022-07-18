@@ -8,6 +8,7 @@ module gamut.image;
 
 import core.stdc.stdio;
 import core.stdc.stdlib: malloc, free, realloc;
+import core.stdc.string: strlen;
 
 import gamut.types;
 import gamut.io;
@@ -136,9 +137,13 @@ public:
     }
 
     /// The error message (null if no error currently held).
-    const(char)* errorMessage() pure const
+    /// This slice is followed by a '\0' zero terminal character, so
+    /// it can be safely given to `print`.
+    const(char)[] errorMessage() pure const @trusted
     {
-        return _error;
+        if (_error is null)
+            return null;
+        return _error[0..strlen(_error)];
     }
 
     /// An image can have data (usually pixels), or not.

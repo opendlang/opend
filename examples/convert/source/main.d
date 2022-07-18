@@ -72,9 +72,12 @@ int main(string[] args)
         }
 
         writefln("Opened %s", input);
-        writefln(" - width  = %s", image.width);
-        writefln(" - height = %s", image.height);
-        writefln(" - type   = %s", image.type);
+        writefln(" - width      = %s", image.width);
+        writefln(" - height     = %s", image.height);
+        writefln(" - type       = %s", image.type);
+        writefln(" - pixel AR   = %s", image.pixelAspectRatio);
+        writefln(" - horz DPI   = %s", image.dotsPerInchX);
+        writefln(" - very DPI   = %s", image.dotsPerInchY);
 
         if (bitness == 8)
             image.convertTo8Bit();

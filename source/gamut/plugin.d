@@ -61,6 +61,8 @@ ImageFormat identifyImageFormatFromFilename(const(char) *filename) @trusted
     if (filename[pos] == '.') 
         pos++;
 
+    int extLength = cast(int)(ilen - pos);
+
     const(char)* fextension = filename + pos; // ex: "jpg", "png"...
 
     for(ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
@@ -77,7 +79,7 @@ ImageFormat identifyImageFormatFromFilename(const(char) *filename) @trusted
             if (sublen == 0)
                 break;
 
-            if (strncmp(fextension, str, sublen) == 0)
+            if (extLength == sublen && strncmp(fextension, str, sublen) == 0)
                 return fif;
 
             if (*end == '\0') // last extension for this format
@@ -92,6 +94,8 @@ unittest
 {
     assert(identifyImageFormatFromFilename("mysueprduperphoto.jpg") == ImageFormat.JPEG);
     assert(identifyImageFormatFromFilename("mysueprduperphoto.jfif") == ImageFormat.JPEG);
+    assert(identifyImageFormatFromFilename("c:\\compromising-photo.qoi") == ImageFormat.QOI);
+    assert(identifyImageFormatFromFilename("my/path/to/file.qoix") == ImageFormat.QOIX);
 }
 
 package:
