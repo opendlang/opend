@@ -54,16 +54,18 @@ See the function declaration below for the signature and more information.
 
 -- Data Format
 
-A QOIX file has a 15 byte header, followed by any number of data "chunks" and an
+A QOIX file has a 23 byte header, followed by any number of data "chunks" and an
 8-byte end marker.
 
 struct qoi_header_t {
-    char     magic[4];   // magic bytes "qoi2"
-    uint32_t width;      // image width in pixels (BE)
-    uint32_t height;     // image height in pixels (BE)
-    uint8_t  version_;   // Major version of QOIX format.
-    uint8_t  channels;   // 3 = RGB, 4 = RGBA
-    uint8_t  colorspace; // 0 = sRGB with linear alpha, 1 = all channels linear
+    char     magic[4];         // magic bytes "qoi2"
+    uint32_t width;            // image width in pixels (BE)
+    uint32_t height;           // image height in pixels (BE)
+    uint8_t  version_;         // Major version of QOIX format.
+    uint8_t  channels;         // 3 = RGB, 4 = RGBA
+    uint8_t  colorspace;       // 0 = sRGB with linear alpha, 1 = all channels linear
+    float    pixelAspectRatio; // -1 = unknown, else Pixel Aspect Ratio
+    float    resolutionX;      // -1 = unknown, else physical resolution in DPI
 };
 
 The decoder and encoder start with {r: 0, g: 0, b: 0, a: 255} as the previous
@@ -268,9 +270,9 @@ struct qoi_desc
     int pitchBytes; // number of bytes between start of lines.
     ubyte channels;
     ubyte colorspace;
+    float pixelAspectRatio; // PAR, in Gamut format
+    float resolutionY;      // Vertical DPI, in Gamut format
 }
-
-
 
 alias QOI_MALLOC = malloc;
 alias QOI_FREE = free;
@@ -289,7 +291,7 @@ enum int QOI_OP_RGBA   = 0xfe; /* 11111110 */
 enum int QOI_OP_END    = 0xff; /* 11111111 */
 
 enum uint QOIX_MAGIC = 0x716F6978; // "qoix"
-enum QOI_HEADER_SIZE = 15;
+enum QOIX_HEADER_SIZE = 14 + 1 /* verison */ + 4 /* PAR */ + 4 /* DPI */;
 
 /* To not have to linearly search through the color index array, we use a hash 
 of the color value to quickly lookup the index position in a hash table. */
@@ -302,7 +304,7 @@ uint QOI_COLOR_HASH(qoi_rgba_t C)
 against anything larger than that, assuming the worst case with 5 bytes per 
 pixel, rounded down to a nice clean value. 400 million pixels ought to be 
 enough for anybody. */
-enum uint QOI_PIXELS_MAX = 400000000;
+enum uint QOIX_PIXELS_MAX = 400000000;
 
 struct RGBA
 {
@@ -338,6 +340,16 @@ uint qoi_read_32(const(ubyte)* bytes, int *p)
     return a << 24 | b << 16 | c << 8 | d;
 }
 
+void qoi_write_32f(ubyte* bytes, int *p, float f) 
+{
+    qoi_write_32(bytes, p, *cast(uint*)&f);
+}
+
+float qoi_read_32f(const(ubyte)* bytes, int *p) 
+{
+    uint r = qoi_read_32(bytes, p);
+    return *cast(float*)&r;
+}
 
 /* Encode raw RGB or RGBA pixels into a QOI image in memory.
 
@@ -361,12 +373,12 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         desc.width == 0 || desc.height == 0 ||
         desc.channels < 1 || desc.channels > 4 ||
         desc.colorspace > 1 ||
-        desc.height >= QOI_PIXELS_MAX / desc.width
+        desc.height >= QOIX_PIXELS_MAX / desc.width
     ) {
         return null;
     }
 
-    max_size = desc.width * desc.height * (desc.channels + 1) + QOI_HEADER_SIZE + cast(int)(qoi_padding.sizeof);
+    max_size = desc.width * desc.height * (desc.channels + 1) + QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof);
 
     p = 0;
     bytes = cast(ubyte*) QOI_MALLOC(max_size);
@@ -381,6 +393,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     bytes[p++] = 1; // Put a version number :)
     bytes[p++] = desc.channels; // 1, 2, 3, or 4
     bytes[p++] = desc.colorspace;
+    qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
+    qoi_write_32f(bytes, &p, desc.resolutionY);
 
     //pixels = cast(const(ubyte)*) data;
 
@@ -609,7 +623,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     if (
         data == null || desc == null ||
         (channels < 0 && channels > 4) ||
-        size < QOI_HEADER_SIZE + cast(int)(qoi_padding.sizeof)
+        size < QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof)
     ) {
         return null;
     }
@@ -622,6 +636,8 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     int qoix_version = bytes[p++];
     desc.channels = bytes[p++];
     desc.colorspace = bytes[p++];
+    desc.pixelAspectRatio = qoi_read_32f(bytes, &p);
+    desc.resolutionY = qoi_read_32f(bytes, &p);
     
     if (
         desc.width == 0 || desc.height == 0 || 
@@ -629,7 +645,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
         desc.colorspace > 1 ||
         qoix_version > 1 ||
         header_magic != QOIX_MAGIC ||
-        desc.height >= QOI_PIXELS_MAX / desc.width
+        desc.height >= QOIX_PIXELS_MAX / desc.width
     ) {
         return null;
     }
@@ -814,28 +830,28 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         return null;
     scope(exit) free(qoix);
 
-    ubyte[] qoixHeader = qoix[0..QOI_HEADER_SIZE];
-    ubyte[] qoixData = qoix[QOI_HEADER_SIZE..qoilen];
+    ubyte[] qoixHeader = qoix[0..QOIX_HEADER_SIZE];
+    ubyte[] qoixData = qoix[QOIX_HEADER_SIZE..qoilen];
     int datalen = cast(int) qoixData.length;
     int maxsize = LZ4_compressBound(datalen);
 
     // Encode QOI in LZ4, except the header.
 
-    ubyte* lz4Data = cast(ubyte*) malloc(QOI_HEADER_SIZE + 4 + maxsize); 
+    ubyte* lz4Data = cast(ubyte*) malloc(QOIX_HEADER_SIZE + 4 + maxsize); 
 
-    lz4Data[0..QOI_HEADER_SIZE] = qoix[0..QOI_HEADER_SIZE];
+    lz4Data[0..QOIX_HEADER_SIZE] = qoix[0..QOIX_HEADER_SIZE];
 
-    int p = QOI_HEADER_SIZE;
+    int p = QOIX_HEADER_SIZE;
     qoi_write_32(lz4Data, &p, datalen);
 
     int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[0], 
-                               cast(char*)&lz4Data[QOI_HEADER_SIZE + 4], 
+                               cast(char*)&lz4Data[QOIX_HEADER_SIZE + 4], 
                                datalen);
 
     if (lz4Size < 0)
         return null;
 
-    *out_len = QOI_HEADER_SIZE + 4 + lz4Size;
+    *out_len = QOIX_HEADER_SIZE + 4 + lz4Size;
 
     lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
     return lz4Data;
@@ -848,25 +864,25 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 ///   LZ4 encoded opcodes
 ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
 {
-    if (size < QOI_HEADER_SIZE + 4)
+    if (size < QOIX_HEADER_SIZE + 4)
         return null;
 
     // Read original size of data.
-    int p = QOI_HEADER_SIZE;
+    int p = QOIX_HEADER_SIZE;
     int orig = qoi_read_32(data, &p);
 
     if (orig < 0)
         return null; // too large, corrupted.
 
     // Allocate decoding buffer.
-    ubyte* decQOIX = cast(ubyte*) malloc(QOI_HEADER_SIZE + orig);
+    ubyte* decQOIX = cast(ubyte*) malloc(QOIX_HEADER_SIZE + orig);
 
-    decQOIX[0..QOI_HEADER_SIZE] = data[0..QOI_HEADER_SIZE];
+    decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
 
-    const(ubyte)[] lz4Data = data[QOI_HEADER_SIZE + 4 ..size];
+    const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
 
     int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
-                                     cast(char*)&decQOIX[QOI_HEADER_SIZE], 
+                                     cast(char*)&decQOIX[QOIX_HEADER_SIZE], 
                                      orig);
 
     if (qoilen < 0)
@@ -878,7 +894,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     // Note: here we ignore the return value qoilen, since it seems to be the compressed decoded size... not sure why.
 
     // Now decompQOIX is a QOIX image.
-    ubyte* image = qoix_decode(decQOIX, QOI_HEADER_SIZE + orig, desc, channels);
+    ubyte* image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
     scope(exit) free(decQOIX);
 
     return image;

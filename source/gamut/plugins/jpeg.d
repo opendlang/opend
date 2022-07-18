@@ -77,6 +77,9 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._height = height;
     image._data = decoded.ptr;
     image._pitch = width * actualComp;
+    image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
+    image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+
     switch (actualComp)
     {
         case 1: image._type = ImageType.uint8; break;

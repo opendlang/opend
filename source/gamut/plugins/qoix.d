@@ -127,6 +127,8 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     }
 
     image._pitch = desc.channels * desc.width;
+    image._pixelAspectRatio = desc.pixelAspectRatio;
+    image._resolutionY = desc.resolutionY;
 }
 
 
@@ -147,6 +149,8 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     desc.height = image._height;
     desc.pitchBytes = image._pitch;
     desc.colorspace = QOI_SRGB;
+    desc.pixelAspectRatio = image._pixelAspectRatio;
+    desc.resolutionY = image._resolutionY;
 
     switch (image._type)
     {

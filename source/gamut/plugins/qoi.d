@@ -122,6 +122,8 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     }
 
     image._pitch = desc.channels * desc.width;
+    image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
+    image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
 }
 
 
