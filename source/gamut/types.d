@@ -98,15 +98,23 @@ enum GAMUT_UNKNOWN_RESOLUTION = -1;
 enum GAMUT_UNKNOWN_ASPECT_RATIO = -1;
 
 
+/// Converts from meters to inches.
 float convertMetersToInches(float x) pure
 {
     return x * 39.37007874f;
 }
 
+/// Converts from inches to meters.
 float convertInchesToMeters(float x) pure
 {
     return x / 39.37007874f;
 }
+
+/// Converts from PPM (Points Per Meter) to DPI (Dots Per Inch).
+alias convertPPMToDPI = convertInchesToMeters;
+
+/// Converts from DPI (Dots Per Inch) to PPM (Points Per Meter).
+alias convertDPIToPPM = convertMetersToInches;
 
 
 /// No Gamut `Image` can exceed this width in gamut.
