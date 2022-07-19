@@ -25,7 +25,8 @@
             "dependencies":
             {
                 "standardpaths": "~>0.0",
-                "binrange": "~>1.0"
+                "binrange": "~>1.0",
+                "gamut": "~>0.0"
             }
         },
         {
