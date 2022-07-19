@@ -29,8 +29,15 @@ public:
 
 
     //
-    // <GETTING DIMENSIONS>
-    //  
+    // <BASIC STORAGE>
+    //
+
+    /// Get the image type.
+    /// See_also: `ImageType`.
+    ImageType type() pure const
+    {
+        return _type;
+    }
 
     /// Returns: Width of image in pixels.
     ///          `GAMUT_UNKNOWN_WIDTH` if not available.
@@ -65,6 +72,14 @@ public:
         assert(y >= 0 && y < _height);
         return _data + _pitch * y;
     }
+
+    //
+    // </BASIC STORAGE>
+    //
+
+    //
+    // <RESOLUTION>
+    //
 
     /// Returns: Horizontal resolution in Dots Per Inch (DPI).
     ///          `GAMUT_UNKNOWN_RESOLUTION` if unknown.
@@ -114,20 +129,13 @@ public:
     }
 
     //
-    // </GETTING DIMENSIONS>
+    // </RESOLUTION>
     //
 
 
     //
     // <GETTING STATUS AND CAPABILITIES>
     //
-
-    /// Get the image type.
-    /// See_also: `ImageType`.
-    ImageType type() pure const
-    {
-        return _type;
-    }
 
     /// Was there an error as a result of calling a public method of `Image`?
     /// It is now unusable.
@@ -384,6 +392,14 @@ public:
                 return fif;
         }
         return ImageFormat.unknown;
+    }
+
+    /// Identify the format of an image by looking at its extension.
+    /// Returns: Its `ImageFormat`, or `ImageFormat.unknown` in case of identification failure or input error.
+    ///          Maybe then you can try `identifyFormatFromFile` instead, which minimally reads the input.
+    static ImageFormat identifyFormatFromFileName(const(char) *filename)
+    {
+        return identifyImageFormatFromFilename(filename);
     }
 
     // 
