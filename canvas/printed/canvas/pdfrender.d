@@ -654,43 +654,64 @@ private:
             object_id smaskId;
             if (isPNG)
             {
-                import dplug.graphics.pngload; // because it's one of the fastest PNG decoder in D world
-                import core.stdc.stdlib: free;
+                import gamut;
+                
+                gamut.Image gimage;
+                gimage.loadFromMemory(originalEncodedData);
 
-                // decode to RGBA
-                int width, height, origComponents;
+                // Suppor greyscale PNG
+                if (gimage.type == ImageType.la8)
+                    gimage.convertTo(ImageType.rgba8);
 
-                // Made a mistake of breaking a function inside dplug:graphics that was used directly by printed
-                static if (__traits(compiles, { int w, h, comp; stbi_load_png_from_memory(null, w, h, comp, 4); }))
+                // Suppor luminance + alpha PNG
+                if (gimage.type == ImageType.uint8)
+                    gimage.convertTo(ImageType.rgb8);
+
+                if (gimage.type != ImageType.rgb8 && gimage.type != ImageType.rgba8)
                 {
-                    ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, 4);
+                    throw new Exception("Only support embed of 8-bit PNG images.");
                 }
-                else
-                {
-                    ubyte* decoded = stbi_load_from_memory(originalEncodedData.ptr,
-                                                           cast(int)(originalEncodedData.length), 
-                                                           &width, &height, &origComponents, 4);
-                }
-                if (origComponents != 3 && origComponents != 4)
-                    throw new Exception("Only support embed of RGB or RGBA PNG");
 
+                bool hasAlpha = (gimage.type == ImageType.rgba8);
+                int channels = hasAlpha ? 4 : 3;
+
+                int width = gimage.width;
+                int height = gimage.height;
                 int size = width * height * 4;
-                ubyte[] decodedRGBA = decoded[0..size];
-                scope(exit) free(decoded);
 
                 // Extract RGB data
                 ubyte[] rgbData = new ubyte[width * height * 3];
-                foreach(i; 0 .. width*height)
-                    rgbData[3*i..3*i+3] = decodedRGBA[4*i..4*i+3];
+                {
+                    int p = 0;
+                    for (int y = 0; y < height; ++y)
+                    {
+                        ubyte* scan = gimage.scanline(y);
+                        for (int x = 0; x < width; ++x)
+                        {
+                            rgbData[p++] = scan[x * channels + 0];
+                            rgbData[p++] = scan[x * channels + 1];
+                            rgbData[p++] = scan[x * channels + 2];
+                        }
+                    }
+                }
+
                 pdfData = compress(rgbData);
 
                 // if PNG has actual alpha information, use separate PDF image as mask
-                if (origComponents == 4)
+                if (hasAlpha)
                 {
-                    // Eventually extract alpha data to a plane, that will be in a separate PNG image
                     ubyte[] alphaData = new ubyte[width * height];
-                    foreach(i; 0 .. width*height)
-                        alphaData[i] = decodedRGBA[4*i+3];
+                    {
+                        int p = 0;
+                        for (int y = 0; y < height; ++y)
+                        {
+                            ubyte* scan = gimage.scanline(y);
+                            for (int x = 0; x < width; ++x)
+                            {
+                                alphaData[p++] = scan[x * 4 + 3];
+                            }
+                        }
+                    }
                     smaskData = compress(alphaData);
                     smaskId = _pool.allocateObjectId();  // MAYDO: allocate this on first use, detect PNG with alpha before
                 }
