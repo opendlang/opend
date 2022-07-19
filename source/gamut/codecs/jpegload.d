@@ -1492,11 +1492,8 @@ private:
                 if (version_ != 42)
                     stop_decoding(JPGD_DECODE_ERROR);
 
-                import core.stdc.stdio;
-
                 uint offset = littleEndian ? read_uint_LE(s) : read_uint_BE(s);
 
-                printf("offset = %d\n", offset);
                 double resolutionX = 72;
                 double resolutionY = 72;
                 int unit = 2;
@@ -1516,11 +1513,6 @@ private:
                         uint count = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
                         uint valueOffset = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
 
-                        printf("tag = %d\n", tag);
-                        printf("type = %d\n", type);
-                        printf("count = %d\n", count);
-                        printf("valueOffset = %d\n", valueOffset);
-
                         if (tag == 282 || tag == 283) // XResolution
                         {
                             const(ubyte)* tagData = tiffFile + valueOffset;
@@ -1537,7 +1529,6 @@ private:
                             unit = valueOffset;
                     }
                     offset = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
-                    printf("\noffset = %d\n", offset);
                 }
 
                 if (unit == 2) // inches
@@ -3129,8 +3120,11 @@ private:
 // ////////////////////////////////////////////////////////////////////////// //
 /// decompress JPEG image, what else?
 /// you can specify required color components in `req_comps` (3 for RGB or 4 for RGBA), or leave it as is to use image value.
+/// Returns pixelAspectRatio and dotsPerInchY, -1 if not available.
 public ubyte[] decompress_jpeg_image_from_stream(scope JpegStreamReadFunc rfn, void* userData,
-                                                 out int width, out int height, out int actual_comps, int req_comps=-1) {
+                                                 out int width, out int height, out int actual_comps, 
+                                                 out float pixelAspectRatio, out float dotsPerInchY,
+                                                 int req_comps=-1) {
 
   //actual_comps = 0;
   if (rfn is null) return null;
@@ -3144,6 +3138,8 @@ public ubyte[] decompress_jpeg_image_from_stream(scope JpegStreamReadFunc rfn, v
   immutable int image_height = decoder.height;
   width = image_width;
   height = image_height;
+  pixelAspectRatio = -1;
+  dotsPerInchY = -1;
   actual_comps = decoder.num_components;
   if (req_comps < 0) req_comps = decoder.num_components;
 
@@ -3206,44 +3202,8 @@ public ubyte[] decompress_jpeg_image_from_stream(scope JpegStreamReadFunc rfn, v
     }
   }
 
+  pixelAspectRatio = decoder.m_pixelAspectRatio;
+  dotsPerInchY = decoder.m_pixelsPerInchY;
+
   return idata;
-}
-
-
-struct MemoryContext
-{
-    const(ubyte)[] buf;
-    size_t bufpos;
-}
-
-int read_from_memory_callback(void* pBuf, int max_bytes_to_read, bool* pEOF_flag, void* userData)
-{   
-    MemoryContext* context = cast(MemoryContext*)userData;
-
-    const(ubyte)[] buf = context.buf;
-
-    if (context.bufpos >= buf.length) 
-    {
-        *pEOF_flag = true;
-        return 0;
-    }
-    if (buf.length - context.bufpos < max_bytes_to_read) 
-    {
-        max_bytes_to_read = cast(int)(buf.length - context.bufpos);
-    }
-    memcpy(pBuf, &buf[context.bufpos], max_bytes_to_read);
-    context.bufpos += max_bytes_to_read;
-    return max_bytes_to_read;
-}
-
-// ////////////////////////////////////////////////////////////////////////// //
-/// decompress JPEG image from memory buffer.
-/// you can specify required color components in `req_comps` (3 for RGB or 4 for RGBA), or leave it as is to use image value.
-public ubyte[] decompress_jpeg_image_from_memory(const(void)[] buf, out int width, out int height, out int actual_comps, int req_comps=-1) 
-{
-    MemoryContext context;
-    context.buf = cast(const(ubyte)[]) buf;
-    ubyte[] result = decompress_jpeg_image_from_stream(&read_from_memory_callback, &context, 
-                                                       width, height, actual_comps, req_comps);
-    return result;
 }

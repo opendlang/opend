@@ -52,7 +52,9 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     }
 
     int width, height, actualComp;
-    ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, requestedComp);
+    float pixelAspectRatio;
+    float dotsPerInchY;
+    ubyte[] decoded = decompress_jpeg_image_from_stream(&stream_read_jpeg, &jio, width, height, actualComp, pixelAspectRatio, dotsPerInchY, requestedComp);
     if (decoded is null)
     {
         image.error(kStrImageDecodingFailed);
@@ -77,8 +79,8 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._height = height;
     image._data = decoded.ptr;
     image._pitch = width * actualComp;
-    image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
-    image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+    image._pixelAspectRatio = pixelAspectRatio == -1 ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelAspectRatio;
+    image._resolutionY = dotsPerInchY == -1 ? GAMUT_UNKNOWN_RESOLUTION : dotsPerInchY;
 
     switch (actualComp)
     {
