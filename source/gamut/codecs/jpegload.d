@@ -43,6 +43,8 @@
 /// JPEG image loading.
 module gamut.codecs.jpegload;
 
+import gamut.types;
+import gamut.internals.binop;
 import core.stdc.string : memcpy, memset;
 import core.stdc.stdlib : malloc, free;
 import inteli.emmintrin;
@@ -504,6 +506,10 @@ private:
   jpgd_status m_error_code;
   bool m_ready_flag;
   int m_total_bytes_read;
+
+  float m_pixelsPerInchX;
+  float m_pixelsPerInchY; // -1 if not available
+  float m_pixelAspectRatio; // -1 if not available
 
 public:
   // Inspect `error_code` after constructing to determine if the stream is valid or not. You may look at the `width`, `height`, etc.
@@ -1390,7 +1396,164 @@ private:
         case M_DRI:
           read_dri_marker();
           break;
-        //case M_APP0:  /* no need to read the JFIF marker */
+
+        case M_APP0:
+            uint num_left;
+
+            num_left = get_bits(16);
+
+            if (num_left < 7)
+                stop_decoding(JPGD_BAD_VARIABLE_MARKER);
+
+            num_left -= 2;
+
+            ubyte[5] jfif_id;
+            foreach(i; 0..5)
+                jfif_id[i] = cast(ubyte) get_bits(8);
+
+            num_left -= 5;
+            static immutable ubyte[5] JFIF = [0x4A, 0x46, 0x49, 0x46, 0x00];
+            if (jfif_id == JFIF && num_left >= 7)
+            {
+                // skip version
+                get_bits(16);
+                uint units = get_bits(8);
+                int Xdensity = get_bits(16);
+                int Ydensity = get_bits(16);
+                num_left -= 7;
+
+                m_pixelAspectRatio = (Xdensity/cast(double)Ydensity);
+
+                switch (units)
+                {
+                    case 0: // no units, just a ratio
+                        m_pixelsPerInchX = -1;
+                        m_pixelsPerInchY = -1;
+                        break;
+
+                    case 1: // dot per inch
+                        m_pixelsPerInchX = Xdensity;
+                        m_pixelsPerInchY = Ydensity;
+                        break;
+
+                    case 2: // dot per cm
+                        m_pixelsPerInchX = convertInchesToMeters(Xdensity * 100.0f);
+                        m_pixelsPerInchY = convertInchesToMeters(Ydensity * 100.0f);
+                        break;
+                    default:
+                }
+            }
+
+            // skip rests of chunk
+
+            while (num_left)
+            {
+                get_bits(8);
+                num_left--;
+            }
+            break;
+
+        case M_APP0+1: // possibly EXIF data
+         
+            uint num_left;
+            num_left = get_bits(16);
+
+            if (num_left < 2)
+                stop_decoding(JPGD_BAD_VARIABLE_MARKER);
+            num_left -= 2;
+
+            ubyte[] exifData = (cast(ubyte*) malloc(num_left))[0..num_left];
+            scope(exit) free(exifData.ptr);
+
+            foreach(i; 0..num_left)
+                exifData[i] = cast(ubyte)(get_bits(8));
+
+            const(ubyte)* s = exifData.ptr;
+
+            ubyte[6] exif_id;
+            foreach(i; 0..6)
+                exif_id[i] = read_ubyte(s);
+
+            const(ubyte)* remainExifData = s;
+
+            static immutable ubyte[6] ExifIdentifierCode = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00]; // "Exif\0\0"
+            if (exif_id == ExifIdentifierCode)
+            {
+                // See EXIF specification: http://www.cipa.jp/std/documents/e/DC-008-2012_E.pdf
+
+                const(ubyte)* tiffFile = s; // save exif chunk from "start of TIFF file"
+
+                ushort byteOrder = read_ushort_BE(s);
+                if (byteOrder != 0x4949 && byteOrder != 0x4D4D)
+                    stop_decoding(JPGD_DECODE_ERROR);
+                bool littleEndian = (byteOrder == 0x4949);
+
+                ushort version_ = littleEndian ? read_ushort_LE(s) : read_ushort_BE(s);
+                if (version_ != 42)
+                    stop_decoding(JPGD_DECODE_ERROR);
+
+                import core.stdc.stdio;
+
+                uint offset = littleEndian ? read_uint_LE(s) : read_uint_BE(s);
+
+                printf("offset = %d\n", offset);
+                double resolutionX = 72;
+                double resolutionY = 72;
+                int unit = 2;
+
+                // parse all IFDs
+                while(offset != 0)
+                {
+                    if (offset > exifData.length)
+                        stop_decoding(JPGD_DECODE_ERROR);
+                    const(ubyte)* pIFD = tiffFile + offset;
+                    ushort numEntries = littleEndian ? read_ushort_LE(pIFD) : read_ushort_BE(pIFD);
+
+                    foreach(entry; 0..numEntries)
+                    {
+                        ushort tag = littleEndian ? read_ushort_LE(pIFD) : read_ushort_BE(pIFD);
+                        ushort type = littleEndian ? read_ushort_LE(pIFD) : read_ushort_BE(pIFD);
+                        uint count = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
+                        uint valueOffset = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
+
+                        printf("tag = %d\n", tag);
+                        printf("type = %d\n", type);
+                        printf("count = %d\n", count);
+                        printf("valueOffset = %d\n", valueOffset);
+
+                        if (tag == 282 || tag == 283) // XResolution
+                        {
+                            const(ubyte)* tagData = tiffFile + valueOffset;
+                            double num = littleEndian ? read_uint_LE(tagData) : read_uint_BE(tagData);
+                            double denom = littleEndian ? read_uint_LE(tagData) : read_uint_BE(tagData);
+                            double frac = num / denom;
+                            if (tag == 282)
+                                resolutionX = frac;
+                            else
+                                resolutionY = frac;
+                        }
+
+                        if (tag == 296) // unit
+                            unit = valueOffset;
+                    }
+                    offset = littleEndian ? read_uint_LE(pIFD) : read_uint_BE(pIFD);
+                    printf("\noffset = %d\n", offset);
+                }
+
+                if (unit == 2) // inches
+                {
+                    m_pixelsPerInchX = resolutionX;
+                    m_pixelsPerInchY = resolutionY;
+                    m_pixelAspectRatio = resolutionX / resolutionY;
+                }
+                else if (unit == 3) // dots per cm
+                {
+                    m_pixelsPerInchX = convertInchesToMeters(resolutionX * 100);
+                    m_pixelsPerInchY = convertInchesToMeters(resolutionY * 100);
+                    m_pixelAspectRatio = resolutionX / resolutionY;
+                }
+            }
+            break;
 
         case M_JPG:
         case M_RST0:    /* no parameters */
