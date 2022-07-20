@@ -3,7 +3,7 @@ This module contains algorithms for the chi-squared continuous distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
-Authors: Ilia Ki
+Authors: Ilia Ki, John Michael Hall
 
 Copyright: 2022 Mir Stat Authors.
 +/
