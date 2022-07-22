@@ -29,7 +29,7 @@ T geometricPMF(T)(const size_t k, const T p)
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.common: pow;
- 	return pow(1 - p, k) * p;   
+    return pow(1 - p, k) * p;   
 }
 
 ///
@@ -60,7 +60,7 @@ T geometricCDF(T)(const size_t k, const T p)
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.common: pow;
- 	return 1 - pow(1 - p, k + 1);   
+    return 1 - pow(1 - p, k + 1);   
 }
 
 /// ditto
@@ -73,7 +73,7 @@ T geometricCDF(T)(const T x, const T p)
 {
     if (x < 0)
         return 0;
- 	return geometricCDF!T(cast(const size_t) x, p);  
+    return geometricCDF!T(cast(const size_t) x, p);  
 }
 
 ///
@@ -110,7 +110,7 @@ T geometricCCDF(T)(const size_t k, const T p)
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.common: pow;
- 	return pow(1 - p, k + 1);   
+    return pow(1 - p, k + 1);   
 }
 
 /// ditto
@@ -123,7 +123,7 @@ T geometricCCDF(T)(const T x, const T p)
 {
     if (x < 0)
         return 1;
- 	return geometricCCDF!T(cast(const size_t) x, p);  
+    return geometricCCDF!T(cast(const size_t) x, p);  
 }
 
 ///
