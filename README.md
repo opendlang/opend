@@ -17,7 +17,7 @@ Mir Ion serialization engine supports
  - [YAML](https://github.com/libmir/mir-yaml)
  - [Bloomberg](https://github.com/libmir/mir-bloomberg)
 
-Mir Ion supports JSON de/serialization out of the box. On the other hand, you may want to use another our JSON library -- [Asdf](https://github.com/libmir/mir-bloomberg). It uses the same [serialization User Defined Attributes](http://mir-algorithm.libmir.org/mir_serde.html). 
+Mir Ion supports JSON de/serialization out of the box. On the other hand, you may want to use another our JSON library -- [Asdf](https://github.com/libmir/asdf). It uses the same [serialization User Defined Attributes](http://mir-algorithm.libmir.org/mir_serde.html). 
 
 ## Benchmarks
 
