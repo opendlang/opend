@@ -92,6 +92,7 @@ unittest
     0.geometricCDF(0.25).shouldApprox == 0.25;
     1.geometricCDF(0.25).shouldApprox == 0.4375;
     2.geometricCDF(0.25).shouldApprox == 0.578125;
+    2.5.geometricCDF(0.25).shouldApprox == 0.578125;
 }
 
 /++
@@ -142,6 +143,7 @@ unittest
     0.geometricCCDF(0.25).shouldApprox == 0.75;
     1.geometricCCDF(0.25).shouldApprox == 0.5625;
     2.geometricCCDF(0.25).shouldApprox == 0.421875;
+    2.5.geometricCCDF(0.25).shouldApprox == 0.421875;
 }
 
 /++

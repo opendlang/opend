@@ -351,11 +351,9 @@ T gammaLPDF(T)(const T x, const size_t shape, const T scale = 1)
     if (x == 0) {
         if (shape > 1) {
             return -T.infinity;
-        } else if (shape < 1) {
-            return T.infinity;
         } else {
             return -log(scale);
-        }
+        } // note: shape cannot be equal to zero or less than 1 because it is size_t
     }
 
     return poissonLPMF(shape - 1, x / scale) - log(scale);
