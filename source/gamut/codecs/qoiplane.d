@@ -75,7 +75,9 @@ import gamut.codecs.qoi2avg;
 /// QOIPLANE_REPEAT2   1111 xxxx xxxx   => repeat 5 to 259 times a pixel.
 ///                                        (1111 1111 1111 disallowed, indicates end of stream)
 
-static immutable ubyte[6] qoiplane_padding = [255,255,255,255,255,255]; // this is 4x a full QOIPLANE_REPEAT2
+static immutable ubyte[4] qoiplane_padding = [255,255,255,255]; // this is 4x a full QOIPLANE_REPEAT2
+
+enum ubyte initialPredictor = 0;
 
 /* Encode raw L8 pixels into a QOIPlane image in memory.
 The function either returns null on failure (invalid parameters or malloc 
@@ -113,7 +115,7 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
 
-    bool writeHiNibble = false; // nibble index into output stream.
+    bool writeHiNibble = true; // nibble index into output stream.
 
     void outputNibble(ubyte nibble) nothrow @nogc
     {
@@ -129,6 +131,19 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         writeHiNibble = !writeHiNibble;
     }
 
+    void outputByte(ubyte b)
+    {
+        if (writeHiNibble)
+        {
+            bytes[p++] = b;
+        }
+        else
+        {
+            bytes[p++] |= (b >>> 4);
+            bytes[p] = cast(ubyte)(b << 4);
+        }
+    }
+
     void encodeRun(ref int run) nothrow @nogc
     {
         assert(run > 0 && run <= 259);
@@ -142,13 +157,12 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             run -= 5;
             // QOIPLANE_REPEAT2
             outputNibble(0xf);
-            outputNibble( (cast(ubyte)run) >>> 4);
-            outputNibble(run & 15);
+            outputByte(cast(ubyte)run);
         }
         run = 0;
     }
 
-    ubyte px = 0;
+    ubyte px = initialPredictor;
     int channels = desc.channels;
     int stride = desc.width * channels;
     int run = 0;
@@ -173,14 +187,13 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                 if (run == 259 || (pixels_encoded + 1 == num_pixels))
                     encodeRun(run);
             }
-            else 
+            else
             {
                 if (run > 0) 
                     encodeRun(run);
 
                 // take top pixel (if it exist), else it's the same predictor
                 ubyte px_top = (posy > 0) ? lineAbove[posx] : px_ref;
-
                 ubyte px_avg = (px_top + px_ref + 1) / 2;
 
                 byte vg_l = cast(byte)(px - px_avg);
@@ -189,18 +202,16 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                 {
                     ubyte nibble = 0x0 | cast(ubyte)(vg_l + 4);
                     outputNibble(nibble); // QOIPLANE_DIFF1
-                }
+                } 
                 else if (vg_l >= -16 && vg_l <= 15)
                 {
                     ubyte diff2b =  0xc0 | cast(ubyte)(vg_l + 16);
-                    outputNibble(diff2b >>> 4); // QOIPLANE_DIFF2   
-                    outputNibble(diff2b & 0x0f);
-                }
-                else 
+                    outputByte(diff2b); // QOIPLANE_DIFF2
+                } 
+                else
                 {
                     outputNibble(0xe); // QOIPLANE_DIRECT
-                    outputNibble(px >>> 4);
-                    outputNibble(px & 0x0f);
+                    outputByte(px);
                 }
             }
             pixels_encoded++;
@@ -215,4 +226,146 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     *out_len = p;
     return bytes;
+}
+
+
+
+/* Decode a QOI-plane image from memory.
+
+The function either returns null on failure (invalid parameters or malloc 
+failed) or a pointer to the decoded pixels. On success, the qoi_desc struct 
+is filled with the description from the file header.
+
+The returned pixel data should be free()d after use. */
+ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
+{ 
+    if ((channels < 0 && channels > 2) ||
+            size < QOIX_HEADER_SIZE + cast(int)(qoiplane_padding.sizeof)) 
+    {
+        return null;
+    }
+
+    const(ubyte)* bytes = data;
+
+    int p = 0;
+
+    uint header_magic = qoi_read_32(bytes, &p);
+    desc.width = qoi_read_32(bytes, &p);
+    desc.height = qoi_read_32(bytes, &p);
+    int qoix_version = bytes[p++];
+    desc.channels = bytes[p++];
+    desc.colorspace = bytes[p++];
+    desc.pixelAspectRatio = qoi_read_32f(bytes, &p);
+    desc.resolutionY = qoi_read_32f(bytes, &p);
+
+    if (desc.width == 0 || desc.height == 0 || 
+        desc.channels < 1 || desc.channels > 2 ||
+        desc.colorspace > 1 ||
+        qoix_version > 1 ||
+        header_magic != QOIX_MAGIC ||
+        desc.height >= QOIX_PIXELS_MAX / desc.width
+        ) 
+    {
+        return null;
+    }
+
+    if (channels == 0) 
+    {
+        channels = desc.channels;
+    }
+
+    int stride = desc.width * channels;
+    desc.pitchBytes = stride; // FUTURE: force to decode with a given layout / image
+
+    int num_pixels = desc.width * desc.height;
+    int output_bytes = num_pixels * channels;
+
+    ubyte* pixels = cast(ubyte*) QOI_MALLOC(output_bytes);
+    if (!pixels) 
+        return null;
+
+    bool readHiNibble = true; // nibble index into output stream.
+
+    ubyte readNibble() nothrow @nogc
+    {
+        ubyte r;
+        if (readHiNibble)
+            r = (bytes[p] >>> 4);
+        else
+            r = (bytes[p++] & 0xf);
+        readHiNibble = !readHiNibble;
+        assert(r < 16);
+        return r;
+    }
+
+    ubyte readUbyte()
+    {
+        ubyte hi = cast(ubyte)(readNibble() << 4);
+        ubyte lo = readNibble();
+        return hi | lo;
+    }
+
+    ubyte px = initialPredictor;
+
+    int decoded_pixels = 0;
+    int run = 0;
+
+    for (int posy = 0; posy < desc.height; ++posy)
+    {
+        ubyte* line = pixels + desc.pitchBytes * posy;
+        const(ubyte)* lineAbove = (posy > 0) ? (pixels + desc.pitchBytes * (posy - 1)) : null;
+
+        for (int posx = 0; posx < desc.width; ++posx)
+        {
+            if (run > 0) 
+            {
+                run--;
+            }
+            else if (decoded_pixels < num_pixels)
+            {
+                ubyte op = readNibble();
+
+                if ((op & 0xc) == 8) // QOIPLANE_REPEAT1
+                {
+                    run = (op & 0x3);
+                }
+                else if ((op & 0xf) == 0xf) // QOIPLANE_REPEAT2
+                {
+                    run = readUbyte() + 4;
+                    if (run == 260) 
+                        run = 0x7fffffff; // fill with last pixel until end of decode
+                }
+                else
+                {
+                    // Compute predictors.
+                    ubyte px_ref = px;
+                    ubyte px_top = (posy > 0) ? lineAbove[posx] : px_ref;
+                    ubyte px_avg = (px_top + px_ref + 1) / 2;
+
+                    if ((op & 0x8) == 0) // QOIPLANE_DIFF1
+                    {
+                        assert(op < 8);
+                        px = cast(ubyte)(px_avg + op - 4);
+                    }
+                    else if ((op & 0xe) == 0xc) // QOIPLANE_DIFF2
+                    {
+                        int vg_l = ((op & 1) << 4) + readNibble();
+                        assert(vg_l >= 0 && vg_l <= 31);
+                        vg_l -= 16;
+                        px = cast(ubyte)(px_avg + vg_l);
+                    } 
+                    else if ((op & 0xf) == 0xe) // QOIPLANE_DIRECT
+                    {
+                        px = readUbyte();
+                    }
+                    else
+                        assert(false);
+                }
+                decoded_pixels++;
+            }
+            line[posx] = px;
+        }
+    }
+
+    return pixels;
 }

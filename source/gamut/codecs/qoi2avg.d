@@ -628,26 +628,9 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
         else if (p < chunks_len) {
             px_ref.v = px.v;
             if (px_pos >= stride) {
-
-                switch(channels)
-                {
-                    case 4:
-                    case 3:
-                        px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
-                        px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
-                        px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
-                        break;
-
-                    case 2:
-                    case 1:
-                    default:
-                        assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
-                        ubyte grey = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
-                        px_ref.rgba.r = grey;
-                        px_ref.rgba.g = grey;
-                        px_ref.rgba.b = grey;
-                        break;
-                }
+                px_ref.rgba.r = (px.rgba.r + pixels[px_pos - stride + 0] + 1) >> 1;
+                px_ref.rgba.g = (px.rgba.g + pixels[px_pos - stride + 1] + 1) >> 1;
+                px_ref.rgba.b = (px.rgba.b + pixels[px_pos - stride + 2] + 1) >> 1;
             } 
 
             int b1 = bytes[p++];

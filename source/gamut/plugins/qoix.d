@@ -251,6 +251,8 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 version(decodeQOIX)
 ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) @trusted
 {
+    assert(channels == 0); // only auto-detect
+
     if (size < QOIX_HEADER_SIZE + 4)
         return null;
 
@@ -278,10 +280,17 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         return null;
     }
 
-    // Note: here we ignore the return value qoilen, since it seems to be the compressed decoded size... not sure why.
+    int streamChannels = decQOIX[13];
+    ubyte* image;
+    if (streamChannels == 1 || streamChannels == 2)
+    {
+        image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+    }
+    else if (streamChannels == 3 || streamChannels == 4)
+    {        
+        image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+    }
 
-    // Now decompQOIX is a QOIX image.
-    ubyte* image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
     scope(exit) free(decQOIX);
 
     return image;
