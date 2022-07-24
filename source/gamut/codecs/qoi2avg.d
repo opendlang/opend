@@ -5,9 +5,6 @@ nothrow @nogc:
 import core.stdc.stdlib: realloc, malloc, free;
 import core.stdc.string: memset;
 
-import gamut.codecs.lz4;
-
-
 version = doNotEncodeGreyscale;
 
 /// Note: this is a translation of "QOI2" mods by @wbd73
@@ -58,11 +55,11 @@ A QOIX file has a 23 byte header, followed by any number of data "chunks" and an
 8-byte end marker.
 
 struct qoi_header_t {
-    char     magic[4];         // magic bytes "qoi2"
+    char     magic[4];         // magic bytes "qoix"
     uint32_t width;            // image width in pixels (BE)
     uint32_t height;           // image height in pixels (BE)
     uint8_t  version_;         // Major version of QOIX format.
-    uint8_t  channels;         // 3 = RGB, 4 = RGBA
+    uint8_t  channels;         // 3 = RGB, 4 = RGBA (1 and 2 indicate QOI-plane codec)
     uint8_t  colorspace;       // 0 = sRGB with linear alpha, 1 = all channels linear
     float    pixelAspectRatio; // -1 = unknown, else Pixel Aspect Ratio
     float    resolutionX;      // -1 = unknown, else physical resolution in DPI
@@ -371,7 +368,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     if (
         data == null || out_len == null || desc == null ||
         desc.width == 0 || desc.height == 0 ||
-        desc.channels < 1 || desc.channels > 4 ||
+        desc.channels < 3 || desc.channels > 4 ||
         desc.colorspace > 1 ||
         desc.height >= QOIX_PIXELS_MAX / desc.width
     ) {
@@ -391,7 +388,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi_write_32(bytes, &p, desc.width);
     qoi_write_32(bytes, &p, desc.height);
     bytes[p++] = 1; // Put a version number :)
-    bytes[p++] = desc.channels; // 1, 2, 3, or 4
+    bytes[p++] = desc.channels; // 3, or 4
     bytes[p++] = desc.colorspace;
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
@@ -412,26 +409,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     px_len = desc.width * desc.height * channels;
     px_end = px_len - channels;
 
-    version(doNotEncodeGreyscale)
-    {
-        if (channels == 1 || channels == 2)
-        {
-            // channels 1 and 2 => no encoding, LZ4 will do better than LZ4 + QOI
-            // copy pixels just like that.
+    assert (channels != 1 && channels != 2);
 
-            for (int posy = 0; posy < desc.height; ++posy)
-            {
-                const(ubyte)* line = data + desc.pitchBytes * posy;
-
-                for (int posx = 0; posx < desc.width * channels; ++posx)
-                {
-                    bytes[p++] = *line++;
-                }
-            }
-            *out_len = px_len;
-            return bytes;
-        }
-    }
 
     for (int posy = 0; posy < desc.height; ++posy)
     {
@@ -452,19 +431,6 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     px.rgba.r = line[posx * 3 + 0];
                     px.rgba.g = line[posx * 3 + 1];
                     px.rgba.b = line[posx * 3 + 2];
-                    break;
-                case 2:
-                    ubyte grey = line[posx * 2 + 0];
-                    px.rgba.r = grey;
-                    px.rgba.g = grey;
-                    px.rgba.b = grey;
-                    px.rgba.a = line[posx * 2 + 1];
-                    break;
-                case 1:
-                    ubyte grey = line[posx * 1 + 0];
-                    px.rgba.r = grey;
-                    px.rgba.g = grey;
-                    px.rgba.b = grey;
                     break;
             }
 
@@ -515,26 +481,11 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
-                    if (px_pos >= stride) 
+                    if (px_pos >= stride)  // ????? doesn't seem OK, TODO
                     {
-                        switch(channels)
-                        {
-                            default:
-                            case 4:
-                            case 3:
-                                px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-                                px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
-                                px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
-                                break;
-                            case 2:
-                            case 1:
-                                assert(px_ref.rgba.r == px_ref.rgba.g && px_ref.rgba.g == px_ref.rgba.b); // in those cases, the predictor is grey
-                                ubyte grey = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-                                px_ref.rgba.r = grey;
-                                px_ref.rgba.g = grey;
-                                px_ref.rgba.b = grey;
-                                break;
-                        }
+                        px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
+                        px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
+                        px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;                     
                     }
 
                     byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -601,8 +552,6 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     return bytes;
 }
 
-// PERF: can speedup decoding by making separate path for channels = 1 and channels = 2 (or a new codec lol)
-
 /* Decode a QOI image from memory.
 
 The function either returns null on failure (invalid parameters or malloc 
@@ -641,7 +590,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     
     if (
         desc.width == 0 || desc.height == 0 || 
-        desc.channels < 1 || desc.channels > 4 ||
+        desc.channels < 3 || desc.channels > 4 ||
         desc.colorspace > 1 ||
         qoix_version > 1 ||
         header_magic != QOIX_MAGIC ||
@@ -663,25 +612,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
         return null;
     }
 
-    version(doNotEncodeGreyscale)
-    {
-        if (channels == 1 || channels == 2)
-        {
-            // channels 1 and 2 => no encoding, LZ4 will do better than LZ4 + QOI
-
-            int q = 0;
-            for (int posy = 0; posy < desc.height; ++posy)
-            {
-                const(ubyte)* line = &bytes[p] + desc.pitchBytes * posy;
-
-                for (int posx = 0; posx < desc.width * channels; ++posx)
-                {
-                    pixels[q++] = *line++;
-                }
-            }
-            return pixels;
-        }
-    }
+    assert(channels != 1 && channels != 2);
 
     memset(index.ptr, 0, 64 * qoi_rgba_t.sizeof);
     px.rgba.r = 0;
@@ -799,103 +730,9 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
             pixels[px_pos + 1] = px.rgba.g;
             pixels[px_pos + 2] = px.rgba.b;
             break;
-        case 2:
-            assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
-            pixels[px_pos + 0] = px.rgba.r;
-            pixels[px_pos + 1] = px.rgba.a;
-            break;
-        case 1:
-            assert(px.rgba.r == px.rgba.g && px.rgba.g == px.rgba.b);
-            pixels[px_pos + 0] = px.rgba.r;
-            break;
         }
         px_pos += channels;
     }
 
     return pixels;
-}
-
-/// Encode in QOIX + LZ4
-/// File format:
-///   QOIX header (15 bytes)
-///   Original data size (4 bytes)
-///   LZ4 encoded opcodes
-ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
-{
-    // Encode to QOIX
-    int qoilen;
-    ubyte* qoix = qoix_encode(data, desc, &qoilen);
-
-    if (qoix is null)
-        return null;
-    scope(exit) free(qoix);
-
-    ubyte[] qoixHeader = qoix[0..QOIX_HEADER_SIZE];
-    ubyte[] qoixData = qoix[QOIX_HEADER_SIZE..qoilen];
-    int datalen = cast(int) qoixData.length;
-    int maxsize = LZ4_compressBound(datalen);
-
-    // Encode QOI in LZ4, except the header.
-
-    ubyte* lz4Data = cast(ubyte*) malloc(QOIX_HEADER_SIZE + 4 + maxsize); 
-
-    lz4Data[0..QOIX_HEADER_SIZE] = qoix[0..QOIX_HEADER_SIZE];
-
-    int p = QOIX_HEADER_SIZE;
-    qoi_write_32(lz4Data, &p, datalen);
-
-    int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[0], 
-                               cast(char*)&lz4Data[QOIX_HEADER_SIZE + 4], 
-                               datalen);
-
-    if (lz4Size < 0)
-        return null;
-
-    *out_len = QOIX_HEADER_SIZE + 4 + lz4Size;
-
-    lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
-    return lz4Data;
-}
-
-/// Decodes a QOIX + LZ4
-/// File format:
-///   QOIX header (15 bytes)
-///   Original data size (4 bytes)
-///   LZ4 encoded opcodes
-ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
-{
-    if (size < QOIX_HEADER_SIZE + 4)
-        return null;
-
-    // Read original size of data.
-    int p = QOIX_HEADER_SIZE;
-    int orig = qoi_read_32(data, &p);
-
-    if (orig < 0)
-        return null; // too large, corrupted.
-
-    // Allocate decoding buffer.
-    ubyte* decQOIX = cast(ubyte*) malloc(QOIX_HEADER_SIZE + orig);
-
-    decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
-
-    const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
-
-    int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
-                                     cast(char*)&decQOIX[QOIX_HEADER_SIZE], 
-                                     orig);
-
-    if (qoilen < 0)
-    {
-        free(decQOIX);
-        return null;
-    }
-
-    // Note: here we ignore the return value qoilen, since it seems to be the compressed decoded size... not sure why.
-
-    // Now decompQOIX is a QOIX image.
-    ubyte* image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
-    scope(exit) free(decQOIX);
-
-    return image;
 }

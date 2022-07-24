@@ -18,9 +18,17 @@ import gamut.plugin;
 import gamut.internals.errors;
 
 version(decodeQOIX)
+{
     import gamut.codecs.qoi2avg;
+    import gamut.codecs.qoiplane;
+    import gamut.codecs.lz4;
+}
 else version(encodeQOIX)
+{
     import gamut.codecs.qoi2avg;
+    import gamut.codecs.qoi2plane;
+    import gamut.codecs.lz4;
+}
 
 ImageFormatPlugin makeQOIXPlugin()
 {
@@ -42,6 +50,9 @@ ImageFormatPlugin makeQOIXPlugin()
     return p;
 }
 
+// IMPORTANT: QOIX uses two possible codecs internally
+//   - "QOIX" in qoi2avg.d for RGB8 and RGBA8
+//   - qoiplane for L8
 
 version(decodeQOIX)
 void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
@@ -122,7 +133,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         image._type = ImageType.rgba8;
     else
     {
-        // QOI with channel different from 3 or 4 is impossible.
+        // QOI with channel different from 1, 2, 3 or 4 is impossible.
         assert(false);
     }
 
@@ -176,4 +187,102 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
         return false;
 
     return true;
+}
+
+
+
+/// Encode in QOIX + LZ4
+/// File format:
+///   QOIX header (15 bytes)
+///   Original data size (4 bytes)
+///   LZ4 encoded opcodes
+version(encodeQOIX)
+ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) @trusted
+{
+    // Encode to QOIX
+    int qoilen;
+    ubyte* qoix;
+    assert(desc.channels != 2);
+    if (desc.channels == 1)
+    {
+        qoix = qoiplane_encode(data, desc, &qoilen);
+    }
+    else
+    {
+        qoix = qoix_encode(data, desc, &qoilen);
+    }
+
+    if (qoix is null)
+        return null;
+    scope(exit) free(qoix);
+
+    ubyte[] qoixHeader = qoix[0..QOIX_HEADER_SIZE];
+    ubyte[] qoixData = qoix[QOIX_HEADER_SIZE..qoilen];
+    int datalen = cast(int) qoixData.length;
+    int maxsize = LZ4_compressBound(datalen);
+
+    // Encode QOI in LZ4, except the header.
+
+    ubyte* lz4Data = cast(ubyte*) malloc(QOIX_HEADER_SIZE + 4 + maxsize); 
+
+    lz4Data[0..QOIX_HEADER_SIZE] = qoix[0..QOIX_HEADER_SIZE];
+
+    int p = QOIX_HEADER_SIZE;
+    qoi_write_32(lz4Data, &p, datalen);
+
+    int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[0], 
+                               cast(char*)&lz4Data[QOIX_HEADER_SIZE + 4], 
+                               datalen);
+
+    if (lz4Size < 0)
+        return null;
+
+    *out_len = QOIX_HEADER_SIZE + 4 + lz4Size;
+
+    lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
+    return lz4Data;
+}
+
+/// Decodes a QOIX + LZ4
+/// File format:
+///   QOIX header (15 bytes)
+///   Original data size (4 bytes)
+///   LZ4 encoded opcodes
+version(decodeQOIX)
+ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) @trusted
+{
+    if (size < QOIX_HEADER_SIZE + 4)
+        return null;
+
+    // Read original size of data.
+    int p = QOIX_HEADER_SIZE;
+    int orig = qoi_read_32(data, &p);
+
+    if (orig < 0)
+        return null; // too large, corrupted.
+
+    // Allocate decoding buffer.
+    ubyte* decQOIX = cast(ubyte*) malloc(QOIX_HEADER_SIZE + orig);
+
+    decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
+
+    const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
+
+    int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
+                                     cast(char*)&decQOIX[QOIX_HEADER_SIZE], 
+                                     orig);
+
+    if (qoilen < 0)
+    {
+        free(decQOIX);
+        return null;
+    }
+
+    // Note: here we ignore the return value qoilen, since it seems to be the compressed decoded size... not sure why.
+
+    // Now decompQOIX is a QOIX image.
+    ubyte* image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+    scope(exit) free(decQOIX);
+
+    return image;
 }

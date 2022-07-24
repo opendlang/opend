@@ -10,15 +10,15 @@
 
     "configurations": [
         {
-            "name": "boost",
-            "versions": [ "decodeJPEG", "decodePNG", 
-                          "encodeJPEG", "encodePNG", "encodeDDS" ]
-        },
-        {
             "name": "boost+mit",
             "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",
                           "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS" ]
-        },        
+        },
+        {
+            "name": "boost",
+            "versions": [ "decodeJPEG", "decodePNG", 
+                          "encodeJPEG", "encodePNG", "encodeDDS" ]
+        },              
         {
             "name": "just-decode",
             "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX" ]
