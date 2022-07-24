@@ -7,6 +7,13 @@ import core.stdc.string: memset;
 
 import gamut.codecs.qoi2avg;
 
+version = benchmark;
+
+version(benchmark)
+{
+    import core.stdc.stdio;
+}
+
 /// A QOI-inspired codec for 8-bit greyscale images.
 ///
 /// Because the input is 8-bit, we are forced to split bytes in nibbles.
@@ -65,7 +72,7 @@ import gamut.codecs.qoi2avg;
 ///
 /// The byte stream's end is marked with 4 0xff bytes.
 ///
-/// Free space = 1011
+/// 
 ///
 /// Encoding:
 ///
@@ -75,6 +82,10 @@ import gamut.codecs.qoi2avg;
 /// QOIPLANE_REPEAT1   11xx             => repeat 1 to 3 times the last pixel
 /// QOIPLANE_REPEAT2   1111 xxxx xxxx   => repeat 4 to 258 times a pixel.
 ///                                        (1111 1111 1111 disallowed, indicates end of stream)
+/// QOIPLANE_PRED      1011 xxyy        => diff -4..+3 vs xx = 00 left
+///                                                       xx = 01 top
+///                                                       xx = 10 n-2 encoded pixel
+///                                                       xx = 11 n-3 encoded pixel
 
 static immutable ubyte[4] qoiplane_padding = [255,255,255,255]; // this is 4x a full QOIPLANE_REPEAT2
 
@@ -105,6 +116,18 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     if (!bytes) 
     {
         return null;
+    }
+
+    version(benchmark)
+    {
+        int numQOIPLANE_DIFF1 = 0;
+        int numQOIPLANE_DIFF2 = 0;
+        int numQOIPLANE_DIRECT = 0;
+        int numQOIPLANE_REPEAT1 = 0;
+        int numQOIPLANE_REPEAT2 = 0;
+        
+        int encodedQOIPLANE_REPEAT1 = 0;
+        int encodedQOIPLANE_REPEAT2 = 0;
     }
 
     qoi_write_32(bytes, &p, QOIX_MAGIC);
@@ -152,18 +175,31 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         {
             ubyte nibble =  0xc | cast(ubyte)(run - 1);
             outputNibble(nibble); // QOIPLANE_REPEAT1
+            version(benchmark) 
+            {
+                numQOIPLANE_REPEAT1++;
+                encodedQOIPLANE_REPEAT1 += run;
+            }
         }
         else
         {
-            run -= 4;
-            // QOIPLANE_REPEAT2
-            outputNibble(0xf);
+            run -= 4;                        
+            outputNibble(0xf); // QOIPLANE_REPEAT2
             outputByte(cast(ubyte)run);
+            version(benchmark)
+            {
+                numQOIPLANE_REPEAT2++;
+                encodedQOIPLANE_REPEAT2 += run;
+            }
         }
         run = 0;
     }
 
     ubyte px = initialPredictor;
+    ubyte px_ref = initialPredictor;
+    ubyte px_refm2 = initialPredictor;
+    ubyte px_refm3 = initialPredictor;
+
     int channels = desc.channels;
     int stride = desc.width * channels;
     int run = 0;
@@ -177,10 +213,12 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         for (int posx = 0; posx < desc.width; ++posx)
         {
             // last pixel is the new predictor
-            ubyte px_ref = px;
+            px_refm3 = px_refm2;
+            px_refm2 = px_ref;
+            px_ref = px;
 
             // take next pixel to encode
-            px = line[posx];            
+            px = line[posx];
 
             if (px == px_ref)
             {
@@ -203,16 +241,19 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                 {
                     ubyte nibble = 0x0 | cast(ubyte)(vg_l + 4);
                     outputNibble(nibble); // QOIPLANE_DIFF1
+                    version(benchmark) numQOIPLANE_DIFF1++;
                 } 
                 else if (vg_l >= -16 && vg_l <= 15)
                 {
                     ubyte diff2b =  0x80 | cast(ubyte)(vg_l + 16);
                     outputByte(diff2b); // QOIPLANE_DIFF2
+                    version(benchmark) numQOIPLANE_DIFF2++;
                 } 
                 else
                 {
                     outputNibble(0xa); // QOIPLANE_DIRECT
                     outputByte(px);
+                    version(benchmark) numQOIPLANE_DIRECT++;
                 }
             }
             pixels_encoded++;
@@ -224,6 +265,44 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     // Last nibble to fit
     if (!writeHiNibble) outputNibble(0xf);
+
+
+    version(benchmark)
+    {
+        double totalOps = numQOIPLANE_DIFF1 + numQOIPLANE_DIFF2 + numQOIPLANE_DIRECT + numQOIPLANE_REPEAT1 + numQOIPLANE_REPEAT2;
+
+        double pixelsQOIPLANE_DIFF1 = numQOIPLANE_DIFF1 / cast(double)pixels_encoded;
+        double pixelsQOIPLANE_DIFF2 = numQOIPLANE_DIFF2 / cast(double)pixels_encoded;
+        double pixelsQOIPLANE_DIRECT = numQOIPLANE_DIRECT / cast(double)pixels_encoded;
+        double pixelsQOIPLANE_REPEAT1 = encodedQOIPLANE_REPEAT1 / cast(double)pixels_encoded;
+        double pixelsQOIPLANE_REPEAT2 = encodedQOIPLANE_REPEAT2 / cast(double)pixels_encoded;
+
+        double sizeQOIPLANE_DIFF1  = 4 * numQOIPLANE_DIFF1 / (8.0 * p);
+        double sizeQOIPLANE_DIFF2  = 8 * numQOIPLANE_DIFF2 / (8.0 * p);
+        double sizeQOIPLANE_DIRECT = 12 * numQOIPLANE_DIRECT / (8.0 * p);
+        double sizeQOIPLANE_REPEAT1 = 4 * numQOIPLANE_REPEAT1 / (8.0 * p);
+        double sizeQOIPLANE_REPEAT2 = 12 * numQOIPLANE_REPEAT2 / (8.0 * p);
+
+        printf("Num QOIPLANE_DIFF1 = %d\n", numQOIPLANE_DIFF1);
+        printf(" * pixels  = %.2f\n", pixelsQOIPLANE_DIFF1 * 100);
+        printf(" * size    = %.2f\n\n", sizeQOIPLANE_DIFF1 * 100);
+
+        printf("Num QOIPLANE_DIFF2 = %d\n", numQOIPLANE_DIFF2);
+        printf(" * pixels  = %.2f\n", pixelsQOIPLANE_DIFF2 * 100);
+        printf(" * size    = %.2f\n\n", sizeQOIPLANE_DIFF2 * 100);
+
+        printf("Num QOIPLANE_DIRECT = %d\n", numQOIPLANE_DIRECT);
+        printf(" * pixels  = %.2f\n", pixelsQOIPLANE_DIRECT * 100);
+        printf(" * size    = %.2f\n\n", sizeQOIPLANE_DIRECT * 100);
+
+        printf("Num QOIPLANE_REPEAT1 = %d\n", encodedQOIPLANE_REPEAT1);
+        printf(" * pixels  = %.2f\n", pixelsQOIPLANE_REPEAT1 * 100);
+        printf(" * size    = %.2f\n\n", sizeQOIPLANE_REPEAT1 * 100);
+
+        printf("Num QOIPLANE_REPEAT2 = %d\n", encodedQOIPLANE_REPEAT2);
+        printf(" * pixels  = %.2f\n", pixelsQOIPLANE_REPEAT2 * 100);
+        printf(" * size    = %.2f\n\n", sizeQOIPLANE_REPEAT2 * 100);
+    }
 
     *out_len = p;
     return bytes;
@@ -307,6 +386,9 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     }
 
     ubyte px = initialPredictor;
+    ubyte px_ref = initialPredictor;
+    ubyte px_refm2 = initialPredictor;
+    ubyte px_refm3 = initialPredictor;
 
     int decoded_pixels = 0;
     int run = 0;
@@ -318,6 +400,10 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
 
         for (int posx = 0; posx < desc.width; ++posx)
         {
+            px_refm3 = px_refm2;
+            px_refm2 = px_ref;
+            px_ref = px;
+
             if (run > 0) 
             {
                 run--;
@@ -339,7 +425,6 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
                 else
                 {
                     // Compute predictors.
-                    ubyte px_ref = px;
                     ubyte px_top = (posy > 0) ? lineAbove[posx] : px_ref;
                     ubyte px_avg = (px_top + px_ref) / 2;
 
