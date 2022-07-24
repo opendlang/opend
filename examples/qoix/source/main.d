@@ -37,12 +37,6 @@ int main(string[] args)
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
-        if (image.type == ImageType.la8)
-        {
-            writeln(" => skipped, no support yet");
-            continue;
-        }
-
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 

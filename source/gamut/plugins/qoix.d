@@ -202,8 +202,8 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
     // Encode to QOIX
     int qoilen;
     ubyte* qoix;
-    assert(desc.channels != 2);
-    if (desc.channels == 1)
+
+    if (desc.channels == 1 || desc.channels == 2)
     {
         qoix = qoiplane_encode(data, desc, &qoilen);
     }
