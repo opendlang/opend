@@ -82,10 +82,9 @@ version(benchmark)
 /// QOIPLANE_REPEAT1   11xx             => repeat 1 to 3 times the last pixel
 /// QOIPLANE_REPEAT2   1111 xxxx xxxx   => repeat 4 to 258 times a pixel.
 ///                                        (1111 1111 1111 disallowed, indicates end of stream)
-/// QOIPLANE_PRED      1011 xxyy        => diff -2..+1 vs xx = 00 left
-///                                                       xx = 01 top
-///                                                       xx = 10 n-2 encoded pixel
-///                                                       xx = 11 n-3 encoded pixel
+/// QOIPLANE_PRED      1011 xyyy        => diff -4..+3 vs x = 0 left
+///                                                       x = 1 top
+///                                                       
 
 static immutable ubyte[4] qoiplane_padding = [255,255,255,255]; // this is 4x a full QOIPLANE_REPEAT2
 
@@ -257,27 +256,15 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     byte diff_left = cast(byte)(px - px_ref);
                     byte diff_m2   = cast(byte)(px - px_refm2);
                     byte diff_m3   = cast(byte)(px - px_refm3);
-                    if (diff_left >= -2 && diff_left <= 1)
+                    if (diff_left >= -4 && diff_left <= 3)
                     {
-                        ubyte pred = 0xb0 | cast(ubyte)(diff_left + 2);
+                        ubyte pred = 0xb0 | cast(ubyte)(diff_left + 4);
                         outputByte(pred); // QOIPLANE_PRED
                         version(benchmark) numQOIPLANE_PRED++;
                     }
-                    else if (diff_top >= -2 && diff_top <= 1)
+                    else if (diff_top >= -4 && diff_top <= 3)
                     {
-                        ubyte pred = 0xb4 | cast(ubyte)(diff_top + 2);
-                        outputByte(pred); // QOIPLANE_PRED
-                        version(benchmark) numQOIPLANE_PRED++;
-                    }
-                    else if (diff_m2 >= -2 && diff_m2 <= 1)
-                    {
-                        ubyte pred = 0xb8 | cast(ubyte)(diff_m2 + 2);
-                        outputByte(pred); // QOIPLANE_PRED
-                        version(benchmark) numQOIPLANE_PRED++;
-                    }
-                    else if (diff_m3 >= -2 && diff_m3 <= 1)
-                    {
-                        ubyte pred = 0xbc | cast(ubyte)(diff_m3 + 2);
+                        ubyte pred = 0xb8 | cast(ubyte)(diff_top + 4);
                         outputByte(pred); // QOIPLANE_PRED
                         version(benchmark) numQOIPLANE_PRED++;
                     }
@@ -486,14 +473,12 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
                     else if ((op & 0xf) == 0xb) // QOIPLANE_PRED
                     {
                         int nibble = readNibble();
-                        int pred = nibble >>> 2;
-                        int diff = (nibble & 0x3) - 2;
-                        assert(pred >= 0 && pred <= 3);
+                        int pred = nibble >>> 3;
+                        int diff = (nibble & 0x7) - 4;
+                        assert(pred >= 0 && pred <= 1);
 
                         if (pred == 0)      px = cast(ubyte)(px_ref + diff);
-                        else if (pred == 1) px = cast(ubyte)(px_top + diff);
-                        else if (pred == 2) px = cast(ubyte)(px_refm2 + diff);
-                        else                px = cast(ubyte)(px_refm3 + diff);
+                                          else px = cast(ubyte)(px_top + diff);
                     }
                     else
                         assert(false);
