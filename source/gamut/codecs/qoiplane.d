@@ -7,7 +7,7 @@ import core.stdc.string: memset;
 
 import gamut.codecs.qoi2avg;
 
-version = benchmark;
+//version = benchmark;
 
 version(benchmark)
 {
@@ -22,7 +22,7 @@ version(benchmark)
 ///
 /// -- LICENSE: The MIT License(MIT)
 /// Copyright(c) 2021 Dominic Szablewski (original QOI format)
-/// Copyright(c) 2022 Guillaume Piolat
+/// Copyright(c) 2022 Guillaume Piolat (QOI-plane variant for 8-bit greyscale and greyscale + alpha images).
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of
 /// this software and associated documentation files(the "Software"), to deal in
 /// the Software without restriction, including without limitation the rights to
