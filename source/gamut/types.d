@@ -179,3 +179,29 @@ enum int ENCODE_NORMAL = 0;
 /// Internal use, this is to test a variation of a compiler.
 /// Supported by: JPEG, PNG, DDS, QOI, QOIX.
 enum int ENCODE_CHALLENGER = 4;
+
+
+/// Layout constraints flags.
+/// All of those introduce "gap pixels" after the scanline, in order to follow the various constraints.
+alias LayoutConstraints = int;
+
+
+enum LayoutConstraints
+     LAYOUT_DEFAULT              = 0,  /// Default / do-not-care layout options.
+     LAYOUT_GAPLESS              = 0,  /// No requirements for either scanline alignment, trailing samples, or multiplicity. Pixels are gapless.
+     LAYOUT_MULTIPLICITY_1       = 0,  /// No particular multiplicity requirements.
+     LAYOUT_MULTIPLICITY_2       = 1,  /// Beginning at the start of a scanline, pixels can be accessed 2 by 2 without segfault.
+     LAYOUT_MULTIPLICITY_4       = 2,  /// Beginning at the start of a scanline, pixels can be accessed 4 by 4 without segfault.
+     LAYOUT_MULTIPLICITY_8       = 3,  /// Beginning at the start of a scanline, pixels can be accessed 8 by 8 without segfault.
+     LAYOUT_TRAILING_0           = 0,  /// Scanlines have no trailing requirements.
+     LAYOUT_TRAILING_1           = 4,  /// Scanlines must be followed by at least 1 gap pixels.
+     LAYOUT_TRAILING_3           = 8,  /// Scanlines must be followed by at least 3 gap pixels.
+     LAYOUT_TRAILING_7           = 12, /// Scanlines must be followed by at least 7 gap pixels.
+     LAYOUT_SCANLINE_ALIGNED_1   = 0,  /// No particular alignment for scanline.
+     LAYOUT_SCANLINE_ALIGNED_2   = 16, /// Scanlines required to be at least aligned on 2 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_4   = 32, /// Scanlines required to be at least aligned on 4 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_8   = 48, /// Scanlines required to be at least aligned on 8 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_16  = 64, /// Scanlines required to be at least aligned on 16 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_32  = 80, /// Scanlines required to be at least aligned on 32 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_64  = 96, /// Scanlines required to be at least aligned on 64 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_128 = 112;/// Scanlines required to be at least aligned on 128 bytes boundaries.
