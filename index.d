@@ -28,6 +28,8 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,chi2)) $(TD Chi-squared Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,exponential)) $(TD Exponential Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,gamma)) $(TD Gamma Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,geometric)) $(TD Geometric Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,gev)) $(TD Generalized Extreme Value Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Uniform Probability Distribution ))

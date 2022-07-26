@@ -26,6 +26,8 @@ public import mir.stat.distribution.exponential: exponentialPDF;
 ///
 public import mir.stat.distribution.gamma: gammaPDF;
 ///
+public import mir.stat.distribution.geometric: geometricPMF;
+///
 public import mir.stat.distribution.gev: gevPDF;
 ///
 public import mir.stat.distribution.normal: normalPDF;

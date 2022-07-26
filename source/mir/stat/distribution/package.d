@@ -20,12 +20,18 @@ public import mir.stat.distribution.beta_proportion;
 ///
 public import mir.stat.distribution.binomial;
 ///
-public import mir.stat.distribution.normal;
+public import mir.stat.distribution.chi2;
 ///
-public import mir.stat.distribution.uniform;
-///
-public import mir.stat.distribution.gev;
+public import mir.stat.distribution.exponential;
 ///
 public import mir.stat.distribution.gamma;
 ///
-public import mir.stat.distribution.chi2;
+public import mir.stat.distribution.geometric;
+///
+public import mir.stat.distribution.gev;
+///
+public import mir.stat.distribution.normal;
+///
+public import mir.stat.distribution.poisson;
+///
+public import mir.stat.distribution.uniform;

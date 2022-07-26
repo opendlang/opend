@@ -26,6 +26,8 @@ public import mir.stat.distribution.exponential: exponentialInvCDF;
 ///
 public import mir.stat.distribution.gamma: gammaInvCDF;
 ///
+public import mir.stat.distribution.geometric: geometricInvCDF;
+///
 public import mir.stat.distribution.gev: gevInvCDF;
 ///
 public import mir.stat.distribution.normal: normalInvCDF;

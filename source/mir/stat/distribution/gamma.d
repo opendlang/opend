@@ -3,7 +3,7 @@ This module contains algorithms for the gamma distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
-Authors: Ilia Ki
+Authors: Ilia Ki, John Michael Hall
 
 Copyright: 2022 Mir Stat Authors.
 +/
@@ -297,16 +297,16 @@ unittest
 }
 
 /++
-Computes the gamma log probability density function (LogPDF).
+Computes the gamma log probability density function (LPDF).
 
 `shape` values less than `1` are supported when it is a floating point type.
 
 If `shape is passed as a `size_t` type (or a type convertible to that), then the
-LogPDF is calculated using the relationship with the poisson distribution (i.e.
+LPDF is calculated using the relationship with the poisson distribution (i.e.
 replacing the `logGamma` function with the `logFactorial`).
 
 Params:
-    x = value to evaluate LogPDF
+    x = value to evaluate LPDF
     shape = shape parameter
     scale = scale parameter
 
@@ -314,7 +314,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
 +/
 @safe pure nothrow @nogc
-T gammaLogPDF(T)(const T x, const T shape, const T scale = 1)
+T gammaLPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
@@ -339,26 +339,24 @@ T gammaLogPDF(T)(const T x, const T shape, const T scale = 1)
 
 /// ditto
 @safe pure nothrow @nogc
-T gammaLogPDF(T)(const T x, const size_t shape, const T scale = 1)
+T gammaLPDF(T)(const T x, const size_t shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
     in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: log;
-    import mir.stat.distribution.poisson: poissonLogPMF;
+    import mir.stat.distribution.poisson: poissonLPMF;
 
     if (x == 0) {
         if (shape > 1) {
             return -T.infinity;
-        } else if (shape < 1) {
-            return T.infinity;
         } else {
             return -log(scale);
-        }
+        } // note: shape cannot be equal to zero or less than 1 because it is size_t
     }
 
-    return poissonLogPMF(shape - 1, x / scale) - log(scale);
+    return poissonLPMF(shape - 1, x / scale) - log(scale);
 }
 
 ///
@@ -368,12 +366,12 @@ unittest
 {
     import mir.test: shouldApprox;
 
-    2.0.gammaLogPDF(3.0).shouldApprox == -1.306853;
-    2.0.gammaLogPDF(3.0, 4.0).shouldApprox == -3.965736;
+    2.0.gammaLPDF(3.0).shouldApprox == -1.306853;
+    2.0.gammaLPDF(3.0, 4.0).shouldApprox == -3.965736;
     // Calling with `size_t` uses log factorial function instead of log gamma,
     // but produces same results
-    2.0.gammaLogPDF(3).shouldApprox == 2.0.gammaLogPDF(3.0);
-    2.0.gammaLogPDF(3, 4.0).shouldApprox == 2.0.gammaLogPDF(3.0, 4.0);
+    2.0.gammaLPDF(3).shouldApprox == 2.0.gammaLPDF(3.0);
+    2.0.gammaLPDF(3, 4.0).shouldApprox == 2.0.gammaLPDF(3.0, 4.0);
 }
 
 // test floating point version
@@ -384,12 +382,12 @@ unittest {
     import mir.test: shouldApprox;
 
     for (double x = 0; x <= 10; x = x + 0.5) {
-        x.gammaLogPDF(5.0).exp.shouldApprox == x.gammaPDF(5.0);
-        x.gammaLogPDF(5.0, 1.5).exp.shouldApprox == x.gammaPDF(5.0, 1.5);
-        x.gammaLogPDF(1.0).exp.shouldApprox == x.gammaPDF(1.0);
-        x.gammaLogPDF(1.0, 1.5).exp.shouldApprox == x.gammaPDF(1.0, 1.5);
-        x.gammaLogPDF(0.5).exp.shouldApprox == x.gammaPDF(0.5);
-        x.gammaLogPDF(0.5, 1.5).exp.shouldApprox == x.gammaPDF(0.5, 1.5);
+        x.gammaLPDF(5.0).exp.shouldApprox == x.gammaPDF(5.0);
+        x.gammaLPDF(5.0, 1.5).exp.shouldApprox == x.gammaPDF(5.0, 1.5);
+        x.gammaLPDF(1.0).exp.shouldApprox == x.gammaPDF(1.0);
+        x.gammaLPDF(1.0, 1.5).exp.shouldApprox == x.gammaPDF(1.0, 1.5);
+        x.gammaLPDF(0.5).exp.shouldApprox == x.gammaPDF(0.5);
+        x.gammaLPDF(0.5, 1.5).exp.shouldApprox == x.gammaPDF(0.5, 1.5);
     }
 }
 
@@ -401,9 +399,9 @@ unittest {
     import mir.test: shouldApprox;
 
     for (double x = 0; x <= 10; x = x + 0.5) {
-        x.gammaLogPDF(5).exp.shouldApprox == x.gammaPDF(5);
-        x.gammaLogPDF(5, 1.5).exp.shouldApprox == x.gammaPDF(5, 1.5);
-        x.gammaLogPDF(1).exp.shouldApprox == x.gammaPDF(1);
-        x.gammaLogPDF(1, 1.5).exp.shouldApprox == x.gammaPDF(1, 1.5);
+        x.gammaLPDF(5).exp.shouldApprox == x.gammaPDF(5);
+        x.gammaLPDF(5, 1.5).exp.shouldApprox == x.gammaPDF(5, 1.5);
+        x.gammaLPDF(1).exp.shouldApprox == x.gammaPDF(1);
+        x.gammaLPDF(1, 1.5).exp.shouldApprox == x.gammaPDF(1, 1.5);
     }
 }

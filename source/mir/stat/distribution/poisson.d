@@ -699,17 +699,17 @@ unittest {
 }
 
 /++
-Computes the poisson log probability mass function (LogPMF).
+Computes the poisson log probability mass function (LPMF).
 
 Params:
-    k = value to evaluate LogPMF (e.g. number of "heads")
+    k = value to evaluate LPMF (e.g. number of "heads")
     lambda = expected rate of occurence
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
 +/
 @safe pure nothrow @nogc
-T poissonLogPMF(T)(const size_t k, const T lambda)
+T poissonLPMF(T)(const size_t k, const T lambda)
     if (isFloatingPoint!T)
     in (lambda > 0, "lambda must be greater than or equal to 0")
 {
@@ -726,6 +726,6 @@ unittest {
     import mir.math.common: approxEqual, exp;
 
     for (size_t i; i <= 10; i++) {
-        assert(i.poissonLogPMF(5.0).exp.approxEqual(poissonPMF(i, 5.0)));
+        assert(i.poissonLPMF(5.0).exp.approxEqual(poissonPMF(i, 5.0)));
     }
 }
