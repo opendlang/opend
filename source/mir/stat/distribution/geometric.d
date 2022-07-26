@@ -83,7 +83,7 @@ unittest
 {
     import mir.test: shouldApprox;
 
-	geometricCDF(-1.0, 0.5).shouldApprox == 0; // UFCS chaining deduces this as size_t instead of a floating point type
+    geometricCDF(-1.0, 0.5).shouldApprox == 0; // UFCS chaining deduces this as size_t instead of a floating point type
     0.geometricCDF(0.5).shouldApprox == 0.5;
     1.geometricCDF(0.5).shouldApprox == 0.75;
     2.geometricCDF(0.5).shouldApprox == 0.875;
@@ -134,7 +134,7 @@ unittest
 {
     import mir.test: shouldApprox;
 
-	geometricCCDF(-1.0, 0.5).shouldApprox == 1.0; // UFCS chaining deduces this as size_t instead of a floating point type
+    geometricCCDF(-1.0, 0.5).shouldApprox == 1.0; // UFCS chaining deduces this as size_t instead of a floating point type
     0.geometricCCDF(0.5).shouldApprox == 0.5;
     1.geometricCCDF(0.5).shouldApprox == 0.25;
     2.geometricCCDF(0.5).shouldApprox == 0.125;
