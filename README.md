@@ -36,7 +36,7 @@ Our benchmark results:
 
 
 - QOIX and QOI generally outperforms PNG in decoding speed and encoding speed.
-- QOIX outperform QOI in compression efficiency at the cost of speed:
+- QOIX outperforms QOI in compression efficiency at the cost of speed:
   * because it's based upon qoi2avg, a better QOI variant for RGB and RGBA images
   * because it is followed by LZ4, which removes some of the QOI worst cases.
 - Unlike QOI, QOIX adds support for 8-bit greyscale and greyscale + alpha images, with a "QOI-plane" custom codec.
