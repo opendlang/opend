@@ -150,17 +150,17 @@ bool imageIsValidSize(int width, int height) pure
 /// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_NORMAL = 0; 
 
-/// Load the image in grayscale, faster than loading as RGB24 then converting to greyscale.
+/// Load the image in grayscale, faster than loading as RGB8 then converting to greyscale.
 /// Can't be used with either `LOAD_RGB` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG.
 enum int LOAD_GREYSCALE = 1;
 
-/// Load the image in RGB8/RGB16, faster than loading as RGB8 then converting to greyscale.
+/// Load the image in RGB8/RGB16, faster than loading a greyscale image and then converting to RGB8/RGB16.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_RGB = 2; 
 
-/// Load the image in RGBA8/RGBA16, faster than loading as RGBA8 then converting to greyscale.
+/// Load the image in RGBA8/RGBA16, faster than loading as RGB8 then converting to RGBA8/RGBA16.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
 enum int LOAD_RGBA = 4;
@@ -183,12 +183,11 @@ enum int ENCODE_CHALLENGER = 4;
 
 /// Layout constraints flags.
 /// All of those introduce "gap pixels" after the scanline, in order to follow the various constraints.
-alias LayoutConstraints = int;
-
+alias LayoutConstraints = ushort;
 
 enum LayoutConstraints
      LAYOUT_DEFAULT              = 0,  /// Default / do-not-care layout options.
-     LAYOUT_GAPLESS              = 0,  /// No requirements for either scanline alignment, trailing samples, or multiplicity. Pixels are gapless.
+     LAYOUT_GAPLESS              = 0,  /// No requirements for either scanline alignment, trailing samples, multiplicity, or borders. Pixels are gapless.
      LAYOUT_MULTIPLICITY_1       = 0,  /// No particular multiplicity requirements.
      LAYOUT_MULTIPLICITY_2       = 1,  /// Beginning at the start of a scanline, pixels can be accessed 2 by 2 without segfault.
      LAYOUT_MULTIPLICITY_4       = 2,  /// Beginning at the start of a scanline, pixels can be accessed 4 by 4 without segfault.
@@ -204,4 +203,8 @@ enum LayoutConstraints
      LAYOUT_SCANLINE_ALIGNED_16  = 64, /// Scanlines required to be at least aligned on 16 bytes boundaries.
      LAYOUT_SCANLINE_ALIGNED_32  = 80, /// Scanlines required to be at least aligned on 32 bytes boundaries.
      LAYOUT_SCANLINE_ALIGNED_64  = 96, /// Scanlines required to be at least aligned on 64 bytes boundaries.
-     LAYOUT_SCANLINE_ALIGNED_128 = 112;/// Scanlines required to be at least aligned on 128 bytes boundaries.
+     LAYOUT_SCANLINE_ALIGNED_128 = 112, /// Scanlines required to be at least aligned on 128 bytes boundaries.
+     LAYOUT_BORDER_0             = 0,   /// No particular border constraint.
+     LAYOUT_BORDER_1             = 128, /// The whole image has a border of 1 pixel addressable without segfault.
+     LAYOUT_BORDER_2             = 256, /// The whole image has a border of 2 pixels addressable without segfault.
+     LAYOUT_BORDER_3             = 384; /// The whole image has a border of 3 pixels addressable without segfault.
