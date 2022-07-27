@@ -144,32 +144,31 @@ bool imageIsValidSize(int width, int height) pure
     return true;
 }
 
-
-
-// Load flags
+/// Load flags (range: bits 16 to 23).
+alias LoadFlags = int;
 
 /// No loading options.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum int LOAD_NORMAL = 0; 
+enum LoadFlags LOAD_NORMAL = 0; 
 
 /// Load the image in grayscale, faster than loading as RGB8 then converting to greyscale.
 /// Can't be used with either `LOAD_RGB` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG.
-enum int LOAD_GREYSCALE = 1;
+enum LoadFlags LOAD_GREYSCALE = 0x1000;
 
 /// Load the image in RGB8/RGB16, faster than loading a greyscale image and then converting to RGB8/RGB16.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum int LOAD_RGB = 2; 
+enum LoadFlags LOAD_RGB       = 0x2000; 
 
 /// Load the image in RGBA8/RGBA16, faster than loading as RGB8 then converting to RGBA8/RGBA16.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum int LOAD_RGBA = 4;
+enum LoadFlags LOAD_RGBA      = 0x4000;
 
 /// Only decode metadata, not the pixels themselves.
 /// Supported by: none yet.
-enum int LOAD_NOPIXELS = 8;
+enum LoadFlags LOAD_NOPIXELS  = 0x8000;
 
 
 // Encode flags

@@ -288,7 +288,13 @@ public:
     //
 
     /// Load an image from a file location.
-    /// Returns: true if successfull.
+    ///
+    /// Params:
+    ///    path  A string containing the file path.
+    ///    flags Flags can contain LOAD_xxx flags and LAYOUT_xxx flags.
+    ///
+    /// Returns: `true` if successfull. The image will be in errored state if there is a problem.
+    /// See_also: `LoadFlags`, `LayoutConstraints`.
     bool loadFromFile(const(char)[] path, int flags = 0) @trusted
     {
         cleanupBitmapIfAny();
@@ -307,7 +313,14 @@ public:
     }
 
     /// Load an image from a memory location.
-    /// Returns: true if successfull.
+    ///
+    /// Params:
+    ///    bytes Arrays containing the encoded image to decode.
+    ///    flags Flags can contain LOAD_xxx flags and LAYOUT_xxx flags.
+    ///
+    /// Returns: `true` if successfull. The image will be in errored state if there is a problem.
+    ///
+    /// See_also: `LoadFlags`, `LayoutConstraints`.
     bool loadFromMemory(const(ubyte)[] bytes, int flags = 0) @trusted
     {
         cleanupBitmapIfAny();
