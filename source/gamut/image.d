@@ -157,9 +157,19 @@ public:
     /// An image can have data (usually pixels), or not.
     /// "Data" refers to pixel content, that can be in a decoded form (RGBA8), but also in more
     /// complicated forms such as planar, compressed, etc.
+    ///
+    /// Note: An image that has no data doesn't have to follow its `LayoutConstraints`.
+    ///       But an image with zero size must.
     bool hasData() pure const
     {
         return _data !is null;
+    }
+
+    /// An that has data can own it (will free it in destructor) or can borrow it.
+    /// An image that has no data, cannot own it.
+    bool isOwned() pure const
+    {
+        return _allocArea !is null;
     }
 
     /// An image can have plain pixels, which means:
@@ -195,14 +205,23 @@ public:
     //
 
     /// Clear the image and initialize a new image, with given dimensions.
-    this(int width, int height, ImageType type = ImageType.rgba8)
+    this(int width, 
+         int height, 
+         ImageType type = ImageType.rgba8,
+         LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        setCanvasSize(width, height, type);
+        setCanvasSize(width, height, type,layoutConstraints);
     }
     ///ditto
-    void setCanvasSize(int width, int height, ImageType type = ImageType.rgba8)
+    void setCanvasSize(int width, 
+                       int height, 
+                       ImageType type = ImageType.rgba8,
+                       LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        cleanupBitmapUnlessOwned();
+        // PERF: Pessimized, because we don't know if we have been borrowed from...
+        //       Not sure what to do.
+        cleanupBitmapIfAny();
+
         clearError();
 
         if (width < 0 || height < 0)
@@ -217,8 +236,7 @@ public:
             return;
         }
 
-        int pitch = computePitch(type, width);
-        if (!setStorage(type, width, height, pitch))
+        if (!setStorage(width, height, type, layoutConstraints))
         {
             error(kStrOutOfMemory);
             return;
@@ -412,7 +430,7 @@ public:
     //
 
     /// Convert the image to one channel equivalent, using a greyscale transformation (all channels weighted equally).
-    void convertToGreyScale()
+    void convertToGreyScale(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         final switch(_type) with (ImageType)
@@ -431,11 +449,11 @@ public:
             case rgba16:  t = uint16; break;
             case rgbaf32: t = f32; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image to a RGB equivalent, using duplication and/or alpha-stripping.
-    void convertToRGB()
+    void convertToRGB(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         final switch(_type) with (ImageType)
@@ -454,12 +472,12 @@ public:
             case rgba16:  t = rgb16; break;
             case rgbaf32: t = rgbf32; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image to a RGBA equivalent, using duplication.
     /// If the image had no alpha, it received a fully opaqua alpha value.
-    void convertToRGBA()
+    void convertToRGBA(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         final switch(_type) with (ImageType)
@@ -478,11 +496,11 @@ public:
             case rgba16:  t = rgba16; break;
             case rgbaf32: t = rgbaf32; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image bit-depth to 8-bit per component.
-    void convertTo8Bit()
+    void convertTo8Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         ImageType type = _type;
@@ -502,11 +520,11 @@ public:
             case rgba16:  t = rgba8; break;
             case rgbaf32: t = rgba8; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image bit-depth to 16-bit per component.
-    void convertTo16Bit()
+    void convertTo16Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         final switch(_type) with (ImageType)
@@ -525,11 +543,11 @@ public:
             case rgba16:  t = rgba16; break;
             case rgbaf32: t = rgba16; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image bit-depth to 32-bit float per component.
-    void convertToFP32()
+    void convertToFP32(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         ImageType t = ImageType.unknown;
         final switch(_type) with (ImageType)
@@ -548,13 +566,16 @@ public:
             case rgba16:  t = rgbaf32; break;
             case rgbaf32: t = rgbaf32; break;
         }
-        convertTo(t);
+        convertTo(t, layoutConstraints);
     }
 
     /// Convert the image to the following format.
     /// This can destruct channels, loose precision, etc.
+    /// You can also change the layout constraints at the same time.
+    ///
     /// Returns: true on success.
-    bool convertTo(ImageType targetType) @trusted
+    bool convertTo(ImageType targetType, 
+                   LayoutConstraints layoutConstraints = LAYOUT_DEFAULT) @trusted
     {
         assert(!errored()); // this should have been caught before.
         if (targetType == ImageType.unknown)
@@ -563,25 +584,46 @@ public:
             return false;
         }
 
-        if (_type == targetType)
-            return true; // success, same type alread
+        // Are the new layout constraints stricter?
+        // If yes, we have more reason to convert.
+        bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, _layoutConstraints);
+
+        if (_type == targetType && compatibleLayout)
+            return true; // success, same type already, and compatible constraints
 
         if (!hasData())
             return true; // success, no pixel data, so everything was "converted"
 
-        if (width() == 0 || height() == 0)
+        if ((width() == 0 || height()) == 0 && compatibleLayout)
         {
-            return true; // image dimension is zero, everything fine
+            return true; // image dimension is zero, and compatible constraints, everything fine
         }
 
         ubyte* source = _data;
         int sourcePitch = _pitch;
-        int destPitch = computePitch(targetType, width);
 
-        // Do not use realloc to avoid invalidating previous data.
+        // Do not realloc the same block to avoid invalidating previous data.
+        // We'll manage this manually.
+        assert(_data !is null);
+        assert(_allocArea !is null);
+
         // PERF: can do this, if not owned.
+
+        ubyte* dest; // first scanline
+        ubyte* newAllocArea;  // the result of realloc-ed
+        int destPitch;
         bool err;
-        ubyte* dest = allocStorage(null, targetType, width, height, destPitch, err);
+        allocatePixelStorage(null, // so that the former allocation keep existing for the copy
+                             targetType,
+                             width,
+                             height,
+                             layoutConstraints,
+                             0,
+                             dest,
+                             newAllocArea,
+                             destPitch,
+                             err);
+        
         if (err)
         {
             error(kStrOutOfMemory);
@@ -603,6 +645,9 @@ public:
             error(kStrUnsupportedTypeConversion);
             return false;
         }
+
+        // TODO: free former image, if was owned
+        // TODO: make the new image owned
 
         _data = dest; // TODO LEAK, should free existing bitmap if owned
         _type = targetType;
@@ -699,10 +744,19 @@ package:
     /// The type of the data pointed to.
     ImageType _type = ImageType.unknown;
 
+    /// The data layout constraints, in flags.
+    /// See_also: `LayoutConstraints`.
+    LayoutConstraints _layoutConstraints = LAYOUT_DEFAULT;
+
     /// Pointer to the pixel data. What is pointed to depends on `_type`.
     /// The amount of what is pointed to depends upon the dimensions.
     /// it is possible to have `_data` null but `_type` is known.
     ubyte* _data = null;
+
+    /// Pointer to the `malloc` area holding the data.
+    /// _allocArea being null signify that there is no data, or that the data is borrowed.
+    /// _allocArea not being null signify that the image is owning its data.
+    ubyte* _allocArea = null;
 
     /// Width of the image in pixels, when pixels makes sense.
     /// By default, this width is `GAMUT_INVALID_IMAGE_WIDTH`.
@@ -739,61 +793,55 @@ private:
     }
 
     void cleanupBitmapIfAny() @trusted
+    {
+        cleanupBitmapIfOwned();
+        _data = null;
+        assert(!hasData());
+    }
+
+    // If owning an allocation, free it, else keep it.
+    void cleanupBitmapIfOwned() @trusted
     {   
-        if (_data !is null)
+        if (isOwned())
         {
-            free(_data);
+            deallocatePixelStorage(_allocArea);
+            _allocArea = null;
             _data = null;
         }
     }
 
-    void cleanupBitmapUnlessOwned() @trusted
-    {
-        // TODO owned image can reuse their allocation, but not
-        //      borrowed images.
-    }
-
     /// Discard ancient data, and reallocate stuff.
     /// Returns true on success, false on OOM.
-    bool setStorage(ImageType type, int width, int  height, int pitch) @trusted
+    bool setStorage(int width, 
+                    int height,
+                    ImageType type, 
+                    LayoutConstraints constraints) @trusted
     {
-        bool err;
-        ubyte* newStorage = allocStorage(_data, type, width, height, pitch, err);
+        ubyte* dataPointer;
+        ubyte* mallocArea;
+        int pitchBytes;
+        bool err;        
 
+        allocatePixelStorage(_allocArea,
+                             type, 
+                             width,
+                             height,
+                             constraints,
+                             0,
+                             dataPointer,
+                             mallocArea,
+                             pitchBytes,
+                             err);
         if (err)
             return false;
 
-        _data = newStorage;
+        _data = dataPointer;
+        _allocArea = mallocArea;
         _type = type;
         _width = width;
         _height = height;
-        _pitch = pitch;
+        _pitch = pitchBytes;
         return true;
-    }
-
-    /// Discard ancient data, and reallocate stuff.
-    /// Returns true in *errored.
-    /// Note: that you can request zero byte, and realloc would still give a non-null pointer, 
-    /// that you would have to keep. This is a success case.
-    static ubyte* allocStorage(void* existingData, ImageType type, int width, int  height, int pitch, out bool err) @trusted
-    {       
-        int size = storageSize(type, width, height, pitch);
-        // PERF: all gamut using same heap? to reuse allocation.
-        ubyte* res = cast(ubyte*) realloc(existingData, size);
-
-        err = false;
-        if (size != 0 && res is null) // realloc is allowed to return null if zero bytes required.
-            err = true;
-
-        return res;
-    }
-
-    /// The size of the allocation needed for this storage.
-    static int storageSize(ImageType type, int width, int  height, int pitch)
-    {
-        assert(pitch >= 0); // TODO support negative pitch
-        assert( imageTypePixelSize(type) * width <= pitch);
-        return width * pitch;
     }
 
     void loadFromFileInternal(ImageFormat fif, const(char)* filename, int flags = 0) @system

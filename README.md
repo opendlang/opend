@@ -30,9 +30,9 @@ Our benchmark results:
 
 | Codec | decode mpps | encode mpps | bit-per-pixel |
 |-------|-------------|-------------|---------------|
+| PNG (stb) | 89.73   | 14.34       | 10.29693      |
 | QOI   | 204.70      | 150.42      | 10.35162      |
 | QOIX  | 177.5       | 103.35      | 8.30963       |
-
 
 
 - QOIX and QOI generally outperforms PNG in decoding speed and encoding speed.
