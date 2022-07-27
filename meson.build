@@ -32,6 +32,7 @@ sources_list = [
     'mir/stat/distribution/normal',
     'mir/stat/distribution/poisson',
     'mir/stat/distribution/uniform',
+    'mir/stat/distribution/uniformDiscrete',
     'mir/stat/distribution/gev',
 ]
 
