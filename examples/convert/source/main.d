@@ -77,7 +77,7 @@ int main(string[] args)
         writefln(" - type       = %s", image.type);
         writefln(" - pixel AR   = %s", image.pixelAspectRatio);
         writefln(" - horz DPI   = %s", image.dotsPerInchX);
-        writefln(" - very DPI   = %s", image.dotsPerInchY);
+        writefln(" - vert DPI   = %s", image.dotsPerInchY);
 
         if (bitness == 8)
             image.convertTo8Bit();
