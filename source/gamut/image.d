@@ -599,17 +599,27 @@ public:
 
         // Are the new layout constraints stricter?
         // If yes, we have more reason to convert.
+        // PERF: analyzing actual layout may lead to less reallocations if the layour is accidentally compatible
+        // for example scanline alignement. But this is small potatoes.
         bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, _layoutConstraints);
 
         if (_type == targetType && compatibleLayout)
+        {
+            _layoutConstraints = layoutConstraints;
             return true; // success, same type already, and compatible constraints
+        }
 
         if (!hasData())
+        {
+            _layoutConstraints = layoutConstraints;
             return true; // success, no pixel data, so everything was "converted"
+        }
 
         if ((width() == 0 || height()) == 0 && compatibleLayout)
         {
-            return true; // image dimension is zero, and compatible constraints, everything fine
+             // image dimension is zero, and compatible constraints, everything fine
+            _layoutConstraints = layoutConstraints;
+            return true;
         }
 
         ubyte* source = _data;
@@ -619,8 +629,6 @@ public:
         // We'll manage this manually.
         assert(_data !is null);
         assert(_allocArea !is null);
-
-        // PERF: can do this, if not owned.
 
         ubyte* dest; // first scanline
         ubyte* newAllocArea;  // the result of realloc-ed
@@ -645,6 +653,7 @@ public:
 
         // Need an intermediate buffer.
         // PERF: eventually, find a way to bypass that if supported.
+        // for example it could be inside the newly allocated buffer if any, as it's just one line
         ImageType interType = intermediateConversionType(_type, targetType);
         ubyte* interBuf = cast(ubyte*) malloc( width * imageTypePixelSize(interType));
         scope(exit) free(interBuf);
@@ -655,14 +664,17 @@ public:
                                   interType, interBuf);
         if (!ok)
         {
+            // Keep former image
+            deallocatePixelStorage(newAllocArea);
             error(kStrUnsupportedTypeConversion);
             return false;
         }
 
-        // TODO: free former image, if was owned
-        // TODO: make the new image owned
+        cleanupBitmapIfAny(); // forget about former image
 
-        _data = dest; // TODO LEAK, should free existing bitmap if owned
+        _layoutConstraints = layoutConstraints;
+        _data = dest;
+        _allocArea = newAllocArea; // now own the new one.
         _type = targetType;
         _pitch = destPitch;
         return true;

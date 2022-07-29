@@ -291,7 +291,7 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
     return true; // is compatible
 }
 
-/// Allocate pixel data. Discard ancient data, and reallocate with `realloc`.
+/// Allocate pixel data. Discard ancient data if any, and reallocate with `realloc`.
 ///
 /// Returns true in `err` in case of success. If the function is successful 
 /// then `deallocatePixelStorage` MUST be called later on.
@@ -302,12 +302,14 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
 ///     width        Image width.
 ///     height       Image height.
 ///     constraints  The layout constraints to follow for the scanlines and allocation.
-///     bonusBytes   If non-zero, the area dataPointer[0..bonusBytes] can be used for user storage.
+///     bonusBytes   If non-zero, the area mallocArea[0..bonusBytes] can be used for user storage.
+///                  Only the caller can use as temp storage, since Image won't preserve knowledge of these
+///                  bonusBytes once the allocation is done.
 ///     dataPointer  The pointer to the first scanline.
 ///     mallocArea   The pointer to the allocation beginning. Will be different from dataPointer and
 ///                  must be kept somewhere.
 ///     pitchBytes   Byte offset between two adjacent scanlines. Scanlines cannot ever overlap.
-///     err          True if successful.
+///     err          True if successful. Only err indicates success, not mallocArea.
 ///
 /// Note: even if you can request zero bytes, `realloc` can give you a non-null pointer, 
 /// that you would have to keep. This is a success case given by `err` only.
@@ -316,29 +318,82 @@ void allocatePixelStorage(ubyte* existingData,
                           int width, 
                           int height, 
                           LayoutConstraints constraints,
-                          size_t bonusBytes,
+                          int bonusBytes,
                           out ubyte* dataPointer, // first scanline
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
                           out bool err) @trusted
 {      
-    // TODO support layout constraints
-
-    int size = imageTypePixelSize(type) * width * height;
+    assert(width >= 0); // width == 0 and height == 0 must be supported!
+    assert(height >= 0);
     
-    // PERF: all gamut using same heap? to reuse allocation.
-    ubyte* res = cast(ubyte*) realloc(existingData, size);
+    int border         = layoutBorderWidth(constraints);
+    int rowAlignment   = layoutScanlineAlignment(constraints);
+    int trailingPixels = layoutTrailingPixels(constraints);
+    int xMultiplicity  = layoutMultiplicity(constraints);
 
-    err = false;
-    if (size != 0 && res is null) // realloc is allowed to return null if zero bytes required.
+    assert(border >= 0);
+    assert(rowAlignment >= 1); // Not yet implemented!
+    assert(xMultiplicity >= 1); // Not yet implemented!
+    assert(trailingPixels >= 0);
+
+    static size_t nextMultipleOf(size_t base, size_t multiple) pure
+    {
+        assert(multiple > 0);
+        size_t n = (base + multiple - 1) / multiple;
+        return multiple * n;
+    }
+
+    static int computeRightPadding(int width, int border, int xMultiplicity) pure
+    {
+        int nextMultiple = cast(int)(nextMultipleOf(width + border, xMultiplicity));
+        return nextMultiple - (width + border);
+    }    
+
+    /// Returns: next pointer aligned with alignment bytes.
+    static ubyte* nextAlignedPointer(ubyte* start, size_t alignment) pure
+    {
+        return cast(ubyte*)nextMultipleOf(cast(size_t)(start), alignment);
+    }
+
+    // Compute size of right border, in pixels.
+    // How many "padding pixels" do we need to extend the right border with to respect `xMultiplicity`?
+    int rightPadding = computeRightPadding(width, border, xMultiplicity);
+    int borderRight = border + rightPadding;
+    if (borderRight < trailingPixels)
+        borderRight = trailingPixels;
+
+    int actualWidthInPixels  = border + width  + borderRight;
+    int actualHeightInPixels = border + height + border;
+
+    // Compute byte pitch and align it on `rowAlignment`
+    int pixelSize = imageTypePixelSize(type);
+    int bytePitch = pixelSize * actualWidthInPixels;
+    bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
+
+    // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
+    size_t allocationSize = bytePitch * actualHeightInPixels;
+    allocationSize += (rowAlignment - 1) + bonusBytes;
+
+    // We don't need to preserve former data, nor to align the allocation.
+    // Note: allocationSize can legally be zero.
+    ubyte* allocation = cast(ubyte*) realloc(existingData, allocationSize);
+
+    // realloc is allowed to return null if zero bytes required.
+    if (allocationSize != 0 && allocation is null) 
     {
         err = true;
         return;
     }
 
-    dataPointer = res;
-    mallocArea = res;
-    pitchBytes = imageTypePixelSize(type) * width;
+    // Compute pointer to pixel data itself.
+    size_t offsetToFirstMeaningfulPixel = bonusBytes + bytePitch * border + pixelSize * border;       
+    ubyte* pixels = nextAlignedPointer(allocation + offsetToFirstMeaningfulPixel, rowAlignment);
+    
+    dataPointer = pixels;
+    mallocArea = allocation;
+    pitchBytes = bytePitch;
+    err = false;
 }
 
 /// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
