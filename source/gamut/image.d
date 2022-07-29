@@ -445,13 +445,13 @@ public:
 
     /// Convert the image to greyscale, using a greyscale transformation (all channels weighted equally).
     /// Alpha is preserved if existing.
-    bool convertToGreyScale(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
+    bool convertToGreyscale(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
         return convertTo( convertImageTypeToGreyscale(_type), layoutConstraints);
     }
 
     /// Convert the image to a greyscale + alpha equivalent, using duplication and/or adding an opaque alpha channel.
-    bool convertToGreyScaleAlpha(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
+    bool convertToGreyscaleAlpha(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
         return convertTo( convertImageTypeToAddAlphaChannel( convertImageTypeToGreyscale(_type) ), layoutConstraints);     
     }

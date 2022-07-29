@@ -127,7 +127,7 @@ enum LoadFlags LOAD_RGBA            = LOAD_RGB | LOAD_ALPHA;
 
 /// Only decode metadata, not the pixels themselves.
 /// Supported by: none yet.
-enum LoadFlags LOAD_NOPIXELS       = 0x8000;
+enum LoadFlags LOAD_NO_PIXELS       = 0x10000;
 
 
 
