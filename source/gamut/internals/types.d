@@ -256,7 +256,9 @@ bool validLoadFlags(LoadFlags loadFlags) pure
     return true;
 }
 
-// Load flags to components asked.
+// Load flags to components asked, intended for an image decoder. 
+// This is for STB-style loading who can convert scanline as they are decoded.
+//
 // Return: 
 //   -1 => keep input number of components
 //    0 => error
@@ -268,18 +270,31 @@ int computeRequestedImageComponents(LoadFlags loadFlags) pure nothrow @nogc @saf
     if (!validLoadFlags(loadFlags))
         return 0;
 
-    if (loadFlags & LOAD_GREYSCALE) requestedComp = 1;
-    if (loadFlags & LOAD_RGB) requestedComp = 3;
-    if (loadFlags & LOAD_ALPHA) requestedComp++;
+    if (loadFlags & LOAD_GREYSCALE)
+    {
+        if (loadFlags & LOAD_ALPHA)
+            requestedComp = 2;
+        else if (loadFlags & LOAD_NO_ALPHA)
+            requestedComp = 1;
+    }
+    else if (loadFlags & LOAD_RGB)
+    {
+        if (loadFlags & LOAD_ALPHA)
+            requestedComp = 4;
+        else if (loadFlags & LOAD_NO_ALPHA)
+            requestedComp = 3;
+    }
     return requestedComp;
 }
 unittest
 {
-    assert(computeRequestedImageComponents(LOAD_GREYSCALE) == 1);
+    assert(computeRequestedImageComponents(LOAD_GREYSCALE) == -1); // keep same, because it is alpha-preserving.
+    assert(computeRequestedImageComponents(LOAD_GREYSCALE | LOAD_NO_ALPHA) == 1);
     assert(computeRequestedImageComponents(LOAD_GREYSCALE_ALPHA) == 2);
-    assert(computeRequestedImageComponents(LOAD_GREYSCALE_ALPHA | LOAD_NO_ALPHA) == 0);
-    assert(computeRequestedImageComponents(LOAD_RGB) == 3);
-    assert(computeRequestedImageComponents(LOAD_RGB | LOAD_GREYSCALE) == 0);
+    assert(computeRequestedImageComponents(LOAD_GREYSCALE_ALPHA | LOAD_NO_ALPHA) == 0); // invalid
+    assert(computeRequestedImageComponents(LOAD_RGB) == -1);
+    assert(computeRequestedImageComponents(LOAD_RGB  | LOAD_NO_ALPHA) == 3);
+    assert(computeRequestedImageComponents(LOAD_RGB | LOAD_GREYSCALE) == 0); // invalid
     assert(computeRequestedImageComponents(LOAD_RGBA) == 4);
 }
 
@@ -288,7 +303,7 @@ unittest
 
 /// From a type and LoadFlags, get the target type using the loading flags.
 /// This is when the decoder doesn't support inside conversion and we need to use convertTo.
-ImageType convertImageType(ImageType type, LoadFlags flags)
+ImageType applyLoadFlags(ImageType type, LoadFlags flags)
 {
     // Check incompatible load flags.
     if (!validLoadFlags(flags))

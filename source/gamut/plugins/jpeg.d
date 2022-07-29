@@ -52,6 +52,9 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
+    if (requestedComp == 2) // JPEG reader doesn't convert to greyscale+alpha on the fly 
+        requestedComp = -1;
+
     int width, height, actualComp;
     float pixelAspectRatio;
     float dotsPerInchY;
@@ -76,14 +79,13 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    // TODO: put implicit layout constraint and then convert
-
     image._width = width;
     image._height = height;
     image._data = decoded.ptr;
     image._pitch = width * actualComp;
     image._pixelAspectRatio = pixelAspectRatio == -1 ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelAspectRatio;
     image._resolutionY = dotsPerInchY == -1 ? GAMUT_UNKNOWN_RESOLUTION : dotsPerInchY;
+    image._layoutConstraints = LAYOUT_GAPLESS; // JPEG decoder has decoded to dense 8-bit pixels.
 
     switch (actualComp)
     {
@@ -92,6 +94,9 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         case 4: image._type = ImageType.rgba8; break;
         default:
     }
+
+    // Convert to target type and constraints
+    image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);
 }
 
 bool detectJPEG(IOStream *io, IOHandle handle) @trusted

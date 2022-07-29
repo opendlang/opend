@@ -25,7 +25,7 @@ enum ImageFormat
 enum ImageType
 {
     unknown = -1, /// Unknown format (returned value only, never use it as input value)
-    uint8 = 0,    /// Array of ushort: unsigned 8-bit
+    uint8   = 0,  /// Array of ushort: unsigned 8-bit
     uint16,       /// Array of ushort: unsigned 16-bit
     f32,          /// Array of float: 32-bit IEEE floating point
     
