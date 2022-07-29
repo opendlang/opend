@@ -81,11 +81,12 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
 
     image._width = width;
     image._height = height;
+    image._allocArea = decoded.ptr;
     image._data = decoded.ptr;
     image._pitch = width * actualComp;
     image._pixelAspectRatio = pixelAspectRatio == -1 ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelAspectRatio;
     image._resolutionY = dotsPerInchY == -1 ? GAMUT_UNKNOWN_RESOLUTION : dotsPerInchY;
-    image._layoutConstraints = LAYOUT_GAPLESS; // JPEG decoder has decoded to dense 8-bit pixels.
+    image._layoutConstraints = LAYOUT_DEFAULT; // JPEG decoder follow no particular constraints (TODO?)
 
     switch (actualComp)
     {

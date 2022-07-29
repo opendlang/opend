@@ -154,10 +154,6 @@ alias LayoutConstraints = ushort;
 
 enum LayoutConstraints
      LAYOUT_DEFAULT              = 0,  /// Default / do-not-care layout options.
-     LAYOUT_GAPLESS              = 0,  /// No requirements for either scanline alignment, trailing samples, multiplicity, or borders. Pixels are gapless.
-                                       /// `LAYOUT_GAPLESS` is incompatible with any other flags.
-                                       /// An image _can_ be accidentally gapless without `LayoutConstraints == 0`.
-                                       /// but it isn't guaranteed.
 
      // Multiplicity: allows to access by packing them together, without stepping on the next scanline or segfault..
      LAYOUT_MULTIPLICITY_1       = 0,  /// No particular multiplicity requirements.
@@ -185,9 +181,4 @@ enum LayoutConstraints
      LAYOUT_BORDER_0             = 0,   /// No particular border constraint.
      LAYOUT_BORDER_1             = 128, /// The whole image has a border of 1 pixel addressable without segfault.
      LAYOUT_BORDER_2             = 256, /// The whole image has a border of 2 pixels addressable without segfault.
-     LAYOUT_BORDER_3             = 384, /// The whole image has a border of 3 pixels addressable without segfault.
-
-
-     LAYOUT_KEEP_EXISTING        = 512; /// Only useful in conversion functions: this keeps the original Image layout constraints.
-                                        /// The "keep existing" bit override any other bits meaning.
-                                        /// It is meaningless and unused when creating a new Image, in `loadFromFile` for example.
+     LAYOUT_BORDER_3             = 384; /// The whole image has a border of 3 pixels addressable without segfault.
