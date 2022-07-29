@@ -15,6 +15,7 @@ import gamut.io;
 import gamut.image;
 import gamut.plugin;
 import gamut.internals.errors;
+import gamut.internals.types;
 
 version(decodeQOI)
     import gamut.codecs.qoi;
@@ -104,6 +105,8 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         free(decoded);
         return;
     }
+
+    // TODO: put implicit layout constraint and then convert
 
     // TODO: support desc.colorspace information
 

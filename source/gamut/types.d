@@ -6,8 +6,6 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.types;
 
-import core.stdc.stdlib: realloc, free;
-
 nothrow @nogc:
 @safe:
 
@@ -44,52 +42,15 @@ enum ImageType
     rgbaf32,      /// 128-bit RGBA float image: 4 x 32-bit IEEE floating point
 }
 
-/// Returns: `true` if this `ImageType` is "plain", meaning that it's 1/2/3/4 channel of L/LA/RGB/RGBA data.
-bool imageTypeIsPlain(ImageType t) pure
-{
-    return true;
-}
-
-/// Returns: `true` if this `ImageType` is planar, meaning the data is best iterated by the user.
-bool imageTypeIsPlanar(ImageType t) pure
-{
-    return false; // No support yet in gamut.
-}
-
-/// Returns: `true` if this `ImageType` is compressed, meaning the data is inscrutable until decoded.
-bool imageTypeIsCompressed(ImageType t) pure
-{
-    return false; // No support yet in gamut.
-}
-
-/// Size of one pixel for given image type `type`.
-int imageTypePixelSize(ImageType type) pure
-{
-    final switch(type)
-    {
-        case ImageType.uint8:   return 1;
-        case ImageType.uint16:  return 2;
-        case ImageType.f32:     return 4;
-        case ImageType.la8:     return 2;
-        case ImageType.la16:    return 4;
-        case ImageType.laf32:   return 8;
-        case ImageType.rgb8:    return 3;
-        case ImageType.rgb16:   return 6;
-        case ImageType.rgba8:   return 4;
-        case ImageType.rgba16:  return 8;
-        case ImageType.rgbf32:  return 12;
-        case ImageType.rgbaf32: return 16;
-        case ImageType.unknown: assert(false);
-    }
-}
 
 // Limits
 
-
 /// When images have an unknown width.
+/// TODO: remove that, a Image.init could instead have no data.
 enum GAMUT_INVALID_IMAGE_WIDTH = -1;  
 
 /// When images have an unknown height.
+/// TODO: remove that, a Image.init could instead have no data.
 enum GAMUT_INVALID_IMAGE_HEIGHT = -1; 
 
 /// When images have an unknown DPI resolution;
@@ -98,6 +59,15 @@ enum GAMUT_UNKNOWN_RESOLUTION = -1;
 /// When images have an unknown physical pixel ratio.
 /// Explanation: it is possible to have a known pixel ratio, but an unknown DPI (eg: PNG).
 enum GAMUT_UNKNOWN_ASPECT_RATIO = -1;
+
+/// No Gamut `Image` can exceed this width in gamut.
+enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;  
+
+/// No Gamut `Image` can exceed this height in gamut.
+enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
+
+/// No Gamut `Image` can have a width x height product that exceed this value of 67 Mpixels.
+enum int GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT = 67108864;
 
 
 /// Converts from meters to inches.
@@ -119,56 +89,49 @@ alias convertPPMToDPI = convertInchesToMeters;
 alias convertDPIToPPM = convertMetersToInches;
 
 
-/// No Gamut `Image` can exceed this width in gamut.
-enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;  
-
-/// No Gamut `Image` can exceed this height in gamut.
-enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
-
-/// No Gamut `Image` can have a width x height product that exceed this value of 67 Mpixels.
-enum int GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT = 67108864;
-
-/// Check if these image dimensions are valid in Gamut.
-bool imageIsValidSize(int width, int height) pure
-{
-    if (width < 0 || height < 0)
-        return false;
-
-    if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
-        return false;
-
-    long pixels = cast(long)width * cast(long)height;
-    if (pixels > GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT)
-        return false;
-
-    return true;
-}
-
 /// Load flags (range: bits 16 to 23).
 alias LoadFlags = int;
 
-/// No loading options.
+/// No loading options. This will keep the original input pixel format.
 /// Supported by: JPEG, PNG, QOI, QOIX.
 enum LoadFlags LOAD_NORMAL = 0; 
 
 /// Load the image in grayscale, faster than loading as RGB8 then converting to greyscale.
-/// Can't be used with either `LOAD_RGB` or `LOAD_RGBA`.
+/// Can't be used with `LOAD_RGB` flag.
 /// Supported by: JPEG, PNG.
-enum LoadFlags LOAD_GREYSCALE = 0x1000;
+enum LoadFlags LOAD_GREYSCALE       = 0x1000;
+
+/// Load the image and adds an alpha channel (opaque if not existing).
+/// Can't be used with `LOAD_NO_ALPHA` flag.
+/// Supported by: JPEG, PNG.
+enum LoadFlags LOAD_ALPHA           = 0x2000;
+
+/// Load the image and drops an eventual alpha channel, if it exists.
+/// Can't be used with `LOAD_ALPHA` flag.
+/// Supported by: JPEG, PNG.
+enum LoadFlags LOAD_NO_ALPHA        = 0x4000;
+
+/// Load the image in grayscale + alpha.
+/// Supported by: JPEG, PNG.
+enum LoadFlags LOAD_GREYSCALE_ALPHA = LOAD_GREYSCALE | LOAD_ALPHA;
 
 /// Load the image in RGB8/RGB16, faster than loading a greyscale image and then converting to RGB8/RGB16.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum LoadFlags LOAD_RGB       = 0x2000; 
+enum LoadFlags LOAD_RGB             = 0x8000; 
 
 /// Load the image in RGBA8/RGBA16, faster than loading as RGB8 then converting to RGBA8/RGBA16.
-/// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
+/// Can't be used with `LOAD_GREYSCALE` flag.
 /// Supported by: JPEG, PNG, QOI, QOIX.
-enum LoadFlags LOAD_RGBA      = 0x4000;
+enum LoadFlags LOAD_RGBA            = LOAD_RGB | LOAD_ALPHA;
 
 /// Only decode metadata, not the pixels themselves.
 /// Supported by: none yet.
-enum LoadFlags LOAD_NOPIXELS  = 0x8000;
+enum LoadFlags LOAD_NOPIXELS       = 0x8000;
+
+
+
+
 
 
 // Encode flags
@@ -182,7 +145,7 @@ enum int ENCODE_NORMAL = 0;
 enum int ENCODE_CHALLENGER = 4;
 
 
-/// Layout constraints flags.
+/// Layout constraints flags (bits 0 to 15).
 /// All of those introduce "gap pixels" after the scanline, in order to follow the various constraints.
 ///
 /// Example: if you want to process 4x RGBA8 pixels at once, with aligned SSE, use:
@@ -222,183 +185,9 @@ enum LayoutConstraints
      LAYOUT_BORDER_0             = 0,   /// No particular border constraint.
      LAYOUT_BORDER_1             = 128, /// The whole image has a border of 1 pixel addressable without segfault.
      LAYOUT_BORDER_2             = 256, /// The whole image has a border of 2 pixels addressable without segfault.
-     LAYOUT_BORDER_3             = 384; /// The whole image has a border of 3 pixels addressable without segfault.
+     LAYOUT_BORDER_3             = 384, /// The whole image has a border of 3 pixels addressable without segfault.
 
-/// From a layout constraint, get requested pixel multiplicity.
-int layoutMultiplicity(LayoutConstraints constraints)
-{
-    return 1 << (constraints & 3);
-}
-unittest
-{
-    assert(layoutMultiplicity(LAYOUT_MULTIPLICITY_1) == 1);
-    assert(layoutMultiplicity(LAYOUT_MULTIPLICITY_8) == 8);
-}
 
-/// From a layout constraint, get requested trailing pixels.
-int layoutTrailingPixels(LayoutConstraints constraints) @trusted
-{
-    return (1 << ((constraints & 0x0C) >> 2)) - 1;
-}
-unittest
-{
-    assert(layoutTrailingPixels(LAYOUT_TRAILING_0) == 0);
-    assert(layoutTrailingPixels(LAYOUT_TRAILING_1) == 1);
-    assert(layoutTrailingPixels(LAYOUT_TRAILING_3) == 3);
-    assert(layoutTrailingPixels(LAYOUT_TRAILING_7 | LAYOUT_MULTIPLICITY_8) == 7);
-}
-
-/// From a layout constraint, get scanline alignment.
-int layoutScanlineAlignment(LayoutConstraints constraints)
-{
-    return 1 << ((constraints >> 4) & 0x0f);
-}
-unittest
-{
-    assert(layoutScanlineAlignment(LAYOUT_SCANLINE_ALIGNED_1 | LAYOUT_TRAILING_7) == 1);
-    assert(layoutScanlineAlignment(LAYOUT_SCANLINE_ALIGNED_128) == 128);
-}
-
-/// From a layout constraint, get surrounding border width.
-int layoutBorderWidth(LayoutConstraints constraints)
-{
-    return (constraints >> 7) & 3;
-}
-unittest
-{
-    assert(layoutBorderWidth(LAYOUT_BORDER_0) == 0);
-    assert(layoutBorderWidth(LAYOUT_BORDER_1) == 1);
-    assert(layoutBorderWidth(LAYOUT_BORDER_2 | LAYOUT_TRAILING_7) == 2);
-    assert(layoutBorderWidth(LAYOUT_BORDER_3) == 3);
-}
-
-/// _Assuming the same ImageType_, can an allocation made with constraint `older` 
-/// be used with constraint `newer`?
-bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older)
-{
-    if (layoutMultiplicity(newer) > layoutMultiplicity(older))
-        return false;
-
-    if (layoutTrailingPixels(newer) > layoutTrailingPixels(older))
-        return false;
-
-    if (layoutScanlineAlignment(newer) > layoutScanlineAlignment(older))
-        return false;
-
-    if (layoutBorderWidth(newer) > layoutBorderWidth(older))
-        return false;
-
-    return true; // is compatible
-}
-
-/// Allocate pixel data. Discard ancient data if any, and reallocate with `realloc`.
-///
-/// Returns true in `err` in case of success. If the function is successful 
-/// then `deallocatePixelStorage` MUST be called later on.
-///
-/// Params:
-///     existingData The existing `mallocArea` from a former call to `allocatePixelStorage`.
-///     type         Pixel data type.
-///     width        Image width.
-///     height       Image height.
-///     constraints  The layout constraints to follow for the scanlines and allocation.
-///     bonusBytes   If non-zero, the area mallocArea[0..bonusBytes] can be used for user storage.
-///                  Only the caller can use as temp storage, since Image won't preserve knowledge of these
-///                  bonusBytes once the allocation is done.
-///     dataPointer  The pointer to the first scanline.
-///     mallocArea   The pointer to the allocation beginning. Will be different from dataPointer and
-///                  must be kept somewhere.
-///     pitchBytes   Byte offset between two adjacent scanlines. Scanlines cannot ever overlap.
-///     err          True if successful. Only err indicates success, not mallocArea.
-///
-/// Note: even if you can request zero bytes, `realloc` can give you a non-null pointer, 
-/// that you would have to keep. This is a success case given by `err` only.
-void allocatePixelStorage(ubyte* existingData, 
-                          ImageType type, 
-                          int width, 
-                          int height, 
-                          LayoutConstraints constraints,
-                          int bonusBytes,
-                          out ubyte* dataPointer, // first scanline
-                          out ubyte* mallocArea,  // the result of realloc-ed
-                          out int pitchBytes,
-                          out bool err) @trusted
-{      
-    assert(width >= 0); // width == 0 and height == 0 must be supported!
-    assert(height >= 0);
-    
-    int border         = layoutBorderWidth(constraints);
-    int rowAlignment   = layoutScanlineAlignment(constraints);
-    int trailingPixels = layoutTrailingPixels(constraints);
-    int xMultiplicity  = layoutMultiplicity(constraints);
-
-    assert(border >= 0);
-    assert(rowAlignment >= 1); // Not yet implemented!
-    assert(xMultiplicity >= 1); // Not yet implemented!
-    assert(trailingPixels >= 0);
-
-    static size_t nextMultipleOf(size_t base, size_t multiple) pure
-    {
-        assert(multiple > 0);
-        size_t n = (base + multiple - 1) / multiple;
-        return multiple * n;
-    }
-
-    static int computeRightPadding(int width, int border, int xMultiplicity) pure
-    {
-        int nextMultiple = cast(int)(nextMultipleOf(width + border, xMultiplicity));
-        return nextMultiple - (width + border);
-    }    
-
-    /// Returns: next pointer aligned with alignment bytes.
-    static ubyte* nextAlignedPointer(ubyte* start, size_t alignment) pure
-    {
-        return cast(ubyte*)nextMultipleOf(cast(size_t)(start), alignment);
-    }
-
-    // Compute size of right border, in pixels.
-    // How many "padding pixels" do we need to extend the right border with to respect `xMultiplicity`?
-    int rightPadding = computeRightPadding(width, border, xMultiplicity);
-    int borderRight = border + rightPadding;
-    if (borderRight < trailingPixels)
-        borderRight = trailingPixels;
-
-    int actualWidthInPixels  = border + width  + borderRight;
-    int actualHeightInPixels = border + height + border;
-
-    // Compute byte pitch and align it on `rowAlignment`
-    int pixelSize = imageTypePixelSize(type);
-    int bytePitch = pixelSize * actualWidthInPixels;
-    bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
-
-    // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
-    size_t allocationSize = bytePitch * actualHeightInPixels;
-    allocationSize += (rowAlignment - 1) + bonusBytes;
-
-    // We don't need to preserve former data, nor to align the allocation.
-    // Note: allocationSize can legally be zero.
-    ubyte* allocation = cast(ubyte*) realloc(existingData, allocationSize);
-
-    // realloc is allowed to return null if zero bytes required.
-    if (allocationSize != 0 && allocation is null) 
-    {
-        err = true;
-        return;
-    }
-
-    // Compute pointer to pixel data itself.
-    size_t offsetToFirstMeaningfulPixel = bonusBytes + bytePitch * border + pixelSize * border;       
-    ubyte* pixels = nextAlignedPointer(allocation + offsetToFirstMeaningfulPixel, rowAlignment);
-    
-    dataPointer = pixels;
-    mallocArea = allocation;
-    pitchBytes = bytePitch;
-    err = false;
-}
-
-/// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
-/// to be through that function.
-void deallocatePixelStorage(void* mallocArea) @trusted
-{
-    free(mallocArea);
-}
+     LAYOUT_KEEP_EXISTING        = 512; /// Only useful in conversion functions: this keeps the original Image layout constraints.
+                                        /// The "keep existing" bit override any other bits meaning.
+                                        /// It is meaningless and unused when creating a new Image, in `loadFromFile` for example.

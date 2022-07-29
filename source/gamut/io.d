@@ -194,18 +194,18 @@ debug extern(C) @system private
     size_t debug_fwrite (const(void)* buffer, size_t size, size_t count, IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
-        printf("Write %lld elements of %lld bytes\n", count, size);
+        printf("Write %lld elements of %lld bytes\n", cast(long)count, cast(long)size);
         size_t r = wio.wrapped.write(buffer, size, count, wio.handle);
-        printf("  => written %lld elements\n", r);
+        printf("  => written %lld elements\n", cast(long)r);
         return r;
     }
 
     size_t debug_fread (void* buffer, size_t size, size_t count, IOHandle handle)
     {
         WrappedIO* wio = cast(WrappedIO*) handle;
-        printf("Read %lld elements of %lld bytes\n", count, size);
+        printf("Read %lld elements of %lld bytes\n", cast(long)count, cast(long)size);
         size_t r = wio.wrapped.read(buffer, size, count, wio.handle);
-        printf("  => read %lld elements\n", r);
+        printf("  => read %lld elements\n", cast(long)r);
         return r;
     }
 
@@ -371,7 +371,7 @@ extern(C) @system
         if (!success)
             return -1;
 
-        stream.offset = newOffset;
+        stream.offset = cast(size_t) newOffset;
         return 0;
     }
 

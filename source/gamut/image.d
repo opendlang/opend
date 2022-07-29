@@ -15,6 +15,7 @@ import gamut.io;
 import gamut.plugin;
 import gamut.internals.cstring;
 import gamut.internals.errors;
+import gamut.internals.types;
 
 public import gamut.types: ImageFormat;
 
@@ -442,144 +443,60 @@ public:
     // <CONVERSION>
     //
 
-    /// Convert the image to one channel equivalent, using a greyscale transformation (all channels weighted equally).
-    void convertToGreyScale(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    /// Convert the image to greyscale, using a greyscale transformation (all channels weighted equally).
+    /// Alpha is preserved if existing.
+    bool convertToGreyScale(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = uint8; break;
-            case uint16:  t = uint16; break;
-            case f32:     t = f32; break;
-            case la8:     t = uint8; break;
-            case la16:    t = uint16; break;
-            case laf32:   t = f32; break;
-            case rgb8:    t = uint8; break;
-            case rgb16:   t = uint16; break;
-            case rgbf32:  t = f32; break;
-            case rgba8:   t = uint8; break;
-            case rgba16:  t = uint16; break;
-            case rgbaf32: t = f32; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeToGreyscale(_type), layoutConstraints);
     }
 
-    /// Convert the image to a RGB equivalent, using duplication and/or alpha-stripping.
-    void convertToRGB(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    /// Convert the image to a greyscale + alpha equivalent, using duplication and/or adding an opaque alpha channel.
+    bool convertToGreyScaleAlpha(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = rgb8; break;
-            case uint16:  t = rgb16; break;
-            case f32:     t = rgbf32; break;
-            case la8:     t = rgb8; break;
-            case la16:    t = rgb16; break;
-            case laf32:   t = rgbf32; break;
-            case rgb8:    t = rgb8; break;
-            case rgb16:   t = rgb16; break;
-            case rgbf32:  t = rgbf32; break;
-            case rgba8:   t = rgb8; break;
-            case rgba16:  t = rgb16; break;
-            case rgbaf32: t = rgbf32; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeToAddAlphaChannel( convertImageTypeToGreyscale(_type) ), layoutConstraints);     
     }
 
-    /// Convert the image to a RGBA equivalent, using duplication.
-    /// If the image had no alpha, it received a fully opaqua alpha value.
-    void convertToRGBA(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    /// Convert the image to a RGB equivalent, using duplication if greyscale.
+    /// Alpha is preserved if existing.
+    bool convertToRGB(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = rgba8; break;
-            case uint16:  t = rgba16; break;
-            case f32:     t = rgbaf32; break;
-            case la8:     t = rgba8; break;
-            case la16:    t = rgba16; break;
-            case laf32:    t = rgbaf32; break;
-            case rgb8:    t = rgba8; break;
-            case rgb16:   t = rgba16; break;
-            case rgbf32:  t = rgbaf32; break;
-            case rgba8:   t = rgba8; break;
-            case rgba16:  t = rgba16; break;
-            case rgbaf32: t = rgbaf32; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeToRGB(_type), layoutConstraints);     
+    }
+
+    /// Convert the image to a RGBA equivalent, using duplication and/or adding an opaque alpha channel.
+    bool convertToRGBA(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
+    {
+        return convertTo( convertImageTypeToAddAlphaChannel( convertImageTypeToRGB(_type) ), layoutConstraints);     
+    }
+
+    /// Add an opaque alpha channel if not-existing already.
+    bool addAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
+    {
+        return convertTo( convertImageTypeToAddAlphaChannel(_type), layoutConstraints);     
+    }
+
+    /// Removes the alpha channel if not-existing already.
+    bool dropAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
+    {
+        return convertTo( convertImageTypeToDropAlphaChannel(_type), layoutConstraints);     
     }
 
     /// Convert the image bit-depth to 8-bit per component.
-    void convertTo8Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    bool convertTo8Bit(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        ImageType type = _type;
-        final switch(type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = uint8; break;
-            case uint16:  t = uint8; break;
-            case f32:     t = uint8; break;
-            case la8:     t = la8; break;
-            case la16:    t = la8; break;
-            case laf32:   t = la8; break;
-            case rgb8:    t = rgb8; break;
-            case rgb16:   t = rgb8; break;
-            case rgbf32:  t = rgb8; break;
-            case rgba8:   t = rgba8; break;
-            case rgba16:  t = rgba8; break;
-            case rgbaf32: t = rgba8; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeTo8Bit(_type), layoutConstraints);        
     }
 
     /// Convert the image bit-depth to 16-bit per component.
-    void convertTo16Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    bool convertTo16Bit(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = uint16; break;
-            case uint16:  t = uint16; break;
-            case f32:     t = uint16; break;
-            case la8:     t = la16; break;
-            case la16:    t = la16; break;
-            case laf32:   t = la16; break;
-            case rgb8:    t = rgb16; break;
-            case rgb16:   t = rgb16; break;
-            case rgbf32:  t = rgb16; break;
-            case rgba8:   t = rgba16; break;
-            case rgba16:  t = rgba16; break;
-            case rgbaf32: t = rgba16; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeTo16Bit(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 32-bit float per component.
-    void convertToFP32(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    bool convertToFP32(LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING)
     {
-        ImageType t = ImageType.unknown;
-        final switch(_type) with (ImageType)
-        {
-            case unknown: assert(false);
-            case uint8:   t = f32; break;
-            case uint16:  t = f32; break;
-            case f32:     t = f32; break;
-            case la8:     t = laf32; break;
-            case la16:    t = laf32; break;
-            case laf32:   t = laf32; break;
-            case rgb8:    t = rgbf32; break;
-            case rgb16:   t = rgbf32; break;
-            case rgbf32:  t = rgbf32; break;
-            case rgba8:   t = rgbaf32; break;
-            case rgba16:  t = rgbaf32; break;
-            case rgbaf32: t = rgbaf32; break;
-        }
-        convertTo(t, layoutConstraints);
+        return convertTo( convertImageTypeToFP32(_type), layoutConstraints);
     }
 
     /// Convert the image to the following format.
@@ -587,14 +504,18 @@ public:
     /// You can also change the layout constraints at the same time.
     ///
     /// Returns: true on success.
-    bool convertTo(ImageType targetType, 
-                   LayoutConstraints layoutConstraints = LAYOUT_DEFAULT) @trusted
+    bool convertTo(ImageType targetType, LayoutConstraints layoutConstraints = LAYOUT_KEEP_EXISTING) @trusted
     {
         assert(!errored()); // this should have been caught before.
         if (targetType == ImageType.unknown)
         {
             error(kStrUnsupportedTypeConversion);
             return false;
+        }
+
+        if (layoutConstraints & LAYOUT_KEEP_EXISTING)
+        {
+            layoutConstraints = _layoutConstraints;
         }
 
         // Are the new layout constraints stricter?
@@ -962,35 +883,6 @@ private:
     }
 }
 
-// Return: 
-//   -1 => keep input number of components
-//    0 => error
-//    1/2/3/4 => forced number of components.
-package int computeRequestedImageComponents(int loadFlags) pure nothrow @nogc @safe
-{
-    int requestedComp = -1; // keep original
-
-    int forceFlags = 0;
-    if (loadFlags & LOAD_GREYSCALE)
-    {
-        forceFlags++;
-        requestedComp = 1;
-    }
-    if (loadFlags & LOAD_RGB)
-    {
-        forceFlags++;
-        requestedComp = 3;
-    }
-    if (loadFlags & LOAD_RGBA)
-    {
-        forceFlags++;
-        requestedComp = 4;
-    }
-    if (forceFlags > 1)
-        return 0; // LOAD_GREYSCALE, LOAD_RGB and LOAD_RGBA are mutually exclusive => error
-
-    return requestedComp;
-}
 
 private:
 

@@ -16,6 +16,7 @@ import gamut.io;
 import gamut.image;
 import gamut.plugin;
 import gamut.internals.errors;
+import gamut.internals.types;
 
 version(decodeQOIX)
 {
@@ -102,6 +103,8 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
+    // TODO: put implicit layout constraint and then convert
+
     decoded = cast(ubyte*) qoix_lz4_decode(buf, len, &desc, requestedComp);
 
     if (decoded is null)
@@ -140,6 +143,9 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._pitch = desc.channels * desc.width;
     image._pixelAspectRatio = desc.pixelAspectRatio;
     image._resolutionY = desc.resolutionY;
+
+    // Convert to final requested type.
+
 }
 
 

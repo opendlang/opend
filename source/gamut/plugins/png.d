@@ -14,6 +14,7 @@ import gamut.io;
 import gamut.plugin;
 import gamut.image;
 import gamut.internals.errors;
+import gamut.internals.types;
 
 version(decodePNG) import gamut.codecs.pngload;
 version(encodePNG) import gamut.codecs.stb_image_write;
@@ -99,6 +100,8 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         free(decoded);
         return;
     }
+
+    // TODO: put implicit layout constraint and then convert
 
     image._width = width;
     image._height = height;

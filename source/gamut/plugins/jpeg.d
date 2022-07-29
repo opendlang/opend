@@ -16,6 +16,7 @@ import gamut.plugin;
 import gamut.codecs.jpegload;
 import gamut.codecs.stb_image_write;
 import gamut.internals.errors;
+import gamut.internals.types;
 
 
 ImageFormatPlugin makeJPEGPlugin()
@@ -74,6 +75,8 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         free(decoded.ptr);
         return;
     }
+
+    // TODO: put implicit layout constraint and then convert
 
     image._width = width;
     image._height = height;
