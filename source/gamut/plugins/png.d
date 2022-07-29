@@ -77,6 +77,8 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     float ppmY = -1;
     float pixelRatio = -1;
 
+    // PERF: this could be overriden to use internal 8-bit <-> 10-bit stb conversion
+
     if (is16bit)
     {
         decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp,
@@ -87,6 +89,9 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         decoded = stbi_load_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp,
                                            &ppmX, &ppmY, &pixelRatio);
     }
+
+    if (requestedComp != 0)
+        components = requestedComp;
 
     if (decoded is null)
     {
@@ -101,15 +106,15 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }
 
-    // TODO: put implicit layout constraint and then convert
-
+    image._allocArea = decoded; // works because codec.pngload and gamut both use malloc/free
     image._width = width;
     image._height = height;
-    image._data = decoded; // works because codec.pngload and gamut both use malloc/free
+    image._data = decoded; 
     image._pitch = width * components * (is16bit ? 2 : 1);
 
     image._pixelAspectRatio = (pixelRatio == -1) ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelRatio;
     image._resolutionY = (ppmY == -1) ? GAMUT_UNKNOWN_RESOLUTION : convertInchesToMeters(ppmY);
+    image._layoutConstraints = LAYOUT_DEFAULT; // STB decoder follows no particular constraints (TODO?)
 
     if (!is16bit)
     {
@@ -149,6 +154,11 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
             image._type = ImageType.rgba16;
         }
     }
+
+    ImageType targetType = applyLoadFlags(image._type, flags);
+
+    // Convert to target type and constraints
+    image.convertTo(targetType, cast(LayoutConstraints) flags);
 }
 
 bool detectPNG(IOStream *io, IOHandle handle) @trusted

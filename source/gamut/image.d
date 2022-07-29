@@ -534,7 +534,7 @@ public:
         if ((width() == 0 || height()) == 0 && compatibleLayout)
         {
             // Image dimension is zero, and compatible constraints, everything fine
-            // No need for reallocation.
+            // No need for reallocation or copy.
             _layoutConstraints = layoutConstraints;
             return true;
         }
@@ -580,8 +580,9 @@ public:
         else
         {
             // Need an intermediate buffer.
-            // PERF: eventually, find a way to bypass that if supported.
+            // PERF: eventually, find a way to bypass the malloc that if supported.
             // for example it could be inside the newly allocated buffer if any, as it's just one line
+            // PERF: smaller intermediate formats are possible.
             ImageType interType = intermediateConversionType(_type, targetType);
             ubyte* interBuf = cast(ubyte*) malloc( width * imageTypePixelSize(interType));
             scope(exit) free(interBuf);
