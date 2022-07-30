@@ -545,7 +545,16 @@ public:
         // Do not realloc the same block to avoid invalidating previous data.
         // We'll manage this manually.
         assert(_data !is null);
-        assert(_allocArea !is null);
+
+        // PERF: do some conversions in place?
+        // PERF: smaller intermediate formats are possible.
+
+        // Do we need to perform a conversion scanline by scanline, using
+        // a scratch buffer?
+        bool needConversionWithIntermediateType = targetType != _type;
+        ImageType interType = intermediateConversionType(_type, targetType);
+        int interBufSize = width * imageTypePixelSize(interType); // PERF: could align that buffer, etc
+        int bonusBytes = needConversionWithIntermediateType ? interBufSize : 0;
 
         ubyte* dest; // first scanline
         ubyte* newAllocArea;  // the result of realloc-ed
@@ -556,7 +565,7 @@ public:
                              width,
                              height,
                              layoutConstraints,
-                             0,
+                             bonusBytes,
                              dest,
                              newAllocArea,
                              destPitch,
@@ -579,13 +588,9 @@ public:
         }
         else
         {
-            // Need an intermediate buffer.
-            // PERF: eventually, find a way to bypass the malloc that if supported.
-            // for example it could be inside the newly allocated buffer if any, as it's just one line
-            // PERF: smaller intermediate formats are possible.
-            ImageType interType = intermediateConversionType(_type, targetType);
-            ubyte* interBuf = cast(ubyte*) malloc( width * imageTypePixelSize(interType));
-            scope(exit) free(interBuf);
+            // Need an intermediate buffer. We allocated one in the new image buffer.
+            // After that conversion, noone will ever talk about it, and the bonus bytes will stay unused.
+            ubyte* interBuf = newAllocArea;
 
             ok = convertScanlines(_type, source, sourcePitch, 
                                   targetType, dest, destPitch,
@@ -776,7 +781,7 @@ private:
         ubyte* dataPointer;
         ubyte* mallocArea;
         int pitchBytes;
-        bool err;        
+        bool err;
 
         allocatePixelStorage(_allocArea,
                              type, 

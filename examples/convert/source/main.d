@@ -75,16 +75,13 @@ int main(string[] args)
         writefln(" - width      = %s", image.width);
         writefln(" - height     = %s", image.height);
         writefln(" - type       = %s", image.type);
-        writefln(" - pixel AR   = %s", image.pixelAspectRatio);
-        writefln(" - horz DPI   = %s", image.dotsPerInchX);
-        writefln(" - vert DPI   = %s", image.dotsPerInchY);
 
         if (bitness == 8)
             image.convertTo8Bit();
         else if (bitness == 16)
-            image.convertTo16Bit();      
+            image.convertTo16Bit();
 
-        bool r = result.saveToFile(output);  
+        bool r = result.saveToFile(output);
         if (!r)
         {
             throw new Exception("Couldn't save file " ~ output);
