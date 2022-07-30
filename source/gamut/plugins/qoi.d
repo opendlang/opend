@@ -131,7 +131,7 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._pitch = desc.channels * desc.width;
     image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
     image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
-    image._layoutConstraints = 0; // no particular constraint followd in QOI decoder.
+    image._layoutConstraints = 0; // no particular constraint followed in QOI decoder.
 
     // Convert to target type and constraints
     image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);

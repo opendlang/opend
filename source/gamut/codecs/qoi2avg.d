@@ -571,7 +571,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
     if (
         data == null || desc == null ||
-        (channels < 0 && channels > 4) ||
+        (channels != 0 && channels !=  3 && channels !=  4) ||
         size < QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof)
     ) {
         return null;

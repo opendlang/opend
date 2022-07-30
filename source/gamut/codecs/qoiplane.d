@@ -441,6 +441,8 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     for (int posy = 0; posy < desc.height; ++posy)
     {
         ubyte* line = pixels + desc.pitchBytes * posy;
+
+        // Note: don't read alpha in line above, since it may not exist if decoding 2 channels to 1
         const(ubyte)* lineAbove = (posy > 0) ? (pixels + desc.pitchBytes * (posy - 1)) : null;
 
         for (int posx = 0; posx < desc.width; ++posx)

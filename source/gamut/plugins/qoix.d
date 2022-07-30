@@ -103,9 +103,9 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    // TODO: put implicit layout constraint and then convert
-
     decoded = cast(ubyte*) qoix_lz4_decode(buf, len, &desc, requestedComp);
+
+    int decodedComp = desc.channels; // get decoded number of channels (this is unlike the original QOI API).
 
     if (decoded is null)
     {
@@ -126,15 +126,17 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._data = decoded;
     image._width = desc.width;
     image._height = desc.height;
-    image._layoutConstraints = 0; // no particular constraint followd in QOI decoder.
 
-    if (desc.channels == 1)
+    // PERF: allocate a QOIX decoding buffer with proper layout by passing layoutConstraints to qoix_lz4_decode
+    image._layoutConstraints = 0; // No particular constraint followd in QOIX decoder.
+
+    if (decodedComp == 1)
         image._type = ImageType.uint8;
-    else if (desc.channels == 2)
+    else if (decodedComp == 2)
         image._type = ImageType.la8;
-    else if (desc.channels == 3)
+    else if (decodedComp == 3)
         image._type = ImageType.rgb8;
-    else if (desc.channels == 4)
+    else if (decodedComp == 4)
         image._type = ImageType.rgba8;
     else
     {
@@ -256,11 +258,11 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 ///   QOIX header (15 bytes)
 ///   Original data size (4 bytes)
 ///   LZ4 encoded opcodes
+/// Warning: unlike qoi_decode, qoi_desc.channels is the decoded channel count, since you may not
+///          obtain the one number of channels you asked for.
 version(decodeQOIX)
 ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) @trusted
 {
-    assert(channels == 0); // only auto-detect
-
     if (size < QOIX_HEADER_SIZE + 4)
         return null;
 
@@ -292,11 +294,23 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     ubyte* image;
     if (streamChannels == 1 || streamChannels == 2)
     {
+        // Using qoiplane.d codec
+        // Force channel auto-detect if 3 or 4 channels are requested, which this codec can't do.
+        if (channels != 1 && channels != 2)
+            channels = 0;
         image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+        if (channels != 0)
+            desc.channels = cast(ubyte)channels;
     }
     else if (streamChannels == 3 || streamChannels == 4)
-    {        
+    {
+        // Using qoi2avg.d codec
+        // Force channel auto-detect if 1 or 2 channels are requested, which this codec can't do.
+        if (channels != 3 && channels != 4)
+            channels = 0;
         image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+        if (channels != 0)
+            desc.channels = cast(ubyte)channels;
     }
 
     scope(exit) free(decQOIX);
