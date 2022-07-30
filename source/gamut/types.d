@@ -92,41 +92,43 @@ alias convertDPIToPPM = convertMetersToInches;
 /// Load flags (range: bits 16 to 23).
 alias LoadFlags = int;
 
-/// No loading options. This will keep the original input pixel format.
-/// Supported by: JPEG, PNG, QOI, QOIX.
-enum LoadFlags LOAD_NORMAL = 0; 
+/// No loading options. This will keep the original input pixel format, so as to make the least
+/// conversions possible.
+enum LoadFlags LOAD_NORMAL          = 0; 
 
-/// Load the image in grayscale, faster than loading as RGB8 then converting to greyscale.
+/// Load the image in greyscale, can be faster than loading as RGB8 then converting to greyscale.
+/// This will preserve an alpha channel, if existing.
+/// The resulting image will have 1 or 2 channels.
 /// Can't be used with `LOAD_RGB` flag.
-/// Supported by: JPEG, PNG.
 enum LoadFlags LOAD_GREYSCALE       = 0x1000;
 
 /// Load the image and adds an alpha channel (opaque if not existing).
+/// This will preserve the color channels.
+/// The resulting image will have 2 or 4 channels.
 /// Can't be used with `LOAD_NO_ALPHA` flag.
-/// Supported by: JPEG, PNG.
 enum LoadFlags LOAD_ALPHA           = 0x2000;
 
 /// Load the image and drops an eventual alpha channel, if it exists.
+/// The resulting image will have 1 or 3 channels.
 /// Can't be used with `LOAD_ALPHA` flag.
-/// Supported by: JPEG, PNG.
 enum LoadFlags LOAD_NO_ALPHA        = 0x4000;
 
-/// Load the image in grayscale + alpha.
-/// Supported by: JPEG, PNG.
+/// Load the image in greyscale + alpha.
+/// The resulting image will 2 channels.
 enum LoadFlags LOAD_GREYSCALE_ALPHA = LOAD_GREYSCALE | LOAD_ALPHA;
 
-/// Load the image in RGB8/RGB16, faster than loading a greyscale image and then converting to RGB8/RGB16.
+/// Load the image in RGB, can be faster than loading a greyscale image and then converting it RGB.
+/// The resulting image will have 3 or 4 channels.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
-/// Supported by: JPEG, PNG, QOI, QOIX.
 enum LoadFlags LOAD_RGB             = 0x8000; 
 
-/// Load the image in RGBA8/RGBA16, faster than loading as RGB8 then converting to RGBA8/RGBA16.
+/// Load the image in RGBA, can be faster than loading as RGB/greyscale and then converting to RGBA.
+/// The resulting image will 4 channels.
 /// Can't be used with `LOAD_GREYSCALE` flag.
-/// Supported by: JPEG, PNG, QOI, QOIX.
 enum LoadFlags LOAD_RGBA            = LOAD_RGB | LOAD_ALPHA;
 
 /// Only decode metadata, not the pixels themselves.
-/// Supported by: none yet.
+/// NOT SUPPORTED YET!
 enum LoadFlags LOAD_NO_PIXELS       = 0x10000;
 
 

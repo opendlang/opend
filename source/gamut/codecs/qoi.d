@@ -463,7 +463,7 @@ void *qoi_decode(const void *data, int size, qoi_desc *desc, int channels)
     header_magic = qoi_read_32(bytes, &p);
     desc.width = qoi_read_32(bytes, &p);
     desc.height = qoi_read_32(bytes, &p);
-    desc.channels = bytes[p++];
+    desc.channels = bytes[p++]; // Return original number of channels.
     desc.colorspace = bytes[p++];
 
     if (

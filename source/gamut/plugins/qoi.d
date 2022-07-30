@@ -79,10 +79,10 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         image.error(kStrInvalidFlags);
         return;
     }
-    if (requestedComp == -1)
-        requestedComp = 0; // auto
 
-    // PERF: use requestComp to avoid some conversions
+    // QOI decoder can't decode to greyscale or greyscale + alpha, but it can decode to RGB/RGBA
+    if (requestedComp == -1 || requestedComp == 1 || requestedComp == 2)
+        requestedComp = 0; // auto
 
     ubyte* decoded;
     qoi_desc desc;
@@ -95,6 +95,7 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     }
         
     decoded = cast(ubyte*) qoi_decode(buf, len, &desc, requestedComp);
+    assert(decoded);
     if (decoded is null)
     {
         image.error(kStrImageDecodingFailed);
@@ -115,9 +116,11 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._width = desc.width;
     image._height = desc.height;
 
-    if (desc.channels == 3)
+    int decodedComp = (requestedComp == 0) ? desc.channels : requestedComp;
+
+    if (decodedComp == 3)
         image._type = ImageType.rgb8;
-    else if (desc.channels == 4)
+    else if (decodedComp == 4)
         image._type = ImageType.rgba8;
     else
     {

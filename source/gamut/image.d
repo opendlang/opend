@@ -546,14 +546,14 @@ public:
         // We'll manage this manually.
         assert(_data !is null);
 
-        // PERF: do some conversions in place?
+        // PERF: do some conversions in place? if target type is smaller then input, always possible
         // PERF: smaller intermediate formats are possible.
 
         // Do we need to perform a conversion scanline by scanline, using
         // a scratch buffer?
         bool needConversionWithIntermediateType = targetType != _type;
         ImageType interType = intermediateConversionType(_type, targetType);
-        int interBufSize = width * imageTypePixelSize(interType); // PERF: could align that buffer, etc
+        int interBufSize = width * imageTypePixelSize(interType); // PERF: could align that buffer
         int bonusBytes = needConversionWithIntermediateType ? interBufSize : 0;
 
         ubyte* dest; // first scanline
