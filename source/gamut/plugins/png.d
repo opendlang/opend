@@ -79,7 +79,11 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
 
     // PERF: this could be overriden to use internal 8-bit <-> 10-bit stb conversion
 
-    if (is16bit)
+    bool decodeTo16bit = is16bit;
+    if (flags & LOAD_8BIT) decodeTo16bit = false;
+    if (flags & LOAD_16BIT) decodeTo16bit = true;
+
+    if (decodeTo16bit)
     {
         decoded = cast(ubyte*) stbi_load_16_from_callbacks(&stb_callback, &ioh, &width, &height, &components, requestedComp,
                                                            &ppmX, &ppmY, &pixelRatio);
@@ -110,13 +114,13 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._width = width;
     image._height = height;
     image._data = decoded; 
-    image._pitch = width * components * (is16bit ? 2 : 1);
+    image._pitch = width * components * (decodeTo16bit ? 2 : 1);
 
     image._pixelAspectRatio = (pixelRatio == -1) ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelRatio;
     image._resolutionY = (ppmY == -1) ? GAMUT_UNKNOWN_RESOLUTION : convertInchesToMeters(ppmY);
     image._layoutConstraints = LAYOUT_DEFAULT; // STB decoder follows no particular constraints (TODO?)
 
-    if (!is16bit)
+    if (!decodeTo16bit)
     {
         if (components == 1)
         {

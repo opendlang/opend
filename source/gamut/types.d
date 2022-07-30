@@ -100,18 +100,18 @@ enum LoadFlags LOAD_NORMAL          = 0;
 /// This will preserve an alpha channel, if existing.
 /// The resulting image will have 1 or 2 channels.
 /// Can't be used with `LOAD_RGB` flag.
-enum LoadFlags LOAD_GREYSCALE       = 0x1000;
+enum LoadFlags LOAD_GREYSCALE       = 0x10000;
 
 /// Load the image and adds an alpha channel (opaque if not existing).
 /// This will preserve the color channels.
 /// The resulting image will have 2 or 4 channels.
 /// Can't be used with `LOAD_NO_ALPHA` flag.
-enum LoadFlags LOAD_ALPHA           = 0x2000;
+enum LoadFlags LOAD_ALPHA           = 0x20000;
 
 /// Load the image and drops an eventual alpha channel, if it exists.
 /// The resulting image will have 1 or 3 channels.
 /// Can't be used with `LOAD_ALPHA` flag.
-enum LoadFlags LOAD_NO_ALPHA        = 0x4000;
+enum LoadFlags LOAD_NO_ALPHA        = 0x40000;
 
 /// Load the image in greyscale + alpha.
 /// The resulting image will 2 channels.
@@ -120,16 +120,29 @@ enum LoadFlags LOAD_GREYSCALE_ALPHA = LOAD_GREYSCALE | LOAD_ALPHA;
 /// Load the image in RGB, can be faster than loading a greyscale image and then converting it RGB.
 /// The resulting image will have 3 or 4 channels.
 /// Can't be used with either `LOAD_GREYSCALE` or `LOAD_RGBA`.
-enum LoadFlags LOAD_RGB             = 0x8000; 
+enum LoadFlags LOAD_RGB             = 0x80000; 
 
 /// Load the image in RGBA, can be faster than loading as RGB/greyscale and then converting to RGBA.
 /// The resulting image will 4 channels.
 /// Can't be used with `LOAD_GREYSCALE` flag.
 enum LoadFlags LOAD_RGBA            = LOAD_RGB | LOAD_ALPHA;
 
+/// Load the image directly in 8-bit, can be faster than loading as 16-bit PNG and then converting to 8-bit.
+/// Can't be used with `LOAD_10BIT` or `LOAD_FP32` flag.
+enum LoadFlags LOAD_8BIT            = 0x100000;
+
+/// Load the image directly in 16-bit, can be faster than loading as 8-bit PNG and then converting to 16-bit.
+/// Can't be used with `LOAD_8BIT` or `LOAD_FP32` flag.
+enum LoadFlags LOAD_16BIT           = 0x200000;
+
+/// Load the image directly in 32-bit floating point.
+/// Probably the same speed as just calling `convertToFP32` after load though.
+/// Can't be used with `LOAD_8BIT` or `LOAD_10BIT` flag.
+enum LoadFlags LOAD_FP32           = 0x400000;
+
 /// Only decode metadata, not the pixels themselves.
 /// NOT SUPPORTED YET!
-enum LoadFlags LOAD_NO_PIXELS       = 0x10000;
+enum LoadFlags LOAD_NO_PIXELS       = 0x800000;
 
 
 

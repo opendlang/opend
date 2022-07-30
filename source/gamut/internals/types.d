@@ -253,8 +253,18 @@ bool validLoadFlags(LoadFlags loadFlags) pure
 {
     if ((loadFlags & LOAD_GREYSCALE) && (loadFlags & LOAD_RGB)) return false;
     if ((loadFlags & LOAD_ALPHA) && (loadFlags & LOAD_NO_ALPHA)) return false;
+
+    int bitnessFlags = 0;
+    if (loadFlags & LOAD_8BIT) ++bitnessFlags;
+    if (loadFlags & LOAD_16BIT) ++bitnessFlags;
+    if (loadFlags & LOAD_FP32) ++bitnessFlags;
+    if (bitnessFlags > 1)
+        return false;
+
     return true;
 }
+
+
 
 // Load flags to components asked, intended for an image decoder. 
 // This is for STB-style loading who can convert scanline as they are decoded.
