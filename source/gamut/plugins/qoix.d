@@ -122,9 +122,11 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
 
     // TODO: support desc.colorspace information
 
+    image._allocArea = decoded;
     image._data = decoded;
     image._width = desc.width;
     image._height = desc.height;
+    image._layoutConstraints = 0; // no particular constraint followd in QOI decoder.
 
     if (desc.channels == 1)
         image._type = ImageType.uint8;
@@ -144,8 +146,8 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._pixelAspectRatio = desc.pixelAspectRatio;
     image._resolutionY = desc.resolutionY;
 
-    // Convert to final requested type.
-
+    // Convert to target type and constraints.
+    image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);
 }
 
 

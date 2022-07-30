@@ -82,6 +82,8 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     if (requestedComp == -1)
         requestedComp = 0; // auto
 
+    // PERF: use requestComp to avoid some conversions
+
     ubyte* decoded;
     qoi_desc desc;
 
@@ -106,10 +108,9 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }
 
-    // TODO: put implicit layout constraint and then convert
-
     // TODO: support desc.colorspace information
 
+    image._allocArea = decoded;
     image._data = decoded;
     image._width = desc.width;
     image._height = desc.height;
@@ -127,6 +128,10 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._pitch = desc.channels * desc.width;
     image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
     image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+    image._layoutConstraints = 0; // no particular constraint followd in QOI decoder.
+
+    // Convert to target type and constraints
+    image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);
 }
 
 
