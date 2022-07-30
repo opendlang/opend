@@ -443,6 +443,12 @@ public:
     // <CONVERSION>
     //
 
+    /// Keep the same pixels and type, but change how they are arranged in memory to fit some constraints.
+    bool changeLayout(LayoutConstraints layoutConstraints)
+    {
+        return convertTo(_type, layoutConstraints);
+    }
+
     /// Convert the image to greyscale, using a greyscale transformation (all channels weighted equally).
     /// Alpha is preserved if existing.
     bool convertToGreyscale(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
@@ -672,6 +678,66 @@ public:
     //
     // </CONVERSION>
     //
+
+
+    //
+    // <LAYOUT>
+    //
+
+    /// On how many bytes each scanline is aligned.
+    /// Useful to know for 
+    /// The actual alignment could be higher than what the layout constraints strictly tells.
+    int scanlineAlignment()
+    {
+        return layoutScanlineAlignment(_layoutConstraints);
+    }
+
+    /// Get the number of border pixels around the image.
+    /// This is an area that can be safely accessed, using -pitchInBytes() and pointer offsets.
+    /// The actual border width could well be higher, but there is no way of safely knowing that.
+    /// See_also: `LayoutConstraints`.
+    int borderWidth()
+    {
+        return layoutBorderWidth(_layoutConstraints);
+    }
+
+    /// Get the multiplicity of pixels in a single scanline.
+    /// The actual mulitplicity could well be higher.
+    /// See_also: `LayoutConstraints`.
+    int pixelMultiplicity()
+    {
+        return layoutMultiplicity(_layoutConstraints);
+    }
+
+    /// Get the guaranteed number of scanline trailing pixels, from the layout constraints.
+    /// Each scanline is followed by at least that much out-of-image pixels, that can be safely
+    /// addressed.
+    /// The actual number of trailing pixels can well be larger than what the layout strictly tells,
+    /// but we'll never know.
+    /// See_also: `LayoutConstraints`.
+    int trailingPixels()
+    {
+        return layoutTrailingPixels(_layoutConstraints);
+    }
+
+    /// Returns: `true` if rows of pixels are immediately consecutive in memory.
+    ///          Meaning that there is no border or gap pixels in the data.
+    ///
+    /// Important: As of today, you CANNOT guarantee any image will be gapless. 
+    ///            You have to provide an alternative path using `scanline()` if it isn't.
+    ///            `LAYOUT_DEFAULT` doesn't ensure leading to a gapless image, because
+    ///            `LAYOUT_DEFAULT` is lack of constraints and not a constraint.
+    bool isGapless() pure
+    {
+        return _width * imageTypePixelSize(_type) == _pitch;
+    }
+
+    //
+    // </LAYOUT>
+    //
+
+
+
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
 
