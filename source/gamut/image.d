@@ -211,13 +211,13 @@ public:
          ImageType type = ImageType.rgba8,
          LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        setCanvasSize(width, height, type,layoutConstraints);
+        setSize(width, height, type, layoutConstraints);
     }
     ///ditto
-    void setCanvasSize(int width, 
-                       int height, 
-                       ImageType type = ImageType.rgba8,
-                       LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    void setSize(int width, 
+                 int height, 
+                 ImageType type = ImageType.rgba8,
+                 LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         // PERF: Pessimized, because we don't know if we have been borrowed from...
         //       Not sure what to do.
@@ -248,7 +248,7 @@ public:
     Image clone() const
     {
         Image r;
-        r.setCanvasSize(_width, _height, _type);
+        r.setSize(_width, _height, _type, _layoutConstraints);
         if (r.errored)
             return r;
 
