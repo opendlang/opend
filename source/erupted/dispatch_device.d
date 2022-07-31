@@ -496,6 +496,10 @@ struct DispatchDevice {
         vkGetShaderModuleIdentifierEXT                    = cast( PFN_vkGetShaderModuleIdentifierEXT                    ) vkGetDeviceProcAddr( device, "vkGetShaderModuleIdentifierEXT" );
         vkGetShaderModuleCreateInfoIdentifierEXT          = cast( PFN_vkGetShaderModuleCreateInfoIdentifierEXT          ) vkGetDeviceProcAddr( device, "vkGetShaderModuleCreateInfoIdentifierEXT" );
 
+        // VK_QCOM_tile_properties
+        vkGetFramebufferTilePropertiesQCOM                = cast( PFN_vkGetFramebufferTilePropertiesQCOM                ) vkGetDeviceProcAddr( device, "vkGetFramebufferTilePropertiesQCOM" );
+        vkGetDynamicRenderingTilePropertiesQCOM           = cast( PFN_vkGetDynamicRenderingTilePropertiesQCOM           ) vkGetDeviceProcAddr( device, "vkGetDynamicRenderingTilePropertiesQCOM" );
+
         // VK_KHR_acceleration_structure
         vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
         vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
@@ -965,6 +969,10 @@ struct DispatchDevice {
     // VK_EXT_shader_module_identifier
     void      GetShaderModuleIdentifierEXT( VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier ) { vkGetShaderModuleIdentifierEXT( vkDevice, shaderModule, pIdentifier ); }
     void      GetShaderModuleCreateInfoIdentifierEXT( const( VkShaderModuleCreateInfo )* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier ) { vkGetShaderModuleCreateInfoIdentifierEXT( vkDevice, pCreateInfo, pIdentifier ); }
+
+    // VK_QCOM_tile_properties
+    VkResult  GetFramebufferTilePropertiesQCOM( VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties ) { return vkGetFramebufferTilePropertiesQCOM( vkDevice, framebuffer, pPropertiesCount, pProperties ); }
+    VkResult  GetDynamicRenderingTilePropertiesQCOM( const( VkRenderingInfo )* pRenderingInfo, VkTilePropertiesQCOM* pProperties ) { return vkGetDynamicRenderingTilePropertiesQCOM( vkDevice, pRenderingInfo, pProperties ); }
 
     // VK_KHR_acceleration_structure
     VkResult  CreateAccelerationStructureKHR( const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, VkAccelerationStructureKHR* pAccelerationStructure ) { return vkCreateAccelerationStructureKHR( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
@@ -1542,6 +1550,10 @@ struct DispatchDevice {
     // VK_EXT_shader_module_identifier
     PFN_vkGetShaderModuleIdentifierEXT                    vkGetShaderModuleIdentifierEXT;
     PFN_vkGetShaderModuleCreateInfoIdentifierEXT          vkGetShaderModuleCreateInfoIdentifierEXT;
+
+    // VK_QCOM_tile_properties
+    PFN_vkGetFramebufferTilePropertiesQCOM                vkGetFramebufferTilePropertiesQCOM;
+    PFN_vkGetDynamicRenderingTilePropertiesQCOM           vkGetDynamicRenderingTilePropertiesQCOM;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                  vkCreateAccelerationStructureKHR;

@@ -544,6 +544,10 @@ extern( System ) {
     alias PFN_vkGetShaderModuleIdentifierEXT                                    = void      function( VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier );
     alias PFN_vkGetShaderModuleCreateInfoIdentifierEXT                          = void      function( VkDevice device, const( VkShaderModuleCreateInfo )* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier );
 
+    // VK_QCOM_tile_properties
+    alias PFN_vkGetFramebufferTilePropertiesQCOM                                = VkResult  function( VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties );
+    alias PFN_vkGetDynamicRenderingTilePropertiesQCOM                           = VkResult  function( VkDevice device, const( VkRenderingInfo )* pRenderingInfo, VkTilePropertiesQCOM* pProperties );
+
     // VK_KHR_acceleration_structure
     alias PFN_vkCreateAccelerationStructureKHR                                  = VkResult  function( VkDevice device, const( VkAccelerationStructureCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure );
     alias PFN_vkDestroyAccelerationStructureKHR                                 = void      function( VkDevice device, VkAccelerationStructureKHR accelerationStructure, const( VkAllocationCallbacks )* pAllocator );
@@ -1103,6 +1107,10 @@ __gshared {
     // VK_EXT_shader_module_identifier
     PFN_vkGetShaderModuleIdentifierEXT                                    vkGetShaderModuleIdentifierEXT;
     PFN_vkGetShaderModuleCreateInfoIdentifierEXT                          vkGetShaderModuleCreateInfoIdentifierEXT;
+
+    // VK_QCOM_tile_properties
+    PFN_vkGetFramebufferTilePropertiesQCOM                                vkGetFramebufferTilePropertiesQCOM;
+    PFN_vkGetDynamicRenderingTilePropertiesQCOM                           vkGetDynamicRenderingTilePropertiesQCOM;
 
     // VK_KHR_acceleration_structure
     PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1837,6 +1845,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetShaderModuleIdentifierEXT                    = cast( PFN_vkGetShaderModuleIdentifierEXT                    ) vkGetInstanceProcAddr( instance, "vkGetShaderModuleIdentifierEXT" );
     vkGetShaderModuleCreateInfoIdentifierEXT          = cast( PFN_vkGetShaderModuleCreateInfoIdentifierEXT          ) vkGetInstanceProcAddr( instance, "vkGetShaderModuleCreateInfoIdentifierEXT" );
 
+    // VK_QCOM_tile_properties
+    vkGetFramebufferTilePropertiesQCOM                = cast( PFN_vkGetFramebufferTilePropertiesQCOM                ) vkGetInstanceProcAddr( instance, "vkGetFramebufferTilePropertiesQCOM" );
+    vkGetDynamicRenderingTilePropertiesQCOM           = cast( PFN_vkGetDynamicRenderingTilePropertiesQCOM           ) vkGetInstanceProcAddr( instance, "vkGetDynamicRenderingTilePropertiesQCOM" );
+
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureKHR" );
     vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureKHR" );
@@ -2308,6 +2320,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_EXT_shader_module_identifier
     vkGetShaderModuleIdentifierEXT                    = cast( PFN_vkGetShaderModuleIdentifierEXT                    ) vkGetDeviceProcAddr( device, "vkGetShaderModuleIdentifierEXT" );
     vkGetShaderModuleCreateInfoIdentifierEXT          = cast( PFN_vkGetShaderModuleCreateInfoIdentifierEXT          ) vkGetDeviceProcAddr( device, "vkGetShaderModuleCreateInfoIdentifierEXT" );
+
+    // VK_QCOM_tile_properties
+    vkGetFramebufferTilePropertiesQCOM                = cast( PFN_vkGetFramebufferTilePropertiesQCOM                ) vkGetDeviceProcAddr( device, "vkGetFramebufferTilePropertiesQCOM" );
+    vkGetDynamicRenderingTilePropertiesQCOM           = cast( PFN_vkGetDynamicRenderingTilePropertiesQCOM           ) vkGetDeviceProcAddr( device, "vkGetDynamicRenderingTilePropertiesQCOM" );
 
     // VK_KHR_acceleration_structure
     vkCreateAccelerationStructureKHR                  = cast( PFN_vkCreateAccelerationStructureKHR                  ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureKHR" );
