@@ -135,6 +135,7 @@ Our benchmark results:
 - Load an `Image` from memory:
   ```d
   auto pngBytes = cast(const(ubyte)[]) import("logo.png"); 
+  Image image;
   image.loadFromMemory(pngBytes);
   ```
   > **Key concept:** You can force the loaded image to be a certain type using `LoadFlags`.
@@ -156,8 +157,8 @@ Our benchmark results:
 
   Example:
   ```d
-  // This will force an ImageType.rgba8 result
-  image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);
+  Image image;  
+  image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);  // force ImageType.rgba8 
   ```
   Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT`.
     
@@ -183,22 +184,26 @@ Our benchmark results:
   }
   ```
 
-  This can be used to avoid inferring the output format from the filename. (TODO)
+  This can be used to avoid inferring the output format from the filename:
+  ```d
+  if (!image.saveToFile(ImageFormat.PNG, "output.png"))
+      throw new Exception("Writing output.png failed");
+  ```
 
-- Save an `Image` to memory:
+### **Save an `Image` to memory:**
 
   ```d
   ubyte[] qoixEncoded = image.saveToMemory(ImageFormat.QOIX);
   scope(exit) free(qoix_encoded.ptr);
   ```
 
-  The returned slices must be freed with `core.stdc.stdlib.free`.
+  The returned slice must be freed up with `core.stdc.stdlib.free`.
 
 
 
-## Accessing `Image` pixels
+## 4. Accessing `Image` pixels
 
-- Get the row pitch, in bytes:
+### **4.1 Get the row pitch, in bytes:**
   ```d
   int pitch = image.pitchInBytes();
   ```
@@ -206,14 +211,14 @@ Our benchmark results:
   > **Key concept:** The image `pitch` is the distance between the start of two consecutive scanlines, in bytes.
   **This pitch can be negative.**
 
-- Access a row of pixels:
+### **4.2 Access a row of pixels:**
   ```d
   ubyte* scan = image.scanline(y);
   ```
   > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `ImageType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
 
 
-- Iterate on pixels:
+### **4.3 Iterate on pixels:**
   ```d
   assert(image.type == ImageType.rgba16);
   assert(image.hasData());
