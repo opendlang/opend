@@ -59,7 +59,7 @@ Our benchmark results:
 > **Key concept:**
 > The `Image` struct is where most of the public API resides.
 
-- Getting the dimensions of an image:
+- Get the dimensions of an image:
   ```d
   Image image = Image(800, 600);
   int w = image.width();
@@ -67,7 +67,7 @@ Our benchmark results:
   assert(w == 800 && h == 600);
   ```
 
-- Getting the pixel format of an image:
+- Get the pixel format of an image:
   ```d
   Image image = Image(800, 600);
   ImageType type = image.type();
@@ -103,11 +103,11 @@ Our benchmark results:
   - 3 components is implicitely Red + Green + Blue
   - 4 components is implicitely Red + Green + Blue + Alpha
 
-  > Each of these components can be represented in 8-bit, 16-bit, or 32-bit floating-point (0.0f to 1.0f range).
+  _**Bit-depth:** Each of these components can be represented in 8-bit, 16-bit, or 32-bit floating-point (0.0f to 1.0f range)._
 
 
 
-- Creating an uninitialized image:
+- Create an uninitialized image:
   ```d
   Image image;
   image.setSize(640, 480, ImageType.rgba8);
@@ -131,36 +131,74 @@ Our benchmark results:
   > - `bool errored()` return `true` if the `Image` is in an error state. In an error state, the image can't be used anymore until recreated (for example, loading another file).
   > - `const(char)[] errorMessage()` is then available, and is guaranteed to be zero-terminated.
 
+
 - Load an `Image` from memory:
   ```d
   auto pngBytes = cast(const(ubyte)[]) import("logo.png"); 
   image.loadFromMemory(pngBytes);
   ```
+  > **Key concept:** You can force the loaded image to be a certain type using `LoadFlags`.
 
-  You can have 
+  Here are the possible `LoadFlags`:
+  ```d
+  LOAD_NORMAL      // Default: preserve type from original.
+  
+  LOAD_ALPHA       // Force one alpha channel.
+  LOAD_NO_ALPHA    // Force zero alpha channel.
+  
+  LOAD_GREYSCALE   // Force greyscale.
+  LOAD_RGB         // Force RGB values.
+  
+  LOAD_8BIT        // Force 8-bit `ubyte` per component.
+  LOAD_16BIT       // Force 16-bit `ushort` per component.
+  LOAD_FP32        // Force 32-bit `float` per component.
+  ```
 
-    bool loadFromFile(const(char)[] path, int flags = 0);
-    bool loadFromMemory(const(void)[] bytes, int flags = 0);
+  Example:
+  ```d
+  // This will force an ImageType.rgba8 result
+  image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);
+  ```
+  Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT`.
+    
 
+- Save an `Image` to file:
 
-> **Key concept:** `Imageformat` is simply the codecs/containers files Gamut encode and decodes to.
+  ```d
+  if (!image.saveToFile("output.png"))
+      throw new Exception("Writing output.png failed");
+  ```
 
-```d
-enum ImageFormat
-{
-    unknown,
-    JPEG,
-    PNG,
-    QOI,
-    QOIX,
-    DDS
-}
-```
+  > **Key concept:** `Imageformat` is simply the codecs/containers files Gamut encode and decodes to.
+
+  ```d
+  enum ImageFormat
+  {
+      unknown,
+      JPEG,
+      PNG,
+      QOI,
+      QOIX,
+      DDS
+  }
+  ```
+
+  This can be used to avoid inferring the output format from the filename. (TODO)
+
+- Save an `Image` to memory:
+
+  ```d
+  ubyte[] qoixEncoded = image.saveToMemory(ImageFormat.QOIX);
+  scope(exit) free(qoix_encoded.ptr);
+  ```
+
+  The returned slices must be freed with `core.stdc.stdlib.free`.
+
 
 
 ## Accessing `Image` pixels
 
-- Getting the row pitch, in bytes:
+- Get the row pitch, in bytes:
   ```d
   int pitch = image.pitchInBytes();
   ```
@@ -168,14 +206,14 @@ enum ImageFormat
   > **Key concept:** The image `pitch` is the distance between the start of two consecutive scanlines, in bytes.
   **This pitch can be negative.**
 
-- Accessing a row of pixels:
+- Access a row of pixels:
   ```d
   ubyte* scan = image.scanline(y);
   ```
   > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `ImageType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
 
 
-- Iterating on pixels:
+- Iterate on pixels:
   ```d
   assert(image.type == ImageType.rgba16);
   assert(image.hasData());
@@ -194,15 +232,3 @@ enum ImageFormat
   > **Key concept:** You cannot access pixels in a contiguous manner in all cases. You can if `image.isGapless()` returns `true`, but there is no constraints to guarantee being gapless.
 
 
-
-    // Save and load
-    bool saveToFile(const(char)[] path, int flags = 0);
-    bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0);
-    ubyte[] saveToMemory(ImageFormat fif, int flags = 0);
-
-    // Set image canvas size and pixel format.
-    void setSize(int w, int h, ImageType type, LayoutConstraints lc);
-    Image clone();          
-    void copyPixelsTo(ref Image img);
-}
-```
