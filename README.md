@@ -54,12 +54,12 @@ Our benchmark results:
 
 # Gamut API documentation
 
-## `Image` basics
+## 1. `Image` basics
 
 > **Key concept:**
 > The `Image` struct is where most of the public API resides.
 
-- Get the dimensions of an image:
+### **1.1 Get the dimensions of an image:**
   ```d
   Image image = Image(800, 600);
   int w = image.width();
@@ -67,7 +67,7 @@ Our benchmark results:
   assert(w == 800 && h == 600);
   ```
 
-- Get the pixel format of an image:
+### **1.2 Get the pixel format of an image:**
   ```d
   Image image = Image(800, 600);
   ImageType type = image.type();
@@ -107,16 +107,16 @@ Our benchmark results:
 
 
 
-- Create an uninitialized image:
+### **1.3 Create an uninitialized image:**
   ```d
   Image image;
   image.setSize(640, 480, ImageType.rgba8);
   ```
 
 
-## Loading and Saving an `Image`
+## 2. Loading and saving an image
 
-- Load an `Image` from a file:
+### **2.1 Load an `Image` from a file:**
 
   ```d
   Image image;
@@ -132,7 +132,7 @@ Our benchmark results:
   > - `const(char)[] errorMessage()` is then available, and is guaranteed to be zero-terminated.
 
 
-- Load an `Image` from memory:
+### **2.2 Load an image from memory:**
   ```d
   auto pngBytes = cast(const(ubyte)[]) import("logo.png"); 
   Image image;
@@ -163,9 +163,10 @@ Our benchmark results:
   Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT`.
     
 
-- Save an `Image` to file:
+### **2.3 Save an image to a file:**
 
   ```d
+  Image image;
   if (!image.saveToFile("output.png"))
       throw new Exception("Writing output.png failed");
   ```
@@ -186,13 +187,15 @@ Our benchmark results:
 
   This can be used to avoid inferring the output format from the filename:
   ```d
+  Image image;
   if (!image.saveToFile(ImageFormat.PNG, "output.png"))
       throw new Exception("Writing output.png failed");
   ```
 
-### **Save an `Image` to memory:**
+### **2.4 Save an image to memory:**
 
   ```d
+  Image image;
   ubyte[] qoixEncoded = image.saveToMemory(ImageFormat.QOIX);
   scope(exit) free(qoix_encoded.ptr);
   ```
@@ -201,9 +204,9 @@ Our benchmark results:
 
 
 
-## 4. Accessing `Image` pixels
+## 3. Accessing image pixels
 
-### **4.1 Get the row pitch, in bytes:**
+### **3.1 Get the row pitch, in bytes:**
   ```d
   int pitch = image.pitchInBytes();
   ```
@@ -211,14 +214,14 @@ Our benchmark results:
   > **Key concept:** The image `pitch` is the distance between the start of two consecutive scanlines, in bytes.
   **This pitch can be negative.**
 
-### **4.2 Access a row of pixels:**
+### **3.2 Access a row of pixels:**
   ```d
   ubyte* scan = image.scanline(y);
   ```
   > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `ImageType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
 
 
-### **4.3 Iterate on pixels:**
+### **3.3 Iterate on pixels:**
   ```d
   assert(image.type == ImageType.rgba16);
   assert(image.hasData());
