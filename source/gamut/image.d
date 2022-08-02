@@ -363,6 +363,11 @@ public:
         return !errored();
     }
     
+    /// Saves an image to a file, detecting the format from the path extension.
+    ///
+    /// Params:
+    ///     path The path of output file.
+    ///      
     /// Returns: `true` if file successfully written.
     bool saveToFile(const(char)[] path, int flags = 0) @trusted
     {
@@ -373,7 +378,12 @@ public:
         
         return saveToFileInternal(fif, cstr.storage, flags);
     }
-    /// Save the image into a file, but provide a file format.
+    /// Save the image into a file, with a given file format.
+    ///
+    /// Params:
+    ///     fif The `ImageFormat` to use.
+    ///     path The path of output file.
+    ///
     /// Returns: `true` if file successfully written.
     bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) const @trusted
     {
@@ -400,6 +410,35 @@ public:
             return mem.releaseData();
         else
             return null;
+    }
+
+    /// Save an image with a set of user-defined I/O callbacks.
+    ///
+    /// Params:
+    ///     fif The `ImageFormat` to use.
+    ///     io User-defined stream object.
+    ///     handle User provided `void*` pointer  passed to the I/O callbacks.
+    ///
+    /// Returns: `true` if file successfully written.
+    bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
+    {
+        assert(!errored); // else, nothing to save
+
+        if (fif == ImageFormat.unknown)
+        {
+            // No format given for save.
+            return false;
+        }
+
+        if (!hasPlainPixels)
+            return false; // no data that is pixels, impossible to save that.
+
+        const(ImageFormatPlugin)* plugin = &g_plugins[fif];
+        void* data = null; // probably exist to pass metadata stuff
+        if (plugin.saveProc is null)
+            return false;
+        bool r = plugin.saveProc(this, &io, handle, 0, flags, data);
+        return r;
     }
 
     //
@@ -943,25 +982,6 @@ private:
         bool r = saveToStream(fif, io, cast(IOHandle)f, flags);
         bool fcloseOK = fclose(f) == 0;
         return r && fcloseOK;
-    }
-
-    bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
-    {
-        if (fif == ImageFormat.unknown)
-        {
-            // No format given for save.
-            return false;
-        }
-
-        if (!hasPlainPixels)
-            return false; // no data that is pixels, impossible to save that.
-
-        const(ImageFormatPlugin)* plugin = &g_plugins[fif];
-        void* data = null; // probably exist to pass metadata stuff
-        if (plugin.saveProc is null)
-            return false;
-        bool r = plugin.saveProc(this, &io, handle, 0, flags, data);
-        return r;
     }
 
     static ImageFormat identifyFormatFromMemoryFile(ref MemoryFile mem) @trusted
