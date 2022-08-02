@@ -101,7 +101,7 @@ else
 
 private bool LZ4_64bits()
 {
-	return size_t.length == 8;
+    return size_t.sizeof == 8;
 }
 
 private bool LZ4_isLittleEndian()

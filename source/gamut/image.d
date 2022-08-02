@@ -334,7 +334,7 @@ public:
 
         IOStream io;
         io.setupForMemoryIO();
-        loadFromStream(fif, io, cast(IOHandle)&mem, flags);
+        loadFromStreamInternal(fif, io, cast(IOHandle)&mem, flags);
 
         return !errored();
     }
@@ -344,7 +344,25 @@ public:
         return loadFromMemory(cast(const(ubyte)[])bytes, flags);
     }
 
-    /// Save the image into a file.
+    /// Load an image from a set of user-defined I/O callbacks.
+    ///
+    /// Params:
+    ///    fif The target image format.
+    ///    io The user-defined callbacks.
+    ///    handle A void* user pointer to pass to I/O callbacks.
+    ///    flags Flags can contain LOAD_xxx flags and LAYOUT_xxx flags.
+    ///
+    bool loadFromStream(ref IOStream io, IOHandle handle, int flags = 0) @system
+    {
+        cleanupBitmapIfAny();
+
+        // Deduce format from stream.
+        ImageFormat fif = identifyFormatFromStream(io, handle);
+
+        loadFromStreamInternal(fif, io, handle, flags);
+        return !errored();
+    }
+    
     /// Returns: `true` if file successfully written.
     bool saveToFile(const(char)[] path, int flags = 0) @trusted
     {
@@ -882,7 +900,7 @@ private:
 
         IOStream io;
         io.setupForFileIO();
-        loadFromStream(fif, io, cast(IOHandle)f, flags);
+        loadFromStreamInternal(fif, io, cast(IOHandle)f, flags);
 
         if (0 != fclose(f))
         {
@@ -891,7 +909,7 @@ private:
         }
     }
 
-    void loadFromStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) @system
+    void loadFromStreamInternal(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) @system
     {
         // By loading an image, we agreed to forget about past mistakes.
         clearError();
