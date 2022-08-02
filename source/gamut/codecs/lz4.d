@@ -91,31 +91,26 @@ version(LDC)
 }
 else
 {
-    bool likely(bool b) { return b; } // PERF: use the hint
-    bool unlikely(bool b) { return b; } // PERF: use the hint
+    bool likely(bool b) { return b; }
+    bool unlikely(bool b) { return b; }
 }
 
 /* *************************************
    Reading and writing into memory
 **************************************/
 
-// Bug: this is wrong on arm64
 private bool LZ4_64bits()
 {
-	version(X86_64)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return size_t.length == 8;
 }
 
 private bool LZ4_isLittleEndian()
 {
 	return (endian == Endian.littleEndian);
 }
+
+
+// FUTURE: use gamut.utils functions
 
 private ushort LZ4_readLE16(const(void)* memPtr)
 {
