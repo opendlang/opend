@@ -30,6 +30,8 @@ public import mir.stat.distribution.geometric;
 ///
 public import mir.stat.distribution.gev;
 ///
+public import mir.stat.distribution.negativeBinomial;
+///
 public import mir.stat.distribution.normal;
 ///
 public import mir.stat.distribution.poisson;

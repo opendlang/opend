@@ -30,6 +30,8 @@ public import mir.stat.distribution.geometric: geometricPMF;
 ///
 public import mir.stat.distribution.gev: gevPDF;
 ///
+public import mir.stat.distribution.negativeBinomial: negativeBinomialPMF;
+///
 public import mir.stat.distribution.normal: normalPDF;
 ///
 public import mir.stat.distribution.poisson: poissonPMF;
