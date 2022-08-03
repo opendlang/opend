@@ -169,78 +169,78 @@ void allocatePixelStorage(ubyte* existingData,
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
                           out bool err) @trusted
-                          {      
-                            assert(width >= 0); // width == 0 and height == 0 must be supported!
-                            assert(height >= 0);
+{      
+    assert(width >= 0); // width == 0 and height == 0 must be supported!
+    assert(height >= 0);
 
-                            int border         = layoutBorderWidth(constraints);
-                            int rowAlignment   = layoutScanlineAlignment(constraints);
-                            int trailingPixels = layoutTrailingPixels(constraints);
-                            int xMultiplicity  = layoutMultiplicity(constraints);
+    int border         = layoutBorderWidth(constraints);
+    int rowAlignment   = layoutScanlineAlignment(constraints);
+    int trailingPixels = layoutTrailingPixels(constraints);
+    int xMultiplicity  = layoutMultiplicity(constraints);
 
-                            assert(border >= 0);
-                            assert(rowAlignment >= 1); // Not yet implemented!
-                            assert(xMultiplicity >= 1); // Not yet implemented!
-                            assert(trailingPixels >= 0);
+    assert(border >= 0);
+    assert(rowAlignment >= 1); // Not yet implemented!
+    assert(xMultiplicity >= 1); // Not yet implemented!
+    assert(trailingPixels >= 0);
 
-                            static size_t nextMultipleOf(size_t base, size_t multiple) pure
-                            {
-                                assert(multiple > 0);
-                                size_t n = (base + multiple - 1) / multiple;
-                                return multiple * n;
-                            }
+    static size_t nextMultipleOf(size_t base, size_t multiple) pure
+    {
+        assert(multiple > 0);
+        size_t n = (base + multiple - 1) / multiple;
+        return multiple * n;
+    }
 
-                            static int computeRightPadding(int width, int border, int xMultiplicity) pure
-                            {
-                                int nextMultiple = cast(int)(nextMultipleOf(width + border, xMultiplicity));
-                                return nextMultiple - (width + border);
-                            }    
+    static int computeRightPadding(int width, int border, int xMultiplicity) pure
+    {
+        int nextMultiple = cast(int)(nextMultipleOf(width + border, xMultiplicity));
+        return nextMultiple - (width + border);
+    }    
 
-                            /// Returns: next pointer aligned with alignment bytes.
-                            static ubyte* nextAlignedPointer(ubyte* start, size_t alignment) pure
-                            {
-                                return cast(ubyte*)nextMultipleOf(cast(size_t)(start), alignment);
-                            }
+    /// Returns: next pointer aligned with alignment bytes.
+    static ubyte* nextAlignedPointer(ubyte* start, size_t alignment) pure
+    {
+        return cast(ubyte*)nextMultipleOf(cast(size_t)(start), alignment);
+    }
 
-                            // Compute size of right border, in pixels.
-                            // How many "padding pixels" do we need to extend the right border with to respect `xMultiplicity`?
-                            int rightPadding = computeRightPadding(width, border, xMultiplicity);
-                            int borderRight = border + rightPadding;
-                            if (borderRight < trailingPixels)
-                                borderRight = trailingPixels;
+    // Compute size of right border, in pixels.
+    // How many "padding pixels" do we need to extend the right border with to respect `xMultiplicity`?
+    int rightPadding = computeRightPadding(width, border, xMultiplicity);
+    int borderRight = border + rightPadding;
+    if (borderRight < trailingPixels)
+        borderRight = trailingPixels;
 
-                            int actualWidthInPixels  = border + width  + borderRight;
-                            int actualHeightInPixels = border + height + border;
+    int actualWidthInPixels  = border + width  + borderRight;
+    int actualHeightInPixels = border + height + border;
 
-                            // Compute byte pitch and align it on `rowAlignment`
-                            int pixelSize = imageTypePixelSize(type);
-                            int bytePitch = pixelSize * actualWidthInPixels;
-                            bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
+    // Compute byte pitch and align it on `rowAlignment`
+    int pixelSize = imageTypePixelSize(type);
+    int bytePitch = pixelSize * actualWidthInPixels;
+    bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
 
-                            // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
-                            size_t allocationSize = bytePitch * actualHeightInPixels;
-                            allocationSize += (rowAlignment - 1) + bonusBytes;
+    // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
+    size_t allocationSize = bytePitch * actualHeightInPixels;
+    allocationSize += (rowAlignment - 1) + bonusBytes;
 
-                            // We don't need to preserve former data, nor to align the allocation.
-                            // Note: allocationSize can legally be zero.
-                            ubyte* allocation = cast(ubyte*) realloc(existingData, allocationSize);
+    // We don't need to preserve former data, nor to align the allocation.
+    // Note: allocationSize can legally be zero.
+    ubyte* allocation = cast(ubyte*) realloc(existingData, allocationSize);
 
-                            // realloc is allowed to return null if zero bytes required.
-                            if (allocationSize != 0 && allocation is null) 
-                            {
-                                err = true;
-                                return;
-                            }
+    // realloc is allowed to return null if zero bytes required.
+    if (allocationSize != 0 && allocation is null) 
+    {
+        err = true;
+        return;
+    }
 
-                            // Compute pointer to pixel data itself.
-                            size_t offsetToFirstMeaningfulPixel = bonusBytes + bytePitch * border + pixelSize * border;       
-                            ubyte* pixels = nextAlignedPointer(allocation + offsetToFirstMeaningfulPixel, rowAlignment);
+    // Compute pointer to pixel data itself.
+    size_t offsetToFirstMeaningfulPixel = bonusBytes + bytePitch * border + pixelSize * border;       
+    ubyte* pixels = nextAlignedPointer(allocation + offsetToFirstMeaningfulPixel, rowAlignment);
 
-                            dataPointer = pixels;
-                            mallocArea = allocation;
-                            pitchBytes = bytePitch;
-                            err = false;
-                          }
+    dataPointer = pixels;
+    mallocArea = allocation;
+    pitchBytes = bytePitch;
+    err = false;
+}
 
 /// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
 /// to be through that function.
@@ -322,7 +322,7 @@ ImageType applyLoadFlags(ImageType type, LoadFlags flags)
     if (flags & LOAD_GREYSCALE)
         type = convertImageTypeToGreyscale(type);
 
-    if (flags & LOAD_RGBA)
+    if (flags & LOAD_RGB)
         type = convertImageTypeToRGB(type);
 
     if (flags & LOAD_ALPHA)
@@ -330,6 +330,15 @@ ImageType applyLoadFlags(ImageType type, LoadFlags flags)
 
     if (flags & LOAD_NO_ALPHA)
         type = convertImageTypeToDropAlphaChannel(type);
+
+    if (flags & LOAD_8BIT)
+        type = convertImageTypeTo8Bit(type);
+
+    if (flags & LOAD_16BIT)
+        type = convertImageTypeTo16Bit(type);
+
+    if (flags & LOAD_FP32)
+        type = convertImageTypeToFP32(type);
 
     return type;
 }
