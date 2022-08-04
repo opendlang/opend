@@ -348,7 +348,7 @@ float qoi_read_32f(const(ubyte)* bytes, int *p)
     return *cast(float*)&r;
 }
 
-/* Encode raw RGB or RGBA pixels into a QOI image in memory.
+/* Encode raw RGB or RGBA pixels into a QOI2AVG image in memory.
 
 The function either returns null on failure (invalid parameters or malloc 
 failed) or a pointer to the encoded data on success. On success the out_len 
@@ -554,7 +554,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     return bytes;
 }
 
-/* Decode a QOI image from memory.
+/* Decode a QOI2AVG image from memory.
 
 The function either returns null on failure (invalid parameters or malloc 
 failed) or a pointer to the decoded pixels. On success, the qoi_desc struct 

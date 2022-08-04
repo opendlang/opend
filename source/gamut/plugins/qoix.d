@@ -132,21 +132,40 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     // PERF: allocate a QOIX decoding buffer with proper layout by passing layoutConstraints to qoix_lz4_decode
     image._layoutConstraints = 0; // No particular constraint followd in QOIX decoder.
 
-    if (decodedComp == 1)
-        image._type = ImageType.uint8;
-    else if (decodedComp == 2)
-        image._type = ImageType.la8;
-    else if (decodedComp == 3)
-        image._type = ImageType.rgb8;
-    else if (decodedComp == 4)
-        image._type = ImageType.rgba8;
-    else
-    {
-        // QOI with channel different from 1, 2, 3 or 4 is impossible.
-        assert(false);
-    }
+    int bitdepth = desc.bitdepth;
 
-    image._pitch = desc.channels * desc.width;
+    if (bitdepth == 8)
+    {
+        if (decodedComp == 1)
+            image._type = ImageType.uint8;
+        else if (decodedComp == 2)
+            image._type = ImageType.la8;
+        else if (decodedComp == 3)
+            image._type = ImageType.rgb8;
+        else if (decodedComp == 4)
+            image._type = ImageType.rgba8;
+        else
+            // QOI with channel different from 1, 2, 3 or 4 is impossible.
+            assert(false);
+    }
+    else if (bitdepth == 10)
+    {
+        if (decodedComp == 1)
+            image._type = ImageType.uint16;
+        else if (decodedComp == 2)
+            image._type = ImageType.la16;
+        else if (decodedComp == 3)
+            image._type = ImageType.rgb16;
+        else if (decodedComp == 4)
+            image._type = ImageType.rgba16;
+        else
+            // QOI with channel different from 1, 2, 3 or 4 is impossible.
+            assert(false);
+    }
+    else 
+        assert(false);
+
+    image._pitch = desc.pitchBytes;
     image._pixelAspectRatio = desc.pixelAspectRatio;
     image._resolutionY = desc.resolutionY;
 
@@ -332,26 +351,40 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     int streamBitdepth = decQOIX[14]; // coupled with qoix header format
 
     ubyte* image;
-    if (streamChannels == 1 || streamChannels == 2)
+    if (streamBitdepth == 10)
     {
-        // Using qoiplane.d codec
-        // Force channel auto-detect if 3 or 4 channels are requested, which this codec can't do.
-        if (channels != 1 && channels != 2)
-            channels = 0;
-        image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
-        if (channels != 0)
-            desc.channels = cast(ubyte)channels;
+        // PERF: can do conversion inside instead, which won't cost more
+        // Force channel auto-detect
+        image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
     }
-    else if (streamChannels == 3 || streamChannels == 4)
+    else if (streamBitdepth == 8)
     {
-        // Using qoi2avg.d codec
-        // Force channel auto-detect if 1 or 2 channels are requested, which this codec can't do.
-        if (channels != 3 && channels != 4)
-            channels = 0;
-        image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
-        if (channels != 0)
-            desc.channels = cast(ubyte)channels;
+        if (streamChannels == 1 || streamChannels == 2)
+        {
+            // Using qoiplane.d codec
+            // Force channel auto-detect if 3 or 4 channels are requested, which this codec can't do.
+            if (channels != 1 && channels != 2)
+                channels = 0;
+            image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+        }
+        else if (streamChannels == 3 || streamChannels == 4)
+        {
+            // Using qoi2avg.d codec
+            // Force channel auto-detect if 1 or 2 channels are requested, which this codec can't do.
+            if (channels != 3 && channels != 4)
+                channels = 0;
+            image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+        }
     }
+    else
+    {
+        free(decQOIX);
+        return null;
+    }
+
+    // Different API, qoix_lz4_decode never return stream number of channels, only the one asked
+    if (channels != 0)
+        desc.channels = cast(ubyte)channels;
 
     scope(exit) free(decQOIX);
 

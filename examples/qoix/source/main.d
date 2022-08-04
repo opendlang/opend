@@ -34,8 +34,8 @@ int main(string[] args)
 
         Image image;
         image.loadFromFile(f);
-        image.convertToGreyscale();
-     //   image.convertTo16Bit();
+     //   image.convertToGreyscale();
+        image.convertTo16Bit();
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
@@ -73,6 +73,7 @@ int main(string[] args)
         {
             Image image2;
             image2.loadFromMemory(qoix_encoded);
+            image2.convertTo8Bit();
             string path = "output/" ~ baseName(f) ~ ".png";
             image2.saveToFile(path, ImageFormat.PNG);
         }
