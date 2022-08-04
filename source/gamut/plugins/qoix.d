@@ -22,12 +22,14 @@ version(decodeQOIX)
 {
     import gamut.codecs.qoi2avg;
     import gamut.codecs.qoiplane;
+    import gamut.codecs.qoi10b;
     import gamut.codecs.lz4;
 }
 else version(encodeQOIX)
 {
     import gamut.codecs.qoi2avg;
     import gamut.codecs.qoi2plane;
+    import gamut.codecs.qoi10b;
     import gamut.codecs.lz4;
 }
 
@@ -191,7 +193,6 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
             desc.bitdepth = 8;
             desc.channels = 4; 
             break;
-
         case ImageType.uint16: 
             desc.channels = 1; 
             desc.bitdepth = 10;
@@ -242,13 +243,21 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
     int qoilen;
     ubyte* qoix;
 
-    if (desc.channels == 1 || desc.channels == 2)
+    if (desc.bitdepth == 10)
     {
-        qoix = qoiplane_encode(data, desc, &qoilen);
+        qoix = qoi10b_encode(data, desc, &qoilen);
     }
     else
     {
-        qoix = qoix_encode(data, desc, &qoilen);
+        assert(desc.bitdepth == 8);
+        if (desc.channels == 1 || desc.channels == 2)
+        {
+            qoix = qoiplane_encode(data, desc, &qoilen);
+        }
+        else
+        {
+            qoix = qoix_encode(data, desc, &qoilen);
+        }
     }
 
     if (qoix is null)
@@ -319,7 +328,9 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         return null;
     }
 
-    int streamChannels = decQOIX[13];
+    int streamChannels = decQOIX[13]; // coupled with qoix header format
+    int streamBitdepth = decQOIX[14]; // coupled with qoix header format
+
     ubyte* image;
     if (streamChannels == 1 || streamChannels == 2)
     {

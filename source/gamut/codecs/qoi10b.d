@@ -68,13 +68,15 @@ import gamut.codecs.qoi2avg;
 /// QOI_OP_INDEX    8   10xxxxxx
 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
+/// QOI_OP_ADIFF    5   11101xxxxx
 /// QOI_OP_RUN      8   11110xxx
 /// QOI_OP_RUN2    16   111110xxxxxxxxxx
 /// QOI_OP_GRAY    18   11111100gggggggggg
 /// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb
-/// QOI_OP_A       18   11111110aaaaaaaaaa
+/// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa
 /// QOI_OP_END      8   11111111
 
+enum int WORST_OPCODE_BITS = 48;
 
 static immutable ubyte[5] qoi10b_padding = [255,255,255,255,255];
 
@@ -116,7 +118,11 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     // At worst, each pixel take 38 bit to be encoded.
     int num_pixels = desc.width * desc.height;
-    int max_size = cast(int) (cast(long)num_pixels * 38 + 7) / 8 + QOIX_HEADER_SIZE + cast(int)(qoi10b_padding.sizeof);
+
+    import core.stdc.stdio;
+    printf("width %d   height %d  channels = %d\n", desc.width, desc.height, desc.channels);
+
+    int max_size = cast(int) (cast(long)num_pixels * WORST_OPCODE_BITS + 7) / 8 + QOIX_HEADER_SIZE + cast(int)(qoi10b_padding.sizeof);
 
     ubyte* stream;
 
@@ -127,17 +133,19 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         return null;
     }
 
+    
+
     qoi_write_32(bytes, &p, QOIX_MAGIC);
     qoi_write_32(bytes, &p, desc.width);
     qoi_write_32(bytes, &p, desc.height);
     bytes[p++] = 1; // Put a version number :)
-    bytes[p++] = desc.channels; // 1, or 2
-    bytes[p++] = desc.bitdepth; // 8, or 10
+    bytes[p++] = desc.channels; // 1, 2, 3 or 4
+    bytes[p++] = desc.bitdepth; // 10
     bytes[p++] = desc.colorspace;
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
 
-    int currentBit = 7;
+    int currentBit = -1;
 
     // write the nbits last bits of x, starting from the highest one
     void outputBits(uint x, int nbits) nothrow @nogc
@@ -146,19 +154,26 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
         for (int b = nbits - 1; b >= 0; --b)
         {
+            if (currentBit == -1)
+            {
+                p++;
+                if (p > max_size)
+                {
+                    int a = 0;
+                    
+                    printf("max_size %d   index %d\n", max_size, p);
+                    int ma = max_size;
+                    int p2 = p;
+                }
+                bytes[p] = 0;
+                currentBit = 7;
+            }
+
             // which bit to write
             ubyte bit = (x >>> b) & 1;
             bytes[p] |= (bit << currentBit);
-            
-            if (currentBit == 0)
-            {
-                p++;
-                currentBit = 7;
-            }
-            else
-            {
-                currentBit--;
-            }            
+
+            currentBit--;
         }
     }
 
@@ -223,12 +238,26 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     px.a = 65535;
                     break;
             }
-            px.r = (px.r + 32) >>> 6;
-            px.g = (px.g + 32) >>> 6;
-            px.b = (px.b + 32) >>> 6;
-            px.a = (px.a + 32) >>> 6;
+            px.r = px.r >>> 6;
+            px.g = px.g >>> 6;
+            px.b = px.b >>> 6;
+            px.a = px.a >>> 6;
 
-            if (px == px_ref) {
+            assert(px.r <= 1023);
+            assert(px.g <= 1023);
+            assert(px.b <= 1023);
+            assert(px.a <= 1023);
+
+            outputByte(QOI_OP_RGBA);
+            outputBits(px.r, 10);
+            outputBits(px.g, 10);
+            outputBits(px.b, 10);
+            outputBits(px.a, 10);
+        }
+    }
+
+
+          /*  if (px == px_ref) {
                 run++;
                 if (run == 1024 || px_pos == px_end) {
                     run--;
@@ -267,12 +296,12 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                             bytes[p++] = cast(ubyte)(QOI_OP_ADIFF | (va + 4));
                         } else { 
              */               
-                    outputByte(QOI_OP_RGBA);
+   /*                 outputByte(QOI_OP_RGBA);
                     outputBits(px.r, 10);
                     outputBits(px.g, 10);
                     outputBits(px.b, 10);
-                    outputBits(px.a, 10);
-                    continue;
+                    outputBits(px.a, 10); */
+        //            continue;
                //         }
                  //   }
 /+
@@ -331,12 +360,12 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                                 bytes[p++] = px.rgba.g;
                                 bytes[p++] = px.rgba.b;
                              } +/
-                }
-            }
+        //        }
+      //      }
 
-            px_pos += channels;
+  /*          px_pos += channels;
         }
-    }
+    } */
 
     for (int i = 0; i < cast(int)(qoi10b_padding.sizeof); i++) 
     {
@@ -346,7 +375,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // finish the last byte
     if (currentBit != 7)
         outputBits(0xff, 7 - currentBit);
-    assert(currentBit == 7);
+    assert(currentBit == -1); // full byte
 
     *out_len = p;
     return bytes;
