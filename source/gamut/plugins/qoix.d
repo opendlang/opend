@@ -175,10 +175,39 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
 
     switch (image._type)
     {
-        case ImageType.uint8: desc.channels = 1; break;
-        case ImageType.la8:   desc.channels = 2; break;
-        case ImageType.rgb8:  desc.channels = 3; break;
-        case ImageType.rgba8: desc.channels = 4; break;
+        case ImageType.uint8: 
+            desc.bitdepth = 8;
+            desc.channels = 1; 
+            break;
+        case ImageType.la8:  
+            desc.bitdepth = 8;
+            desc.channels = 2; 
+            break;
+        case ImageType.rgb8: 
+            desc.bitdepth = 8;
+            desc.channels = 3; 
+            break;
+        case ImageType.rgba8:
+            desc.bitdepth = 8;
+            desc.channels = 4; 
+            break;
+
+        case ImageType.uint16: 
+            desc.channels = 1; 
+            desc.bitdepth = 10;
+            break;
+        case ImageType.la16:   
+            desc.channels = 2; 
+            desc.bitdepth = 10;
+            break;
+        case ImageType.rgb16:  
+            desc.channels = 3; 
+            desc.bitdepth = 10;
+            break;
+        case ImageType.rgba16: 
+            desc.channels = 4; 
+            desc.bitdepth = 10;
+            break;
         default: 
             return false; // not supported
     }

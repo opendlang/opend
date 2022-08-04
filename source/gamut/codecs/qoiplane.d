@@ -53,7 +53,8 @@ version(benchmark)
 ///     uint32_t width;            // image width in pixels (BE)
 ///     uint32_t height;           // image height in pixels (BE)
 ///     uint8_t  version_;         // Major version of QOIX format.
-///     uint8_t  channels;         // 1 = 8-bit luminance
+///     uint8_t  channels;         // 1 = 8-bit luminance  2 = luminance + alpha (3 and 4 indicate QOI2AVG codec, see qoi2avg.d)
+///     uint8_t  bitdepth;         // 8 = this qoiplane codec is always 8-bit (10 indicates QOI-10 codec, see qoi10b.d)
 ///     uint8_t  colorspace;       // 0 = sRGB with linear alpha, 1 = all channels linear
 ///     float    pixelAspectRatio; // -1 = unknown, else Pixel Aspect Ratio
 ///     float    resolutionX;      // -1 = unknown, else physical resolution in DPI
@@ -111,6 +112,9 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         return null;
     }
 
+    if (desc.bitdepth != 8)
+        return null;
+
     int channels = desc.channels;
 
     // At worst, each pixel take 12 bit to be encoded.
@@ -146,6 +150,7 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi_write_32(bytes, &p, desc.height);
     bytes[p++] = 1; // Put a version number :)
     bytes[p++] = desc.channels; // 1, or 2
+    bytes[p++] = desc.bitdepth; // 8, or 10
     bytes[p++] = desc.colorspace;
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
@@ -381,6 +386,7 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     desc.height = qoi_read_32(bytes, &p);
     int qoix_version = bytes[p++];
     desc.channels = bytes[p++];
+    desc.bitdepth = bytes[p++];
     desc.colorspace = bytes[p++];
     desc.pixelAspectRatio = qoi_read_32f(bytes, &p);
     desc.resolutionY = qoi_read_32f(bytes, &p);
@@ -388,6 +394,7 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     if (desc.width == 0 || desc.height == 0 || 
         desc.channels < 1 || desc.channels > 2 ||
         desc.colorspace > 1 ||
+        desc.bitdepth != 8 ||
         qoix_version > 1 ||
         header_magic != QOIX_MAGIC ||
         desc.height >= QOIX_PIXELS_MAX / desc.width

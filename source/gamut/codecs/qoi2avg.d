@@ -5,8 +5,6 @@ nothrow @nogc:
 import core.stdc.stdlib: realloc, malloc, free;
 import core.stdc.string: memset;
 
-version = doNotEncodeGreyscale;
-
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34
 /// Called "QOIX" in Gamut, since it has a few extensions again, such as LZ4.
@@ -59,7 +57,8 @@ struct qoi_header_t {
     uint32_t width;            // image width in pixels (BE)
     uint32_t height;           // image height in pixels (BE)
     uint8_t  version_;         // Major version of QOIX format.
-    uint8_t  channels;         // 3 = RGB, 4 = RGBA (1 and 2 indicate QOI-plane codec)
+    uint8_t  channels;         // 3 = RGB, 4 = RGBA (1 and 2 indicate QOI-plane codec, see qoiplane.d)
+    uint8_t  bitdepth;         // 8 = this qoi2avg codec is always 8-bit (10 indicates QOI-10 codec, see qoi10b.d)
     uint8_t  colorspace;       // 0 = sRGB with linear alpha, 1 = all channels linear
     float    pixelAspectRatio; // -1 = unknown, else Pixel Aspect Ratio
     float    resolutionX;      // -1 = unknown, else physical resolution in DPI
@@ -266,6 +265,7 @@ struct qoi_desc
     uint height;
     int pitchBytes; // number of bytes between start of lines.
     ubyte channels;
+    ubyte bitdepth;
     ubyte colorspace;
     float pixelAspectRatio; // PAR, in Gamut format
     float resolutionY;      // Vertical DPI, in Gamut format
@@ -288,7 +288,7 @@ enum int QOI_OP_RGBA   = 0xfe; /* 11111110 */
 enum int QOI_OP_END    = 0xff; /* 11111111 */
 
 enum uint QOIX_MAGIC = 0x716F6978; // "qoix"
-enum QOIX_HEADER_SIZE = 14 + 1 /* verison */ + 4 /* PAR */ + 4 /* DPI */;
+enum QOIX_HEADER_SIZE = 15 + 1 /* verison */ + 4 /* PAR */ + 4 /* DPI */;
 
 /* To not have to linearly search through the color index array, we use a hash 
 of the color value to quickly lookup the index position in a hash table. */
@@ -370,6 +370,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         desc.width == 0 || desc.height == 0 ||
         desc.channels < 3 || desc.channels > 4 ||
         desc.colorspace > 1 ||
+        desc.bitdepth != 8 ||
         desc.height >= QOIX_PIXELS_MAX / desc.width
     ) {
         return null;
@@ -389,6 +390,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi_write_32(bytes, &p, desc.height);
     bytes[p++] = 1; // Put a version number :)
     bytes[p++] = desc.channels; // 3, or 4
+    bytes[p++] = desc.bitdepth; // 8, or 10
     bytes[p++] = desc.colorspace;
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
@@ -584,6 +586,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     desc.height = qoi_read_32(bytes, &p);
     int qoix_version = bytes[p++];
     desc.channels = bytes[p++];
+    desc.bitdepth = bytes[p++];
     desc.colorspace = bytes[p++];
     desc.pixelAspectRatio = qoi_read_32f(bytes, &p);
     desc.resolutionY = qoi_read_32f(bytes, &p);
@@ -592,6 +595,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
         desc.width == 0 || desc.height == 0 || 
         desc.channels < 3 || desc.channels > 4 ||
         desc.colorspace > 1 ||
+        desc.bitdepth != 8 ||
         qoix_version > 1 ||
         header_magic != QOIX_MAGIC ||
         desc.height >= QOIX_PIXELS_MAX / desc.width
