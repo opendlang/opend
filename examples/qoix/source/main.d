@@ -34,11 +34,7 @@ int main(string[] args)
 
         Image image;
         image.loadFromFile(f);
-     //   image.convertToGreyscale();
         image.convertTo16Bit();
-        if (image.errored)
-            throw new Exception(to!string(image.errorMessage));
-
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 

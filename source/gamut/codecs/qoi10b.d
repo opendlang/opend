@@ -64,17 +64,17 @@ import gamut.codecs.qoi2avg;
 /// This codec is simply like QOI2AVG but with extra 2 bits for each components, and it breaks byte alignment.
 ///
 /// Opcode       Bits   Meaning
-/// QOI_OP_LUMA    14   0gggggrrrrbbbb
+/// QOI_OP_LUMA    14   0gggggrrrrbbbb 
 /// QOI_OP_INDEX    8   10xxxxxx
 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
 /// QOI_OP_ADIFF   10   11101xxxxx
-/// QOI_OP_RUN      8   11110xxx
-/// QOI_OP_RUN2    16   111110xxxxxxxxxx
+/// QOI_OP_RUN      8   11110xxx                                         [OK]
+/// QOI_OP_RUN2    16   111110xxxxxxxxxx                                 [OK]
 /// QOI_OP_GRAY    18   11111100gggggggggg
 /// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb
-/// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa
-/// QOI_OP_END      8   11111111
+/// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa [OK]
+/// QOI_OP_END      8   11111111                                         [OK]
 
 enum int WORST_OPCODE_BITS = 48;
 
@@ -236,16 +236,8 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             assert(px.b <= 1023);
             assert(px.a <= 1023);
 
-            outputByte(QOI_OP_RGBA);
-            outputBits(px.r, 10);
-            outputBits(px.g, 10);
-            outputBits(px.b, 10);
-            outputBits(px.a, 10);
-        }
-    }
-
-
-          /*  if (px == px_ref) {
+            if (px == px_ref) 
+            {
                 run++;
                 if (run == 1024 || px_pos == px_end) {
                     run--;
@@ -254,10 +246,12 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     run = 0;
                 }
             }
-            else {
+            else 
+            {
                 int hash = QOI10b_COLOR_HASH(px);
 
-                if (run > 0) {
+                if (run > 0) 
+                {
                     run--;
                     if (run < 8) {
                         outputByte( cast(ubyte)(QOI_OP_RUN | run) );
@@ -268,6 +262,19 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     }
                     run = 0;
                 }
+
+                outputByte(QOI_OP_RGBA);
+                outputBits(px.r, 10);
+                outputBits(px.g, 10);
+                outputBits(px.b, 10);
+                outputBits(px.a, 10);
+            }
+        }
+    }
+
+
+           
+              /*
 
                 if (index[index_lookup[hash]] == px) {
                     bytes[p++] = QOI_OP_INDEX | index_lookup[hash];
@@ -480,10 +487,11 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
         for (int posx = 0; posx < desc.width; ++posx)
         {
-            if (run > 0) {
+            if (run > 0) 
+            {
                 run--;
             }
-            else
+            else if (!finished)
             {
                 px_ref = px;
 
@@ -509,6 +517,14 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 else if (op == QOI_OP_END)
                 {
                     finished = true;
+                }
+                else if ( (op & 0xf8) == 0xf0) // QOI_OP_RUN
+                {       
+                    run = op & 7;
+                }
+                else if ( (op & 0xfc) == 0xf8)   // QOI_OP_RUN2
+                {       
+                    run = ((op & 3) << 8) | readByte();
                 }
                 else
                 {
