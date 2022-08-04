@@ -46,7 +46,7 @@ version(benchmark)
 /// - qoiplane_encode  -- encode an rgba buffer into a QOI-plane image in memory
 /// 
 ///
-/// A QOI-Plane file has a 23 byte header, compatible with Gamut QOIX.
+/// A QOI-Plane file has a 24 byte header, compatible with Gamut QOIX.
 ///
 /// struct qoi_header_t {
 ///     char     magic[4];         // magic bytes "qoix"

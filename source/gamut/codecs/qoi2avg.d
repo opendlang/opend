@@ -49,7 +49,7 @@ See the function declaration below for the signature and more information.
 
 -- Data Format
 
-A QOIX file has a 23 byte header, followed by any number of data "chunks" and an
+A QOIX file has a 24 byte header, followed by any number of data "chunks" and an
 8-byte end marker.
 
 struct qoi_header_t {
@@ -288,14 +288,14 @@ enum int QOI_OP_RGBA   = 0xfe; /* 11111110 */
 enum int QOI_OP_END    = 0xff; /* 11111111 */
 
 enum uint QOIX_MAGIC = 0x716F6978; // "qoix"
-enum QOIX_HEADER_SIZE = 15 + 1 /* verison */ + 4 /* PAR */ + 4 /* DPI */;
+enum QOIX_HEADER_SIZE = 15 + 1 /* version */ + 4 /* PAR */ + 4 /* DPI */;
 
 /* To not have to linearly search through the color index array, we use a hash 
 of the color value to quickly lookup the index position in a hash table. */
 uint QOI_COLOR_HASH(qoi_rgba_t C)
 {
     return (((C.v * 2654435769) >> 22) & 1023);
-} 
+}
 
 /* 2GB is the max file size that this implementation can safely handle. We guard
 against anything larger than that, assuming the worst case with 5 bytes per 
