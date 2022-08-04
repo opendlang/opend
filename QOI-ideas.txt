@@ -2,3 +2,4 @@ Generally I'd like to:
 - support 10-bit => type punning probably, because QOI opcodes not really designed for more bits
 - experiment with lossy for increasing compression?
   * interesting, since the difference to reconstructed need to be considered
+  * quite easy to do, since QOI have simple encoding you don't need to do RDO
