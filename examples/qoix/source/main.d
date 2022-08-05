@@ -30,11 +30,18 @@ int main(string[] args)
     foreach(f; files)
     {
         writeln();
-        writeln(f);
+
+
+        ubyte[] originalImage = cast(ubyte[]) std.file.read(f);
+
+        double original_size_kb = originalImage.length / 1024.0;
+        writefln("*** image of size %.1f kb: %s", original_size_kb, f);
 
         Image image;
-        image.loadFromFile(f);
+        image.loadFromMemory(originalImage);
+        
         image.convertTo16Bit();
+
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
@@ -60,9 +67,10 @@ int main(string[] args)
         mean_encode_mpps += qoix_encode_mpps;
         mean_decode_mpps += qoix_decode_mpps;
         mean_bpp += bit_per_pixel;
+        double size_vs_original = qoix_size_kb / original_size_kb;
 
-        writefln("       decode mpps   encode mpps      bit-per-pixel        size");
-        writefln("          %8.2f      %8.2f           %8.5f     %9.1f kb", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel, qoix_size_kb);
+        writefln("       decode mpps   encode mpps      bit-per-pixel        size        reduction");
+        writefln("          %8.2f      %8.2f           %8.5f     %9.1f kb  %9.4f", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel, qoix_size_kb, size_vs_original);
         N += 1;
 
         // Check encoding is properly done.
