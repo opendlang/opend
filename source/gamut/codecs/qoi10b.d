@@ -207,7 +207,9 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         {
             px_ref = px;
 
-            // Note that we drop six lower bits here. This codec is lossy if you really have more than 10-bits of precision.
+            // Note that we drop six lower bits here. This codec is lossy 
+            // if you really have more than 10-bits of precision.
+            // The use case is PBR knob in Dplug, who needs 10-bit (presumably) for the elevation map.
             switch(channels)
             {
                 default:
@@ -270,16 +272,16 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     index[index_pos] = px;
                     index_pos = (index_pos + 1) & 63;
 
-                    int va = (px.a - px_ref.a);
-
-                    if (va) 
+                    if (px.a != px_ref.a) 
                     {
-                    /*    if (va >= -4 && va <= 3)
+                        ushort va = (px.a - px_ref.a) & 1023;
+                        // QOI_OP_ADIFF doesn't work yet!!!
+                  /*      if ( ((va + 16) & 1023) <= 31 )  // alpha difference between -16 and +15?
                         {
-                            outputBits(29, 5); // QOI_OP_ADIFF
-                            outputBits(
-                            bytes[p++] = cast(ubyte)(QOI_OP_ADIFF | (va + 4));
-                        } 
+                            // it fits on 5 bits
+                            outputBits(0x1d, 5); // QOI_OP_ADIFF
+                            outputBits(va, 5);   // Note: stored without an offset
+                        }  
                         else */
                         {     
                             outputByte(QOI_OP_RGBA);
@@ -484,6 +486,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
         for (int posx = 0; posx < desc.width; ++posx)
         {
             // PERF: decoding loop could use the opcode ordering to go faster, discriminating several of them at once.
+            px_ref = px;
 
             if (run > 0) 
             {
@@ -491,8 +494,6 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
             }
             else if ((decoded_pixels < num_pixels) && !finished)
             {
-                px_ref = px;
-
                 decode_next_op:
 
                 ubyte op = readByte();
@@ -500,13 +501,22 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
                 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
                 /// QOI_OP_ADIFF   10   11101xxxxx
-                /// QOI_OP_GRAY    18   11111100gggggggggg                
+                /// QOI_OP_GRAY    18   11111100gggggggggg      
 
-                if (op == QOI_OP_RGB)
+                if ( (op & 0xf8) == 0xf0) // QOI_OP_RUN
+                {       
+                    run = op & 7;
+                }
+                else if ( (op & 0xfc) == 0xf8)   // QOI_OP_RUN2
+                {       
+                    run = ((op & 3) << 8) | readByte();
+                }
+                else if (op == QOI_OP_RGB)
                 {
                     px.r = cast(ushort) readBits(10);
                     px.g = cast(ushort) readBits(10);
                     px.b = cast(ushort) readBits(10);
+                    index[index_pos++ & 63] = px;
                 }
                 else if (op == QOI_OP_RGBA)
                 {
@@ -514,6 +524,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     px.g = cast(ushort) readBits(10);
                     px.b = cast(ushort) readBits(10);
                     px.a = cast(ushort) readBits(10);
+                    index[index_pos++ & 63] = px;
                 }
                 else if ((op & 0xc0) == 0x80)     // QOI_OP_INDEX
                 {
@@ -521,20 +532,15 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 }
                 else if ((op & 0xf8) == 0xe8)    // QOI_OP_ADIFF
                 {
-                    // TODO
+                    int adiff = ((op & 7) << 2) | readBits(2);
+                    adiff = adiff << 26; // Not sure if we need that sign extension...
+                    adiff = adiff >> 26;
+                    px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
                 }
                 else if (op == QOI_OP_END)
                 {
                     finished = true;
-                }
-                else if ( (op & 0xf8) == 0xf0) // QOI_OP_RUN
-                {       
-                    run = op & 7;
-                }
-                else if ( (op & 0xfc) == 0xf8)   // QOI_OP_RUN2
-                {       
-                    run = ((op & 3) << 8) | readByte();
                 }
                 else
                 {
