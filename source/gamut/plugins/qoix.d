@@ -353,8 +353,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     ubyte* image;
     if (streamBitdepth == 10)
     {
-        // PERF: can do conversion inside instead, which won't cost more
-        // Force channel auto-detect
+
         image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
     }
     else if (streamBitdepth == 8)

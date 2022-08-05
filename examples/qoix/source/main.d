@@ -31,7 +31,6 @@ int main(string[] args)
     {
         writeln();
 
-
         ubyte[] originalImage = cast(ubyte[]) std.file.read(f);
 
         double original_size_kb = originalImage.length / 1024.0;
@@ -39,8 +38,6 @@ int main(string[] args)
 
         Image image;
         image.loadFromMemory(originalImage);
-        
-        image.convertTo16Bit();
 
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
