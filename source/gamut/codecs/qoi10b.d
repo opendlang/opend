@@ -68,11 +68,11 @@ import gamut.codecs.qoi2avg;
 /// QOI_OP_INDEX    8   10xxxxxx                                         [OK]
 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
-/// QOI_OP_ADIFF   10   11101xxxxx
+/// QOI_OP_ADIFF   10   11101xxxxx                                       [OK]
 /// QOI_OP_RUN      8   11110xxx                                         [OK]
 /// QOI_OP_RUN2    16   111110xxxxxxxxxx                                 [OK]
 /// QOI_OP_GRAY    18   11111100gggggggggg
-/// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb
+/// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb           [OK]
 /// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa [OK]
 /// QOI_OP_END      8   11111111                                         [OK]
 
@@ -272,17 +272,16 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     index[index_pos] = px;
                     index_pos = (index_pos + 1) & 63;
 
-                    if (px.a != px_ref.a) 
+                    int va = (px.a - px_ref.a) & 1023;
+                    if (va) 
                     {
-                        ushort va = (px.a - px_ref.a) & 1023;
-                        // QOI_OP_ADIFF doesn't work yet!!!
-                  /*      if ( ((va + 16) & 1023) <= 31 )  // alpha difference between -16 and +15?
+                        if (va < 16 || va >= 1008) // alpha difference between -16 and +15?
                         {
                             // it fits on 5 bits
                             outputBits(0x1d, 5); // QOI_OP_ADIFF
                             outputBits(va, 5);   // Note: stored without an offset
                         }  
-                        else */
+                        else
                         {     
                             outputByte(QOI_OP_RGBA);
                             outputBits(px.r, 10);
@@ -533,8 +532,8 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 else if ((op & 0xf8) == 0xe8)    // QOI_OP_ADIFF
                 {
                     int adiff = ((op & 7) << 2) | readBits(2);
-                    adiff = adiff << 26; // Not sure if we need that sign extension...
-                    adiff = adiff >> 26;
+                    adiff = adiff << 27; // Need sign extension, else the negatives aren't negatives.
+                    adiff = adiff >> 27;
                     px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
                 }
