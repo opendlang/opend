@@ -65,7 +65,7 @@ import gamut.codecs.qoi2avg;
 ///
 /// Opcode       Bits   Meaning
 /// QOI_OP_LUMA    14   0gggggrrrrbbbb 
-/// QOI_OP_INDEX    8   10xxxxxx
+/// QOI_OP_INDEX    8   10xxxxxx                                         [OK]
 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
 /// QOI_OP_ADIFF   10   11101xxxxx
@@ -170,11 +170,6 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         outputBits(b, 8);
     }
 
-    void encodeRun(ref int run) nothrow @nogc
-    {
-        assert(false); // TODO
-    }
-
     qoi10_rgba_t px = initialPredictor;
     qoi10_rgba_t px_ref = initialPredictor;
 
@@ -185,9 +180,24 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     index_lookup[] = 0;
 
     int run = 0;
-    int px_pos = 0;
-    int px_end = channels * desc.width * desc.height;
+    int encoded_pixels = 0;
 
+    void encodeRun()
+    {
+        assert(run > 0 && run <= 1024);
+        run--;
+        if (run < 8) 
+        {
+            outputByte( cast(ubyte)(QOI_OP_RUN | run) );
+        }
+        else 
+        {
+            outputByte( QOI_OP_RUN2 | ((run >> 8) & 3) );
+            outputByte( run & 0xff );
+        }
+        run = 0;
+    }
+    
     for (int posy = 0; posy < desc.height; ++posy)
     {
         const(ushort)* line = cast(const(ushort*))(data + desc.pitchBytes * posy);
@@ -239,128 +249,112 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             if (px == px_ref) 
             {
                 run++;
-                if (run == 1024 || px_pos == px_end) {
-                    run--;
-                    outputByte( QOI_OP_RUN2 | ((run >> 8) & 3) );
-                    outputByte( run & 0xff );
-                    run = 0;
-                }
+                if (run == 1024 || encoded_pixels + 1 == num_pixels)
+                    encodeRun();
             }
             else 
             {
-                int hash = QOI10b_COLOR_HASH(px);
-
                 if (run > 0) 
+                    encodeRun();
+
+                int hash = QOI10b_COLOR_HASH(px);
+                if (index[index_lookup[hash]] == px) 
                 {
-                    run--;
-                    if (run < 8) {
-                        outputByte( cast(ubyte)(QOI_OP_RUN | run) );
-                    }
-                    else {
-                        outputByte( QOI_OP_RUN2 | ((run >> 8) & 3) );
-                        outputByte( run & 0xff );
-                    }
-                    run = 0;
+                    ubyte indlookup = index_lookup[hash];
+                    assert(indlookup < 64);
+                    outputByte( QOI_OP_INDEX | index_lookup[hash] );
                 }
-
-                outputByte(QOI_OP_RGBA);
-                outputBits(px.r, 10);
-                outputBits(px.g, 10);
-                outputBits(px.b, 10);
-                outputBits(px.a, 10);
-            }
-        }
-    }
-
-
-           
-              /*
-
-                if (index[index_lookup[hash]] == px) {
-                    bytes[p++] = QOI_OP_INDEX | index_lookup[hash];
-                }
-                else {
+                else
+                {
                     index_lookup[hash] = cast(ubyte) index_pos;
                     index[index_pos] = px;
                     index_pos = (index_pos + 1) & 63;
 
-                    short va = (px.a - px_ref.a) & 1023;
+                    int va = (px.a - px_ref.a);
 
-           /*         if (va) {
-                        if (va >= -4 && va <= 3){
+                    if (va) 
+                    {
+                    /*    if (va >= -4 && va <= 3)
+                        {
+                            outputBits(29, 5); // QOI_OP_ADIFF
+                            outputBits(
                             bytes[p++] = cast(ubyte)(QOI_OP_ADIFF | (va + 4));
-                        } else { 
-             */               
-   /*                 outputByte(QOI_OP_RGBA);
-                    outputBits(px.r, 10);
-                    outputBits(px.g, 10);
-                    outputBits(px.b, 10);
-                    outputBits(px.a, 10); */
-        //            continue;
-               //         }
-                 //   }
-/+
-                    if (px_pos >= stride)  // ????? doesn't seem OK, TODO
+                        } 
+                        else */
+                        {     
+                            outputByte(QOI_OP_RGBA);
+                            outputBits(px.r, 10);
+                            outputBits(px.g, 10);
+                            outputBits(px.b, 10);
+                            outputBits(px.a, 10);
+                            goto pixel_is_encoded;
+                        }
+                    }
+
+                    // TODO: compute new predictor, based on averages
+                    /*if (px_pos >= stride)
                     {
                         px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
                         px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
                         px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;                     
-                    }
+                    }*/
 
-                    byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
-                    byte vg_r = cast(byte)(px.rgba.r - px_ref.rgba.r - vg);
-                    byte vg_b = cast(byte)(px.rgba.b - px_ref.rgba.b - vg);
+                    short vg   = cast(short)(px.g - px_ref.g);
+                    short vg_r = cast(short)(px.r - px_ref.r - vg);
+                    short vg_b = cast(short)(px.b - px_ref.b - vg);
 
-                    if (
-                        vg   >= -4 && vg   <  0 && 
+                /*    if (vg   >= -4 && vg   <  0 && 
                         vg_r >= -1 && vg_r <= 2 &&
                         vg_b >= -1 && vg_b <= 2
-                        ) {
-                            bytes[p++] = cast(ubyte)( QOI_OP_LUMA | (vg + 4) << 4 | (vg_r + 1) << 2 | (vg_b + 1) );
-                        }
-                    else if (
-                             vg   >=  0 && vg   <= 3 && 
+                        ) 
+                    {
+                        bytes[p++] = cast(ubyte)( QOI_OP_LUMA | (vg + 4) << 4 | (vg_r + 1) << 2 | (vg_b + 1) );
+                    }
+                    else if (vg   >=  0 && vg   <= 3 && 
                              vg_r >= -2 && vg_r <= 1 &&
                              vg_b >= -2 && vg_b <= 1
-                             ) {
-                                bytes[p++] = cast(ubyte)( QOI_OP_LUMA | (vg + 4) << 4 | (vg_r + 2) << 2 | (vg_b + 2) );
-                             }
-                    else if (
-                             px.rgba.g == px.rgba.r &&
+                             ) 
+                    {
+                        bytes[p++] = cast(ubyte)( QOI_OP_LUMA | (vg + 4) << 4 | (vg_r + 2) << 2 | (vg_b + 2) );
+                    }
+                    else if (px.rgba.g == px.rgba.r &&
                              px.rgba.g == px.rgba.b
-                             ) {
-                                bytes[p++] = QOI_OP_GRAY;
-                                bytes[p++] = px.rgba.g;
-                             }
-                    else if (
-                             vg_r >=  -8 && vg_r <=  7 && 
+                             ) 
+                    {
+                        bytes[p++] = QOI_OP_GRAY;
+                        bytes[p++] = px.rgba.g;
+                    }
+                    else if (vg_r >=  -8 && vg_r <=  7 && 
                              vg   >= -16 && vg   <= 15 && 
-                             vg_b >=  -8 && vg_b <=  7
-                             ) {
-                                bytes[p++] = cast(ubyte)( QOI_OP_LUMA2    | (vg   + 16) );
-                                bytes[p++] = cast(ubyte)( (vg_r + 8) << 4 | (vg_b +  8) );
-                             }
-                    else if (
-                             vg_r >= -32 && vg_r <= 31 && 
+                             vg_b >=  -8 && vg_b <=  7) 
+                    {
+                        bytes[p++] = cast(ubyte)( QOI_OP_LUMA2    | (vg   + 16) );
+                        bytes[p++] = cast(ubyte)( (vg_r + 8) << 4 | (vg_b +  8) );
+                    }
+                    else if (vg_r >= -32 && vg_r <= 31 && 
                              vg   >= -64 && vg   <= 63 && 
-                             vg_b >= -32 && vg_b <= 31
-                             ) {
-                                int dv = ((vg + 64) << 12) | ((vg_r + 32) << 6) | (vg_b + 32);
-                                bytes[p++] = QOI_OP_LUMA3 | ((dv >> 16) & 31);
-                                bytes[p++] = (dv >> 8) & 255;
-                                bytes[p++] = dv & 255;
-                             } else {
-                                bytes[p++] = QOI_OP_RGB;
-                                bytes[p++] = px.rgba.r;
-                                bytes[p++] = px.rgba.g;
-                                bytes[p++] = px.rgba.b;
-                             } +/
-        //        }
-      //      }
+                             vg_b >= -32 && vg_b <= 31) 
+                    {
+                        int dv = ((vg + 64) << 12) | ((vg_r + 32) << 6) | (vg_b + 32);
+                        bytes[p++] = QOI_OP_LUMA3 | ((dv >> 16) & 31);
+                        bytes[p++] = (dv >> 8) & 255;
+                        bytes[p++] = dv & 255;
+                    } 
+                    else    */
+                    {
+                        outputByte(QOI_OP_RGB);
+                        outputBits(px.r, 10);
+                        outputBits(px.g, 10);
+                        outputBits(px.b, 10);
+                    }
+                }
+            }
 
-  /*          px_pos += channels;
+            pixel_is_encoded:
+
+            encoded_pixels++;
         }
-    } */
+    }
 
     for (int i = 0; i < cast(int)(qoi10b_padding.sizeof); i++) 
     {
@@ -369,7 +363,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     // finish the last byte
     if (currentBit != 7)
-        outputBits(0xff, 7 - currentBit);
+        outputBits(0xff, currentBit + 1);
     assert(currentBit == 7); // full byte
 
     *out_len = p;
@@ -479,6 +473,8 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
     qoi10_rgba_t px_ref = initialPredictor;
 
     bool finished = false;
+    int decoded_pixels = 0;
+    int num_pixels = desc.width * desc.height;
 
     for (int posy = 0; posy < desc.height; ++posy)
     {
@@ -487,32 +483,46 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
         for (int posx = 0; posx < desc.width; ++posx)
         {
+            // PERF: decoding loop could use the opcode ordering to go faster, discriminating several of them at once.
+
             if (run > 0) 
             {
                 run--;
             }
-            else if (!finished)
+            else if ((decoded_pixels < num_pixels) && !finished)
             {
                 px_ref = px;
+
+                decode_next_op:
 
                 ubyte op = readByte();
 
                 /// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
                 /// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
                 /// QOI_OP_ADIFF   10   11101xxxxx
-                /// QOI_OP_RUN      8   11110xxx
-                /// QOI_OP_RUN2    16   111110xxxxxxxxxx
-                /// QOI_OP_GRAY    18   11111100gggggggggg
-                /// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb
-                /// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa
-                /// QOI_OP_END      8   11111111
+                /// QOI_OP_GRAY    18   11111100gggggggggg                
 
-                if (op == QOI_OP_RGBA)
+                if (op == QOI_OP_RGB)
+                {
+                    px.r = cast(ushort) readBits(10);
+                    px.g = cast(ushort) readBits(10);
+                    px.b = cast(ushort) readBits(10);
+                }
+                else if (op == QOI_OP_RGBA)
                 {
                     px.r = cast(ushort) readBits(10);
                     px.g = cast(ushort) readBits(10);
                     px.b = cast(ushort) readBits(10);
                     px.a = cast(ushort) readBits(10);
+                }
+                else if ((op & 0xc0) == 0x80)     // QOI_OP_INDEX
+                {
+                    px = index[op & 63];
+                }
+                else if ((op & 0xf8) == 0xe8)    // QOI_OP_ADIFF
+                {
+                    // TODO
+                    goto decode_next_op;
                 }
                 else if (op == QOI_OP_END)
                 {
@@ -565,6 +575,8 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     line[posx * channels + 0] = px16b.r;
                     break;
             }
+
+            decoded_pixels++;
         }
     }
     return pixels;
