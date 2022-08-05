@@ -64,19 +64,21 @@ import gamut.codecs.qoi2avg;
 /// This codec is simply like QOI2AVG but with extra 2 bits for each components, and it breaks byte alignment.
 ///
 /// Opcode       Bits   Meaning
-/// QOI_OP_LUMA    14   0gggggrrrrbbbb                                   [OK]
-/// QOI_OP_INDEX    8   10xxxxxx                                         [OK]
-/// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb                           [OK]
-/// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb                   [OK]
-/// QOI_OP_ADIFF   10   11101xxxxx                                       [OK]
-/// QOI_OP_RUN      8   11110xxx                                         [OK]
-/// QOI_OP_RUN2    16   111110xxxxxxxxxx                                 [OK]
+/// QOI_OP_LUMA    14   0gggggrrrrbbbb
+/// QOI_OP_INDEX    8   10xxxxxx
+/// QOI_OP_LUMA2   22   110gggggggrrrrrrbbbbbb
+/// QOI_OP_LUMA3   30   11100gggggggggrrrrrrrrbbbbbbbb
+/// QOI_OP_ADIFF   10   11101xxxxx
+/// QOI_OP_RUN      8   11110xxx
+/// QOI_OP_RUN2    16   111110xxxxxxxxxx
 /// QOI_OP_GRAY    18   11111100gggggggggg
-/// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb           [OK]
+/// QOI_OP_RGB     38   11111101rrrrrrrrrrggggggggggbbbbbbbbbb
 /// QOI_OP_RGBA    48   11111110rrrrrrrrrrggggggggggbbbbbbbbbbaaaaaaaaaa [OK]
-/// QOI_OP_END      8   11111111                                         [OK]
+/// QOI_OP_END      8   11111111
 
 enum int WORST_OPCODE_BITS = 48;
+
+enum enableAveragePrediction = false; // For some reason, it's worse
 
 static immutable ubyte[5] qoi10b_padding = [255,255,255,255,255];
 
@@ -292,13 +294,24 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
-                    // TODO: compute new predictor, based on averages
-                    /*if (px_pos >= stride)
+                    if (lineAbove && enableAveragePrediction)
                     {
-                        px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-                        px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
-                        px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
-                    }*/
+                        switch(channels)
+                        {
+                            case 4:
+                            case 3:
+                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
+                                px_ref.g = (px_ref.g + (lineAbove[posx * channels + 1] >> 6) + 1) >> 1;
+                                px_ref.b = (px_ref.b + (lineAbove[posx * channels + 2] >> 6) + 1) >> 1;
+                                break;
+                            case 1:
+                            case 2:
+                            default:
+                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
+                                px_ref.g = px_ref.g;
+                                px_ref.b = px_ref.b;
+                        }
+                    }
 
                     int vg   = (px.g - px_ref.g) & 1023;
                     int vg_r = (px.r - px_ref.r - vg) & 1023;
@@ -313,16 +326,11 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         outputBits(vg_r, 4);
                         outputBits(vg_b, 4);
                     }
-
-                    /*
-                    else if (px.rgba.g == px.rgba.r &&
-                             px.rgba.g == px.rgba.b
-                             ) 
+                    else if (px.g == px.r && px.g == px.b) 
                     {
-                        bytes[p++] = QOI_OP_GRAY;
-                        bytes[p++] = px.rgba.g;
+                        outputByte(QOI_OP_GRAY); // PERF: maybe split this opcode to encode a single vg in less bits
+                        outputBits(px.g, 10);
                     }
-                    */
                     else
                     if ( ( (vg_r >= (1024-32)) || (vg_r < 32) ) &&  // fits in 6 bits?
                          ( (vg   >= (1024-64)) || (vg   < 64) ) &&  // fits in 7 bits?
@@ -499,17 +507,9 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
                 ubyte op = readByte();
 
-                if (op < 128)              // QOI_OP_LUMA
+                if ((op & 0xc0) == 0x80)     // QOI_OP_INDEX
                 {
-                    int vg = (op >> 2) & 31;  // vg is a signed 5-bit number
-                    vg = (vg << 27) >> 27;   // extends sign
-                    int vg_r = ((op & 3) << 2) | readBits(2); // vg_r and vg_b are signed 4-bit number in the stream
-                    vg_r = (vg_r << 28) >> 28;   // extends sign    
-                    int vg_b = cast(int)(readBits(4) << 28) >> 28;
-                    px.r = (px_ref.r + vg + vg_r) & 1023;
-                    px.g = (px_ref.g + vg       ) & 1023;
-                    px.b = (px_ref.b + vg + vg_b) & 1023;
-                    index[index_pos++ & 63] = px;
+                    px = index[op & 63];
                 }
                 else if ( (op & 0xf8) == 0xf0) // QOI_OP_RUN
                 {       
@@ -519,54 +519,6 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 {       
                     run = ((op & 3) << 8) | readByte();
                 }
-                else if (op == QOI_OP_RGB)
-                {
-                    px.r = cast(ushort) readBits(10);
-                    px.g = cast(ushort) readBits(10);
-                    px.b = cast(ushort) readBits(10);
-                    index[index_pos++ & 63] = px;
-                }
-                else if (op == QOI_OP_RGBA)
-                {
-                    px.r = cast(ushort) readBits(10);
-                    px.g = cast(ushort) readBits(10);
-                    px.b = cast(ushort) readBits(10);
-                    px.a = cast(ushort) readBits(10);
-                    index[index_pos++ & 63] = px;
-                }
-                else if (op == QOI_OP_GRAY)
-                {
-                    px.r = cast(ushort) readBits(10);
-                    px.g = px.r;
-                    px.b = px.r;
-                    index[index_pos++ & 63] = px;
-                }
-                else if ((op & 0xc0) == 0x80)     // QOI_OP_INDEX
-                {
-                    px = index[op & 63];
-                }
-                else if ((op & 0xe0) == 0xc0)    // QOI_OP_LUMA2
-                {
-                    int vg   = ((op & 31) << 2) | readBits(2); // vg is a signed 7-bit number
-                    vg = (vg << 25) >> 25;                     // extends sign
-                    int vg_r = cast(int)(readBits(6) << 26) >> 26; // vg_r and vg_b are signed 6-bit number in the stream
-                    int vg_b = cast(int)(readBits(6) << 26) >> 26;
-                    px.r = (px_ref.r + vg + vg_r) & 1023;
-                    px.g = (px_ref.g + vg       ) & 1023;
-                    px.b = (px_ref.b + vg + vg_b) & 1023;
-                    index[index_pos++ & 63] = px;
-                }
-                else if ((op & 0xf8) == 0xe0)    // QOI_OP_LUMA3
-                {
-                    int vg   = ((op & 7) << 6) | readBits(6); // vg is a signed 9-bit number
-                    vg = (vg << 23) >> 23;                    // extends sign
-                    int vg_r = cast(int)(readBits(8) << 24) >> 24; // vg_r and vg_b are signed 8-bit number in the stream
-                    int vg_b = cast(int)(readBits(8) << 24) >> 24;
-                    px.r = (px_ref.r + vg + vg_r) & 1023;
-                    px.g = (px_ref.g + vg       ) & 1023;
-                    px.b = (px_ref.b + vg + vg_b) & 1023;
-                    index[index_pos++ & 63] = px;
-                }
                 else if ((op & 0xf8) == 0xe8)    // QOI_OP_ADIFF
                 {
                     int adiff = ((op & 7) << 2) | readBits(2);
@@ -575,13 +527,93 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
                 }
-                else if (op == QOI_OP_END)
-                {
-                    finished = true;
-                }
                 else
                 {
-                    assert(false);
+                    // Compute averaged predictors then
+
+                    if (lineAbove && enableAveragePrediction)
+                    {
+                        switch(channels)
+                        {
+                            case 4:
+                            case 3:
+                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
+                                px_ref.g = (px_ref.g + (lineAbove[posx * channels + 1] >> 6) + 1) >> 1;
+                                px_ref.b = (px_ref.b + (lineAbove[posx * channels + 2] >> 6) + 1) >> 1;
+                                break;
+                            case 1:
+                            case 2:
+                            default:
+                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
+                                px_ref.g = px_ref.g;
+                                px_ref.b = px_ref.b;
+                        }
+                    }
+
+                    if (op < 128)              // QOI_OP_LUMA
+                    {
+                        int vg = (op >> 2) & 31;  // vg is a signed 5-bit number
+                        vg = (vg << 27) >> 27;   // extends sign
+                        int vg_r = ((op & 3) << 2) | readBits(2); // vg_r and vg_b are signed 4-bit number in the stream
+                        vg_r = (vg_r << 28) >> 28;   // extends sign    
+                        int vg_b = cast(int)(readBits(4) << 28) >> 28;
+                        px.r = (px_ref.r + vg + vg_r) & 1023;
+                        px.g = (px_ref.g + vg       ) & 1023;
+                        px.b = (px_ref.b + vg + vg_b) & 1023;
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if (op == QOI_OP_RGB)
+                    {
+                        px.r = cast(ushort) readBits(10);
+                        px.g = cast(ushort) readBits(10);
+                        px.b = cast(ushort) readBits(10);
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if (op == QOI_OP_RGBA)
+                    {
+                        px.r = cast(ushort) readBits(10);
+                        px.g = cast(ushort) readBits(10);
+                        px.b = cast(ushort) readBits(10);
+                        px.a = cast(ushort) readBits(10);
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if (op == QOI_OP_GRAY)
+                    {
+                        px.r = cast(ushort) readBits(10);
+                        px.g = px.r;
+                        px.b = px.r;
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if ((op & 0xe0) == 0xc0)    // QOI_OP_LUMA2
+                    {
+                        int vg   = ((op & 31) << 2) | readBits(2); // vg is a signed 7-bit number
+                        vg = (vg << 25) >> 25;                     // extends sign
+                        int vg_r = cast(int)(readBits(6) << 26) >> 26; // vg_r and vg_b are signed 6-bit number in the stream
+                        int vg_b = cast(int)(readBits(6) << 26) >> 26;
+                        px.r = (px_ref.r + vg + vg_r) & 1023;
+                        px.g = (px_ref.g + vg       ) & 1023;
+                        px.b = (px_ref.b + vg + vg_b) & 1023;
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if ((op & 0xf8) == 0xe0)    // QOI_OP_LUMA3
+                    {
+                        int vg   = ((op & 7) << 6) | readBits(6); // vg is a signed 9-bit number
+                        vg = (vg << 23) >> 23;                    // extends sign
+                        int vg_r = cast(int)(readBits(8) << 24) >> 24; // vg_r and vg_b are signed 8-bit number in the stream
+                        int vg_b = cast(int)(readBits(8) << 24) >> 24;
+                        px.r = (px_ref.r + vg + vg_r) & 1023;
+                        px.g = (px_ref.g + vg       ) & 1023;
+                        px.b = (px_ref.b + vg + vg_b) & 1023;
+                        index[index_pos++ & 63] = px;
+                    }
+                    else if (op == QOI_OP_END)
+                    {
+                        finished = true;
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
                 }
             }
 
