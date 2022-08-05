@@ -71,7 +71,7 @@ import gamut.codecs.qoi2avg;
 /// [ ]           QOI_OP_ADIFF     10          10     11101xxxxx
 /// [ ]           QOI_OP_RUN        8           8     11110xxx
 /// [ ]           QOI_OP_RUN2      16          16     111110xxxxxxxxxx
-/// [ ]           QOI_OP_GRAY      18          18     11111100gggggggggg
+/// [x]           QOI_OP_GRAY      18          18     11111100gggggggggg
 /// [ ]           QOI_OP_RGB       38          18     11111101rrrrrrrrrr[ggggggggggbbbbbbbbbb]
 /// [ ]           QOI_OP_RGBA      48          28     11111110rrrrrrrrrr[ggggggggggbbbbbbbbbb]aaaaaaaaaa
 /// [ ]           QOI_OP_END        8           8     11111111
@@ -349,10 +349,11 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                             outputBits(vg_b, 4);
                         }
                     }
-                    else if (px.g == px.r && px.g == px.b) 
-                    {
+                    else if (!streamIsGrey && px.g == px.r && px.g == px.b) 
+                    {  
                         // Note: in greyscale, more expensive than QOI_OP_LUMA2
-                        outputByte(QOI_OP_GRAY); // PERF: maybe split this opcode to encode a single vg in less bits
+                        // This opcode should not be used if input is grey.
+                        outputByte(QOI_OP_GRAY);
                         outputBits(px.g, 10);
                     }
                     else
