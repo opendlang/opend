@@ -36,4 +36,4 @@ public import mir.stat.distribution.poisson;
 ///
 public import mir.stat.distribution.uniform;
 ///
-public import mir.stat.distribution.uniformDiscrete;
+public import mir.stat.distribution.uniform_discrete;

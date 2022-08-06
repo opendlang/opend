@@ -8,7 +8,7 @@ Authors: John Michael Hall
 Copyright: 2022 Mir Stat Authors.
 +/
 
-module mir.stat.distribution.uniformDiscrete;
+module mir.stat.distribution.uniform_discrete;
 
 import mir.internal.utility: isFloatingPoint;
 

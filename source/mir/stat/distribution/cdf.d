@@ -36,4 +36,4 @@ public import mir.stat.distribution.poisson: poissonCDF;
 ///
 public import mir.stat.distribution.uniform: uniformCDF;
 ///
-public import mir.stat.distribution.uniformDiscrete: uniformDiscreteCDF;
+public import mir.stat.distribution.uniform_discrete: uniformDiscreteCDF;
