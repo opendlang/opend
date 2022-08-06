@@ -353,7 +353,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     ubyte* image;
     if (streamBitdepth == 10)
     {
-
+        channels = 0; // force auto-detect, in order to be able to perform average prediction
         image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
     }
     else if (streamBitdepth == 8)

@@ -78,7 +78,11 @@ import gamut.codecs.qoi2avg;
 
 enum int WORST_OPCODE_BITS = 48;
 
-enum enableAveragePrediction = false; // For some reason, it's worse
+// Since the decoder allows to decode into another number of channel, this can loose data. 
+// Hence, making it impossible to recreate orrect average predictors.
+// In the future, decode each scanline to a double-buffered 
+// row of qoi10_rgba_t and then convert, so that the last line is kept.
+enum enableAveragePrediction = true; 
 
 enum INDEX_BITS = 8; // original = 6
 enum INDEX_SIZE = 1 << INDEX_BITS;
@@ -322,8 +326,8 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                             case 2:
                             default:
                                 px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                                px_ref.g = px_ref.g;
-                                px_ref.b = px_ref.b;
+                                px_ref.g = px_ref.r;
+                                px_ref.b = px_ref.r;
                         }
                     }
 
@@ -597,8 +601,8 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                             case 2:
                             default:
                                 px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                                px_ref.g = px_ref.g;
-                                px_ref.b = px_ref.b;
+                                px_ref.g = px_ref.r;
+                                px_ref.b = px_ref.r;
                         }
                     }
 

@@ -13,20 +13,20 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - PNG: 8-bit and 16-bit, L/LA/RGB/RGBA
 - JPEG: 8-bit, L/RGB/RGBA, baseline and progressive
 - QOI: 8-bit, RGB/RGBA
-- QOIX: 8-bit, L/LA/RGB/RGBA. _This is an evolving format, specific to Gamut, that embeds some developments in the QOI family of formats._
+- QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA. _This is still an evolving format, specific to Gamut, that embeds some developments in the QOI family of formats._
 
 ## Encoding
 
 - PNG. 8-bit, RGB/RGBA
 - JPEG: 8-bit, greyscale/RGB, baseline
 - QOI: 8-bit, RGB/RGBA
-- QOIX: 8-bit, L/LA/RGB/RGBA
+- QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA
 - DDS: BC7 encoded, 8-bit, RGB/RGBA
 
 
 ## Why QOIX?
 
-Our benchmark results:
+Our benchmark results for 8-bit color images:
 
 | Codec | decode mpps | encode mpps | bit-per-pixel |
 |-------|-------------|-------------|---------------|
@@ -39,7 +39,8 @@ Our benchmark results:
 - QOIX outperforms QOI in compression efficiency at the cost of speed:
   * because it's based upon qoi2avg, a better QOI variant for RGB and RGBA images
   * because it is followed by LZ4, which removes some of the QOI worst cases.
-- Unlike QOI, QOIX adds support for 8-bit greyscale and greyscale + alpha images, with a "QOI-plane" custom codec.
+- QOIX adds support for 8-bit greyscale and greyscale + alpha images, with a "QOI-plane" custom codec.
+- QOIX adds support for 10-bit images, with a "QOI-10b" custom codec. It is lossy but outperform PNG 16-bit in everyway apart from being lossless.
 
 
 &nbsp;
