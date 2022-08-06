@@ -30,7 +30,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,gamma)) $(TD Gamma Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,geometric)) $(TD Geometric Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,gev)) $(TD Generalized Extreme Value Probability Distribution ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,negativeBinomial)) $(TD Negative Binomial Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,negative_binomial)) $(TD Negative Binomial Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Uniform Probability Distribution ))

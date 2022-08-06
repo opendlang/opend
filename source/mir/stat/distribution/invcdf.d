@@ -30,7 +30,7 @@ public import mir.stat.distribution.geometric: geometricInvCDF;
 ///
 public import mir.stat.distribution.gev: gevInvCDF;
 ///
-public import mir.stat.distribution.negativeBinomial: negativeBinomialInvCDF;
+public import mir.stat.distribution.negative_binomial: negativeBinomialInvCDF;
 ///
 public import mir.stat.distribution.normal: normalInvCDF;
 ///

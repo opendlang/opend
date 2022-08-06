@@ -12,7 +12,7 @@ Copyright: 2022 Mir Stat Authors.
 
 +/
 
-module mir.stat.distribution.negativeBinomial;
+module mir.stat.distribution.negative_binomial;
 
 import mir.bignum.fp: Fp;
 import mir.internal.utility: isFloatingPoint;

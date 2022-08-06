@@ -29,7 +29,7 @@ sources_list = [
     'mir/stat/distribution/binomial',
     'mir/stat/distribution/exponential',
     'mir/stat/distribution/geometric',
-    'mir/stat/distribution/negativeBinomial',
+    'mir/stat/distribution/negative_binomial',
     'mir/stat/distribution/normal',
     'mir/stat/distribution/poisson',
     'mir/stat/distribution/uniform',
