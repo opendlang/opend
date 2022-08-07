@@ -542,14 +542,13 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
         for (int posx = 0; posx < desc.width; ++posx)
         {
-            // PERF: decoding loop could use the opcode ordering to go faster, discriminating several of them at once.
             px_ref = px;
 
             if (run > 0) 
             {
                 run--;
             }
-            else if ((decoded_pixels < num_pixels))
+            else if (decoded_pixels < num_pixels))
             {
                 // Compute averaged predictors then
                 if (lineAbove && enableAveragePrediction)
