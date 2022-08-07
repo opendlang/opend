@@ -1042,6 +1042,8 @@ struct Algebraic(_Types...)
     else
     static if (anySatisfy!(hasElaborateCopyConstructor, AllowedTypes))
     {
+        import std.meta: Filter;
+        private alias CC_AllowedTypes = Filter!(hasElaborateCopyConstructor, AllowedTypes);
         // private enum _allCanImplicitlyRemoveConst = allSatisfy!(canImplicitlyRemoveConst, AllowedTypes);
         // private enum _allCanRemoveConst = allSatisfy!(canRemoveConst, AllowedTypes);
         // private enum _allHaveImplicitSemiMutableConstruction = _allCanImplicitlyRemoveConst && _allHaveMutableConstruction;
@@ -1053,7 +1055,7 @@ struct Algebraic(_Types...)
             ubyte[_Storage_.bytes.length] bytes;
         }
 
-        static if (allSatisfy!(hasInoutConstruction, AllowedTypes))
+        static if (allSatisfy!(hasInoutConstruction, CC_AllowedTypes))
         this(return ref scope inout Algebraic rhs) inout
         {
             static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
@@ -1083,7 +1085,7 @@ struct Algebraic(_Types...)
         }
         else
         {
-            static if (allSatisfy!(hasMutableConstruction, AllowedTypes))
+            static if (allSatisfy!(hasMutableConstruction, CC_AllowedTypes))
             this(return ref scope Algebraic rhs)
             {
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
@@ -1101,7 +1103,7 @@ struct Algebraic(_Types...)
                 }
             }
 
-            static if (allSatisfy!(hasConstConstruction, AllowedTypes))
+            static if (allSatisfy!(hasConstConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs) const
             {
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
@@ -1119,7 +1121,7 @@ struct Algebraic(_Types...)
                 }
             }
 
-            static if (allSatisfy!(hasImmutableConstruction, AllowedTypes))
+            static if (allSatisfy!(hasImmutableConstruction, CC_AllowedTypes))
             this(return ref scope immutable Algebraic rhs) immutable
             {
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
@@ -1137,7 +1139,7 @@ struct Algebraic(_Types...)
                 }
             }
 
-            static if (allSatisfy!(hasSemiImmutableConstruction, AllowedTypes))
+            static if (allSatisfy!(hasSemiImmutableConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs) immutable
             {
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
@@ -1155,7 +1157,7 @@ struct Algebraic(_Types...)
                 }
             }
 
-            static if (allSatisfy!(hasSemiMutableConstruction, AllowedTypes))
+            static if (allSatisfy!(hasSemiMutableConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs)
             {
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
