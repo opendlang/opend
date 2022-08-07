@@ -66,8 +66,8 @@ int main(string[] args)
         mean_bpp += bit_per_pixel;
         double size_vs_original = qoix_size_kb / original_size_kb;
 
-        writefln("       decode mpps   encode mpps      bit-per-pixel        size        reduction");
-        writefln("          %8.2f      %8.2f           %8.5f     %9.1f kb  %9.4f", qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel, qoix_size_kb, size_vs_original);
+        writefln("       decode      decode mpps   encode mpps      bit-per-pixel        size        reduction");
+        writefln("  %8.2f ms       %8.2f      %8.2f           %8.5f     %9.1f kb  %9.4f", qoix_decode_ms, qoix_decode_mpps, qoix_encode_mpps, bit_per_pixel, qoix_size_kb, size_vs_original);
         N += 1;
 
         // Check encoding is properly done.
