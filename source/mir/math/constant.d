@@ -1,5 +1,5 @@
 /// Math constants
-/// Authors: Phobos Team, Ilya Yaroshenko
+/// Authors: Phobos Team, Ilia Ki
 module mir.math.constant;
 
 enum real E =          0x1.5bf0a8b1457695355fb8ac404e7a8p+1L; /++ e = 2.718281... +/

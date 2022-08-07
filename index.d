@@ -86,7 +86,7 @@ range primitives for arrays with multi-dimensional like API support)
     )
 )
 
-Copyright: Copyright © 2020-, Ilya Yaroshenko.
+Copyright: Copyright © 2020-, Ilia Ki.
 
 Macros:
         TITLE=Mir Core

@@ -10,7 +10,7 @@ $(T2 max, Maximum value.)
 )
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilya Yaroshenko, $(HTTP erdani.com, Andrei Alexandrescu) (original std.* modules), 
+Authors: Ilia Ki, $(HTTP erdani.com, Andrei Alexandrescu) (original std.* modules), 
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 +/

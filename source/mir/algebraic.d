@@ -112,7 +112,7 @@ $(LI $(LREF some) / $(LREF none) idiom. )
 See_also: $(HTTPS en.wikipedia.org/wiki/Algebra_of_sets, Algebra of sets).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilya Yaroshenko
+Authors: Ilia Ki
 
 Macros:
 T2plain=$(TR $(TDNW $1) $(TD $+))

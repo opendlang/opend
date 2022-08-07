@@ -1,8 +1,8 @@
 /++
 Complex numbers
 
-Copyright: Ilya Yaroshenko; 2010, Lars T. Kyllingstad (original Phobos code)
-Authors: Ilya Yaroshenko, Lars Tandle Kyllingstad, Don Clugston
+Copyright: Ilia Ki; 2010, Lars T. Kyllingstad (original Phobos code)
+Authors: Ilia Ki, Lars Tandle Kyllingstad, Don Clugston
 +/
 module mir.complex;
 

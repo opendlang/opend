@@ -2,7 +2,7 @@
 Mir String Table designed for fast deserialization routines.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilya Yaroshenko 
+Authors: Ilia Ki 
 Macros:
 +/
 module mir.string_table;

@@ -7,7 +7,7 @@ UTF strings behaves like common arrays in Mir.
 `std.uni.byCodePoint` can be used to create a range of characters.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilya Yaroshenko, $(HTTP erdani.com, Andrei Alexandrescu), David Simcha, and
+Authors: Ilia Ki, $(HTTP erdani.com, Andrei Alexandrescu), David Simcha, and
          $(HTTP jmdavisprog.com, Jonathan M Davis). Credit for some of the ideas
          in building this module goes to
          $(HTTP fantascienza.net/leonardo/so/, Leonardo Maffi)

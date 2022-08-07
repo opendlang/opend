@@ -1,6 +1,6 @@
 /++
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: $(HTTP erdani.com, Andrei Alexandrescu), Ilya Yaroshenko (Mir rework of original Phobos code)
+Authors: $(HTTP erdani.com, Andrei Alexandrescu), Ilia Ki (Mir rework of original Phobos code)
 +/
 module mir.internal.memory;
 

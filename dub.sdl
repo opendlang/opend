@@ -1,8 +1,8 @@
 name "mir-core"
 description "Base software building blocks: Algebraic types (aka sumtype/tagged union/variant), universal reflection API, basic math, and more"
 
-authors "Ilya Yaroshenko" "Phobos authors (see information per file)"
-copyright "Ilya Yaroshenko, Kaleidic Associates Advisory Limited, Symmetry Investments"
+authors "Ilia Ki" "Phobos authors (see information per file)"
+copyright "Ilia Ki, Kaleidic Associates Advisory Limited, Symmetry Investments"
 license "Apache-2.0"
 
 buildType "unittest" {

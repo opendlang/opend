@@ -34,7 +34,7 @@ $(TR $(TH Function Name) $(TH Description))
     ))
 )
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilya Yaroshenko, $(HTTP erdani.org, Andrei Alexandrescu (some original code from std.functional))
+Authors: Ilia Ki, $(HTTP erdani.org, Andrei Alexandrescu (some original code from std.functional))
 
 Macros:
 NDSLICE = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)

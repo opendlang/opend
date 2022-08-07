@@ -35,7 +35,7 @@
  *      HALF = &frac12;
  *
  * License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
- * Authors:   $(HTTP digitalmars.com, Walter Bright), Don Clugston, Ilya Yaroshenko
+ * Authors:   $(HTTP digitalmars.com, Walter Bright), Don Clugston, Ilia Ki
  */
 module mir.math.ieee;
 
