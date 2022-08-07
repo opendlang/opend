@@ -155,7 +155,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
 
-    int currentBit = 7;
+    int currentBit = 7; // beginning of a byte
     bytes[p] = 0;
 
     // write the nbits last bits of x, starting from the highest one
@@ -164,13 +164,13 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         assert(nbits >= 2 && nbits <= 16);
         assert( (nbits % 2) == 0);
 
-        for (int b = nbits - 1; b >= 0; --b)
+        for (int b = nbits - 2; b >= 0; b -= 2)
         {
             // which bit to write
-            ubyte bit = (x >>> b) & 1;
-            bytes[p] |= (bit << currentBit);
+            ubyte pairOfBits = (x >>> b) & 3;
+            bytes[p] |= (pairOfBits << (currentBit - 1));
 
-            currentBit--;
+            currentBit -= 2;
 
             if (currentBit == -1)
             {
