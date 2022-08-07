@@ -69,12 +69,15 @@ import gamut.codecs.qoi2avg;
 /// [ ]           QOI_OP_LUMA2     22          10     110ggggggg[rrrrrrbbbbbb]
 /// [ ]           QOI_OP_LUMA3     30          14     11100ggggggggg[rrrrrrrrbbbbbbbb]
 /// [ ]           QOI_OP_ADIFF     10          10     11101xxxxx
-/// [ ]           QOI_OP_RUN        8           8     11110xxx
-/// [ ]           QOI_OP_RUN2      16          16     111110xxxxxxxxxx
+/// [x]           QOI_OP_RUN        8           8     11110xxx
+///                                16          16     11110111xxxxxxxx
+/// [ ]           QOI_OP_ALPHA     16          16     111110aaaaaaaaaa 
 /// [x]           QOI_OP_GRAY      18          18     11111100gggggggggg
 /// [ ]           QOI_OP_RGB       38          18     11111101rrrrrrrrrr[ggggggggggbbbbbbbbbb]
 /// [ ]           QOI_OP_RGBA      48          28     11111110rrrrrrrrrr[ggggggggggbbbbbbbbbb]aaaaaaaaaa
 /// [ ]           QOI_OP_END        8           8     11111111
+
+enum ubyte QOI_OP_ALPHA = 0xf8;
 
 enum int WORST_OPCODE_BITS = 48;
 
@@ -204,16 +207,16 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
     void encodeRun()
     {
-        assert(run > 0 && run <= 1024);
+        assert(run > 0 && run <= 256);
         run--;
-        if (run < 8) 
+        if (run < 7) 
         {
-            outputByte( cast(ubyte)(QOI_OP_RUN | run) );
+            outputByte( cast(ubyte)(QOI_OP_RUN | run) ); // run 1 to 7
         }
         else 
         {
-            outputByte( QOI_OP_RUN2 | ((run >> 8) & 3) );
-            outputByte( run & 0xff );
+            outputByte( cast(ubyte)(QOI_OP_RUN | 7) ); // QOI_OP_RUN2 is inside the QOI_OP_RUN
+            outputBits(run - 7, 8);
         }
         run = 0;
     }
@@ -283,7 +286,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             if (px == px_ref) 
             {
                 run++;
-                if (run == 1024 || encoded_pixels + 1 == num_pixels)
+                if (run == 256 || encoded_pixels + 1 == num_pixels)
                     encodeRun();
             }
             else 
@@ -305,6 +308,8 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     index[index_pos] = px;
                     index_pos = (index_pos + 1) & INDEX_MASK;
 
+                    // Can we hit one of the top pixels or the left pixel exactly?
+                    
                     int va = (px.a - px_ref.a) & 1023;
                     if (va) 
                     {
@@ -313,6 +318,13 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                             // it fits on 5 bits
                             outputBits((0x1d << 5) | (va & 0x1f), 10); // QOI_OP_ADIFF
                         }
+                       /* else
+                        {
+                            outputBits( (QOI_OP_ALPHA >>> 2), 6);
+                            outputBits(px.a, 10);
+                           
+                        }*/
+
                         else
                         {
                             outputByte(QOI_OP_RGBA);
@@ -657,13 +669,18 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
                 }
+               /* else if ((op & 0xfc) == QOI_OP_ALPHA)
+                {
+                    px.a = cast(ushort)( ((op >>> 6) & 3) | readBits(8) );
+                    goto decode_next_op;
+                }*/
                 else if (op < 0xf8) // QOI_OP_RUN
                 {       
                     run = op & 7;
-                }
-                else if (op < 0xfc)   // QOI_OP_RUN2
-                {       
-                    run = ((op & 3) << 8) | readByte();
+                    if (run == 7)
+                    {
+                        run = readBits(8) + 7;
+                    }
                 }               
                 else if (op == QOI_OP_RGB)
                 {
