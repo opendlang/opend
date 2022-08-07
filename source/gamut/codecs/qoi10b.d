@@ -161,7 +161,8 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // write the nbits last bits of x, starting from the highest one
     void outputBits(uint x, int nbits) nothrow @nogc
     {
-        assert(nbits >= 1 && nbits <= 10);
+        assert(nbits >= 2 && nbits <= 16);
+        assert( (nbits % 2) == 0);
 
         for (int b = nbits - 1; b >= 0; --b)
         {
@@ -295,11 +296,10 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         if (va < 16 || va >= (1024 - 16)) // alpha difference between -16 and +15?
                         {
                             // it fits on 5 bits
-                            outputBits(0x1d, 5); // QOI_OP_ADIFF
-                            outputBits(va, 5);   // Note: stored without an offset
-                        }  
+                            outputBits((0x1d << 5) | (va & 0x1f), 10); // QOI_OP_ADIFF
+                        }
                         else
-                        {     
+                        {
                             outputByte(QOI_OP_RGBA);
                             outputBits(px.r, 10);
                             if (!streamIsGrey)
@@ -345,8 +345,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                          ( (vg   >= (1024-16)) || (vg   < 16) ) &&  // fits in 5 bits?
                          ( (vg_b >= (1024- 8)) || (vg_b <  8) ) )   // fits in 4 bits?
                     {
-                        outputBits(0, 1); // QOI_OP_LUMA
-                        outputBits(vg, 5); 
+                        outputBits(vg & 0x1f, 6); // QOI_OP_LUMA
                         if (!streamIsGrey)
                         {
                             outputBits(vg_r, 4);
@@ -365,8 +364,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                          ( (vg   >= (1024-64)) || (vg   < 64) ) &&  // fits in 7 bits?
                          ( (vg_b >= (1024-32)) || (vg_b < 32) ) )   // fits in 6 bits?
                     {
-                        outputBits(0x6, 3); // QOI_OP_LUMA2
-                        outputBits(vg, 7); 
+                        outputBits((0x6 << 7) | (vg & 0x7f), 10); // QOI_OP_LUMA2
                         if (!streamIsGrey)
                         {
                             outputBits(vg_r, 6);
@@ -378,8 +376,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                          ( (vg   >= (1024-256)) || (vg   < 256) ) && // fits in 9 bits?
                          ( (vg_b >= (1024-128)) || (vg_b < 128) ) )   // fits in 8 bits?
                     {
-                        outputBits(0x1c, 5); // QOI_OP_LUMA3
-                        outputBits(vg, 9); 
+                        outputBits((0x1c << 9) | (vg & 0x1ff), 14); // QOI_OP_LUMA3
                         if (!streamIsGrey)
                         {
                             outputBits(vg_r, 8);
