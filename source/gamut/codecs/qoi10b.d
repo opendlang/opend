@@ -78,10 +78,6 @@ import gamut.codecs.qoi2avg;
 
 enum int WORST_OPCODE_BITS = 48;
 
-// Since the decoder allows to decode into another number of channel, this can loose data. 
-// Hence, making it impossible to recreate orrect average predictors.
-// In the future, decode each scanline to a double-buffered 
-// row of qoi10_rgba_t and then convert, so that the last line is kept.
 enum enableAveragePrediction = true; 
 
 enum INDEX_BITS = 8; // original = 6
@@ -471,14 +467,22 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
     int stride = desc.width * channels * 2;
     desc.pitchBytes = stride;         
 
-    int sizeInBytes = stride * desc.height;
+    int pixel_data_size = stride * desc.height;
+    int index_data_size = INDEX_SIZE * cast(int)qoi10_rgba_t.sizeof;
+    int decoded_scanline_size = desc.width * cast(int)qoi10_rgba_t.sizeof;
 
-    ubyte* pixels = cast(ubyte*) QOI_MALLOC(sizeInBytes + INDEX_SIZE * qoi10_rgba_t.sizeof);
+    ubyte* pixels = cast(ubyte*) QOI_MALLOC(pixel_data_size + index_data_size + 2 * decoded_scanline_size);
     if (!pixels) {
         return null;
     }
 
-    qoi10_rgba_t* index = cast(qoi10_rgba_t*)(&pixels[sizeInBytes]);
+    qoi10_rgba_t* index = cast(qoi10_rgba_t*)(&pixels[pixel_data_size]);
+
+    // double-buffered scanline, for correct average predictors
+    // (else we can't decode 4/3 channels to 1/2 with average prediction, the predictors would be wrong
+    //  if taken from the decoded output)
+    qoi10_rgba_t* decodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size + index_data_size]);
+    qoi10_rgba_t* lastDecodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size + index_data_size + decoded_scanline_size]);
 
     assert(channels >= 1 && channels <= 4);
 
@@ -537,9 +541,6 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
     for (int posy = 0; posy < desc.height; ++posy)
     {
-        ushort* line      = cast(ushort*)(pixels + desc.pitchBytes * posy);
-        ushort* lineAbove = (posy > 0) ? cast(ushort*)(pixels + desc.pitchBytes * (posy - 1)) : null;
-
         for (int posx = 0; posx < desc.width; ++posx)
         {
             px_ref = px;
@@ -548,26 +549,15 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
             {
                 run--;
             }
-            else if (decoded_pixels < num_pixels))
+            else if (decoded_pixels < num_pixels)
             {
                 // Compute averaged predictors then
-                if (lineAbove && enableAveragePrediction)
+
+                if (posy > 0 && enableAveragePrediction)
                 {
-                    switch(channels)
-                    {
-                        case 4:
-                        case 3:
-                            px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                            px_ref.g = (px_ref.g + (lineAbove[posx * channels + 1] >> 6) + 1) >> 1;
-                            px_ref.b = (px_ref.b + (lineAbove[posx * channels + 2] >> 6) + 1) >> 1;
-                            break;
-                        case 1:
-                        case 2:
-                        default:
-                            px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                            px_ref.g = px_ref.r;
-                            px_ref.b = px_ref.r;
-                    }
+                    px_ref.r = (px_ref.r + lastDecodedScanline[posx].r + 1) >> 1;
+                    px_ref.g = (px_ref.g + lastDecodedScanline[posx].g + 1) >> 1;
+                    px_ref.b = (px_ref.b + lastDecodedScanline[posx].b + 1) >> 1;
                 }
 
                 decode_next_op:
@@ -709,11 +699,16 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                 }
             }
 
-            qoi10_rgba_t px16b = px;
-            assert(px16b.r <= 1023);
-            assert(px16b.g <= 1023);
-            assert(px16b.b <= 1023);
-            assert(px16b.a <= 1023);
+            decodedScanline[posx] = px;
+            decoded_pixels++;
+        }
+
+        // convert just-decoded scanline into output type
+        ushort* line      = cast(ushort*)(pixels + desc.pitchBytes * posy);
+
+        for (int posx = 0; posx < desc.width; ++posx)
+        {
+            qoi10_rgba_t px16b = decodedScanline[posx]; // 0..1023 components
             px16b.r = cast(ushort)(px16b.r << 6 | (px16b.r >> 4));
             px16b.g = cast(ushort)(px16b.g << 6 | (px16b.g >> 4));
             px16b.b = cast(ushort)(px16b.b << 6 | (px16b.b >> 4));
@@ -742,8 +737,13 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     line[posx * channels + 0] = px16b.r;
                     break;
             }
+        }
 
-            decoded_pixels++;
+        // swap decoded scanline buffers
+        {
+            qoi10_rgba_t* temp = decodedScanline;
+            decodedScanline = lastDecodedScanline;
+            lastDecodedScanline = temp;
         }
     }
 
