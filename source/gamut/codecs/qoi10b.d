@@ -496,13 +496,13 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
         currentBit++;
     }
 
-    int readBit() nothrow @nogc
+    int read2Bits() nothrow @nogc
     {
         ubyte bb = bytes[p];
 
-        int bit = (bytes[p] >>> currentBit) & 1;
+        int bit = (bytes[p] >>> (currentBit - 1)) & 3;
 
-        currentBit -= 1;
+        currentBit -= 2;
         if (currentBit == -1)
         {
             currentBit = 7;
@@ -513,10 +513,11 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
     uint readBits(int nbits) nothrow @nogc
     {
+        assert(nbits % 2 == 0);
         uint r = 0;
-        for (int b = 0; b < nbits; ++b)
+        for (int b = 0; b < nbits; b += 2)
         {
-            r = (r << 1) | readBit();
+            r = (r << 2) | read2Bits();
         }
         return r;
     }
