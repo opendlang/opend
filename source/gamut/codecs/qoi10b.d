@@ -126,12 +126,15 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // At worst, each pixel take 38 bit to be encoded.
     int num_pixels = desc.width * desc.height;
 
+    int index_size = cast(int)(qoi10_rgba_t.sizeof) * INDEX_SIZE;
+    int scanline_size = cast(int)(qoi10_rgba_t.sizeof) * desc.width;
+
     int max_size = cast(int) (cast(long)num_pixels * WORST_OPCODE_BITS + 7) / 8 + QOIX_HEADER_SIZE + cast(int)(qoi10b_padding.sizeof);
 
     ubyte* stream;
 
     int p = 0; // write index into output stream
-    ubyte* bytes = cast(ubyte*) QOI_MALLOC(max_size + qoi10_rgba_t.sizeof * INDEX_SIZE);
+    ubyte* bytes = cast(ubyte*) QOI_MALLOC(max_size + index_size + 2 * scanline_size);
     if (!bytes) 
     {
         return null;
@@ -185,6 +188,10 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi10_rgba_t px = initialPredictor;
     qoi10_rgba_t px_ref = initialPredictor;
 
+    // To serve as predictor
+    qoi10_rgba_t* scanlineConverted     = cast(qoi10_rgba_t*)(&bytes[max_size + index_size]);
+    qoi10_rgba_t* lastScanlineConverted = cast(qoi10_rgba_t*)(&bytes[max_size + index_size + scanline_size]);
+
     ubyte[1024] index_lookup;
     uint index_pos = 0;
     
@@ -213,53 +220,65 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     
     for (int posy = 0; posy < desc.height; ++posy)
     {
-        const(ushort)* line = cast(const(ushort*))(data + desc.pitchBytes * posy);
-        const(ushort)* lineAbove = (posy > 0) ? cast(const(ushort*))(data + desc.pitchBytes * (posy - 1)) : null;
+        {
+            const(ushort)* line = cast(const(ushort*))(data + desc.pitchBytes * posy);
+   
+            // 1. First convert the scanline to full qoi10_rgba_t to serve as predictor.
+            for (int posx = 0; posx < desc.width; ++posx)
+            {
+                qoi10_rgba_t pixel;
+
+                // Note that we drop six lower bits here. This codec is lossy 
+                // if you really have more than 10-bits of precision.
+                // The use case is PBR knob in Dplug, who needs 10-bit (presumably) for the elevation map.
+                switch(channels)
+                {
+                    default:
+                    case 4:
+                        pixel.r = line[posx * channels + 0];
+                        pixel.g = line[posx * channels + 1];
+                        pixel.b = line[posx * channels + 2];
+                        pixel.a = line[posx * channels + 3];
+                        break;
+                    case 3:
+                        pixel.r = line[posx * channels + 0];
+                        pixel.g = line[posx * channels + 1];
+                        pixel.b = line[posx * channels + 2];
+                        pixel.a = 65535;
+                        break;
+                    case 2:
+                        pixel.r = line[posx * channels + 0];
+                        pixel.g = pixel.r;
+                        pixel.b = pixel.r;
+                        pixel.a = line[posx * channels + 1];
+                        break;
+                    case 1:
+                        pixel.r = line[posx * channels + 0];
+                        pixel.g = pixel.r;
+                        pixel.b = pixel.r;
+                        pixel.a = 65535;
+                        break;
+                }
+
+                pixel.r = pixel.r >>> 6;
+                pixel.g = pixel.g >>> 6;
+                pixel.b = pixel.b >>> 6;
+                pixel.a = pixel.a >>> 6;
+
+                assert(pixel.r <= 1023);
+                assert(pixel.g <= 1023);
+                assert(pixel.b <= 1023);
+                assert(pixel.a <= 1023);
+
+                scanlineConverted[posx] = pixel; // Note: if we'd like lossy, this would be the reconstructed buffer.
+            }
+        }
 
         for (int posx = 0; posx < desc.width; ++posx)
         {
             px_ref = px;
 
-            // Note that we drop six lower bits here. This codec is lossy 
-            // if you really have more than 10-bits of precision.
-            // The use case is PBR knob in Dplug, who needs 10-bit (presumably) for the elevation map.
-            switch(channels)
-            {
-                default:
-                case 4:
-                    px.r = line[posx * channels + 0];
-                    px.g = line[posx * channels + 1];
-                    px.b = line[posx * channels + 2];
-                    px.a = line[posx * channels + 3];
-                    break;
-                case 3:
-                    px.r = line[posx * channels + 0];
-                    px.g = line[posx * channels + 1];
-                    px.b = line[posx * channels + 2];
-                    px.a = 65535;
-                    break;
-                case 2:
-                    px.r = line[posx * channels + 0];
-                    px.g = px.r;
-                    px.b = px.r;
-                    px.a = line[posx * channels + 1];
-                    break;
-                case 1:
-                    px.r = line[posx * channels + 0];
-                    px.g = px.r;
-                    px.b = px.r;
-                    px.a = 65535;
-                    break;
-            }
-            px.r = px.r >>> 6;
-            px.g = px.g >>> 6;
-            px.b = px.b >>> 6;
-            px.a = px.a >>> 6;
-
-            assert(px.r <= 1023);
-            assert(px.g <= 1023);
-            assert(px.b <= 1023);
-            assert(px.a <= 1023);
+            px = scanlineConverted[posx];
 
             if (px == px_ref) 
             {
@@ -308,23 +327,11 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
-                    if (lineAbove && enableAveragePrediction)
+                    if (posy > 0 && enableAveragePrediction)
                     {
-                        switch(channels)
-                        {
-                            case 4:
-                            case 3:
-                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                                px_ref.g = (px_ref.g + (lineAbove[posx * channels + 1] >> 6) + 1) >> 1;
-                                px_ref.b = (px_ref.b + (lineAbove[posx * channels + 2] >> 6) + 1) >> 1;
-                                break;
-                            case 1:
-                            case 2:
-                            default:
-                                px_ref.r = (px_ref.r + (lineAbove[posx * channels + 0] >> 6) + 1) >> 1;
-                                px_ref.g = px_ref.r;
-                                px_ref.b = px_ref.r;
-                        }
+                        px_ref.r = (px_ref.r + lastScanlineConverted[posx].r + 1) >> 1;
+                        px_ref.g = (px_ref.g + lastScanlineConverted[posx].g + 1) >> 1;
+                        px_ref.b = (px_ref.b + lastScanlineConverted[posx].b + 1) >> 1;
                     }
 
                     int vg   = (px.g - px_ref.g) & 1023;
@@ -395,6 +402,13 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             pixel_is_encoded:
 
             encoded_pixels++;
+        }
+
+        // Exchange scanline pointers
+        {
+            qoi10_rgba_t* temp = scanlineConverted;
+            scanlineConverted = lastScanlineConverted;
+            lastScanlineConverted = temp;
         }
     }
 
