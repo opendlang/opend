@@ -350,11 +350,13 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     int streamChannels = decQOIX[13]; // coupled with qoix header format
     int streamBitdepth = decQOIX[14]; // coupled with qoix header format
 
+    channels = 0; // doesn't work properly, flags not applied in the right way, should do the type conversions
+
     ubyte* image;
     if (streamBitdepth == 10)
     {
         // This codec can convert 1/2/3/4 to 1/2/3/4 channels on decode, per scanline.
-        image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+        image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);        
     }
     else if (streamBitdepth == 8)
     {
