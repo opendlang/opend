@@ -1692,7 +1692,7 @@ struct Algebraic(_Types...)
             }
             static if (allSatisfy!(ApplyRight!(templateNot!(templateOr!(hasField, isProperty)), member), _ReflectionTypes))
             {
-                mixin(`auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) { static if (args.length) { import core.lifetime: forward; return this.getMember!member(forward!args); } else return this.getMember!member;  }});
+                mixin(`template ` ~ member ~`(TArgs...) { auto ref ` ~ member ~q{(this This, Args...)(auto ref Args args) { static if (args.length) { import core.lifetime: forward; return this.getMember!(member, TArgs)(forward!args); } else return this.getMember!(member, TArgs);  }} ~ `}`);
             }
         }
     }
@@ -2008,6 +2008,7 @@ unittest
         void b(string b) @property { _b = b; }
 
         int retArg(int v) { return v; }
+        string retArgT(TArgs...)(int v) { return TArgs.stringof; }
 
         this(int a, string b)
         {
@@ -2022,6 +2023,7 @@ unittest
         int a;
 
         double retArg(double v) { return v; }
+        double retArgT(TArgs...)(int v) { return v * TArgs.length; }
 
         // alias this members are supported 
         Base base;
@@ -2047,6 +2049,10 @@ unittest
     // method call support
     assert(v.retArg(100)._is!int);
     assert(v.retArg(100) == 100);
+
+    // method with template args support
+    assert(v.retArgT!dchar(100)._is!string);
+    assert(v.retArgT!dchar(100) == "(dchar)");
 
     v = V("S", 5);
     assert(v._is!S);
@@ -2792,7 +2798,7 @@ unittest
 Applies a member handler to the given Variant depending on the held type,
 ensuring that all types are handled by the visiting handler.
 +/
-alias getMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.compileTime, false);
+alias getMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.compileTime, false);
 
 ///
 @safe pure @nogc nothrow
@@ -2825,7 +2831,7 @@ ensuring that all types are handled by the visiting handler.
 
 Fuses algebraic types on return.
 +/
-alias matchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.compileTime, true);
+alias matchMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.compileTime, true);
 
 ///
 @safe pure @nogc nothrow
@@ -2898,13 +2904,13 @@ Throws: Exception if member can't be accessed with provided arguments
 
 Fuses algebraic types on return.
 +/
-alias tryMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.exception, true);
+alias tryMatchMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.exception, true);
 
 /++
 Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Returns: nullable variant, null value is used if the member can't be called with provided arguments.
 +/
-alias optionalGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.nullable, false);
+alias optionalGetMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.nullable, false);
 
 /++
 Behaves as $(LREF matchMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
@@ -2912,13 +2918,13 @@ Returns: nullable variant, null value is used if the member can't be called with
 
 Fuses algebraic types on return.
 +/
-alias optionalMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.nullable, true);
+alias optionalMatchMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.nullable, true);
 
 /++
 Behaves as $(LREF getMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
 Returns: optionally nullable type, null value is used if the member can't be called with provided arguments.
 +/
-alias autoGetMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.auto_, false);
+alias autoGetMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.auto_, false);
 
 /++
 Behaves as $(LREF matchMember) but doesn't enforce at compile time that all types can be handled by the member visitor.
@@ -2926,25 +2932,42 @@ Returns: optionally nullable type, null value is used if the member can't be cal
 
 Fuses algebraic types on return.
 +/
-alias autoMatchMember(string member) = visitImpl!(getMemberHandler!member, Exhaustive.auto_, true);
+alias autoMatchMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, TArgs), Exhaustive.auto_, true);
 
-private template getMemberHandler(string member)
+private template getMemberHandler(string member, TArgs...)
 {
     ///
     auto ref getMemberHandler(V, Args...)(ref V value, auto ref Args args)
     {
         static if (Args.length == 0)
         {
-            return __traits(getMember, value, member);
+            static if (TArgs.length)
+            {
+                return mixin(`value.` ~ member ~ `!TArgs`);
+            }
+            else
+            {
+                return __traits(getMember, value, member);
+            }
         }
         else
         {
             import core.lifetime: forward;
             import mir.reflection: hasField;
-            static if (hasField!(V, member) && Args.length == 1)
-                return __traits(getMember, value, member) = forward!args;
+            static if (TArgs.length)
+            {
+                static if (hasField!(V, member) && Args.length == 1)
+                    return mixin(`value.` ~ member ~ `!TArgs`) = forward!args;
+                else
+                    return mixin(`value.` ~ member ~ `!TArgs(forward!args)`);
+            }
             else
-                return __traits(getMember, value, member)(forward!args);
+            {
+                static if (hasField!(V, member) && Args.length == 1)
+                    return __traits(getMember, value, member) = forward!args;
+                else
+                    return __traits(getMember, value, member)(forward!args);
+            }
         }
     }
 }
