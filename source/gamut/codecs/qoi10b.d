@@ -71,13 +71,13 @@ import gamut.codecs.qoi2avg;
 /// [ ]           QOI_OP_ADIFF     10          10     11101xxxxx
 /// [x]           QOI_OP_RUN        8           8     11110xxx
 ///                                16          16     11110111xxxxxxxx
-/// [ ]           QOI_OP_ALPHA     16          16     111110aaaaaaaaaa 
+/// [ ]           QOI_OP_ADIFF2    16          16     111110xxxxxxxx 
 /// [x]           QOI_OP_GRAY      18          18     11111100gggggggggg
 /// [ ]           QOI_OP_RGB       38          18     11111101rrrrrrrrrr[ggggggggggbbbbbbbbbb]
 /// [ ]           QOI_OP_RGBA      48          28     11111110rrrrrrrrrr[ggggggggggbbbbbbbbbb]aaaaaaaaaa
 /// [ ]           QOI_OP_END        8           8     11111111
 
-enum ubyte QOI_OP_ALPHA = 0xf8;
+enum ubyte QOI_OP_ADIFF2 = 0xf8;
 
 enum int WORST_OPCODE_BITS = 48;
 
@@ -313,18 +313,16 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     int va = (px.a - px_ref.a) & 1023;
                     if (va) 
                     {
-                        if (va < 16 || va >= (1024 - 16)) // alpha difference between -16 and +15?
+                        if (va < 16 || va >= (1024 - 16)) // does it fit on 5 bits?
                         {
                             // it fits on 5 bits
                             outputBits((0x1d << 5) | (va & 0x1f), 10); // QOI_OP_ADIFF
                         }
-                       /* else
+                        else if (va < 128 || va >= (1024 - 128)) // does it fit on 8 bits?
                         {
-                            outputBits( (QOI_OP_ALPHA >>> 2), 6);
-                            outputBits(px.a, 10);
-                           
-                        }*/
-
+                            outputBits( (QOI_OP_ADIFF2 >>> 2), 6);
+                            outputBits(va, 8);  
+                        }
                         else
                         {
                             outputByte(QOI_OP_RGBA);
@@ -669,11 +667,13 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                     px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
                 }
-               /* else if ((op & 0xfc) == QOI_OP_ALPHA)
+                else if ((op & 0xfc) == QOI_OP_ADIFF2)
                 {
-                    px.a = cast(ushort)( ((op >>> 6) & 3) | readBits(8) );
+                    int adiff = ((op & 3) << 6) | readBits(6);
+                    adiff = (adiff << 24) >> 24; // sign-extend
+                    px.a = cast(ushort)((px.a + adiff) & 1023);
                     goto decode_next_op;
-                }*/
+                }
                 else if (op < 0xf8) // QOI_OP_RUN
                 {       
                     run = op & 7;
