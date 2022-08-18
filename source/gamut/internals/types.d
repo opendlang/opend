@@ -53,6 +53,72 @@ int imageTypePixelSize(ImageType type) pure
     }
 }
 
+/// Number of channels in this image type.
+int imageTypeNumChannels(ImageType type) pure
+{
+    final switch(type)
+    {
+        case ImageType.uint8:   return 1;
+        case ImageType.uint16:  return 1;
+        case ImageType.f32:     return 1;
+        case ImageType.la8:     return 2;
+        case ImageType.la16:    return 2;
+        case ImageType.laf32:   return 2;
+        case ImageType.rgb8:    return 3;
+        case ImageType.rgb16:   return 3;
+        case ImageType.rgbf32:  return 3;
+        case ImageType.rgba8:   return 4;
+        case ImageType.rgba16:  return 4;
+        case ImageType.rgbaf32: return 4;
+        case ImageType.unknown: assert(false);
+    }
+}
+
+/// Is this type 8-bit?
+int imageTypeIs8Bit(ImageType type) pure
+{
+    switch(type)
+    {
+        case ImageType.uint8:
+        case ImageType.la8:
+        case ImageType.rgb8:
+        case ImageType.rgba8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/// Is this type 16-bit?
+int imageTypeIs16Bit(ImageType type) pure
+{
+    switch(type)
+    {
+        case ImageType.uint16:
+        case ImageType.la16:
+        case ImageType.rgb8:
+        case ImageType.rgba8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/// Is this type 32-bit floating-point?
+int imageTypeIsFP32(ImageType type) pure
+{
+    switch(type)
+    {
+        case ImageType.f32:
+        case ImageType.laf32:
+        case ImageType.rgbf32:
+        case ImageType.rgbaf32:
+            return true;
+        default:
+            return false;
+    }
+}
+
 /// Check if these image dimensions are valid in Gamut.
 bool imageIsValidSize(int width, int height) pure
 {
@@ -374,15 +440,15 @@ ImageType convertImageTypeToRGB(ImageType type)
         case uint8:   t = rgb8; break;
         case uint16:  t = rgb16; break;
         case f32:     t = rgbf32; break;
-        case la8:     t = rgb8; break;
-        case la16:    t = rgb16; break;
-        case laf32:   t = rgbf32; break;
+        case la8:     t = rgba8; break;
+        case la16:    t = rgba16; break;
+        case laf32:   t = rgbaf32; break;
         case rgb8:    t = rgb8; break;
         case rgb16:   t = rgb16; break;
         case rgbf32:  t = rgbf32; break;
-        case rgba8:   t = rgb8; break;
-        case rgba16:  t = rgb16; break;
-        case rgbaf32: t = rgbf32; break;
+        case rgba8:   t = rgba8; break;
+        case rgba16:  t = rgba16; break;
+        case rgbaf32: t = rgbaf32; break;
     }
     return t;
 }

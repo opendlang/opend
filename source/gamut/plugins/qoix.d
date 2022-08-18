@@ -105,9 +105,10 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    decoded = cast(ubyte*) qoix_lz4_decode(buf, len, &desc, requestedComp);
+    ImageType decodedToType;
+    decoded = cast(ubyte*) qoix_lz4_decode(buf, len, &desc, flags, decodedToType);
 
-    int decodedComp = desc.channels; // get decoded number of channels (this is unlike the original QOI API).
+    // Note: do not use desc.channels or desc.bits here, it doesn't mean anything anymore.
 
     if (decoded is null)
     {
@@ -130,41 +131,9 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._height = desc.height;
 
     // PERF: allocate a QOIX decoding buffer with proper layout by passing layoutConstraints to qoix_lz4_decode
-    image._layoutConstraints = 0; // No particular constraint followd in QOIX decoder.
+    image._layoutConstraints = 0; // No particular constraint followd in QOIX decoder, for now.
 
-    int bitdepth = desc.bitdepth;
-
-    if (bitdepth == 8)
-    {
-        if (decodedComp == 1)
-            image._type = ImageType.uint8;
-        else if (decodedComp == 2)
-            image._type = ImageType.la8;
-        else if (decodedComp == 3)
-            image._type = ImageType.rgb8;
-        else if (decodedComp == 4)
-            image._type = ImageType.rgba8;
-        else
-            // QOI with channel different from 1, 2, 3 or 4 is impossible.
-            assert(false);
-    }
-    else if (bitdepth == 10)
-    {
-        if (decodedComp == 1)
-            image._type = ImageType.uint16;
-        else if (decodedComp == 2)
-            image._type = ImageType.la16;
-        else if (decodedComp == 3)
-            image._type = ImageType.rgb16;
-        else if (decodedComp == 4)
-            image._type = ImageType.rgba16;
-        else
-            // QOI with channel different from 1, 2, 3 or 4 is impossible.
-            assert(false);
-    }
-    else 
-        assert(false);
-
+    image._type = decodedToType;
     image._pitch = desc.pitchBytes;
     image._pixelAspectRatio = desc.pixelAspectRatio;
     image._resolutionY = desc.resolutionY;
@@ -315,12 +284,20 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 ///   QOIX header (15 bytes)
 ///   Original data size (4 bytes)
 ///   LZ4 encoded opcodes
-/// Warning: unlike qoi_decode, qoi_desc.channels is the decoded channel count, since you may not
-///          obtain the one number of channels you asked for.
+/// Warning: qoi_desc.channels is the encoded channel count.
+/// requestedType may or may not be followed as a wish.
+/// The actual type, after flags applied, is in decodedType.
 version(decodeQOIX)
-ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) @trusted
+ubyte* qoix_lz4_decode(const(ubyte)* data, 
+                       int size, 
+                       qoi_desc *desc, 
+                       int flags,
+                       out ImageType decodedType) @trusted
 {
     if (size < QOIX_HEADER_SIZE + 4)
+        return null;
+
+    if (!validLoadFlags(flags))
         return null;
 
     // Read original size of data.
@@ -335,6 +312,17 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
 
     decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
 
+    int streamChannels = decQOIX[13]; // coupled with qoix header format
+    int streamBitdepth = decQOIX[14]; // coupled with qoix header format
+
+    // What type should it be once decompressed?
+    ImageType streamType;
+    if (!identifyTypeFromStream(streamChannels, streamBitdepth, streamType))
+    {
+        // Corrupted stream, unknown type.
+        return null;
+    }
+
     const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
 
     int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
@@ -346,15 +334,15 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         free(decQOIX);
         return null;
     }
-
-    int streamChannels = decQOIX[13]; // coupled with qoix header format
-    int streamBitdepth = decQOIX[14]; // coupled with qoix header format
-
-    channels = 0; // doesn't work properly, flags not applied in the right way, should do the type conversions
-
+  
     ubyte* image;
     if (streamBitdepth == 10)
     {
+        // Using qoi10b.d codec
+        decodedType = applyLoadFlags_QOI10b(streamType, flags);
+        decodedType = streamType;
+        int channels = imageTypeNumChannels(decodedType);
+
         // This codec can convert 1/2/3/4 to 1/2/3/4 channels on decode, per scanline.
         image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);        
     }
@@ -363,17 +351,18 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         if (streamChannels == 1 || streamChannels == 2)
         {
             // Using qoiplane.d codec
-            // Force channel auto-detect if 3 or 4 channels are requested, which this codec can't do.
-            if (channels != 1 && channels != 2)
-                channels = 0;
+            decodedType = applyLoadFlags_QOIPlane(streamType, flags);
+            decodedType = streamType;
+            int channels = imageTypeNumChannels(decodedType);
+
             image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
         }
         else if (streamChannels == 3 || streamChannels == 4)
         {
             // Using qoi2avg.d codec
-            // Force channel auto-detect if 1 or 2 channels are requested, which this codec can't do.
-            if (channels != 3 && channels != 4)
-                channels = 0;
+            decodedType = applyLoadFlags_QOI2AVG(streamType, flags);
+            decodedType = streamType;
+            int channels = imageTypeNumChannels(decodedType);
             image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
         }
     }
@@ -383,11 +372,92 @@ ubyte* qoix_lz4_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         return null;
     }
 
-    // Different API, qoix_lz4_decode never return stream number of channels, only the one asked
-    if (channels != 0)
-        desc.channels = cast(ubyte)channels;
-
     scope(exit) free(decQOIX);
 
     return image;
+}
+
+// Construct output type from channel count and bitness.
+bool identifyTypeFromStream(int channels, int bitdepth, out ImageType type)
+{
+    if (bitdepth == 8)
+    {
+        if (channels == 1)
+            type = ImageType.uint8;
+        else if (channels == 2)
+            type = ImageType.la8;
+        else if (channels == 3)
+            type = ImageType.rgb8;
+        else if (channels == 4)
+            type = ImageType.rgba8;
+        else
+            return false;
+    }
+    else if (bitdepth == 10)
+    {
+        if (channels == 1)
+            type = ImageType.uint16;
+        else if (channels == 2)
+            type = ImageType.la16;
+        else if (channels == 3)
+            type = ImageType.rgb16;
+        else if (channels == 4)
+            type = ImageType.rgba16;
+        else
+            return false;
+    }
+    else
+        return false;
+    return true;
+}
+
+// Given those load flags, what is the best effort the decoder can do?
+ImageType applyLoadFlags_QOI2AVG(ImageType type, LoadFlags flags)
+{
+    if (imageTypeIs8Bit(type))
+    {
+        // QOI2AVG can only convert rgb8 <=> rgba8 at decode-time
+        if (flags & LOAD_ALPHA)
+            type = convertImageTypeToAddAlphaChannel(type);
+
+        if (flags & LOAD_NO_ALPHA)
+            type = convertImageTypeToDropAlphaChannel(type);
+    }
+    return type;
+}
+
+// Given those load flags, what is the best effort the decoder can do?
+ImageType applyLoadFlags_QOIPlane(ImageType type, LoadFlags flags)
+{
+    if (imageTypeIs8Bit(type))
+    {
+        // QOIPlane can convert ubyte8 <=> la8
+        if (flags & LOAD_ALPHA)
+            type = convertImageTypeToAddAlphaChannel(type);
+
+        if (flags & LOAD_NO_ALPHA)
+            type = convertImageTypeToDropAlphaChannel(type);
+    }
+    return type;
+}
+
+// Given those load flags, what is the best effort the decoder can do?
+ImageType applyLoadFlags_QOI10b(ImageType type, LoadFlags flags)
+{
+    // QOI-10b can convert to 1/2/3/4 channels at decode-time
+    if (imageTypeIs16Bit(type))
+    {
+        if (flags & LOAD_GREYSCALE)
+            type = convertImageTypeToGreyscale(type);
+
+        if (flags & LOAD_RGB)
+            type = convertImageTypeToRGB(type);
+
+        if (flags & LOAD_ALPHA)
+            type = convertImageTypeToAddAlphaChannel(type);
+
+        if (flags & LOAD_NO_ALPHA)
+            type = convertImageTypeToDropAlphaChannel(type);
+    }
+    return type;
 }

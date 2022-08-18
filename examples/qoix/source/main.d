@@ -41,8 +41,6 @@ int main(string[] args)
         if (image.errored)
             throw new Exception(to!string(image.errorMessage));
 
-//        image.convertTo16Bit();
-
         int width = image.width;
         int height = image.height;
 
