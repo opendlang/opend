@@ -160,7 +160,7 @@ private ulong LZ4_read64(const(void)* memPtr)
 
 private size_t LZ4_read_ARCH(const(void)* p)
 {
-	version(X86_64) // BUG: this shouldn't work on arm64
+	static if (size_t.sizeof == 8) // BUG: this shouldn't work on arm64
 	{
 		return cast(size_t)LZ4_read64(p);
 	}
@@ -209,7 +209,7 @@ unittest
 }
 
 
-/* *******************************
+/********************************
    Common functions
 ********************************/
 
@@ -225,7 +225,14 @@ private uint LZ4_count(const(ubyte)* pIn, const(ubyte)* pMatch, const(ubyte)* pI
 		return cast(uint)(pIn - pStart);
 	}
 
-	version(X86_64) {if ((pIn<(pInLimit-3)) && (LZ4_read32(pMatch) == LZ4_read32(pIn))) { pIn+=4; pMatch+=4; }}
+	static if (size_t.sizeof == 8) 
+	{
+		if ((pIn<(pInLimit-3)) && (LZ4_read32(pMatch) == LZ4_read32(pIn))) 
+		{ 
+			pIn+=4; 
+			pMatch+=4; 
+		}
+	}
 	if ((pIn<(pInLimit-1)) && (LZ4_read16(pMatch) == LZ4_read16(pIn))) { pIn+=2; pMatch+=2; }
 	if ((pIn<pInLimit) && (*pMatch == *pIn)) pIn++;
 	return cast(uint)(pIn - pStart);
