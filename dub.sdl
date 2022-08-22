@@ -8,11 +8,16 @@ license "Apache-2.0"
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_core_test"
+}
+
+buildType "unittest-verbose" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
     dflags "-checkaction=context" "-allinst"
 }
 
 buildType "unittest-dip1008" {
     buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_core_test"
-    dflags "-lowmem" "-preview=dip1008" "-checkaction=context" "-allinst"
+    dflags "-lowmem" "-preview=dip1008"
 }
