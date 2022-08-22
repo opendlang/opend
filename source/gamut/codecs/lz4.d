@@ -106,7 +106,10 @@ private bool LZ4_64bits()
 
 private bool LZ4_isLittleEndian()
 {
-	return (endian == Endian.littleEndian);
+	version(LittleEndian)
+		return true;
+	else
+		return false;
 }
 
 
@@ -189,24 +192,22 @@ private void LZ4_wildCopy(void* dstPtr, const(void)* srcPtr, void* dstEnd)
 
 /**************************************/
 
-private uint LZ4_NbCommonBytes (size_t val)
+public uint LZ4_NbCommonBytes (size_t val)
 {
     import core.bitop: bsf;
     assert(val != 0);
-    return bsf(val) >> 3; 
+    return bsf(val) >> 3;
 }
-// TODO: does this function really work?
-
-/*
 unittest
 {
+    assert(LZ4_NbCommonBytes(1) == 0);
     assert(LZ4_NbCommonBytes(4) == 0);
     assert(LZ4_NbCommonBytes(256) == 1);
-    assert(LZ4_NbCommonBytes(65534) == 2);
-    assert(LZ4_NbCommonBytes(0xffffff) == 2);
+    assert(LZ4_NbCommonBytes(65534) == 0);
+    assert(LZ4_NbCommonBytes(0xffffff) == 0);
     assert(LZ4_NbCommonBytes(0x1000000) == 3);
 }
-*/
+
 
 /* *******************************
    Common functions
