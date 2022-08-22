@@ -366,12 +366,12 @@ unittest
 {
     assert(computeRequestedImageComponents(LOAD_GREYSCALE) == -1); // keep same, because it is alpha-preserving.
     assert(computeRequestedImageComponents(LOAD_GREYSCALE | LOAD_NO_ALPHA) == 1);
-    assert(computeRequestedImageComponents(LOAD_GREYSCALE_ALPHA) == 2);
-    assert(computeRequestedImageComponents(LOAD_GREYSCALE_ALPHA | LOAD_NO_ALPHA) == 0); // invalid
+    assert(computeRequestedImageComponents(LOAD_GREYSCALE | LOAD_ALPHA) == 2);
+    assert(computeRequestedImageComponents(LOAD_GREYSCALE | LOAD_ALPHA | LOAD_NO_ALPHA) == 0); // invalid
     assert(computeRequestedImageComponents(LOAD_RGB) == -1);
-    assert(computeRequestedImageComponents(LOAD_RGB  | LOAD_NO_ALPHA) == 3);
+    assert(computeRequestedImageComponents(LOAD_RGB | LOAD_NO_ALPHA) == 3);
     assert(computeRequestedImageComponents(LOAD_RGB | LOAD_GREYSCALE) == 0); // invalid
-    assert(computeRequestedImageComponents(LOAD_RGBA) == 4);
+    assert(computeRequestedImageComponents(LOAD_RGB | LOAD_ALPHA) == 4);
 }
 
 
