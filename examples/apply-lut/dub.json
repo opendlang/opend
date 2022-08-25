@@ -1,0 +1,15 @@
+{
+    "name": "apply-lut",
+    "description": "Apply all known LUT to the same image.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    },
+
+    "subConfigurations":
+    {
+        "gamut": "boost+mit"
+    }
+}
