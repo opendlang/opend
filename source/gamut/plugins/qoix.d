@@ -165,7 +165,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
 
     switch (image._type)
     {
-        case ImageType.uint8: 
+        case ImageType.l8: 
             desc.bitdepth = 8;
             desc.channels = 1; 
             break;
@@ -181,7 +181,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
             desc.bitdepth = 8;
             desc.channels = 4; 
             break;
-        case ImageType.uint16: 
+        case ImageType.l16: 
             desc.channels = 1; 
             desc.bitdepth = 10;
             break;
@@ -383,7 +383,7 @@ bool identifyTypeFromStream(int channels, int bitdepth, out ImageType type)
     if (bitdepth == 8)
     {
         if (channels == 1)
-            type = ImageType.uint8;
+            type = ImageType.l8;
         else if (channels == 2)
             type = ImageType.la8;
         else if (channels == 3)
@@ -396,7 +396,7 @@ bool identifyTypeFromStream(int channels, int bitdepth, out ImageType type)
     else if (bitdepth == 10)
     {
         if (channels == 1)
-            type = ImageType.uint16;
+            type = ImageType.l16;
         else if (channels == 2)
             type = ImageType.la16;
         else if (channels == 3)

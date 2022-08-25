@@ -90,7 +90,7 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
 
     switch (actualComp)
     {
-        case 1: image._type = ImageType.uint8; break;
+        case 1: image._type = ImageType.l8; break;
         case 3: image._type = ImageType.rgb8; break;
         case 4: image._type = ImageType.rgba8; break;
         default:
@@ -116,7 +116,7 @@ bool saveJPEG(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
 
     switch (image._type)
     {
-        case ImageType.uint8:
+        case ImageType.l8:
             components = 1; break;
         case ImageType.rgb8:
             components = 3; 

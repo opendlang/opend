@@ -66,6 +66,7 @@ int main(string[] args)
 
         image.loadFromFile(input);
 
+
         if (image.errored)
         {
             throw new Exception("Couldn't open file " ~ input);

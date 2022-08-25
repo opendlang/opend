@@ -172,7 +172,7 @@ Our benchmark results for 8-bit color images:
       throw new Exception("Writing output.png failed");
   ```
 
-  > **Key concept:** `Imageformat` is simply the codecs/containers files Gamut encode and decodes to.
+  > **Key concept:** `ImageFormat` is simply the codecs/containers files Gamut encode and decodes to.
 
   ```d
   enum ImageFormat

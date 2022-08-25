@@ -37,9 +37,9 @@ int imageTypePixelSize(ImageType type) pure
 {
     final switch(type)
     {
-        case ImageType.uint8:   return 1;
-        case ImageType.uint16:  return 2;
-        case ImageType.f32:     return 4;
+        case ImageType.l8:      return 1;
+        case ImageType.l16:     return 2;
+        case ImageType.lf32:    return 4;
         case ImageType.la8:     return 2;
         case ImageType.la16:    return 4;
         case ImageType.laf32:   return 8;
@@ -58,9 +58,9 @@ int imageTypeNumChannels(ImageType type) pure
 {
     final switch(type)
     {
-        case ImageType.uint8:   return 1;
-        case ImageType.uint16:  return 1;
-        case ImageType.f32:     return 1;
+        case ImageType.l8:   return 1;
+        case ImageType.l16:  return 1;
+        case ImageType.lf32:     return 1;
         case ImageType.la8:     return 2;
         case ImageType.la16:    return 2;
         case ImageType.laf32:   return 2;
@@ -79,7 +79,7 @@ int imageTypeIs8Bit(ImageType type) pure
 {
     switch(type)
     {
-        case ImageType.uint8:
+        case ImageType.l8:
         case ImageType.la8:
         case ImageType.rgb8:
         case ImageType.rgba8:
@@ -94,7 +94,7 @@ int imageTypeIs16Bit(ImageType type) pure
 {
     switch(type)
     {
-        case ImageType.uint16:
+        case ImageType.l16:
         case ImageType.la16:
         case ImageType.rgb8:
         case ImageType.rgba8:
@@ -109,7 +109,7 @@ int imageTypeIsFP32(ImageType type) pure
 {
     switch(type)
     {
-        case ImageType.f32:
+        case ImageType.lf32:
         case ImageType.laf32:
         case ImageType.rgbf32:
         case ImageType.rgbaf32:
@@ -415,18 +415,18 @@ ImageType convertImageTypeToGreyscale(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = uint8; break;
-        case uint16:  t = uint16; break;
-        case f32:     t = f32; break;
-        case la8:     t = uint8; break;
-        case la16:    t = uint16; break;
-        case laf32:   t = f32; break;
-        case rgb8:    t = uint8; break;
-        case rgb16:   t = uint16; break;
-        case rgbf32:  t = f32; break;
-        case rgba8:   t = uint8; break;
-        case rgba16:  t = uint16; break;
-        case rgbaf32: t = f32; break;
+        case l8:      t = l8; break;
+        case l16:     t = l16; break;
+        case lf32:    t = lf32; break;
+        case la8:     t = la8; break;
+        case la16:    t = la16; break;
+        case laf32:   t = laf32; break;
+        case rgb8:    t = l8; break;
+        case rgb16:   t = l16; break;
+        case rgbf32:  t = lf32; break;
+        case rgba8:   t = la8; break;
+        case rgba16:  t = la16; break;
+        case rgbaf32: t = laf32; break;
     }
     return t;
 }
@@ -437,9 +437,9 @@ ImageType convertImageTypeToRGB(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = rgb8; break;
-        case uint16:  t = rgb16; break;
-        case f32:     t = rgbf32; break;
+        case l8:      t = rgb8; break;
+        case l16:     t = rgb16; break;
+        case lf32:    t = rgbf32; break;
         case la8:     t = rgba8; break;
         case la16:    t = rgba16; break;
         case laf32:   t = rgbaf32; break;
@@ -459,9 +459,9 @@ ImageType convertImageTypeToAddAlphaChannel(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = la8; break;
-        case uint16:  t = la16; break;
-        case f32:     t = laf32; break;
+        case l8:      t = la8; break;
+        case l16:     t = la16; break;
+        case lf32:    t = laf32; break;
         case la8:     t = la8; break;
         case la16:    t = la16; break;
         case laf32:   t = laf32; break;
@@ -481,12 +481,12 @@ ImageType convertImageTypeToDropAlphaChannel(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = uint8; break;
-        case uint16:  t = uint16; break;
-        case f32:     t = f32; break;
-        case la8:     t = uint8; break;
-        case la16:    t = uint16; break;
-        case laf32:   t = f32; break;
+        case l8:      t = l8; break;
+        case l16:     t = l16; break;
+        case lf32:    t = lf32; break;
+        case la8:     t = l8; break;
+        case la16:    t = l16; break;
+        case laf32:   t = lf32; break;
         case rgb8:    t = rgb8; break;
         case rgb16:   t = rgb16; break;
         case rgbf32:  t = rgbf32; break;
@@ -503,9 +503,9 @@ ImageType convertImageTypeTo8Bit(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = uint8; break;
-        case uint16:  t = uint8; break;
-        case f32:     t = uint8; break;
+        case l8:      t = l8; break;
+        case l16:     t = l8; break;
+        case lf32:    t = l8; break;
         case la8:     t = la8; break;
         case la16:    t = la8; break;
         case laf32:   t = la8; break;
@@ -525,9 +525,9 @@ ImageType convertImageTypeTo16Bit(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = uint16; break;
-        case uint16:  t = uint16; break;
-        case f32:     t = uint16; break;
+        case l8:      t = l16; break;
+        case l16:     t = l16; break;
+        case lf32:    t = l16; break;
         case la8:     t = la16; break;
         case la16:    t = la16; break;
         case laf32:   t = la16; break;
@@ -548,9 +548,9 @@ ImageType convertImageTypeToFP32(ImageType type)
     final switch(type) with (ImageType)
     {
         case unknown: t = unknown; break;
-        case uint8:   t = f32; break;
-        case uint16:  t = f32; break;
-        case f32:     t = f32; break;
+        case l8:      t = lf32; break;
+        case l16:     t = lf32; break;
+        case lf32:    t = lf32; break;
         case la8:     t = laf32; break;
         case la16:    t = laf32; break;
         case laf32:   t = laf32; break;

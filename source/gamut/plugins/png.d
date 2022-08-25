@@ -124,7 +124,7 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     {
         if (components == 1)
         {
-            image._type = ImageType.uint8;
+            image._type = ImageType.l8;
         }
         else if (components == 2)
         {
@@ -143,7 +143,7 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     {
         if (components == 1)
         {
-            image._type = ImageType.uint16;
+            image._type = ImageType.l16;
         }
         else if (components == 2)
         {
@@ -180,7 +180,7 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     int channels = 0;
     switch (image._type)
     {
-        case ImageType.uint8:  channels = 1; break;
+        case ImageType.l8:     channels = 1; break;
         case ImageType.la8:    channels = 2; break;
         case ImageType.rgb8:   channels = 3; break;
         case ImageType.rgba8:  channels = 4; break;

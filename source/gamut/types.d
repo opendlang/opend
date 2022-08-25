@@ -21,13 +21,15 @@ enum ImageFormat
     DDS     =  4  /// Compressed texture formats.
 }
 
-/// Image format.
+/// Pixel component type.
+/// Integer components are stored normalized (255 or 65535 being the maximum of intensity).
 enum ImageType
 {
     unknown = -1, /// Unknown format (returned value only, never use it as input value)
-    uint8   = 0,  /// Array of ushort: unsigned 8-bit
-    uint16,       /// Array of ushort: unsigned 16-bit
-    f32,          /// Array of float: 32-bit IEEE floating point
+
+    l8,           /// Array of ubyte: unsigned 8-bit
+    l16,          /// Array of ushort: unsigned 16-bit
+    lf32,         /// Array of float: 32-bit IEEE floating point
     
     la8,          /// 16-bit Luminance Alpha image: 2 x unsigned 8-bit
     la16,         /// 32-bit Luminance Alpha image: 2 x unsigned 16-bit

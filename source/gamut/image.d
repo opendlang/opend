@@ -1074,7 +1074,7 @@ void convertToIntermediateScanline(ImageType srcType,
         final switch(srcType) with (ImageType)
         {
             case unknown: assert(false);
-            case uint8:
+            case l8:
             {
                 const(ubyte)* s = src;
                 for (int x = 0; x < width; ++x)
@@ -1087,7 +1087,7 @@ void convertToIntermediateScanline(ImageType srcType,
                 }
                 break;
             }
-            case uint16:
+            case l16:
             {
                 const(ushort)* s = cast(const(ushort)*) src;
                 for (int x = 0; x < width; ++x)
@@ -1100,7 +1100,7 @@ void convertToIntermediateScanline(ImageType srcType,
                 }
                 break;
             }
-            case f32:
+            case lf32:
             {
                 const(float)* s = cast(const(float)*) src;
                 for (int x = 0; x < width; ++x)
@@ -1264,7 +1264,7 @@ void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dst
         final switch(dstType) with (ImageType)
         {
             case unknown: assert(false);
-            case uint8:
+            case l8:
             {
                 ubyte* s = dest;
                 for (int x = 0; x < width; ++x)
@@ -1274,7 +1274,7 @@ void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dst
                 }
                 break;
             }
-            case uint16:
+            case l16:
             {
                 ushort* s = cast(ushort*) dest;
                 for (int x = 0; x < width; ++x)
@@ -1284,7 +1284,7 @@ void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dst
                 }
                 break;
             }
-            case f32:
+            case lf32:
             {
                 float* s = cast(float*) dest;
                 for (int x = 0; x < width; ++x)
