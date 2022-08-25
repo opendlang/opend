@@ -24,7 +24,7 @@ enum ImageFormat
 
 /// Pixel component type.
 /// Integer components are stored normalized (255 or 65535 being the maximum of intensity).
-enum ImageType
+enum PixelType
 {
     unknown = -1, /// Unknown format (returned value only, never use it as input value)
 

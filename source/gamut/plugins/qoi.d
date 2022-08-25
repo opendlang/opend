@@ -119,9 +119,9 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     int decodedComp = (requestedComp == 0) ? desc.channels : requestedComp;
 
     if (decodedComp == 3)
-        image._type = ImageType.rgb8;
+        image._type = PixelType.rgb8;
     else if (decodedComp == 4)
-        image._type = ImageType.rgba8;
+        image._type = PixelType.rgba8;
     else
     {
         // QOI with channel different from 3 or 4 is impossible.
@@ -158,8 +158,8 @@ bool saveQOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         
     switch (image._type)
     {
-        case ImageType.rgb8:  desc.channels = 3; break;
-        case ImageType.rgba8: desc.channels = 4; break;
+        case PixelType.rgb8:  desc.channels = 3; break;
+        case PixelType.rgba8: desc.channels = 4; break;
         default: 
             {
                 int a = 0;

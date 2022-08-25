@@ -25,5 +25,5 @@ static immutable string kStrImageFormatNoWriteSupport  = "Cannot encode this ima
 static immutable string kStrOutOfMemory                = "Out of memory";
 static immutable string kStrIllegalNegativeDimension   = "Illegal negative dimension";
 static immutable string kStrUnsupportedTypeConversion  = "Unsupported image pixel type conversion";
-static immutable string kStrInvalidImageTypeCast       = "Invalid image type cast";
+static immutable string kStrInvalidPixelTypeCast       = "Invalid pixel type cast";
 

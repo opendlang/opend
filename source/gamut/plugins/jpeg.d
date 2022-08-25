@@ -90,9 +90,9 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
 
     switch (actualComp)
     {
-        case 1: image._type = ImageType.l8; break;
-        case 3: image._type = ImageType.rgb8; break;
-        case 4: image._type = ImageType.rgba8; break;
+        case 1: image._type = PixelType.l8; break;
+        case 3: image._type = PixelType.rgb8; break;
+        case 4: image._type = PixelType.rgba8; break;
         default:
     }
 
@@ -116,12 +116,12 @@ bool saveJPEG(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
 
     switch (image._type)
     {
-        case ImageType.l8:
+        case PixelType.l8:
             components = 1; break;
-        case ImageType.rgb8:
+        case PixelType.rgb8:
             components = 3; 
             break;
-        case ImageType.rgba8:
+        case PixelType.rgba8:
             return false; // stb would throw away alpha
         default:
             return false;

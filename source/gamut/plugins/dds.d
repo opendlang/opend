@@ -54,10 +54,10 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     // The following format are accepted: 8-bit with 1/2/3/4 channels.
     switch (image._type)
     {
-        case ImageType.l8:    channels = 1; break;
-        case ImageType.la8:   channels = 2; break;
-        case ImageType.rgb8:  channels = 3; break;
-        case ImageType.rgba8: channels = 4; break;
+        case PixelType.l8:    channels = 1; break;
+        case PixelType.la8:   channels = 2; break;
+        case PixelType.rgb8:  channels = 3; break;
+        case PixelType.rgba8: channels = 4; break;
         default: 
             return false; // not supported
     }

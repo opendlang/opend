@@ -124,42 +124,42 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     {
         if (components == 1)
         {
-            image._type = ImageType.l8;
+            image._type = PixelType.l8;
         }
         else if (components == 2)
         {
-            image._type = ImageType.la8;
+            image._type = PixelType.la8;
         }
         else if (components == 3)
         {
-            image._type = ImageType.rgb8;
+            image._type = PixelType.rgb8;
         }
         else if (components == 4)
         {
-            image._type = ImageType.rgba8;
+            image._type = PixelType.rgba8;
         }
     }
     else
     {
         if (components == 1)
         {
-            image._type = ImageType.l16;
+            image._type = PixelType.l16;
         }
         else if (components == 2)
         {
-            image._type = ImageType.la16;
+            image._type = PixelType.la16;
         }
         else if (components == 3)
         {
-            image._type = ImageType.rgb16;
+            image._type = PixelType.rgb16;
         }
         else if (components == 4)
         {
-            image._type = ImageType.rgba16;
+            image._type = PixelType.rgba16;
         }
     }
 
-    ImageType targetType = applyLoadFlags(image._type, flags);
+    PixelType targetType = applyLoadFlags(image._type, flags);
 
     // Convert to target type and constraints
     image.convertTo(targetType, cast(LayoutConstraints) flags);
@@ -180,10 +180,10 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     int channels = 0;
     switch (image._type)
     {
-        case ImageType.l8:     channels = 1; break;
-        case ImageType.la8:    channels = 2; break;
-        case ImageType.rgb8:   channels = 3; break;
-        case ImageType.rgba8:  channels = 4; break;
+        case PixelType.l8:     channels = 1; break;
+        case PixelType.la8:    channels = 2; break;
+        case PixelType.rgb8:   channels = 3; break;
+        case PixelType.rgba8:  channels = 4; break;
         default:
             return false;
     }

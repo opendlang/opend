@@ -13,76 +13,76 @@ import gamut.types;
 
 nothrow @nogc @safe:
 
-/// Returns: `true` if this `ImageType` is "plain", meaning that it's 1/2/3/4 channel of L/LA/RGB/RGBA data.
+/// Returns: `true` if this `PixelType` is "plain", meaning that it's 1/2/3/4 channel of L/LA/RGB/RGBA data.
 /// Currently: all images are plain, or have no data.
-bool imageTypeIsPlain(ImageType t) pure
+bool pixelTypeIsPlain(PixelType t) pure
 {
     return true;
 }
 
-/// Returns: `true` if this `ImageType` is planar, meaning the data is best iterated by the user.
-bool imageTypeIsPlanar(ImageType t) pure
+/// Returns: `true` if this `PixelType` is planar, completely unsupported for now.
+bool pixelTypeIsPlanar(PixelType t) pure
 {
     return false; // No support yet in gamut.
 }
 
-/// Returns: `true` if this `ImageType` is compressed, meaning the data is inscrutable until decoded.
-bool imageTypeIsCompressed(ImageType t) pure
+/// Returns: `true` if this `PixelType` is compressed, meaning the data is inscrutable until decoded.
+bool pixelTypeIsCompressed(PixelType t) pure
 {
     return false; // No support yet in gamut.
 }
 
-/// Size of one pixel for given image type `type`.
-int imageTypePixelSize(ImageType type) pure
+/// Size of one pixel for given pixel type `type`, in bytes.
+int pixelTypeSize(PixelType type) pure
 {
-    final switch(type)
+    final switch(type) with (PixelType)
     {
-        case ImageType.l8:      return 1;
-        case ImageType.l16:     return 2;
-        case ImageType.lf32:    return 4;
-        case ImageType.la8:     return 2;
-        case ImageType.la16:    return 4;
-        case ImageType.laf32:   return 8;
-        case ImageType.rgb8:    return 3;
-        case ImageType.rgb16:   return 6;
-        case ImageType.rgba8:   return 4;
-        case ImageType.rgba16:  return 8;
-        case ImageType.rgbf32:  return 12;
-        case ImageType.rgbaf32: return 16;
-        case ImageType.unknown: assert(false);
+        case l8:      return 1;
+        case l16:     return 2;
+        case lf32:    return 4;
+        case la8:     return 2;
+        case la16:    return 4;
+        case laf32:   return 8;
+        case rgb8:    return 3;
+        case rgb16:   return 6;
+        case rgba8:   return 4;
+        case rgba16:  return 8;
+        case rgbf32:  return 12;
+        case rgbaf32: return 16;
+        case unknown: assert(false);
     }
 }
 
 /// Number of channels in this image type.
-int imageTypeNumChannels(ImageType type) pure
+int pixelTypeNumChannels(PixelType type) pure
 {
-    final switch(type)
+    final switch(type) with (PixelType)
     {
-        case ImageType.l8:   return 1;
-        case ImageType.l16:  return 1;
-        case ImageType.lf32:     return 1;
-        case ImageType.la8:     return 2;
-        case ImageType.la16:    return 2;
-        case ImageType.laf32:   return 2;
-        case ImageType.rgb8:    return 3;
-        case ImageType.rgb16:   return 3;
-        case ImageType.rgbf32:  return 3;
-        case ImageType.rgba8:   return 4;
-        case ImageType.rgba16:  return 4;
-        case ImageType.rgbaf32: return 4;
-        case ImageType.unknown: assert(false);
+        case l8:      return 1;
+        case l16:     return 1;
+        case lf32:    return 1;
+        case la8:     return 2;
+        case la16:    return 2;
+        case laf32:   return 2;
+        case rgb8:    return 3;
+        case rgb16:   return 3;
+        case rgbf32:  return 3;
+        case rgba8:   return 4;
+        case rgba16:  return 4;
+        case rgbaf32: return 4;
+        case unknown: assert(false);
     }
 }
 
 /// Is this type 8-bit?
-int imageTypeIs8Bit(ImageType type) pure
+int pixelTypeIs8Bit(PixelType type) pure
 {
-    switch(type)
+    switch(type) with (PixelType)
     {
-        case ImageType.l8:
-        case ImageType.la8:
-        case ImageType.rgb8:
-        case ImageType.rgba8:
+        case l8:
+        case la8:
+        case rgb8:
+        case rgba8:
             return true;
         default:
             return false;
@@ -90,14 +90,14 @@ int imageTypeIs8Bit(ImageType type) pure
 }
 
 /// Is this type 16-bit?
-int imageTypeIs16Bit(ImageType type) pure
+int pixelTypeIs16Bit(PixelType type) pure
 {
-    switch(type)
+    switch(type) with (PixelType)
     {
-        case ImageType.l16:
-        case ImageType.la16:
-        case ImageType.rgb8:
-        case ImageType.rgba8:
+        case l16:
+        case la16:
+        case rgb8:
+        case rgba8:
             return true;
         default:
             return false;
@@ -105,14 +105,14 @@ int imageTypeIs16Bit(ImageType type) pure
 }
 
 /// Is this type 32-bit floating-point?
-int imageTypeIsFP32(ImageType type) pure
+int pixelTypeIsFP32(PixelType type) pure
 {
-    switch(type)
+    switch(type) with (PixelType)
     {
-        case ImageType.lf32:
-        case ImageType.laf32:
-        case ImageType.rgbf32:
-        case ImageType.rgbaf32:
+        case lf32:
+        case laf32:
+        case rgbf32:
+        case rgbaf32:
             return true;
         default:
             return false;
@@ -184,7 +184,7 @@ unittest
     assert(layoutBorderWidth(LAYOUT_BORDER_3) == 3);
 }
 
-/// _Assuming the same ImageType_, can an allocation made with constraint `older` 
+/// _Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
 bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older)
 {
@@ -226,7 +226,7 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
 /// Note: even if you can request zero bytes, `realloc` can give you a non-null pointer, 
 /// that you would have to keep. This is a success case given by `err` only.
 void allocatePixelStorage(ubyte* existingData, 
-                          ImageType type, 
+                          PixelType type, 
                           int width, 
                           int height, 
                           LayoutConstraints constraints,
@@ -279,7 +279,7 @@ void allocatePixelStorage(ubyte* existingData,
     int actualHeightInPixels = border + height + border;
 
     // Compute byte pitch and align it on `rowAlignment`
-    int pixelSize = imageTypePixelSize(type);
+    int pixelSize = pixelTypeSize(type);
     int bytePitch = pixelSize * actualWidthInPixels;
     bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
 
@@ -379,40 +379,40 @@ unittest
 
 /// From a type and LoadFlags, get the target type using the loading flags.
 /// This is when the decoder doesn't support inside conversion and we need to use convertTo.
-ImageType applyLoadFlags(ImageType type, LoadFlags flags)
+PixelType applyLoadFlags(PixelType type, LoadFlags flags)
 {
     // Check incompatible load flags.
     if (!validLoadFlags(flags))
-        return ImageType.unknown;
+        return PixelType.unknown;
 
     if (flags & LOAD_GREYSCALE)
-        type = convertImageTypeToGreyscale(type);
+        type = convertPixelTypeToGreyscale(type);
 
     if (flags & LOAD_RGB)
-        type = convertImageTypeToRGB(type);
+        type = convertPixelTypeToRGB(type);
 
     if (flags & LOAD_ALPHA)
-        type = convertImageTypeToAddAlphaChannel(type);
+        type = convertPixelTypeToAddAlphaChannel(type);
 
     if (flags & LOAD_NO_ALPHA)
-        type = convertImageTypeToDropAlphaChannel(type);
+        type = convertPixelTypeToDropAlphaChannel(type);
 
     if (flags & LOAD_8BIT)
-        type = convertImageTypeTo8Bit(type);
+        type = convertPixelTypeTo8Bit(type);
 
     if (flags & LOAD_16BIT)
-        type = convertImageTypeTo16Bit(type);
+        type = convertPixelTypeTo16Bit(type);
 
     if (flags & LOAD_FP32)
-        type = convertImageTypeToFP32(type);
+        type = convertPixelTypeToFP32(type);
 
     return type;
 }
 
-ImageType convertImageTypeToGreyscale(ImageType type)
+PixelType convertPixelTypeToGreyscale(PixelType type)
 {
-    ImageType t = ImageType.unknown;
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = l8; break;
@@ -431,10 +431,10 @@ ImageType convertImageTypeToGreyscale(ImageType type)
     return t;
 }
 
-ImageType convertImageTypeToRGB(ImageType type)
+PixelType convertPixelTypeToRGB(PixelType type)
 {
-    ImageType t = ImageType.unknown;
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = rgb8; break;
@@ -453,10 +453,10 @@ ImageType convertImageTypeToRGB(ImageType type)
     return t;
 }
 
-ImageType convertImageTypeToAddAlphaChannel(ImageType type)
+PixelType convertPixelTypeToAddAlphaChannel(PixelType type)
 {
-    ImageType t = ImageType.unknown;
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = la8; break;
@@ -475,10 +475,10 @@ ImageType convertImageTypeToAddAlphaChannel(ImageType type)
     return t;
 }
 
-ImageType convertImageTypeToDropAlphaChannel(ImageType type)
+PixelType convertPixelTypeToDropAlphaChannel(PixelType type)
 {
-    ImageType t = ImageType.unknown;
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = l8; break;
@@ -497,10 +497,10 @@ ImageType convertImageTypeToDropAlphaChannel(ImageType type)
     return t;
 }
 
-ImageType convertImageTypeTo8Bit(ImageType type)
+PixelType convertPixelTypeTo8Bit(PixelType type)
 {
-    ImageType t = ImageType.unknown;       
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;       
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = l8; break;
@@ -519,10 +519,10 @@ ImageType convertImageTypeTo8Bit(ImageType type)
     return t;
 }
 
-ImageType convertImageTypeTo16Bit(ImageType type)
+PixelType convertPixelTypeTo16Bit(PixelType type)
 {
-    ImageType t = ImageType.unknown;       
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;       
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = l16; break;
@@ -542,10 +542,10 @@ ImageType convertImageTypeTo16Bit(ImageType type)
 }
 
 
-ImageType convertImageTypeToFP32(ImageType type)
+PixelType convertPixelTypeToFP32(PixelType type)
 {
-    ImageType t = ImageType.unknown;       
-    final switch(type) with (ImageType)
+    PixelType t = PixelType.unknown;       
+    final switch(type) with (PixelType)
     {
         case unknown: t = unknown; break;
         case l8:      t = lf32; break;

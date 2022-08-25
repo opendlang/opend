@@ -33,9 +33,9 @@ public:
     // <BASIC STORAGE>
     //
 
-    /// Get the image type.
-    /// See_also: `ImageType`.
-    ImageType type() pure const
+    /// Get the pixel type.
+    /// See_also: `PixelType`.
+    PixelType type() pure const
     {
         return _type;
     }
@@ -178,7 +178,7 @@ public:
     ///   2. those are in a plain decoded format (not a compressed texture, not planar, etc).
     bool hasPlainPixels() pure const
     {
-        return hasData() && imageTypeIsPlain(_type); // Note: all formats are plain, for now.
+        return hasData() && pixelTypeIsPlain(_type); // Note: all formats are plain, for now.
     }
 
     /// A planar image is for example YUV420.
@@ -186,14 +186,14 @@ public:
     /// Currently not supported.
     bool isPlanar() pure const
     {
-        return hasData() && imageTypeIsPlanar(_type);
+        return hasData() && pixelTypeIsPlanar(_type);
     }
 
     /// A compressed image doesn't have its pixels available.
     /// Currently not supported.
     bool isCompressed() pure const
     {
-        return hasData() && imageTypeIsCompressed(_type);
+        return hasData() && pixelTypeIsCompressed(_type);
     }
 
     //
@@ -208,7 +208,7 @@ public:
     /// Clear the image and initialize a new image, with given dimensions.
     this(int width, 
          int height, 
-         ImageType type = ImageType.rgba8,
+         PixelType type = PixelType.rgba8,
          LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         setSize(width, height, type, layoutConstraints);
@@ -216,7 +216,7 @@ public:
     ///ditto
     void setSize(int width, 
                  int height, 
-                 ImageType type = ImageType.rgba8,
+                 PixelType type = PixelType.rgba8,
                  LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         // PERF: Pessimized, because we don't know if we have been borrowed from...
@@ -266,7 +266,7 @@ public:
         // PERF: if same pitch, do a single memcpy
         //       caution with negative pitch
 
-        int scanlineLen = _width * imageTypePixelSize(type);
+        int scanlineLen = _width * pixelTypeSize(type);
 
         const(ubyte)* dataSrc = _data;
         ubyte* dataDst = img._data;
@@ -510,56 +510,56 @@ public:
     /// Alpha is preserved if existing.
     bool convertToGreyscale(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToGreyscale(_type), layoutConstraints);
+        return convertTo( convertPixelTypeToGreyscale(_type), layoutConstraints);
     }
 
     /// Convert the image to a greyscale + alpha equivalent, using duplication and/or adding an opaque alpha channel.
     bool convertToGreyscaleAlpha(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToAddAlphaChannel( convertImageTypeToGreyscale(_type) ), layoutConstraints);
+        return convertTo( convertPixelTypeToAddAlphaChannel( convertPixelTypeToGreyscale(_type) ), layoutConstraints);
     }
 
     /// Convert the image to a RGB equivalent, using duplication if greyscale.
     /// Alpha is preserved if existing.
     bool convertToRGB(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToRGB(_type), layoutConstraints);
+        return convertTo( convertPixelTypeToRGB(_type), layoutConstraints);
     }
 
     /// Convert the image to a RGBA equivalent, using duplication and/or adding an opaque alpha channel.
     bool convertToRGBA(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToAddAlphaChannel( convertImageTypeToRGB(_type) ), layoutConstraints);
+        return convertTo( convertPixelTypeToAddAlphaChannel( convertPixelTypeToRGB(_type) ), layoutConstraints);
     }
 
     /// Add an opaque alpha channel if not-existing already.
     bool addAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToAddAlphaChannel(_type), layoutConstraints);
+        return convertTo( convertPixelTypeToAddAlphaChannel(_type), layoutConstraints);
     }
 
     /// Removes the alpha channel if not-existing already.
     bool dropAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToDropAlphaChannel(_type), layoutConstraints);
+        return convertTo( convertPixelTypeToDropAlphaChannel(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 8-bit per component.
     bool convertTo8Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeTo8Bit(_type), layoutConstraints);
+        return convertTo( convertPixelTypeTo8Bit(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 16-bit per component.
     bool convertTo16Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeTo16Bit(_type), layoutConstraints);
+        return convertTo( convertPixelTypeTo16Bit(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 32-bit float per component.
     bool convertToFP32(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        return convertTo( convertImageTypeToFP32(_type), layoutConstraints);
+        return convertTo( convertPixelTypeToFP32(_type), layoutConstraints);
     }
 
     /// Convert the image to the following format.
@@ -567,10 +567,10 @@ public:
     /// You can also change the layout constraints at the same time.
     ///
     /// Returns: true on success.
-    bool convertTo(ImageType targetType, LayoutConstraints layoutConstraints = LAYOUT_DEFAULT) @trusted
+    bool convertTo(PixelType targetType, LayoutConstraints layoutConstraints = LAYOUT_DEFAULT) @trusted
     {
         assert(!errored()); // this should have been caught before.
-        if (targetType == ImageType.unknown)
+        if (targetType == PixelType.unknown)
         {
             error(kStrUnsupportedTypeConversion);
             return false;
@@ -615,8 +615,8 @@ public:
         // Do we need to perform a conversion scanline by scanline, using
         // a scratch buffer?
         bool needConversionWithIntermediateType = targetType != _type;
-        ImageType interType = intermediateConversionType(_type, targetType);
-        int interBufSize = width * imageTypePixelSize(interType); // PERF: could align that buffer
+        PixelType interType = intermediateConversionType(_type, targetType);
+        int interBufSize = width * pixelTypeSize(interType); // PERF: could align that buffer
         int bonusBytes = needConversionWithIntermediateType ? interBufSize : 0;
 
         ubyte* dest; // first scanline
@@ -687,12 +687,12 @@ public:
     /// works if the width is a multiple of 4.
     ///
     /// So it is a bit like casting slices in D.
-    bool castTo(ImageType targetType) @trusted
+    bool castTo(PixelType targetType) @trusted
     {
         assert(!errored()); // this should have been caught before.
-        if (targetType == ImageType.unknown)
+        if (targetType == PixelType.unknown)
         {
-            error(kStrInvalidImageTypeCast);
+            error(kStrInvalidPixelTypeCast);
             return false;
         }
 
@@ -711,8 +711,8 @@ public:
         }
 
         // Basically, you can cast if the source type size is a multiple of the dest type.
-        int srcBytes = imageTypePixelSize(_type);
-        int destBytes = imageTypePixelSize(_type);
+        int srcBytes = pixelTypeSize(_type);
+        int destBytes = pixelTypeSize(_type);
 
         // Byte length of source line.
         int sourceLineSize = width * srcBytes;
@@ -727,7 +727,7 @@ public:
         }
         else
         {
-            error(kStrInvalidImageTypeCast);
+            error(kStrInvalidPixelTypeCast);
             return false;
         }
     }
@@ -786,7 +786,7 @@ public:
     ///            `LAYOUT_DEFAULT` is lack of constraints and not a constraint.
     bool isGapless() pure
     {
-        return _width * imageTypePixelSize(_type) == _pitch;
+        return _width * pixelTypeSize(_type) == _pitch;
     }
 
     //
@@ -826,7 +826,7 @@ package:
     }
 
     /// The type of the data pointed to.
-    ImageType _type = ImageType.unknown;
+    PixelType _type = PixelType.unknown;
 
     /// The data layout constraints, in flags.
     /// See_also: `LayoutConstraints`.
@@ -871,9 +871,9 @@ private:
 
     /// Compute a suitable pitch when making an image.
     /// FUTURE some flags that change alignment constraints?
-    int computePitch(ImageType type, int width)
+    deprecated int computePitch(PixelType type, int width)
     {
-        return width * imageTypePixelSize(type);
+        return width * pixelTypeSize(type);
     }
 
     void cleanupBitmapIfAny() @trusted
@@ -898,7 +898,7 @@ private:
     /// Returns true on success, false on OOM.
     bool setStorage(int width, 
                     int height,
-                    ImageType type, 
+                    PixelType type, 
                     LayoutConstraints constraints) @trusted
     {
         ubyte* dataPointer;
@@ -1008,23 +1008,23 @@ private:
 
 
 // FUTURE: this will also manage color conversion.
-ImageType intermediateConversionType(ImageType srcType, ImageType destType)
+PixelType intermediateConversionType(PixelType srcType, PixelType destType)
 {
-    return ImageType.rgbaf32; // PERF: smaller intermediate types
+    return PixelType.rgbaf32; // PERF: smaller intermediate types
 }
 
 // This converts scanline per scanline, using an intermediate format to lessen the number of conversions.
-bool convertScanlines(ImageType srcType, const(ubyte)* src, int srcPitch, 
-                      ImageType destType, ubyte* dest, int destPitch,
+bool convertScanlines(PixelType srcType, const(ubyte)* src, int srcPitch, 
+                      PixelType destType, ubyte* dest, int destPitch,
                       int width, int height,
-                      ImageType interType, ubyte* interBuf) @system
+                      PixelType interType, ubyte* interBuf) @system
 {
     assert(srcType != destType);
-    assert(srcType != ImageType.unknown && destType != ImageType.unknown);
+    assert(srcType != PixelType.unknown && destType != PixelType.unknown);
 
-    if (imageTypeIsPlanar(srcType) || imageTypeIsPlanar(destType))
+    if (pixelTypeIsPlanar(srcType) || pixelTypeIsPlanar(destType))
         return false; // No support
-    if (imageTypeIsCompressed(srcType) || imageTypeIsCompressed(destType))
+    if (pixelTypeIsCompressed(srcType) || pixelTypeIsCompressed(destType))
         return false; // No support
 
     // For each scanline
@@ -1039,17 +1039,17 @@ bool convertScanlines(ImageType srcType, const(ubyte)* src, int srcPitch,
 }
 
 // This copy scanline per scanline of the same type
-bool copyScanlines(ImageType type, 
+bool copyScanlines(PixelType type, 
                    const(ubyte)* src, int srcPitch, 
                    ubyte* dest, int destPitch,
                    int width, int height) @system
 {
-    if (imageTypeIsPlanar(type))
+    if (pixelTypeIsPlanar(type))
         return false; // No support
-    if (imageTypeIsCompressed(type))
+    if (pixelTypeIsCompressed(type))
         return false; // No support
 
-    int scanlineBytes = imageTypePixelSize(type) * width;
+    int scanlineBytes = pixelTypeSize(type) * width;
     for (int y = 0; y < height; ++y)
     {
         dest[0..scanlineBytes] = src[0..scanlineBytes];
@@ -1062,16 +1062,16 @@ bool copyScanlines(ImageType type,
 
 /// See_also: OpenGL ES specification 2.3.5.1 and 2.3.5.2 for details about converting from 
 /// floating-point to integers, and the other way around.
-void convertToIntermediateScanline(ImageType srcType, 
+void convertToIntermediateScanline(PixelType srcType, 
                                    const(ubyte)* src, 
-                                   ImageType dstType, 
+                                   PixelType dstType, 
                                    ubyte* dest, int width) @system
 {
-    if (dstType == ImageType.rgbaf32)
+    if (dstType == PixelType.rgbaf32)
     {
         float* outp = cast(float*) dest;
 
-        final switch(srcType) with (ImageType)
+        final switch(srcType) with (PixelType)
         {
             case unknown: assert(false);
             case l8:
@@ -1255,13 +1255,13 @@ void convertToIntermediateScanline(ImageType srcType,
 
 }
 
-void convertFromIntermediate(ImageType srcType, const(ubyte)* src, ImageType dstType, ubyte* dest, int width) @system
+void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dstType, ubyte* dest, int width) @system
 {
-    if (srcType == ImageType.rgbaf32)
+    if (srcType == PixelType.rgbaf32)
     {    
         const(float)* inp = cast(const(float)*) src;
 
-        final switch(dstType) with (ImageType)
+        final switch(dstType) with (PixelType)
         {
             case unknown: assert(false);
             case l8:

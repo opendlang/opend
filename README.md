@@ -71,21 +71,21 @@ Our benchmark results for 8-bit color images:
 ### **1.2 Get the pixel format of an image:**
   ```d
   Image image = Image(800, 600);
-  ImageType type = image.type();
-  assert(type == ImageType.rgba8); // rgba8 is default if not provided
+  PixelType type = image.type();
+  assert(type == PixelType.rgba8); // rgba8 is default if not provided
   ```
 
-  > **Key concept:** `ImageType` completely describes the pixel format, for example `Imagetype.rgb8` is a 24-bit format with one byte for red, green and blue components each (in that order).
+  > **Key concept:** `PixelType` completely describes the pixel format, for example `PixelType.rgb8` is a 24-bit format with one byte for red, green and blue components each (in that order). Nothing is specified about the color space though.
 
-  Here are the possible `ImageType`:
+  Here are the possible `PixelType`:
 
 
   ```d
-  enum ImageType
+  enum PixelType
   {
-      uint8,
-      uint16,
-      f32,
+      l8,
+      l16,
+      lf32,
       la8,
       la16,
       laf32,
@@ -111,7 +111,7 @@ Our benchmark results for 8-bit color images:
 ### **1.3 Create an uninitialized image:**
   ```d
   Image image;
-  image.setSize(640, 480, ImageType.rgba8);
+  image.setSize(640, 480, PixelType.rgba8);
   ```
 
 
@@ -159,7 +159,7 @@ Our benchmark results for 8-bit color images:
   Example:
   ```d
   Image image;  
-  image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);  // force ImageType.rgba8 
+  image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);  // force PixelType.rgba8 
   ```
   Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT`.
     
@@ -219,12 +219,12 @@ Our benchmark results for 8-bit color images:
   ```d
   ubyte* scan = image.scanline(y);
   ```
-  > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `ImageType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
+  > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `PixelType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
 
 
 ### **3.3 Iterate on pixels:**
   ```d
-  assert(image.type == ImageType.rgba16);
+  assert(image.type == PixelType.rgba16);
   assert(image.hasData());
   for (int y = 0; y < image.height(); ++y)
   {
