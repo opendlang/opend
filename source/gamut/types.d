@@ -10,6 +10,7 @@ nothrow @nogc:
 @safe:
 
 /// Image format.
+/// It is the kind of container/codec formats Gamut can read and write to.
 enum ImageFormat
 {
     unknown = -1, /// Unknown format (returned value only, never use it as input value)
@@ -47,13 +48,7 @@ enum ImageType
 
 // Limits
 
-/// When images have an unknown width.
-/// TODO: remove that, a Image.init could instead have no data.
-enum GAMUT_INVALID_IMAGE_WIDTH = -1;  
 
-/// When images have an unknown height.
-/// TODO: remove that, a Image.init could instead have no data.
-enum GAMUT_INVALID_IMAGE_HEIGHT = -1; 
 
 /// When images have an unknown DPI resolution;
 enum GAMUT_UNKNOWN_RESOLUTION = -1;

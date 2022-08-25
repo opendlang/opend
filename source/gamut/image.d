@@ -843,12 +843,12 @@ package:
     ubyte* _allocArea = null;
 
     /// Width of the image in pixels, when pixels makes sense.
-    /// By default, this width is `GAMUT_INVALID_IMAGE_WIDTH`.
-    int _width = GAMUT_INVALID_IMAGE_WIDTH;
+    /// By default, this width is 0 (but as the image has no pixel data, this doesn't matter).
+    int _width = 0;
 
     /// Height of the image in pixels, when pixels makes sense.
-    /// By default, this height is `GAMUT_INVALID_IMAGE_HEIGHT`.
-    int _height = GAMUT_INVALID_IMAGE_HEIGHT;
+    /// By default, this height is 0 (but as the image has no pixel data, this doesn't matter).
+    int _height = 0;
 
     /// Pitch in bytes between lines, when a pitch makes sense.
     /// FUTURE: negative pitch for costless vertical flip.
