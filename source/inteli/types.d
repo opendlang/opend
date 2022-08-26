@@ -137,7 +137,7 @@ else version(DigitalMars)
     //
     static if (__VERSION__ >= 2100)
     {
-        enum bool tryToEnableCoreSimdWithDMD = false;
+        enum bool tryToEnableCoreSimdWithDMD = true;
     }
     else
     {
