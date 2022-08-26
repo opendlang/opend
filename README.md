@@ -1,21 +1,25 @@
 # audio-formats
 Audio format loading for D.
 
-- Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
-- Can encode WAV to a file or to memory.
-- Seeking support
-- `float` and `double` decoding support
-- reduced bitdepth WAV encoding with dithering
+- ✅ Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
+- ✅ Can encode WAV, to a file or memory.
+- ✅ Seeking support.
+- ✅ `float` and `double` decoding support.
+- ✅ WAV encoding with dithering when reducing bit-depth.
 
-This package is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
+This package is a replacement for the `wave-d` package but with more formats, `nothrow @nogc`, and chunk support.
 
 
-# Changelog
+## Changelog
 
-## `audio-format` v2.x.y
+### 🔔 `audio-formats` v2
 
-- **NEW** Doesn't depend upon `dplug:core` anymore.
-- **BREAKING** All exceptions thrown by `audio-formats` are `AudioFormatsException`. They must be clean-up with `destroyAudioFormatException`.
+- Doesn't depend upon `dplug:core` anymore.
+- All exceptions thrown by `audio-formats` are now `AudioFormatsException`.  
+  They must be clean-up with `destroyAudioFormatException`.
+
+### 🔔 `audio-formats` v1
+- Initial release.
 
 
 # API
@@ -27,13 +31,13 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 
 |       | Decoding   | Encoding | Seeking support |
 |-------|------------|----------|-----------------|
-| WAV   | Yes        | Yes      | Sample          |
-| MP3   | Yes        | No       | Sample          |
-| FLAC  | Yes        | No       | Sample          |
-| OPUS  | Yes (LGPL) | No       | Sample          |
-| OGG   | Yes        | No       | Sample          |
-| MOD   | Yes        | No       | Pattern+Row     |
-| XM    | Yes        | No       | Pattern+Row     |
+| 📀 WAV   | Yes        | Yes      | Sample          |
+| 📀 MP3   | Yes        | No       | Sample          |
+| 📀 FLAC  | Yes        | No       | Sample          |
+| 📀 OPUS  | Yes (LGPL) | No       | Sample          |
+| 📀 OGG   | Yes        | No       | Sample          |
+| 📀 MOD   | Yes        | No       | Pattern+Row     |
+| 📀 XM    | Yes        | No       | Pattern+Row     |
 
 
 Some of these decoders were originally translated by Ketmar, who did the heavy-lifting.
@@ -46,7 +50,7 @@ Some of these decoders were originally translated by Ketmar, who did the heavy-l
 - https://github.com/Artefact2/libxm
 
 
-# License
+# License ⚖️
 
 - Boost license otherwise.
 - LGPL v2.1 with OPUS decoding.
@@ -61,4 +65,4 @@ The following version identifiers can be used to enable/disable decoder level fe
 
 # Bugs
 
-- framesRemainingInPattern is unimplemented for XM currently.
+- `framesRemainingInPattern` is unimplemented for XM currently.
