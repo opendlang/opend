@@ -4,6 +4,7 @@ import std.stdio;
 import std.string;
 import std.conv;
 import core.stdc.stdio;
+import inteli.emmintrin;
 
 /// A 3D LUT can be applied to floating-point images.
 struct LUT
@@ -49,6 +50,14 @@ struct LUT
             {
                 // ignore
             }
+            else if (line.startsWith("LUT_1D_SIZE"))
+            {
+                // ignored, often does nothing
+            }
+            else if (line.startsWith("LUT_1D_INPUT_RANGE"))
+            {
+                // ignored, often does nothing                
+            }
             else if (line.startsWith("TITLE"))
             {
                 title = line[6..$];
@@ -75,12 +84,22 @@ struct LUT
                         table[point] = [r, g, b, a];
                         point++;
                     }
+                    else
+                        assert(false);
                     // else input error, TODO fail                    
                 }
             }
         }
         file.close();
 
+    }
+
+    __m128 sampleAt(int r, int g, int b)
+    {
+        if (r >= size) r = size - 1;
+        if (g >= size) g = size - 1;
+        if (b >= size) b = size - 1;
+        return _mm_loadu_ps(cast(float*) &table[r + g * size + b * size * size]);
     }
 
     void processScanline(float[4]* pixels, int width)
@@ -95,17 +114,58 @@ struct LUT
             if (fr < 0) fr = 0;
             if (fg < 0) fg = 0;
             if (fb < 0) fb = 0;
+            if (fr > size - 1.001f) fr = size - 1.001f;
+            if (fg > size - 1.001f) fg = size - 1.001f;
+            if (fb > size - 1.001f) fb = size - 1.001f;
 
             // TODO linear sampling with 8 integer samples
 
-            int ir = cast(int)(fr + 0.5f);
-            int ig = cast(int)(fg + 0.5f);
-            int ib = cast(int)(fb + 0.5f);
+            int ir = cast(int)(fr);
+            int ig = cast(int)(fg);
+            int ib = cast(int)(fb);
+            assert(ir >= 0);
+            assert(ig >= 0);
+            assert(ib >= 0);
+            
 
-            float[4] mapped = table[ir + ig * size + ib * size * size];
+            __m128 A = sampleAt(ir,   ig,   ib);
+            __m128 B = sampleAt(ir+1, ig,   ib);
+            __m128 C = sampleAt(ir  , ig+1, ib);
+            __m128 D = sampleAt(ir+1, ig+1, ib);
+
+            __m128 E = sampleAt(ir,   ig,   ib+1);
+            __m128 F = sampleAt(ir+1, ig,   ib+1);
+            __m128 G = sampleAt(ir  , ig+1, ib+1);
+            __m128 H = sampleAt(ir+1, ig+1, ib+1); 
+
+            __m128 ones = _mm_set1_ps(1.0f);
+            __m128 fmr = _mm_set1_ps(fr - ir);
+            __m128 fmg = _mm_set1_ps(fg - ig);
+            __m128 fmb = _mm_set1_ps(fb - ib);
+
+            A = E * fmb + A * (ones - fmb); 
+            B = F * fmb + B * (ones - fmb); 
+            C = G * fmb + C * (ones - fmb); 
+            D = H * fmb + D * (ones - fmb); 
+
+            A = C * fmg + A * (ones - fmg);
+            B = D * fmg + B * (ones - fmg);
+
+            A = A * fmr + B * (ones - fmr);
+
+            // clip again
+            alias mapped = A;
+
             pixel[0] = mapped[0];
             pixel[1] = mapped[1];
             pixel[2] = mapped[2]; // do not touch original alpha
+
+            if (pixel[0] < 0) pixel[0] = 0;
+            if (pixel[1] < 0) pixel[1] = 0;
+            if (pixel[2] < 0) pixel[2] = 0;
+            if (pixel[0] > 1) pixel[0] = 1;
+            if (pixel[1] > 1) pixel[1] = 1;
+            if (pixel[2] > 1) pixel[2] = 1;
 
             pixels[x] = pixel;
         }
