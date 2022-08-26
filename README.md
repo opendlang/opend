@@ -1,13 +1,19 @@
 # audio-formats
-Audio format loading for D.
 
-- ✅ Can decode WAV / MP3 / FLAC / OPUS / OGG / MOD / XM, from file or memory.
-- ✅ Can encode WAV, to a file or memory.
-- ✅ Seeking support.
-- ✅ `float` and `double` decoding support.
-- ✅ WAV encoding with dithering when reducing bit-depth.
+`audio-formats` is meant to be the easiest package to load and write sounds in D.
 
-This package is a replacement for the `wave-d` package but with more formats, `nothrow @nogc`, and chunk support.
+## Features
+
+- ✅ Decode from WAV / MP3 / FLAC / OPUS / OGG / MOD / XM
+- ✅ Encode to WAV
+- ✅ File and memory support
+- ✅ Seeking support
+- ✅ Chunked support
+- ✅ `float` and `double` support
+- ✅ WAV encoding with dithering when reducing bit-depth
+- ✅ `nothrow @nogc` API
+- ✅ Archs: `x86` / `x86_64` / `arm64`
+
 
 
 ## Changelog
@@ -20,14 +26,14 @@ This package is a replacement for the `wave-d` package but with more formats, `n
 
 ### 🔔 `audio-formats` v1
 - Initial release.
+  
 
+## How to use it?
 
-# API
+- Add audio-formats as dependency to your `dub.json` or `dub.sdl`.
+- See the [transcode example](https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/source/main.d) for usage.
 
-See `examples/transcode/main.d`:
-https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/source/main.d
-
-# File format support
+## What formats are supported exactly?
 
 |       | Decoding   | Encoding | Seeking support |
 |-------|------------|----------|-----------------|
@@ -40,29 +46,28 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | 📀 XM    | Yes        | No       | Pattern+Row     |
 
 
-Some of these decoders were originally translated by Ketmar, who did the heavy-lifting.
+_Some of these decoders were originally translated by Ketmar, who did the heavy-lifting._
 
 
-# References
+## License 
+
+- ⚖️ Boost license otherwise.
+- ⚖️ LGPL v2.1 with OPUS decoding.
+(use DUB subconfigurations) to choose, default is boost.
+
+## External links and references
 
 - https://github.com/Zoadian/mp3decoder
 - https://github.com/rombankzero/pocketmod
 - https://github.com/Artefact2/libxm
 
-
-# License ⚖️
-
-- Boost license otherwise.
-- LGPL v2.1 with OPUS decoding.
-(use DUB subconfigurations) to choose, default is boost.
-
-# Extras
-The following version identifiers can be used to enable/disable decoder level features  
+## Ultra secret options
+-The following `version` identifiers can be used to enable/disable decoder level features  
 | Version Identifier | Feature                                                       |
 |--------------------|---------------------------------------------------------------|
 | AF_LINEAR          | Use linear sampling for MOD modules instead of Amiga sampling |
 |                    |                                                               |
 
-# Bugs
+## Bugs
 
 - `framesRemainingInPattern` is unimplemented for XM currently.
