@@ -9,6 +9,15 @@ Audio format loading for D.
 
 This package is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
 
+
+# Changelog
+
+## `audio-format` v2.x.y
+
+- **NEW** Doesn't depend upon `dplug:core` anymore.
+- **BREAKING** All exceptions thrown by `audio-formats` are `AudioFormatsException`. They must be clean-up with `destroyAudioFormatException`.
+
+
 # API
 
 See `examples/transcode/main.d`:

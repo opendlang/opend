@@ -3,11 +3,6 @@
     "description": "Streaming decoding support for popular audio formats.",
     "license": "BSL-1.0",
 
-    "dependencies": 
-    {
-        "dplug:core": ">=9.0.0 <13.0.0"
-    },
-
     "configurations": [
         {
             "name": "boost",

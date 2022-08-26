@@ -4,7 +4,6 @@ import std.stdio;
 import std.file;
 
 import audioformats;
-import dplug.core;
 import core.stdc.stdlib;
 
 // Currently it can take a MOD and dump patterns in the wrong order...
@@ -29,9 +28,9 @@ void main(string[] args)
         long lengthFrames = input.getLengthInFrames();
 
         if (!input.isModule)
-            throw mallocNew!Exception("Must be a module");
+            throw new Exception("Must be a module");
         if (!input.canSeek)
-            throw mallocNew!Exception("Must be seekable");
+            throw new Exception("Must be seekable");
 
         float[] buf;
         output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
@@ -56,9 +55,13 @@ void main(string[] args)
         
         writefln("=> %s patterns decoded and encoded to %s", patternCount, outputPath);
     }
+    catch(AudioFormatsException e)
+    {
+        writeln(e.msg);
+        destroyAudioFormatException(e);
+    }
     catch(Exception e)
     {
         writeln(e.msg);
-        destroyFree(e);
     }
 }

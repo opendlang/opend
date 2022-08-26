@@ -23,12 +23,10 @@ module audioformats.dopus;
 
 version(decodeOPUS):
 
-import dplug.core.nogc;
-import dplug.core.vec;
-
 import core.stdc.string;
 
 import audioformats.io;
+import audioformats.internals;
 
 
 private:
@@ -7356,9 +7354,9 @@ public:
     _io = io;
     _userData = userData;
     eofhit = false;
-    if (!nextPage!true()) throw mallocNew!Exception("can't find valid Ogg page");
-    if (pgcont || !pgbos) throw mallocNew!Exception("invalid starting Ogg page");
-    if (!loadPacket()) throw mallocNew!Exception("can't load Ogg packet");
+    if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
+    if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
+    if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
   }
 
   static struct PageInfo {
@@ -7391,7 +7389,7 @@ public:
       {
           auto read = rawRead(buf[bufused..bufused+bulen]);
           if (read.length != bulen) 
-              throw mallocNew!Exception("read error");
+              throw mallocNew!AudioFormatsException("read error");
       }
       uint pos = bufused+bulen-27;
       uint pend = bufused+bulen;
@@ -7457,7 +7455,7 @@ public:
               _io.seek(flpos, false, _userData);
               auto sliceOut = rawRead(buf[bufused..bufused+ChunkSize]);
               if (sliceOut.length != ChunkSize)
-                throw mallocNew!Exception("Bad parsing");
+                throw mallocNew!AudioFormatsException("Bad parsing");
               pos = opos;
               pend = bufused+ChunkSize;
             }
@@ -7488,7 +7486,7 @@ public:
     packetBop = (curseg == 0);
     if (curseg >= segments) {
       if (!nextPage!false()) return false;
-      if (pgcont || pgbos) throw mallocNew!Exception("invalid starting Ogg page");
+      if (pgcont || pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
       packetBos = pgbos;
       packetBop = true;
       packetGranule = pggranule;
@@ -7504,7 +7502,7 @@ public:
       }
       //conwriteln("copyofs=", copyofs, "; copylen=", copylen, "; eop=", eop, "; packetLength=", packetLength, "; segments=", segments, "; curseg=", curseg);
       if (copylen > 0) {
-        if (packetLength+copylen > 1024*1024*32) throw mallocNew!Exception("Ogg packet too big");
+        if (packetLength+copylen > 1024*1024*32) throw mallocNew!AudioFormatsException("Ogg packet too big");
         if (packetLength+copylen > packetData.length) 
         {
             packetData.resize(packetLength+copylen);
@@ -7521,7 +7519,7 @@ public:
       assert(curseg >= segments);
       // get next page
       if (!nextPage!false()) return false;
-      if (!pgcont || pgbos) throw mallocNew!Exception("invalid cont Ogg page");
+      if (!pgcont || pgbos) throw mallocNew!AudioFormatsException("invalid cont Ogg page");
     }
   }
 
@@ -7566,23 +7564,23 @@ public:
       curseg = 0;
       _io.seek(firstpagepos, false, _userData);
       eofhit = false;
-      if (!nextPage!true()) throw mallocNew!Exception("can't find valid Ogg page");
-      if (pgcont || !pgbos) throw mallocNew!Exception("invalid starting Ogg page");
+      if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
+      if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
       for (;;) {
         if (pggranule && pggranule != -1) {
           curseg = 0;
           //for (int p = 0; p < segments; ++p) if (seglen[p] < 255) curseg = p+1;
           //auto rtg = pggranule;
-          if (!loadPacket()) throw mallocNew!Exception("can't load Ogg packet");
+          if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
           return 0;
         }
-        if (!nextPage!false()) throw mallocNew!Exception("can't find valid Ogg page");
+        if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
       }
     }
 
     if (lastpage.pgfpos < 0) {
       PageInfo pi;
-      if (!findLastPage(pi)) throw mallocNew!Exception("can't find last Ogg page");
+      if (!findLastPage(pi)) throw mallocNew!AudioFormatsException("can't find last Ogg page");
     }
 
     if (firstdatapgofs < 0) assert(0, "internal error");
@@ -7642,7 +7640,7 @@ public:
             end = begin;
           } else {
             // we tried to load a fraction of the last page; back up a bit and try to get the whole last page
-            if (bisect == 0) throw mallocNew!Exception("seek error");
+            if (bisect == 0) throw mallocNew!AudioFormatsException("seek error");
             bisect -= ChunkSize;
 
             // don't repeat/loop on a read we've already performed
@@ -7715,15 +7713,15 @@ public:
       //{ import core.stdc.stdio; printf("fpp=%lld\n", firstpagepos); }
       _io.seek(firstpagepos, false, _userData);
       eofhit = false;
-      if (!nextPage!true()) throw mallocNew!Exception("can't find valid Ogg page");
-      if (pgcont || !pgbos) throw mallocNew!Exception("invalid starting Ogg page");
+      if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
+      if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
       for (;;) {
         if (pggranule && pggranule != -1) {
           curseg = 0;
-          if (!loadPacket()) throw mallocNew!Exception("can't load Ogg packet");
+          if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
           return 0;
         }
-        if (!nextPage!false()) throw mallocNew!Exception("can't find valid Ogg page");
+        if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
       }
       //return 0;
     }
@@ -7733,12 +7731,12 @@ public:
     pglength = 0;
     curseg = 0;
     _io.seek(best, false, _userData);    
-    if (!nextPage!(false, true)()) throw mallocNew!Exception("wtf?!");
+    if (!nextPage!(false, true)()) throw mallocNew!AudioFormatsException("wtf?!");
     auto rtg = pggranule;
     seqno = pgseqno;
     // pull out all but last packet; the one right after granulepos
     for (int p = 0; p < segments; ++p) if (seglen[p] < 255) curseg = p+1;
-    if (!loadPacket()) throw mallocNew!Exception("wtf?!");
+    if (!loadPacket()) throw mallocNew!AudioFormatsException("wtf?!");
     return rtg;
   }
 
@@ -8086,7 +8084,7 @@ public:
       ogg._io.seek(ogg.lastpage.pgfpos, false, ogg._userData);
       //{ import core.stdc.stdio; printf("lpofs=0x%08llx\n", ogg.lastpage.pgfpos); }
       ogg.eofhit = false;
-      if (!ogg.nextPage!(false, true)()) throw mallocNew!Exception("can't find valid Ogg page");
+      if (!ogg.nextPage!(false, true)()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
       ogg.seqno = ogg.pgseqno;
       ogg.curseg = 0;
       for (int p = 0; p < ogg.segments; ++p) if (ogg.seglen[p] < 255) ogg.curseg = p+1;
@@ -8131,7 +8129,7 @@ public:
       frame.extended_data = eptr.ptr;
       int gotfrptr = 0;
       auto r = opus_decode_packet(&c, &frame, &gotfrptr, &pkt);
-      if (r < 0) throw mallocNew!Exception("error processing opus frame");
+      if (r < 0) throw mallocNew!AudioFormatsException("error processing opus frame");
       if (!gotfrptr) continue;
       curpcm += r;
       //if (ogg.packetGranule && ogg.packetGranule != -1) lastgran = ogg.packetGranule-ctx.preskip;
@@ -8156,7 +8154,7 @@ public alias OpusFile = OpusFileCtx*;
 public OpusFile opusOpen (IOCallbacks* io, void* userData) 
 {
   OpusFile of = av_mallocz!OpusFileCtx(1);
-  if (of is null) throw mallocNew!Exception("out of memory");
+  if (of is null) throw mallocNew!AudioFormatsException("out of memory");
   *of = OpusFileCtx.init; // just in case
   scope(failure) { av_freep(&of.commbuf); av_freep(&of.ctx.extradata); av_free(of); }
 
@@ -8164,11 +8162,11 @@ public OpusFile opusOpen (IOCallbacks* io, void* userData)
   of.ogg.setup(io, userData);
   scope(failure) of.ogg.close();
 
-  if (!of.ogg.findLastPage(of.lastpage)) throw mallocNew!Exception("can't find last page");
+  if (!of.ogg.findLastPage(of.lastpage)) throw mallocNew!AudioFormatsException("can't find last page");
 
   for (;;) {
     auto r = opus_header(&of.ctx, of.ogg);
-    if (r < 0) throw mallocNew!Exception("can't find opus header");
+    if (r < 0) throw mallocNew!AudioFormatsException("can't find opus header");
     // current packet is tags?
     if (of.ogg.packetLength >= 12 && of.commbuf is null && cast(const(char)[])(of.ogg.packetData[0..8]) == "OpusTags") {
       of.commbuf = av_mallocz!ubyte(of.ogg.packetLength-8);
@@ -8178,20 +8176,20 @@ public OpusFile opusOpen (IOCallbacks* io, void* userData)
         of.cblen = of.ogg.packetLength-8;
       }
     }
-    if (!of.ogg.loadPacket()) throw mallocNew!Exception("invalid opus file");
+    if (!of.ogg.loadPacket()) throw mallocNew!AudioFormatsException("invalid opus file");
     if (r == 1) break;
   }
 
-  if (of.ogg.pggranule < of.ctx.preskip) throw mallocNew!Exception("invalid starting granule");
-  if (of.lastpage.granule < of.ctx.preskip) throw mallocNew!Exception("invalid ending granule");
+  if (of.ogg.pggranule < of.ctx.preskip) throw mallocNew!AudioFormatsException("invalid starting granule");
+  if (of.lastpage.granule < of.ctx.preskip) throw mallocNew!AudioFormatsException("invalid ending granule");
   of.lastpage.granule -= of.ctx.preskip;
 
-  if (opus_decode_init(&of.ctx, &of.c, of.getGain) < 0) throw mallocNew!Exception("can't init opus decoder");
+  if (opus_decode_init(&of.ctx, &of.c, of.getGain) < 0) throw mallocNew!AudioFormatsException("can't init opus decoder");
   scope(failure) opus_decode_close(&of.c);
 
-  if (of.c.nb_streams != 1) throw mallocNew!Exception("only mono and stereo opus streams are supported");
+  if (of.c.nb_streams != 1) throw mallocNew!AudioFormatsException("only mono and stereo opus streams are supported");
   // just in case, check the impossible
-  if (of.c.streams[0].output_channels < 1 || of.c.streams[0].output_channels > 2) throw mallocNew!Exception("only mono and stereo opus streams are supported");
+  if (of.c.streams[0].output_channels < 1 || of.c.streams[0].output_channels > 2) throw mallocNew!AudioFormatsException("only mono and stereo opus streams are supported");
 
   return of;
 }

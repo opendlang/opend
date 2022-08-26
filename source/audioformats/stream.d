@@ -10,10 +10,8 @@ import core.stdc.stdio;
 import core.stdc.string;
 import core.stdc.stdlib: malloc, realloc, free;
 
-import dplug.core.nogc;
-import dplug.core.vec;
-
 import audioformats.io;
+import audioformats.internals;
 
 version(decodeMP3) import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
@@ -98,7 +96,7 @@ public: // This is also part of the public API
     /// Params: 
     ///     path An UTF-8 path to the sound file.
     ///
-    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     void openFromFile(const(char)[] path) @nogc
     {
         cleanUp();
@@ -121,7 +119,7 @@ public: // This is also part of the public API
 
     /// Opens an audio stream that decodes from memory.
     /// This stream will be opened for reading only.
-    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     ///
     /// Params: inputData The whole file to decode.
     void openFromMemory(const(ubyte)[] inputData) @nogc
@@ -147,7 +145,7 @@ public: // This is also part of the public API
 
     /// Opens an audio stream that writes to file.
     /// This stream will be open for writing only.
-    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     ///
     /// Params: 
     ///     path An UTF-8 path to the sound file.
@@ -181,7 +179,7 @@ public: // This is also part of the public API
     /// Opens an audio stream that writes to a dynamically growable output buffer.
     /// This stream will be open for writing only.
     /// Access to the internal buffer after encoding with `finalizeAndGetEncodedResult`.
-    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     ///
     /// Params: 
     ///     format Audio file format to generate.
@@ -213,7 +211,7 @@ public: // This is also part of the public API
     /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
     /// This stream will be open for writing only.
     /// Destroy this stream with `closeAudioStream`.
-    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     ///
     /// Params: 
     ///     data Pointer to output memory.
@@ -416,7 +414,7 @@ public: // This is also part of the public API
                         assert(_opusPositionFrame <= _lengthInFrames);
                         return decoded;
                     }
-                    catch(Exception e)
+                    catch(AudioFormatsException e)
                     {
                         destroyFree(e);
                         return 0; // decoding might fail, in which case return zero samples
@@ -1284,7 +1282,7 @@ private:
             {
                 int result = fclose(fileContext.file);
                 if (result)
-                    throw mallocNew!Exception("Closing of audio file errored");
+                    throw mallocNew!AudioFormatsException("Closing of audio file errored");
             }
             destroyFree(fileContext);
             fileContext = null;
@@ -1327,7 +1325,7 @@ private:
                 _opusPositionFrame = 0;
                 return;
             }
-            catch(Exception e)
+            catch(AudioFormatsException e)
             {
                 destroyFree(e);
             }
@@ -1374,7 +1372,7 @@ private:
                 _lengthInFrames = _wavDecoder._lengthInFrames;
                 return;
             }
-            catch(Exception e)
+            catch(AudioFormatsException e)
             {
                 // not a WAV
                 destroyFree(e);
@@ -1545,7 +1543,7 @@ private:
         _numChannels = 0;
         _lengthInFrames = -1;
 
-        throw mallocNew!Exception("Cannot decode stream: unrecognized encoding.");
+        throw mallocNew!AudioFormatsException("Cannot decode stream: unrecognized encoding.");
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels, EncodingOptions options) @nogc
@@ -1557,17 +1555,17 @@ private:
         final switch(format) with (AudioFileFormat)
         {
             case mp3:
-                throw mallocNew!Exception("Unsupported encoding format: MP3");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: MP3");
             case flac:
-                throw mallocNew!Exception("Unsupported encoding format: FLAC");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: FLAC");
             case ogg:
-                throw mallocNew!Exception("Unsupported encoding format: OGG");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: OGG");
             case opus:
-                throw mallocNew!Exception("Unsupported encoding format: Opus");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: Opus");
             case mod:
-                throw mallocNew!Exception("Unsupported encoding format: MOD");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: MOD");
             case xm:
-                throw mallocNew!Exception("Unsupported encoding format: XM");
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: XM");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
@@ -1586,7 +1584,7 @@ private:
                 break;
             }
             case unknown:
-                throw mallocNew!Exception("Can't encode using 'unknown' coding");
+                throw mallocNew!AudioFormatsException("Can't encode using 'unknown' coding");
         }        
     }   
 
@@ -1627,7 +1625,7 @@ struct FileContext // this is what is passed to I/O when used in file mode
         CString strZ = CString(path);
         file = fopen(strZ.storage, forWrite ? "wb".ptr : "rb".ptr);
         if (file is null)
-            throw mallocNew!Exception("File not found");
+            throw mallocNew!AudioFormatsException("File not found");
         // finds the size of the file
         fseek(file, 0, SEEK_END);
         fileSize = ftell(file);

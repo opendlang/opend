@@ -10,8 +10,7 @@ module audioformats.libxm;
 import core.stdc.config: c_ulong;
 import core.stdc.stdlib: malloc, free;
 import core.stdc.string: memcpy, memcmp, memset;
-
-import dplug.core.math;
+import std.math;
 
 nothrow:
 @nogc:
@@ -1160,7 +1159,7 @@ float xm_waveform(xm_context_t* context, xm_waveform_type_t waveform, uint8_t st
         case XM_SINE_WAVEFORM:
             /* Why not use a table? For saving space, and because there's
             * very very little actual performance gain. */
-            return -fast_sin(2.0f * 3.141592f * cast(float)step / cast(float)0x40);
+            return -sin(2.0f * 3.141592f * cast(float)step / cast(float)0x40);
 
         case XM_RAMP_DOWN_WAVEFORM:
             /* Ramp down: 1.0f when step = 0; -1.0f when step = 0x40 */
@@ -1348,7 +1347,7 @@ float xm_linear_period(float note) {
 }
 
 float xm_linear_frequency(float period) {
-	return 8363.0f * fast_pow(2.0f, (4608.0f - period) / 768.0f);
+	return 8363.0f * pow(2.0f, (4608.0f - period) / 768.0f);
 }
 
 float xm_amiga_period(float note) {
@@ -2276,7 +2275,7 @@ void xm_tick(xm_context_t* ctx) {
 		float panning, volume;
 
 		panning = ch.panning +
-			(ch.panning_envelope_panning - .5f) * (.5f - fast_fabs(ch.panning - .5f)) * 2.0f;
+			(ch.panning_envelope_panning - .5f) * (.5f - abs(ch.panning - .5f)) * 2.0f;
 
 		if(ch.tremor_on) {
             volume = .0f;
@@ -2291,8 +2290,8 @@ void xm_tick(xm_context_t* ctx) {
         {
 		    /* See https://modarchive.org/forums/index.php?topic=3517.0
             * and https://github.com/Artefact2/libxm/pull/16 */
-		    ch.target_volume[0] = volume * fast_sqrt(1.0f - panning);
-		    ch.target_volume[1] = volume * fast_sqrt(panning);
+		    ch.target_volume[0] = volume * sqrt(1.0f - panning);
+		    ch.target_volume[1] = volume * sqrt(panning);
         }
         else
         {

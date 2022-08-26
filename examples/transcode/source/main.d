@@ -4,7 +4,6 @@ import std.stdio;
 import std.file;
 
 import audioformats;
-import dplug.core;
 import core.stdc.stdlib;
 
 
@@ -66,10 +65,14 @@ void main(string[] args)
         
         writefln("=> %s frames decoded and encoded to %s", totalFrames, outputPath);
     }
+    catch(AudioFormatsException e)
+    {
+        writeln(e.msg);
+        destroyAudioFormatException(e);
+    }
     catch(Exception e)
     {
         writeln(e.msg);
-        destroyFree(e);
     }
 }
 
@@ -135,8 +138,7 @@ debug(checkSeeking)
                 }
             }
 
-            // Come back at start
-, read 16 frames.
+            // Come back at start, read 16 frames.
             res = input.seekPosition(0);
             assert(res && input.tellPosition() == 0);
             {

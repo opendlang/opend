@@ -1,7 +1,6 @@
 module audioformats.io;
 
-import dplug.core.nogc;
-
+import audioformats.internals;
 
 nothrow @nogc
 {
@@ -56,7 +55,7 @@ struct IOCallbacks
         {
             return b;
         }
-        throw mallocNew!Exception("expected ubyte");
+        throw mallocNew!AudioFormatsException("expected ubyte");
     }
 
     ubyte[16] read_guid(void* userData) @nogc
@@ -66,7 +65,7 @@ struct IOCallbacks
         {
             return b;
         }
-        throw mallocNew!Exception("expected a GUID");
+        throw mallocNew!AudioFormatsException("expected a GUID");
     }
 
     ushort read_ushort_LE(void* userData) @nogc
@@ -83,7 +82,7 @@ struct IOCallbacks
             return *cast(ushort*)(v.ptr);
         }
         else
-            throw mallocNew!Exception("expected ushort");
+            throw mallocNew!AudioFormatsException("expected ushort");
     }
 
     uint read_uint_BE(void* userData) @nogc
@@ -103,7 +102,7 @@ struct IOCallbacks
             return *cast(uint*)(v.ptr);
         }
         else
-            throw mallocNew!Exception("expected uint");
+            throw mallocNew!AudioFormatsException("expected uint");
     }
 
     uint read_uint_LE(void* userData) @nogc
@@ -123,7 +122,7 @@ struct IOCallbacks
             return *cast(uint*)(v.ptr);
         }
         else
-            throw mallocNew!Exception("expected uint");
+            throw mallocNew!AudioFormatsException("expected uint");
     }
 
     uint read_24bits_LE(void* userData) @nogc
@@ -134,7 +133,7 @@ struct IOCallbacks
             return v[0] | (v[1] << 8) | (v[2] << 16);
         }
         else
-            throw mallocNew!Exception("expected 24-bit int");
+            throw mallocNew!AudioFormatsException("expected 24-bit int");
     }
 
     float read_float_LE(void* userData) @nogc
@@ -166,7 +165,7 @@ struct IOCallbacks
             return *cast(double*)(v.ptr);
         }
         else
-            throw mallocNew!Exception("expected double");
+            throw mallocNew!AudioFormatsException("expected double");
     }
 
     void readRIFFChunkHeader(void* userData, ref uint chunkId, ref uint chunkSize) @nogc
@@ -196,13 +195,13 @@ struct IOCallbacks
         }
 
         if (4 != write(v.ptr, 4, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_byte(void* userData, byte value) @nogc
     {
         if (1 != write(&value, 1, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_short_LE(void* userData, short value) @nogc
@@ -216,7 +215,7 @@ struct IOCallbacks
             v[1] = v0;
         }
         if (2 != write(v.ptr, 2, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_24bits_LE(void* userData, int value) @nogc
@@ -233,7 +232,7 @@ struct IOCallbacks
             v[2] = v1;
         }
         if (3 != write(v.ptr, 3, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_float_LE(void* userData, float value) @nogc
@@ -267,7 +266,7 @@ struct IOCallbacks
         }
 
         if (8 != write(v.ptr, 8, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_uint_LE(void* userData, uint value) @nogc
@@ -285,7 +284,7 @@ struct IOCallbacks
         }
 
         if (4 != write(v.ptr, 4, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void write_ushort_LE(void* userData, ushort value) @nogc
@@ -300,7 +299,7 @@ struct IOCallbacks
         }
 
         if (2 != write(v.ptr, 2, userData))
-            throw mallocNew!Exception(writeFailureMessage);
+            throw mallocNew!AudioFormatsException(writeFailureMessage);
     }
 
     void writeRIFFChunkHeader(void* userData, uint chunkId, uint chunkSize) @nogc

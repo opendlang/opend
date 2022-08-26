@@ -8,9 +8,8 @@ module audioformats.wav;
 
 import core.stdc.math: round, floor, fabs;
 import core.stdc.stdlib: rand, RAND_MAX;
-import dplug.core.nogc;
-import dplug.core.vec;
 import audioformats.io;
+import audioformats.internals;
 
 
 version(decodeWAV)
@@ -38,13 +37,13 @@ version(decodeWAV)
                 uint chunkId, chunkSize;
                 _io.readRIFFChunkHeader(_userData, chunkId, chunkSize);
                 if (chunkId != RIFFChunkId!"RIFF")
-                    throw mallocNew!Exception("Expected RIFF chunk.");
+                    throw mallocNew!AudioFormatsException("Expected RIFF chunk.");
 
                 if (chunkSize < 4)
-                    throw mallocNew!Exception("RIFF chunk is too small to contain a format.");
+                    throw mallocNew!AudioFormatsException("RIFF chunk is too small to contain a format.");
 
                 if (_io.read_uint_BE(_userData) !=  RIFFChunkId!"WAVE")
-                    throw mallocNew!Exception("Expected WAVE format.");
+                    throw mallocNew!AudioFormatsException("Expected WAVE format.");
             }
 
             bool foundFmt = false;
@@ -71,34 +70,34 @@ version(decodeWAV)
                 if (chunkId == RIFFChunkId!"fmt ")
                 {
                     if (foundFmt)
-                        throw mallocNew!Exception("Found several 'fmt ' chunks in RIFF file.");
+                        throw mallocNew!AudioFormatsException("Found several 'fmt ' chunks in RIFF file.");
 
                     foundFmt = true;
 
                     if (chunkSize < 16)
-                        throw mallocNew!Exception("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
+                        throw mallocNew!AudioFormatsException("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
 
                     _audioFormat = _io.read_ushort_LE(_userData);
                     bool isWFE = _audioFormat == WAVE_FORMAT_EXTENSIBLE;
 
                     if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE && !isWFE)
-                        throw mallocNew!Exception("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
+                        throw mallocNew!AudioFormatsException("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
 
                     _channels = _io.read_ushort_LE(_userData);
 
                     _sampleRate = _io.read_uint_LE(_userData);
                     if (_sampleRate <= 0)
-                        throw mallocNew!Exception("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
+                        throw mallocNew!AudioFormatsException("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
 
                     uint bytesPerSec = _io.read_uint_LE(_userData);
                     int bytesPerFrame = _io.read_ushort_LE(_userData);
                     bitsPerSample = _io.read_ushort_LE(_userData);
 
                     if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32 && bitsPerSample != 64) 
-                        throw mallocNew!Exception("Unsupported bitdepth");
+                        throw mallocNew!AudioFormatsException("Unsupported bitdepth");
 
                     if (bytesPerFrame != (bitsPerSample / 8) * _channels)
-                        throw mallocNew!Exception("Invalid bytes-per-second, data might be corrupted.");
+                        throw mallocNew!AudioFormatsException("Invalid bytes-per-second, data might be corrupted.");
 
                     // Sometimes there is no cbSize
                     if (chunkSize >= 18)
@@ -118,10 +117,10 @@ version(decodeWAV)
                                     _audioFormat = FloatingPointIEEE;
                                 }
                                 else
-                                    throw mallocNew!Exception("Unsupported GUID in WAVE_FORMAT_EXTENSIBLE.");
+                                    throw mallocNew!AudioFormatsException("Unsupported GUID in WAVE_FORMAT_EXTENSIBLE.");
                             }
                             else
-                                throw mallocNew!Exception("Unsupported WAVE_FORMAT_EXTENSIBLE.");
+                                throw mallocNew!AudioFormatsException("Unsupported WAVE_FORMAT_EXTENSIBLE.");
 
                             _io.skip(chunkSize - (18 + 2 + 4 + 16), _userData);
                         }
@@ -139,15 +138,15 @@ version(decodeWAV)
                 else if (chunkId == RIFFChunkId!"data")
                 {
                     if (foundData)
-                        throw mallocNew!Exception("Found several 'data' chunks in RIFF file.");
+                        throw mallocNew!AudioFormatsException("Found several 'data' chunks in RIFF file.");
 
                     if (!foundFmt)
-                        throw mallocNew!Exception("'fmt ' chunk expected before the 'data' chunk.");
+                        throw mallocNew!AudioFormatsException("'fmt ' chunk expected before the 'data' chunk.");
 
                     _bytePerSample = bitsPerSample / 8;
                     uint frameSize = _channels * _bytePerSample;
                     if (chunkSize % frameSize != 0)
-                        throw mallocNew!Exception("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
+                        throw mallocNew!AudioFormatsException("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
 
                     uint numFrames = chunkSize / frameSize;
                     _lengthInFrames = numFrames;
@@ -165,10 +164,10 @@ version(decodeWAV)
             }
 
             if (!foundFmt)
-                throw mallocNew!Exception("'fmt ' chunk not found.");
+                throw mallocNew!AudioFormatsException("'fmt ' chunk not found.");
 
             if (!foundData)
-                throw mallocNew!Exception("'data' chunk not found.");
+                throw mallocNew!AudioFormatsException("'data' chunk not found.");
 
             // Get ready to decode
             _io.seek(_samplesOffsetInFile, false, _userData);
@@ -198,7 +197,7 @@ version(decodeWAV)
         // read interleaved samples
         // `outData` should have enough room for frames * _channels
         // Returs: Frames actually read.
-        int readSamples(T)(T* outData, int maxFrames) nothrow
+        int readSamples(T)(T* outData, int maxFrames)
         {
             assert(_framePosition <= _lengthInFrames);
             int available = _lengthInFrames - _framePosition;
@@ -228,7 +227,7 @@ version(decodeWAV)
                             outData[n] = _io.read_double_LE(_userData);
                     }
                     else
-                        throw mallocNew!Exception("Unsupported bit-depth for floating point data, should be 32 or 64.");
+                        throw mallocNew!AudioFormatsException("Unsupported bit-depth for floating point data, should be 32 or 64.");
                 }
                 else if (_audioFormat == LinearPCM)
                 {
@@ -267,12 +266,12 @@ version(decodeWAV)
                         }
                     }
                     else
-                        throw mallocNew!Exception("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
+                        throw mallocNew!AudioFormatsException("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
                 }
                 else
                     assert(false); // should have been handled earlier, crash
             }
-            catch(Exception e)
+            catch(AudioFormatsException e)
             {
                 destroyFree(e); // well this is really unexpected, since no read should fail in this loop
                 return 0;
@@ -329,7 +328,7 @@ version(encodeWAV)
 
             // Avoids a number of edge cases.
             if (_channels < 0 || _channels > 1024)
-                throw mallocNew!Exception("Can't save a WAV with this numnber of channels.");
+                throw mallocNew!AudioFormatsException("Can't save a WAV with this numnber of channels.");
 
             // RIFF header
             // its size will be overwritten at finalizing
@@ -357,7 +356,7 @@ version(encodeWAV)
             _writtenFrames = 0;
         }
 
-        // read interleaved samples
+        // write interleaved samples
         // `inSamples` should have enough room for frames * _channels
         int writeSamples(T)(T* inSamples, int frames) nothrow
         {
@@ -417,9 +416,13 @@ version(encodeWAV)
                 }
                 _writtenFrames += frames;
             }
-            catch(Exception e)
+            catch(AudioFormatsException e)
             {
                 destroyFree(e);
+            }
+            catch(Exception e)
+            {
+                assert(false); // disallow
             }
             return n;
         }
