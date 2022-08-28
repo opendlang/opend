@@ -148,8 +148,11 @@ else version(DigitalMars)
     {
         enum MMXSizedVectorsAreEmulated = true;
         enum SSESizedVectorsAreEmulated = !tryToEnableCoreSimdWithDMD;
+
+        // Note: with DMD, AVX-sized vectors can't be enabled yet.
+        /// On linux + x86_64, this will fail since a few operands seem to be missing. 
         version(D_AVX)
-            enum AVXSizedVectorsAreEmulated = !tryToEnableCoreSimdWithDMD;
+            enum AVXSizedVectorsAreEmulated = true;
         else
             enum AVXSizedVectorsAreEmulated = true;
     }
