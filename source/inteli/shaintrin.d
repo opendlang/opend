@@ -180,6 +180,19 @@ unittest
 /// Perform an intermediate calculation for the next four SHA256 message values (unsigned 32-bit integers) using previous message values from `a` and `b`, and return the result.
 __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k) @trusted
 {
+    // TODO: the pragma(inline) false prevent a DMD 1.100
+    //       regression in Linux + x86_64 + -b release-unittest, report that
+
+    version(DigitalMars)
+    {
+        enum bool workaround = true;
+    }
+    else
+    {
+        enum bool workaround = false;
+    }
+
+
     static if (SHA_builtins)
     {
         return __builtin_ia32_sha256rnds2(cast(int4) a, cast(int4) b, cast(int4) k);
@@ -188,21 +201,25 @@ __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k) @trusted
     {
         static uint Ch(uint x, uint y, uint z) nothrow @nogc @safe
         { 
+            static if (workaround) pragma (inline, false);
             return z ^ (x & (y ^ z)); 
         }
         
         static uint Maj(uint x, uint y, uint z) nothrow @nogc @safe
         { 
+            static if (workaround) pragma (inline, false);
             return (x & y) | (z & (x ^ y)); 
         }
 
         static uint sum0(uint x) nothrow @nogc @safe
         { 
+            static if (workaround) pragma (inline, false);
             return bitwiseRotateRight_uint(x, 2) ^ bitwiseRotateRight_uint(x, 13) ^ bitwiseRotateRight_uint(x, 22); 
         }
 
         static uint sum1(uint x) nothrow @nogc @safe
         { 
+            static if (workaround) pragma (inline, false);
             return bitwiseRotateRight_uint(x, 6) ^ bitwiseRotateRight_uint(x, 11) ^ bitwiseRotateRight_uint(x, 25); 
         }
 
