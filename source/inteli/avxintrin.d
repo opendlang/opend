@@ -41,7 +41,6 @@ unittest
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     // PERF DMD
-    pragma(inline, true);
     static if (GDC_with_AVX)
     {
         return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) mem_addr);
@@ -143,7 +142,6 @@ __m256i _mm256_setr_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte
                           byte e7,  byte e6,  byte e5,  byte e4,  byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
     // PERF GDC, not checked
-    pragma(inline, true);
     byte[32] result = [ e31,  e30,  e29,  e28,  e27,  e26,  e25,  e24,
                         e23,  e22,  e21,  e20,  e19,  e18,  e17,  e16,
                         e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
@@ -181,7 +179,6 @@ unittest
 __m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9,  short e8,
                            short e7,  short e6,  short e5,  short e4,  short e3,  short e2,  short e1,  short e0) pure @trusted
 {
-    pragma(inline, true);
     short[16] result = [ e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
                          e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
     static if (GDC_with_AVX)
@@ -212,7 +209,6 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
 {
-    pragma(inline, true);
     int[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     static if (GDC_with_AVX)
     {
