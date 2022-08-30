@@ -100,11 +100,12 @@ __m128i _mm_abs_epi8 (__m128i a) @trusted
     {
         return cast(__m128i)__simd(XMM.PABSB, cast(byte16)a);
     }
-    else static if (GDC_with_SSSE3)
+    // TODO bug with GDC 12
+    /*else static if (GDC_with_SSSE3)
     {
         alias ubyte16 = __vector(ubyte[16]);
         return cast(__m128i) __builtin_ia32_pabsb128(cast(ubyte16)a);
-    }
+    }*/
     else static if (LDC_with_ARM64)
     {
         return cast(__m128i) vabsq_s8(cast(byte16)a);
