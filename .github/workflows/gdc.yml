@@ -30,7 +30,7 @@ jobs:
             - name: Install GDC
               run: |
                   sudo apt update
-                  sudo apt -y install gcc-12
+                  sudo apt -y install gdc-12
 
             - name: Vanilla unittest
               run: ./dub test -a x86_64 --compiler gdc
