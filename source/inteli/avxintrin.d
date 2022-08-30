@@ -138,7 +138,7 @@ unittest
 /// Load 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) 
 /// from memory. `mem_addr` must be aligned on a 32-byte boundary or a general-protection 
 /// exception may be generated.
-__m256d _mm256_load_pd (const(double)* mem_addr) pure @system
+__m256d _mm256_load_pd (const(double)* mem_addr) pure @trusted
 {
     return *cast(__m256d*)mem_addr;
 }
