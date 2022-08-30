@@ -2393,7 +2393,7 @@ deprecated("Use _mm_set1_ps instead") alias _mm_set_ps1 = _mm_set1_ps; ///
 void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) @safe
 {
     // Work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
-    version(GNU) asm @trusted { "" : : : "memory"; }
+    version(GNU) asm nothrow @nogc @trusted { "" : : : "memory"; }
     _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
 }
 
@@ -2464,7 +2464,7 @@ void _mm_setcsr(uint controlWord) @trusted
         static if (GDC_with_SSE)
         {
             // Work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98607
-            version(GNU) asm @trusted { "" : : : "memory"; }
+            version(GNU) asm nothrow @nogc @trusted { "" : : : "memory"; }
             __builtin_ia32_ldmxcsr(controlWord);
         }
         else version(X86)
