@@ -36,7 +36,20 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256 _mm256_add_ps (__m256 a, __m256 b)
+/// Add packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256 _mm256_add_ps (__m256 a, __m256 b) pure @trusted
+{
+    return a + b;
+}
+unittest
+{
+    align(32) float[8] A = [-1.0f, 2, -3, 40000, 0, 3, 5, 6];
+    align(32) float[8] B = [ 9.0f, -7, 8,  -0.5, 8, 7, 3, -1];
+    __m256 R = _mm256_add_ps(_mm256_load_ps(A.ptr), _mm256_load_ps(B.ptr));
+    float[8] correct     = [8, -5, 5, 39999.5, 8, 10, 8, 5];
+    assert(R.array == correct);
+}
+
 // TODO __m256d _mm256_addsub_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_addsub_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_and_pd (__m256d a, __m256d b)
@@ -125,7 +138,7 @@ unittest
 /// Load 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) 
 /// from memory. `mem_addr` must be aligned on a 32-byte boundary or a general-protection 
 /// exception may be generated.
-__m256d _mm256_load_pd (const(double)* mem_addr) pure @trusted
+__m256d _mm256_load_pd (const(double)* mem_addr) pure @system
 {
     return *cast(__m256d*)mem_addr;
 }
@@ -136,7 +149,21 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256 _mm256_load_ps (float const * mem_addr)
+/// Load 256-bits (composed of 8 packed single-precision (32-bit) 
+/// floating-point elements) from memory. 
+/// `mem_addr` must be aligned on a 32-byte boundary or a 
+/// general-protection exception may be generated.
+__m256 _mm256_load_ps (const(float)* mem_addr) pure @trusted
+{
+    return *cast(__m256*)mem_addr;
+}
+unittest
+{
+    static immutable align(32) float[8] correct = 
+        [1.0, 2.0, 3.5, -42.0, 7.43f, 0.0f, 3, 2];
+    __m256 A = _mm256_load_ps(correct.ptr);
+    assert(A.array == correct);
+}
 
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
