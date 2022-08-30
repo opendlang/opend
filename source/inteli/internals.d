@@ -47,20 +47,39 @@ version(GNU)
         // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
         // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 
         public import gcc.builtins;
-                
+
+        // TODO: SSE and SSE2 should be truly optional instead, in the future, if we 
+        // want to support other archs with GDC
+
         enum GDC_with_x86 = true;
         enum GDC_with_MMX = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
         enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
 
-        enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_SSSE3 = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_SSE41 = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_SSE42 = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_AVX = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_AVX2 = false; // TODO: we don't have a way to detect that at CT
-        enum GDC_with_SHA = false;
-        enum GDC_with_BMI2 = false;
+        static if (__VERSION__ >= 2100) // Starting at GDC 12.1
+        {
+            enum GDC_with_SSE3 = __traits(compiles, __builtin_ia32_haddps);
+            enum GDC_with_SSSE3 = __traits(compiles, __builtin_ia32_pmulhrsw128);
+            enum GDC_with_SSE41 = __traits(compiles, __builtin_ia32_dpps);
+            enum GDC_with_SSE42 = __traits(compiles, __builtin_ia32_pcmpgtq);
+            enum GDC_with_AVX = __traits(compiles, __builtin_ia32_vbroadcastf128_pd256);
+            enum GDC_with_AVX2 = __traits(compiles, __builtin_ia32_gathersiv2df);
+        }
+        else
+        {
+            // Before GCC 11.3, no reliable way to detect instruction sets.
+            // We start above detection at GCC 12, with DMDFE 2.100, which
+            // is more conservative.
+            enum GDC_with_SSE3 = false;
+            enum GDC_with_SSSE3 = false;
+            enum GDC_with_SSE41 = false;
+            enum GDC_with_SSE42 = false;
+            enum GDC_with_AVX = false;
+            enum GDC_with_AVX2 = false;
+        }
+
+        enum GDC_with_SHA = false; // TODO: detect that
+        enum GDC_with_BMI2 = false; // TODO: detect that
     }
     else
     {
