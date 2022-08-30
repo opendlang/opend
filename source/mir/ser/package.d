@@ -272,7 +272,7 @@ unittest
 }
 
 /// String-value associative array serialization
-void serializeValue(S, T)(scope ref S serializer, auto ref T[string] value)
+void serializeValue(S, T)(scope ref S serializer, auto ref const T[string] value)
 {
     if(value is null)
     {
@@ -280,7 +280,7 @@ void serializeValue(S, T)(scope ref S serializer, auto ref T[string] value)
         return;
     }
     auto state = serializer.beginStruct(value);
-    foreach (key, ref val; value)
+    foreach (key, ref val; (()@trusted => cast()value)())
     {
         serializer.putKey(key);
         serializer.serializeValue(val);
@@ -295,7 +295,8 @@ unittest
     import mir.ser.json: serializeJson;
     import mir.ser.text: serializeText;
     uint[string] ar = ["a" : 1];
-    assert(serializeJson(ar) == `{"a":1}`);
+    auto car = cast(const)ar;
+    assert(serializeJson(car) == `{"a":1}`);
     assert(serializeText(ar) == `{a:1}`);
     ar.remove("a");
     assert(serializeJson(ar) == `{}`);
@@ -327,7 +328,8 @@ unittest
     import mir.ser.json: serializeJson;
     enum E { a, b }
     uint[E] ar = [E.a : 1];
-    assert(serializeJson(ar) == `{"a":1}`);
+    auto car = cast(const)ar;
+    assert(serializeJson(car) == `{"a":1}`);
     ar.remove(E.a);
     assert(serializeJson(ar) == `{}`);
     assert(serializeJson((uint[string]).init) == `{}`);
