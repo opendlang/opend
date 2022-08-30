@@ -1,4 +1,4 @@
-name: gdc
+name: gdc-old
 on: [push, pull_request]
 
 jobs:
@@ -6,7 +6,7 @@ jobs:
         name: Dub Tests
         strategy:
             matrix:
-                os: [ubuntu-22.04]
+                os: [ubuntu-20.04]
                 dc: 
                     - ldc-latest 
 
@@ -28,9 +28,7 @@ jobs:
               run: sudo apt install libcurl4-gnutls-dev
 
             - name: Install GDC
-              run: |
-                  sudo apt update
-                  sudo apt -y install gcc-12
+              run: sudo apt install gdc              
 
             - name: Vanilla unittest
               run: ./dub test -a x86_64 --compiler gdc
