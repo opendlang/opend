@@ -84,6 +84,46 @@ unittest
     assert(R.array == correct);
 }
 
+/// Alternatively add and subtract packed single-precision (32-bit) floating-point elements 
+/// in `a` to/from packed elements in `b`.
+__m256 _mm256_addsub_ps (__m256 a, __m256 b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_addsubps256(a, b);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_addsubps256(a, b);
+    }
+    else
+    {
+        // Note: GDC x86 generates addsubps since GDC 11 -O3
+        //               and in absence of AVX, a pair of SSE3 addsubps since GDC 12 -O2
+        //       LDC x86 generates addsubps since LDC 1.18 -O2
+        //               and in absence of AVX, a pair of SSE3 addsubps since LDC 1.1 -O1
+        // LDC ARM: neat output since LDC 1.21 -O2
+   
+        a.ptr[0] = a.array[0] + (-b.array[0]);
+        a.ptr[1] = a.array[1] + b.array[1];
+        a.ptr[2] = a.array[2] + (-b.array[2]);
+        a.ptr[3] = a.array[3] + b.array[3];
+        a.ptr[4] = a.array[4] + (-b.array[4]);
+        a.ptr[5] = a.array[5] + b.array[5];
+        a.ptr[6] = a.array[6] + (-b.array[6]);
+        a.ptr[7] = a.array[7] + b.array[7];
+        return a;
+    }
+}
+unittest
+{
+    align(32) float[8] A = [-1.0f,  2,  -3, 40000,    0, 3,  5,  6];
+    align(32) float[8] B = [ 9.0f, -7,   8,  -0.5,    8, 7,  3, -1];
+    __m256 R = _mm256_addsub_ps(_mm256_load_ps(A.ptr), _mm256_load_ps(B.ptr));
+    float[8] correct     = [  -10, -5, -11, 39999.5, -8, 10, 2,  5];
+    assert(R.array == correct);
+}
 
 // TODO __m256 _mm256_addsub_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_and_pd (__m256d a, __m256d b)
