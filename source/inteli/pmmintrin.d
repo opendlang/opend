@@ -16,6 +16,7 @@ public import inteli.emmintrin;
 // Note: this header will work whether you have SSE3 enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+sse3"] or equivalent to actively 
 // generate SSE3 instruction (they are often enabled with -O1 or greater).
+// With GDC, use "dflags-gdc": ["-msse3"] or equivalent to generate SSE3 instructions.
 
 
 nothrow @nogc:

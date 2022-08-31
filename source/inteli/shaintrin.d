@@ -13,6 +13,7 @@ module inteli.shaintrin;
 // Note: this header will work whether you have SHA enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+sha"] or equivalent to actively
 // generate SHA instructions.
+// With GDC, use "dflags-gdc": ["-msha"] or equivalent to generate SHA instructions.
 
 public import inteli.types;
 import inteli.internals;

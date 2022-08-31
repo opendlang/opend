@@ -22,6 +22,7 @@ nothrow @nogc:
 // Note: this header will work whether you have SSSE3 enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+ssse3"] or equivalent to actively 
 // generate SSE3 instructions.
+// With GDC, use "dflags-gdc": ["-mssse3"] or equivalent to generate SSSE3 instructions.
 
 /// Compute the absolute value of packed signed 16-bit integers in `a`.
 __m128i _mm_abs_epi16 (__m128i a) @trusted

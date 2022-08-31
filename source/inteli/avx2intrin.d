@@ -13,6 +13,8 @@ module inteli.avx2intrin;
 // Note: this header will work whether you have AVX2 enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+avx2"] or equivalent to actively
 // generate AVX2 instructions.
+// With GDC, use "dflags-gdc": ["-mavx2"] or equivalent to actively
+// generate AVX2 instructions.
 
 public import inteli.types;
 import inteli.internals;

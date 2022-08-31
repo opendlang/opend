@@ -13,6 +13,8 @@ module inteli.avxintrin;
 // Note: this header will work whether you have AVX enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+avx"] or equivalent to actively
 // generate AVX instructions.
+// With GDC, use "dflags-gdc": ["-mavx"] or equivalent to actively
+// generate AVX instructions.
 
 public import inteli.types;
 import inteli.internals;
@@ -125,7 +127,6 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256 _mm256_addsub_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_and_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_and_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)

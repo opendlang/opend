@@ -17,6 +17,7 @@ import core.bitop: bsf, bsr;
 // With LDC, use "dflags-ldc": ["-mattr=+sse4.2"] or equivalent to actively 
 // generate SSE4.2 instruction (they are often enabled with -O1 or greater).
 // Additionally, you need ["-mattr=+crc"] on ARM if you want hardware CRC instructions.
+// With GDC, use "dflags-gdc": ["-msse4.2"] or equivalent to generate SSE4.2 instructions.
 
 nothrow @nogc:
 

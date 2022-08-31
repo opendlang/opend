@@ -13,6 +13,7 @@ module inteli.smmintrin;
 // Note: this header will work whether you have SSE4.1 enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+sse4.1"] or equivalent to actively
 // generate SSE4.1 instructions.
+// With GDC, use "dflags-gdc": ["-msse4.1"] or equivalent to generate SSE4.1 instructions.
 
 public import inteli.types;
 import inteli.internals;
