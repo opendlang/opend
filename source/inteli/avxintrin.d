@@ -50,7 +50,41 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256d _mm256_addsub_pd (__m256d a, __m256d b)
+/// Alternatively add and subtract packed double-precision (64-bit) floating-point
+///  elements in `a` to/from packed elements in `b`.
+__m256d _mm256_addsub_pd (__m256d a, __m256d b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_addsubpd256(a, b);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_addsubpd256(a, b);
+    }
+    else
+    {
+        //// Note: GDC x86 generates addsubpd since GDC 11.1 with -O3
+        ////       LDC x86 generates addsubpd since LDC 1.18 with -O2
+        //// LDC ARM: not fantastic, ok since LDC 1.18 -O2
+        a.ptr[0] = a.array[0] + (-b.array[0]);
+        a.ptr[1] = a.array[1] + b.array[1];
+        a.ptr[2] = a.array[2] + (-b.array[2]);
+        a.ptr[3] = a.array[3] + b.array[3];
+        return a;
+    }
+}
+unittest
+{
+    align(32) double[4] A = [-1, 2, -3, 40000];
+    align(32) double[4] B = [ 9, -7, 8, -0.5];
+    __m256d R = _mm256_addsub_pd(_mm256_load_pd(A.ptr), _mm256_load_pd(B.ptr));
+    double[4] correct = [-10, -5, -11, 39999.5];
+    assert(R.array == correct);
+}
+
+
 // TODO __m256 _mm256_addsub_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_and_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_and_ps (__m256 a, __m256 b)
