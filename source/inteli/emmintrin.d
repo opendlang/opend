@@ -746,11 +746,19 @@ unittest
 /// Compare packed 8-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
+    // Workaround of a GCC bug here.
+    // Of course the GCC builtin is buggy and generates a weird (and wrong) sequence
+    // with __builtin_ia32_pcmpgtb128.
+    // GCC's emmintrin.h uses comparison operators we don't have instead.
+    // PERF: this is a quite severe GDC performance problem.
+    // Could be workarounded with inline assembly, or another algorithm I guess.
+  
+  /*
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pcmpgtb128(cast(ubyte16)a, cast(ubyte16)b);
     }
-    else
+    else */
     {
         return cast(__m128i) greaterMask!byte16(cast(byte16)a, cast(byte16)b);
     }
