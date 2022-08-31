@@ -143,13 +143,11 @@ __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
 {
     // PERF DMD
     // TODO BUG GDC version
-    /*
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
     }
-    else
-    */ static if (LDC_with_SSE41)
+    else static if (LDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
     }
