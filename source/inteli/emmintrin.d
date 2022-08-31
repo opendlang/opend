@@ -757,10 +757,10 @@ __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 }
 unittest
 {
-    __m128i A = _mm_setr_epi8(1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
-    __m128i B = _mm_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
+    __m128i A = _mm_setr_epi8(1, 2, 3, 1,  127, -80, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
+    __m128i B = _mm_setr_epi8(2, 2, 1, 2, -128, -42, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
     byte16 C = cast(byte16) _mm_cmpgt_epi8(A, B);
-    byte[16] correct =       [0, 0,-1, 0, 0, 0, 0, 0,-1,-1,-1, 0, 0, 0,-1, 0];
+    byte[16] correct =       [0, 0,-1, 0,   -1,   0, 0, 0,-1,-1,-1, 0, 0, 0,-1, 0];
     __m128i D = _mm_cmpeq_epi8(A, B);
     assert(C.array == correct);
 }
@@ -2175,7 +2175,6 @@ unittest
     byte16 R = cast(byte16) _mm_max_epu8(_mm_setr_epi8(45, 1, -4, -8, 9,  7, 0,-57, -4,-8,  9,  7, 0,-57, 0,  0),
                                          _mm_setr_epi8(-4,-8,  9,  7, 0,-57, 0,  0, 45, 1, -4, -8, 9,  7, 0,-57));
     byte[16] correct =                                [-4,-8, -4, -8, 9,-57, 0,-57, -4,-8, -4, -8, 9,-57, 0,-57];
-    _mm_print_epi8(cast(int4)R);
     assert(R.array == correct);
 }
 
