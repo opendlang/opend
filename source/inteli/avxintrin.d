@@ -615,9 +615,28 @@ void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
 // TODO int _mm_testz_ps (__m128 a, __m128 b)
 // TODO int _mm256_testz_ps (__m256 a, __m256 b)
 // TODO int _mm256_testz_si256 (__m256i a, __m256i b)
-// TODO __m256d _mm256_undefined_pd (void)
-// TODO __m256 _mm256_undefined_ps (void)
-// TODO __m256i _mm256_undefined_si256 (void)
+
+/// Return vector of type __m256d with undefined elements.
+__m256d _mm256_undefined_pd () pure @safe
+{
+    __m256d r = void;
+    return r;
+}
+
+/// Return vector of type __m256 with undefined elements.
+__m256 _mm256_undefined_ps () pure @safe
+{
+    __m256 r = void;
+    return r;
+}
+
+/// Return vector of type __m256i with undefined elements.
+__m256i _mm256_undefined_si256 () pure @safe
+{
+    __m256i r = void;
+    return r;
+}
+
 // TODO __m256d _mm256_unpackhi_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_unpackhi_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
