@@ -163,7 +163,6 @@ unittest
         assert(R.array[i] == correct);
 }
 
-// TODO __m256 _mm256_and_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_andnot_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
@@ -307,6 +306,7 @@ unittest
 }
 
 // TODO __m256i _mm256_load_si256 (__m256i const * mem_addr)
+
 // TODO __m256d _mm256_loadu_pd (double const * mem_addr)
 // TODO __m256 _mm256_loadu_ps (float const * mem_addr)
 // TODO __m256 _mm256_loadu2_m128 (float const* hiaddr, float const* loaddr)
@@ -445,7 +445,6 @@ unittest
 
 // TODO __m256i _mm256_set1_epi64x (long long a)
 
-
 /// Broadcast 8-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi8 (byte a) pure @trusted
 {
@@ -575,27 +574,42 @@ unittest
 // TODO __m256i _mm256_setr_m128i (__m128i lo, __m128i hi)
 // TODO __m256d _mm256_setr_pd (double e3, double e2, double e1, double e0)
 // TODO __m256 _mm256_setr_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
-// TODO __m256d _mm256_setzero_pd (void)
-// TODO __m256 _mm256_setzero_ps (void)
 
+
+/// Return vector of type `__m256d` with all elements set to zero.
+__m256d _mm256_setzero_pd ()
+{
+    return double4(0.0);
+}
+unittest
+{
+    __m256d A = _mm256_setzero_pd();
+    double[4] correct = [0.0, 0.0, 0.0, 0.0];
+    assert(A.array == correct);
+}
+
+/// Return vector of type `__m256` with all elements set to zero.
+__m256 _mm256_setzero_ps ()
+{
+    return float8(0.0f);
+}
+unittest
+{
+    __m256 A = _mm256_setzero_ps();
+    float[8] correct = [0.0f, 0, 0, 0, 0, 0, 0, 0];
+    assert(A.array == correct);
+}
 
 /// Return vector of type `__m256i` with all elements set to zero.
 __m256i _mm256_setzero_si256() pure @trusted
 {
-    // PERF: nothing was checked
-    pragma(inline, true);
-    
-    version(LDC)
-    {
-        int[8] result = [0, 0, 0, 0, 0, 0, 0, 0];
-        return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
-    }
-    else
-    {
-        __m256i r;
-        r = 0;
-        return r;
-    }
+    return __m256i(0);
+}
+unittest
+{
+    __m256i A = _mm256_setzero_si256();
+    long[4] correct = [0, 0, 0, 0];
+    assert(A.array == correct);
 }
 
 
