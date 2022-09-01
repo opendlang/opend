@@ -29,7 +29,7 @@ double uniformDiscretePMF(const size_t x, const size_t lower = 0, const size_t u
     in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
     in(lower <= upper, "lower must be less than or equal to upper")
 {
-    return 1.0L / (upper - lower + 1);
+    return 1.0 / (upper - lower + 1);
 }
 
 ///
@@ -59,7 +59,7 @@ double uniformDiscreteCDF(const size_t x, const size_t lower = 0, const size_t u
     in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
     in(lower <= upper, "lower must be less than or equal to upper")
 {
-    return (cast(real) x - lower + 1) / (upper - lower + 1);
+    return (cast(double) x - lower + 1) / (upper - lower + 1);
 }
 
 ///
@@ -93,7 +93,7 @@ double uniformDiscreteCCDF(const size_t x, const size_t lower = 0, const size_t 
     in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
     in(lower <= upper, "lower must be less than or equal to upper")
 {
-    return (cast(real) upper - x) / (upper - lower + 1);
+    return (cast(double) upper - x) / (upper - lower + 1);
 }
 
 ///
