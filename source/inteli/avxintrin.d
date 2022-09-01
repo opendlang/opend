@@ -305,7 +305,18 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256i _mm256_load_si256 (__m256i const * mem_addr)
+/// Load 256-bits of integer data from memory. `mem_addr` must be aligned on a 
+/// 32-byte boundary or a general-protection exception may be generated.
+__m256i _mm256_load_si256 (const(void)* mem_addr) pure @trusted // TODO @system
+{
+    return *cast(__m256i*)mem_addr;
+}
+unittest
+{
+    static immutable align(64) long[4] correct = [1, -2, long.min, long.max];
+    __m256i A = _mm256_load_si256(correct.ptr);
+    assert(A.array == correct);
+}
 
 // TODO __m256d _mm256_loadu_pd (double const * mem_addr)
 // TODO __m256 _mm256_loadu_ps (float const * mem_addr)
