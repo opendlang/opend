@@ -37,3 +37,5 @@ public import mir.stat.distribution.normal: normalPDF;
 public import mir.stat.distribution.poisson: poissonPMF;
 ///
 public import mir.stat.distribution.uniform: uniformPDF;
+///
+public import mir.stat.distribution.uniform_discrete: uniformDiscretePMF;

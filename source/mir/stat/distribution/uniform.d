@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the uniform continuous probability distribution.
+This module contains algorithms for the continuous uniform probability distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

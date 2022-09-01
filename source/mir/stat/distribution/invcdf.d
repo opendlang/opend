@@ -37,4 +37,5 @@ public import mir.stat.distribution.normal: normalInvCDF;
 public import mir.stat.distribution.poisson: poissonInvCDF;
 ///
 public import mir.stat.distribution.uniform: uniformInvCDF;
-
+///
+public import mir.stat.distribution.uniform_discrete: uniformDiscreteInvCDF;

@@ -33,7 +33,8 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,negative_binomial)) $(TD Negative Binomial Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Probability Distribution ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Uniform Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Continuous Uniform Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,uniform_discrete)) $(TD Discrete Uniform Probability Distribution ))
 )
 
 Macros:
