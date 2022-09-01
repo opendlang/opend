@@ -59,7 +59,7 @@ alias __m64 = long1;
 
 ### Vector Operators for all
 
-`intel-intrinsics` implements Vector Operators for compilers that don't have `__vector` support (DMD with 32-bit x86 target). It doesn't provide unsigned vectors though.
+`intel-intrinsics` implements Vector Operators for compilers that don't have `__vector` support (DMD with 32-bit x86 target, 256-bit vectors with GDC without `-mavx`...). It doesn't provide unsigned vectors though.
 
 **Example:**
 ```d
