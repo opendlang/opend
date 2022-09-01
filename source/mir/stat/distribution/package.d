@@ -22,6 +22,8 @@ public import mir.stat.distribution.binomial;
 ///
 public import mir.stat.distribution.chi2;
 ///
+public import mir.stat.distribution.cornish_fisher;
+///
 public import mir.stat.distribution.exponential;
 ///
 public import mir.stat.distribution.gamma;

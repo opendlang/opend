@@ -26,6 +26,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,beta_proportion)) $(TD Beta Proportion Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,binomial)) $(TD Binomial Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,chi2)) $(TD Chi-squared Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,cornisher_fisher)) $(TD Cornish-Fisher Expansion ))
     $(TR $(TDNW $(MREF mir,stat,distribution,exponential)) $(TD Exponential Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,gamma)) $(TD Gamma Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,geometric)) $(TD Geometric Probability Distribution ))
