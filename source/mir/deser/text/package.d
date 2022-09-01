@@ -113,7 +113,8 @@ struct IonTextDeserializer(Serializer)
         t = IonTokenizer(text);
         while (!t.isEOF())
         {
-            assert(t.nextToken(), "hit eof when tokenizer says we're not at an EOF??");
+            auto ntr = t.nextToken();
+            assert(ntr, "hit eof when tokenizer says we're not at an EOF??");
 
             switch (state) with (State)
             {
