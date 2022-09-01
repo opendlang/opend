@@ -127,7 +127,26 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256d _mm256_and_pd (__m256d a, __m256d b)
+/// Compute the bitwise AND of packed double-precision (64-bit) floating-point elements in `a` and `b`.
+__m256d _mm256_and_pd (__m256d a, __m256d b) pure @trusted
+{
+    return cast(__m256d)(cast(__m256i)a & cast(__m256i)b);
+}
+unittest
+{
+    double a = 4.32;
+    double b = -78.99;
+    long correct = (*cast(long*)(&a)) & (*cast(long*)(&b));
+    __m256d A = _mm256_set_pd(a, b, a, b);
+    __m256d B = _mm256_set_pd(b, a, b, a);
+    long4 R = cast(long4)( _mm256_and_pd(A, B) );
+    assert(R.array[0] == correct);
+    assert(R.array[1] == correct);
+    assert(R.array[2] == correct);
+    assert(R.array[3] == correct);
+}
+
+
 // TODO __m256 _mm256_and_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_andnot_ps (__m256 a, __m256 b)
@@ -321,7 +340,25 @@ unittest
 // TODO __m256 _mm256_set_m128 (__m128 hi, __m128 lo)
 // TODO __m256d _mm256_set_m128d (__m128d hi, __m128d lo)
 // TODO __m256i _mm256_set_m128i (__m128i hi, __m128i lo)
-// TODO __m256d _mm256_set_pd (double e3, double e2, double e1, double e0)
+
+/// Set packed double-precision (64-bit) floating-point elements with the supplied values.
+__m256d _mm256_set_pd (double e3, double e2, double e1, double e0) pure @trusted
+{
+    // Note: with LDC, beats a loadUnaligned thing.
+    __m256d r;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    return r;
+}
+unittest
+{
+    __m256d A = _mm256_set_pd(3, 2, 1, 546);
+    double[4] correct = [546.0, 1.0, 2.0, 3.0];
+    assert(A.array == correct);
+}
+
 // TODO __m256 _mm256_set_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
 
 
