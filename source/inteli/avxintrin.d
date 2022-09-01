@@ -146,6 +146,22 @@ unittest
     assert(R.array[3] == correct);
 }
 
+/// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256 _mm256_and_ps (__m256 a, __m256 b) pure @trusted
+{
+    return cast(__m256)(cast(__m256i)a & cast(__m256i)b);
+}
+unittest
+{
+    float a = 4.32f;
+    float b = -78.99f;
+    int correct = (*cast(int*)(&a)) & (*cast(int*)(&b));
+    __m256 A = _mm256_set_ps(a, b, a, b, a, b, a, b);
+    __m256 B = _mm256_set_ps(b, a, b, a, b, a, b, a);
+    int8 R = cast(int8)( _mm256_and_ps(A, B) );
+    foreach(i; 0..8)
+        assert(R.array[i] == correct);
+}
 
 // TODO __m256 _mm256_and_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
@@ -359,8 +375,26 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256 _mm256_set_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
-
+/// Set packed single-precision (32-bit) floating-point elements with the supplied values.
+__m256 _mm256_set_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) pure @trusted
+{
+    __m256 r;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    r.ptr[4] = e4;
+    r.ptr[5] = e5;
+    r.ptr[6] = e6;
+    r.ptr[7] = e7;
+    return r;
+}
+unittest
+{
+    __m256 A = _mm256_set_ps(3, 2, 1, 546.0f, -1.25f, -2, -3, 0);
+    float[8] correct = [0, -3, -2, -1.25f, 546.0f, 1.0, 2.0, 3.0];
+    assert(A.array == correct);
+}
 
 /// Broadcast 16-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi16 (short a) pure @trusted
