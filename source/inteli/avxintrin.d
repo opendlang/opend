@@ -276,6 +276,8 @@ unittest
 
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
+// TODO: take void* as input
+// TODO: make that @system
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     // PERF DMD
@@ -318,7 +320,38 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256d _mm256_loadu_pd (double const * mem_addr)
+/// Load 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) 
+/// from memory. `mem_addr` does not need to be aligned on any particular boundary.
+__m256d _mm256_loadu_pd (const(void)* mem_addr) pure @trusted // TODO @system
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_loadupd256 ( cast(const(double)*) mem_addr);
+    }
+    else version(LDC)
+    {
+        return loadUnaligned!(__m256d)(cast(double*)mem_addr);
+    }    
+    else
+    {
+        const(double)* p = cast(const(double)*)mem_addr; 
+        double4 r;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[2];
+        r.ptr[3] = p[3];
+        return r;
+    }
+}
+unittest
+{
+    double[4] correct = [1.0, -2.0, 0.0, 768.5];
+    __m256d A = _mm256_loadu_pd(correct.ptr);
+    assert(A.array == correct);
+}
+
+
 // TODO __m256 _mm256_loadu_ps (float const * mem_addr)
 // TODO __m256 _mm256_loadu2_m128 (float const* hiaddr, float const* loaddr)
 // TODO __m256d _mm256_loadu2_m128d (double const* hiaddr, double const* loaddr)
