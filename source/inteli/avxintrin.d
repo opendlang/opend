@@ -793,8 +793,40 @@ unittest
 }
 
 
-// TODO __m256 _mm256_setr_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
-
+/// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
+__m256 _mm256_setr_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        align(32) float[8] r = [ e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
+        return *cast(__m256*)r;
+    }
+    else version(LDC)
+    {
+        align(32) float[8] r = [ e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
+        return *cast(__m256*)r;
+    }
+    else
+    {
+        __m256 r;
+        r.ptr[0] = e7;
+        r.ptr[1] = e6;
+        r.ptr[2] = e5;
+        r.ptr[3] = e4;
+        r.ptr[4] = e3;
+        r.ptr[5] = e2;
+        r.ptr[6] = e1;
+        r.ptr[7] = e0;
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(   3, 2, 1, 546.125f, 4, 5, 6, 7);
+    float[8] correct       = [3.0f, 2, 1, 546.125f, 4, 5, 6, 7];
+    assert(A.array == correct);
+}
 
 /// Return vector of type `__m256d` with all elements set to zero.
 __m256d _mm256_setzero_pd ()

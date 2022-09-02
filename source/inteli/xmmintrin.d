@@ -2496,9 +2496,10 @@ unittest
 }
 
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
+/// PERF: performance improvements with an aligned float[4] and float4 cast?
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    pragma(inline, true);        
+    pragma(inline, true);
     version(LDC)
     {
         float[4] result = [e3, e2, e1, e0];
