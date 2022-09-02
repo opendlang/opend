@@ -163,10 +163,6 @@ unittest
         assert(R.array[i] == correct);
 }
 
-// TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
-
-
-
 /// Compute the bitwise NOT of packed double-precision (64-bit) floating-point elements in `a`
 /// and then AND with b.
 __m256d _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
@@ -214,7 +210,6 @@ unittest
 }
 
 
-// TODO __m256 _mm256_andnot_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
 // TODO __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
 // TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
@@ -224,18 +219,75 @@ unittest
 // TODO __m256d _mm256_broadcast_sd (double const * mem_addr)
 // TODO __m128 _mm_broadcast_ss (float const * mem_addr)
 // TODO __m256 _mm256_broadcast_ss (float const * mem_addr)
-// TODO __m256 _mm256_castpd_ps (__m256d a)
-// TODO __m256i _mm256_castpd_si256 (__m256d a)
-// TODO __m256d _mm256_castpd128_pd256 (__m128d a)
-// TODO __m128d _mm256_castpd256_pd128 (__m256d a)
-// TODO __m256d _mm256_castps_pd (__m256 a)
-// TODO __m256i _mm256_castps_si256 (__m256 a)
+
+
+/// Cast vector of type `__m256d` to type `__m256`.
+__m256 _mm256_castpd_ps (__m256d a) pure @safe
+{
+    return cast(__m256)a;
+}
+
+/// Cast vector of type `__m256d` to type `__m256i`.
+__m256i _mm256_castpd_si256 (__m256d a) pure @safe
+{
+    return cast(__m256i)a;
+}
+
+/// Cast vector of type `__m128d` to type `__m256d`; the upper 128 bits of the result are undefined.
+__m256d _mm256_castpd128_pd256 (__m128d a) pure @trusted
+{
+    // PERF: GDC doesn't reduce that to just a "ret" instruction, and does a useless movapd xmm0, xmm0
+    __m256d r = void;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    return r;
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(4.0, -6.125);
+    __m256d B = _mm256_castpd128_pd256(A);
+    assert(B.array[0] == 4.0);
+    assert(B.array[1] == -6.125);
+}
+
+/// Cast vector of type `__m256d` to type `__m128d`; the upper 128 bits of `a` are lost.
+__m128d _mm256_castpd256_pd128 (__m256d a) pure @trusted
+{
+    __m128d r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    return r;
+}
+unittest
+{
+    __m256d A = _mm256_set_pd(1, 2, -6.25, 4.0);
+    __m128d B = _mm256_castpd256_pd128(A);
+    assert(B.array[0] == 4.0);
+    assert(B.array[1] == -6.25);
+}
+
+/// Cast vector of type `__m256` to type `__m256d`.
+__m256d _mm256_castps_pd (__m256 a) pure @safe
+{
+    return cast(__m256d)a;
+}
+
+/// Cast vector of type `__m256` to type `__m256i`.
+__m256i _mm256_castps_si256 (__m256 a) pure @safe
+{
+    return cast(__m256i)a;
+}
+
+
 // TODO __m256 _mm256_castps128_ps256 (__m128 a)
 // TODO __m128 _mm256_castps256_ps128 (__m256 a)
 // TODO __m256i _mm256_castsi128_si256 (__m128i a)
 // TODO __m256d _mm256_castsi256_pd (__m256i a)
 // TODO __m256 _mm256_castsi256_ps (__m256i a)
 // TODO __m128i _mm256_castsi256_si128 (__m256i a)
+
+
+
 // TODO __m256d _mm256_ceil_pd (__m256d a)
 // TODO __m256 _mm256_ceil_ps (__m256 a)
 // TODO __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
@@ -584,8 +636,6 @@ unittest
     for (int i = 0; i < 32; ++i)
         assert(a.array[i] == 31);
 }
-
-// TODO __m256d _mm256_set1_pd (double a)
 
 /// Broadcast double-precision (64-bit) floating-point value `a` to all elements of the return value.
 __m256d _mm256_set1_pd (double a) pure @trusted
