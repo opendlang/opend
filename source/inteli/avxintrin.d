@@ -167,13 +167,15 @@ unittest
 
 
 
-/// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
-__m256i _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
+/// Compute the bitwise NOT of packed double-precision (64-bit) floating-point elements in `a`
+/// and then AND with b.
+__m256d _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
 {
+    // PERF DMD
     __m256i notA = _mm256_not_si256(cast(__m256i)a);
     __m256i ib = cast(__m256i)b;
     __m256i ab = notA & ib;
-    return ab;
+    return cast(__m256d)ab;
 }
 unittest
 {
@@ -185,6 +187,29 @@ unittest
     __m256d B = _mm256_set_pd(b, b, b, b);
     long4 R = cast(long4)( _mm256_andnot_pd(A, B) );
     foreach(i; 0..4)
+        assert(R.array[i] == correct);
+}
+
+/// Compute the bitwise NOT of packed single-precision (32-bit) floating-point elements in `a`
+/// and then AND with b.
+__m256 _mm256_andnot_ps (__m256 a, __m256 b) pure @trusted
+{
+    // PERF DMD
+    __m256i notA = _mm256_not_si256(cast(__m256i)a);
+    __m256i ib = cast(__m256i)b;
+    __m256i ab = notA & ib;
+    return cast(__m256)ab;
+}
+unittest
+{
+    float a = 4.32f;
+    float b = -78.99f;
+    int notA = ~ ( *cast(int*)(&a) );
+    int correct = notA & (*cast(int*)(&b));
+    __m256 A = _mm256_set1_ps(a);
+    __m256 B = _mm256_set1_ps(b);
+    int8 R = cast(int8)( _mm256_andnot_ps(A, B) );
+    foreach(i; 0..8)
         assert(R.array[i] == correct);
 }
 
@@ -561,7 +586,32 @@ unittest
 }
 
 // TODO __m256d _mm256_set1_pd (double a)
-// TODO __m256 _mm256_set1_ps (float a)
+
+/// Broadcast double-precision (64-bit) floating-point value `a` to all elements of the return value.
+__m256d _mm256_set1_pd (double a) pure @trusted
+{
+    return __m256d(a);
+}
+unittest
+{
+    double a = 464.21;
+    double[4] correct = [a, a, a, a];
+    double4 A = cast(double4) _mm256_set1_pd(a);
+    assert(A.array == correct);
+}
+
+/// Broadcast single-precision (32-bit) floating-point value `a` to all elements of the return value.
+__m256 _mm256_set1_ps (float a) pure @trusted
+{
+    return __m256(a);
+}
+unittest
+{
+    float a = 464.21f;
+    float[8] correct = [a, a, a, a, a, a, a, a];
+    float8 A = cast(float8) _mm256_set1_ps(a);
+    assert(A.array == correct);
+}
 
 /// Set packed 16-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9,  short e8,
