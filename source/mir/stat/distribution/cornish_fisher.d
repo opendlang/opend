@@ -96,7 +96,7 @@ T cornishFisherInvCDFImpl(T)(const T x, const T skewness, const T excessKurtosis
     return x + (x2 - 1) * skewness / 6 + (x3 - 3 * x) * excessKurtosis / 24 - (2 * x3 - 5 * x) * skewness * skewness / 36;
 }
 
-///
+//
 version(mir_stat_test)
 @safe pure @nogc nothrow
 unittest {
