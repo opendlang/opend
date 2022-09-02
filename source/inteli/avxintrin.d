@@ -164,6 +164,34 @@ unittest
 }
 
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
+
+
+/+
+
+/// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256d _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
+{
+    __m256i notA = ~ cast(__m256i)a;
+    return cast(__m256d)(notA & cast(__m256i)b);
+}
+unittest
+{
+    double a = 4.32;
+    double b = -78.99;
+    long notA = ~ ( *cast(long*)(&a) );
+    long correct = notA & (*cast(long*)(&b));
+    __m256d A = _mm256_set_pd(a, b, a, b);
+    __m256d B = _mm256_set_pd(b, a, b, a);
+    long4 R = cast(long4)( _mm256_andnot_pd(A, B) );
+    _mm256_print_pd(cast(__m256d)R);
+    assert(R.array[0] == correct);
+    assert(R.array[1] == correct);
+    assert(R.array[2] == correct);
+    assert(R.array[3] == correct);
+}
+
++/
+
 // TODO __m256 _mm256_andnot_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
 // TODO __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
@@ -375,6 +403,21 @@ unittest
 // TODO int _mm256_movemask_ps (__m256 a)
 // TODO __m256d _mm256_mul_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_mul_ps (__m256 a, __m256 b)
+
+/// Compute the bitwise NOT of 256 bits in `a`. #BONUS
+__m256i _mm256_not_si256 (__m256i a) pure @safe
+{
+    return ~a;
+}
+unittest
+{
+    __m256i A = _mm256_set1_epi64x(-748);
+    long4 notA = cast(long4) _mm256_not_si256(A);
+    int[4] correct = [747, 747, 747, 747];
+    assert(notA.array == correct);
+}
+
+
 // TODO __m256d _mm256_or_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_or_ps (__m256 a, __m256 b)
 // TODO __m128d _mm_permute_pd (__m128d a, int imm8)
@@ -487,7 +530,17 @@ unittest
         assert(a.array[i] == 31);
 }
 
-// TODO __m256i _mm256_set1_epi64x (long long a)
+/// Broadcast 64-bit integer `a` to all elements of the return value.
+__m256i _mm256_set1_epi64x (long a)
+{
+    return cast(__m256i)(long4(a));
+}
+unittest
+{
+    long4 a = cast(long4) _mm256_set1_epi64x(-31);
+    for (int i = 0; i < 4; ++i)
+        assert(a.array[i] == -31);
+}
 
 /// Broadcast 8-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi8 (byte a) pure @trusted

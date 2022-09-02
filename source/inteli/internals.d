@@ -752,7 +752,13 @@ version(unittest)
     {
         double[2] C = (cast(double2)v).array;
         printf("%f %f\n", C[0], C[1]);
-    }    
+    }
+
+    void _mm256_print_pd(__m256d v) @trusted
+    {
+        double[4] C = (cast(double4)v).array;
+        printf("%f %f %f %f\n", C[0], C[1], C[2], C[3]);
+    }
 }
 
 
