@@ -744,8 +744,9 @@ version(unittest)
 
     void _mm_print_ps(__m128 v) @trusted
     {
+        // %g because %f can conceal very small numbers and prints zero instead
         float[4] C = (cast(float4)v).array;
-        printf("%f %f %f %f\n", C[0], C[1], C[2], C[3]);
+        printf("%g %g %g %g\n", C[0], C[1], C[2], C[3]);
     }
 
     void _mm_print_pd(__m128d v) @trusted
@@ -756,8 +757,14 @@ version(unittest)
 
     void _mm256_print_pd(__m256d v) @trusted
     {
-        double[4] C = (cast(double4)v).array;
-        printf("%f %f %f %f\n", C[0], C[1], C[2], C[3]);
+        // %g because %f can conceal very small numbers and prints zero instead
+        printf("%g %g %g %g\n", v.array[0], v.array[1], v.array[2], v.array[3]); 
+    }
+
+    void _mm256_print_epi64(__m256i v) @trusted
+    {
+        long4 vl = cast(long4)v;
+        printf("%lld %lld %lld %lld\n", vl.array[0], vl.array[1], vl.array[2], vl.array[3]);
     }
 }
 

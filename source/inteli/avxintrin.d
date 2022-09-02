@@ -166,13 +166,14 @@ unittest
 // TODO __m256d _mm256_andnot_pd (__m256d a, __m256d b)
 
 
-/+
 
 /// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in `a` and `b`.
-__m256d _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
+__m256i _mm256_andnot_pd (__m256d a, __m256d b) pure @trusted
 {
-    __m256i notA = ~ cast(__m256i)a;
-    return cast(__m256d)(notA & cast(__m256i)b);
+    __m256i notA = _mm256_not_si256(cast(__m256i)a);
+    __m256i ib = cast(__m256i)b;
+    __m256i ab = notA & ib;
+    return ab;
 }
 unittest
 {
@@ -180,17 +181,13 @@ unittest
     double b = -78.99;
     long notA = ~ ( *cast(long*)(&a) );
     long correct = notA & (*cast(long*)(&b));
-    __m256d A = _mm256_set_pd(a, b, a, b);
-    __m256d B = _mm256_set_pd(b, a, b, a);
+    __m256d A = _mm256_set_pd(a, a, a, a);
+    __m256d B = _mm256_set_pd(b, b, b, b);
     long4 R = cast(long4)( _mm256_andnot_pd(A, B) );
-    _mm256_print_pd(cast(__m256d)R);
-    assert(R.array[0] == correct);
-    assert(R.array[1] == correct);
-    assert(R.array[2] == correct);
-    assert(R.array[3] == correct);
+    foreach(i; 0..4)
+        assert(R.array[i] == correct);
 }
 
-+/
 
 // TODO __m256 _mm256_andnot_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
