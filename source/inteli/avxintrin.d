@@ -766,7 +766,33 @@ unittest
 // TODO __m256 _mm256_setr_m128 (__m128 lo, __m128 hi)
 // TODO __m256d _mm256_setr_m128d (__m128d lo, __m128d hi)
 // TODO __m256i _mm256_setr_m128i (__m128i lo, __m128i hi)
-// TODO __m256d _mm256_setr_pd (double e3, double e2, double e1, double e0)
+
+/// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
+__m256d _mm256_setr_pd (double e3, double e2, double e1, double e0) pure @trusted
+{
+    version(LDC)
+    {
+        double[4] result = [e3, e2, e1, e0];
+        return loadUnaligned!(double4)(result.ptr);
+    }
+    else
+    {
+        __m256d r;
+        r.ptr[0] = e3;
+        r.ptr[1] = e2;
+        r.ptr[2] = e1;
+        r.ptr[3] = e0;
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(3, 2, 1, 546.125);
+    double[4] correct = [3.0, 2.0, 1.0, 546.125];
+    assert(A.array == correct);
+}
+
+
 // TODO __m256 _mm256_setr_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
 
 

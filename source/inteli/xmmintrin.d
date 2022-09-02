@@ -2519,10 +2519,6 @@ unittest
     __m128 A = _mm_setr_ps(3, 2, 1, 546);
     float[4] correct = [3.0f, 2.0f, 1.0f, 546.0f];
     assert(A.array == correct);
-    assert(A.array[0] == 3.0f);
-    assert(A.array[1] == 2.0f);
-    assert(A.array[2] == 1.0f);
-    assert(A.array[3] == 546.0f);
 }
 
 /// Return vector of type `__m128` with all elements set to zero.
