@@ -24,9 +24,6 @@ jobs:
                   wget https://github.com/dlang/dub/releases/download/v1.23.0/dub-v1.23.0-linux-x86_64.tar.gz
                   tar xvf dub-v1.23.0-linux-x86_64.tar.gz
 
-            - name: Install libcurl
-              run: sudo apt install libcurl4-gnutls-dev
-
             - name: Install GDC
               run: sudo apt install gdc              
 
