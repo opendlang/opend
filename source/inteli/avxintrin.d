@@ -216,8 +216,38 @@ unittest
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
 
 // TODO __m256d _mm256_broadcast_pd (__m128d const * mem_addr)
-// TODO __m256 _mm256_broadcast_ps (__m128 const * mem_addr)
-// TODO __m256d _mm256_broadcast_sd (double const * mem_addr)
+
+/// Broadcast 128 bits from memory (composed of 4 packed single-precision (32-bit) 
+/// floating-point elements) to all elements.
+__m256 _mm256_broadcast_ps (const(__m128)* mem_addr) // TODO: does this require alignment? if not, change the signature
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vbroadcastf128_ps256(cast(float4*)mem_addr);
+    }   
+    else
+    {
+        const(float)* p = cast(const(float)*)mem_addr;
+        __m256 r;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[2];
+        r.ptr[3] = p[3];
+        r.ptr[4] = p[0];
+        r.ptr[5] = p[1];
+        r.ptr[6] = p[2];
+        r.ptr[7] = p[3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1, 2, 3, -4);
+    __m256 B = _mm256_broadcast_ps(&A);
+    float[8] correct = [1.0f, 2, 3, -4, 1, 2, 3, -4];
+    assert(B.array == correct);
+}
 
 /// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
 __m256d _mm256_broadcast_sd (const(double)* mem_addr) pure @trusted
