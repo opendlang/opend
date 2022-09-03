@@ -290,11 +290,17 @@ __m256i _mm256_castpd_si256 (__m256d a) pure @safe
 /// Cast vector of type `__m128d` to type `__m256d`; the upper 128 bits of the result are undefined.
 __m256d _mm256_castpd128_pd256 (__m128d a) pure @trusted
 {
-    // PERF: GDC doesn't reduce that to just a "ret" instruction, and does a useless movapd xmm0, xmm0
-    __m256d r = void;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = a.array[1];
-    return r;
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_pd256_pd(a);
+    }
+    else
+    {
+        __m256d r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
+    }
 }
 unittest
 {
@@ -307,11 +313,17 @@ unittest
 /// Cast vector of type `__m256d` to type `__m128d`; the upper 128 bits of `a` are lost.
 __m128d _mm256_castpd256_pd128 (__m256d a) pure @trusted
 {
-    // PERF GDC
-    __m128d r;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = a.array[1];
-    return r;
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_pd_pd256(a);
+    }
+    else
+    {
+        __m128d r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
+    }
 }
 unittest
 {
