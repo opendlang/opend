@@ -20,14 +20,11 @@ jobs:
               with:
                   compiler: ${{ matrix.dc }}
 
-            - name: Unittest with default configuration
-              run: dub test -a arm64-apple-macos
+            # Note: debug info disabled on M1 because of
+            # https://github.com/ldc-developers/ldc/issues/3864
 
             - name: Unittest with unittest-release configuration
               run: dub test -b unittest-release -a arm64-apple-macos
-
-            - name: Unittest with unittest-inst configuration
-              run: dub test -b unittest-inst -a arm64-apple-macos
 
             - name: Unittest with unittest-release-inst configuration
               run: dub test -b unittest-release-inst -a arm64-apple-macos
