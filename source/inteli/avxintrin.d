@@ -272,8 +272,27 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256 _mm256_broadcast_ss (float const * mem_addr)
-
+__m256 _mm256_broadcast_ss (const(float)* mem_addr)
+{
+    // PERF: DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vbroadcastss256 (mem_addr);
+    }
+    else
+    {
+        float a = *mem_addr;
+        __m256 r = __m256(a);
+        return r;
+    }
+}
+unittest
+{
+    float t = 7.5f;
+    __m256 A = _mm256_broadcast_ss(&t);
+    float[8] correct = [7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f];
+    assert(A.array == correct);
+}
 
 /// Cast vector of type `__m256d` to type `__m256`.
 __m256 _mm256_castpd_ps (__m256d a) pure @safe
