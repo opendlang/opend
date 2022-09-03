@@ -215,11 +215,38 @@ unittest
 // TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
 
-// TODO __m256d _mm256_broadcast_pd (__m128d const * mem_addr)
+/// Broadcast 128 bits from memory (composed of 2 packed double-precision (64-bit)
+/// floating-point elements) to all elements.
+/// This effectively duplicates the 128-bit vector.
+__m256d _mm256_broadcast_pd (const(__m128d)* mem_addr) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vbroadcastf128_pd256(cast(float4*)mem_addr);
+    }
+    else
+    {
+        const(double)* p = cast(const(double)*) mem_addr;
+        __m256d r;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[0];
+        r.ptr[3] = p[1];
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(3, -4);
+    __m256d B = _mm256_broadcast_pd(&A);
+    double[4] correct = [3, -4, 3, -4];
+    assert(B.array == correct);
+}
 
 /// Broadcast 128 bits from memory (composed of 4 packed single-precision (32-bit) 
 /// floating-point elements) to all elements.
-__m256 _mm256_broadcast_ps (const(__m128)* mem_addr) // TODO: does this require alignment? if not, change the signature
+/// This effectively duplicates the 128-bit vector.
+__m256 _mm256_broadcast_ps (const(__m128)* mem_addr) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_AVX)
