@@ -214,10 +214,49 @@ unittest
 // TODO __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
 // TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
+
 // TODO __m256d _mm256_broadcast_pd (__m128d const * mem_addr)
 // TODO __m256 _mm256_broadcast_ps (__m128 const * mem_addr)
 // TODO __m256d _mm256_broadcast_sd (double const * mem_addr)
-// TODO __m128 _mm_broadcast_ss (float const * mem_addr)
+
+/// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
+__m256d _mm256_broadcast_sd (const(double)* mem_addr) pure @trusted
+{
+    double a = *mem_addr;
+    __m256d r;
+    r.ptr[0] = a;
+    r.ptr[1] = a;
+    r.ptr[2] = a;
+    r.ptr[3] = a;
+    return r;
+}
+unittest
+{
+    double t = 7.5f;
+    __m256d A = _mm256_broadcast_sd(&t);
+    double[4] correct = [7.5, 7.5, 7.5, 7.5];
+    assert(A.array == correct);
+}
+
+/// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
+__m128 _mm_broadcast_ss (const(float)* mem_addr) pure @trusted
+{
+    float a = *mem_addr;
+    __m128 r;
+    r.ptr[0] = a;
+    r.ptr[1] = a;
+    r.ptr[2] = a;
+    r.ptr[3] = a;
+    return r;
+}
+unittest
+{
+    float t = 7.5f;
+    __m128 A = _mm_broadcast_ss(&t);
+    float[4] correct = [7.5f, 7.5f, 7.5f, 7.5f];
+    assert(A.array == correct);
+}
+
 // TODO __m256 _mm256_broadcast_ss (float const * mem_addr)
 
 
