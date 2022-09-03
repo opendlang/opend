@@ -242,7 +242,37 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using control 
+/// mask `imm8`.
+__m256 _mm256_blend_ps(int imm8)(__m256 a, __m256 b) pure @trusted
+{
+    static assert(imm8 >= 0 && imm8 < 256);
+    // PERF DMD
+    // PERF ARM64: not awesome with some constant values, up to 8/9 instructions
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_blendps256 (a, b, imm8);
+    }
+    else
+    {
+        // LDC x86: vblendps generated since LDC 1.27 -O1
+        float8 r;
+        for (int n = 0; n < 8; ++n)
+        {
+            r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(0, 1,  2,  3,  4,  5,  6,  7);
+    __m256 B = _mm256_setr_ps(8, 9, 10, 11, 12, 13, 14, 15);
+    float8 C = _mm256_blend_ps!0xe7(A, B);
+    float[8] correct =       [8, 9, 10,  3,  4, 13, 14, 15];
+    assert(C.array == correct);
+}
+
 // TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
 
