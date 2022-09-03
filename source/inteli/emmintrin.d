@@ -4330,6 +4330,7 @@ __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(short8)a - cast(short8)b);
 }
+// TODO untitest
 
 /// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
@@ -4337,6 +4338,7 @@ __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(int4)a - cast(int4)b);
 }
+// TODO untitest
 
 /// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
 __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
@@ -4344,6 +4346,7 @@ __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(long2)a - cast(long2)b);
 }
+// TODO untitest
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
@@ -4351,6 +4354,7 @@ __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(byte16)a - cast(byte16)b);
 }
+// TODO untitest
 
 /// Subtract packed double-precision (64-bit) floating-point elements in `b` from packed double-precision (64-bit) 
 /// floating-point elements in `a`.
@@ -4359,6 +4363,7 @@ __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
     pragma(inline, true);
     return a - b;
 }
+// TODO untitest
 
 /// Subtract the lower double-precision (64-bit) floating-point element in `b` from the lower double-precision (64-bit) 
 /// floating-point element in `a`, store that in the lower element of result, and copy the upper element from `a` to the
