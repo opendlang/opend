@@ -1,0 +1,34 @@
+name: arm64
+on: [push, pull_request]
+
+jobs:
+    test:
+        name: Dub Tests
+        strategy:
+            matrix:
+                os: [macos-12]
+                dc: 
+                    - ldc-latest
+                    - ldc-1.28.1
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install D compiler
+              uses: dlang-community/setup-dlang@v1
+              with:
+                  compiler: ${{ matrix.dc }}
+
+            - name: Unittest with default configuration
+              run: dub test -a arm64-apple-macos
+
+            - name: Unittest with unittest-release configuration
+              run: dub test -b unittest-release -a arm64-apple-macos
+
+            - name: Unittest with unittest-inst configuration
+              run: dub test -b unittest-inst -a arm64-apple-macos
+
+            - name: Unittest with unittest-release-inst configuration
+              run: dub test -b unittest-release-inst -a arm64-apple-macos
+              
