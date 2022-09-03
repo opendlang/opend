@@ -130,6 +130,8 @@ unittest
 /// Compute the bitwise AND of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m256d _mm256_and_pd (__m256d a, __m256d b) pure @trusted
 {
+    // Note: GCC avxintrin.h uses the builtins for AND NOTAND OR of _ps and _pd,
+    //       but those do not seem needed at any optimization level.
     return cast(__m256d)(cast(__m256i)a & cast(__m256i)b);
 }
 unittest
@@ -209,8 +211,37 @@ unittest
         assert(R.array[i] == correct);
 }
 
+/// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using control 
+/// mask `imm8`.
+__m256d _mm256_blend_pd(int imm8)(__m256d a, __m256d b)
+{
+    static assert(imm8 >= 0 && imm8 < 16);
 
-// TODO __m256d _mm256_blend_pd (__m256d a, __m256d b, const int imm8)
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_blendpd256 (a, b, imm8);
+    }
+    else
+    {
+        // Works great with LDC.
+        double4 r;
+        for (int n = 0; n < 4; ++n)
+        {
+            r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(0, 1, 2, 3);
+    __m256d B = _mm256_setr_pd(8, 9, 10, 11);
+    double4 C = _mm256_blend_pd!0x06(A, B);
+    double[4] correct =    [0, 9, 10, 3];
+    assert(C.array == correct);
+}
+
 // TODO __m256 _mm256_blend_ps (__m256 a, __m256 b, const int imm8)
 // TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
@@ -1082,8 +1113,36 @@ void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
 // TODO void _mm256_stream_pd (double * mem_addr, __m256d a)
 // TODO void _mm256_stream_ps (float * mem_addr, __m256 a)
 // TODO void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
-// TODO __m256d _mm256_sub_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_sub_ps (__m256 a, __m256 b)
+
+/// Subtract packed double-precision (64-bit) floating-point elements in `b` from 
+/// packed double-precision (64-bit) floating-point elements in `a`.
+__m256d _mm256_sub_pd (__m256d a, __m256d b) pure @safe
+{
+    return a - b;
+}
+unittest
+{
+    __m256d a = [1.5, -2.0, 3.0, 200000.0];
+    a = _mm256_sub_pd(a, a);
+    double[4] correct = [0.0, 0, 0, 0];
+    assert(a.array == correct);
+}
+
+/// Subtract packed single-precision (32-bit) floating-point elements in `b` from 
+/// packed single-precision (32-bit) floating-point elements in `a`.
+__m256 _mm256_sub_ps (__m256 a, __m256 b) pure @safe
+{
+    return a - b;
+}
+unittest
+{
+    __m256 a = [1.5f, -2.0f, 3.0f, 1.0f, 1.5f, -2000.0f, 3.0f, 1.0f];
+    a = _mm256_sub_ps(a, a);
+    float[8] correct = [0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f];
+    assert(a.array == correct);
+}
+
+
 // TODO int _mm_testc_pd (__m128d a, __m128d b)
 // TODO int _mm256_testc_pd (__m256d a, __m256d b)
 // TODO int _mm_testc_ps (__m128 a, __m128 b)
