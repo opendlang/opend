@@ -307,6 +307,7 @@ unittest
 /// Cast vector of type `__m256d` to type `__m128d`; the upper 128 bits of `a` are lost.
 __m128d _mm256_castpd256_pd128 (__m256d a) pure @trusted
 {
+    // PERF GDC
     __m128d r;
     r.ptr[0] = a.array[0];
     r.ptr[1] = a.array[1];
@@ -332,8 +333,24 @@ __m256i _mm256_castps_si256 (__m256 a) pure @safe
     return cast(__m256i)a;
 }
 
+/// Cast vector of type `__m128` to type `__m256`; the upper 128 bits of the result are undefined.
+__m256 _mm256_castps128_ps256 (__m128 a) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_ps256_ps(a);
+    }
+    else
+    {
+        __m256 r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    }
+}
 
-// TODO __m256 _mm256_castps128_ps256 (__m128 a)
 // TODO __m128 _mm256_castps256_ps128 (__m256 a)
 // TODO __m256i _mm256_castsi128_si256 (__m128i a)
 // TODO __m256d _mm256_castsi256_pd (__m256i a)
@@ -997,9 +1014,180 @@ __m256i _mm256_undefined_si256 () pure @safe
 // TODO __m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_xor_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_xor_ps (__m256 a, __m256 b)
-// TODO void _mm256_zeroall (void)
-// TODO void _mm256_zeroupper (void)
+
+void _mm256_zeroall () pure @safe
+{
+    // TODO: on GDC too?
+    // Do nothing. The transitions penalty are handled by the backend.
+}
+
+void _mm256_zeroupper () pure @safe
+{
+    // TODO: on GDC too?
+    // Do nothing. The transitions penalty are handled by the backend.
+}
+
 // TODO __m256d _mm256_zextpd128_pd256 (__m128d a)
 // TODO __m256 _mm256_zextps128_ps256 (__m128 a)
 // TODO __m256i _mm256_zextsi128_si256 (__m128i a)
 
+
+/+
+
+pragma(LDC_intrinsic, "llvm.x86.avx.addsub.pd.256")
+    double4 __builtin_ia32_addsubpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.addsub.ps.256")
+    float8 __builtin_ia32_addsubps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.blendv.pd.256")
+    double4 __builtin_ia32_blendvpd256(double4, double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.blendv.ps.256")
+    float8 __builtin_ia32_blendvps256(float8, float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.cvt.pd2.ps.256")
+    float4 __builtin_ia32_cvtpd2ps256(double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.cvt.pd2dq.256")
+    int4 __builtin_ia32_cvtpd2dq256(double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.cvt.ps2dq.256")
+    int8 __builtin_ia32_cvtps2dq256(float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.pd2dq.256")
+    int4 __builtin_ia32_cvttpd2dq256(double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.ps2dq.256")
+    int8 __builtin_ia32_cvttps2dq256(float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.dp.ps.256")
+    float8 __builtin_ia32_dpps256(float8, float8, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.hadd.pd.256")
+    double4 __builtin_ia32_haddpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.hadd.ps.256")
+    float8 __builtin_ia32_haddps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.hsub.pd.256")
+    double4 __builtin_ia32_hsubpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.hsub.ps.256")
+    float8 __builtin_ia32_hsubps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.ldu.dq.256")
+    byte32 __builtin_ia32_lddqu256(const void*);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd")
+    double2 __builtin_ia32_maskloadpd(const void*, long2);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd.256")
+    double4 __builtin_ia32_maskloadpd256(const void*, long4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps")
+    float4 __builtin_ia32_maskloadps(const void*, int4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
+    float8 __builtin_ia32_maskloadps256(const void*, int8);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.pd")
+    void __builtin_ia32_maskstorepd(void*, long2, double2);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.pd.256")
+    void __builtin_ia32_maskstorepd256(void*, long4, double4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps")
+    void __builtin_ia32_maskstoreps(void*, int4, float4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps.256")
+    void __builtin_ia32_maskstoreps256(void*, int8, float8);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.max.pd.256")
+    double4 __builtin_ia32_maxpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.max.ps.256")
+    float8 __builtin_ia32_maxps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.min.pd.256")
+    double4 __builtin_ia32_minpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.min.ps.256")
+    float8 __builtin_ia32_minps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.pd.256")
+    int __builtin_ia32_movmskpd256(double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.ps.256")
+    int __builtin_ia32_movmskps256(float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.ptestc.256")
+    int __builtin_ia32_ptestc256(long4, long4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.ptestnzc.256")
+    int __builtin_ia32_ptestnzc256(long4, long4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.ptestz.256")
+    int __builtin_ia32_ptestz256(long4, long4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
+    float8 __builtin_ia32_rcpps256(float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.round.pd.256")
+    double4 __builtin_ia32_roundpd256(double4, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.round.ps.256")
+    float8 __builtin_ia32_roundps256(float8, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.rsqrt.ps.256")
+    float8 __builtin_ia32_rsqrtps256(float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd")
+    double2 __builtin_ia32_vpermilvarpd(double2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd.256")
+    double4 __builtin_ia32_vpermilvarpd256(double4, long4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps")
+    float4 __builtin_ia32_vpermilvarps(float4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps.256")
+    float8 __builtin_ia32_vpermilvarps256(float8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.pd")
+    int __builtin_ia32_vtestcpd(double2, double2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.pd.256")
+    int __builtin_ia32_vtestcpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.ps")
+    int __builtin_ia32_vtestcps(float4, float4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.ps.256")
+    int __builtin_ia32_vtestcps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.pd")
+    int __builtin_ia32_vtestnzcpd(double2, double2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.pd.256")
+    int __builtin_ia32_vtestnzcpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps")
+    int __builtin_ia32_vtestnzcps(float4, float4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps.256")
+    int __builtin_ia32_vtestnzcps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.pd")
+    int __builtin_ia32_vtestzpd(double2, double2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.pd.256")
+    int __builtin_ia32_vtestzpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.ps")
+    int __builtin_ia32_vtestzps(float4, float4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.ps.256")
+    int __builtin_ia32_vtestzps256(float8, float8) pure @safe;
+
++/
