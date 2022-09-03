@@ -220,6 +220,7 @@ unittest
 /// This effectively duplicates the 128-bit vector.
 __m256d _mm256_broadcast_pd (const(__m128d)* mem_addr) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_vbroadcastf128_pd256(cast(float4*)mem_addr);
@@ -634,8 +635,32 @@ unittest
 // TODO __m256 _mm256_moveldup_ps (__m256 a)
 // TODO int _mm256_movemask_pd (__m256d a)
 // TODO int _mm256_movemask_ps (__m256 a)
-// TODO __m256d _mm256_mul_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_mul_ps (__m256 a, __m256 b)
+
+/// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`.
+__m256d _mm256_mul_pd (__m256d a, __m256d b) pure @safe
+{
+    return a * b;
+}
+unittest
+{
+    __m256d a = [-2.0, 1.5, -2.0, 1.5];
+    a = _mm256_mul_pd(a, a);
+    assert(a.array == [4.0, 2.25, 4.0, 2.25]);
+}
+
+/// Multiply packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256 _mm256_mul_ps (__m256 a, __m256 b) pure @safe
+{
+    return a * b;
+}
+unittest
+{
+    __m256 a = [1.5f, -2.0f, 3.0f, 1.0f, 1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm256_mul_ps(a, a);
+    float[8] correct = [2.25f, 4.0f, 9.0f, 1.0f, 2.25f, 4.0f, 9.0f, 1.0f];
+    assert(a.array == correct);
+}
+
 
 /// Compute the bitwise NOT of 256 bits in `a`. #BONUS
 __m256i _mm256_not_si256 (__m256i a) pure @safe
@@ -1122,11 +1147,6 @@ void _mm256_zeroupper () pure @safe
 
 /+
 
-pragma(LDC_intrinsic, "llvm.x86.avx.addsub.pd.256")
-    double4 __builtin_ia32_addsubpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.addsub.ps.256")
-    float8 __builtin_ia32_addsubps256(float8, float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.blendv.pd.256")
     double4 __builtin_ia32_blendvpd256(double4, double4, double4) pure @safe;
