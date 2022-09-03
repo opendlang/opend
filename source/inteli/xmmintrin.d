@@ -1302,7 +1302,7 @@ unittest
 
 /// Load 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from memory.
 //  `p` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128 _mm_load_ps(const(float)*p) pure @trusted // TODO shouldn't be trusted
+__m128 _mm_load_ps(const(float)*p) pure @trusted // FUTURE shouldn't be trusted, see #62
 {
     pragma(inline, true);
     return *cast(__m128*)p;
@@ -1416,7 +1416,7 @@ unittest
 
 /// Load 4 single-precision (32-bit) floating-point elements from memory in reverse order. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted // TODO shouldn't be trusted
+__m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted // FUTURE shouldn't be trusted, see #62
 {
     __m128* aligned = cast(__m128*)mem_addr; // x86: movaps + shups since LDC 1.0.0 -O1
     __m128 a = *aligned;
@@ -1939,7 +1939,7 @@ __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
     else
         return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
-// TODO unittest and force inline
+// TODO unittest
 
 deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;///
 deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;///
@@ -2718,7 +2718,7 @@ unittest
 
 /// Store the lower single-precision (32-bit) floating-point element from `a` into 4 contiguous elements in memory. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // TODO: shouldn't be trusted
+void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE: shouldn't be trusted, see #62
 {
     __m128* aligned = cast(__m128*)mem_addr;
     static if (DMD_with_DSIMD)
@@ -2792,7 +2792,7 @@ unittest
 
 /// Store 4 single-precision (32-bit) floating-point elements from `a` into memory in reverse order. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // TODO should not be trusted
+void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not be trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
     static if (DMD_with_DSIMD)
@@ -2819,7 +2819,7 @@ unittest
 
 /// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
-void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // TODO should not be trusted
+void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not be trusted, see #62
 {
     pragma(inline, true);
     static if (DMD_with_DSIMD)
@@ -3017,7 +3017,7 @@ __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
 }
-// TODO unittest and force inline
+// TODO unittest
 
 private
 {
