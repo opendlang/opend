@@ -1,6 +1,10 @@
 language: d
 
-dist: jammy
+dist: bionic
+
+# Note:
+# There is an error "version `GLIBC_2.27' not found" when trying to use a newer LDC than 1.26
+# Unresolved and blocks us on 1.26 on travis
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -y ; fi
@@ -14,18 +18,17 @@ os:
   - linux
 
 d:
- - ldc-1.30.0
- - ldc-1.28.1
+ - ldc-1.26.0
  - ldc-1.24.0
  - dmd-beta
- - dmd-2.100.0
+ - dmd-2.097.0
  - dmd-2.094.2
 
 matrix:
   allow_failures:
    - d: dmd-beta      # DMD on arm64 not supported
      arch: arm64
-   - d: dmd-2.100.0
+   - d: dmd-2.097.0
      arch: arm64
    - d: dmd-2.094.2
      arch: arm64
