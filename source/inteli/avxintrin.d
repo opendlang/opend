@@ -222,13 +222,20 @@ unittest
 /// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
 __m256d _mm256_broadcast_sd (const(double)* mem_addr) pure @trusted
 {
-    double a = *mem_addr;
-    __m256d r;
-    r.ptr[0] = a;
-    r.ptr[1] = a;
-    r.ptr[2] = a;
-    r.ptr[3] = a;
-    return r;
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vbroadcastsd256(mem_addr);
+    }
+    else
+    {
+        double a = *mem_addr;
+        __m256d r;
+        r.ptr[0] = a;
+        r.ptr[1] = a;
+        r.ptr[2] = a;
+        r.ptr[3] = a;
+        return r;
+    }
 }
 unittest
 {
@@ -241,13 +248,21 @@ unittest
 /// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
 __m128 _mm_broadcast_ss (const(float)* mem_addr) pure @trusted
 {
-    float a = *mem_addr;
-    __m128 r;
-    r.ptr[0] = a;
-    r.ptr[1] = a;
-    r.ptr[2] = a;
-    r.ptr[3] = a;
-    return r;
+    // PERF: DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vbroadcastss(mem_addr);
+    }
+    else
+    {
+        float a = *mem_addr;
+        __m128 r;
+        r.ptr[0] = a;
+        r.ptr[1] = a;
+        r.ptr[2] = a;
+        r.ptr[3] = a;
+        return r;
+    }
 }
 unittest
 {
