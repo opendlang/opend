@@ -1,6 +1,6 @@
 language: d
 
-dist: bionic
+dist: jammy
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -y ; fi
@@ -25,7 +25,7 @@ matrix:
   allow_failures:
    - d: dmd-beta      # DMD on arm64 not supported
      arch: arm64
-   - d: dmd-2.097.0
+   - d: dmd-2.100.0
      arch: arm64
    - d: dmd-2.094.2
      arch: arm64
