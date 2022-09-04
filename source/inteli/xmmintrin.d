@@ -2567,9 +2567,15 @@ void _mm_sfence() @trusted
             sfence;
         }
     }
+    else static if (LDC_with_ARM64)
+    {
+        __builtin_arm_dmb(10); // dmb ishst
+    }
     else version(LDC)
     {
-        llvm_memory_fence(); // PERF: this generates mfence instead of sfence
+        // When the architecture is unknown, generate a full memory barrier,
+        // as the semantics of sfence do not really match those of atomics.
+        llvm_memory_fence();
     }
     else
         static assert(false);

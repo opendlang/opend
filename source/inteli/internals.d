@@ -1157,6 +1157,9 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.crc32cx")
         uint __crc32cd(uint a, ulong b) pure @safe;
 
+    pragma(LDC_intrinsic, "llvm.aarch64.dmb")
+        uint __dmb(int a) @safe; // didn't found a name in intrinsic list
+
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
         byte16 vabdq_u8(byte16 a, byte16 b) pure @safe;
 

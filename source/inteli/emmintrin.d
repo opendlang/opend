@@ -1769,12 +1769,13 @@ unittest
     assert(R.array == correct);
 }
 
-
+/// Perform a serializing operation on all load-from-memory instructions that were issued prior 
+/// to this instruction. Guarantees that every load instruction that precedes, in program order, 
+/// is globally visible before any load instruction which follows the fence in program order.
 void _mm_lfence() @trusted
 {
     version(GNU)
     {
-    
         static if (GDC_with_SSE2)
         {
             __builtin_ia32_lfence();
@@ -1793,6 +1794,10 @@ void _mm_lfence() @trusted
     {
         __builtin_ia32_lfence();
     }
+    else static if (LDC_with_ARM64)
+    {
+         __builtin_arm_dmb(9);  // dmb ishld
+    }
     else static if (DMD_with_asm)
     {
         asm nothrow @nogc pure @safe
@@ -1802,7 +1807,9 @@ void _mm_lfence() @trusted
     }
     else version(LDC)
     {
-        llvm_memory_fence(); // PERF actually generates mfence
+        // When the architecture is unknown, generate a full memory barrier,
+        // as the semantics of sfence do not really match those of atomics.
+        llvm_memory_fence();
     }
     else
         static assert(false);
@@ -2239,7 +2246,7 @@ unittest
 /// Perform a serializing operation on all load-from-memory and store-to-memory instructions that were issued prior to 
 /// this instruction. Guarantees that every memory access that precedes, in program order, the memory fence instruction 
 /// is globally visible before any memory instruction which follows the fence in program order.
-void _mm_mfence() @trusted
+void _mm_mfence() @trusted // not pure!
 {
     version(GNU)
     {
@@ -2270,11 +2277,8 @@ void _mm_mfence() @trusted
     }
     else version(LDC)
     {
-        void _mm_mfence() pure @safe
-        {
-            // Note: will generate the DMB instruction on ARM
-            llvm_memory_fence();
-        }
+        // Note: will generate the DMB ish instruction on ARM
+        llvm_memory_fence();
     }
     else
         static assert(false);
