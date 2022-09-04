@@ -2373,6 +2373,7 @@ void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) @safe
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values.
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
+    // PERF: remove loadUnaligned?, see #102 
     // Note: despite appearances, generates sensible code,
     //       inlines correctly and is constant folded
     float[4] result = [e0, e1, e2, e3];
@@ -2496,24 +2497,18 @@ unittest
 }
 
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values in reverse order.
-/// PERF: performance improvements with an aligned float[4] and float4 cast?
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     pragma(inline, true);
-    version(LDC)
-    {
-        float[4] result = [e3, e2, e1, e0];
-        return loadUnaligned!(float4)(result.ptr);
-    }
-    else
-    {
-        __m128 r;
-        r.ptr[0] = e3;
-        r.ptr[1] = e2;
-        r.ptr[2] = e1;
-        r.ptr[3] = e0;
-        return r;
-    }
+  
+    // This small = void here wins a bit in all optimization levels in GDC
+    // and in -O0 in LDC.
+    __m128 r = void;
+    r.ptr[0] = e3;
+    r.ptr[1] = e2;
+    r.ptr[2] = e1;
+    r.ptr[3] = e0;
+    return r;
 }
 unittest
 {
@@ -2527,7 +2522,7 @@ __m128 _mm_setzero_ps() pure @trusted
 {
     pragma(inline, true);
 
-    // Note: for all compilers, this performs best in debug builds, and in DMD -O
+    // Note: for all compilers, this works best in debug builds, and in DMD -O
     int4 r; 
     return cast(__m128)r;
 }
@@ -2538,7 +2533,7 @@ unittest
     assert(R.array == correct);
 }
 
-/// Perform a serializing operation on all store-to-memory instructions that were issued prior 
+/// Do a serializing operation on all store-to-memory instructions that were issued prior 
 /// to this instruction. Guarantees that every store instruction that precedes, in program order, 
 /// is globally visible before any store instruction which follows the fence in program order.
 void _mm_sfence() @trusted
