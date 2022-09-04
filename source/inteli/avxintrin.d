@@ -767,6 +767,7 @@ unittest
 __m256d _mm256_set_pd (double e3, double e2, double e1, double e0) pure @trusted
 {
     // Note: with LDC, beats a loadUnaligned thing.
+    // PERF: see #102, use = void
     __m256d r;
     r.ptr[0] = e0;
     r.ptr[1] = e1;
@@ -784,6 +785,7 @@ unittest
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values.
 __m256 _mm256_set_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) pure @trusted
 {
+    // PERF: see #102, use = void?
     __m256 r;
     r.ptr[0] = e0;
     r.ptr[1] = e1;

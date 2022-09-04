@@ -2006,6 +2006,7 @@ __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
     }
     else
     {
+        // TODO make that LDC only
         return loadUnaligned!(__m128i)(cast(int*)mem_addr);
     }
 }
@@ -2908,6 +2909,7 @@ __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
             if (s > 255) s = 255;
             result[i+8] = cast(ubyte)s;
         }
+        // TODO: remove useless loadUnaligned
         return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
     }
 }
@@ -3022,6 +3024,7 @@ unittest
 /// Set packed 16-bit integers with the supplied values.
 __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf
     short[8] result = [e0, e1, e2, e3, e4, e5, e6, e7];
     return cast(__m128i) loadUnaligned!(short8)(result.ptr);
 }
@@ -3036,6 +3039,7 @@ unittest
 /// Set packed 32-bit integers with the supplied values.
 __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     int[4] result = [e0, e1, e2, e3];
     return loadUnaligned!(int4)(result.ptr);
@@ -3050,6 +3054,7 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     long[2] result = [e0.array[0], e1.array[0]];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
@@ -3065,6 +3070,7 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64x (long e1, long e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     long[2] result = [e0, e1];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
@@ -3083,6 +3089,7 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
                       byte e7, byte e6, byte e5, byte e4,
                       byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
+    // TODO: remove loadUnaligned?, check perf (see #102)
     byte[16] result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
                      e8, e9, e10, e11, e12, e13, e14, e15];
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
@@ -3091,6 +3098,7 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     double[2] result = [e0, e1];
     return loadUnaligned!(double2)(result.ptr);
@@ -3105,6 +3113,7 @@ unittest
 /// Broadcast double-precision (64-bit) floating-point value `a` to all element.
 __m128d _mm_set_pd1 (double a) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     double[2] result = [a, a];
     return loadUnaligned!(double2)(result.ptr);
@@ -3120,6 +3129,7 @@ unittest
 /// and zero the upper element.
 __m128d _mm_set_sd (double a) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     double[2] result = [a, 0];
     return loadUnaligned!(double2)(result.ptr);
 }
@@ -3207,6 +3217,7 @@ alias _mm_set1_pd = _mm_set_pd1;
 __m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, 
                         short e3, short e2, short e1, short e0) pure @trusted
 {
+    // TODO: remove useless(?) loadUnaligned, check perf (see #102)
     short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
 }
@@ -3220,6 +3231,7 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     int[4] result = [e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
@@ -3234,6 +3246,7 @@ unittest
 /// Set packed 64-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     long[2] result = [e1, e0];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
@@ -3250,6 +3263,7 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                        byte e7,  byte e6,  byte e5,  byte e4,
                        byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     byte[16] result = [e15, e14, e13, e12, e11, e10, e9, e8,
                       e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
@@ -3274,6 +3288,7 @@ unittest
 /// Return vector of type `__m128d` with all elements set to zero.
 __m128d _mm_setzero_pd () pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     double[2] result = [0.0, 0.0];
@@ -3283,6 +3298,7 @@ __m128d _mm_setzero_pd () pure @trusted
 /// Return vector of type `__m128i` with all elements set to zero.
 __m128i _mm_setzero_si128() pure @trusted
 {
+    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
     // Note: using loadUnaligned has better -O0 codegen compared to .ptr
     int[4] result = [0, 0, 0, 0];

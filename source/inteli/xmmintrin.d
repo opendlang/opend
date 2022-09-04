@@ -2373,11 +2373,12 @@ void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) @safe
 /// Set packed single-precision (32-bit) floating-point elements with the supplied values.
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    // PERF: remove loadUnaligned?, see #102 
-    // Note: despite appearances, generates sensible code,
-    //       inlines correctly and is constant folded
-    float[4] result = [e0, e1, e2, e3];
-    return loadUnaligned!(float4)(result.ptr);
+    __m128 r = void;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    return r;
 }
 unittest
 {
