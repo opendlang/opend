@@ -6,6 +6,8 @@ subprojects = []
 
 has_cpp_headers = false
 
+dc = meson.get_compiler('d')
+
 sources_list = [
     'mir/algebraic',
     'mir/bitmanip',
@@ -36,10 +38,16 @@ foreach s : sources_list
     sources += 'source/' + s + '.d'
 endforeach
 
-add_project_arguments([
-    '-preview=dip1008',
-    '-lowmem',
-], language: 'd')
+if dc.get_id() == 'gcc'
+    add_project_arguments([
+        '-fpreview=dip1008',
+    ], language: 'd')
+else
+    add_project_arguments([
+        '-preview=dip1008',
+        '-lowmem',
+    ], language: 'd')
+endif
 
 required_deps = []
 
