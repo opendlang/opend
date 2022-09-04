@@ -153,6 +153,7 @@ version(LDC)
     }
     else version(AArch64)
     {
+        public import ldc.gccbuiltins_aarch64;
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = true; // implies "has Neon"
         enum LDC_with_ARM64_CRC = __traits(targetHasFeature, "crc");
@@ -1157,8 +1158,8 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.crc32cx")
         uint __crc32cd(uint a, ulong b) pure @safe;
 
-    pragma(LDC_intrinsic, "llvm.aarch64.dmb")
-        uint __dmb(int a) @safe; // didn't found a name in intrinsic list
+    //pragma(LDC_intrinsic, "llvm.aarch64.dmb")
+    //    uint __dmb(int a) @safe; // didn't found a name in intrinsic list
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.uabd.v16i8")
         byte16 vabdq_u8(byte16 a, byte16 b) pure @safe;
