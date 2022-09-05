@@ -200,7 +200,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionKHR} );
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionParametersKHR} );
             
-            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 4;
+            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 5;
             enum const( char )* VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
             
             enum VkQueryResultStatusKHR {
@@ -223,7 +223,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias VkVideoCodecOperationFlagsKHR = VkFlags;
             enum VkVideoCodecOperationFlagBitsKHR : VkVideoCodecOperationFlagsKHR {
-                VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR             = 0,
+                VK_VIDEO_CODEC_OPERATION_NONE_KHR                    = 0,
                 VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT         = 0x00010000,
                 VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT         = 0x00020000,
                 VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT         = 0x00000001,
@@ -231,7 +231,7 @@ mixin template Platform_Extensions( extensions... ) {
                 VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR      = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR            = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR;
+            enum VK_VIDEO_CODEC_OPERATION_NONE_KHR                   = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_NONE_KHR;
             enum VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
             enum VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT;
             enum VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT        = VkVideoCodecOperationFlagBitsKHR.VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT;
@@ -240,7 +240,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias VkVideoChromaSubsamplingFlagsKHR = VkFlags;
             enum VkVideoChromaSubsamplingFlagBitsKHR : VkVideoChromaSubsamplingFlagsKHR {
-                VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR          = 0,
+                VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR              = 0,
                 VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR       = 0x00000001,
                 VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR              = 0x00000002,
                 VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR              = 0x00000004,
@@ -248,7 +248,7 @@ mixin template Platform_Extensions( extensions... ) {
                 VK_VIDEO_CHROMA_SUBSAMPLING_FLAG_BITS_MAX_ENUM_KHR   = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR         = VkVideoChromaSubsamplingFlagBitsKHR.VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR;
+            enum VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR             = VkVideoChromaSubsamplingFlagBitsKHR.VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR;
             enum VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR      = VkVideoChromaSubsamplingFlagBitsKHR.VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR;
             enum VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR             = VkVideoChromaSubsamplingFlagBitsKHR.VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
             enum VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR             = VkVideoChromaSubsamplingFlagBitsKHR.VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR;
@@ -283,55 +283,43 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias VkVideoSessionCreateFlagsKHR = VkFlags;
             enum VkVideoSessionCreateFlagBitsKHR : VkVideoSessionCreateFlagsKHR {
-                VK_VIDEO_SESSION_CREATE_DEFAULT_KHR                  = 0,
                 VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR    = 0x00000001,
                 VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR       = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_SESSION_CREATE_DEFAULT_KHR                 = VkVideoSessionCreateFlagBitsKHR.VK_VIDEO_SESSION_CREATE_DEFAULT_KHR;
             enum VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR   = VkVideoSessionCreateFlagBitsKHR.VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR;
             enum VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR      = VkVideoSessionCreateFlagBitsKHR.VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR;
+            alias VkVideoSessionParametersCreateFlagsKHR = VkFlags;
             alias VkVideoBeginCodingFlagsKHR = VkFlags;
             alias VkVideoEndCodingFlagsKHR = VkFlags;
             
             alias VkVideoCodingControlFlagsKHR = VkFlags;
             enum VkVideoCodingControlFlagBitsKHR : VkVideoCodingControlFlagsKHR {
-                VK_VIDEO_CODING_CONTROL_DEFAULT_KHR                  = 0,
-                VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR                = 0x00000001,
-                VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR       = 0x7FFFFFFF
+                VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR                        = 0x00000001,
+                VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR          = 0x00000002,
+                VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_LAYER_BIT_KHR    = 0x00000004,
+                VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR               = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_CODING_CONTROL_DEFAULT_KHR                 = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_DEFAULT_KHR;
-            enum VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR               = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR;
-            enum VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR      = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR;
+            enum VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR                       = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR;
+            enum VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR         = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR;
+            enum VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_LAYER_BIT_KHR   = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_LAYER_BIT_KHR;
+            enum VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR              = VkVideoCodingControlFlagBitsKHR.VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR;
             
-            alias VkVideoCodingQualityPresetFlagsKHR = VkFlags;
-            enum VkVideoCodingQualityPresetFlagBitsKHR : VkVideoCodingQualityPresetFlagsKHR {
-                VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR                = 0x00000001,
-                VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR                 = 0x00000002,
-                VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR               = 0x00000004,
-                VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR        = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR               = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR;
-            enum VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR                = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR;
-            enum VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR              = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR;
-            enum VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR       = VkVideoCodingQualityPresetFlagBitsKHR.VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR;
-            
-            struct VkQueueFamilyQueryResultStatusProperties2KHR {
-                VkStructureType  sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR;
+            struct VkQueueFamilyQueryResultStatusPropertiesKHR {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR;
                 void*            pNext;
                 VkBool32         queryResultStatusSupport;
             }
             
-            struct VkVideoQueueFamilyProperties2KHR {
-                VkStructureType                sType = VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR;
+            struct VkQueueFamilyVideoPropertiesKHR {
+                VkStructureType                sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;
                 void*                          pNext;
                 VkVideoCodecOperationFlagsKHR  videoCodecOperations;
             }
             
-            struct VkVideoProfileKHR {
-                VkStructureType                   sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR;
+            struct VkVideoProfileInfoKHR {
+                VkStructureType                   sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
                 const( void )*                    pNext;
                 VkVideoCodecOperationFlagBitsKHR  videoCodecOperation;
                 VkVideoChromaSubsamplingFlagsKHR  chromaSubsampling;
@@ -339,11 +327,11 @@ mixin template Platform_Extensions( extensions... ) {
                 VkVideoComponentBitDepthFlagsKHR  chromaBitDepth;
             }
             
-            struct VkVideoProfilesKHR {
-                VkStructureType              sType = VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
-                const( void )*               pNext;
-                uint32_t                     profileCount;
-                const( VkVideoProfileKHR )*  pProfiles;
+            struct VkVideoProfileListInfoKHR {
+                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
+                const( void )*                   pNext;
+                uint32_t                         profileCount;
+                const( VkVideoProfileInfoKHR )*  pProfiles;
             }
             
             struct VkVideoCapabilitiesKHR {
@@ -362,7 +350,7 @@ mixin template Platform_Extensions( extensions... ) {
             
             struct VkPhysicalDeviceVideoFormatInfoKHR {
                 VkStructureType    sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
-                void*              pNext;
+                const( void )*     pNext;
                 VkImageUsageFlags  imageUsage;
             }
             
@@ -377,8 +365,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkImageUsageFlags   imageUsageFlags;
             }
             
-            struct VkVideoPictureResourceKHR {
-                VkStructureType  sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_KHR;
+            struct VkVideoPictureResourceInfoKHR {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR;
                 const( void )*   pNext;
                 VkOffset2D       codedOffset;
                 VkExtent2D       codedExtent;
@@ -386,22 +374,22 @@ mixin template Platform_Extensions( extensions... ) {
                 VkImageView      imageViewBinding;
             }
             
-            struct VkVideoReferenceSlotKHR {
-                VkStructureType                      sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR;
-                const( void )*                       pNext;
-                int8_t                               slotIndex;
-                const( VkVideoPictureResourceKHR )*  pPictureResource;
+            struct VkVideoReferenceSlotInfoKHR {
+                VkStructureType                          sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
+                const( void )*                           pNext;
+                int8_t                                   slotIndex;
+                const( VkVideoPictureResourceInfoKHR )*  pPictureResource;
             }
             
-            struct VkVideoGetMemoryPropertiesKHR {
-                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_GET_MEMORY_PROPERTIES_KHR;
-                const( void )*          pNext;
-                uint32_t                memoryBindIndex;
-                VkMemoryRequirements2*  pMemoryRequirements;
+            struct VkVideoSessionMemoryRequirementsKHR {
+                VkStructureType       sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR;
+                void*                 pNext;
+                uint32_t              memoryBindIndex;
+                VkMemoryRequirements  memoryRequirements;
             }
             
-            struct VkVideoBindMemoryKHR {
-                VkStructureType  sType = VK_STRUCTURE_TYPE_VIDEO_BIND_MEMORY_KHR;
+            struct VkBindVideoSessionMemoryInfoKHR {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR;
                 const( void )*   pNext;
                 uint32_t         memoryBindIndex;
                 VkDeviceMemory   memory;
@@ -414,7 +402,7 @@ mixin template Platform_Extensions( extensions... ) {
                 const( void )*                   pNext;
                 uint32_t                         queueFamilyIndex;
                 VkVideoSessionCreateFlagsKHR     flags;
-                const( VkVideoProfileKHR )*      pVideoProfile;
+                const( VkVideoProfileInfoKHR )*  pVideoProfile;
                 VkFormat                         pictureFormat;
                 VkExtent2D                       maxCodedExtent;
                 VkFormat                         referencePicturesFormat;
@@ -424,10 +412,11 @@ mixin template Platform_Extensions( extensions... ) {
             }
             
             struct VkVideoSessionParametersCreateInfoKHR {
-                VkStructureType              sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR;
-                const( void )*               pNext;
-                VkVideoSessionParametersKHR  videoSessionParametersTemplate;
-                VkVideoSessionKHR            videoSession;
+                VkStructureType                         sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR;
+                const( void )*                          pNext;
+                VkVideoSessionParametersCreateFlagsKHR  flags;
+                VkVideoSessionParametersKHR             videoSessionParametersTemplate;
+                VkVideoSessionKHR                       videoSession;
             }
             
             struct VkVideoSessionParametersUpdateInfoKHR {
@@ -437,14 +426,13 @@ mixin template Platform_Extensions( extensions... ) {
             }
             
             struct VkVideoBeginCodingInfoKHR {
-                VkStructureType                     sType = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
-                const( void )*                      pNext;
-                VkVideoBeginCodingFlagsKHR          flags;
-                VkVideoCodingQualityPresetFlagsKHR  codecQualityPreset;
-                VkVideoSessionKHR                   videoSession;
-                VkVideoSessionParametersKHR         videoSessionParameters;
-                uint32_t                            referenceSlotCount;
-                const( VkVideoReferenceSlotKHR )*   pReferenceSlots;
+                VkStructureType                        sType = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
+                const( void )*                         pNext;
+                VkVideoBeginCodingFlagsKHR             flags;
+                VkVideoSessionKHR                      videoSession;
+                VkVideoSessionParametersKHR            videoSessionParameters;
+                uint32_t                               referenceSlotCount;
+                const( VkVideoReferenceSlotInfoKHR )*  pReferenceSlots;
             }
             
             struct VkVideoEndCodingInfoKHR {
@@ -459,12 +447,12 @@ mixin template Platform_Extensions( extensions... ) {
                 VkVideoCodingControlFlagsKHR  flags;
             }
             
-            alias PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR                           = VkResult  function( VkPhysicalDevice physicalDevice, const( VkVideoProfileKHR )* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities );
+            alias PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR                           = VkResult  function( VkPhysicalDevice physicalDevice, const( VkVideoProfileInfoKHR )* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities );
             alias PFN_vkGetPhysicalDeviceVideoFormatPropertiesKHR                       = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceVideoFormatInfoKHR )* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties );
             alias PFN_vkCreateVideoSessionKHR                                           = VkResult  function( VkDevice device, const( VkVideoSessionCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkVideoSessionKHR* pVideoSession );
             alias PFN_vkDestroyVideoSessionKHR                                          = void      function( VkDevice device, VkVideoSessionKHR videoSession, const( VkAllocationCallbacks )* pAllocator );
-            alias PFN_vkGetVideoSessionMemoryRequirementsKHR                            = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements );
-            alias PFN_vkBindVideoSessionMemoryKHR                                       = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t videoSessionBindMemoryCount, const( VkVideoBindMemoryKHR )* pVideoSessionBindMemories );
+            alias PFN_vkGetVideoSessionMemoryRequirementsKHR                            = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements );
+            alias PFN_vkBindVideoSessionMemoryKHR                                       = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const( VkBindVideoSessionMemoryInfoKHR )* pBindSessionMemoryInfos );
             alias PFN_vkCreateVideoSessionParametersKHR                                 = VkResult  function( VkDevice device, const( VkVideoSessionParametersCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters );
             alias PFN_vkUpdateVideoSessionParametersKHR                                 = VkResult  function( VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const( VkVideoSessionParametersUpdateInfoKHR )* pUpdateInfo );
             alias PFN_vkDestroyVideoSessionParametersKHR                                = void      function( VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const( VkAllocationCallbacks )* pAllocator );
@@ -477,32 +465,20 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_decode_queue )) {
             enum VK_KHR_video_decode_queue = 1;
 
-            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 4;
+            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 5;
             enum const( char )* VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
             
             alias VkVideoDecodeCapabilityFlagsKHR = VkFlags;
             enum VkVideoDecodeCapabilityFlagBitsKHR : VkVideoDecodeCapabilityFlagsKHR {
-                VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR                       = 0,
                 VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR   = 0x00000001,
                 VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR   = 0x00000002,
                 VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR            = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR                      = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DEFAULT_KHR;
             enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR;
             enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR;
             enum VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR           = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR;
-            
             alias VkVideoDecodeFlagsKHR = VkFlags;
-            enum VkVideoDecodeFlagBitsKHR : VkVideoDecodeFlagsKHR {
-                VK_VIDEO_DECODE_DEFAULT_KHR                  = 0,
-                VK_VIDEO_DECODE_RESERVED_0_BIT_KHR           = 0x00000001,
-                VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR       = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_DECODE_DEFAULT_KHR                 = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_DEFAULT_KHR;
-            enum VK_VIDEO_DECODE_RESERVED_0_BIT_KHR          = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_RESERVED_0_BIT_KHR;
-            enum VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR      = VkVideoDecodeFlagBitsKHR.VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR;
             
             struct VkVideoDecodeCapabilitiesKHR {
                 VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
@@ -511,16 +487,16 @@ mixin template Platform_Extensions( extensions... ) {
             }
             
             struct VkVideoDecodeInfoKHR {
-                VkStructureType                    sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
-                const( void )*                     pNext;
-                VkVideoDecodeFlagsKHR              flags;
-                VkBuffer                           srcBuffer;
-                VkDeviceSize                       srcBufferOffset;
-                VkDeviceSize                       srcBufferRange;
-                VkVideoPictureResourceKHR          dstPictureResource;
-                const( VkVideoReferenceSlotKHR )*  pSetupReferenceSlot;
-                uint32_t                           referenceSlotCount;
-                const( VkVideoReferenceSlotKHR )*  pReferenceSlots;
+                VkStructureType                        sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
+                const( void )*                         pNext;
+                VkVideoDecodeFlagsKHR                  flags;
+                VkBuffer                               srcBuffer;
+                VkDeviceSize                           srcBufferOffset;
+                VkDeviceSize                           srcBufferRange;
+                VkVideoPictureResourceInfoKHR          dstPictureResource;
+                const( VkVideoReferenceSlotInfoKHR )*  pSetupReferenceSlot;
+                uint32_t                               referenceSlotCount;
+                const( VkVideoReferenceSlotInfoKHR )*  pReferenceSlots;
             }
             
             alias PFN_vkCmdDecodeVideoKHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkVideoDecodeInfoKHR )* pFrameInfo );
@@ -707,28 +683,17 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_encode_queue )) {
             enum VK_KHR_video_encode_queue = 1;
 
-            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 5;
+            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 6;
             enum const( char )* VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_encode_queue";
             
             alias VkVideoEncodeFlagsKHR = VkFlags;
-            enum VkVideoEncodeFlagBitsKHR : VkVideoEncodeFlagsKHR {
-                VK_VIDEO_ENCODE_DEFAULT_KHR                  = 0,
-                VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR           = 0x00000001,
-                VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR       = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_ENCODE_DEFAULT_KHR                 = VkVideoEncodeFlagBitsKHR.VK_VIDEO_ENCODE_DEFAULT_KHR;
-            enum VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR          = VkVideoEncodeFlagBitsKHR.VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR;
-            enum VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR      = VkVideoEncodeFlagBitsKHR.VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR;
             
             alias VkVideoEncodeCapabilityFlagsKHR = VkFlags;
             enum VkVideoEncodeCapabilityFlagBitsKHR : VkVideoEncodeCapabilityFlagsKHR {
-                VK_VIDEO_ENCODE_CAPABILITY_DEFAULT_KHR                                       = 0,
                 VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR        = 0x00000001,
                 VK_VIDEO_ENCODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR                            = 0x7FFFFFFF
             }
             
-            enum VK_VIDEO_ENCODE_CAPABILITY_DEFAULT_KHR                                      = VkVideoEncodeCapabilityFlagBitsKHR.VK_VIDEO_ENCODE_CAPABILITY_DEFAULT_KHR;
             enum VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR       = VkVideoEncodeCapabilityFlagBitsKHR.VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR;
             enum VK_VIDEO_ENCODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR                           = VkVideoEncodeCapabilityFlagBitsKHR.VK_VIDEO_ENCODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR;
             
@@ -744,31 +709,21 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR               = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR;
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR               = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR;
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR    = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR;
-            
             alias VkVideoEncodeRateControlFlagsKHR = VkFlags;
-            enum VkVideoEncodeRateControlFlagBitsKHR : VkVideoEncodeRateControlFlagsKHR {
-                VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR             = 0,
-                VK_VIDEO_ENCODE_RATE_CONTROL_RESERVED_0_BIT_KHR      = 0x00000001,
-                VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR  = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR            = VkVideoEncodeRateControlFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR;
-            enum VK_VIDEO_ENCODE_RATE_CONTROL_RESERVED_0_BIT_KHR     = VkVideoEncodeRateControlFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_RESERVED_0_BIT_KHR;
-            enum VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR = VkVideoEncodeRateControlFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR;
             
             struct VkVideoEncodeInfoKHR {
-                VkStructureType                    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR;
-                const( void )*                     pNext;
-                VkVideoEncodeFlagsKHR              flags;
-                uint32_t                           qualityLevel;
-                VkBuffer                           dstBitstreamBuffer;
-                VkDeviceSize                       dstBitstreamBufferOffset;
-                VkDeviceSize                       dstBitstreamBufferMaxRange;
-                VkVideoPictureResourceKHR          srcPictureResource;
-                const( VkVideoReferenceSlotKHR )*  pSetupReferenceSlot;
-                uint32_t                           referenceSlotCount;
-                const( VkVideoReferenceSlotKHR )*  pReferenceSlots;
-                uint32_t                           precedingExternallyEncodedBytes;
+                VkStructureType                        sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR;
+                const( void )*                         pNext;
+                VkVideoEncodeFlagsKHR                  flags;
+                uint32_t                               qualityLevel;
+                VkBuffer                               dstBitstreamBuffer;
+                VkDeviceSize                           dstBitstreamBufferOffset;
+                VkDeviceSize                           dstBitstreamBufferMaxRange;
+                VkVideoPictureResourceInfoKHR          srcPictureResource;
+                const( VkVideoReferenceSlotInfoKHR )*  pSetupReferenceSlot;
+                uint32_t                               referenceSlotCount;
+                const( VkVideoReferenceSlotInfoKHR )*  pReferenceSlots;
+                uint32_t                               precedingExternallyEncodedBytes;
             }
             
             struct VkVideoEncodeCapabilitiesKHR {
@@ -808,8 +763,26 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_encode_h264 )) {
             enum VK_EXT_video_encode_h264 = 1;
 
-            enum VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION = 7;
+            enum VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION = 8;
             enum const( char )* VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME = "VK_EXT_video_encode_h264";
+            
+            enum VkVideoEncodeH264RateControlStructureEXT {
+                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT      = 0,
+                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_EXT         = 1,
+                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT       = 2,
+                VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT = VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT,
+                VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_END_RANGE_EXT   = VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT,
+                VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT  = VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT - VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT + 1,
+                VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT    = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT     = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
+            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_EXT        = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_EXT;
+            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT      = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_EXT;
+            enum VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT;
+            enum VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_END_RANGE_EXT  = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_END_RANGE_EXT;
+            enum VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT;
+            enum VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT   = VkVideoEncodeH264RateControlStructureEXT.VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT;
             
             alias VkVideoEncodeH264CapabilityFlagsEXT = VkFlags;
             enum VkVideoEncodeH264CapabilityFlagBitsEXT : VkVideoEncodeH264CapabilityFlagsEXT {
@@ -894,19 +867,6 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT            = VkVideoEncodeH264OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT;
             enum VK_VIDEO_ENCODE_H2_64_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT    = VkVideoEncodeH264OutputModeFlagBitsEXT.VK_VIDEO_ENCODE_H2_64_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT;
             
-            alias VkVideoEncodeH264RateControlStructureFlagsEXT = VkFlags;
-            enum VkVideoEncodeH264RateControlStructureFlagBitsEXT : VkVideoEncodeH264RateControlStructureFlagsEXT {
-                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT              = 0,
-                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT             = 0x00000001,
-                VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT           = 0x00000002,
-                VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT  = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT             = VkVideoEncodeH264RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
-            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT            = VkVideoEncodeH264RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT          = VkVideoEncodeH264RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT = VkVideoEncodeH264RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H2_64_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT;
-            
             struct VkVideoEncodeH264CapabilitiesEXT {
                 VkStructureType                      sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT;
                 void*                                pNext;
@@ -947,8 +907,8 @@ mixin template Platform_Extensions( extensions... ) {
                 const( StdVideoEncodeH264ReferenceInfo )*  pStdReferenceInfo;
             }
             
-            struct VkVideoEncodeH264ReferenceListsEXT {
-                VkStructureType                                       sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_EXT;
+            struct VkVideoEncodeH264ReferenceListsInfoEXT {
+                VkStructureType                                       sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_INFO_EXT;
                 const( void )*                                        pNext;
                 uint8_t                                               referenceList0EntryCount;
                 const( VkVideoEncodeH264DpbSlotInfoEXT )*             pReferenceList0Entries;
@@ -957,25 +917,25 @@ mixin template Platform_Extensions( extensions... ) {
                 const( StdVideoEncodeH264RefMemMgmtCtrlOperations )*  pMemMgmtCtrlOperations;
             }
             
-            struct VkVideoEncodeH264NaluSliceEXT {
-                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT;
-                const( void )*                                pNext;
-                uint32_t                                      mbCount;
-                const( VkVideoEncodeH264ReferenceListsEXT )*  pReferenceFinalLists;
-                const( StdVideoEncodeH264SliceHeader )*       pSliceHeaderStd;
+            struct VkVideoEncodeH264NaluSliceInfoEXT {
+                VkStructureType                                   sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_EXT;
+                const( void )*                                    pNext;
+                uint32_t                                          mbCount;
+                const( VkVideoEncodeH264ReferenceListsInfoEXT )*  pReferenceFinalLists;
+                const( StdVideoEncodeH264SliceHeader )*           pSliceHeaderStd;
             }
             
             struct VkVideoEncodeH264VclFrameInfoEXT {
-                VkStructureType                               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
-                const( void )*                                pNext;
-                const( VkVideoEncodeH264ReferenceListsEXT )*  pReferenceFinalLists;
-                uint32_t                                      naluSliceEntryCount;
-                const( VkVideoEncodeH264NaluSliceEXT )*       pNaluSliceEntries;
-                const( StdVideoEncodeH264PictureInfo )*       pCurrentPictureInfo;
+                VkStructureType                                   sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
+                const( void )*                                    pNext;
+                const( VkVideoEncodeH264ReferenceListsInfoEXT )*  pReferenceFinalLists;
+                uint32_t                                          naluSliceEntryCount;
+                const( VkVideoEncodeH264NaluSliceInfoEXT )*       pNaluSliceEntries;
+                const( StdVideoEncodeH264PictureInfo )*           pCurrentPictureInfo;
             }
             
-            struct VkVideoEncodeH264EmitPictureParametersEXT {
-                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT;
+            struct VkVideoEncodeH264EmitPictureParametersInfoEXT {
+                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_INFO_EXT;
                 const( void )*     pNext;
                 uint8_t            spsId;
                 VkBool32           emitSpsEnable;
@@ -983,20 +943,20 @@ mixin template Platform_Extensions( extensions... ) {
                 const( uint8_t )*  ppsIdEntries;
             }
             
-            struct VkVideoEncodeH264ProfileEXT {
-                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT;
+            struct VkVideoEncodeH264ProfileInfoEXT {
+                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT;
                 const( void )*          pNext;
                 StdVideoH264ProfileIdc  stdProfileIdc;
             }
             
             struct VkVideoEncodeH264RateControlInfoEXT {
-                VkStructureType                                   sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT;
-                const( void )*                                    pNext;
-                uint32_t                                          gopFrameCount;
-                uint32_t                                          idrPeriod;
-                uint32_t                                          consecutiveBFrameCount;
-                VkVideoEncodeH264RateControlStructureFlagBitsEXT  rateControlStructure;
-                uint8_t                                           temporalLayerCount;
+                VkStructureType                           sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT;
+                const( void )*                            pNext;
+                uint32_t                                  gopFrameCount;
+                uint32_t                                  idrPeriod;
+                uint32_t                                  consecutiveBFrameCount;
+                VkVideoEncodeH264RateControlStructureEXT  rateControlStructure;
+                uint8_t                                   temporalLayerCount;
             }
             
             struct VkVideoEncodeH264QpEXT {
@@ -1031,8 +991,26 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_encode_h265 )) {
             enum VK_EXT_video_encode_h265 = 1;
 
-            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 7;
+            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 8;
             enum const( char )* VK_EXT_VIDEO_ENCODE_H265_EXTENSION_NAME = "VK_EXT_video_encode_h265";
+            
+            enum VkVideoEncodeH265RateControlStructureEXT {
+                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT      = 0,
+                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_EXT         = 1,
+                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT       = 2,
+                VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT = VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT,
+                VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_END_RANGE_EXT   = VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT,
+                VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT  = VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT - VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT + 1,
+                VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT    = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT     = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
+            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_EXT        = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_EXT;
+            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT      = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_BEGIN_RANGE_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_END_RANGE_EXT  = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_END_RANGE_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_RANGE_SIZE_EXT;
+            enum VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT   = VkVideoEncodeH265RateControlStructureEXT.VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_MAX_ENUM_EXT;
             
             alias VkVideoEncodeH265CapabilityFlagsEXT = VkFlags;
             enum VkVideoEncodeH265CapabilityFlagBitsEXT : VkVideoEncodeH265CapabilityFlagsEXT {
@@ -1147,19 +1125,6 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_EXT                = VkVideoEncodeH265TransformBlockSizeFlagBitsEXT.VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_EXT;
             enum VK_VIDEO_ENCODE_H2_65_TRANSFORM_BLOCK_SIZE_FLAG_BITS_MAX_ENUM_EXT   = VkVideoEncodeH265TransformBlockSizeFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_TRANSFORM_BLOCK_SIZE_FLAG_BITS_MAX_ENUM_EXT;
             
-            alias VkVideoEncodeH265RateControlStructureFlagsEXT = VkFlags;
-            enum VkVideoEncodeH265RateControlStructureFlagBitsEXT : VkVideoEncodeH265RateControlStructureFlagsEXT {
-                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT              = 0,
-                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT             = 0x00000001,
-                VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT           = 0x00000002,
-                VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT  = 0x7FFFFFFF
-            }
-            
-            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT             = VkVideoEncodeH265RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
-            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT            = VkVideoEncodeH265RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_FLAT_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT          = VkVideoEncodeH265RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H265_RATE_CONTROL_STRUCTURE_DYADIC_BIT_EXT;
-            enum VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT = VkVideoEncodeH265RateControlStructureFlagBitsEXT.VK_VIDEO_ENCODE_H2_65_RATE_CONTROL_STRUCTURE_FLAG_BITS_MAX_ENUM_EXT;
-            
             struct VkVideoEncodeH265CapabilitiesEXT {
                 VkStructureType                              sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT;
                 void*                                        pNext;
@@ -1212,8 +1177,8 @@ mixin template Platform_Extensions( extensions... ) {
                 const( StdVideoEncodeH265ReferenceInfo )*  pStdReferenceInfo;
             }
             
-            struct VkVideoEncodeH265ReferenceListsEXT {
-                VkStructureType                                     sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT;
+            struct VkVideoEncodeH265ReferenceListsInfoEXT {
+                VkStructureType                                     sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT;
                 const( void )*                                      pNext;
                 uint8_t                                             referenceList0EntryCount;
                 const( VkVideoEncodeH265DpbSlotInfoEXT )*           pReferenceList0Entries;
@@ -1222,25 +1187,25 @@ mixin template Platform_Extensions( extensions... ) {
                 const( StdVideoEncodeH265ReferenceModifications )*  pReferenceModifications;
             }
             
-            struct VkVideoEncodeH265NaluSliceSegmentEXT {
-                VkStructureType                                 sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT;
-                const( void )*                                  pNext;
-                uint32_t                                        ctbCount;
-                const( VkVideoEncodeH265ReferenceListsEXT )*    pReferenceFinalLists;
-                const( StdVideoEncodeH265SliceSegmentHeader )*  pSliceSegmentHeaderStd;
+            struct VkVideoEncodeH265NaluSliceSegmentInfoEXT {
+                VkStructureType                                   sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_EXT;
+                const( void )*                                    pNext;
+                uint32_t                                          ctbCount;
+                const( VkVideoEncodeH265ReferenceListsInfoEXT )*  pReferenceFinalLists;
+                const( StdVideoEncodeH265SliceSegmentHeader )*    pSliceSegmentHeaderStd;
             }
             
             struct VkVideoEncodeH265VclFrameInfoEXT {
-                VkStructureType                                 sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
-                const( void )*                                  pNext;
-                const( VkVideoEncodeH265ReferenceListsEXT )*    pReferenceFinalLists;
-                uint32_t                                        naluSliceSegmentEntryCount;
-                const( VkVideoEncodeH265NaluSliceSegmentEXT )*  pNaluSliceSegmentEntries;
-                const( StdVideoEncodeH265PictureInfo )*         pCurrentPictureInfo;
+                VkStructureType                                     sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_VCL_FRAME_INFO_EXT;
+                const( void )*                                      pNext;
+                const( VkVideoEncodeH265ReferenceListsInfoEXT )*    pReferenceFinalLists;
+                uint32_t                                            naluSliceSegmentEntryCount;
+                const( VkVideoEncodeH265NaluSliceSegmentInfoEXT )*  pNaluSliceSegmentEntries;
+                const( StdVideoEncodeH265PictureInfo )*             pCurrentPictureInfo;
             }
             
-            struct VkVideoEncodeH265EmitPictureParametersEXT {
-                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT;
+            struct VkVideoEncodeH265EmitPictureParametersInfoEXT {
+                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_INFO_EXT;
                 const( void )*     pNext;
                 uint8_t            vpsId;
                 uint8_t            spsId;
@@ -1250,20 +1215,20 @@ mixin template Platform_Extensions( extensions... ) {
                 const( uint8_t )*  ppsIdEntries;
             }
             
-            struct VkVideoEncodeH265ProfileEXT {
-                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT;
+            struct VkVideoEncodeH265ProfileInfoEXT {
+                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_EXT;
                 const( void )*          pNext;
                 StdVideoH265ProfileIdc  stdProfileIdc;
             }
             
             struct VkVideoEncodeH265RateControlInfoEXT {
-                VkStructureType                                   sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT;
-                const( void )*                                    pNext;
-                uint32_t                                          gopFrameCount;
-                uint32_t                                          idrPeriod;
-                uint32_t                                          consecutiveBFrameCount;
-                VkVideoEncodeH265RateControlStructureFlagBitsEXT  rateControlStructure;
-                uint8_t                                           subLayerCount;
+                VkStructureType                           sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT;
+                const( void )*                            pNext;
+                uint32_t                                  gopFrameCount;
+                uint32_t                                  idrPeriod;
+                uint32_t                                  consecutiveBFrameCount;
+                VkVideoEncodeH265RateControlStructureEXT  rateControlStructure;
+                uint8_t                                   subLayerCount;
             }
             
             struct VkVideoEncodeH265QpEXT {
@@ -1298,7 +1263,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_decode_h264 )) {
             enum VK_EXT_video_decode_h264 = 1;
 
-            enum VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION = 5;
+            enum VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION = 6;
             enum const( char )* VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME = "VK_EXT_video_decode_h264";
             
             alias VkVideoDecodeH264PictureLayoutFlagsEXT = VkFlags;
@@ -1314,8 +1279,8 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT      = VkVideoDecodeH264PictureLayoutFlagBitsEXT.VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT;
             enum VK_VIDEO_DECODE_H2_64_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT                 = VkVideoDecodeH264PictureLayoutFlagBitsEXT.VK_VIDEO_DECODE_H2_64_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT;
             
-            struct VkVideoDecodeH264ProfileEXT {
-                VkStructureType                         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT;
+            struct VkVideoDecodeH264ProfileInfoEXT {
+                VkStructureType                         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT;
                 const( void )*                          pNext;
                 StdVideoH264ProfileIdc                  stdProfileIdc;
                 VkVideoDecodeH264PictureLayoutFlagsEXT  pictureLayout;
@@ -1353,8 +1318,8 @@ mixin template Platform_Extensions( extensions... ) {
                 const( uint32_t )*                       pSlicesDataOffsets;
             }
             
-            struct VkVideoDecodeH264MvcEXT {
-                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT;
+            struct VkVideoDecodeH264MvcInfoEXT {
+                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_INFO_EXT;
                 const( void )*                   pNext;
                 const( StdVideoDecodeH264Mvc )*  pStdMvc;
             }
@@ -1571,11 +1536,11 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_decode_h265 )) {
             enum VK_EXT_video_decode_h265 = 1;
 
-            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 3;
+            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 4;
             enum const( char )* VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME = "VK_EXT_video_decode_h265";
             
-            struct VkVideoDecodeH265ProfileEXT {
-                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT;
+            struct VkVideoDecodeH265ProfileInfoEXT {
+                VkStructureType         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_EXT;
                 const( void )*          pNext;
                 StdVideoH265ProfileIdc  stdProfileIdc;
             }
@@ -2685,8 +2650,8 @@ mixin template Platform_Extensions( extensions... ) {
             static if( __traits( isSame, extension, KHR_video_queue )) {
                 VkResult  CreateVideoSessionKHR( const( VkVideoSessionCreateInfoKHR )* pCreateInfo, VkVideoSessionKHR* pVideoSession ) { return vkCreateVideoSessionKHR( vkDevice, pCreateInfo, pAllocator, pVideoSession ); }
                 void      DestroyVideoSessionKHR( VkVideoSessionKHR videoSession ) { vkDestroyVideoSessionKHR( vkDevice, videoSession, pAllocator ); }
-                VkResult  GetVideoSessionMemoryRequirementsKHR( VkVideoSessionKHR videoSession, uint32_t* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements ) { return vkGetVideoSessionMemoryRequirementsKHR( vkDevice, videoSession, pVideoSessionMemoryRequirementsCount, pVideoSessionMemoryRequirements ); }
-                VkResult  BindVideoSessionMemoryKHR( VkVideoSessionKHR videoSession, uint32_t videoSessionBindMemoryCount, const( VkVideoBindMemoryKHR )* pVideoSessionBindMemories ) { return vkBindVideoSessionMemoryKHR( vkDevice, videoSession, videoSessionBindMemoryCount, pVideoSessionBindMemories ); }
+                VkResult  GetVideoSessionMemoryRequirementsKHR( VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements ) { return vkGetVideoSessionMemoryRequirementsKHR( vkDevice, videoSession, pMemoryRequirementsCount, pMemoryRequirements ); }
+                VkResult  BindVideoSessionMemoryKHR( VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const( VkBindVideoSessionMemoryInfoKHR )* pBindSessionMemoryInfos ) { return vkBindVideoSessionMemoryKHR( vkDevice, videoSession, bindSessionMemoryInfoCount, pBindSessionMemoryInfos ); }
                 VkResult  CreateVideoSessionParametersKHR( const( VkVideoSessionParametersCreateInfoKHR )* pCreateInfo, VkVideoSessionParametersKHR* pVideoSessionParameters ) { return vkCreateVideoSessionParametersKHR( vkDevice, pCreateInfo, pAllocator, pVideoSessionParameters ); }
                 VkResult  UpdateVideoSessionParametersKHR( VkVideoSessionParametersKHR videoSessionParameters, const( VkVideoSessionParametersUpdateInfoKHR )* pUpdateInfo ) { return vkUpdateVideoSessionParametersKHR( vkDevice, videoSessionParameters, pUpdateInfo ); }
                 void      DestroyVideoSessionParametersKHR( VkVideoSessionParametersKHR videoSessionParameters ) { vkDestroyVideoSessionParametersKHR( vkDevice, videoSessionParameters, pAllocator ); }
