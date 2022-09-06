@@ -525,6 +525,11 @@ struct DispatchDevice {
         vkCmdTraceRaysIndirectKHR                         = cast( PFN_vkCmdTraceRaysIndirectKHR                         ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysIndirectKHR" );
         vkGetRayTracingShaderGroupStackSizeKHR            = cast( PFN_vkGetRayTracingShaderGroupStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupStackSizeKHR" );
         vkCmdSetRayTracingPipelineStackSizeKHR            = cast( PFN_vkCmdSetRayTracingPipelineStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkCmdSetRayTracingPipelineStackSizeKHR" );
+
+        // VK_EXT_mesh_shader
+        vkCmdDrawMeshTasksEXT                             = cast( PFN_vkCmdDrawMeshTasksEXT                             ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksEXT" );
+        vkCmdDrawMeshTasksIndirectEXT                     = cast( PFN_vkCmdDrawMeshTasksIndirectEXT                     ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectEXT" );
+        vkCmdDrawMeshTasksIndirectCountEXT                = cast( PFN_vkCmdDrawMeshTasksIndirectCountEXT                ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountEXT" );
     }
 
 
@@ -999,6 +1004,11 @@ struct DispatchDevice {
     void      CmdTraceRaysIndirectKHR( const( VkStridedDeviceAddressRegionKHR )* pRaygenShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pMissShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pHitShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress ) { vkCmdTraceRaysIndirectKHR( commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress ); }
     VkDeviceSize  GetRayTracingShaderGroupStackSizeKHR( VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader ) { return vkGetRayTracingShaderGroupStackSizeKHR( vkDevice, pipeline, group, groupShader ); }
     void      CmdSetRayTracingPipelineStackSizeKHR( uint32_t pipelineStackSize ) { vkCmdSetRayTracingPipelineStackSizeKHR( commandBuffer, pipelineStackSize ); }
+
+    // VK_EXT_mesh_shader
+    void      CmdDrawMeshTasksEXT( uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ ) { vkCmdDrawMeshTasksEXT( commandBuffer, groupCountX, groupCountY, groupCountZ ); }
+    void      CmdDrawMeshTasksIndirectEXT( VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride ) { vkCmdDrawMeshTasksIndirectEXT( commandBuffer, buffer, offset, drawCount, stride ); }
+    void      CmdDrawMeshTasksIndirectCountEXT( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawMeshTasksIndirectCountEXT( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
 
     // VK_KHR_dynamic_rendering
     alias CmdBeginRenderingKHR                                  = CmdBeginRendering;
@@ -1580,6 +1590,11 @@ struct DispatchDevice {
     PFN_vkCmdTraceRaysIndirectKHR                         vkCmdTraceRaysIndirectKHR;
     PFN_vkGetRayTracingShaderGroupStackSizeKHR            vkGetRayTracingShaderGroupStackSizeKHR;
     PFN_vkCmdSetRayTracingPipelineStackSizeKHR            vkCmdSetRayTracingPipelineStackSizeKHR;
+
+    // VK_EXT_mesh_shader
+    PFN_vkCmdDrawMeshTasksEXT                             vkCmdDrawMeshTasksEXT;
+    PFN_vkCmdDrawMeshTasksIndirectEXT                     vkCmdDrawMeshTasksIndirectEXT;
+    PFN_vkCmdDrawMeshTasksIndirectCountEXT                vkCmdDrawMeshTasksIndirectCountEXT;
 
     // VK_KHR_dynamic_rendering
     alias vkCmdBeginRenderingKHR                                  = vkCmdBeginRendering;

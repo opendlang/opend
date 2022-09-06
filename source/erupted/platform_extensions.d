@@ -465,7 +465,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_decode_queue )) {
             enum VK_KHR_video_decode_queue = 1;
 
-            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 5;
+            enum VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION = 6;
             enum const( char )* VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_decode_queue";
             
             alias VkVideoDecodeCapabilityFlagsKHR = VkFlags;
@@ -478,12 +478,33 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR;
             enum VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR  = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR;
             enum VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR           = VkVideoDecodeCapabilityFlagBitsKHR.VK_VIDEO_DECODE_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR;
+            
+            alias VkVideoDecodeUsageFlagsKHR = VkFlags;
+            enum VkVideoDecodeUsageFlagBitsKHR : VkVideoDecodeUsageFlagsKHR {
+                VK_VIDEO_DECODE_USAGE_DEFAULT_KHR            = 0,
+                VK_VIDEO_DECODE_USAGE_TRANSCODING_BIT_KHR    = 0x00000001,
+                VK_VIDEO_DECODE_USAGE_OFFLINE_BIT_KHR        = 0x00000002,
+                VK_VIDEO_DECODE_USAGE_STREAMING_BIT_KHR      = 0x00000004,
+                VK_VIDEO_DECODE_USAGE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_DECODE_USAGE_DEFAULT_KHR           = VkVideoDecodeUsageFlagBitsKHR.VK_VIDEO_DECODE_USAGE_DEFAULT_KHR;
+            enum VK_VIDEO_DECODE_USAGE_TRANSCODING_BIT_KHR   = VkVideoDecodeUsageFlagBitsKHR.VK_VIDEO_DECODE_USAGE_TRANSCODING_BIT_KHR;
+            enum VK_VIDEO_DECODE_USAGE_OFFLINE_BIT_KHR       = VkVideoDecodeUsageFlagBitsKHR.VK_VIDEO_DECODE_USAGE_OFFLINE_BIT_KHR;
+            enum VK_VIDEO_DECODE_USAGE_STREAMING_BIT_KHR     = VkVideoDecodeUsageFlagBitsKHR.VK_VIDEO_DECODE_USAGE_STREAMING_BIT_KHR;
+            enum VK_VIDEO_DECODE_USAGE_FLAG_BITS_MAX_ENUM_KHR = VkVideoDecodeUsageFlagBitsKHR.VK_VIDEO_DECODE_USAGE_FLAG_BITS_MAX_ENUM_KHR;
             alias VkVideoDecodeFlagsKHR = VkFlags;
             
             struct VkVideoDecodeCapabilitiesKHR {
                 VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
                 void*                            pNext;
                 VkVideoDecodeCapabilityFlagsKHR  flags;
+            }
+            
+            struct VkVideoDecodeUsageInfoKHR {
+                VkStructureType             sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR;
+                const( void )*              pNext;
+                VkVideoDecodeUsageFlagsKHR  videoUsageHints;
             }
             
             struct VkVideoDecodeInfoKHR {
@@ -683,8 +704,30 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, KHR_video_encode_queue )) {
             enum VK_KHR_video_encode_queue = 1;
 
-            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 6;
+            enum VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION = 7;
             enum const( char )* VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME = "VK_KHR_video_encode_queue";
+            
+            enum VkVideoEncodeTuningModeKHR {
+                VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR              = 0,
+                VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR         = 1,
+                VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR          = 2,
+                VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR    = 3,
+                VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR             = 4,
+                VK_VIDEO_ENCODE_TUNING_MODE_BEGIN_RANGE_KHR          = VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR,
+                VK_VIDEO_ENCODE_TUNING_MODE_END_RANGE_KHR            = VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR,
+                VK_VIDEO_ENCODE_TUNING_MODE_RANGE_SIZE_KHR           = VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR - VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR + 1,
+                VK_VIDEO_ENCODE_TUNING_MODE_MAX_ENUM_KHR             = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR             = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR        = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR         = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR   = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR            = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_BEGIN_RANGE_KHR         = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_BEGIN_RANGE_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_END_RANGE_KHR           = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_END_RANGE_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_RANGE_SIZE_KHR          = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_RANGE_SIZE_KHR;
+            enum VK_VIDEO_ENCODE_TUNING_MODE_MAX_ENUM_KHR            = VkVideoEncodeTuningModeKHR.VK_VIDEO_ENCODE_TUNING_MODE_MAX_ENUM_KHR;
             
             alias VkVideoEncodeFlagsKHR = VkFlags;
             
@@ -709,6 +752,38 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR               = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR;
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR               = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR;
             enum VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR    = VkVideoEncodeRateControlModeFlagBitsKHR.VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR;
+            
+            alias VkVideoEncodeUsageFlagsKHR = VkFlags;
+            enum VkVideoEncodeUsageFlagBitsKHR : VkVideoEncodeUsageFlagsKHR {
+                VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR            = 0,
+                VK_VIDEO_ENCODE_USAGE_TRANSCODING_BIT_KHR    = 0x00000001,
+                VK_VIDEO_ENCODE_USAGE_STREAMING_BIT_KHR      = 0x00000002,
+                VK_VIDEO_ENCODE_USAGE_RECORDING_BIT_KHR      = 0x00000004,
+                VK_VIDEO_ENCODE_USAGE_CONFERENCING_BIT_KHR   = 0x00000008,
+                VK_VIDEO_ENCODE_USAGE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR           = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR;
+            enum VK_VIDEO_ENCODE_USAGE_TRANSCODING_BIT_KHR   = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_TRANSCODING_BIT_KHR;
+            enum VK_VIDEO_ENCODE_USAGE_STREAMING_BIT_KHR     = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_STREAMING_BIT_KHR;
+            enum VK_VIDEO_ENCODE_USAGE_RECORDING_BIT_KHR     = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_RECORDING_BIT_KHR;
+            enum VK_VIDEO_ENCODE_USAGE_CONFERENCING_BIT_KHR  = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_CONFERENCING_BIT_KHR;
+            enum VK_VIDEO_ENCODE_USAGE_FLAG_BITS_MAX_ENUM_KHR = VkVideoEncodeUsageFlagBitsKHR.VK_VIDEO_ENCODE_USAGE_FLAG_BITS_MAX_ENUM_KHR;
+            
+            alias VkVideoEncodeContentFlagsKHR = VkFlags;
+            enum VkVideoEncodeContentFlagBitsKHR : VkVideoEncodeContentFlagsKHR {
+                VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR                  = 0,
+                VK_VIDEO_ENCODE_CONTENT_CAMERA_BIT_KHR               = 0x00000001,
+                VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR              = 0x00000002,
+                VK_VIDEO_ENCODE_CONTENT_RENDERED_BIT_KHR             = 0x00000004,
+                VK_VIDEO_ENCODE_CONTENT_FLAG_BITS_MAX_ENUM_KHR       = 0x7FFFFFFF
+            }
+            
+            enum VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR                 = VkVideoEncodeContentFlagBitsKHR.VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR;
+            enum VK_VIDEO_ENCODE_CONTENT_CAMERA_BIT_KHR              = VkVideoEncodeContentFlagBitsKHR.VK_VIDEO_ENCODE_CONTENT_CAMERA_BIT_KHR;
+            enum VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR             = VkVideoEncodeContentFlagBitsKHR.VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR;
+            enum VK_VIDEO_ENCODE_CONTENT_RENDERED_BIT_KHR            = VkVideoEncodeContentFlagBitsKHR.VK_VIDEO_ENCODE_CONTENT_RENDERED_BIT_KHR;
+            enum VK_VIDEO_ENCODE_CONTENT_FLAG_BITS_MAX_ENUM_KHR      = VkVideoEncodeContentFlagBitsKHR.VK_VIDEO_ENCODE_CONTENT_FLAG_BITS_MAX_ENUM_KHR;
             alias VkVideoEncodeRateControlFlagsKHR = VkFlags;
             
             struct VkVideoEncodeInfoKHR {
@@ -734,6 +809,14 @@ mixin template Platform_Extensions( extensions... ) {
                 uint8_t                               rateControlLayerCount;
                 uint8_t                               qualityLevelCount;
                 VkExtent2D                            inputImageDataFillAlignment;
+            }
+            
+            struct VkVideoEncodeUsageInfoKHR {
+                VkStructureType               sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR;
+                const( void )*                pNext;
+                VkVideoEncodeUsageFlagsKHR    videoUsageHints;
+                VkVideoEncodeContentFlagsKHR  videoContentHints;
+                VkVideoEncodeTuningModeKHR    tuningMode;
             }
             
             struct VkVideoEncodeRateControlLayerInfoKHR {

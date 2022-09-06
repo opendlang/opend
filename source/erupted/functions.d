@@ -573,6 +573,11 @@ extern( System ) {
     alias PFN_vkCmdTraceRaysIndirectKHR                                         = void      function( VkCommandBuffer commandBuffer, const( VkStridedDeviceAddressRegionKHR )* pRaygenShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pMissShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pHitShaderBindingTable, const( VkStridedDeviceAddressRegionKHR )* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress );
     alias PFN_vkGetRayTracingShaderGroupStackSizeKHR                            = VkDeviceSize  function( VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader );
     alias PFN_vkCmdSetRayTracingPipelineStackSizeKHR                            = void      function( VkCommandBuffer commandBuffer, uint32_t pipelineStackSize );
+
+    // VK_EXT_mesh_shader
+    alias PFN_vkCmdDrawMeshTasksEXT                                             = void      function( VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ );
+    alias PFN_vkCmdDrawMeshTasksIndirectEXT                                     = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride );
+    alias PFN_vkCmdDrawMeshTasksIndirectCountEXT                                = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 }
 
 
@@ -1137,6 +1142,11 @@ __gshared {
     PFN_vkCmdTraceRaysIndirectKHR                                         vkCmdTraceRaysIndirectKHR;
     PFN_vkGetRayTracingShaderGroupStackSizeKHR                            vkGetRayTracingShaderGroupStackSizeKHR;
     PFN_vkCmdSetRayTracingPipelineStackSizeKHR                            vkCmdSetRayTracingPipelineStackSizeKHR;
+
+    // VK_EXT_mesh_shader
+    PFN_vkCmdDrawMeshTasksEXT                                             vkCmdDrawMeshTasksEXT;
+    PFN_vkCmdDrawMeshTasksIndirectEXT                                     vkCmdDrawMeshTasksIndirectEXT;
+    PFN_vkCmdDrawMeshTasksIndirectCountEXT                                vkCmdDrawMeshTasksIndirectCountEXT;
 
     // VK_KHR_dynamic_rendering
     alias vkCmdBeginRenderingKHR                                                  = vkCmdBeginRendering;
@@ -1874,6 +1884,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdTraceRaysIndirectKHR                         = cast( PFN_vkCmdTraceRaysIndirectKHR                         ) vkGetInstanceProcAddr( instance, "vkCmdTraceRaysIndirectKHR" );
     vkGetRayTracingShaderGroupStackSizeKHR            = cast( PFN_vkGetRayTracingShaderGroupStackSizeKHR            ) vkGetInstanceProcAddr( instance, "vkGetRayTracingShaderGroupStackSizeKHR" );
     vkCmdSetRayTracingPipelineStackSizeKHR            = cast( PFN_vkCmdSetRayTracingPipelineStackSizeKHR            ) vkGetInstanceProcAddr( instance, "vkCmdSetRayTracingPipelineStackSizeKHR" );
+
+    // VK_EXT_mesh_shader
+    vkCmdDrawMeshTasksEXT                             = cast( PFN_vkCmdDrawMeshTasksEXT                             ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksEXT" );
+    vkCmdDrawMeshTasksIndirectEXT                     = cast( PFN_vkCmdDrawMeshTasksIndirectEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectEXT" );
+    vkCmdDrawMeshTasksIndirectCountEXT                = cast( PFN_vkCmdDrawMeshTasksIndirectCountEXT                ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectCountEXT" );
 }
 
 
@@ -2350,5 +2365,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdTraceRaysIndirectKHR                         = cast( PFN_vkCmdTraceRaysIndirectKHR                         ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysIndirectKHR" );
     vkGetRayTracingShaderGroupStackSizeKHR            = cast( PFN_vkGetRayTracingShaderGroupStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupStackSizeKHR" );
     vkCmdSetRayTracingPipelineStackSizeKHR            = cast( PFN_vkCmdSetRayTracingPipelineStackSizeKHR            ) vkGetDeviceProcAddr( device, "vkCmdSetRayTracingPipelineStackSizeKHR" );
+
+    // VK_EXT_mesh_shader
+    vkCmdDrawMeshTasksEXT                             = cast( PFN_vkCmdDrawMeshTasksEXT                             ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksEXT" );
+    vkCmdDrawMeshTasksIndirectEXT                     = cast( PFN_vkCmdDrawMeshTasksIndirectEXT                     ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectEXT" );
+    vkCmdDrawMeshTasksIndirectCountEXT                = cast( PFN_vkCmdDrawMeshTasksIndirectCountEXT                ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountEXT" );
 }
 
