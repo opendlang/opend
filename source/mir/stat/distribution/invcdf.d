@@ -22,6 +22,8 @@ public import mir.stat.distribution.binomial: binomialInvCDF;
 ///
 public import mir.stat.distribution.chi2: chi2InvCDF;
 ///
+public import mir.stat.distribution.cornish_fisher: cornishFisherInvCDF;
+///
 public import mir.stat.distribution.exponential: exponentialInvCDF;
 ///
 public import mir.stat.distribution.gamma: gammaInvCDF;
