@@ -250,27 +250,6 @@ static if (CoreSimdIsEmulated)
         }
 
     }
-
-    // they just weren't interesting enough, use v.array[i] instead.
-    deprecated auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
-    {
-        static assert(Vec.sizeof == Vec2.sizeof);
-        import core.stdc.string: memcpy;
-        Vec v = void;
-        memcpy(&v, &vec, Vec2.sizeof);
-        return v.array[index];
-    }
-
-    // they just weren't interesting enough, use v.ptr[i] = x instead.
-    deprecated auto insertelement(Vec, int index, Vec2)(Vec2 vec, Vec.Base e) @trusted
-    {
-        static assert(Vec.sizeof == Vec2.sizeof);
-        import core.stdc.string: memcpy;
-        Vec v = void;
-        memcpy(&v, &vec, Vec2.sizeof);
-        v.array[index] = e;
-        return v;
-    }
 }
 else
 {
