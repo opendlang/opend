@@ -3104,7 +3104,7 @@ private
         static if (PreserveDataIfResized)
         {
             size_t minSize = size < previousSize ? size : previousSize;
-            memcpy(newAligned, aligned, minSize);
+            memcpy(newAligned, aligned, minSize); // ok to use memcpy: newAligned is into new memory, always different from aligned
         }
 
         // Free previous data
