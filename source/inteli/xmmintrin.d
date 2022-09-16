@@ -2608,12 +2608,20 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
 {
     static if (DMD_with_DSIMD)
     {
-        return cast(__m128) __simd(XMM.SHUFPS, a, b, imm8);
+        return cast(__m128) __simd(XMM.SHUFPS, a, b, imm);
     }
     else
     {
         return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
     }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(0, 1, 2, 3);
+    __m128 B = _mm_setr_ps(4, 5, 6, 7);
+    __m128 C = _mm_shuffle_ps!0x9c(A, B);
+    float[4] correct = [0.0f, 3, 5, 6];
+    assert(C.array == correct);
 }
 
 /// Compute the square root of packed single-precision (32-bit) floating-point elements in `a`.
