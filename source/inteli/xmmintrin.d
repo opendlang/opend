@@ -2603,7 +2603,7 @@ unittest
     assert(B.array == expectedB);
 }
 
-/// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
+/// Warning: the immediate shuffle value `imm` is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
 {
     static if (DMD_with_DSIMD)
