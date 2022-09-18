@@ -28,22 +28,27 @@ alias __m128d = double2;
 
 version(LDC)
 {
-    enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1");
+    enum LDC_with_AVX = __traits(targetHasFeature, "avx");
     enum LDC_with_ARM64 = __traits(targetHasFeature, "neon");
 }
 else
 {
-    enum LDC_with_SSE41 = false;
+    enum LDC_with_AVX = false;
     enum LDC_with_ARM64 = false;
 }
 
 version(GNU)
 {
-    enum GDC_with_SSE41 = true;
+    static if (__VERSION__ >= 2100) // Starting at GDC 12.1
+    {
+        enum GDC_with_AVX = __traits(compiles, __builtin_ia32_vbroadcastf128_pd256);
+    }
+    else
+        enum GDC_with_AVX = false;
 }
 else
 {
-    enum GDC_with_SSE41 = false;
+    enum GDC_with_AVX = false;
 }
 
 version(LDC)
