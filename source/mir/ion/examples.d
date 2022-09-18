@@ -1055,6 +1055,17 @@ version(mir_ion_test) unittest
             serializer.putStringPart(" Another chunk.");
             serializer.stringEnd(state);
         }
+@safe const scope pure nothrow @nogc:
+
+        bool opEquals(scope const typeof(this) rhs)
+        {
+            return s == rhs.s;
+        }
+        
+        override size_t toHash()
+        {
+            return hashOf(s);
+        }
     }
 
     import mir.algebraic: Nullable, This;

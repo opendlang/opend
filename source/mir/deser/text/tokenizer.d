@@ -1085,7 +1085,8 @@ void testRead(T)(ref T t, char expected, string file = __FILE__, int line = __LI
     if (v != expected) {
         import mir.format : stringBuf, print;
         auto buf = stringBuf;
-        throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
+        buf.print("Expected ", expected, " but got ", v);
+        throw new MirError(buf.data, file, line);
     }
 }
 
@@ -1098,6 +1099,7 @@ void testPeek(T)(ref T t, char expected, string file = __FILE__, int line = __LI
     if (v != expected) {
         import mir.format : stringBuf, print;
         auto buf = stringBuf;
-        throw new MirError(buf.print("Expected ", expected, " but got ", v).data, file, line);
+        buf.print("Expected ", expected, " but got ", v);
+        throw new MirError(buf.data, file, line);
     }
 }
