@@ -273,7 +273,45 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask)
+/// Blend packed double-precision (64-bit) floating-point elements from `a` and `b` using mask.
+__m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask) @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        // Amazingly enough, GCC/GDC generates the vblendvpd instruction
+        // with -mavx2 but not -mavx.
+        // Not sure what is the reason, and there is a replacement sequence.
+        // PERF: Sounds like a bug, similar to _mm_blendv_pd
+        return __builtin_ia32_blendvpd256(a, b, mask);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_blendvpd256(a, b, mask);
+    }
+    else
+    {
+        // LDC x86: vblendvpd since LDC 1.27 -O2
+        //     arm64: only 4 instructions, since LDC 1.27 -O2
+        __m256d r;
+        long4 lmask = cast(long4)mask;
+        for (int n = 0; n < 4; ++n)
+        {
+            r.ptr[n] = (lmask.array[n] < 0) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2.0, 3.0, 4.0);
+    __m256d B = _mm256_setr_pd(5.0, 6.0, 7.0, 8.0);
+    __m256d M = _mm256_setr_pd(-3.0, 2.0, 1.0, -4.0);
+    __m256d R = _mm256_blendv_pd(A, B, M);
+    double[4] correct1 = [5.0, 2.0, 3.0, 8.0];
+    assert(R.array == correct1); // Note: probably the same NaN-mask oddity exist on arm64+linux than with _mm_blendv_pd
+}
+
 // TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
 
 /// Broadcast 128 bits from memory (composed of 2 packed double-precision (64-bit)
