@@ -1214,7 +1214,7 @@ version(unittest) private
             }
         }
 
-        string toString() const
+        string toString() scope const
         {
             if (e == E.none)
                 return "NONE";
