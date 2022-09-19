@@ -318,7 +318,7 @@ template deserializeValue(string[] symbolTable)
         {
             if (data.descriptor.type == IonTypeCode.struct_)
             {
-                foreach (IonErrorCode error, size_t symbolId, IonDescribedValue ionElem; data.trustedGet!IonStruct)
+                foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue ionElem; data.trustedGet!IonStruct)
                 {
                     if (_expect(error, false))
                         return error.ionException;
@@ -603,7 +603,7 @@ template deserializeValue(string[] symbolTable)
             }
             auto ionValue = data.trustedGet!IonStruct;
 
-            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+            foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
             {
                 if (error)
                     return error.ionException;
@@ -628,7 +628,7 @@ template deserializeValue(string[] symbolTable)
             }
             auto ionValue = data.trustedGet!IonStruct;
 
-            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+            foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
             {
                 if (error)
                     return error.ionException;
@@ -738,7 +738,7 @@ template deserializeValue(string[] symbolTable)
                 import mir.conv;
                 if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
                     return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
-                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; data.trustedGet!IonStruct)
+                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
                 {
                     if (error)
                         return error.ionException;
@@ -849,10 +849,12 @@ template deserializeValue(string[] symbolTable)
                     auto annotatedParams = params.withAnnotations(IonAnnotations.init);
                     if (data.descriptor.type == IonTypeCode.annotations)
                     {
-                        if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotatedParams.annotations, data))
-                        {
+                        IonErrorCode error;
+                        auto wrapper = data.get!IonAnnotationWrapper(error);
+                        if (error)
                             return error.ionException;
-                        }
+                        annotatedParams.annotations = wrapper.annotations;
+                        data = wrapper.value;
                     }
                     
                 }
@@ -913,7 +915,7 @@ template deserializeValue(string[] symbolTable)
                     auto dataStruct = data.trustedGet!IonStruct;
                     if (dataStruct.walkLength == 1)
                     {
-                        foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; dataStruct)
+                        foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; dataStruct)
                         {
                             if (error)
                                 return error.ionException;
@@ -1138,7 +1140,7 @@ template deserializeValue(string[] symbolTable)
                                 static assert (df == discriminatedField, "Discriminated field doesn't match: " ~ discriminatedField ~ " and " ~ df);
                             }}
 
-                            foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; data.trustedGet!IonStruct)
+                            foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
                             {
                                 if (error)
                                     return error.ionException;
@@ -1231,12 +1233,13 @@ template deserializeValue(string[] symbolTable)
                     {
                         return unqualException(cantDesrializeUnexpectedDescriptorType!T);
                     }
-                    
-                    IonAnnotations annotations;
-                    if (auto error = data.trustedGet!IonAnnotationWrapper.unwrap(annotations, data))
-                    {
-                        return error.ionException;
-                    }
+
+                    IonErrorCode _wrapperError;
+                    auto wrapper = data.get!IonAnnotationWrapper(_wrapperError);
+                    if (_wrapperError)
+                        return _wrapperError.ionException;
+                    auto annotations = wrapper.annotations;
+                    data = wrapper.value;
                 }
 
                 static foreach (member; serdeGetAnnotationMembersIn!T)
@@ -1386,7 +1389,7 @@ template deserializeValue(string[] symbolTable)
                             enum keys = serdeGetKeysIn!(__traits(getMember, value, member));
                             static if (keys.length)
                             {
-                                foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+                                foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
                                 {
                                     if (error)
                                         return error.ionException;
@@ -1452,7 +1455,7 @@ template deserializeValue(string[] symbolTable)
                     }
                     else
                     {
-                        foreach (IonErrorCode error, size_t symbolId, IonDescribedValue elem; ionValue)
+                        foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
                         {
                             if (error)
                                 return error.ionException;
@@ -1714,7 +1717,7 @@ version(mir_ion_test) unittest
     static struct Q
     {
         int i;
-        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value) scope @safe pure @nogc
+        IonException deserializeFromIon(scope const char[][] symbolTable, scope IonDescribedValue value) scope @safe pure @nogc
         {
             i = deserializeIon!int(symbolTable, value);
             return null;

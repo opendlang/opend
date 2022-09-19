@@ -467,7 +467,7 @@ version(mir_ion_test) unittest
         Returns: error msg if any
         +/
         @trusted pure scope
-        IonException deserializeFromIon(scope const char[][] symbolTable, IonDescribedValue value)
+        IonException deserializeFromIon(scope const char[][] symbolTable, scope IonDescribedValue value)
         {
             import mir.deser.ion: deserializeIon;
             import mir.ion.exception;

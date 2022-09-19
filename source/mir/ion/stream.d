@@ -118,10 +118,9 @@ const:
             // check if describedValue is symbol table
             if (describedValue.descriptor.type == IonTypeCode.annotations)
             {
-                auto annotationWrapper = describedValue.trustedGet!IonAnnotationWrapper;
-                IonAnnotations annotations;
-                IonDescribedValue symbolTableValue;
-                error = annotationWrapper.unwrap(annotations, symbolTableValue);
+                auto annotationWrapper = describedValue.get!IonAnnotationWrapper(error);
+                IonAnnotations annotations = annotationWrapper.annotations;
+                IonDescribedValue symbolTableValue = annotationWrapper.value;
                 if (!error && !annotations.empty)
                 {
                     // check first annotation is $ion_symbol_table
@@ -154,7 +153,7 @@ const:
                         bool preserveCurrentSymbols;
                         IonList symbols;
 
-                        foreach (IonErrorCode symbolTableError, size_t symbolTableKeyId, IonDescribedValue elementValue; symbolTableStruct)
+                        foreach (IonErrorCode symbolTableError, size_t symbolTableKeyId, scope IonDescribedValue elementValue; symbolTableStruct)
                         {
                             error = symbolTableError;
                             if (error)
@@ -213,7 +212,7 @@ const:
                             resetSymbolTable();
                         }
 
-                        foreach (IonErrorCode symbolsError, IonDescribedValue symbolValue; symbols)
+                        foreach (IonErrorCode symbolsError, scope IonDescribedValue symbolValue; symbols)
                         {
                             error = symbolsError;
                             if (error)

@@ -181,6 +181,7 @@ struct IonValue
         value = (out) $(LREF IonDescribedValue)
     Returns: $(SUBREF exception, IonErrorCode)
     +/
+    deprecated("")
     IonErrorCode describe()(scope ref IonDescribedValue value)
         @safe pure nothrow @nogc const
     {
@@ -190,6 +191,21 @@ struct IonValue
         if (_expect(d.length, false))
             return IonErrorCode.illegalBinaryData;
         return IonErrorCode.none;
+    }
+
+    IonDescribedValue describe()(scope out IonErrorCode error) return scope
+        @safe pure nothrow @nogc const
+    {
+        auto d = data[];
+        error = parseValue(d, value);
+        if (error)
+            return IonDescribedValue.init;
+        if (_expect(d.length, false))
+        {
+            error = IonErrorCode.illegalBinaryData;
+            return IonDescribedValue.init;
+        }
+        return IonDescribedValue(d);
     }
 
     version (D_Exceptions)
@@ -359,6 +375,7 @@ struct IonDescribedValue
         @safe pure nothrow @nogc const
         if (isIonType!T || is(T == IonInt))
     {
+
         static if (is(T == IonNull))
         {
             if (_expect(descriptor.L != 0xF, false))
@@ -366,6 +383,7 @@ struct IonDescribedValue
                 error = IonErrorCode.unexpectedIonType;
                 return T.init;
             }
+            return trustedGet!T;
         }
         else
         static if (is(T == IonInt))
@@ -375,6 +393,7 @@ struct IonDescribedValue
                 error = IonErrorCode.unexpectedIonType;
                 return T.init;
             }
+            return trustedGet!T;
         }
         else
         {
@@ -383,8 +402,35 @@ struct IonDescribedValue
                 error = IonErrorCode.unexpectedIonType;
                 return T.init;
             }
+
+            static if (is(T == IonAnnotationWrapper))
+            {
+                size_t length;
+                const(ubyte)[] d = data;
+                error = parseVarUInt(d, length);
+                if (error)
+                    return T.init;
+                if (_expect(length == 0, false))
+                {
+                    error = IonErrorCode.zeroAnnotations;
+                    return T.init;
+                }
+                if (_expect(length >= d.length, false))
+                {
+                    error = IonErrorCode.unexpectedEndOfData;
+                    return T.init;
+                }
+                IonDescribedValue idv;
+                error = IonValue(d[length .. $]).describe(idv);
+                if (error)
+                    return T.init;
+                return T(IonAnnotations(d[0 .. length]), idv);
+            }
+            else
+            {
+                return trustedGet!T;
+            }
         }
-        return trustedGet!T;
     }
 
     /++
@@ -395,23 +441,34 @@ struct IonDescribedValue
         @safe pure @nogc const
         if (isIonType!T || is(T == IonInt))
     {
+        static if (is(T == IonAnnotationWrapper))
+        {
+            IonErrorCode error;
+            auto ret = get!IonAnnotationWrapper(error);
+            if (error)
+                throw error.ionException;
+            return ret;
+        }
+        else
         static if (is(T == IonNull))
         {
             if (_expect(descriptor.L != 0xF, false))
                 throw IonErrorCode.unexpectedIonType.ionException;
+            return trustedGet!T;
         }
         else
         static if (is(T == IonInt))
         {
             if (_expect(descriptor.type == IonTypeCode.null_ || (descriptor.type | 1) != IonTypeCodeOf!IonNInt, false))
                 throw IonErrorCode.unexpectedIonType.ionException;
+            return trustedGet!T;
         }
         else
         {
             if (_expect(descriptor.type == IonTypeCode.null_ || descriptor.type != IonTypeCodeOf!T, false))
                 throw IonErrorCode.unexpectedIonType.ionException;
+            return trustedGet!T;
         }
-        return trustedGet!T;
     }
 
     /++
@@ -423,7 +480,7 @@ struct IonDescribedValue
     +/
     T trustedGet(T)() return scope
         @safe pure nothrow @nogc const
-        if (isIonType!T || is(T == IonInt))
+        if ((isIonType!T || is(T == IonInt)) && !is(T == IonAnnotationWrapper))
     {
         static if (is(T == IonInt))
         {
@@ -579,7 +636,7 @@ struct IonDescribedValue
                         trustedGet!IonStruct.serialize(serializer);
                         break;
                     case IonTypeCode.annotations:
-                        trustedGet!IonAnnotationWrapper.serialize(serializer);
+                        get!IonAnnotationWrapper.serialize(serializer);
                         break;
                 }
             }
@@ -2352,8 +2409,8 @@ struct IonStruct
     ///
     const(ubyte)[] data;
 
-    private alias DG = int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = int delegate(size_t symbolID, IonDescribedValue value) @safe pure @nogc;
+    private alias DG = int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(size_t symbolID, scope IonDescribedValue value) @safe pure @nogc;
 
     ///
     bool sorted()
@@ -2379,9 +2436,9 @@ const:
         /++
         +/
         @safe pure @nogc
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value) @safe pure @nogc dg)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value) @safe pure @nogc dg)
         {
-            return opApply((IonErrorCode error, size_t symbolID, IonDescribedValue value) {
+            return opApply((IonErrorCode error, size_t symbolID, scope IonDescribedValue value) {
                 if (_expect(error, false))
                     throw error.ionException;
                 return dg(symbolID, value);
@@ -2390,43 +2447,43 @@ const:
 
         /// ditto
         @trusted @nogc
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @safe @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted pure
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @safe pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @safe dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure @nogc
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @system pure @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system @nogc
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @system @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @system pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system
-        scope int opApply(scope int delegate(size_t symbolID, IonDescribedValue value)
+        scope int opApply(scope int delegate(size_t symbolID, scope IonDescribedValue value)
         @system dg) { return opApply(cast(EDG) dg); }
     }
 
     /++
     +/
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value) @safe pure nothrow @nogc dg)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value) @safe pure nothrow @nogc dg)
         @safe pure nothrow @nogc
     {
         auto d = data[];
@@ -2450,77 +2507,77 @@ const:
 
     /// ditto
     @trusted nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @safe dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system pure nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system
-    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, size_t symbolID, scope IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
@@ -2531,7 +2588,7 @@ const:
     scope int opApply(Dg)(scope Dg dg)
         if (ParameterTypeTuple!Dg.length == 2)
     {
-        foreach (IonErrorCode error, size_t symbolID, IonDescribedValue value; this)
+        foreach (IonErrorCode error, size_t symbolID, scope IonDescribedValue value; this)
         {
             if (_expect(error, false))
                 throw error.ionException;
@@ -2579,7 +2636,7 @@ const:
     {
         import mir.ser: beginStruct;
         auto state = serializer.beginStruct(this);
-        foreach (size_t symbolID, IonDescribedValue value; this)
+        foreach (size_t symbolID, scope IonDescribedValue value; this)
         {
             serializer.putKeyId(symbolID);
             value.serializeImpl(serializer);
@@ -2599,7 +2656,7 @@ const:
     ///
     size_t walkLength() const @property @safe pure @nogc {
         size_t length;
-        foreach (size_t symbolID, IonDescribedValue value; this)
+        foreach (size_t symbolID, scope IonDescribedValue value; this)
             length++;
         return length;
     }
@@ -2652,8 +2709,8 @@ struct IonStructWithSymbols
     ///
     const(char[])[] symbolTable;
 
-    private alias DG = int delegate(IonErrorCode error, scope const(char)[], IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = int delegate(scope const(char)[], IonDescribedValue value) @safe pure @nogc;
+    private alias DG = int delegate(IonErrorCode error, scope const(char)[], scope IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(scope const(char)[], scope IonDescribedValue value) @safe pure @nogc;
 
     ///
     bool sorted()
@@ -2679,9 +2736,9 @@ const:
         /++
         +/
         @safe pure @nogc
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value) @safe pure @nogc dg)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value) @safe pure @nogc dg)
         {
-            return opApply((IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value) {
+            return opApply((IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value) {
                 if (_expect(error, false))
                     throw error.ionException;
                 return dg(symbol, value);
@@ -2690,46 +2747,46 @@ const:
 
         /// ditto
         @trusted @nogc
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @safe @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted pure
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @safe pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @safe dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure @nogc
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @system pure @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system @nogc
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @system @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @system pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system
-        scope int opApply(scope int delegate(scope const(char)[] symbol, IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char)[] symbol, scope IonDescribedValue value)
         @system dg) { return opApply(cast(EDG) dg); }
     }
 
     /++
     +/
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value) @safe pure nothrow @nogc dg)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value) @safe pure nothrow @nogc dg)
         @safe pure nothrow @nogc
     {
-        return ionStruct.opApply((IonErrorCode error, size_t symbolId, IonDescribedValue value) {
+        return ionStruct.opApply((IonErrorCode error, size_t symbolId, scope IonDescribedValue value) {
             scope const(char)[] symbol;
             if (!error)
             {
@@ -2748,77 +2805,77 @@ const:
 
     /// ditto
     @trusted nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted pure
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @trusted
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @safe dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system pure nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system nothrow @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system pure @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system pure nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system @nogc
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system @nogc dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system pure
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system pure dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system nothrow
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system nothrow dg) { return opApply(cast(DG) dg); }
 
     /// ditto
     @system
-    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, IonDescribedValue value)
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char)[] symbol, scope IonDescribedValue value)
     @system dg) { return opApply(cast(DG) dg); }
 
     /++
@@ -2826,7 +2883,7 @@ const:
     +/
     auto opIndex(scope const(char)[] symbol) const @safe pure // @nogc DIP1008
     {
-        foreach (key, IonDescribedValue value; this)
+        foreach (key, scope IonDescribedValue value; this)
         {
             if (key == symbol)
             {
@@ -2869,66 +2926,9 @@ Ion Annotation Wrapper
 struct IonAnnotationWrapper
 {
     ///
-    const(ubyte)[] data;
-
-    /++
-    Unwraps Ion annotations (nothrow version).
-    Params:
-        annotations = (out) $(LREF IonAnnotations)
-        value = (out, optional) $(LREF IonDescribedValue) or $(LREF IonValue)
-    Returns: $(SUBREF exception, IonErrorCode)
-    +/
-    IonErrorCode unwrap()(scope ref IonAnnotations annotations, scope ref IonDescribedValue value)
-        @safe pure nothrow @nogc const
-    {
-        IonValue v;
-        if (auto error = unwrap(annotations, v))
-            return error;
-        return v.describe(value);
-    }
-
-    /// ditto
-    IonErrorCode unwrap()(scope ref IonAnnotations annotations, scope ref IonValue value)
-        @safe pure nothrow @nogc const
-    {
-        size_t length;
-        const(ubyte)[] d = data;
-        if (auto error = parseVarUInt(d, length))
-            return error;
-        if (_expect(length == 0, false))
-            return IonErrorCode.zeroAnnotations;
-        if (_expect(length >= d.length, false))
-            return IonErrorCode.unexpectedEndOfData;
-        annotations = IonAnnotations(d[0 .. length]);
-        value = IonValue(d[length .. $]);
-        return IonErrorCode.none;
-    }
-
-    version (D_Exceptions)
-    {
-        /++
-        Unwraps Ion annotations.
-        Params:
-            annotations = (optional out) $(LREF IonAnnotations)
-        Returns: $(LREF IonDescribedValue)
-        +/
-        IonDescribedValue unwrap()(scope ref IonAnnotations annotations)
-            @safe pure @nogc const
-        {
-            IonDescribedValue ret;
-            if (auto error = unwrap(annotations, ret))
-                throw error.ionException;
-            return ret;
-        }
-
-        /// ditto
-        IonDescribedValue unwrap()
-            @safe pure @nogc const
-        {
-            IonAnnotations annotations;
-            return unwrap(annotations);
-        }
-    }
+    IonAnnotations annotations;
+    ///
+    IonDescribedValue value;
 
     /++
     Params:
@@ -2936,9 +2936,6 @@ struct IonAnnotationWrapper
     +/
     void serialize(S)(scope ref S serializer) scope const
     {
-        IonAnnotations annotations;
-        auto value = unwrap(annotations);
-
         auto state = serializer.annotationWrapperBegin;
         foreach(symbolID; annotations)
         {
@@ -2959,16 +2956,14 @@ struct IonAnnotationWrapper
 version(mir_ion_test) unittest
 {
     // null.struct
-    IonAnnotations annotations;
-    assert(IonValue([0xE7, 0x82, 0x8A, 0x8B, 0x53, 0xC3, 0x04, 0x65])
+
+    auto uw = IonValue([0xE7, 0x82, 0x8A, 0x8B, 0x53, 0xC3, 0x04, 0x65])
         .describe
-        .get!IonAnnotationWrapper
-        .unwrap(annotations)
-        .get!IonDecimal
-        .get!double == 1.125);
+        .get!IonAnnotationWrapper;
+    assert(uw.value.get!IonDecimal.get!double == 1.125);
 
     size_t i;
-    foreach (symbolID; annotations)
+    foreach (symbolID; uw.annotations)
     {
         if (i == 0)
         {
