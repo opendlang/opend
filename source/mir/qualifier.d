@@ -69,7 +69,7 @@ This funciton should be used only when the result never skips the current scope.
 
 This function is used by some algorithms to optimise work with reference counted types.
 +/
-auto ref lightScope(T)(auto ref return T v)
+auto ref lightScope(T)(auto ref return scope T v)
     if (!is(T : P*, P) && __traits(hasMember, T, "lightScope"))
 {
     return v.lightScope;
@@ -77,7 +77,7 @@ auto ref lightScope(T)(auto ref return T v)
 
 /// ditto
 auto ref lightScope(T)(auto return ref T v)
-    if (is(T : P*, P) || !__traits(hasMember, T, "lightScope"))
+    if (!is(T : P*, P) && !__traits(hasMember, T, "lightScope"))
 {
     static if (is(T == immutable))
         return lightImmutable(v);
@@ -86,6 +86,13 @@ auto ref lightScope(T)(auto return ref T v)
         return lightConst(v);
     else
         return v;
+}
+
+/// ditto
+auto lightScope(T)(return T v)
+    if (is(T : P*, P))
+{
+    return cast(typeof(*v)*) v;
 }
 
 ///

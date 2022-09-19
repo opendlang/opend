@@ -109,6 +109,7 @@ enum canImplicitlyRemoveConst(T) = __traits(compiles, {static T _function_(ref c
 enum canRemoveConst(T) = canConstructWith!(const T, T);
 enum canRemoveImmutable(T) = canConstructWith!(immutable T, T);
 enum hasOpPostMove(T) = __traits(hasMember, T, "opPostMove");
+enum hasOpCmp(T) = __traits(hasMember, T, "opCmp");
 enum hasToHash(T) = __traits(hasMember, T, "toHash");
 static if (__VERSION__ < 2094)
     enum isCopyable(S) = is(typeof({ S foo = S.init; S copy = foo; }));
@@ -648,4 +649,13 @@ version(mir_core_test) @safe unittest
     interface I(T) {}
     class C : I!int {}
     static assert(is(ReplaceType!(int, string, C) == C));
+}
+
+template basicElementType(T)
+{
+    import std.traits: isArray, ForeachType;
+    static if (isArray!T)
+        alias basicElementType = ForeachType!T;
+    else
+        alias basicElementType = T;
 }

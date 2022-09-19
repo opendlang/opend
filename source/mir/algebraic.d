@@ -126,6 +126,23 @@ module mir.algebraic;
 import mir.internal.meta;
 import mir.functional: naryFun;
 
+/++
+The attribute is used to define a permanent member field in an anlgebraic type.
+Should applied to a field of the union passed to $(LREF TaggedVariant).
++/
+enum algebraicMeta;
+/++
+The attribute is used in pair with $(LREF algebraicMeta) to exclude the field
+from compression in `toHash`, `opEquals`, and `opCmp` methods.
++/
+enum algebraicTransparent;
+/++
+The attribute is used in pair with $(LREF algebraicMeta) to use the field
+as an error infomration. Usually it is a position marker in a file.
+The type should have `scope const` `toString` method.
++/
+enum algebraicErrorPosition;
+
 private static immutable variantExceptionMsg = "mir.algebraic: the algebraic stores other type then requested.";
 private static immutable variantNullExceptionMsg = "mir.algebraic: the algebraic is empty and doesn't store any value.";
 private static immutable variantMemberExceptionMsg = "mir.algebraic: the algebraic stores a type that isn't compatible with the user provided visitor and arguments.";
@@ -179,7 +196,7 @@ static if (__VERSION__ >= 2_100)
     ///
     @safe pure version(mir_core_test) unittest
     {
-        struct CustomVariant
+        static struct CustomVariant
         {
             Variant!(int, string) data;
             alias data this;
@@ -287,27 +304,35 @@ struct This
 /++
 Dummy type used to associate tags with a type.
 +/
-struct TaggedType(T, string name)
-    if (name.length)
+struct TaggedType(T, string name, bool isMeta = false, bool isTransparent = false, bool isPosition = false)
+    if (name.length && isMeta >= isTransparent && isMeta >= isPosition)
 {
     private enum tag = name;
+    private enum meta = isMeta;
+    private enum transparent = isTransparent;
+    private enum position = isPosition;
     private alias Type = T;
     static if (!is(T == void) && !is(T == typeof(null)))
         private T payload;
-@safe pure nothrow @nogc const:
+@safe pure nothrow @nogc const scope:
     int opCmp(ref typeof(this)) { return 0; }
     string toString() { return typeof(this).stringof; }
 }
 
 /++
-Checks if `T` is $(LREF TaggedType) instance.
+Checks if `T` is $(LREF TaggedType) instance with false `isMeta` flag.
 +/
 enum isTaggedType(T) = is(T == TaggedType!(I, name), I, string name);
 
 /++
+Checks if `T` is $(LREF TaggedType) instance with true `isMeta` flag.
++/
+enum isTaggedMeta(T) = is(T == TaggedType!(I, name, true, transparent, position), I, string name, bool transparent, bool position);
+
+/++
 Gets $(LREF TaggedType) underlying type.
 +/
-alias getTaggedTypeUnderlying(T : TaggedType!(I, name), I, string name) = I;
+alias getTaggedTypeUnderlying(T : TaggedType!(I, name, meta, transparent, position), I, string name, bool meta, bool transparent, bool position) = I;
 
 /++
 Gets $(LREF TaggedType) tag name.
@@ -417,6 +442,8 @@ private template TypeCmp(A, B)
     isIonNull!B ? false:
     is(A == void) || is(A == TaggedType!(void, vaname), string vaname) ? true:
     is(B == void) || is(A == TaggedType!(void, vbname), string vbname) ? false:
+    isTaggedMeta!A < isTaggedMeta!B ? true:
+    isTaggedMeta!A > isTaggedMeta!B ? false:
     A.sizeof < B.sizeof ? true:
     A.sizeof > B.sizeof ? false:
     A.mangleof < B.mangleof;
@@ -577,17 +604,45 @@ alias TaggedVariant(string[] tags, T...) = Variant!(applyTags!(tags, T));
 template TaggedVariant(T)
     if (is(T == union))
 {
+    import std.traits: hasUDA;
     import std.meta: staticMap;
-    enum names = __traits(allMembers, T);
-    alias TypeOf(string member) = typeof(__traits(getMember, T, member));
-    alias Types = staticMap!(TypeOf, names);
-    alias TaggedVariant = .TaggedVariant!([names], Types);
+    alias TypeOf(string member) = TaggedType!(
+        typeof(__traits(getMember, T, member)),
+        member,
+        hasUDA!(__traits(getMember, T, member), algebraicMeta),
+        hasUDA!(__traits(getMember, T, member), algebraicTransparent),
+        hasUDA!(__traits(getMember, T, member), algebraicErrorPosition),
+    );
+    alias TaggedVariant = .Variant!(staticMap!(TypeOf, __traits(allMembers, T)));
 }
 
-/// Json Value
-@safe pure 
+/// Json Value with styles
+@safe pure
 version(mir_core_test) unittest
 {
+    enum Style { block, flow }
+
+    static struct SomeMetadata { 
+        int a;
+        @safe pure nothrow @nogc scope
+        int opCmp(scope const SomeMetadata rhs) const { return a - rhs.a; } 
+    }
+
+    static struct ParsePosition
+    {
+        string file, line, column;
+
+        void toString()(scope ref W w) scope const
+        {
+            w.put(file);
+            if (line) {
+                w.put("("); w.put(line);
+                if (column) { w.put(","); w.put(column); }
+                w.put(")");
+            }
+        }
+    }
+
     static union JsonUnion
     {
         long integer;
@@ -596,7 +651,15 @@ version(mir_core_test) unittest
         typeof(null) null_;
         immutable(char)[] string;
         This[] array;
-        This[immutable(char)[]] object;
+        // commented out to test `opCmp` primitive
+        // This[immutable(char)[]] object;
+
+    @algebraicMeta:
+        bool active;
+        SomeMetadata metadata;
+    @algebraicTransparent:
+        Style style;
+        @algebraicErrorPosition ParsePosition position;
     }
 
     alias JsonValue = TaggedVariant!JsonUnion;
@@ -611,7 +674,7 @@ version(mir_core_test) unittest
     static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.floating] == double));
     static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.integer] == long));
     static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.null_] == typeof(null)));
-    static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.object] == JsonValue[string]));
+    // static assert (is(JsonValue.AllowedTypes[JsonValue.Kind.object] == JsonValue[string]));
 
     JsonValue v;
     assert(v.kind == JsonValue.Kind.null_);
@@ -635,13 +698,26 @@ version(mir_core_test) unittest
     assert(v.get!(JsonValue.Kind.string) == "Tagged!"); // Kind-based get
     assert(v.trustedGet!(JsonValue.Kind.string) == "Tagged!"); // Kind-based trustedGet
 
+    v = null;
+    assert(v.kind == JsonValue.Kind.null_);
+
     v = [JsonValue("str"), JsonValue(4.3)];
 
     assert(v.kind == JsonValue.Kind.array);
     assert(v.trustedGet!(JsonValue[])[1].kind == JsonValue.Kind.floating);
 
-    v = null;
-    assert(v.kind == JsonValue.Kind.null_);
+    JsonValue w = v;
+    w.style = Style.flow;
+    assert(v.style != w.style);
+    assert(v == w);
+    assert(v <= w);
+    assert(v >= w);
+    assert(v.toHash == w.toHash);
+    w.active = true;
+    assert(v != w);
+    assert(v.toHash != w.toHash);
+    assert(v.get!"array" == w.get!"array");
+    assert(v < w);
 }
 
 /// Wrapped algebraic with propogated primitives
@@ -734,6 +810,15 @@ version(mir_core_test) unittest
     static assert(typeof(a).sizeof == 1);
 }
 
+private bool contains(scope const string[] names, string member)
+@safe pure nothrow @nogc
+{
+    foreach (name; names)
+        if (name == member)
+            return true;
+    return false;
+}
+
 /++
 Algebraic implementation.
 For more portable code, it is higly recommeded to don't use this template directly.
@@ -744,12 +829,14 @@ struct Algebraic(_Types...)
     import core.lifetime: moveEmplace;
     import mir.conv: emplaceRef;
     import mir.reflection: isPublic, hasField, isProperty;
-    import std.meta: Filter, AliasSeq, ApplyRight, anySatisfy, allSatisfy, staticMap, templateOr, templateNot;
+    import std.meta: Filter, AliasSeq, ApplyRight, anySatisfy, allSatisfy, staticMap, templateOr, templateNot, templateAnd;
     import std.traits:
         hasElaborateAssign,
         hasElaborateCopyConstructor,
         hasElaborateDestructor,
         hasMember,
+        isAggregateType,
+        isAssociativeArray,
         isDynamicArray,
         isEqualityComparable,
         isOrderingComparable,
@@ -759,20 +846,36 @@ struct Algebraic(_Types...)
 
     private enum bool _variant_test_ = is(_Types == AliasSeq!(typeof(null), double));
 
-    static if (anySatisfy!(isTaggedType, _Types))
+    static if (anySatisfy!(templateOr!(isTaggedType, isTaggedMeta), _Types))
     {
         private alias _UntaggedThisTypeSetList = staticMap!(getTaggedTypeUnderlying, _Types);
+        private enum size_t _meta_field_count__ = Filter!(isTaggedMeta, _Types).length;
     }
     else
     {
         private alias _UntaggedThisTypeSetList = _Types;
+        private enum size_t _meta_field_count__ = 0;
     }
 
     /++
     Allowed types list
     See_also: $(LREF TypeSet)
     +/
-    alias AllowedTypes = AliasSeq!(ReplaceTypeUnless!(isVariant, This, Algebraic!_Types, _UntaggedThisTypeSetList));
+    alias AllowedTypes = AliasSeq!(ReplaceTypeUnless!(isVariant, This, Algebraic!_Types, _UntaggedThisTypeSetList[0 .. $ - _meta_field_count__]));
+
+
+    /++
+    +/
+    alias MetaFieldsTypes = AliasSeq!(ReplaceTypeUnless!(isVariant, This, Algebraic!_Types, _UntaggedThisTypeSetList[$ - _meta_field_count__ .. $]));
+
+    /++
+    +/
+    enum string[] MetaFieldsNames = () {
+        string[] ret;
+        foreach (T; _Types[$ - _meta_field_count__ .. $])
+            ret ~= T.tag;
+        return ret;
+    } ();
 
     version(mir_core_test)
     static if (_variant_test_)
@@ -796,6 +899,9 @@ struct Algebraic(_Types...)
             double,
             V*)));
     }
+
+    static foreach (i; 0 .. _meta_field_count__)
+        mixin ("MetaFieldsTypes["  ~ i.stringof ~ "] " ~ _Types[$ - _meta_field_count__ + i].tag ~";");
 
     private alias _Payload = Replace!(void, _Void!(), Replace!(typeof(null), _Null!(), AllowedTypes));
 
@@ -822,10 +928,10 @@ struct Algebraic(_Types...)
         static if ((_Storage_.alignof & 2) && _Payload.length <= ushort.max)
             private alias _ID_ = ushort;
         else
-        static if (_Storage_.alignof & 3)
+        // static if (_Storage_.alignof & 3)
             private alias _ID_ = uint;
-        else
-            private alias _ID_ = ulong;
+        // else
+        //     private alias _ID_ = ulong;
     
         _ID_ _identifier_;
     }
@@ -856,7 +962,7 @@ struct Algebraic(_Types...)
         version (D_Ddoc){}
         else
         {
-            mixin(enumKindText([staticMap!(getTaggedTypeName, _Types)]));
+            mixin(enumKindText([staticMap!(getTaggedTypeName, _Types[0 .. $ - _meta_field_count__])]));
 
         }
     }
@@ -1002,6 +1108,10 @@ struct Algebraic(_Types...)
             this = move(rhs);
         else
         {
+            static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                static if (Algebraic!RhsTypes.MetaFieldsNames.contains(T.tag))
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
             switch (rhs._identifier_)
             {
                 static foreach (i, T; Algebraic!RhsTypes.AllowedTypes)
@@ -1058,6 +1168,9 @@ struct Algebraic(_Types...)
         static if (allSatisfy!(hasInoutConstruction, CC_AllowedTypes))
         this(return ref scope inout Algebraic rhs) inout
         {
+            static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
             static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
             static foreach (int i, T; AllowedTypes)
             static if (!is(T == typeof(null)) && !is(T == void))
@@ -1088,6 +1201,9 @@ struct Algebraic(_Types...)
             static if (allSatisfy!(hasMutableConstruction, CC_AllowedTypes))
             this(return ref scope Algebraic rhs)
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
                 static foreach (int i, T; AllowedTypes)
                 static if (!is(T == typeof(null)) && !is(T == void))
@@ -1106,6 +1222,9 @@ struct Algebraic(_Types...)
             static if (allSatisfy!(hasConstConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs) const
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
                 static foreach (int i, T; AllowedTypes)
                 static if (!is(T == typeof(null)) && !is(T == void))
@@ -1124,6 +1243,9 @@ struct Algebraic(_Types...)
             static if (allSatisfy!(hasImmutableConstruction, CC_AllowedTypes))
             this(return ref scope immutable Algebraic rhs) immutable
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
                 static foreach (int i, T; AllowedTypes)
                 static if (!is(T == typeof(null)) && !is(T == void))
@@ -1142,6 +1264,9 @@ struct Algebraic(_Types...)
             static if (allSatisfy!(hasSemiImmutableConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs) immutable
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
                 static foreach (int i, T; AllowedTypes)
                 static if (!is(T == typeof(null)) && !is(T == void))
@@ -1160,6 +1285,9 @@ struct Algebraic(_Types...)
             static if (allSatisfy!(hasSemiMutableConstruction, CC_AllowedTypes))
             this(return ref scope const Algebraic rhs)
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, rhs, T.tag);
+
                 static if (AllowedTypes.length > 1) this._identifier_ = rhs._identifier_;
                 static foreach (int i, T; AllowedTypes)
                 static if (!is(T == typeof(null)) && !is(T == void))
@@ -1179,8 +1307,24 @@ struct Algebraic(_Types...)
 
     /++
     +/
-    size_t toHash() @trusted nothrow const
+    size_t toHash() scope @trusted const pure nothrow @nogc
     {
+        size_t hash;
+
+        static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+        static if (!T.transparent)
+        {
+            static if (is(MetaFieldsTypes[i] == class) || is(MetaFieldsTypes[i] == interface))
+            {{
+                scope eqfun = delegate() {
+                    hash = hashOf(__traits(getMember, this, T.tag), hash);
+                };
+                trustedAllAttr(eqfun)();
+            }}
+            else
+                hash = hashOf(__traits(getMember, this, T.tag), hash);
+        }
+
         static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
         {
             return 0;
@@ -1197,8 +1341,8 @@ struct Algebraic(_Types...)
                     static if (is(T == typeof(null)))
                         return i;
                     else
-                    static if (__traits(compiles, hashOf(trustedGet!T, cast(size_t)i)))
-                        return hashOf(trustedGet!T, cast(size_t)i);
+                    static if (__traits(compiles, hashOf(trustedGet!T, i ^ hash)))
+                        return hashOf(trustedGet!T, i ^ hash);
                     else
                     {
                         debug pragma(msg, "Mir warning: can't compute hash of " ~ (const T).stringof);
@@ -1211,8 +1355,24 @@ struct Algebraic(_Types...)
 
     /++
     +/
-    bool opEquals()(auto ref const typeof(this) rhs) const @trusted
+    bool opEquals(scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
     {
+        static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+        static if (!T.transparent)
+        {
+            static if (is(MetaFieldsTypes[i] == class) || is(MetaFieldsTypes[i] == interface))
+            {{
+                scope eqfun = delegate() {
+                    return __traits(getMember, this, T.tag) != __traits(getMember, rhs, T.tag);
+                };
+                if (trustedAllAttr(eqfun)())   
+                    return false;
+            }}
+            else
+                if (__traits(getMember, this, T.tag) != __traits(getMember, rhs, T.tag))
+                    return false;
+        }
+
         static if (AllowedTypes.length == 0)
         {
             return true;
@@ -1229,6 +1389,17 @@ struct Algebraic(_Types...)
                         static if (is(T == void))
                             return rhs._is!void;
                         else
+                        static if (is(T == class) || is(T == interface))
+                        {{
+                            scope eqfun = delegate() {
+                                return this.trustedGet!T == rhs.trustedGet!T;
+                            };
+                            return trustedAllAttr(eqfun)();
+                        }}
+                        else
+                        static if (__traits(isFloating, T))
+                            return this.trustedGet!T == rhs.trustedGet!T || (this.trustedGet!T != this.trustedGet!T && rhs.trustedGet!T != rhs.trustedGet!T);
+                        else
                             return this.trustedGet!T == rhs.trustedGet!T;
                 }
                 default: assert(0);
@@ -1238,34 +1409,59 @@ struct Algebraic(_Types...)
 
     /++
     +/
-    static if (is(AllowedTypes == _Types))
-    auto opCmp()(auto ref const typeof(this) rhs) const @trusted
+    static if (!anySatisfy!(templateOr!(isAssociativeArray, templateAnd!(isAggregateType, templateNot!hasOpCmp)), staticMap!(basicElementType, AllowedTypes)))
+    int opCmp()(auto ref scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
     {
+        static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+        static if (!T.transparent)
+        {
+            static if (__traits(compiles, __cmp(__traits(getMember, this, T.tag), __traits(getMember, rhs, T.tag))))
+            {
+                if (auto d = __cmp(__traits(getMember, this, T.tag), __traits(getMember, rhs, T.tag)))
+                    return d;
+            }
+            else
+            static if (__traits(hasMember, __traits(getMember, this, T.tag), "opCmp") && !is(MetaFieldsTypes[i] == U*, U))
+            {
+                if (auto d = __traits(getMember, this, T.tag).opCmp(__traits(getMember, rhs, T.tag)))
+                    return d;
+            }
+            else
+            {
+                if (auto d = __traits(getMember, this, T.tag) < __traits(getMember, rhs, T.tag) ? -1 : __traits(getMember, this, T.tag) > __traits(getMember, rhs, T.tag) ? +1 : 0)
+                    return d;
+            }
+        }
+
+
         static if (AllowedTypes.length == 0)
         {
             return 0;
         }
         else
         {
-            import mir.internal.utility: isFloatingPoint;
             if (auto d = int(this._identifier_) - int(rhs._identifier_))
                 return d;
+            import std.traits: isArray, isPointer;
             switch (_identifier_)
             {
                 static foreach (i, T; AllowedTypes)
                 {
                     case i:
-                        static if (__traits(compiles, __cmp(trustedGet!T, rhs.trustedGet!T)))
-                            return __cmp(trustedGet!T, rhs.trustedGet!T);
+                        static if (__traits(hasMember, T, "opCmp") && !isPointer!T)
+                        {{
+                            auto ret = this.trustedGet!T.opCmp(rhs.trustedGet!T);
+                            static if (is(typeof(ret) == int))
+                                return ret;
+                            else
+                                return ret < 0 ? -1 : ret > 0 ? 1 : 0;
+                        }}
                         else
-                        static if (__traits(hasMember, T, "opCmp") && !is(T == U*, U))
-                            return this.trustedGet!T.opCmp(rhs.trustedGet!T);
-                        else
-                        // static if (isFloatingPoint!T)
-                        //     return trustedGet!T == rhs ? 0 : trustedGet!T - rhs.trustedGet!T;
-                        // else
+                        static if (!isArray!T)
                             return this.trustedGet!T < rhs.trustedGet!T ? -1 :
                                 this.trustedGet!T > rhs.trustedGet!T ? +1 : 0;
+                        else
+                            return __cmp(trustedGet!T, rhs.trustedGet!T);
                 }
                 default: assert(0);
             }
@@ -1273,7 +1469,7 @@ struct Algebraic(_Types...)
     }
 
     /// Requires mir-algorithm package
-    string toString()() const
+    string toString()() @trusted pure scope const
     {
         static if (AllowedTypes.length == 0)
         {
@@ -1282,22 +1478,33 @@ struct Algebraic(_Types...)
         else
         {
             import mir.conv: to;
+            string ret;
+            static foreach (i, member; MetaFieldsNames)
+            {
+                static if (__traits(compiles, { auto s = to!string(__traits(getMember, this, member));}))
+                    // should be passed by value to workaround compiler bug
+                    ret ~= to!string(__traits(getMember, this, member));
+                else
+                    ret ~= AllowedTypes[i].stringof;
+                ret ~= ", ";
+            }
             switch (_identifier_)
             {
                 static foreach (i, T; AllowedTypes)
                 {
                     case i:
                         static if (is(T == void))
-                            return "void";
+                            ret ~= "void";
                         else
                         static if (is(T == typeof(null)))
-                            return "null";
+                            ret ~= "null";
                         else
                         static if (__traits(compiles, { auto s = to!string(trustedGet!T);}))
                             // should be passed by value to workaround compiler bug
-                            return to!string((()=>trustedGet!T)());
+                            ret ~= to!string(trustedGet!T);
                         else
-                            return AllowedTypes[i].stringof;
+                            ret ~= AllowedTypes[i].stringof;
+                        return ret;
                 }
                 default: assert(0);
             }
@@ -1305,8 +1512,54 @@ struct Algebraic(_Types...)
     }
 
     ///ditto
-    void toString(W)(scope ref W w) const
+    void toString(W)(ref scope W w) scope const @trusted pure
+        if (__traits(compiles, ()pure{ w.put("Algebraic"); }))
     {
+        if (false)
+            return w.put("Algebraic");
+        static if (AllowedTypes.length == 0)
+        {
+            return w.put("Algebraic");
+        }
+        else
+        {
+            import mir.format: print;
+            static foreach (i, member; MetaFieldsNames)
+            {
+                static if (__traits(compiles, { import mir.format: print; print(w, __traits(getMember, this, member)); }))
+                    { import mir.format: print; print(w, __traits(getMember, this, member)); }
+                else
+                    w.put(AllowedTypes[i].stringof);
+                w.put(", ");
+            }
+            switch (_identifier_)
+            {
+                static foreach (i, T; AllowedTypes)
+                {
+                    case i:
+                        static if (is(T == void))
+                            w.put("void");
+                        else
+                        static if (is(T == typeof(null)))
+                            w.put("null");
+                        else
+                        static if (__traits(compiles, { import mir.format: print; print(w, trustedGet!T); }))
+                            toStringImpl!T(w);
+                        else
+                            w.put(AllowedTypes[i].stringof);
+                        return;
+                }
+                default: assert(0);
+            }
+        }
+    }
+
+    ///ditto
+    void toString(W)(ref scope W w) scope const @trusted
+        if (!__traits(compiles, ()pure{ w.put("Algebraic"); }))
+    {
+        if (false)
+            return w.put("Algebraic");
         static if (AllowedTypes.length == 0)
         {
             return w.put("Algebraic");
@@ -1325,14 +1578,22 @@ struct Algebraic(_Types...)
                             return w.put("null");
                         else
                         static if (__traits(compiles, { import mir.format: print; print(w, trustedGet!T); }))
-                            { import mir.format: print; print(w, trustedGet!T); }
+                            return toStringImpl!T(w);
                         else
-                            w.put(AllowedTypes[i].stringof);
-                        return;
+                            return w.put(AllowedTypes[i].stringof);
                 }
                 default: assert(0);
             }
         }
+    }
+
+    private void toStringImpl(T, W)(ref scope W w)  @safe scope const pure nothrow @nogc
+    {
+        import mir.format: print; 
+        scope pfun = delegate() {
+            print(w, trustedGet!T);
+        };
+        trustedAllAttr(pfun)();
     }
 
     static if (is(AllowedTypes[0] == typeof(null)))
@@ -1654,30 +1915,9 @@ struct Algebraic(_Types...)
     {
         static foreach (member; AllMembersRec!(_ReflectionTypes[0]))
         static if (
-            member != "_ID_" &&
-            member != "_identifier_" &&
-            member != "_is" &&
-            member != "_storage_" &&
-            member != "_Storage_" &&
-            member != "_variant_test_" &&
-            member != "_void" &&
-            member != "AllowedTypes" &&
-            member != "get" &&
-            member != "isNull" &&
-            member != "kind" &&
-            member != "Kind" &&
-            member != "nullify" &&
-            member != "opAssign" &&
-            member != "opCast" &&
-            member != "opCmp" &&
-            member != "opEquals" &&
-            member != "opPostMove" &&
-            member != "toHash" &&
-            member != "toString" &&
-            member != "trustedGet" &&
-            member != "deserializeFromAsdf" &&
-            member != "deserializeFromIon" &&
-            !(member.length >= 2 && member[0 .. 2] == "__"))
+            !.algebraicMembers.contains(member) && 
+            !MetaFieldsNames.contains(member) && 
+            !(member.length >= 2 && (member[0 .. 2] == "__" || member[$ - 2 .. $] == "__")))
         static if (allSatisfy!(ApplyRight!(hasMember, member), _ReflectionTypes))
         static if (!anySatisfy!(ApplyRight!(isMemberType, member), _ReflectionTypes))
         static if (allSatisfy!(ApplyRight!(isSingleMember, member), _ReflectionTypes))
@@ -1704,8 +1944,7 @@ struct Algebraic(_Types...)
         if (RhsTypes.length < AllowedTypes.length && allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
         import core.lifetime: forward;
-        static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
-            this.__dtor();
+        this = this.init;
         __ctor(forward!rhs);
         return this;
     }
@@ -1853,16 +2092,18 @@ struct Algebraic(_Types...)
             ///
             ref opAssign(T rhs) return @trusted
             {
+                static foreach (i, T; _Types[$ - _meta_field_count__ .. $])
+                    __traits(getMember, this, T.tag) = __traits(getMember, this, T.tag).init;
+
                 import core.lifetime: forward;
-                static if (anySatisfy!(hasElaborateDestructor, AllowedTypes))
-                    this.__dtor();
+                this = this.init;
                 __ctor(forward!rhs);
                 return this;
             }
 
             /++
             +/
-            auto opEquals()(auto ref const T rhs) const
+            auto opEquals()(auto ref scope const T rhs) scope @trusted const pure nothrow @nogc
             {
                 static if (AllowedTypes.length > 1)
                     if (_identifier_ != i)
@@ -1872,9 +2113,8 @@ struct Algebraic(_Types...)
 
             /++
             +/
-            auto opCmp()(auto ref const T rhs) const
+            auto opCmp()(auto ref scope const T rhs) scope @trusted const pure nothrow @nogc
             {
-                import mir.internal.utility: isFloatingPoint;
                 static if (AllowedTypes.length > 1)
                     if (auto d = int(_identifier_) - int(i))
                         return d;
@@ -1884,11 +2124,7 @@ struct Algebraic(_Types...)
                 static if (__traits(hasMember, T, "opCmp") && !is(T == U*, U))
                     return trustedGet!T.opCmp(rhs);
                 else
-                static if (isFloatingPoint!T)
-                    return trustedGet!T == rhs ? 0 : trustedGet!T - rhs;
-                else
-                    return trustedGet!T < rhs ? -1 :
-                        trustedGet!T > rhs ? +1 : 0;
+                    return trustedGet!T < rhs ? -1 : trustedGet!T > rhs ? +1 : 0;
             }
 
             static if (is(Unqual!T == bool))
@@ -1963,7 +2199,7 @@ struct Algebraic(_Types...)
         }
     }
 
-    static if (anySatisfy!(isErr, _Types))
+    static if (anySatisfy!(isErr, AllowedTypes))
     {
         /++
         Determines if the variant holds value of some none-$(LREF isVariant) type.
@@ -1995,7 +2231,7 @@ unittest
         double d;
     }
 
-    static class C
+    static class Cc
     {
         // alias this members are supported 
         Base base;
@@ -2005,6 +2241,8 @@ unittest
         private string _b;
 
     @safe pure nothrow @nogc:
+
+        override size_t toHash() scope const { return hashOf(_b) ^ a; }
 
         string b() const @property { return _b; }
         void b(string b) @property { _b = b; }
@@ -2034,10 +2272,10 @@ unittest
 
     static void inc(ref int a) { a++; }
 
-    alias V = Nullable!(C, S); // or Variant!
+    alias V = Nullable!(Cc, S); // or Variant!
 
     auto v = V(2, "str");
-    assert(v._is!C);
+    assert(v._is!Cc);
     assert(v.a == 2);
     assert(v.b == "str");
     // members are returned by reference if possible
@@ -2071,7 +2309,6 @@ unittest
     // method call support
     assert(v.retArg(300)._is!double);
     assert(v.retArg(300) == 300.0);
-
 }
 
 // test CTFE
@@ -2131,11 +2368,11 @@ version(mir_core_test) unittest
 
 
     static if (hasToHash)
-        size_t toHash() { return hashOf(_payload); }
+        size_t toHash() scope { return hashOf(_payload); }
 
     static if (hasOpEquals)
-        auto opEquals(ref const typeof(this) rhs) @trusted { return memcmp(_payload.ptr, rhs._payload.ptr, _payload.length); }
-        auto opCmp(ref const typeof(this) rhs) { return _payload == rhs._payload; }
+        auto opEquals(ref const scope  typeof(this) rhs) scope   { return _payload == rhs._payload; }
+        auto opCmp(ref const scope typeof(this) rhs) @trusted scope  { return memcmp(_payload.ptr, rhs._payload.ptr, _payload.length); }
     }
 
     static foreach (size1; [1, 2, 4, 8, 10, 16, 20])
@@ -2313,14 +2550,14 @@ version(mir_core_test) unittest
         this(this) @safe pure nothrow @nogc {}
         // void opAssign(typeof(this) rhs) {}
     }
-    static struct C { const(uint)* value; }
+    static struct C1 { const(uint)* value; }
 
     S s;
     S r = s;
     r = s;
     r = S.init;
 
-    alias V = Variant!(S, C);
+    alias V = Variant!(S, C1);
     V v = S();
     V w = v;
     w = S();
@@ -2421,20 +2658,20 @@ $(LREF Algerbraic)`.toString` requries `mir-algorithm` package
     V variant;
 
     assert(secondOrderVisitorHandler(visitorHandler(variant)) == "NULL");
-    assert(variant.to!string == "null");
+    assert(variant.toString == "null");
 
     variant = V._void;
     assert(variant._is!void);
     assert(is(typeof(variant.get!void()) == void));
 
     assert(secondOrderVisitorHandler(visitorHandler(variant)) == "VOID");
-    assert(variant.to!string == "void");
+    assert(variant.toString == "void");
 
     variant = 5;
 
     assert(secondOrderVisitorHandler(visitorHandler(variant)) == "SO VOID");
     assert(variant == 6);
-    assert(variant.to!string == (MIR_ALGORITHM ? "6" : "int"));
+    assert(variant.toString == (MIR_ALGORITHM ? "6" : "int"));
 }
 
 version(mir_core_test)
@@ -2807,12 +3044,12 @@ alias getMember(string member, TArgs...) = visitImpl!(getMemberHandler!(member, 
 version(mir_core_test) unittest
 {
     static struct S { auto bar(int a) { return a; } enum boolean = true; }
-    static struct C { alias bar = (double a) => a * 2; enum boolean = false; }
+    static struct C2 { alias bar = (double a) => a * 2; enum boolean = false; }
 
-    alias V = Variant!(S, C);
+    alias V = Variant!(S, C2);
 
     V x = S();
-    V y = C();
+    V y = C2();
 
     static assert(is(typeof(x.getMember!"bar"(2)) == Variant!(int, double)));
     assert(x.getMember!"bar"(2) == 2);
@@ -2844,15 +3081,15 @@ version(mir_core_test) unittest
         Nullable!int m;
     }
 
-    static struct C
+    static struct C1
     {
         Variant!(float, double) m;
     }
 
-    alias V = Variant!(S, C);
+    alias V = Variant!(S, C1);
 
     V x = S(2.nullable);
-    V y = C(Variant!(float, double)(4.0));
+    V y = C1(Variant!(float, double)(4.0));
 
     // getMember returns an algebraic of algebaics
     static assert(is(typeof(x.getMember!"m") == Variant!(Variant!(float, double), Nullable!int)));
@@ -2874,12 +3111,12 @@ alias tryGetMember(string member) = visitImpl!(getMemberHandler!member, Exhausti
 version(mir_core_test) unittest
 {
     static struct S { int bar(int a) { return a; }}
-    static struct C { alias Bar = (double a) => a * 2; }
+    static struct C3 { alias Bar = (double a) => a * 2; }
 
-    alias V = Variant!(S, C);
+    alias V = Variant!(S, C3);
 
     V x = S();
-    V y = C();
+    V y = C3();
 
     static assert(is(typeof(x.tryGetMember!"bar"(2)) == int));
     static assert(is(typeof(y.tryGetMember!"Bar"(2)) == double));
@@ -3732,7 +3969,7 @@ unittest
 version(mir_core_test)
 unittest
 {
-    struct RequestToken
+    static struct RequestToken
     {
         Variant!(long, string) value;
         alias value this;
@@ -3754,3 +3991,42 @@ unittest
 
     static assert(is(typeof(r) == Variant!(long, string)));
 }
+
+private auto trustedAllAttr(T)(scope T t) @trusted
+{
+    import std.traits;
+    enum attrs = (functionAttributes!T & ~FunctionAttribute.system) 
+        | FunctionAttribute.pure_
+        | FunctionAttribute.safe
+        | FunctionAttribute.nogc
+        | FunctionAttribute.nothrow_;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
+
+private static immutable algebraicMembers = [
+    "_ID_",
+    "_identifier_",
+    "_is",
+    "_storage_",
+    "_Storage_",
+    "_variant_test_",
+    "_void",
+    "AllowedTypes",
+    "MetaFieldsTypes",
+    "MetaFieldsNames",
+    "get",
+    "isNull",
+    "kind",
+    "Kind",
+    "nullify",
+    "opAssign",
+    "opCast",
+    "opCmp",
+    "opEquals",
+    "opPostMove",
+    "toHash",
+    "toString",
+    "trustedGet",
+    "deserializeFromAsdf",
+    "deserializeFromIon",
+];
