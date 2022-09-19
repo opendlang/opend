@@ -196,6 +196,7 @@ struct IonValue
     IonDescribedValue describe()(scope out IonErrorCode error) return scope
         @safe pure nothrow @nogc const
     {
+        IonDescribedValue value;
         auto d = data[];
         error = parseValue(d, value);
         if (error)
@@ -205,7 +206,7 @@ struct IonValue
             error = IonErrorCode.illegalBinaryData;
             return IonDescribedValue.init;
         }
-        return IonDescribedValue(d);
+        return value;
     }
 
     version (D_Exceptions)
@@ -214,11 +215,12 @@ struct IonValue
         Describes value.
         Returns: $(LREF IonDescribedValue)
         +/
-        IonDescribedValue describe()()
+        IonDescribedValue describe()() return scope
             @safe pure @nogc const
         {
-            IonDescribedValue ret;
-            if (auto error = describe(ret))
+            IonErrorCode error;
+            auto ret = describe(error);
+            if (error)
                 throw error.ionException;
             return ret;
         }
