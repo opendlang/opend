@@ -55,7 +55,7 @@ template serde(T)
         if (table.initialized)
         {
             symbolTableBuffer.put(IonSystemSymbolTable_v1);
-            foreach (IonErrorCode error, IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
+            foreach (IonErrorCode error, scope IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
             {
                 assert(!error);
                 symbolTableBuffer.put(cast(string)symbolValue.trustedGet!(const(char)[]));

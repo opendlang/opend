@@ -413,7 +413,7 @@ scope:
     }
 
     ///
-    void putValue(Clob value)
+    void putValue(scope Clob value)
     {
         version (thunderbolt)
             buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
@@ -422,7 +422,7 @@ scope:
     }
 
     ///
-    void putValue(Blob value)
+    void putValue(scope Blob value)
     {
         version (thunderbolt)
             buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);

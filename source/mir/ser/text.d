@@ -440,7 +440,7 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    void putValue(Clob value)
+    void putValue(scope Clob value)
     {
         import mir.format: printEscaped, EscapeFormat;
 
@@ -458,7 +458,7 @@ struct TextSerializer(string sep, Appender)
     }
 
     ///
-    void putValue(Blob value)
+    void putValue(scope Blob value)
     {
         import mir.base64 : encodeBase64;
         static if(sep.length)

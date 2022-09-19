@@ -125,10 +125,10 @@ interface ISerializer
     void putValue(real value);
 
     ///
-    void putValue(ref const BigInt!128 value);
+    void putValue(scope ref const BigInt!128 value);
 
     ///
-    void putValue(ref const Decimal!128 value);
+    void putValue(scope ref const Decimal!128 value);
 
     ///
     void putValue(typeof(null));
@@ -143,10 +143,10 @@ interface ISerializer
     void putValue(scope const char[] value);
 
     ///
-    void putValue(Clob value);
+    void putValue(scope Clob value);
 
     ///
-    void putValue(Blob value);
+    void putValue(scope Blob value);
 
     ///
     void putValue(Timestamp value);
@@ -276,12 +276,12 @@ final class SerializerWrapper(S) : ISerializer
         return serializer.putValue(value);
     }
 
-    void putValue(ref const BigInt!128 value)
+    void putValue(scope ref const BigInt!128 value)
     {
         return serializer.putValue(value);
     }
 
-    void putValue(ref const Decimal!128 value)
+    void putValue(scope ref const Decimal!128 value)
     {
         return serializer.putValue(value);
     }
@@ -306,12 +306,12 @@ final class SerializerWrapper(S) : ISerializer
         return serializer.putValue(value);
     }
 
-    void putValue(Clob value)
+    void putValue(scope Clob value)
     {
         return serializer.putValue(value);
     }
 
-    void putValue(Blob value)
+    void putValue(scope Blob value)
     {
         return serializer.putValue(value);
     }
@@ -344,7 +344,7 @@ unittest
     {
         T value;
 
-        void serialize(S)(scope ref S serializer) const @safe
+        void serialize(S)(scope ref S serializer) scope const @safe
         {
             import mir.ser: serializeValue;
             import mir.ser.interfaces: SerializerWrapper;

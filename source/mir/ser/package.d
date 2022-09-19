@@ -894,7 +894,7 @@ unittest
 {
     struct S
     {
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.structBegin(1);
             serializer.putKey("foo");

@@ -513,13 +513,13 @@ scope:
         }
 
         ///
-        void putValue(Clob value)
+        void putValue(scope Clob value)
         {
             putValue(value.data);
         }
 
         ///
-        void putValue(Blob value)
+        void putValue(scope Blob value)
         {
             if (value.data.length <= ubyte.max)
             {
@@ -930,7 +930,7 @@ version(mir_ion_test) unittest
             this.text = text;
         }
 
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.stringBegin;
             serializer.putStringPart("Hello! ");
@@ -956,7 +956,7 @@ version(mir_ion_test) unittest
 
     static class HugeStruct
     {
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.structBegin(size_t(uint.max) + 1);
         }
@@ -985,7 +985,7 @@ version(mir_ion_test) unittest
 
     static class HugeArray
     {
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.listBegin(size_t(uint.max) + 1); 
         }

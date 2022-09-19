@@ -381,7 +381,7 @@ version(mir_ion_test) unittest
         }
 
         // and use custom serializer to serialize as int
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             import mir.ser : serializeValue;
 
@@ -455,7 +455,7 @@ version(mir_ion_test) unittest
             return array;
         }
 
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             import mir.ser: serializeValue;
             // mir.algebraic has builtin support for serialization.
@@ -471,7 +471,7 @@ version(mir_ion_test) unittest
         {
             import mir.deser.ion: deserializeIon;
             import mir.ion.exception;
-            foreach (IonErrorCode error, IonDescribedValue elem; value.get!IonList)
+            foreach (IonErrorCode error, scope IonDescribedValue elem; value.get!IonList)
             {
                 if (error)
                     return error.ionException;
@@ -1047,7 +1047,7 @@ version(mir_ion_test) unittest
             this.s = s;
         }
 
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.stringBegin;
             // putStringPart is usefull in the loop and with buffers

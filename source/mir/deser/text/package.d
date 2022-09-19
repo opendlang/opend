@@ -1217,7 +1217,7 @@ version(mir_ion_parser_test) unittest
     import mir.timestamp : Timestamp;
     void test(const(char)[] ionData, Timestamp expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             Timestamp t = ionValue.get!(IonTimestamp).get;
             assert(expected == t);
         }
@@ -1225,7 +1225,7 @@ version(mir_ion_parser_test) unittest
     
     void testFail(const(char)[] ionData, Timestamp expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             Timestamp t = ionValue.get!(IonTimestamp).get;
             assert(expected != t);
         }
@@ -1293,7 +1293,7 @@ version (mir_ion_parser_test) unittest
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, uint val)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonUInt);
             assert(v.get!uint == val);
         }
@@ -1314,7 +1314,7 @@ version (mir_ion_parser_test) unittest
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, ulong val)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonUInt);
             assert(v.get!ulong == val);
         }
@@ -1322,7 +1322,7 @@ version (mir_ion_parser_test) unittest
 
     void testNeg(const(char)[] ionData, ulong val)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonNInt);
             assert(v.get!long == -val);
         }
@@ -1360,7 +1360,7 @@ version (mir_ion_parser_test) unittest
     import mir.ion.stream;
     void test(const(char)[] ionData, float expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonFloat);
             v.get!float.should == expected;
         }
@@ -1380,7 +1380,7 @@ version (mir_ion_parser_test) unittest
     alias isNaN = x => x != x;
     void test(const(char)[] ionData)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonFloat);
             assert(isNaN(v.get!float));
         }
@@ -1398,7 +1398,7 @@ version (mir_ion_parser_test) unittest
     import mir.ion.conv : text2ion;
     void test_uint(const(char)[] ionData, ulong expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonUInt);
             v.get!ulong.should == expected;
         }
@@ -1406,7 +1406,7 @@ version (mir_ion_parser_test) unittest
 
     void test_nint(const(char)[] ionData, long expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonNInt);
             v.get!long.should == expected;
         }
@@ -1414,7 +1414,7 @@ version (mir_ion_parser_test) unittest
 
     void test_dec(const(char)[] ionData, double expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonDecimal);
             v.get!double.should == expected;
         }
@@ -1422,7 +1422,7 @@ version (mir_ion_parser_test) unittest
 
     void test_float(const(char)[] ionData, float expected)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonFloat);
             v.get!float.should == expected;
         }
@@ -1488,7 +1488,7 @@ version (mir_ion_parser_test) unittest
     import mir.ion.conv : text2ion;
     void test(const(char)[] ionData, IonTypeCode nullType)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(IonNull);
             assert(v.code == nullType);
         }
@@ -1518,7 +1518,7 @@ version (mir_ion_parser_test) unittest
     import mir.lob;
     void test(const(char)[] ionData, ubyte[] blobData)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(Blob);
             assert(v.data == blobData);
         }
@@ -1537,7 +1537,7 @@ version (mir_ion_parser_test) unittest
     import mir.lob;
     void test(const(char)[] ionData, const(char)[] blobData)
     {
-        foreach(symbolTable, ionValue; ionData.text2ion.IonValueStream) {
+        foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             auto v = ionValue.get!(Clob);
             assert(v.data == blobData);
         }

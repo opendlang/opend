@@ -324,13 +324,13 @@ scope:
     }
 
     ///
-    void putValue(Clob value)
+    void putValue(scope Clob value)
     {
         throw jsonClobSerializationIsntImplemented;
     }
 
     ///
-    void putValue(Blob value)
+    void putValue(scope Blob value)
     {
         throw jsonBlobSerializationIsntImplemented;
     }

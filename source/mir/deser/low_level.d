@@ -103,7 +103,7 @@ unittest
 /++
 Deserialize `null` value
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == typeof(null)))
 {
@@ -125,11 +125,13 @@ version(mir_ion_test) unittest
 /++
 Deserialize boolean value
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == bool))
 {
-    return data.get(value);
+    IonErrorCode error;
+    value = data.get!bool(error);
+    return error;
 }
 
 ///
@@ -147,21 +149,23 @@ pure version(mir_ion_test) unittest
 /++
 Deserialize integral value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (isIntegral!T && !is(T == enum))
 {
     static if (__traits(isUnsigned, T))
     {
-        IonUInt ionValue;
-        if (auto error = data.get(ionValue))
+        IonErrorCode error;
+        auto ionValue = data.get!IonUInt(error);
+        if (error)
             return error;
         return ionValue.get!T(value);
     }
     else
     {
-        IonInt ionValue;
-        if (auto error = data.get(ionValue))
+        IonErrorCode error;
+        auto ionValue = data.get!IonInt(error);
+        if (error)
             return error;
         return ionValue.get!T(value);
     }
@@ -192,11 +196,12 @@ version(mir_ion_test) unittest
 /++
 Deserialize big integer value.
 +/
-IonErrorCode deserializeValueImpl(T : BigInt!maxSize64, size_t maxSize64)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T : BigInt!maxSize64, size_t maxSize64)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
 {
-    IonInt ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!IonInt(error);
+    if (error)
         return error;
     if (!value.copyFromBigEndian(ionValue.data, ionValue.sign))
         return IonErrorCode.integerOverflow;
@@ -221,11 +226,12 @@ version(mir_ion_test) unittest
 /++
 Deserialize Blob value.
 +/
-IonErrorCode deserializeValueImpl()(IonDescribedValue data, ref Blob value)
+IonErrorCode deserializeValueImpl()(scope IonDescribedValue data, ref Blob value)
     pure @safe nothrow
 {
-    Blob ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!Blob(error);
+    if (error)
         return error;
     value = ionValue.data.dup.Blob;
     return IonErrorCode.none;
@@ -247,11 +253,12 @@ version(mir_ion_test) unittest
 /++
 Deserialize Clob value.
 +/
-IonErrorCode deserializeValueImpl()(IonDescribedValue data, ref Clob value)
+IonErrorCode deserializeValueImpl()(scope IonDescribedValue data, ref Clob value)
     pure @safe nothrow
 {
-    Clob ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!Clob(error);
+    if (error)
         return error;
     value = ionValue.data.dup.Clob;
     return IonErrorCode.none;
@@ -281,7 +288,7 @@ $(TABLE
     $(TR $(TD `-inf`))
 )
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (isFloatingPoint!T)
 {
@@ -299,8 +306,9 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
         else
         if (data.descriptor.type == IonTypeCode.uInt || data.descriptor.type == IonTypeCode.nInt)
         {
-            IonInt ionValue;
-            if (auto error = data.get(ionValue))
+            IonErrorCode error;
+            auto ionValue = data.get!IonInt(error);
+            if (error)
                 return error;
             import mir.bignum.integer;
             BigInt!128 integer = void;
@@ -311,8 +319,9 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
         }
         else
         {
-            const(char)[] ionValue;
-            if (auto error = data.get(ionValue))
+            IonErrorCode error;
+            auto ionValue = data.get!(const(char)[])(error);
+            if (error)
                 return error;
 
             import mir.bignum.decimal;
@@ -376,14 +385,15 @@ version(mir_ion_test) unittest
 /++
 Deserialize decimal value.
 +/
-IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSize)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T : Decimal!maxW64bitSize, size_t maxW64bitSize)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
 {
-    IonDecimal ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!IonDecimal(error);
+    if (error)
         return error;
-    IonDescribedDecimal ionDescribedDecimal;
-    if (auto error = ionValue.get(ionDescribedDecimal))
+    auto ionDescribedDecimal = ionValue.get!IonDescribedDecimal(error);
+    if (error)
         return error;
     return ionDescribedDecimal.get(value);
 }
@@ -407,7 +417,7 @@ version(mir_ion_test) unittest
 /++
 Deserialize timestamp value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow @nogc
     if (is(T == Timestamp))
 {
@@ -419,8 +429,9 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
         }
         else
         {
-            const(char)[] ionValue;
-            if (!data.get(ionValue) && Timestamp.fromString(ionValue, value))
+            IonErrorCode error;
+            auto ionValue = data.get!(const(char)[])(error);
+            if (!error && Timestamp.fromString(ionValue, value))
                 return IonErrorCode.none;
         }
     }
@@ -428,7 +439,7 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
 }
 
 ///ditto
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     // pure @safe nothrow @nogc
     if (!(hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T) && is(typeof(Timestamp.init.opCast!T)))
 {
@@ -494,7 +505,7 @@ package template hasFallbackStruct(T)
 /++
 Deserialize struct/class value with proxy.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     if (hasProxy!T && !hasLikeStruct!T && isFirstOrderSerdeType!T)
 {
     import std.traits: Select;
@@ -510,12 +521,13 @@ IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
 /++
 Deserialize enum value.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     if (is(T == enum) && !hasProxy!T)
 {
     import mir.serde: serdeParseEnum;
-    scope const(char)[] ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!(const(char)[])(error);
+    if (error)
         return error;
     if (serdeParseEnum(ionValue, value))
         return IonErrorCode.none;
@@ -541,12 +553,13 @@ version(mir_ion_test) unittest
 /++
 Deserialize ascii value from ion string.
 +/
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     pure @safe nothrow
     if (is(T == char))
 {
-    const(char)[] ionValue;
-    if (auto error = data.get(ionValue))
+    IonErrorCode error;
+    auto ionValue = data.get!(const(char)[])(error);
+    if (error)
         return error;
     if (_expect(ionValue.length != 1, false))
         return IonErrorCode.expectedCharValue; 
@@ -567,10 +580,10 @@ version(mir_ion_test) unittest
     assert(value == 'b');
 }
 
-private IonErrorCode deserializeListToScopedBuffer(Buffer)(IonDescribedValue data, ref Buffer buffer)
+private IonErrorCode deserializeListToScopedBuffer(Buffer)(scope IonDescribedValue data, ref Buffer buffer)
 {
     auto ionValue = data.trustedGet!IonList;
-    foreach (IonErrorCode error, IonDescribedValue ionElem; ionValue)
+    foreach (IonErrorCode error, scope IonDescribedValue ionElem; ionValue)
     {
         import std.traits: Unqual;
         if (_expect(error, false))
@@ -587,7 +600,7 @@ private IonErrorCode deserializeListToScopedBuffer(Buffer)(IonDescribedValue dat
 
 
 ///
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     if (is(T == E[], E) && !isSomeChar!E)
 {
     alias E = Unqual!(ForeachType!T);
@@ -628,7 +641,7 @@ version(mir_ion_test) unittest
 }
 
 ///
-IonErrorCode deserializeValueImpl(T)(IonDescribedValue data, scope ref T value)
+IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T value)
     if (is(T == RCArray!E, E) && !isSomeChar!E)
 {
     alias E = Unqual!(ForeachType!T);
@@ -679,11 +692,11 @@ version(mir_ion_test) unittest
 }
 
 ///
-IonErrorCode deserializeValueImpl(T : SmallArray!(E, maxLength), E, size_t maxLength)(IonDescribedValue data, out T value)
+IonErrorCode deserializeValueImpl(T : SmallArray!(E, maxLength), E, size_t maxLength)(scope IonDescribedValue data, out T value)
 {
     if (data.descriptor.type == IonTypeCode.list)
     {
-        foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
+        foreach (IonErrorCode error, scope IonDescribedValue ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
                 return error;
@@ -707,12 +720,12 @@ IonErrorCode deserializeValueImpl(T : SmallArray!(E, maxLength), E, size_t maxLe
 }
 
 ///
-IonErrorCode deserializeValueImpl(T : E[N], E, size_t N)(IonDescribedValue data, out T value)
+IonErrorCode deserializeValueImpl(T : E[N], E, size_t N)(scope IonDescribedValue data, out T value)
 {
     if (data.descriptor.type == IonTypeCode.list)
     {
         size_t i;
-        foreach (IonErrorCode error, IonDescribedValue ionElem; data.trustedGet!IonList)
+        foreach (IonErrorCode error, scope IonDescribedValue ionElem; data.trustedGet!IonList)
         {
             if (_expect(error, false))
                 return error;

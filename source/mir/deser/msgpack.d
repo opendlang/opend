@@ -607,7 +607,7 @@ struct MsgpackValueStream
 {
     const(ubyte)[] data;
 
-    void serialize(S)(scope ref S serializer) const
+    void serialize(S)(scope ref S serializer) scope const
     {
         auto window = data[0 .. $];
         bool following = false;
@@ -627,6 +627,7 @@ struct MsgpackValueStream
 ///
 template deserializeMsgpack(T)
 {
+@safe:
     ///
     void deserializeMsgpack(scope ref T value, scope const(ubyte)[] data)
     {
@@ -940,7 +941,7 @@ unittest
     {
         ubyte[] arg;
 
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.structBegin();
             serializer.putKey("arg");
@@ -970,7 +971,7 @@ unittest
         @serdeAllowMultiple
         ubyte asdf;
 
-        void serialize(S)(scope ref S serializer) const
+        void serialize(S)(scope ref S serializer) scope const
         {
             auto state = serializer.structBegin();
             foreach (i; 0 .. (ushort.max + 1))
