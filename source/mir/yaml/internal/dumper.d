@@ -17,7 +17,6 @@ import mir.primitives;
 import mir.internal.yaml.emitter;
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;
-import mir.internal.yaml.linebreak;
 import mir.algebraic_alias.yaml;
 import mir.internal.yaml.representer;
 import mir.internal.yaml.resolver;
@@ -54,8 +53,6 @@ struct Dumper
         bool canonical;
         //Preferred text width.
         uint textWidth = 80;
-        //Line break to use. Unix by default.
-        LineBreak lineBreak = LineBreak.unix;
         //YAML version string. Default is 1.1.
         string YAMLVersion = "1.1";
         //Always explicitly write document start? Default is no explicit start.
@@ -146,7 +143,7 @@ struct Dumper
         {
             try
             {
-                auto emitter = new Emitter!Range(range, canonical, indent_, textWidth, lineBreak);
+                auto emitter = new Emitter!Range(range, canonical, indent_, textWidth);
                 auto serializer = Serializer(resolver, explicitStart ? Yes.explicitStart : No.explicitStart,
                                              explicitEnd ? Yes.explicitEnd : No.explicitEnd, YAMLVersion, tags_);
                 serializer.startStream(emitter);
@@ -267,29 +264,4 @@ struct Dumper
     assert(stream.data[0..3] != "---");
     //account for newline at end
     assert(stream.data[$-4..$-1] != "...");
-}
-// Windows, macOS line breaks
-@safe unittest
-{
-    auto node = YamlAlgebraic(0);
-    {
-        auto stream = new Appender!string();
-        auto dumper = dumper();
-        dumper.explicitEnd = true;
-        dumper.explicitStart = true;
-        dumper.YAMLVersion = null;
-        dumper.lineBreak = LineBreak.windows;
-        dumper.dump(stream, node);
-        assert(stream.data == "--- 0\r\n...\r\n", stream.data);
-    }
-    {
-        auto stream = new Appender!string();
-        auto dumper = dumper();
-        dumper.explicitEnd = true;
-        dumper.explicitStart = true;
-        dumper.YAMLVersion = null;
-        dumper.lineBreak = LineBreak.macintosh;
-        dumper.dump(stream, node);
-        assert(stream.data == "--- 0\r...\r");
-    }
 }

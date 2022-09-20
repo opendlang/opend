@@ -7,7 +7,6 @@ module mir.internal.yaml;
 
 public import mir.internal.yaml.dumper;
 public import mir.internal.yaml.exception;
-public import mir.internal.yaml.linebreak;
 public import mir.internal.yaml.loader;
 public import mir.internal.yaml.resolver;
 public import mir.algebraic_alias.yaml;

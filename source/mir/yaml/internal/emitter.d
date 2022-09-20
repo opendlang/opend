@@ -17,7 +17,6 @@ import mir.format;
 import mir.internal.yaml.escapes;
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;
-import mir.internal.yaml.linebreak;
 import mir.internal.yaml.queue;
 import mir.internal.yaml.scanner;
 import mir.internal.yaml.tagdirective;
@@ -135,8 +134,6 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         uint bestIndent_ = 2;
         ///Best text width.
         uint bestWidth_ = 80;
-        ///Best line break character/s.
-        LineBreak bestLineBreak_;
 
         ///Tag directive handle - prefix pairs.
         TagDirective[] tagDirectives_;
@@ -161,10 +158,8 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
          * Params:  stream    = Output range to write to.
          *          canonical = Write scalars in canonical form?
          *          indent    = Indentation width.
-         *          lineBreak = Line break character/s.
          */
-        this(Range stream, const bool canonical, const int indent, const int width,
-             const LineBreak lineBreak) @safe
+        this(Range stream, const bool canonical, const int indent, const int width) @safe
         {
             states_.reserve(32);
             indents_.reserve(32);
@@ -174,7 +169,6 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
 
             if(indent > 1 && indent < 10){bestIndent_ = indent;}
             if(width > bestIndent_ * 2)  {bestWidth_ = width;}
-            bestLineBreak_ = lineBreak;
 
             analysis_.flags.isNull = true;
         }
@@ -1208,7 +1202,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             whitespace_ = indentation_ = true;
             ++line_;
             column_ = 0;
-            writeString(data is null ? lineBreak(bestLineBreak_) : data);
+            writeString(data is null ? "\n" : data);
         }
 
         ///Write a YAML version directive.
