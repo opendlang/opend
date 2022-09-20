@@ -154,7 +154,7 @@ struct IonSymbolTableSequental
         pragma(inline, true);
         auto n = str.length;
         auto llen = n / ulong.sizeof + (n % ulong.sizeof != 0);
-        if (_expect(n > entries.length, false))
+        if (_expect(n >= entries.length, false))
         {
             auto oldLength = entries.length;
             auto temporalStoragePtr = cast(ulong*) realloc(temporalStorage.ptr, llen * ulong.sizeof);
