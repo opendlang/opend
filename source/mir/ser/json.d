@@ -537,7 +537,7 @@ template serializeJsonPretty(string sep = "\t")
 {
     import mir.primitives: isOutputRange;
     ///
-    void serializeJsonPretty(Appender, V)(ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.json)
+    void serializeJsonPretty(Appender, V)(ref Appender appender, scope auto ref V value, int serdeTarget = SerdeTarget.json) @safe
         if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))
     {
         import mir.ser: serializeValue;
@@ -548,13 +548,13 @@ template serializeJsonPretty(string sep = "\t")
     /++
     JSON serialization function with pretty formatting.
     +/
-    string serializeJsonPretty(V)(auto ref V value, int serdeTarget = SerdeTarget.json)
+    string serializeJsonPretty(V)(scope auto ref const V value, int serdeTarget = SerdeTarget.json)
     {
         import std.array: appender;
         import mir.functional: forward;
 
         auto app = appender!(char[]);
-        serializeJsonPretty(app, forward!value, serdeTarget);
+        serializeJsonPretty(app, value, serdeTarget);
         return (()@trusted => cast(string) app.data)();
     }
 }

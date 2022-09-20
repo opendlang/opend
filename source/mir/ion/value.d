@@ -196,9 +196,8 @@ struct IonValue
     IonDescribedValue describe()(scope out IonErrorCode error) return scope
         @safe pure nothrow @nogc const
     {
-        IonDescribedValue value;
         auto d = data[];
-        error = parseValue(d, value);
+        auto value = parseValue(d, error);
         if (error)
             return IonDescribedValue.init;
         if (_expect(d.length, false))
@@ -422,8 +421,7 @@ struct IonDescribedValue
                     error = IonErrorCode.unexpectedEndOfData;
                     return T.init;
                 }
-                IonDescribedValue idv;
-                error = IonValue(d[length .. $]).describe(idv);
+                auto idv = IonValue(d[length .. $]).describe(error);
                 if (error)
                     return T.init;
                 return T(IonAnnotations(d[0 .. length]), idv);
@@ -1383,7 +1381,7 @@ struct IonDescribedDecimal
     Params:
         serializer = serializer
     +/
-    void serialize(S)(scope ref S serializer) scope const
+    void serialize(S)(scope ref S serializer) scope const @safe
     {
         Decimal!128 decimal = void;
         if (auto error = this.get(decimal))
@@ -1466,13 +1464,24 @@ struct IonDecimal
         Describes decimal.
         Returns: $(LREF IonDescribedDecimal)
         +/
-        T get(T = IonDescribedDecimal)()
+        T get(T = IonDescribedDecimal)() return scope
             @safe pure @nogc const
         {
-            T ret;
-            if (auto error = get(ret))
-                throw error.ionException;
-            return ret;
+            static if (isFloatingPoint!T)
+            {
+                T ret;
+                if (auto error = get(ret))
+                    throw error.ionException;
+                return ret;
+            }
+            else
+            {
+                IonErrorCode error;
+                auto ret = get!T(error);
+                if (error)
+                    throw error.ionException;
+                return ret;
+            }
         }
     }
 
@@ -1491,7 +1500,7 @@ struct IonDecimal
     Params:
         serializer = serializer
     +/
-    void serialize(S)(scope ref S serializer) scope const
+    void serialize(S)(scope ref S serializer) scope const @safe
     {
         this.get!IonDescribedDecimal.serialize(serializer);
     }
@@ -3223,6 +3232,61 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
         if (_expect(length >= mLength, false))
             return IonErrorCode.overflowInParseVarUInt;
     }
+}
+
+package IonDescribedValue parseValue()(ref scope return const(ubyte)[] data, out IonErrorCode error)
+    @safe pure nothrow @nogc
+{
+    version (LDC) pragma(inline, true);
+
+    if (_expect(data.length == 0, false))
+    {
+        error = IonErrorCode.unexpectedEndOfData;
+        return IonDescribedValue.init;
+    }
+    auto descriptorPtr = &data[0];
+    data = data[1 .. $];
+    ubyte descriptorData = *descriptorPtr;
+
+    if (_expect(descriptorData > 0xEE, false))
+    {
+        error = IonErrorCode.illegalTypeDescriptor;
+        return IonDescribedValue.init;
+    }
+
+    auto describedValue = IonDescribedValue(IonDescriptor(descriptorPtr));
+
+    const L = describedValue.descriptor.L;
+    const type = describedValue.descriptor.type;
+    // if null
+    if (L == 0xF)
+        return describedValue;
+    // if bool
+    if (type == IonTypeCode.bool_)
+    {
+        if (_expect(L > 1, false))
+            error = IonErrorCode.illegalTypeDescriptor;
+        return describedValue;
+    }
+    size_t length = L;
+    // if large
+    bool sortedStruct = descriptorData == 0xD1;
+    if (length == 0xE || sortedStruct)
+    {
+        error = parseVarUInt(data, length);
+        if (error)
+            return IonDescribedValue.init;
+    }
+    if (_expect(length > data.length, false))
+    {
+        error = IonErrorCode.unexpectedEndOfData;
+        return IonDescribedValue.init;
+    }
+    describedValue.data = data[0 .. length];
+    data = data[length .. $];
+    // NOP Padding
+    error = type == IonTypeCode.null_ ? IonErrorCode.nop : IonErrorCode.none;
+    return describedValue;
 }
 
 package IonErrorCode parseValue()(ref const(ubyte)[] data, scope ref IonDescribedValue describedValue)

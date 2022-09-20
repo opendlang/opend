@@ -13,7 +13,7 @@ version(mir_ion_test) unittest
     {
         @serdeIgnore string str;
     @safe pure:
-        string a() @property
+        string a() const @property
         {
             return str;
         }
@@ -41,7 +41,7 @@ version(mir_ion_test) unittest
     {
         long value;
 
-    @safe pure:
+    @safe pure nothrow @nogc:
 
         @property
         isNull() const
@@ -50,7 +50,7 @@ version(mir_ion_test) unittest
         }
 
         @property
-        get()
+        long get() const
         {
             return value;
         }
@@ -72,7 +72,7 @@ version(mir_ion_test) unittest
         MyNullable my_nullable;
         string field;
 
-        bool opEquals()(auto ref const(typeof(this)) rhs)
+        bool opEquals()(auto ref const(typeof(this)) rhs) const
         {
             if (my_nullable.isNull && rhs.my_nullable.isNull)
                 return field == rhs.field;
@@ -445,12 +445,12 @@ version(mir_ion_test) unittest
     {
         MyObject[] array;
 
-        this(MyObject[] array) @safe pure nothrow @nogc
+        this(inout(MyObject)[] array) @safe pure nothrow @nogc inout
         {
             this.array = array;
         }
 
-        T opCast(T : MyObject[])()
+        inout(T) opCast(T : MyObject[])() inout
         {
             return array;
         }
@@ -615,7 +615,7 @@ unittest
         private int sum;
 
         // opApply is used for serialization
-        int opApply(scope int delegate(scope const char[] key, ref const int val) pure @safe dg) pure @safe
+        int opApply(scope int delegate(scope const char[] key, ref const int val) pure @safe dg) const pure @safe
         {
             { int var = 1; if (auto r = dg("a", var)) return r; }
             { int var = 2; if (auto r = dg("b", var)) return r; }
