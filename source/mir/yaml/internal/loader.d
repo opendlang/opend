@@ -11,7 +11,6 @@ module mir.internal.yaml.loader;
 import std.exception;
 import std.file;
 import std.stdio : File;
-import std.string;
 
 import mir.internal.yaml.composer;
 import mir.internal.yaml.constructor;
@@ -63,8 +62,7 @@ struct Loader
             }
             catch(FileException e)
             {
-                throw new YamlException("Unable to open file %s for YAML loading: %s"
-                                        .format(filename, e.msg), e.file, e.line);
+                throw new YamlException("Unable to open file " ~ filename ~ " for YAML loading: " ~ e.msg, e.file, e.line);
             }
          }
 
@@ -221,7 +219,7 @@ struct Loader
 /// Load all YAML documents from a file:
 @safe unittest
 {
-    import std.array : array;
+    import mir.array.allocation : array;
     import std.file : write;
     write("example.yaml",
         "---\n"~

@@ -11,10 +11,9 @@
  */
 module mir.internal.yaml.dumper;
 
-import std.array;
-import std.range.primitives;
-import std.typecons;
-
+import std.array: Appender, appender;
+import std.typecons: Flag, Yes, No;
+import mir.primitives;
 import mir.internal.yaml.emitter;
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;

@@ -8,10 +8,8 @@
 module mir.internal.yaml.exception;
 
 
-import std.algorithm;
-import std.array;
-import std.string;
-import std.conv;
+import mir.array.allocation: array;
+import mir.conv;
 
 
 /// Base class for all exceptions thrown by `mir-yaml`.

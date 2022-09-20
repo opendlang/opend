@@ -10,19 +10,10 @@
 module mir.internal.yaml.emitter;
 
 
-import std.algorithm;
-import std.array;
-import std.ascii;
-import std.conv;
-import std.encoding;
-import std.exception;
-import std.format;
-import std.range;
-import std.string;
-import std.system;
-import std.typecons;
-import std.utf;
-
+import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
+import mir.algorithm.iteration: all;
+import mir.conv;
+import mir.format;
 import mir.internal.yaml.escapes;
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;
@@ -30,7 +21,17 @@ import mir.internal.yaml.linebreak;
 import mir.internal.yaml.queue;
 import mir.internal.yaml.scanner;
 import mir.internal.yaml.tagdirective;
-import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
+import mir.ndslice.sorting: sort;
+import mir.primitives: isOutputRange;
+import mir.utility: min, max;
+import std.algorithm.comparison: among;
+import std.algorithm.iteration: splitter;
+import std.algorithm.searching: canFind, startsWith;
+import std.array: Appender, appender;
+import std.ascii;
+import std.typecons: Flag, Yes, No, BitFlags;
+import std.uni: icmp;
+import std.utf;
 
 package:
 
@@ -220,7 +221,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         ///Write a string to the file/stream.
         void writeString(const scope char[] str) @safe
         {
-            copy(str, stream_);
+            stream_.put(str);
         }
 
         ///In some cases, we wait for a few next events before emitting.
@@ -324,7 +325,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
                 if(tagDirectives !is null)
                 {
                     tagDirectives_ = tagDirectives;
-                    sort!"icmp(a.handle, b.handle) < 0"(tagDirectives_);
+                    sort!((ref a, ref b) => icmp(a.handle, b.handle) < 0)(tagDirectives_);
 
                     foreach(ref pair; tagDirectives_)
                     {
@@ -337,7 +338,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
                 //Add any default tag directives that have not been overriden.
                 foreach(ref def; defaultTagDirectives_)
                 {
-                    if(!std.algorithm.canFind!eq(tagDirectives_, def))
+                    if(!canFind!eq(tagDirectives_, def))
                     {
                         tagDirectives_ ~= def;
                     }
@@ -829,7 +830,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
 
         ///Prepare YAML version string for output.
         static string prepareVersion(const string YAMLVersion) @safe
-            in(YAMLVersion.split(".")[0] == "1",
+            in(YAMLVersion.splitter(".").front == "1",
                 "Unsupported YAML version: " ~ YAMLVersion)
         {
             return YAMLVersion;
@@ -843,10 +844,11 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             //For each byte add string in format %AB , where AB are hex digits of the byte.
             foreach(const char b; data[0 .. bytes])
             {
-                formattedWrite(writer, "%%%02X", cast(ubyte)b);
+                print(writer, hexAddress(cast(ubyte)b));
             }
         }
 
+        import std.range: drop, dropBack;
         ///Prepare tag directive handle for output.
         static string prepareTagHandle(const string handle) @safe
             in(handle != "", "Tag handle must not be empty")
@@ -895,7 +897,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             string suffix = tagString;
 
             //Sort lexicographically by prefix.
-            sort!"icmp(a.prefix, b.prefix) < 0"(tagDirectives_);
+            sort!((ref a, ref b) => icmp(a.prefix, b.prefix) < 0)(tagDirectives_);
             foreach(ref pair; tagDirectives_)
             {
                 auto prefix = pair.prefix;
@@ -1357,8 +1359,8 @@ struct ScalarWriter(Range)
                     }
                     if(c != dcharNone)
                     {
-                        auto appender = appender!string();
-                        if(const dchar es = toEscape(c))
+                        auto appender = stringBuf();
+                        if(const es = toEscape(c))
                         {
                             appender.put('\\');
                             appender.put(es);
@@ -1368,7 +1370,13 @@ struct ScalarWriter(Range)
                             //Write an escaped Unicode character.
                             const format = c <= 255   ? "\\x%02X":
                                            c <= 65535 ? "\\u%04X": "\\U%08X";
-                            formattedWrite(appender, format, cast(uint)c);
+                            if (c <= ubyte.max)
+                                put_xXX(appender, cast(ubyte)c);
+                            else
+                            if (c <= ushort.max)
+                                put_uXXXX(appender, cast(ushort)c);
+                            else
+                                put_UXXXXXXXX(appender, cast(uint)c);
                         }
 
                         emitter_.column_ += appender.data.length;

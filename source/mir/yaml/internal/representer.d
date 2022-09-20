@@ -16,12 +16,8 @@ module mir.internal.yaml.representer;
 import mir.conv;
 import mir.math;
 import mir.timestamp;
-import std.algorithm;
-import std.array;
-import std.base64;
-import std.exception;
-import std.format;
-import std.string;
+import mir.array.allocation: array;
+import mir.base64;
 
 import mir.internal.yaml.exception;
 import mir.algebraic_alias.yaml;
@@ -309,7 +305,7 @@ YamlAlgebraic representBytes(const YamlAlgebraic node) @safe
     const ubyte[] value = node.get!"blob".data;
     if(value is null){return YamlAlgebraic("null").withTag("tag:yaml.org,2002:null");}
 
-    auto newNode = YamlAlgebraic(Base64.encode(value).idup).withTag("tag:yaml.org,2002:binary");
+    auto newNode = YamlAlgebraic(encodeBase64(value)).withTag("tag:yaml.org,2002:binary");
     newNode.scalarStyle = YamlScalarStyle.literal;
     return newNode;
 }

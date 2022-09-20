@@ -10,8 +10,8 @@
  */
 module mir.internal.yaml.event;
 
-import std.array;
-import std.conv;
+import mir.array.allocation: array;
+import mir.conv;
 
 import mir.internal.yaml.exception;
 import mir.internal.yaml.reader;

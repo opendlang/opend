@@ -6,22 +6,12 @@
 
 module mir.internal.yaml.reader;
 
-
-import core.stdc.stdlib;
-import core.stdc.string;
-import core.thread;
-
-import std.algorithm;
-import std.array;
-import std.conv;
-import std.exception;
-import std.range;
-import std.string;
-import std.system;
-import std.typecons;
-import std.utf;
-
+import mir.array.allocation: array;
+import mir.conv;
 import mir.internal.yaml.exception;
+import mir.utility: min;
+import std.algorithm.comparison: among;
+import std.utf;
 
 alias isBreak = among!('\n', '\u0085', '\u2028', '\u2029');
 
@@ -503,6 +493,7 @@ public:
         // by a Reader method and point to buffer. So we need to memmove.
         else
         {
+            import std.algorithm.mutation: copy;
             copy(str, buffer_[end_..end_ + str.length * char.sizeof]);
             end_ += str.length;
         }
@@ -555,6 +546,7 @@ public:
 
         if(movedLength > 0)
         {
+            import std.algorithm.mutation: copy;
             copy(buffer_[point..point + movedLength * char.sizeof],
                     buffer_[point + bytes..point + bytes + movedLength * char.sizeof]);
         }
@@ -692,6 +684,8 @@ bool isPrintableValidUTF8(scope const char[] chars) @safe pure
 /// Used to determine how many characters we can process without decoding.
 size_t countASCII(const(char)[] buffer) @safe pure nothrow @nogc
 {
+    import mir.primitives: walkLength;
+    import std.algorithm.searching: until;
     return buffer.byCodeUnit.until!(x => x > 0x7F).walkLength;
 }
 // Unittests.

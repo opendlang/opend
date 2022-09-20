@@ -11,22 +11,20 @@ module mir.internal.yaml.scanner;
 
 import core.stdc.string;
 
-import std.algorithm;
-import std.array;
-import std.conv;
-import std.ascii : isAlphaNum, isDigit, isHexDigit;
-import std.exception;
-import std.string;
-import std.typecons;
-import std.traits : Unqual;
-import std.utf;
-
+import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
+import mir.conv;
+import mir.format;
 import mir.internal.yaml.escapes;
 import mir.internal.yaml.exception;
 import mir.internal.yaml.queue;
 import mir.internal.yaml.reader;
 import mir.internal.yaml.token;
-import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
+import mir.utility: min, max;
+import std.algorithm.comparison: among;
+import std.array;
+import std.array: Appender;
+import std.ascii : isAlphaNum, isDigit, isHexDigit;
+import std.exception;
 
 package:
 /// Scanner produces tokens of the following types:
@@ -158,6 +156,7 @@ struct Scanner
         /// Construct a Scanner using specified Reader.
         this(Reader reader) @safe nothrow
         {
+            import core.lifetime: move;
             // Return the next token, but do not delete it from the queue
             reader_   = move(reader);
             fetchStreamStart();
@@ -248,9 +247,8 @@ struct Scanner
                 default:   if(checkPlain())      { return fetchPlain();      }
             }
 
-            throw new ScannerException("While scanning for the next token, found character " ~
-                                       "\'%s\', index %s that cannot start any token"
-                                       .format(c, to!int(c)), reader_.mark);
+            throw new ScannerException(text("While scanning for the next token, found character " ~
+                                       "\'", c, "\', index ", cast(uint)c, " that cannot start any token"), reader_.mark);
         }
 
 
@@ -1101,8 +1099,8 @@ struct Scanner
 
             const indicators = scanBlockScalarIndicators(startMark);
 
-            const chomping   = indicators[0];
-            const increment  = indicators[1];
+            const chomping   = indicators.chomping;
+            const increment  = indicators.increment;
             scanBlockScalarIgnoredLine(startMark);
 
             // Determine the indentation level and go to the first non-empty line.
@@ -1119,8 +1117,8 @@ struct Scanner
             if(increment == int.min)
             {
                 auto indentation = scanBlockScalarIndentationToSlice();
-                endMark = indentation[1];
-                indent  = max(indent, indentation[0]);
+                endMark = indentation.mark;
+                indent  = max(indent, indentation.indent);
             }
             else
             {
@@ -1230,7 +1228,12 @@ struct Scanner
         }
 
         /// Scan chomping and indentation indicators of a scalar token.
-        Tuple!(Chomping, int) scanBlockScalarIndicators(const ParsePosition startMark) @safe
+        struct ChompingID
+        {
+            Chomping chomping;
+            int increment;
+        }
+        ChompingID scanBlockScalarIndicators(const ParsePosition startMark) @safe
         {
             auto chomping = Chomping.clip;
             int increment = int.min;
@@ -1251,7 +1254,7 @@ struct Scanner
                 new ScannerException("While scanning a block scalar", startMark,
                 expected("chomping or indentation indicator", c), reader_.mark));
 
-            return tuple(chomping, increment);
+            return ChompingID(chomping, increment);
         }
 
         /// Get chomping indicator, if detected. Return false otherwise.
@@ -1315,7 +1318,13 @@ struct Scanner
         ///
         /// Assumes that the caller is building a slice in Reader, and puts the scanned
         /// characters into that slice.
-        Tuple!(uint, ParsePosition) scanBlockScalarIndentationToSlice() @safe
+        struct IndentPos
+        {
+            uint indent;
+            ParsePosition mark;
+        }
+
+        IndentPos scanBlockScalarIndentationToSlice() @safe
         {
             uint maxIndent;
             ParsePosition endMark = reader_.mark;
@@ -1332,7 +1341,7 @@ struct Scanner
                 maxIndent = max(reader_.column, maxIndent);
             }
 
-            return tuple(maxIndent, endMark);
+            return IndentPos(maxIndent, endMark);
         }
 
         /// Scan line breaks at lower or specified indentation in a block scalar.
@@ -1741,8 +1750,8 @@ struct Scanner
                     new ScannerException(contextMsg, startMark,
                         expected("URI escape sequence of 2 hexadecimal " ~
                             "numbers", nextByte), reader_.mark));
-
-                buffer ~= nextByte[].to!ubyte(16);
+                import std.conv: stdTo = to;
+                buffer ~= nextByte[].stdTo!ubyte(16);
 
                 reader_.forward(2);
             }

@@ -10,12 +10,14 @@
  */
 module mir.internal.yaml.parser;
 
-
-import std.algorithm;
+import std.algorithm.searching: canFind;
 import std.array;
-import std.conv;
+import std.algorithm.iteration: splitter;
+import std.algorithm.comparison: among;
+import std.array: Appender, appender;
+import mir.conv;
 import std.exception;
-import std.typecons;
+import std.typecons: Flag, Yes, No;
 
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;
@@ -365,7 +367,7 @@ struct Parser
                 {
                     enforce(YAMLVersion_ is null,
                             new ParserException("Duplicate YAML directive", token.startMark));
-                    const minor = value.split(".")[0];
+                    const minor = value.splitter(".").front;
                     enforce(minor == "1",
                             new ParserException("Incompatible document (version 1.x is required)",
                                       token.startMark));
@@ -611,8 +613,8 @@ struct Parser
                     import std.ascii : isHexDigit;
                     assert(!hex.canFind!(d => !d.isHexDigit),
                             "Scanner must ensure the hex string is valid");
-
-                    const decoded = cast(dchar)parse!int(hex, 16u);
+                    import std.conv: stdParse = parse;
+                    const decoded = cast(dchar)stdParse!int(hex, 16u);
                     if(notInPlace is null) { appender.put(decoded); }
                     else                   { notInPlace ~= decoded; }
                     continue;

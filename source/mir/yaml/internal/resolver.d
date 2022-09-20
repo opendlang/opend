@@ -15,17 +15,20 @@
 module mir.internal.yaml.resolver;
 
 
-import std.conv;
-import std.regex;
-import std.typecons;
-import std.utf;
 
 import mir.algebraic_alias.yaml;
+import mir.conv;
 import mir.internal.yaml.exception;
+import std.regex;
 
 
 /// Type of `regexes`
-private alias RegexType = Tuple!(string, "tag", const Regex!char, "regexp", string, "chars");
+private struct RegexType
+{
+    string tag;
+    Regex!char regexp;
+    string chars;
+}
 
 private immutable RegexType[] regexes = [
     RegexType("tag:yaml.org,2002:bool",
@@ -86,7 +89,12 @@ struct Resolver
          * Each tuple stores regular expression the scalar must match,
          * and tag to assign to it if it matches.
          */
-        Tuple!(string, const Regex!char)[][dchar] yamlImplicitResolvers_;
+        struct IRes
+        {
+            string str;
+            const Regex!char regex;
+        }
+        IRes[][dchar] yamlImplicitResolvers_;
 
     package:
         static auto withDefaultResolvers() @safe
@@ -129,7 +137,7 @@ struct Resolver
                 {
                     yamlImplicitResolvers_[c] = [];
                 }
-                yamlImplicitResolvers_[c] ~= tuple(tag, regexp);
+                yamlImplicitResolvers_[c] ~= IRes(tag, regexp);
             }
         }
 
@@ -177,11 +185,11 @@ struct Resolver
                         // assigned to non-scope parameter `this` calling
                         // `std.regex.RegexMatch!string.RegexMatch.~this`
                         bool isEmpty = () @trusted {
-                            return match(value, resolver[1]).empty;
+                            return match(value, resolver.regex).empty;
                         }();
                         if(!isEmpty)
                         {
-                            return resolver[0];
+                            return resolver.str;
                         }
                     }
                     return defaultScalarTag_;

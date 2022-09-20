@@ -53,7 +53,7 @@ dchar fromEscape(dchar escape) @safe pure nothrow @nogc
  *      If the character passed as parameter can be escaped, returns the matching
  *      escape, otherwise returns a null character.
  */
-dchar toEscape(dchar value) @safe pure nothrow @nogc
+char toEscape(dchar value) @safe pure nothrow @nogc
 {
     switch(value)
     {

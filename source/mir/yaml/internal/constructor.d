@@ -12,14 +12,14 @@
 module mir.internal.yaml.constructor;
 
 import mir.timestamp;
-import std.algorithm;
-import std.array;
-import std.base64;
-import std.conv;
+import mir.algorithm.iteration: filter;
+import std.algorithm.searching: canFind, startsWith;
+import std.algorithm.comparison: among;
+import mir.array.allocation: array;
+import mir.base64;
+import mir.conv;
 import std.exception;
-import std.regex;
-import std.string;
-import std.utf;
+import std.string: representation, empty, split, replace, toLower;
 
 import mir.algebraic_alias.yaml;
 import mir.internal.yaml.exception;
@@ -221,16 +221,16 @@ long constructLong(const string str) @safe
     enforce(value != "", new Exception("Unable to parse float value: " ~ value));
 
     long result;
-    try
-    {
+
+        import std.conv: stdTo = to;
         //Zero.
         if(value == "0")               {result = cast(long)0;}
         //Binary.
-        else if(value.startsWith("0b")){result = sign * to!int(value[2 .. $], 2);}
+        else if(value.startsWith("0b")){result = sign * stdTo!int(value[2 .. $], 2);}
         //Hexadecimal.
-        else if(value.startsWith("0x")){result = sign * to!int(value[2 .. $], 16);}
+        else if(value.startsWith("0x")){result = sign * stdTo!int(value[2 .. $], 16);}
         //Octal.
-        else if(value[0] == '0')       {result = sign * to!int(value, 8);}
+        else if(value[0] == '0')       {result = sign * stdTo!int(value, 8);}
         //Sexagesimal.
         else if(value.canFind(":"))
         {
@@ -245,11 +245,6 @@ long constructLong(const string str) @safe
         }
         //Decimal.
         else{result = sign * to!long(value);}
-    }
-    catch(ConvException e)
-    {
-        throw new Exception("Unable to parse integer value: " ~ value);
-    }
 
     return result;
 }
@@ -286,8 +281,6 @@ double constructReal(const string str) @safe
         throw new Exception("Unable to parse float value: " ~ value);
 
     double result;
-    try
-    {
         //Infinity.
         if     (value == ".inf"){result = sign * double.infinity;}
         //Not a Number.
@@ -306,11 +299,6 @@ double constructReal(const string str) @safe
         }
         //Plain floating point.
         else{result = sign * to!double(value);}
-    }
-    catch(ConvException e)
-    {
-        throw new Exception("Unable to parse float value: \"" ~ value ~ "\"");
-    }
 
     return result;
 }
@@ -341,25 +329,16 @@ import mir.lob: Blob;
 Blob constructBinary(const string value) @safe
 {
     import std.ascii : newline;
-    import std.array : array;
+    import mir.array.allocation : array;
 
     // For an unknown reason, this must be nested to work (compiler bug?).
-    try
-    {
-        return Base64.decode(value.representation.filter!(c => !newline.canFind(c)).array).Blob;
-    }
-    catch(Base64Exception e)
-    {
-        throw new Exception("Unable to decode base64 value: " ~ e.msg);
-    }
+    return decodeBase64(cast(string)value.representation.filter!(c => !newline.canFind(c)).array).Blob;
 }
 
 @safe unittest
 {
     auto test = "The Answer: 42".representation;
-    char[] buffer;
-    buffer.length = 256;
-    string input = Base64.encode(test, buffer).idup;
+    string input = encodeBase64(test);
     const value = constructBinary(input);
     assert(value.data == test);
     assert(value.data == [84, 104, 101, 32, 65, 110, 115, 119, 101, 114, 58, 32, 52, 50]);
@@ -368,6 +347,7 @@ Blob constructBinary(const string value) @safe
 // Construct a timestamp _node.
 Timestamp constructTimestamp(const string str) @safe
 {
+    import std.regex;
     import mir.conv: to;
     string value = str;
 

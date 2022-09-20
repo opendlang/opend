@@ -12,12 +12,12 @@ module mir.internal.yaml.composer;
 
 import core.memory;
 
-import std.algorithm;
-import std.array;
-import std.conv;
+import std.algorithm.searching: canFind, skipOver;
+import mir.ndslice.sorting: sort;
+import std.array: Appender, appender;
+import mir.conv;
+import mir.format: text;
 import std.exception;
-import std.range;
-import std.typecons;
 
 import mir.internal.yaml.constructor;
 import mir.internal.yaml.event;
@@ -335,7 +335,12 @@ struct Composer
                                           startEvent.implicit);
             auto pairAppender = &(pairAppenders_[pairAppenderLevel]);
 
-            Tuple!(YamlAlgebraic, ParsePosition)[] toMerge;
+            static struct YamlAlgebraicParsePosition
+            {
+                YamlAlgebraic node;
+                ParsePosition mark;
+            }
+            YamlAlgebraicParsePosition[] toMerge;
             while(parser_.front.id != EventID.mappingEnd)
             {
                 auto pair = YamlPair(composeNode(pairAppenderLevel + 1, nodeAppenderLevel),
@@ -344,7 +349,7 @@ struct Composer
                 // Need to flatten and merge the node referred by YAMLMerge.
                 if(pair.key == "<<")
                 {
-                    toMerge ~= tuple(pair.value, cast(ParsePosition)parser_.front.endMark);
+                    toMerge ~= YamlAlgebraicParsePosition(pair.value, cast(ParsePosition)parser_.front.endMark);
                 }
                 //Not YAMLMerge, just add the pair.
                 else
@@ -352,18 +357,17 @@ struct Composer
                     pairAppender.put(pair);
                 }
             }
-            foreach(node; toMerge)
+            foreach(ref node; toMerge)
             {
-                merge(*pairAppender, flatten(node[0], startEvent.startMark, node[1],
+                merge(*pairAppender, flatten(node.node, startEvent.startMark, node.mark,
                                              pairAppenderLevel + 1, nodeAppenderLevel));
             }
 
-            auto sorted = pairAppender.data.dup.sort!((x,y) => x.key > y.key);
+            auto sorted = pairAppender.data.dup.sort;
             if (sorted.length) {
-                foreach (index, const ref value; sorted[0 .. $ - 1].enumerate)
+                foreach (index, const ref value; sorted[0 .. $ - 1])
                     if (value.key == sorted[index + 1].key) {
                         const message = () @trusted {
-                            import mir.format: text;
                             import mir.algebraic: visit;
                             return text("Key '", value.key.visit!text, "' appears multiple times in mapping (first: ", value.key.startMark, ")");
                         }();

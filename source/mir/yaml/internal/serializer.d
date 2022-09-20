@@ -10,10 +10,8 @@
  */
 module mir.internal.yaml.serializer;
 
-
-import std.array;
-import std.format;
-import std.typecons;
+import std.array: appender;
+import std.typecons: Flag, Yes, No;
 
 import mir.internal.yaml.emitter;
 import mir.internal.yaml.event;
@@ -183,10 +181,12 @@ struct Serializer
         ///Generate and return a new anchor.
         string generateAnchor() @safe
         {
+            import mir.format;
             ++lastAnchorID_;
-            auto appender = appender!string();
-            formattedWrite(appender, "id%03d", lastAnchorID_);
-            return appender.data;
+            auto appender = stringBuf();
+            print(appender, "id");
+            printZeroPad(appender, lastAnchorID_, 3);
+            return appender.data.idup;
         }
 
         ///Serialize a node and all its subnodes.

@@ -9,7 +9,7 @@
 module mir.internal.yaml.token;
 
 
-import std.conv;
+import mir.conv;
 
 import mir.internal.yaml.exception;
 import mir.internal.yaml.reader;
