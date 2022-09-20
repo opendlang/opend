@@ -3,7 +3,7 @@ $(H4 High level serialization API)
 
 Macros:
 IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
-Authros: Ilya Yaroshenko
+Authros: Ilia Ki
 +/
 module mir.ser;
 
