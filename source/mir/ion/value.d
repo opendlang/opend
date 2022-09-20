@@ -1907,7 +1907,7 @@ struct IonList
     Note: a NOP padding makes in the struct non-empty.
     +/
     bool empty()
-        @safe pure nothrow @nogc const @property
+        scope @safe pure nothrow @nogc const @property
     {
         return data.length == 0;
     }
@@ -1972,8 +1972,8 @@ const:
         auto d = data[];
         while (d.length)
         {
-            IonDescribedValue describedValue;
-            auto error = parseValue(d, describedValue);
+            IonErrorCode error;
+            auto describedValue = parseValue(d, error);
             if (error == IonErrorCode.nop)
                 continue;
             if (auto ret = dg(error, describedValue))
@@ -2119,7 +2119,7 @@ const:
     }
 
     ///
-    size_t walkLength() const @property @safe pure @nogc {
+    size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
         foreach (scope IonDescribedValue value; this)
             length++;
@@ -2162,7 +2162,7 @@ struct IonSexp
     Note: a NOP padding makes in the struct makes it non-empty.
     +/
     bool empty()
-        @safe pure nothrow @nogc const @property
+        scope @safe pure nothrow @nogc const @property
     {
         return data.length == 0;
     }
@@ -2359,7 +2359,7 @@ const:
     }
 
     ///
-    size_t walkLength() const @property @safe pure @nogc {
+    size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
         foreach (scope IonDescribedValue value; this)
             length++;
@@ -2435,7 +2435,7 @@ struct IonStruct
     Note: a NOP padding makes in the struct makes it non-empty.
     +/
     bool empty()
-        @safe pure nothrow @nogc const @property
+        scope @safe pure nothrow @nogc const @property
     {
         return data.length == 0;
     }
@@ -2505,7 +2505,7 @@ const:
             auto error = parseVarUInt(d, symbolID);
             if (!error)
             {
-                error = parseValue(d, describedValue);
+                describedValue = parseValue(d, error);
                 if (error == IonErrorCode.nop)
                     continue;
             }
@@ -2665,7 +2665,7 @@ const:
     }
 
     ///
-    size_t walkLength() const @property @safe pure @nogc {
+    size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
         foreach (size_t symbolID, scope IonDescribedValue value; this)
             length++;
@@ -2735,7 +2735,7 @@ struct IonStructWithSymbols
     Note: a NOP padding makes in the struct makes it non-empty.
     +/
     bool empty()
-        @safe pure nothrow @nogc const @property
+        scope @safe pure nothrow @nogc const @property
     {
         return ionStruct.empty;
     }
@@ -3003,14 +3003,14 @@ struct IonAnnotations
     Returns: true if no annotations provided.
     +/
     bool empty()
-        @safe pure nothrow @nogc const @property
+        scope @safe pure nothrow @nogc const @property
     {
         return data.length == 0;
     }
 
     ///
-    IonErrorCode pick(ref size_t symbolID)
-        @safe pure nothrow @nogc
+    IonErrorCode pick(scope ref size_t symbolID)
+        @safe pure nothrow @nogc scope
     {
         assert(!empty);
         return parseVarUInt(data, symbolID);
@@ -3234,7 +3234,7 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
     }
 }
 
-package IonDescribedValue parseValue()(ref scope return const(ubyte)[] data, out IonErrorCode error)
+package IonDescribedValue parseValue()(ref return scope const(ubyte)[] data, out IonErrorCode error)
     @safe pure nothrow @nogc
 {
     version (LDC) pragma(inline, true);
@@ -3287,50 +3287,6 @@ package IonDescribedValue parseValue()(ref scope return const(ubyte)[] data, out
     // NOP Padding
     error = type == IonTypeCode.null_ ? IonErrorCode.nop : IonErrorCode.none;
     return describedValue;
-}
-
-package IonErrorCode parseValue()(ref const(ubyte)[] data, scope ref IonDescribedValue describedValue)
-    @safe pure nothrow @nogc
-{
-    version (LDC) pragma(inline, true);
-
-    if (_expect(data.length == 0, false))
-        return IonErrorCode.unexpectedEndOfData;
-    auto descriptorPtr = &data[0];
-    data = data[1 .. $];
-    ubyte descriptorData = *descriptorPtr;
-
-    if (_expect(descriptorData > 0xEE, false))
-        return IonErrorCode.illegalTypeDescriptor;
-
-    describedValue = IonDescribedValue(IonDescriptor(descriptorPtr));
-
-    const L = describedValue.descriptor.L;
-    const type = describedValue.descriptor.type;
-    // if null
-    if (L == 0xF)
-        return IonErrorCode.none;
-    // if bool
-    if (type == IonTypeCode.bool_)
-    {
-        if (_expect(L > 1, false))
-            return IonErrorCode.illegalTypeDescriptor;
-        return IonErrorCode.none;
-    }
-    size_t length = L;
-    // if large
-    bool sortedStruct = descriptorData == 0xD1;
-    if (length == 0xE || sortedStruct)
-    {
-        if (auto error = parseVarUInt(data, length))
-            return error;
-    }
-    if (_expect(length > data.length, false))
-        return IonErrorCode.unexpectedEndOfData;
-    describedValue.data = data[0 .. length];
-    data = data[length .. $];
-    // NOP Padding
-    return type == IonTypeCode.null_ ? IonErrorCode.nop : IonErrorCode.none;
 }
 
 private F parseFloating(F)(scope const(ubyte)[] data)

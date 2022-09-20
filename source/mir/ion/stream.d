@@ -18,7 +18,7 @@ struct IonValueStream
     const(ubyte)[] data;
 
     private alias DG = int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure nothrow @nogc;
-    private alias EDG = int delegate(const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc;
+    private alias EDG = int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc;
 
 const:
 
@@ -34,7 +34,7 @@ const:
         /++
         +/
         @safe pure @nogc
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc dg)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc dg)
         {
             return opApply((IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value) {
                 if (_expect(error, false))
@@ -45,37 +45,37 @@ const:
 
         /// ditto
         @trusted @nogc
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @safe @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted pure
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @safe pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @trusted
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @safe dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure @nogc
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @system pure @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system @nogc
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @system @nogc dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system pure
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @system pure dg) { return opApply(cast(EDG) dg); }
 
         /// ditto
         @system
-        scope int opApply(scope int delegate(const(char[])[] symbolTable, scope IonDescribedValue value)
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
         @system dg) { return opApply(cast(EDG) dg); }
     }
 
@@ -114,7 +114,7 @@ const:
                 resetSymbolTable();
                 continue;
             }
-            error = d.parseValue(describedValue);
+            describedValue = d.parseValue(error);
             // check if describedValue is symbol table
             if (describedValue.descriptor.type == IonTypeCode.annotations)
             {
@@ -313,10 +313,10 @@ const:
     Params:
         serializer = serializer
     +/
-    void serialize(S)(scope ref S serializer) scope const
+    void serialize(S)(scope ref S serializer) scope const @safe
     {
         bool following;
-        foreach (symbolTable, value; this)
+        foreach (scope symbolTable, scope value; this)
         {
             if (following)
                 serializer.nextTopLevelValue;
@@ -328,7 +328,7 @@ const:
             // else
             // {
                 import mir.ser.unwrap_ids;
-                auto unwrappedSerializer = unwrapSymbolIds(serializer, symbolTable);
+                auto unwrappedSerializer = unwrapSymbolIds((()@trusted => &serializer)(), symbolTable);
             // }
             value.serialize(unwrappedSerializer);
         }

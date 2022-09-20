@@ -291,7 +291,7 @@ struct IonSymbolTable(bool gc)
 
     @safe pure nothrow @nogc @property:
 
-        bool empty() const
+        bool empty() const scope
         {
             return probeCount < 0;
         }
@@ -352,7 +352,7 @@ pure nothrow:
     }
 
     ///
-    void initialize()
+    void initialize() scope
     {
         initializeNull;
         static if (gc)

@@ -39,7 +39,7 @@ IonException deserializeValue_(T)(scope IonDescribedValue data, scope ref T valu
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T, TableKind tableKind, bool annotated)(scope IonDescribedValue data, DeserializationParams!(tableKind, annotated) params, scope ref T value)
+IonException deserializeValue_(T, TableKind tableKind, bool annotated)(scope IonDescribedValue data, scope DeserializationParams!(tableKind, annotated) params, scope ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValue_!T(data, value);
@@ -81,7 +81,7 @@ struct DeserializationParams(TableKind tableKind, bool annotated = false)
     else
     {
         ///
-        DeserializationParams!(tableKind, true) withAnnotations(IonAnnotations annotations) const
+        DeserializationParams!(tableKind, true) withAnnotations(return scope IonAnnotations annotations) const return scope
         {
             auto ret = typeof(return)();
             ret.annotations = annotations;
@@ -94,7 +94,7 @@ struct DeserializationParams(TableKind tableKind, bool annotated = false)
         }
 
         ///
-        DeserializationParams!(tableKind, false) withAnnotations() const
+        DeserializationParams!(tableKind, false) withAnnotations() const return scope
         {
             auto ret = typeof(return)();
             static if (tableKind)
@@ -162,11 +162,9 @@ template deserializeValue(string[] symbolTable)
         return symbolId < symbolTable.length;
     }
 
-@safe:
-
     @trusted pure nothrow @nogc private IonException deserializeScoped(C, TableKind tableKind, bool annotated)(
         scope IonDescribedValue data,
-        DeserializationParams!(tableKind, annotated) params,
+        scope DeserializationParams!(tableKind, annotated) params,
         scope ref C[] value)
         if (is(immutable C == immutable char))
     {with(params){
@@ -202,7 +200,7 @@ template deserializeValue(string[] symbolTable)
 
     private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, Buffer)(
         scope IonDescribedValue data,
-        DeserializationParams!(tableKind, annotated) params,
+        scope DeserializationParams!(tableKind, annotated) params,
         ref Buffer buffer)
     {with(params){
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
@@ -223,7 +221,7 @@ template deserializeValue(string[] symbolTable)
 
     private IonException deserializeValueMember(string member, T, TableKind tableKind, bool annotated)(
         scope IonDescribedValue data,
-        DeserializationParams!(tableKind, annotated) params,
+        scope DeserializationParams!(tableKind, annotated) params,
         scope ref T value,
         scope ref SerdeFlags!T requiredFlags)
     {with(params){
@@ -433,9 +431,10 @@ template deserializeValue(string[] symbolTable)
         value = value to deserialize
     Returns: `IonException`
     +/
+    @safe
     IonException deserializeValue(T, TableKind tableKind, bool annotated)(
         scope IonDescribedValue data,
-        DeserializationParams!(tableKind, annotated) params,
+        scope DeserializationParams!(tableKind, annotated) params,
         scope ref T value)
         if (!isFirstOrderSerdeType!T)
     {with(params){
@@ -853,8 +852,10 @@ template deserializeValue(string[] symbolTable)
                         auto wrapper = data.get!IonAnnotationWrapper(error);
                         if (error)
                             return error.ionException;
-                        annotatedParams.annotations = wrapper.annotations;
-                        data = wrapper.value;
+                        () @trusted {
+                            annotatedParams.annotations = wrapper.annotations;
+                            data = wrapper.value;
+                        } ();
                     }
                     
                 }
@@ -1239,7 +1240,7 @@ template deserializeValue(string[] symbolTable)
                     if (_wrapperError)
                         return _wrapperError.ionException;
                     auto annotations = wrapper.annotations;
-                    data = wrapper.value;
+                    (()@trusted {data = wrapper.value;})();
                 }
 
                 static foreach (member; serdeGetAnnotationMembersIn!T)

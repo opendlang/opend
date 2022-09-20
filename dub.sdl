@@ -6,8 +6,6 @@ license "Apache-2.0"
 dependency "mir-algorithm" version="~>3.14.0"
 dependency "mir-cpuid" version="~>1.2.6"
 
-dflags // "-v"// "-preview=dip1000"
-
 // versions "thunderbolt"
 
 configuration "library" {

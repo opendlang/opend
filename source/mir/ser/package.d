@@ -21,7 +21,23 @@ static immutable cannotSerializeVoidMsg = "Can't serialize none (void) value of 
 version (D_Exceptions)
     private static immutable cannotSerializeVoid = new Exception(cannotSerializeVoidMsg);
 
-private noreturn throwCannotSerializeVoid() @safe pure @nogc
+private noreturn serializeVoidHandler() @safe pure @nogc
+{
+    version (D_Exceptions)
+        throw cannotSerializeVoid;
+    else
+        assert(0, cannotSerializeVoidMsg);
+}
+
+private noreturn serializeVoidHandlerWithSerializer(S)(scope ref S serializer) @safe pure @nogc
+{
+    version (D_Exceptions)
+        throw cannotSerializeVoid;
+    else
+        assert(0, cannotSerializeVoidMsg);
+}
+
+private noreturn serializeVoidHandlerWithSerializerAndState(S)(scope ref S serializer, size_t state) @safe pure @nogc
 {
     version (D_Exceptions)
         throw cannotSerializeVoid;
@@ -142,7 +158,7 @@ unittest
 void serializeValue(S, T)(scope ref S serializer, scope const T[] value) @safe
     if(!isSomeChar!T)
 {
-    if(value is null)
+    if (value is null)
     {
         serializer.putNull(IonTypeCode.list);
         return;
@@ -233,7 +249,7 @@ void serializeValue(S, T)(scope ref S serializer, scope const T[string] value)
         return;
     }
     auto state = serializer.beginStruct(value);
-    foreach (key, ref val; (()@trusted => cast()value)())
+    foreach (key, ref const val; (()@trusted => cast()value)())
     {
         serializer.putKey(key);
         serializer.serializeValue(val);
@@ -326,47 +342,50 @@ unittest
 
 private IonTypeCode nullTypeCodeOf(T)()
 {
-    import mir.algebraic: isVariant, visit;
+    import mir.algebraic: isVariant;
     import mir.serde: serdeGetFinalProxy;
+    import std.traits: Unqual;
 
     IonTypeCode code;
 
-    static if (is(T == bool))
+    alias U = Unqual!T;
+
+    static if (is(U == bool))
         code = IonTypeCode.bool_;
     else
-    static if (isUnsigned!T)
+    static if (isUnsigned!U)
         code = IonTypeCode.uInt;
     else
-    static if (isIntegral!T || isBigInt!T)
+    static if (isIntegral!U || isBigInt!U)
         code = IonTypeCode.nInt;
     else
-    static if (isFloatingPoint!T)
+    static if (isFloatingPoint!U)
         code = IonTypeCode.float_;
     else
-    static if (isDecimal!T)
+    static if (isDecimal!U)
         code = IonTypeCode.decimal;
     else
-    static if (isClob!T)
+    static if (isClob!U)
         code = IonTypeCode.clob;
     else
-    static if (isBlob!T)
+    static if (isBlob!U)
         code = IonTypeCode.blob;
     else
-    static if (isSomeString!T)
+    static if (isSomeString!U)
         code = IonTypeCode.string;
     else
-    static if (!isVariant!T && isAggregateType!T)
+    static if (!isVariant!U && isAggregateType!U)
     {
-        static if (hasUDA!(T, serdeProxy))
-            code = .nullTypeCodeOf!(serdeGetFinalProxy!T);
+        static if (hasUDA!(U, serdeProxy))
+            code = .nullTypeCodeOf!(serdeGetFinalProxy!U);
         else
-        static if (isIterable!T && !hasFields!T)
+        static if (isIterable!U && !hasFields!U)
             code = IonTypeCode.list;
         else
             code = IonTypeCode.struct_;
     }
     else
-    static if (isIterable!T && !hasFields!T)
+    static if (isIterable!U && !hasFields!U)
         code = IonTypeCode.list;
 
     return code;
@@ -381,7 +400,7 @@ unittest
 @safe
 private void serializeAnnotatedValue(S, V)(scope ref S serializer, scope ref const V value, size_t wrapperState)
 {
-    import mir.algebraic: isVariant;
+    import mir.algebraic: Algebraic;
     static if (serdeGetAnnotationMembersOut!V.length)
     {
         static foreach (annotationMember; serdeGetAnnotationMembersOut!V)
@@ -403,41 +422,17 @@ private void serializeAnnotatedValue(S, V)(scope ref S serializer, scope ref con
             enum aliasThisMember = __traits(getAliasThis, V)[0];
         else
             enum aliasThisMember = "value";
-        serializeAnnotatedValue(serializer, __traits(getMember, value, aliasThisMember), wrapperState);
+        return serializeAnnotatedValue(serializer, __traits(getMember, value, aliasThisMember), wrapperState);
     }
     else
-    static if (isVariant!V)
+    static if (is(V == Algebraic!TypeSet, TypeSet...) && (!isStdNullable!V || Algebraic!TypeSet.AllowedTypes.length != 2))
     {
-        import mir.algebraic: visit;
-        if (false)
-        {
-            auto state = serializer.listBegin(3);
-            serializer.elemBegin();
-            serializer.putValue(23.12);
-            serializer.elemBegin();
-            serializer.putValue("23.12");
-            serializer.elemBegin();
-            serializer.putValue(null);
-            serializer.listEnd(state);
-        }
-        () @safe {
-        value.visit!(
-            (auto ref v) @trusted {
-                alias A = typeof(v);
-                static if (serdeIsComplexVariant!V && serdeHasAlgebraicAnnotation!A)
-                {
-                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
-                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
-                    else
-                    static if (__traits(hasMember, S, "putAnnotationPtr"))
-                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
-                    else
-                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
-                }
-                serializeAnnotatedValue(serializer, v, wrapperState);
-            },
-            throwCannotSerializeVoid,
-        ); } ();
+        import mir.algebraic: match;
+        match!(
+            serializeVoidHandlerWithSerializerAndState,
+            staticMap!(serializeAlgebraicAnnotationContinue!S, Filter!(serdeHasAlgebraicAnnotation, V.AllowedTypes)),
+            serializeAnnotatedValue,
+        )(serializer, value, wrapperState);
     }
     else
     {
@@ -451,7 +446,7 @@ private void serializeAnnotatedValue(S, V)(scope ref S serializer, scope ref con
 }
 
 /// Struct and class type serialization
-void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V value)
+private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V value)
     if (isAggregateType!V && (!isIterable!V || hasFields!V || hasUDA!(V, serdeProxy) && !hasUDA!(V, serdeLikeList)))
 {
     import mir.algebraic;
@@ -534,7 +529,7 @@ void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V value)
             else
             static if (hasField!(V, member))
             {
-                auto valPtr = &__traits(getMember, value, member);
+                scope valPtr = (()@trusted => &__traits(getMember, value, member))();
                 alias W  = typeof(*valPtr);
                 ref W val() @trusted @property { return *valPtr; }
             }
@@ -641,11 +636,38 @@ private template serializeWithProxy(Proxy)
     }
 }
 
+private template serializeAlgebraicAnnotation(S)
+{
+    void serializeAlgebraicAnnotation(V)(scope ref S serializer, scope ref const V value)
+        if (serdeHasAlgebraicAnnotation!V)
+    {
+        auto wrapperState = serializer.annotationWrapperBegin;
+        alias continueThis = serializeAlgebraicAnnotationContinue!S;
+        return continueThis(serializer, value, wrapperState);
+    }
+}
+
+private template serializeAlgebraicAnnotationContinue(S)
+{
+    void serializeAlgebraicAnnotationContinue(V)(scope ref S serializer, scope ref const V value, size_t wrapperState)
+        if (serdeHasAlgebraicAnnotation!V)
+    {
+        static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
+            serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!V);
+        else
+        static if (__traits(hasMember, S, "putAnnotationPtr"))
+            serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!V.ptr);
+        else
+            serializer.putAnnotation(serdeGetAlgebraicAnnotation!V);
+        serializeAnnotatedValue(serializer, value, wrapperState);
+    }
+}
+
 /// Struct and class type serialization
-void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
+void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
     if (isAggregateType!V)
 {
-    import mir.algebraic: Algebraic, isVariant, isNullable, visit;
+    import mir.algebraic: Algebraic, isVariant, isNullable;
     import mir.string_map: isStringMap;
     import mir.timestamp: Timestamp;
 
@@ -658,14 +680,36 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
         }
     }
 
-    static if (isIterable!V &&
+    static if (isBigInt!V || isDecimal!V || isTimestamp!V || isBlob!V || isClob!V)
+    {
+        serializer.putValue(value);
+        return;
+    }
+    else
+    static if (isStringMap!V)
+    {
+        auto state = serializer.beginStruct(value);
+        auto keys = value.keys;
+        foreach (i, ref v; value.values)
+        {
+            serializer.putKey(keys[i]);
+            .serializeValue(serializer, v);
+        }
+        serializer.structEnd(state);
+    }
+    else
+    static if (serdeGetAnnotationMembersOut!V.length || isAnnotated!V)
+    {
+        auto wrapperState = serializer.annotationWrapperBegin;
+        return serializeAnnotatedValue(serializer, value, wrapperState);
+    }
+    else
+    static if ((isIterable!V || isRefIterable!V) &&
         (!hasProxy!V || hasLikeList!V) &&
-        !isDynamicArray!V &&
         !hasFields!V &&
-        !isAssociativeArray!V &&
         !isStdNullable!V)
     {
-        static if(is(V == interface) || is(V == class) || is(V : E[], E) && !is(V : D[N], D, size_t N))
+        static if(is(V : E[], E) && !is(V : D[N], D, size_t N))
         {
             if (value is null)
             {
@@ -686,6 +730,15 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
             auto state = serializer.beginList(value);
             static if (isRefIterable!V)
             {
+                static if (__traits(hasMember, V, "lightScope"))
+                {
+                    foreach (ref elem; value.lightScope)
+                    {
+                        serializer.elemBegin;
+                        serializer.serializeValue(elem);
+                    }
+                }
+                else
                 static if (isRefIterable!(const V))
                 {
                     foreach (ref elem; value)
@@ -705,6 +758,15 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
             }
             else
             {
+                static if (__traits(hasMember, V, "lightScope"))
+                {
+                    foreach (elem; value.lightScope)
+                    {
+                        serializer.elemBegin;
+                        serializer.serializeValue(elem);
+                    }
+                }
+                else
                 static if (isIterable!(const V))
                 {
                     foreach (elem; value)
@@ -726,24 +788,6 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
         }
     }
     else
-    static if (isBigInt!V || isDecimal!V || isTimestamp!V || isBlob!V || isClob!V)
-    {
-        serializer.putValue(value);
-        return;
-    }
-    else
-    static if (isStringMap!V)
-    {
-        auto state = serializer.beginStruct(value);
-        auto keys = value.keys;
-        foreach (i, ref v; value.values)
-        {
-            serializer.putKey(keys[i]);
-            .serializeValue(serializer, v);
-        }
-        serializer.structEnd(state);
-    }
-    else
     static if(hasUDA!(V, serdeLikeList))
     {
         static assert(0);
@@ -751,9 +795,9 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
     else
     static if(hasUDA!(V, serdeLikeStruct))
     {
-        static if(is(V == interface) || is(V == class) || is(V : E[T], E, T))
+        static if (is(V : E[T], E, T))
         {
-            if(value is null)
+            if (value is null)
             {
                 serializer.putNull(nullTypeCodeOf!V);
                 continue F;
@@ -780,47 +824,19 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
         serializer.structEnd(valState);
     }
     else
-    static if (is(Unqual!V == Algebraic!TypeSet, TypeSet...))
+    static if (isAlgebraicAliasThis!V)
     {
-        enum isSimpleNullable = isNullable!V && V.AllowedTypes.length == 2;
-        if (false)
-        {
-            auto state = serializer.listBegin(3);
-            serializer.elemBegin();
-            serializer.putValue(23.12);
-            serializer.elemBegin();
-            serializer.putValue("23.12");
-            serializer.elemBegin();
-            serializer.putValue(null);
-            serializer.listEnd(state);
-        }
-        () @safe {
-        value.visit!(
-            (auto ref v) @trusted {
-                alias A = typeof(v);
-                static if (serdeHasAlgebraicAnnotation!A && !isSimpleNullable)
-                {
-                    auto wrapperState = serializer.annotationWrapperBegin;
-                    static if (__traits(hasMember, S, "putCompiletimeAnnotation"))
-                        serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!A);
-                    else
-                    static if (__traits(hasMember, S, "putAnnotationPtr"))
-                        serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!A.ptr);
-                    else
-                        serializer.putAnnotation(serdeGetAlgebraicAnnotation!A);
-                    serializeAnnotatedValue(serializer, v, wrapperState);
-                }
-                else
-                {
-                    static if (is(immutable A == immutable typeof(null)))
-                        serializer.putNull(nullTypeCodeOf!(V.AllowedTypes[1]));
-                    else
-                        serializeValue(serializer, v);
-                }
-            },
-            throwCannotSerializeVoid,
-        );} ();
-        return;
+        serializeValue(serializer, __traits(getMember, value, __traits(getAliasThis, V)));
+    }
+    else
+    static if (is(V == Algebraic!TypeSet, TypeSet...) && (!isStdNullable!V || Algebraic!TypeSet.AllowedTypes.length != 2))
+    {
+        import mir.algebraic: match;
+        match!(
+            serializeVoidHandlerWithSerializer,
+            staticMap!(serializeAlgebraicAnnotation!S, Filter!(serdeHasAlgebraicAnnotation, V.AllowedTypes)),
+            serializeValue,
+        )(serializer, value);
     }
     else
     static if(staticIndexOf!("serialize", __traits(allMembers, V)) >= 0)
@@ -851,27 +867,20 @@ void serializeValue(S, V)(scope ref S serializer, scope ref V value) @safe
         return;
     }
     else
+    static if (isStdNullable!V || isNullable!V)
+    {
+        if(value.isNull)
+        {
+            serializer.putNull(nullTypeCodeOf!(typeof(V.init.get())));
+            return;
+        }
+        return serializeValue(serializer, value.get);
+    }
+    else
     static if (is(typeof(Timestamp(V.init))))
     {
         serializer.putValue(Timestamp(value));
         return;
-    }
-    else
-    static if (serdeGetAnnotationMembersOut!V.length)
-    {
-        auto wrapperState = serializer.annotationWrapperBegin;
-        serializeAnnotatedValue(serializer, value, wrapperState);
-        return;
-    }
-    else
-    static if (isStdNullable!V)
-    {
-        if(value.isNull)
-        {
-            serializer.putNull(nullTypeCodeOf!(typeof(value.get())));
-            return;
-        }
-        return serializeValue(serializer, value.get);
     }
     else
     {
@@ -994,12 +1003,13 @@ unittest
     import mir.algebraic;
     import mir.small_string;
 
-    @serdeAlgebraicAnnotation("$a")
+    @serdeAlgebraicAnnotation("$B")
     static struct B
     {
         double number;
     }
 
+    @serdeAlgebraicAnnotation("$A")
     static struct A
     {
         @serdeAnnotation
@@ -1008,18 +1018,17 @@ unittest
         @serdeAnnotation
         string[] id2;
 
-        // Alias this is transparent for members and can catch algebraic annotation
-        alias c this;
         B c;
+        alias c this;
 
         string s;
     }
 
 
     static assert(serdeHasAlgebraicAnnotation!B);
-    static assert(serdeGetAlgebraicAnnotation!B == "$a");
+    static assert(serdeGetAlgebraicAnnotation!B == "$B");
     static assert(serdeHasAlgebraicAnnotation!A);
-    static assert(serdeGetAlgebraicAnnotation!A == "$a");
+    static assert(serdeGetAlgebraicAnnotation!A == "$A");
 
     @serdeAlgebraicAnnotation("$c")
     static struct C
@@ -1046,8 +1055,8 @@ unittest
     }
 
 
-    @serdeAlgebraicAnnotation("$S2")
-    static struct S2
+    @serdeAlgebraicAnnotation("$Y")
+    static struct Y
     {
         alias Data = Nullable!(A, C, long);
 
@@ -1060,43 +1069,44 @@ unittest
     import mir.ion.conv: ion2text;
     import mir.ser.ion: serializeIon;
     import mir.ser.text: serializeText;
+    import mir.test;
 
     () {
         Nullable!S value = S("LIBOR", "S", S.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
-        static immutable text = `LIBOR::S::$a::Rate::USD::GBP::{number:nan,s:null.string}`;
-        assert(value.serializeText == text);
+        static immutable text = `LIBOR::S::$A::Rate::USD::GBP::{number:nan,s:null.string}`;
+        value.serializeText.should == text;
         auto binary = value.serializeIon;
-        assert(binary.ion2text == text);
+        binary.ion2text.should == text;
         import mir.deser.ion: deserializeIon;
-        assert(binary.deserializeIon!S.serializeText == text);
+        binary.deserializeIon!S.serializeText.should == text;
     } ();
 
     () {
         S value = S("LIBOR", "S", S.Data(E.e2));
         static immutable text = `LIBOR::S::$E::e2`;
-        assert(value.serializeText == text);
+        value.serializeText.should == text;
         auto binary = value.serializeIon;
-        assert(binary.ion2text == text);
+        binary.ion2text.should == text;
         import mir.deser.ion: deserializeIon;
-        assert(binary.deserializeIon!S.serializeText == text);
+        binary.deserializeIon!S.serializeText.should == text;
     } ();
 
     () {
-        auto value = S2(S2.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
-        static immutable text = `$a::Rate::USD::GBP::{number:nan,s:null.string}`;
+        auto value = Y(Y.Data(A("Rate".SmallString!32, ["USD", "GBP"])));
+        static immutable text = `$A::Rate::USD::GBP::{number:nan,s:null.string}`;
         auto binary = value.serializeIon;
-        assert(binary.ion2text == text);
+        binary.ion2text.should == text;
         import mir.deser.ion: deserializeIon;
-        assert(binary.deserializeIon!S2.serializeText == text);
+        binary.deserializeIon!Y.serializeText.should == text;
     } ();
 
     () {
         auto value = S("USD", "S", S.Data(3));
         static immutable text = `USD::S::3`;
         auto binary = value.serializeIon;
-        assert(binary.ion2text == text, binary.ion2text);
+        binary.ion2text.should == text;
         import mir.deser.ion: deserializeIon;
-        assert(binary.deserializeIon!S.serializeText == text);
+        binary.deserializeIon!S.serializeText.should == text;
     } ();
 }
 

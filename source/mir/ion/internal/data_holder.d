@@ -90,7 +90,7 @@ struct IonTapeHolder(size_t stackAllocatedLength, bool useGC = false)
     }
 
     ///
-    void initialize() @trusted
+    void initialize() scope @trusted
     {
         version(LDC) pragma(inline, true);
         allData = stackData;

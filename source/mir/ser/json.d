@@ -537,7 +537,7 @@ template serializeJsonPretty(string sep = "\t")
 {
     import mir.primitives: isOutputRange;
     ///
-    void serializeJsonPretty(Appender, V)(ref Appender appender, scope auto ref V value, int serdeTarget = SerdeTarget.json) @safe
+    void serializeJsonPretty(Appender, V)(scope ref Appender appender, scope auto ref V value, int serdeTarget = SerdeTarget.json)
         if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))
     {
         import mir.ser: serializeValue;

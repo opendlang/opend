@@ -108,7 +108,9 @@ jobs:
           restore-keys: |
             ubuntu-latest-build-
       - name: Build / test 
-        run: dub test --build=unittest-release && dub test --arch=$ARCH --build=unittest-cov
+        run: |
+          dub test --build=unittest-release
+          dub test --arch=$ARCH --build=unittest-cov
         shell: bash
       - name: Upload coverage data
         uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b
@@ -141,7 +143,9 @@ jobs:
           restore-keys: |
             windows-latest-build-
       - name: Build / test
-        run: dub test --arch=$ARCH --build=unittest-cov
+        run: |
+          dub test --arch=$ARCH --build=unittest-dip1000
+          dub test --arch=$ARCH --build=unittest-cov
         shell: bash
       - name: Upload coverage data
         uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b

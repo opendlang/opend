@@ -74,7 +74,7 @@ struct IonSerializer(uint bufferStackSize, string[] compiletimeSymbolTable, bool
 
 nothrow pure @trusted:
 
-    void initialize(ref IonSymbolTable!tableGC runtimeTable, int serdeTarget = SerdeTarget.ion) @trusted
+    void initialize(ref IonSymbolTable!tableGC runtimeTable, int serdeTarget = SerdeTarget.ion) scope @trusted
     {
         buffer.initialize;
         this.runtimeTable = &runtimeTable;
@@ -543,7 +543,7 @@ void serializeIon(Appender, T)(scope ref Appender appender, auto ref T value, in
     enum keys = serdeGetSerializationKeysRecurse!T.removeSystemSymbols;
 
     auto table = () @trusted { IonSymbolTable!false ret = void; ret.initializeNull; return ret; }();
-    auto serializer = ionSerializer!(nMax * 8, keys, false);
+    scope serializer = ionSerializer!(nMax * 8, keys, false);
     serializer.initialize(table, serdeTarget);
 
     serializeValue(serializer, value);

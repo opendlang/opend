@@ -12,7 +12,6 @@ private alias AliasSeq(T...) = T;
 +/
 template deserializeIon(T, bool annotated = false)
 {
-@safe:
     import mir.ion.value: IonDescribedValue, IonAnnotations;
 
     static if (annotated)
