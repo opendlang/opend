@@ -7,21 +7,17 @@
 /// Class used to load YAML documents.
 module mir.internal.yaml.loader;
 
-
-import std.exception;
-import std.file;
-import std.stdio : File;
-
+import mir.algebraic_alias.yaml;
 import mir.internal.yaml.composer;
 import mir.internal.yaml.constructor;
 import mir.internal.yaml.event;
 import mir.internal.yaml.exception;
-import mir.algebraic_alias.yaml;
 import mir.internal.yaml.parser;
 import mir.internal.yaml.reader;
 import mir.internal.yaml.resolver;
 import mir.internal.yaml.scanner;
 import mir.internal.yaml.token;
+import std.exception;
 
 
 /** Loads YAML documents from files or string.
@@ -53,45 +49,11 @@ struct Loader
          *
          * Throws:  YamlException if the file could not be opened or read.
          */
-         static Loader fromFile(string filename) @trusted
+         package static Loader fromFile(string filename) @trusted
          {
-            try
-            {
-                auto loader = Loader(cast(string)std.file.read(filename), filename);
-                return loader;
-            }
-            catch(FileException e)
-            {
-                throw new YamlException("Unable to open file " ~ filename ~ " for YAML loading: " ~ e.msg, e.file, e.line);
-            }
+            import std.file: readText;
+            return Loader(readText(filename), filename);
          }
-
-        /** Construct a Loader to load YAML from a string.
-         *
-         * Params:
-         *   data = String to load YAML from.
-         *   filename = The filename to give to the Loader, defaults to `"<unknown>"`
-         *
-         * Returns: Loader loading YAML from given string.
-         *
-         * Throws:
-         *
-         * YamlException if data could not be read (e.g. a decoding error)
-         */
-        static Loader fromString(string data, string filename = "<unknown>") @safe
-        {
-            return Loader(data, filename);
-        }
-        /// Load  a string.
-        @safe unittest
-        {
-            assert(Loader.fromString("42".dup).load().get!long == 42);
-        }
-        /// Load a string.
-        @safe unittest
-        {
-            assert(Loader.fromString("42").load().get!long == 42);
-        }
 
         /** Construct a Loader to load YAML from a buffer.
          *
@@ -110,16 +72,20 @@ struct Loader
          *
          * Throws:  YamlException if yamlData contains data illegal in YAML.
          */
-        static Loader fromBuffer(string yamlData) @safe
-        {
-            return Loader(yamlData);
-        }
-        /// Ditto
-        private this(string yamlData, string name = "<unknown>") @safe
+        this(string yamlData, string name = "<unknown>") @safe
         {
             composer_ = yamlData.Reader(name).Scanner.Parser.Composer(Resolver.withDefaultResolvers);
         }
-
+        /// Load  a string.
+        @safe unittest
+        {
+            assert(Loader("42".dup).load().get!long == 42);
+        }
+        /// Load a string.
+        @safe unittest
+        {
+            assert(Loader("42").load().get!long == 42);
+        }
         /** Load single YAML document.
          *
          * If none or more than one YAML document is found, this throws a YamlException.
@@ -157,7 +123,7 @@ struct Loader
         *
         * Returns: `true` if no more documents left, `false` otherwise.
         */
-        bool empty() @safe
+        private bool empty() @safe
         {
             // currentNode and done_ are both invalid until popFront is called once
             if (!rangeInitialized)
@@ -170,7 +136,7 @@ struct Loader
         *
         * Reads the next document from the stream, if possible.
         */
-        void popFront() @safe
+        private void popFront() @safe
         {
             // Composer initialization is done here in case the constructor is
             // modified, which is a pretty common case.
@@ -192,7 +158,7 @@ struct Loader
         *
         * Returns: the current document as a YamlAlgebraic.
         */
-        YamlAlgebraic front() @safe
+        private YamlAlgebraic front() @safe
         {
             // currentNode and done_ are both invalid until popFront is called once
             if (!rangeInitialized)
@@ -212,6 +178,7 @@ struct Loader
 /// Load single YAML document from a file:
 @safe unittest
 {
+    import std.file;
     write("example.yaml", "Hello world!");
     auto rootNode = Loader.fromFile("example.yaml").load();
     assert(rootNode == "Hello world!");
@@ -253,7 +220,7 @@ struct Loader
                         "green: '#00ff00'\n" ~
                         "blue:  '#0000ff'");
 
-    auto colors = Loader.fromString(yaml_input).load();
+    auto colors = Loader(yaml_input).load();
 
     foreach(pair; colors.get!"object".pairs) with(pair)
     {
@@ -264,8 +231,7 @@ struct Loader
 /// Load a file into a buffer in memory and then load YAML from that buffer:
 @safe unittest
 {
-    import std.file : read, write;
-    import std.stdio : writeln;
+    import std.file : readText, write;
     // Create a yaml document
     write("example.yaml",
         "---\n"~
@@ -275,22 +241,13 @@ struct Loader
         "Hello world 2!\n"~
         "...\n"
     );
-    try
-    {
-        string buffer = readText("example.yaml");
-        auto yamlNode = Loader.fromString(buffer);
-
-        // Read data from yamlNode here...
-    }
-    catch(FileException e)
-    {
-        writeln("Failed to read file 'example.yaml'");
-    }
+    string buffer = readText("example.yaml");
+    auto yamlNode = Loader(buffer);
 }
 /// Use a custom resolver to support custom data types and/or implicit tags:
 @safe unittest
 {
-    import std.file : write;
+    import std.file: write;
     // Create a yaml document
     write("example.yaml",
         "---\n"~
@@ -310,7 +267,7 @@ struct Loader
 @safe unittest
 {
     auto yaml = "{\n\"root\": {\n\t\"key\": \"value\"\n    }\n}";
-    auto doc = Loader.fromString(yaml).load();
+    auto doc = Loader(yaml).load();
     assert(doc._is!YamlMap);
 }
 
@@ -325,7 +282,7 @@ EOS";
     auto filename = "invalid.yml";
 
     YamlAlgebraic unused;
-    auto e = Loader.fromString(yaml, filename).load().collectException!ScannerException(unused);
+    auto e = Loader(yaml, filename).load().collectException!ScannerException(unused);
     e.msg.should == `Mapping values are not allowed here
 invalid.yml(1,19)`;
 }

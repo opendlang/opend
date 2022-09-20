@@ -399,7 +399,7 @@ struct Composer
     import mir.test: should;
 
     try
-        auto node = Loader.fromString(str).load();
+        auto node = Loader(str).load();
     catch (ComposerException exc)
         (()@trusted => exc.message())().should ==
                "Key 'comment' appears multiple times in mapping " ~

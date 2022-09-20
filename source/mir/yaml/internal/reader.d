@@ -726,6 +726,6 @@ void test1Byte(R)()
 {
     import mir.internal.yaml.loader : Loader;
     auto yaml = "hello ";
-    auto root = Loader.fromString(yaml).load();
+    auto root = Loader(yaml).load();
     assert(root._is!string);
 }
