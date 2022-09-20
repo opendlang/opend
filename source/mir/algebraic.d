@@ -1600,7 +1600,7 @@ struct Algebraic(T__...)
 
         /// ditto
         auto get()()
-            if (allSatisfy!(isCopyable, AllowedTypes[1 .. $]) && AllowedTypes.length != 2)
+            if (allSatisfy!(isCopyable, AllowedTypes[1 .. $]) && AllowedTypes.length != 2 && is(AllowedTypes[0] == typeof(null)))
         {
             import mir.utility: _expect;
             if (_expect(!identifier__, false))
@@ -1609,8 +1609,7 @@ struct Algebraic(T__...)
             }
             static if (AllowedTypes.length != 2)
             {
-                Algebraic!(Types__[1 .. $]) ret;
-
+                Algebraic!(AllowedTypes[1 .. $]) ret;
                 S: switch (identifier__)
                 {
                     static foreach (i, T; AllowedTypes[1 .. $])
@@ -1619,7 +1618,10 @@ struct Algebraic(T__...)
                             case i + 1:
                                 if (!hasElaborateCopyConstructor!T && !__ctfe)
                                     goto default;
-                                ret = this.trustedGet!T;
+                                static if (is(T == void))
+                                    ret = ret._void;
+                                else
+                                    ret = this.trustedGet!T;
                                 break S;
                         }
                     }
@@ -3853,9 +3855,9 @@ private template withNewLine(alias arg)
     alias withNewLine = AliasSeq!("\n", arg);
 }
 
-private noreturn throwMe(Args...)(auto ref Args args) {
-    static if (Args.length == 1)
-        enum simpleThrow = is(immutable Args[0] : immutable Throwable);
+private noreturn throwMe(T...)(auto ref T args) {
+    static if (T.length == 1)
+        enum simpleThrow = is(immutable T[0] : immutable Throwable);
     else
         enum simpleThrow = false;
     static if (simpleThrow)
