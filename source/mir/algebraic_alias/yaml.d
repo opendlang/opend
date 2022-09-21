@@ -83,8 +83,8 @@ union Yaml_
     This[] array;
     /// Self alias in $(MREF mir,string_map).
     YamlMap object;
-    // /// Self alias in $(MREF mir,annotated).
-    // Annotated!This annotated;
+    /// Self alias in $(MREF mir,annotated).
+    Annotated!This annotated;
 
 @algMeta:
     ///

@@ -183,6 +183,11 @@ YamlAlgebraic constructNode(T)(const ParsePosition start, const ParsePosition en
             default:
                 newNode = YamlAlgebraic(value);
                 newNode.tag = tag;
+                if (!tag.startsWith("tag:yaml.org"))
+                {
+                    newNode.startMark = start;
+                    newNode = Annotated!YamlAlgebraic(tag.split("::"), newNode);
+                }
                 break;
         }
     }

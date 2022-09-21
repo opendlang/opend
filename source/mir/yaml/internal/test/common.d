@@ -84,7 +84,7 @@ void assertNodesEqual(const scope YamlAlgebraic gotNode, const scope YamlAlgebra
 {
     import mir.test;
     import mir.ser.text;
-    gotNode.serializeTextPretty.should == expectedNode.serializeTextPretty;
+    gotNode.should == expectedNode;
 }
 
 /**

@@ -805,11 +805,15 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
         }
         auto valState = serializer.beginStruct(value);
 
+        import mir.algebraic: isVariant, visit;
         static if (__traits(hasMember, value, "byKeyValue"))
         {
             foreach (keyElem; value.byKeyValue)
             {
-                serializer.putKey(keyElem.key);
+                static if (!isVariant!(typeof(keyElem.key)))
+                    serializer.putKey(keyElem.key);
+                else (() @trusted =>
+                    serializer.putKey(keyElem.key.visit!(to!string)))();
                 serializer.serializeValue(keyElem.value);
             }
         }
@@ -817,7 +821,10 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
         {
             foreach (key, ref elem; value)
             {
-                serializer.putKey(key);
+                static if (!isVariant!(typeof(key)))
+                    serializer.putKey(key);
+                else (() @trusted =>
+                    serializer.putKey(key.visit!(to!string)))();
                 serializer.serializeValue(elem);
             }
         }

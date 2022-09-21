@@ -159,8 +159,21 @@ YamlAlgebraic[] constructCustom() @safe
     return [
         YamlAlgebraic(
             [
-                cast(YamlAlgebraic)new TestClass(1, 2, 3),
-                cast(YamlAlgebraic)TestStruct(10)
+                Annotated!YamlAlgebraic(["!tag1"], ([
+                    YamlPair(
+                        YamlAlgebraic("x").withTag("tag:yaml.org,2002:str"),
+                        YamlAlgebraic(1).withTag("tag:yaml.org,2002:int")
+                    ),
+                    YamlPair(
+                        YamlAlgebraic("y").withTag("tag:yaml.org,2002:str"),
+                        YamlAlgebraic(2).withTag("tag:yaml.org,2002:int")
+                    ),
+                    YamlPair(
+                        YamlAlgebraic("z").withTag("tag:yaml.org,2002:str"),
+                        YamlAlgebraic(3).withTag("tag:yaml.org,2002:int")
+                    )
+                ].dup.YamlAlgebraic).withTag("!tag1")).YamlAlgebraic,
+                Annotated!YamlAlgebraic(["!tag2"], YamlAlgebraic("10").withTag("!tag2")).YamlAlgebraic
             ].dup).withTag("tag:yaml.org,2002:seq")
     ];
 }
@@ -820,61 +833,6 @@ YamlAlgebraic[] utf8implicit() @safe
         YamlAlgebraic("implicit UTF-8").withTag("tag:yaml.org,2002:str")
     ];
 }
-
-///Testing custom YAML class type.
-class TestClass
-{
-    int x, y, z;
-
-    this(int x, int y, int z) @safe
-    {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    YamlAlgebraic opCast(T: YamlAlgebraic)() @safe
-    {
-        return Annotated!YamlAlgebraic(["!tag1"], (            [
-                YamlPair(
-                    YamlAlgebraic("x").withTag("tag:yaml.org,2002:str"),
-                    YamlAlgebraic(x).withTag("tag:yaml.org,2002:int")
-                ),
-                YamlPair(
-                    YamlAlgebraic("y").withTag("tag:yaml.org,2002:str"),
-                    YamlAlgebraic(y).withTag("tag:yaml.org,2002:int")
-                ),
-                YamlPair(
-                    YamlAlgebraic("z").withTag("tag:yaml.org,2002:str"),
-                    YamlAlgebraic(z).withTag("tag:yaml.org,2002:int")
-                )
-            ].dup.YamlAlgebraic).withTag("!tag1")).YamlAlgebraic;
-    }
-}
-
-///Testing custom YAML struct type.
-struct TestStruct
-{
-    int value;
-
-    this (int x) @safe
-    {
-        value = x;
-    }
-
-    ///Constructor function for TestStruct.
-    this(ref YamlAlgebraic node) @safe
-    {
-        value = node.get!string.to!int;
-    }
-
-    ///Representer function for TestStruct.
-    YamlAlgebraic opCast(T: YamlAlgebraic)() @safe
-    {
-        return YamlAlgebraic(value.to!string).withTag("!tag2");
-    }
-}
-
 } // version(unittest)
 
 @safe unittest

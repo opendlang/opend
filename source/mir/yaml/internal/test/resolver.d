@@ -32,6 +32,8 @@ module mir.internal.yaml.test.resolver;
         foreach (YamlAlgebraic scalar; node.get!"array")
         {
             assert(scalar.kind != YamlAlgebraic.Kind.array && scalar.kind != YamlAlgebraic.Kind.object, text("Expected sequence of scalars when reading '", dataFilename, "', got sequence of ", scalar.kind));
+            if (scalar._is!"annotated")
+                scalar = scalar.annotated.value;
             assert(scalar.tag == correctTag, text("Expected tag '", correctTag, "' when reading '", dataFilename, "', got '", scalar.tag, "'"));
         }
     }

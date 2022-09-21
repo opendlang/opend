@@ -80,6 +80,12 @@ YamlAlgebraic representData(const YamlAlgebraic data, YamlScalarStyle defaultSca
         case YamlAlgebraic.Kind.array:
             result = representNodes(data, defaultScalarStyle, defaultCollectionStyle);
             break;
+        case YamlAlgebraic.Kind.annotated:
+            auto annotated = data.annotated;
+            result = representData(annotated.value, defaultScalarStyle, defaultCollectionStyle);
+            import std.array: join;
+            result.tag = annotated.annotations.join("::");
+            break;
     }
 
     switch (result.kind)

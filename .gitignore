@@ -42,7 +42,6 @@ benchmarks/sajson/sajson-benchmark
 .vs
 build/
 test.d
-test
 libmir-ion.a
 mir-ion-test-library
 *.DS_Store
