@@ -111,7 +111,7 @@ struct Parser
 {
     private:
         ///Default tag handle shortcuts and replacements.
-        static TagDirective[] defaultTagDirectives_ =
+        static immutable TagDirective[] defaultTagDirectives_ =
             [TagDirective("!", "!"), TagDirective("!!", "tag:yaml.org,2002:")];
 
         ///Scanner providing YAML tokens.
@@ -272,7 +272,7 @@ struct Parser
             if(!scanner_.front.id.among!(TokenID.directive, TokenID.documentStart,
                                     TokenID.streamEnd))
             {
-                tagDirectives_  = defaultTagDirectives_;
+                tagDirectives_  = defaultTagDirectives_.dup;
                 const token = scanner_.front;
 
                 pushState(State.parseDocumentEnd);
