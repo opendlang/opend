@@ -14,12 +14,19 @@
  */
 module mir.internal.yaml.resolver;
 
-
-
 import mir.algebraic_alias.yaml;
 import mir.conv;
 import mir.internal.yaml.exception;
 import std.regex;
+import std.traits;
+
+auto assumePure(T)(T t) @trusted
+if (isFunctionPointer!T || isDelegate!T)
+{
+    pragma(inline, false);
+    enum attrs = functionAttributes!T | FunctionAttribute.pure_ | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
 
 
 /// Type of `regexes`
@@ -95,7 +102,7 @@ struct Resolver
             const Regex!char regex;
         }
         IRes[][dchar] yamlImplicitResolvers_;
-
+@safe pure:
     package:
         static auto withDefaultResolvers() @safe
         {
@@ -184,9 +191,7 @@ struct Resolver
                         // source/mir.internal.yaml/resolver.d(192,35): Error: scope variable `__tmpfordtorXXX`
                         // assigned to non-scope parameter `this` calling
                         // `std.regex.RegexMatch!string.RegexMatch.~this`
-                        bool isEmpty = () @trusted {
-                            return match(value, resolver.regex).empty;
-                        }();
+                        bool isEmpty = assumePure(&isEmptyMatch)(value, resolver.regex);
                         if(!isEmpty)
                         {
                             return resolver.str;
@@ -247,4 +252,10 @@ struct Resolver
 
         ///Returns: Default mapping tag.
         @property string defaultMappingTag()  const pure @safe nothrow {return defaultMappingTag_;}
+}
+
+private bool isEmptyMatch(string value, const(Regex!char) regex)
+    @trusted
+{
+    return match(value, regex).empty;
 }

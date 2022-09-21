@@ -504,7 +504,7 @@ struct TextSerializer(string sep, Appender)
 /++
 Ion serialization function.
 +/
-string serializeText(V)(auto ref V value, int serdeTarget = SerdeTarget.ion)
+string serializeText(V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     return serializeTextPretty!""(value, serdeTarget);
 }
@@ -664,7 +664,7 @@ unittest
 /++
 Ion serialization function with pretty formatting.
 +/
-string serializeTextPretty(string sep = "\t", V)(auto ref V value, int serdeTarget = SerdeTarget.ion)
+string serializeTextPretty(string sep = "\t", V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     import std.array: appender;
     import std.functional: forward;
@@ -684,7 +684,7 @@ version(mir_ion_test) unittest
 /++
 Ion serialization for custom outputt range.
 +/
-void serializeText(Appender, V)(scope ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
+void serializeText(Appender, V)(scope ref Appender appender, auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     return serializeTextPretty!""(appender, value, serdeTarget);
 }
@@ -707,7 +707,7 @@ template serializeTextPretty(string sep = "\t")
 {
     import std.range.primitives: isOutputRange; 
     ///
-    void serializeTextPretty(Appender, V)(scope ref Appender appender, auto ref V value, int serdeTarget = SerdeTarget.ion)
+    void serializeTextPretty(Appender, V)(scope ref Appender appender, auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
         if (isOutputRange!(Appender, const(char)[]))
     {
         import mir.ser: serializeValue;

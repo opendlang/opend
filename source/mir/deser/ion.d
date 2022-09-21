@@ -21,7 +21,7 @@ template deserializeIon(T, bool annotated = false)
 
     /++
     +/
-    T deserializeIon()(scope const char[][] symbolTable, scope IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    T deserializeIon()(scope const char[][] symbolTable, scope IonDescribedValue ionValue, scope OptIonAnnotations optionalAnnotations)
     {
         T value;
         deserializeIon(value, symbolTable, ionValue, optionalAnnotations);
@@ -32,10 +32,22 @@ template deserializeIon(T, bool annotated = false)
     void deserializeIon()(
         scope ref T value, scope const char[][] symbolTable,
         scope IonDescribedValue ionValue,
-        OptIonAnnotations optionalAnnotations)
+        scope OptIonAnnotations optionalAnnotations)
+    {
+        import std.meta: anySatisfy;
+        import mir.algebraic: Algebraic;
+        import std.traits: isDynamicArray;
+    static if (is(immutable T : immutable Algebraic!TypeSet, TypeSet...)
+        && anySatisfy!(isDynamicArray, Algebraic!TypeSet.AllowedTypes))
+    {
+        import mir.ndslice.topology: map;
+        import mir.array.allocation: array;
+        deserializeIon(value, symbolTable.map!idup.array, ionValue, optionalAnnotations);
+    }
+    else
     {
         import mir.appender: scopedBuffer;
-        import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: hasDeserializeFromIon, deserializeValue, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: createTable;
 
@@ -55,15 +67,13 @@ template deserializeIon(T, bool annotated = false)
                 id = uint.max;
             tableMapBuffer.put(id);
         }
-        alias DP = DeserializationParams!(TableKind.scopeRuntime, annotated);
-        DP params = (()@trusted => DP(optionalAnnotations, symbolTable, tableMapBuffer.data))();
-        if (auto exception = deserializeValue!keys(ionValue, params, value))
+        if (auto exception = deserializeValue!(keys, TableKind.scopeRuntime, annotated)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
             throw exception;
-    }
+    }}
 
     /// ditto
     // the same code with GC allocated symbol table
-    T deserializeIon(const string[] symbolTable, scope IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    T deserializeIon(const string[] symbolTable, scope IonDescribedValue ionValue, scope OptIonAnnotations optionalAnnotations)
     {
         T value;
         deserializeIon(value, symbolTable, ionValue, optionalAnnotations);
@@ -71,10 +81,10 @@ template deserializeIon(T, bool annotated = false)
     }
 
     /// ditto
-    void deserializeIon()(scope ref T value, const string[] symbolTable, scope IonDescribedValue ionValue, OptIonAnnotations optionalAnnotations)
+    void deserializeIon()(scope ref T value, const string[] symbolTable, scope IonDescribedValue ionValue, scope OptIonAnnotations optionalAnnotations)
     {
         import mir.appender: scopedBuffer;
-        import mir.deser: hasDeserializeFromIon, deserializeValue, DeserializationParams, TableKind;
+        import mir.deser: hasDeserializeFromIon, deserializeValue, TableKind;
         import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
         import mir.string_table: MirStringTable;
 
@@ -100,9 +110,7 @@ template deserializeIon(T, bool annotated = false)
             tableMapBuffer.put(id);
         }
 
-        alias DP = DeserializationParams!(TableKind.immutableRuntime, annotated);
-        DP params = (()@trusted => DP(optionalAnnotations, symbolTable, tableMapBuffer.data))();
-        if (auto exception = deserializeValue!keys(ionValue, params, value))
+        if (auto exception = deserializeValue!(keys, TableKind.immutableRuntime, annotated)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
             throw exception;            
     }
 

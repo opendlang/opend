@@ -47,6 +47,11 @@ buildType "parser-test" {
 
 buildType "unittest-dip1000" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_ion_test" "mir_ion_parser_test" "mir_ion_test_table"
+    versions "mir_ion_tape_test" 
+    versions "mir_ion_ser_test"
+    versions "mir_ion_test" 
+    versions "mir_ion_value_test" 
+    versions "mir_ion_example_test" 
+    versions "mir_ion_parser_test"
     dflags "-lowmem" "-preview=dip1000"
 }

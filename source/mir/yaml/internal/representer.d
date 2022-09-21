@@ -23,7 +23,7 @@ import mir.internal.yaml.exception;
 import mir.algebraic_alias.yaml;
 import mir.internal.yaml.serializer;
 
-package:
+@safe pure package:
 
 auto withTag(YamlAlgebraic node, string tag)
 {

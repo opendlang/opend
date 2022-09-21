@@ -36,7 +36,7 @@ struct Serializer
         ///Do all document ends have to be specified explicitly?
         Flag!"explicitEnd" explicitEnd_;
         ///YAML version string.
-        string YAMLVersion_;
+        string YamlVersion_;
 
         ///Tag directives to emit.
         TagDirective[] tagDirectives_;
@@ -48,7 +48,7 @@ struct Serializer
         bool[YamlAlgebraic] serializedNodes_;
         ///ID of the last anchor generated.
         uint lastAnchorID_ = 0;
-
+@safe pure:
     public:
         /**
          * Construct a Serializer.
@@ -57,18 +57,18 @@ struct Serializer
          *          resolver      = Resolver used to determine which tags are automaticaly resolvable.
          *          explicitStart = Do all document starts have to be specified explicitly?
          *          explicitEnd   = Do all document ends have to be specified explicitly?
-         *          YAMLVersion   = YAML version string.
+         *          YamlVersion   = YAML version string.
          *          tagDirectives = Tag directives to emit.
          */
         this(Resolver resolver,
              const Flag!"explicitStart" explicitStart,
-             const Flag!"explicitEnd" explicitEnd, string YAMLVersion,
+             const Flag!"explicitEnd" explicitEnd, string YamlVersion,
              TagDirective[] tagDirectives) @safe
         {
             resolver_      = resolver;
             explicitStart_ = explicitStart;
             explicitEnd_   = explicitEnd;
-            YAMLVersion_   = YAMLVersion;
+            YamlVersion_   = YamlVersion;
             tagDirectives_ = tagDirectives;
         }
 
@@ -88,7 +88,7 @@ struct Serializer
         void serialize(ref Emitter emitter, ref YamlAlgebraic node) @safe
         {
             emitter.emit(documentStartEvent(ParsePosition(), ParsePosition(), explicitStart_,
-                                             YAMLVersion_, tagDirectives_));
+                                             YamlVersion_, tagDirectives_));
             anchorNode(node);
             serializeNode(emitter, node);
             emitter.emit(documentEndEvent(ParsePosition(), ParsePosition(), explicitEnd_));

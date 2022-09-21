@@ -39,7 +39,7 @@ IonException deserializeValue_(T)(scope IonDescribedValue data, scope ref T valu
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T, TableKind tableKind, bool annotated)(scope IonDescribedValue data, scope DeserializationParams!(tableKind, annotated) params, scope ref T value)
+IonException deserializeValue_(T, P...)(scope IonDescribedValue data, scope ref T value, scope const P p)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValue_!T(data, value);
@@ -69,68 +69,6 @@ enum TableKind
     immutableRuntime,
 }
 
-///
-struct DeserializationParams(TableKind tableKind, bool annotated = false)
-{
-
-    static if (annotated)
-    {
-        ///
-        IonAnnotations annotations;
-    }
-    else
-    {
-        ///
-        DeserializationParams!(tableKind, true) withAnnotations(return scope IonAnnotations annotations) const return scope
-        {
-            auto ret = typeof(return)();
-            ret.annotations = annotations;
-            static if (tableKind)
-            {
-                ret.compiletimeIndex = compiletimeIndex;
-                ret.runtimeSymbolTable = runtimeSymbolTable;
-            }
-            return ret;
-        }
-
-        ///
-        DeserializationParams!(tableKind, false) withAnnotations() const return scope
-        {
-            auto ret = typeof(return)();
-            static if (tableKind)
-            {
-                ret.compiletimeIndex = compiletimeIndex;
-                ret.runtimeSymbolTable = runtimeSymbolTable;
-            }
-            return ret;
-        }
-    }
-
-    ///
-    DeserializationParams!tableKind withoutAnnotations() const
-    {
-        auto ret = typeof(return)();
-        static if (tableKind)
-        {
-            ret.compiletimeIndex = compiletimeIndex;
-            ret.runtimeSymbolTable = runtimeSymbolTable;
-        }
-        return ret;
-    }
-
-    static if (tableKind)
-    {
-        static if (tableKind == TableKind.scopeRuntime)
-            ///
-            const(char[])[] runtimeSymbolTable;
-        else
-            ///
-            const(string)[] runtimeSymbolTable;
-        ///
-        const(uint)[] compiletimeIndex;
-    }
-}
-
 package static immutable tableInsance(string[] symbolTable) = symbolTable;
 
 package template hasDeserializeFromIon(T)
@@ -146,28 +84,55 @@ package template hasDeserializeFromIon(T)
 /++
 Deserialize aggregate value using compile time symbol table
 +/
-template deserializeValue(string[] symbolTable)
+template deserializeValue(string[] symbolTable, TableKind tableKind, bool annotated)
 {
     import mir.appender: scopedBuffer, ScopedBuffer;
 
+    static if (annotated)
+        alias Annotations = AliasSeq!IonAnnotations;
+    else
+        alias Annotations = AliasSeq!();
+
+    static if (tableKind)
+    {
+        static if (tableKind == TableKind.scopeRuntime)
+            alias RuntimeSymbolTable = const(char[])[];
+        else
+            alias RuntimeSymbolTable = const(string)[];
+        alias CompiletimeIndex = const(uint)[];
+    }
+    else
+    {
+        alias RuntimeSymbolTable = AliasSeq!();
+        alias CompiletimeIndex = AliasSeq!();
+    }
+
+    alias Params = AliasSeq!(RuntimeSymbolTable, CompiletimeIndex, Annotations);
+
     @safe pure nothrow @nogc
-    private bool prepareSymbolId(TableKind tableKind, bool annotated)(DeserializationParams!(tableKind, annotated) params, ref size_t symbolId)
+    private bool prepareSymbolId(
+        scope ref size_t symbolId,
+        scope CompiletimeIndex compiletimeIndex,
+        )
     {
         static if (tableKind)
         {
-            if (symbolId >= params.compiletimeIndex.length)
+            if (symbolId >= compiletimeIndex.length)
                 return false;
-            symbolId = params.compiletimeIndex[symbolId];
+            symbolId = compiletimeIndex[symbolId];
         }
         return symbolId < symbolTable.length;
     }
 
-    @trusted pure nothrow @nogc private IonException deserializeScoped(C, TableKind tableKind, bool annotated)(
+    @trusted pure nothrow @nogc private IonException deserializeScoped(C)(
         scope IonDescribedValue data,
-        scope DeserializationParams!(tableKind, annotated) params,
-        scope ref C[] value)
+        scope ref C[] value,
+        scope RuntimeSymbolTable runtimeSymbolTable,
+        scope CompiletimeIndex compiletimeIndex,
+        scope Annotations annotations_,
+        )
         if (is(immutable C == immutable char))
-    {with(params){
+    {
 
         import std.traits: Select;
         import mir.serde: serdeGetProxy, serdeScoped, serdeScoped;
@@ -185,7 +150,7 @@ template deserializeValue(string[] symbolTable)
                 return exc.ionException;
             if (id >= table.length)
                 return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-            value = cast(C[])table[id];
+            (()@trusted pure {value = cast(C[])table[id];})();
             return null;
         }
         else
@@ -196,13 +161,17 @@ template deserializeValue(string[] symbolTable)
             value = cast(C[])ionValue;
             return null;
         }
-    }}
+    }
 
-    private IonException deserializeListToScopedBuffer(TableKind tableKind, bool annotated, Buffer)(
+    pure
+    private IonException deserializeListToScopedBuffer(Buffer)(
         scope IonDescribedValue data,
-        scope DeserializationParams!(tableKind, annotated) params,
-        ref Buffer buffer)
-    {with(params){
+        scope ref Buffer buffer,
+        scope RuntimeSymbolTable runtimeSymbolTable,
+        scope CompiletimeIndex compiletimeIndex,
+        scope Annotations annotations_,
+        )
+    {
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
             return IonErrorCode.expectedListValue.ionException;
         foreach (IonErrorCode error, scope IonDescribedValue ionElem; data.trustedGet!IonList)
@@ -211,20 +180,24 @@ template deserializeValue(string[] symbolTable)
             if (_expect(error, false))
                 return error.ionException;
             Unqual!(typeof(buffer.data[0])) value;
-            if (auto exception = deserializeValue(ionElem, params, value))
+            if (auto exception = deserializeValue(ionElem, value, runtimeSymbolTable, compiletimeIndex, annotations_))
                 return exception;
             import core.lifetime: move;
             buffer.put(move(value));
         }
         return null;
-    }}
+    }
 
-    private IonException deserializeValueMember(string member, T, TableKind tableKind, bool annotated)(
+    pure
+    private IonException deserializeValueMember(string member, T)(
         scope IonDescribedValue data,
-        scope DeserializationParams!(tableKind, annotated) params,
         scope ref T value,
-        scope ref SerdeFlags!T requiredFlags)
-    {with(params){
+        scope ref SerdeFlags!T requiredFlags,
+        scope RuntimeSymbolTable runtimeSymbolTable,
+        scope CompiletimeIndex compiletimeIndex,
+        scope Annotations annotations_,
+        )
+    {
         import core.lifetime: move;
         import mir.conv: to;
         import mir.reflection: hasField;
@@ -282,7 +255,7 @@ template deserializeValue(string[] symbolTable)
                     if (_expect(error, false))
                         return error.ionException;
                     Temporal elem;
-                    if (auto exception = impl(ionElem, params, elem))
+                    if (auto exception = impl(ionElem, elem, runtimeSymbolTable, compiletimeIndex, annotations_))
                         return exception;
                     import core.lifetime: move;
                     __traits(getMember, value, member).put(move(elem));
@@ -322,7 +295,7 @@ template deserializeValue(string[] symbolTable)
                         return error.ionException;
 
                     Temporal elem;
-                    if (auto exception = impl(ionElem, params, elem))
+                    if (auto exception = impl(ionElem, elem, runtimeSymbolTable, compiletimeIndex, annotations_))
                         return exception;
                     import core.lifetime: move;
 
@@ -334,9 +307,9 @@ template deserializeValue(string[] symbolTable)
                     if (symbolId >= table.length)
                         return unqualException(unexpectedSymbolIdWhenDeserializing!T);
 
-                    static if (__traits(compiles, __traits(getMember, value, member)[table[symbolId]] = move(elem)))
+                    static if (tableKind == TableKind.immutableRuntime)
                     {
-                        __traits(getMember, value, member)[table[symbolId]] = move(elem);
+                        (()@trusted pure {__traits(getMember, value, member)[table[symbolId]] = move(elem);})();
                     }
                     else
                     {
@@ -371,7 +344,7 @@ template deserializeValue(string[] symbolTable)
         static if (hasProxy)
         {
             Temporal proxy;
-            if (auto exception = impl(data, params, proxy))
+            if (auto exception = impl(data, proxy, runtimeSymbolTable, compiletimeIndex, annotations_))
                 return exception;
             auto temporal = to!(serdeDeserializationMemberType!(T, member))(move(proxy));
             static if (hasTransform)
@@ -382,7 +355,7 @@ template deserializeValue(string[] symbolTable)
         else
         static if (hasField!(T, member))
         {
-            if (auto exception = impl(data, params, __traits(getMember, value, member)))
+            if (auto exception = impl(data, __traits(getMember, value, member), runtimeSymbolTable, compiletimeIndex, annotations_))
                 return exception;
             static if (hasTransform)
                 transform(__traits(getMember, value, member));
@@ -403,7 +376,7 @@ template deserializeValue(string[] symbolTable)
                     import std.array: std_appender = appender;
                     auto buffer = std_appender!(D[]);
                 }
-                if (auto exception = deserializeListToScopedBuffer(data, params, buffer))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
                 auto temporal = (() @trusted => cast(Member)buffer.data)();
                 static if (hasTransform)
@@ -414,7 +387,7 @@ template deserializeValue(string[] symbolTable)
             else
             {
                 Member temporal;
-                if (auto exception = impl(data, params, temporal))
+                if (auto exception = impl(data, temporal, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
                 static if (hasTransform)
                     transform(temporal);
@@ -422,22 +395,27 @@ template deserializeValue(string[] symbolTable)
                 return null;
             }
         }
-    }}
+    }
+
+    import mir.algebraic: isVariant;
 
     /++
     Deserialize aggregate value
     Params:
-        params = $(LREF DeserializationParams)
         value = value to deserialize
     Returns: `IonException`
     +/
-    @safe
-    IonException deserializeValue(T, TableKind tableKind, bool annotated)(
+    pure
+    @safe 
+    IonException deserializeValue(T)(
         scope IonDescribedValue data,
-        scope DeserializationParams!(tableKind, annotated) params,
-        scope ref T value)
-        if (!isFirstOrderSerdeType!T)
-    {with(params){
+        scope ref T value,
+        scope RuntimeSymbolTable runtimeSymbolTable,
+        scope CompiletimeIndex compiletimeIndex,
+        scope Annotations annotations_,
+        )
+        if (!isFirstOrderSerdeType!T && !isVariant!T)
+    {
         import mir.algebraic: isVariant, isNullable;
         import mir.internal.meta: Contains;
         import mir.ndslice.slice: Slice, SliceKind;
@@ -468,7 +446,7 @@ template deserializeValue(string[] symbolTable)
                     if (value._length == maxLength)
                         return IonErrorCode.smallArrayOverflow.ionException;
                     E elem;
-                    if (auto exception = deserializeValue(ionElem, params, elem))
+                    if (auto exception = deserializeValue(ionElem, elem, runtimeSymbolTable, compiletimeIndex, annotations_))
                         return exception;
                     import core.lifetime: move;
                     value.trustedAppend(move(elem));
@@ -493,10 +471,13 @@ template deserializeValue(string[] symbolTable)
                 if (id >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
-                if (tableKind == TableKind.scopeRuntime && !is(T == string))
+                static if (tableKind == TableKind.scopeRuntime && !is(T == string))
                     value = table[id].dup;
                 else
-                    value = table[id].to!T;
+                static if (tableKind == TableKind.scopeRuntime)
+                    value = table[id].idup;
+                else
+                    ()@trusted pure {value = table[id].to!T; }();
                 return null;
             }
             if (_expect(data.descriptor.type != IonTypeCode.string && data.descriptor.type != IonTypeCode.null_, false))
@@ -540,7 +521,7 @@ template deserializeValue(string[] symbolTable)
                     return exc.ionException;
                 if (id >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                value = table[id].rcarray!(TemplateArgsOf!T);
+                (()@trusted pure {value = table[id].rcarray!(TemplateArgsOf!T);})();
                 return null;
             }
             import std.traits: TemplateArgsOf;
@@ -557,7 +538,7 @@ template deserializeValue(string[] symbolTable)
             {
                 import std.array: std_appender = appender;
                 auto buffer = std_appender!(D[]);
-                if (auto exception = deserializeListToScopedBuffer(data, params, buffer))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
                 value = buffer.data;
                 return null;
@@ -582,7 +563,7 @@ template deserializeValue(string[] symbolTable)
                     return error.ionException;
                 if (i >= N)
                     return IonErrorCode.tooManyElementsForStaticArray.ionException;
-                if (auto exception = deserializeValue(ionElem, params, value[i++]))
+                if (auto exception = deserializeValue(ionElem, value[i++], runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
             }
             if (i < N)
@@ -609,7 +590,7 @@ template deserializeValue(string[] symbolTable)
                 if (symbolId >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
-                if (auto errorMsg = deserializeValue(elem, params, ref () @trusted {return value.require(table[symbolId].to!K);} ()))
+                if (auto errorMsg = deserializeValue(elem, ref () @trusted pure {return value.require(table[symbolId].to!K);} (), runtimeSymbolTable, compiletimeIndex, annotations_))
                     return errorMsg;
             }
             return null;
@@ -634,7 +615,9 @@ template deserializeValue(string[] symbolTable)
                 if (symbolId >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
-                if (auto errorMsg = deserializeValue(elem, params, value.require(table[symbolId].to!string)))
+                if (auto errorMsg = deserializeValue(elem, 
+                    (ref () @trusted pure => value.require(table[symbolId].to!string))(),
+                    runtimeSymbolTable, compiletimeIndex, annotations_))
                     return errorMsg;
             }
             return null;
@@ -649,7 +632,7 @@ template deserializeValue(string[] symbolTable)
                 import mir.ndslice.slice: sliced;
 
                 D[] array;
-                if (auto ret = deserializeValue(data, params, array))
+                if (auto ret = deserializeValue(data, array, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return ret;
                 value = array.sliced.asKindOf!kind;
                 return null;
@@ -660,7 +643,7 @@ template deserializeValue(string[] symbolTable)
                 import mir.ndslice.fuse: fuse;
 
                 Slice!(D*, N - 1)[] array;
-                if (auto ret = deserializeValue(data, params, array))
+                if (auto ret = deserializeValue(data, array, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return ret;
                 value = array.fuse.asKindOf!kind;
                 return null;
@@ -674,9 +657,11 @@ template deserializeValue(string[] symbolTable)
             static if (N == 1)
             {
                 RCArray!D array;
-                if (auto ret = deserializeValue(data, params, array))
+                if (auto ret = deserializeValue(data, array, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return ret;
-                value = array.moveToSlice.asKindOf!kind;
+                () @trusted {
+                    value = array.moveToSlice.asKindOf!kind;
+                } ();
                 return null;
             }
             // TODO: create a single allocation algorithm
@@ -685,9 +670,11 @@ template deserializeValue(string[] symbolTable)
                 import mir.ndslice.fuse: rcfuse;
 
                 RCArray!(Slice!(RCI!D, N - 1)) array;
-                if (auto ret = deserializeValue(data, params, array))
+                if (auto ret = deserializeValue(data, array, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return ret;
-                value = array.moveToSlice.rcfuse.asKindOf!kind;
+                () @trusted {
+                    value = array.moveToSlice.rcfuse.asKindOf!kind;
+                } ();
                 return null;
             }
         }
@@ -698,7 +685,7 @@ template deserializeValue(string[] symbolTable)
             if (data.descriptor.type == IonTypeCode.list)
             {
                 auto buffer = scopedBuffer!E;
-                if (auto exception = deserializeListToScopedBuffer(data, params, buffer))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
                 auto ar = RCArray!E(buffer.length, false);
                 () @trusted {
@@ -745,11 +732,11 @@ template deserializeValue(string[] symbolTable)
                         return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                     import mir.conv: to;
                     serdeGetProxy!T temporal;
-                    if (auto exception = impl(elem, params, temporal))
+                    if (auto exception = impl(elem, temporal, runtimeSymbolTable, compiletimeIndex, annotations_))
                         return exception;
-                    static if (__traits(compiles, {value[table[symbolId]] = move(temporal);}))
+                    static if (tableKind == TableKind.immutableRuntime)
                     {
-                        value[table[symbolId]] = move(temporal);
+                        (()@trusted pure {value[table[symbolId]] = move(temporal);})();
                     }
                     else
                     {
@@ -769,7 +756,7 @@ template deserializeValue(string[] symbolTable)
                         return error.ionException;
                     import mir.conv: to;
                     serdeGetProxy!T temporal;
-                    if (auto exception = impl(elem, params, temporal))
+                    if (auto exception = impl(elem, temporal, runtimeSymbolTable, compiletimeIndex, annotations_))
                         return exception;
                     value.put(move(temporal));
                 }
@@ -777,7 +764,7 @@ template deserializeValue(string[] symbolTable)
             else
             {
                 serdeGetProxy!T temporal;
-                if (auto exception = impl(data, params, temporal))
+                if (auto exception = impl(data, temporal, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
 
                 value = to!T(move(temporal));
@@ -801,7 +788,7 @@ template deserializeValue(string[] symbolTable)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
 
                 auto originalId = id;
-                if (!prepareSymbolId(params, id))
+                if (!prepareSymbolId(id, compiletimeIndex))
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
 
                 switch (id)
@@ -819,7 +806,7 @@ template deserializeValue(string[] symbolTable)
                             return null;
                         }
                     }}
-                    default:
+                 default:
                         static if (hasUDA!(T, serdeIgnoreCase))
                             ionValue = table[id];
                         else
@@ -836,379 +823,6 @@ template deserializeValue(string[] symbolTable)
             return IonErrorCode.expectedEnumValue.ionException;
         }
         else
-        static if (isVariant!T)
-        {
-            import mir.lob: Blob, Clob;
-            import mir.timestamp: Timestamp;
-
-            static if (getAlgebraicAnnotationsOfVariant!T.length)
-            {
-                static if (!annotated)
-                {
-                    auto annotatedParams = params.withAnnotations(IonAnnotations.init);
-                    if (data.descriptor.type == IonTypeCode.annotations)
-                    {
-                        IonErrorCode error;
-                        auto wrapper = data.get!IonAnnotationWrapper(error);
-                        if (error)
-                            return error.ionException;
-                        () @trusted {
-                            annotatedParams.annotations = wrapper.annotations;
-                            data = wrapper.value;
-                        } ();
-                    }
-                    
-                }
-                else
-                    alias annotatedParams = params;
-
-                IonException retNull() @property
-                {
-                    return annotatedParams.annotations.empty ? null : IonErrorCode.unusedAnnotations.ionException;
-                }
-            }
-            else
-            {
-                IonException retNull;
-            }
-
-            alias Types = T.AllowedTypes;
-            alias contains = Contains!Types;
-
-            static if (getAlgebraicAnnotationsOfVariant!T.length)
-            {
-                if (!annotatedParams.annotations.empty)
-                {
-                    size_t symbolId;
-                    if (auto error = annotatedParams.annotations.pick(symbolId))
-                        return error.ionException;
-
-                    auto originalId = symbolId;
-                    if (!prepareSymbolId(params, symbolId))
-                        goto Default;
-
-                    switch (symbolId)
-                    {
-                        static foreach (VT; Types)
-                        static if (serdeHasAlgebraicAnnotation!VT)
-                        {
-                            case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
-                            {
-                                VT object;
-                                if (auto exception = deserializeValue(data, annotatedParams, object))
-                                    return exception;
-                                import core.lifetime: move;
-                                value = move(object);
-                                return null;
-                            }
-                        }
-                        Default:
-                        default:
-                            static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
-                                value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
-                            else
-                                return unqualException(unexpectedAnnotationWhenDeserializing!T);
-                    }
-                }
-                else
-                if (data.descriptor.type == IonTypeCode.struct_)
-                {
-                    auto dataStruct = data.trustedGet!IonStruct;
-                    if (dataStruct.walkLength == 1)
-                    {
-                        foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; dataStruct)
-                        {
-                            if (error)
-                                return error.ionException;
-                            auto originalId = symbolId;
-                            if (prepareSymbolId(params, symbolId)) switch (symbolId)
-                            {
-                                static foreach (VT; Types)
-                                static if (serdeHasAlgebraicAnnotation!VT)
-                                {
-                                    case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
-                                    {
-                                        VT object;
-                                        if (auto exception = deserializeValue(elem, annotatedParams, object))
-                                            return exception;
-                                        import core.lifetime: move;
-                                        value = move(object);
-                                        return null;
-                                    }
-                                }
-                                default:
-                            }
-                        }
-                    }
-                }
-            }
-            static if (contains!IonNull)
-            {
-                // TODO: check that descriptor.type correspond underlaying type
-                if (data.descriptor.L == 0xF)
-                {
-                    value = IonNull(data.descriptor.type);
-                    return retNull;
-                }
-            }
-            else
-            static if (contains!(typeof(null)))
-            {
-                // TODO: check that descriptor.type correspond underlaying type
-                if (data.descriptor.L == 0xF)
-                {
-                    value = null;
-                    return retNull;
-                }
-            }
-            static if ((contains!(typeof(null)) || contains!IonNull) && T.AllowedTypes.length == 2)
-            {
-                T.AllowedTypes[1] payload;
-                if (auto exception = deserializeValue(data, params, payload))
-                    return exception;
-                value = payload;
-                return retNull;
-            }
-            else
-            switch (data.descriptor.type)
-            {
-                // static if (contains!(typeof(null)))
-                // {
-                //     case IonTypeCode.null_:
-                //     {
-                //         value = null;
-                //         return retNull;
-                //     }
-                // }
-
-                static if (contains!bool)
-                {
-                    case IonTypeCode.bool_:
-                    {
-                        IonErrorCode error;
-                        bool boolean = data.get!bool(error);
-                        if (error)
-                            return error.ionException;
-                        value = boolean;
-                        return retNull;
-                    }
-                }
-
-                static if (contains!string)
-                {
-                    case IonTypeCode.symbol:
-                    case IonTypeCode.string:
-                    {
-                        string str;
-                        if (auto exception = deserializeValue(data, params, str))
-                            return exception;
-                        value = str;
-                        return retNull;
-                    }
-                }
-                else
-                static if (Filter!(isSmallString, Types).length)
-                {
-                    case IonTypeCode.symbol:
-                    case IonTypeCode.string:
-                    {
-                        Filter!(isSmallString, Types)[$ - 1] str; // pick the largest one
-                        if (auto exception = deserializeValue(data, params, str))
-                            return exception;
-                        value = str;
-                        return retNull;
-                    }
-                }
-
-                static if (contains!long)
-                {
-                    case IonTypeCode.nInt:
-                    case IonTypeCode.uInt:
-                    {
-                        long number;
-                        if (auto exception = deserializeValue_(data, number))
-                            return exception;
-                        value = number;
-                        return retNull;
-                    }
-                }
-
-                static if (contains!double)
-                {
-                    static if (!contains!long)
-                    {
-                        case IonTypeCode.nInt:
-                        case IonTypeCode.uInt:
-                    }
-                    case IonTypeCode.float_:
-                    case IonTypeCode.decimal:
-                    {
-                        double number;
-                        if (auto exception = deserializeValue_(data, number))
-                            return exception;
-                        value = number;
-                        return retNull;
-                    }
-                }
-
-                static if (contains!Timestamp)
-                {
-                    case IonTypeCode.timestamp:
-                    {
-                        Timestamp timestamp;
-                        if (auto error = data.trustedGet!IonTimestamp.get(timestamp))
-                            return error.ionException;
-                        value = timestamp;
-                        return retNull;
-                    }
-                }
-
-                static if (contains!Blob)
-                {
-                    case IonTypeCode.blob:
-                    {
-                        auto blob = data.trustedGet!Blob;
-                        value = Blob(blob.data.dup);
-                        return retNull;
-                    }
-                }
-
-                static if (contains!Clob)
-                {
-                    case IonTypeCode.clob:
-                    {
-                        auto clob = data.trustedGet!Clob;
-                        value = Clob(clob.data.dup);
-                        return retNull;
-                    }
-                }
-
-                static if (anySatisfy!(templateAnd!(isArray, templateNot!isSomeString), Types))
-                {
-                    case IonTypeCode.list:
-                    {
-                        alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
-                        static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
-                        ArrayTypes[0] array;
-                        if (auto exception = deserializeValue(data, params, array))
-                            return exception;
-                        import core.lifetime: move;
-                        value = move(array);
-                        return retNull;
-                    }
-                }
-
-                static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct, hasDiscriminatedField), Types))
-                {
-                    case IonTypeCode.struct_:
-                    {                        
-                        static if (anySatisfy!(isStringMap, Types))
-                        {
-                            alias isMapType = isStringMap;
-                        }
-                        else
-                        static if (anySatisfy!(isAssociativeArray, Types))
-                        {
-                            alias isMapType = isAssociativeArray;
-                        }
-                        else
-                        static if (anySatisfy!(hasLikeStruct, Types))
-                        {
-                            alias isMapType = hasLikeStruct;
-                        }
-                        else
-                        static if (anySatisfy!(hasFallbackStruct, Types))
-                        {
-                            alias isMapType = hasFallbackStruct;
-                        }
-                        else
-                        static if (anySatisfy!(hasDiscriminatedField, Types))
-                        {
-                            alias isMapType = hasDiscriminatedField;
-                        }
-                        else
-                        {
-                            static assert(0);
-                        }
-
-                        alias DiscriminatedFieldTypes = Filter!(hasDiscriminatedField, Types);
-                        static if (DiscriminatedFieldTypes.length)
-                        {
-                            enum discriminatedField = getUDAs!(DiscriminatedFieldTypes[0], serdeDiscriminatedField)[0].field;
-                            foreach (DFT; DiscriminatedFieldTypes[1 .. $])
-                            {{
-                                enum df = getUDAs!(DFT, serdeDiscriminatedField)[0].field;
-                                static assert (df == discriminatedField, "Discriminated field doesn't match: " ~ discriminatedField ~ " and " ~ df);
-                            }}
-
-                            foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
-                            {
-                                if (error)
-                                    return error.ionException;
-                                if (symbolId >= table.length)
-                                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                                if (table[symbolId] == discriminatedField)
-                                {
-                                    const(char)[] tag;
-                                    if (auto exception = deserializeScoped(elem, params, tag))
-                                        return exception;
-                                    switch (tag)
-                                    {
-                                        foreach (DFT; DiscriminatedFieldTypes)
-                                        {
-                                            case getUDAs!(DFT, serdeDiscriminatedField)[0].tag: {
-                                                DFT object;
-                                                if (auto exception = deserializeValue(data, params, object))
-                                                    return exception;
-                                                import core.lifetime: move;
-                                                value = move(object);
-                                                return retNull;
-                                            }
-                                        }
-                                        default:
-                                    }
-                                }
-                            }
-                        }
-
-                        static if (__traits(isSame, isMapType, hasDiscriminatedField))
-                        {
-                            goto default;
-                        }
-                        else
-                        {
-                            alias AATypes = Filter!(isMapType, Types);
-                            static assert(AATypes.length == 1, AATypes.stringof);
-                            AATypes[0] object;
-                            if (auto exception = deserializeValue(data, params, object))
-                                return exception;
-                            import core.lifetime: move;
-                            value = move(object);
-                            return retNull;
-                        }
-                    }
-                }
-
-                static if (anySatisfy!(isAnnotated, Types))
-                {
-                    case IonTypeCode.annotations:
-                    {
-                        alias ATypes = Filter!(isAnnotated, Types);
-                        static assert(ATypes.length == 1, ATypes.stringof);
-                        ATypes[0] object;
-                        if (auto exception = deserializeValue(data, params, object))
-                            return exception;
-                        import core.lifetime: move;
-                        value = move(object);
-                        return retNull;
-                    }
-                }
-
-                default:
-                    return unqualException(unexpectedIonTypeCodeFor!T);
-            }
-        }
-        else
         static if (isStdNullable!T && !isAlgebraicAliasThis!T)
         {
             // TODO: check that descriptor.type correspond underlaying type
@@ -1219,7 +833,7 @@ template deserializeValue(string[] symbolTable)
             }
 
             typeof(value.get) payload;
-            if (auto exception = deserializeValue(data, params, payload))
+            if (auto exception = deserializeValue(data, payload, runtimeSymbolTable, compiletimeIndex, annotations_))
                 return exception;
             value = payload;
             return null;
@@ -1241,6 +855,10 @@ template deserializeValue(string[] symbolTable)
                         return _wrapperError.ionException;
                     auto annotations = wrapper.annotations;
                     (()@trusted {data = wrapper.value;})();
+                }
+                else
+                {
+                    alias annotations = annotations_[0];
                 }
 
                 static foreach (member; serdeGetAnnotationMembersIn!T)
@@ -1264,9 +882,9 @@ template deserializeValue(string[] symbolTable)
                             break;
                         }
                         else
-                        static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId]))
+                        static if (tableKind == TableKind.immutableRuntime && __traits(compiles, () @trusted pure {__traits(getMember, value, member) = table[symbolId];}))
                         {
-                            __traits(getMember, value, member) = table[symbolId];
+                            (() @trusted pure {__traits(getMember, value, member) = table[symbolId];})() ;
                             break;
                         }
                         else
@@ -1281,7 +899,13 @@ template deserializeValue(string[] symbolTable)
                             static if (!isSomeChar!(ForeachType!AT))
                             {
                                 import mir.conv : to;
-                                __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!AT);
+                                static if (__traits(isIntegral, AT))
+                                    __traits(getMember, value, member) ~= table[symbolId].to!(ForeachType!AT);
+                                else
+                                static if (tableKind == TableKind.immutableRuntime || is(AT : const(char)[]))
+                                    (()pure @trusted {__traits(getMember, value, member) ~= table[symbolId];})();
+                                else
+                                    __traits(getMember, value, member) ~= table[symbolId].idup;
                                 if (annotations.empty)
                                     break;
                             }
@@ -1290,12 +914,11 @@ template deserializeValue(string[] symbolTable)
                         }
                     }
                 }}
-            }
 
-            static if (serdeGetAnnotationMembersIn!T.length && !annotated)
-                auto annotatedParams = params.withAnnotations(annotations);
+                alias annotations__ = AliasSeq!(annotations);
+            }
             else
-                alias annotatedParams = params;
+                alias annotations__ = annotations_;
 
             static if (isAlgebraicAliasThis!T || isAnnotated!T)
             {
@@ -1305,10 +928,10 @@ template deserializeValue(string[] symbolTable)
                 else
                     enum aliasMember = "value";
                 static if (hasField!(T, aliasMember))
-                    return deserializeValue(data, annotatedParams, __traits(getMember, value, aliasMember));
+                    return .deserializeValue!(symbolTable, tableKind, annotations__.length)(data, __traits(getMember, value, aliasMember), runtimeSymbolTable, compiletimeIndex, annotations__);
                 else {
                     typeof(__traits(getMember, value, aliasMember)) temporal;
-                    if (auto exception = deserializeValue(data, annotatedParams, temporal))
+                    if (auto exception = .deserializeValue!(symbolTable, tableKind, annotations__.length)(data, temporal, runtimeSymbolTable, compiletimeIndex, annotations__))
                         return exception;
                     import core.lifetime: move;
                     __traits(getMember, value, aliasMember) = move(temporal);
@@ -1371,7 +994,7 @@ template deserializeValue(string[] symbolTable)
                 static if (hasUDA!(T, serdeOrderedIn))
                 {
                     SerdeOrderedDummy!T temporal;
-                    if (auto exception = deserializeValue(params.withoutAnnotations, temporal))
+                    if (auto exception = .deserializeValue!(symbolTable, tableKind, false)(temporal, runtimeSymbolTable, compiletimeIndex))
                         return exception;
                     temporal.serdeFinalizeTarget(value, requiredFlags);
                 }
@@ -1394,7 +1017,7 @@ template deserializeValue(string[] symbolTable)
                                 {
                                     if (error)
                                         return error.ionException;
-                                    prepareSymbolId(params, symbolId);
+                                    prepareSymbolId(symbolId, compiletimeIndex);
 
                                     switch(symbolId)
                                     {
@@ -1423,7 +1046,7 @@ template deserializeValue(string[] symbolTable)
                                                 }
                                             }
 
-                                            if (auto mexp = deserializeValueMember!member(elem, params, value, requiredFlags))
+                                            if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, runtimeSymbolTable, compiletimeIndex, annotations_))
                                                 return mexp;
                                             break;
                                         default:
@@ -1453,7 +1076,7 @@ template deserializeValue(string[] symbolTable)
                                 }
                             }
                         }}
-                    }
+                 }
                     else
                     {
                         foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
@@ -1461,7 +1084,7 @@ template deserializeValue(string[] symbolTable)
                             if (error)
                                 return error.ionException;
                             auto originalId = symbolId;
-                            if (!prepareSymbolId(params, symbolId))
+                            if (!prepareSymbolId(symbolId, compiletimeIndex))
                                 goto Default;
                             S: switch(symbolId)
                             {
@@ -1494,12 +1117,12 @@ template deserializeValue(string[] symbolTable)
                                             goto default;
                                         }
                                     }
-                                    if (auto mexp = deserializeValueMember!member(elem, params, value, requiredFlags))
+                                    if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, runtimeSymbolTable, compiletimeIndex, annotations_))
                                         return mexp;
                                     break S;
                                     }
                                 }}
-                                Default:
+                             Default:
                                 default:
                                     static if (hasDiscriminatedField!T)
                                     {
@@ -1553,7 +1176,400 @@ template deserializeValue(string[] symbolTable)
                 return null;
             }
         }
-    }}
+    }
+
+    pure
+    @safe 
+    IonException deserializeValue(T)(
+        scope IonDescribedValue data,
+        scope ref T value,
+        scope RuntimeSymbolTable runtimeSymbolTable,
+        scope CompiletimeIndex compiletimeIndex,
+        scope Annotations annotations_,
+        )
+        if (!isFirstOrderSerdeType!T && isVariant!T)
+    {
+        import mir.internal.meta: Contains;
+        import mir.ndslice.slice: Slice, SliceKind;
+        import mir.rc.array: RCArray, RCI;
+        import mir.reflection: isStdNullable;
+        import mir.string_map : isStringMap;
+        import std.meta: anySatisfy, Filter, templateAnd, templateNot, templateOr, ApplyRight;
+        import std.traits: isArray, isSomeString, isAssociativeArray;
+
+        static if (tableKind)
+            auto table = runtimeSymbolTable;
+        else
+            alias table = tableInsance!symbolTable;
+
+
+        import mir.lob: Blob, Clob;
+        import mir.timestamp: Timestamp;
+
+        static if (getAlgebraicAnnotationsOfVariant!T.length)
+        {
+            static if (!annotated)
+            {
+                IonAnnotations annotations__;
+                if (data.descriptor.type == IonTypeCode.annotations)
+                {
+                    IonErrorCode error;
+                    auto wrapper = data.get!IonAnnotationWrapper(error);
+                    if (error)
+                        return error.ionException;
+                    () @trusted {
+                        annotations__ = wrapper.annotations;
+                        data = wrapper.value;
+                    } ();
+                }
+                
+            }
+            else
+                alias annotations__ = annotations_[0];
+
+            IonException retNull() @property
+            {
+                return annotations__.empty ? null : IonErrorCode.unusedAnnotations.ionException;
+            }
+        }
+        else
+        {
+            IonException retNull;
+        }
+
+        alias Types = T.AllowedTypes;
+        alias contains = Contains!Types;
+
+        static if (getAlgebraicAnnotationsOfVariant!T.length)
+        {
+            if (!annotations__.empty)
+            {
+                size_t symbolId;
+                if (auto error = annotations__.pick(symbolId))
+                    return error.ionException;
+
+                auto originalId = symbolId;
+                if (!prepareSymbolId(symbolId, compiletimeIndex))
+                    goto Default;
+
+                switch (symbolId)
+                {
+                    static foreach (VT; Types)
+                    static if (serdeHasAlgebraicAnnotation!VT)
+                    {
+                        case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
+                        {
+                            VT object;
+                            if (auto exception = .deserializeValue!(symbolTable, tableKind, true)(data, object, runtimeSymbolTable, compiletimeIndex, annotations__))
+                                return exception;
+                            import core.lifetime: move;
+                            value = move(object);
+                            return null;
+                        }
+                    }
+                    Default:
+                    default:
+                        static if (__traits(hasMember, T, "serdeUnexpectedAnnotationHandler"))
+                            value.serdeUnexpectedAnnotationHandler(originalId < table.length ? table[originalId] : "<@unknown symbol@>");
+                        else
+                            return unqualException(unexpectedAnnotationWhenDeserializing!T);
+                }
+            }
+            else
+            if (data.descriptor.type == IonTypeCode.struct_)
+            {
+                auto dataStruct = data.trustedGet!IonStruct;
+                if (dataStruct.walkLength == 1)
+                {
+                    foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; dataStruct)
+                    {
+                        if (error)
+                            return error.ionException;
+                        auto originalId = symbolId;
+                        if (prepareSymbolId(symbolId, compiletimeIndex)) switch (symbolId)
+                        {
+                            static foreach (VT; Types)
+                            static if (serdeHasAlgebraicAnnotation!VT)
+                            {
+                                case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
+                                {
+                                    VT object;
+                                    if (auto exception = .deserializeValue!(symbolTable, tableKind, true)(elem, object, runtimeSymbolTable, compiletimeIndex, annotations__))
+                                        return exception;
+                                    import core.lifetime: move;
+                                    value = move(object);
+                                    return null;
+                                }
+                            }
+                            default:
+                        }
+                    }
+                }
+            }
+        }
+        static if (contains!IonNull)
+        {
+            // TODO: check that descriptor.type correspond underlaying type
+            if (data.descriptor.L == 0xF)
+            {
+                value = IonNull(data.descriptor.type);
+                return retNull;
+            }
+        }
+        else
+        static if (contains!(typeof(null)))
+        {
+            // TODO: check that descriptor.type correspond underlaying type
+            if (data.descriptor.L == 0xF)
+            {
+                value = null;
+                return retNull;
+            }
+        }
+        static if ((contains!(typeof(null)) || contains!IonNull) && T.AllowedTypes.length == 2)
+        {
+            T.AllowedTypes[1] payload;
+            if (auto exception = deserializeValue(data, payload, runtimeSymbolTable, compiletimeIndex, annotations_))
+                return exception;
+            value = payload;
+            return retNull;
+        }
+        else
+        switch (data.descriptor.type)
+        {
+            // static if (contains!(typeof(null)))
+            // {
+            //     case IonTypeCode.null_:
+            //     {
+            //         value = null;
+            //         return retNull;
+            //     }
+            // }
+
+            static if (contains!bool)
+            {
+                case IonTypeCode.bool_:
+                {
+                    IonErrorCode error;
+                    bool boolean = data.get!bool(error);
+                    if (error)
+                        return error.ionException;
+                    value = boolean;
+                    return retNull;
+                }
+            }
+
+            static if (contains!string)
+            {
+                case IonTypeCode.symbol:
+                case IonTypeCode.string:
+                {
+                    string str;
+                    if (auto exception = deserializeValue(data, str, runtimeSymbolTable, compiletimeIndex, annotations_))
+                        return exception;
+                    value = str;
+                    return retNull;
+                }
+            }
+            else
+            static if (Filter!(isSmallString, Types).length)
+            {
+                case IonTypeCode.symbol:
+                case IonTypeCode.string:
+                {
+                    Filter!(isSmallString, Types)[$ - 1] str; // pick the largest one
+                    if (auto exception = deserializeValue(data, str, runtimeSymbolTable, compiletimeIndex, annotations_))
+                        return exception;
+                    value = str;
+                    return retNull;
+                }
+            }
+
+            static if (contains!long)
+            {
+                case IonTypeCode.nInt:
+                case IonTypeCode.uInt:
+                {
+                    long number;
+                    if (auto exception = deserializeValue_(data, number))
+                        return exception;
+                    value = number;
+                    return retNull;
+                }
+            }
+
+            static if (contains!double)
+            {
+                static if (!contains!long)
+                {
+                    case IonTypeCode.nInt:
+                    case IonTypeCode.uInt:
+                }
+                case IonTypeCode.float_:
+                case IonTypeCode.decimal:
+                {
+                    double number;
+                    if (auto exception = deserializeValue_(data, number))
+                        return exception;
+                    value = number;
+                    return retNull;
+                }
+            }
+
+            static if (contains!Timestamp)
+            {
+                case IonTypeCode.timestamp:
+                {
+                    Timestamp timestamp;
+                    if (auto error = data.trustedGet!IonTimestamp.get(timestamp))
+                        return error.ionException;
+                    value = timestamp;
+                    return retNull;
+                }
+            }
+
+            static if (contains!Blob)
+            {
+                case IonTypeCode.blob:
+                {
+                    auto blob = data.trustedGet!Blob;
+                    value = Blob(blob.data.dup);
+                    return retNull;
+                }
+            }
+
+            static if (contains!Clob)
+            {
+                case IonTypeCode.clob:
+                {
+                    auto clob = data.trustedGet!Clob;
+                    value = Clob(clob.data.dup);
+                    return retNull;
+                }
+            }
+
+            static if (anySatisfy!(templateAnd!(isArray, templateNot!isSomeString), Types))
+            {
+                case IonTypeCode.list:
+                {
+                    alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
+                    static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
+                    value = ArrayTypes[0].init;
+                    return deserializeValue(data, value.trustedGet!(ArrayTypes[0]), runtimeSymbolTable, compiletimeIndex, annotations_);
+                }
+            }
+
+            static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct, hasDiscriminatedField), Types))
+            {
+                case IonTypeCode.struct_:
+                {                        
+                    static if (anySatisfy!(isStringMap, Types))
+                    {
+                        alias isMapType = isStringMap;
+                    }
+                    else
+                    static if (anySatisfy!(isAssociativeArray, Types))
+                    {
+                        alias isMapType = isAssociativeArray;
+                    }
+                    else
+                    static if (anySatisfy!(hasLikeStruct, Types))
+                    {
+                        alias isMapType = hasLikeStruct;
+                    }
+                    else
+                    static if (anySatisfy!(hasFallbackStruct, Types))
+                    {
+                        alias isMapType = hasFallbackStruct;
+                    }
+                    else
+                    static if (anySatisfy!(hasDiscriminatedField, Types))
+                    {
+                        alias isMapType = hasDiscriminatedField;
+                    }
+                    else
+                    {
+                        static assert(0);
+                    }
+
+                    alias DiscriminatedFieldTypes = Filter!(hasDiscriminatedField, Types);
+                    static if (DiscriminatedFieldTypes.length)
+                    {
+                        enum discriminatedField = getUDAs!(DiscriminatedFieldTypes[0], serdeDiscriminatedField)[0].field;
+                        foreach (DFT; DiscriminatedFieldTypes[1 .. $])
+                        {{
+                            enum df = getUDAs!(DFT, serdeDiscriminatedField)[0].field;
+                            static assert (df == discriminatedField, "Discriminated field doesn't match: " ~ discriminatedField ~ " and " ~ df);
+                        }}
+
+                        foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
+                        {
+                            if (error)
+                                return error.ionException;
+                            if (symbolId >= table.length)
+                                return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                            if (table[symbolId] == discriminatedField)
+                            {
+                                const(char)[] tag;
+                                if (auto exception = deserializeScoped(elem, tag, runtimeSymbolTable, compiletimeIndex, annotations_))
+                                    return exception;
+                                switch (tag)
+                                {
+                                    foreach (DFT; DiscriminatedFieldTypes)
+                                    {
+                                        case getUDAs!(DFT, serdeDiscriminatedField)[0].tag: {
+                                            DFT object;
+                                            if (auto exception = deserializeValue(data, object, runtimeSymbolTable, compiletimeIndex, annotations_))
+                                                return exception;
+                                            import core.lifetime: move;
+                                            value = move(object);
+                                            return retNull;
+                                        }
+                                    }
+                                    default:
+                                }
+                            }
+                        }
+                    }
+
+                    static if (__traits(isSame, isMapType, hasDiscriminatedField))
+                    {
+                        goto default;
+                    }
+                    else
+                    {
+                        alias AATypes = Filter!(isMapType, Types);
+                        static assert(AATypes.length == 1, AATypes.stringof);
+                        AATypes[0] object;
+                        if (auto exception = deserializeValue(data, object, runtimeSymbolTable, compiletimeIndex, annotations_))
+                            return exception;
+                        import core.lifetime: move;
+                        value = move(object);
+                        return retNull;
+                    }
+                }
+            }
+
+            static if (anySatisfy!(isAnnotated, Types))
+            {
+                case IonTypeCode.annotations:
+                {
+                    alias ATypes = Filter!(isAnnotated, Types);
+                    static assert(ATypes.length == 1, ATypes.stringof);
+                    ATypes[0] object;
+                    if (auto exception = deserializeValue(data, object, runtimeSymbolTable, compiletimeIndex, annotations_))
+                        return exception;
+                    import core.lifetime: move;
+                    value = move(object);
+                    return retNull;
+                }
+            }
+
+            default:
+                return unqualException(unexpectedIonTypeCodeFor!T);
+        }
+
+    }
 
     ///
     alias deserializeValue = .deserializeValue_;
@@ -1595,8 +1611,7 @@ version(mir_ion_test) unittest
     
     Book book;
 
-    auto params = DeserializationParams!(TableKind.compiletime)(); 
-    if (auto exception = deserializeValue!(IonSystemSymbolTable_v1 ~ symbolTable)(data, params, book))
+    if (auto exception = deserializeValue!(IonSystemSymbolTable_v1 ~ symbolTable, TableKind.compiletime, false)(data, book))
         throw exception;
 
     assert(book.description.length == 0);

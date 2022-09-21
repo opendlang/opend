@@ -14,9 +14,9 @@ template serde(T)
     if (!is(immutable T == immutable IonValueStream))
 {
     import mir.serde: SerdeTarget;
-
+@safe:
     ///
-    T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
+    T serde(V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
     {
         T target;
         serde(target, value, serdeTarget);
@@ -24,7 +24,7 @@ template serde(T)
     }
 
     ///
-    void serde(V)(ref T target, auto ref const V value, int serdeTarget = SerdeTarget.ion)
+    void serde(V)(scope ref T target, auto ref scope const V value, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ion.exception;
@@ -40,16 +40,17 @@ template serde(T)
         enum nMax = 4096;
         enum keys = serdeGetSerializationKeysRecurse!V.removeSystemSymbols;
 
-        const(string)[] symbolTable;
 
         import mir.appender : scopedBuffer;
-        auto symbolTableBuffer = scopedBuffer!string;
+        auto symbolTableBuffer = scopedBuffer!(const(char)[]);
 
         auto table = () @trusted { IonSymbolTable!false ret = void; ret.initializeNull; return ret; }();
         auto serializer = ionSerializer!(nMax * 8, keys, false);
         serializer.initialize(table);
         serializeValue(serializer, value);
         serializer.finalize;
+
+        scope const(const(char)[])[] symbolTable;
 
         // use runtime table
         if (table.initialized)
@@ -58,7 +59,7 @@ template serde(T)
             foreach (IonErrorCode error, scope IonDescribedValue symbolValue; IonList(table.unfinilizedKeysData))
             {
                 assert(!error);
-                symbolTableBuffer.put(cast(string)symbolValue.trustedGet!(const(char)[]));
+                (()@trusted => symbolTableBuffer.put(symbolValue.trustedGet!(const(char)[])))();
             }
             symbolTable = symbolTableBuffer.data;
         }
@@ -72,7 +73,7 @@ template serde(T)
     }
 
     /// ditto
-    void serde()(ref T target, IonValueStream stream, int serdeTarget = SerdeTarget.ion)
+    void serde()(scope ref T target, scope IonValueStream stream, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
         import mir.deser.ion: deserializeIon;
@@ -86,7 +87,7 @@ template serde(T)
 {
     ///
     import mir.serde: SerdeTarget;
-    T serde(V)(auto ref const V value, int serdeTarget = SerdeTarget.ion)
+    T serde(V)(auto ref scope const V value, int serdeTarget = SerdeTarget.ion)
         if (!is(immutable V == immutable IonValueStream))
     {
         import mir.ser.ion: serializeIon;

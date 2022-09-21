@@ -121,7 +121,7 @@ struct Parser
         Event currentEvent_;
 
         ///YAML version string.
-        string YAMLVersion_ = null;
+        string YamlVersion_ = null;
         ///Tag handle shortcuts and replacements.
         TagDirective[] tagDirectives_;
 
@@ -307,7 +307,7 @@ struct Parser
                 scanner_.popFront();
                 pushState(State.parseDocumentEnd);
                 state_ = State.parseDocumentContent;
-                return documentStartEvent(startMark, endMark, true, YAMLVersion_, tagDirectives);
+                return documentStartEvent(startMark, endMark, true, YamlVersion_, tagDirectives);
             }
             else
             {
@@ -354,7 +354,7 @@ struct Parser
         TagDirective[] processDirectives() @safe
         {
             // Destroy version and tag handles from previous document.
-            YAMLVersion_ = null;
+            YamlVersion_ = null;
             tagDirectives_.length = 0;
 
             // Process directives.
@@ -365,13 +365,13 @@ struct Parser
                 string value = token.value.idup;
                 if(token.directive == DirectiveType.yaml)
                 {
-                    enforce(YAMLVersion_ is null,
+                    enforce(YamlVersion_ is null,
                             new ParserException("Duplicate YAML directive", token.startMark));
                     const minor = value.splitter(".").front;
                     enforce(minor == "1",
                             new ParserException("Incompatible document (version 1.x is required)",
                                       token.startMark));
-                    YAMLVersion_ = value;
+                    YamlVersion_ = value;
                 }
                 else if(token.directive == DirectiveType.tag)
                 {

@@ -10,7 +10,7 @@ Authors: Ilia Ki
 Macros:
 +/
 module mir.algebraic_alias.yaml;
-import mir.serde: serdeLikeStruct;
+import mir.serde: serdeLikeStruct, serdeProxy;
 
 import mir.algebraic:
     algVerbose,
@@ -112,6 +112,7 @@ YAML map representation.
 The implementation preserves order and allows duplicated keys.
 +/
 @serdeLikeStruct
+@serdeProxy!YamlAlgebraic
 struct YamlMap
 {
     /++
@@ -149,6 +150,14 @@ struct YamlMap
             return pairs[$ - 1].value;
         }
 
+        ref YamlAlgebraic opIndexAssign(V value, scope const(char)[] key) @safe pure return scope nothrow
+        {
+            if (auto valuePtr = key in this)
+                return *valuePtr = value;
+            pairs ~= YamlPair(key.idup, value);
+            return pairs[$ - 1].value;
+        }
+
         ref YamlAlgebraic opIndexAssign(V value, YamlAlgebraic key) @safe pure return scope nothrow
         {
             if (auto valuePtr = key in this)
@@ -173,7 +182,7 @@ struct YamlMap
     /++
     Returns: the first value associated with the provided key.
     +/
-    inout(YamlAlgebraic)* _opIn(scope string key) @safe pure nothrow @nogc inout return scope
+    inout(YamlAlgebraic)* _opIn(scope const char[] key) @safe pure nothrow @nogc inout return scope
     {
         foreach (ref pair; pairs)
             if (pair.key == key)
@@ -195,7 +204,7 @@ struct YamlMap
     /++
     Returns: the first value associated with the provided key.
     +/
-    ref inout(YamlAlgebraic) opIndex(scope string key) @safe pure inout return scope
+    ref inout(YamlAlgebraic) opIndex(scope const char[] key) @safe pure inout return scope
     {
         if (auto valuePtr = key in this)
             return *valuePtr;
