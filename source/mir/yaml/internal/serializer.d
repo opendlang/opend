@@ -73,19 +73,19 @@ struct Serializer
         }
 
         ///Begin the stream.
-        void startStream(EmitterT)(ref EmitterT emitter) @safe
+        void startStream(ref Emitter emitter) @safe
         {
             emitter.emit(streamStartEvent(ParsePosition(), ParsePosition()));
         }
 
         ///End the stream.
-        void endStream(EmitterT)(ref EmitterT emitter) @safe
+        void endStream(ref Emitter emitter) @safe
         {
             emitter.emit(streamEndEvent(ParsePosition(), ParsePosition()));
         }
 
         ///Serialize a node, emitting it in the process.
-        void serialize(EmitterT)(ref EmitterT emitter, ref YamlAlgebraic node) @safe
+        void serialize(ref Emitter emitter, ref YamlAlgebraic node) @safe
         {
             emitter.emit(documentStartEvent(ParsePosition(), ParsePosition(), explicitStart_,
                                              YAMLVersion_, tagDirectives_));
@@ -190,7 +190,7 @@ struct Serializer
         }
 
         ///Serialize a node and all its subnodes.
-        void serializeNode(EmitterT)(ref EmitterT emitter, ref YamlAlgebraic node) @safe
+        void serializeNode(ref Emitter emitter, ref YamlAlgebraic node) @safe
         {
             //If the node has an anchor, emit an anchor (as aliasEvent) on the
             //first occurrence, save it in serializedNodes_, and emit an alias

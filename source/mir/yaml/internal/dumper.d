@@ -59,10 +59,6 @@ struct Dumper
         bool explicitStart = false;
         //Always explicitly write document end? Default is no explicit end.
         bool explicitEnd = false;
-
-        //Name of the output file or stream, used in error messages.
-        string name = "<unknown>";
-
         // Default style for scalar nodes. If style is $(D YamlScalarStyle.invalid), the _style is chosen automatically.
         YamlScalarStyle defaultScalarStyle = YamlScalarStyle.invalid;
         // Default style for collection nodes. If style is $(D YamlCollectionStyle.invalid), the _style is chosen automatically.
@@ -143,7 +139,7 @@ struct Dumper
         {
             try
             {
-                auto emitter = new Emitter(range, canonical, indent_, textWidth);
+                auto emitter = Emitter(range, canonical, indent_, textWidth);
                 auto serializer = Serializer(resolver, explicitStart ? Yes.explicitStart : No.explicitStart,
                                              explicitEnd ? Yes.explicitEnd : No.explicitEnd, YAMLVersion, tags_);
                 serializer.startStream(emitter);
@@ -156,8 +152,7 @@ struct Dumper
             }
             catch(YamlException e)
             {
-                throw new YamlException("Unable to dump YAML to stream "
-                                        ~ name ~ " : " ~ e.msg, e.file, e.line);
+                throw new YamlException("Unable to dump YAML to stream: " ~ e.msg, e.file, e.line);
             }
         }
 }
