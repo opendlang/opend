@@ -23,7 +23,7 @@ package:
 ///Event types.
 enum EventID : ubyte
 {
-    invalid = 0,     /// Invalid (uninitialized) event.
+    none = 0,     /// Invalid (uninitialized) event.
     streamStart,     /// Stream start
     streamEnd,       /// Stream end
     documentStart,   /// Document start
@@ -66,9 +66,9 @@ struct Event
         TagDirective[] _tagDirectives;
     }
     ///Event type.
-    EventID id = EventID.invalid;
+    EventID id = EventID.none;
     ///Style of scalar event, if this is a scalar event.
-    YamlScalarStyle scalarStyle = YamlScalarStyle.invalid;
+    YamlScalarStyle scalarStyle = YamlScalarStyle.none;
     struct
     {
         ///Should the tag be implicitly resolved?
@@ -81,10 +81,10 @@ struct Event
         bool explicitDocument;
     }
     ///Collection style, if this is a SequenceStart or MappingStart.
-    YamlCollectionStyle collectionStyle = YamlCollectionStyle.invalid;
+    YamlCollectionStyle collectionStyle = YamlCollectionStyle.none;
 
     ///Is this a null (uninitialized) event?
-    @property bool isNull() scope const pure @safe nothrow {return id == EventID.invalid;}
+    @property bool isNull() scope const pure @safe nothrow {return id == EventID.none;}
 
     ///Get string representation of the token ID.
     @property string idString() scope const @safe {return to!string(id);}
@@ -227,7 +227,7 @@ Event documentEndEvent(const ParsePosition start, const ParsePosition end, const
 ///          style    = Scalar style.
 Event scalarEvent(const ParsePosition start, const ParsePosition end, const string anchor, const string tag,
                   const bool implicit, const string value,
-                  const YamlScalarStyle style = YamlScalarStyle.invalid) @safe pure nothrow @nogc
+                  const YamlScalarStyle style = YamlScalarStyle.none) @safe pure nothrow @nogc
 {
     Event result;
     result.value       = value;

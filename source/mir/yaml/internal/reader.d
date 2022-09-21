@@ -177,7 +177,7 @@ struct Reader
         /// Get specified number of characters starting at current position.
         ///
         /// Note: This gets only a "view" into the internal buffer, which will be
-        ///       invalidated after other Reader calls. Use Reader to build slices
+        ///       noneated after other Reader calls. Use Reader to build slices
         ///       for permanent use.
         ///
         /// Params: length = Number of characters (code points, not bytes) to get. May
@@ -193,7 +193,7 @@ struct Reader
         /// Get specified number of bytes, not code points, starting at current position.
         ///
         /// Note: This gets only a "view" into the internal buffer, which will be
-        ///       invalidated after other Reader calls. Use Reader to build slices
+        ///       noneated after other Reader calls. Use Reader to build slices
         ///       for permanent use.
         ///
         /// Params: length = Number bytes (not code points) to get. May NOT reach past
@@ -210,7 +210,7 @@ struct Reader
         /// Get a slice view of the internal buffer, starting at the current position.
         ///
         /// Note: This gets only a "view" into the internal buffer,
-        ///       which get invalidated after other Reader calls.
+        ///       which get noneated after other Reader calls.
         ///
         /// Params:  end = End of the slice relative to current position. May reach past
         ///                the end of the buffer; in that case the returned slice will
@@ -244,7 +244,7 @@ struct Reader
         /// Returns: Next character.
         ///
         /// Throws:  ReaderException if trying to read past the end of the buffer
-        ///          or if invalid data is read.
+        ///          or if none data is read.
         dchar get() @safe pure
         {
             const result = peek();

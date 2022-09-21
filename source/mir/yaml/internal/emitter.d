@@ -147,7 +147,7 @@ struct Emitter
         ///Analysis result of the current scalar.
         ScalarAnalysis analysis_;
         ///Style of the current scalar.
-        YamlScalarStyle style_ = YamlScalarStyle.invalid;
+        YamlScalarStyle style_ = YamlScalarStyle.none;
 
     public:
         @disable int opCmp(ref Emitter);
@@ -698,13 +698,13 @@ scope:
         void processScalar() @safe scope
         {
             if(analysis_.flags.isNull){analysis_ = analyzeScalar(event_.value);}
-            if(style_ == YamlScalarStyle.invalid)
+            if(style_ == YamlScalarStyle.none)
             {
                 style_ = chooseScalarStyle();
             }
 
             //if(analysis_.flags.multiline && (context_ != Context.mappingSimpleKey) &&
-            //   ([YamlScalarStyle.invalid, YamlScalarStyle.plain, YamlScalarStyle.singleQuoted, YamlScalarStyle.doubleQuoted)
+            //   ([YamlScalarStyle.none, YamlScalarStyle.plain, YamlScalarStyle.singleQuoted, YamlScalarStyle.doubleQuoted)
             //    .canFind(style_))
             //{
             //    writeIndent();
@@ -713,7 +713,7 @@ scope:
                                        context_ != Context.mappingSimpleKey);
             final switch(style_)
             {
-                case YamlScalarStyle.invalid:      assert(false);
+                case YamlScalarStyle.none:      assert(false);
                 case YamlScalarStyle.doubleQuoted: writer.writeDoubleQuoted(); break;
                 case YamlScalarStyle.singleQuoted: writer.writeSingleQuoted(); break;
                 case YamlScalarStyle.folded:       writer.writeFolded();       break;
@@ -721,7 +721,7 @@ scope:
                 case YamlScalarStyle.plain:        writer.writePlain();        break;
             }
             analysis_.flags.isNull = true;
-            style_ = YamlScalarStyle.invalid;
+            style_ = YamlScalarStyle.none;
         }
 
         ///Process and write an anchor/alias.
@@ -751,7 +751,7 @@ scope:
 
             if(event_.id == EventID.scalar)
             {
-                if(style_ == YamlScalarStyle.invalid){style_ = chooseScalarStyle();}
+                if(style_ == YamlScalarStyle.none){style_ = chooseScalarStyle();}
                 if((!canonical_ || (tag is null)) &&
                    ((tag == "tag:yaml.org,2002:str") || (style_ == YamlScalarStyle.plain ? event_.implicit : !event_.implicit && (tag is null))))
                 {
@@ -785,7 +785,7 @@ scope:
             if(analysis_.flags.isNull){analysis_ = analyzeScalar(event_.value);}
 
             const style          = event_.scalarStyle;
-            const invalidOrPlain = style == YamlScalarStyle.invalid || style == YamlScalarStyle.plain;
+            const noneOrPlain = style == YamlScalarStyle.none || style == YamlScalarStyle.plain;
             const block          = style == YamlScalarStyle.literal || style == YamlScalarStyle.folded;
             const singleQuoted   = style == YamlScalarStyle.singleQuoted;
             const doubleQuoted   = style == YamlScalarStyle.doubleQuoted;
@@ -801,7 +801,7 @@ scope:
                 return YamlScalarStyle.doubleQuoted;
             }
 
-            if(invalidOrPlain && event_.implicit && !simpleNonPlain && allowPlain)
+            if(noneOrPlain && event_.implicit && !simpleNonPlain && allowPlain)
             {
                 return YamlScalarStyle.plain;
             }
@@ -812,7 +812,7 @@ scope:
                 return style;
             }
 
-            if((invalidOrPlain || singleQuoted) &&
+            if((noneOrPlain || singleQuoted) &&
                analysis_.flags.allowSingleQuoted &&
                !(context_ == Context.mappingSimpleKey && analysis_.flags.multiline))
             {
@@ -1389,7 +1389,7 @@ import std.range: drop, dropBack;
 static string prepareTagHandle(return scope string handle) @safe
     in(handle != "", "Tag handle must not be empty")
     in(handle.drop(1).dropBack(1).all!(c => isAlphaNum(c) || c.among!('-', '_')),
-        "Tag handle contains invalid characters")
+        "Tag handle contains none characters")
 {
     return handle;
 }
@@ -1425,7 +1425,7 @@ static string prepareTagPrefix(scope string prefix) @safe
 ///Prepare anchor for output.
 static string prepareAnchor(const return scope string anchor) @safe
     in(anchor != "",  "Anchor must not be empty")
-    in(anchor.all!isNSAnchorName, "Anchor contains invalid characters")
+    in(anchor.all!isNSAnchorName, "Anchor contains none characters")
 {
     return anchor;
 }

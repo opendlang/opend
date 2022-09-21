@@ -120,7 +120,7 @@ struct Loader
         */
         private bool empty() @safe
         {
-            // currentNode and done_ are both invalid until popFront is called once
+            // currentNode and done_ are both none until popFront is called once
             if (!rangeInitialized)
             {
                 popFront();
@@ -155,7 +155,7 @@ struct Loader
         */
         private YamlAlgebraic front() @safe
         {
-            // currentNode and done_ are both invalid until popFront is called once
+            // currentNode and done_ are both none until popFront is called once
             if (!rangeInitialized)
             {
                 popFront();

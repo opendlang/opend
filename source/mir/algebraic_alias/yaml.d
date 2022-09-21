@@ -36,7 +36,7 @@ private alias AliasSeq(T...) = T;
 enum YamlScalarStyle
 {
     /// Invalid (uninitialized) style
-    invalid = 0,
+    none,
     /// `|` (Literal block style)
     literal,
     /// `>` (Folded block style)
@@ -53,7 +53,7 @@ enum YamlScalarStyle
 enum YamlCollectionStyle
 {
     /// Invalid (uninitialized) style
-    invalid = 0,
+    none,
     /// Block style.
     block,
     /// Flow style.

@@ -59,10 +59,10 @@ struct Dumper
         bool explicitStart = false;
         //Always explicitly write document end? Default is no explicit end.
         bool explicitEnd = false;
-        // Default style for scalar nodes. If style is $(D YamlScalarStyle.invalid), the _style is chosen automatically.
-        YamlScalarStyle defaultScalarStyle = YamlScalarStyle.invalid;
-        // Default style for collection nodes. If style is $(D YamlCollectionStyle.invalid), the _style is chosen automatically.
-        YamlCollectionStyle defaultCollectionStyle = YamlCollectionStyle.invalid;
+        // Default style for scalar nodes. If style is $(D YamlScalarStyle.none), the _style is chosen automatically.
+        YamlScalarStyle defaultScalarStyle = YamlScalarStyle.none;
+        // Default style for collection nodes. If style is $(D YamlCollectionStyle.none), the _style is chosen automatically.
+        YamlCollectionStyle defaultCollectionStyle = YamlCollectionStyle.none;
 
         @disable bool opEquals(ref Dumper);
         @disable int opCmp(ref Dumper);
@@ -131,7 +131,7 @@ struct Dumper
          *
          * Params:  documents = Documents to _dump (root nodes of the _documents).
          *
-         * Throws:  YamlException on error (e.g. invalid nodes,
+         * Throws:  YamlException on error (e.g. none nodes,
          *          unable to write to file/stream).
          */
         @safe

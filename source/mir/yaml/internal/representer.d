@@ -85,13 +85,13 @@ YamlAlgebraic representData(const YamlAlgebraic data, YamlScalarStyle defaultSca
     switch (result.kind)
     {
         default:
-            if (result.scalarStyle == YamlScalarStyle.invalid)
+            if (result.scalarStyle == YamlScalarStyle.none)
             {
                 result.scalarStyle = defaultScalarStyle;
             }
             break;
         case YamlAlgebraic.Kind.array, YamlAlgebraic.Kind.object:
-            if (defaultCollectionStyle != YamlCollectionStyle.invalid)
+            if (defaultCollectionStyle != YamlCollectionStyle.none)
             {
                 result.collectionStyle = defaultCollectionStyle;
             }
@@ -103,11 +103,11 @@ YamlAlgebraic representData(const YamlAlgebraic data, YamlScalarStyle defaultSca
     if(data.tag !is null){result.tag = data.tag;}
 
     //Remember style if this was loaded before.
-    if(data.scalarStyle != YamlScalarStyle.invalid)
+    if(data.scalarStyle != YamlScalarStyle.none)
     {
         result.scalarStyle = data.scalarStyle;
     }
-    if(data.collectionStyle != YamlCollectionStyle.invalid)
+    if(data.collectionStyle != YamlCollectionStyle.none)
     {
         result.collectionStyle = data.collectionStyle;
     }
@@ -117,60 +117,60 @@ YamlAlgebraic representData(const YamlAlgebraic data, YamlScalarStyle defaultSca
 @safe unittest
 {
     // We don't emit yaml merge nodes.
-    // assert(representData(YamlAlgebraic(YAMLMerge()), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic.init);
+    // assert(representData(YamlAlgebraic(YAMLMerge()), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic.init);
 }
 
 @safe unittest
 {
-    assert(representData(YamlAlgebraic(null), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("null").withTag("tag:yaml.org,2002:null"));
+    assert(representData(YamlAlgebraic(null), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("null").withTag("tag:yaml.org,2002:null"));
 }
 
 @safe unittest
 {
-    assert(representData(YamlAlgebraic(cast(string)null), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("null").withTag("tag:yaml.org,2002:null"));
-    assert(representData(YamlAlgebraic("Hello world!"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("Hello world!").withTag("tag:yaml.org,2002:str"));
+    assert(representData(YamlAlgebraic(cast(string)null), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("null").withTag("tag:yaml.org,2002:null"));
+    assert(representData(YamlAlgebraic("Hello world!"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("Hello world!").withTag("tag:yaml.org,2002:str"));
 }
 
 @safe unittest
 {
-    assert(representData(YamlAlgebraic(64), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("64").withTag("tag:yaml.org,2002:int"));
+    assert(representData(YamlAlgebraic(64), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("64").withTag("tag:yaml.org,2002:int"));
 }
 
 @safe unittest
 {
-    assert(representData(YamlAlgebraic(true), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("true").withTag("tag:yaml.org,2002:bool"));
-    assert(representData(YamlAlgebraic(false), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("false").withTag("tag:yaml.org,2002:bool"));
+    assert(representData(YamlAlgebraic(true), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("true").withTag("tag:yaml.org,2002:bool"));
+    assert(representData(YamlAlgebraic(false), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("false").withTag("tag:yaml.org,2002:bool"));
 }
 
 @safe unittest
 {
     // Float comparison is pretty unreliable...
-    auto result = representData(YamlAlgebraic(1.0), YamlScalarStyle.invalid, YamlCollectionStyle.invalid);
+    auto result = representData(YamlAlgebraic(1.0), YamlScalarStyle.none, YamlCollectionStyle.none);
     assert(approxEqual(result.get!string.to!double, 1.0));
     assert(result.tag == "tag:yaml.org,2002:float");
 
-    assert(representData(YamlAlgebraic(double.nan), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(".nan").withTag("tag:yaml.org,2002:float"));
-    assert(representData(YamlAlgebraic(double.infinity), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(".inf").withTag("tag:yaml.org,2002:float"));
-    assert(representData(YamlAlgebraic(-double.infinity), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("-.inf").withTag("tag:yaml.org,2002:float"));
+    assert(representData(YamlAlgebraic(double.nan), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(".nan").withTag("tag:yaml.org,2002:float"));
+    assert(representData(YamlAlgebraic(double.infinity), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(".inf").withTag("tag:yaml.org,2002:float"));
+    assert(representData(YamlAlgebraic(-double.infinity), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("-.inf").withTag("tag:yaml.org,2002:float"));
 }
 
 unittest
 {
     import mir.conv;
-    assert(representData(YamlAlgebraic(Timestamp(2000, 3, 14, 12, 34, 56)), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic("2000-03-14T12:34:56Z").withTag("tag:yaml.org,2002:timestamp"));
+    assert(representData(YamlAlgebraic(Timestamp(2000, 3, 14, 12, 34, 56)), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("2000-03-14T12:34:56Z").withTag("tag:yaml.org,2002:timestamp"));
 }
 
 @safe unittest
 {
-    assert(representData(YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:set"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:set"));
-    assert(representData(YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:seq"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:seq"));
+    assert(representData(YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:set"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:set"));
+    assert(representData(YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:seq"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:seq"));
     {
         auto nodes = [
             YamlAlgebraic("a"),
             YamlAlgebraic("b"),
             YamlAlgebraic("c"),
         ];
-        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:set"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) ==
+        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:set"), YamlScalarStyle.none, YamlCollectionStyle.none) ==
             YamlAlgebraic([
                 YamlPair(
                     YamlAlgebraic("a").withTag("tag:yaml.org,2002:str"),
@@ -192,7 +192,7 @@ unittest
             YamlAlgebraic("b"),
             YamlAlgebraic("c"),
         ];
-        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:seq"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) ==
+        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:seq"), YamlScalarStyle.none, YamlCollectionStyle.none) ==
             YamlAlgebraic([
                 YamlAlgebraic("a").withTag("tag:yaml.org,2002:str"),
                 YamlAlgebraic("b").withTag("tag:yaml.org,2002:str"),
@@ -205,15 +205,15 @@ version (none)
 @safe unittest
 {
     import mir.test;
-    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:omap"));
-    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:pairs"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:pairs"));
-    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) == YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:map"));
+    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:omap"));
+    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:pairs"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:pairs"));
+    assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:map"));
     {
         auto nodes = [
             YamlPair("a", "b"),
             YamlPair("a", "c")
         ];
-        assertThrown(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid));
+        assertThrown(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.none, YamlCollectionStyle.none));
     }
     // Yeah, this gets ugly really fast.
     {
@@ -221,7 +221,7 @@ version (none)
             YamlPair("a", "b"),
             YamlPair("a", "c")
         ];
-        representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:pairs"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid).should ==
+        representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:pairs"), YamlScalarStyle.none, YamlCollectionStyle.none).should ==
             YamlAlgebraic([
                 YamlAlgebraic(
                     [YamlPair(
@@ -240,14 +240,14 @@ version (none)
             YamlPair("a", "b"),
             YamlPair("a", "c")
         ];
-        assertThrown(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid));
+        assertThrown(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.none, YamlCollectionStyle.none));
     }
     {
         auto nodes = [
             YamlPair("a", "b"),
             YamlPair("c", "d")
         ];
-        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) ==
+        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.none, YamlCollectionStyle.none) ==
             YamlAlgebraic([
                 YamlAlgebraic([
                     YamlPair(
@@ -268,7 +268,7 @@ version (none)
             YamlPair("a", "b"),
             YamlPair("c", "d")
         ];
-        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.invalid, YamlCollectionStyle.invalid) ==
+        assert(representData(YamlAlgebraic(nodes).withTag("tag:yaml.org,2002:map"), YamlScalarStyle.none, YamlCollectionStyle.none) ==
             YamlAlgebraic([
                 YamlPair(
                     YamlAlgebraic("a").withTag("tag:yaml.org,2002:str"),
@@ -382,7 +382,7 @@ YamlAlgebraic representNodes(const YamlAlgebraic node, YamlScalarStyle defaultSc
             value[idx] = representData(item, defaultScalarStyle, defaultCollectionStyle);
             const isScalar = value[idx].isScalar;
             const s = value[idx].scalarStyle;
-            if(!isScalar || (s != YamlScalarStyle.invalid && s != YamlScalarStyle.plain))
+            if(!isScalar || (s != YamlScalarStyle.none && s != YamlScalarStyle.plain))
             {
                 bestStyle = YamlCollectionStyle.block;
             }
@@ -398,7 +398,7 @@ bool shouldUseBlockStyle(const YamlAlgebraic value) @safe
 {
     const isScalar = value.isScalar;
     const s = value.scalarStyle;
-    return (!isScalar || (s != YamlScalarStyle.invalid && s != YamlScalarStyle.plain));
+    return (!isScalar || (s != YamlScalarStyle.none && s != YamlScalarStyle.plain));
 }
 bool shouldUseBlockStyle(const YamlPair value) @safe
 {
@@ -407,12 +407,12 @@ bool shouldUseBlockStyle(const YamlPair value) @safe
     const keyStyle = value.key.scalarStyle;
     const valStyle = value.value.scalarStyle;
     if(!keyScalar ||
-       (keyStyle != YamlScalarStyle.invalid && keyStyle != YamlScalarStyle.plain))
+       (keyStyle != YamlScalarStyle.none && keyStyle != YamlScalarStyle.plain))
     {
         return true;
     }
     if(!valScalar ||
-       (valStyle != YamlScalarStyle.invalid && valStyle != YamlScalarStyle.plain))
+       (valStyle != YamlScalarStyle.none && valStyle != YamlScalarStyle.plain))
     {
         return true;
     }

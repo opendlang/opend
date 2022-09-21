@@ -22,7 +22,7 @@ package:
 enum TokenID : ubyte
 {
     // Invalid (uninitialized) token
-    invalid = 0,
+    none = 0,
     directive,
     documentStart,
     documentEnd,
@@ -123,7 +123,7 @@ Token simpleToken(TokenID id)(const ParsePosition start, const ParsePosition end
 ///          encoding = Encoding of the stream.
 Token streamStartToken(const ParsePosition start, const ParsePosition end) @safe pure nothrow @nogc
 {
-    return Token(null, start, end, TokenID.streamStart, YamlScalarStyle.invalid);
+    return Token(null, start, end, TokenID.streamStart, YamlScalarStyle.none);
 }
 
 /// Aliases for construction of simple token types.
@@ -147,7 +147,7 @@ alias flowEntryToken = simpleToken!(TokenID.flowEntry);
 Token simpleValueToken(TokenID id)(const ParsePosition start, const ParsePosition end, const(char)[] value,
                                    const uint valueDivider = uint.max)
 {
-    return Token(value, start, end, id, YamlScalarStyle.invalid,
+    return Token(value, start, end, id, YamlScalarStyle.none,
                  DirectiveType.init, valueDivider);
 }
 

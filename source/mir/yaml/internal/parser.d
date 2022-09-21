@@ -198,12 +198,12 @@ struct Parser
          */
         void popFront() @safe
         {
-            currentEvent_.id = EventID.invalid;
+            currentEvent_.id = EventID.none;
             ensureState();
         }
 
     private:
-        /// If current event is invalid, load the next valid one if possible.
+        /// If current event is none, load the next valid one if possible.
         void ensureState() @safe
         {
             if (currentEvent_.isNull)
@@ -443,7 +443,7 @@ struct Parser
             string anchor;
             string tag;
             ParsePosition startMark, endMark, tagMark;
-            bool invalidMarks = true;
+            bool noneMarks = true;
             // The index in the tag string where tag handle ends and tag suffix starts.
             uint tagHandleEnd;
 
@@ -451,7 +451,7 @@ struct Parser
             bool get(const TokenID id, const Flag!"first" first, ref string target) @safe
             {
                 if(scanner_.front.id != id){return false;}
-                invalidMarks = false;
+                noneMarks = false;
                 const token = scanner_.front;
                 scanner_.popFront();
                 if(first){startMark = token.startMark;}
@@ -471,7 +471,7 @@ struct Parser
 
             if(tag !is null){tag = processTag(tag, tagHandleEnd, startMark, tagMark);}
 
-            if(invalidMarks)
+            if(noneMarks)
             {
                 startMark = endMark = scanner_.front.startMark;
             }

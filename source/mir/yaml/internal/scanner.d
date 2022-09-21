@@ -107,7 +107,7 @@ struct Scanner
             ushort column;
             /// Is this required to be a simple key?
             bool required;
-            /// Is this struct "null" (invalid)?.
+            /// Is this struct "null" (none)?.
             bool isNull;
         }
 
@@ -1290,7 +1290,7 @@ struct Scanner
             if(!c.isDigit) { return false; }
             // Convert a digit to integer.
             increment = c - '0';
-            assert(increment < 10 && increment >= 0, "Digit has invalid value");
+            assert(increment < 10 && increment >= 0, "Digit has none value");
 
             enforce(increment > 0,
                 new ScannerException("While scanning a block scalar", startMark,
