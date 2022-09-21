@@ -160,8 +160,8 @@ struct IonSymbolTableSequental
             auto temporalStoragePtr = cast(ulong*) realloc(temporalStorage.ptr, llen * ulong.sizeof);
             this.temporalStorage = temporalStoragePtr[0 .. llen];
             this.temporalStorage.ptr[0] = 0;
-            auto entriesPtr = cast(Entry*) realloc(entries.ptr, n * Entry.sizeof);
-            this.entries = entriesPtr[0 .. n];
+            auto entriesPtr = cast(Entry*) realloc(entries.ptr, (n + 1) * Entry.sizeof);
+            this.entries = entriesPtr[0 .. n + 1];
             this.entries[oldLength .. $] = Entry.init;
         }
         temporalStorage.ptr[0] = 0;
