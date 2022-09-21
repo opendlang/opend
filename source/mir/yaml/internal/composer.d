@@ -62,6 +62,8 @@ struct Composer
         ///part of the outer levels. Used as a stack.
         Appender!(YamlAlgebraic[])[] nodeAppenders_;
 
+@safe pure:
+
     public:
         /**
          * Construct a composer.
@@ -368,8 +370,13 @@ struct Composer
                 foreach (index, const ref value; sorted[0 .. $ - 1])
                     if (value.key == sorted[index + 1].key) {
                         const message = () @trusted {
-                            import mir.algebraic: visit;
-                            return text("Key '", value.key.visit!text, "' appears multiple times in mapping (first: ", value.key.startMark, ")");
+                            auto key =
+                                value.key._is!string ? value.key.get!string :
+                                value.key._is!long ? value.key.get!long.to!string :
+                                value.key._is!double ? value.key.get!double.to!string :
+                                value.key._is!"timestamp" ? value.key.timestamp.to!string :
+                                "<not s string>";
+                            return text("Key '", key, "' appears multiple times in mapping (first: ", value.key.startMark, ")");
                         }();
                         throw new ComposerException(message, sorted[index + 1].key.startMark);
                     }
@@ -413,7 +420,7 @@ package:
 //
 // Params:  pairs   = Appender managing the array of pairs to merge into.
 //          toMerge = Pairs to merge.
-void merge(ref Appender!(YamlPair[]) pairs, YamlPair[] toMerge) @safe
+void merge(ref Appender!(YamlPair[]) pairs, YamlPair[] toMerge) @safe pure
 {
     foreach(ref pair; toMerge) if(!canFind!"a.key == b.key"(pairs.data, pair))
     {

@@ -55,6 +55,8 @@ struct Loader
             return Loader(readText(filename), filename);
          }
 
+@safe pure:
+
         /** Construct a Loader to load YAML from a buffer.
          *
          * Params: yamlData = Buffer with YAML data to load. This may be e.g. a file

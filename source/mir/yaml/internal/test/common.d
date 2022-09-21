@@ -83,7 +83,6 @@ const(char)[] readData(string filename) @trusted
 void assertNodesEqual(const scope YamlAlgebraic gotNode, const scope YamlAlgebraic expectedNode, string file = __FILE__, int line = __LINE__) @trusted
 {
     import mir.test;
-    import mir.ser.text;
     gotNode.should == expectedNode;
 }
 

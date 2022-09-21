@@ -152,6 +152,8 @@ struct Scanner
         /// Possible simple keys indexed by flow levels.
         SimpleKey[] possibleSimpleKeys_;
 
+@safe pure:
+
     public:
         /// Construct a Scanner using specified Reader.
         this(Reader reader) @safe nothrow

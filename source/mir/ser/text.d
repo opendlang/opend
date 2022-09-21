@@ -504,6 +504,7 @@ struct TextSerializer(string sep, Appender)
 /++
 Ion serialization function.
 +/
+@safe
 string serializeText(V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     return serializeTextPretty!""(value, serdeTarget);
@@ -667,10 +668,9 @@ Ion serialization function with pretty formatting.
 string serializeTextPretty(string sep = "\t", V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     import std.array: appender;
-    import std.functional: forward;
 
     auto app = appender!(char[]);
-    serializeTextPretty!sep(app, forward!value, serdeTarget);
+    serializeTextPretty!sep(app, value, serdeTarget);
     return (()@trusted => cast(string) app.data)();
 }
 

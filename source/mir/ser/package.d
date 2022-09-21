@@ -531,7 +531,7 @@ private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V 
             {
                 scope valPtr = (()@trusted => &__traits(getMember, value, member))();
                 alias W  = typeof(*valPtr);
-                ref W val() @trusted @property { return *valPtr; }
+                ref W val() @trusted pure @property { return *valPtr; }
             }
             else
             {
@@ -812,8 +812,20 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
             {
                 static if (!isVariant!(typeof(keyElem.key)))
                     serializer.putKey(keyElem.key);
-                else (() @trusted =>
-                    serializer.putKey(keyElem.key.visit!(to!string)))();
+                else
+                {
+                    if (keyElem.key._is!string)
+                        serializer.putKey(keyElem.key.trustedGet!string);
+                    else
+                    if (keyElem.key._is!long)
+                        serializer.putKey(keyElem.key.trustedGet!long.to!string);
+                    else
+                    if (keyElem.key._is!double)
+                        serializer.putKey(keyElem.key.trustedGet!double.to!string);
+                    else
+                    if (keyElem.key._is!Timestamp)
+                        serializer.putKey(keyElem.key.trustedGet!Timestamp.to!string);
+                }
                 serializer.serializeValue(keyElem.value);
             }
         }
@@ -823,8 +835,20 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
             {
                 static if (!isVariant!(typeof(key)))
                     serializer.putKey(key);
-                else (() @trusted =>
-                    serializer.putKey(key.visit!(to!string)))();
+                else
+                {
+                    if (key._is!string)
+                        serializer.putKey(key.trustedGet!string);
+                    else
+                    if (key._is!long)
+                        serializer.putKey(key.trustedGet!long.to!string);
+                    else
+                    if (key._is!double)
+                        serializer.putKey(key.trustedGet!double.to!string);
+                    else
+                    if (key._is!Timestamp)
+                        serializer.putKey(key.trustedGet!Timestamp.to!string);
+                }
                 serializer.serializeValue(elem);
             }
         }
@@ -924,6 +948,17 @@ private struct UntrustDummy
     bool c;
     string[] d;
 }
+
+import std.traits: isFunctionPointer, isDelegate;
+
+auto assumePure(T)(T t) @trusted
+if (isFunctionPointer!T || isDelegate!T)
+{
+    pragma(inline, false);
+    enum attrs = functionAttributes!T | FunctionAttribute.pure_ | FunctionAttribute.nogc | FunctionAttribute.nothrow_;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
+
 
 /// Mir types
 version(mir_ion_test)

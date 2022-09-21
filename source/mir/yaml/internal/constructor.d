@@ -19,6 +19,7 @@ import mir.array.allocation: array;
 import mir.base64;
 import mir.conv;
 import std.exception;
+import mir.exception: MirException;
 import std.string: representation, empty, split, replace, toLower;
 
 import mir.algebraic_alias.yaml;
@@ -41,6 +42,8 @@ class ConstructorException : YamlException
         super(text(msg, "\nstart: ", start, "\nend: ", end), file, line);
     }
 }
+
+@safe pure:
 
 /** Constructs YAML values.
  *
@@ -67,7 +70,7 @@ class ConstructorException : YamlException
  *
  * Returns: Constructed node.
  */
-YamlAlgebraic constructNode(T)(const ParsePosition start, const ParsePosition end, const string tag,
+YamlAlgebraic constructNode(T)(const ParsePosition start, const ParsePosition end, return string tag,
                 T value) @safe
     if((is(T : string) || is(T == YamlAlgebraic[]) || is(T == YamlPair[])))
 {
@@ -193,8 +196,7 @@ YamlAlgebraic constructNode(T)(const ParsePosition start, const ParsePosition en
     }
     catch(Exception e)
     {
-        throw new ConstructorException("Error constructing " ~ typeid(T).toString()
-                        ~ ":\n" ~ e.msg, start, end);
+        throw new ConstructorException("Error constructing " ~ T.stringof ~ ":\n" ~ e.msg, start, end);
     }
 
     newNode.startMark = start;
@@ -204,18 +206,18 @@ YamlAlgebraic constructNode(T)(const ParsePosition start, const ParsePosition en
 
 private:
 // Construct a boolean _node.
-bool constructBool(const string str) @safe
+bool constructBool(string str) @trusted
 {
-    string value = str.toLower();
+    auto value = str.toLower();
     if(value.among!("yes", "true", "on")){return true;}
     if(value.among!("no", "false", "off")){return false;}
-    throw new Exception("Unable to parse boolean value: " ~ value);
+    throw new MirException("Unable to parse boolean value: ", value);
 }
 
 // Construct an integer (long) _node.
-long constructLong(const string str) @safe
+long constructLong(string str) @safe
 {
-    string value = str.replace("_", "");
+    auto value = str.replace("_", "");
     const char c = value[0];
     const long sign = c != '-' ? 1 : -1;
     if(c == '-' || c == '+')
@@ -223,7 +225,8 @@ long constructLong(const string str) @safe
         value = value[1 .. $];
     }
 
-    enforce(value != "", new Exception("Unable to parse float value: " ~ value));
+    if (value == "")
+        throw new MirException("Unable to parse float value: ", value);
 
     long result;
 
@@ -271,10 +274,10 @@ long constructLong(const string str) @safe
 }
 
 // Construct a floating point (double) _node.
-double constructReal(const string str) @safe
+double constructReal(string str) @safe
 {
     import mir.conv: to;
-    string value = str.replace("_", "").toLower();
+    auto value = str.replace("_", "").toLower();
     const char c = value[0];
     const double sign = c != '-' ? 1.0 : -1.0;
     if(c == '-' || c == '+')
@@ -283,7 +286,7 @@ double constructReal(const string str) @safe
     }
 
     if (value == "" || value == "nan" || value == "inf" || value == "-inf")
-        throw new Exception("Unable to parse float value: " ~ value);
+        throw new MirException("Unable to parse float value: ", value);
 
     double result;
         //Infinity.
@@ -331,7 +334,7 @@ double constructReal(const string str) @safe
 
 // Construct a binary (base64) _node.
 import mir.lob: Blob;
-Blob constructBinary(const string value) @safe
+Blob constructBinary(string value) @trusted
 {
     import std.ascii : newline;
     import mir.array.allocation : array;
@@ -350,72 +353,11 @@ Blob constructBinary(const string value) @safe
 }
 
 // Construct a timestamp _node.
-Timestamp constructTimestamp(const string str) @safe
+Timestamp constructTimestamp(string value) @safe
 {
-    import std.regex;
-    import mir.conv: to;
-    string value = str;
-
-    auto YMDRegexp = regex("^([0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)");
-    auto HMSRegexp = regex("^[Tt \t]+([0-9][0-9]?):([0-9][0-9]):([0-9][0-9])(\\.[0-9]*)?");
-    auto TZRegexp  = regex("^[ \t]*Z|([-+][0-9][0-9]?)(:[0-9][0-9])?");
-
     try
     {
-        // First, get year, month and day.
-        auto matches = match(value, YMDRegexp);
-
-        enforce(!matches.empty,
-                new Exception("Unable to parse timestamp value: " ~ value));
-
-        auto captures = matches.front.captures;
-        const year  = to!short(captures[1]);
-        const month = to!ubyte(captures[2]);
-        const day   = to!ubyte(captures[3]);
-
-        // If available, get hour, minute, second and fraction, if present.
-        value = matches.front.post;
-        matches  = match(value, HMSRegexp);
-        if(matches.empty)
-            return Timestamp(year, month, day);
-
-        captures = matches.front.captures;
-        const hour            = to!byte(captures[1]);
-        const minute          = to!byte(captures[2]);
-        const second          = to!byte(captures[3]);
-        Timestamp ret;
-        if (captures[4].length <= 1)
-        {
-            ret = Timestamp(year, month, day, hour, minute, second);
-        }
-        else
-        {
-            long fraction = 1 - captures[4].length;
-            auto fractionCoefficient = captures[4][1 .. $].to!ulong;
-            // If available, get timezone.
-            ret = Timestamp(year, month, day, hour, minute, second, cast(byte) fraction, fractionCoefficient);
-        }
-
-        value = matches.front.post;
-        matches = match(value, TZRegexp);
-        if(matches.empty || matches.front.captures[0] == "Z")
-            // No timezone.
-            return ret;
-
-        // We have a timezone, so parse it.
-        captures = matches.front.captures;
-        int sign    = 1;
-        int tzHours;
-        if(!captures[1].empty)
-        {
-            if(captures[1][0] == '-') {sign = -1;}
-            tzHours = to!ubyte(captures[1][1 .. $]);
-        }
-        const tzMinutes = (!captures[2].empty) ? to!ubyte(captures[2][1 .. $]) : 0;
-        const tzOffset  = sign * (60 * tzHours + tzMinutes);
-        ret.offset = cast(short)tzOffset;
-        ret.addMinutes(cast(short)-tzOffset);
-        return ret;
+        return Timestamp.fromYamlString(value);
     }
     catch(Exception e)
     {
@@ -446,7 +388,7 @@ Timestamp constructTimestamp(const string str) @safe
 }
 
 // Construct a string _node.
-string constructString(const string str) @safe
+string constructString(string str) @safe
 {
     return str;
 }

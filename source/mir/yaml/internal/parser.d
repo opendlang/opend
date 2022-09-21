@@ -159,6 +159,8 @@ struct Parser
             parseFlowSequenceEntryMappingEnd,
         }
 
+@safe pure:
+
     public:
         ///Construct a Parser using specified Scanner.
         this(Scanner scanner) @safe
