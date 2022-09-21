@@ -201,9 +201,9 @@ unittest
     }
 }
 
-version (none)
 @safe unittest
 {
+    import std.exception: assertThrown;
     import mir.test;
     assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:omap"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:omap"));
     assert(representData(YamlAlgebraic(YamlPair[].init).withTag("tag:yaml.org,2002:pairs"), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic(YamlAlgebraic[].init).withTag("tag:yaml.org,2002:pairs"));
