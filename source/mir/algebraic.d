@@ -2097,7 +2097,7 @@ struct Algebraic(T__...)
 
             /++
             +/
-            auto opEquals()(auto ref scope const T rhs) scope @trusted const pure nothrow @nogc
+            auto opEquals()(auto ref scope const UnqualRec!T rhs) scope @trusted const pure nothrow @nogc
             {
                 static if (AllowedTypes.length > 1)
                     if (identifier__ != i)
@@ -2107,7 +2107,7 @@ struct Algebraic(T__...)
 
             /++
             +/
-            auto opCmp()(auto ref scope const T rhs) scope @trusted const pure nothrow @nogc
+            auto opCmp()(auto ref scope const UnqualRec!T rhs) scope @trusted const pure nothrow @nogc
             {
                 static if (AllowedTypes.length > 1)
                     if (auto d = int(identifier__) - int(i))
@@ -4013,3 +4013,12 @@ private static immutable algebraicMembers = [
     "deserializeFromAsdf",
     "deserializeFromIon",
 ];
+
+private template UnqualRec(T)
+{
+    import std.traits: Unqual, isDynamicArray, ForeachType;
+    static if (isDynamicArray!T)
+        alias UnqualRec = UnqualRec!(ForeachType!T)[];
+    else
+        alias UnqualRec = Unqual!T;
+}
