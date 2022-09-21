@@ -1,0 +1,13 @@
+canonical: yes
+answer: NO
+logical: True
+option: on
+constbool: on
+imutbool: on
+const_bool: on
+imut_bool: on
+
+
+but:
+    y: is a string
+    n: is a string
