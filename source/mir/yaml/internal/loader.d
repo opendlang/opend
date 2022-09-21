@@ -76,11 +76,6 @@ struct Loader
         {
             composer_ = yamlData.Reader(name).Scanner.Parser.Composer(Resolver.withDefaultResolvers);
         }
-        /// Load  a string.
-        @safe unittest
-        {
-            assert(Loader("42".dup).load().get!long == 42);
-        }
         /// Load a string.
         @safe unittest
         {

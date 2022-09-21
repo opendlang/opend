@@ -89,7 +89,7 @@ struct Token
     uint valueDivider;
 
     /// Get string representation of the token ID.
-    @property string idString() @safe pure const {return id.to!string;}
+    @property string idString() scope @safe pure const {return id.to!string;}
 }
 
 /// Construct a directive token.

@@ -65,15 +65,16 @@ private alias isFlowIndicator = among!(',', '?', '[', ']', '{', '}');
 private alias isSpace = among!('\0', '\n', '\r', '\u0085', '\u2028', '\u2029', ' ', '\t');
 
 //Emits YAML events into a file/stream.
-struct Emitter(Range) if (isOutputRange!(Range, char))
+struct Emitter
 {
+@safe pure:
     private:
         ///Default tag handle shortcuts and replacements.
-        static TagDirective[] defaultTagDirectives_ =
+        static immutable TagDirective[] defaultTagDirectives_ =
             [TagDirective("!", "!"), TagDirective("!!", "tag:yaml.org,2002:")];
 
         ///Stream to write to.
-        Range stream_;
+        Appender!string stream_;
 
         /// Type used for upcoming emitter steps
         alias EmitterFunction = void function(scope typeof(this)*) @safe;
@@ -151,7 +152,6 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
     public:
         @disable int opCmp(ref Emitter);
         @disable bool opEquals(ref Emitter);
-
         /**
          * Construct an emitter.
          *
@@ -159,7 +159,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
          *          canonical = Write scalars in canonical form?
          *          indent    = Indentation width.
          */
-        this(Range stream, const bool canonical, const int indent, const int width) @safe
+        this(Appender!string stream, const bool canonical, const int indent, const int width) @safe
         {
             states_.reserve(32);
             indents_.reserve(32);
@@ -172,9 +172,9 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
 
             analysis_.flags.isNull = true;
         }
-
+scope:
         ///Emit an event.
-        void emit(Event event) @safe
+        void emit(Event event) @safe scope
         {
             events_.push(event);
             while(!needMoreEvents())
@@ -196,7 +196,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             return result;
         }
 
-        void pushState(string D)() @safe
+        void pushState(string D)() @safe scope
         {
             states_ ~= mixin("function(typeof(this)* self) { self."~D~"(); }");
         }
@@ -213,13 +213,13 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Write a string to the file/stream.
-        void writeString(const scope char[] str) @safe
+        void writeString(const scope char[] str) @safe scope
         {
             stream_.put(str);
         }
 
         ///In some cases, we wait for a few next events before emitting.
-        bool needMoreEvents() @safe nothrow
+        bool needMoreEvents() @safe nothrow scope
         {
             if(events_.length == 0){return true;}
 
@@ -232,7 +232,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Determines if we need specified number of more events.
-        bool needEvents(in uint count) @safe nothrow
+        bool needEvents(in uint count) @safe nothrow scope
         {
             int level;
 
@@ -252,7 +252,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Increase indentation level.
-        void increaseIndent(const Flag!"flow" flow = No.flow, const bool indentless = false) @safe
+        void increaseIndent(const Flag!"flow" flow = No.flow, const bool indentless = false) @safe scope
         {
             indents_ ~= indent_;
             if(indent_ == -1)
@@ -279,7 +279,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Stream handlers.
 
         ///Handle start of a file/stream.
-        void expectStreamStart() @safe
+        void expectStreamStart() @safe scope
             in(eventTypeIs(EventID.streamStart),
                 "Expected streamStart, but got " ~ event_.idString)
         {
@@ -288,7 +288,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Expect nothing, throwing if we still have something.
-        void expectNothing() @safe
+        void expectNothing() @safe scope
         {
             assert(0, "Expected nothing, but got " ~ event_.idString);
         }
@@ -296,7 +296,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Document handlers.
 
         ///Handle start of a document.
-        void expectDocumentStart(Flag!"first" first)() @safe
+        void expectDocumentStart(Flag!"first" first)() @trusted scope
             in(eventTypeIs(EventID.documentStart) || eventTypeIs(EventID.streamEnd),
                 "Expected documentStart or streamEnd, but got " ~ event_.idString)
         {
@@ -332,7 +332,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
                 //Add any default tag directives that have not been overriden.
                 foreach(ref def; defaultTagDirectives_)
                 {
-                    if(!canFind!eq(tagDirectives_, def))
+                    if(!canFind!eq(tagDirectives_, cast()def))
                     {
                         tagDirectives_ ~= def;
                     }
@@ -361,7 +361,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle end of a document.
-        void expectDocumentEnd() @safe
+        void expectDocumentEnd() @safe scope
             in(eventTypeIs(EventID.documentEnd),
                 "Expected DocumentEnd, but got " ~ event_.idString)
         {
@@ -376,7 +376,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle the root node of a document.
-        void expectRootNode() @safe
+        void expectRootNode() @safe scope
         {
             pushState!"expectDocumentEnd"();
             expectNode(Context.root);
@@ -385,19 +385,19 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         ///Handle a mapping node.
         //
         //Params: simpleKey = Are we in a simple key?
-        void expectMappingNode(const bool simpleKey = false) @safe
+        void expectMappingNode(const bool simpleKey = false) @safe scope
         {
             expectNode(simpleKey ? Context.mappingSimpleKey : Context.mappingNoSimpleKey);
         }
 
         ///Handle a sequence node.
-        void expectSequenceNode() @safe
+        void expectSequenceNode() @safe scope
         {
             expectNode(Context.sequence);
         }
 
         ///Handle a new node. Context specifies where in the document we are.
-        void expectNode(const Context context) @safe
+        void expectNode(const Context context) @safe scope
         {
             context_ = context;
 
@@ -441,7 +441,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             }
         }
         ///Handle an alias.
-        void expectAlias() @safe
+        void expectAlias() @safe scope
             in(event_.anchor != "", "Anchor is not specified for alias")
         {
             processAnchor("*");
@@ -449,7 +449,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a scalar.
-        void expectScalar() @safe
+        void expectScalar() @safe scope
         {
             increaseIndent(Yes.flow);
             processScalar();
@@ -460,7 +460,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Flow sequence handlers.
 
         ///Handle a flow sequence.
-        void expectFlowSequence() @safe
+        void expectFlowSequence() @safe scope
         {
             writeIndicator("[", Yes.needWhitespace, Yes.whitespace);
             ++flowLevel_;
@@ -469,7 +469,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a flow sequence item.
-        void expectFlowSequenceItem(Flag!"first" first)() @safe
+        void expectFlowSequenceItem(Flag!"first" first)() @safe scope
         {
             if(event_.id == EventID.sequenceEnd)
             {
@@ -493,7 +493,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Flow mapping handlers.
 
         ///Handle a flow mapping.
-        void expectFlowMapping() @safe
+        void expectFlowMapping() @safe scope
         {
             writeIndicator("{", Yes.needWhitespace, Yes.whitespace);
             ++flowLevel_;
@@ -502,7 +502,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a key in a flow mapping.
-        void expectFlowMappingKey(Flag!"first" first)() @safe
+        void expectFlowMappingKey(Flag!"first" first)() @safe scope
         {
             if(event_.id == EventID.mappingEnd)
             {
@@ -533,7 +533,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a simple value in a flow mapping.
-        void expectFlowMappingSimpleValue() @safe
+        void expectFlowMappingSimpleValue() @safe scope
         {
             writeIndicator(":", No.needWhitespace);
             pushState!"expectFlowMappingKey!(No.first)"();
@@ -541,7 +541,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a complex value in a flow mapping.
-        void expectFlowMappingValue() @safe
+        void expectFlowMappingValue() @safe scope
         {
             if(canonical_ || column_ > bestWidth_){writeIndent();}
             writeIndicator(":", Yes.needWhitespace);
@@ -552,7 +552,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Block sequence handlers.
 
         ///Handle a block sequence.
-        void expectBlockSequence() @safe
+        void expectBlockSequence() @safe scope
         {
             const indentless = (context_ == Context.mappingNoSimpleKey ||
                                 context_ == Context.mappingSimpleKey) && !indentation_;
@@ -561,7 +561,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a block sequence item.
-        void expectBlockSequenceItem(Flag!"first" first)() @safe
+        void expectBlockSequenceItem(Flag!"first" first)() @safe scope
         {
             static if(!first) if(event_.id == EventID.sequenceEnd)
             {
@@ -579,14 +579,14 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         //Block mapping handlers.
 
         ///Handle a block mapping.
-        void expectBlockMapping() @safe
+        void expectBlockMapping() @safe scope
         {
             increaseIndent(No.flow);
             nextExpected!"expectBlockMappingKey!(Yes.first)"();
         }
 
         ///Handle a key in a block mapping.
-        void expectBlockMappingKey(Flag!"first" first)() @safe
+        void expectBlockMappingKey(Flag!"first" first)() @safe scope
         {
             static if(!first) if(event_.id == EventID.mappingEnd)
             {
@@ -609,7 +609,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a simple value in a block mapping.
-        void expectBlockMappingSimpleValue() @safe
+        void expectBlockMappingSimpleValue() @safe scope
         {
             writeIndicator(":", No.needWhitespace);
             pushState!"expectBlockMappingKey!(No.first)"();
@@ -617,7 +617,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Handle a complex value in a block mapping.
-        void expectBlockMappingValue() @safe
+        void expectBlockMappingValue() @safe scope
         {
             writeIndent();
             writeIndicator(":", Yes.needWhitespace, No.whitespace, Yes.indentation);
@@ -695,7 +695,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Process and write a scalar.
-        void processScalar() @safe
+        void processScalar() @safe scope
         {
             if(analysis_.flags.isNull){analysis_ = analyzeScalar(event_.value);}
             if(style_ == YamlScalarStyle.invalid)
@@ -709,7 +709,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             //{
             //    writeIndent();
             //}
-            auto writer = ScalarWriter!Range(&this, analysis_.scalar,
+            auto writer = ScalarWriter((()@trusted=>&this)(), analysis_.scalar,
                                        context_ != Context.mappingSimpleKey);
             final switch(style_)
             {
@@ -725,7 +725,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Process and write an anchor/alias.
-        void processAnchor(const string indicator) @safe
+        void processAnchor(const string indicator) @safe scope
         {
             if(event_.anchor is null)
             {
@@ -745,7 +745,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Process and write a tag.
-        void processTag() @safe
+        void processTag() @safe scope
         {
             string tag = event_.tag;
 
@@ -822,66 +822,8 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             return YamlScalarStyle.doubleQuoted;
         }
 
-        ///Prepare YAML version string for output.
-        static string prepareVersion(const string YAMLVersion) @safe
-            in(YAMLVersion.splitter(".").front == "1",
-                "Unsupported YAML version: " ~ YAMLVersion)
-        {
-            return YAMLVersion;
-        }
-
-        ///Encode an Unicode character for tag directive and write it to writer.
-        static void encodeChar(Writer)(ref Writer writer, in dchar c) @safe
-        {
-            char[4] data;
-            const bytes = encode(data, c);
-            //For each byte add string in format %AB , where AB are hex digits of the byte.
-            foreach(const char b; data[0 .. bytes])
-            {
-                print(writer, hexAddress(cast(ubyte)b));
-            }
-        }
-
-        import std.range: drop, dropBack;
-        ///Prepare tag directive handle for output.
-        static string prepareTagHandle(const string handle) @safe
-            in(handle != "", "Tag handle must not be empty")
-            in(handle.drop(1).dropBack(1).all!(c => isAlphaNum(c) || c.among!('-', '_')),
-                "Tag handle contains invalid characters")
-        {
-            return handle;
-        }
-
-        ///Prepare tag directive prefix for output.
-        static string prepareTagPrefix(const string prefix) @safe
-            in(prefix != "", "Tag prefix must not be empty")
-        {
-            auto appender = appender!string();
-            const int offset = prefix[0] == '!';
-            size_t start, end;
-
-            foreach(const size_t i, const dchar c; prefix)
-            {
-                const size_t idx = i + offset;
-                if(isAlphaNum(c) || c.among!('-', ';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '_', '.', '!', '~', '*', '\\', '\'', '(', ')', '[', ']', '%'))
-                {
-                    end = idx + 1;
-                    continue;
-                }
-
-                if(start < idx){appender.put(prefix[start .. idx]);}
-                start = end = idx + 1;
-
-                encodeChar(appender, c);
-            }
-
-            end = min(end, prefix.length);
-            if(start < end){appender.put(prefix[start .. end]);}
-            return appender.data;
-        }
-
         ///Prepare tag for output.
-        string prepareTag(in string tag) @safe
+        string prepareTag(scope string tag) @safe
             in(tag != "", "Tag must not be empty")
         {
 
@@ -926,233 +868,10 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             return appender.data;
         }
 
-        ///Prepare anchor for output.
-        static string prepareAnchor(const string anchor) @safe
-            in(anchor != "",  "Anchor must not be empty")
-            in(anchor.all!isNSAnchorName, "Anchor contains invalid characters")
-        {
-            return anchor;
-        }
-
-        ///Analyze specifed scalar and return the analysis result.
-        static ScalarAnalysis analyzeScalar(string scalar) @safe
-        {
-            ScalarAnalysis analysis;
-            analysis.flags.isNull = false;
-            analysis.scalar = scalar;
-
-            //Empty scalar is a special case.
-            if(scalar is null || scalar == "")
-            {
-                with(ScalarAnalysis.AnalysisFlags)
-                    analysis.flags =
-                        empty |
-                        allowBlockPlain |
-                        allowSingleQuoted |
-                        allowDoubleQuoted;
-                return analysis;
-            }
-
-            //Indicators and special characters (All false by default).
-            bool blockIndicators, flowIndicators, lineBreaks, specialCharacters;
-
-            //Important whitespace combinations (All false by default).
-            bool leadingSpace, leadingBreak, trailingSpace, trailingBreak,
-                 breakSpace, spaceBreak;
-
-            //Check document indicators.
-            if(scalar.startsWith("---", "..."))
-            {
-                blockIndicators = flowIndicators = true;
-            }
-
-            //First character or preceded by a whitespace.
-            bool preceededByWhitespace = true;
-
-            //Last character or followed by a whitespace.
-            bool followedByWhitespace = scalar.length == 1 ||
-                                        scalar[1].among!(' ', '\t', '\0', '\n', '\r', '\u0085', '\u2028', '\u2029');
-
-            //The previous character is a space/break (false by default).
-            bool previousSpace, previousBreak;
-
-            foreach(const size_t index, const dchar c; scalar)
-            {
-                //Check for indicators.
-                if(index == 0)
-                {
-                    //Leading indicators are special characters.
-                    if(c.isSpecialChar)
-                    {
-                        flowIndicators = blockIndicators = true;
-                    }
-                    if(':' == c || '?' == c)
-                    {
-                        flowIndicators = true;
-                        if(followedByWhitespace){blockIndicators = true;}
-                    }
-                    if(c == '-' && followedByWhitespace)
-                    {
-                        flowIndicators = blockIndicators = true;
-                    }
-                }
-                else
-                {
-                    //Some indicators cannot appear within a scalar as well.
-                    if(c.isFlowIndicator){flowIndicators = true;}
-                    if(c == ':')
-                    {
-                        flowIndicators = true;
-                        if(followedByWhitespace){blockIndicators = true;}
-                    }
-                    if(c == '#' && preceededByWhitespace)
-                    {
-                        flowIndicators = blockIndicators = true;
-                    }
-                }
-
-                //Check for line breaks, special, and unicode characters.
-                if(c.isNewLine){lineBreaks = true;}
-                if(!(c == '\n' || (c >= '\x20' && c <= '\x7E')) &&
-                   !((c == '\u0085' || (c >= '\xA0' && c <= '\uD7FF') ||
-                     (c >= '\uE000' && c <= '\uFFFD')) && c != '\uFEFF'))
-                {
-                    specialCharacters = true;
-                }
-
-                //Detect important whitespace combinations.
-                if(c == ' ')
-                {
-                    if(index == 0){leadingSpace = true;}
-                    if(index == scalar.length - 1){trailingSpace = true;}
-                    if(previousBreak){breakSpace = true;}
-                    previousSpace = true;
-                    previousBreak = false;
-                }
-                else if(c.isNewLine)
-                {
-                    if(index == 0){leadingBreak = true;}
-                    if(index == scalar.length - 1){trailingBreak = true;}
-                    if(previousSpace){spaceBreak = true;}
-                    previousSpace = false;
-                    previousBreak = true;
-                }
-                else
-                {
-                    previousSpace = previousBreak = false;
-                }
-
-                //Prepare for the next character.
-                preceededByWhitespace = c.isSpace != 0;
-                followedByWhitespace = index + 2 >= scalar.length ||
-                                       scalar[index + 2].isSpace;
-            }
-
-            with(ScalarAnalysis.AnalysisFlags)
-            {
-                //Let's decide what styles are allowed.
-                analysis.flags |= allowFlowPlain | allowBlockPlain | allowSingleQuoted |
-                               allowDoubleQuoted | allowBlock;
-
-                //Leading and trailing whitespaces are bad for plain scalars.
-                if(leadingSpace || leadingBreak || trailingSpace || trailingBreak)
-                {
-                    analysis.flags &= ~(allowFlowPlain | allowBlockPlain);
-                }
-
-                //We do not permit trailing spaces for block scalars.
-                if(trailingSpace)
-                {
-                    analysis.flags &= ~allowBlock;
-                }
-
-                //Spaces at the beginning of a new line are only acceptable for block
-                //scalars.
-                if(breakSpace)
-                {
-                    analysis.flags &= ~(allowFlowPlain | allowBlockPlain | allowSingleQuoted);
-                }
-
-                //Spaces followed by breaks, as well as special character are only
-                //allowed for double quoted scalars.
-                if(spaceBreak || specialCharacters)
-                {
-                    analysis.flags &= ~(allowFlowPlain | allowBlockPlain | allowSingleQuoted | allowBlock);
-                }
-
-                //Although the plain scalar writer supports breaks, we never emit
-                //multiline plain scalars.
-                if(lineBreaks)
-                {
-                    analysis.flags &= ~(allowFlowPlain | allowBlockPlain);
-                    analysis.flags |= multiline;
-                }
-
-                //Flow indicators are forbidden for flow plain scalars.
-                if(flowIndicators)
-                {
-                    analysis.flags &= ~allowFlowPlain;
-                }
-
-                //Block indicators are forbidden for block plain scalars.
-                if(blockIndicators)
-                {
-                    analysis.flags &= ~allowBlockPlain;
-                }
-            }
-            return analysis;
-        }
-
-        @safe unittest
-        {
-            with(analyzeScalar("").flags)
-            {
-                // workaround for empty being std.range.primitives.empty here
-                alias empty = ScalarAnalysis.AnalysisFlags.empty;
-                assert(empty && allowBlockPlain && allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar("a").flags)
-            {
-                assert(allowFlowPlain && allowBlockPlain && allowSingleQuoted && allowDoubleQuoted && allowBlock);
-            }
-            with(analyzeScalar(" ").flags)
-            {
-                assert(allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar(" a").flags)
-            {
-                assert(allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar("a ").flags)
-            {
-                assert(allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar("\na").flags)
-            {
-                assert(allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar("a\n").flags)
-            {
-                assert(allowSingleQuoted && allowDoubleQuoted);
-            }
-            with(analyzeScalar("\n").flags)
-            {
-                assert(multiline && allowSingleQuoted && allowDoubleQuoted && allowBlock);
-            }
-            with(analyzeScalar(" \n").flags)
-            {
-                assert(multiline && allowDoubleQuoted);
-            }
-            with(analyzeScalar("\n a").flags)
-            {
-                assert(multiline && allowDoubleQuoted && allowBlock);
-            }
-        }
-
         //Writers.
 
         ///Write an indicator (e.g. ":", "[", ">", etc.).
-        void writeIndicator(const scope char[] indicator,
+        void writeIndicator(const scope char[] indicator, scope
                             const Flag!"needWhitespace" needWhitespace,
                             const Flag!"whitespace" whitespace = No.whitespace,
                             const Flag!"indentation" indentation = No.indentation) @safe
@@ -1171,7 +890,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Write indentation.
-        void writeIndent() @safe
+        void writeIndent() @safe scope
         {
             const indent = indent_ == -1 ? 0 : indent_;
 
@@ -1197,7 +916,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Start new line.
-        void writeLineBreak(const scope char[] data = null) @safe
+        void writeLineBreak(const scope char[] data = null) @safe scope
         {
             whitespace_ = indentation_ = true;
             ++line_;
@@ -1206,7 +925,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Write a YAML version directive.
-        void writeVersionDirective(const string versionText) @safe
+        void writeVersionDirective(scope string versionText) @safe scope
         {
             writeString("%YAML ");
             writeString(versionText);
@@ -1214,7 +933,7 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
         }
 
         ///Write a tag directive.
-        void writeTagDirective(const string handle, const string prefix) @safe
+        void writeTagDirective(scope string handle, scope string prefix) @safe scope
         {
             writeString("%TAG ");
             writeString(handle);
@@ -1222,17 +941,17 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
             writeString(prefix);
             writeLineBreak();
         }
-        void nextExpected(string D)() @safe
+        void nextExpected(string D)() @safe scope
         {
             state_ = mixin("function(typeof(this)* self) { self."~D~"(); }");
         }
-        void nextExpected(EmitterFunction f) @safe
+        void nextExpected(EmitterFunction f) @safe scope
         {
             state_ = f;
         }
-        void callNext() @safe
+        void callNext() @safe scope
         {
-            state_(&this);
+            state_((()@trusted=>&this)());
         }
 }
 
@@ -1240,8 +959,9 @@ struct Emitter(Range) if (isOutputRange!(Range, char))
 private:
 
 ///RAII struct used to write out scalar values.
-struct ScalarWriter(Range)
+struct ScalarWriter
 {
+@safe pure:
     invariant()
     {
         assert(emitter_.bestIndent_ > 0 && emitter_.bestIndent_ < 10,
@@ -1249,14 +969,14 @@ struct ScalarWriter(Range)
     }
 
     private:
-        @disable int opCmp(ref Emitter!Range);
-        @disable bool opEquals(ref Emitter!Range);
+        @disable int opCmp(ref Emitter);
+        @disable bool opEquals(ref Emitter);
 
         ///Used as "null" UTF-32 character.
         static immutable dcharNone = dchar.max;
 
         ///Emitter used to emit the scalar.
-        Emitter!Range* emitter_;
+        Emitter* emitter_;
 
         ///UTF-8 encoded text of the scalar to write.
         string text_;
@@ -1277,7 +997,7 @@ struct ScalarWriter(Range)
 
     public:
         ///Construct a ScalarWriter using emitter to output text.
-        this(Emitter!Range* emitter, string text, const bool split = true) @safe nothrow
+        this(return scope Emitter* emitter, return scope string text, const bool split = true) @safe nothrow
         {
             emitter_ = emitter;
             text_ = text;
@@ -1285,7 +1005,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write text as single quoted scalar.
-        void writeSingleQuoted() @safe
+        void writeSingleQuoted() @safe scope
         {
             emitter_.writeIndicator("\'", Yes.needWhitespace);
             spaces_ = breaks_ = false;
@@ -1335,7 +1055,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write text as double quoted scalar.
-        void writeDoubleQuoted() @safe
+        void writeDoubleQuoted() @safe scope
         {
             resetTextPosition();
             emitter_.writeIndicator("\"", Yes.needWhitespace);
@@ -1403,7 +1123,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write text as folded block scalar.
-        void writeFolded() @safe
+        void writeFolded() @safe scope
         {
             initBlock('>');
             bool leadingSpace = true;
@@ -1449,7 +1169,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write text as literal block scalar.
-        void writeLiteral() @safe
+        void writeLiteral() @safe scope
         {
             initBlock('|');
             breaks_ = true;
@@ -1476,9 +1196,9 @@ struct ScalarWriter(Range)
         }
 
         ///Write text as plain scalar.
-        void writePlain() @safe
+        void writePlain() @safe scope
         {
-            if(emitter_.context_ == Emitter!Range.Context.root){emitter_.openEnded_ = true;}
+            if(emitter_.context_ == Emitter.Context.root){emitter_.openEnded_ = true;}
             if(text_ == ""){return;}
             if(!emitter_.whitespace_)
             {
@@ -1523,7 +1243,7 @@ struct ScalarWriter(Range)
 
     private:
         ///Get next character and move end of the text range to it.
-        @property dchar nextChar() pure @safe
+        @property dchar nextChar() scope pure @safe
         {
             ++endChar_;
             endByte_ = nextEndByte_;
@@ -1539,27 +1259,27 @@ struct ScalarWriter(Range)
         }
 
         ///Get character at start of the text range.
-        @property dchar charAtStart() const pure @safe
+        @property dchar charAtStart() scope const pure @safe
         {
             size_t idx = startByte_;
             return decode(text_, idx);
         }
 
         ///Is the current line too wide?
-        @property bool tooWide() const pure @safe nothrow
+        @property bool tooWide() scope const pure @safe nothrow
         {
             return startChar_ + 1 == endChar_ &&
                    emitter_.column_ > emitter_.bestWidth_;
         }
 
         ///Determine hints (indicators) for block scalar.
-        size_t determineBlockHints(char[] hints, uint bestIndent) const pure @safe
+        size_t determineBlockHints(scope char[] hints, uint bestIndent) scope const pure @safe
         {
             size_t hintsIdx;
             if(text_.length == 0)
                 return hintsIdx;
 
-            dchar lastChar(const string str, ref size_t end)
+            dchar lastChar(scope string str, ref size_t end)
             {
                 size_t idx = end = end - strideBack(str, end);
                 return decode(text_, idx);
@@ -1585,7 +1305,7 @@ struct ScalarWriter(Range)
         }
 
         ///Initialize for block scalar writing with specified indicator.
-        void initBlock(const char indicator) @safe
+        void initBlock(const char indicator) scope @safe
         {
             char[4] hints;
             hints[0] = indicator;
@@ -1599,7 +1319,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write out the current text range.
-        void writeCurrentRange(const Flag!"UpdateColumn" updateColumn) @safe
+        void writeCurrentRange(const Flag!"UpdateColumn" updateColumn) scope @safe
         {
             emitter_.writeString(text_[startByte_ .. endByte_]);
             if(updateColumn){emitter_.column_ += endChar_ - startChar_;}
@@ -1607,7 +1327,7 @@ struct ScalarWriter(Range)
         }
 
         ///Write line breaks in the text range.
-        void writeLineBreaks() @safe
+        void writeLineBreaks() @safe scope
         {
             foreach(const dchar br; text_[startByte_ .. endByte_])
             {
@@ -1623,13 +1343,13 @@ struct ScalarWriter(Range)
         }
 
         ///Write line break if start of the text range is a newline.
-        void writeStartLineBreak() @safe
+        void writeStartLineBreak() @safe scope
         {
             if(charAtStart == '\n'){emitter_.writeLineBreak();}
         }
 
         ///Write indentation, optionally resetting whitespace/indentation flags.
-        void writeIndent(const Flag!"ResetSpace" resetSpace) @safe
+        void writeIndent(const Flag!"ResetSpace" resetSpace) @safe scope
         {
             emitter_.writeIndent();
             if(resetSpace)
@@ -1639,14 +1359,14 @@ struct ScalarWriter(Range)
         }
 
         ///Move start of text range to its end.
-        void updateRangeStart() pure @safe nothrow
+        void updateRangeStart() pure @safe nothrow scope
         {
             startByte_ = endByte_;
             startChar_ = endChar_;
         }
 
         ///Update the line breaks_ flag, optionally updating the spaces_ flag.
-        void updateBreaks(in dchar c, const Flag!"UpdateSpaces" updateSpaces) pure @safe
+        void updateBreaks(in dchar c, const Flag!"UpdateSpaces" updateSpaces) pure @safe scope
         {
             if(c == dcharNone){return;}
             breaks_ = (c.isNewLine != 0);
@@ -1654,9 +1374,293 @@ struct ScalarWriter(Range)
         }
 
         ///Move to the beginning of text.
-        void resetTextPosition() pure @safe nothrow
+        void resetTextPosition() pure @safe nothrow scope
         {
             startByte_ = endByte_ = nextEndByte_ = 0;
             startChar_ = endChar_ = -1;
         }
+}
+
+
+private @safe pure:
+
+import std.range: drop, dropBack;
+///Prepare tag directive handle for output.
+static string prepareTagHandle(return scope string handle) @safe
+    in(handle != "", "Tag handle must not be empty")
+    in(handle.drop(1).dropBack(1).all!(c => isAlphaNum(c) || c.among!('-', '_')),
+        "Tag handle contains invalid characters")
+{
+    return handle;
+}
+
+///Prepare tag directive prefix for output.
+static string prepareTagPrefix(scope string prefix) @safe
+    in(prefix != "", "Tag prefix must not be empty")
+{
+    auto appender = appender!string();
+    const int offset = prefix[0] == '!';
+    size_t start, end;
+
+    foreach(const size_t i, const dchar c; prefix)
+    {
+        const size_t idx = i + offset;
+        if(isAlphaNum(c) || c.among!('-', ';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '_', '.', '!', '~', '*', '\\', '\'', '(', ')', '[', ']', '%'))
+        {
+            end = idx + 1;
+            continue;
+        }
+
+        if(start < idx){appender.put(prefix[start .. idx]);}
+        start = end = idx + 1;
+
+        encodeChar(appender, c);
+    }
+
+    end = min(end, prefix.length);
+    if(start < end){appender.put(prefix[start .. end]);}
+    return appender.data;
+}
+
+///Prepare anchor for output.
+static string prepareAnchor(const return scope string anchor) @safe
+    in(anchor != "",  "Anchor must not be empty")
+    in(anchor.all!isNSAnchorName, "Anchor contains invalid characters")
+{
+    return anchor;
+}
+
+///Analyze specifed scalar and return the analysis result.
+static ScalarAnalysis analyzeScalar(return scope string scalar) @safe
+{
+    ScalarAnalysis analysis;
+    analysis.flags.isNull = false;
+    analysis.scalar = scalar;
+
+    //Empty scalar is a special case.
+    if(scalar is null || scalar == "")
+    {
+        with(ScalarAnalysis.AnalysisFlags)
+            analysis.flags =
+                empty |
+                allowBlockPlain |
+                allowSingleQuoted |
+                allowDoubleQuoted;
+        return analysis;
+    }
+
+    //Indicators and special characters (All false by default).
+    bool blockIndicators, flowIndicators, lineBreaks, specialCharacters;
+
+    //Important whitespace combinations (All false by default).
+    bool leadingSpace, leadingBreak, trailingSpace, trailingBreak,
+            breakSpace, spaceBreak;
+
+    //Check document indicators.
+    if(scalar.startsWith("---", "..."))
+    {
+        blockIndicators = flowIndicators = true;
+    }
+
+    //First character or preceded by a whitespace.
+    bool preceededByWhitespace = true;
+
+    //Last character or followed by a whitespace.
+    bool followedByWhitespace = scalar.length == 1 ||
+                                scalar[1].among!(' ', '\t', '\0', '\n', '\r', '\u0085', '\u2028', '\u2029');
+
+    //The previous character is a space/break (false by default).
+    bool previousSpace, previousBreak;
+
+    foreach(const size_t index, const dchar c; scalar)
+    {
+        //Check for indicators.
+        if(index == 0)
+        {
+            //Leading indicators are special characters.
+            if(c.isSpecialChar)
+            {
+                flowIndicators = blockIndicators = true;
+            }
+            if(':' == c || '?' == c)
+            {
+                flowIndicators = true;
+                if(followedByWhitespace){blockIndicators = true;}
+            }
+            if(c == '-' && followedByWhitespace)
+            {
+                flowIndicators = blockIndicators = true;
+            }
+        }
+        else
+        {
+            //Some indicators cannot appear within a scalar as well.
+            if(c.isFlowIndicator){flowIndicators = true;}
+            if(c == ':')
+            {
+                flowIndicators = true;
+                if(followedByWhitespace){blockIndicators = true;}
+            }
+            if(c == '#' && preceededByWhitespace)
+            {
+                flowIndicators = blockIndicators = true;
+            }
+        }
+
+        //Check for line breaks, special, and unicode characters.
+        if(c.isNewLine){lineBreaks = true;}
+        if(!(c == '\n' || (c >= '\x20' && c <= '\x7E')) &&
+            !((c == '\u0085' || (c >= '\xA0' && c <= '\uD7FF') ||
+                (c >= '\uE000' && c <= '\uFFFD')) && c != '\uFEFF'))
+        {
+            specialCharacters = true;
+        }
+
+        //Detect important whitespace combinations.
+        if(c == ' ')
+        {
+            if(index == 0){leadingSpace = true;}
+            if(index == scalar.length - 1){trailingSpace = true;}
+            if(previousBreak){breakSpace = true;}
+            previousSpace = true;
+            previousBreak = false;
+        }
+        else if(c.isNewLine)
+        {
+            if(index == 0){leadingBreak = true;}
+            if(index == scalar.length - 1){trailingBreak = true;}
+            if(previousSpace){spaceBreak = true;}
+            previousSpace = false;
+            previousBreak = true;
+        }
+        else
+        {
+            previousSpace = previousBreak = false;
+        }
+
+        //Prepare for the next character.
+        preceededByWhitespace = c.isSpace != 0;
+        followedByWhitespace = index + 2 >= scalar.length ||
+                                scalar[index + 2].isSpace;
+    }
+
+    with(ScalarAnalysis.AnalysisFlags)
+    {
+        //Let's decide what styles are allowed.
+        analysis.flags |= allowFlowPlain | allowBlockPlain | allowSingleQuoted |
+                        allowDoubleQuoted | allowBlock;
+
+        //Leading and trailing whitespaces are bad for plain scalars.
+        if(leadingSpace || leadingBreak || trailingSpace || trailingBreak)
+        {
+            analysis.flags &= ~(allowFlowPlain | allowBlockPlain);
+        }
+
+        //We do not permit trailing spaces for block scalars.
+        if(trailingSpace)
+        {
+            analysis.flags &= ~allowBlock;
+        }
+
+        //Spaces at the beginning of a new line are only acceptable for block
+        //scalars.
+        if(breakSpace)
+        {
+            analysis.flags &= ~(allowFlowPlain | allowBlockPlain | allowSingleQuoted);
+        }
+
+        //Spaces followed by breaks, as well as special character are only
+        //allowed for double quoted scalars.
+        if(spaceBreak || specialCharacters)
+        {
+            analysis.flags &= ~(allowFlowPlain | allowBlockPlain | allowSingleQuoted | allowBlock);
+        }
+
+        //Although the plain scalar writer supports breaks, we never emit
+        //multiline plain scalars.
+        if(lineBreaks)
+        {
+            analysis.flags &= ~(allowFlowPlain | allowBlockPlain);
+            analysis.flags |= multiline;
+        }
+
+        //Flow indicators are forbidden for flow plain scalars.
+        if(flowIndicators)
+        {
+            analysis.flags &= ~allowFlowPlain;
+        }
+
+        //Block indicators are forbidden for block plain scalars.
+        if(blockIndicators)
+        {
+            analysis.flags &= ~allowBlockPlain;
+        }
+    }
+    return analysis;
+}
+
+@safe unittest
+{
+    with(analyzeScalar("").flags)
+    {
+        // workaround for empty being std.range.primitives.empty here
+        alias empty = ScalarAnalysis.AnalysisFlags.empty;
+        assert(empty && allowBlockPlain && allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar("a").flags)
+    {
+        assert(allowFlowPlain && allowBlockPlain && allowSingleQuoted && allowDoubleQuoted && allowBlock);
+    }
+    with(analyzeScalar(" ").flags)
+    {
+        assert(allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar(" a").flags)
+    {
+        assert(allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar("a ").flags)
+    {
+        assert(allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar("\na").flags)
+    {
+        assert(allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar("a\n").flags)
+    {
+        assert(allowSingleQuoted && allowDoubleQuoted);
+    }
+    with(analyzeScalar("\n").flags)
+    {
+        assert(multiline && allowSingleQuoted && allowDoubleQuoted && allowBlock);
+    }
+    with(analyzeScalar(" \n").flags)
+    {
+        assert(multiline && allowDoubleQuoted);
+    }
+    with(analyzeScalar("\n a").flags)
+    {
+        assert(multiline && allowDoubleQuoted && allowBlock);
+    }
+}
+
+///Prepare YAML version string for output.
+static string prepareVersion(const return scope string YAMLVersion) @safe
+    in(YAMLVersion.splitter(".").front == "1",
+        "Unsupported YAML version: " ~ YAMLVersion)
+{
+    return YAMLVersion;
+}
+
+///Encode an Unicode character for tag directive and write it to writer.
+static void encodeChar(Writer)(scope ref Writer writer, in dchar c) @safe
+{
+    char[4] data;
+    const bytes = encode(data, c);
+    //For each byte add string in format %AB , where AB are hex digits of the byte.
+    foreach(const char b; data[0 .. bytes])
+    {
+        print(writer, hexAddress(cast(ubyte)b));
+    }
 }

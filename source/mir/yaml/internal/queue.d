@@ -43,7 +43,7 @@ private:
     size_t length_;
 
     // allocate a new node or recycle one from the stock.
-    Node* makeNewNode(T thePayload, Node* theNext = null) @trusted nothrow @nogc
+    Node* makeNewNode(T thePayload, return scope Node* theNext = null) @trusted nothrow @nogc scope
     {
         import std.experimental.allocator : make;
         import std.experimental.allocator.mallocator : Mallocator;
@@ -142,7 +142,7 @@ public:
     }
 
     /// Push a new item to the queue.
-    void push(T item) @nogc @safe nothrow
+    void push(T item) scope @nogc @safe nothrow
     {
         Node* newLast = makeNewNode(item);
         if (last_ !is null)
@@ -154,7 +154,7 @@ public:
     }
 
     /// Insert a new item putting it to specified index in the linked list.
-    void insert(T item, const size_t idx) @safe nothrow
+    void insert(T item, const size_t idx) scope @safe nothrow
     in
     {
         assert(idx <= length_);
@@ -186,7 +186,7 @@ public:
     }
 
     /// Returns: The next element in the queue and remove it.
-    T pop() @safe nothrow
+    T pop() return scope @trusted nothrow
     in
     {
         assert(!empty, "Trying to pop an element from an empty queue");

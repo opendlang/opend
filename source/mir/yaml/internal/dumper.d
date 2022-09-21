@@ -123,7 +123,7 @@ struct Dumper
             //This will emit tags starting with "tag:long.org,2011"
             //with a "!short!" prefix instead.
             dumper.tagDirectives(directives);
-            dumper.dump(new Appender!string(), YamlAlgebraic("foo"));
+            dumper.dump(appender!string(), YamlAlgebraic("foo"));
         }
 
         /**
@@ -138,12 +138,12 @@ struct Dumper
          * Throws:  YamlException on error (e.g. invalid nodes,
          *          unable to write to file/stream).
          */
-        void dump(Range)(Range range, YamlAlgebraic[] documents ...)
-            if (isOutputRange!(Range, char))
+        @safe
+        void dump(Appender!string range, YamlAlgebraic[] documents ...)
         {
             try
             {
-                auto emitter = new Emitter!Range(range, canonical, indent_, textWidth);
+                auto emitter = new Emitter(range, canonical, indent_, textWidth);
                 auto serializer = Serializer(resolver, explicitStart ? Yes.explicitStart : No.explicitStart,
                                              explicitEnd ? Yes.explicitEnd : No.explicitEnd, YAMLVersion, tags_);
                 serializer.startStream(emitter);
@@ -165,21 +165,21 @@ struct Dumper
 @safe unittest
 {
     auto node = YamlAlgebraic([1L, 2, 3, 4, 5]);
-    dumper().dump(new Appender!string(), node);
+    dumper().dump(appender!string(), node);
 }
 ///Write multiple YAML documents to a file
 @safe unittest
 {
     auto node1 = YamlAlgebraic([1L, 2, 3, 4, 5]);
     auto node2 = YamlAlgebraic("This document contains only one string");
-    dumper().dump(new Appender!string(), node1, node2);
+    dumper().dump(appender!string(), node1, node2);
     //Or with an array:
-    dumper().dump(new Appender!string(), [node1, node2]);
+    dumper().dump(appender!string(), [node1, node2]);
 }
 ///Write to memory
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic([1L, 2, 3, 4, 5]);
     dumper().dump(stream, node);
 }
@@ -190,12 +190,12 @@ struct Dumper
     auto node = YamlAlgebraic([1L, 2, 3, 4, 5]);
     auto dumper = dumper();
     dumper.resolver.addImplicitResolver("!tag", regex("A.*"), "A");
-    dumper.dump(new Appender!string(), node);
+    dumper.dump(appender!string(), node);
 }
 /// Set default scalar style
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic("Hello world!");
     auto dumper = dumper();
     dumper.defaultScalarStyle = YamlScalarStyle.singleQuoted;
@@ -204,7 +204,7 @@ struct Dumper
 /// Set default collection style
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic(["Hello".YamlAlgebraic, "world!".YamlAlgebraic]);
     auto dumper = dumper();
     dumper.defaultCollectionStyle = YamlCollectionStyle.flow;
@@ -213,7 +213,7 @@ struct Dumper
 // Make sure the styles are actually used
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic([YamlAlgebraic("Hello world!"), YamlAlgebraic(["Hello".YamlAlgebraic, "world!".YamlAlgebraic])]);
     auto dumper = dumper();
     dumper.defaultScalarStyle = YamlScalarStyle.singleQuoted;
@@ -227,7 +227,7 @@ struct Dumper
 // Explicit document start/end markers
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic([1L, 2, 3, 4, 5]);
     auto dumper = dumper();
     dumper.explicitEnd = true;
@@ -241,7 +241,7 @@ struct Dumper
 }
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic([YamlAlgebraic("Te, st2")]);
     auto dumper = dumper();
     dumper.explicitStart = true;
@@ -253,7 +253,7 @@ struct Dumper
 // No explicit document start/end markers
 @safe unittest
 {
-    auto stream = new Appender!string();
+    auto stream = appender!string();
     auto node = YamlAlgebraic([1L, 2, 3, 4, 5]);
     auto dumper = dumper();
     dumper.explicitEnd = false;

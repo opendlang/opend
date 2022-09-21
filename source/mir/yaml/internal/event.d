@@ -43,6 +43,7 @@ enum EventID : ubyte
  */
 struct Event
 {
+@safe pure:
     @disable int opCmp(ref Event);
 
     ///Value of the event, if any.
@@ -83,22 +84,22 @@ struct Event
     YamlCollectionStyle collectionStyle = YamlCollectionStyle.invalid;
 
     ///Is this a null (uninitialized) event?
-    @property bool isNull() const pure @safe nothrow {return id == EventID.invalid;}
+    @property bool isNull() scope const pure @safe nothrow {return id == EventID.invalid;}
 
     ///Get string representation of the token ID.
-    @property string idString() const @safe {return to!string(id);}
+    @property string idString() scope const @safe {return to!string(id);}
 
-    auto ref anchor() inout @trusted pure {
+    ref inout(string) anchor() inout @trusted pure scope return nothrow{
         assert(id != EventID.documentStart, "DocumentStart events cannot have anchors.");
         return _anchor;
     }
 
-    auto ref tag() inout @trusted pure {
+    ref tag() inout @trusted pure scope return {
         assert(id != EventID.documentStart, "DocumentStart events cannot have tags.");
         return _tag;
     }
 
-    auto ref tagDirectives() inout @trusted pure {
+    ref tagDirectives() inout @trusted pure scope return {
         assert(id == EventID.documentStart, "Only DocumentStart events have tag directives.");
         return _tagDirectives;
     }
@@ -111,14 +112,14 @@ struct Event
  *          end      = End position of the event in the file/stream.
  *          anchor   = Anchor, if this is an alias event.
  */
-Event event(EventID id)(const ParsePosition start, const ParsePosition end, const string anchor = null)
+Event event(EventID id)(const ParsePosition start, const ParsePosition end, const scope return string anchor = null)
     @safe
     in(!(id == EventID.alias_ && anchor == ""), "Missing anchor for alias event")
 {
     Event result;
     result.startMark = start;
     result.endMark   = end;
-    result.anchor    = anchor;
+    result._anchor    = anchor;
     result.id        = id;
     return result;
 }
@@ -142,7 +143,7 @@ Event collectionStartEvent(EventID id)
     Event result;
     result.startMark       = start;
     result.endMark         = end;
-    result.anchor          = anchor;
+    result._anchor          = anchor;
     result.tag             = tag;
     result.id              = id;
     result.implicit        = implicit;
@@ -233,7 +234,7 @@ Event scalarEvent(const ParsePosition start, const ParsePosition end, const stri
     result.startMark   = start;
     result.endMark     = end;
 
-    result.anchor  = anchor;
+    result._anchor  = anchor;
     result.tag     = tag;
 
     result.id          = EventID.scalar;
