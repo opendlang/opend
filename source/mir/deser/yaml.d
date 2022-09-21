@@ -12,7 +12,7 @@ import std.traits: isMutable;
 Deserialize YAML document to a scpecified type.
 Params:
     T = type of the value
-    text = UTF-8 text without BOM
+    text = UTF-8 text (without BOM)
     fileNam = (optional) file name for better error information
 Returns:
     value of type `T`
@@ -131,7 +131,7 @@ unittest
 Deserialize YAML documents to an array of scpecified type.
 Params:
     T = type of the value
-    text = UTF-8 text without BOM
+    text = UTF-8 text (without BOM)
     fileNam = (optional) file name for better error information
 Returns:
     array of type `T`

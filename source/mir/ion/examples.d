@@ -1415,3 +1415,28 @@ unittest
     assert((cast(Foo)6).serializeText == "6", Foo.b.serializeText);
     assert("6".deserializeText!Foo == 6);
 }
+
+/// @serdeOrderedIn support
+version(mir_ion_test)
+unittest
+{
+    import mir.deser.text;
+    import mir.serde: serdeOrderedIn;
+    import mir.test: should;
+
+    @serdeOrderedIn
+    static struct Foo
+    {
+        int a;
+        private int b_;
+
+        auto b(int value) @property
+        {
+            b_ = value;
+            // a is always set here
+            assert(a + b_ == 7);
+        }
+    }
+
+    `{b:3,a:4}`.deserializeText!Foo.should == Foo(4, 3);
+}

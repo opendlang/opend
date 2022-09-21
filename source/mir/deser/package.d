@@ -107,7 +107,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         alias CompiletimeIndex = AliasSeq!();
     }
 
-    alias Params = AliasSeq!(RuntimeSymbolTable, CompiletimeIndex, Annotations);
+@safe pure:
 
     @safe pure nothrow @nogc
     private bool prepareSymbolId(
@@ -124,7 +124,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         return symbolId < symbolTable.length;
     }
 
-    @trusted pure nothrow @nogc private IonException deserializeScoped(C)(
+    @trusted nothrow @nogc private IonException deserializeScoped(C)(
         scope IonDescribedValue data,
         scope ref C[] value,
         scope RuntimeSymbolTable runtimeSymbolTable,
@@ -163,7 +163,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         }
     }
 
-    pure
     private IonException deserializeListToScopedBuffer(Buffer)(
         scope IonDescribedValue data,
         scope ref Buffer buffer,
@@ -188,7 +187,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         return null;
     }
 
-    pure
     private IonException deserializeValueMember(string member, T)(
         scope IonDescribedValue data,
         scope ref T value,
@@ -405,8 +403,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         value = value to deserialize
     Returns: `IonException`
     +/
-    pure
-    @safe 
     IonException deserializeValue(T)(
         scope IonDescribedValue data,
         scope ref T value,
@@ -987,19 +983,19 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     }
                 }
 
-                auto ionValue = data.trustedGet!IonStruct;
-
                 SerdeFlags!T requiredFlags;
 
                 static if (hasUDA!(T, serdeOrderedIn))
                 {
                     SerdeOrderedDummy!T temporal;
-                    if (auto exception = .deserializeValue!(symbolTable, tableKind, false)(temporal, runtimeSymbolTable, compiletimeIndex))
+                    if (auto exception = .deserializeValue!(symbolTable, tableKind, false)(data, temporal, runtimeSymbolTable, compiletimeIndex))
                         return exception;
                     temporal.serdeFinalizeTarget(value, requiredFlags);
                 }
                 else
                 {
+                    auto ionValue = data.trustedGet!IonStruct;
+
                     enum hasUnexpectedKeyHandler = __traits(hasMember, T, "serdeUnexpectedKeyHandler");
                     enum hasSerdeIgnoreUnexpectedKeys = hasUDA!(T, serdeIgnoreUnexpectedKeys);
 
@@ -1178,8 +1174,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         }
     }
 
-    pure
-    @safe 
     IonException deserializeValue(T)(
         scope IonDescribedValue data,
         scope ref T value,
