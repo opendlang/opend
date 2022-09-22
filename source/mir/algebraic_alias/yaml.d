@@ -33,7 +33,7 @@ public import mir.parse: ParsePosition;
 private alias AliasSeq(T...) = T;
 
 ///Scalar styles.
-enum YamlScalarStyle
+enum YamlScalarStyle : ubyte
 {
     /// Invalid (uninitialized) style
     none,
@@ -50,7 +50,7 @@ enum YamlScalarStyle
 }
 
 ///Collection styles.
-enum YamlCollectionStyle
+enum YamlCollectionStyle : ubyte
 {
     /// Invalid (uninitialized) style
     none,

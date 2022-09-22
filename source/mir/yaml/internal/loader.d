@@ -74,7 +74,7 @@ struct Loader
          *
          * Throws:  YamlException if yamlData contains data illegal in YAML.
          */
-        this(string yamlData, string name = "<unknown>") @safe
+        this(scope const(char)[] yamlData, string name = "<unknown>") @safe
         {
             composer_ = yamlData.Reader(name).Scanner.Parser.Composer(Resolver.withDefaultResolvers);
         }

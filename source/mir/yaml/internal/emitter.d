@@ -303,17 +303,17 @@ scope:
 
             if(event_.id == EventID.documentStart)
             {
-                const YamlVersion = event_.value;
+                const yamlVersion = event_.value;
                 auto tagDirectives = event_.tagDirectives;
-                if(openEnded_ && (YamlVersion !is null || tagDirectives !is null))
+                if(openEnded_ && (yamlVersion !is null || tagDirectives !is null))
                 {
                     writeIndicator("...", Yes.needWhitespace);
                     writeIndent();
                 }
 
-                if(YamlVersion !is null)
+                if(yamlVersion !is null)
                 {
-                    writeVersionDirective(prepareVersion(YamlVersion));
+                    writeVersionDirective(prepareVersion(yamlVersion));
                 }
 
                 if(tagDirectives !is null)
@@ -339,7 +339,7 @@ scope:
                 }
 
                 const implicit = first && !event_.explicitDocument && !canonical_ &&
-                                 YamlVersion is null && tagDirectives is null &&
+                                 yamlVersion is null && tagDirectives is null &&
                                  !checkEmptyDocument();
                 if(!implicit)
                 {
@@ -1646,11 +1646,11 @@ static ScalarAnalysis analyzeScalar(return scope string scalar) @safe
 }
 
 ///Prepare YAML version string for output.
-static string prepareVersion(const return scope string YamlVersion) @safe
-    in(YamlVersion.splitter(".").front == "1",
-        "Unsupported YAML version: " ~ YamlVersion)
+static string prepareVersion(const return scope string yamlVersion) @safe
+    in(yamlVersion.splitter(".").front == "1",
+        "Unsupported YAML version: " ~ yamlVersion)
 {
-    return YamlVersion;
+    return yamlVersion;
 }
 
 ///Encode an Unicode character for tag directive and write it to writer.

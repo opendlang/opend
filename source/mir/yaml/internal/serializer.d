@@ -57,18 +57,18 @@ struct Serializer
          *          resolver      = Resolver used to determine which tags are automaticaly resolvable.
          *          explicitStart = Do all document starts have to be specified explicitly?
          *          explicitEnd   = Do all document ends have to be specified explicitly?
-         *          YamlVersion   = YAML version string.
+         *          yamlVersion   = YAML version string.
          *          tagDirectives = Tag directives to emit.
          */
         this(Resolver resolver,
              const Flag!"explicitStart" explicitStart,
-             const Flag!"explicitEnd" explicitEnd, string YamlVersion,
+             const Flag!"explicitEnd" explicitEnd, string yamlVersion,
              TagDirective[] tagDirectives) @safe
         {
             resolver_      = resolver;
             explicitStart_ = explicitStart;
             explicitEnd_   = explicitEnd;
-            YamlVersion_   = YamlVersion;
+            YamlVersion_   = yamlVersion;
             tagDirectives_ = tagDirectives;
         }
 

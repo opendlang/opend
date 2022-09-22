@@ -24,7 +24,7 @@ import mir.internal.yaml.serializer;
 import mir.internal.yaml.tagdirective;
 import mir.ser.yaml: YamlSerializationParams;
 
-
+private enum YamlSerializationParams OldYamlSerializationParams = {yamlVersion : "1.1"};
 /**
  * Dumps YAML documents to files or streams.
  *
@@ -34,7 +34,7 @@ import mir.ser.yaml: YamlSerializationParams;
  * Setters are provided to affect output details (style, etc.).
  */
 @safe pure
-auto dumper(YamlSerializationParams params = YamlSerializationParams.init)
+auto dumper(YamlSerializationParams params = OldYamlSerializationParams)
 {
     auto dumper = Dumper();
     dumper.resolver = Resolver.withDefaultResolvers;
@@ -135,7 +135,7 @@ public:
         {
             auto emitter = Emitter(range, canonical, indent_, textWidth);
             auto serializer = Serializer(resolver, explicitStart ? Yes.explicitStart : No.explicitStart,
-                                            explicitEnd ? Yes.explicitEnd : No.explicitEnd, YamlVersion, tags_);
+                                            explicitEnd ? Yes.explicitEnd : No.explicitEnd, yamlVersion, tags_);
             serializer.startStream(emitter);
             foreach(ref document; documents)
             {
@@ -209,7 +209,7 @@ public:
     dumper.defaultCollectionStyle = YamlCollectionStyle.flow;
     dumper.explicitEnd = false;
     dumper.explicitStart = false;
-    dumper.YamlVersion = null;
+    dumper.yamlVersion = null;
     dumper.dump(stream, node);
     assert(stream.data == "['Hello world!', ['Hello', 'world!']]\n", stream.data);
 }
@@ -221,7 +221,7 @@ public:
     auto dumper = dumper();
     dumper.explicitEnd = true;
     dumper.explicitStart = true;
-    dumper.YamlVersion = null;
+    dumper.yamlVersion = null;
     dumper.dump(stream, node);
     //Skip version string
     assert(stream.data[0..3] == "---");
@@ -235,7 +235,7 @@ public:
     auto dumper = dumper();
     dumper.explicitStart = true;
     dumper.explicitEnd = false;
-    dumper.YamlVersion = null;
+    dumper.yamlVersion = null;
     dumper.dump(stream, node);
     assert(stream.data == "--- ['Te, st2']\n");
 }
@@ -247,7 +247,7 @@ public:
     auto dumper = dumper();
     dumper.explicitEnd = false;
     dumper.explicitStart = false;
-    dumper.YamlVersion = null;
+    dumper.yamlVersion = null;
     dumper.dump(stream, node);
     //Skip version string
     assert(stream.data[0..3] != "---");

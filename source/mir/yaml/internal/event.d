@@ -183,14 +183,14 @@ alias mappingStartEvent = collectionStartEvent!(EventID.mappingStart);
  * Params:  start         = Start position of the event in the file/stream.
  *          end           = End position of the event in the file/stream.
  *          explicit      = Is this an explicit document start?
- *          YamlVersion   = YAML version string of the document.
+ *          yamlVersion   = YAML version string of the document.
  *          tagDirectives = Tag directives of the document.
  */
-Event documentStartEvent(const ParsePosition start, const ParsePosition end, const bool explicit, string YamlVersion,
+Event documentStartEvent(const ParsePosition start, const ParsePosition end, const bool explicit, string yamlVersion,
                          TagDirective[] tagDirectives) pure @safe nothrow
 {
     Event result;
-    result.value            = YamlVersion;
+    result.value            = yamlVersion;
     result.startMark        = start;
     result.endMark          = end;
     result.id               = EventID.documentStart;
