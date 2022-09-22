@@ -1,18 +1,15 @@
 /++
+$(H4 High level JSON deserialization API)
+
+Macros:
+IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.deser.json;
 
 public import mir.serde;
-import mir.algebraic: Algebraic;
-import mir.deser.low_level: hasDiscriminatedField;
-import mir.string_map: isStringMap;
-import std.traits: hasUDA, isAggregateType;
-
-version(LDC) import ldc.attributes: optStrategy;
-else private struct optStrategy { string opt; }
 
 /++
-Deserialize json string to a type trying to do perform less memort allocations.
+Deserialize JSON string to a type trying to do perform less memort allocations.
 +/
 template deserializeJson(T)
 {
@@ -24,7 +21,6 @@ template deserializeJson(T)
         return value;
     }
 
-    // @optStrategy("optsize")
     void deserializeJson(scope ref T value, scope const(char)[] text)
     {
         version (LDC) pragma(inline, true);

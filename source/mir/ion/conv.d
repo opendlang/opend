@@ -14,7 +14,7 @@ template serde(T)
     if (!is(immutable T == immutable IonValueStream))
 {
     import mir.serde: SerdeTarget;
-@safe:
+
     ///
     T serde(V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
     {
@@ -95,8 +95,10 @@ template serde(T)
     }
 }
 
+
 ///
 version(mir_ion_test)
+@safe
 unittest {
     import mir.ion.stream: IonValueStream;
     import mir.algebraic_alias.json: JsonAlgebraic;
@@ -107,6 +109,19 @@ unittest {
     }
     auto s = S(12.34, "str");
     assert(s.serde!JsonAlgebraic.serde!S == s);
+    assert(s.serde!IonValueStream.serde!S == s);
+}
+
+@safe pure
+version(mir_ion_test)
+unittest {
+    static struct S
+    {
+        double a;
+        string s;
+    }
+    auto s = S(12.34, "str");
+    assert(s.serde!S == s);
     assert(s.serde!IonValueStream.serde!S == s);
 }
 
