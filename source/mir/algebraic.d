@@ -4001,7 +4001,7 @@ unittest
     static assert(is(typeof(r) == Variant!(long, string)));
 }
 
-private auto trustedAllAttr(T)(scope T t) @trusted
+package auto trustedAllAttr(T)(scope T t) @trusted
 {
     import std.traits;
     enum attrs = (functionAttributes!T & ~FunctionAttribute.system) 
