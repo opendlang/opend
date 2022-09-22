@@ -109,7 +109,7 @@ jobs:
             ubuntu-latest-build-
       - name: Build / test 
         run: |
-          dub test --build=unittest-release
+          # dub test --build=unittest-release
           dub test --arch=$ARCH --build=unittest-cov
         shell: bash
       - name: Upload coverage data
