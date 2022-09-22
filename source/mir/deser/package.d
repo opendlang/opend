@@ -732,7 +732,14 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                         return exception;
                     static if (tableKind == TableKind.immutableRuntime)
                     {
-                        (()@trusted pure {value[table[symbolId]] = move(temporal);})();
+                        static if (is(typeof((()@trusted pure {value[table[symbolId]] = move(temporal);}))))
+                            (()@trusted {value[table[symbolId]] = move(temporal);})();
+                        else
+                        {
+                            pragma(msg, "Mir warning: " ~ T.stringof ~
+                                ".opIndexAssign has to be @safe pure");
+                            (()@trusted=>(cast(void delegate() @safe pure) () {value[table[symbolId]] = move(temporal);}))();
+                        }
                     }
                     else
                     {
@@ -763,7 +770,17 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 if (auto exception = impl(data, temporal, runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
 
-                value = to!T(move(temporal));
+                static if (__traits(compiles, ()@safe{return to!T(move(temporal));}))
+                    value = to!T(move(temporal));
+                else
+                {
+                    pragma(msg, "Mir warning: can't safely cast from "
+                        ~ (const V).stringof
+                        ~ " to "
+                        ~ (const Proxy).stringof
+                    );
+                    value = ()@trusted{return to!T(move(temporal));}();
+                }
             }
             static if(__traits(hasMember, T, "serdeFinalize"))
             {
