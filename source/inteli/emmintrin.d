@@ -3060,10 +3060,8 @@ unittest
 /// Set packed 32-bit integers with the supplied values.
 __m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
-    pragma(inline, true);
-    int[4] result = [e0, e1, e2, e3];
-    return loadUnaligned!(int4)(result.ptr);
+    align(16) int[4] r = [e0, e1, e2, e3];
+    return *cast(int4*)&r;
 }
 unittest
 {
