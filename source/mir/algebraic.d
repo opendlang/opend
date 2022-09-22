@@ -2122,7 +2122,10 @@ struct Algebraic(T__...)
                 static if (AllowedTypes.length > 1)
                     if (identifier__ != i)
                         return false;
-                return trustedGet!T == rhs;
+                static if (isDynamicArray!T)
+                    return trustedGet!T[] == rhs[];
+                else
+                    return trustedGet!T == rhs;
             } 
 
             /++
