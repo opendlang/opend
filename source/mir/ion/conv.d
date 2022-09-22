@@ -29,7 +29,7 @@ template serde(T)
     {
         import mir.ion.exception;
         import mir.deser.ion: deserializeIon;
-        import mir.ion.internal.data_holder: ionPrefix, ionTapeHolder, IonTapeHolder;
+        import mir.ion.internal.data_holder: ionPrefix;
         import mir.ser: serializeValue;
         import mir.ser.ion: ionSerializer;
         import mir.ion.symbol_table: IonSymbolTable, removeSystemSymbols, IonSystemSymbolTable_v1;
@@ -167,7 +167,7 @@ void json2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
 {
     import mir.exception: MirException;
     import mir.ion.exception: ionErrorMsg, ionException;
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
 
     mir_json2ion(text, (error, data)
     {
@@ -274,7 +274,7 @@ Returns:
 immutable(ubyte)[] text2ion(scope const(char)[] text)
     @trusted pure
 {
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
     import mir.ser.ion : ionSerializer;
@@ -338,7 +338,7 @@ Params:
 void text2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     @trusted
 {
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
     import mir.ser.ion : ionSerializer;
@@ -433,7 +433,7 @@ version(mir_ion_test) unittest
 void msgpack2ion(Appender)(scope const(ubyte)[] data, scope ref Appender appender)
     @trusted
 {
-    import mir.ion.internal.data_holder: ionPrefix, IonTapeHolder;
+    import mir.ion.internal.data_holder: ionPrefix;
     import mir.ion.symbol_table: IonSymbolTable;
     import mir.ion.internal.data_holder: ionPrefix;
     import mir.ser.ion : ionSerializer;
