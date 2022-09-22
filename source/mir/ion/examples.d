@@ -1418,6 +1418,7 @@ unittest
 
 /// @serdeOrderedIn support
 version(mir_ion_test)
+@safe pure
 unittest
 {
     import mir.deser.text;
@@ -1439,4 +1440,22 @@ unittest
     }
 
     `{b:3,a:4}`.deserializeText!Foo.should == Foo(4, 3);
+}
+
+/// `new C` support for classes
+version(mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.deser.text;
+    import mir.test: should;
+
+    static class C
+    {
+        int a;
+        this() @safe pure {
+        }
+    }
+
+    `{a:4}`.deserializeText!C.a.should == 4;
 }

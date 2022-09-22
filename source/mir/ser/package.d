@@ -634,10 +634,7 @@ private template serializeWithProxy(Proxy)
                     auto proxy = to!(const Proxy)(value);
                 else
                 {
-                    pragma(msg, "Mir warning: can't safely cast from "
-                        ~ (const V).stringof
-                        ~ " to "
-                        ~ (const Proxy).stringof
+                    pragma(msg, "Mir warning: can't safely cast from ", (const V).stringof, " to ", (const Proxy).stringof
                     );
                     auto proxy = ()@trusted{return to!(const Proxy)(value);}();
                 }
@@ -739,17 +736,15 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                     foreach (elem; value) buf.put(elem);
                 else () @trusted
                 {
-                    pragma(msg, "Mir warning: Can't @safely iterate " ~ (const V).stringof);
+                    pragma(msg, "Mir warning: can't @safely iterate ", (const V).stringof);
                     foreach (elem; value) buf.put(elem);
                 }();
             }
             else
             {
-                pragma(msg, "Mir warning: Removing const qualifier to iterate "
-                    ~ V.stringof ~
-                    ". Implement `auto opIndex() @safe scope const` method to fixup");
+                pragma(msg, "Mir warning: removing const qualifier to iterate. Implement `auto opIndex() @safe scope const` for ", (V).stringof);
                 static if (!is(typeof(()@safe{foreach (elem; (()@trusted => cast() value)()){}})))
-                    pragma(msg, "Mir warning: Can't @safely iterate " ~ (const V).stringof);
+                    pragma(msg, "Mir warning: can't @safely iterate ", (V).stringof);
                 () @trusted
                 {
                     foreach (elem; cast() value) buf.put(elem);
@@ -781,7 +776,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                     }
                     else ()@trusted
                     {
-                        pragma(msg, "Mir warning: Can't @safely iterate " ~ (const V).stringof);
+                        pragma(msg, "Mir warning: can't @safely iterate ", (const V).stringof);
                     foreach (ref elem; value)
                     {
                         serializer.elemBegin;
@@ -791,9 +786,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                 }
                 else
                 {
-                    pragma(msg, "Mir warning: Removing const qualifier to iterate "
-                        ~ V.stringof ~
-                        ". Implement `auto opIndex() @safe scope const` method to fixup");
+                    pragma(msg, "Mir warning: removing const qualifier to iterate. Implement `auto opIndex() @safe scope const` for ", (V).stringof);
                     foreach (ref elem; (()@trusted => cast() value)())
                     {
                         serializer.elemBegin;
@@ -822,9 +815,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                 }
                 else
                 {
-                    pragma(msg, "Mir warning: Removing const qualifier to iterate "
-                        ~ V.stringof ~
-                        ". Implement `auto opIndex() @safe scope const` method to fixup");
+                    pragma(msg, "Mir warning: removing const qualifier to iterate. Implement `auto opIndex() @safe scope const` for ", (V).stringof);
                     static if (is(typeof(()@safe{foreach (elem; (()@trusted => cast() value)()){}})))
                     foreach (elem; (()@trusted => cast() value)())
                     {
@@ -833,7 +824,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                     }
                     else ()@trusted
                     {
-                        pragma(msg, "Mir warning: Can't @safely iterate " ~ (const V).stringof);
+                        pragma(msg, "Mir warning: can't @safely iterate ", (V).stringof);
                     foreach (elem; cast() value)
                     {
                         serializer.elemBegin;
@@ -866,6 +857,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
         import mir.algebraic: isVariant, visit;
         static if (__traits(hasMember, value, "byKeyValue"))
         {
+            static if (is(typeof(()@safe {foreach (keyElem; value.byKeyValue){}})))
             foreach (keyElem; value.byKeyValue)
             {
                 static if (!isVariant!(typeof(keyElem.key)))
@@ -886,6 +878,31 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
                 }
                 serializer.serializeValue(keyElem.value);
             }
+            else
+            {
+                pragma(msg, "Mir warning: can't safely iterate ", typeof(value));
+                () @trusted {
+            foreach (keyElem; (cast() value).byKeyValue)
+            {
+                static if (!isVariant!(typeof(keyElem.key)))
+                    serializer.putKey(keyElem.key);
+                else
+                {
+                    if (keyElem.key._is!string)
+                        serializer.putKey(keyElem.key.trustedGet!string);
+                    else
+                    if (keyElem.key._is!long)
+                        serializer.putKey(keyElem.key.trustedGet!long.to!string);
+                    else
+                    if (keyElem.key._is!double)
+                        serializer.putKey(keyElem.key.trustedGet!double.to!string);
+                    else
+                    if (keyElem.key._is!Timestamp)
+                        serializer.putKey(keyElem.key.trustedGet!Timestamp.to!string);
+                }
+                serializer.serializeValue(keyElem.value);
+            }
+            }();}
         }
         else
         {

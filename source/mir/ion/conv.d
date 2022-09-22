@@ -239,7 +239,6 @@ version(mir_ion_test) unittest
 
 version(mir_ion_test) unittest
 {
-    import std.stdio;
     assert("".json2ion.ion2text == "");
 }
 

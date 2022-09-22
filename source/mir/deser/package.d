@@ -49,7 +49,7 @@ static immutable exc(T, string member, int line = __LINE__) = new IonException("
 static immutable excm(T, string member, int line = __LINE__) = new IonException("mir.ion: multiple keys for member '" ~ member ~ "' in " ~ T.stringof ~ " are not allowed.", __FILE__, line);
 
 static immutable cantConstructNullValueOfType(T, int line = __LINE__) = new IonException("Can't construct null value of type" ~ T.stringof, __FILE__, line);
-static immutable cantConstructObjectExc(T, int line = __LINE__) = new IonException(T.stringof ~ " must be either not null or have a default constructor.", __FILE__, line);
+static immutable cantConstructObjectExc(T, int line = __LINE__) = new IonException(T.stringof ~ " must be either not null or have a default `@safe pure` constructor.", __FILE__, line);
 static immutable cantDeserilizeTFromIonStruct(T, int line = __LINE__) = new IonException("Can't deserilize " ~ T.stringof ~ " from IonStruct", __FILE__, line);
 static immutable cantDesrializeUnexpectedDescriptorType(T, int line = __LINE__) = new IonException("Can't desrialize " ~ T.stringof ~ ". Unexpected descriptor type.", __FILE__, line);
 static immutable unexpectedAnnotationWhenDeserializing(T, int line = __LINE__) = new IonException("Unexpected annotation when deserializing " ~ T.stringof, __FILE__, line);
@@ -428,7 +428,10 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
 
         static if (hasDeserializeFromIon!T)
         {
-            return value.deserializeFromIon(table, data);
+            static if (tableKind == TableKind.immutableRuntime)
+                return value.deserializeFromIon((()@trusted =>table)(), data);
+            else
+                return value.deserializeFromIon(table, data);
         }
         else
         static if (is(T : SmallArray!(E, maxLength), E, size_t maxLength))
@@ -988,9 +991,13 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     {
                         static if (is(T == class))
                         {
-                            static if (__traits(compiles, new T()))
+                            static if (is(typeof(() @safe pure {return new T();})))
                             {
-                                value == new T();
+                                value = new T();
+                            }
+                            else
+                            {
+                                return unqualException(cantConstructObjectExc!T);
                             }
                         }
                         else

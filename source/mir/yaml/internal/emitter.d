@@ -29,7 +29,6 @@ import std.algorithm.searching: canFind, startsWith;
 import std.array: Appender, appender;
 import std.ascii;
 import std.typecons: Flag, Yes, No, BitFlags;
-import std.uni: icmp;
 import std.utf;
 
 package:
@@ -319,7 +318,7 @@ scope:
                 if(tagDirectives !is null)
                 {
                     tagDirectives_ = tagDirectives;
-                    sort!((ref a, ref b) => icmp(a.handle, b.handle) < 0)(tagDirectives_);
+                    sort!"a.handle < b.handle"(tagDirectives_);
 
                     foreach(ref pair; tagDirectives_)
                     {
@@ -833,7 +832,7 @@ scope:
             string suffix = tagString;
 
             //Sort lexicographically by prefix.
-            sort!((ref a, ref b) => icmp(a.prefix, b.prefix) < 0)(tagDirectives_);
+            sort!"a.prefix < b.prefix"(tagDirectives_);
             foreach(ref pair; tagDirectives_)
             {
                 auto prefix = pair.prefix;
