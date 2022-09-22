@@ -804,7 +804,7 @@ unittest
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m256d _mm256_set_pd (double e3, double e2, double e1, double e0) pure @trusted
 {
-    // Note: with LDC, beats a loadUnaligned thing.
+    // Note: with LDC, beats a load-unaligned thing.
     // PERF: see #102, use = void
     __m256d r;
     r.ptr[0] = e0;
@@ -1057,6 +1057,7 @@ __m256d _mm256_setr_pd (double e3, double e2, double e1, double e0) pure @truste
 {
     version(LDC)
     {
+        // PERF, probably not the best
         double[4] result = [e3, e2, e1, e0];
         return loadUnaligned!(double4)(result.ptr);
     }

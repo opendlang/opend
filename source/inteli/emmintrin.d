@@ -2006,15 +2006,25 @@ unittest
 /// Load 128-bits of integer data from memory. `mem_addr` does not need to be aligned on any particular boundary.
 __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
+    // PERF DMD
     pragma(inline, true);
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_loaddqu(cast(const(char*))mem_addr);
     }
+    else version(LDC)
+    {
+        return loadUnaligned!(__m128i)(cast(int*)mem_addr);
+    }
     else
     {
-        // TODO make that LDC only
-        return loadUnaligned!(__m128i)(cast(int*)mem_addr);
+        const(int)* p = cast(const(int)*)mem_addr;
+        __m128i r = void;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[2];
+        r.ptr[3] = p[3];
+        return r;
     }
 }
 unittest
@@ -3136,6 +3146,12 @@ __m128d _mm_set_sd (double a) pure @trusted
     // TODO: remove useless loadUnaligned, check perf (see #102)
     double[2] result = [a, 0];
     return loadUnaligned!(double2)(result.ptr);
+}
+unittest
+{
+    __m128d A = _mm_set_sd(61.0);
+    double[2] correct = [61.0, 0.0];
+    assert(A.array == correct);
 }
 
 /// Broadcast 16-bit integer a to all elements of dst.
