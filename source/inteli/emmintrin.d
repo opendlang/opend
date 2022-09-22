@@ -2891,6 +2891,7 @@ unittest
 /// Convert packed signed 16-bit integers from `a` and `b` to packed 8-bit integers using unsigned saturation.
 __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
 {
+    // PERF DMD catastrophic
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
@@ -2910,7 +2911,7 @@ __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        ubyte[16] result = void;
+        align(16) ubyte[16] result = void;
         for (int i = 0; i < 8; ++i)
         {
             short s = sa[i];
@@ -2923,8 +2924,7 @@ __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
             if (s > 255) s = 255;
             result[i+8] = cast(ubyte)s;
         }
-        // TODO: remove useless loadUnaligned
-        return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
+        return *cast(__m128i*)(result.ptr);
     }
 }
 unittest
