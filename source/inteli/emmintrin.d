@@ -3038,9 +3038,16 @@ unittest
 /// Set packed 16-bit integers with the supplied values.
 __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf
-    short[8] result = [e0, e1, e2, e3, e4, e5, e6, e7];
-    return cast(__m128i) loadUnaligned!(short8)(result.ptr);
+    short8 r = void;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    r.ptr[4] = e4;
+    r.ptr[5] = e5;
+    r.ptr[6] = e6;
+    r.ptr[7] = e7;
+    return cast(__m128i) r;
 }
 unittest
 {
