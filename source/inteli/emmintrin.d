@@ -3143,9 +3143,10 @@ unittest
 /// and zero the upper element.
 __m128d _mm_set_sd (double a) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
-    double[2] result = [a, 0];
-    return loadUnaligned!(double2)(result.ptr);
+    double2 r = void;
+    r.ptr[0] = a;
+    r.ptr[1] = 0.0;
+    return r;
 }
 unittest
 {
