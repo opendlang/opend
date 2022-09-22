@@ -11,7 +11,6 @@ module mir.internal.yaml.test.representer;
     import std.array : appender, array;
     import std.meta : AliasSeq;
     import std.path : baseName, stripExtension;
-    import std.utf : toUTF8;
 
     import mir.internal.yaml : dumper, Loader, YamlAlgebraic;
     import mir.internal.yaml.test.common : assertNodesEqual, run;
@@ -34,7 +33,7 @@ module mir.internal.yaml.test.representer;
 
         immutable output = emitStream.data;
 
-        auto loader = Loader(emitStream.data.toUTF8, "TEST");
+        auto loader = Loader(emitStream.data, "TEST");
         const readNodes = loader.loadAll;
 
         assert(expectedNodes.length == readNodes.length);

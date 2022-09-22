@@ -29,7 +29,7 @@ import std.algorithm.searching: canFind, startsWith;
 import std.array: Appender, appender;
 import std.ascii;
 import std.typecons: Flag, Yes, No, BitFlags;
-import std.utf;
+import std.utf: count, strideBack, encode, decode;
 
 package:
 
@@ -1296,7 +1296,7 @@ struct ScalarWriter
             {
                 hints[hintsIdx++] = '-';
             }
-            else if(std.utf.count(text_) == 1 || secondLast.isNewLine)
+            else if(.count(text_) == 1 || secondLast.isNewLine)
             {
                 hints[hintsIdx++] = '+';
             }

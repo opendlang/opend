@@ -27,41 +27,6 @@ IonTokenizer tokenizeString(const(char)[] input) @safe @nogc pure {
 }
 
 /+
-Create a tokenizer for a given UTF-16/UTF-32 string.
-
-This function will take in a UTF-16/UTF-32 string, and convert it to a UTF-8 string before tokenizing.
-
-Params:
-    input = UTF-16 string to tokenize.
-Returns:
-    [IonTokenizer]
-+/
-auto tokenizeString(Input)(Input input) @safe pure  
-if (is(Input : const(wchar)[]) || is(Input : const(dchar)[])) {
-    import std.utf : toUTF8;
-    auto range = input.toUTF8();
-    return tokenizeString(range);
-}
-
-// UTF-16 string
-version(mir_ion_parser_test) unittest {
-    import mir.deser.text.tokens : IonTokenType;
-    import mir.deser.text.readers : readString;
-    auto t = tokenizeString(`"hello𐐷world"`w);
-    assert(t.nextToken());
-    assert(t.currentToken == IonTokenType.TokenString);
-    assert(t.readString().matchedText == "hello𐐷world");
-}
-// UTF-32 string
-version(mir_ion_parser_test) unittest {
-    import mir.deser.text.tokens : IonTokenType;
-    import mir.deser.text.readers : readString;
-    auto t = tokenizeString(`"hello𐐷world"`d);
-    assert(t.nextToken());
-    assert(t.currentToken == IonTokenType.TokenString);
-    assert(t.readString().matchedText == "hello𐐷world");
-}
-/+
 Tokenizer based off of how ion-go handles tokenization
 +/
 struct IonTokenizer {

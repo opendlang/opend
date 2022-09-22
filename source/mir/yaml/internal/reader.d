@@ -11,7 +11,7 @@ import mir.conv;
 import mir.internal.yaml.exception;
 import mir.utility: min;
 import std.algorithm.comparison: among;
-import std.utf;
+import std.utf: decode, encode, isValidDchar, byCodeUnit;
 
 alias isBreak = among!('\n', '\u0085', '\u2028', '\u2029');
 

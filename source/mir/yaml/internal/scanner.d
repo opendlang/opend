@@ -1729,7 +1729,6 @@ struct Scanner
                 new ScannerException(contextMsg, startMark, expected("URI", c), reader_.mark));
         }
 
-        // Not @nogc yet because std.utf.decode is not @nogc
         /// Scan URI escape sequences.
         ///
         /// Assumes that the caller is building a slice in Reader, and puts the scanned
