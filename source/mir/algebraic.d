@@ -1353,9 +1353,14 @@ struct Algebraic(T__...)
         return hash;
     }
 
-    /++
-    +/
-    bool opEquals()(scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
+    ///
+    bool opEquals()(scope const Algebraic rhs) scope @trusted const pure nothrow @nogc
+    {
+        return opEquals(rhs);
+    }
+
+    /// ditto
+    bool opEquals()(scope ref const Algebraic rhs) scope @trusted const pure nothrow @nogc
     {
         static foreach (i, T; MetaInfo__)
         static if (!T.transparent)
@@ -2117,15 +2122,18 @@ struct Algebraic(T__...)
 
             /++
             +/
-            auto opEquals()(auto ref scope const UnqualRec!T rhs) scope @trusted const pure nothrow @nogc
+            bool opEquals()(scope ref const UnqualRec!T rhs) scope @trusted const //pure nothrow @nogc
             {
                 static if (AllowedTypes.length > 1)
                     if (identifier__ != i)
                         return false;
-                static if (isDynamicArray!T)
-                    return trustedGet!T[] == rhs[];
-                else
-                    return trustedGet!T == rhs;
+                return trustedGet!T == rhs;
+            } 
+
+            ///ditto
+            bool opEquals()(scope const UnqualRec!T rhs) scope @trusted const //pure nothrow @nogc
+            {
+                return opEquals(rhs);
             } 
 
             /++
