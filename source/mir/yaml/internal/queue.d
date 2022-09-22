@@ -93,29 +93,7 @@ public:
     @disable bool opEquals(ref Queue);
     @disable int opCmp(ref Queue);
 
-    this(this) @safe nothrow @nogc
-    {
-        auto node = first_;
-        first_ = null;
-        last_ = null;
-        while (node !is null)
-        {
-            Node* newLast = makeNewNode(node.payload_);
-            if (last_ !is null)
-                last_.next_ = newLast;
-            if (first_ is null)
-                first_      = newLast;
-            last_ = newLast;
-            node = node.next_;
-        }
-    }
-
-    ~this() @safe nothrow @nogc
-    {
-        freeStock();
-        stock = first_;
-        freeStock();
-    }
+    @disable this(this);
 
     /// Returns a forward range iterating over this queue.
     auto range() @safe pure nothrow @nogc
