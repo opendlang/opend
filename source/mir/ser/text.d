@@ -504,7 +504,6 @@ struct TextSerializer(string sep, Appender)
 /++
 Ion serialization function.
 +/
-@safe
 string serializeText(V)(auto scope ref const V value, int serdeTarget = SerdeTarget.ion)
 {
     return serializeTextPretty!""(value, serdeTarget);
