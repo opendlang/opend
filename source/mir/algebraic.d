@@ -1292,6 +1292,51 @@ struct Algebraic(T__...)
     {
         size_t hash;
 
+
+        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
+        {
+        }
+        else{S:
+        switch (identifier__)
+        {
+            import std.traits: isArray;
+            static foreach (i, T; AllowedTypes)
+            {
+                case i: {
+                    static if (is(T == void))
+                        hash = i;
+                    else
+                    static if (is(T == typeof(null)))
+                        hash = i;
+                    else
+                    static if (typeFieldNames__.length) // force for tagged types
+                    {
+                        static if (__traits(hasMember, T, "toHash"))
+                            hash = trustedGet!T.toHash;
+                        else
+                        static if (isArray!T)
+                            foreach (ref e; trustedGet!T)
+                                static if (__traits(hasMember, typeof(e), "toHash"))
+                                    hash = hashOf(e.toHash, hash);
+                                else
+                                    hash = hashOf(e, hash);
+                        else
+                            hash = hashOf(trustedGet!T);
+                    }
+                    else
+                    static if (__traits(compiles, hashOf(trustedGet!T.hashOf, i ^ hash)))
+                        hash = hashOf(trustedGet!T.hashOf, i ^ hash);
+                    else
+                    {
+                        debug pragma(msg, "Mir warning: can't compute hash. Expexted `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
+                        hash = i;
+                    }
+                    break S;
+                }
+            }
+            default: assert(0);
+        }}
+
         static foreach (i, T; MetaInfo__)
         static if (!T.transparent)
         {
@@ -1305,33 +1350,7 @@ struct Algebraic(T__...)
             else
                 hash = hashOf(__traits(getMember, this, T.tag), hash);
         }
-
-        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
-        {
-            return 0;
-        }
-        else
-        switch (identifier__)
-        {
-            static foreach (i, T; AllowedTypes)
-            {
-                case i:
-                    static if (is(T == void))
-                        return i;
-                    else
-                    static if (is(T == typeof(null)))
-                        return i;
-                    else
-                    static if (__traits(compiles, hashOf(trustedGet!T, i ^ hash)))
-                        return hashOf(trustedGet!T, i ^ hash);
-                    else
-                    {
-                        debug pragma(msg, "Mir warning: can't compute hash. Expexted `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
-                        return i;
-                    }
-            }
-            default: assert(0);
-        }
+        return hash;
     }
 
     /++
@@ -1421,6 +1440,7 @@ struct Algebraic(T__...)
         }
         else
         {
+            import std.traits: isArray;
             if (auto d = int(this.identifier__) - int(rhs.identifier__))
                 return d;
             import std.traits: isArray, isPointer;
