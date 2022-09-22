@@ -105,7 +105,7 @@ struct Complex(T)
         return this;
     }
 
-const:
+scope const:
 
     ///
     bool opEquals(const Complex rhs)
@@ -119,8 +119,6 @@ const:
         T[2] val = [re, im];
         return hashOf(val) ;
     }
-
-scope:
 
     ///
     bool opEquals(R)(Complex!R rhs)

@@ -759,10 +759,41 @@ private template Deserializable(T, string member)
 
 private enum SerdeFieldsAndProperties(T) = Reverse!(NoDuplicates!(Reverse!(SerdeFieldsAndPropertiesImpl!T)));
 
+
+private static immutable exlMembers = [
+    "opAssign",
+    "opCast",
+    "opCmp",
+    "opEquals",
+    "opPostMove",
+    "toHash",
+    "toString",
+    "trustedGet",
+    "deserializeFromAsdf",
+    "deserializeFromIon",
+];
+
+private auto filterMembers(string[] members)
+{
+    string[] ret;
+
+    L: foreach(member; members)
+    {
+        if (member.length >= 2 && (member[0 .. 2] == "__" || member[$ - 2 .. $] == "__"))
+            continue;
+        foreach(exlMember; exlMembers)
+            if (exlMember == member)
+                continue L;
+        ret ~= member;
+    }
+    return ret;
+};
+
 private template allMembers(T)
 {
+    import std.meta: aliasSeqOf;
     static if (isAggregateType!T)
-        alias allMembers = __traits(allMembers, T);
+        alias allMembers = aliasSeqOf!(filterMembers([__traits(allMembers, T)]));
     else
         alias allMembers = AliasSeq!();
 }
