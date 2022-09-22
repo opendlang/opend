@@ -1326,7 +1326,7 @@ struct Algebraic(T__...)
                         return hashOf(trustedGet!T, i ^ hash);
                     else
                     {
-                        debug pragma(msg, "Mir warning: can't compute hash of " ~ (const T).stringof);
+                        debug pragma(msg, "Mir warning: can't compute hash. Expexted `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
                         return i;
                     }
             }
@@ -1336,7 +1336,7 @@ struct Algebraic(T__...)
 
     /++
     +/
-    bool opEquals(scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
+    bool opEquals()(scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
     {
         static foreach (i, T; MetaInfo__)
         static if (!T.transparent)
