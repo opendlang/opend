@@ -13,6 +13,8 @@ enum CsvKind
     ///
     objectOfColumns,
     ///
+    objectOfIndexedColumns,
+    ///
     indexedRaws,
     ///
     indexedObjects,
