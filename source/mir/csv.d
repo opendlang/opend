@@ -32,6 +32,8 @@ struct Csv
     char separator = ',';
     ///
     char comment = '#';
+    ///
+    ubyte rawsToSkip;
 
 
     void serialize(S)(scope ref S serializer) scope const
@@ -45,8 +47,11 @@ struct Csv
         import std.algorithm.searching: canFind;
         import std.ascii;
         auto rawState = serializer.listBegin;
+        size_t i;
         foreach (line; text.splitLines)
         {
+            if (i++ < rawsToSkip)
+                continue;
             if (line.length && line[0] == comment)
                 continue;
             auto state = serializer.listBegin;
