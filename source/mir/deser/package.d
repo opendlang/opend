@@ -16,6 +16,7 @@ import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
 import std.traits: ForeachType, hasUDA, Unqual, isSomeChar, EnumMembers, TemplateArgsOf, getUDAs;
+import mir.ion.internal.basic_types: isTuple;
 
 private alias AliasSeq(T...) = T;
 
@@ -564,6 +565,34 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     return IonErrorCode.tooManyElementsForStaticArray.ionException;
                 if (auto exception = deserializeValue(ionElem, value[i++], runtimeSymbolTable, compiletimeIndex, annotations_))
                     return exception;
+            }
+            if (i < N)
+                return IonErrorCode.notEnoughElementsForStaticArray.ionException;
+            return null;
+        }
+        else
+        static if (isTuple!T)
+        {
+            enum N = value.expand.length;
+            if (data.descriptor.type != IonTypeCode.list)
+                return IonErrorCode.expectedListValue.ionException;
+            size_t i;
+            foreach (IonErrorCode error, scope IonDescribedValue ionElem; data.trustedGet!IonList)
+            {
+                if (_expect(error, false))
+                    return error.ionException;
+                S: switch (i++)
+                {
+                    static foreach (j; 0 .. N)
+                    {
+                        case j:
+                            if (auto exception = deserializeValue(ionElem, value[j], runtimeSymbolTable, compiletimeIndex, annotations_))
+                                return exception;
+                            break S;
+                    }
+                    default:
+                        return IonErrorCode.tooManyElementsForStaticArray.ionException;
+                }
             }
             if (i < N)
                 return IonErrorCode.notEnoughElementsForStaticArray.ionException;
@@ -1466,11 +1495,11 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 }
             }
 
-            static if (anySatisfy!(templateAnd!(isArray, templateNot!isSomeString), Types))
+            static if (anySatisfy!(templateAnd!(isArray, isTuple, templateNot!isSomeString), Types))
             {
                 case IonTypeCode.list:
                 {
-                    alias ArrayTypes = Filter!(templateAnd!(isArray, templateNot!isSomeString), Types);
+                    alias ArrayTypes = Filter!(templateAnd!(isArray, isTuple, templateNot!isSomeString), Types);
                     static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
                     value = ArrayTypes[0].init;
                     return deserializeValue(data, value.trustedGet!(ArrayTypes[0]), runtimeSymbolTable, compiletimeIndex, annotations_);

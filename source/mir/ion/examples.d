@@ -1459,3 +1459,18 @@ unittest
 
     `{a:4}`.deserializeText!C.a.should == 4;
 }
+
+/// Tuple support
+unittest
+{
+    import mir.test: should;
+    import mir.functional: Tuple;
+    import mir.ser.text: serializeText;
+    import mir.deser.text: deserializeText;
+
+    alias T = Tuple!(uint, string, double[]);
+    auto value = T(3, "str", [3.4, 23]);
+    auto text = `[3,"str",[3.4,23.0]]`;
+    value.serializeText.should == text;
+    text.deserializeText!T.should == value;
+}

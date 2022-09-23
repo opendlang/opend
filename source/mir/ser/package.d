@@ -365,6 +365,9 @@ private IonTypeCode nullTypeCodeOf(T)()
     static if (isDecimal!U)
         code = IonTypeCode.decimal;
     else
+    static if (isTuple!U)
+        code = IonTypeCode.list;
+    else
     static if (isClob!U)
         code = IonTypeCode.clob;
     else
@@ -693,6 +696,17 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
     {
         serializer.putValue(value);
         return;
+    }
+    else
+    static if (isTuple!V)
+    {
+        auto state = serializer.listBegin(value.expand.length);
+        foreach (ref v; value.expand)
+        {
+            serializer.elemBegin;
+            .serializeValue(serializer, v);
+        }
+        serializer.listEnd(state);
     }
     else
     static if (isStringMap!V)

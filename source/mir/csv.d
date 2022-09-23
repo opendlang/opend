@@ -72,8 +72,8 @@ struct Csv
         import mir.timestamp: Timestamp;
         import std.algorithm.iteration: splitter;
         import std.algorithm.searching: canFind;
-        import std.ascii;
-        import std.string;
+        // import std.ascii;
+        import std.string: lineSplitter, strip;
 
         auto headerBuff = scopedBuffer!(const(char)[]);
         auto unquotedStringBuff = scopedBuffer!(const(char));
@@ -99,7 +99,7 @@ struct Csv
                 kind == CsvKind.objectOfColumns;
 
             size_t i;
-            foreach (line; text.splitLines)
+            foreach (line; text.lineSplitter)
             {
                 i++;
                 if (i <= rowsToSkip)
@@ -109,7 +109,7 @@ struct Csv
                 size_t j;
                 if (header is null && hasHeader)
                 {
-                    foreach (value; splitter(line, separator))
+                    foreach (value; line.splitter(separator))
                     {
                         j++;
                         if (stripUnquoted)

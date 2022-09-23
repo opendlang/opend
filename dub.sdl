@@ -3,7 +3,7 @@ description "Fast, Expressive, and Easy to use Ion, JSON, Msgpack Serialization 
 authors "Ilia Ki (Asdf & Mir Ion) " "Yannick Koechlin (Asdf)"
 copyright "Tamedia Digital, 2016, Symmetry Investments and Kaleidic Associates, 2020, Symmetry Investments and Ilia Ki 2021-"
 license "Apache-2.0"
-dependency "mir-algorithm" version="~>3.15.2"
+dependency "mir-algorithm" version="~>3.15.4"
 dependency "mir-cpuid" version="~>1.2.6"
 
 // versions "thunderbolt"
