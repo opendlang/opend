@@ -148,7 +148,7 @@ T[] deserializeYamlValues(T)(scope const(char)[] text, string fileName = "<unkno
     static if (is(T == YamlAlgebraic))
     {
         import mir.yaml.internal.loader: Loader;
-        pragma(inline, false)
+        pragma(inline, false);
         return text.Loader(fileName).loadAll;
     }
     else
