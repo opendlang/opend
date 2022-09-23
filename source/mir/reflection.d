@@ -10,6 +10,7 @@ module mir.reflection;
 import std.meta;
 import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
 import mir.internal.meta: hasUDA;
+import mir.functional: Tuple;
 
 deprecated
 package alias isSomeStruct = isAggregateType;
@@ -812,7 +813,7 @@ private template SerdeFieldsAndPropertiesImpl(T)
             enum hasReflectSerde = false;
     }
     alias isMember = templateAnd!(templateOr!(hasField, isProperty, hasReflectSerde), isOriginalMember);
-    static if (__traits(getAliasThis, T).length)
+    static if (!is(immutable T == Tuple!Types, Types...) && __traits(getAliasThis, T).length)
     {
         alias A = typeof(__traits(getMember, aggregate, __traits(getAliasThis, T)));
         static if (isAggregateType!T)
