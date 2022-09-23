@@ -3,21 +3,35 @@ DRAFT
 +/
 module mir.csv;
 
-///
+/++
+CSV representation kind.
++/
 enum CsvKind
 {
-    ///
+    /++
+    Array of raws.
+    +/
     matrix,
-    ///
-    transposedMatrix,
-    ///
-    objectOfColumns,
-    ///
-    objectOfIndexedColumns,
-    ///
+    /++
+    Indexed array of raws with index from the first column.
+    +/
     indexedRaws,
-    ///
+    /++
+    Indexed arrays of objects with index from the first column and object field names from the header.
+    +/
     indexedObjects,
+    /++
+    Array of columns.
+    +/
+    transposedMatrix,
+    /++
+    Object of columns with object field names from the header.
+    +/
+    objectOfColumns,
+    /++
+    Object of indexed columns with index from the first column and object field names from the header.
+    +/
+    objectOfIndexedColumns,
 }
 
 /++
