@@ -4,12 +4,12 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.compare;
+module mir.yaml.internal.test.compare;
 
 @safe unittest
 {
-    import mir.internal.yaml : Loader;
-    import mir.internal.yaml.test.common : assertNodesEqual, compareEvents, run;
+    import mir.yaml.internal : Loader;
+    import mir.yaml.internal.test.common : assertNodesEqual, compareEvents, run;
 
     /**
     Test parser by comparing output from parsing two equivalent YAML files.

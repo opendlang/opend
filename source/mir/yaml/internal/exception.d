@@ -5,7 +5,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 ///Exceptions thrown by `mir-yaml` and _exception related code.
-module mir.internal.yaml.exception;
+module mir.yaml.internal.exception;
 
 
 import mir.array.allocation: array;

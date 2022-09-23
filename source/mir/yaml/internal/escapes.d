@@ -5,7 +5,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.escapes;
+module mir.yaml.internal.escapes;
 
 package:
 
@@ -95,7 +95,7 @@ uint escapeHexLength(dchar hexCode) @safe pure nothrow @nogc
 // for JSON compatibility
 @safe unittest
 {
-    import mir.internal.yaml.loader : Loader;
+    import mir.yaml.internal.loader : Loader;
 
     const str = `{
     "forward/slashes": "can\/be\/optionally\/escaped"

@@ -9,19 +9,19 @@
  *
  * Code based on $(LINK2 http://www.pyyaml.org, PyYAML).
  */
-module mir.internal.yaml.dumper;
+module mir.yaml.internal.dumper;
 
 import std.array: Appender, appender;
 import std.typecons: Flag, Yes, No;
 import mir.primitives;
-import mir.internal.yaml.emitter;
-import mir.internal.yaml.event;
-import mir.internal.yaml.exception;
+import mir.yaml.internal.emitter;
+import mir.yaml.internal.event;
+import mir.yaml.internal.exception;
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml.representer;
-import mir.internal.yaml.resolver;
-import mir.internal.yaml.serializer;
-import mir.internal.yaml.tagdirective;
+import mir.yaml.internal.representer;
+import mir.yaml.internal.resolver;
+import mir.yaml.internal.serializer;
+import mir.yaml.internal.tagdirective;
 import mir.ser.yaml: YamlSerializationParams;
 
 private enum YamlSerializationParams OldYamlSerializationParams = {yamlVersion : "1.1"};

@@ -3,10 +3,10 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml;
+module mir.yaml.internal;
 
-public import mir.internal.yaml.dumper;
-public import mir.internal.yaml.exception;
-public import mir.internal.yaml.loader;
-public import mir.internal.yaml.resolver;
+public import mir.yaml.internal.dumper;
+public import mir.yaml.internal.exception;
+public import mir.yaml.internal.loader;
+public import mir.yaml.internal.resolver;
 public import mir.algebraic_alias.yaml;

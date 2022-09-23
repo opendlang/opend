@@ -8,7 +8,7 @@
  * YAML parser.
  * Code based on PyYAML: http://www.pyyaml.org
  */
-module mir.internal.yaml.parser;
+module mir.yaml.internal.parser;
 
 import std.algorithm.searching: canFind;
 import std.array;
@@ -19,11 +19,11 @@ import mir.conv;
 import std.exception;
 import std.typecons: Flag, Yes, No;
 
-import mir.internal.yaml.event;
-import mir.internal.yaml.exception;
-import mir.internal.yaml.scanner;
-import mir.internal.yaml.token;
-import mir.internal.yaml.tagdirective;
+import mir.yaml.internal.event;
+import mir.yaml.internal.exception;
+import mir.yaml.internal.scanner;
+import mir.yaml.internal.token;
+import mir.yaml.internal.tagdirective;
 import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
 
 
@@ -578,7 +578,7 @@ struct Parser
                     continue;
                 }
 
-                import mir.internal.yaml.escapes;
+                import mir.yaml.internal.escapes;
                 scope(exit) { inEscape = false; }
 
                 // 'Normal' escape sequence.
@@ -590,16 +590,16 @@ struct Parser
                         // many-byte unicode chars
                         if(c != 'L' && c != 'P')
                         {
-                            appender.put(mir.internal.yaml.escapes.fromEscape(c));
+                            appender.put(mir.yaml.internal.escapes.fromEscape(c));
                             continue;
                         }
                         // Need to duplicate as we won't fit into
                         // token.value - which is what appender uses
                         notInPlace = appender.data.dup;
-                        notInPlace ~= mir.internal.yaml.escapes.fromEscape(c);
+                        notInPlace ~= mir.yaml.internal.escapes.fromEscape(c);
                         continue;
                     }
-                    notInPlace ~= mir.internal.yaml.escapes.fromEscape(c);
+                    notInPlace ~= mir.yaml.internal.escapes.fromEscape(c);
                     continue;
                 }
 
@@ -608,7 +608,7 @@ struct Parser
                 {
                     // Scanner has already checked that the hex string is valid.
 
-                    const hexLength = mir.internal.yaml.escapes.escapeHexLength(c);
+                    const hexLength = mir.yaml.internal.escapes.escapeHexLength(c);
                     // Any hex digits are 1-byte so this works.
                     const(char)[] hex = oldValue[0 .. hexLength];
                     oldValue = oldValue[hexLength .. $];

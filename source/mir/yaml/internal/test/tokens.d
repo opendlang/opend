@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.tokens;
+module mir.yaml.internal.test.tokens;
 
 @safe unittest
 {
@@ -12,10 +12,10 @@ module mir.internal.yaml.test.tokens;
     import mir.format : text;
     import std.file : readText;
 
-    import mir.internal.yaml.test.common : run;
-    import mir.internal.yaml.reader : Reader;
-    import mir.internal.yaml.scanner : Scanner;
-    import mir.internal.yaml.token : TokenID;
+    import mir.yaml.internal.test.common : run;
+    import mir.yaml.internal.reader : Reader;
+    import mir.yaml.internal.scanner : Scanner;
+    import mir.yaml.internal.token : TokenID;
 
     // Read and scan a YAML doc, returning a range of tokens.
     static auto scanTestCommon(string filename) @safe

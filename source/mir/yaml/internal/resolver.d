@@ -12,11 +12,11 @@
  *
  * Code based on $(LINK2 http://www.pyyaml.org, PyYAML).
  */
-module mir.internal.yaml.resolver;
+module mir.yaml.internal.resolver;
 
 import mir.algebraic_alias.yaml;
 import mir.conv;
-import mir.internal.yaml.exception;
+import mir.yaml.internal.exception;
 import std.regex;
 import std.traits;
 
@@ -188,7 +188,7 @@ struct Resolver
                     //If regexp matches, return tag.
                     foreach(resolver; resolvers)
                     {
-                        // source/mir.internal.yaml/resolver.d(192,35): Error: scope variable `__tmpfordtorXXX`
+                        // source/mir.yaml.internal/resolver.d(192,35): Error: scope variable `__tmpfordtorXXX`
                         // assigned to non-scope parameter `this` calling
                         // `std.regex.RegexMatch!string.RegexMatch.~this`
                         bool isEmpty = assumePure(&isEmptyMatch)(value, resolver.regex);

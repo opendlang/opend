@@ -9,7 +9,7 @@
  * This can be used to add custom data types. A tutorial can be found
  * $(LINK2 https://dlang-community.github.io/D-YAML/, here).
  */
-module mir.internal.yaml.constructor;
+module mir.yaml.internal.constructor;
 
 import mir.timestamp;
 import mir.algorithm.iteration: filter;
@@ -23,7 +23,7 @@ import mir.exception: MirException;
 import std.string: representation, empty, split, replace, toLower;
 
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml.exception;
+import mir.yaml.internal.exception;
 
 package:
 
@@ -414,7 +414,7 @@ YamlPair[] getPairs(string type, const YamlAlgebraic[] nodes) @safe
 YamlPair[] constructOrderedMap(const YamlAlgebraic[] nodes) @safe
 {
     auto pairs = getPairs("ordered map", nodes);
-    import mir.internal.yaml.representer: hasDuplicates;
+    import mir.yaml.internal.representer: hasDuplicates;
     if (pairs.hasDuplicates)
         throw new Exception("Duplicate entry in an ordered map");
     return pairs;
@@ -529,7 +529,7 @@ YamlPair[] constructMap(YamlPair[] pairs) @safe
 {
     //Detect duplicates.
     //TODO this should be replaced by something with deterministic memory allocation.
-    import mir.internal.yaml.representer: hasDuplicates;
+    import mir.yaml.internal.representer: hasDuplicates;
     if (pairs.hasDuplicates)
         throw new Exception("Duplicate entry in a map");
     return pairs;

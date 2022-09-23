@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.resolver;
+module mir.yaml.internal.test.resolver;
 
 @safe unittest
 {
@@ -12,8 +12,8 @@ module mir.internal.yaml.test.resolver;
     import std.file : readText;
     import std.string : strip;
 
-    import mir.internal.yaml : Loader, YamlAlgebraic;
-    import mir.internal.yaml.test.common : run;
+    import mir.yaml.internal : Loader, YamlAlgebraic;
+    import mir.yaml.internal.test.common : run;
 
 
     /**

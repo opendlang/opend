@@ -4,17 +4,17 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.emitter;
+module mir.yaml.internal.test.emitter;
 
 @safe unittest
 {
     import std.array : appender, Appender;
     import mir.primitives : ElementType, isInputRange;
 
-    import mir.internal.yaml : YamlCollectionStyle, Loader, ParsePosition, YamlScalarStyle;
-    import mir.internal.yaml.emitter : Emitter;
-    import mir.internal.yaml.event : Event, EventID, mappingStartEvent, scalarEvent, sequenceStartEvent;
-    import mir.internal.yaml.test.common : assertEventsEqual, compareEvents, run;
+    import mir.yaml.internal : YamlCollectionStyle, Loader, ParsePosition, YamlScalarStyle;
+    import mir.yaml.internal.emitter : Emitter;
+    import mir.yaml.internal.event : Event, EventID, mappingStartEvent, scalarEvent, sequenceStartEvent;
+    import mir.yaml.internal.test.common : assertEventsEqual, compareEvents, run;
 
     // Try to emit an event range.
     static void emitTestCommon(T)(ref Appender!string emitStream, T events, bool canonical = false) @safe

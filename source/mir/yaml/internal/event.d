@@ -8,14 +8,14 @@
  * YAML events.
  * Code based on PyYAML: http://www.pyyaml.org
  */
-module mir.internal.yaml.event;
+module mir.yaml.internal.event;
 
 import mir.array.allocation: array;
 import mir.conv;
 
-import mir.internal.yaml.exception;
-import mir.internal.yaml.reader;
-import mir.internal.yaml.tagdirective;
+import mir.yaml.internal.exception;
+import mir.yaml.internal.reader;
+import mir.yaml.internal.tagdirective;
 import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
 
 

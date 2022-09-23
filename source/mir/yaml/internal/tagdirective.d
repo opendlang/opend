@@ -5,7 +5,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 ///Tag directives.
-module mir.internal.yaml.tagdirective;
+module mir.yaml.internal.tagdirective;
 
 ///Single tag directive. handle is the shortcut, prefix is the prefix that replaces it.
 struct TagDirective

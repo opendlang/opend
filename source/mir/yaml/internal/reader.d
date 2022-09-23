@@ -4,11 +4,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.reader;
+module mir.yaml.internal.reader;
 
 import mir.array.allocation: array;
 import mir.conv;
-import mir.internal.yaml.exception;
+import mir.yaml.internal.exception;
 import mir.utility: min;
 import std.algorithm.comparison: among;
 import std.utf: decode, encode, isValidDchar, byCodeUnit;
@@ -724,7 +724,7 @@ void test1Byte(R)()
 //Issue 257 - https://github.com/dlang-community/D-YAML/issues/257
 @safe unittest
 {
-    import mir.internal.yaml.loader : Loader;
+    import mir.yaml.internal.loader : Loader;
     auto yaml = "hello ";
     auto root = Loader(yaml).load();
     assert(root._is!string);

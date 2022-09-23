@@ -4,15 +4,15 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.errors;
+module mir.yaml.internal.test.errors;
 
 @safe unittest
 {
     import mir.array.allocation : array;
     import std.exception : assertThrown;
 
-    import mir.internal.yaml : Loader;
-    import mir.internal.yaml.test.common : run;
+    import mir.yaml.internal : Loader;
+    import mir.yaml.internal.test.common : run;
 
     /**
     Loader error unittest from file stream.

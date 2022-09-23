@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.constructor;
+module mir.yaml.internal.test.constructor;
 
 
 version(unittest)
@@ -17,8 +17,8 @@ import std.path;
 import std.string: representation;
 
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml : Loader;
-import mir.internal.yaml.representer: withTag;
+import mir.yaml.internal : Loader;
+import mir.yaml.internal.representer: withTag;
 
 ///Expected results of loading test inputs.
 YamlAlgebraic[][string] expected;
@@ -837,7 +837,7 @@ YamlAlgebraic[] utf8implicit() @safe
 
 @safe unittest
 {
-    import mir.internal.yaml.test.common : assertNodesEqual, run;
+    import mir.yaml.internal.test.common : assertNodesEqual, run;
     /**
     Constructor unittest.
 

@@ -4,14 +4,14 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.reader;
+module mir.yaml.internal.test.reader;
 
 @safe unittest
 {
     import std.exception :assertThrown;
 
-    import mir.internal.yaml.test.common : readData, run;
-    import mir.internal.yaml.reader : Reader, ReaderException;
+    import mir.yaml.internal.test.common : readData, run;
+    import mir.yaml.internal.reader : Reader, ReaderException;
 
     /**
     Try reading entire file through Reader, expecting an error (the file is none).

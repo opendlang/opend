@@ -7,19 +7,19 @@
  * YAML emitter.
  * Code based on PyYAML: http://www.pyyaml.org
  */
-module mir.internal.yaml.emitter;
+module mir.yaml.internal.emitter;
 
 
 import mir.algebraic_alias.yaml: YamlScalarStyle, YamlCollectionStyle;
 import mir.algorithm.iteration: all;
 import mir.conv;
 import mir.format;
-import mir.internal.yaml.escapes;
-import mir.internal.yaml.event;
-import mir.internal.yaml.exception;
-import mir.internal.yaml.queue;
-import mir.internal.yaml.scanner;
-import mir.internal.yaml.tagdirective;
+import mir.yaml.internal.escapes;
+import mir.yaml.internal.event;
+import mir.yaml.internal.exception;
+import mir.yaml.internal.queue;
+import mir.yaml.internal.scanner;
+import mir.yaml.internal.tagdirective;
 import mir.ndslice.sorting: sort;
 import mir.primitives: isOutputRange;
 import mir.utility: min, max;

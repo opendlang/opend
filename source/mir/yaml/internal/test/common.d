@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.common;
+module mir.yaml.internal.test.common;
 
 version(unittest)
 {
@@ -12,7 +12,7 @@ version(unittest)
 import std.algorithm.searching: canFind;
 import std.algorithm.comparison: among;
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml.event;
+import mir.yaml.internal.event;
 import mir.primitives;
 import mir.array.allocation: array;
 import mir.conv;

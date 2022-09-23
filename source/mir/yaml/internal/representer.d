@@ -10,7 +10,7 @@
  *
  * Code based on $(LINK2 http://www.pyyaml.org, PyYAML).
  */
-module mir.internal.yaml.representer;
+module mir.yaml.internal.representer;
 
 
 import mir.conv;
@@ -19,9 +19,9 @@ import mir.timestamp;
 import mir.array.allocation: array;
 import mir.base64;
 
-import mir.internal.yaml.exception;
+import mir.yaml.internal.exception;
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml.serializer;
+import mir.yaml.internal.serializer;
 
 @safe pure package:
 

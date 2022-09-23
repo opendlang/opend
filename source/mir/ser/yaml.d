@@ -173,7 +173,7 @@ See_Also:
 @safe pure
 string serializeYamlValues(scope const YamlAlgebraic[] nodes, YamlSerializationParams params = YamlSerializationParams.init)
 {
-    import mir.internal.yaml.dumper;
+    import mir.yaml.internal.dumper;
     import std.array: appender;
 
     auto app = appender!string;

@@ -5,18 +5,18 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 /// Class used to load YAML documents.
-module mir.internal.yaml.loader;
+module mir.yaml.internal.loader;
 
 import mir.algebraic_alias.yaml;
-import mir.internal.yaml.composer;
-import mir.internal.yaml.constructor;
-import mir.internal.yaml.event;
-import mir.internal.yaml.exception;
-import mir.internal.yaml.parser;
-import mir.internal.yaml.reader;
-import mir.internal.yaml.resolver;
-import mir.internal.yaml.scanner;
-import mir.internal.yaml.token;
+import mir.yaml.internal.composer;
+import mir.yaml.internal.constructor;
+import mir.yaml.internal.event;
+import mir.yaml.internal.exception;
+import mir.yaml.internal.parser;
+import mir.yaml.internal.reader;
+import mir.yaml.internal.resolver;
+import mir.yaml.internal.scanner;
+import mir.yaml.internal.token;
 import std.exception;
 
 

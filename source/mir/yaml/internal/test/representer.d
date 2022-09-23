@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-module mir.internal.yaml.test.representer;
+module mir.yaml.internal.test.representer;
 
 @safe unittest
 {
@@ -12,15 +12,15 @@ module mir.internal.yaml.test.representer;
     import std.meta : AliasSeq;
     import std.path : baseName, stripExtension;
 
-    import mir.internal.yaml : dumper, Loader, YamlAlgebraic;
-    import mir.internal.yaml.test.common : assertNodesEqual, run;
-    import mir.internal.yaml.test.constructor : expected;
+    import mir.yaml.internal : dumper, Loader, YamlAlgebraic;
+    import mir.yaml.internal.test.common : assertNodesEqual, run;
+    import mir.yaml.internal.test.constructor : expected;
 
     /**
     Representer unittest. Dumps nodes, then loads them again.
 
     Params:
-        baseName = Nodes in mir.internal.yaml.test.constructor.expected for roundtripping.
+        baseName = Nodes in mir.yaml.internal.test.constructor.expected for roundtripping.
     */
     static void testRepresenterTypes(string baseName) @safe
     {
