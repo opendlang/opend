@@ -13,6 +13,10 @@ enum CsvKind
     +/
     matrix,
     /++
+    Arrays of objects with object field names from the header.
+    +/
+    objects,
+    /++
     Indexed array of raws with index from the first column.
     +/
     indexedRaws,
