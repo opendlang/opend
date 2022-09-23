@@ -28,10 +28,6 @@ enum CsvKind
     Object of columns with object field names from the header.
     +/
     objectOfColumns,
-    /++
-    Object of indexed columns with index from the first column and object field names from the header.
-    +/
-    objectOfIndexedColumns,
 }
 
 /++
