@@ -24,13 +24,15 @@ struct Csv
     ///
     const(char)[] text;
     ///
-    char sep = ',';
-    ///
     bool header = false;
     ///
     bool columnIndex = false;
     ///
     bool stripUnquoted = true; 
+    ///
+    char sep = ',';
+    ///
+    char comment = '#';
 
     void serialize(S)(scope ref S serializer) scope const
     {
@@ -46,6 +48,8 @@ struct Csv
         auto rawState = serializer.listBegin;
         foreach (line; text.splitLines)
         {
+            if (line.length && line[0] == comment)
+                continue;
             auto state = serializer.listBegin;
             foreach (value; splitter(line, sep))
             {
@@ -56,7 +60,7 @@ struct Csv
                     serializer.putValue(null);
                     continue;
                 }
-                // TODO recognise double and Timestamp
+                // TODO Timestamp
 
                 import mir.bignum.decimal: Decimal, DecimalExponentKey;
                 import mir.utility: _expect;
