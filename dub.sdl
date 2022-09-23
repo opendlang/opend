@@ -1,6 +1,6 @@
 name "mir-cpuid"
-authors "Ilya Yaroshenko"
+authors "Ilia Ki"
 dependency "mir-core" version=">=1.0.0"
 description "CPU Characteristics Identification"
-copyright "Ilya Yaroshenko"
+copyright "Ilia Ki"
 license "BSL-1.0"
