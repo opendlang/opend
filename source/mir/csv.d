@@ -9,7 +9,7 @@ CSV representation kind.
 enum CsvKind
 {
     /++
-    Array of raws.
+    Array of rows.
     +/
     matrix,
     /++
@@ -17,9 +17,9 @@ enum CsvKind
     +/
     objects,
     /++
-    Indexed array of raws with index from the first column.
+    Indexed array of rows with index from the first column.
     +/
-    indexedRaws,
+    indexedRows,
     /++
     Indexed arrays of objects with index from the first column and object field names from the header.
     +/
@@ -49,7 +49,9 @@ struct Csv
     ///
     char comment = '#';
     ///
-    ubyte rawsToSkip;
+    ubyte rowsToSkip;
+    /// File name for berrer error messages
+    string fileName = "<unknown>";
 
 
     void serialize(S)(scope ref S serializer) scope const
@@ -58,52 +60,238 @@ struct Csv
         // TODO: have to be @nogc
         // TODO: support only matrix for now, have to support all
         assert(kind == CsvKind.matrix, "not implemented");
-        import std.string;
+
+        import mir.algebraic_alias.csv: CsvAlgebraic;
+        import mir.appender: scopedBuffer;
+        import mir.bignum.decimal: Decimal, DecimalExponentKey;
+        import mir.exception: MirException;
+        import mir.ndslice.dynamic: transposed;
+        import mir.ndslice.slice: sliced;
+        import mir.parse: ParsePosition;
+        import mir.ser: serializeValue;
+        import mir.timestamp: Timestamp;
         import std.algorithm.iteration: splitter;
         import std.algorithm.searching: canFind;
         import std.ascii;
-        auto rawState = serializer.listBegin;
-        size_t i;
-        foreach (line; text.splitLines)
+        import std.string;
+
+        auto headerBuff = scopedBuffer!(const(char)[]);
+        auto unquotedStringBuff = scopedBuffer!(const(char));
+        auto indexBuff = scopedBuffer!CsvAlgebraic;
+        auto dataBuff = scopedBuffer!CsvAlgebraic;
+        scope const(char)[][] header;
+        auto nColumns = size_t.max;
+
+        void process()
         {
-            if (i++ < rawsToSkip)
-                continue;
-            if (line.length && line[0] == comment)
-                continue;
-            auto state = serializer.listBegin;
-            foreach (value; splitter(line, separator))
+            Decimal!128 decimal = void;
+            DecimalExponentKey decimalKey;
+
+            Timestamp timestamp;
+
+            bool transp =
+                kind == CsvKind.transposedMatrix || 
+                kind == CsvKind.objectOfColumns;
+
+            bool hasHeader =
+                kind == CsvKind.objects ||
+                kind == CsvKind.indexedObjects ||
+                kind == CsvKind.objectOfColumns;
+
+            size_t i;
+            foreach (line; text.splitLines)
             {
-                if (stripUnquoted)
-                    value = value.strip;
-                if (value.length == 0)
+                i++;
+                if (i <= rowsToSkip)
+                    continue;
+                if (line.length && line[0] == comment)
+                    continue;
+                size_t j;
+                if (header is null && hasHeader)
                 {
-                    serializer.putValue(null);
+                    foreach (value; splitter(line, separator))
+                    {
+                        j++;
+                        if (stripUnquoted)
+                            value = value.strip;
+                        if (value.canFind('"'))
+                        {
+                            // TODO unqote
+                            value = value.strip;
+                        }
+                        () @trusted {
+                            headerBuff.put(value);
+                        } ();
+                    }
+                    header = headerBuff.data;
+                    nColumns = j;
                     continue;
                 }
-                // TODO Timestamp
-
-                import mir.bignum.decimal: Decimal, DecimalExponentKey;
-                import mir.utility: _expect;
-
-                Decimal!128 decimal = void;
-                DecimalExponentKey key;
-                if (decimal.fromStringImpl(value, key))
+                size_t state;
+                if (!transp)
                 {
-                    if (key)
-                        serializer.putValue(decimal);
+                    if (hasHeader)
+                        state = serializer.structBegin;
                     else
-                        serializer.putValue(decimal.coefficient);
-                    continue;
+                        state = serializer.listBegin();
                 }
-                if (value.canFind('"'))
-                    value = value.strip;
-                // TODO unqote
-                serializer.putValue(value);
-            }
-            serializer.listEnd(state);
+                foreach (value; splitter(line, separator))
+                {
+                    // The same like Mir deserializatin from string to floating
+                    enum bool allowSpecialValues = true;
+                    enum bool allowDotOnBounds = true;
+                    enum bool allowDExponent = true;
+                    enum bool allowStartingPlus = true;
+                    enum bool allowUnderscores = false;
+                    enum bool allowLeadingZeros = true;
+                    enum bool allowExponent = true;
+                    enum bool checkEmpty = false;
 
+                    j++;
+                    if (j > nColumns)
+                        break;
+
+                    if (stripUnquoted)
+                        value = value.strip;
+
+                    CsvAlgebraic scalar;
+
+                    if (value.length == 0)
+                    {
+                        // null
+                    }
+                    else
+                    if (decimal.fromStringImpl!(
+                        char,
+                        allowSpecialValues,
+                        allowDotOnBounds,
+                        allowDExponent,
+                        allowStartingPlus,
+                        allowUnderscores,
+                        allowLeadingZeros,
+                        allowExponent,
+                        checkEmpty,
+                    )(value, decimalKey))
+                    {
+                        if (decimalKey)
+                            scalar = cast(double) decimal;
+                        else
+                            scalar = cast(long) decimal.coefficient;
+                    }
+                    else
+                    if (Timestamp.fromString(value, timestamp))
+                    {
+                        scalar = timestamp;
+                    }
+                    else
+                    switch (value)
+                    {
+                        case "true":
+                        case "True":
+                        case "TRUE":
+                            scalar = true;
+                            break;
+                        case "false":
+                        case "False":
+                        case "FALSE":
+                            scalar = false;
+                            break;
+                        default:
+                            if (value.canFind('"'))
+                            {
+                                // TODO unqote
+                                value = value.strip;
+                            }
+                            () @trusted {
+                                scalar = cast(string) value;
+                            } ();
+                    }
+
+                    if (j == 1 && (kind == CsvKind.indexedRows || kind == CsvKind.indexedObjects))
+                    {
+                        indexBuff.put(scalar);
+                    }
+                    else
+                    if (!transp)
+                    {
+                        if (hasHeader)
+                            serializer.elemBegin();
+                        else
+                            serializer.putKey(header[j - 1]);
+                        serializer.serializeValue(scalar);
+                    }
+                    else
+                    {
+                        dataBuff.put(scalar);
+                    }
+                }
+                if (j != nColumns && nColumns != nColumns.max)
+                {
+                    throw new MirException("CSV: Expected ", nColumns, ", got ", j, " at:\n", ParsePosition(fileName, cast(uint)i, 0));
+                }
+                nColumns = j;
+
+                if (!transp)
+                {
+                    if (hasHeader)
+                        serializer.listEnd(state);
+                    else
+                        serializer.structEnd(state);
+                }
+            }
         }
-        serializer.listEnd(rawState);
+
+        final switch (kind)
+        {
+            case CsvKind.matrix:
+            case CsvKind.objects:
+            {
+                auto state = serializer.listBegin();
+                process();
+                serializer.listEnd(state);
+                break;
+            }            
+            case CsvKind.indexedRows:
+            case CsvKind.indexedObjects:
+            {
+                auto wrapperState = serializer.structBegin;
+                {
+                    serializer.putKey("data");
+                    {
+                        auto state = serializer.listBegin();
+                        process();
+                        serializer.listEnd(state);
+                    }
+                    serializer.putKey("index");
+                    {
+                        serializer.serializeValue(indexBuff.data);
+                    }
+                }
+                serializer.structEnd(wrapperState);
+                break;
+            }            
+            case CsvKind.transposedMatrix:
+            {
+                auto data = dataBuff.data.sliced(nColumns, nColumns ? dataBuff.data.length / nColumns : 0);
+                auto transposedData = data.transposed;
+                serializer.serializeValue(transposedData);
+                break;
+            }
+            case CsvKind.objectOfColumns:
+            {
+                auto data = dataBuff.data.sliced(nColumns, nColumns ? dataBuff.data.length / nColumns : 0);
+                auto transposedData = data.transposed;
+                auto sate = serializer.structBegin();
+                foreach (j, key; header)
+                {
+                    serializer.putKey(key);
+                    auto column = transposedData[j];
+                    serializer.serializeValue(column);
+                }
+                serializer.structEnd(sate);
+                break;
+            }
+        }
     }
 }
 
