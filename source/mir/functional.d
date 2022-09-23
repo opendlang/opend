@@ -23,7 +23,7 @@ $(TR $(TH Function Name) $(TH Description))
     $(TR $(TD $(LREF forward))
         $(TD Forwards function arguments with saving ref-ness.
     ))
-    $(TR $(TD $(LREF refTuple))
+    $(TR $(TD $(LREF tuple))
         $(TD Removes $(LREF Ref) shell.
     ))
     $(TR $(TD $(LREF unref))
@@ -131,7 +131,7 @@ struct Tuple(T...)
     mixin _RefTupleMixin!T;
 }
 
-deprecated("Use Tuple instead.")
+deprecated("Use 'Tuple' instead")
 alias RefTuple = Tuple;
 
 /// Removes $(LREF Ref) shell.
@@ -149,10 +149,13 @@ alias Unref(V) = V;
 /++
 Returns: a $(LREF Tuple) structure.
 +/
-Tuple!Args refTuple(Args...)(auto ref Args args)
+Tuple!Args tuple(Args...)(auto ref Args args)
 {
     return Tuple!Args(args);
 }
+
+deprecated("Use 'tuple' instead")
+alias refTuple = tuple;
 
 /// Removes $(LREF Ref) shell.
 ref T unref(V : Ref!T, T)(scope return V value)
@@ -229,7 +232,7 @@ template autoExpandAndForward(alias value)
 version(mir_core_test) unittest
 {
     long v;
-    auto tup = refTuple(v._ref, 2.3);
+    auto tup = tuple(v._ref, 2.3);
 
     auto f(ref long a, double b)
     {
@@ -286,7 +289,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
                 }
 
                 import mir.internal.utility;
-                mixin("return refTuple(" ~ [staticMap!(_adjoin, Iota!(fun.length))].joinStrings ~ ");");
+                mixin("return tuple(" ~ [staticMap!(_adjoin, Iota!(fun.length))].joinStrings ~ ");");
             }
         }
         else alias adjoin = .adjoin!(staticMap!(naryFun, fun));
@@ -344,8 +347,8 @@ version(mir_core_test) unittest
     alias funs = staticMap!(naryFun, "a", "a * 2", "a * 3", "a * a", "-a");
     alias afun = adjoin!funs;
     int a = 5, b = 5;
-    assert(afun(a) == refTuple(Ref!int(a), 10, 15, 25, -5));
-    assert(afun(a) == refTuple(Ref!int(b), 10, 15, 25, -5));
+    assert(afun(a) == tuple(Ref!int(a), 10, 15, 25, -5));
+    assert(afun(a) == tuple(Ref!int(b), 10, 15, 25, -5));
 
     static class C{}
     alias IC = immutable(C);
