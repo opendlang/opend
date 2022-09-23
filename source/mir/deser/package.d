@@ -1495,11 +1495,11 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 }
             }
 
-            static if (anySatisfy!(templateAnd!(isArray, isTuple, templateNot!isSomeString), Types))
+            static if (anySatisfy!(templateOr!(templateAnd!(isArray, templateNot!isSomeString), isTuple), Types))
             {
                 case IonTypeCode.list:
                 {
-                    alias ArrayTypes = Filter!(templateAnd!(isArray, isTuple, templateNot!isSomeString), Types);
+                    alias ArrayTypes = Filter!(templateOr!(templateAnd!(isArray, templateNot!isSomeString), isTuple), Types);
                     static assert(ArrayTypes.length == 1, ArrayTypes.stringof);
                     value = ArrayTypes[0].init;
                     return deserializeValue(data, value.trustedGet!(ArrayTypes[0]), runtimeSymbolTable, compiletimeIndex, annotations_);

@@ -215,9 +215,9 @@ struct Csv
                     if (!transp)
                     {
                         if (hasHeader)
-                            serializer.elemBegin();
-                        else
                             serializer.putKey(header[j - 1]);
+                        else
+                            serializer.elemBegin();
                         serializer.serializeValue(scalar);
                     }
                     else
@@ -234,9 +234,9 @@ struct Csv
                 if (!transp)
                 {
                     if (hasHeader)
-                        serializer.listEnd(state);
-                    else
                         serializer.structEnd(state);
+                    else
+                        serializer.listEnd(state);
                 }
             }
         }

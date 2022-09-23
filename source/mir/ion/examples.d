@@ -1473,4 +1473,14 @@ unittest
     auto text = `[3,"str",[3.4,23.0]]`;
     value.serializeText.should == text;
     text.deserializeText!T.should == value;
+
+    // combination with Algebraic
+    import mir.algebraic: Variant;
+    alias V = Variant!(T, T[string], T);
+
+    text.deserializeText!V.should == value;
+    `{key: [3,"str",[3.4,23.0]]}`
+        .deserializeText!V
+        .get!(T[string])["key"]
+        .should == value;
 }
