@@ -333,7 +333,7 @@ be arbitrarily complex.
 +/
 @safe pure version(mir_core_test) unittest
 {
-    import mir.functional: Tuple = RefTuple;
+    import mir.functional: Tuple;
 
     // A tree is either a leaf or a branch of two others
     alias Tree(Leaf) = Variant!(Leaf, Tuple!(This*, This*));

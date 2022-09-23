@@ -27,7 +27,7 @@ $(TR $(TH Function Name) $(TH Description))
         $(TD Removes $(LREF Ref) shell.
     ))
     $(TR $(TD $(LREF unref))
-        $(TD Creates a $(LREF RefTuple) structure.
+        $(TD Creates a $(LREF Tuple) structure.
     ))
     $(TR $(TD $(LREF __ref))
         $(TD Creates a $(LREF Ref) structure.
@@ -123,7 +123,7 @@ private mixin template _RefTupleMixin(T...)
 Simplified tuple structure. Some fields may be type of $(LREF Ref).
 Ref stores a pointer to a values.
 +/
-struct RefTuple(T...)
+struct Tuple(T...)
 {
     @optmath:
     T expand;
@@ -131,24 +131,27 @@ struct RefTuple(T...)
     mixin _RefTupleMixin!T;
 }
 
+deprecated("Use Tuple instead.")
+alias RefTuple = Tuple;
+
 /// Removes $(LREF Ref) shell.
 alias Unref(V : Ref!T, T) = T;
 /// ditto
-template Unref(V : RefTuple!T, T...)
+template Unref(V : Tuple!T, T...)
 {
     import std.meta: staticMap;
-    alias Unref = RefTuple!(staticMap!(.Unref, T));
+    alias Unref = Tuple!(staticMap!(.Unref, T));
 }
 
 /// ditto
 alias Unref(V) = V;
 
 /++
-Returns: a $(LREF RefTuple) structure.
+Returns: a $(LREF Tuple) structure.
 +/
-RefTuple!Args refTuple(Args...)(auto ref Args args)
+Tuple!Args refTuple(Args...)(auto ref Args args)
 {
-    return RefTuple!Args(args);
+    return Tuple!Args(args);
 }
 
 /// Removes $(LREF Ref) shell.
@@ -158,7 +161,7 @@ ref T unref(V : Ref!T, T)(scope return V value)
 }
 
 /// ditto
-Unref!(RefTuple!T) unref(V : RefTuple!T, T...)(V value)
+Unref!(Tuple!T) unref(V : Tuple!T, T...)(V value)
 {
     typeof(return) ret;
     foreach(i, ref elem; ret.expand)
@@ -191,7 +194,7 @@ private template autoExpandAndForwardElem(alias value)
 }
 
 template autoExpandAndForward(alias value)
-    if (is(typeof(value) : RefTuple!Types, Types...))
+    if (is(typeof(value) : Tuple!Types, Types...))
 {
 
     import core.lifetime: move;
@@ -257,7 +260,7 @@ private auto copyArg(alias a)()
 
 /++
 Takes multiple functions and adjoins them together. The result is a
-$(LREF RefTuple) with one element per passed-in function. Upon
+$(LREF Tuple) with one element per passed-in function. Upon
 invocation, the returned tuple is the adjoined results of all
 functions.
 Note: In the special case where only a single function is provided
@@ -297,7 +300,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
     static bool f1(int a) { return a != 0; }
     static int f2(int a) { return a / 2; }
     auto x = adjoin!(f1, f2)(5);
-    assert(is(typeof(x) == RefTuple!(bool, int)));
+    assert(is(typeof(x) == Tuple!(bool, int)));
     assert(x.a == true && x.b == 2);
 }
 
@@ -315,10 +318,10 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
     auto x1 = adjoin!(F1)(5);
     static int F2(int a) { return a / 2; }
     auto x2 = adjoin!(F1, F2)(5);
-    assert(is(typeof(x2) == RefTuple!(bool, int)));
+    assert(is(typeof(x2) == Tuple!(bool, int)));
     assert(x2.a && x2.b == 2);
     auto x3 = adjoin!(F1, F2, F2)(5);
-    assert(is(typeof(x3) == RefTuple!(bool, int, int)));
+    assert(is(typeof(x3) == Tuple!(bool, int, int)));
     assert(x3.a && x3.b == 2 && x3.c == 2);
 
     bool F4(int a) { return a != x1; }
@@ -347,12 +350,12 @@ version(mir_core_test) unittest
     static class C{}
     alias IC = immutable(C);
     IC foo(){return typeof(return).init;}
-    RefTuple!(IC, IC, IC, IC) ret1 = adjoin!(foo, foo, foo, foo)();
+    Tuple!(IC, IC, IC, IC) ret1 = adjoin!(foo, foo, foo, foo)();
 
     static struct S{int* p;}
     alias IS = immutable(S);
     IS bar(){return typeof(return).init;}
-    enum RefTuple!(IS, IS, IS, IS) ret2 = adjoin!(bar, bar, bar, bar)();
+    enum Tuple!(IS, IS, IS, IS) ret2 = adjoin!(bar, bar, bar, bar)();
 }
 
 private template needOpCallAlias(alias fun)
