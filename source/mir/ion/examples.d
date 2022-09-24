@@ -1,4 +1,9 @@
-///
+/++
+DRAFT
+Macros:
+    AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
+    AAREF = $(REF_ALTTEXT $(TT $2), $2, mir, algebraic_alias, $1)$(NBSP)
++/
 module mir.ion.examples;
 
 /// A user may define setter and/or getter properties.
@@ -775,14 +780,15 @@ version(mir_ion_test) unittest
 User defined algebraic types deserialization supports any subset of the following types:
 
 $(UL 
-$(LI `typeof(null)`)
-$(LI `bool`)
-$(LI `long`)
-$(LI `double`)
-$(LI `string`)
-$(LI `AnyType[]`)
-$(LI `StringMap!AnyType`)
-$(LI `AnyType[string]`)
+    $(LI `typeof(null)`)
+    $(LI `bool`)
+    $(LI `long`)
+    $(LI `double`)
+    $(LI `string`)
+    $(LI $(AlgorithmREF timestamp, Timestamp))
+    $(LI `AnyType[]`)
+    $(LI `StringMap!AnyType`)
+    $(LI `AnyType[string]`)
 )
 
 A `StringMap` has has priority over builtin associative arrays.

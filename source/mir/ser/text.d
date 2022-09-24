@@ -397,7 +397,10 @@ struct TextSerializer(string sep, Appender)
         if (isNumeric!Num && !is(Num == enum))
     {
         import mir.format: print;
-        print(appender, num);
+        static if (is(Num == float))
+            print(appender, cast(double)num);
+        else
+            print(appender, num);
     }
 
     ///

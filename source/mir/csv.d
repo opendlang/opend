@@ -1,7 +1,16 @@
 /++
+$(H2 CSV/TSV library)
+
 DRAFT
+
+Macros:
+    AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
+    AAREF = $(REF_ALTTEXT $(TT $2), $2, mir, algebraic_alias, $1)$(NBSP)
 +/
 module mir.csv;
+
+///
+public import mir.algebraic_alias.csv: CsvAlgebraic;
 
 /++
 CSV representation kind.
@@ -38,6 +47,29 @@ enum CsvKind
 +/
 struct Csv
 {
+    private static immutable NA_default = [
+        ``,
+        `#N/A`,
+        `#N/A N/A`,
+        `#NA`,
+        `<NA>`,
+        `N/A`,
+        `NA`,
+        `n/a`,
+    ];
+        // "NULL",
+        // "null",
+
+        // "1.#IND",
+        // "-1.#QNAN",
+        // "-1.#IND",
+        // "1.#QNAN",
+
+        // "-NaN",
+        // "-nan",
+        // "nan",
+        // "NaN",
+
     ///
     const(char)[] text;
     ///
@@ -47,21 +79,34 @@ struct Csv
     ///
     char separator = ',';
     ///
-    char comment = '#';
+    char comment = char.init;
     ///
     ubyte rowsToSkip;
+    ///
+    const(string)[] naStrings = NA_default;
+    /++
+    Conversion callback to finish conversion resolution
+    Params:
+        unquotedString = string after unquoting
+        isQuoted = is the original data field is quoted
+        columnIndex = column index starting from 0
+        columnName = column name if any
+    +/
+    CsvAlgebraic delegate(
+        return scope const(char)[] unquotedString,
+        bool isQuoted,
+        return scope CsvAlgebraic scalar,
+        size_t columnIndex,
+        scope const(char)[] columnName
+    ) @safe pure @nogc conversionFinalizer;
     /// File name for berrer error messages
     string fileName = "<unknown>";
 
-
-    void serialize(S)(scope ref S serializer) scope const
+    void serialize(S)(scope ref S serializer) scope const @trusted
     {
         // DRAFT
         // TODO: have to be @nogc
-        // TODO: support only matrix for now, have to support all
-        assert(kind == CsvKind.matrix, "not implemented");
-
-        import mir.algebraic_alias.csv: CsvAlgebraic;
+        // import std.ascii;
         import mir.appender: scopedBuffer;
         import mir.bignum.decimal: Decimal, DecimalExponentKey;
         import mir.exception: MirException;
@@ -70,13 +115,13 @@ struct Csv
         import mir.parse: ParsePosition;
         import mir.ser: serializeValue;
         import mir.timestamp: Timestamp;
+        import mir.utility: _expect;
         import std.algorithm.iteration: splitter;
         import std.algorithm.searching: canFind;
-        // import std.ascii;
         import std.string: lineSplitter, strip;
 
         auto headerBuff = scopedBuffer!(const(char)[]);
-        auto unquotedStringBuff = scopedBuffer!(const(char));
+        auto unquotedStringStringBuff = scopedBuffer!(const(char));
         auto indexBuff = scopedBuffer!CsvAlgebraic;
         auto dataBuff = scopedBuffer!CsvAlgebraic;
         scope const(char)[][] header;
@@ -130,10 +175,11 @@ struct Csv
                 size_t state;
                 if (!transp)
                 {
+                    serializer.elemBegin;
                     if (hasHeader)
                         state = serializer.structBegin;
                     else
-                        state = serializer.listBegin();
+                        state = serializer.listBegin;
                 }
                 foreach (value; splitter(line, separator))
                 {
@@ -156,12 +202,16 @@ struct Csv
 
                     CsvAlgebraic scalar;
 
-                    if (value.length == 0)
+                    bool quoted;
+
+                    if (value.canFind('"'))
                     {
-                        // null
+                        quoted = true;
+                        // TODO unqote
+                        value = value.strip;
                     }
                     else
-                    if (decimal.fromStringImpl!(
+                    if (value.length && decimal.fromStringImpl!(
                         char,
                         allowSpecialValues,
                         allowDotOnBounds,
@@ -184,7 +234,7 @@ struct Csv
                         scalar = timestamp;
                     }
                     else
-                    switch (value)
+                    S: switch (value)
                     {
                         case "true":
                         case "True":
@@ -197,14 +247,18 @@ struct Csv
                             scalar = false;
                             break;
                         default:
-                            if (value.canFind('"'))
-                            {
-                                // TODO unqote
-                                value = value.strip;
-                            }
+                            foreach (na; naStrings)
+                                if (na == value)
+                                    break S; // null
                             () @trusted {
                                 scalar = cast(string) value;
+                                bool quoted = false;
                             } ();
+                    }
+
+                    if (_expect(conversionFinalizer !is null, false))
+                    {
+                        scalar = conversionFinalizer(value, quoted, scalar, j - 1, hasHeader ? header[j - 1] : null);
                     }
 
                     if (j == 1 && (kind == CsvKind.indexedRows || kind == CsvKind.indexedObjects))
@@ -246,7 +300,7 @@ struct Csv
             case CsvKind.matrix:
             case CsvKind.objects:
             {
-                auto state = serializer.listBegin();
+                auto state = serializer.listBegin;
                 process();
                 serializer.listEnd(state);
                 break;
@@ -258,7 +312,7 @@ struct Csv
                 {
                     serializer.putKey("data");
                     {
-                        auto state = serializer.listBegin();
+                        auto state = serializer.listBegin;
                         process();
                         serializer.listEnd(state);
                     }
@@ -272,14 +326,16 @@ struct Csv
             }            
             case CsvKind.transposedMatrix:
             {
-                auto data = dataBuff.data.sliced(nColumns, nColumns ? dataBuff.data.length / nColumns : 0);
+                process();
+                auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
                 auto transposedData = data.transposed;
                 serializer.serializeValue(transposedData);
                 break;
             }
             case CsvKind.objectOfColumns:
             {
-                auto data = dataBuff.data.sliced(nColumns, nColumns ? dataBuff.data.length / nColumns : 0);
+                process();
+                auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
                 auto transposedData = data.transposed;
                 auto sate = serializer.structBegin();
                 foreach (j, key; header)
@@ -295,15 +351,178 @@ struct Csv
     }
 }
 
-/// Matrix
+/++
+Type resolution is performed for types defined in $(MREF mir,algebraic_alias,csv):
+
+$(UL 
+    $(LI `typeof(null)` - used for N/A values)
+    $(LI `bool`)
+    $(LI `long`)
+    $(LI `double`)
+    $(LI `string`)
+    $(LI $(AlgorithmREF timestamp, Timestamp))
+)
++/
 unittest
 {
+    import mir.ion.conv: serde;
+    import mir.ndslice.slice: Slice;
+    import mir.ser.text: serializeTextPretty;
+    import mir.test: should;
+    import std.string: join;
+
+    // alias Matrix = Slice!(CsvAlgebraic*, 2);
+
+    Csv csv = {
+        conversionFinalizer : (
+            unquotedString,
+            isQuoted,
+            scalar,
+            columnIndex,
+            columnName)
+        {
+            return !isQuoted && unquotedString == `Billion` ?
+                1000000000.CsvAlgebraic :
+                scalar;
+        },
+        text : join([
+            // User-defined conversion
+            `Billion`
+            // `long` patterns
+            , `100`, `+200`, `-200`
+            // `double` pattern
+            , `+1.0`, `-.2`, `3.`, `3e-10`, `3d20`,
+            // also `double` pattern
+            `inf`, `+Inf`, `-INF`, `+NaN`, `-nan`, `NAN`
+            // `bool` patterns
+            , `True`, `TRUE`, `true`, `False`, `FALSE`, `false`
+            // `Timestamp` patterns
+            , `2021-02-03` // iso8601 extended
+            , `20210204T` // iso8601
+            , `20210203T0506` // iso8601
+            , `2001-12-15T02:59:43.1Z` //canonical
+            , `2001-12-14t21:59:43.1-05:30` //with lower `t`
+            , `2001-12-14 21:59:43.1 -5` //yaml space separated
+            , `2001-12-15 2:59:43.10` //no time zone (Z):
+            , `2002-12-14` //date (00:00:00Z):
+            // Default NA patterns are converted to NaN when exposed to arrays
+            // and skipped when exposed to objects
+            , ``
+            , `#N/A`
+            , `#N/A N/A`
+            , `#NA`
+            , `<NA>`
+            , `N/A`
+            , `NA`
+            , `n/a`
+            // strings patterns (TODO)
+            , `100_000`
+            , `nAN`
+            , `iNF`
+            , `Infinity`
+            , `+Infinity`
+            , `.Infinity`
+            // , `""`
+            // , ` `
+        ], `,`)
+    };
+
+    // Serializing Csv to Amazon Ion (text version)
+    csv.serializeTextPretty!"    ".should ==
+`[
+    [
+        1000000000,
+        100,
+        200,
+        -200,
+        1.0,
+        -0.2,
+        3.0,
+        3e-10,
+        3e+20,
+        +inf,
+        +inf,
+        -inf,
+        nan,
+        nan,
+        nan,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        2021-02-03,
+        2021-02-04,
+        2021-02-03T05:06Z,
+        2001-12-15T02:59:43.1Z,
+        2001-12-14T21:59:43.1-05:30,
+        2001-12-14T21:59:43.1-05,
+        2001-12-15T02:59:43.10Z,
+        2002-12-14,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "100_000",
+        "nAN",
+        "iNF",
+        "Infinity",
+        "+Infinity",
+        ".Infinity"
+    ]
+]`;
+}
+
+/// Matrix & Transposed Matrix
+unittest
+{
+    import mir.test: should;
     import mir.ndslice.slice: Slice;
     import mir.ion.conv: serde;
 
-    auto text = "1,2\n3,4";
-    auto matrix = text.Csv.serde!(Slice!(int*, 2));
-    assert(matrix == [[1, 2], [3, 4]]);
+    alias Matrix = Slice!(double*, 2);
+
+    auto text = "1,2\n3,4\r\n5,6\n";
+    auto matrix = text.Csv.serde!Matrix;
+    matrix.should == [[1, 2], [3, 4], [5, 6]];
+
+    Csv csv = {
+        text : text,
+        kind : CsvKind.transposedMatrix
+    };
+    csv.serde!Matrix.should == [[1.0, 3, 5], [2.0, 4, 6]];
+}
+
+/++
+Transposed Matrix & Tuple support
++/
+unittest
+{
+    import mir.ion.conv: serde;
+    import mir.date: Date; //also wotks with mir.timestamp and std.datetime
+    import mir.functional: Tuple;
+    import mir.ser.text: serializeText;
+    import mir.test: should;
+
+    Csv csv = {
+        text : "str,2022-10-12,3.4\nb,2022-10-13,2\n",
+        kind : CsvKind.transposedMatrix
+    };
+
+    csv.serializeText.should == `[["str","b"],[2022-10-12,2022-10-13],[3.4,2]]`;
+
+    alias T = Tuple!(string[], Date[], double[]);
+
+    csv.serde!T.should == T (
+        ["str", "b"],
+        [Date(2022, 10, 12), Date(2022, 10, 13)],
+        [3.4, 2],
+    );
 }
 
 /++

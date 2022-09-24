@@ -3,6 +3,7 @@ Ion Type enumeration and encoding.
 
 Macros:
 AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 +/
 module mir.ion.type_code;
 
