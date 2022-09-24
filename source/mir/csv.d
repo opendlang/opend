@@ -830,18 +830,19 @@ unittest
     );
 }
 
-/++
-With column index
-+/
+/// Converting NA to NaN
 unittest
 {
-    // TODO
-}
+    import mir.csv;
+    import mir.algebraic: Nullable, visit;
+    import mir.ion.conv: serde;
+    import mir.ndslice: Slice, map, slice;
+    import mir.test: should;
 
-/++
-With header and column index
-+/
-unittest
-{
-    // TODO
+    auto text = "1,2\n3,4\n5,#N/A\n";
+    auto matrix = text
+        .Csv
+        .serde!(Slice!(Nullable!double*, 2))
+        .map!(visit!((double x) => x, (_) => double.nan))
+        .slice;
 }
