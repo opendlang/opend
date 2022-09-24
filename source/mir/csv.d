@@ -84,6 +84,25 @@ struct Csv
     ubyte rowsToSkip;
     ///
     const(string)[] naStrings = NA_default;
+
+    /++
+    +/
+    static bool defaultIsSymbolHandler(scope const(char)[] symbol, bool quoted) @safe pure @nogc nothrow
+    {
+        import mir.deser.text.tokens: symbolNeedsQuotes;
+        return !quoted && symbol.length && !symbolNeedsQuotes(symbol) && symbol[0] != '$';
+    }
+
+    /++
+    A function used to determine if a string should be passed
+    to a serializer as a symbol instead of strings.
+    That may help to reduce memory allocation for data with
+    a huge amount of equal cell values.``
+    The default pattern follows regular expression `[a-zA-Z_][a-zA-Z_0-9]*`
+    and requires symbol to be presented without double quotes.
+    +/
+    bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
+
     /++
     Conversion callback to finish conversion resolution
     Params:
@@ -94,7 +113,6 @@ struct Csv
     +/
     CsvAlgebraic delegate(
         return scope const(char)[] unquotedString,
-        bool isQuoted,
         return scope CsvAlgebraic scalar,
         size_t columnIndex,
         scope const(char)[] columnName
@@ -258,7 +276,8 @@ struct Csv
 
                     if (_expect(conversionFinalizer !is null, false))
                     {
-                        scalar = conversionFinalizer(value, quoted, scalar, j - 1, hasHeader ? header[j - 1] : null);
+                        scalar.isQuoted = quoted;
+                        scalar = conversionFinalizer(value, scalar, j - 1, hasHeader ? header[j - 1] : null);
                     }
 
                     if (j == 1 && (kind == CsvKind.indexedRows || kind == CsvKind.indexedObjects))
@@ -272,7 +291,10 @@ struct Csv
                             serializer.putKey(header[j - 1]);
                         else
                             serializer.elemBegin();
-                        serializer.serializeValue(scalar);
+                        if (scalar._is!string && isSymbolHandler(scalar.trustedGet!string, scalar.isQuoted))
+                            serializer.putSymbol(scalar.trustedGet!string);
+                        else
+                            serializer.serializeValue(scalar);
                     }
                     else
                     {
@@ -373,12 +395,12 @@ unittest
     Csv csv = {
         conversionFinalizer : (
             unquotedString,
-            isQuoted,
             scalar,
             columnIndex,
             columnName)
         {
-            return !isQuoted && unquotedString == `Billion` ?
+            // Do we want to symbolize the data?
+            return !scalar.isQuoted && unquotedString == `Billion` ?
                 1000000000.CsvAlgebraic :
                 scalar;
         },
@@ -414,9 +436,11 @@ unittest
             , `n/a`
             // strings patterns (TODO)
             , `100_000`
-            , `nAN`
-            , `iNF`
-            , `Infinity`
+            , `_100`     // match default pattern for symbols
+            , `Str` // match default pattern for symbols
+            , `Value100` // match default pattern for symbols
+            , `iNF`      // match default pattern for symbols
+            , `Infinity` // match default pattern for symbols
             , `+Infinity`
             , `.Infinity`
             // , `""`
@@ -466,9 +490,11 @@ unittest
         null,
         null,
         "100_000",
-        "nAN",
-        "iNF",
-        "Infinity",
+        _100,
+        Str,
+        Value100,
+        iNF,
+        Infinity,
         "+Infinity",
         ".Infinity"
     ]
