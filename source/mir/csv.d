@@ -285,8 +285,13 @@ struct Csv
     +/
     static bool defaultIsSymbolHandler(scope const(char)[] symbol, bool quoted) @safe pure @nogc nothrow
     {
-        import mir.deser.text.tokens: symbolNeedsQuotes;
-        return !quoted && symbol.length && !symbolNeedsQuotes(symbol) && symbol[0] != '$';
+        import mir.algorithm.iteration: all;
+        return !quoted && symbol.length && symbol.all!(
+            c =>
+                'a' <= c && c <= 'z' ||
+                'A' <= c && c <= 'Z' ||
+                c == '_'
+        );
     }
 
     /++
@@ -294,7 +299,7 @@ struct Csv
     to a serializer as a symbol instead of strings.
     That may help to reduce memory allocation for data with
     a huge amount of equal cell values.``
-    The default pattern follows regular expression `[a-zA-Z_][a-zA-Z_0-9]*`
+    The default pattern follows regular expression `[a-zA-Z_]+`
     and requires symbol to be presented without double quotes.
     +/
     bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
@@ -351,18 +356,40 @@ struct Csv
         size_t wrapperState;
         size_t outerState;
 
-        size_t i;
-        foreach (line; text.lineSplitter)
+        auto csv = text[];
+        if (csv.length)
         {
-            i++;
-            if (i <= rowsToSkip)
-                continue;
-            if (line.length == 0)
+            LS: foreach (i; 0 .. rowsToSkip)
             {
-                // TODO
+                do
+                {
+                    csv = csv[1 .. $];
+                    if (csv.length == 0)
+                        break LS;
+                }
+                while(csv[0] != '\n');
             }
-            if (line[0] == comment)
-                continue;
+        }
+        if (comment && csv.length)
+        {
+            LC: while (csv[0] == comment)
+            {
+                do
+                {
+                    csv = csv[1 .. $];
+                    if (csv.length == 0)
+                        break LC;
+                }
+                while(csv[0] != '\n');
+                csv = csv[1 .. $];
+                if (csv.length == 0)
+                    break LC;
+            }
+        }
+
+        size_t i;
+        foreach (line; csv.lineSplitter)
+        {
             size_t j;
             if (header is null && hasHeader)
             {
@@ -653,7 +680,8 @@ unittest
             , `n/a`
             // strings patterns (TODO)
             , `100_000`
-            , `_100`     // match default pattern for symbols
+            , `_ab0`
+            , `_abc`     // match default pattern for symbols
             , `Str`      // match default pattern for symbols
             , `Value100` // match default pattern for symbols
             , `iNF`      // match default pattern for symbols
@@ -667,7 +695,7 @@ unittest
 
     // Serializing Csv to Amazon Ion (text version)
     csv.serializeTextPretty!"    ".should ==
-`[
+q{[
     [
         1000000000,
         100,
@@ -707,15 +735,16 @@ unittest
         null,
         null,
         "100_000",
-        _100,
+        "_ab0",
+        _abc,
         Str,
-        Value100,
+        "Value100",
         iNF,
         Infinity,
         "+Infinity",
         ".Infinity"
     ]
-]`;
+]};
 }
 
 ///
@@ -772,7 +801,7 @@ unittest
     };
 
     // Check how Ion payload looks like
-    csv.serializeTextPretty!"    ".should == q{{
+    csv.serializeTextPretty!"    ".should == `{
     indexName: Date,
     columnNames: [
         Open,
@@ -801,7 +830,7 @@ unittest
         2021-01-21T09:30:00Z,
         2021-01-21T09:35:00Z
     ]
-}};
+}`;
 }
 
 /++
@@ -852,7 +881,7 @@ unittest
         kind : CsvKind.transposedMatrix
     };
 
-    csv.serializeText.should == `[[str,b],[2022-10-12,2022-10-13],[3.4,2]]`;
+    csv.serializeText.should == q{[[str,b],[2022-10-12,2022-10-13],[3.4,2]]};
 
     alias T = Tuple!(string[], Date[], double[]);
 
