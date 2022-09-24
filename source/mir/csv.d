@@ -82,92 +82,6 @@ unittest
 }
 
 ///
-unittest
-{
-    import mir.csv;
-    import mir.date: Date; // Phobos std.datetime supported as well
-    import mir.ion.conv: serde; // to convert Csv to DataFrame
-    import mir.ndslice.slice: Slice;//ditto
-    import mir.timestamp: Timestamp;//mir-algorithm package
-    // for testing
-    import mir.ndslice.fuse: fuse;
-    import mir.ser.text: serializeTextPretty;
-    import mir.test: should;
-
-    auto text =
-`Date,Open,High,Low,Close,Volume
-2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
-2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
-
-    Csv csv = {
-        text: text,
-        // We allow 7 CSV payloads!
-        kind: CsvKind.seriesWithHeader
-    };
-
-    // Can be of any scalar type including `CsvAlgebraic`
-    alias Elem = double;
-    // `Elem[][]` matrix are supported as well.
-    // But we like `Slice` because we can easily access columns
-    alias Matrix = Slice!(Elem*, 2);
-
-    static struct MySeriesWithHeader
-    {
-        string indexName;
-        string[] columnNames;
-        Matrix data;
-        // Can be an array of any type that can be deserialized
-        // like a string or `CsvAlgebraic`, `Date`, `DateTime`, or whatever.
-        Timestamp[] index;
-    }
-
-    MySeriesWithHeader testSeries = {
-        indexName: `Date`,
-        columnNames: [`Open`, `High`, `Low`, `Close`, `Volume`],
-        data: [
-            [133.8, 134.43, 133.59, 134.0, 9166695],
-            [134.25, 135.0, 134.19, 134.5, 4632863],
-        ].fuse,
-        index: [
-            `2021-01-21T09:30:00Z`.Timestamp,
-            `2021-01-21T09:35:00Z`.Timestamp,
-        ],
-    };
-
-    // Check how Ion payload looks like
-    csv.serializeTextPretty!"    ".should == q{{
-    indexName: Date,
-    columnNames: [
-        Open,
-        High,
-        Low,
-        Close,
-        Volume
-    ],
-    data: [
-        [
-            133.8,
-            134.43,
-            133.59,
-            134.0,
-            9166695
-        ],
-        [
-            134.25,
-            135.0,
-            134.19,
-            134.5,
-            4632863
-        ]
-    ],
-    index: [
-        2021-01-21T09:30:00Z,
-        2021-01-21T09:35:00Z
-    ]
-}};
-}
-
-///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
 
 /++
@@ -802,6 +716,92 @@ unittest
         ".Infinity"
     ]
 ]`;
+}
+
+///
+unittest
+{
+    import mir.csv;
+    import mir.date: Date; // Phobos std.datetime supported as well
+    import mir.ion.conv: serde; // to convert Csv to DataFrame
+    import mir.ndslice.slice: Slice;//ditto
+    import mir.timestamp: Timestamp;//mir-algorithm package
+    // for testing
+    import mir.ndslice.fuse: fuse;
+    import mir.ser.text: serializeTextPretty;
+    import mir.test: should;
+
+    auto text =
+`Date,Open,High,Low,Close,Volume
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+
+    Csv csv = {
+        text: text,
+        // We allow 7 CSV payloads!
+        kind: CsvKind.seriesWithHeader
+    };
+
+    // Can be of any scalar type including `CsvAlgebraic`
+    alias Elem = double;
+    // `Elem[][]` matrix are supported as well.
+    // But we like `Slice` because we can easily access columns
+    alias Matrix = Slice!(Elem*, 2);
+
+    static struct MySeriesWithHeader
+    {
+        string indexName;
+        string[] columnNames;
+        Matrix data;
+        // Can be an array of any type that can be deserialized
+        // like a string or `CsvAlgebraic`, `Date`, `DateTime`, or whatever.
+        Timestamp[] index;
+    }
+
+    MySeriesWithHeader testSeries = {
+        indexName: `Date`,
+        columnNames: [`Open`, `High`, `Low`, `Close`, `Volume`],
+        data: [
+            [133.8, 134.43, 133.59, 134.0, 9166695],
+            [134.25, 135.0, 134.19, 134.5, 4632863],
+        ].fuse,
+        index: [
+            `2021-01-21T09:30:00Z`.Timestamp,
+            `2021-01-21T09:35:00Z`.Timestamp,
+        ],
+    };
+
+    // Check how Ion payload looks like
+    csv.serializeTextPretty!"    ".should == q{{
+    indexName: Date,
+    columnNames: [
+        Open,
+        High,
+        Low,
+        Close,
+        Volume
+    ],
+    data: [
+        [
+            133.8,
+            134.43,
+            133.59,
+            134.0,
+            9166695
+        ],
+        [
+            134.25,
+            135.0,
+            134.19,
+            134.5,
+            4632863
+        ]
+    ],
+    index: [
+        2021-01-21T09:30:00Z,
+        2021-01-21T09:35:00Z
+    ]
+}};
 }
 
 /++
