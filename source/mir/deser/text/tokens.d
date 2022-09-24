@@ -194,11 +194,6 @@ All valid characters which can be the beginning of an identifier (a-zA-Z_$)
 static immutable ION_IDENTIFIER_START_CHARS = ION_LOWERCASE ~ ION_UPPERCASE ~ ['_', '$'];
 
 /+
-All valid characters which can be within an identifier (a-zA-Z$_0-9)
-+/
-static immutable ION_IDENTIFIER_CHARS = ION_IDENTIFIER_START_CHARS ~ ION_DIGITS;
-
-/+
 All symbols which must be surrounded by quotes
 +/
 static immutable ION_QUOTED_SYMBOLS = ["", "null", "true", "false", "nan"];
@@ -225,7 +220,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a digit.
 +/
-bool isDigit(char c) @safe @nogc pure {
+bool isDigit(char c) @safe @nogc pure nothrow {
     static foreach(member; ION_DIGITS) {
         if (c == member) return true;
     }
@@ -239,7 +234,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a hex digit.
 +/
-bool isHexDigit(char c) @safe @nogc pure {
+bool isHexDigit(char c) @safe @nogc pure nothrow {
     static foreach(member; ION_HEX_DIGITS) {
         if (c == member) return true;
     }
@@ -253,8 +248,8 @@ Params:
 Returns:
     true if the character is considered by Ion to be a valid start to an identifier.
 +/
-bool isIdentifierStart(char c) @safe @nogc pure{
-    static foreach(member; ION_IDENTIFIER_CHARS) {
+bool isIdentifierStart(char c) @safe @nogc pure nothrow {
+    static foreach(member; ION_IDENTIFIER_START_CHARS) {
         if (c == member) return true;
     }
     return false;
@@ -267,7 +262,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a valid part of an identifier.
 +/
-bool isIdentifierPart(char c) @safe @nogc pure {
+bool isIdentifierPart(char c) @safe @nogc pure nothrow {
     return isIdentifierStart(c) || isDigit(c);
 }   
 
@@ -278,7 +273,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a symbol operator character.
 +/
-bool isOperatorChar(char c) @safe @nogc pure {
+bool isOperatorChar(char c) @safe @nogc pure nothrow {
     static foreach(member; ION_OPERATOR_CHARS) {
         if (c == member) return true;
     }
@@ -292,7 +287,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be a "stop" character.
 +/
-bool isStopChar(char c) @safe @nogc pure {
+bool isStopChar(char c) @safe @nogc pure nothrow {
     static foreach(member; ION_STOP_CHARS) {
         if (c == member) return true;
     }
@@ -307,7 +302,7 @@ Params:
 Returns:
     true if the character is considered by Ion to be whitespace.
 +/
-bool isWhitespace(char c) @safe @nogc pure {
+bool isWhitespace(char c) @safe @nogc pure nothrow {
     static foreach(member; ION_WHITESPACE) {
         if (c == member) return true;
     }
@@ -321,7 +316,7 @@ Params:
 Returns:
     true if the symbol requires quotes around it.
 +/
-bool symbolNeedsQuotes(scope const(char)[] symbol) @safe @nogc pure {
+bool symbolNeedsQuotes(scope const(char)[] symbol) @safe @nogc pure nothrow {
     static foreach(member; ION_QUOTED_SYMBOLS) {
         if (symbol == member) return true;
     }
@@ -341,7 +336,7 @@ Params:
 Returns:
     true if the symbol has quotes surrounding it.
 +/
-bool symbolHasQuotes(const(char)[] symbol) @safe @nogc pure {
+bool symbolHasQuotes(const(char)[] symbol) @safe @nogc pure nothrow {
     if (symbol[0] != '\'') return false;
     if (symbol[$ - 1] != '\'') return false;
     return true;
@@ -355,7 +350,7 @@ Params:
 Returns:
     true if a character is considered to be a new-line.
 +/
-bool isNewLine(char c) @safe @nogc pure {
+bool isNewLine(char c) @safe @nogc pure nothrow {
     return c == 0x0A || c == 0x0D;
 }
 
@@ -367,7 +362,7 @@ Params:
 Returns:
     true if a character is considered to be printable whitespace.
 +/
-bool isStringWhitespace(char c) @safe @nogc pure {
+bool isStringWhitespace(char c) @safe @nogc pure nothrow {
     return c == 0x09 || c == 0x0B || c == 0x0C;
 }
 
@@ -379,7 +374,7 @@ Params:
 Returns:
     true if a character is considered a control character.
 +/
-bool isControlChar(char c) @safe @nogc pure {
+bool isControlChar(char c) @safe @nogc pure nothrow {
     return c < 0x20 || c == 0x7F;
 }
 
@@ -391,7 +386,7 @@ Params:
 Returns:
     true if a character is considered to be valid ASCII.
 +/
-bool isASCIIChar(char c) @safe @nogc pure {
+bool isASCIIChar(char c) @safe @nogc pure nothrow {
     return c <= 0x7F;
 }
 
@@ -402,7 +397,7 @@ Params:
 Returns:
     true if a character is invalid, false otherwise
 +/
-bool isInvalidChar(char c) @safe @nogc pure {
+bool isInvalidChar(char c) @safe @nogc pure nothrow {
     if (isStringWhitespace(c) || isNewLine(c)) return false;
     if (isControlChar(c)) return true;
     return false;
