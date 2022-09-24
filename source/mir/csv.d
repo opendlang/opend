@@ -1,13 +1,171 @@
 /++
-$(H2 CSV/TSV library)
+$(H2 CSV/TSV parsing)
 
 DRAFT
 
+$(LREF Csv) can be serialized to Ion, JSON, MsgPack, or YAML
+and then deserialized to a specified type.
+That approachs allows to use the same mir deserialization
+pattern like for other data types.
+$(IONREF conv, serde) unifies this two steps throught binary Ion format,
+which serves as an efficient DOM representation for all other formats.
+
+We provide seven variants of how $(LREF CsvKind) can be represented
+in Ion notation.
+
 Macros:
+    IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
     AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
     AAREF = $(REF_ALTTEXT $(TT $2), $2, mir, algebraic_alias, $1)$(NBSP)
 +/
 module mir.csv;
+
+///
+unittest
+{
+    import mir.csv;
+    import mir.ion.conv: serde; // to convert Csv to D types
+    import mir.serde: serdeKeys, serdeIgnoreUnexpectedKeys, serdeOptional;
+    // mir.date and std.datetime are supported as well
+    import mir.timestamp: Timestamp;//mir-algorithm package
+    import mir.test: should;
+
+    auto text =
+`Date,Open,High,Low,Close,Volume
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+
+    Csv csv = {
+        text: text,
+        // We allow 7 CSV payloads!
+        kind: CsvKind.dataFrame
+    };
+
+    // If you don't have a header,
+    // `mir.functional.Tuple` instead of MyDataFrame.
+    @serdeIgnoreUnexpectedKeys //ignore all other columns
+    static struct MyDataFrame
+    {
+        // Few keys are allowed
+        @serdeKeys(`Date`, `date`, `timestamp`)
+        Timestamp[] timestamp;
+
+        @serdeKeys(`Open`)  double[]    open;
+        @serdeKeys(`High`)  double[]    high;
+        @serdeKeys(`Low`)   double[]    low;
+        @serdeKeys(`Close`) double[]    close;
+
+        @serdeOptional // if we don't have Volume
+        @serdeKeys(`Volume`)
+        long[]volume;
+    }
+
+    MyDataFrame testValue = {
+        timestamp:  [`2021-01-21 09:30:00`.Timestamp, `2021-01-21 09:35:00`.Timestamp],
+        volume:     [9166695, 4632863],
+        open:       [133.8,  134.25],
+        high:       [134.43, 135],
+        low:        [133.59, 134.19],
+        close:      [134.0,  134.5],
+    };
+
+    csv.serde!MyDataFrame.should == testValue;
+
+    ///////////////////////////////////////////////
+    /// More flexible Data Frame
+
+    import mir.algebraic_alias.csv: CsvAlgebraic;
+    alias DataFrame = CsvAlgebraic[][string];
+    auto flex = csv.serde!DataFrame;
+
+    flex["Volume"][1].should == 4632863;
+}
+
+///
+unittest
+{
+    import mir.csv;
+    import mir.date: Date; // Phobos std.datetime supported as well
+    import mir.ion.conv: serde; // to convert Csv to DataFrame
+    import mir.ndslice.slice: Slice;//ditto
+    import mir.timestamp: Timestamp;//mir-algorithm package
+    // for testing
+    import mir.ndslice.fuse: fuse;
+    import mir.ser.text: serializeTextPretty;
+    import mir.test: should;
+
+    auto text =
+`Date,Open,High,Low,Close,Volume
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+
+    Csv csv = {
+        text: text,
+        // We allow 7 CSV payloads!
+        kind: CsvKind.seriesWithHeader
+    };
+
+    // Can be of any scalar type including `CsvAlgebraic`
+    alias Elem = double;
+    // `Elem[][]` matrix are supported as well.
+    // But we like `Slice` because we can easily access columns
+    alias Matrix = Slice!(Elem*, 2);
+
+    static struct MySeriesWithHeader
+    {
+        string indexName;
+        string[] columnNames;
+        Matrix data;
+        // Can be an array of any type that can be deserialized
+        // like a string or `CsvAlgebraic`, `Date`, `DateTime`, or whatever.
+        Timestamp[] index;
+    }
+
+    MySeriesWithHeader testSeries = {
+        indexName: `Date`,
+        columnNames: [`Open`, `High`, `Low`, `Close`, `Volume`],
+        data: [
+            [133.8, 134.43, 133.59, 134.0, 9166695],
+            [134.25, 135.0, 134.19, 134.5, 4632863],
+        ].fuse,
+        index: [
+            `2021-01-21T09:30:00Z`.Timestamp,
+            `2021-01-21T09:35:00Z`.Timestamp,
+        ],
+    };
+
+    // Check how Ion payload looks like
+    csv.serializeTextPretty!"    ".should == q{{
+    indexName: Date,
+    columnNames: [
+        Open,
+        High,
+        Low,
+        Close,
+        Volume
+    ],
+    data: [
+        [
+            133.8,
+            134.43,
+            133.59,
+            134.0,
+            9166695
+        ],
+        [
+            134.25,
+            135.0,
+            134.19,
+            134.5,
+            4632863
+        ]
+    ],
+    index: [
+        2021-01-21T09:30:00Z,
+        2021-01-21T09:35:00Z
+    ]
+}};
+}
 
 ///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
@@ -19,28 +177,95 @@ enum CsvKind
 {
     /++
     Array of rows.
+
+    Ion_Payload:
+    ```
+    [
+        [cell_0_0, cell_0_1, cell_0_2, ...],
+        [cell_1_0, cell_1_1, cell_1_2, ...],
+        [cell_2_0, cell_2_1, cell_2_2, ...],
+        ...
+    ]
+    ```
     +/
     matrix,
     /++
     Arrays of objects with object field names from the header.
+
+    Ion_Payload:
+    ```
+    [
+        {
+            cell_0_0: cell_1_0,
+            cell_0_1: cell_1_1,
+            cell_0_2: cell_1_2,
+            ...
+        },
+        {
+            cell_0_0: cell_2_0,
+            cell_0_1: cell_2_1,
+            cell_0_2: cell_2_2,
+            ...
+        },
+        ...
+    ]
+    ```
     +/
     objects,
     /++
     Indexed array of rows with index from the first column.
     +/
-    indexedRows,
+    series,
     /++
     Indexed arrays of objects with index from the first column and object field names from the header.
     +/
-    indexedObjects,
+    seriesOfObjects,
     /++
     Array of columns.
+
+    Ion_Payload:
+    ```
+    [
+        [cell_0_0, cell_1_0, cell_2_0, ...],
+        [cell_0_1, cell_1_1, cell_2_1, ...],
+        [cell_0_2, cell_1_2, cell_2_2, ...],
+        ...
+    ]
+    ```
     +/
     transposedMatrix,
     /++
     Object of columns with object field names from the header.
+
+    Ion_Payload:
+    ```
+    {
+        cell_0_0: [cell_1_0, cell_2_0, ...],
+        cell_0_1: [cell_1_1, cell_2_1, ...],
+        cell_0_2: [cell_1_2, cell_2_2, ...],
+        ...
+    }
+    ```
     +/
-    objectOfColumns,
+    dataFrame,
+    /++
+    DataFrame representation.
+
+    Ion_Payload:
+    ```
+    {
+        indexName: cell_0_0,
+        columnNames: [cell_0_1, cell_0_2, ...],
+        data: [
+            [cell_1_1, cell_1_2, ...],
+            [cell_2_1, cell_2_2, ...],
+            ...
+        ],
+        index: [cell_1_0, cell_2_0, ...]
+    }
+    ```
+    +/
+    seriesWithHeader,
 }
 
 /++
@@ -75,15 +300,39 @@ struct Csv
     ///
     CsvKind kind;
     ///
-    bool stripUnquoted = true; 
-    ///
     char separator = ',';
+    ///
+    bool stripUnquoted = false; 
     ///
     char comment = char.init;
     ///
     ubyte rowsToSkip;
-    ///
+    /++
+    NA patterns are converted to Ion `null` when exposed to arrays
+    and skipped when exposed to objects
+    +/
     const(string)[] naStrings = NA_default;
+    /// File name for berrer error messages
+    string fileName = "<unknown>";
+
+    // /++
+    // +/
+    // bool delegate(size_t columnIndex, scope const(char)[] columnName) useColumn;
+
+    /++
+    Conversion callback to finish conversion resolution
+    Params:
+        unquotedString = string after unquoting
+        isQuoted = is the original data field is quoted
+        columnIndex = column index starting from 0
+        columnName = column name if any
+    +/
+    CsvAlgebraic delegate(
+        return scope const(char)[] unquotedString,
+        return scope CsvAlgebraic scalar,
+        size_t columnIndex,
+        scope const(char)[] columnName
+    ) @safe pure @nogc conversionFinalizer;
 
     /++
     +/
@@ -102,23 +351,6 @@ struct Csv
     and requires symbol to be presented without double quotes.
     +/
     bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
-
-    /++
-    Conversion callback to finish conversion resolution
-    Params:
-        unquotedString = string after unquoting
-        isQuoted = is the original data field is quoted
-        columnIndex = column index starting from 0
-        columnName = column name if any
-    +/
-    CsvAlgebraic delegate(
-        return scope const(char)[] unquotedString,
-        return scope CsvAlgebraic scalar,
-        size_t columnIndex,
-        scope const(char)[] columnName
-    ) @safe pure @nogc conversionFinalizer;
-    /// File name for berrer error messages
-    string fileName = "<unknown>";
 
     void serialize(S)(scope ref S serializer) scope const @trusted
     {
@@ -145,227 +377,265 @@ struct Csv
         scope const(char)[][] header;
         auto nColumns = size_t.max;
 
-        void process()
+        Decimal!128 decimal = void;
+        DecimalExponentKey decimalKey;
+
+        Timestamp timestamp;
+
+        const transp =
+            kind == CsvKind.transposedMatrix || 
+            kind == CsvKind.dataFrame;
+
+        const hasInternalHeader =
+            kind == CsvKind.objects ||
+            kind == CsvKind.seriesOfObjects;
+
+        const hasHeader = hasInternalHeader ||
+            kind == CsvKind.dataFrame ||
+            kind == CsvKind.seriesWithHeader;
+
+        const hasIndex =
+            kind == CsvKind.series ||
+            kind == CsvKind.seriesOfObjects ||
+            kind == CsvKind.seriesWithHeader;
+        
+        bool initLoop;
+
+        size_t wrapperState;
+        size_t outerState;
+
+        size_t i;
+        foreach (line; text.lineSplitter)
         {
-            Decimal!128 decimal = void;
-            DecimalExponentKey decimalKey;
-
-            Timestamp timestamp;
-
-            bool transp =
-                kind == CsvKind.transposedMatrix || 
-                kind == CsvKind.objectOfColumns;
-
-            bool hasHeader =
-                kind == CsvKind.objects ||
-                kind == CsvKind.indexedObjects ||
-                kind == CsvKind.objectOfColumns;
-
-            size_t i;
-            foreach (line; text.lineSplitter)
+            i++;
+            if (i <= rowsToSkip)
+                continue;
+            if (line.length == 0)
             {
-                i++;
-                if (i <= rowsToSkip)
-                    continue;
-                if (line.length && line[0] == comment)
-                    continue;
-                size_t j;
-                if (header is null && hasHeader)
+                // TODO
+            }
+            if (line[0] == comment)
+                continue;
+            size_t j;
+            if (header is null && hasHeader)
+            {
+                foreach (value; line.splitter(separator))
                 {
-                    foreach (value; line.splitter(separator))
-                    {
-                        j++;
-                        if (stripUnquoted)
-                            value = value.strip;
-                        if (value.canFind('"'))
-                        {
-                            // TODO unqote
-                            value = value.strip;
-                        }
-                        () @trusted {
-                            headerBuff.put(value);
-                        } ();
-                    }
-                    header = headerBuff.data;
-                    nColumns = j;
-                    continue;
-                }
-                size_t state;
-                if (!transp)
-                {
-                    serializer.elemBegin;
-                    if (hasHeader)
-                        state = serializer.structBegin(nColumns);
-                    else
-                        state = serializer.listBegin(nColumns);
-                }
-                foreach (value; splitter(line, separator))
-                {
-                    // The same like Mir deserializatin from string to floating
-                    enum bool allowSpecialValues = true;
-                    enum bool allowDotOnBounds = true;
-                    enum bool allowDExponent = true;
-                    enum bool allowStartingPlus = true;
-                    enum bool allowUnderscores = false;
-                    enum bool allowLeadingZeros = true;
-                    enum bool allowExponent = true;
-                    enum bool checkEmpty = false;
-
                     j++;
-                    if (j > nColumns)
-                        break;
-
                     if (stripUnquoted)
                         value = value.strip;
-
-                    CsvAlgebraic scalar;
-
-                    bool quoted;
-
                     if (value.canFind('"'))
                     {
-                        quoted = true;
                         // TODO unqote
                         value = value.strip;
                     }
-                    else
-                    if (value.length && decimal.fromStringImpl!(
-                        char,
-                        allowSpecialValues,
-                        allowDotOnBounds,
-                        allowDExponent,
-                        allowStartingPlus,
-                        allowUnderscores,
-                        allowLeadingZeros,
-                        allowExponent,
-                        checkEmpty,
-                    )(value, decimalKey))
-                    {
-                        if (decimalKey)
-                            scalar = cast(double) decimal;
-                        else
-                            scalar = cast(long) decimal.coefficient;
-                    }
-                    else
-                    if (Timestamp.fromString(value, timestamp))
-                    {
-                        scalar = timestamp;
-                    }
-                    else
-                    S: switch (value)
-                    {
-                        case "true":
-                        case "True":
-                        case "TRUE":
-                            scalar = true;
-                            break;
-                        case "false":
-                        case "False":
-                        case "FALSE":
-                            scalar = false;
-                            break;
-                        default:
-                            foreach (na; naStrings)
-                                if (na == value)
-                                    break S; // null
-                            () @trusted {
-                                scalar = cast(string) value;
-                                bool quoted = false;
-                            } ();
-                    }
-
-                    if (_expect(conversionFinalizer !is null, false))
-                    {
-                        scalar.isQuoted = quoted;
-                        scalar = conversionFinalizer(value, scalar, j - 1, hasHeader ? header[j - 1] : null);
-                    }
-
-                    if (j == 1 && (kind == CsvKind.indexedRows || kind == CsvKind.indexedObjects))
-                    {
-                        indexBuff.put(scalar);
-                    }
-                    else
-                    if (!transp)
-                    {
-                        if (hasHeader)
-                            serializer.putKey(header[j - 1]);
-                        else
-                            serializer.elemBegin();
-                        if (scalar._is!string && isSymbolHandler(scalar.trustedGet!string, scalar.isQuoted))
-                            serializer.putSymbol(scalar.trustedGet!string);
-                        else
-                            serializer.serializeValue(scalar);
-                    }
-                    else
-                    {
-                        dataBuff.put(scalar);
-                    }
+                    () @trusted {
+                        headerBuff.put(value);
+                    } ();
                 }
-                if (j != nColumns && nColumns != nColumns.max)
-                {
-                    throw new MirException("CSV: Expected ", nColumns, ", got ", j, " at:\n", ParsePosition(fileName, cast(uint)i, 0));
-                }
+                header = headerBuff.data;
+                assert(header.length);
+                assert(j == header.length);
                 nColumns = j;
-
+                continue;
+            }
+            if (!initLoop)
+            {
+                initLoop = true;
                 if (!transp)
                 {
-                    if (hasHeader)
-                        serializer.structEnd(state);
-                    else
-                        serializer.listEnd(state);
+                    if (hasIndex)
+                    {
+                        wrapperState = serializer.structBegin(kind == CsvKind.seriesWithHeader ? 4 : 2);
+                        if (kind == CsvKind.seriesWithHeader)
+                        {
+                            serializer.putKey("indexName");
+                            serializer.putSymbol(header[0]);
+                            serializer.putKey("columnNames");
+                            auto state = serializer.listBegin(header.length - 1);
+                            foreach (name; header[1 .. $])
+                            {
+                                serializer.elemBegin;
+                                serializer.putSymbol(name);
+                            }
+                            serializer.listEnd(state);
+                        }
+                        serializer.putKey("data");
+                    }
+                    outerState = serializer.listBegin;
                 }
+            }
+            size_t state;
+            if (!transp)
+            {
+                serializer.elemBegin;
+                if (hasInternalHeader)
+                    state = serializer.structBegin(nColumns);
+                else
+                    state = serializer.listBegin(nColumns);
+            }
+            foreach (value; splitter(line, separator))
+            {
+                // The same like Mir deserializatin from string to floating
+                enum bool allowSpecialValues = true;
+                enum bool allowDotOnBounds = true;
+                enum bool allowDExponent = true;
+                enum bool allowStartingPlus = true;
+                enum bool allowUnderscores = false;
+                enum bool allowLeadingZeros = true;
+                enum bool allowExponent = true;
+                enum bool checkEmpty = false;
+
+                j++;
+                if (j > nColumns)
+                    break;
+
+                if (stripUnquoted)
+                    value = value.strip;
+
+                CsvAlgebraic scalar;
+
+                bool quoted;
+
+                if (value.canFind('"'))
+                {
+                    quoted = true;
+                    // TODO unqote
+                    value = value.strip;
+                }
+                else
+                if (value.length && decimal.fromStringImpl!(
+                    char,
+                    allowSpecialValues,
+                    allowDotOnBounds,
+                    allowDExponent,
+                    allowStartingPlus,
+                    allowUnderscores,
+                    allowLeadingZeros,
+                    allowExponent,
+                    checkEmpty,
+                )(value, decimalKey))
+                {
+                    if (decimalKey)
+                        scalar = cast(double) decimal;
+                    else
+                        scalar = cast(long) decimal.coefficient;
+                }
+                else
+                if (Timestamp.fromString(value, timestamp))
+                {
+                    scalar = timestamp;
+                }
+                else
+                S: switch (value)
+                {
+                    case "true":
+                    case "True":
+                    case "TRUE":
+                        scalar = true;
+                        break;
+                    case "false":
+                    case "False":
+                    case "FALSE":
+                        scalar = false;
+                        break;
+                    default:
+                        foreach (na; naStrings)
+                            if (na == value)
+                                break S; // null
+                        () @trusted {
+                            scalar = cast(string) value;
+                            bool quoted = false;
+                        } ();
+                }
+
+                if (_expect(conversionFinalizer !is null, false))
+                {
+                    scalar.isQuoted = quoted;
+                    scalar = conversionFinalizer(value, scalar, j - 1, hasHeader ? header[j - 1] : null);
+                }
+
+                if (j == 1 && hasIndex)
+                {
+                    indexBuff.put(scalar);
+                }
+                else
+                if (!transp)
+                {
+                    if (!hasInternalHeader)
+                        serializer.elemBegin();
+                    else
+                    if (scalar.isNull)
+                        goto Skip;
+                    else
+                        serializer.putKey(header[j - 1]);
+
+                    if (scalar._is!string && isSymbolHandler(scalar.trustedGet!string, scalar.isQuoted))
+                        serializer.putSymbol(scalar.trustedGet!string);
+                    else
+                        serializer.serializeValue(scalar);
+                Skip:
+                }
+                else
+                {
+                    dataBuff.put(scalar);
+                }
+            }
+            if (j != nColumns && nColumns != nColumns.max)
+            {
+                throw new MirException("CSV: Expected ", nColumns, ", got ", j, " at:\n", ParsePosition(fileName, cast(uint)i, 0));
+            }
+            nColumns = j;
+
+            if (!transp)
+            {
+                if (hasInternalHeader)
+                    serializer.structEnd(state);
+                else
+                    serializer.listEnd(state);
+            }
+        }
+        if (!transp)
+        {
+            if (!initLoop)
+                outerState = serializer.listBegin(0);
+            serializer.listEnd(outerState);
+
+            if (hasIndex)
+            {
+                serializer.putKey("index");
+                serializer.serializeValue(indexBuff.data);
+                serializer.structEnd(wrapperState);
             }
         }
 
-        final switch (kind)
+        if (transp)
         {
-            case CsvKind.matrix:
-            case CsvKind.objects:
-            {
-                auto state = serializer.listBegin;
-                process();
-                serializer.listEnd(state);
-                break;
-            }            
-            case CsvKind.indexedRows:
-            case CsvKind.indexedObjects:
-            {
-                auto wrapperState = serializer.structBegin(2);
-                {
-                    serializer.putKey("data");
-                    auto state = serializer.listBegin;
-                    process();
-                    serializer.listEnd(state);
+            // auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
+            // auto transposedData = data.transposed;
+            auto data = dataBuff.data;
 
-                    serializer.putKey("index");
-                    serializer.serializeValue(indexBuff.data);
-                }
-                serializer.structEnd(wrapperState);
-                break;
-            }            
-            case CsvKind.transposedMatrix:
+            auto nRows = nColumns ? data.length / nColumns : 0;
+            assert(nRows * nColumns == data.length);
+
+            auto state = hasHeader ? serializer.structBegin(nColumns) : serializer.listBegin(nColumns);
+            foreach (j; 0 .. nColumns)
             {
-                process();
-                auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
-                auto transposedData = data.transposed;
-                serializer.serializeValue(transposedData);
-                break;
-            }
-            case CsvKind.objectOfColumns:
-            {
-                process();
-                auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
-                auto transposedData = data.transposed;
-                auto sate = serializer.structBegin(header.length);
-                foreach (j, key; header)
+                hasHeader ? serializer.putKey(header[j]) : serializer.elemBegin;
+                auto listState = serializer.listBegin(nRows);
+                foreach (ii; 0 .. nRows)
                 {
-                    serializer.putKey(key);
-                    auto column = transposedData[j];
-                    serializer.serializeValue(column);
+                    serializer.elemBegin;
+
+                    auto scalar = data[ii * nColumns + j];
+                    if (scalar._is!string && isSymbolHandler(scalar.trustedGet!string, scalar.isQuoted))
+                        serializer.putSymbol(scalar.trustedGet!string);
+                    else
+                        serializer.serializeValue(scalar);
                 }
-                serializer.structEnd(sate);
-                break;
+                serializer.listEnd(listState);
             }
+            hasHeader ? serializer.structEnd(state) : serializer.listEnd(state);
         }
     }
 }
@@ -424,7 +694,7 @@ unittest
             , `2001-12-14 21:59:43.1 -5` //yaml space separated
             , `2001-12-15 2:59:43.10` //no time zone (Z):
             , `2002-12-14` //date (00:00:00Z):
-            // Default NA patterns are converted to NaN when exposed to arrays
+            // Default NA patterns are converted to Ion `null` when exposed to arrays
             // and skipped when exposed to objects
             , ``
             , `#N/A`
@@ -437,7 +707,7 @@ unittest
             // strings patterns (TODO)
             , `100_000`
             , `_100`     // match default pattern for symbols
-            , `Str` // match default pattern for symbols
+            , `Str`      // match default pattern for symbols
             , `Value100` // match default pattern for symbols
             , `iNF`      // match default pattern for symbols
             , `Infinity` // match default pattern for symbols
@@ -501,6 +771,18 @@ unittest
 ]`;
 }
 
+/++
+How $(LREF CsvKind) are represented.
++/
+unittest
+{
+    auto text = 
+`Date,Open,High,Low,Close,Volume
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+        
+}
+
 /// Matrix & Transposed Matrix
 unittest
 {
@@ -537,23 +819,15 @@ unittest
         kind : CsvKind.transposedMatrix
     };
 
-    csv.serializeText.should == `[["str","b"],[2022-10-12,2022-10-13],[3.4,2]]`;
+    csv.serializeText.should == `[[str,b],[2022-10-12,2022-10-13],[3.4,2]]`;
 
     alias T = Tuple!(string[], Date[], double[]);
 
     csv.serde!T.should == T (
-        ["str", "b"],
+        [`str`, `b`],
         [Date(2022, 10, 12), Date(2022, 10, 13)],
         [3.4, 2],
     );
-}
-
-/++
-With header
-+/
-unittest
-{
-    // TODO
 }
 
 /++
