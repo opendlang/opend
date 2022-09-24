@@ -1486,13 +1486,14 @@ struct Algebraic(T__...)
             import mir.conv: to;
             immutable(char)[] ret;
             static foreach (i, member; metaFieldNames__)
+            static if (!MetaInfo__[i].transparent)
             {
                 static if (__traits(compiles, { auto s = to!(immutable(char)[])(__traits(getMember, this, member));}))
                     // should be passed by value to workaround compiler bug
                     ret ~= to!(immutable(char)[])(__traits(getMember, this, member));
                 else
                     ret ~= AllowedTypes[i].stringof;
-                ret ~= ", ";
+                ret ~= "::";
             }
             switch (identifier__)
             {
@@ -1531,12 +1532,13 @@ struct Algebraic(T__...)
         {
             import mir.format: print;
             static foreach (i, member; metaFieldNames__)
+            static if (!MetaInfo__[i].transparent)
             {
                 static if (__traits(compiles, { import mir.format: print; print(w, __traits(getMember, this, member)); }))
                     { import mir.format: print; print(w, __traits(getMember, this, member)); }
                 else
                     w.put(AllowedTypes[i].stringof);
-                w.put(", ");
+                w.put("::");
             }
             switch (identifier__)
             {
