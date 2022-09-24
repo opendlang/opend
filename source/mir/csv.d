@@ -837,6 +837,7 @@ unittest
     import mir.algebraic: Nullable, visit;
     import mir.ion.conv: serde;
     import mir.ndslice: Slice, map, slice;
+    import mir.ser.text: serializeText;
     import mir.test: should;
 
     auto text = "1,2\n3,4\n5,#N/A\n";
@@ -845,4 +846,6 @@ unittest
         .serde!(Slice!(Nullable!double*, 2))
         .map!(visit!((double x) => x, (_) => double.nan))
         .slice;
+
+    matrix.serializeText.should == q{[[1.0,2.0],[3.0,4.0],[5.0,nan]]};
 }
