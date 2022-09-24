@@ -214,10 +214,61 @@ enum CsvKind
     objects,
     /++
     Indexed array of rows with index from the first column.
+
+    Ion_Payload:
+    ```
+    {
+        data: [
+            [cell_0_1, cell_0_2, ...],
+            [cell_1_1, cell_1_2, ...],
+            [cell_2_1, cell_2_2, ...],
+            ...
+        ],
+        index: [cell_0_0, cell_1_0, cell_2_0, ...]
+    }
+    ```
     +/
     series,
     /++
+    DataFrame representation.
+
+    Ion_Payload:
+    ```
+    {
+        indexName: cell_0_0,
+        columnNames: [cell_0_1, cell_0_2, ...],
+        data: [
+            [cell_1_1, cell_1_2, ...],
+            [cell_2_1, cell_2_2, ...],
+            ...
+        ],
+        index: [cell_1_0, cell_2_0, ...]
+    }
+    ```
+    +/
+    seriesWithHeader,
+    /++
     Indexed arrays of objects with index from the first column and object field names from the header.
+
+    Ion_Payload:
+    ```
+    {
+        data: [
+            {
+                cell_0_1: cell_1_1,
+                cell_0_2: cell_1_2,
+                ...
+            },
+            {
+                cell_0_1: cell_2_1,
+                cell_0_2: cell_2_2,
+                ...
+            },
+            ...
+        ],
+        index: [cell_1_0, cell_2_0, ...]
+    }
+    ```
     +/
     seriesOfObjects,
     /++
@@ -248,24 +299,6 @@ enum CsvKind
     ```
     +/
     dataFrame,
-    /++
-    DataFrame representation.
-
-    Ion_Payload:
-    ```
-    {
-        indexName: cell_0_0,
-        columnNames: [cell_0_1, cell_0_2, ...],
-        data: [
-            [cell_1_1, cell_1_2, ...],
-            [cell_2_1, cell_2_2, ...],
-            ...
-        ],
-        index: [cell_1_0, cell_2_0, ...]
-    }
-    ```
-    +/
-    seriesWithHeader,
 }
 
 /++
