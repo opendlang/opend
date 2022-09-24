@@ -177,9 +177,9 @@ struct Csv
                 {
                     serializer.elemBegin;
                     if (hasHeader)
-                        state = serializer.structBegin;
+                        state = serializer.structBegin(nColumns);
                     else
-                        state = serializer.listBegin;
+                        state = serializer.listBegin(nColumns);
                 }
                 foreach (value; splitter(line, separator))
                 {
@@ -308,18 +308,15 @@ struct Csv
             case CsvKind.indexedRows:
             case CsvKind.indexedObjects:
             {
-                auto wrapperState = serializer.structBegin;
+                auto wrapperState = serializer.structBegin(2);
                 {
                     serializer.putKey("data");
-                    {
-                        auto state = serializer.listBegin;
-                        process();
-                        serializer.listEnd(state);
-                    }
+                    auto state = serializer.listBegin;
+                    process();
+                    serializer.listEnd(state);
+
                     serializer.putKey("index");
-                    {
-                        serializer.serializeValue(indexBuff.data);
-                    }
+                    serializer.serializeValue(indexBuff.data);
                 }
                 serializer.structEnd(wrapperState);
                 break;
@@ -337,7 +334,7 @@ struct Csv
                 process();
                 auto data = dataBuff.data.sliced(nColumns ? dataBuff.data.length / nColumns : 0, nColumns);
                 auto transposedData = data.transposed;
-                auto sate = serializer.structBegin();
+                auto sate = serializer.structBegin(header.length);
                 foreach (j, key; header)
                 {
                     serializer.putKey(key);
