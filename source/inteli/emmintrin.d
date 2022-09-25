@@ -4317,7 +4317,7 @@ void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 
 /// Store 2 double-precision (64-bit) floating-point elements from `a` into memory in reverse order. `mem_addr` must be 
 /// aligned on a 16-byte boundary or a general-protection exception may be generated.
-void _mm_storer_pd (double* mem_addr, __m128d a) pure
+void _mm_storer_pd (double* mem_addr, __m128d a) pure @system
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = shufflevector!(double2, 1, 0)(a, a);
@@ -4325,10 +4325,31 @@ void _mm_storer_pd (double* mem_addr, __m128d a) pure
 
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
-void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
+void _mm_storeu_pd (double* mem_addr, __m128d a) pure @trusted // TODO: signature, should be system
 {
+    // PERF DMD
     pragma(inline, true);
-    storeUnaligned!double2(a, mem_addr); // TODO remove that storeUnaligned
+    static if (GDC_with_SSE2)
+    {
+        __builtin_ia32_storeupd(mem_addr, a);
+    }
+    else version(LDC)
+    {
+        storeUnaligned!double2(a, mem_addr);
+    }
+    else
+    {
+        mem_addr[0] = a.array[0];
+        mem_addr[1] = a.array[1];
+    }
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(3.0, 4.0);
+    align(16) double[4] R = [0.0, 0, 0, 0];
+    double[2] correct = [3.0, 4.0];
+    _mm_storeu_pd(&R[1], A);
+    assert(R[1..3] == correct);
 }
 
 /// Store 128-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular 
