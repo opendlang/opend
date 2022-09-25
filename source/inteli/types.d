@@ -25,36 +25,6 @@ version(GNU)
 
         import gcc.builtins;
 
-        void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
-        {
-            __builtin_ia32_storeups(pvec, v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
-        {
-            __builtin_ia32_storeupd(pvec, v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
-        {
-            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
-        {
-            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
-        {
-            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
-        void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
-        {
-            __builtin_ia32_storedqu(cast(char*)pvec, cast(ubyte16)v);
-        }
-
         // TODO: for performance, replace that anywhere possible by a GDC intrinsic
         Vec shufflevector(Vec, mask...)(Vec a, Vec b) @trusted
         {
@@ -235,43 +205,6 @@ else
 
 static if (DefineGenericLoadStoreUnaligned)
 {
-    template storeUnaligned(Vec)
-    {
-        // Note: can't be @safe with this signature
-        void storeUnaligned(Vec v, BaseType!Vec* pvec) @trusted
-        {
-            enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
-                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
-
-            static if (isVector)
-            {
-                // PERF DMD
-                // BUG: code is wrong, should cast to Vec, see https://github.com/dlang/druntime/pull/3808/commits/b5670753248ec3b1631a0eb8ca76a27e8d6a39b9
-                /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
-                static if (DMD_with_DSIMD && Vec.sizeof == 8)
-                {
-                    static if (is(Vec == double2))
-                        __simd_sto(XMM.STOUPD, *pvec, value);
-                    else static if (is(Vec == float4))
-                        __simd_sto(XMM.STOUPS, *pvec, value);
-                    else
-                        __simd_sto(XMM.STODQU, *pvec, value);
-                }
-                else*/
-                {
-                    enum size_t Count = Vec.array.length;
-                    foreach(int i; 0..Count)
-                        pvec[i] = v.array[i];
-                }
-            }
-            else
-            {
-                *cast(Vec*)(pvec) = v;
-            }
-        }
-    }
-
     Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe if (Vec.sizeof < 32)
     {
         enum size_t Count = Vec.array.length;
