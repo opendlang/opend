@@ -11,7 +11,6 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then sudo apt-get install -y gcc-multilib ; fi
 
 arch:
-  - amd64
   - arm64
 
 os:
@@ -20,18 +19,7 @@ os:
 d:
  - ldc-1.26.0
  - ldc-1.24.0
- - dmd-beta
- - dmd-2.097.0
- - dmd-2.094.2
 
-matrix:
-  allow_failures:
-   - d: dmd-beta      # DMD on arm64 not supported
-     arch: arm64
-   - d: dmd-2.097.0
-     arch: arm64
-   - d: dmd-2.094.2
-     arch: arm64
 
 # Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
 # Note: run 32-bit tests on Linux x86 only
