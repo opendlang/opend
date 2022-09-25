@@ -3114,6 +3114,7 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
                                  e8, e9, e10, e11, e12, e13, e14, e15];
     return *cast(__m128i*)(result.ptr);
 }
+// TODO unittest
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
@@ -3246,9 +3247,16 @@ alias _mm_set1_pd = _mm_set_pd1;
 __m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, 
                         short e3, short e2, short e1, short e0) pure @trusted
 {
-    // TODO: remove useless(?) loadUnaligned, check perf (see #102)
-    short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
-    return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
+    short8 r = void;
+    r.ptr[0] = e7;
+    r.ptr[1] = e6;
+    r.ptr[2] = e5;
+    r.ptr[3] = e4;
+    r.ptr[4] = e3;
+    r.ptr[5] = e2;
+    r.ptr[6] = e1;
+    r.ptr[7] = e0;
+    return cast(__m128i)(r);
 }
 unittest
 {
@@ -3260,10 +3268,10 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
+    // Performs better than = void; with GDC
     pragma(inline, true);
-    int[4] result = [e3, e2, e1, e0];
-    return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
+    align(16) int[4] result = [e3, e2, e1, e0];
+    return *cast(__m128i*)(result.ptr);
 }
 unittest
 {
@@ -3275,9 +3283,10 @@ unittest
 /// Set packed 64-bit integers with the supplied values in reverse order.
 __m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
-    long[2] result = [e1, e0];
-    return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
+    long2 r = void;
+    r.ptr[0] = e1;
+    r.ptr[1] = e0;
+    return cast(__m128i)(r);
 }
 unittest
 {
@@ -3292,11 +3301,11 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                        byte e7,  byte e6,  byte e5,  byte e4,
                        byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
-    byte[16] result = [e15, e14, e13, e12, e11, e10, e9, e8,
-                      e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
-    return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
+    align(16) byte[16] result = [e15, e14, e13, e12, e11, e10, e9, e8,
+                                 e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
+    return *cast(__m128i*)(result.ptr);
 }
+// TODO unittest
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
