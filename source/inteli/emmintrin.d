@@ -3110,19 +3110,19 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
                       byte e7, byte e6, byte e5, byte e4,
                       byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
-    // TODO: remove loadUnaligned?, check perf (see #102)
-    byte[16] result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
-                     e8, e9, e10, e11, e12, e13, e14, e15];
-    return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
+    align(16) byte[16] result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
+                                 e8, e9, e10, e11, e12, e13, e14, e15];
+    return *cast(__m128i*)(result.ptr);
 }
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    double[2] result = [e0, e1];
-    return loadUnaligned!(double2)(result.ptr);
+    double2 r = void;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    return r;
 }
 unittest
 {
@@ -3134,10 +3134,11 @@ unittest
 /// Broadcast double-precision (64-bit) floating-point value `a` to all element.
 __m128d _mm_set_pd1 (double a) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    double[2] result = [a, a];
-    return loadUnaligned!(double2)(result.ptr);
+    __m128d r = void;
+    r.ptr[0] = a;
+    r.ptr[1] = a;
+    return r;
 }
 unittest
 {
