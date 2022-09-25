@@ -3090,16 +3090,17 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64x (long e1, long e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    long[2] result = [e0, e1];
-    return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
+    long2 r = void;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    return cast(__m128i)(r);
 }
 unittest
 {
-    __m128i A = _mm_set_epi64x(1234, 5678);
+    __m128i A = _mm_set_epi64x(1234, -5678);
     long2 B = cast(long2) A;
-    assert(B.array[0] == 5678);
+    assert(B.array[0] == -5678);
     assert(B.array[1] == 1234);
 }
 
