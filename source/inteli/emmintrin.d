@@ -2593,7 +2593,7 @@ __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
+        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero); // TODO remove this use of shufflevector except for LDC
         long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
     }
 
@@ -3370,7 +3370,7 @@ __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
         return shufflevector!(int4, (imm8 >> 0) & 3,
                                     (imm8 >> 2) & 3,
                                     (imm8 >> 4) & 3,
-                                    (imm8 >> 6) & 3)(a, a);
+                                    (imm8 >> 6) & 3)(a, a); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -3393,7 +3393,7 @@ __m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
     else
     {
         return shufflevector!(double2, 0 + ( imm8 & 1 ),
-                                       2 + ( (imm8 >> 1) & 1 ))(a, b);
+                                       2 + ( (imm8 >> 1) & 1 ))(a, b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -3421,7 +3421,7 @@ __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
                                           4 + ( (imm8 >> 0) & 3 ),
                                           4 + ( (imm8 >> 2) & 3 ),
                                           4 + ( (imm8 >> 4) & 3 ),
-                                          4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a);
+                                          4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -3444,6 +3444,7 @@ __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return cast(__m128i) shufflevector!(short8, ( (imm8 >> 0) & 3 ),
                                                     ( (imm8 >> 2) & 3 ),
                                                     ( (imm8 >> 4) & 3 ),
@@ -3742,6 +3743,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
         }
         else
         {
+            // TODO remove this use of shufflevector except for LDC
             return cast(__m128i) shufflevector!(byte16,
             16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes, 20 - bytes, 21 - bytes,
             22 - bytes, 23 - bytes, 24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
@@ -4209,6 +4211,7 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return cast(__m128i) shufflevector!(byte16,
                                             bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
                                             bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
@@ -4319,6 +4322,7 @@ void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 /// aligned on a 16-byte boundary or a general-protection exception may be generated.
 void _mm_storer_pd (double* mem_addr, __m128d a) pure @system
 {
+    // TODO remove this use of shufflevector except for LDC
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = shufflevector!(double2, 1, 0)(a, a);
 }
@@ -4514,6 +4518,7 @@ __m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
     pragma(inline, true);
     return a - b;
 }
+// TODO unittest
 
 /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
 __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
@@ -4786,6 +4791,7 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return cast(__m128i) shufflevector!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
                                            (cast(short8)a, cast(short8)b);
     }
@@ -4817,6 +4823,7 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
     }
 }
@@ -4873,6 +4880,7 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return cast(__m128i)shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
                                                    12, 28, 13, 29, 14, 30, 15, 31)
                                                    (cast(byte16)a, cast(byte16)b);
@@ -4896,7 +4904,7 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
     }
     else
     {
-        return shufflevector!(__m128d, 1, 3)(a, b);
+        return shufflevector!(__m128d, 1, 3)(a, b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -4929,7 +4937,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
     else
     {
         return cast(__m128i) shufflevector!(short8, 0, 8, 1, 9, 2, 10, 3, 11)
-                                           (cast(short8)a, cast(short8)b);
+                                           (cast(short8)a, cast(short8)b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -4959,7 +4967,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        return shufflevector!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b);
+        return shufflevector!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -5019,7 +5027,7 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
     {
         return cast(__m128i) shufflevector!(byte16, 0, 16, 1, 17, 2, 18, 3, 19,
                                                     4, 20, 5, 21, 6, 22, 7, 23)
-                                           (cast(byte16)a, cast(byte16)b);
+                                           (cast(byte16)a, cast(byte16)b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
@@ -5040,7 +5048,7 @@ __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
     }
     else
     {
-        return shufflevector!(__m128d, 0, 2)(a, b);
+        return shufflevector!(__m128d, 0, 2)(a, b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest

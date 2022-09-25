@@ -2588,6 +2588,7 @@ unittest
 /// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
 __m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @safe
 {
+    // TODO remove this use of shufflevector except for LDC
     // PERF DMD + D_SIMD
     return cast(__m64) shufflevector!(short4, ( (imm8 >> 0) & 3 ),
                                               ( (imm8 >> 2) & 3 ),
@@ -2612,6 +2613,7 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
     }
 }
