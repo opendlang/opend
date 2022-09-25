@@ -145,7 +145,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            short[8] res;
+            short[8] res; // PERF =void;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
             foreach(i; 0..8)
@@ -157,7 +157,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        short[8] res;
+        short[8] res; // PERF =void;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         foreach(i; 0..8)
@@ -194,7 +194,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            byte[16] res;
+            byte[16] res; // PERF =void;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
@@ -206,7 +206,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        byte[16] res;
+        byte[16] res; // PERF =void;
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
         foreach(i; 0..16)
@@ -241,7 +241,7 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            ubyte[16] res;
+            ubyte[16] res; // PERF =void;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
@@ -253,7 +253,7 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        ubyte[16] res;
+        ubyte[16] res; // PERF =void;
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
         foreach(i; 0..16)
@@ -289,7 +289,7 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            ushort[8] res;
+            ushort[8] res; // PERF =void;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
             foreach(i; 0..8)
@@ -301,7 +301,7 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        ushort[8] res;
+        ushort[8] res; // PERF =void;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         foreach(i; 0..8)
@@ -1238,7 +1238,7 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
     }
     else
     {
-        __m128 res;
+        __m128 res; // PERF =void;
         res.ptr[0] = cast(float)a.array[0];
         res.ptr[1] = cast(float)a.array[1];
         res.ptr[2] = cast(float)a.array[2];
@@ -1643,7 +1643,7 @@ __m128i _mm_cvttpd_epi32 (__m128d a) pure @trusted
     else
     {
         // Note: doesn't generate cvttpd2dq as of LDC 1.13
-        __m128i r;
+        __m128i r; // PERF =void;
         r.ptr[0] = cast(int)a.array[0];
         r.ptr[1] = cast(int)a.array[1];
         r.ptr[2] = 0;
@@ -1675,7 +1675,7 @@ __m128i _mm_cvttps_epi32 (__m128 a) pure @trusted
 {
     // x86: Generates cvttps2dq since LDC 1.3 -O2
     // ARM64: generates fcvtze since LDC 1.8 -O2
-    __m128i r;
+    __m128i r; // PERF = void;
     r.ptr[0] = cast(int)a.array[0];
     r.ptr[1] = cast(int)a.array[1];
     r.ptr[2] = cast(int)a.array[2];
@@ -1839,7 +1839,7 @@ unittest
 __m128d _mm_load_pd1 (const(double)* mem_addr) pure
 {
     double m = *mem_addr;
-    __m128d r;
+    __m128d r; // PERF =void;
     r.ptr[0] = m;
     r.ptr[1] = m;
     return r;
@@ -1939,7 +1939,7 @@ unittest
 __m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
 {
     __m128d a = *cast(__m128d*)(mem_addr);
-    __m128d r;
+    __m128d r; // PERF =void;
     r.ptr[0] = a.array[1];
     r.ptr[1] = a.array[0];
     return r;
@@ -4263,7 +4263,7 @@ void _mm_store_pd (double* mem_addr, __m128d a) pure @trusted
 void _mm_store_pd1 (double* mem_addr, __m128d a) pure @trusted
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
-    __m128d r;
+    __m128d r; // PERF =void;
     r.ptr[0] = a.array[0];
     r.ptr[1] = a.array[0];
     *aligned = r;
@@ -4539,7 +4539,7 @@ __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
             /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-            short[8] res;
+            short[8] res; // PERF: =void;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
             foreach(i; 0..8)
@@ -4559,7 +4559,7 @@ __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        short[8] res;
+        short[8] res; // PERF =void;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         foreach(i; 0..8)
@@ -4592,7 +4592,7 @@ __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            byte[16] res;
+            byte[16] res; // PERF =void;
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
@@ -4612,7 +4612,7 @@ __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        byte[16] res;
+        byte[16] res; // PERF =void;
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
         foreach(i; 0..16)
@@ -4645,7 +4645,7 @@ __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         }
         else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
         {
-            short[8] res;
+            short[8] res; // PERF =void;
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
             foreach(i; 0..8)
@@ -4668,7 +4668,7 @@ __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        short[8] res;
+        short[8] res; // PERF =void;
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         foreach(i; 0..8)
@@ -4707,7 +4707,7 @@ __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
             /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
             __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
             {
-                ubyte[16] res;
+                ubyte[16] res; // PERF =void;
                 byte16 sa = cast(byte16)a;
                 byte16 sb = cast(byte16)b;
                 foreach(i; 0..16)
@@ -4728,7 +4728,7 @@ __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
     }
     else
     {
-        ubyte[16] res;
+        ubyte[16] res; // PERF =void;
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
         foreach(i; 0..16)
@@ -4990,7 +4990,7 @@ __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
     {
         long2 lA = cast(long2)a;
         long2 lB = cast(long2)b;
-        long2 R;
+        long2 R; // PERF =void;
         R.ptr[0] = lA.array[0];
         R.ptr[1] = lB.array[0];
         return cast(__m128i)R;

@@ -122,7 +122,7 @@ __m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         for (int n = 0; n < 4; ++n)
         {
             r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];
@@ -185,7 +185,7 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
     // PERF DMD
     static if (GDC_with_SSE42)
     {
-        // Amazingly enough, GCC/GDC generates the blendvpd instruction
+        // PERF Amazingly enough, GCC/GDC generates the blendvpd instruction
         // with -msse4.2 but not -msse4.1.
         // Not sure what is the reason, and there is a replacement sequence.
         // Sounds like a bug.
@@ -204,7 +204,7 @@ __m128d _mm_blendv_pd (__m128d a, __m128d b, __m128d mask) @trusted
     }
     else
     {
-        __m128d r;
+        __m128d r; // PERF =void;
         long2 lmask = cast(long2)mask;
         for (int n = 0; n < 2; ++n)
         {
@@ -258,7 +258,7 @@ __m128 _mm_blendv_ps (__m128 a, __m128 b, __m128 mask) @trusted
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         int4 lmask = cast(int4)mask;
         for (int n = 0; n < 4; ++n)
         {

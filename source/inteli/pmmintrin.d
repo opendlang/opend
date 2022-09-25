@@ -70,7 +70,7 @@ __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
     else
     {
        // On GDC this generates haddpd with -O1
-        __m128d res;
+        __m128d res; // PERF =void;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = b.array[1] + b.array[0];
         return res;
@@ -98,7 +98,7 @@ __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
     }
     else
     {    
-        __m128 res;
+        __m128 res; // PERF =void;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = a.array[3] + a.array[2];
         res.ptr[2] = b.array[1] + b.array[0];
@@ -124,7 +124,7 @@ __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
     else
     {        
         // On GDC this generates hsubpd with -O1
-        __m128d res;
+        __m128d res; // PERF =void;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = b.array[0] - b.array[1];
         return res;
@@ -155,7 +155,7 @@ __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
     else
     {
         // PERF: GDC doesn't generate the right instruction, do something
-        __m128 res;
+        __m128 res; // PERF =void;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = a.array[2] - a.array[3];
         res.ptr[2] = b.array[0] - b.array[1];
@@ -181,7 +181,7 @@ __m128d _mm_loaddup_pd (const(double)* mem_addr) pure @trusted
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
     // Same for GDC with -O1
     double value = *mem_addr;
-    __m128d res;
+    __m128d res; // PERF =void;
     res.ptr[0] = value;
     res.ptr[1] = value;
     return res;

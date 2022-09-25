@@ -1338,7 +1338,7 @@ __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERf =void;
         r.ptr[0] = *mem_addr;
         r.ptr[1] = 0;
         r.ptr[2] = 0;
@@ -1426,7 +1426,7 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted // FUTURE shouldn't b
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         r.ptr[0] = a.array[3];
         r.ptr[1] = a.array[2];
         r.ptr[2] = a.array[1];
@@ -1599,7 +1599,7 @@ __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
     else
     {
         // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
-        __m128 r;
+        __m128 r; // PERF =void;
         r[0] = (a[0] > b[0]) ? a[0] : b[0];
         r[1] = (a[1] > b[1]) ? a[1] : b[1];
         r[2] = (a[2] > b[2]) ? a[2] : b[2];
@@ -1688,7 +1688,7 @@ __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
     else
     {
         // ARM: Optimized into fcmgt + bsl since LDC 1.8 -02
-        __m128 r;
+        __m128 r; // PERF =void;
         r[0] = (a[0] < b[0]) ? a[0] : b[0];
         r[1] = (a[1] < b[1]) ? a[1] : b[1];
         r[2] = (a[2] < b[2]) ? a[2] : b[2];
@@ -2739,7 +2739,7 @@ void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE: shouldn't
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         r.ptr[0] = a.array[0];
         r.ptr[1] = a.array[0];
         r.ptr[2] = a.array[0];
@@ -2813,7 +2813,7 @@ void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         r.ptr[0] = a.array[3];
         r.ptr[1] = a.array[2];
         r.ptr[2] = a.array[1];
@@ -2994,7 +2994,7 @@ __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         r.ptr[0] = a.array[2];
         r.ptr[1] = b.array[2];
         r.ptr[2] = a.array[3];
@@ -3026,7 +3026,7 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
     }
     else
     {
-        __m128 r;
+        __m128 r; // PERF =void;
         r.ptr[0] = a.array[0];
         r.ptr[1] = b.array[0];
         r.ptr[2] = a.array[1];

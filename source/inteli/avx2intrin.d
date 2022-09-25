@@ -63,7 +63,7 @@ __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
     else
     {
         short8 sa = cast(short8)a;
-        int8 r;
+        int8 r; // PERF =void;
         // Explicit cast to unsigned to get *zero* extension (instead of sign extension).
         r.ptr[0] = cast(ushort)sa.array[0];
         r.ptr[1] = cast(ushort)sa.array[1];
@@ -138,7 +138,7 @@ __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
     {
         short16 sa = cast(short16)a;
         short16 sb = cast(short16)b;
-        int8 r;
+        int8 r; // PERF =void;
         foreach(i; 0..8)
         {
             r.ptr[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];

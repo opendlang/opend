@@ -612,7 +612,7 @@ unittest
 /// Return vector of type `__m64` with all elements set to zero.
 __m64 _mm_setzero_si64 () pure @trusted
 {
-    __m64 r;
+    __m64 r; // PERF =void;
     r.ptr[0] = 0;
     return r;
 }
