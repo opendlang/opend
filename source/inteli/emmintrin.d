@@ -4354,6 +4354,14 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @trusted // TODO: sign
         p[3] = a.array[3];
     }
 }
+unittest
+{
+    __m128i A = _mm_setr_epi32(1, 2, 3, 4);
+    align(16) int[6] R = [0, 0, 0, 0, 0, 0];
+    int[4] correct = [1, 2, 3, 4];
+    _mm_storeu_si128(cast(__m128i*)(&R[1]), A);
+    assert(R[1..5] == correct);
+}
 
 /// Store 32-bit integer from the first element of `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
