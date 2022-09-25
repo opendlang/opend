@@ -3315,23 +3315,37 @@ unittest
 }
 
 /// Return vector of type `__m128d` with all elements set to zero.
-__m128d _mm_setzero_pd () pure @trusted
+__m128d _mm_setzero_pd() pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    // Note: using loadUnaligned has better -O0 codegen compared to .ptr
-    double[2] result = [0.0, 0.0];
-    return loadUnaligned!(double2)(result.ptr);
+    double2 r = void;
+    r.ptr[0] = 0.0;
+    r.ptr[1] = 0.0;
+    return r;
+}
+unittest
+{
+    __m128d A = _mm_setzero_pd();
+    double[2] correct = [0.0, 0.0];
+    assert(A.array == correct);
 }
 
 /// Return vector of type `__m128i` with all elements set to zero.
 __m128i _mm_setzero_si128() pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    // Note: using loadUnaligned has better -O0 codegen compared to .ptr
-    int[4] result = [0, 0, 0, 0];
-    return cast(__m128i)( loadUnaligned!(int4)(result.ptr) );
+    int4 r = void;
+    r.ptr[0] = 0;
+    r.ptr[1] = 0;
+    r.ptr[2] = 0;
+    r.ptr[3] = 0;
+    return r;
+}
+unittest
+{
+    __m128i A = _mm_setzero_si128();
+    int[4] correct = [0, 0, 0, 0];
+    assert(A.array == correct);
 }
 
 /// Shuffle 32-bit integers in a using the control in `imm8`.
@@ -4989,14 +5003,14 @@ __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)(cast(__m128i)a ^ cast(__m128i)b);
 }
-// TODO unittest and thus force inline
+// TODO unittest
 
 /// Compute the bitwise XOR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
 {
     return a ^ b;
 }
-// TODO unittest and thus force inline
+// TODO unittest
 
 unittest
 {
