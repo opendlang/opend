@@ -120,6 +120,9 @@ Without that Intel documentation, it's impractical to write sizeable SIMD code.
 - [18x faster SHA-256 vs Phobos](https://github.com/AuburnSounds/intel-intrinsics/blob/master/examples/sha256/source/main.d) with `intel-intrinsics`
 - [Auburn Sounds](https://www.auburnsounds.com/) audio products
 - [Cut Through Recordings](https://www.cutthroughrecordings.com/) audio products
+- [Punk Labs](https://punklabs.com/) audio products
+- [PixelPerfectEngine](https://github.com/ZILtoid1991/pixelperfectengine)
+- [SMAOLAB](https://smaolab.org/) audio products
 
 
 ### Notable differences between x86 and ARM targets
