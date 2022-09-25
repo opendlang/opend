@@ -25,36 +25,6 @@ version(GNU)
 
         import gcc.builtins;
 
-        float4 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
-        {
-            return __builtin_ia32_loadups(pvec);
-        }
-
-        double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
-        {
-            return __builtin_ia32_loadupd(pvec);
-        }
-
-        byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
-        {
-            return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
-        short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
-        {
-            return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
-        int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
-        {
-            return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
-        long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
-        {
-            return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-        }
-
         void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
         {
             __builtin_ia32_storeups(pvec, v);
@@ -265,49 +235,6 @@ else
 
 static if (DefineGenericLoadStoreUnaligned)
 {
-    template loadUnaligned(Vec)
-    {
-        // Note: can't be @safe with this signature
-        Vec loadUnaligned(const(BaseType!Vec)* pvec) @trusted
-        {
-            enum bool isVector = ( (Vec.sizeof == 8)  && (!MMXSizedVectorsAreEmulated)
-                                || (Vec.sizeof == 16) && (!SSESizedVectorsAreEmulated)
-                                || (Vec.sizeof == 32) && (!AVXSizedVectorsAreEmulated) );
-
-            static if (isVector)
-            {
-                // PERF DMD
-                // BUG: code is wrong, should cast to Vec, see https://github.com/dlang/druntime/pull/3808/commits/b5670753248ec3b1631a0eb8ca76a27e8d6a39b9
-                /* enabling this need to move loadUnaligned and storeUnaligned to internals.d
-                static if (DMD_with_DSIMD && Vec.sizeof == 8)
-                {
-                    static if (is(Vec == double2))
-                        return cast(Vec)__simd(XMM.LODUPD, *pvec);
-                    else static if (is(Vec == float4))
-                        return cast(Vec)__simd(XMM.LODUPS, *pvec);
-                    else
-                        return cast(Vec)__simd(XMM.LODDQU, *pvec);
-                }
-                else */
-                {
-                    enum size_t Count = Vec.array.length;
-                    Vec result;
-                    foreach(int i; 0..Count)
-                    {
-                        result.ptr[i] = pvec[i];
-                    }
-                    return result;
-                }
-            }
-            else
-            {
-                // Since this vector is emulated, it doesn't have alignement constraints
-                // and as such we can just cast it.
-                return *cast(Vec*)(pvec);
-            }
-        }
-    }
-
     template storeUnaligned(Vec)
     {
         // Note: can't be @safe with this signature

@@ -4328,7 +4328,7 @@ void _mm_storer_pd (double* mem_addr, __m128d a) pure
 void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 {
     pragma(inline, true);
-    storeUnaligned!double2(a, mem_addr);
+    storeUnaligned!double2(a, mem_addr); // TODO remove that storeUnaligned
 }
 
 /// Store 128-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular 

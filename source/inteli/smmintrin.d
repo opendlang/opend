@@ -1700,7 +1700,7 @@ __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
         // PERF: not great without SSE4.1
         int4 sa = cast(int4)a;
         int4 sb = cast(int4)b;
-        ushort[8] result;
+        align(16) ushort[8] result;
         for (int i = 0; i < 4; ++i)
         {
             int s = sa.array[i];
@@ -1713,7 +1713,7 @@ __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
             if (s > 65535) s = 65535;
             result.ptr[i+4] = cast(ushort)s;
         }
-        return cast(__m128i) loadUnaligned!(short8)(cast(short*)result.ptr);
+        return *cast(__m128i*)(result.ptr);
     }
 }
 unittest

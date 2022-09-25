@@ -2838,7 +2838,7 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not
     }
     else
     {
-        storeUnaligned!(float4)(a, mem_addr);
+        storeUnaligned!(float4)(a, mem_addr); // TODO remove that storeUnaligned except for LDC
     }
 }
 
