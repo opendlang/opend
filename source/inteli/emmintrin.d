@@ -4336,7 +4336,7 @@ void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
 {
     pragma(inline, true);
-    storeUnaligned!__m128i(a, cast(int*)mem_addr);
+    storeUnaligned!__m128i(a, cast(int*)mem_addr); // TODO remove that storeUnaligned
 }
 
 /// Store 32-bit integer from the first element of `a` into memory. 

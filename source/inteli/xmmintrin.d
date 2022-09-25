@@ -2836,9 +2836,20 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not
     {
         cast(void) __simd_sto(XMM.STOUPS, *cast(void16*)(cast(float*)mem_addr), a);
     }
+    else static if (GDC_with_SSE)
+    {
+        __builtin_ia32_storeups(mem_addr, a); // better in -O0
+    }
+    else version(LDC)
+    {
+        storeUnaligned!(float4)(a, mem_addr);
+    }
     else
     {
-        storeUnaligned!(float4)(a, mem_addr); // TODO remove that storeUnaligned except for LDC
+        mem_addr[0] = a.array[0];
+        mem_addr[1] = a.array[1];
+        mem_addr[2] = a.array[2];
+        mem_addr[3] = a.array[3];
     }
 }
 
