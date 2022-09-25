@@ -4333,10 +4333,26 @@ void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
 
 /// Store 128-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular 
 /// boundary.
-void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
+void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @trusted // TODO: signature is wrong, mem_addr is not aligned
 {
+    // PERF: DMD
     pragma(inline, true);
-    storeUnaligned!__m128i(a, cast(int*)mem_addr); // TODO remove that storeUnaligned
+    static if (GDC_with_SSE2)
+    {
+        __builtin_ia32_storedqu(cast(char*)mem_addr, cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        storeUnaligned!__m128i(a, cast(int*)mem_addr);
+    }
+    else
+    {
+        int* p = cast(int*)mem_addr;
+        p[0] = a.array[0];
+        p[1] = a.array[1];
+        p[2] = a.array[2];
+        p[3] = a.array[3];
+    }
 }
 
 /// Store 32-bit integer from the first element of `a` into memory. 

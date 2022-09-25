@@ -2852,6 +2852,14 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not
         mem_addr[3] = a.array[3];
     }
 }
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2, 3, 4);
+    align(16) float[6] R = [0.0f, 0, 0, 0, 0, 0];
+    float[4] correct = [1.0f, 2, 3, 4];
+    _mm_storeu_ps(&R[1], A);
+    assert(R[1..5] == correct);
+}
 
 /// Store 64-bits of integer data from `a` into memory using a non-temporal memory hint.
 void _mm_stream_pi (__m64* mem_addr, __m64 a)
