@@ -3073,10 +3073,11 @@ unittest
 /// Set packed 64-bit integers with the supplied values.
 __m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
 {
-    // TODO: remove useless loadUnaligned, check perf (see #102)
     pragma(inline, true);
-    long[2] result = [e0.array[0], e1.array[0]];
-    return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
+    long2 r = void;
+    r.ptr[0] = e0.array[0];
+    r.ptr[1] = e1.array[0];
+    return cast(__m128i)(r);
 }
 unittest
 {
