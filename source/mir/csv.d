@@ -10,15 +10,640 @@ pattern like for other data types.
 $(IONREF conv, serde) unifies this two steps throught binary Ion format,
 which serves as an efficient DOM representation for all other formats.
 
-We provide seven variants of how $(LREF CsvKind) can be represented
-in Ion notation.
-
 Macros:
     IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
     AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
     AAREF = $(REF_ALTTEXT $(TT $2), $2, mir, algebraic_alias, $1)$(NBSP)
 +/
+
 module mir.csv;
+
+///
+public import mir.algebraic_alias.csv: CsvAlgebraic;
+
+/++
++/
+struct Csv
+{
+    ///
+    const(char)[] text;
+    ///
+    bool hasHeader = true;
+    ///
+    char separator = ',';
+    ///
+    char quote = '"';
+    ///
+    char comment = '\0';
+    ///
+    bool stripSpace = false; 
+    ///
+    ubyte skipRows;
+    ///
+    bool parseTimestamps = false;
+
+    /++
+    N/A and NULL patterns are converted to Ion `null` when exposed to arrays
+    and skipped when exposed to objects
+    +/
+    const(string)[] naStrings = [
+        ``,
+        `#N/A`,
+        `#N/A N/A`,
+        `#NA`,
+        `<NA>`,
+        `N/A`,
+        `NA`,
+        `n/a`,
+        `Null`,
+        `Null`,
+        `NULL`,
+    ];
+
+
+    /// File name for berrer error messages
+    string fileName = "<unknown>";
+
+    // /++
+    // +/
+    // bool delegate(size_t columnIndex, scope const(char)[] columnName) useColumn;
+
+    /++
+    Conversion callback to finish conversion resolution
+    Params:
+        unquotedString = string after unquoting
+        kind = currently recognized path
+        columnIndex = column index starting from 0
+    +/
+    CsvAlgebraic delegate(
+        return scope const(char)[] unquotedString,
+        CsvAlgebraic scalar,
+        bool quoted,
+        size_t columnIndex
+    ) @safe pure @nogc conversionFinalizer;
+
+    /++
+    +/
+    static bool defaultIsSymbolHandler(scope const(char)[] symbol, bool quoted) @safe pure @nogc nothrow
+    {
+        import mir.algorithm.iteration: all;
+        return !quoted && symbol.length && symbol.all!(
+            c =>
+                'a' <= c && c <= 'z' ||
+                'A' <= c && c <= 'Z' ||
+                c == '_'
+        );
+    }
+
+    /++
+    A function used to determine if a string should be passed
+    to a serializer as a symbol instead of strings.
+    That may help to reduce memory allocation for data with
+    a huge amount of equal cell values.``
+    The default pattern follows regular expression `[a-zA-Z_]+`
+    and requires symbol to be presented without double quotes.
+    +/
+    bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
+
+    void serialize(S)(scope ref S serializer) scope const @trusted
+    {
+        // DRAFT
+        // TODO: have to be @nogc
+        // import std.ascii;
+        import mir.bignum.decimal: Decimal, DecimalExponentKey;
+        import mir.exception: MirException;
+        import mir.ndslice.dynamic: transposed;
+        import mir.ndslice.slice: sliced;
+        import mir.parse: ParsePosition;
+        import mir.ser: serializeValue;
+        import mir.timestamp: Timestamp;
+        import mir.utility: _expect;
+        import mir.format: stringBuf;
+        import std.algorithm.iteration: splitter;
+        import std.algorithm.searching: canFind;
+        import std.string: lineSplitter, strip;
+
+        auto csv = text[];
+        if (csv.length)
+        {
+            LS: foreach (i; 0 .. skipRows)
+            {
+                do
+                {
+                    csv = csv[1 .. $];
+                    if (csv.length == 0)
+                        break LS;
+                }
+                while(csv[0] != '\n');
+            }
+        }
+        if (comment && csv.length)
+        {
+            LC: while (csv[0] == comment)
+            {
+                do
+                {
+                    csv = csv[1 .. $];
+                    if (csv.length == 0)
+                        break LC;
+                }
+                while(csv[0] != '\n');
+                csv = csv[1 .. $];
+                if (csv.length == 0)
+                    break LC;
+            }
+        }
+
+        bool initLoop;
+        auto strBuf = stringBuf;
+        const(char)[] readQuoted() scope return
+        {
+            strBuf.reset;
+            // fill buf here
+            // ...
+            return strBuf.data;
+        }
+
+            // if (i == 0 && hasHeader)
+        { // first line lookup to count columns
+            // if header?
+            // put symbol!
+        }
+        size_t i;
+        auto nColumns = size_t.max;
+        size_t wrapperState;
+        size_t outerState;
+
+
+        foreach (line; csv.lineSplitter)
+        {
+            if (!initLoop)
+            {
+                initLoop = true;
+                outerState = serializer.listBegin;
+            }
+            size_t j;
+            size_t state;
+            serializer.elemBegin;
+            state = serializer.listBegin(nColumns);
+            foreach (value; splitter(line, separator))
+            {
+                j++;
+                if (j > nColumns)
+                    break;
+
+                if (_expect(stripSpace, false))
+                {
+                    if (separator == '\t')
+                    {
+                        while (value.length && value[0] == ' ')
+                            value = value[1 .. $];
+                        while (value.length && value[$ - 1] == ' ')
+                            value = value[0 .. $ - 1];
+
+                    }
+                    else
+                    {
+                        while (value.length && (value[0] == ' ' || value[0] == '\t'))
+                            value = value[1 .. $];
+                        while (value.length && (value[$ - 1] == ' ' || value[$ - 1] == '\t'))
+                            value = value[0 .. $ - 1];
+                    }
+                }
+
+                CsvAlgebraic scalar;
+                bool quoted;
+                DecimalExponentKey decimalKey;
+                Decimal!128 decimal = void;
+
+                enum bool allowSpecialValues = true;
+                enum bool allowDotOnBounds = true;
+                enum bool allowDExponent = true;
+                enum bool allowStartingPlus = true;
+                enum bool allowUnderscores = false;
+                enum bool allowLeadingZeros = true;
+                enum bool allowExponent = true;
+                enum bool checkEmpty = false;
+
+                if (value.length == 0)
+                {
+                }
+                else
+                if (decimal.fromStringImpl!(
+                    char,
+                    allowSpecialValues,
+                    allowDotOnBounds,
+                    allowDExponent,
+                    allowStartingPlus,
+                    allowUnderscores,
+                    allowLeadingZeros,
+                    allowExponent,
+                    checkEmpty)
+                    (value, decimalKey))
+                    if (decimalKey)
+                        scalar = cast(double) decimal;
+                    else
+                        scalar = cast(long) decimal.coefficient;
+                else
+                {
+                    S: switch (value)
+                    {
+                        case `#N/A`:
+                        case `#NA`:
+                        case `<NA>`:
+                        case `n/a`:
+                        case `N/A`:
+                        case `NA`:
+                        case `Null`:
+                        case `NULL`:
+                            // null kind
+                            break;
+                        case `True`:
+                        case `TRUE`:
+                            scalar = true;
+                            break;
+                        case `False`:
+                        case `FALSE`:
+                            scalar = true;
+                            break;
+                        default:
+                            quoted = value[0] == quote;
+                            () @trusted {
+                                if (_expect(!quoted, true))
+                                {
+                                    Timestamp timestamp;
+                                    if (parseTimestamps && Timestamp.fromISOExtString(value, timestamp))
+                                        scalar = timestamp;
+                                    else
+                                        scalar = cast(string) value;
+                                }
+                                else
+                                    scalar = cast(string) readQuoted;
+                            } ();
+                    }                    
+                }
+
+
+                if (_expect(conversionFinalizer !is null, false))
+                {
+                    scalar = conversionFinalizer(value, scalar, quoted, j - 1);
+                }
+                serializer.elemBegin();
+                serializer.serializeValue(scalar);
+            }
+            if (j != nColumns && nColumns != nColumns.max)
+            {
+                throw new MirException("CSV: Expected ", nColumns, ", got ", j, " at:\n", ParsePosition(fileName, cast(uint)i, 0));
+            }
+            nColumns = j;
+
+            serializer.listEnd(state);
+        }
+        if (!initLoop)
+            outerState = serializer.listBegin(0);
+        serializer.listEnd(outerState);
+    }
+}
+
+version(none)
+struct CsvSerializer(Appender)
+{
+    import mir.bignum.decimal: Decimal;
+    import mir.bignum.integer: BigInt;
+    import mir.ion.type_code;
+    import mir.lob;
+    import mir.timestamp;
+    import std.traits: isNumeric;
+
+    /++
+    CSV string buffer
+    +/
+    Appender appender;
+
+    /// Mutable value used to choose format specidied or user-defined serialization specializations
+    int serdeTarget = SerdeTarget.json;
+    private bool _annotation;
+    private size_t state;
+
+scope:
+
+    private void pushState(size_t state)
+    {
+        this.state = state;
+    }
+
+    private size_t popState()
+    {
+        auto ret = state;
+        state = 0;
+        return ret;
+    }
+
+    private void incState()
+    {
+        if(state++)
+        {
+            static if(sep.length)
+            {
+                appender.put(",\n");
+            }
+            else
+            {
+                appender.put(',');
+            }
+        }
+        else
+        {
+            static if(sep.length)
+            {
+                appender.put('\n');
+            }
+        }
+    }
+
+    private void putEscapedKey(scope const char[] key)
+    {
+        incState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+        appender.put('\"');
+        appender.put(key);
+        static if(sep.length)
+        {
+            appender.put(`": `);
+        }
+        else
+        {
+            appender.put(`":`);
+        }
+    }
+
+    ///
+    size_t stringBegin()
+    {
+        appender.put('\"');
+        return 0;
+    }
+
+    /++
+    Puts string part. The implementation allows to split string unicode points.
+    +/
+    void putStringPart(scope const(char)[] value)
+    {
+        import mir.format: printEscaped, EscapeFormat;
+        printEscaped!(char, EscapeFormat.json)(appender, value);
+    }
+
+    ///
+    void stringEnd(size_t)
+    {
+        appender.put('\"');
+    }
+
+    ///
+    size_t structBegin(size_t length = size_t.max)
+    {
+        static if(sep.length)
+        {
+            deep++;
+        }
+        appender.put('{');
+        return popState;
+    }
+
+    ///
+    void structEnd(size_t state)
+    {
+        static if(sep.length)
+        {
+            deep--;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
+        }
+        appender.put('}');
+        pushState(state);
+    }
+
+    ///
+    size_t listBegin(size_t length = size_t.max)
+    {
+        static if(sep.length)
+        {
+            deep++;
+        }
+        appender.put('[');
+        return popState;
+    }
+
+    ///
+    void listEnd(size_t state)
+    {
+        static if(sep.length)
+        {
+            deep--;
+            if (this.state)
+            {
+                appender.put('\n');
+                putSpace;
+            }
+        }
+        appender.put(']');
+        pushState(state);
+    }
+
+    ///
+    alias sexpBegin = listBegin;
+
+    ///
+    alias sexpEnd = listEnd;
+
+    ///
+    void putSymbol(scope const char[] symbol)
+    {
+        putValue(symbol);
+    }
+
+    ///
+    void putAnnotation(scope const(char)[] annotation)
+    {
+        if (_annotation)
+            throw jsonAnnotationException;
+        _annotation = true;
+        putKey(annotation);
+    }
+
+    ///
+    auto annotationsEnd(size_t state)
+    {
+        bool _annotation = false;
+        return state;
+    }
+
+    ///
+    alias annotationWrapperBegin = structBegin;
+
+    ///
+    void annotationWrapperEnd(size_t annotationsState, size_t state)
+    {
+        return structEnd(state);
+    }
+
+    ///
+    void nextTopLevelValue()
+    {
+        appender.put('\n');
+    }
+
+    ///
+    void putCompiletimeKey(string key)()
+    {
+        import mir.algorithm.iteration: any;
+        static if (key.any!(c => c == '"' || c == '\\' || c < ' '))
+            putKey(key);
+        else
+            putEscapedKey(key);
+    }
+
+    ///
+    void putKey(scope const char[] key)
+    {
+        import mir.format: printEscaped, EscapeFormat;
+
+        incState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+        appender.put('\"');
+        printEscaped!(char, EscapeFormat.json)(appender, key);
+        static if(sep.length)
+        {
+            appender.put(`": `);
+        }
+        else
+        {
+            appender.put(`":`);
+        }
+    }
+
+    ///
+    void putValue(Num)(const Num value)
+        if (isNumeric!Num && !is(Num == enum))
+    {
+        import mir.format: print;
+        import mir.internal.utility: isFloatingPoint;
+
+        static if (isFloatingPoint!Num)
+        {
+            import mir.math.common: fabs;
+
+            if (value.fabs < value.infinity)
+                print(appender, value);
+            else if (value == Num.infinity)
+                appender.put(`"+inf"`);
+            else if (value == -Num.infinity)
+                appender.put(`"-inf"`);
+            else
+                appender.put(`"nan"`);
+        }
+        else
+            print(appender, value);
+    }
+
+    ///
+    void putValue(size_t size)(auto ref const BigInt!size num)
+    {
+        num.toString(appender);
+    }
+
+    ///
+    void putValue(size_t size)(auto ref const Decimal!size num)
+    {
+        num.toString(appender);
+    }
+
+    ///
+    void putValue(typeof(null))
+    {
+        appender.put("null");
+    }
+
+    /// ditto 
+    void putNull(IonTypeCode code)
+    {
+        appender.put(code.nullStringJsonAlternative);
+    }
+
+    ///
+    void putValue(bool b)
+    {
+        appender.put(b ? "true" : "false");
+    }
+
+    ///
+    void putValue(scope const char[] value)
+    {
+        auto state = stringBegin;
+        putStringPart(value);
+        stringEnd(state);
+    }
+
+    ///
+    void putValue(scope Clob value)
+    {
+        throw jsonClobSerializationIsntImplemented;
+    }
+
+    ///
+    void putValue(scope Blob value)
+    {
+        throw jsonBlobSerializationIsntImplemented;
+    }
+
+    ///
+    void putValue(Timestamp value)
+    {
+        appender.put('\"');
+        value.toISOExtString(appender);
+        appender.put('\"');
+    }
+
+    ///
+    void elemBegin()
+    {
+        incState;
+        static if(sep.length)
+        {
+            putSpace;
+        }
+    }
+
+    ///
+    alias sexpElemBegin = elemBegin;
+}
+
+/// Matrix
+unittest
+{
+    import mir.test: should;
+    import mir.ndslice.slice: Slice;
+    import mir.ion.conv: serde;
+
+    alias Matrix = Slice!(double*, 2);
+
+    auto text = "1,2\n3,4\r\n5,6\n";
+
+    auto matrix = text.Csv.serde!Matrix;
+    matrix.should == [[1, 2], [3, 4], [5, 6]];
+}
+
+// First draft
+version(none):
 
 ///
 unittest
@@ -80,9 +705,6 @@ unittest
 
     flex["Volume"][1].should == 4632863;
 }
-
-///
-public import mir.algebraic_alias.csv: CsvAlgebraic;
 
 /++
 CSV representation kind.

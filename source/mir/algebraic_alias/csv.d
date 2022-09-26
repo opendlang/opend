@@ -13,7 +13,7 @@ Definition union for $(LREF JsonAlgebraic).
 +/
 import mir.algebraic: Variant;
 
-import mir.algebraic: Algebraic, algMeta, algTransp;
+import mir.algebraic: Algebraic;
 
 public import mir.timestamp: Timestamp;
 
@@ -37,10 +37,6 @@ union Csv_
     Timestamp timestamp;
     ///
     immutable(char)[] string;
-@algMeta:
-@algTransp:
-    ///
-    bool isQuoted;
 }
 
 ///

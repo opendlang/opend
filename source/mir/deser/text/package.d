@@ -860,84 +860,39 @@ private:
         enum bool allowSpecialValues = false;
         // Ion spec allows this
         enum bool allowDotOnBounds = true;
+        enum bool allowDExponent = true;
+        enum bool allowStartingPlus = false;
         enum bool allowUnderscores = true;
         enum bool allowLeadingZeros = false;
+        enum bool allowExponent = true; 
         // shouldn't be empty anyways, tokenizer wouldn't allow it
         enum bool checkEmpty = false; 
 
-        if (v.type == IonTypeCode.nInt || v.type == IonTypeCode.uInt)
+        if (!dec.fromStringImpl!(
+            char,
+            allowSpecialValues,
+            allowDotOnBounds,
+            allowDExponent,
+            allowStartingPlus,
+            allowUnderscores,
+            allowLeadingZeros,
+            allowExponent,
+            checkEmpty
+        )(v.matchedText, exponentKey))
         {
-            enum bool allowDExponent = false;
-            enum bool allowStartingPlus = false;
-            enum bool allowExponent = false;
-            if (!dec.fromStringImpl!(
-                char,
-                allowSpecialValues,
-                allowDotOnBounds,
-                allowDExponent,
-                allowStartingPlus,
-                allowUnderscores,
-                allowLeadingZeros,
-                allowExponent,
-                checkEmpty
-            )(v.matchedText, exponentKey))
-            {
-                goto unexpected_decimal_value;
-            }
-
-            dec.coefficient.sign = v.type == IonTypeCode.nInt;
-        }
-        else if (v.type == IonTypeCode.decimal)
-        {
-            enum bool allowDExponent = true;
-            enum bool allowStartingPlus = true;
-            // this is technically not correct, as Ion spec says that only dot and d|D are allowed
-            // but, Mir needs this flag to be true to enable the code path
-            enum bool allowExponent = true; 
-            if (!dec.fromStringImpl!(
-                char,
-                allowSpecialValues,
-                allowDotOnBounds,
-                allowDExponent,
-                allowStartingPlus,
-                allowUnderscores,
-                allowLeadingZeros,
-                allowExponent,
-                checkEmpty
-            )(v.matchedText, exponentKey))
-            {
-                goto unexpected_decimal_value;
-            }
-        }
-        else if (v.type == IonTypeCode.float_)
-        {
-            enum bool allowDExponent = false;
-            enum bool allowStartingPlus = true;
-            enum bool allowExponent = true;
-            if (!dec.fromStringImpl!(
-                char,
-                allowSpecialValues,
-                allowDotOnBounds,
-                allowDExponent,
-                allowStartingPlus,
-                allowUnderscores,
-                allowLeadingZeros,
-                allowExponent,
-                checkEmpty
-            )(v.matchedText, exponentKey))
-            {
-                goto unexpected_decimal_value;
-            }
+            goto unexpected_decimal_value;
         }
 
         if (exponentKey == DecimalExponentKey.none)
         {
+            dec.coefficient.sign = v.type == IonTypeCode.nInt;
             // this is not a FP, so we can discard the exponent 
             ser.putValue(dec.coefficient);
         }
-        else if (exponentKey == DecimalExponentKey.d 
-                || exponentKey == DecimalExponentKey.D 
-                || exponentKey == DecimalExponentKey.dot)
+        else if (
+            exponentKey == DecimalExponentKey.d 
+         || exponentKey == DecimalExponentKey.D
+         || exponentKey == DecimalExponentKey.dot)
         {
             ser.putValue(dec);
         }
