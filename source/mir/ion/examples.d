@@ -1490,3 +1490,32 @@ unittest
         .get!(T[string])["key"]
         .should == value;
 }
+
+@safe pure
+unittest
+{
+    import mir.algebraic : Variant;
+    import mir.deser.text;
+    import mir.ser.text;
+    import mir.serde;
+    import mir.test;
+
+    enum SerialContract {serial, contract} 
+
+    @serdeAnnotation
+    @serdeAlgebraicAnnotation("stirFuture")
+    static struct StirFutureConfig
+    {
+        @serdeAnnotation
+        SerialContract kind;
+
+        int data;
+        alias data this;
+    }
+
+    auto config = Variant!StirFutureConfig(SerialContract.contract, 7);
+    auto str = "stirFuture::contract::7";
+    config.serializeText.should == "stirFuture::contract::7";
+    `stirFuture::contract::7`
+        .deserializeText!(Variant!StirFutureConfig).should == config;
+}
