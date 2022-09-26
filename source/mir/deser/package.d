@@ -83,14 +83,9 @@ package template hasDeserializeFromIon(T)
 /++
 Deserialize aggregate value using compile time symbol table
 +/
-template deserializeValue(string[] symbolTable, TableKind tableKind, bool annotated)
+template deserializeValue(string[] symbolTable, TableKind tableKind)
 {
     import mir.appender: scopedBuffer, ScopedBuffer;
-
-    static if (annotated)
-        alias Annotations = AliasSeq!IonAnnotations;
-    else
-        alias Annotations = AliasSeq!();
 
     static if (tableKind == TableKind.scopeRuntime)
         alias RuntimeSymbolTable = const(char[])[];
@@ -116,7 +111,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         scope ref C[] value,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
-        scope Annotations annotations_,
         )
         if (is(immutable C == immutable char))
     {
@@ -151,7 +145,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         scope ref Buffer buffer,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
-        scope Annotations annotations_,
         )
     {
         if (_expect(data.descriptor.type != IonTypeCode.list, false))
@@ -162,7 +155,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             if (_expect(error, false))
                 return error.ionException;
             Unqual!(typeof(buffer.data[0])) value;
-            if (auto exception = deserializeValue(ionElem, value, table, tableIndex, annotations_))
+            if (auto exception = deserializeValue(ionElem, value, table, tableIndex))
                 return exception;
             import core.lifetime: move;
             buffer.put(move(value));
@@ -176,7 +169,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         scope ref SerdeFlags!T requiredFlags,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
-        scope Annotations annotations_,
         )
     {
         import core.lifetime: move;
@@ -236,7 +228,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     if (_expect(error, false))
                         return error.ionException;
                     Temporal elem;
-                    if (auto exception = impl(ionElem, elem, table, tableIndex, annotations_))
+                    if (auto exception = impl(ionElem, elem, table, tableIndex))
                         return exception;
                     import core.lifetime: move;
                     __traits(getMember, value, member).put(move(elem));
@@ -276,7 +268,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                         return error.ionException;
 
                     Temporal elem;
-                    if (auto exception = impl(ionElem, elem, table, tableIndex, annotations_))
+                    if (auto exception = impl(ionElem, elem, table, tableIndex))
                         return exception;
                     import core.lifetime: move;
 
@@ -321,7 +313,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         static if (hasProxy)
         {
             Temporal proxy;
-            if (auto exception = impl(data, proxy, table, tableIndex, annotations_))
+            if (auto exception = impl(data, proxy, table, tableIndex))
                 return exception;
             auto temporal = to!(serdeDeserializationMemberType!(T, member))(move(proxy));
             static if (hasTransform)
@@ -332,7 +324,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         else
         static if (hasField!(T, member))
         {
-            if (auto exception = impl(data, __traits(getMember, value, member), table, tableIndex, annotations_))
+            if (auto exception = impl(data, __traits(getMember, value, member), table, tableIndex))
                 return exception;
             static if (hasTransform)
                 transform(__traits(getMember, value, member));
@@ -353,7 +345,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     import std.array: std_appender = appender;
                     auto buffer = std_appender!(D[]);
                 }
-                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex, annotations_))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex))
                     return exception;
                 auto temporal = (() @trusted => cast(Member)buffer.data)();
                 static if (hasTransform)
@@ -364,7 +356,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             else
             {
                 Member temporal;
-                if (auto exception = impl(data, temporal, table, tableIndex, annotations_))
+                if (auto exception = impl(data, temporal, table, tableIndex))
                     return exception;
                 static if (hasTransform)
                     transform(temporal);
@@ -382,14 +374,14 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         value = value to deserialize
     Returns: `IonException`
     +/
-    IonException deserializeValue(T)(
+    IonException deserializeValue(T, Annotations...)(
         scope IonDescribedValue data,
         scope ref T value,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
         scope Annotations annotations_,
         )
-        if (!isFirstOrderSerdeType!T && !isVariant!T)
+        if (!isFirstOrderSerdeType!T && !isVariant!T && Annotations.length <= 1)
     {
         import mir.algebraic: isVariant, isNullable;
         import mir.internal.meta: Contains;
@@ -420,7 +412,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     if (value._length == maxLength)
                         return IonErrorCode.smallArrayOverflow.ionException;
                     E elem;
-                    if (auto exception = deserializeValue(ionElem, elem, table, tableIndex, annotations_))
+                    if (auto exception = deserializeValue(ionElem, elem, table, tableIndex))
                         return exception;
                     import core.lifetime: move;
                     value.trustedAppend(move(elem));
@@ -512,7 +504,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             {
                 import std.array: std_appender = appender;
                 auto buffer = std_appender!(D[]);
-                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex, annotations_))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex))
                     return exception;
                 value = buffer.data;
                 return null;
@@ -537,7 +529,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     return error.ionException;
                 if (i >= N)
                     return IonErrorCode.tooManyElementsForStaticArray.ionException;
-                if (auto exception = deserializeValue(ionElem, value[i++], table, tableIndex, annotations_))
+                if (auto exception = deserializeValue(ionElem, value[i++], table, tableIndex))
                     return exception;
             }
             if (i < N)
@@ -560,7 +552,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                     static foreach (j; 0 .. N)
                     {
                         case j:
-                            if (auto exception = deserializeValue(ionElem, value[j], table, tableIndex, annotations_))
+                            if (auto exception = deserializeValue(ionElem, value[j], table, tableIndex))
                                 return exception;
                             break S;
                     }
@@ -592,7 +584,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 if (symbolId >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                 import mir.conv: to;
-                if (auto errorMsg = deserializeValue(elem, ref () @trusted pure {return value.require(table[symbolId].to!K);} (), table, tableIndex, annotations_))
+                if (auto errorMsg = deserializeValue(elem, ref () @trusted pure {return value.require(table[symbolId].to!K);} (), table, tableIndex))
                     return errorMsg;
             }
             return null;
@@ -619,7 +611,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 import mir.conv: to;
                 if (auto errorMsg = deserializeValue(elem, 
                     (ref () @trusted pure => value.require(table[symbolId].to!string))(),
-                    table, tableIndex, annotations_))
+                    table, tableIndex))
                     return errorMsg;
             }
             return null;
@@ -634,7 +626,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 import mir.ndslice.slice: sliced;
 
                 D[] array;
-                if (auto ret = deserializeValue(data, array, table, tableIndex, annotations_))
+                if (auto ret = deserializeValue(data, array, table, tableIndex))
                     return ret;
                 value = array.sliced.asKindOf!kind;
                 return null;
@@ -645,7 +637,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 import mir.ndslice.fuse: fuse;
 
                 Slice!(D*, N - 1)[] array;
-                if (auto ret = deserializeValue(data, array, table, tableIndex, annotations_))
+                if (auto ret = deserializeValue(data, array, table, tableIndex))
                     return ret;
                 value = array.fuse.asKindOf!kind;
                 return null;
@@ -659,7 +651,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             static if (N == 1)
             {
                 RCArray!D array;
-                if (auto ret = deserializeValue(data, array, table, tableIndex, annotations_))
+                if (auto ret = deserializeValue(data, array, table, tableIndex))
                     return ret;
                 () @trusted {
                     value = array.moveToSlice.asKindOf!kind;
@@ -672,7 +664,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 import mir.ndslice.fuse: rcfuse;
 
                 RCArray!(Slice!(RCI!D, N - 1)) array;
-                if (auto ret = deserializeValue(data, array, table, tableIndex, annotations_))
+                if (auto ret = deserializeValue(data, array, table, tableIndex))
                     return ret;
                 () @trusted {
                     value = array.moveToSlice.rcfuse.asKindOf!kind;
@@ -687,7 +679,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             if (data.descriptor.type == IonTypeCode.list)
             {
                 auto buffer = scopedBuffer!E;
-                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex, annotations_))
+                if (auto exception = deserializeListToScopedBuffer(data, buffer, table, tableIndex))
                     return exception;
                 auto ar = RCArray!E(buffer.length, false);
                 () @trusted {
@@ -859,9 +851,9 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         }
         else
         {
-            static if (serdeGetAnnotationMembersIn!T.length || annotated)
+            static if (serdeGetAnnotationMembersIn!T.length || Annotations.length)
             {
-                static if (!annotated)
+                static if (!Annotations.length)
                 {
                     if (data.descriptor.type != IonTypeCode.annotations)
                     {
@@ -947,10 +939,10 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 else
                     enum aliasMember = "value";
                 static if (hasField!(T, aliasMember))
-                    return .deserializeValue!(symbolTable, tableKind, annotations__.length)(data, __traits(getMember, value, aliasMember), table, tableIndex, annotations__);
+                    return deserializeValue(data, __traits(getMember, value, aliasMember), table, tableIndex, annotations__);
                 else {
                     typeof(__traits(getMember, value, aliasMember)) temporal;
-                    if (auto exception = .deserializeValue!(symbolTable, tableKind, annotations__.length)(data, temporal, table, tableIndex, annotations__))
+                    if (auto exception = deserializeValue(data, temporal, table, tableIndex, annotations__))
                         return exception;
                     import core.lifetime: move;
                     __traits(getMember, value, aliasMember) = move(temporal);
@@ -959,7 +951,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
             }
             else
             {
-                static if (serdeGetAnnotationMembersIn!T.length || annotated)
+                static if (serdeGetAnnotationMembersIn!T.length || Annotations.length)
                 {
                     if (!annotations.empty)
                     {
@@ -1015,7 +1007,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 static if (hasUDA!(T, serdeOrderedIn))
                 {
                     SerdeOrderedDummy!T temporal;
-                    if (auto exception = .deserializeValue!(symbolTable, tableKind, false)(data, temporal, table, tableIndex))
+                    if (auto exception = deserializeValue(data, temporal, table, tableIndex))
                         return exception;
                     temporal.serdeFinalizeTarget(value, requiredFlags);
                 }
@@ -1069,7 +1061,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                                                 }
                                             }
 
-                                            if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, table, tableIndex, annotations_))
+                                            if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, table, tableIndex))
                                                 return mexp;
                                             break;
                                         default:
@@ -1140,7 +1132,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                                             goto default;
                                         }
                                     }
-                                    if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, table, tableIndex, annotations_))
+                                    if (auto mexp = deserializeValueMember!member(elem, value, requiredFlags, table, tableIndex))
                                         return mexp;
                                     break S;
                                     }
@@ -1201,14 +1193,14 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         }
     }
 
-    IonException deserializeValue(T)(
+    IonException deserializeValue(T, Annotations...)(
         scope IonDescribedValue data,
         scope ref T value,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
         scope Annotations annotations_,
         )
-        if (!isFirstOrderSerdeType!T && isVariant!T)
+        if (!isFirstOrderSerdeType!T && isVariant!T && Annotations.length <= 1)
     {
         import mir.internal.meta: Contains;
         import mir.ndslice.slice: Slice, SliceKind;
@@ -1224,7 +1216,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
 
         static if (getAlgebraicAnnotationsOfVariant!T.length)
         {
-            static if (!annotated)
+            static if (!Annotations.length)
             {
                 IonAnnotations annotations__;
                 if (data.descriptor.type == IonTypeCode.annotations)
@@ -1241,7 +1233,9 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 
             }
             else
+            {
                 alias annotations__ = annotations_[0];
+            }
 
             IonException retNull() @property
             {
@@ -1276,7 +1270,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                         case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
                         {
                             VT object;
-                            if (auto exception = .deserializeValue!(symbolTable, tableKind, true)(data, object, table, tableIndex, annotations__))
+                            if (auto exception = deserializeValue(data, object, table, tableIndex, annotations__))
                                 return exception;
                             import core.lifetime: move;
                             value = move(object);
@@ -1310,7 +1304,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                                 case findKey(symbolTable, serdeGetAlgebraicAnnotation!VT):
                                 {
                                     VT object;
-                                    if (auto exception = .deserializeValue!(symbolTable, tableKind, true)(elem, object, table, tableIndex, annotations__))
+                                    if (auto exception = deserializeValue(elem, object, table, tableIndex, annotations__))
                                         return exception;
                                     import core.lifetime: move;
                                     value = move(object);
@@ -1345,7 +1339,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
         static if ((contains!(typeof(null)) || contains!IonNull) && T.AllowedTypes.length == 2)
         {
             T.AllowedTypes[1] payload;
-            if (auto exception = deserializeValue(data, payload, table, tableIndex, annotations_))
+            if (auto exception = deserializeValue(data, payload, table, tableIndex))
                 return exception;
             value = payload;
             return retNull;
@@ -1381,7 +1375,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 case IonTypeCode.string:
                 {
                     string str;
-                    if (auto exception = deserializeValue(data, str, table, tableIndex, annotations_))
+                    if (auto exception = deserializeValue(data, str, table, tableIndex))
                         return exception;
                     value = str;
                     return retNull;
@@ -1394,7 +1388,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                 case IonTypeCode.string:
                 {
                     Filter!(isSmallString, Types)[$ - 1] str; // pick the largest one
-                    if (auto exception = deserializeValue(data, str, table, tableIndex, annotations_))
+                    if (auto exception = deserializeValue(data, str, table, tableIndex))
                         return exception;
                     value = str;
                     return retNull;
@@ -1527,7 +1521,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                             if (table[symbolId] == discriminatedField)
                             {
                                 const(char)[] tag;
-                                if (auto exception = deserializeScoped(elem, tag, table, tableIndex, annotations_))
+                                if (auto exception = deserializeScoped(elem, tag, table, tableIndex))
                                     return exception;
                                 switch (tag)
                                 {
@@ -1583,15 +1577,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
 
 
             default:
-            import mir.stdio;
-            debug writeln(getAlgebraicAnnotationsOfVariant!T);
-            debug writeln(annotated);
-            debug writeln(annotations_, " -- ");
-            static if (getAlgebraicAnnotationsOfVariant!T.length)
-            debug writeln(annotations__, " -- ");
-            debug writeln(data.descriptor.type);
-            debug writeln(anySatisfy!(isAnnotated, Types));
-            debug writeln(Types.stringof);
                 return unqualException(unexpectedIonTypeCodeFor!T);
         }
 

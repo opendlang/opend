@@ -67,7 +67,7 @@ template deserializeIon(T, bool annotated = false)
                 id = uint.max;
             tableMapBuffer.put(id);
         }
-        if (auto exception = deserializeValue!(keys, TableKind.scopeRuntime, annotated)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
+        if (auto exception = deserializeValue!(keys, TableKind.scopeRuntime)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
             throw exception;
     }}
 
@@ -110,7 +110,7 @@ template deserializeIon(T, bool annotated = false)
             tableMapBuffer.put(id);
         }
 
-        if (auto exception = deserializeValue!(keys, TableKind.immutableRuntime, annotated)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
+        if (auto exception = deserializeValue!(keys, TableKind.immutableRuntime)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
             throw exception;            
     }
 
