@@ -1020,7 +1020,7 @@ struct Csv
                     j++;
                     if (stripUnquoted)
                         value = value.strip;
-                    if (value.canFind('"'))
+                    if (value.containsAny('"'))
                     {
                         // TODO unqote
                         value = value.strip;
@@ -1093,7 +1093,7 @@ struct Csv
 
                 bool quoted;
 
-                if (value.canFind('"'))
+                if (value.containsAny('"'))
                 {
                     quoted = true;
                     // TODO unqote

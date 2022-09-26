@@ -11,16 +11,17 @@
  */
 module mir.yaml.internal.constructor;
 
-import mir.timestamp;
 import mir.algorithm.iteration: filter;
-import std.algorithm.searching: canFind, startsWith;
-import std.algorithm.comparison: among;
 import mir.array.allocation: array;
 import mir.base64;
 import mir.conv;
-import std.exception;
 import mir.exception: MirException;
-import std.string: representation, empty, split, replace, toLower;
+import mir.string;
+import mir.timestamp;
+import std.algorithm.comparison: among;
+import std.algorithm.searching: canFind, startsWith;
+import std.exception;
+import std.string: representation, empty, replace, toLower, split;
 
 import mir.algebraic_alias.yaml;
 import mir.yaml.internal.exception;
@@ -240,11 +241,11 @@ long constructLong(string str) @safe
         //Octal.
         else if(value[0] == '0')       {result = sign * stdTo!int(value, 8);}
         //Sexagesimal.
-        else if(value.canFind(":"))
+        else if(value.containsAny(":"))
         {
             long val;
             long base = 1;
-            foreach_reverse(digit; value.split(":"))
+            foreach_reverse(digit; value.split(':'))
             {
                 val += to!long(digit) * base;
                 base *= 60;
@@ -277,7 +278,7 @@ long constructLong(string str) @safe
 double constructReal(string str) @safe
 {
     import mir.conv: to;
-    auto value = str.replace("_", "").toLower();
+    auto value = str.toLower();
     const char c = value[0];
     const double sign = c != '-' ? 1.0 : -1.0;
     if(c == '-' || c == '+')
@@ -292,13 +293,13 @@ double constructReal(string str) @safe
         //Infinity.
         if     (value == ".inf"){result = sign * double.infinity;}
         //Not a Number.
-        else if(value == ".nan"){result = double.nan;}
+        else if(value == ".nan"){result = sign * double.nan;}
         //Sexagesimal.
-        else if(value.canFind(":"))
+        else if(value.containsAny(":"))
         {
             double val = 0.0;
             double base = 1.0;
-            foreach_reverse(digit; value.split(":"))
+            foreach_reverse(digit; value.split(':'))
             {
                 val += to!double(digit) * base;
                 base *= 60.0;
@@ -340,7 +341,7 @@ Blob constructBinary(string value) @trusted
     import mir.array.allocation : array;
 
     // For an unknown reason, this must be nested to work (compiler bug?).
-    return decodeBase64(cast(string)value.representation.filter!(c => !newline.canFind(c)).array).Blob;
+    return decodeBase64(cast(string)value.representation.filter!(c => !newline.containsAny(c)).array).Blob;
 }
 
 @safe unittest
