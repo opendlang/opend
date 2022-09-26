@@ -314,76 +314,41 @@ struct CsvSerializer(Appender)
     import mir.lob;
     import mir.timestamp;
     import std.traits: isNumeric;
+    import mir.format: print;
+    import mir.string: containsAny;
+    import mir.format: printEscaped, EscapeFormat;
 
     /++
     CSV string buffer
     +/
     Appender appender;
 
+    ///
+    char separator = ',';
+    ///
+    char quote = '"';
+    ///
+    bool quoteAllStrings;
+
+    ///
+    string naValue = "NA";
+    ///
+    string trueValue = "TRUE";
+    ///
+    string falseValue = "FALSE";
+
     /// Mutable value used to choose format specidied or user-defined serialization specializations
-    int serdeTarget = SerdeTarget.json;
-    private bool _annotation;
-    private size_t state;
+    int serdeTarget = SerdeTarget.csv;
+
+    private uint level, row, column;
+
 
 scope:
-
-    private void pushState(size_t state)
-    {
-        this.state = state;
-    }
-
-    private size_t popState()
-    {
-        auto ret = state;
-        state = 0;
-        return ret;
-    }
-
-    private void incState()
-    {
-        if(state++)
-        {
-            static if(sep.length)
-            {
-                appender.put(",\n");
-            }
-            else
-            {
-                appender.put(',');
-            }
-        }
-        else
-        {
-            static if(sep.length)
-            {
-                appender.put('\n');
-            }
-        }
-    }
-
-    private void putEscapedKey(scope const char[] key)
-    {
-        incState;
-        static if(sep.length)
-        {
-            putSpace;
-        }
-        appender.put('\"');
-        appender.put(key);
-        static if(sep.length)
-        {
-            appender.put(`": `);
-        }
-        else
-        {
-            appender.put(`":`);
-        }
-    }
 
     ///
     size_t stringBegin()
     {
-        appender.put('\"');
+        appender.put('"');
         return 0;
     }
 
@@ -392,8 +357,7 @@ scope:
     +/
     void putStringPart(scope const(char)[] value)
     {
-        import mir.format: printEscaped, EscapeFormat;
-        printEscaped!(char, EscapeFormat.json)(appender, value);
+        printReplaced!(char, EscapeFormat.json)(appender, value);
     }
 
     ///
@@ -405,55 +369,27 @@ scope:
     ///
     size_t structBegin(size_t length = size_t.max)
     {
-        static if(sep.length)
-        {
-            deep++;
-        }
-        appender.put('{');
-        return popState;
+        throw new Exception("mir.csv: ");
     }
 
     ///
     void structEnd(size_t state)
     {
-        static if(sep.length)
-        {
-            deep--;
-            if (this.state)
-            {
-                appender.put('\n');
-                putSpace;
-            }
-        }
-        appender.put('}');
-        pushState(state);
+        throw new Exception("mir.csv: ");
     }
 
     ///
     size_t listBegin(size_t length = size_t.max)
     {
-        static if(sep.length)
-        {
-            deep++;
-        }
-        appender.put('[');
-        return popState;
+        if (level++ >= 2)
+            throw new Exception("mir.csv: "); 
     }
 
     ///
     void listEnd(size_t state)
     {
-        static if(sep.length)
-        {
-            deep--;
-            if (this.state)
-            {
-                appender.put('\n');
-                putSpace;
-            }
-        }
-        appender.put(']');
-        pushState(state);
+        if (level-- == 2)
+            appender.put('\n');
     }
 
     ///
@@ -471,17 +407,13 @@ scope:
     ///
     void putAnnotation(scope const(char)[] annotation)
     {
-        if (_annotation)
-            throw jsonAnnotationException;
-        _annotation = true;
-        putKey(annotation);
+        throw new Exception("mir.csv: ");
     }
 
     ///
     auto annotationsEnd(size_t state)
     {
-        bool _annotation = false;
-        return state;
+        throw new Exception("mir.csv: ");
     }
 
     ///
@@ -500,44 +432,15 @@ scope:
     }
 
     ///
-    void putCompiletimeKey(string key)()
-    {
-        import mir.algorithm.iteration: any;
-        static if (key.any!(c => c == '"' || c == '\\' || c < ' '))
-            putKey(key);
-        else
-            putEscapedKey(key);
-    }
-
-    ///
     void putKey(scope const char[] key)
     {
-        import mir.format: printEscaped, EscapeFormat;
-
-        incState;
-        static if(sep.length)
-        {
-            putSpace;
-        }
-        appender.put('\"');
-        printEscaped!(char, EscapeFormat.json)(appender, key);
-        static if(sep.length)
-        {
-            appender.put(`": `);
-        }
-        else
-        {
-            appender.put(`":`);
-        }
+        throw new Exception("mir.csv: ");
     }
 
     ///
     void putValue(Num)(const Num value)
         if (isNumeric!Num && !is(Num == enum))
     {
-        import mir.format: print;
-        import mir.internal.utility: isFloatingPoint;
-
         static if (isFloatingPoint!Num)
         {
             import mir.math.common: fabs;
@@ -545,11 +448,11 @@ scope:
             if (value.fabs < value.infinity)
                 print(appender, value);
             else if (value == Num.infinity)
-                appender.put(`"+inf"`);
+                appender.put(`+INF`);
             else if (value == -Num.infinity)
-                appender.put(`"-inf"`);
+                appender.put(`-INF`);
             else
-                appender.put(`"nan"`);
+                appender.put(`NAN`);
         }
         else
             print(appender, value);
@@ -570,57 +473,62 @@ scope:
     ///
     void putValue(typeof(null))
     {
-        appender.put("null");
+        appender.put(naValue);
     }
 
     /// ditto 
     void putNull(IonTypeCode code)
     {
-        appender.put(code.nullStringJsonAlternative);
+        appender.put(naValue);
     }
 
     ///
     void putValue(bool b)
     {
-        appender.put(b ? "true" : "false");
+        appender.put(b ? trueValue : falseValue);
     }
 
     ///
     void putValue(scope const char[] value)
     {
-        auto state = stringBegin;
-        putStringPart(value);
-        stringEnd(state);
+        if (quoteAllStrings
+            || value.containsAny(separator, quote, '\n')
+            || value == naValue
+            || value == falseValue
+            || value == "NAN"
+            || value == trueValue)
+        {
+            auto state = stringBegin;
+            putStringPart(value);
+            stringEnd(state);
+        }
+        else
+        {
+            appender.put(value);
+        }
     }
 
     ///
     void putValue(scope Clob value)
     {
-        throw jsonClobSerializationIsntImplemented;
+        throw new Exception("");
     }
 
     ///
     void putValue(scope Blob value)
     {
-        throw jsonBlobSerializationIsntImplemented;
+        throw new Exception("");
     }
 
     ///
     void putValue(Timestamp value)
     {
-        appender.put('\"');
         value.toISOExtString(appender);
-        appender.put('\"');
     }
 
     ///
     void elemBegin()
     {
-        incState;
-        static if(sep.length)
-        {
-            putSpace;
-        }
     }
 
     ///
