@@ -200,7 +200,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionKHR} );
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionParametersKHR} );
             
-            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 5;
+            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 6;
             enum const( char )* VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
             
             enum VkQueryResultStatusKHR {
@@ -337,14 +337,14 @@ mixin template Platform_Extensions( extensions... ) {
             struct VkVideoCapabilitiesKHR {
                 VkStructureType            sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
                 void*                      pNext;
-                VkVideoCapabilityFlagsKHR  capabilityFlags;
+                VkVideoCapabilityFlagsKHR  flags;
                 VkDeviceSize               minBitstreamBufferOffsetAlignment;
                 VkDeviceSize               minBitstreamBufferSizeAlignment;
-                VkExtent2D                 videoPictureExtentGranularity;
-                VkExtent2D                 minExtent;
-                VkExtent2D                 maxExtent;
-                uint32_t                   maxReferencePicturesSlotsCount;
-                uint32_t                   maxReferencePicturesActiveCount;
+                VkExtent2D                 pictureAccessGranularity;
+                VkExtent2D                 minCodedExtent;
+                VkExtent2D                 maxCodedExtent;
+                uint32_t                   maxDpbSlots;
+                uint32_t                   maxActiveReferencePictures;
                 VkExtensionProperties      stdHeaderVersion;
             }
             
@@ -405,9 +405,9 @@ mixin template Platform_Extensions( extensions... ) {
                 const( VkVideoProfileInfoKHR )*  pVideoProfile;
                 VkFormat                         pictureFormat;
                 VkExtent2D                       maxCodedExtent;
-                VkFormat                         referencePicturesFormat;
-                uint32_t                         maxReferencePicturesSlotsCount;
-                uint32_t                         maxReferencePicturesActiveCount;
+                VkFormat                         referencePictureFormat;
+                uint32_t                         maxDpbSlots;
+                uint32_t                         maxActiveReferencePictures;
                 const( VkExtensionProperties )*  pStdHeaderVersion;
             }
             
@@ -520,7 +520,7 @@ mixin template Platform_Extensions( extensions... ) {
                 const( VkVideoReferenceSlotInfoKHR )*  pReferenceSlots;
             }
             
-            alias PFN_vkCmdDecodeVideoKHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkVideoDecodeInfoKHR )* pFrameInfo );
+            alias PFN_vkCmdDecodeVideoKHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkVideoDecodeInfoKHR )* pDecodeInfo );
         }
 
         // VK_KHR_external_memory_win32 : types and function pointer type aliases
@@ -846,7 +846,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_encode_h264 )) {
             enum VK_EXT_video_encode_h264 = 1;
 
-            enum VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION = 8;
+            enum VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION = 9;
             enum const( char )* VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME = "VK_EXT_video_encode_h264";
             
             enum VkVideoEncodeH264RateControlStructureEXT {
@@ -969,17 +969,17 @@ mixin template Platform_Extensions( extensions... ) {
             struct VkVideoEncodeH264SessionParametersAddInfoEXT {
                 VkStructureType                             sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT;
                 const( void )*                              pNext;
-                uint32_t                                    spsStdCount;
-                const( StdVideoH264SequenceParameterSet )*  pSpsStd;
-                uint32_t                                    ppsStdCount;
-                const( StdVideoH264PictureParameterSet )*   pPpsStd;
+                uint32_t                                    stdSPSCount;
+                const( StdVideoH264SequenceParameterSet )*  pStdSPSs;
+                uint32_t                                    stdPPSCount;
+                const( StdVideoH264PictureParameterSet )*   pStdPPSs;
             }
             
             struct VkVideoEncodeH264SessionParametersCreateInfoEXT {
                 VkStructureType                                         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT;
                 const( void )*                                          pNext;
-                uint32_t                                                maxSpsStdCount;
-                uint32_t                                                maxPpsStdCount;
+                uint32_t                                                maxStdSPSCount;
+                uint32_t                                                maxStdPPSCount;
                 const( VkVideoEncodeH264SessionParametersAddInfoEXT )*  pParametersAddInfo;
             }
             
@@ -1074,7 +1074,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_encode_h265 )) {
             enum VK_EXT_video_encode_h265 = 1;
 
-            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 8;
+            enum VK_EXT_VIDEO_ENCODE_H265_SPEC_VERSION = 9;
             enum const( char )* VK_EXT_VIDEO_ENCODE_H265_EXTENSION_NAME = "VK_EXT_video_encode_h265";
             
             enum VkVideoEncodeH265RateControlStructureEXT {
@@ -1236,20 +1236,20 @@ mixin template Platform_Extensions( extensions... ) {
             struct VkVideoEncodeH265SessionParametersAddInfoEXT {
                 VkStructureType                             sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT;
                 const( void )*                              pNext;
-                uint32_t                                    vpsStdCount;
-                const( StdVideoH265VideoParameterSet )*     pVpsStd;
-                uint32_t                                    spsStdCount;
-                const( StdVideoH265SequenceParameterSet )*  pSpsStd;
-                uint32_t                                    ppsStdCount;
-                const( StdVideoH265PictureParameterSet )*   pPpsStd;
+                uint32_t                                    stdVPSCount;
+                const( StdVideoH265VideoParameterSet )*     pStdVPSs;
+                uint32_t                                    stdSPSCount;
+                const( StdVideoH265SequenceParameterSet )*  pStdSPSs;
+                uint32_t                                    stdPPSCount;
+                const( StdVideoH265PictureParameterSet )*   pStdPPSs;
             }
             
             struct VkVideoEncodeH265SessionParametersCreateInfoEXT {
                 VkStructureType                                         sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT;
                 const( void )*                                          pNext;
-                uint32_t                                                maxVpsStdCount;
-                uint32_t                                                maxSpsStdCount;
-                uint32_t                                                maxPpsStdCount;
+                uint32_t                                                maxStdVPSCount;
+                uint32_t                                                maxStdSPSCount;
+                uint32_t                                                maxStdPPSCount;
                 const( VkVideoEncodeH265SessionParametersAddInfoEXT )*  pParametersAddInfo;
             }
             
@@ -1346,7 +1346,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_decode_h264 )) {
             enum VK_EXT_video_decode_h264 = 1;
 
-            enum VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION = 6;
+            enum VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION = 7;
             enum const( char )* VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME = "VK_EXT_video_decode_h264";
             
             alias VkVideoDecodeH264PictureLayoutFlagsEXT = VkFlags;
@@ -1363,33 +1363,33 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_VIDEO_DECODE_H2_64_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT                 = VkVideoDecodeH264PictureLayoutFlagBitsEXT.VK_VIDEO_DECODE_H2_64_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT;
             
             struct VkVideoDecodeH264ProfileInfoEXT {
-                VkStructureType                         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT;
-                const( void )*                          pNext;
-                StdVideoH264ProfileIdc                  stdProfileIdc;
-                VkVideoDecodeH264PictureLayoutFlagsEXT  pictureLayout;
+                VkStructureType                            sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT;
+                const( void )*                             pNext;
+                StdVideoH264ProfileIdc                     stdProfileIdc;
+                VkVideoDecodeH264PictureLayoutFlagBitsEXT  pictureLayout;
             }
             
             struct VkVideoDecodeH264CapabilitiesEXT {
-                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT;
-                void*              pNext;
-                StdVideoH264Level  maxLevel;
-                VkOffset2D         fieldOffsetGranularity;
+                VkStructureType       sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT;
+                void*                 pNext;
+                StdVideoH264LevelIdc  maxLevelIdc;
+                VkOffset2D            fieldOffsetGranularity;
             }
             
             struct VkVideoDecodeH264SessionParametersAddInfoEXT {
                 VkStructureType                             sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT;
                 const( void )*                              pNext;
-                uint32_t                                    spsStdCount;
-                const( StdVideoH264SequenceParameterSet )*  pSpsStd;
-                uint32_t                                    ppsStdCount;
-                const( StdVideoH264PictureParameterSet )*   pPpsStd;
+                uint32_t                                    stdSPSCount;
+                const( StdVideoH264SequenceParameterSet )*  pStdSPSs;
+                uint32_t                                    stdPPSCount;
+                const( StdVideoH264PictureParameterSet )*   pStdPPSs;
             }
             
             struct VkVideoDecodeH264SessionParametersCreateInfoEXT {
                 VkStructureType                                         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT;
                 const( void )*                                          pNext;
-                uint32_t                                                maxSpsStdCount;
-                uint32_t                                                maxPpsStdCount;
+                uint32_t                                                maxStdSPSCount;
+                uint32_t                                                maxStdPPSCount;
                 const( VkVideoDecodeH264SessionParametersAddInfoEXT )*  pParametersAddInfo;
             }
             
@@ -1397,14 +1397,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkStructureType                          sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT;
                 const( void )*                           pNext;
                 const( StdVideoDecodeH264PictureInfo )*  pStdPictureInfo;
-                uint32_t                                 slicesCount;
-                const( uint32_t )*                       pSlicesDataOffsets;
-            }
-            
-            struct VkVideoDecodeH264MvcInfoEXT {
-                VkStructureType                  sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_INFO_EXT;
-                const( void )*                   pNext;
-                const( StdVideoDecodeH264Mvc )*  pStdMvc;
+                uint32_t                                 sliceCount;
+                const( uint32_t )*                       pSliceOffsets;
             }
             
             struct VkVideoDecodeH264DpbSlotInfoEXT {
@@ -1619,7 +1613,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_decode_h265 )) {
             enum VK_EXT_video_decode_h265 = 1;
 
-            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 4;
+            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 5;
             enum const( char )* VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME = "VK_EXT_video_decode_h265";
             
             struct VkVideoDecodeH265ProfileInfoEXT {
@@ -1629,28 +1623,28 @@ mixin template Platform_Extensions( extensions... ) {
             }
             
             struct VkVideoDecodeH265CapabilitiesEXT {
-                VkStructureType    sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT;
-                void*              pNext;
-                StdVideoH265Level  maxLevel;
+                VkStructureType       sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT;
+                void*                 pNext;
+                StdVideoH265LevelIdc  maxLevelIdc;
             }
             
             struct VkVideoDecodeH265SessionParametersAddInfoEXT {
                 VkStructureType                             sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT;
                 const( void )*                              pNext;
-                uint32_t                                    vpsStdCount;
-                const( StdVideoH265VideoParameterSet )*     pVpsStd;
-                uint32_t                                    spsStdCount;
-                const( StdVideoH265SequenceParameterSet )*  pSpsStd;
-                uint32_t                                    ppsStdCount;
-                const( StdVideoH265PictureParameterSet )*   pPpsStd;
+                uint32_t                                    stdVPSCount;
+                const( StdVideoH265VideoParameterSet )*     pStdVPSs;
+                uint32_t                                    stdSPSCount;
+                const( StdVideoH265SequenceParameterSet )*  pStdSPSs;
+                uint32_t                                    stdPPSCount;
+                const( StdVideoH265PictureParameterSet )*   pStdPPSs;
             }
             
             struct VkVideoDecodeH265SessionParametersCreateInfoEXT {
                 VkStructureType                                         sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT;
                 const( void )*                                          pNext;
-                uint32_t                                                maxVpsStdCount;
-                uint32_t                                                maxSpsStdCount;
-                uint32_t                                                maxPpsStdCount;
+                uint32_t                                                maxStdVPSCount;
+                uint32_t                                                maxStdSPSCount;
+                uint32_t                                                maxStdPPSCount;
                 const( VkVideoDecodeH265SessionParametersAddInfoEXT )*  pParametersAddInfo;
             }
             
@@ -1658,8 +1652,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkStructureType                 sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT;
                 const( void )*                  pNext;
                 StdVideoDecodeH265PictureInfo*  pStdPictureInfo;
-                uint32_t                        slicesCount;
-                const( uint32_t )*              pSlicesDataOffsets;
+                uint32_t                        sliceCount;
+                const( uint32_t )*              pSliceOffsets;
             }
             
             struct VkVideoDecodeH265DpbSlotInfoEXT {
@@ -2745,7 +2739,7 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_video_decode_queue : dispatch device convenience member functions
             else static if( __traits( isSame, extension, KHR_video_decode_queue )) {
-                void      CmdDecodeVideoKHR( const( VkVideoDecodeInfoKHR )* pFrameInfo ) { vkCmdDecodeVideoKHR( commandBuffer, pFrameInfo ); }
+                void      CmdDecodeVideoKHR( const( VkVideoDecodeInfoKHR )* pDecodeInfo ) { vkCmdDecodeVideoKHR( commandBuffer, pDecodeInfo ); }
             }
 
             // VK_KHR_external_memory_win32 : dispatch device convenience member functions
