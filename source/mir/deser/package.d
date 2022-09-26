@@ -927,7 +927,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind, bool annota
                             break;
                         }
                         else
-                        static if (tableKind == TableKind.immutableRuntime && __traits(compiles, () @trusted pure {__traits(getMember, value, member) = table[symbolId];}))
+                        static if (__traits(compiles, __traits(getMember, value, member) = table[symbolId]))
                         {
                             (() @trusted pure {__traits(getMember, value, member) = table[symbolId];})() ;
                             break;
