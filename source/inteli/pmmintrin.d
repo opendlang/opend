@@ -25,12 +25,22 @@ nothrow @nogc:
 /// floating-point elements in `a` to/from packed elements in `b`.
 __m128d _mm_addsub_pd (__m128d a, __m128d b) pure @trusted
 {
-    // Note: generates addsubpd since LDC 1.3.0 with -O1
-    // PERF: for GDC, detect SSE3 and use the relevant builtin, because it doesn't generates addsubpd
-    // ARM: well optimized starting with LDC 1.18.0 -O2
-    a.ptr[0] = a.array[0] - b.array[0];
-    a.ptr[1] = a.array[1] + b.array[1];
-    return a;
+    // PERF DMD
+    static if (GDC_with_SSE3)
+    {
+        return __builtin_ia32_addsubpd(a, b);
+    }
+    else static if (LDC_with_SSE3)
+    {
+        return __builtin_ia32_addsubpd(a, b);
+    }
+    else
+    {
+        // ARM: well optimized starting with LDC 1.18.0 -O2, not disrupted by LLVM 13+
+        a.ptr[0] = a.array[0] - b.array[0];
+        a.ptr[1] = a.array[1] + b.array[1];
+        return a;
+    }
 }
 unittest
 {
@@ -43,13 +53,23 @@ unittest
 /// floating-point elements in `a` to/from packed elements in `b`.
 float4 _mm_addsub_ps (float4 a, float4 b) pure @trusted
 {
-    // Note: generates addsubps since LDC 1.3.0 with -O1
-    // PERF: for GDC, detect SSE3 and use the relevant builtin
-    a.ptr[0] -= b.array[0];
-    a.ptr[1] += b.array[1];
-    a.ptr[2] -= b.array[2];
-    a.ptr[3] += b.array[3];
-    return a;
+    // PERF DMD
+    static if (GDC_with_SSE3)
+    {
+        return __builtin_ia32_addsubps(a, b);
+    }
+    else static if (LDC_with_SSE3)
+    {
+        return __builtin_ia32_addsubps(a, b);
+    }
+    else
+    {    
+        a.ptr[0] -= b.array[0];
+        a.ptr[1] += b.array[1];
+        a.ptr[2] -= b.array[2];
+        a.ptr[3] += b.array[3];
+        return a;
+    }
 }
 unittest
 {
