@@ -1127,14 +1127,14 @@ version(mir_ion_test) unittest
     }
 
     alias V = Variant!(S1, S2);
-    auto v = V(S2(123));
+    auto v = [V(123), V("124")];
 
-    auto ion = `s2::{key:123}`;
-    auto json = `{"s2":{"key":123}}`;
+    auto ion = `[s2::{key:123},s1::{key:"124"}]`;
+    auto json = `[{"s2":{"key":123}},{"s1":{"key":"124"}}]`;
     assert(v.serializeText == ion);
-    assert(ion.deserializeText!V == v);
+    assert(ion.deserializeText!(V[2]) == v);
     assert(v.serializeJson == json);
-    assert(json.deserializeJson!V == v);
+    assert(json.deserializeJson!(V[2]) == v);
 }
 
 /// Annotated arrays
