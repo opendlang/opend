@@ -718,7 +718,8 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                 import mir.conv;
                 if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
                     return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
-                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
+                if (data.descriptor.L != 0xF)
+                foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
                 {
                     if (error)
                         return error.ionException;
@@ -726,7 +727,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                         return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
                     import mir.conv: to;
                     serdeGetProxy!T temporal;
-                    if (auto exception = impl(elem, temporal, table, tableIndex, annotations_))
+                    if (auto exception = impl(elem, temporal, table, tableIndex))
                         return exception;
                     static if (tableKind == TableKind.immutableRuntime)
                     {
@@ -751,13 +752,14 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                 import mir.conv;
                 if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.list)
                     return IonErrorCode.expectedListValue.ionException;
-                if (data.descriptor.L != 0xF) foreach (IonErrorCode error, scope IonDescribedValue elem; data.trustedGet!IonList)
+                if (data.descriptor.L != 0xF)
+                foreach (IonErrorCode error, scope IonDescribedValue elem; data.trustedGet!IonList)
                 {
                     if (error)
                         return error.ionException;
                     import mir.conv: to;
                     serdeGetProxy!T temporal;
-                    if (auto exception = impl(elem, temporal, table, tableIndex, annotations_))
+                    if (auto exception = impl(elem, temporal, table, tableIndex))
                         return exception;
                     value.put(move(temporal));
                 }
@@ -765,7 +767,12 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
             else
             {
                 serdeGetProxy!T temporal;
-                if (auto exception = impl(data, temporal, table, tableIndex, annotations_))
+                static if (is(serdeGetProxy!T == _C[], _C) && is(immutable _C == immutable char))
+                    alias proxyAnnotations = AliasSeq!();
+                else
+                    alias proxyAnnotations = annotations_;
+
+                if (auto exception = impl(data, temporal, table, tableIndex, proxyAnnotations))
                     return exception;
 
                 static if (__traits(compiles, ()@safe{return to!T(move(temporal));}))
