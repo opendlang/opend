@@ -316,11 +316,11 @@ void serializeValue(S,  V : const T[K], T, K)(scope ref S serializer, scope cons
     auto state = serializer.beginStruct(value);
     foreach (key, ref val; value)
     {
-        import mir.format: print;
+        import mir.format: print, stringBuf;
         import mir.small_string : SmallString;
-        SmallString!32 buffer;
+        auto buffer = stringBuf;
         print(buffer, key);
-        serializer.putKey(buffer[]);
+        serializer.putKey(buffer.data);
         .serializeValue(serializer, val);
     }
     serializer.structEnd(state);

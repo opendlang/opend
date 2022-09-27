@@ -326,13 +326,36 @@ scope:
     ///
     void putValue(scope Clob value)
     {
-        throw jsonClobSerializationIsntImplemented;
+        import mir.format: printEscaped, EscapeFormat;
+
+        static if(sep.length)
+            appender.put(`{{ "`);
+        else
+            appender.put(`{{"`);
+
+        printEscaped!(char, EscapeFormat.ionClob)(appender, value.data);
+
+        static if(sep.length)
+            appender.put(`" }}`);
+        else
+            appender.put(`"}}`);
     }
 
     ///
     void putValue(scope Blob value)
     {
-        throw jsonBlobSerializationIsntImplemented;
+        import mir.base64 : encodeBase64;
+        static if(sep.length)
+            appender.put("{{ ");
+        else
+            appender.put("{{");
+
+        encodeBase64(value.data, appender);
+
+        static if(sep.length)
+            appender.put(" }}");
+        else
+            appender.put("}}");
     }
 
     ///
