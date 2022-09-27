@@ -278,7 +278,7 @@ scope:
         ///
         auto annotationsEnd(size_t state)
         {
-            bool _annotation = false;
+            _annotation = false;
             return 0;
         }
 

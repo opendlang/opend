@@ -7,11 +7,10 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 module mir.ser.json;
 
 public import mir.serde;
-import mir.ion.exception: IonException;
+import mir.ion.exception: IonException, IonMirException;
 
-version(D_Exceptions) private static immutable jsonAnnotationException = new IonException("JSON can store exactly one annotation.");
-version(D_Exceptions) private static immutable jsonClobSerializationIsntImplemented = new IonException("JSON CLOB serialization isn't implemented.");
-version(D_Exceptions) private static immutable jsonBlobSerializationIsntImplemented = new IonException("JSON BLOB serialization isn't implemented.");
+private static immutable jsonAnnotationExceptionMsg = "JSON can store exactly one annotation.";
+version(D_Exceptions) private static immutable jsonAnnotationException = new IonException(jsonAnnotationExceptionMsg);
 
 /++
 JSON serialization back-end
@@ -24,6 +23,8 @@ struct JsonSerializer(string sep, Appender)
     import mir.lob;
     import mir.timestamp;
     import std.traits: isNumeric;
+
+    private enum hasDIP1008 = __traits(compiles, ()@nogc {throw new Exception("");});
 
     /++
     JSON string buffer
@@ -202,7 +203,12 @@ scope:
     void putAnnotation(scope const(char)[] annotation)
     {
         if (_annotation)
-            throw jsonAnnotationException;
+        {
+            static if (hasDIP1008)
+                throw new IonMirException(jsonAnnotationExceptionMsg, " The second annotation is '", annotation, "'");
+            else
+                throw jsonAnnotationException;
+        }
         _annotation = true;
         putKey(annotation);
     }
@@ -210,7 +216,7 @@ scope:
     ///
     auto annotationsEnd(size_t state)
     {
-        bool _annotation = false;
+        _annotation = false;
         return state;
     }
 
