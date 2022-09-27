@@ -18,6 +18,9 @@ Macros:
 
 module mir.csv;
 
+import mir.primitives: isOutputRange;
+import mir.serde: SerdeTarget;
+
 ///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
 
@@ -40,7 +43,9 @@ struct Csv
     ///
     ubyte skipRows;
     ///
-    bool parseTimestamps = false;
+    bool parseNumbers = true;
+    ///
+    bool parseTimestamps = true;
 
     /++
     N/A and NULL patterns are converted to Ion `null` when exposed to arrays
@@ -48,18 +53,15 @@ struct Csv
     +/
     const(string)[] naStrings = [
         ``,
-        `#N/A`,
-        `#N/A N/A`,
-        `#NA`,
-        `<NA>`,
-        `N/A`,
-        `NA`,
-        `n/a`,
-        `Null`,
-        `Null`,
-        `NULL`,
     ];
 
+    const(string)[] trueStrings = [
+        `TRUE`,
+    ];
+
+    const(string)[] falseStrings = [
+        `FALSE`,
+    ];
 
     /// File name for berrer error messages
     string fileName = "<unknown>";
@@ -215,21 +217,24 @@ struct Csv
                 bool quoted;
                 DecimalExponentKey decimalKey;
                 Decimal!128 decimal = void;
+                    Timestamp timestamp;
 
                 enum bool allowSpecialValues = true;
                 enum bool allowDotOnBounds = true;
                 enum bool allowDExponent = true;
                 enum bool allowStartingPlus = true;
                 enum bool allowUnderscores = false;
-                enum bool allowLeadingZeros = true;
+                enum bool allowLeadingZeros = false;
                 enum bool allowExponent = true;
-                enum bool checkEmpty = false;
+                enum bool checkEmpty = true;
 
-                if (value.length == 0)
+                quoted = value.length && value[0] == quote;
+                if (_expect(quoted, false))
                 {
+                    scalar = cast(string) readQuoted;
                 }
                 else
-                if (decimal.fromStringImpl!(
+                if (parseNumbers && decimal.fromStringImpl!(
                     char,
                     allowSpecialValues,
                     allowDotOnBounds,
@@ -240,49 +245,35 @@ struct Csv
                     allowExponent,
                     checkEmpty)
                     (value, decimalKey))
+                {
                     if (decimalKey)
                         scalar = cast(double) decimal;
                     else
                         scalar = cast(long) decimal.coefficient;
+                }
+                else
+                if (parseTimestamps && Timestamp.fromISOExtString(value, timestamp))
+                {
+                    scalar = timestamp;
+                }
+                else
+                if (naStrings.canFind(value))
+                {
+                }
+                else
+                if (trueStrings.canFind(value))
+                {
+                    scalar = true;
+                }
+                else
+                if (falseStrings.canFind(value))
+                {
+                    scalar = false;
+                }
                 else
                 {
-                    S: switch (value)
-                    {
-                        case `#N/A`:
-                        case `#NA`:
-                        case `<NA>`:
-                        case `n/a`:
-                        case `N/A`:
-                        case `NA`:
-                        case `Null`:
-                        case `NULL`:
-                            // null kind
-                            break;
-                        case `True`:
-                        case `TRUE`:
-                            scalar = true;
-                            break;
-                        case `False`:
-                        case `FALSE`:
-                            scalar = true;
-                            break;
-                        default:
-                            quoted = value[0] == quote;
-                            () @trusted {
-                                if (_expect(!quoted, true))
-                                {
-                                    Timestamp timestamp;
-                                    if (parseTimestamps && Timestamp.fromISOExtString(value, timestamp))
-                                        scalar = timestamp;
-                                    else
-                                        scalar = cast(string) value;
-                                }
-                                else
-                                    scalar = cast(string) readQuoted;
-                            } ();
-                    }                    
+                    scalar = cast(string) value;
                 }
-
 
                 if (_expect(conversionFinalizer !is null, false))
                 {
@@ -305,33 +296,118 @@ struct Csv
     }
 }
 
-version(none)
+/++
+Ion serialization function with pretty formatting.
++/
+string serializeCsv(V)(
+    auto scope ref const V value,
+    char separator = ',',
+    char quote = '"',
+    bool quoteAll = false,
+    string naValue = "",
+    string trueValue = "TRUE",
+    string falseValue = "FALSE",
+    int serdeTarget = SerdeTarget.csv)
+{
+    import std.array: appender;
+    auto app = appender!(char[]);
+    .serializeCsv!(typeof(app), V)(app, value,
+    separator,
+    quote,
+    quoteAll,
+    naValue,
+    trueValue,
+    falseValue,
+    serdeTarget);
+    return (()@trusted => cast(string) app.data)();
+}
+
+///
+version(mir_ion_test) unittest
+{
+    import mir.timestamp: Timestamp;
+    import mir.format: stringBuf;
+    import mir.test;
+    auto someMatrix = [
+        [3.0.CsvAlgebraic, 2.CsvAlgebraic, true.CsvAlgebraic, ],
+        ["str".CsvAlgebraic, "2022-12-12".Timestamp.CsvAlgebraic, "".CsvAlgebraic, null.CsvAlgebraic],
+        [double.nan.CsvAlgebraic, double.infinity.CsvAlgebraic, 0.0.CsvAlgebraic]
+    ];
+
+    someMatrix.serializeCsv.should == "3.0,2,TRUE\nstr,2022-12-12,\"\",\nNAN,+INF,0.0\n";
+}
+
+/++
+Ion serialization for custom outputt range.
++/
+void serializeCsv(Appender, V)(
+    scope ref Appender appender,
+    auto scope ref const V value,
+    char separator = ',',
+    char quote = '"',
+    bool quoteAll = false,
+    string naValue = "",
+    string trueValue = "TRUE",
+    string falseValue = "FALSE",
+    int serdeTarget = SerdeTarget.csv)
+    if (isOutputRange!(Appender, const(char)[]) && isOutputRange!(Appender, char))
+{
+    auto serializer = CsvSerializer!Appender((()@trusted => &appender)());
+    serializer.serdeTarget = serdeTarget;
+    serializer.separator = separator;
+    serializer.quote = quote;
+    serializer.quoteAll = quoteAll;
+    serializer.naValue = naValue;
+    serializer.trueValue = trueValue;
+    serializer.falseValue = falseValue;
+    import mir.ser: serializeValue;
+    serializeValue(serializer, value);
+}
+
+///
+@safe pure // nothrow @nogc
+unittest
+{
+    import mir.timestamp: Timestamp;
+    import mir.format: stringBuf;
+    import mir.test;
+
+    auto someMatrix = [
+        ["str".CsvAlgebraic, 2.CsvAlgebraic, true.CsvAlgebraic],
+        [3.0.CsvAlgebraic, "2022-12-12".Timestamp.CsvAlgebraic, null.CsvAlgebraic]
+    ];
+
+    auto buffer = stringBuf;
+    buffer.serializeCsv(someMatrix);
+    buffer.data.should == "str,2,TRUE\n3.0,2022-12-12,\n";
+}
+
 struct CsvSerializer(Appender)
 {
     import mir.bignum.decimal: Decimal;
     import mir.bignum.integer: BigInt;
+    import mir.format: print, stringBuf, printReplaced;
+    import mir.internal.utility: isFloatingPoint;
     import mir.ion.type_code;
     import mir.lob;
+    import mir.string: containsAny;
     import mir.timestamp;
     import std.traits: isNumeric;
-    import mir.format: print;
-    import mir.string: containsAny;
-    import mir.format: printEscaped, EscapeFormat;
 
     /++
     CSV string buffer
     +/
-    Appender appender;
+    Appender* appender;
 
     ///
     char separator = ',';
     ///
     char quote = '"';
     ///
-    bool quoteAllStrings;
+    bool quoteAll;
 
     ///
-    string naValue = "NA";
+    string naValue = "";
     ///
     string trueValue = "TRUE";
     ///
@@ -343,7 +419,7 @@ struct CsvSerializer(Appender)
     private uint level, row, column;
 
 
-scope:
+@safe scope:
 
     ///
     size_t stringBegin()
@@ -357,39 +433,48 @@ scope:
     +/
     void putStringPart(scope const(char)[] value)
     {
-        printReplaced!(char, EscapeFormat.json)(appender, value);
+        printReplaced(appender, value, '"', `""`);
     }
 
     ///
     void stringEnd(size_t)
     {
-        appender.put('\"');
+        appender.put('"');
     }
 
     ///
     size_t structBegin(size_t length = size_t.max)
     {
-        throw new Exception("mir.csv: ");
+        throw new Exception("mir.csv: structure serialization isn't supported: ");
     }
 
     ///
     void structEnd(size_t state)
     {
-        throw new Exception("mir.csv: ");
+        throw new Exception("mir.csv: structure serialization isn't supported");
     }
 
     ///
     size_t listBegin(size_t length = size_t.max)
     {
+        assert(level <= 2);
         if (level++ >= 2)
-            throw new Exception("mir.csv: "); 
+            throw new Exception("mir.csv: arrays can't be serialized as scalar values");
+        return 0;
     }
 
     ///
     void listEnd(size_t state)
     {
         if (level-- == 2)
+        {
+            column = 0;
             appender.put('\n');
+        }
+        else
+        {
+            row = 0;
+        }
     }
 
     ///
@@ -407,22 +492,25 @@ scope:
     ///
     void putAnnotation(scope const(char)[] annotation)
     {
-        throw new Exception("mir.csv: ");
+        assert(0);
     }
 
     ///
     auto annotationsEnd(size_t state)
     {
-        throw new Exception("mir.csv: ");
+        assert(0);
     }
 
     ///
-    alias annotationWrapperBegin = structBegin;
+    size_t annotationWrapperBegin(size_t length = size_t.max)
+    {
+        throw new Exception("mir.csv: annotation serialization isn't supported");
+    }
 
     ///
     void annotationWrapperEnd(size_t annotationsState, size_t state)
     {
-        return structEnd(state);
+        assert(0);
     }
 
     ///
@@ -434,101 +522,145 @@ scope:
     ///
     void putKey(scope const char[] key)
     {
-        throw new Exception("mir.csv: ");
+        assert(0);
     }
 
     ///
     void putValue(Num)(const Num value)
         if (isNumeric!Num && !is(Num == enum))
     {
+        auto buf = stringBuf;
         static if (isFloatingPoint!Num)
         {
             import mir.math.common: fabs;
 
             if (value.fabs < value.infinity)
-                print(appender, value);
+                print(buf, value);
             else if (value == Num.infinity)
-                appender.put(`+INF`);
+                buf.put(`+INF`);
             else if (value == -Num.infinity)
-                appender.put(`-INF`);
+                buf.put(`-INF`);
             else
-                appender.put(`NAN`);
+                buf.put(`NAN`);
         }
         else
-            print(appender, value);
+            print(buf, value);
+        putValue(buf.data);
     }
 
     ///
     void putValue(size_t size)(auto ref const BigInt!size num)
     {
-        num.toString(appender);
+        auto buf = stringBuf;
+        num.toString(buf);
+        putValue(buf.data);
     }
 
     ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
-        num.toString(appender);
+        auto buf = stringBuf;
+        num.toString(buf);
+        putValue(buf.data);
     }
 
     ///
     void putValue(typeof(null))
     {
-        appender.put(naValue);
+        putValue(naValue, true);
     }
 
     /// ditto 
     void putNull(IonTypeCode code)
     {
-        appender.put(naValue);
+        putValue(null);
     }
 
     ///
     void putValue(bool b)
     {
-        appender.put(b ? trueValue : falseValue);
+        putValue(b ? trueValue : falseValue, true);
     }
 
     ///
-    void putValue(scope const char[] value)
+    void putValue(scope const char[] value, bool noQuote = false)
     {
-        if (quoteAllStrings
-            || value.containsAny(separator, quote, '\n')
-            || value == naValue
-            || value == falseValue
-            || value == "NAN"
-            || value == trueValue)
+        import mir.exception: MirException;
+        import mir.utility: _expect;
+
+        if (_expect(level != 2, false))
+            throw new MirException(
+                "mir.csv: expected ",
+                level ? "row" : "table",
+                " value, got scalar value '", value, "'");
+
+        if (!quoteAll
+         && (noQuote || !value.containsAny(separator, quote, '\n'))
+         && ((value == naValue || value == trueValue || value == falseValue) == noQuote)
+        )
+        {
+            appender.put(value);
+        }
+        else
         {
             auto state = stringBegin;
             putStringPart(value);
             stringEnd(state);
-        }
-        else
-        {
-            appender.put(value);
         }
     }
 
     ///
     void putValue(scope Clob value)
     {
-        throw new Exception("");
+        import mir.format: printEscaped, EscapeFormat;
+
+        auto buf = stringBuf;
+
+        buf.put(`{{"`);
+
+        printEscaped!(char, EscapeFormat.ionClob)(buf, value.data);
+
+        buf.put(`"}}`);
+
+        putValue(buf.data);
     }
 
     ///
     void putValue(scope Blob value)
     {
-        throw new Exception("");
+        import mir.base64 : encodeBase64;
+
+        auto buf = stringBuf;
+
+        buf.put("{{");
+
+        encodeBase64(value.data, buf);
+
+        buf.put("}}");
+
+        putValue(buf.data);
     }
 
     ///
     void putValue(Timestamp value)
     {
-        value.toISOExtString(appender);
+        auto buf = stringBuf;
+        value.toISOExtString(buf);
+        putValue(buf.data);
     }
 
     ///
     void elemBegin()
     {
+        if (level == 2)
+        {
+            if (column++)
+                appender.put(separator);
+        }
+        else
+        {
+            row++;
+        }
     }
 
     ///
