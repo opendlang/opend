@@ -3,7 +3,7 @@ $(H2 CSV/TSV parsing)
 
 DRAFT
 
-$(LREF Csv) can be serialized to Ion, JSON, MsgPack, or YAML
+$(LREF CsvProxy) can be serialized to Ion, JSON, MsgPack, or YAML
 and then deserialized to a specified type.
 That approachs allows to use the same mir deserialization
 pattern like for other data types.
@@ -13,6 +13,7 @@ which serves as an efficient DOM representation for all other formats.
 Macros:
     IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
     AlgorithmREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, $1)$(NBSP)
+    NDSLICEREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, ndslice, $1)$(NBSP)
     AAREF = $(REF_ALTTEXT $(TT $2), $2, mir, algebraic_alias, $1)$(NBSP)
 +/
 
@@ -25,13 +26,16 @@ import mir.serde: SerdeTarget;
 public import mir.algebraic_alias.csv: CsvAlgebraic;
 
 /++
+
 +/
-struct Csv
+struct CsvProxy
 {
+    import mir.algebraic_alias.csv: CsvAlgebraic;
+    import mir.ion.exception: IonMirException;
     ///
     const(char)[] text;
     ///
-    bool hasHeader = true;
+    bool hasHeader;
     ///
     char separator = ',';
     ///
@@ -39,13 +43,32 @@ struct Csv
     ///
     char comment = '\0';
     ///
-    bool stripSpace = false; 
-    ///
     ubyte skipRows;
     ///
     bool parseNumbers = true;
     ///
     bool parseTimestamps = true;
+
+    ///
+    struct Conversion
+    {
+        ///
+        string from;
+        ///
+        CsvAlgebraic to;
+    }
+
+    /++
+    The conversion map represented as array of `from->to` pairs.
+
+    Note:
+    automated number recognition works with values like `NaN` and `+Inf` already.
+    +/
+    const(Conversion)[] conversions = [
+        Conversion("", null.CsvAlgebraic),
+        Conversion("TRUE", true.CsvAlgebraic),
+        Conversion("FALSE", false.CsvAlgebraic),
+    ];
 
     /++
     N/A and NULL patterns are converted to Ion `null` when exposed to arrays
@@ -109,115 +132,60 @@ struct Csv
 
     void serialize(S)(scope ref S serializer) scope const @trusted
     {
-        // DRAFT
-        // TODO: have to be @nogc
-        // import std.ascii;
         import mir.bignum.decimal: Decimal, DecimalExponentKey;
         import mir.exception: MirException;
-        import mir.ndslice.dynamic: transposed;
-        import mir.ndslice.slice: sliced;
-        import mir.parse: ParsePosition;
         import mir.ser: serializeValue;
         import mir.timestamp: Timestamp;
         import mir.utility: _expect;
-        import mir.format: stringBuf;
-        import std.algorithm.iteration: splitter;
-        import std.algorithm.searching: canFind;
-        import std.string: lineSplitter, strip;
 
-        auto csv = text[];
-        if (csv.length)
+        auto table = CsvReader(
+            text,
+            separator,
+            quote,
+            comment,
+            skipRows,
+        );
+
+        if (hasHeader && table.empty)
         {
-            LS: foreach (i; 0 .. skipRows)
-            {
-                do
-                {
-                    csv = csv[1 .. $];
-                    if (csv.length == 0)
-                        break LS;
-                }
-                while(csv[0] != '\n');
-            }
-        }
-        if (comment && csv.length)
-        {
-            LC: while (csv[0] == comment)
-            {
-                do
-                {
-                    csv = csv[1 .. $];
-                    if (csv.length == 0)
-                        break LC;
-                }
-                while(csv[0] != '\n');
-                csv = csv[1 .. $];
-                if (csv.length == 0)
-                    break LC;
-            }
+            serializer.putValue(null);
+            return;
         }
 
-        bool initLoop;
-        auto strBuf = stringBuf;
-        const(char)[] readQuoted() scope return
+        bool quoted;
+        DecimalExponentKey decimalKey;
+        Decimal!128 decimal = void;
+        Timestamp timestamp;
+
+        size_t outerState = serializer.listBegin;
+
+        if (hasHeader)
         {
-            strBuf.reset;
-            // fill buf here
-            // ...
-            return strBuf.data;
-        }
-
-            // if (i == 0 && hasHeader)
-        { // first line lookup to count columns
-            // if header?
-            // put symbol!
-        }
-        size_t i;
-        auto nColumns = size_t.max;
-        size_t wrapperState;
-        size_t outerState;
-
-
-        foreach (line; csv.lineSplitter)
-        {
-            if (!initLoop)
-            {
-                initLoop = true;
-                outerState = serializer.listBegin;
-            }
-            size_t j;
-            size_t state;
             serializer.elemBegin;
-            state = serializer.listBegin(nColumns);
-            foreach (value; splitter(line, separator))
+            auto state = serializer.listBegin;
+            foreach (elem; table.front)
             {
-                j++;
-                if (j > nColumns)
-                    break;
+                assert(!elem.error);
+                serializer.elemBegin;
+                serializer.putSymbol(elem.value);
+            }
+            serializer.listEnd(state);
+            table.popFront;
+        }
 
-                if (_expect(stripSpace, false))
-                {
-                    if (separator == '\t')
-                    {
-                        while (value.length && value[0] == ' ')
-                            value = value[1 .. $];
-                        while (value.length && value[$ - 1] == ' ')
-                            value = value[0 .. $ - 1];
+        do
+        {
+            serializer.elemBegin;
+            auto state = serializer.listBegin;
+            auto row = table.front;
+            do
+            {
+                auto elem = row.front;
 
-                    }
-                    else
-                    {
-                        while (value.length && (value[0] == ' ' || value[0] == '\t'))
-                            value = value[1 .. $];
-                        while (value.length && (value[$ - 1] == ' ' || value[$ - 1] == '\t'))
-                            value = value[0 .. $ - 1];
-                    }
-                }
+                if (_expect(elem.error, false)) 
+                    row.validateCsvError(elem.error);
 
                 CsvAlgebraic scalar;
-                bool quoted;
-                DecimalExponentKey decimalKey;
-                Decimal!128 decimal = void;
-                    Timestamp timestamp;
 
                 enum bool allowSpecialValues = true;
                 enum bool allowDotOnBounds = true;
@@ -228,10 +196,9 @@ struct Csv
                 enum bool allowExponent = true;
                 enum bool checkEmpty = true;
 
-                quoted = value.length && value[0] == quote;
-                if (_expect(quoted, false))
+                if (_expect(elem.wasQuoted, false))
                 {
-                    scalar = cast(string) readQuoted;
+                    scalar = cast(string) elem.value;
                 }
                 else
                 if (parseNumbers && decimal.fromStringImpl!(
@@ -244,7 +211,7 @@ struct Csv
                     allowLeadingZeros,
                     allowExponent,
                     checkEmpty)
-                    (value, decimalKey))
+                    (elem.value, decimalKey))
                 {
                     if (decimalKey)
                         scalar = cast(double) decimal;
@@ -252,48 +219,508 @@ struct Csv
                         scalar = cast(long) decimal.coefficient;
                 }
                 else
-                if (parseTimestamps && Timestamp.fromISOExtString(value, timestamp))
+                if (parseTimestamps && Timestamp.fromISOExtString(elem.value, timestamp))
                 {
                     scalar = timestamp;
                 }
                 else
-                if (naStrings.canFind(value))
                 {
-                }
-                else
-                if (trueStrings.canFind(value))
-                {
-                    scalar = true;
-                }
-                else
-                if (falseStrings.canFind(value))
-                {
-                    scalar = false;
-                }
-                else
-                {
-                    scalar = cast(string) value;
+                    foreach(ref target; conversions)
+                    {
+                        if (elem.value == target.from)
+                        {
+                            scalar = target.to;
+                            goto Finalizer;
+                        }
+                    }
+                    scalar = cast(string) elem.value;
                 }
 
+            Finalizer:
                 if (_expect(conversionFinalizer !is null, false))
                 {
-                    scalar = conversionFinalizer(value, scalar, quoted, j - 1);
+                    scalar = conversionFinalizer(elem.value, scalar, quoted, row.columnIndex);
                 }
-                serializer.elemBegin();
-                serializer.serializeValue(scalar);
+                serializer.elemBegin;
+                serializer.serializeValue(scalar);                
+                row.popFront;
             }
-            if (j != nColumns && nColumns != nColumns.max)
-            {
-                throw new MirException("CSV: Expected ", nColumns, ", got ", j, " at:\n", ParsePosition(fileName, cast(uint)i, 0));
-            }
-            nColumns = j;
-
+            while(!row.empty);
             serializer.listEnd(state);
+            table.popFront;
         }
-        if (!initLoop)
-            outerState = serializer.listBegin(0);
+        while (!table.empty);
         serializer.listEnd(outerState);
     }
+}
+
+/++
+Rapid CSV reader represented as a range of rows.
+
+The structure isn't copyable. Please use it's pointer with range modifiers.
+
+Exactly one call of `empty` has to be preciding each call of `front`.
+Exactly one call of `popFront` has to be following each call of `front`.
+Some Phobos functions doesn't follow this rule.
+
+All elements of the each row have to be accessed exactly once before
+the next row can be processed.
++/
+struct CsvReader
+{
+    import mir.appender: ScopedBuffer, scopedBuffer;
+    import mir.utility: _expect;
+    import mir.string: scanLeftAny;
+
+    ///
+    const(char)[] text;
+    ///
+    uint rowLength;
+    ///
+    uint rowIndex;
+    ///
+    char separator = ',';
+    ///
+    char quote = '"';
+
+    private ScopedBuffer!(char, 128) buffer;
+
+    /++
+    +/
+    enum Error
+    {
+        ///
+        none,
+        // ///
+        // missingLeftQuote,
+        ///
+        unexpectedSeparator,
+        ///
+        unexpectedRowEnd,
+    }
+
+    /++
+    CSV cell element
+    +/
+    struct Scalar
+    {
+        /++
+        Unquoted string.
+
+        $(LREF .CsvReader.Scalar.wasQuoted) is set, then the value refers
+        $(LREF .CsvRow.buffer) and valid only until the next quoted string is produced.
+        +/
+        const(char)[] value;
+
+        bool wasQuoted;
+        /++
+        If the flag is true the $(LREF .CsvReader.Scalar.value) member refers the $(LREF .CsvRow.buffer) the original text,
+        otherwise it .
+        +/
+        bool isScopeAllocated;
+
+        /++
+        +/
+        Error error;
+    }
+
+    /++
+    CSV Row Input Range
+
+    Exactly one call of `empty` has to be preciding each call of `front`.
+    Exactly one call of `popFront` has to be following each call of `front`.
+    Some Phobos functions doesn't follow this rule.
+    +/
+    struct Row
+    {
+        private CsvReader* root;
+        ///
+        uint length;
+
+        /++
+        Throws: MirIonException if the $(LREF CsvReader.Error) is set.
+        Returns: `void`
+        +/
+        auto validateCsvError(CsvReader.Error error)
+            scope const @safe pure
+        {
+            import mir.ion.exception: IonMirException;
+
+            final switch (error)
+            {
+                case CsvReader.Error.none: break;
+                // case CsvReader.Error.missingLeftQuote: throw new IonMirException("mir.csv: missing left quote when parsing element at index [", root.rowIndex, ", ", columnIndex, "]");
+                case CsvReader.Error.unexpectedSeparator: throw new IonMirException("mir.csv: unexpected separator when parsing element at index [", root.rowIndex, ", ", columnIndex, "]");
+                case CsvReader.Error.unexpectedRowEnd: throw new IonMirException("mir.csv: unexpected row end when parsing element at index [", root.rowIndex, ", ", columnIndex, "]");
+            }
+        }
+
+        ///
+        bool empty()() scope const pure nothrow @nogc @property
+            in (root)
+        {
+            return length == 0;
+        }
+
+        ///
+        void popFront()() scope pure nothrow @nogc
+            in (root)
+        {
+            length--;
+        }
+
+        ///
+        Scalar front()() return scope pure nothrow @nogc @property
+            in (root)
+            in (length)
+            in (length == 1 || root.text.length)
+        {
+            auto scalar = root.readCell();
+            // if (_expect(!scalar.error, true))
+            with (root)
+            {
+                if (text.length && text[0] == separator)
+                {
+                    text = text.ptr[1 .. text.length];
+                    if (_expect(length == 1, false))
+                        scalar.error = Error.unexpectedSeparator;
+                }
+                else
+                {
+                    if (text.length)
+                        text = text.ptr[1 + (text.length > 1 && text[0] == '\r' && text[1] == '\n') .. text.length];
+                    if (_expect(length != 1, false))
+                        scalar.error = Error.unexpectedRowEnd;
+                }
+            }
+            return scalar;
+        }
+
+        uint columnIndex()() scope const @safe pure nothrow @nogc
+            in (root)
+        {
+            return root.rowLength - length;
+        }
+    }
+
+    ///
+    bool empty()() scope const pure nothrow @nogc @property
+    {
+        return text.length == 0;
+    }
+
+    ///
+    void popFront()() scope pure nothrow @nogc
+    {
+        rowIndex++;
+    }
+
+    ///
+    Row front()() scope return pure nothrow @nogc @property
+    {
+        return typeof(return)(&this, rowLength);
+    }
+
+    /++
+    Throws: throws an exception if the first row is exists and invalid.
+    +/
+    this(
+        return scope const(char)[] text,
+        char separator = ',',
+        char quote = '"',
+        char comment = '\0',
+        sizediff_t skipRows = 0,
+    ) @safe pure @nogc
+    {
+        pragma(inline, false);
+
+        while (text.length && (skipRows-- || text[0] == comment))
+        {
+            auto next = text.scanLeftAny('\r', '\n');
+            text = text[$ - next.length + (next.length >= 1) + (next.length > 1 && next[0] == '\r' && next[1] == '\n') .. $];
+        }
+
+        this.text = text;
+        this.separator = separator;
+        this.quote = quote;
+
+        if (this.text.length == 0)
+            return;
+
+        for (;;)
+        {
+            this.rowLength++;
+            auto scalar = readCell();
+            if (scalar.error)
+            {
+                import mir.ion.exception: IonException;
+                static immutable exc = new IonException("mir.csv: left double quote is missing in the first row");
+                throw exc;
+
+            }
+            if (this.text.length && this.text[0] == separator)
+            {
+                this.text = this.text[1 .. $];
+                continue;
+            }
+            if (this.text.length)
+                this.text = this.text[1 + (this.text.length > 1 && this.text[0] == '\r' && this.text[1] == '\n') .. $];
+            break;
+        }
+
+        this.text = text;
+    }
+
+    private Scalar readCell()() scope return @trusted pure nothrow @nogc
+    {
+        // if skipLeftSpaces// TODO then stripLeft csv
+        auto quoted = text.length && text[0] == quote;
+        if (!quoted)
+        {
+            auto next = text.scanLeftAny(separator, '\r', '\n');
+            auto ret = text[0 .. text.length - next.length];
+            text = text.ptr[text.length - next.length .. text.length];
+            return Scalar(ret);
+        }
+        buffer.reset;
+
+        assert(text.length);
+        assert(text[0] == quote);
+        text = text.ptr[1 .. text.length];
+
+        for (;;)
+        {
+            auto next = text.scanLeftAny(quote);
+
+            auto isQuote = next.length > 1 && next[1] == quote;
+            auto ret = text[0 .. text.length - next.length + isQuote];
+            text = text.ptr[text.length - next.length + isQuote + (next.length != 0) .. text.length];
+
+            if (!isQuote && buffer.data.length == 0)
+                return Scalar(ret, true);
+
+            buffer.put(ret);
+
+            if (!isQuote)
+                return Scalar(buffer.data, true, true);
+        }
+    }
+}
+
+/++
+Returns: $(NDSLICEREF slice, Slice)`!(string*, 2)`.
++/
+auto csvToStringMatrix(
+    return scope string text,
+    char separator = ',',
+    char quote = '"',
+    char comment = '\0',
+    ubyte skipRows = 0,
+) @trusted pure
+{
+    pragma(inline, false);
+
+    import mir.ndslice.slice: Slice;
+    import mir.utility: _expect;
+    import std.array: appender;
+
+    auto app = appender!(string[]);
+    app.reserve(text.length / 32);
+
+    auto table = CsvReader(
+        text,
+        separator,
+        quote,
+        comment,
+        skipRows,
+    );
+
+    auto wip = new string[table.rowLength];
+
+    while (!table.empty)
+    {
+        auto row = table.front;
+        do
+        {
+            auto elem = row.front;
+            if (_expect(elem.error, false)) 
+                row.validateCsvError(elem.error);
+
+            auto value = cast(string) elem.value;
+            if (_expect(elem.isScopeAllocated, false))
+                value = value.idup;
+
+            wip[row.columnIndex] = value;
+            row.popFront;
+        }
+        while(!row.empty);
+        app.put(wip);
+        table.popFront;
+    }
+
+    import mir.ndslice: sliced;
+    assert (app.data.length == table.rowIndex * table.rowLength);
+    return app.data.sliced(table.rowIndex, table.rowLength);
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    auto sampleData = `012,abc,"mno pqr",0` ~ "\n" ~ `982,def,"stuv wx",1`
+        ~ "\n" ~ `78,ghijk,"yx",2`;
+
+    auto matrix = sampleData.csvToStringMatrix();
+
+    import mir.ndslice.slice: Slice, SliceKind;
+
+    static assert(is(typeof(matrix) == Slice!(string*, 2)));
+
+    import mir.test: should;
+    matrix.should ==
+    [[`012`, `abc`, `mno pqr`, `0`], [`982`, `def`, `stuv wx`, `1`], [`78`, `ghijk`, `yx`, `2`]];
+
+    import mir.ndslice.dynamic: transposed;
+    auto transp = matrix.transposed;
+    static assert(is(typeof(transp) == Slice!(string*, 2, SliceKind.universal)));
+
+    transp.should ==
+    [[`012`, `982`, `78`], [`abc`, `def`, `ghijk`], [`mno pqr`, `stuv wx`, `yx`], [`0`, `1`, `2`]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Optional parameters to csvToStringMatrix
+    auto sampleData = `012;abc;"mno pqr";0` ~ "\n" ~ `982;def;"stuv wx";1`
+        ~ "\n" ~ `78;ghijk;"yx";2`;
+
+    import mir.test: should;
+    sampleData.csvToStringMatrix(';', '"').should ==
+    [["012", "abc", "mno pqr", "0"], ["982", "def", "stuv wx", "1"], ["78", "ghijk", "yx", "2"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    auto data = `012,aa,bb,cc` ~ "\r\n" ~ `982,dd,ee,ff` ~ "\r\n"
+        ~ `789,gg,hh,ii` ~ "\r\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix.should ==
+    [["012", "aa", "bb", "cc"], ["982", "dd", "ee", "ff"], ["789", "gg", "hh", "ii"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Optional parameters here too
+    auto data = `012;aa;bb;cc` ~ "\r\n" ~ `982;dd;ee;ff` ~ "\r\n"
+        ~ `789;gg;hh;ii` ~ "\r\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix(';', '"').should ==
+    [["012", "aa", "bb", "cc"], ["982", "dd", "ee", "ff"], ["789", "gg", "hh", "ii"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Quoted fields that contains newlines and delimiters
+    auto data = `012,abc,"ha ha ` ~ "\n" ~ `ha this is a split value",567`
+        ~ "\n" ~ `321,"a,comma,b",def,111` ~ "\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix.should ==
+    [["012", "abc", "ha ha \nha this is a split value", "567"], ["321", "a,comma,b", "def", "111"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Quoted fields that contains newlines and delimiters, optional parameters for csvToStringMatrix
+    auto data = `012;abc;"ha ha ` ~ "\n" ~ `ha this is a split value";567`
+        ~ "\n" ~ `321;"a,comma,b";def;111` ~ "\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix(';', '"').should ==
+    [["012", "abc", "ha ha \nha this is a split value", "567"], ["321", "a,comma,b", "def", "111"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Quoted fields that contain quotes
+    // (Note: RFC-4180 does not allow doubled quotes in unquoted fields)
+    auto data = `012,"a b ""haha"" c",982` ~ "\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix.should == [["012", `a b "haha" c`, "982"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Quoted fields that contain quotes, optional parameters for csvToStringMatrix
+    // (Note: RFC-4180 does not allow doubled quotes in unquoted fields)
+    auto data = `012;"a b ""haha"" c";982` ~ "\n";
+
+    import mir.test: should;
+    data.csvToStringMatrix(';', '"').should == [["012", `a b "haha" c`, "982"]];
+}
+
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    // Trailing empty fields (bug#1522)
+    import mir.test: should;
+
+    auto data = `,` ~ "\n";
+    data.csvToStringMatrix.should == [["", ""]];
+
+    data = `,,` ~ "\n";
+    data.csvToStringMatrix.should == [["", "", ""]];
+
+    data = "a,b,c,d" ~ "\n" ~ ",,," ~ "\n" ~ ",,," ~ "\n";
+    data.csvToStringMatrix.should == 
+    [["a", "b", "c", "d"], ["", "", "", ""], ["", "", "", ""]];
+
+    data = "\"a\",b,c,\"d\",";
+    data.csvToStringMatrix.should == [["a", "b", "c", "d", ""]];
+
+    data = "\"\",\"\",";
+    data.csvToStringMatrix.should == [["", "", ""]];
+}
+
+// Boundary condition checks
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.test: should;
+    auto data = `012,792,"def""`;
+    data.csvToStringMatrix.should == [[`012`, `792`, `def"`]];
+
+    data = `012,792,"def""012`;
+    data.csvToStringMatrix.should == [[`012`, `792`, `def"012`]];
+
+    data = `012,792,"a"`;
+    data.csvToStringMatrix.should == [[`012`, `792`, `a`]];
+
+    data = `012,792,"`;
+    data.csvToStringMatrix.should == [[`012`, `792`, ``]];
+
+    data = `012;;311`;
+    data.csvToStringMatrix(';').should == [[`012`, ``, `311`]];
 }
 
 /++
@@ -673,12 +1100,13 @@ unittest
     import mir.test: should;
     import mir.ndslice.slice: Slice;
     import mir.ion.conv: serde;
+    import mir.ser.text;
 
     alias Matrix = Slice!(double*, 2);
 
     auto text = "1,2\n3,4\r\n5,6\n";
 
-    auto matrix = text.Csv.serde!Matrix;
+    auto matrix = text.CsvProxy.serde!Matrix;
     matrix.should == [[1, 2], [3, 4], [5, 6]];
 }
 
@@ -689,7 +1117,7 @@ version(none):
 unittest
 {
     import mir.csv;
-    import mir.ion.conv: serde; // to convert Csv to D types
+    import mir.ion.conv: serde; // to convert CsvProxy to D types
     import mir.serde: serdeKeys, serdeIgnoreUnexpectedKeys, serdeOptional;
     // mir.date and std.datetime are supported as well
     import mir.timestamp: Timestamp;//mir-algorithm package
@@ -700,7 +1128,7 @@ unittest
 2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
 2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
 
-    Csv csv = {
+    CsvProxy csv = {
         text: text,
         // We allow 7 CSV payloads!
         kind: CsvKind.dataFrame
@@ -768,7 +1196,7 @@ unittest
 
     // alias Matrix = Slice!(CsvAlgebraic*, 2);
 
-    Csv csv = {
+    CsvProxy csv = {
         conversionFinalizer : (
             unquotedString,
             scalar,
@@ -825,7 +1253,7 @@ unittest
         ], `,`)
     };
 
-    // Serializing Csv to Amazon Ion (text version)
+    // Serializing CsvProxy to Amazon Ion (text version)
     csv.serializeTextPretty!"    ".should ==
 q{[
     [
@@ -884,7 +1312,7 @@ unittest
 {
     import mir.csv;
     import mir.date: Date; // Phobos std.datetime supported as well
-    import mir.ion.conv: serde; // to convert Csv to DataFrame
+    import mir.ion.conv: serde; // to convert CsvProxy to DataFrame
     import mir.ndslice.slice: Slice;//ditto
     import mir.timestamp: Timestamp;//mir-algorithm package
     // for testing
@@ -897,7 +1325,7 @@ unittest
 2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
 2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
 
-    Csv csv = {
+    CsvProxy csv = {
         text: text,
         // We allow 7 CSV payloads!
         kind: CsvKind.seriesWithHeader
@@ -987,10 +1415,10 @@ unittest
     alias Matrix = Slice!(double*, 2);
 
     auto text = "1,2\n3,4\r\n5,6\n";
-    auto matrix = text.Csv.serde!Matrix;
+    auto matrix = text.CsvProxy.serde!Matrix;
     matrix.should == [[1, 2], [3, 4], [5, 6]];
 
-    Csv csv = {
+    CsvProxy csv = {
         text : text,
         kind : CsvKind.transposedMatrix
     };
@@ -1008,7 +1436,7 @@ unittest
     import mir.ser.text: serializeText;
     import mir.test: should;
 
-    Csv csv = {
+    CsvProxy csv = {
         text : "str,2022-10-12,3.4\nb,2022-10-13,2\n",
         kind : CsvKind.transposedMatrix
     };
@@ -1036,7 +1464,7 @@ unittest
 
     auto text = "1,2\n3,4\n5,#N/A\n";
     auto matrix = text
-        .Csv
+        .CsvProxy
         .serde!(Slice!(Nullable!double*, 2))
         .map!(visit!((double x) => x, (_) => double.nan))
         .slice;
