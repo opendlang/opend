@@ -21,6 +21,8 @@ module mir.csv;
 
 import mir.primitives: isOutputRange;
 import mir.serde: SerdeTarget;
+import mir.ndslice.slice: Slice, SliceKind;
+import mir.string_map: StringMap;
 
 ///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
@@ -514,8 +516,9 @@ struct CsvReader
 
 /++
 Returns: $(NDSLICEREF slice, Slice)`!(string*, 2)`.
+See_also: $(LREF stringMatrixToStringMap)
 +/
-auto csvToStringMatrix(
+Slice!(string*, 2) csvToStringMatrix(
     return scope string text,
     char separator = ',',
     char quote = '"',
@@ -573,10 +576,10 @@ version (mir_ion_test)
 @safe pure
 unittest
 {
-    auto sampleData = `012,abc,"mno pqr",0` ~ "\n" ~ `982,def,"stuv wx",1`
+    auto data = `012,abc,"mno pqr",0` ~ "\n" ~ `982,def,"stuv wx",1`
         ~ "\n" ~ `78,ghijk,"yx",2`;
 
-    auto matrix = sampleData.csvToStringMatrix();
+    auto matrix = data.csvToStringMatrix();
 
     import mir.ndslice.slice: Slice, SliceKind;
 
@@ -599,11 +602,11 @@ version (mir_ion_test)
 unittest
 {
     // Optional parameters to csvToStringMatrix
-    auto sampleData = `012;abc;"mno pqr";0` ~ "\n" ~ `982;def;"stuv wx";1`
+    auto data = `012;abc;"mno pqr";0` ~ "\n" ~ `982;def;"stuv wx";1`
         ~ "\n" ~ `78;ghijk;"yx";2`;
 
     import mir.test: should;
-    sampleData.csvToStringMatrix(';', '"').should ==
+    data.csvToStringMatrix(';', '"').should ==
     [["012", "abc", "mno pqr", "0"], ["982", "def", "stuv wx", "1"], ["78", "ghijk", "yx", "2"]];
 }
 
@@ -712,6 +715,7 @@ version (mir_ion_test)
 unittest
 {
     import mir.test: should;
+
     auto data = `012,792,"def""`;
     data.csvToStringMatrix.should == [[`012`, `792`, `def"`]];
 
@@ -726,6 +730,49 @@ unittest
 
     data = `012;;311`;
     data.csvToStringMatrix(';').should == [[`012`, ``, `311`]];
+}
+
+/++
+Represent CSV data as dictionary of columns.
+Uses the first row as header.
+Returns: a string map that refers the same header and the same data.
++/
+StringMap!(Slice!(string*, 1, SliceKind.universal))
+    stringMatrixToStringMap(return scope Slice!(string*, 2) matrix)
+    @trusted pure
+{
+    import mir.array.allocation: array;
+    import mir.ion.exception: IonException;
+    import mir.ndslice.topology: byDim;
+    if (matrix.length == 0)
+        throw new IonException("mir.csv: Matrix should have at least a single row to get the header");
+    return typeof(return)(matrix[0].field, matrix[1 .. $].byDim!1.array);
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.test: should;
+
+    auto data = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n10,11,12";
+
+    import mir.ndslice.topology: as, map;
+    auto table = data
+        .csvToStringMatrix
+        .stringMatrixToStringMap;
+
+    
+    table["a"].should == ["1", "4", "7", "10"];
+
+    table.keys.should == ["a", "b", "c"];
+    table.values
+        .map!(column => column[].as!double)
+        .should == [
+        [1, 4, 7, 10], // first column
+        [2, 5, 8, 11], // ...
+        [3, 6, 9, 12]];
 }
 
 /++
