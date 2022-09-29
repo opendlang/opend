@@ -23,6 +23,7 @@ import mir.primitives: isOutputRange;
 import mir.serde: SerdeTarget;
 import mir.ndslice.slice: Slice, SliceKind;
 import mir.string_map: StringMap;
+import std.traits: isImplicitlyConvertible;
 
 ///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
@@ -773,6 +774,155 @@ unittest
         [1, 4, 7, 10], // first column
         [2, 5, 8, 11], // ...
         [3, 6, 9, 12]];
+}
+
+/++
++/
+auto objectsAsTable(T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
+    @safe pure nothrow @nogc
+    if (isImplicitlyConvertible!(const T, T))
+{
+    import mir.algebraic: Variant;
+    import mir.ndslice.concatenation: concatenation;
+    import mir.ndslice.slice: Slice, sliced;
+    import mir.ndslice.topology: as, repeat;
+
+    auto rows = objectsAsRows(objects, header);
+
+    alias V = Variant!(typeof(rows[0]), Slice!(const(string)*));
+
+    return V(header.sliced).repeat(1).concatenation(rows.as!V);
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.algebraic_alias.csv: CsvAlgebraic;
+    import mir.algebraic: Nullable;
+    import mir.date: Date;
+    import mir.test: should;
+
+    auto o1 = ["a" : 1.CsvAlgebraic,
+               "b" : 2.0.CsvAlgebraic]
+        .StringMap!CsvAlgebraic;
+    auto o2 = ["b" : true.CsvAlgebraic,
+               "c" : false.CsvAlgebraic]
+        .StringMap!CsvAlgebraic;
+    auto o3 = ["c" : Date(2021, 12, 12).CsvAlgebraic,
+               "d" : 3.CsvAlgebraic]
+        .StringMap!CsvAlgebraic;
+
+    import mir.ser.text: serializeText;
+    [o1, o2, o3].objectsAsTable(["b", "c"])
+        .serializeText.should
+    == `[["b","c"],[2.0,null],[true,false],[null,2021-12-12]]`;
+}
+
+/++
+Contruct a lazy random-access-range (ndslice)
+Returns:
+    a lazy 1-dimensional slice of lazy 1-dimensionalal slices
++/
+auto objectsAsRows(T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
+    @safe pure nothrow @nogc
+    if (isImplicitlyConvertible!(const T, T))
+{
+    import mir.algebraic: Nullable;
+    import mir.ndslice.topology: repeat, map, zip;
+
+    return header
+        .repeat(objects.length)
+        .zip(objects)
+        .map!(
+            (header, object) => object
+                .repeat(header.length)
+                .zip(header)
+                .map!(
+                    (object, name)
+                    {
+                        if (auto ptr = name in object)
+                            return Nullable!T(*ptr);
+                        else
+                            return Nullable!T.init;
+                    }
+                )
+        );
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.algebraic_alias.csv: T = CsvAlgebraic;
+    import mir.algebraic: Nullable;
+    import mir.date: Date;
+    import mir.test: should;
+
+    auto o1 = ["a" : 1.T,
+               "b" : 2.0.T]
+        .StringMap!T;
+    auto o2 = ["b" : true.T,
+               "c" : false.T]
+        .StringMap!T;
+    auto o3 = ["c" : Date(2021, 12, 12).T,
+               "d" : 3.T]
+        .StringMap!T;
+    
+    alias NCA = Nullable!T;
+
+    auto rows = [o1, o2, o3].objectsAsRows(["b", "c"]);
+    rows.should == [
+        // a                           b
+        [NCA(2.0.T),  NCA(null)],
+        [NCA(true.T), NCA(false.T)],
+        [NCA(null),   NCA(Date(2021, 12, 12))],
+    ];
+
+    static assert(is(typeof(rows[0][0]) == NCA));
+
+    // evaluate
+    import mir.ndslice.fuse: fuse;
+    static assert(is(typeof(rows.fuse) == Slice!(NCA*, 2))); 
+}
+
+/++
+Returns:
+    all keys of all the objects in the observed order. 
+Params:
+    objects = array of objects (string maps)
++/
+string[] inclusiveHeader(T)(return scope const(StringMap!T)[] objects)
+    @safe pure nothrow
+{
+    if (objects.length == 0)
+        return null;
+    
+    auto map = StringMap!bool(
+        objects[0].keys.dup,
+        new bool[objects[0].keys.length]);
+
+    foreach (object; objects[1 .. $])
+        foreach (key; object.keys)
+            map[key] = false;
+
+    return (()@trusted => cast(string[]) map.keys)();
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.test: should;
+
+    auto o1 = ["a", "b"].StringMap!int([8, 8]);
+    auto o2 = ["b", "c"].StringMap!int([8, 8]);
+    auto o3 = ["c", "d"].StringMap!int([8, 8]);
+    [o1, o2, o3].inclusiveHeader.should = ["a", "b", "c", "d"];
+    [o3, o2, o1].inclusiveHeader.should = ["c", "d", "b", "a"];
 }
 
 /++
