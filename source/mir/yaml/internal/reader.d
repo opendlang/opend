@@ -669,7 +669,7 @@ private:
 bool isPrintableValidUTF8(scope const char[] chars) @safe pure
 {
     import std.uni : isControl, isWhite;
-    foreach (dchar chr; chars.byCodeUnit)
+    foreach (dchar chr; chars)
     {
         if (!chr.isValidDchar || (chr.isControl && !chr.isWhite))
         {
