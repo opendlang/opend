@@ -668,8 +668,8 @@ private:
 /// Determine if all characters (code points, not bytes) in a string are printable.
 bool isPrintableValidUTF8(scope const char[] chars) @safe pure
 {
-    import std.ascii : isControl, isWhite;
-    foreach (dchar chr; chars)
+    import std.uni : isControl, isWhite, byCodeUnit;
+    foreach (dchar chr; chars.byCodeUnit)
     {
         if (!chr.isValidDchar || (chr.isControl && !chr.isWhite))
         {
