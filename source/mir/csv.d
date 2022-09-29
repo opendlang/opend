@@ -26,30 +26,31 @@ import mir.serde: SerdeTarget;
 public import mir.algebraic_alias.csv: CsvAlgebraic;
 
 /++
-
+A proxy that allows to converty CSV to a table in another data format.
 +/
 struct CsvProxy
 {
     import mir.algebraic_alias.csv: CsvAlgebraic;
     import mir.ion.exception: IonMirException;
-    ///
+    /// An input CSV text. BOM isn't supported.
     const(char)[] text;
-    ///
+    /// If true the elements in the first row are symbolised.
     bool hasHeader;
-    ///
+    /// Scalar separator
     char separator = ',';
-    ///
+    /// Symbol to quote scalars
     char quote = '"';
-    ///
+    /// Skips rows the first consequent lines, which starts with this character.
     char comment = '\0';
-    ///
+    /// Skips a number of rows
     ubyte skipRows;
-    ///
+    /// If true the parser tries to recognsise and parse numbers.
     bool parseNumbers = true;
-    ///
+    /// If true the parser tries to recognsise and parse
+    // ISO timestamps in the extended form.
     bool parseTimestamps = true;
 
-    ///
+    /// A number of conversion conventions.
     struct Conversion
     {
         ///
@@ -272,15 +273,15 @@ struct CsvReader
     import mir.utility: _expect;
     import mir.string: scanLeftAny;
 
-    ///
+    /// An input CSV text. BOM isn't supported.
     const(char)[] text;
     ///
     uint rowLength;
     ///
     uint rowIndex;
-    ///
+    /// Scalar separator
     char separator = ',';
-    ///
+    /// Symbol to quote scalars
     char quote = '"';
 
     private ScopedBuffer!(char, 128) buffer;
@@ -362,7 +363,9 @@ struct CsvReader
             return length == 0;
         }
 
-        ///
+        /++
+        The function has be called after the front value is precessed.
+        +/
         void popFront()() scope pure nothrow @nogc
             in (root)
         {
@@ -409,7 +412,9 @@ struct CsvReader
         return text.length == 0;
     }
 
-    ///
+    /++
+    The function has be called after the all row cell values have been precessed.
+    +/
     void popFront()() scope pure nothrow @nogc
     {
         rowIndex++;
@@ -826,9 +831,9 @@ struct CsvSerializer(Appender)
     +/
     Appender* appender;
 
-    ///
+    /// Scalar separator
     char separator = ',';
-    ///
+    /// Symbol to quote scalars
     char quote = '"';
     ///
     bool quoteAll;
