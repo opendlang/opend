@@ -156,7 +156,6 @@ struct CsvProxy
             return;
         }
 
-        bool quoted;
         DecimalExponentKey decimalKey;
         Decimal!128 decimal = void;
         Timestamp timestamp;
@@ -243,7 +242,7 @@ struct CsvProxy
             Finalizer:
                 if (_expect(conversionFinalizer !is null, false))
                 {
-                    scalar = conversionFinalizer(elem.value, scalar, quoted, row.columnIndex);
+                    scalar = conversionFinalizer(elem.value, scalar, elem.wasQuoted, row.columnIndex);
                 }
                 serializer.elemBegin;
                 serializer.serializeValue(scalar);                
@@ -517,7 +516,7 @@ struct CsvReader
 
 /++
 Returns: $(NDSLICEREF slice, Slice)`!(string*, 2)`.
-See_also: $(LREF stringMatrixToStringMap)
+See_also: $(LREF matrixAsDataFrame)
 +/
 Slice!(string*, 2) csvToStringMatrix(
     return scope string text,
@@ -734,20 +733,213 @@ unittest
 }
 
 /++
+Returns: $(NDSLICEREF slice, Slice)`!(string*, 2)`.
+See_also: $(LREF matrixAsDataFrame)
++/
+Slice!(CsvAlgebraic*, 2) csvToAlgebraicMatrix(
+    return scope string text,
+    char separator = ',',
+    char quote = '"',
+    char comment = '\0',
+    ubyte skipRows = 0,
+    bool parseNumbers = true,
+    bool parseTimestamps = true,
+    scope const CsvProxy.Conversion[] conversions = CsvProxy.init.conversions,
+    CsvAlgebraic delegate(
+        return scope const(char)[] unquotedString,
+        CsvAlgebraic scalar,
+        bool quoted,
+        size_t columnIndex
+    ) @safe pure conversionFinalizer = null
+) @trusted pure
+{
+    pragma(inline, false);
+
+    import mir.bignum.decimal: Decimal, DecimalExponentKey;
+    import mir.ndslice.slice: Slice;
+    import mir.timestamp: Timestamp;
+    import mir.utility: _expect;
+    import std.array: appender;
+
+    auto app = appender!(CsvAlgebraic[]);
+    app.reserve(text.length / 32);
+
+    auto table = CsvReader(
+        text,
+        separator,
+        quote,
+        comment,
+        skipRows,
+    );
+
+    auto wip = new CsvAlgebraic[table.rowLength];
+
+    DecimalExponentKey decimalKey;
+    Decimal!128 decimal = void;
+    Timestamp timestamp;
+
+    while (!table.empty)
+    {
+        auto row = table.front;
+        do
+        {
+            auto elem = row.front;
+            if (_expect(elem.error, false)) 
+                row.validateCsvError(elem.error);
+
+            CsvAlgebraic scalar;
+
+            enum bool allowSpecialValues = true;
+            enum bool allowDotOnBounds = true;
+            enum bool allowDExponent = true;
+            enum bool allowStartingPlus = true;
+            enum bool allowUnderscores = false;
+            enum bool allowLeadingZeros = false;
+            enum bool allowExponent = true;
+            enum bool checkEmpty = true;
+
+            if (_expect(elem.wasQuoted, false))
+            {
+                auto value = cast(string) elem.value;
+                if (_expect(elem.isScopeAllocated, false))
+                    value = value.idup;
+                scalar = value;
+            }
+            else
+            if (parseNumbers && decimal.fromStringImpl!(
+                char,
+                allowSpecialValues,
+                allowDotOnBounds,
+                allowDExponent,
+                allowStartingPlus,
+                allowUnderscores,
+                allowLeadingZeros,
+                allowExponent,
+                checkEmpty)
+                (elem.value, decimalKey))
+            {
+                if (decimalKey)
+                    scalar = cast(double) decimal;
+                else
+                    scalar = cast(long) decimal.coefficient;
+            }
+            else
+            if (parseTimestamps && Timestamp.fromISOExtString(elem.value, timestamp))
+            {
+                scalar = timestamp;
+            }
+            else
+            {
+                foreach(ref target; conversions)
+                {
+                    if (elem.value == target.from)
+                    {
+                        scalar = target.to;
+                        goto Finalizer;
+                    }
+                }
+                scalar = cast(string) elem.value;
+            }
+
+        Finalizer:
+            if (_expect(conversionFinalizer !is null, false))
+            {
+                scalar = conversionFinalizer(elem.value, scalar, elem.wasQuoted, row.columnIndex);
+            }
+
+            wip[row.columnIndex] = scalar;
+            row.popFront;
+        }
+        while(!row.empty);
+        app.put(wip);
+        table.popFront;
+    }
+
+    import mir.ndslice: sliced;
+    assert (app.data.length == table.rowIndex * table.rowLength);
+    return app.data.sliced(table.rowIndex, table.rowLength);
+}
+
+///
+unittest
+{
+    import mir.csv;
+    import mir.ion.conv: serde; // to convert CsvProxy to D types
+    import mir.serde: serdeKeys, serdeIgnoreUnexpectedKeys, serdeOptional;
+    // mir.date and std.datetime are supported as well
+    import mir.timestamp: Timestamp;//mir-algorithm package
+    import mir.test: should;
+
+    auto text =
+`Date,Open,High,Low,Close,Volume
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+
+    // If you don't have a header,
+    // `mir.functional.Tuple` instead of MyDataFrame.
+    @serdeIgnoreUnexpectedKeys //ignore all other columns
+    static struct MyDataFrame
+    {
+        // Few keys are allowed
+        @serdeKeys(`Date`, `date`, `timestamp`)
+        Timestamp[] timestamp;
+
+        @serdeKeys(`Open`)  double[]    open;
+        @serdeKeys(`High`)  double[]    high;
+        @serdeKeys(`Low`)   double[]    low;
+        @serdeKeys(`Close`) double[]    close;
+
+        @serdeOptional // if we don't have Volume
+        @serdeKeys(`Volume`)
+        long[]volume;
+    }
+
+    MyDataFrame testValue = {
+        timestamp:  [`2021-01-21 09:30:00`.Timestamp, `2021-01-21 09:35:00`.Timestamp],
+        volume:     [9166695, 4632863],
+        open:       [133.8,  134.25],
+        high:       [134.43, 135],
+        low:        [133.59, 134.19],
+        close:      [134.0,  134.5],
+    };
+
+    auto table = text
+        .csvToAlgebraicMatrix
+        .matrixAsDataFrame; 
+
+    table["Volume"][1].should == 4632863;
+
+    table.serde!MyDataFrame.should == testValue;
+}
+
+/++
 Represent CSV data as dictionary of columns.
 Uses the first row as header.
 Returns: a string map that refers the same header and the same data.
 +/
-StringMap!(Slice!(string*, 1, SliceKind.universal))
-    stringMatrixToStringMap(return scope Slice!(string*, 2) matrix)
+StringMap!(Slice!(T*, 1, SliceKind.universal))
+    matrixAsDataFrame(T)(return scope Slice!(T*, 2) matrix)
     @trusted pure
 {
+    import mir.algebraic: isVariant;
     import mir.array.allocation: array;
     import mir.ion.exception: IonException;
-    import mir.ndslice.topology: byDim;
+    import mir.ndslice.topology: byDim, map, as;
+
     if (matrix.length == 0)
         throw new IonException("mir.csv: Matrix should have at least a single row to get the header");
-    return typeof(return)(matrix[0].field, matrix[1 .. $].byDim!1.array);
+    
+    static if (is(T == string))
+        auto keys = matrix[0].field;
+    else
+    static if (isVariant!T)
+        auto keys = matrix[0].map!((ref x) => x.get!string).array;
+    else
+        auto keys = matrix[0].as!string.array;
+
+    auto data = matrix[1 .. $].byDim!1.array;
+
+    return typeof(return)(keys, data);
 }
 
 ///
@@ -761,8 +953,8 @@ unittest
 
     import mir.ndslice.topology: as, map;
     auto table = data
-        .csvToStringMatrix
-        .stringMatrixToStringMap;
+        .csvToStringMatrix // see also csvToAlgebraicMatrix
+        .matrixAsDataFrame;
 
     
     table["a"].should == ["1", "4", "7", "10"];
@@ -1312,70 +1504,7 @@ unittest
     matrix.should == [[1, 2], [3, 4], [5, 6]];
 }
 
-// First draft
 version(none):
-
-///
-unittest
-{
-    import mir.csv;
-    import mir.ion.conv: serde; // to convert CsvProxy to D types
-    import mir.serde: serdeKeys, serdeIgnoreUnexpectedKeys, serdeOptional;
-    // mir.date and std.datetime are supported as well
-    import mir.timestamp: Timestamp;//mir-algorithm package
-    import mir.test: should;
-
-    auto text =
-`Date,Open,High,Low,Close,Volume
-2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
-2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
-
-    CsvProxy csv = {
-        text: text,
-        // We allow 7 CSV payloads!
-        kind: CsvKind.dataFrame
-    };
-
-    // If you don't have a header,
-    // `mir.functional.Tuple` instead of MyDataFrame.
-    @serdeIgnoreUnexpectedKeys //ignore all other columns
-    static struct MyDataFrame
-    {
-        // Few keys are allowed
-        @serdeKeys(`Date`, `date`, `timestamp`)
-        Timestamp[] timestamp;
-
-        @serdeKeys(`Open`)  double[]    open;
-        @serdeKeys(`High`)  double[]    high;
-        @serdeKeys(`Low`)   double[]    low;
-        @serdeKeys(`Close`) double[]    close;
-
-        @serdeOptional // if we don't have Volume
-        @serdeKeys(`Volume`)
-        long[]volume;
-    }
-
-    MyDataFrame testValue = {
-        timestamp:  [`2021-01-21 09:30:00`.Timestamp, `2021-01-21 09:35:00`.Timestamp],
-        volume:     [9166695, 4632863],
-        open:       [133.8,  134.25],
-        high:       [134.43, 135],
-        low:        [133.59, 134.19],
-        close:      [134.0,  134.5],
-    };
-
-    csv.serde!MyDataFrame.should == testValue;
-
-    ///////////////////////////////////////////////
-    /// More flexible Data Frame
-
-    import mir.algebraic_alias.csv: CsvAlgebraic;
-    alias DataFrame = CsvAlgebraic[][string];
-    auto flex = csv.serde!DataFrame;
-
-    flex["Volume"][1].should == 4632863;
-}
-
 /++
 Type resolution is performed for types defined in $(MREF mir,algebraic_alias,csv):
 
