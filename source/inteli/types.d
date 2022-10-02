@@ -205,6 +205,7 @@ else
 
 static if (DefineGenericLoadStoreUnaligned)
 {
+    // TODO: remove, only LDC should use that
     Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe if (Vec.sizeof < 32)
     {
         enum size_t Count = Vec.array.length;

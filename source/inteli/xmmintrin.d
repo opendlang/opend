@@ -2585,15 +2585,28 @@ unittest
     _mm_sfence();
 }
 
-/// Warning: the immediate shuffle value `imm8` is given at compile-time instead of runtime.
-__m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @safe
+
+__m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @trusted
 {
-    // TODO remove this use of shufflevector except for LDC
     // PERF DMD + D_SIMD
-    return cast(__m64) shufflevector!(short4, ( (imm8 >> 0) & 3 ),
-                                              ( (imm8 >> 2) & 3 ),
-                                              ( (imm8 >> 4) & 3 ),
-                                              ( (imm8 >> 6) & 3 ))(cast(short4)a, cast(short4)a);
+    version(LDC)
+    {
+        return cast(__m64) shufflevectorLDC!(short4, ( (imm8 >> 0) & 3 ),
+                                                     ( (imm8 >> 2) & 3 ),
+                                                     ( (imm8 >> 4) & 3 ),
+                                                     ( (imm8 >> 6) & 3 ))(cast(short4)a, cast(short4)a);
+    }
+    else
+    {
+        // GDC optimizes that correctly starting with -O2
+        short4 sa = cast(short4)a;
+        short4 r = void;
+        r.ptr[0] = sa.array[ (imm8 >> 0) & 3 ];
+        r.ptr[1] = sa.array[ (imm8 >> 2) & 3 ];
+        r.ptr[2] = sa.array[ (imm8 >> 4) & 3 ];
+        r.ptr[3] = sa.array[ (imm8 >> 6) & 3 ];
+        return cast(__m64)r;
+    }
 }
 unittest
 {
@@ -2604,17 +2617,31 @@ unittest
     assert(B.array == expectedB);
 }
 
+/// Shuffle single-precision (32-bit) floating-point elements in `a` and `b` using the control in `imm8`, 
 /// Warning: the immediate shuffle value `imm` is given at compile-time instead of runtime.
-__m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
+__m128 _mm_shuffle_ps(ubyte imm8)(__m128 a, __m128 b) pure @trusted
 {
-    static if (DMD_with_DSIMD)
+    static if (GDC_with_SSE)
     {
-        return cast(__m128) __simd(XMM.SHUFPS, a, b, imm);
+        return __builtin_ia32_shufps(a, b, imm8);
+    }
+    else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128) __simd(XMM.SHUFPS, a, b, imm8);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(__m128, imm8 & 3, (imm8>>2) & 3, 
+                                 4 + ((imm8>>4) & 3), 4 + ((imm8>>6) & 3) )(a, b);
     }
     else
     {
-        // TODO remove this use of shufflevector except for LDC
-        return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
+        float4 r = void;
+        r.ptr[0] = a.array[ (imm8 >> 0) & 3 ];
+        r.ptr[1] = a.array[ (imm8 >> 2) & 3 ];
+        r.ptr[2] = b.array[ (imm8 >> 4) & 3 ];
+        r.ptr[3] = b.array[ (imm8 >> 6) & 3 ];
+        return r;
     }
 }
 unittest
