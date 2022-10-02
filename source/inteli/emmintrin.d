@@ -2577,46 +2577,65 @@ __m128i _mm_movpi64_epi64 (__m64 a) pure @trusted
     return cast(__m128i)r;
 }
 
-// Note: generates pmuludq in LDC with -O1
+/// Multiply the low unsigned 32-bit integers from each packed 64-bit element in `a` and `b`, 
+/// and store the unsigned 64-bit results.
 __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
-{
-    __m128i zero = _mm_setzero_si128();
-
-    static if (__VERSION__ >= 2088)
+{    
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE2)
     {
-        // Need LLVM9 to avoid this shufflevector
-        long2 la, lb;
-        la.ptr[0] = cast(uint)a.array[0];
-        la.ptr[1] = cast(uint)a.array[2];
-        lb.ptr[0] = cast(uint)b.array[0];
-        lb.ptr[1] = cast(uint)b.array[2];
+        return cast(__m128i) __builtin_ia32_pmuludq128 (a, b);
     }
     else
     {
-        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero); // TODO remove this use of shufflevector except for LDC
-        long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
-    }
-
-    version(DigitalMars)
-    {
-        // DMD has no long2 mul
-        // long2 mul not supported before LDC 1.5
-        la.ptr[0] *= lb.array[0];
-        la.ptr[1] *= lb.array[1];
-        return cast(__m128i)(la);
-    }
-    else
-    {
-        static if (__VERSION__ >= 2076)
+        version(LDC)
         {
-            return cast(__m128i)(la * lb);
+            static if (__VERSION__ >= 2088)
+            {
+                // Need LLVM9 to avoid this shufflevector
+                long2 la, lb;
+                la.ptr[0] = cast(uint)a.array[0];
+                la.ptr[1] = cast(uint)a.array[2];
+                lb.ptr[0] = cast(uint)b.array[0];
+                lb.ptr[1] = cast(uint)b.array[2];
+            }
+            else
+            {
+                __m128i zero;
+                zero = 0;
+                long2 la = cast(long2) shufflevectorLDC!(int4, 0, 4, 2, 6)(a, zero);
+                long2 lb = cast(long2) shufflevectorLDC!(int4, 0, 4, 2, 6)(b, zero);
+            }
         }
         else
         {
-            // long2 mul not supported before LDC 1.5
+            long2 la, lb;
+            la.ptr[0] = cast(uint)a.array[0];
+            la.ptr[1] = cast(uint)a.array[2];
+            lb.ptr[0] = cast(uint)b.array[0];
+            lb.ptr[1] = cast(uint)b.array[2];
+        }
+
+        version(DigitalMars)
+        {
+            // DMD has no long2 mul
             la.ptr[0] *= lb.array[0];
             la.ptr[1] *= lb.array[1];
             return cast(__m128i)(la);
+        }
+        else
+        {
+            static if (__VERSION__ >= 2076)
+            {
+                return cast(__m128i)(la * lb);
+            }
+            else
+            {
+                // long2 mul not supported before LDC 1.5
+                la.ptr[0] *= lb.array[0];
+                la.ptr[1] *= lb.array[1];
+                return cast(__m128i)(la);
+            }
         }
     }
 }
@@ -4952,11 +4971,16 @@ unittest
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckldq128(a, b);
     }
-    else version(DigitalMars)
+    else version(LDC)
+    {
+        return shufflevectorLDC!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b);
+    }
+    else
     {
         __m128i r;
         r.ptr[0] = a.array[0];
@@ -4964,10 +4988,6 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
         r.ptr[2] = a.array[1];
         r.ptr[3] = b.array[1];
         return r;
-    }
-    else
-    {
-        return shufflevector!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b); // TODO remove this use of shufflevector except for LDC
     }
 }
 unittest
