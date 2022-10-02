@@ -1245,6 +1245,157 @@ version(unittest) private
     }
 }
 
+/// enums
+version(mir_ion_test) unittest
+{
+    import std.exception : assertThrown;
+    import mir.serde: serdeProxy;
+
+    enum Builtin
+    {
+        one = 1,
+        two = 2
+    }
+
+    enum BuiltinString : string
+    {
+        one = "eins",
+        two = "zwei"
+    }
+
+    @serdeProxy!int
+    enum ByInt
+    {
+        one = 1,
+        two = 2
+    }
+
+    @serdeProxy!string
+    enum StringEnum : string
+    {
+        one = "eins",
+        two = "zwei"
+    }
+
+    static struct B
+    {
+        Builtin builtin;
+        BuiltinString bstr;
+    }
+
+    static struct P
+    {
+        ByInt byInt;
+        StringEnum str;
+    }
+
+    import mir.ser.json : serializeJson;
+    import mir.deser.json : deserializeJson;
+
+    assert(`{"builtin":"one","bstr":"one"}`.deserializeJson!B
+        == B(Builtin.one, BuiltinString.one));
+    assert(`{"builtin":"two","bstr":"two"}`.deserializeJson!B
+        == B(Builtin.two, BuiltinString.two));
+    assertThrown(`{"builtin":"three","bstr":"three"}`.deserializeJson!B);
+
+    assert(`{"byInt":1,"str":"eins"}`.deserializeJson!P
+        == P(ByInt.one, StringEnum.one));
+    assert(`{"byInt":2,"str":"zwei"}`.deserializeJson!P
+        == P(ByInt.two, StringEnum.two));
+    assertThrown(`{"byInt":2,"str":"drei"}`.deserializeJson!P);
+    // asserts are a little inconsistent with integral values
+    assert(`{"byInt":3,"str":"zwei"}`.deserializeJson!P
+        == P(cast(ByInt)3, StringEnum.two));
+
+
+    assert(B().serializeJson
+        == `{"builtin":"one","bstr":"one"}`);
+    assert(P().serializeJson
+        == `{"byInt":1,"str":"eins"}`);
+
+    // serializing invalid enum values may cause AssertError or other errors,
+    // so avoid doing it altogether.
+    assertThrown!Throwable(B(cast(Builtin)2, cast(BuiltinString)"drei").serializeJson);
+    assertThrown!Throwable(B(cast(Builtin)3, BuiltinString.two).serializeJson);
+    // Fine with @serdeProxy!T with serialization, although inconsistent.
+    // Use @serdeEnumProxy!T or add @serdeProxyCast to your serdeProxy annotated value
+    // to also support serialization and deserialization through the underlying type.
+    assert(P(cast(ByInt)2, cast(StringEnum)"drei").serializeJson
+        == `{"byInt":2,"str":"StringEnum(drei)"}`);
+    assert(P(cast(ByInt)3, StringEnum.two).serializeJson
+        == `{"byInt":3,"str":"zwei"}`);
+}
+
+/// ditto
+version(mir_ion_test) unittest
+{
+    import mir.serde: serdeEnumProxy;
+
+    @serdeEnumProxy!int
+    enum IntE
+    {
+        one = 1,
+        two = 2
+    }
+
+    @serdeEnumProxy!string
+    enum StrE : string
+    {
+        one = "eins",
+        two = "zwei"
+    }
+
+    static struct S
+    {
+        IntE a;
+        StrE b;
+    }
+
+    import mir.ser.json : serializeJson;
+    import mir.deser.json : deserializeJson;
+
+    // same as regular serdeProxy so far
+    assert(`{"a":1,"b":"eins"}`.deserializeJson!S == S(IntE.one, StrE.one));
+    assert(`{"a":2,"b":"zwei"}`.deserializeJson!S == S(IntE.two, StrE.two));
+
+    assert(`{"a":1,"b":"eins"}` == S(IntE.one, StrE.one).serializeJson);
+    assert(`{"a":2,"b":"zwei"}` == S(IntE.two, StrE.two).serializeJson);
+
+    // but allows any underlying values
+    assert(`{"a":3,"b":"drei"}`.deserializeJson!S
+        == S(cast(IntE)3, cast(StrE)"drei"));
+    assert(`{"a":3,"b":"drei"}`
+        == S(cast(IntE)3, cast(StrE)"drei").serializeJson,
+        S(cast(IntE)3, cast(StrE)"drei").serializeJson);
+}
+
+version(mir_ion_test) unittest
+{
+    import mir.serde: serdeEnumProxy;
+    import mir.algebraic: Nullable, nullable;
+
+    @serdeEnumProxy!string
+    enum StrE : string
+    {
+        one = "eins",
+        two = "zwei"
+    }
+
+    static struct S
+    {
+        Nullable!(StrE[]) a;
+    }
+
+    import mir.ser.json : serializeJson;
+    import mir.deser.json : deserializeJson;
+
+    auto s = S([StrE.one, StrE.two, cast(StrE)"drei"].nullable);
+    auto str = `{"a":["eins","zwei","drei"]}`;
+
+    assert(str.deserializeJson!S == s);
+    assert(s.serializeJson == str, str);
+}
+
 // check symbols support
 // check typed nullable support
 // check void support

@@ -107,7 +107,7 @@ void serializeValue(S, V)(scope ref S serializer, scope const V value)
 {
     static if (hasUDA!(V, serdeProxy))
     {
-        serializer.serializeWithProxy!(serdeGetProxy!V)(value);
+        serializeProxyCastImpl!(S, V)(serializer, value);
     }
     else
     {
@@ -133,6 +133,17 @@ unittest
     assert(serializeIon(Key.foo).deserializeIon!(SmallString!32) == "FOO");
     auto rcstring = serializeIon(Key.foo).deserializeIon!(RCArray!char);
     assert(rcstring[] == "FOO");
+}
+
+private static void serializeProxyCastImpl(S, alias U, V)(scope ref S serializer, scope const V value)
+{
+    static if (hasUDA!(U, serdeProxyCast))
+    {
+        scope casted = cast(serdeGetProxy!U)value;
+        serializeValue(serializer, casted);
+    }
+    else
+        serializer.serializeWithProxy!(serdeGetProxy!U)(value);
 }
 
 /// String serialization
@@ -593,7 +604,7 @@ private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V 
             else
             static if(hasUDA!(__traits(getMember, value, member), serdeProxy))
             {
-                serializer.serializeWithProxy!(serdeGetProxy!(__traits(getMember, value, member)))(val);
+                serializeProxyCastImpl!(S, __traits(getMember, value, member))(serializer, val);
             }
             else
             {
@@ -983,7 +994,7 @@ void serializeValue(S, V)(scope ref S serializer, scope ref const V value) @safe
     else
     static if (hasUDA!(V, serdeProxy))
     {
-        serializer.serializeWithProxy!(serdeGetProxy!V)(value);
+        serializeProxyCastImpl!(S, V)(serializer, value);
         return;
     }
     else

@@ -775,16 +775,33 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                 if (auto exception = impl(data, temporal, table, tableIndex, proxyAnnotations))
                     return exception;
 
-                static if (__traits(compiles, ()@safe{return to!T(move(temporal));}))
-                    value = to!T(move(temporal));
+                static if (hasUDA!(T, serdeProxyCast))
+                {
+                    static if (__traits(compiles, ()@safe{return cast(T)temporal;}))
+                        value = cast(T)temporal;
+                    else
+                    {
+                        pragma(msg, "Mir warning: can't safely cast from "
+                            ~ (const V).stringof
+                            ~ " to "
+                            ~ (const Proxy).stringof
+                        );
+                        value = ()@trusted{return cast(T)temporal;}();
+                    }
+                }
                 else
                 {
-                    pragma(msg, "Mir warning: can't safely cast from "
-                        ~ (const V).stringof
-                        ~ " to "
-                        ~ (const Proxy).stringof
-                    );
-                    value = ()@trusted{return to!T(move(temporal));}();
+                    static if (__traits(compiles, ()@safe{return to!T(move(temporal));}))
+                        value = to!T(move(temporal));
+                    else
+                    {
+                        pragma(msg, "Mir warning: can't safely cast from "
+                            ~ (const V).stringof
+                            ~ " to "
+                            ~ (const Proxy).stringof
+                        );
+                        value = ()@trusted{return to!T(move(temporal));}();
+                    }
                 }
             }
             static if(__traits(hasMember, T, "serdeFinalize"))
