@@ -3016,7 +3016,6 @@ __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
     }
     else version(LDC)
     {
-        // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
         return shufflevectorLDC!(__m128, 2, 6, 3, 7)(a, b);
     }
     else
@@ -3048,7 +3047,6 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
     }
     else version(LDC)
     {
-        // x86: plain version generates unpckhps with LDC 1.0.0 -O1, but shufflevector 8 less instructions in -O0
         return shufflevectorLDC!(__m128, 0, 4, 1, 5)(a, b);
     }
     else

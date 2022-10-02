@@ -223,7 +223,7 @@ __m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
         {
             // Generates palignr since LDC 1.1 -O1
             // Also generates a single ext instruction on arm64.
-            return cast(__m128i) shufflevector!(byte16, ( 0 + count),
+            return cast(__m128i) shufflevectorLDC!(byte16, ( 0 + count),
                                                         ( 1 + count),
                                                         ( 2 + count),
                                                         ( 3 + count),
@@ -242,7 +242,7 @@ __m128i _mm_alignr_epi8(ubyte count)(__m128i a, __m128i b) @trusted
         }
         else
         {
-            return cast(__m128i) shufflevector!(byte16, ( 0 + count) % 32,
+            return cast(__m128i) shufflevectorLDC!(byte16, ( 0 + count) % 32,
                                                         ( 1 + count) % 32,
                                                         ( 2 + count) % 32,
                                                         ( 3 + count) % 32,
@@ -331,7 +331,7 @@ __m64 _mm_alignr_pi8(ubyte count)(__m64 a, __m64 b) @trusted
         {
             // Note: in LDC x86 this uses a pshufb.
             // Generates ext in arm64.
-            return cast(__m64) shufflevector!(byte8, (0 + count),
+            return cast(__m64) shufflevectorLDC!(byte8, (0 + count),
                                                      (1 + count),
                                                      (2 + count),
                                                      (3 + count),
@@ -342,7 +342,7 @@ __m64 _mm_alignr_pi8(ubyte count)(__m64 a, __m64 b) @trusted
         }
         else
         {
-            return cast(__m64) shufflevector!(byte8, (0 + count)%16,
+            return cast(__m64) shufflevectorLDC!(byte8, (0 + count)%16,
                                                      (1 + count)%16,
                                                      (2 + count)%16,
                                                      (3 + count)%16,
@@ -567,8 +567,8 @@ __m128i _mm_hadds_epi16 (__m128i a, __m128i b) @trusted
         // uzp1/uzp2/sqadd sequence
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
-        short8 d = shufflevector!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
+        short8 c = shufflevectorLDC!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
+        short8 d = shufflevectorLDC!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
         return cast(__m128i)vqaddq_s16(c, d);
     }
     else
@@ -621,8 +621,8 @@ __m64 _mm_hadds_pi16 (__m64 a, __m64 b) @trusted
         // uzp1/uzp2/sqadd sequence
         short4 sa = cast(short4)a;
         short4 sb = cast(short4)b;
-        short4 c = shufflevector!(short4, 0, 2, 4, 6)(sa, sb);
-        short4 d = shufflevector!(short4, 1, 3, 5, 7)(sa, sb);
+        short4 c = shufflevectorLDC!(short4, 0, 2, 4, 6)(sa, sb);
+        short4 d = shufflevectorLDC!(short4, 1, 3, 5, 7)(sa, sb);
         return cast(__m64)vqadd_s16(c, d);
     }
     else
@@ -664,8 +664,8 @@ __m128i _mm_hsub_epi16 (__m128i a, __m128i b) @trusted
         // Produce uzp1 uzp2 sub sequence since LDC 1.8 -O1 
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
-        short8 d = shufflevector!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
+        short8 c = shufflevectorLDC!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
+        short8 d = shufflevectorLDC!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
         return cast(__m128i)(c - d);
     }
     else 
@@ -709,8 +709,8 @@ __m128i _mm_hsub_epi32 (__m128i a, __m128i b) @trusted
         // Produce uzp1 uzp2 sub sequence since LDC 1.8 -O1 
         int4 ia = cast(int4)a;
         int4 ib = cast(int4)b;
-        int4 c = shufflevector!(int4, 0, 2, 4, 6)(ia, ib);
-        int4 d = shufflevector!(int4, 1, 3, 5, 7)(ia, ib);
+        int4 c = shufflevectorLDC!(int4, 0, 2, 4, 6)(ia, ib);
+        int4 d = shufflevectorLDC!(int4, 1, 3, 5, 7)(ia, ib);
         return cast(__m128i)(c - d);
     }
     else
@@ -748,8 +748,8 @@ __m64 _mm_hsub_pi16 (__m64 a, __m64 b) @trusted
         // Produce uzp1 uzp2 sub sequence since LDC 1.3 -O1 
         short4 sa = cast(short4)a;
         short4 sb = cast(short4)b;
-        short4 c = shufflevector!(short4, 0, 2, 4, 6)(sa, sb);
-        short4 d = shufflevector!(short4, 1, 3, 5, 7)(sa, sb);
+        short4 c = shufflevectorLDC!(short4, 0, 2, 4, 6)(sa, sb);
+        short4 d = shufflevectorLDC!(short4, 1, 3, 5, 7)(sa, sb);
         return cast(__m64)(c - d);
     }
     else
@@ -788,8 +788,8 @@ __m64 _mm_hsub_pi32 (__m64 a, __m64 b) @trusted
         // LDC arm64: generates zip1+zip2+sub sequence since LDC 1.8 -O1
         int2 ia = cast(int2)a;
         int2 ib = cast(int2)b;
-        int2 c = shufflevector!(int2, 0, 2)(ia, ib);
-        int2 d = shufflevector!(int2, 1, 3)(ia, ib);
+        int2 c = shufflevectorLDC!(int2, 0, 2)(ia, ib);
+        int2 d = shufflevectorLDC!(int2, 1, 3)(ia, ib);
         return cast(__m64)(c - d);
     }
     else
@@ -830,8 +830,8 @@ __m128i _mm_hsubs_epi16 (__m128i a, __m128i b) @trusted
         // uzp1/uzp2/sqsub sequence
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        short8 c = shufflevector!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
-        short8 d = shufflevector!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
+        short8 c = shufflevectorLDC!(short8, 0, 2, 4, 6, 8, 10, 12, 14)(sa, sb);
+        short8 d = shufflevectorLDC!(short8, 1, 3, 5, 7, 9, 11, 13, 15)(sa, sb);
         return cast(__m128i)vqsubq_s16(c, d);
     }
     else
@@ -885,8 +885,8 @@ __m64 _mm_hsubs_pi16 (__m64 a, __m64 b) @trusted
         // uzp1/uzp2/sqsub sequence in -O1
         short4 sa = cast(short4)a;
         short4 sb = cast(short4)b;
-        short4 c = shufflevector!(short4, 0, 2, 4, 6)(sa, sb);
-        short4 d = shufflevector!(short4, 1, 3, 5, 7)(sa, sb);
+        short4 c = shufflevectorLDC!(short4, 0, 2, 4, 6)(sa, sb);
+        short4 d = shufflevectorLDC!(short4, 1, 3, 5, 7)(sa, sb);
         return cast(__m64)vqsub_s16(c, d);
     }
     else

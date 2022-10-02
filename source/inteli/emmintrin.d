@@ -1279,7 +1279,7 @@ __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
             case _MM_ROUND_TOWARD_ZERO_ARM: i = vcvtzq_s64_f64(a); break;
         }
         int4 zero = 0;
-        return cast(__m128i) shufflevector!(int4, 0, 2, 4, 6)(cast(int4)i, zero);
+        return cast(__m128i) shufflevectorLDC!(int4, 0, 2, 4, 6)(cast(int4)i, zero);
     }
     else
     {
@@ -5045,9 +5045,10 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
     }
     else
     {
+        // TODO remove this use of shufflevector except for LDC
         return cast(__m128i) shufflevector!(byte16, 0, 16, 1, 17, 2, 18, 3, 19,
                                                     4, 20, 5, 21, 6, 22, 7, 23)
-                                           (cast(byte16)a, cast(byte16)b); // TODO remove this use of shufflevector except for LDC
+                                           (cast(byte16)a, cast(byte16)b); 
     }
 }
 unittest

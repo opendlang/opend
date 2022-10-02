@@ -115,10 +115,10 @@ __m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
     {
         // LDC x86: generates blendps since LDC 1.1 -O2
         //   arm64: pretty good, two instructions worst case
-        return shufflevector!(float4, (imm8 & 1) ? 4 : 0,
-                                      (imm8 & 2) ? 5 : 1,
-                                      (imm8 & 4) ? 6 : 2,
-                                      (imm8 & 8) ? 7 : 3)(a, b);
+        return shufflevectorLDC!(float4, (imm8 & 1) ? 4 : 0,
+                                         (imm8 & 2) ? 5 : 1,
+                                         (imm8 & 4) ? 6 : 2,
+                                         (imm8 & 8) ? 7 : 3)(a, b);
     }
     else
     {

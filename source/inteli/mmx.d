@@ -875,8 +875,7 @@ __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @trusted
 {   
     version(LDC)
     {
-        // avoiding this shufflevector leads to bad performance on LDC
-        return cast(__m64) shufflevector!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
+        return cast(__m64) shufflevectorLDC!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
     }
     else
     {
@@ -925,7 +924,7 @@ __m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
 {
     version(LDC)
     {
-        return cast(__m64) shufflevector!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
+        return cast(__m64) shufflevectorLDC!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
     }
     else
     {
@@ -1000,7 +999,7 @@ __m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
 {
     version(LDC)
     {
-        return cast(__m64) shufflevector!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
+        return cast(__m64) shufflevectorLDC!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
     }
     else
     {
