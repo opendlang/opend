@@ -28,234 +28,6 @@ import std.traits: isImplicitlyConvertible;
 ///
 public import mir.algebraic_alias.csv: CsvAlgebraic;
 
-/++
-A proxy that allows to converty CSV to a table in another data format.
-+/
-struct CsvProxy
-{
-    import mir.algebraic_alias.csv: CsvAlgebraic;
-    import mir.ion.exception: IonMirException;
-    /// An input CSV text. BOM isn't supported.
-    const(char)[] text;
-    /// If true the elements in the first row are symbolised.
-    bool hasHeader;
-    /// Scalar separator
-    char separator = ',';
-    /// Symbol to quote scalars
-    char quote = '"';
-    /// Skips rows the first consequent lines, which starts with this character.
-    char comment = '\0';
-    /// Skips a number of rows
-    ubyte skipRows;
-    /// If true the parser tries to recognsise and parse numbers.
-    bool parseNumbers = true;
-    /// If true the parser tries to recognsise and parse
-    // ISO timestamps in the extended form.
-    bool parseTimestamps = true;
-
-    /// A number of conversion conventions.
-    struct Conversion
-    {
-        ///
-        string from;
-        ///
-        CsvAlgebraic to;
-    }
-
-    /++
-    The conversion map represented as array of `from->to` pairs.
-
-    Note:
-    automated number recognition works with values like `NaN` and `+Inf` already.
-    +/
-    const(Conversion)[] conversions = [
-        Conversion("", null.CsvAlgebraic),
-        Conversion("TRUE", true.CsvAlgebraic),
-        Conversion("FALSE", false.CsvAlgebraic),
-    ];
-
-    /++
-    N/A and NULL patterns are converted to Ion `null` when exposed to arrays
-    and skipped when exposed to objects
-    +/
-    const(string)[] naStrings = [
-        ``,
-    ];
-
-    const(string)[] trueStrings = [
-        `TRUE`,
-    ];
-
-    const(string)[] falseStrings = [
-        `FALSE`,
-    ];
-
-    /// File name for berrer error messages
-    string fileName = "<unknown>";
-
-    // /++
-    // +/
-    // bool delegate(size_t columnIndex, scope const(char)[] columnName) useColumn;
-
-    /++
-    Conversion callback to finish conversion resolution
-    Params:
-        unquotedString = string after unquoting
-        kind = currently recognized path
-        columnIndex = column index starting from 0
-    +/
-    CsvAlgebraic delegate(
-        return scope const(char)[] unquotedString,
-        CsvAlgebraic scalar,
-        bool quoted,
-        size_t columnIndex
-    ) @safe pure @nogc conversionFinalizer;
-
-    /++
-    +/
-    static bool defaultIsSymbolHandler(scope const(char)[] symbol, bool quoted) @safe pure @nogc nothrow
-    {
-        import mir.algorithm.iteration: all;
-        return !quoted && symbol.length && symbol.all!(
-            c =>
-                'a' <= c && c <= 'z' ||
-                'A' <= c && c <= 'Z' ||
-                c == '_'
-        );
-    }
-
-    /++
-    A function used to determine if a string should be passed
-    to a serializer as a symbol instead of strings.
-    That may help to reduce memory allocation for data with
-    a huge amount of equal cell values.``
-    The default pattern follows regular expression `[a-zA-Z_]+`
-    and requires symbol to be presented without double quotes.
-    +/
-    bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
-
-    void serialize(S)(scope ref S serializer) scope const @trusted
-    {
-        import mir.bignum.decimal: Decimal, DecimalExponentKey;
-        import mir.exception: MirException;
-        import mir.ser: serializeValue;
-        import mir.timestamp: Timestamp;
-        import mir.utility: _expect;
-
-        auto table = CsvReader(
-            text,
-            separator,
-            quote,
-            comment,
-            skipRows,
-        );
-
-        if (hasHeader && table.empty)
-        {
-            serializer.putValue(null);
-            return;
-        }
-
-        DecimalExponentKey decimalKey;
-        Decimal!128 decimal = void;
-        Timestamp timestamp;
-
-        size_t outerState = serializer.listBegin;
-
-        if (hasHeader)
-        {
-            serializer.elemBegin;
-            auto state = serializer.listBegin;
-            foreach (elem; table.front)
-            {
-                assert(!elem.error);
-                serializer.elemBegin;
-                serializer.putSymbol(elem.value);
-            }
-            serializer.listEnd(state);
-            table.popFront;
-        }
-
-        do
-        {
-            serializer.elemBegin;
-            auto state = serializer.listBegin;
-            auto row = table.front;
-            do
-            {
-                auto elem = row.front;
-
-                if (_expect(elem.error, false)) 
-                    row.validateCsvError(elem.error);
-
-                CsvAlgebraic scalar;
-
-                enum bool allowSpecialValues = true;
-                enum bool allowDotOnBounds = true;
-                enum bool allowDExponent = true;
-                enum bool allowStartingPlus = true;
-                enum bool allowUnderscores = false;
-                enum bool allowLeadingZeros = false;
-                enum bool allowExponent = true;
-                enum bool checkEmpty = true;
-
-                if (_expect(elem.wasQuoted, false))
-                {
-                    scalar = cast(string) elem.value;
-                }
-                else
-                if (parseNumbers && decimal.fromStringImpl!(
-                    char,
-                    allowSpecialValues,
-                    allowDotOnBounds,
-                    allowDExponent,
-                    allowStartingPlus,
-                    allowUnderscores,
-                    allowLeadingZeros,
-                    allowExponent,
-                    checkEmpty)
-                    (elem.value, decimalKey))
-                {
-                    if (decimalKey)
-                        scalar = cast(double) decimal;
-                    else
-                        scalar = cast(long) decimal.coefficient;
-                }
-                else
-                if (parseTimestamps && Timestamp.fromISOExtString(elem.value, timestamp))
-                {
-                    scalar = timestamp;
-                }
-                else
-                {
-                    foreach(ref target; conversions)
-                    {
-                        if (elem.value == target.from)
-                        {
-                            scalar = target.to;
-                            goto Finalizer;
-                        }
-                    }
-                    scalar = cast(string) elem.value;
-                }
-
-            Finalizer:
-                if (_expect(conversionFinalizer !is null, false))
-                {
-                    scalar = conversionFinalizer(elem.value, scalar, elem.wasQuoted, row.columnIndex);
-                }
-                serializer.elemBegin;
-                serializer.serializeValue(scalar);                
-                row.popFront;
-            }
-            while(!row.empty);
-            serializer.listEnd(state);
-            table.popFront;
-        }
-        while (!table.empty);
-        serializer.listEnd(outerState);
-    }
-}
 
 /++
 Rapid CSV reader represented as a range of rows.
@@ -1144,7 +916,9 @@ string serializeCsv(V)(
 }
 
 ///
-version(mir_ion_test) unittest
+version(mir_ion_test)
+@safe pure
+unittest
 {
     import mir.timestamp: Timestamp;
     import mir.format: stringBuf;
@@ -1488,7 +1262,238 @@ struct CsvSerializer(Appender)
     alias sexpElemBegin = elemBegin;
 }
 
+/++
+A proxy that allows to converty CSV to a table in another data format.
++/
+struct CsvProxy
+{
+    import mir.algebraic_alias.csv: CsvAlgebraic;
+    import mir.ion.exception: IonMirException;
+    /// An input CSV text. BOM isn't supported.
+    const(char)[] text;
+    /// If true the elements in the first row are symbolised.
+    bool hasHeader;
+    /// Scalar separator
+    char separator = ',';
+    /// Symbol to quote scalars
+    char quote = '"';
+    /// Skips rows the first consequent lines, which starts with this character.
+    char comment = '\0';
+    /// Skips a number of rows
+    ubyte skipRows;
+    /// If true the parser tries to recognsise and parse numbers.
+    bool parseNumbers = true;
+    /// If true the parser tries to recognsise and parse
+    // ISO timestamps in the extended form.
+    bool parseTimestamps = true;
+
+    /// A number of conversion conventions.
+    struct Conversion
+    {
+        ///
+        string from;
+        ///
+        CsvAlgebraic to;
+    }
+
+    /++
+    The conversion map represented as array of `from->to` pairs.
+
+    Note:
+    automated number recognition works with values like `NaN` and `+Inf` already.
+    +/
+    const(Conversion)[] conversions = [
+        Conversion("", null.CsvAlgebraic),
+        Conversion("TRUE", true.CsvAlgebraic),
+        Conversion("FALSE", false.CsvAlgebraic),
+    ];
+
+    /++
+    N/A and NULL patterns are converted to Ion `null` when exposed to arrays
+    and skipped when exposed to objects
+    +/
+    const(string)[] naStrings = [
+        ``,
+    ];
+
+    const(string)[] trueStrings = [
+        `TRUE`,
+    ];
+
+    const(string)[] falseStrings = [
+        `FALSE`,
+    ];
+
+    /// File name for berrer error messages
+    string fileName = "<unknown>";
+
+    // /++
+    // +/
+    // bool delegate(size_t columnIndex, scope const(char)[] columnName) useColumn;
+
+    /++
+    Conversion callback to finish conversion resolution
+    Params:
+        unquotedString = string after unquoting
+        kind = currently recognized path
+        columnIndex = column index starting from 0
+    +/
+    CsvAlgebraic delegate(
+        return scope const(char)[] unquotedString,
+        CsvAlgebraic scalar,
+        bool quoted,
+        size_t columnIndex
+    ) @safe pure @nogc conversionFinalizer;
+
+    /++
+    +/
+    static bool defaultIsSymbolHandler(scope const(char)[] symbol, bool quoted) @safe pure @nogc nothrow
+    {
+        import mir.algorithm.iteration: all;
+        return !quoted && symbol.length && symbol.all!(
+            c =>
+                'a' <= c && c <= 'z' ||
+                'A' <= c && c <= 'Z' ||
+                c == '_'
+        );
+    }
+
+    /++
+    A function used to determine if a string should be passed
+    to a serializer as a symbol instead of strings.
+    That may help to reduce memory allocation for data with
+    a huge amount of equal cell values.``
+    The default pattern follows regular expression `[a-zA-Z_]+`
+    and requires symbol to be presented without double quotes.
+    +/
+    bool function(scope const(char)[] symbol, bool quoted) @safe pure @nogc isSymbolHandler = &defaultIsSymbolHandler;
+
+    void serialize(S)(scope ref S serializer) scope const @trusted
+    {
+        import mir.bignum.decimal: Decimal, DecimalExponentKey;
+        import mir.exception: MirException;
+        import mir.ser: serializeValue;
+        import mir.timestamp: Timestamp;
+        import mir.utility: _expect;
+
+        auto table = CsvReader(
+            text,
+            separator,
+            quote,
+            comment,
+            skipRows,
+        );
+
+        if (hasHeader && table.empty)
+        {
+            serializer.putValue(null);
+            return;
+        }
+
+        DecimalExponentKey decimalKey;
+        Decimal!128 decimal = void;
+        Timestamp timestamp;
+
+        size_t outerState = serializer.listBegin;
+
+        if (hasHeader)
+        {
+            serializer.elemBegin;
+            auto state = serializer.listBegin;
+            foreach (elem; table.front)
+            {
+                assert(!elem.error);
+                serializer.elemBegin;
+                serializer.putSymbol(elem.value);
+            }
+            serializer.listEnd(state);
+            table.popFront;
+        }
+
+        do
+        {
+            serializer.elemBegin;
+            auto state = serializer.listBegin;
+            auto row = table.front;
+            do
+            {
+                auto elem = row.front;
+
+                if (_expect(elem.error, false)) 
+                    row.validateCsvError(elem.error);
+
+                CsvAlgebraic scalar;
+
+                enum bool allowSpecialValues = true;
+                enum bool allowDotOnBounds = true;
+                enum bool allowDExponent = true;
+                enum bool allowStartingPlus = true;
+                enum bool allowUnderscores = false;
+                enum bool allowLeadingZeros = false;
+                enum bool allowExponent = true;
+                enum bool checkEmpty = true;
+
+                if (_expect(elem.wasQuoted, false))
+                {
+                    scalar = cast(string) elem.value;
+                }
+                else
+                if (parseNumbers && decimal.fromStringImpl!(
+                    char,
+                    allowSpecialValues,
+                    allowDotOnBounds,
+                    allowDExponent,
+                    allowStartingPlus,
+                    allowUnderscores,
+                    allowLeadingZeros,
+                    allowExponent,
+                    checkEmpty)
+                    (elem.value, decimalKey))
+                {
+                    if (decimalKey)
+                        scalar = cast(double) decimal;
+                    else
+                        scalar = cast(long) decimal.coefficient;
+                }
+                else
+                if (parseTimestamps && Timestamp.fromISOExtString(elem.value, timestamp))
+                {
+                    scalar = timestamp;
+                }
+                else
+                {
+                    foreach(ref target; conversions)
+                    {
+                        if (elem.value == target.from)
+                        {
+                            scalar = target.to;
+                            goto Finalizer;
+                        }
+                    }
+                    scalar = cast(string) elem.value;
+                }
+
+            Finalizer:
+                if (_expect(conversionFinalizer !is null, false))
+                {
+                    scalar = conversionFinalizer(elem.value, scalar, elem.wasQuoted, row.columnIndex);
+                }
+                serializer.elemBegin;
+                serializer.serializeValue(scalar);                
+                row.popFront;
+            }
+            while(!row.empty);
+            serializer.listEnd(state);
+            table.popFront;
+        }
+        while (!table.empty);
+        serializer.listEnd(outerState);
+    }
+}
+
 /// Matrix
+version (mir_ion_test)
+@safe pure
 unittest
 {
     import mir.test: should;
@@ -1504,7 +1509,6 @@ unittest
     matrix.should == [[1, 2], [3, 4], [5, 6]];
 }
 
-version(none):
 /++
 Type resolution is performed for types defined in $(MREF mir,algebraic_alias,csv):
 
@@ -1517,6 +1521,8 @@ $(UL
     $(LI $(AlgorithmREF timestamp, Timestamp))
 )
 +/
+version (mir_ion_test)
+@safe pure
 unittest
 {
     import mir.ion.conv: serde;
@@ -1531,11 +1537,11 @@ unittest
         conversionFinalizer : (
             unquotedString,
             scalar,
-            columnIndex,
-            columnName)
+            wasQuoted,
+            columnIndex)
         {
             // Do we want to symbolize the data?
-            return !scalar.isQuoted && unquotedString == `Billion` ?
+            return !wasQuoted && unquotedString == `Billion` ?
                 1000000000.CsvAlgebraic :
                 scalar;
         },
@@ -1545,48 +1551,35 @@ unittest
             // `long` patterns
             , `100`, `+200`, `-200`
             // `double` pattern
-            , `+1.0`, `-.2`, `3.`, `3e-10`, `3d20`,
+            , `+1.0`, `-.2`, `3.`, `3e-10`, `3d20`
             // also `double` pattern
-            `inf`, `+Inf`, `-INF`, `+NaN`, `-nan`, `NAN`
+            , `inf`, `+Inf`, `-INF`, `+NaN`, `-nan`, `NAN`
             // `bool` patterns
-            , `True`, `TRUE`, `true`, `False`, `FALSE`, `false`
+            , `TRUE`, `FALSE`
             // `Timestamp` patterns
             , `2021-02-03` // iso8601 extended
-            , `20210204T` // iso8601
-            , `20210203T0506` // iso8601
             , `2001-12-15T02:59:43.1Z` //canonical
-            , `2001-12-14t21:59:43.1-05:30` //with lower `t`
-            , `2001-12-14 21:59:43.1 -5` //yaml space separated
-            , `2001-12-15 2:59:43.10` //no time zone (Z):
-            , `2002-12-14` //date (00:00:00Z):
             // Default NA patterns are converted to Ion `null` when exposed to arrays
             // and skipped when exposed to objects
             , ``
-            , `#N/A`
-            , `#N/A N/A`
-            , `#NA`
-            , `<NA>`
-            , `N/A`
-            , `NA`
-            , `n/a`
-            // strings patterns (TODO)
+            // strings
             , `100_000`
             , `_ab0`
-            , `_abc`     // match default pattern for symbols
-            , `Str`      // match default pattern for symbols
-            , `Value100` // match default pattern for symbols
-            , `iNF`      // match default pattern for symbols
-            , `Infinity` // match default pattern for symbols
+            , `_abc`
+            , `Str`
+            , `Value100`
+            , `iNF`
+            , `Infinity`
             , `+Infinity`
             , `.Infinity`
-            // , `""`
-            // , ` `
+            , `""`
+            , ` `
         ], `,`)
     };
 
     // Serializing CsvProxy to Amazon Ion (text version)
     csv.serializeTextPretty!"    ".should ==
-q{[
+`[
     [
         1000000000,
         100,
@@ -1604,161 +1597,30 @@ q{[
         nan,
         nan,
         true,
-        true,
-        true,
-        false,
-        false,
         false,
         2021-02-03,
-        2021-02-04,
-        2021-02-03T05:06Z,
         2001-12-15T02:59:43.1Z,
-        2001-12-14T21:59:43.1-05:30,
-        2001-12-14T21:59:43.1-05,
-        2001-12-15T02:59:43.10Z,
-        2002-12-14,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
         null,
         "100_000",
         "_ab0",
-        _abc,
-        Str,
+        "_abc",
+        "Str",
         "Value100",
-        iNF,
-        Infinity,
+        "iNF",
+        "Infinity",
         "+Infinity",
-        ".Infinity"
+        ".Infinity",
+        "",
+        " "
     ]
-]};
-}
-
-///
-unittest
-{
-    import mir.csv;
-    import mir.date: Date; // Phobos std.datetime supported as well
-    import mir.ion.conv: serde; // to convert CsvProxy to DataFrame
-    import mir.ndslice.slice: Slice;//ditto
-    import mir.timestamp: Timestamp;//mir-algorithm package
-    // for testing
-    import mir.ndslice.fuse: fuse;
-    import mir.ser.text: serializeTextPretty;
-    import mir.test: should;
-
-    auto text =
-`Date,Open,High,Low,Close,Volume
-2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
-2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
-
-    CsvProxy csv = {
-        text: text,
-        // We allow 7 CSV payloads!
-        kind: CsvKind.seriesWithHeader
-    };
-
-    // Can be of any scalar type including `CsvAlgebraic`
-    alias Elem = double;
-    // `Elem[][]` matrix are supported as well.
-    // But we like `Slice` because we can easily access columns
-    alias Matrix = Slice!(Elem*, 2);
-
-    static struct MySeriesWithHeader
-    {
-        string indexName;
-        string[] columnNames;
-        Matrix data;
-        // Can be an array of any type that can be deserialized
-        // like a string or `CsvAlgebraic`, `Date`, `DateTime`, or whatever.
-        Timestamp[] index;
-    }
-
-    MySeriesWithHeader testSeries = {
-        indexName: `Date`,
-        columnNames: [`Open`, `High`, `Low`, `Close`, `Volume`],
-        data: [
-            [133.8, 134.43, 133.59, 134.0, 9166695],
-            [134.25, 135.0, 134.19, 134.5, 4632863],
-        ].fuse,
-        index: [
-            `2021-01-21T09:30:00Z`.Timestamp,
-            `2021-01-21T09:35:00Z`.Timestamp,
-        ],
-    };
-
-    // Check how Ion payload looks like
-    csv.serializeTextPretty!"    ".should == `{
-    indexName: Date,
-    columnNames: [
-        Open,
-        High,
-        Low,
-        Close,
-        Volume
-    ],
-    data: [
-        [
-            133.8,
-            134.43,
-            133.59,
-            134.0,
-            9166695
-        ],
-        [
-            134.25,
-            135.0,
-            134.19,
-            134.5,
-            4632863
-        ]
-    ],
-    index: [
-        2021-01-21T09:30:00Z,
-        2021-01-21T09:35:00Z
-    ]
-}`;
-}
-
-/++
-How $(LREF CsvKind) are represented.
-+/
-unittest
-{
-    auto text = 
-`Date,Open,High,Low,Close,Volume
-2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
-2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
-        
-}
-
-/// Matrix & Transposed Matrix
-unittest
-{
-    import mir.test: should;
-    import mir.ndslice.slice: Slice;
-    import mir.ion.conv: serde;
-
-    alias Matrix = Slice!(double*, 2);
-
-    auto text = "1,2\n3,4\r\n5,6\n";
-    auto matrix = text.CsvProxy.serde!Matrix;
-    matrix.should == [[1, 2], [3, 4], [5, 6]];
-
-    CsvProxy csv = {
-        text : text,
-        kind : CsvKind.transposedMatrix
-    };
-    csv.serde!Matrix.should == [[1.0, 3, 5], [2.0, 4, 6]];
+]`;
 }
 
 /++
 Transposed Matrix & Tuple support
 +/
+version (mir_ion_test)
+@safe pure
 unittest
 {
     import mir.ion.conv: serde;
@@ -1766,24 +1628,26 @@ unittest
     import mir.functional: Tuple;
     import mir.ser.text: serializeText;
     import mir.test: should;
+    import mir.ndslice.dynamic: transposed;
 
-    CsvProxy csv = {
-        text : "str,2022-10-12,3.4\nb,2022-10-13,2\n",
-        kind : CsvKind.transposedMatrix
-    };
+    auto text = "str,2022-10-12,3.4\nb,2022-10-13,2\n";
 
-    csv.serializeText.should == q{[[str,b],[2022-10-12,2022-10-13],[3.4,2]]};
+    auto matrix = text.CsvProxy.serde!(Slice!(CsvAlgebraic*, 2));
+    matrix.transposed.serializeText.should
+        == q{[["str","b"],[2022-10-12,2022-10-13],[3.4,2]]};
 
     alias T = Tuple!(string[], Date[], double[]);
 
-    csv.serde!T.should == T (
-        [`str`, `b`],
-        [Date(2022, 10, 12), Date(2022, 10, 13)],
-        [3.4, 2],
+    matrix.transposed.serde!T.should == T(
+            [`str`, `b`],
+            [Date(2022, 10, 12), Date(2022, 10, 13)],
+            [3.4, 2],
     );
 }
 
 /// Converting NA to NaN
+version (mir_ion_test)
+@safe pure
 unittest
 {
     import mir.csv;
@@ -1793,7 +1657,7 @@ unittest
     import mir.ser.text: serializeText;
     import mir.test: should;
 
-    auto text = "1,2\n3,4\n5,#N/A\n";
+    auto text = "1,2\n3,4\n5,\n";
     auto matrix = text
         .CsvProxy
         .serde!(Slice!(Nullable!double*, 2))
