@@ -58,7 +58,7 @@ public:
 
     /// Get the image pitch (byte distance between rows), in bytes.
     /// This pitch can be negative.
-    int pitchInBytes(Image *dib) pure const
+    int pitchInBytes() pure const
     {
         return _pitch;
     }
