@@ -3459,7 +3459,7 @@ __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @trusted
                                           4 + ( (imm8 >> 0) & 3 ),
                                           4 + ( (imm8 >> 2) & 3 ),
                                           4 + ( (imm8 >> 4) & 3 ),
-                                          4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a); // TODO remove this use of shufflevector except for LDC
+                                          4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a);
     }
     else
     {
@@ -4376,17 +4376,25 @@ void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
     *mem_addr = a.array[0];
 }
 
-/// Store 2 double-precision (64-bit) floating-point elements from `a` into memory in reverse order. `mem_addr` must be 
-/// aligned on a 16-byte boundary or a general-protection exception may be generated.
+/// Store 2 double-precision (64-bit) floating-point elements from `a` into memory in reverse 
+/// order. `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception 
+/// may be generated.
 void _mm_storer_pd (double* mem_addr, __m128d a) pure @system
 {
-    // TODO remove this use of shufflevector except for LDC
-    __m128d* aligned = cast(__m128d*)mem_addr;
-    *aligned = shufflevector!(double2, 1, 0)(a, a);
+    __m128d reversed = void;
+    reversed.ptr[0] = a.array[1];
+    reversed.ptr[1] = a.array[0];
+    *cast(__m128d*)mem_addr = reversed;
+}
+unittest
+{
+    align(16) double[2] A = [0.0, 1.0];
+    _mm_storer_pd(A.ptr, _mm_setr_pd(2.0, 3.0));
+    assert(A[0] == 3.0 && A[1] == 2.0);
 }
 
-/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from `a` into memory. 
-/// `mem_addr` does not need to be aligned on any particular boundary.
+/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) from 
+/// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_pd (double* mem_addr, __m128d a) pure @trusted // TODO: signature, should be system
 {
     // PERF DMD
@@ -4870,19 +4878,18 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
     {
         return __builtin_ia32_punpckhdq128(a, b);
     }
-    else version(DigitalMars)
+    else version(LDC)
     {
-        __m128i r;
+        return shufflevectorLDC!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
+    }
+    else
+    {
+        __m128i r = void;
         r.ptr[0] = a.array[2];
         r.ptr[1] = b.array[2];
         r.ptr[2] = a.array[3];
         r.ptr[3] = b.array[3];
         return r;
-    }
-    else
-    {
-        // TODO remove this use of shufflevector except for LDC
-        return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
     }
 }
 unittest
