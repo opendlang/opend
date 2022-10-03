@@ -4915,15 +4915,23 @@ unittest
 }
 
 /// Unpack and interleave double-precision (64-bit) floating-point elements from the high half of `a` and `b`.
-__m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
+__m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_unpckhpd(a, b);
     }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(__m128d, 1, 3)(a, b);
+    }
     else
     {
-        return shufflevector!(__m128d, 1, 3)(a, b); // TODO remove this use of shufflevector except for LDC
+        double2 r = void;
+        r.ptr[0] = a.array[1];
+        r.ptr[1] = b.array[1];
+        return r;
     }
 }
 unittest
@@ -5076,15 +5084,23 @@ unittest
 }
 
 /// Unpack and interleave double-precision (64-bit) floating-point elements from the low half of `a` and `b`.
-__m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
+__m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_unpcklpd(a, b);
     }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(__m128d, 0, 2)(a, b);
+    }
     else
     {
-        return shufflevector!(__m128d, 0, 2)(a, b); // TODO remove this use of shufflevector except for LDC
+        double2 r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = b.array[0];
+        return r;
     }
 }
 unittest
