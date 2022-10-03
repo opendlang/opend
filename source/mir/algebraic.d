@@ -1288,6 +1288,7 @@ struct Algebraic(T__...)
 
     /++
     +/
+    static if (typeFieldNames__.length)
     size_t toHash() scope @trusted const pure nothrow @nogc
     {
         size_t hash;
@@ -1352,6 +1353,72 @@ struct Algebraic(T__...)
         }
         return hash;
     }
+    else
+    size_t toHash() scope @trusted const
+    {
+        size_t hash;
+
+
+        static if (AllowedTypes.length == 0 || is(AllowedTypes == AliasSeq!(typeof(null))))
+        {
+        }
+        else{S:
+        switch (identifier__)
+        {
+            import std.traits: isArray;
+            static foreach (i, T; AllowedTypes)
+            {
+                case i: {
+                    static if (is(T == void))
+                        hash = i;
+                    else
+                    static if (is(T == typeof(null)))
+                        hash = i;
+                    else
+                    static if (typeFieldNames__.length) // force for tagged types
+                    {
+                        static if (__traits(hasMember, T, "toHash"))
+                            hash = trustedGet!T.toHash;
+                        else
+                        static if (isArray!T)
+                            foreach (ref e; trustedGet!T)
+                                static if (__traits(hasMember, typeof(e), "toHash"))
+                                    hash = hashOf(e.toHash, hash);
+                                else
+                                    hash = hashOf(e, hash);
+                        else
+                            hash = hashOf(trustedGet!T);
+                    }
+                    else
+                    static if (__traits(compiles, hashOf(trustedGet!T.hashOf, i ^ hash)))
+                        hash = hashOf(trustedGet!T.hashOf, i ^ hash);
+                    else
+                    {
+                        debug pragma(msg, "Mir warning: can't compute hash. Expexted `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
+                        hash = i;
+                    }
+                    break S;
+                }
+            }
+            default: assert(0);
+        }}
+
+        static foreach (i, T; MetaInfo__)
+        static if (!T.transparent)
+        {
+            static if (is(MetaFieldsTypes[i] == class) || is(MetaFieldsTypes[i] == interface))
+            {{
+                scope eqfun = delegate() {
+                    hash = hashOf(__traits(getMember, this, T.tag), hash);
+                };
+                trustedAllAttr(eqfun)();
+            }}
+            else
+                hash = hashOf(__traits(getMember, this, T.tag), hash);
+        }
+        return hash;
+    }
+
 
     ///
     bool opEquals()(scope const Algebraic rhs) scope @trusted const pure nothrow @nogc
