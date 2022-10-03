@@ -4936,11 +4936,16 @@ unittest
 }
 
 /// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
-__m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
+__m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @trusted
 {
+    // PERF DMD SIMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpcklwd128(cast(short8) a, cast(short8) b);
+    }
+    else version(LDC)
+    {
+        return cast(__m128i) shufflevectorLDC!(short8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(short8)a, cast(short8)b);
     }
     else static if (DMD_with_32bit_asm)
     {
@@ -4955,8 +4960,18 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
     }
     else
     {
-        return cast(__m128i) shufflevector!(short8, 0, 8, 1, 9, 2, 10, 3, 11)
-                                           (cast(short8)a, cast(short8)b); // TODO remove this use of shufflevector except for LDC
+        short8 r = void;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sb.array[0];
+        r.ptr[2] = sa.array[1];
+        r.ptr[3] = sb.array[1];
+        r.ptr[4] = sa.array[2];
+        r.ptr[5] = sb.array[2];
+        r.ptr[6] = sa.array[3];
+        r.ptr[7] = sb.array[3];
+        return cast(__m128i)r;
     }
 }
 unittest
