@@ -3446,19 +3446,30 @@ unittest
 /// Shuffle 16-bit integers in the high 64 bits of `a` using the control in `imm8`. Store the results in the high 
 /// 64 bits of result, with the low 64 bits being copied from from `a` to result.
 /// See also: `_MM_SHUFFLE`.
-__m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
+__m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pshufhw(cast(short8)a, imm8);
     }
-    else
+    else version(LDC)
     {
-        return cast(__m128i) shufflevector!(short8, 0, 1, 2, 3,
+        return cast(__m128i) shufflevectorLDC!(short8, 0, 1, 2, 3,
                                           4 + ( (imm8 >> 0) & 3 ),
                                           4 + ( (imm8 >> 2) & 3 ),
                                           4 + ( (imm8 >> 4) & 3 ),
                                           4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a); // TODO remove this use of shufflevector except for LDC
+    }
+    else
+    {
+        short8 r = cast(short8)a;
+        short8 sa = cast(short8)a;
+        r.ptr[4] = sa.array[4 + ( (imm8 >> 0) & 3 ) ];
+        r.ptr[5] = sa.array[4 + ( (imm8 >> 2) & 3 ) ];
+        r.ptr[6] = sa.array[4 + ( (imm8 >> 4) & 3 ) ];
+        r.ptr[7] = sa.array[4 + ( (imm8 >> 6) & 3 ) ];
+        return cast(__m128i) r;
     }
 }
 unittest
@@ -3473,19 +3484,29 @@ unittest
 /// Shuffle 16-bit integers in the low 64 bits of `a` using the control in `imm8`. Store the results in the low 64 
 /// bits of result, with the high 64 bits being copied from from `a` to result.
 /// See_also: `_MM_SHUFFLE`.
-__m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
+__m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pshuflw(cast(short8)a, imm8);
     }
+    else version(LDC)
+    {
+        return cast(__m128i) shufflevectorLDC!(short8, ( (imm8 >> 0) & 3 ),
+                                                       ( (imm8 >> 2) & 3 ),
+                                                       ( (imm8 >> 4) & 3 ),
+                                                       ( (imm8 >> 6) & 3 ), 4, 5, 6, 7)(cast(short8)a, cast(short8)a);
+    }
     else
     {
-        // TODO remove this use of shufflevector except for LDC
-        return cast(__m128i) shufflevector!(short8, ( (imm8 >> 0) & 3 ),
-                                                    ( (imm8 >> 2) & 3 ),
-                                                    ( (imm8 >> 4) & 3 ),
-                                                    ( (imm8 >> 6) & 3 ), 4, 5, 6, 7)(cast(short8)a, cast(short8)a);
+        short8 r = cast(short8)a;
+        short8 sa = cast(short8)a;
+        r.ptr[0] = sa.array[(imm8 >> 0) & 3];
+        r.ptr[1] = sa.array[(imm8 >> 2) & 3];
+        r.ptr[2] = sa.array[(imm8 >> 4) & 3];
+        r.ptr[3] = sa.array[(imm8 >> 6) & 3];
+        return cast(__m128i) r;
     }
 }
 unittest
