@@ -2592,7 +2592,7 @@ __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
         {
             static if (__VERSION__ >= 2088)
             {
-                // Need LLVM9 to avoid this shufflevector
+                // Need LLVM9 for proper optimization
                 long2 la, lb;
                 la.ptr[0] = cast(uint)a.array[0];
                 la.ptr[1] = cast(uint)a.array[2];
@@ -3378,18 +3378,28 @@ unittest
 
 /// Shuffle 32-bit integers in a using the control in `imm8`.
 /// See_also: `_MM_SHUFFLE`.
-__m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
+__m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pshufd(a, imm8);
     }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(int4, (imm8 >> 0) & 3,
+                                 (imm8 >> 2) & 3,
+                                 (imm8 >> 4) & 3,
+                                 (imm8 >> 6) & 3)(a, a);
+    }
     else
     {
-        return shufflevector!(int4, (imm8 >> 0) & 3,
-                                    (imm8 >> 2) & 3,
-                                    (imm8 >> 4) & 3,
-                                    (imm8 >> 6) & 3)(a, a); // TODO remove this use of shufflevector except for LDC
+        int4 r = void;
+        r.ptr[0] = a.ptr[(imm8 >> 0) & 3];
+        r.ptr[1] = a.ptr[(imm8 >> 2) & 3];
+        r.ptr[2] = a.ptr[(imm8 >> 4) & 3];
+        r.ptr[3] = a.ptr[(imm8 >> 6) & 3];
+        return r;
     }
 }
 unittest
