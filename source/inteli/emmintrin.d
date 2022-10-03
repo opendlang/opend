@@ -3413,16 +3413,24 @@ unittest
 
 /// Shuffle double-precision (64-bit) floating-point elements using the control in `imm8`.
 /// See_also: `_MM_SHUFFLE2`.
-__m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
+__m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_shufpd(a, b, imm8);
     }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(double2, 0 + ( imm8 & 1 ),
+                                 2 + ( (imm8 >> 1) & 1 ))(a, b);
+    }
     else
     {
-        return shufflevector!(double2, 0 + ( imm8 & 1 ),
-                                       2 + ( (imm8 >> 1) & 1 ))(a, b); // TODO remove this use of shufflevector except for LDC
+        double2 r = void;
+        r.ptr[0] = a.array[imm8 & 1];
+        r.ptr[1] = b.array[(imm8 >> 1) & 1];
+        return r;
     }
 }
 unittest
