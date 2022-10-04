@@ -649,7 +649,7 @@ private:
             else
                 assert(false);
 
-            const(ubyte)[] pdfData = originalEncodedData; // what content will be embeded
+            const(ubyte)[] pdfData = originalEncodedData; // what content will be embedded
             const(ubyte)[] smaskData = null; // optional smask object
             object_id smaskId;
             if (isPNG)
@@ -659,13 +659,13 @@ private:
                 gamut.Image gimage;
                 gimage.loadFromMemory(originalEncodedData);
 
-                // Suppor greyscale PNG
+                // Support greyscale PNG
                 if (gimage.type == PixelType.l8)
-                    gimage.convertTo(PixelType.rgba8);
-
-                // Suppor luminance + alpha PNG
-                if (gimage.type == PixelType.la8)
                     gimage.convertTo(PixelType.rgb8);
+
+                // Support luminance + alpha PNG
+                if (gimage.type == PixelType.la8)
+                    gimage.convertTo(PixelType.rgba8);
 
                 if (gimage.type != PixelType.rgb8 && gimage.type != PixelType.rgba8)
                 {
