@@ -800,7 +800,7 @@ struct Algebraic(T__...)
     
     static if (T__.length != 1)
     {
-        private alias Types__ = T__;
+        alias Types__ = T__;
         private alias MetaInfo__ = T__[0 .. 0];
         enum immutable(char[][]) metaFieldNames__ = null;
         enum immutable(char[][]) typeFieldNames__ = null;
@@ -808,7 +808,7 @@ struct Algebraic(T__...)
     else
     static if (!is(T__[0] == union))
     {
-        private alias Types__ = T__;
+        alias Types__ = T__;
         private alias MetaInfo__ = T__[0 .. 0];
         enum immutable(char[][]) metaFieldNames__ = null;
         enum immutable(char[][]) typeFieldNames__ = null;
@@ -829,7 +829,7 @@ struct Algebraic(T__...)
         private alias AllInfo__ = staticMap!(UMTypeInfoOf__, __traits(allMembers, T__[0]));
         private alias TypesInfo__ = Filter!(templateNot!UMGetMeta, AllInfo__);
         private alias MetaInfo__ = Filter!(UMGetMeta, AllInfo__);
-        private alias Types__ = staticMap!(UMGetType__, TypesInfo__);
+        alias Types__ = staticMap!(UMGetType__, TypesInfo__);
 
         /++
         +/
