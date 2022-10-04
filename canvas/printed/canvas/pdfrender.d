@@ -660,19 +660,19 @@ private:
                 gimage.loadFromMemory(originalEncodedData);
 
                 // Suppor greyscale PNG
-                if (gimage.type == ImageType.la8)
-                    gimage.convertTo(ImageType.rgba8);
+                if (gimage.type == PixelType.l8)
+                    gimage.convertTo(PixelType.rgba8);
 
                 // Suppor luminance + alpha PNG
-                if (gimage.type == ImageType.uint8)
-                    gimage.convertTo(ImageType.rgb8);
+                if (gimage.type == PixelType.la8)
+                    gimage.convertTo(PixelType.rgb8);
 
-                if (gimage.type != ImageType.rgb8 && gimage.type != ImageType.rgba8)
+                if (gimage.type != PixelType.rgb8 && gimage.type != PixelType.rgba8)
                 {
                     throw new Exception("Only support embed of 8-bit PNG images.");
                 }
 
-                bool hasAlpha = (gimage.type == ImageType.rgba8);
+                bool hasAlpha = (gimage.type == PixelType.rgba8);
                 int channels = hasAlpha ? 4 : 3;
 
                 int width = gimage.width;

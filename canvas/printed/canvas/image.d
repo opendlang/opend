@@ -37,7 +37,7 @@ class Image
             throw new Exception("Unidentified format");
 
         gamut.image.Image img;
-        img.loadFromMemory(data, LOAD_NOPIXELS);
+        img.loadFromMemory(data, LOAD_NO_PIXELS);
 
         if (img.errored)
             throw new Exception("Can't decode image.");
