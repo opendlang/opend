@@ -4926,8 +4926,9 @@ unittest // Issue #36
 }
 
 /// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
-__m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
+__m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
 {
+    // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpckhbw128(cast(ubyte16)a, cast(ubyte16)b);
@@ -4943,12 +4944,34 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
         }
         return a;
     }
+    else version(LDC)
+    {
+        return cast(__m128i)shufflevectorLDC!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
+                                                      12, 28, 13, 29, 14, 30, 15, 31)
+            (cast(byte16)a, cast(byte16)b);
+    }
     else
     {
-        // TODO remove this use of shufflevector except for LDC
-        return cast(__m128i)shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
-                                                   12, 28, 13, 29, 14, 30, 15, 31)
-                                                   (cast(byte16)a, cast(byte16)b);
+        byte16 r = void;
+        byte16 ba = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        r.ptr[0] = ba.array[8];
+        r.ptr[1] = bb.array[8];
+        r.ptr[2] = ba.array[9];
+        r.ptr[3] = bb.array[9];
+        r.ptr[4] = ba.array[10];
+        r.ptr[5] = bb.array[10];
+        r.ptr[6] = ba.array[11];
+        r.ptr[7] = bb.array[11];
+        r.ptr[8] = ba.array[12];
+        r.ptr[9] = bb.array[12];
+        r.ptr[10] = ba.array[13];
+        r.ptr[11] = bb.array[13];
+        r.ptr[12] = ba.array[14];
+        r.ptr[13] = bb.array[14];
+        r.ptr[14] = ba.array[15];
+        r.ptr[15] = bb.array[15];
+        return cast(__m128i)r;
     }
 }
 unittest
