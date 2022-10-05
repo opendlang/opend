@@ -312,7 +312,51 @@ unittest
     assert(R.array == correct1); // Note: probably the same NaN-mask oddity exist on arm64+linux than with _mm_blendv_pd
 }
 
-// TODO __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask)
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` 
+/// using `mask`.
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` 
+/// using `mask`.
+__m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask) @trusted
+{
+    // PERF DMD
+    // PERF LDC/GDC without AVX could use two intrinsics for each part
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_blendvps256(a, b, mask);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_blendvps256(a, b, mask);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        int8 shift;
+        shift = 31;
+        int8 lmask = cast(int8)mask >> shift;     
+        int8 ia = cast(int8)a;   
+        int8 ib = cast(int8)b;
+        return cast(__m256)(ia ^ ((ia ^ ib) & lmask));
+    }
+    else
+    {
+        __m256 r = void; // PERF =void;
+        int8 lmask = cast(int8)mask;
+        for (int n = 0; n < 8; ++n)
+        {
+            r.ptr[n] = (lmask.array[n] < 0) ? b.array[n] : a.array[n];
+        }
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+    __m256 B = _mm256_setr_ps(5.0f, 6.0f, 7.0f, 8.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+    __m256 M = _mm256_setr_ps(-3.0f, 2.0f, 1.0f, -4.0f, -3.0f, 2.0f, 1.0f, -4.0f);
+    __m256 R = _mm256_blendv_ps(A, B, M);
+    float[8] correct1 = [5.0f, 2.0f, 3.0f, 8.0f, 5.0f, 2.0f, 3.0f, 8.0f];
+    assert(R.array == correct1); // Note: probably the same NaN-mask oddity exist on arm64+linux than with _mm_blendv_pd
+}
 
 /// Broadcast 128 bits from memory (composed of 2 packed double-precision (64-bit)
 /// floating-point elements) to all elements.
