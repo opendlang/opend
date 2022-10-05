@@ -3820,7 +3820,7 @@ unittest
     short[8] correct = [ 0, 0, 0, 0, 0, 1, 2, 3 ];
     assert(R.array == correct);
 
-    __m128i B = _mm_srli_si128!16(_mm_set1_epi32(-1));
+    __m128i B = _mm_slli_si128!16(_mm_set1_epi32(-1));
     int[4] expectedB = [0, 0, 0, 0];
     assert(B.array == expectedB);
 }
@@ -4250,7 +4250,7 @@ unittest
 }
 
 /// Shift `v` right by `bytes` bytes while shifting in zeros.
-__m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
+__m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @trusted
 {
     static if (bytes & 0xF0)
     {
@@ -4270,19 +4270,28 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
         }
         return v;
     }
+    else version(LDC)
+    {
+        return cast(__m128i) shufflevectorLDC!(byte16,
+                                               bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
+                                               bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
+                                               (cast(byte16) v, cast(byte16)_mm_setzero_si128());
+    }
     else
     {
-        // TODO remove this use of shufflevector except for LDC
-        return cast(__m128i) shufflevector!(byte16,
-                                            bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
-                                            bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
-                                           (cast(byte16) v, cast(byte16)_mm_setzero_si128());
+        byte16 A = cast(byte16)v;
+        byte16 R = void;
+        for (int n = 0; n < bytes; ++n)
+            R.ptr[15-n] = 0;
+        for (int n = bytes; n < 16; ++n)
+            R.ptr[15-n] = A.array[15 - n + bytes];
+        return cast(__m128i)R;
     }
 }
 unittest
 {
-    __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1));
-    int[4] correct = [2, 3, 4, 0];
+    __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, -2, 1));
+    int[4] correct = [-2, 3, 4, 0];
     assert(R.array == correct);
 
     __m128i A = _mm_srli_si128!16(_mm_set1_epi32(-1));
