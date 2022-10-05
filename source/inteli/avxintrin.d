@@ -582,13 +582,73 @@ __m256 _mm256_castps128_ps256 (__m128 a) pure @trusted
         return r;
     }
 }
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2, 3, 4);
+    __m256 B = _mm256_castps128_ps256(A);
+    float[4] correct = [1.0f, 2, 3, 4];
+    assert(B.array[0..4] == correct);
+}
 
-// TODO __m128 _mm256_castps256_ps128 (__m256 a)
-// TODO __m256i _mm256_castsi128_si256 (__m128i a)
-// TODO __m256d _mm256_castsi256_pd (__m256i a)
-// TODO __m256 _mm256_castsi256_ps (__m256i a)
-// TODO __m128i _mm256_castsi256_si128 (__m256i a)
+/// Cast vector of type `__m256` to type `__m128`. The upper 128-bit of `a` are lost.
+__m128 _mm256_castps256_ps128 (__m256 a) pure @trusted
+{
+    return *cast(const(__m128)*)(&a);
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.0f, 2, 3, 4, 5, 6, 7, 8);
+    __m128 B = _mm256_castps256_ps128(A);
+    float[4] correct = [1.0f, 2, 3, 4];
+    assert(B.array == correct);
+}
 
+/// Cast vector of type `__m128i` to type `__m256i`; the upper 128 bits of the result are undefined.
+__m256i _mm256_castsi128_si256 (__m128i a) pure @trusted
+{
+    long2 la = cast(long2)a;
+    long4 r = void;
+    r.ptr[0] = la.array[0];
+    r.ptr[1] = la.array[1];
+    return r;
+}
+unittest
+{
+    __m128i A = _mm_setr_epi64(-1, 42);
+    __m256i B = _mm256_castsi128_si256(A);
+    long[2] correct = [-1, 42];
+    assert(B.array[0..2] == correct);
+}
+
+/// Cast vector of type `__m256i` to type `__m256d`.
+__m256d _mm256_castsi256_pd (__m256i a) pure @safe
+{
+    return cast(__m256d)a;
+}
+
+/// Cast vector of type `__m256i` to type `__m256`.
+__m256 _mm256_castsi256_ps (__m256i a) pure @safe
+{
+    return cast(__m256)a;
+}
+
+/// Cast vector of type `__m256i` to type `__m128i`. The upper 128-bit of `a` are lost.
+__m128i _mm256_castsi256_si128 (__m256i a) pure @trusted
+{
+    long2 r = void;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    return cast(__m128i)r;
+}
+unittest
+{
+    long4 A;
+    A.ptr[0] = -1;
+    A.ptr[1] = 42;
+    long2 B = cast(long2)(_mm256_castsi256_si128(A));
+    long[2] correct = [-1, 42];
+    assert(B.array[0..2] == correct);
+}
 
 
 // TODO __m256d _mm256_ceil_pd (__m256d a)
