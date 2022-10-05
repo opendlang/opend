@@ -24,25 +24,6 @@ version(GNU)
         enum AVXSizedVectorsAreEmulated = true;
 
         import gcc.builtins;
-
-        // TODO: for performance, replace that anywhere possible by a GDC intrinsic
-        Vec shufflevector(Vec, mask...)(Vec a, Vec b) @trusted
-        {
-            enum Count = Vec.array.length;
-            static assert(mask.length == Count);
-
-            Vec r = void;
-            foreach(int i, m; mask)
-            {
-                static assert (m < Count * 2);
-                int ind = cast(int)m;
-                if (ind < Count)
-                    r.ptr[i] = a.array[ind];
-                else
-                    r.ptr[i] = b.array[ind - Count];
-            }
-            return r;
-        }
     }
     else
     {
@@ -57,7 +38,7 @@ else version(LDC)
 
     // Use this alias to mention it should only be used with LDC,
     // for example when emulated shufflevector would just be wasteful.
-    alias shufflevectorLDC = shufflevector; 
+    alias shufflevectorLDC = shufflevector;
 
     enum MMXSizedVectorsAreEmulated = false;
     enum SSESizedVectorsAreEmulated = false;
@@ -106,12 +87,6 @@ else version(DigitalMars)
 }
 
 enum CoreSimdIsEmulated = MMXSizedVectorsAreEmulated || SSESizedVectorsAreEmulated || AVXSizedVectorsAreEmulated;
-
-version(GNU)
-    enum bool DefineGenericLoadStoreUnaligned = false;
-else
-    enum bool DefineGenericLoadStoreUnaligned = CoreSimdIsEmulated;
-
 
 static if (CoreSimdIsEmulated)
 {
@@ -196,33 +171,11 @@ else
     public import core.simd;
 
     // GDC cannot convert implicitely __vector from signed to unsigned, but LDC can
-    // And LDC sometimes need those unsigned vector types for some intrinsics.
+    // And GDC sometimes need those unsigned vector types for some intrinsics.
     // For internal use only.
     package alias ushort8 = Vector!(ushort[8]);
     package alias ubyte8  = Vector!(ubyte[8]);
     package alias ubyte16 = Vector!(ubyte[16]);
-}
-
-static if (DefineGenericLoadStoreUnaligned)
-{
-    // TODO: remove, only LDC should use that
-    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe if (Vec.sizeof < 32)
-    {
-        enum size_t Count = Vec.array.length;
-        static assert(mask.length == Count);
-
-        Vec r = void;
-        foreach(int i, m; mask)
-        {
-            static assert (m < Count * 2);
-            enum int ind = cast(int)m;
-            static if (ind < Count)
-                r.array[i] = a.array[ind];
-            else
-                r.array[i] = b.array[ind-Count];
-        }
-        return r;
-    }
 }
 
 // Emulate ldc.simd cmpMask and other masks.
