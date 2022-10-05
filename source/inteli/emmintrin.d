@@ -3780,44 +3780,37 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
     {
         return _mm_setzero_si128();
     }
+    else static if (GDC_with_SSE2)
+    {
+        return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
+    }
+    else version(LDC)
+    {
+        return cast(__m128i) shufflevectorLDC!(byte16,
+                                               16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes, 20 - bytes, 21 - bytes,
+                                               22 - bytes, 23 - bytes, 24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
+                                               28 - bytes, 29 - bytes, 30 - bytes, 31 - bytes)
+                                               (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
+    }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted // somehow doesn't work for x86_64
+        {
+            movdqu XMM0, op;
+            pslldq XMM0, bytes;
+            movdqu op, XMM0;
+        }
+        return op;
+    }
     else
     {
-        static if (GDC_with_SSE2)
-        {
-            return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
-        }
-        else version(DigitalMars)
-        {
-            version(D_InlineAsm_X86)
-            {
-                asm pure nothrow @nogc @trusted // somehow doesn't work for x86_64
-                {
-                    movdqu XMM0, op;
-                    pslldq XMM0, bytes;
-                    movdqu op, XMM0;
-                }
-                return op;
-            }
-            else
-            {
-                byte16 A = cast(byte16)op;
-                byte16 R;
-                for (int n = 15; n >= bytes; --n)
-                    R.ptr[n] = A.array[n-bytes];
-                for (int n = bytes-1; n >= 0; --n)
-                    R.ptr[n] = 0;
-                return cast(__m128i)R;
-            }
-        }
-        else
-        {
-            // TODO remove this use of shufflevector except for LDC
-            return cast(__m128i) shufflevector!(byte16,
-            16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes, 20 - bytes, 21 - bytes,
-            22 - bytes, 23 - bytes, 24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
-            28 - bytes, 29 - bytes, 30 - bytes, 31 - bytes)
-            (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
-        }
+        byte16 A = cast(byte16)op;
+        byte16 R = void;
+        for (int n = 15; n >= bytes; --n)
+            R.ptr[n] = A.array[n-bytes];
+        for (int n = bytes-1; n >= 0; --n)
+            R.ptr[n] = 0;
+        return cast(__m128i)R;
     }
 }
 unittest
