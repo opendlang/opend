@@ -3329,7 +3329,12 @@ __m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
                                  e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
     return *cast(__m128i*)(result.ptr);
 }
-// TODO unittest
+unittest
+{
+    byte16 R = cast(byte16) _mm_setr_epi8(-1, 0, 56, 127, -128, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    byte[16] correct = [-1, 0, 56, 127, -128, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+    assert(R.array == correct);
+}
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m128d _mm_setr_pd (double e1, double e0) pure @trusted
