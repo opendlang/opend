@@ -3133,7 +3133,12 @@ __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12,
                                  e8, e9, e10, e11, e12, e13, e14, e15];
     return *cast(__m128i*)(result.ptr);
 }
-// TODO unittest
+unittest
+{
+    byte16 R = cast(byte16) _mm_set_epi8(-1, 0, 56, 127, -128, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    byte[16] correct = [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, -128, 127, 56, 0, -1];
+    assert(R.array == correct);
+}
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m128d _mm_set_pd (double e1, double e0) pure @trusted
