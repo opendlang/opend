@@ -715,19 +715,19 @@ unittest
     assert(_mm256_extract_epi32(A, 7 + 32) == -6);
 }
 
-/*
+/// Extract a 64-bit integer from `a`, selected with `index`.
 long _mm256_extract_epi64 (__m256i a, const int index) pure @safe
 {
     return a.array[index & 3];
 }
 unittest
 {
-    __m128i A = _mm256_set_epi64x(-7, 6, 42, 0);
-    assert(_mm_extract_epi16(A, 6) == 6);
-    assert(_mm_extract_epi16(A, 0) == 65535);
-    assert(_mm_extract_epi16(A, 5 + 8) == 5);
+    __m256i A = _mm256_setr_epi64x(-7, 6, 42, 0);
+    assert(_mm256_extract_epi64(A, -8) == -7);
+    assert(_mm256_extract_epi64(A, 1) == 6);
+    assert(_mm256_extract_epi64(A, 2 + 4) == 42);
 }
-*/
+
 
 // TODO __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
 // TODO __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
