@@ -670,8 +670,33 @@ unittest
 // TODO float _mm256_cvtss_f32 (__m256 a)
 // TODO __m128i _mm256_cvttpd_epi32 (__m256d a)
 // TODO __m256i _mm256_cvttps_epi32 (__m256 a)
-// TODO __m256d _mm256_div_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_div_ps (__m256 a, __m256 b)
+
+/// Divide packed double-precision (64-bit) floating-point elements in `a` by packed elements in `b`.
+__m256d _mm256_div_pd (__m256d a, __m256d b) pure @safe
+{
+    return a / b;
+}
+unittest
+{
+    __m256d a = [1.5, -2.0, 3.0, 1.0];
+    a = _mm256_div_pd(a, a);
+    double[4] correct = [1.0, 1.0, 1.0, 1.0];
+    assert(a.array == correct);
+}
+
+/// Divide packed single-precision (32-bit) floating-point elements in `a` by packed elements in `b`.
+__m256 _mm256_div_ps (__m256 a, __m256 b) pure @safe
+{
+    return a / b;
+}
+unittest
+{
+    __m256 a = [1.5f, -2.0f, 3.0f, 1.0f, 4.5f, -5.0f, 6.0f, 7.0f];
+    a = _mm256_div_ps(a, a);
+    float[8] correct = [1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f];
+    assert(a.array == correct);
+}
+
 // TODO __m256 _mm256_dp_ps (__m256 a, __m256 b, const int imm8)
 
 
@@ -931,6 +956,7 @@ unittest
 
 // TODO __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
 // TODO __m256 _mm256_set_m128 (__m128 hi, __m128 lo)
+
 __m256d _mm256_set_m128d (__m128d hi, __m128d lo) pure @trusted
 {
     __m256d r = void;
