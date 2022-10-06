@@ -931,15 +931,30 @@ unittest
 
 // TODO __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
 // TODO __m256 _mm256_set_m128 (__m128 hi, __m128 lo)
-// TODO __m256d _mm256_set_m128d (__m128d hi, __m128d lo)
+__m256d _mm256_set_m128d (__m128d hi, __m128d lo) pure @trusted
+{
+    __m256d r = void;
+    r.ptr[0] = lo.array[0];
+    r.ptr[1] = lo.array[1];
+    r.ptr[2] = hi.array[0];
+    r.ptr[3] = hi.array[1];
+    return r;
+}
+unittest
+{
+    __m128d lo = _mm_setr_pd(1.0, 2.0);
+    __m128d hi = _mm_setr_pd(3.0, 4.0);
+    __m256d R = _mm256_set_m128d(hi, lo);
+    double[4] correct = [1.0, 2.0, 3.0, 4.0];
+    assert(R.array == correct);
+}
+
 // TODO __m256i _mm256_set_m128i (__m128i hi, __m128i lo)
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values.
 __m256d _mm256_set_pd (double e3, double e2, double e1, double e0) pure @trusted
 {
-    // Note: with LDC, beats a load-unaligned thing.
-    // PERF: see #102, use = void
-    __m256d r;
+    __m256d r = void;
     r.ptr[0] = e0;
     r.ptr[1] = e1;
     r.ptr[2] = e2;
