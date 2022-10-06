@@ -1491,14 +1491,31 @@ __m256i _mm256_undefined_si256 () pure @safe
 
 void _mm256_zeroall () pure @safe
 {
-    // TODO: on GDC too?
-    // Do nothing. The transitions penalty are handled by the backend.
+    // TODO: DMD needs to do it explicitely if AVX is used.
+
+    static if (GDC_with_AVX)
+    {
+        __builtin_ia32_vzeroall();
+    }
+    else
+    {
+        // Do nothing. The transitions penalty are supposed handled by the backend.
+    }
 }
 
 void _mm256_zeroupper () pure @safe
 {
-    // TODO: on GDC too?
-    // Do nothing. The transitions penalty are handled by the backend.
+    // TODO: DMD needs to do it explicitely if AVX is used.
+
+    static if (GDC_with_AVX)
+    {
+        __builtin_ia32_vzeroupper();
+    }
+    else
+    {
+        // Do nothing. The transitions penalty are supposed handled by the backend.
+    }
+    
 }
 
 // TODO __m256d _mm256_zextpd128_pd256 (__m128d a)
@@ -1509,11 +1526,6 @@ void _mm256_zeroupper () pure @safe
 /+
 
 
-pragma(LDC_intrinsic, "llvm.x86.avx.blendv.pd.256")
-    double4 __builtin_ia32_blendvpd256(double4, double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.blendv.ps.256")
-    float8 __builtin_ia32_blendvps256(float8, float8, float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.cvt.pd2.ps.256")
     float4 __builtin_ia32_cvtpd2ps256(double4) pure @safe;
