@@ -916,9 +916,18 @@ unittest
     assert(notA.array == correct);
 }
 
+/// Compute the bitwise OR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
+__m256d _mm256_or_pd (__m256d a, __m256d b) pure @safe
+{
+    return cast(__m256d)( cast(__m256i)a | cast(__m256i)b );
+}
 
-// TODO __m256d _mm256_or_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_or_ps (__m256 a, __m256 b)
+/// Compute the bitwise OR of packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
+{
+    return cast(__m256)( cast(__m256i)a | cast(__m256i)b );
+}
+
 // TODO __m128d _mm_permute_pd (__m128d a, int imm8)
 // TODO __m256d _mm256_permute_pd (__m256d a, int imm8)
 // TODO __m128 _mm_permute_ps (__m128 a, int imm8)
