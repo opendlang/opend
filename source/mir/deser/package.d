@@ -736,7 +736,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                         else
                         {
                             pragma(msg, "Mir warning: " ~ T.stringof ~
-                                ".opIndexAssign has to be @safe pure");
+                                ".opIndexAssign has to be @safe pure scope");
                             (()@trusted=>(cast(void delegate() @safe pure) () {value[table[symbolId]] = move(temporal);}))();
                         }
                     }
