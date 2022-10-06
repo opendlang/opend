@@ -802,8 +802,19 @@ version(mir_ion_test) unittest
     import mir.string_map;
     import mir.deser.ion: deserializeIon;
     import mir.ion.conv: json2ion, ion2text;
-    import mir.algebraic: Nullable, This; // Nullable, Variant, or TaggedVariant
-    alias MyJsonAlgebraic = Nullable!(bool, string, double[], StringMap!This);
+    import mir.algebraic: Algebraic, This;
+
+    static union Json_
+    {
+        typeof(null) null_;
+        bool boolean;
+        long integer;
+        immutable(char)[] string;
+        double[] array;
+        StringMap!This object;
+    }
+
+    alias MyJsonAlgebraic = Algebraic!Json_;
 
     auto json = `{"b" : true, "z" : null, "this" : {"c" : "str", "d" : [1, 2, 3, 4]}}`;
     auto binary = json.json2ion;
@@ -865,14 +876,28 @@ version(mir_ion_test) unittest
     import mir.string_map;
     import mir.timestamp;
 
-    alias IonLikeAlgebraic = Variant!(Blob, Clob, Timestamp, double, long, string, StringMap!This, This[]);
+    static union Ion_
+    {
+        typeof(null) null_;
+        bool boolean;
+        long integer;
+        double float_;
+        immutable(char)[] string;
+        Blob blob;
+        Clob clob;
+        Timestamp timestamp;
+        This[] array;
+        StringMap!This object;
+    }
 
-    StringMap!IonLikeAlgebraic map;
+    alias IonAlgebraic = Algebraic!Ion_;
+
+    StringMap!IonAlgebraic map;
     map["ts"] = Timestamp(2021, 4, 24);
     map["clob"] = Clob("Some clob");
     map["blob"] = Blob([0x32, 0x52]);
 
-    assert(map.serializeIon.deserializeIon!(StringMap!IonLikeAlgebraic) == map);
+    assert(map.serializeIon.deserializeIon!(StringMap!IonAlgebraic) == map);
 }
 
 /// Phobos date-time serialization
@@ -1074,11 +1099,22 @@ version(mir_ion_test) unittest
         }
     }
 
-    import mir.algebraic: Nullable, This;
+    import mir.algebraic: Algebraic, This;
     import mir.string_map;
 
     // Your JSON DOM Type
-    alias Json = Nullable!(bool, long, double, string, MyHugeRESTString, StringMap!This, This[]);
+    static union Json_
+    {
+        typeof(null) null_;
+        bool boolean;
+        long integer;
+        double float_;
+        immutable(char)[] string;
+        MyHugeRESTString restString; 
+        This[] array;
+        StringMap!This object;
+    }
+    alias Json = Algebraic!Json_;
 
     /// ordered
     StringMap!Json response;
