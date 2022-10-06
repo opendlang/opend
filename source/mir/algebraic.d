@@ -3185,7 +3185,7 @@ version(mir_core_test) unittest
     V x = S(2.nullable);
     V y = C1(Variant!(float, double)(4.0));
 
-    // getMember returns an algebraic of algebaics
+    // getMember returns an algebraic of algebraics
     static assert(is(typeof(x.getMember!"m") == Variant!(Variant!(float, double), Nullable!int)));
     // matchMember returns a fused algebraic
     static assert(is(typeof(x.matchMember!"m") == Nullable!(int, float, double)));
