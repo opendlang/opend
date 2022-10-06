@@ -854,8 +854,41 @@ unittest
     assert(A.array == correct);
 }
 
+/// Load 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from memory.
+/// `mem_addr` does not need to be aligned on any particular boundary.
+__m256 _mm256_loadu_ps (const(float)* mem_addr) pure @trusted // TODO @system
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_loadups256 ( cast(const(float)*) mem_addr);
+    }
+    else version(LDC)
+    {
+        return loadUnaligned!(__m256)(cast(float*)mem_addr);
+    }    
+    else
+    {
+        const(float)* p = cast(const(float)*)mem_addr; 
+        float8 r = void;
+        r.ptr[0] = p[0];
+        r.ptr[1] = p[1];
+        r.ptr[2] = p[2];
+        r.ptr[3] = p[3];
+        r.ptr[4] = p[4];
+        r.ptr[5] = p[5];
+        r.ptr[6] = p[6];
+        r.ptr[7] = p[7];
+        return r;
+    }
+}
+unittest
+{
+    align(32) float[10] correct = [0.0f, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    __m256 A = _mm256_loadu_ps(&correct[1]);
+    assert(A.array == correct[1..9]);
+}
 
-// TODO __m256 _mm256_loadu_ps (float const * mem_addr)
 // TODO __m256 _mm256_loadu2_m128 (float const* hiaddr, float const* loaddr)
 // TODO __m256d _mm256_loadu2_m128d (double const* hiaddr, double const* loaddr)
 // TODO __m256i _mm256_loadu2_m128i (__m128i const* hiaddr, __m128i const* loaddr)
