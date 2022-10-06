@@ -690,7 +690,20 @@ unittest
     assert(_mm256_extract_epi32(A, 7 + 32) == -6);
 }
 
-// TODO __int64 _mm256_extract_epi64 (__m256i a, const int index)
+/*
+long _mm256_extract_epi64 (__m256i a, const int index) pure @safe
+{
+    return a.array[index & 3];
+}
+unittest
+{
+    __m128i A = _mm256_set_epi64x(-7, 6, 42, 0);
+    assert(_mm_extract_epi16(A, 6) == 6);
+    assert(_mm_extract_epi16(A, 0) == 65535);
+    assert(_mm_extract_epi16(A, 5 + 8) == 5);
+}
+*/
+
 // TODO __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
 // TODO __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
 // TODO __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
@@ -1110,7 +1123,22 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256i _mm256_setr_epi64x (__int64 e3, __int64 e2, __int64 e1, __int64 e0)
+/// Set packed 64-bit integers with the supplied values in reverse order.
+__m256i _mm256_setr_epi64x (long e3, long e2, long e1, long e0) pure @trusted
+{
+    long4 r = void;
+    r.ptr[0] = e3;
+    r.ptr[1] = e2;
+    r.ptr[2] = e1;
+    r.ptr[3] = e0;
+    return r;
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64x(-1, 42, long.min, long.max);
+    long[4] correct = [-1, 42, long.min, long.max];
+    assert(A.array == correct);
+}
 
 /// Set packed 8-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24,
