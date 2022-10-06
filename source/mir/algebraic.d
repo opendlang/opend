@@ -76,7 +76,7 @@ $(T2 isResultVariant, Checks if T is a Variant with at least one allowed type th
 
 
 $(H3 Type Set)
-$(UL 
+$(UL
 $(LI Type set is unordered. Example:`TypeSet!(int, double)` and `TypeSet!(double, int)` are the same. )
 $(LI Duplicats are ignored. Example: `TypeSet!(float, int, float)` and `TypeSet!(int, float)` are the same. )
 $(LI Types are automatically unqualified if this operation can be performed implicitly. Example: `TypeSet!(const int) and `TypeSet!int` are the same. )
@@ -86,7 +86,7 @@ $(LI Empty `TypeSet!()` is allowed.)
 )
 
 $(H3 Visitors)
-$(UL 
+$(UL
 $(LI Visitors are allowed to return values of different types If there are more then one return type then the an $(LREF Algebraic) type is returned. )
 $(LI Visitors are allowed to accept additional arguments. The arguments can be passed to the visitor handler. )
 $(LI Multiple visitors can be passes to the visitor handler. )
@@ -97,7 +97,7 @@ $(LI If the visitors arguments has known types, then such visitors should be pas
 )
 
 $(H3 Implementation Features)
-$(UL 
+$(UL
 $(LI BetterC support. Runtime `TypeInfo` is not used.)
 $(LI Copy-constructors and postblit constructors are supported. )
 $(LI `toHash`, `opCmp`. `opEquals`, and `toString` support. )
@@ -204,15 +204,15 @@ static if (__VERSION__ >= 2_100)
                 return this;
             }
         }
-        
+
         static assert(isLikeVariant!(Variant!(int, string)));
         static assert(isLikeVariant!(const Variant!(int[], string)));
         static assert(isLikeVariant!(Nullable!(int, string)));
         static assert(!isLikeVariant!int);
-        
+
         static assert(!isVariant!CustomVariant);
         static assert(isLikeVariant!CustomVariant);
-        
+
         CustomVariant customVariant = 5;
         assert(customVariant.match!(
             (string s) => false,
@@ -325,7 +325,7 @@ $(LUCKY self-referential data structures), i.e. structures that embed references
 values of their own type within.
 This is achieved with $(LREF Variant) by using $(LREF This) as a placeholder whenever a
 reference to the type being defined is needed. The $(LREF Variant) instantiation
-will perform 
+will perform
 $(LINK2 https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)#Alpha_renaming_to_make_name_resolution_trivial,
 alpha renaming) on its constituent types, replacing $(LREF This)
 with the self-referenced type. The structure of the type involving $(LREF This) may
@@ -452,7 +452,7 @@ Compatible with BetterC mode.
 alias Variant(T...) = Algebraic!(TypeSet!T);
 
 ///
-@safe pure @nogc 
+@safe pure @nogc
 version(mir_core_test) unittest
 {
     Variant!(int, double, string) v = 5;
@@ -465,8 +465,8 @@ version(mir_core_test) unittest
 
 /// Single argument Variant
 // and Type with copy constructor
-@safe pure nothrow @nogc 
-version(mir_core_test) unittest 
+@safe pure nothrow @nogc
+version(mir_core_test) unittest
 {
     static struct S
     {
@@ -486,7 +486,7 @@ version(mir_core_test) unittest
 }
 
 /// Empty type set
-@safe pure nothrow @nogc version(mir_core_test) unittest 
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     Variant!() a;
     auto b = a;
@@ -497,13 +497,13 @@ version(mir_core_test) unittest
 }
 
 /// Small types
-@safe pure nothrow @nogc version(mir_core_test) unittest 
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     static struct S { ubyte d; }
     static assert(Nullable!(byte, char, S).sizeof == 2);
 }
 
-@safe pure nothrow @nogc version(mir_core_test) unittest 
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     static struct S { ubyte[3] d; }
     static assert(Nullable!(ushort, wchar, S).sizeof == 6);
@@ -561,10 +561,10 @@ version(mir_core_test) unittest
 {
     enum Style { block, flow }
 
-    static struct SomeMetadata { 
+    static struct SomeMetadata {
         int a;
         @safe pure nothrow @nogc scope
-        int opCmp(scope const SomeMetadata rhs) const { return a - rhs.a; } 
+        int opCmp(scope const SomeMetadata rhs) const { return a - rhs.a; }
     }
 
     static struct ParsePosition
@@ -608,7 +608,7 @@ version(mir_core_test) unittest
     // typeof(null) has priority
     static assert(JsonAlgebraic.Kind.init == JsonAlgebraic.Kind.null_);
     static assert(JsonAlgebraic.Kind.null_ == 0);
-    
+
     // Kind and AllowedTypes has the same order
     static assert (is(JsonAlgebraic.AllowedTypes[JsonAlgebraic.Kind.array] == JsonAlgebraic[]));
     static assert (is(JsonAlgebraic.AllowedTypes[JsonAlgebraic.Kind.boolean] == bool));
@@ -645,7 +645,7 @@ version(mir_core_test) unittest
     // checks
     assert(v._is!string); // type based
     assert(v._is!"string"); // string based
-    assert(v._is!(JsonAlgebraic.Kind.string)); // 
+    assert(v._is!(JsonAlgebraic.Kind.string)); //
 
     v = null;
     assert(v.kind == JsonAlgebraic.Kind.null_);
@@ -670,7 +670,7 @@ version(mir_core_test) unittest
 }
 
 /// Wrapped algebraic with propogated primitives
-@safe pure 
+@safe pure
 version(mir_core_test) unittest
 {
     static struct Response
@@ -710,7 +710,7 @@ alias Nullable(T...) = Variant!(typeof(null), T);
 ----
 
 In additional to common algebraic API the following members can be accesssed:
-$(UL 
+$(UL
 $(LI $(LREF .Algebraic.isNull))
 $(LI $(LREF .Algebraic.nullify))
 $(LI $(LREF .Algebraic.get.2))
@@ -734,7 +734,7 @@ Single type `Nullable`
 version(mir_core_test) unittest
 {
     static assert(is(Nullable!int == Variant!(typeof(null), int)));
-    
+
     Nullable!int a = 5;
     assert(a.get!int == 5);
 
@@ -752,7 +752,7 @@ version(mir_core_test) unittest
 }
 
 /// Empty nullable type set support
-@safe pure nothrow @nogc version(mir_core_test) unittest 
+@safe pure nothrow @nogc version(mir_core_test) unittest
 {
     Nullable!() a;
     auto b = a;
@@ -797,7 +797,7 @@ struct Algebraic(T__...)
         Largest,
         Unqual
         ;
-    
+
     static if (T__.length != 1)
     {
         alias Types__ = T__;
@@ -913,7 +913,7 @@ struct Algebraic(T__...)
             private alias ID__ = uint;
         // else
         //     private alias ID__ = ulong;
-    
+
         ID__ identifier__;
     }
     else
@@ -1354,7 +1354,7 @@ struct Algebraic(T__...)
         return hash;
     }
     else
-    size_t toHash() scope @trusted const
+    size_t toHash() const scope @trusted nothrow
     {
         size_t hash;
 
@@ -1437,7 +1437,7 @@ struct Algebraic(T__...)
                 scope eqfun = delegate() {
                     return __traits(getMember, this, T.tag) != __traits(getMember, rhs, T.tag);
                 };
-                if (trustedAllAttr(eqfun)())   
+                if (trustedAllAttr(eqfun)())
                     return false;
             }}
             else
@@ -1664,7 +1664,7 @@ struct Algebraic(T__...)
 
     private void toStringImpl(T, W)(ref scope W w)  @safe scope const pure nothrow @nogc
     {
-        import mir.format: print; 
+        import mir.format: print;
         scope pfun = delegate() {
             print(w, trustedGet!T);
         };
@@ -1734,13 +1734,13 @@ struct Algebraic(T__...)
             Gets the value if not null. If `this` is in the null state, and the optional
             parameter `fallback` was provided, it will be returned. Without `fallback`,
             calling `get` with a null state is invalid.
-        
+
             When the fallback type is different from the Nullable type, `get(T)` returns
             the common type.
-        
+
             Params:
                 fallback = the value to return in case the `Nullable` is null.
-        
+
             Returns:
                 The value held internally by this `Nullable`.
             +/
@@ -2000,9 +2000,9 @@ struct Algebraic(T__...)
     {
         static foreach (member; AllMembersRec!(_ReflectionTypes[0]))
         static if (
-            !.algebraicMembers.contains(member) && 
-            !metaFieldNames__.contains(member) && 
-            !typeFieldNames__.contains(member) && 
+            !.algebraicMembers.contains(member) &&
+            !metaFieldNames__.contains(member) &&
+            !typeFieldNames__.contains(member) &&
             !(member.length >= 2 && (member[0 .. 2] == "__" || member[$ - 2 .. $] == "__")))
         static if (allSatisfy!(ApplyRight!(hasMember, member), _ReflectionTypes))
         static if (!anySatisfy!(ApplyRight!(isMemberType, member), _ReflectionTypes))
@@ -2197,13 +2197,13 @@ struct Algebraic(T__...)
                     if (identifier__ != i)
                         return false;
                 return trustedGet!T == rhs;
-            } 
+            }
 
             ///ditto
             bool opEquals()(scope const UnqualRec!T rhs) scope @trusted const //pure nothrow @nogc
             {
                 return opEquals(rhs);
-            } 
+            }
 
             /++
             +/
@@ -2249,7 +2249,7 @@ struct Algebraic(T__...)
                     auto opEquals()(int rhs) const
                     {
                         return opEquals(long(rhs));
-                    } 
+                    }
 
                     auto opCmp()(int rhs) const
                     {
@@ -2282,7 +2282,7 @@ struct Algebraic(T__...)
                     auto opEquals()(uint rhs) const
                     {
                         return opEquals(ulong(rhs));
-                    } 
+                    }
 
                     auto opCmp()(uint rhs) const
                     {
@@ -2327,7 +2327,7 @@ unittest
 
     static class Cc
     {
-        // alias this members are supported 
+        // alias this members are supported
         Base base;
         alias base this;
 
@@ -2359,7 +2359,7 @@ unittest
         double retArg(double v) { return v; }
         double retArgT(TArgs...)(int v) { return v * TArgs.length; }
 
-        // alias this members are supported 
+        // alias this members are supported
         Base base;
         alias base this;
     }
@@ -2377,7 +2377,7 @@ unittest
     assert(v.a == 3);
     v.b = "s";
     assert(v.b == "s");
-    // alias this members are supported 
+    // alias this members are supported
     v.d = 10;
     assert(v.d == 10);
     // method call support
@@ -2397,7 +2397,7 @@ unittest
     assert(v.a == 6);
     v.b = "s";
     assert(v.b == "s");
-    // alias this members are supported 
+    // alias this members are supported
     v.d = 15;
     assert(v.d == 15);
     // method call support
@@ -2719,7 +2719,7 @@ version(mir_core_test) unittest
     assert(array[2] == 100);
     array.length = 4;
     assert(array == [0L, 0, 100, 0]);
-    array = array[2 .. 3];    
+    array = array[2 .. 3];
     assert(array.length == 1);
     assert(array[0] == 100);
     array[0] = 10.Variant!(long, double);
@@ -2916,7 +2916,7 @@ unittest
 
     alias collideWith = tryMatch!(
         (Asteroid x, Asteroid y) => "a/a",
-        // No visitor for A/S pair 
+        // No visitor for A/S pair
         // (Asteroid x, Spaceship y) => "a/s",
         (Spaceship x, Asteroid y) => "s/a",
         (Spaceship x, Spaceship y) => "s/s",
@@ -2992,7 +2992,7 @@ unittest
 
     alias collideWith = optionalMatch!(
         (Asteroid x, Asteroid y) => "a/a",
-        // No visitor for A/S pair 
+        // No visitor for A/S pair
         // (Asteroid x, Spaceship y) => "a/s",
         (Spaceship x, Asteroid y) => "s/a",
         (Spaceship x, Spaceship y) => "s/s",
@@ -3035,7 +3035,7 @@ unittest
     assert(collide(os, es) == "big-boom");
     assert(collide(os, os) == "big-boom");
 
-    // check types  
+    // check types
 
     static assert(!__traits(compiles, collide(Asteroid.init, Spaceship.init)));
     static assert(is(typeof(collideWith(Asteroid.init, Spaceship.init)) == Nullable!()));
@@ -3068,7 +3068,7 @@ unittest
 
     alias collideWith = autoMatch!(
         (Asteroid x, Asteroid y) => "a/a",
-        // No visitor for A/S pair 
+        // No visitor for A/S pair
         // (Asteroid x, Spaceship y) => "a/s",
         (Spaceship x, Asteroid y) => "s/a",
         (Spaceship x, Spaceship y) => "s/s",
@@ -3111,7 +3111,7 @@ unittest
     assert(collide(os, es) == "big-boom");
     assert(collide(os, os) == "big-boom");
 
-    // check types  
+    // check types
 
     static assert(!__traits(compiles, collide(Asteroid.init, Spaceship.init)));
     static assert(is(typeof(collideWith(Asteroid.init, Spaceship.init)) == Nullable!()));
@@ -3688,8 +3688,8 @@ version(mir_core_test)
     alias V = Variant!(long, int, string, long[], int[]);
     alias autoGetElementType = match!(
         (string s) => "string", // we override the suit handler below for string
-        suit!(isDynamicArray, a => Unqual!(typeof(a[0])).stringof), 
-        suit!(templateNot!isDynamicArray, a => Unqual!(typeof(a)).stringof), 
+        suit!(isDynamicArray, a => Unqual!(typeof(a[0])).stringof),
+        suit!(templateNot!isDynamicArray, a => Unqual!(typeof(a)).stringof),
     );
     assert(autoGetElementType(V(string.init)) == "string");
     assert(autoGetElementType(V((long[]).init)) == "long");
@@ -3970,7 +3970,7 @@ private noreturn throwMe(T...)(auto ref T args) {
         static if (__traits(compiles, { import mir.format: print; }))
         {
             import std.meta: staticMap;
-            throw new MirException("assumeOk failure:", staticMap!(withNewLine, args)); 
+            throw new MirException("assumeOk failure:", staticMap!(withNewLine, args));
         }
         else
         {
@@ -4084,7 +4084,7 @@ unittest
 package auto trustedAllAttr(T)(scope T t) @trusted
 {
     import std.traits;
-    enum attrs = (functionAttributes!T & ~FunctionAttribute.system) 
+    enum attrs = (functionAttributes!T & ~FunctionAttribute.system)
         | FunctionAttribute.pure_
         | FunctionAttribute.safe
         | FunctionAttribute.nogc
