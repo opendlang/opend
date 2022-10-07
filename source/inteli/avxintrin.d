@@ -1381,11 +1381,44 @@ unittest
     assert(A.array == correct);
 }
 
-
-// TODO __m256d _mm256_shuffle_pd (__m256d a, __m256d b, const int imm8)
+/// Shuffle double-precision (64-bit) floating-point elements within 128-bit lanes using the 
+/// control in `imm8`.
+__m256d _mm256_shuffle_pd(int imm8)(__m256d a, __m256d b) pure @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_shufpd256(a, b, imm8);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(double4,        
+                                       (imm8 >> 0) & 1,
+                                 4 + ( (imm8 >> 1) & 1),
+                                 2 + ( (imm8 >> 2) & 1),
+                                 6 + ( (imm8 >> 3) & 1) )(a, b);
+    }
+    else
+    {
+        double4 r = void;
+        r.ptr[0] = a.array[(imm8 >> 0) & 1];
+        r.ptr[1] = b.array[(imm8 >> 1) & 1];
+        r.ptr[2] = a.array[2 + ( (imm8 >> 2) & 1)];
+        r.ptr[3] = b.array[2 + ( (imm8 >> 3) & 1)];
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd( 0, 1, 2, 3);
+    __m256d B = _mm256_setr_pd( 4, 5, 6, 7);
+    __m256d C = _mm256_shuffle_pd!75 /* 01001011 */(A, B);
+    double[4] correct = [1.0, 5.0, 2.0, 7.0];
+    assert(C.array == correct);
+} 
 
 /// Shuffle single-precision (32-bit) floating-point elements in `a` within 128-bit lanes using 
-/// the control in imm8.
+/// the control in `imm8`.
 __m256 _mm256_shuffle_ps(int imm8)(__m256 a, __m256 b) pure @trusted
 {
     // PERF DMD D_SIMD
