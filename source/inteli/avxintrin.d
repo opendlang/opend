@@ -1385,8 +1385,32 @@ unittest
 // TODO __m256d _mm256_shuffle_pd (__m256d a, __m256d b, const int imm8)
 // TODO __m256 _mm256_shuffle_ps (__m256 a, __m256 b, const int imm8)
 
-
-// TODO __m256d _mm256_sqrt_pd (__m256d a)
+/// Compute the square root of packed double-precision (64-bit) floating-point elements in `a`.
+__m256d _mm256_sqrt_pd (__m256d a) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_sqrtpd256(a);
+    } 
+    else version(LDC)
+    {    
+        return llvm_sqrt(a);
+    }    
+    else
+    {
+        a.ptr[0] = sqrt(a.array[0]);
+        a.ptr[1] = sqrt(a.array[1]);
+        a.ptr[2] = sqrt(a.array[2]);
+        a.ptr[3] = sqrt(a.array[3]);
+        return a;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_sqrt_pd(_mm256_set1_pd(4.0));
+    double[4] correct = [2.0, 2, 2, 2];
+    assert(A.array == correct);
+}
 
 /// Compute the square root of packed single-precision (32-bit) floating-point elements in `a`.
 __m256 _mm256_sqrt_ps (__m256 a) pure @trusted

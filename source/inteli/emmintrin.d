@@ -3835,7 +3835,7 @@ __m128d _mm_sqrt_pd(__m128d vec) pure @trusted
             return __builtin_ia32_sqrtpd(vec);
         else
         {
-            // TODO PERF: use llvm_sqrt on the vector
+            // PERF: use llvm_sqrt on the vector
             vec.array[0] = llvm_sqrt(vec.array[0]); 
             vec.array[1] = llvm_sqrt(vec.array[1]);
             return vec;
