@@ -1384,8 +1384,42 @@ unittest
 
 // TODO __m256d _mm256_shuffle_pd (__m256d a, __m256d b, const int imm8)
 // TODO __m256 _mm256_shuffle_ps (__m256 a, __m256 b, const int imm8)
+
+
 // TODO __m256d _mm256_sqrt_pd (__m256d a)
-// TODO __m256 _mm256_sqrt_ps (__m256 a)
+
+/// Compute the square root of packed single-precision (32-bit) floating-point elements in `a`.
+__m256 _mm256_sqrt_ps (__m256 a) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_sqrtps256(a);
+    } 
+    else version(LDC)
+    {    
+        return llvm_sqrt(a);
+    }    
+    else
+    {
+        a.ptr[0] = sqrt(a.array[0]);
+        a.ptr[1] = sqrt(a.array[1]);
+        a.ptr[2] = sqrt(a.array[2]);
+        a.ptr[3] = sqrt(a.array[3]);
+        a.ptr[4] = sqrt(a.array[4]);
+        a.ptr[5] = sqrt(a.array[5]);
+        a.ptr[6] = sqrt(a.array[6]);
+        a.ptr[7] = sqrt(a.array[7]);
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_sqrt_ps(_mm256_set1_ps(4.0f));
+    float[8] correct = [2.0f, 2, 2, 2, 2, 2, 2, 2];
+    assert(A.array == correct);
+}
+
+
 // TODO void _mm256_store_pd (double * mem_addr, __m256d a)
 // TODO void _mm256_store_ps (float * mem_addr, __m256 a)
 // TODO void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
@@ -1486,8 +1520,18 @@ __m256i _mm256_undefined_si256 () pure @safe
 // TODO __m256 _mm256_unpackhi_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
-// TODO __m256d _mm256_xor_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_xor_ps (__m256 a, __m256 b)
+
+/// Compute the bitwise XOR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
+__m256d _mm256_xor_pd (__m256d a, __m256d b) pure @safe
+{
+    return cast(__m256d)( cast(__m256i)a ^ cast(__m256i)b );
+}
+
+/// Compute the bitwise XOR of packed single-precision (32-bit) floating-point elements in `a` and `b`.
+__m256 _mm256_xor_ps (__m256 a, __m256 b) pure @safe
+{
+    return cast(__m256)( cast(__m256i)a ^ cast(__m256i)b );
+}
 
 void _mm256_zeroall () pure @safe
 {

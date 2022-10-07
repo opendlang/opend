@@ -2671,6 +2671,7 @@ __m128 _mm_sqrt_ps(__m128 a) @trusted
             return __builtin_ia32_sqrtps(a);
         else
         {
+            // TODO PERF: use llvm_sqrt on the vector, works better
             a[0] = llvm_sqrt(a[0]);
             a[1] = llvm_sqrt(a[1]);
             a[2] = llvm_sqrt(a[2]);
