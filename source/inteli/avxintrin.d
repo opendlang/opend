@@ -697,14 +697,13 @@ unittest
     assert(a.array == correct);
 }
 
-/+
 /// Conditionally multiply the packed single-precision (32-bit) floating-point elements in `a` and 
 /// `b` using the high 4 bits in `imm8`, sum the four products, and conditionally store the sum 
 /// using the low 4 bits of `imm8`.
 __m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
 {
     // PERF DMD
-    // PERF without AVX, can use 2 _mm_dp_ps exactly
+    // PERF without AVX, can use 2 _mm_dp_ps exactly (beware the imm8 is tricky)
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_dpps256(a, b, cast(byte)imm8);
@@ -716,11 +715,13 @@ __m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
     else
     {
         __m256 zero = _mm256_setzero_ps();
-        __m256 temp = _mm256_blend_ps!( (imm8 >>> 4) & 15)(zero, a * b);
+        enum ubyte op = (imm8 >>> 4) & 15;
+        __m256 temp = _mm256_blend_ps!( op | (op << 4) )(zero, a * b);
         float lo = temp.array[0] + temp.array[1] + temp.array[2] + temp.array[3];
         float hi = temp.array[4] + temp.array[5] + temp.array[6] + temp.array[7];
         __m256 r = _mm256_set_m128(_mm_set1_ps(hi), _mm_set1_ps(lo));
-        return _mm256_blend_ps!(imm8 & 15)(zero, r);
+        enum ubyte op2 = (imm8 & 15);
+        return _mm256_blend_ps!(op2 | (op2 << 4))(zero, r);
     }
 }
 unittest
@@ -731,15 +732,13 @@ unittest
     float8 R1 = _mm256_dp_ps!(0xf0 + 0xf)(A, B);
     float8 R2 = _mm256_dp_ps!(0x30 + 0x5)(A, B);
     float8 R3 = _mm256_dp_ps!(0x50 + 0xa)(A, B);
-    float[8] correct1 =   [67.0f, 67.0f, 67.0f,67.0f, -14,  -14,  -14, -14];
+    float[8] correct1 =   [67.0f, 67.0f, 67.0f,67.0f,  10,   10,   10,  10];
     float[8] correct2 =   [23.0f, 0.0f, 23.0f,  0.0f,  22,    0,   22,   0];
-    float[8] correct3 =   [0.0f, 29.0f, 0.0f,  29.0f,  18,   18,   18,  18];
+    float[8] correct3 =   [0.0f, 29.0f, 0.0f,  29.0f,   0,   18,    0,  18];
     assert(R1.array == correct1);
     assert(R2.array == correct2);
     assert(R3.array == correct3);
 }
-+/
-
 
 /// Extract a 32-bit integer from `a`, selected with `imm8`.
 int _mm256_extract_epi32 (__m256i a, const int imm8) pure @trusted
@@ -1042,7 +1041,7 @@ unittest
 /// Set packed `__m256d` vector with the supplied values.
 __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
 {
-    // TODO DMD PERF
+    // DMD PERF
     static if (GDC_with_AVX)
     {
         __m256 r = __builtin_ia32_ps256_ps(lo);

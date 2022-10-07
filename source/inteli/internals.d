@@ -762,6 +762,14 @@ version(unittest)
         printf("%g %g %g %g\n", v.array[0], v.array[1], v.array[2], v.array[3]); 
     }
 
+    void _mm256_print_ps(__m256 v) @trusted
+    {
+        // %g because %f can conceal very small numbers and prints zero instead
+        printf("%g %g %g %g %g %g %g %g\n", 
+            v.array[0], v.array[1], v.array[2], v.array[3],
+            v.array[4], v.array[5], v.array[6], v.array[7]); 
+    }
+
     void _mm256_print_epi64(__m256i v) @trusted
     {
         long4 vl = cast(long4)v;
