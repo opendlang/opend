@@ -1383,7 +1383,49 @@ unittest
 
 
 // TODO __m256d _mm256_shuffle_pd (__m256d a, __m256d b, const int imm8)
-// TODO __m256 _mm256_shuffle_ps (__m256 a, __m256 b, const int imm8)
+
+/// Shuffle single-precision (32-bit) floating-point elements in `a` within 128-bit lanes using 
+/// the control in imm8.
+__m256 _mm256_shuffle_ps(int imm8)(__m256 a, __m256 b) pure @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_shufps256(a, b, imm8);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(float8, (imm8 >> 0) & 3,
+                                 (imm8 >> 2) & 3,
+                                 8 + ( (imm8 >> 4) & 3),
+                                 8 + ( (imm8 >> 6) & 3),
+                                 4 + ( (imm8 >> 0) & 3),
+                                 4 + ( (imm8 >> 2) & 3),
+                                 12 + ( (imm8 >> 4) & 3),
+                                 12 + ( (imm8 >> 6) & 3) )(a, b);
+    }
+    else
+    {
+        float8 r = void;
+        r.ptr[0] = a.array[(imm8 >> 0) & 3];
+        r.ptr[1] = a.array[(imm8 >> 2) & 3];
+        r.ptr[2] = b.array[(imm8 >> 4) & 3];
+        r.ptr[3] = b.array[(imm8 >> 6) & 3];
+        r.ptr[4] = a.array[4 + ( (imm8 >> 0) & 3 )];
+        r.ptr[5] = a.array[4 + ( (imm8 >> 2) & 3 )];
+        r.ptr[6] = b.array[4 + ( (imm8 >> 4) & 3 )];
+        r.ptr[7] = b.array[4 + ( (imm8 >> 6) & 3 )];
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps( 0,  1,  2,  3,  4,  5,  6,  7);
+    __m256 B = _mm256_setr_ps( 8,  9, 10, 11, 12, 13, 14, 15);
+    __m256 C = _mm256_shuffle_ps!75 /* 01001011 */(A, B);
+    float[8] correct = [3.0f, 2, 8, 9, 7, 6, 12, 13];
+    assert(C.array == correct);
+} 
 
 /// Compute the square root of packed double-precision (64-bit) floating-point elements in `a`.
 __m256d _mm256_sqrt_pd (__m256d a) pure @trusted

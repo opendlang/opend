@@ -3386,7 +3386,7 @@ unittest
     assert(A.array == correct);
 }
 
-/// Shuffle 32-bit integers in a using the control in `imm8`.
+/// Shuffle 32-bit integers in `a` using the control in `imm8`.
 /// See_also: `_MM_SHUFFLE`.
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @trusted
 {
