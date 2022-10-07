@@ -697,7 +697,48 @@ unittest
     assert(a.array == correct);
 }
 
-// TODO __m256 _mm256_dp_ps (__m256 a, __m256 b, const int imm8)
+/+
+/// Conditionally multiply the packed single-precision (32-bit) floating-point elements in `a` and 
+/// `b` using the high 4 bits in `imm8`, sum the four products, and conditionally store the sum 
+/// using the low 4 bits of `imm8`.
+__m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
+{
+    // PERF DMD
+    // PERF without AVX, can use 2 _mm_dp_ps exactly
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_dpps256(a, b, cast(byte)imm8);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_dpps256(a, b, cast(byte)imm8);
+    }
+    else
+    {
+        __m256 zero = _mm256_setzero_ps();
+        __m256 temp = _mm256_blend_ps!( (imm8 >>> 4) & 15)(zero, a * b);
+        float lo = temp.array[0] + temp.array[1] + temp.array[2] + temp.array[3];
+        float hi = temp.array[4] + temp.array[5] + temp.array[6] + temp.array[7];
+        __m256 r = _mm256_set_m128(_mm_set1_ps(hi), _mm_set1_ps(lo));
+        return _mm256_blend_ps!(imm8 & 15)(zero, r);
+    }
+}
+unittest
+{
+    // Products:                 9    14    20   24     6    16    12   -24
+    __m256 A = _mm256_setr_ps(1.0f, 2.0f, 4.0f, 8.0f, 1.0f, 2.0f, 4.0f, 8.0f);
+    __m256 B = _mm256_setr_ps(9.0f, 7.0f, 5.0f, 3.0f, 6.0f, 8.0f, 3.0f,-3.0f);
+    float8 R1 = _mm256_dp_ps!(0xf0 + 0xf)(A, B);
+    float8 R2 = _mm256_dp_ps!(0x30 + 0x5)(A, B);
+    float8 R3 = _mm256_dp_ps!(0x50 + 0xa)(A, B);
+    float[8] correct1 =   [67.0f, 67.0f, 67.0f,67.0f, -14,  -14,  -14, -14];
+    float[8] correct2 =   [23.0f, 0.0f, 23.0f,  0.0f,  22,    0,   22,   0];
+    float[8] correct3 =   [0.0f, 29.0f, 0.0f,  29.0f,  18,   18,   18,  18];
+    assert(R1.array == correct1);
+    assert(R2.array == correct2);
+    assert(R3.array == correct3);
+}
++/
 
 
 /// Extract a 32-bit integer from `a`, selected with `imm8`.
@@ -997,8 +1038,35 @@ unittest
 }
 
 // TODO __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
-// TODO __m256 _mm256_set_m128 (__m128 hi, __m128 lo)
 
+/// Set packed `__m256d` vector with the supplied values.
+__m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
+{
+    // TODO DMD PERF
+    static if (GDC_with_AVX)
+    {
+        __m256 r = __builtin_ia32_ps256_ps(lo);
+        return __builtin_ia32_vinsertf128_ps256(r, hi, 1);
+    }
+    else
+    {
+        __m256 r = void;
+        __m128* p = cast(__m128*)(&r);
+        p[0] = lo;
+        p[1] = hi;
+        return r;
+    }
+}
+unittest
+{
+    __m128 lo = _mm_setr_ps(1.0f, 2, 3, 4);
+    __m128 hi = _mm_setr_ps(3.0f, 4, 5, 6);
+    __m256 R = _mm256_set_m128(hi, lo);
+    float[8] correct = [1.0f, 2, 3, 4, 3, 4, 5, 6];
+    assert(R.array == correct);
+}
+
+/// Set packed `__m256d` vector with the supplied values.
 __m256d _mm256_set_m128d (__m128d hi, __m128d lo) pure @trusted
 {
     __m256d r = void;
