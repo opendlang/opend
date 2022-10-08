@@ -770,6 +770,13 @@ version(unittest)
             v.array[4], v.array[5], v.array[6], v.array[7]); 
     }
 
+    void _mm256_print_epi32(__m256i v) @trusted
+    {
+        int8 vl = cast(int8)v;
+        printf("%d %d %d %d %d %d %d %d\n", vl.array[0], vl.array[1], vl.array[2], vl.array[3],
+                                            vl.array[4], vl.array[5], vl.array[6], vl.array[7]);
+    }
+
     void _mm256_print_epi64(__m256i v) @trusted
     {
         long4 vl = cast(long4)v;
