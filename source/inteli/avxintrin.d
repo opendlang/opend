@@ -1413,7 +1413,7 @@ unittest
 }
 
 /// Return vector of type `__m256d` with all elements set to zero.
-__m256d _mm256_setzero_pd ()
+__m256d _mm256_setzero_pd() pure @safe
 {
     return double4(0.0);
 }
@@ -1425,7 +1425,7 @@ unittest
 }
 
 /// Return vector of type `__m256` with all elements set to zero.
-__m256 _mm256_setzero_ps ()
+__m256 _mm256_setzero_ps() pure @safe
 {
     return float8(0.0f);
 }
@@ -1585,9 +1585,36 @@ unittest
     assert(A.array == correct);
 }
 
+/// Store 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) from 
+/// `a` into memory. `mem_addr` must be aligned on a 32-byte boundary or a general-protection 
+/// exception may be generated.
+void _mm256_store_pd (double* mem_addr, __m256d a) pure @system
+{
+    *cast(__m256d*)mem_addr = a;
+}
+unittest
+{
+    align(32) double[4] mem;
+    double[4] correct = [1.0, 2, 3, 4];
+    _mm256_store_pd(mem.ptr, _mm256_setr_pd(1.0, 2, 3, 4));
+    assert(mem == correct);
+}
 
-// TODO void _mm256_store_pd (double * mem_addr, __m256d a)
-// TODO void _mm256_store_ps (float * mem_addr, __m256 a)
+/// Store 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from 
+/// `a` into memory. `mem_addr` must be aligned on a 32-byte boundary or a general-protection 
+/// exception may be generated.
+void _mm256_store_ps (float* mem_addr, __m256 a) pure @system
+{
+    *cast(__m256*)mem_addr = a;
+}
+unittest
+{
+    align(32) float[8] mem;
+    float[8] correct = [1.0, 2, 3, 4, 5, 6, 7, 8];
+    _mm256_store_ps(mem.ptr, _mm256_set_ps(8.0, 7, 6, 5, 4, 3, 2, 1));
+    assert(mem == correct);
+}
+
 // TODO void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
 // TODO void _mm256_storeu_pd (double * mem_addr, __m256d a)
 // TODO void _mm256_storeu_ps (float * mem_addr, __m256 a)
