@@ -560,7 +560,7 @@ private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V 
             else
             static if (__traits(hasMember, S, "putKeyPtr"))
             {
-                serializer.putKeyPtr(key.ptr);
+                serializer.putKeyPtr((()@trusted => key.ptr)());
             }
             else
             {
@@ -679,7 +679,7 @@ private template serializeAlgebraicAnnotationContinue(S)
             serializer.putCompiletimeAnnotation!(serdeGetAlgebraicAnnotation!V);
         else
         static if (__traits(hasMember, S, "putAnnotationPtr"))
-            serializer.putAnnotationPtr(serdeGetAlgebraicAnnotation!V.ptr);
+            serializer.putAnnotationPtr((()@trusted =>serdeGetAlgebraicAnnotation!V.ptr)());
         else
             serializer.putAnnotation(serdeGetAlgebraicAnnotation!V);
         serializeAnnotatedValue(serializer, value, wrapperState);
