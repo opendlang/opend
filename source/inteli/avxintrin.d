@@ -785,7 +785,31 @@ unittest
 // TODO __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
 // TODO __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
 // TODO __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
-// TODO __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
+
+/// Load 256-bits of integer data from unaligned memory into dst. 
+/// This intrinsic may perform better than `_mm256_loadu_si256` when the data crosses a cache 
+/// line boundary.
+__m256i _mm256_lddqu_si256(const(__m256i)* mem_addr) @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return cast(__m256i) __builtin_ia32_lddqu256(cast(const(char)*)mem_addr);
+    }
+    else static if (LDC_with_AVX)
+    {
+        // unfortunately builtin is not marked pure
+        return cast(__m256i) __builtin_ia32_lddqu256(cast(const void*)mem_addr);
+    }
+    else
+        return _mm256_loadu_si256(mem_addr);
+}
+unittest
+{
+    int[10] correct = [0, -1, 2, -3, 4, 9, -7, 8, -6, 34];
+    int8 A = cast(int8) _mm256_lddqu_si256(cast(__m256i*) &correct[1]);
+    assert(A.array == correct[1..9]);
+}
 
 /// Load 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) 
 /// from memory. `mem_addr` must be aligned on a 32-byte boundary or a general-protection 
@@ -819,8 +843,7 @@ unittest
 
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
-// TODO: take void* as input
-// TODO: make that @system
+// MAYDO: take void* as input, make that @system
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     // PERF DMD
