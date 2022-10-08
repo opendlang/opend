@@ -1047,8 +1047,23 @@ __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
         __m256 r = __builtin_ia32_ps256_ps(lo);
         return __builtin_ia32_vinsertf128_ps256(r, hi, 1);
     }
+    else version(DigitalMars)
+    {
+        __m256 r = void;
+        r.ptr[0] = lo.array[0];
+        r.ptr[1] = lo.array[1];
+        r.ptr[2] = lo.array[2];
+        r.ptr[3] = lo.array[3];
+        r.ptr[4] = hi.array[0];
+        r.ptr[5] = hi.array[1];
+        r.ptr[6] = hi.array[2];
+        r.ptr[7] = hi.array[3];
+        return r;
+    }
     else
     {
+        // PERF: this crash on DMD v100.2 on Linux x86_64, find out why since 
+        // it would be better performance wise
         __m256 r = void;
         __m128* p = cast(__m128*)(&r);
         p[0] = lo;
