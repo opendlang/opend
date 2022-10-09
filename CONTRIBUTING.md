@@ -4,7 +4,10 @@ Advice:
 
 - Do intrinsics **one by one**, not all at once. This is very detailed work, it's not possible nor desirable to go fast while writing intrinsics. Please don't.
 
-- Add PERF comment anywhere you feel that something could be done faster in a supported combination: DMD D_SIMD, LDC x86_64, LDC arm64, LDC x86, GDC x86_64, with or without optimizations, with or without instructionsupport.
+- Add PERF comment anywhere you feel that something could be done faster in a supported combination: DMD D_SIMD, LDC x86_64, LDC arm64, LDC x86, GDC x86_64, with or without optimizations, with or without instruction support... 
+  * If this is supposed returns a SIMD literal, does it inline?
+  * Can this be faster in -O0?
+  * If instruction support is not there, is the alternative path fast?
 
 
 To be merged a PR:
