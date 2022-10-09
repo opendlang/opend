@@ -2129,9 +2129,71 @@ unittest
     assert(arr[1..5] == correct);
 }
 
-// TODO void _mm256_storeu2_m128 (float* hiaddr, float* loaddr, __m256 a)
-// TODO void _mm256_storeu2_m128d (double* hiaddr, double* loaddr, __m256d a)
-// TODO void _mm256_storeu2_m128i (__m128i* hiaddr, __m128i* loaddr, __m256i a)
+/// Store the high and low 128-bit halves (each composed of 4 packed single-precision (32-bit) 
+/// floating-point elements) from `a` into memory two different 128-bit locations. 
+/// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+void _mm256_storeu2_m128 (float* hiaddr, float* loaddr, __m256 a) pure @system
+{
+    // This performed way better on GDC, and similarly in LDC, vs using other intrinsics
+    loaddr[0] = a.array[0];
+    loaddr[1] = a.array[1];
+    loaddr[2] = a.array[2];
+    loaddr[3] = a.array[3];
+    hiaddr[0] = a.array[4];
+    hiaddr[1] = a.array[5];
+    hiaddr[2] = a.array[6];
+    hiaddr[3] = a.array[7];
+}
+unittest
+{
+    align(32) float[11] A = [0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    _mm256_storeu2_m128(&A[1], &A[6], _mm256_set1_ps(2.0f));
+    float[11] correct     = [0.0f, 2, 2, 2, 2, 0, 2, 2, 2, 2, 0];
+    assert(A == correct);
+}
+
+/// Store the high and low 128-bit halves (each composed of 2 packed double-precision (64-bit)
+/// floating-point elements) from `a` into memory two different 128-bit locations. 
+/// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+void _mm256_storeu2_m128d (double* hiaddr, double* loaddr, __m256d a) pure @system
+{
+    loaddr[0] = a.array[0];
+    loaddr[1] = a.array[1];
+    hiaddr[0] = a.array[2];
+    hiaddr[1] = a.array[3];
+}
+unittest
+{
+    double[2] A;
+    double[2] B;
+    _mm256_storeu2_m128d(A.ptr, B.ptr, _mm256_set1_pd(-43.0));
+    double[2] correct = [-43.0, -43];
+    assert(A == correct);
+    assert(B == correct);
+}
+
+/// Store the high and low 128-bit halves (each composed of integer data) from `a` into memory two 
+/// different 128-bit locations. 
+/// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+void _mm256_storeu2_m128i (__m128i* hiaddr, __m128i* loaddr, __m256i a) pure @trusted // TODO: signature
+{
+    long* hi = cast(long*)hiaddr;
+    long* lo = cast(long*)loaddr;
+    lo[0] = a.array[0];
+    lo[1] = a.array[1];
+    hi[0] = a.array[2];
+    hi[1] = a.array[3];
+}
+unittest
+{
+    long[2] A;
+    long[2] B;
+    _mm256_storeu2_m128i(cast(__m128i*)A.ptr, cast(__m128i*)B.ptr, _mm256_set1_epi64x(-42));
+    long[2] correct = [-42, -42];
+    assert(A == correct);
+    assert(B == correct);
+}
+
 // TODO void _mm256_stream_pd (double * mem_addr, __m256d a)
 // TODO void _mm256_stream_ps (float * mem_addr, __m256 a)
 // TODO void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
