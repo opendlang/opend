@@ -771,63 +771,88 @@ unittest
 }
 
 /// Extract a 128-bits lane from `a`, selected with `index` (0 or 1).
-__m128d _mm256_extractf128_pd (__m256d a, const int imm8) pure @trusted
+__m128d _mm256_extractf128_pd(ubyte imm8)(__m256d a) pure @trusted
 {
-    // TODO PERF: nothing was godbolted here
-    double2 r = void;
-    int index = 2*(imm8 & 1);
-    r.ptr[0] = a.array[index+0];
-    r.ptr[1] = a.array[index+1];
-    return r;
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        // Note: needs to be a template intrinsics because of this builtin.
+        return __builtin_ia32_vextractf128_pd256(a, imm8 & 1);
+    }
+    else
+    {
+        double2 r = void;
+        enum int index = 2*(imm8 & 1);
+        r.ptr[0] = a.array[index+0];
+        r.ptr[1] = a.array[index+1];
+        return r;
+    }
 }
 unittest
 {
     __m256d A = _mm256_setr_pd(1.0, 2, 3, 4);
     double[4] correct = [1.0, 2, 3, 4];
-    __m128d l0 = _mm256_extractf128_pd(A, 0);
-    __m128d l1 = _mm256_extractf128_pd(A, 1);
+    __m128d l0 = _mm256_extractf128_pd!18(A);
+    __m128d l1 = _mm256_extractf128_pd!55(A);
     assert(l0.array == correct[0..2]);
     assert(l1.array == correct[2..4]);
 }
 
 ///ditto
-__m128 _mm256_extractf128_ps (__m256 a, const int imm8) pure @trusted
+__m128 _mm256_extractf128_ps(ubyte imm8)(__m256 a) pure @trusted
 {
-    // TODO PERF: nothing was godbolted here
-    float4 r = void;
-    int index = 4*(imm8 & 1);
-    r.ptr[0] = a.array[index+0];
-    r.ptr[1] = a.array[index+1];
-    r.ptr[2] = a.array[index+2];
-    r.ptr[3] = a.array[index+3];
-    return r;
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vextractf128_ps256(a, imm8 & 1);
+    }
+    else
+    {
+        float4 r = void; // Optimize well since LDC 1.1 -O1
+        enum int index = 4*(imm8 & 1);
+        r.ptr[0] = a.array[index+0];
+        r.ptr[1] = a.array[index+1];
+        r.ptr[2] = a.array[index+2];
+        r.ptr[3] = a.array[index+3];
+        return r;
+    }
 }
 unittest
 {
     __m256 A = _mm256_setr_ps(1.0, 2, 3, 4, 5, 6, 7, 8);
     float[8] correct = [1.0, 2, 3, 4, 5, 6, 7, 8];
-    __m128 l0 = _mm256_extractf128_ps(A, 0);
-    __m128 l1 = _mm256_extractf128_ps(A, 1);
+    __m128 l0 = _mm256_extractf128_ps!8(A);
+    __m128 l1 = _mm256_extractf128_ps!255(A);
     assert(l0.array == correct[0..4]);
     assert(l1.array == correct[4..8]);
 }
 
 ///ditto
-__m128i _mm256_extractf128_si256 (__m256i a, const int imm8) pure @trusted
+__m128i _mm256_extractf128_si256(ubyte imm8)(__m256i a) pure @trusted
 {
-    // TODO PERF: nothing was godbolted here
-    long2 r = void;
-    int index = 2*(imm8 & 1);
-    r.ptr[0] = a.array[index+0];
-    r.ptr[1] = a.array[index+1];
-    return cast(__m128i)r;
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        // Note: if it weren't for this GDC intrinsic, _mm256_extractf128_si256
+        // could be a non-template, however, this wins in -O0.
+        // Same story for _mm256_extractf128_ps and _mm256_extractf128_pd
+        return __builtin_ia32_vextractf128_si256(cast(int8)a, imm8 & 1);
+    }
+    else
+    {
+        long2 r = void;
+        enum int index = 2*(imm8 & 1);
+        r.ptr[0] = a.array[index+0];
+        r.ptr[1] = a.array[index+1];
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
     __m256i A = _mm256_setr_epi32(9, 2, 3, 4, 5, 6, 7, 8);
     int[8] correct = [9, 2, 3, 4, 5, 6, 7, 8];
-    __m128i l0 = _mm256_extractf128_si256(A, 0);
-    __m128i l1 = _mm256_extractf128_si256(A, 1);
+    __m128i l0 = _mm256_extractf128_si256!0(A);
+    __m128i l1 = _mm256_extractf128_si256!1(A);
     assert(l0.array == correct[0..4]);
     assert(l1.array == correct[4..8]);
 }
@@ -2044,8 +2069,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.hsub.pd.256")
 pragma(LDC_intrinsic, "llvm.x86.avx.hsub.ps.256")
     float8 __builtin_ia32_hsubps256(float8, float8) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.ldu.dq.256")
-    byte32 __builtin_ia32_lddqu256(const void*);
 
 pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd")
     double2 __builtin_ia32_maskloadpd(const void*, long2);
