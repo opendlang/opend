@@ -18,18 +18,7 @@ module inteli.shaintrin;
 public import inteli.types;
 import inteli.internals;
 
-static if (LDC_with_SHA)
-{
-    private enum SHA_builtins = true;
-}
-else static if (GDC_with_SHA)
-{
-    private enum SHA_builtins = true;
-}
-else
-{
-    private enum SHA_builtins = false;
-}
+
 
 nothrow @nogc:
 
@@ -106,7 +95,7 @@ __m128i _mm_sha1rnds4_epu32(__m128i a, __m128i b, const int func) @trusted
 /// Perform the final calculation for the next four SHA256 message values (unsigned 32-bit integers) using previous message values from `a` and `b`, and return the result.
 __m128i _mm_sha256msg1_epu32(__m128i a, __m128i b) @trusted
 {
-    static if (SHA_builtins)
+    static if (GDC_or_LDC_with_SHA)
     {
         return __builtin_ia32_sha256msg1(cast(int4) a, cast(int4) b);
     }
@@ -143,7 +132,7 @@ unittest
 /// Perform 2 rounds of SHA256 operation using an initial SHA256 state (C,D,G,H) from `a`, an initial SHA256 state (A,B,E,F) from `b`, and a pre-computed sum of the next 2 round message values (unsigned 32-bit integers) and the corresponding round constants from k, and return the updated SHA256 state (A,B,E,F).
 __m128i _mm_sha256msg2_epu32(__m128i a, __m128i b) @trusted
 {
-    static if (SHA_builtins)
+    static if (GDC_or_LDC_with_SHA)
     {
         return __builtin_ia32_sha256msg2(cast(int4) a, cast(int4) b);
     }
@@ -193,8 +182,7 @@ __m128i _mm_sha256rnds2_epu32(__m128i a, __m128i b, __m128i k) @trusted
         enum bool workaround = false;
     }
 
-
-    static if (SHA_builtins)
+    static if (GDC_or_LDC_with_SHA)
     {
         return __builtin_ia32_sha256rnds2(cast(int4) a, cast(int4) b, cast(int4) k);
     }

@@ -231,6 +231,16 @@ else
     enum DMD_with_DSIMD = false;
 }
 
+
+// Sometimes, can be helpful to merge builtin code, however keep in mind that
+// LDC and GDC builtins often subtly diverse, wrt. unsigned vs signed vectors, 
+// return types, purity...
+enum GDC_or_LDC_with_AVX  = GDC_with_AVX  || LDC_with_AVX;
+enum GDC_or_LDC_with_AVX2 = GDC_with_AVX2 || LDC_with_AVX2;
+enum GDC_or_LDC_with_SHA  = GDC_with_SHA  || LDC_with_SHA;
+enum GDC_or_LDC_with_BMI2 = GDC_with_BMI2 || LDC_with_BMI2;
+
+
 static if (LDC_with_ARM32)
 {
     package uint arm_get_fpcr() nothrow @nogc @trusted

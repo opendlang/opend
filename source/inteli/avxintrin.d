@@ -24,8 +24,6 @@ public import inteli.tmmintrin;
 
 nothrow @nogc:
 
-enum GDC_or_LDC_with_AVX = GDC_with_AVX || LDC_with_AVX;
-
 /// Add packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m256d _mm256_add_pd (__m256d a, __m256d b) pure @trusted
 {
@@ -928,7 +926,8 @@ unittest
 
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
-// MAYDO: take void* as input, make that @system
+// TODO: take void* as input, make that @system
+// See this dlang forum post => https://forum.dlang.org/thread/vymrsngsfibkmqsqffce@forum.dlang.org
 __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     // PERF DMD
@@ -960,7 +959,7 @@ unittest
 
 /// Load 256-bits of integer data from memory. `mem_addr` must be aligned on a 
 /// 32-byte boundary or a general-protection exception may be generated.
-__m256i _mm256_load_si256 (const(void)* mem_addr) pure @trusted // TODO @system
+__m256i _mm256_load_si256 (const(void)* mem_addr) pure @system
 {
     return *cast(__m256i*)mem_addr;
 }
@@ -973,7 +972,7 @@ unittest
 
 /// Load 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) 
 /// from memory. `mem_addr` does not need to be aligned on any particular boundary.
-__m256d _mm256_loadu_pd (const(void)* mem_addr) pure @trusted // TODO @system
+__m256d _mm256_loadu_pd (const(void)* mem_addr) pure @system
 {
     // PERF DMD
     static if (GDC_with_AVX)
@@ -1004,7 +1003,7 @@ unittest
 
 /// Load 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from memory.
 /// `mem_addr` does not need to be aligned on any particular boundary.
-__m256 _mm256_loadu_ps (const(float)* mem_addr) pure @trusted // TODO @system
+__m256 _mm256_loadu_ps (const(float)* mem_addr) pure @system
 {
     // PERF DMD
     static if (GDC_with_AVX)

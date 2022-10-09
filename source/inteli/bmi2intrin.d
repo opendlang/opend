@@ -9,21 +9,12 @@ module inteli.bmi2intrin;
 
 import inteli.internals;
 
-static if (LDC_with_BMI2 || GDC_with_BMI2)
-{
-    private enum BMI2_builtins = true;
-}
-else
-{
-    private enum BMI2_builtins = false;
-}
-
 nothrow @nogc pure @safe:
 
 /// Copy all bits from unsigned 32-bit integer `a` to dst, and reset (set to 0) the high bits in dst starting at index.
 uint _bzhi_u32 (uint a, uint index)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
             return __builtin_ia32_bzhi_si(a, index);
@@ -48,7 +39,7 @@ unittest
 /// Copy all bits from unsigned 64-bit integer `a` to dst, and reset (set to 0) the high bits in dst starting at index.
 ulong _bzhi_u64 (ulong a, uint index)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
         {
@@ -194,7 +185,7 @@ ulong _mulx_u64 (ulong a, ulong b, ulong* hi)
 /// Deposit contiguous low bits from unsigned 32-bit integer `a` to dst at the corresponding bit locations specified by `mask`; all other bits in dst are set to zero.
 uint _pdep_u32 (uint a, uint mask)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
             return __builtin_ia32_pdep_si(a, mask);
@@ -215,7 +206,7 @@ unittest
 /// Deposit contiguous low bits from unsigned 64-bit integer `a` to dst at the corresponding bit locations specified by `mask`; all other bits in dst are set to zero.
 ulong _pdep_u64 (ulong a, ulong mask)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
         {
@@ -276,7 +267,7 @@ private T pdep(T)(T a, T mask)
 /// Extract bits from unsigned 32-bit integer `a` at the corresponding bit locations specified by `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
 uint _pext_u32 (uint a, uint mask)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
             return __builtin_ia32_pext_si(a, mask);
@@ -297,7 +288,7 @@ unittest
 /// Extract bits from unsigned 64-bit integer `a` at the corresponding bit locations specified by `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
 ulong _pext_u64 (ulong a, ulong mask)
 {
-    static if (BMI2_builtins)
+    static if (GDC_or_LDC_with_BMI2)
     {
         if (!__ctfe)
         {
