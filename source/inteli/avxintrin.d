@@ -832,7 +832,6 @@ unittest
     assert(l1.array == correct[4..8]);
 }
 
-// TODO __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
 // TODO __m256d _mm256_floor_pd (__m256d a)
 // TODO __m256 _mm256_floor_ps (__m256 a)
 // TODO __m256d _mm256_hadd_pd (__m256d a, __m256d b)
