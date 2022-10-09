@@ -2051,6 +2051,10 @@ void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
             p[n] = v[n];
     }
 }
+/*
+void __builtin_ia32_storedqu256 (pchar,v32qi);
+void __builtin_ia32_storeupd256 (pdouble,v4df);
+void __builtin_ia32_storeups256 (pfloat,v8sf);*/
 
 // TODO void _mm256_storeu2_m128 (float* hiaddr, float* loaddr, __m256 a)
 // TODO void _mm256_storeu2_m128d (double* hiaddr, double* loaddr, __m256d a)

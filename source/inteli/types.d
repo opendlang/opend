@@ -19,9 +19,7 @@ version(GNU)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
-
-        // TODO: use D_AVX and D_AVX2 eventually to detect AVX?
-        enum AVXSizedVectorsAreEmulated = true;
+        enum AVXSizedVectorsAreEmulated = !(GDC_with_AVX || GDC_with_AVX2);
 
         import gcc.builtins;
     }
@@ -176,6 +174,12 @@ else
     package alias ushort8 = Vector!(ushort[8]);
     package alias ubyte8  = Vector!(ubyte[8]);
     package alias ubyte16 = Vector!(ubyte[16]);
+
+    static if (!AVXSizedVectorsAreEmulated)
+    {
+        package alias ushort16 = Vector!(ushort[16]);
+        package alias ubyte32  = Vector!(ubyte[32]);
+    }
 }
 
 // Emulate ldc.simd cmpMask and other masks.
