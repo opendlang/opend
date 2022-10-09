@@ -1053,13 +1053,15 @@ unittest
 /// packed maximum values.
 __m256d _mm256_max_pd (__m256d a, __m256d b) pure @trusted
 {    
+    // PERF DMD D_SIMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_maxpd256(a, b);
     }
     else
     {
-        // TODO: test on LDC without AVX, is this optimal?
+        // LDC: becomes good in -O2
+        // PERF: GDC without AVX
         a.ptr[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
         a.ptr[1] = (a.array[1] > b.array[1]) ? a.array[1] : b.array[1];
         a.ptr[2] = (a.array[2] > b.array[2]) ? a.array[2] : b.array[2];
@@ -1110,7 +1112,7 @@ unittest
 // Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
 /// packed minimum values.
 __m256d _mm256_min_pd (__m256d a, __m256d b) pure @trusted
-{   
+{
     // PERF DMD D_SIMD
     static if (GDC_or_LDC_with_AVX)
     {
@@ -1118,7 +1120,8 @@ __m256d _mm256_min_pd (__m256d a, __m256d b) pure @trusted
     }
     else
     {
-        // TODO: test on LDC without AVX, is this optimal? (and correct)
+        // LDC: becomes good in -O2
+        // PERF: GDC without AVX
         a.ptr[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
         a.ptr[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
         a.ptr[2] = (a.array[2] < b.array[2]) ? a.array[2] : b.array[2];
