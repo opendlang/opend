@@ -1672,9 +1672,47 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256 _mm256_setr_m128 (__m128 lo, __m128 hi)
-// TODO __m256d _mm256_setr_m128d (__m128d lo, __m128d hi)
-// TODO __m256i _mm256_setr_m128i (__m128i lo, __m128i hi)
+/// Set packed `__m256` vector with the supplied values.
+__m256 _mm256_setr_m128 (__m128 lo, __m128 hi)
+{
+    return _mm256_set_m128(hi, lo);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2, 3, 4);
+    __m128 B = _mm_setr_ps(3.0f, 4, 5, 6);
+    __m256 R = _mm256_setr_m128(B, A);
+    float[8] correct = [3.0f, 4, 5, 6, 1, 2, 3, 4,];
+    assert(R.array == correct);
+}
+
+/// Set packed `__m256d` vector with the supplied values.
+__m256d _mm256_setr_m128d (__m128d lo, __m128d hi)
+{
+    return _mm256_set_m128d(hi, lo);
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 2.0);
+    __m128d B = _mm_setr_pd(3.0, 4.0);
+    __m256d R = _mm256_setr_m128d(B, A);
+    double[4] correct = [3.0, 4.0, 1.0, 2.0];
+    assert(R.array == correct);
+}
+
+/// Set packed `__m256i` vector with the supplied values.
+__m256i _mm256_setr_m128i (__m128i lo, __m128i hi)
+{
+    return _mm256_set_m128i(hi, lo);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32( 1,  2,  3,  4);
+    __m128i B =  _mm_set_epi32(-3, -4, -5, -6);
+    int8 R = cast(int8)_mm256_setr_m128i(B, A);
+    int[8] correct = [-6, -5, -4, -3, 1, 2, 3, 4];
+    assert(R.array == correct);
+}
 
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m256d _mm256_setr_pd (double e3, double e2, double e1, double e0) pure @trusted
@@ -2054,7 +2092,7 @@ __m256 _mm256_xor_ps (__m256 a, __m256 b) pure @safe
 
 void _mm256_zeroall () pure @safe
 {
-    // TODO: DMD needs to do it explicitely if AVX is used.
+    // PERF: DMD needs to do it explicitely if AVX is ever used.
 
     static if (GDC_with_AVX)
     {
@@ -2068,7 +2106,7 @@ void _mm256_zeroall () pure @safe
 
 void _mm256_zeroupper () pure @safe
 {
-    // TODO: DMD needs to do it explicitely if AVX is used.
+    // PERF: DMD needs to do it explicitely if AVX is ever used.
 
     static if (GDC_with_AVX)
     {
