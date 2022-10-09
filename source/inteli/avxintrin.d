@@ -1278,7 +1278,7 @@ unittest
 __m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
 {
     // Inlines a constant with GCC -O1, LDC -O2
-    int8 r;
+    int8 r; // = void would prevent GCC from inlining a constant call
     r.ptr[0] = e0;
     r.ptr[1] = e1;
     r.ptr[2] = e2;
@@ -1596,23 +1596,17 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
 {
-    // TODO PERF: probably not optimal
-    int[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
-    static if (GDC_with_AVX)
-    {
-        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
-    }
-    else version(LDC)
-    {
-        return cast(__m256i)( loadUnaligned!(int8)(result.ptr) );
-    }
-    else
-    {
-        int8 r;
-        for(int n = 0; n < 8; ++n)
-            r.ptr[n] = result[n];
-        return cast(__m256i)r;
-    }
+    // Inlines a constant with GCC -O1, LDC -O2
+    int8 r; // = void would prevent GDC from inlining a constant call
+    r.ptr[0] = e7;
+    r.ptr[1] = e6;
+    r.ptr[2] = e5;
+    r.ptr[3] = e4;
+    r.ptr[4] = e3;
+    r.ptr[5] = e2;
+    r.ptr[6] = e1;
+    r.ptr[7] = e0;
+    return cast(__m256i)r;
 }
 unittest
 {
