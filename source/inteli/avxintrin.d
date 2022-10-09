@@ -1036,9 +1036,57 @@ unittest
     assert(A.array == correct[1..9]);
 }
 
-// TODO __m256 _mm256_loadu2_m128 (float const* hiaddr, float const* loaddr)
-// TODO __m256d _mm256_loadu2_m128d (double const* hiaddr, double const* loaddr)
-// TODO __m256i _mm256_loadu2_m128i (__m128i const* hiaddr, __m128i const* loaddr)
+/// Load two 128-bit values (composed of 4 packed single-precision (32-bit) floating-point 
+/// elements) from memory, and combine them into a 256-bit value. 
+/// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+__m256 _mm256_loadu2_m128 (const(float)* hiaddr, const(float)* loaddr) pure @system
+{
+    // Note: no particular instruction for this in x86.
+    return _mm256_set_m128(_mm_loadu_ps(hiaddr), _mm_loadu_ps(loaddr));
+}
+unittest
+{
+    align(32) float[6] A = [4.5f, 2, 8, 97, -1, 3];
+    align(32) float[6] B = [6.5f, 3, 9, 98, -2, 4];
+    __m256 R = _mm256_loadu2_m128(&B[1], &A[1]);
+    float[8] correct = [2.0f, 8, 97, -1, 3, 9, 98, -2];
+    assert(R.array == correct);
+}
+
+/// Load two 128-bit values (composed of 2 packed double-precision (64-bit) floating-point
+/// elements) from memory, and combine them into a 256-bit value. 
+/// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+__m256d _mm256_loadu2_m128d (const(double)* hiaddr, const(double)* loaddr) pure @system
+{
+    // Note: no particular instruction for this in x86.
+    return _mm256_set_m128d(_mm_loadu_pd(hiaddr), _mm_loadu_pd(loaddr));
+}
+unittest
+{
+    align(32) double[4] A = [4.5f, 2, 8, 97];
+    align(32) double[4] B = [6.5f, 3, 9, 98];
+    __m256d R = _mm256_loadu2_m128d(&B[1], &A[1]);
+    double[4] correct = [2.0, 8, 3, 9];
+    assert(R.array == correct);
+}
+
+/// Load two 128-bit values (composed of integer data) from memory, and combine them into a 
+/// 256-bit value. `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
+__m256i _mm256_loadu2_m128i (const(__m128i)* hiaddr, const(__m128i)* loaddr) pure @trusted
+{
+    // Note: no particular instruction for this in x86.
+    return _mm256_set_m128i(_mm_loadu_si128(hiaddr), _mm_loadu_si128(loaddr));
+}
+unittest
+{
+    align(32) long[4] A = [5, 2, 8, 97];
+    align(32) long[4] B = [6, 3, 9, 98];
+    __m256i R = _mm256_loadu2_m128i(cast(const(__m128i)*) &B[1], cast(const(__m128i)*)  &A[1]);
+    long[4] correct = [2, 8, 3, 9];
+    assert(R.array == correct);
+}
+
+
 // TODO __m128d _mm_maskload_pd (double const * mem_addr, __m128i mask)
 // TODO __m256d _mm256_maskload_pd (double const * mem_addr, __m256i mask)
 // TODO __m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
