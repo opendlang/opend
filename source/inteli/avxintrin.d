@@ -1086,7 +1086,8 @@ __m256 _mm256_max_ps (__m256 a, __m256 b) pure @trusted
     }
     else
     {
-        // TODO: test on LDC without AVX, is this optimal?
+        // LDC: becomes good in -O2, but looks brittle.
+        // PERF GDC without AVX
         a.ptr[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
         a.ptr[1] = (a.array[1] > b.array[1]) ? a.array[1] : b.array[1];
         a.ptr[2] = (a.array[2] > b.array[2]) ? a.array[2] : b.array[2];
@@ -1144,7 +1145,8 @@ __m256 _mm256_min_ps (__m256 a, __m256 b) pure @trusted
     }
     else
     {
-        // TODO: test on LDC without AVX, is this optimal?
+        // LDC: becomes good in -O2, but looks brittle.
+        // PERF GDC without AVX
         a.ptr[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
         a.ptr[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
         a.ptr[2] = (a.array[2] < b.array[2]) ? a.array[2] : b.array[2];
