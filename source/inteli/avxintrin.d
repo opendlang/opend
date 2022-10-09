@@ -1274,8 +1274,27 @@ unittest
         assert(A.array[i] == i);
 }
 
-
-// TODO __m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
+/// Set packed 32-bit integers with the supplied values.
+__m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
+{
+    // Inlines a constant with GCC -O1, LDC -O2
+    int8 r;
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    r.ptr[4] = e4;
+    r.ptr[5] = e5;
+    r.ptr[6] = e6;
+    r.ptr[7] = e7;
+    return cast(__m256i)r;
+}
+unittest
+{
+    int8 A = cast(int8) _mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0);
+    foreach(i; 0..8)
+        assert(A.array[i] == i);
+}
 
 /// Set packed 64-bit integers with the supplied values.
 __m256i _mm256_set_epi64x (long e3, long e2, long e1, long e0) pure @trusted
@@ -1577,6 +1596,7 @@ unittest
 /// Set packed 32-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) pure @trusted
 {
+    // TODO PERF: probably not optimal
     int[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     static if (GDC_with_AVX)
     {
