@@ -23,7 +23,7 @@ version(GNU)
         enum SSESizedVectorsAreEmulated = false;
 
         // Does GDC support AVX-sized vectors?
-        enum AVXSizedVectorsAreEmulated = (is(__vector(double[4]))); 
+        enum AVXSizedVectorsAreEmulated = !(is(__vector(double[4]))); 
 
         import gcc.builtins;
     }
