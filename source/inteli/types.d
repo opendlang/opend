@@ -15,11 +15,15 @@ version(GNU)
 {
     // Note: for GDC support, be sure to use https://explore.dgnu.org/
 
+    // Future: just detect vectors, do not base upon arch.
+
     version(X86_64)
     {
         enum MMXSizedVectorsAreEmulated = false;
         enum SSESizedVectorsAreEmulated = false;
-        enum AVXSizedVectorsAreEmulated = !(GDC_with_AVX || GDC_with_AVX2);
+
+        // Does GDC support AVX-sized vectors?
+        enum AVXSizedVectorsAreEmulated = (is(__vector(double[4]))); 
 
         import gcc.builtins;
     }
