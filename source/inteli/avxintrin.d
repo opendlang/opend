@@ -2031,15 +2031,85 @@ unittest
     assert(mem == correct);
 }
 
-// TODO void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
-// TODO void _mm256_storeu_pd (double * mem_addr, __m256d a)
-// TODO void _mm256_storeu_ps (float * mem_addr, __m256 a)
-
-/// Store 256-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
-void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
+/// Store 256-bits of integer data from `a` into memory. `mem_addr` must be aligned on a 32-byte 
+/// boundary or a general-protection exception may be generated.
+void _mm256_store_si256 (__m256i * mem_addr, __m256i a) pure @safe
 {
-    // PERF: DMD and GDC
-    version(LDC)
+    *mem_addr = a;
+}
+unittest
+{
+    align(32) long[4] mem;
+    long[4] correct = [5, -6, -7, 8];
+    _mm256_store_si256(cast(__m256i*)(mem.ptr), _mm256_setr_epi64x(5, -6, -7, 8));
+    assert(mem == correct);
+}
+
+/// Store 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) from 
+/// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
+void _mm256_storeu_pd (double * mem_addr, __m256d a) pure @system
+{
+    // PERF: DMD
+    static if (GDC_with_AVX)
+    {
+        __builtin_ia32_storeupd256(mem_addr, a);
+    }
+    else version(LDC)
+    {
+        storeUnaligned!__m256d(a, mem_addr);
+    }
+    else
+    {
+        for(int n = 0; n < 4; ++n)
+            mem_addr[n] = a.array[n];
+    }
+}
+unittest
+{
+    align(32) double[6] arr = [0.0, 0, 0, 0, 0, 0];
+    _mm256_storeu_pd(&arr[1], _mm256_set1_pd(4.0));
+    double[4] correct = [4.0, 4, 4, 4];
+    assert(arr[1..5] == correct);
+}
+
+/// Store 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from 
+/// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
+void _mm256_storeu_ps (float* mem_addr, __m256 a) pure @system
+{
+    // PERF: DMD
+    static if (GDC_with_AVX)
+    {
+        __builtin_ia32_storeups256(mem_addr, a);
+    }
+    else version(LDC)
+    {
+        storeUnaligned!__m256(a, mem_addr);
+    }
+    else
+    {
+        for(int n = 0; n < 8; ++n)
+            mem_addr[n] = a.array[n];
+    }
+}
+unittest
+{
+    align(32) float[10] arr = [0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    _mm256_storeu_ps(&arr[1], _mm256_set1_ps(4.0f));
+    float[8] correct = [4.0f, 4, 4, 4, 4, 4, 4, 4];
+    assert(arr[1..9] == correct);
+}
+
+
+/// Store 256-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned
+///  on any particular boundary.
+void _mm256_storeu_si256 (__m256i* mem_addr, __m256i a) pure @trusted
+{
+    // PERF: DMD
+    static if (GDC_with_AVX)
+    {
+        __builtin_ia32_storedqu256(cast(char*)mem_addr, cast(ubyte32) a);
+    }
+    else version(LDC)
     {
         storeUnaligned!__m256i(a, cast(long*)mem_addr);
     }
@@ -2051,10 +2121,13 @@ void _mm256_storeu_si256 (const(__m256i)* mem_addr, __m256i a) pure @trusted
             p[n] = v[n];
     }
 }
-/*
-void __builtin_ia32_storedqu256 (pchar,v32qi);
-void __builtin_ia32_storeupd256 (pdouble,v4df);
-void __builtin_ia32_storeups256 (pfloat,v8sf);*/
+unittest
+{
+    align(32) long[6] arr = [0, 0, 0, 0, 0, 0];
+    _mm256_storeu_si256( cast(__m256i*) &arr[1], _mm256_set1_epi64x(4));
+    long[4] correct = [4, 4, 4, 4];
+    assert(arr[1..5] == correct);
+}
 
 // TODO void _mm256_storeu2_m128 (float* hiaddr, float* loaddr, __m256 a)
 // TODO void _mm256_storeu2_m128d (double* hiaddr, double* loaddr, __m256d a)
