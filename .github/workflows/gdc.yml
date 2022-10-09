@@ -34,3 +34,9 @@ jobs:
 
             - name: Optimized unittest
               run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-release
+
+            - name: Unittest with unittest-inst configuration
+              run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-inst
+
+            - name: Unittest with unittest-release-inst configuration
+              run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-release-inst              
