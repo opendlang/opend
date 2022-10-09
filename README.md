@@ -11,7 +11,7 @@
 
 `intel-intrinsics` lets you use SIMD in D with support for LDC / DMD / GDC with a single syntax and API: the x86 Intel Intrinsics API that is also used within the C, C++, and Rust communities.
 
-`intel-intrinsics` is most similar to [simd-everywhere](https://github.com/simd-everywhere/simde), it can target AArch64 for full-speed with Apple Silicon, and also 32-bit ARM for the Raspberry Pi.
+`intel-intrinsics` is most similar to [simd-everywhere](https://github.com/simd-everywhere/simde), it can target AArch64 for full-speed with Apple Silicon without code change.
 
 ```json
 "dependencies":
@@ -24,7 +24,7 @@
 
 ### SIMD intrinsics with `_mm_` prefix
 
-|       | DMD x86/x86_64        | LDC x86/x86_64         | LDC arm64/arm32      | GDC x86_64              |
+|       | DMD x86/x86_64        | LDC x86/x86_64         | LDC arm64            | GDC x86_64              |
 |-------|-----------------------|------------------------|----------------------|-------------------------|
 | MMX   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                      | Yes    | Yes |
 | SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                      | Yes    | Yes |
@@ -34,7 +34,7 @@
 | SSE4.1| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse4.1`) | Yes    | Yes  (use `-msse4.1`) |
 | SSE4.2| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse4.2`) | Yes (use -mattr=+crc)   | Yes (use `-msse4.2`) |
 | BMI2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+bmi2`)   | Yes but slow ([#83](https://github.com/AuburnSounds/intel-intrinsics/issues/83))    | Yes but slow ([#83](https://github.com/AuburnSounds/intel-intrinsics/issues/83))  |
-| AVX   | Partly and slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Partly (use `-mattr=+avx`) | Partly | Partly (use `-mavx`) |
+| AVX   | WIP and slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | WIP (use `-mattr=+avx`) | WIP | WIP (use `-mavx`) |
 | AVX2  | Partly and slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Partly (use `-mattr=+avx2`) | Partly | Partly (use `-mavx2`) |
 
 The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
