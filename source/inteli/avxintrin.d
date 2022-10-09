@@ -1242,7 +1242,39 @@ __m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
 // TODO __m256d _mm256_round_pd (__m256d a, int rounding)
 // TODO __m256 _mm256_round_ps (__m256 a, int rounding)
 // TODO __m256 _mm256_rsqrt_ps (__m256 a)
-// TODO __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
+
+
+/// Set packed 16-bit integers with the supplied values.
+__m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
+{
+    short16 r; // Note: = void would prevent GDC from inlining a constant short16...
+    r.ptr[0] = e0;
+    r.ptr[1] = e1;
+    r.ptr[2] = e2;
+    r.ptr[3] = e3;
+    r.ptr[4] = e4;
+    r.ptr[5] = e5;
+    r.ptr[6] = e6;
+    r.ptr[7] = e7;
+    r.ptr[8] = e8;
+    r.ptr[9] = e9;
+    r.ptr[10] = e10;
+    r.ptr[11] = e11;
+    r.ptr[12] = e12;
+    r.ptr[13] = e13;
+    r.ptr[14] = e14;
+    r.ptr[15] = e15;
+    return cast(__m256i) r;
+}
+unittest
+{
+    short16 A = cast(short16) _mm256_set_epi16(15, 14, 13, 12, 11, 10, 9, 8, 
+                                               7, 6, 5, 4, 3, 2, 1, 0);
+    foreach(i; 0..16)
+        assert(A.array[i] == i);
+}
+
+
 // TODO __m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
 
 /// Set packed 64-bit integers with the supplied values.
@@ -2058,9 +2090,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.pd2dq.256")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.ps2dq.256")
     int8 __builtin_ia32_cvttps2dq256(float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.dp.ps.256")
-    float8 __builtin_ia32_dpps256(float8, float8, byte) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.hadd.pd.256")
     double4 __builtin_ia32_haddpd256(double4, double4) pure @safe;
