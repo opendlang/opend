@@ -24,6 +24,8 @@ public import inteli.tmmintrin;
 
 nothrow @nogc:
 
+enum GDC_or_LDC_with_AVX = GDC_with_AVX || LDC_with_AVX;
+
 /// Add packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m256d _mm256_add_pd (__m256d a, __m256d b) pure @trusted
 {
@@ -963,7 +965,40 @@ unittest
 // TODO void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
 // TODO void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)
 // TODO void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
-// TODO __m256d _mm256_max_pd (__m256d a, __m256d b)
+
+__m256d _mm256_max_pd (__m256d a, __m256d b) pure @trusted
+{
+    // PERF: all pathes untested
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_maxpd256(a, b);
+    }
+    else
+    {
+        a.ptr[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
+        a.ptr[1] = (a.array[1] > b.array[1]) ? a.array[1] : b.array[1];
+        a.ptr[2] = (a.array[2] > b.array[2]) ? a.array[2] : b.array[2];
+        a.ptr[3] = (a.array[3] > b.array[3]) ? a.array[3] : b.array[3];
+        return a;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(4.0, 1.0, -9.0, double.infinity);
+    __m256d B = _mm256_setr_pd(1.0, 8.0,  0.0, 100000.0);
+    __m256d M = _mm256_max_pd(A, B);
+    double[4] correct =       [4.0, 8.0, 0.0, double.infinity];
+}
+/+
+pragma(LDC_intrinsic, "llvm.x86.avx.max.ps.256")
+float8 __builtin_ia32_maxps256(float8, float8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.min.pd.256")
+double4 __builtin_ia32_minpd256(double4, double4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx.min.ps.256")
+float8 __builtin_ia32_minps256(float8, float8) pure @safe;+/
+
 // TODO __m256 _mm256_max_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_min_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_min_ps (__m256 a, __m256 b)
@@ -1898,17 +1933,7 @@ pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps")
 pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps.256")
     void __builtin_ia32_maskstoreps256(void*, int8, float8);
 
-pragma(LDC_intrinsic, "llvm.x86.avx.max.pd.256")
-    double4 __builtin_ia32_maxpd256(double4, double4) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.max.ps.256")
-    float8 __builtin_ia32_maxps256(float8, float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.min.pd.256")
-    double4 __builtin_ia32_minpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.min.ps.256")
-    float8 __builtin_ia32_minps256(float8, float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.pd.256")
     int __builtin_ia32_movmskpd256(double4) pure @safe;
