@@ -2204,7 +2204,8 @@ unittest
     assert(R.array == correct);
 }
 
-/// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return packed maximum values.
+/// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
+/// packed maximum values.
 __m128d _mm_max_pd (__m128d a, __m128d b) pure @trusted
 {
     static if (GDC_with_SSE2)
