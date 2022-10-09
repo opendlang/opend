@@ -1313,7 +1313,26 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
+/// Set packed 8-bit integers with the supplied values.
+__m256i _mm256_set_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24, 
+                         byte e23, byte e22, byte e21, byte e20, byte e19, byte e18, byte e17, byte e16, 
+                         byte e15, byte e14, byte e13, byte e12, byte e11, byte e10,  byte e9,  byte e8, 
+                          byte e7,  byte e6,  byte e5,  byte e4,  byte e3,  byte e2,  byte e1,  byte e0)
+{
+    // Inline a constant call in GDC -O1 and LDC -O2
+    align(32) byte[32] result = [ e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,
+                                  e8,  e9, e10, e11, e12, e13, e14, e15,
+                                 e16, e17, e18, e19, e20, e21, e22, e23,
+                                 e24, e25, e26, e27, e28, e29, e30, e31 ];
+    return *cast(__m256i*)(result.ptr);
+}
+unittest
+{
+    byte32 R = cast(byte32) _mm256_set_epi8(-1, 0, 56, 127, -128, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7);
+    byte[32] correct = [7, 6, 5, 4, 7, 6, 5, 4, 3, 2, 1, 0, 3, 2, 1, 0,
+                        14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, -128, 127, 56, 0, -1];
+    assert(R.array == correct);
+}
 
 /// Set packed `__m256d` vector with the supplied values.
 __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
@@ -1638,26 +1657,12 @@ __m256i _mm256_setr_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte
                           byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9,  byte e8,
                           byte e7,  byte e6,  byte e5,  byte e4,  byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
-    // PERF GDC, not checked
-    byte[32] result = [ e31,  e30,  e29,  e28,  e27,  e26,  e25,  e24,
-                        e23,  e22,  e21,  e20,  e19,  e18,  e17,  e16,
-                        e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
-                        e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
-    static if (GDC_with_AVX)
-    {
-        return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
-    }
-    else version(LDC)
-    {
-        return cast(__m256i)( loadUnaligned!(byte32)(result.ptr) );
-    }
-    else
-    {
-        byte32 r;
-        for(int n = 0; n < 32; ++n)
-            r.ptr[n] = result[n];
-        return cast(__m256i)r;
-    }
+    // Inline a constant call in GDC -O1 and LDC -O2
+    align(32) byte[32] result = [ e31,  e30,  e29,  e28,  e27,  e26,  e25,  e24,
+                                  e23,  e22,  e21,  e20,  e19,  e18,  e17,  e16,
+                                  e15,  e14,  e13,  e12,  e11,  e10,  e9,   e8,
+                                   e7,   e6,   e5,   e4,   e3,   e2,   e1,   e0];
+    return *cast(__m256i*)(result.ptr);
 }
 unittest
 {

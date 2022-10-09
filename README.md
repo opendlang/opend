@@ -48,14 +48,19 @@ The philosophy (and guarantee) of `intel-intrinsics` is:
 
 `intel-intrinsics` define the following types whatever the compiler and target:
 
-`long1`, `float2`, `int2`, `short4`, `byte8`, `float4`, `int4`, `double2`
+`long1`, `int2`, `short4`, `byte8`, `float2`,  
+`long2`, `int4`, `short8`, `byte16`, `float4`, `double2`
+`long4`, `int8`, `short16`, `byte32`, `float8`, `double4`
 
-though most of the time you should deal with
+though most of the time you will deal with:
 ```d
 alias __m128 = float4; 
 alias __m128i = int4;
 alias __m128d = double2;
 alias __m64 = long1;
+alias __m256 = float8; 
+alias __m256i = long4;
+alias __m256d = double4;
 ```
 
 ### Vector Operators for all
