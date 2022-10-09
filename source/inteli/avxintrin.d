@@ -770,9 +770,68 @@ unittest
     assert(_mm256_extract_epi64(A, 2 + 4) == 42);
 }
 
+/// Extract a 128-bits lane from `a`, selected with `index` (0 or 1).
+__m128d _mm256_extractf128_pd (__m256d a, const int imm8) pure @trusted
+{
+    // TODO PERF: nothing was godbolted here
+    double2 r = void;
+    int index = 2*(imm8 & 1);
+    r.ptr[0] = a.array[index+0];
+    r.ptr[1] = a.array[index+1];
+    return r;
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2, 3, 4);
+    double[4] correct = [1.0, 2, 3, 4];
+    __m128d l0 = _mm256_extractf128_pd(A, 0);
+    __m128d l1 = _mm256_extractf128_pd(A, 1);
+    assert(l0.array == correct[0..2]);
+    assert(l1.array == correct[2..4]);
+}
 
-// TODO __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
-// TODO __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
+///ditto
+__m128 _mm256_extractf128_ps (__m256 a, const int imm8) pure @trusted
+{
+    // TODO PERF: nothing was godbolted here
+    float4 r = void;
+    int index = 4*(imm8 & 1);
+    r.ptr[0] = a.array[index+0];
+    r.ptr[1] = a.array[index+1];
+    r.ptr[2] = a.array[index+2];
+    r.ptr[3] = a.array[index+3];
+    return r;
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.0, 2, 3, 4, 5, 6, 7, 8);
+    float[8] correct = [1.0, 2, 3, 4, 5, 6, 7, 8];
+    __m128 l0 = _mm256_extractf128_ps(A, 0);
+    __m128 l1 = _mm256_extractf128_ps(A, 1);
+    assert(l0.array == correct[0..4]);
+    assert(l1.array == correct[4..8]);
+}
+
+///ditto
+__m128i _mm256_extractf128_si256 (__m256i a, const int imm8) pure @trusted
+{
+    // TODO PERF: nothing was godbolted here
+    long2 r = void;
+    int index = 2*(imm8 & 1);
+    r.ptr[0] = a.array[index+0];
+    r.ptr[1] = a.array[index+1];
+    return cast(__m128i)r;
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(9, 2, 3, 4, 5, 6, 7, 8);
+    int[8] correct = [9, 2, 3, 4, 5, 6, 7, 8];
+    __m128i l0 = _mm256_extractf128_si256(A, 0);
+    __m128i l1 = _mm256_extractf128_si256(A, 1);
+    assert(l0.array == correct[0..4]);
+    assert(l1.array == correct[4..8]);
+}
+
 // TODO __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
 // TODO __m256d _mm256_floor_pd (__m256d a)
 // TODO __m256 _mm256_floor_ps (__m256 a)
@@ -995,7 +1054,8 @@ unittest
 /// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return 
 /// packed maximum values.
 __m256 _mm256_max_ps (__m256 a, __m256 b) pure @trusted
-{    
+{
+    // PERF DMD D_SIMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_maxps256(a, b);
@@ -1016,22 +1076,71 @@ __m256 _mm256_max_ps (__m256 a, __m256 b) pure @trusted
 }
 unittest
 {
-    __m256 A = _mm256_setr_ps(4.0, 1.0, -9.0, double.infinity, 1, 2, 3, 4);
-    __m256 B = _mm256_setr_ps(1.0, 8.0,  0.0, 100000.0       , 4, 3, 2, 1);
+    __m256 A = _mm256_setr_ps(4.0, 1.0, -9.0, float.infinity, 1, 2, 3, 4);
+    __m256 B = _mm256_setr_ps(1.0, 8.0,  0.0, 100000.0f     , 4, 3, 2, 1);
     __m256 M = _mm256_max_ps(A, B);
-    float[8] correct =       [4.0, 8.0, 0.0, double.infinity , 4, 3, 3, 4];
+    float[8] correct =       [4.0, 8.0,  0.0, float.infinity , 4, 3, 3, 4];
+}
+
+// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
+/// packed minimum values.
+__m256d _mm256_min_pd (__m256d a, __m256d b) pure @trusted
+{   
+    // PERF DMD D_SIMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_minpd256(a, b);
+    }
+    else
+    {
+        // TODO: test on LDC without AVX, is this optimal? (and correct)
+        a.ptr[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
+        a.ptr[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
+        a.ptr[2] = (a.array[2] < b.array[2]) ? a.array[2] : b.array[2];
+        a.ptr[3] = (a.array[3] < b.array[3]) ? a.array[3] : b.array[3];
+        return a;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(4.0, 1.0, -9.0, double.infinity);
+    __m256d B = _mm256_setr_pd(1.0, 8.0,  0.0, 100000.0);
+    __m256d M = _mm256_min_pd(A, B);
+    double[4] correct =       [1.0, 8.0, -9.0, 100000.0];
+}
+
+/// Compare packed single-precision (32-bit) floating-point elements in `a` and `b`, and return 
+/// packed maximum values.
+__m256 _mm256_min_ps (__m256 a, __m256 b) pure @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_minps256(a, b);
+    }
+    else
+    {
+        // TODO: test on LDC without AVX, is this optimal?
+        a.ptr[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
+        a.ptr[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
+        a.ptr[2] = (a.array[2] < b.array[2]) ? a.array[2] : b.array[2];
+        a.ptr[3] = (a.array[3] < b.array[3]) ? a.array[3] : b.array[3];
+        a.ptr[4] = (a.array[4] < b.array[4]) ? a.array[4] : b.array[4];
+        a.ptr[5] = (a.array[5] < b.array[5]) ? a.array[5] : b.array[5];
+        a.ptr[6] = (a.array[6] < b.array[6]) ? a.array[6] : b.array[6];
+        a.ptr[7] = (a.array[7] < b.array[7]) ? a.array[7] : b.array[7];
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(4.0, 1.0, -9.0, float.infinity, 1, 2, 3, 4);
+    __m256 B = _mm256_setr_ps(1.0, 8.0,  0.0, 100000.0f     , 4, 3, 2, 1);
+    __m256 M = _mm256_min_ps(A, B);
+    float[8] correct =       [1.0, 1.0, -9.0, 100000.0f     , 1, 2, 2, 1];
 }
 
 
-/+
-pragma(LDC_intrinsic, "llvm.x86.avx.min.pd.256")
-double4 __builtin_ia32_minpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.min.ps.256")
-float8 __builtin_ia32_minps256(float8, float8) pure @safe;+/
-
-// TODO __m256d _mm256_min_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_min_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_movedup_pd (__m256d a)
 // TODO __m256 _mm256_movehdup_ps (__m256 a)
 // TODO __m256 _mm256_moveldup_ps (__m256 a)
