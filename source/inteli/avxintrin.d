@@ -706,7 +706,7 @@ __m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
     // PERF without AVX, can use 2 _mm_dp_ps exactly (beware the imm8 is tricky)
     static if (GDC_with_AVX)
     {
-        return __builtin_ia32_dpps256(a, b, cast(byte)imm8);
+        return __builtin_ia32_dpps256(a, b, cast(ubyte)imm8);
     }
     else static if (LDC_with_AVX)
     {

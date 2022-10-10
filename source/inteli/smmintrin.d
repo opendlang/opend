@@ -905,7 +905,7 @@ __m128 _mm_dp_ps(int imm8)(__m128 a, __m128 b) @trusted
       // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return __builtin_ia32_dpps(a, b, cast(byte)imm8);
+        return __builtin_ia32_dpps(a, b, cast(ubyte)imm8);
     }
     else static if (LDC_with_SSE41)
     {
@@ -1162,7 +1162,7 @@ __m128 _mm_insert_ps(int imm8)(__m128 a, __m128 b) @trusted
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return __builtin_ia32_insertps128(a, b, cast(byte)imm8);
+        return __builtin_ia32_insertps128(a, b, cast(ubyte)imm8);
     }
     else static if (LDC_with_SSE41)
     {
@@ -1573,11 +1573,11 @@ unittest
     short[8] correct4 = [17, 19, 21, 23, 25, 27, 31, 35];
     short[8] correct5 = [755, 753, 751, 749, 747, 745, 743, 741];
     short[8] correct7 = [32, 28, 24, 20, 16, 12, 8, 4];
-    short8 r1 = cast(short8) _mm_mpsadbw_epu8!1(A, B,);
-    short8 r4 = cast(short8) _mm_mpsadbw_epu8!4(A, B,);
-    short8 r5 = cast(short8) _mm_mpsadbw_epu8!5(A, B,);
-    short8 r7 = cast(short8) _mm_mpsadbw_epu8!7(A, B,);
-    short8 r8 = cast(short8) _mm_mpsadbw_epu8!8(A, B,);
+    short8 r1 = cast(short8) _mm_mpsadbw_epu8!1(A, B);
+    short8 r4 = cast(short8) _mm_mpsadbw_epu8!4(A, B);
+    short8 r5 = cast(short8) _mm_mpsadbw_epu8!5(A, B);
+    short8 r7 = cast(short8) _mm_mpsadbw_epu8!7(A, B);
+    short8 r8 = cast(short8) _mm_mpsadbw_epu8!8(A, B);
     assert(r1.array == correct1);
     assert(r4.array == correct4);
     assert(r5.array == correct5);
