@@ -919,7 +919,7 @@ __m128i _mm_maddubs_epi16 (__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
-        return cast(__m128i)__builtin_ia32_pmaddubsw128(cast(byte16)a, cast(byte16)b);
+        return cast(__m128i)__builtin_ia32_pmaddubsw128(cast(ubyte16)a, cast(ubyte16)b);
     }
     else static if (LDC_with_SSSE3)
     {
@@ -963,7 +963,7 @@ __m64 _mm_maddubs_pi16 (__m64 a, __m64 b) @trusted
 {
     static if (GDC_with_SSSE3)
     {
-        return cast(__m64)__builtin_ia32_pmaddubsw(cast(byte8)a, cast(byte8)b);
+        return cast(__m64)__builtin_ia32_pmaddubsw(cast(ubyte8)a, cast(ubyte8)b);
     }
     else static if (LDC_with_SSSE3)
     {
@@ -1101,7 +1101,7 @@ __m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
     // PERF DMD
     static if (GDC_with_SSSE3)
     {
-        return cast(__m128i) __builtin_ia32_pshufb128(cast(byte16) a, cast(byte16) b);
+        return cast(__m128i) __builtin_ia32_pshufb128(cast(ubyte16) a, cast(ubyte16) b);
     }
     else static if (LDC_with_SSSE3)
     {
@@ -1253,7 +1253,7 @@ __m128i _mm_sign_epi8 (__m128i a, __m128i b) @trusted
     // PERF DMD
     static if (GDC_with_SSSE3)
     {
-        return cast(__m128i) __builtin_ia32_psignb128(cast(byte16)a, cast(byte16)b);
+        return cast(__m128i) __builtin_ia32_psignb128(cast(ubyte16)a, cast(ubyte16)b);
     }
     else static if (LDC_with_SSSE3)
     {
