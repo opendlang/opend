@@ -143,12 +143,14 @@ unittest
 __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask) @trusted
 {
     // PERF DMD
-    // TODO BUG GDC version
-    static if (GDC_with_SSE41)
+    /*static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
+        // This intrinsic do nothing in GDC 12.
+        // TODO report to GDC. No problem in GCC.
+        return cast(__m128i) __builtin_ia32_pblendvb128 (cast(ubyte16)a, cast(ubyte16)b, cast(ubyte16)mask);
     }
-    else static if (LDC_with_SSE41)
+    else*/
+    static if (LDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pblendvb(cast(byte16)a, cast(byte16)b, cast(byte16)mask);
     }
@@ -754,7 +756,7 @@ __m128i _mm_cvtepu8_epi16 (__m128i a) @trusted
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_pmovzxbw128(cast(short8)a);
+        return cast(__m128i) __builtin_ia32_pmovzxbw128(cast(ubyte16)a);
     }
     else
     {
@@ -1531,7 +1533,7 @@ __m128i _mm_mpsadbw_epu8(int imm8)(__m128i a, __m128i b) @trusted
     // PERF DMD
     static if (GDC_with_SSE41)
     {
-        return cast(__m128i) __builtin_ia32_mpsadbw128(cast(byte16)a, cast(byte16)b, cast(byte)imm8);
+        return cast(__m128i) __builtin_ia32_mpsadbw128(cast(ubyte16)a, cast(ubyte16)b, cast(ubyte)imm8);  
     }
     else static if (LDC_with_SSE41)
     {
