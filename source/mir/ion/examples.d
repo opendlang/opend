@@ -1408,7 +1408,7 @@ version(mir_ion_test) unittest
 version(mir_ion_test) unittest
 {
     import mir.serde: serdeEnumProxy;
-    import mir.algebraic: Nullable, nullable;
+    import mir.algebraic: Nullable, Variant, nullable;
 
     @serdeEnumProxy!string
     enum StrE : string
@@ -1420,13 +1420,15 @@ version(mir_ion_test) unittest
     static struct S
     {
         Nullable!(StrE[]) a;
+        Variant!(void, StrE) b;
     }
 
     import mir.ser.json : serializeJson;
     import mir.deser.json : deserializeJson;
 
     auto s = S([StrE.one, StrE.two, cast(StrE)"drei"].nullable);
-    auto str = `{"a":["eins","zwei","drei"]}`;
+    s.b = StrE.two;
+    auto str = `{"a":["eins","zwei","drei"],"b":"zwei"}`;
 
     assert(str.deserializeJson!S == s);
     assert(s.serializeJson == str, str);

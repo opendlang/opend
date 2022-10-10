@@ -1360,7 +1360,8 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                 return retNull;
             }
         }
-        static if ((contains!(typeof(null)) || contains!IonNull) && T.AllowedTypes.length == 2)
+        static if (T.AllowedTypes.length == 2
+            && (contains!(typeof(null)) || contains!IonNull || is(T.AllowedTypes[0] == void)))
         {
             T.AllowedTypes[1] payload;
             if (auto exception = deserializeValue(data, payload, table, tableIndex))
