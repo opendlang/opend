@@ -4543,8 +4543,24 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
 /// the cache will be updated.
 void _mm_stream_si32 (int* mem_addr, int a)
 {
-    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    *mem_addr = a;
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_movnti(mem_addr, a);
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store i32 %1, i32* %0, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, int*, int)(mem_addr, a);
+    }
+    else
+    {
+        // Regular store instead.
+        *mem_addr = a;
+    }
 }
 
 /// Store 64-bit integer a into memory using a non-temporal hint to minimize
@@ -4552,8 +4568,25 @@ void _mm_stream_si32 (int* mem_addr, int a)
 /// in the cache, the cache will be updated.
 void _mm_stream_si64 (long* mem_addr, long a)
 {
-    // BUG See `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    *mem_addr = a;
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_movnti64(mem_addr, a);
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store i64 %1, i64* %0, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, long*, long)(mem_addr, a);
+
+    }
+    else
+    {
+        // Regular store instead.
+        *mem_addr = a;
+    }
 }
 
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
