@@ -4510,6 +4510,7 @@ void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
         *dest = a;
     }
 }
+// TODO untitest
 
 /// Store 128-bits of integer data from a into memory using a non-temporal memory hint.
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception
@@ -4537,11 +4538,12 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
         *dest = a;
     }
 }
+// TODO untitest
 
 /// Store 32-bit integer a into memory using a non-temporal hint to minimize cache
-/// pollution. If the cache line containing address mem_addr is already in the cache,
+/// pollution. If the cache line containing address `mem_addr` is already in the cache,
 /// the cache will be updated.
-void _mm_stream_si32 (int* mem_addr, int a)
+void _mm_stream_si32 (int* mem_addr, int a) pure @trusted
 {
     // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
@@ -4562,11 +4564,12 @@ void _mm_stream_si32 (int* mem_addr, int a)
         *mem_addr = a;
     }
 }
+// TODO untitest
 
 /// Store 64-bit integer a into memory using a non-temporal hint to minimize
-/// cache pollution. If the cache line containing address mem_addr is already
+/// cache pollution. If the cache line containing address `mem_addr` is already
 /// in the cache, the cache will be updated.
-void _mm_stream_si64 (long* mem_addr, long a)
+void _mm_stream_si64 (long* mem_addr, long a) pure @trusted
 {
     // PERF DMD D_SIMD
     static if (GDC_with_SSE2)
@@ -4588,6 +4591,7 @@ void _mm_stream_si64 (long* mem_addr, long a)
         *mem_addr = a;
     }
 }
+// TODO untitest
 
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe

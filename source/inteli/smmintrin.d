@@ -1963,11 +1963,27 @@ unittest
 /// Load 128-bits of integer data from memory using a non-temporal memory hint. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection 
 /// exception may be generated.
-__m128i _mm_stream_load_si128 (__m128i * mem_addr) @trusted
+__m128i _mm_stream_load_si128 (__m128i * mem_addr) pure @trusted
 {
-    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    return *mem_addr; // it's a regular move instead
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE41)
+    {
+        return cast(__m128i) __builtin_ia32_movntdqa(cast(long2*)mem_addr);
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            %r = load <4 x i32>, <4 x i32>* %0, !nontemporal !0
+            ret <4 x i32> %r`;
+        return cast(__m128i) LDCInlineIREx!(prefix, ir, "", int4, int4*)(mem_addr);
+    }
+    else
+    {
+        return *mem_addr; // regular move instead
+    }
 }
+// TODO unittest
 
 
 /// Return 1 if all bits in `a` are all 1's. Else return 0.

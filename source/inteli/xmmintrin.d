@@ -2892,10 +2892,9 @@ unittest
 }
 
 /// Store 64-bits of integer data from `a` into memory using a non-temporal memory hint.
-void _mm_stream_pi (__m64* mem_addr, __m64 a)
+void _mm_stream_pi (__m64* mem_addr, __m64 a) pure @trusted
 {
-    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    *mem_addr = a; // it's a regular move instead
+    _mm_stream_si64(cast(long*)mem_addr, a.array[0]);
 }
 
 /// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from 
