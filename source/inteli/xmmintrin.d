@@ -2898,19 +2898,31 @@ void _mm_stream_pi (__m64* mem_addr, __m64 a)
     *mem_addr = a; // it's a regular move instead
 }
 
-/// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from `a`s into memory using
-/// a non-temporal memory hint. mem_addr must be aligned on a 16-byte boundary or a general-protection exception may be
-/// generated.
+/// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from 
+/// `a`s into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte 
+/// boundary or a general-protection exception may be generated.
 void _mm_stream_ps (float* mem_addr, __m128 a)
 {
-    // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
-    // needs some IR outside this function that would say:
-    //
-    //  !0 = !{ i32 1 }
-    //
-    // It's a LLVM IR metadata description.
-    __m128* dest = cast(__m128*)mem_addr;
-    *dest = a; // it's a regular move instead
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE)
+    {
+        return __builtin_ia32_movntps(mem_addr, a); 
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <4 x float> %1, <4 x float>* %0, align 16, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, __m128*, float4)(cast(__m128*)mem_addr, a);
+
+    }
+    else
+    {
+        // Regular store instead.
+        __m128* dest = cast(__m128*)mem_addr;
+        *dest = a; // it's a regular move instead
+    }
 }
 unittest
 {
