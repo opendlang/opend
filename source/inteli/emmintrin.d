@@ -4487,21 +4487,55 @@ unittest
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
 /// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte
 /// boundary or a general-protection exception may be generated.
-void _mm_stream_pd (double* mem_addr, __m128d a)
+void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
 {
-    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    __m128d* dest = cast(__m128d*)mem_addr;
-    *dest = a;
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_movntpd(mem_addr, a); 
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <2 x double> %1, <2 x double>* %0, align 16, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, double2*, double2)(cast(double2*)mem_addr, a);
+
+    }
+    else
+    {
+        // Regular store instead.
+        __m128d* dest = cast(__m128d*)mem_addr;
+        *dest = a;
+    }
 }
 
 /// Store 128-bits of integer data from a into memory using a non-temporal memory hint.
-/// mem_addr must be aligned on a 16-byte boundary or a general-protection exception
+/// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception
 /// may be generated.
-void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
 {
-    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
-    __m128i* dest = cast(__m128i*)mem_addr;
-    *dest = a;
+    // PERF DMD D_SIMD
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_movntdq (cast(long2*)mem_addr, cast(long2)a); 
+    }
+    else version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <4 x i32> %1, <4 x i32>* %0, align 16, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, int4*, int4)(cast(int4*)mem_addr, a);
+
+    }
+    else
+    {
+        // Regular store instead.
+        __m128i* dest = cast(__m128i*)mem_addr;
+        *dest = a;
+    }
 }
 
 /// Store 32-bit integer a into memory using a non-temporal hint to minimize cache
