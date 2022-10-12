@@ -1542,7 +1542,7 @@ struct Algebraic(T__...)
     }
 
     /// Requires mir-algorithm package
-    immutable(char)[] toString()() @trusted pure scope const
+    immutable(char)[] toString()() @trusted scope const
     {
         static if (AllowedTypes.length == 0)
         {
