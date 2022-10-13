@@ -804,14 +804,7 @@ struct Algebraic(T__...)
         Unqual
         ;
 
-    static if (T__.length != 1 || !is(T__[0] == union))
-    {
-        alias Types__ = T__;
-        private alias MetaInfo__ = T__[0 .. 0];
-        enum immutable(char[][]) metaFieldNames__ = null;
-        enum immutable(char[][]) typeFieldNames__ = null;
-    }
-    else
+    static if (T__.length == 1 && is(T__[0] == union))
     {
         private alias UMTypeInfoOf__(immutable(char)[] member) = TagInfo!(
             typeof(__traits(getMember, T__[0], member)),
@@ -846,6 +839,13 @@ struct Algebraic(T__...)
                 ret ~= T.tag;
             return ret;
         } ();
+    }
+    else
+    {
+        alias Types__ = T__;
+        private alias MetaInfo__ = T__[0 .. 0];
+        enum immutable(char[][]) metaFieldNames__ = null;
+        enum immutable(char[][]) typeFieldNames__ = null;
     }
 
     private enum bool variant_test__ = is(Types__ == AliasSeq!(typeof(null), double));
