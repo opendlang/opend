@@ -52,7 +52,7 @@ public import core.lifetime : forward;
 /++
 Constructs static array.
 +/
-T[N] staticArray(T, size_t N)(T[N] a...) {
+T[N] staticArray(T, size_t N)(return scope T[N] a...) {
     import std.traits: isDynamicArray;
     static if (isDynamicArray!T) {  
         T[N] ret;
