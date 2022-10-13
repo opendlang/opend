@@ -804,15 +804,7 @@ struct Algebraic(T__...)
         Unqual
         ;
 
-    static if (T__.length != 1)
-    {
-        alias Types__ = T__;
-        private alias MetaInfo__ = T__[0 .. 0];
-        enum immutable(char[][]) metaFieldNames__ = null;
-        enum immutable(char[][]) typeFieldNames__ = null;
-    }
-    else
-    static if (!is(T__[0] == union))
+    static if (T__.length != 1 || !is(T__[0] == union))
     {
         alias Types__ = T__;
         private alias MetaInfo__ = T__[0 .. 0];
