@@ -1,5 +1,5 @@
 name "mir-ion"
-description "Fast, Expressive, and Easy to use Ion, JSON, Msgpack Serialization Library with SIMD optimization."
+description "Fast, Expressive, and Easy to use Ion, JSON, YAML, CSV, and Msgpack Serialization Library with SIMD optimization."
 authors "Ilia Ki (Asdf & Mir Ion) " "Yannick Koechlin (Asdf)"
 copyright "Tamedia Digital, 2016, Symmetry Investments and Kaleidic Associates, 2020, Symmetry Investments and Ilia Ki 2021-"
 license "Apache-2.0"
