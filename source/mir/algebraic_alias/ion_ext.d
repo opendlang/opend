@@ -56,6 +56,7 @@ See also $(MREF mir,string_map) - ordered string-value associative array.
 alias IonExtAlgebraic = Algebraic!IonExt_;
 
 ///
+@safe pure
 unittest
 {
     import mir.ndslice.topology: map;
@@ -131,6 +132,7 @@ unittest
     value = object["array"] = arr;
     assert(value.kind == IonExtAlgebraic.Kind.array);
     assert(value == arr);
+    assert(value == [0, 1, 2, 3, 4].map!IonExtAlgebraic.array);
     assert(value.array[3] == 3);
 
     // Object
