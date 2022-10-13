@@ -2196,7 +2196,46 @@ unittest
 
 // TODO void _mm256_stream_pd (double * mem_addr, __m256d a)
 // TODO void _mm256_stream_ps (float * mem_addr, __m256 a)
-// TODO void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
+
+/// Store 256-bits of integer data from `a` into memory using a non-temporal memory hint. 
+/// `mem_addr` must be aligned on a 32-byte boundary or a general-protection exception may be
+/// generated.
+/// Note: there isn't any particular instruction in AVX to do that. It just defers to SSE2.
+void _mm256_stream_si256 (__m256i * mem_addr, __m256i a) pure @trusted
+{
+    // PERF DMD
+    version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <4 x i64> %1, <4 x i64>* %0, align 16, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, long4*, long4)(mem_addr, a);
+    }
+    else static if (GDC_with_SSE2) // any hope to be non-temporal? Using SSE2 instructions.
+    {
+        long2 lo, hi;
+        lo.ptr[0] = a.array[0];
+        lo.ptr[1] = a.array[1];
+        hi.ptr[0] = a.array[2];
+        hi.ptr[1] = a.array[3];
+        _mm_stream_si128(cast(__m128i*)mem_addr, cast(__m128i)lo);
+        _mm_stream_si128((cast(__m128i*)mem_addr) + 1, cast(__m128i)hi);
+    }
+    else
+    {
+        // Regular store instead.
+        __m256i* dest = cast(__m256i*)mem_addr;
+        *dest = a;
+    }
+}
+unittest
+{
+    align(32) long[4] mem;
+    long[4] correct = [5, -6, -7, 8];
+    _mm256_stream_si256(cast(__m256i*)(mem.ptr), _mm256_setr_epi64x(5, -6, -7, 8));
+    assert(mem == correct);
+}
 
 /// Subtract packed double-precision (64-bit) floating-point elements in `b` from 
 /// packed double-precision (64-bit) floating-point elements in `a`.
