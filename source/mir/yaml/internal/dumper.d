@@ -45,8 +45,6 @@ auto dumper(YamlSerializationParams params = OldYamlSerializationParams)
 struct Dumper
 {
 private:
-    //Indentation width.
-    int indent_ = 2;
     //Tag directives to use.
     TagDirective[] tags_;
 public:
@@ -60,17 +58,6 @@ public:
 
     @disable bool opEquals(ref Dumper);
     @disable int opCmp(ref Dumper);
-
-    ///Set indentation width. 2 by default. Must not be zero.
-    @property void indent(uint indent) pure @safe nothrow
-    in
-    {
-        assert(indent != 0, "Can't use zero YAML indent width");
-    }
-    do
-    {
-        indent_ = indent;
-    }
 
     /**
         * Specify tag directives.
@@ -133,7 +120,7 @@ public:
     {
         try
         {
-            auto emitter = Emitter(range, canonical, indent_, textWidth);
+            auto emitter = Emitter(range, canonical, params.indent, textWidth);
             auto serializer = Serializer(resolver, explicitStart ? Yes.explicitStart : No.explicitStart,
                                             explicitEnd ? Yes.explicitEnd : No.explicitEnd, yamlVersion, tags_);
             serializer.startStream(emitter);

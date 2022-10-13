@@ -24,10 +24,12 @@ struct YamlSerializationParams
     bool explicitStart;
     /// Always explicitly write document end? Default is no explicit end.
     bool explicitEnd;
-    /// Preferred text width.
-    uint textWidth = 80;
     /// Write scalars in canonical form?
     bool canonical;
+    /// Indentation width
+    ubyte indent = 2;
+    /// Preferred text width.
+    uint textWidth = 80;
     /// YAML version string. Default value is null.
     string yamlVersion;
 }
