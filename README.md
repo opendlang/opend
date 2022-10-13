@@ -7,17 +7,16 @@
 ![Ion Test Status](https://img.shields.io/github/workflow/status/libmir/mir-ion/Integration%20Testing/master?label=Ion%20Test%20Data)
 
 # Mir Ion
-This library seeks to implement the [Ion file format](http://amzn.github.io/ion-docs). We aim to support both versions of Ion (text & binary Ion), as well as providing an implementation of the format that is performant and easy-to-use.
 
 Mir Ion serialization engine supports
 
- - Text and binary Ion
+ - Text and binary [Ion](http://amzn.github.io/ion-docs)
  - JSON
  - MsgPack
- - [YAML](https://github.com/libmir/mir-yaml)
+ - YAML
+ - CSV
  - [Bloomberg](https://github.com/libmir/mir-bloomberg)
 
-Mir Ion supports JSON de/serialization out of the box. On the other hand, you may want to use another our JSON library -- [Asdf](https://github.com/libmir/asdf). It uses the same [serialization User Defined Attributes](http://mir-algorithm.libmir.org/mir_serde.html). 
 
 ## Benchmarks
 
