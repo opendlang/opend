@@ -40,55 +40,55 @@ union Csv_
 }
 
 ///
-version(mir_test)
+version(mir_ion_test)
 unittest
 {
     CsvAlgebraic value;
 
     // Default
     assert(value.isNull);
-    assert(value.kind == YamlAlgebraic.Kind.null_);
+    assert(value.kind == CsvAlgebraic.Kind.null_);
 
     // Boolean
     value = true;
 
     assert(!value.isNull);
     assert(value == true);
-    assert(value.kind == YamlAlgebraic.Kind.boolean);
+    assert(value.kind == CsvAlgebraic.Kind.boolean);
     assert(value.boolean == true);
     assert(value.get!bool == true);
-    assert(value.get!(YamlAlgebraic.Kind.boolean) == true);
+    assert(value.get!(CsvAlgebraic.Kind.boolean) == true);
 
     // Null
     value = null;
     assert(value.isNull);
     assert(value == null);
-    assert(value.kind == YamlAlgebraic.Kind.null_);
+    assert(value.kind == CsvAlgebraic.Kind.null_);
     assert(value.null_ == null);
     assert(value.get!(typeof(null)) == null);
-    assert(value.get!(YamlAlgebraic.Kind.null_) == null);
+    assert(value.get!(CsvAlgebraic.Kind.null_) == null);
 
     // String
     value = "s";
-    assert(value.kind == YamlAlgebraic.Kind.string);
+    assert(value.kind == CsvAlgebraic.Kind.string);
     assert(value == "s");
     assert(value.string == "s");
     assert(value.get!string == "s");
-    assert(value.get!(YamlAlgebraic.Kind.string) == "s");
+    assert(value.get!(CsvAlgebraic.Kind.string) == "s");
 
     // Integer
     value = 4;
-    assert(value.kind == YamlAlgebraic.Kind.integer);
+    assert(value.kind == CsvAlgebraic.Kind.integer);
     assert(value == 4);
     assert(value != 4.0);
     assert(value.integer == 4);
 
     // Float
     value = 3.0;
-    assert(value.kind == YamlAlgebraic.Kind.float_);
+    assert(value.kind == CsvAlgebraic.Kind.float_);
     assert(value != 3);
     assert(value == 3.0);
     assert(value.float_ == 3.0);
     assert(value.get!double == 3.0);
-    assert(value.get!(YamlAlgebraic.Kind.float_) == 3.0);
+    assert(value.get!(CsvAlgebraic.Kind.float_) == 3.0);
 }

@@ -240,16 +240,32 @@ struct YamlMap
         return pairs.sliced;
     }
 
-    ///
+    /// ditto
     auto byKeyValue() const @trusted return scope pure nothrow @nogc
     {
         import mir.ndslice.slice: sliced;
         return pairs.sliced;
     }
+
+    static import mir.functional;
+
+    /// ditto
+    auto opIndex() @trusted return scope pure nothrow @nogc
+    {
+        import mir.ndslice.slice: sliced;
+        return sliced(cast(mir.functional.Tuple!(YamlAlgebraic, YamlAlgebraic)[]) pairs);
+    }
+
+    ///
+    auto opIndex() const @trusted return scope pure nothrow @nogc
+    {
+        import mir.ndslice.slice: sliced;
+        return sliced(cast(const mir.functional.Tuple!(YamlAlgebraic, YamlAlgebraic)[]) pairs);
+    }
 }
 
 ///
-version(mir_test)
+version(mir_ion_test)
 unittest
 {
     YamlMap map = ["a" : 1];
@@ -258,8 +274,16 @@ unittest
     map["a"] = 3;
     map["a"].get!long++;
     map["a"].get!"integer" += 3;
-    assert(map["a"] == 7);
+    map["a"].integer += 3;
+    assert(map["a"] == 10);
     assert(map[1.YamlAlgebraic] == "a");
+
+    // foreach iteration
+    long sum;
+    foreach (ref key, ref value; map)
+        if (key == "a")
+            sum += value.get!long;
+    assert(sum == 10);
 }
 
 /++
@@ -302,7 +326,7 @@ struct YamlPair
 }
 
 ///
-version(mir_test)
+version(mir_ion_test)
 unittest
 {
     import mir.ndslice.topology: map;
