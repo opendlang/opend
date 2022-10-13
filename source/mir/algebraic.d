@@ -1488,6 +1488,8 @@ struct Algebraic(T__...)
     /++
     +/
     static if (!anySatisfy!(templateOr!(isAssociativeArray, templateAnd!(isAggregateType, templateNot!hasOpCmp)), staticMap!(basicElementType, AllowedTypes)))
+    {
+    static if (typeFieldNames__.length)
     int opCmp()(auto ref scope const typeof(this) rhs) scope @trusted const pure nothrow @nogc
     {
         static foreach (i, T; MetaInfo__)
@@ -1545,6 +1547,66 @@ struct Algebraic(T__...)
                 default: assert(0);
             }
         }
+    }
+    else
+    int opCmp()(auto ref scope const typeof(this) rhs) scope @trusted const //pure nothrow @nogc
+    {
+        static foreach (i, T; MetaInfo__)
+        static if (!T.transparent)
+        {
+            static if (__traits(compiles, __cmp(__traits(getMember, this, T.tag), __traits(getMember, rhs, T.tag))))
+            {
+                if (auto d = __cmp(__traits(getMember, this, T.tag), __traits(getMember, rhs, T.tag)))
+                    return d;
+            }
+            else
+            static if (__traits(hasMember, __traits(getMember, this, T.tag), "opCmp") && !is(MetaFieldsTypes[i] == U*, U))
+            {
+                if (auto d = __traits(getMember, this, T.tag).opCmp(__traits(getMember, rhs, T.tag)))
+                    return d;
+            }
+            else
+            {
+                if (auto d = __traits(getMember, this, T.tag) < __traits(getMember, rhs, T.tag) ? -1 : __traits(getMember, this, T.tag) > __traits(getMember, rhs, T.tag) ? +1 : 0)
+                    return d;
+            }
+        }
+
+
+        static if (AllowedTypes.length == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            import std.traits: isArray;
+            if (auto d = int(this.identifier__) - int(rhs.identifier__))
+                return d;
+            import std.traits: isArray, isPointer;
+            switch (identifier__)
+            {
+                static foreach (i, T; AllowedTypes)
+                {
+                    case i:
+                        static if (__traits(hasMember, T, "opCmp") && !isPointer!T)
+                        {{
+                            auto ret = this.trustedGet!T.opCmp(rhs.trustedGet!T);
+                            static if (is(typeof(ret) == int))
+                                return ret;
+                            else
+                                return ret < 0 ? -1 : ret > 0 ? 1 : 0;
+                        }}
+                        else
+                        static if (!isArray!T)
+                            return this.trustedGet!T < rhs.trustedGet!T ? -1 :
+                                this.trustedGet!T > rhs.trustedGet!T ? +1 : 0;
+                        else
+                            return __cmp(trustedGet!T, rhs.trustedGet!T);
+                }
+                default: assert(0);
+            }
+        }
+    }
     }
 
     /// Requires mir-algorithm package
