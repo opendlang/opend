@@ -667,6 +667,12 @@ version(mir_core_test) unittest
     assert(v.toHash != w.toHash);
     assert(v.get!"array" == w.get!"array");
     assert(v < w);
+
+    // test equality with self-referencing allowed type
+    auto arr = [JsonAlgebraic("str"), JsonAlgebraic(120)];
+    v = arr;
+    assert(v == arr);
+    assert(v == [JsonAlgebraic("str"), JsonAlgebraic(120)]);
 }
 
 /// Wrapped algebraic with propogated primitives
