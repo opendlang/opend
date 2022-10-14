@@ -1092,7 +1092,12 @@ version(mir_ion_test) unittest
         {
             return s == rhs.s;
         }
-        
+
+        int opCmp(scope const typeof(this) rhs)
+        {
+            return __cmp(s, rhs.s);
+        }
+
         override size_t toHash()
         {
             return hashOf(s);
