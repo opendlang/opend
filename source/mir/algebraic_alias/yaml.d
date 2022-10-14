@@ -249,14 +249,14 @@ struct YamlMap
 
     static import mir.functional;
 
-    /// ditto
+    ///
     auto opIndex() @trusted return scope pure nothrow @nogc
     {
         import mir.ndslice.slice: sliced;
         return sliced(cast(mir.functional.Tuple!(YamlAlgebraic, YamlAlgebraic)[]) pairs);
     }
 
-    ///
+    /// ditto
     auto opIndex() const @trusted return scope pure nothrow @nogc
     {
         import mir.ndslice.slice: sliced;
