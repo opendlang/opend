@@ -136,7 +136,7 @@ private:
 
     static void __bar()
     {
-        typeof(this).init.ser.putAnnotation("symbolText");
+        typeof(*typeof(this).init.ser).init.putAnnotation("symbolText");
     }
 
     static assert(__traits(compiles, (){__bar();}));

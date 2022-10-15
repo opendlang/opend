@@ -107,10 +107,14 @@ jobs:
           key: ubuntu-latest-build-${{ hashFiles('**/dub.sdl', '**/dub.json') }}
           restore-keys: |
             ubuntu-latest-build-
-      - name: Build / test 
+      - name: Build / test
         run: |
-          # dub test --build=unittest-release
           dub test --arch=$ARCH --build=unittest
+        shell: bash
+      - name: Build / test (Release mode)
+        if: ${{ contains(matrix.dc, 'ldc') }}
+        run: |
+          dub test --arch=$ARCH --build=unittest-release
         shell: bash
       - name: Upload coverage data
         uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b
