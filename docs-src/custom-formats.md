@@ -321,6 +321,29 @@ transactions:
 */
 ```
 
+### Converting from other formats
+
+Conversion from binary Ion to your format can be done as follow:
+
+``` d
+auto ion2MyFormat(scope const(ubyte)[] data)
+{
+    import mir.ion.stream: IonValueStream;
+    return data.IonValueStream.serializeMyFormat;
+}
+```
+
+However, `MySerializer` has to be extended to make this code compiles.
+It has to be compatible with [`SerializerWrapper`](../source/mir/ser/interfaces.d),
+which implements the [`ISerializer`](../source/mir/ser/interfaces.d) interface,
+or be an implementation of `ISerializer` itself.
+
+For serialization methods, that aren't supported by your format
+an exception can be thrown.
+
+Conversion from other formats can be made through their
+conversion to binary Ion. See also [`mir.ion.conv`](../source/mir/ion/conv.d).
+
 ## Deserializer
 
 Deserialization with mir-ion works a little bit differently to serialization. Instead of providing a direct way to deserialize, you generate a stream of values / keys / etc. that can be interpreted by the binary Ion format. Amazon's Ion is a format similar to JSON, but a bit more flexible and descriptive as well as supporting text and binary data.
