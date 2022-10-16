@@ -20,11 +20,11 @@ Mir Ion serialization engine supports
 
 ## Benchmarks
 
-### [kostya/benchmarks](https://github.com/kostya/benchmarks#json)
+### [kostya JSON benchmarks](https://github.com/kostya/benchmarks#json)
 
-## ARM64
+### ARM64
 
-###  Twitter data set
+####  Twitter data set
 
 Test data from [nativejson-benchmark](https://github.com/miloyip/nativejson-benchmark/blob/master/data/twitter.json)
 
@@ -48,7 +48,7 @@ os: 64bit osx
 -------------------------------------------------
 ```
 
-### Kostya data set
+#### Kostya data set
 
 Test data from [kostya/benchmarks](https://github.com/kostya/benchmarks).
 
