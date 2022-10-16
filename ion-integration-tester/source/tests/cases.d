@@ -80,7 +80,7 @@ void testEquivs(Test test) {
             IonSexp sexp = ionValue.get!(IonSexp);
             IonDescribedValue first;
             int i = 0;
-            foreach(IonDescribedValue value; sexp) {
+            foreach(scope IonDescribedValue value; sexp) {
                 if (i++ == 0) {
                     first = value;
                 }
@@ -96,7 +96,7 @@ void testEquivs(Test test) {
             IonList list = ionValue.get!(IonList);
             IonDescribedValue first;
             int i = 0;
-            foreach(IonDescribedValue value; list) {
+            foreach(scope IonDescribedValue value; list) {
                 if (i++ == 0) {
                     first = value;
                 } else {
@@ -124,7 +124,7 @@ void testNonEquivs(Test test) {
             IonSexp sexp = ionValue.get!(IonSexp);
             IonDescribedValue first;
             int i = 0;
-            foreach(IonDescribedValue value; sexp) {
+            foreach(scope IonDescribedValue value; sexp) {
                 if (i++ == 0) {
                     first = value;
                 }
@@ -140,7 +140,7 @@ void testNonEquivs(Test test) {
             IonList list = ionValue.get!(IonList);
             IonDescribedValue first;
             int i = 0;
-            foreach(IonDescribedValue value; list) {
+            foreach(scope IonDescribedValue value; list) {
                 if (i++ == 0) {
                     first = value;
                 } else {
