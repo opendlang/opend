@@ -16,7 +16,7 @@ Mir Ion serialization engine supports
  - YAML
  - CSV
  - [Bloomberg](https://github.com/libmir/mir-bloomberg)
-
+ - [Custom formats](docs-src/custom-formats.md)
 
 ## Benchmarks
 
