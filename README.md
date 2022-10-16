@@ -18,6 +18,10 @@ Mir Ion serialization engine supports
  - [Bloomberg](https://github.com/libmir/mir-bloomberg)
  - [Custom formats](docs-src/custom-formats.md)
 
+## Documentation
+You can find the documentation for this library [here](http://mir-ion.libmir.org/). 
+Additionally, for examples of the Ion format, you can check the [Ion Cookbook](https://amzn.github.io/ion-docs/guides/cookbook.html)
+
 ## Benchmarks
 
 ### [kostya JSON benchmarks](https://github.com/kostya/benchmarks#json)
@@ -71,11 +75,6 @@ number of iterations: 10
 os: 64bit osx
 -------------------------------------------------
 ```
-
-## Documentation
-You can find the documentation for this library [here](http://mir-ion.libmir.org/). 
-Additionally, for examples of the Ion format, you can check the [Ion Cookbook](https://amzn.github.io/ion-docs/guides/cookbook.html)
-
 
 ## Exceptions
 Mir Ion internals are `@nogc` and almost all are preallocated. If DIP1008 is enabled, then the parsing exception will contains additional information about error location in the file and last occured key.
