@@ -325,7 +325,7 @@ transactions:
 
 Conversion from binary Ion to your format can be done as follow:
 
-``` d
+``` d disabled
 auto ion2MyFormat(scope const(ubyte)[] data)
 {
     import mir.ion.stream: IonValueStream;

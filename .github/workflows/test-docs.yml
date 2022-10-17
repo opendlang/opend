@@ -24,6 +24,6 @@ jobs:
         with:
           compiler: dmd-latest
       - name: Fetch 'md' tool
-        run: dub fetch md
+        run: dub fetch md@0.5.0-beta
       - name: Test custom-formats.md
         run: dub run md -- docs-src/custom-formats.md
