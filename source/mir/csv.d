@@ -113,7 +113,7 @@ struct CsvReader
         uint length;
 
         /++
-        Throws: MirIonException if the $(LREF CsvReader.Error) is set.
+        Throws: IonMirException if the $(LREF CsvReader.Error) is set.
         Returns: `void`
         +/
         auto validateCsvError(CsvReader.Error error)
@@ -1180,11 +1180,11 @@ struct CsvSerializer(Appender)
     ///
     void putValue(scope const char[] value, bool noQuote = false)
     {
-        import mir.exception: MirException;
+        import mir.ion.exception: IonMirException;
         import mir.utility: _expect;
 
         if (_expect(level != 2, false))
-            throw new MirException(
+            throw new IonMirException(
                 "mir.csv: expected ",
                 level ? "row" : "table",
                 " value, got scalar value '", value, "'");

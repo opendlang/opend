@@ -6,6 +6,8 @@ module mir.ion.conv;
 public import mir.ion.internal.stage3: mir_json2ion;
 import mir.ion.stream: IonValueStream;
 
+private enum dip1000 = __traits(compiles, ()@nogc { throw new Exception(""); });
+
 /++
 Serialize value to binary ion data and deserialize it back to requested type.
 Uses GC allocated string tables.
@@ -132,14 +134,13 @@ immutable(ubyte)[] json2ion(scope const(char)[] text)
     @trusted pure
 {
     pragma(inline, false);
-    import mir.exception: MirException;
-    import mir.ion.exception: ionErrorMsg;
+    import mir.ion.exception: ionErrorMsg, IonParserMirException;
 
     immutable(ubyte)[] ret;
     mir_json2ion(text, (error, data)
     {
         if (error.code)
-            throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+            throw new IonParserMirException(error.code.ionErrorMsg, error.location);
         ret = data.idup;
     });
     return ret;
@@ -165,17 +166,17 @@ Params:
 void json2ion(Appender)(scope const(char)[] text, scope ref Appender appender)
     @trusted pure @nogc
 {
-    import mir.exception: MirException;
-    import mir.ion.exception: ionErrorMsg, ionException;
+    import mir.ion.exception: ionErrorMsg, ionException, IonMirException;
     import mir.ion.internal.data_holder: ionPrefix;
 
     mir_json2ion(text, (error, data)
     {
         if (error.code)
         {
-            static if (__traits(compiles, ()@nogc { throw new Exception(""); }))
+            enum nogc = __traits(compiles, (const(ubyte)[] data, scope ref Appender appender) @nogc { appender.put(data); });
+            static if (!nogc || dip1000)
             {
-                throw new MirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
+                throw new IonMirException(error.code.ionErrorMsg, ". location = ", error.location, ", last input key = ", error.key);
             }
             else
             {

@@ -266,7 +266,8 @@ class IonParserMirException : IonMirException
         Throwable next = null) pure nothrow @nogc @safe 
     {
         this.location = location;
-        super(msg, file, line, next);
+        import mir.format: stringBuf, getData;
+        super(stringBuf() << msg << ". location = " << location << getData, file, line, next);
     }
 
     ///

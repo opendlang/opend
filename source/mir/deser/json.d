@@ -8,6 +8,8 @@ module mir.deser.json;
 
 public import mir.serde;
 
+private enum dip1000 = __traits(compiles, ()@nogc { throw new Exception(""); });
+
 /++
 Deserialize JSON string to a type trying to do perform less memort allocations.
 +/
@@ -26,16 +28,16 @@ template deserializeJson(T)
         version (LDC) pragma(inline, true);
         import mir.ion.internal.stage3;
         import mir.deser.ion: deserializeIon;
-        import mir.exception: MirException;
-        import mir.ion.exception: ionException, ionErrorMsg;
+        import mir.ion.exception: ionException, ionErrorMsg, IonParserMirException;
 
         mir_json2ion(text, (error, data)
         {
+            enum nogc = __traits(compiles, (scope ref T value, const(ubyte)[] data)@nogc { deserializeIon!T(value, data); });
             if (error.code)
             {
-                static if (__traits(compiles, ()@nogc { throw new Exception(""); }))
+                static if (!nogc || dip1000)
                 {
-                    throw new MirException(error.code.ionErrorMsg, ". location = ", error.location);
+                    throw new IonParserMirException(error.code.ionErrorMsg, error.location);
                 }
                 else
                 {

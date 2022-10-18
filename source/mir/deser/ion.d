@@ -48,7 +48,7 @@ template deserializeIon(T, bool annotated = false)
     {
         import mir.appender: scopedBuffer;
         import mir.deser: hasDeserializeFromIon, deserializeValue, TableKind;
-        import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
+        import mir.serde: serdeGetDeserializationKeysRecurse;
         import mir.string_table: createTable;
 
         static if (hasDeserializeFromIon!T)
@@ -85,7 +85,7 @@ template deserializeIon(T, bool annotated = false)
     {
         import mir.appender: scopedBuffer;
         import mir.deser: hasDeserializeFromIon, deserializeValue, TableKind;
-        import mir.serde: serdeGetDeserializationKeysRecurse, SerdeException;
+        import mir.serde: serdeGetDeserializationKeysRecurse;
         import mir.string_table: MirStringTable;
 
         static if (hasDeserializeFromIon!T)
