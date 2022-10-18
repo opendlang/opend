@@ -131,7 +131,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._height = desc.height;
 
     // PERF: allocate a QOIX decoding buffer with proper layout by passing layoutConstraints to qoix_lz4_decode
-    image._layoutConstraints = 0; // No particular constraint followd in QOIX decoder, for now.
+    image._layoutConstraints = 0; // No particular constraint followed in QOIX decoder, for now.
 
     image._type = decodedToType;
     image._pitch = desc.pitchBytes;
@@ -160,6 +160,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     desc.height = image._height;
     desc.pitchBytes = image._pitch;
     desc.colorspace = QOI_SRGB;
+    desc.compression = QOIX_COMPRESSION_NONE; // whatever, this will get overwritten. QOIX is valid with 0 or 1.
     desc.pixelAspectRatio = image._pixelAspectRatio;
     desc.resolutionY = image._resolutionY;
 
@@ -203,6 +204,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
         
     int qoilen;
 
+    // Note: this can, or not, encode to LZ4 the payload.
     ubyte* encoded = cast(ubyte*) qoix_lz4_encode(image._data, &desc, &qoilen);
 
     if (encoded == null)
@@ -217,13 +219,12 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
     return true;
 }
 
-
-
-/// Encode in QOIX + LZ4
-/// File format:
-///   QOIX header (15 bytes)
+/// Encode in QOIX + LZ4. Result should be freed with `free()`.
+/// File format of final QOIX:
+///   QOIX header (QOIX_HEADER_SIZE bytes with compression = QOIX_COMPRESSION_LZ4)
 ///   Original data size (4 bytes)
 ///   LZ4 encoded opcodes
+/// Note: desc.compression is ignored. This function chooses the compression.
 version(encodeQOIX)
 ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) @trusted
 {
@@ -231,6 +232,11 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
     int qoilen;
     ubyte* qoix;
 
+    // Choose a codec based upon input data.
+    // 10-bit is always QOI-10b.
+    // 8-bit with 1 or 2 channels is QOI-Plane.
+    // 8-bit with 3 or 4 channels is QOI2AVG.
+    // All these sub-codecs have the same header format, and can be LZ4-encoded further.
     if (desc.bitdepth == 10)
     {
         qoix = qoi10b_encode(data, desc, &qoilen);
@@ -250,33 +256,46 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 
     if (qoix is null)
         return null;
-    scope(exit) free(qoix);
 
     ubyte[] qoixHeader = qoix[0..QOIX_HEADER_SIZE];
     ubyte[] qoixData = qoix[QOIX_HEADER_SIZE..qoilen];
     int datalen = cast(int) qoixData.length;
+
+    int originalDataSize = cast(int) qoixData.length;
+
+
+    // Encode QOI in LZ4, except the header. Is it smaller?
     int maxsize = LZ4_compressBound(datalen);
-
-    // Encode QOI in LZ4, except the header.
-
-    ubyte* lz4Data = cast(ubyte*) malloc(QOIX_HEADER_SIZE + 4 + maxsize); 
-
+    ubyte* lz4Data = cast(ubyte*) malloc(QOIX_HEADER_SIZE + 4 + maxsize);
     lz4Data[0..QOIX_HEADER_SIZE] = qoix[0..QOIX_HEADER_SIZE];
-
     int p = QOIX_HEADER_SIZE;
     qoi_write_32(lz4Data, &p, datalen);
-
     int lz4Size = LZ4_compress(cast(const(char)*)&qoixData[0], 
                                cast(char*)&lz4Data[QOIX_HEADER_SIZE + 4], 
                                datalen);
-
     if (lz4Size < 0)
-        return null;
+    {
+        free(qoix);
+        return null; // compression attempt failed, this is an error
+    }
 
-    *out_len = QOIX_HEADER_SIZE + 4 + lz4Size;
-
-    lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
-    return lz4Data;
+    // Only use LZ4 compression in the end if it was actually smaller.
+    bool useCompressed = lz4Size + 4 < originalDataSize;
+    if (useCompressed)
+    {
+        free(qoix); // free original uncompressed QOIX
+        *out_len = QOIX_HEADER_SIZE + 4 + lz4Size;
+        lz4Data = cast(ubyte*) realloc(lz4Data, *out_len); // realloc this to fit memory to actually used
+        lz4Data[QOIX_HEADER_OFFSET_COMPRESSION] = QOIX_COMPRESSION_LZ4;
+        return lz4Data;
+    }
+    else
+    {
+        free(lz4Data);
+        *out_len = qoilen;
+        assert(qoix[QOIX_HEADER_OFFSET_COMPRESSION] == QOIX_COMPRESSION_NONE);
+        return qoix; // return original QOIX
+    }
 }
 
 /// Decodes a QOIX + LZ4
@@ -294,26 +313,15 @@ ubyte* qoix_lz4_decode(const(ubyte)* data,
                        int flags,
                        out PixelType decodedType) @trusted
 {
-    if (size < QOIX_HEADER_SIZE + 4)
+    if (size < QOIX_HEADER_SIZE)
         return null;
 
     if (!validLoadFlags(flags))
         return null;
 
-    // Read original size of data.
-    int p = QOIX_HEADER_SIZE;
-    int orig = qoi_read_32(data, &p);
-
-    if (orig < 0)
-        return null; // too large, corrupted.
-
-    // Allocate decoding buffer.
-    ubyte* decQOIX = cast(ubyte*) malloc(QOIX_HEADER_SIZE + orig);
-
-    decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
-
-    int streamChannels = decQOIX[13]; // coupled with qoix header format
-    int streamBitdepth = decQOIX[14]; // coupled with qoix header format
+    int compression    = data[QOIX_HEADER_OFFSET_COMPRESSION];
+    int streamChannels = data[QOIX_HEADER_OFFSET_CHANNELS];
+    int streamBitdepth = data[QOIX_HEADER_OFFSET_BITDEPTH];
 
     // What type should it be once decompressed?
     PixelType streamType;
@@ -323,18 +331,50 @@ ubyte* qoix_lz4_decode(const(ubyte)* data,
         return null;
     }
 
-    const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
+    int uncompressedQOIXSize;
+    const(ubyte)* uncompressedQOIX = null;
+    ubyte* decQOIX = null;
 
-    int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], 
-                                     cast(char*)&decQOIX[QOIX_HEADER_SIZE], 
-                                     orig);
-
-    if (qoilen < 0)
+    if (compression == QOIX_COMPRESSION_LZ4)
     {
-        free(decQOIX);
-        return null;
+        if (size < QOIX_HEADER_SIZE + 4)
+            return null;
+
+        // Read original size of data.
+        int p = QOIX_HEADER_SIZE;
+        int orig = qoi_read_32(data, &p);
+
+        if (orig < 0)
+            return null; // too large, corrupted.
+
+        // Allocate decoding buffer for uncompressed QOIX.
+        decQOIX = cast(ubyte*) malloc(QOIX_HEADER_SIZE + orig);
+
+        decQOIX[0..QOIX_HEADER_SIZE] = data[0..QOIX_HEADER_SIZE];
+        decQOIX[QOIX_HEADER_OFFSET_COMPRESSION] = QOIX_COMPRESSION_NONE; // remove "compressed" label in header
+
+        const(ubyte)[] lz4Data = data[QOIX_HEADER_SIZE + 4 ..size];
+
+        int qoilen = LZ4_decompress_fast(cast(char*)&lz4Data[0], cast(char*)&decQOIX[QOIX_HEADER_SIZE], orig);
+
+        if (qoilen < 0)
+        {
+            free(decQOIX);
+            return null;
+        }
+
+        uncompressedQOIXSize = QOIX_HEADER_SIZE + orig;
+        uncompressedQOIX = decQOIX;
     }
-  
+    else if (compression == QOIX_COMPRESSION_NONE)
+    {
+        uncompressedQOIXSize = size;
+        uncompressedQOIX = data;
+    }
+    else
+        return null;
+
+ 
     ubyte* image;
     if (streamBitdepth == 10)
     {
@@ -344,7 +384,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data,
         int channels = pixelTypeNumChannels(decodedType);
 
         // This codec can convert 1/2/3/4 to 1/2/3/4 channels on decode, per scanline.
-        image = qoi10b_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);        
+        image = qoi10b_decode(uncompressedQOIX, uncompressedQOIXSize, desc, channels);
     }
     else if (streamBitdepth == 8)
     {
@@ -354,8 +394,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data,
             decodedType = applyLoadFlags_QOIPlane(streamType, flags);
             decodedType = streamType;
             int channels = pixelTypeNumChannels(decodedType);
-
-            image = qoiplane_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+            image = qoiplane_decode(uncompressedQOIX, uncompressedQOIXSize, desc, channels);
         }
         else if (streamChannels == 3 || streamChannels == 4)
         {
@@ -363,7 +402,7 @@ ubyte* qoix_lz4_decode(const(ubyte)* data,
             decodedType = applyLoadFlags_QOI2AVG(streamType, flags);
             decodedType = streamType;
             int channels = pixelTypeNumChannels(decodedType);
-            image = qoix_decode(decQOIX, QOIX_HEADER_SIZE + orig, desc, channels);
+            image = qoix_decode(uncompressedQOIX, uncompressedQOIXSize, desc, channels);
         }
     }
     else

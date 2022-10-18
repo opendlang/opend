@@ -46,9 +46,9 @@ version(benchmark)
 /// - qoiplane_encode  -- encode an rgba buffer into a QOI-plane image in memory
 /// 
 ///
-/// A QOI-Plane file has a 24 byte header, compatible with Gamut QOIX.
+/// A QOI-Plane file has a 25 byte header, compatible with Gamut QOIX.
 ///
-/// struct qoi_header_t {
+/// struct qoix_header_t {
 ///     char     magic[4];         // magic bytes "qoix"
 ///     uint32_t width;            // image width in pixels (BE)
 ///     uint32_t height;           // image height in pixels (BE)
@@ -56,6 +56,7 @@ version(benchmark)
 ///     uint8_t  channels;         // 1 = 8-bit luminance  2 = luminance + alpha (3 and 4 indicate QOI2AVG codec, see qoi2avg.d)
 ///     uint8_t  bitdepth;         // 8 = this qoiplane codec is always 8-bit (10 indicates QOI-10 codec, see qoi10b.d)
 ///     uint8_t  colorspace;       // 0 = sRGB with linear alpha, 1 = all channels linear
+///     uint8_t  compression;      // 0 = none, 1 = LZ4
 ///     float    pixelAspectRatio; // -1 = unknown, else Pixel Aspect Ratio
 ///     float    resolutionX;      // -1 = unknown, else physical resolution in DPI
 /// };
@@ -107,7 +108,8 @@ The returned qoi data should be free()d after use. */
 ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
     if ( (desc.channels != 1 && desc.channels != 2) ||
-        desc.height >= QOIX_PIXELS_MAX / desc.width
+        desc.height >= QOIX_PIXELS_MAX / desc.width ||
+          desc.compression != QOIX_COMPRESSION_NONE
     ) {
         return null;
     }
@@ -152,6 +154,7 @@ ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     bytes[p++] = desc.channels; // 1, or 2
     bytes[p++] = desc.bitdepth; // 8, or 10
     bytes[p++] = desc.colorspace;
+    bytes[p++] = QOIX_COMPRESSION_NONE;
     qoi_write_32f(bytes, &p, desc.pixelAspectRatio);
     qoi_write_32f(bytes, &p, desc.resolutionY);
 
@@ -388,6 +391,7 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
     desc.channels = bytes[p++];
     desc.bitdepth = bytes[p++];
     desc.colorspace = bytes[p++];
+    desc.compression = bytes[p++];
     desc.pixelAspectRatio = qoi_read_32f(bytes, &p);
     desc.resolutionY = qoi_read_32f(bytes, &p);
 
@@ -396,6 +400,7 @@ ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channel
         desc.colorspace > 1 ||
         desc.bitdepth != 8 ||
         qoix_version > 1 ||
+        desc.compression != QOIX_COMPRESSION_NONE ||
         header_magic != QOIX_MAGIC ||
         desc.height >= QOIX_PIXELS_MAX / desc.width
         ) 
