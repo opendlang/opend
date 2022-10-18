@@ -38,6 +38,8 @@ public import mir.stat.distribution.geometric: geometricPMF;
 ///
 public import mir.stat.distribution.gev: gevPDF;
 ///
+public import mir.stat.distribution.hypergeometric: hypergeometricPMF;
+///
 public import mir.stat.distribution.laplace: laplacePDF;
 ///
 public import mir.stat.distribution.log_normal: logNormalPDF;

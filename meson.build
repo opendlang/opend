@@ -34,6 +34,7 @@ sources_list = [
     'mir/stat/distribution/f',
     'mir/stat/distribution/generalized_pareto',
     'mir/stat/distribution/geometric',
+    'mir/stat/distribution/hypergeometric',
     'mir/stat/distribution/laplace',
     'mir/stat/distribution/log_normal',
     'mir/stat/distribution/logistic',
