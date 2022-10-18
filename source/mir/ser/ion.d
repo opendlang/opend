@@ -79,8 +79,6 @@ nothrow pure @trusted:
         buffer.initialize;
         this.runtimeTable = &runtimeTable;
         this.serdeTarget = serdeTarget;
-        version (thunderbolt)
-            buffer._currentLength = 15;
     }
 
     void initializeNoTable(int serdeTarget = SerdeTarget.ion) @trusted
@@ -89,90 +87,33 @@ nothrow pure @trusted:
         buffer.initialize;
         this.runtimeTable = null;
         this.serdeTarget = serdeTarget;
-        version (thunderbolt)
-            buffer._currentLength = 15;
     }
 
     void finalize() @trusted
     {
-        import mir.ion.thunderbolt;
-
-        version (thunderbolt)
-        {
-            auto reserve = buffer.reserve(15);
-            if (__ctfe)
-                reserve[] = 0;
-            auto joy = buffer.data.ptr +  15;
-            auto ion = joy + 15;
-            auto length = buffer._currentLength - 15;
-            buffer._currentLength += 15;
-
-            debug
-            {
-                // d.printHexArray(joy[0 .. length]);
-                // d << endl;
-            }
-
-            auto status = thunderbolt(ion, joy, length);
-
-            debug
-            {
-                // d.printHexArray(ion[0 .. length]);
-                // d << endl;
-            }
-
-            assert(!status);
-        }
-        else
-        {
-
-        }
     }
 
     inout(ubyte)[] data() inout scope return
     {
-        version (thunderbolt)
-        {
-           return buffer.data[30 .. $];
-        }
-        else
-        {
-            return buffer.data;
-        }
+        return buffer.data;
     }
 
 scope:
 
     private void putEnd(size_t beginPosition, IonTypeCode typeCode)
     {
-        version (thunderbolt)
-        {
-            buffer.reserve(11);
-            auto length = buffer._currentLength - beginPosition;
-            buffer._currentLength = beginPosition + joyPutEnd(buffer.data.ptr + beginPosition, typeCode, length);
-        }
-        else
-        {
-            buffer.reserve(128 + 3);
-            auto length = buffer._currentLength - beginPosition - ionPutStartLength;
-            buffer._currentLength = beginPosition + ionPutEnd(buffer.data.ptr + beginPosition, typeCode, length);
-        }
+        buffer.reserve(128 + 3);
+        auto length = buffer._currentLength - beginPosition - ionPutStartLength;
+        buffer._currentLength = beginPosition + ionPutEnd(buffer.data.ptr + beginPosition, typeCode, length);
     }
 
     ///
     size_t structBegin(size_t length = size_t.max)
     {
-        version (thunderbolt)
-        {
-            return buffer._currentLength;
-        }
-        else
-        {
-            auto ret = buffer._currentLength;
-            buffer.reserve(ionPutStartLength);
-            buffer._currentLength += ionPutStartLength;
-            return ret;
-        }
+        auto ret = buffer._currentLength;
+        buffer.reserve(ionPutStartLength);
+        buffer._currentLength += ionPutStartLength;
+        return ret;
     }
 
     ///
@@ -219,23 +160,13 @@ scope:
     ///
     auto annotationsEnd(size_t state)
     {
-        version (thunderbolt)
-        {
-            return buffer._currentLength;
-        }
-        else
-        {
-            size_t length = buffer._currentLength - (state + ionPutStartLength + ionPutAnnotationsListStartLength);
-            if (_expect(length >= 0x80, false))
-                buffer.reserve(9);
-            return buffer._currentLength = state + ionPutStartLength + ionPutAnnotationsListEnd(buffer.data.ptr + state + ionPutStartLength, length);
-        }
+        size_t length = buffer._currentLength - (state + ionPutStartLength + ionPutAnnotationsListStartLength);
+        if (_expect(length >= 0x80, false))
+            buffer.reserve(9);
+        return buffer._currentLength = state + ionPutStartLength + ionPutAnnotationsListEnd(buffer.data.ptr + state + ionPutStartLength, length);
     }
 
     ///
-    version (thunderbolt)
-    alias annotationWrapperBegin = structBegin;
-    else
     size_t annotationWrapperBegin(size_t length = size_t.max)
     {
         auto ret = buffer._currentLength;
@@ -247,16 +178,7 @@ scope:
     ///
     void annotationWrapperEnd(size_t annotationsState, size_t state)
     {
-        version (thunderbolt)
-        {
-            assert(state < annotationsState);
-            buffer._currentLength += joyPutVarUInt(buffer.reserve(22).ptr, annotationsState - state);
-            buffer._currentLength = state + joyPutEnd(buffer.data.ptr + state, IonTypeCode.annotations, buffer._currentLength - state);
-        }
-        else
-        {
-            putEnd(state, IonTypeCode.annotations);
-        }
+        putEnd(state, IonTypeCode.annotations);
     }
 
     ///
@@ -321,10 +243,7 @@ scope:
     void putKeyId(T)(const T id)
         if (__traits(isUnsigned, T))
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPutVarUInt(buffer.reserve(11).ptr, id);
-        else
-            buffer._currentLength += ionPutVarUInt(buffer.reserve(11).ptr, id);
+        buffer._currentLength += ionPutVarUInt(buffer.reserve(11).ptr, id);
     }
 
     ///
@@ -338,10 +257,7 @@ scope:
     ///
     void putSymbolId(size_t id)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPutSymbolId(buffer.reserve(9).ptr, id);
-        else
-            buffer._currentLength += ionPutSymbolId(buffer.reserve(9).ptr, id);
+        buffer._currentLength += ionPutSymbolId(buffer.reserve(9).ptr, id);
     }
 
     ///
@@ -355,19 +271,13 @@ scope:
     void putValue(Num)(const Num num)
         if (isNumeric!Num && !is(Num == enum))
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(Num.sizeof + 1).ptr, num);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(Num.sizeof + 1).ptr, num);
+        buffer._currentLength += ionPut(buffer.reserve(Num.sizeof + 1).ptr, num);
     }
 
     ///
     void putValue(W)(BigIntView!W view)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(view.unsigned.coefficients.length * W.sizeof + 12).ptr, view);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(view.unsigned.coefficients.length * W.sizeof + 12).ptr, view);
+        buffer._currentLength += ionPut(buffer.reserve(view.unsigned.coefficients.length * W.sizeof + 12).ptr, view);
     }
 
     ///
@@ -379,10 +289,7 @@ scope:
     ///
     void putValue(size_t size)(auto ref const Decimal!size num)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(num.coefficient.coefficients.length * size_t.sizeof + 23).ptr, num.view);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(num.coefficient.coefficients.length * size_t.sizeof + 23).ptr, num.view);
+        buffer._currentLength += ionPut(buffer.reserve(num.coefficient.coefficients.length * size_t.sizeof + 23).ptr, num.view);
     }
 
     ///
@@ -406,37 +313,25 @@ scope:
     ///
     void putValue(scope const char[] value)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(value.length + size_t.sizeof + 1).ptr, value);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(value.length + size_t.sizeof + 1).ptr, value);
+        buffer._currentLength += ionPut(buffer.reserve(value.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(scope Clob value)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
+        buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(scope Blob value)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
+        buffer._currentLength += ionPut(buffer.reserve(value.data.length + size_t.sizeof + 1).ptr, value);
     }
 
     ///
     void putValue(Timestamp value)
     {
-        version (thunderbolt)
-            buffer._currentLength += joyPut(buffer.reserve(20).ptr, value);
-        else
-            buffer._currentLength += ionPut(buffer.reserve(20).ptr, value);
+        buffer._currentLength += ionPut(buffer.reserve(20).ptr, value);
     }
 
     ///
