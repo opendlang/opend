@@ -20,23 +20,23 @@ Params:
     x = value to evaluate PDF
     mu = location parameter
     sigma = scale parameter
-    eta = shape parameter
+    xi = shape parameter
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
 +/
 @safe pure nothrow @nogc
-T generalizedParetoPDF(T)(const T x, const T mu, const T sigma, const T eta)
+T generalizedParetoPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in(sigma > 0, "sigma must be greater than zero")
     in(x >= mu, "x must be greater than or equal to mu")
-    in(eta >= 0 || (eta < 0 && x <= (mu - sigma / eta)), "if eta is less than zero, x must be less than mu - sigma / eta")
+    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
     const T z = (x - mu) / sigma;
-    if (eta != 0) {
-        return (cast(T) 1 / sigma) * pow(1 + eta * z, -(cast(T) 1 / eta + 1));
+    if (xi != 0) {
+        return (cast(T) 1 / sigma) * pow(1 + xi * z, -(cast(T) 1 / xi + 1));
     } else {
         return exp(-z);
     }
@@ -61,23 +61,23 @@ Params:
     x = value to evaluate CDF
     mu = location parameter
     sigma = scale parameter
-    eta = shape parameter
+    xi = shape parameter
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
 +/
 @safe pure nothrow @nogc
-T generalizedParetoCDF(T)(const T x, const T mu, const T sigma, const T eta)
+T generalizedParetoCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in(sigma > 0, "sigma must be greater than zero")
     in(x >= mu, "x must be greater than or equal to mu")
-    in(eta >= 0 || (eta < 0 && x <= (mu - sigma / eta)), "if eta is less than zero, x must be less than mu - sigma / eta")
+    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
     const T z = (x - mu) / sigma;
-    if (eta != 0) {
-        return 1 - pow(1 + eta * z, -(cast(T) 1) / eta);
+    if (xi != 0) {
+        return 1 - pow(1 + xi * z, -(cast(T) 1) / xi);
     } else {
         return 1 - exp(-z);
     }
@@ -102,23 +102,23 @@ Params:
     x = value to evaluate CCDF
     mu = location parameter
     sigma = scale parameter
-    eta = shape parameter
+    xi = shape parameter
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
 +/
 @safe pure nothrow @nogc
-T generalizedParetoCCDF(T)(const T x, const T mu, const T sigma, const T eta)
+T generalizedParetoCCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in(sigma > 0, "sigma must be greater than zero")
     in(x >= mu, "x must be greater than or equal to mu")
-    in(eta >= 0 || (eta < 0 && x <= (mu - sigma / eta)), "if eta is less than zero, x must be less than mu - sigma / eta")
+    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
     const T z = (x - mu) / sigma;
-    if (eta != 0) {
-        return pow(1 + eta * z, -(cast(T) 1) / eta);
+    if (xi != 0) {
+        return pow(1 + xi * z, -(cast(T) 1) / xi);
     } else {
         return exp(-z);
     }
@@ -143,13 +143,13 @@ Params:
     p = value to evaluate InvCDF
     mu = location parameter
     sigma = scale parameter
-    eta = shape parameter
+    xi = shape parameter
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
 +/
 @safe pure nothrow @nogc
-T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T eta)
+T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
@@ -159,8 +159,8 @@ T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T eta)
     import std.math.exponential: log1p;
 
     T output;
-    if (eta != 0) {
-        output = (cast(T) 1 / eta) * (pow(1 - p, -eta) - 1);
+    if (xi != 0) {
+        output = (cast(T) 1 / xi) * (pow(1 - p, -xi) - 1);
     } else {
         output = -log1p(-p);
     }
@@ -186,24 +186,24 @@ Params:
     x = value to evaluate LPDF
     mu = location parameter
     sigma = scale parameter
-    eta = shape parameter
+    xi = shape parameter
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
 +/
 @safe pure nothrow @nogc
-T generalizedParetoLPDF(T)(const T x, const T mu, const T sigma, const T eta)
+T generalizedParetoLPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in(sigma > 0, "sigma must be greater than zero")
     in(x >= mu, "x must be greater than or equal to mu")
-    in(eta >= 0 || (eta < 0 && x <= (mu - sigma / eta)), "if eta is less than zero, x must be less than mu - sigma / eta")
+    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: log;
     import mir.math.internal.xlogy: xlogy;
 
     const T z = (x - mu) / sigma;
-    if (eta != 0) {
-        return -log(sigma) + xlogy(-(cast(T) 1 / eta + 1), 1 + eta * z);
+    if (xi != 0) {
+        return -log(sigma) + xlogy(-(cast(T) 1 / xi + 1), 1 + xi * z);
     } else {
         return -z;
     }
