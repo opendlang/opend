@@ -850,35 +850,48 @@ auto objectsAsRows(bool allowMissingFields = true, T)(return scope const(StringM
     @safe pure nothrow @nogc
     if (isImplicitlyConvertible!(const T, T))
 {
-    import mir.ndslice.topology: repeat, map, zip;
+    import mir.ndslice.topology: repeat, map, zip, iota;
 
-    return header
-        .repeat(objects.length)
-        .zip(objects)
-        .map!(
-            (header, object) => object
-                .repeat(header.length)
-                .zip(header)
-                .map!(
-                    (object, name)
-                    {
-                        static if (allowMissingFields)
+    static if (allowMissingFields)
+    {
+        return header
+            .repeat(objects.length)
+            .zip(objects)
+            .map!(
+                (header, object) => object
+                    .repeat(header.length)
+                    .zip(header)
+                    .map!(
+                        (object, name)
                         {
                             import mir.algebraic: Nullable;
                             if (auto ptr = name in object)
                                 return Nullable!T(*ptr);
                             return Nullable!T.init;
                         }
-                        else
+                    )
+            );
+    }
+    else
+    {
+        return header
+            .repeat(objects.length)
+            .zip(objects, objects.length.iota)
+            .map!(
+                (header, object, row) => object
+                    .repeat(header.length)
+                    .zip(header, row.repeat(header.length))
+                    .map!(
+                        (object, name, row)
                         {
                             if (auto ptr = name in object)
                                 return *ptr;
                             import mir.ion.exception: IonMirException;
-                            throw new IonMirException("mir.csv.objectsAsRows: missing field ", name);
+                            throw new IonMirException("mir.csv: row ", row + 1, ": missing field '", name, "'");
                         }
-                    }
-                )
-        );
+                    )
+            );
+    }
 }
 
 ///
