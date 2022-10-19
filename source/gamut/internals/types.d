@@ -137,7 +137,7 @@ bool imageIsValidSize(int width, int height) pure
 
 
 /// From a layout constraint, get requested pixel multiplicity.
-int layoutMultiplicity(LayoutConstraints constraints)
+int layoutMultiplicity(LayoutConstraints constraints) pure
 {
     return 1 << (constraints & 3);
 }
@@ -148,7 +148,7 @@ unittest
 }
 
 /// From a layout constraint, get requested trailing pixels.
-int layoutTrailingPixels(LayoutConstraints constraints) @trusted
+int layoutTrailingPixels(LayoutConstraints constraints) pure @trusted
 {
     return (1 << ((constraints & 0x0C) >> 2)) - 1;
 }
@@ -161,7 +161,7 @@ unittest
 }
 
 /// From a layout constraint, get scanline alignment.
-int layoutScanlineAlignment(LayoutConstraints constraints)
+int layoutScanlineAlignment(LayoutConstraints constraints) pure
 {
     return 1 << ((constraints >> 4) & 0x0f);
 }
@@ -172,7 +172,7 @@ unittest
 }
 
 /// From a layout constraint, get surrounding border width.
-int layoutBorderWidth(LayoutConstraints constraints)
+int layoutBorderWidth(LayoutConstraints constraints) pure
 {
     return (constraints >> 7) & 3;
 }
@@ -186,7 +186,7 @@ unittest
 
 /// Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
-bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older)
+bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older) pure
 {
     // PERF: Could be more lax with VFlip by detecting actual pitch.
     // if newer constraint need to be upside-down, then older constraint need it too.
@@ -215,7 +215,7 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
 
 /// _Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
-bool layoutConstraintsValid(LayoutConstraints constraints)
+bool layoutConstraintsValid(LayoutConstraints constraints) pure
 {
     bool forceVFlipped    = (constraints & LAYOUT_VERT_FLIPPED) != 0;
     bool forceNonVFlipped = (constraints & LAYOUT_VERT_STRAIGHT) != 0;
@@ -226,13 +226,30 @@ bool layoutConstraintsValid(LayoutConstraints constraints)
     return true; // Those constraints are not exclusive.
 }
 
+
 // As input: first scanline pointer and pitch in byte.
-// As output: same, but following the constraints.
+// As output: same, but following the constraints (flipped optionally).
+// This is a way to flip image vertically.
+void flipScanlinePointers(int width,
+                          int height,
+                          ref ubyte* dataPointer, 
+                          ref int bytePitch) pure @system
+{
+    if (height >= 2) // Nothing to do for 0 or 1 row
+    {
+        ptrdiff_t offset_to_Nm1_row = cast(ptrdiff_t)(bytePitch) * (height - 1);
+        dataPointer += offset_to_Nm1_row;
+    }
+    bytePitch = -bytePitch;
+}
+
+// As input: first scanline pointer and pitch in byte.
+// As output: same, but following the constraints (flipped optionally).
 void applyVFlipConstraintsToScanlinePointers(int width,
                                              int height,
                                              ref ubyte* dataPointer, 
                                              ref int bytePitch,
-                                             LayoutConstraints constraints) @system
+                                             LayoutConstraints constraints) pure @system
 {
     assert(layoutConstraintsValid(constraints));
 
@@ -244,12 +261,7 @@ void applyVFlipConstraintsToScanlinePointers(int width,
 
     if (shouldFlip)
     {
-        if (height >= 2) // Nothing to do for 0 or 1 row
-        {
-            ptrdiff_t offset_to_Nm1_row = cast(ptrdiff_t)(bytePitch) * (height - 1);
-            dataPointer += offset_to_Nm1_row;
-        }
-        bytePitch = -bytePitch;
+        flipScanlinePointers(width, height, dataPointer, bytePitch);      
     }
 }
 

@@ -65,6 +65,8 @@ public:
     ///             it is always kept <= 0 (if the image has data).
     ///          When the image has layout constraint LAYOUT_VERT_STRAIGHT, 
     ///             it is always kept >= 0 (if the image has data).
+    ///
+    /// See_also: `scanlineInBytes`.
     int pitchInBytes() pure const
     {
         bool forceVFlip   = (_layoutConstraints & LAYOUT_VERT_FLIPPED) != 0;
@@ -77,6 +79,18 @@ public:
         return _pitch;
     }
 
+    /// Length of the managed scanline pixels, in bytes.
+    /// 
+    /// This is NOT the pointer offset between two scanlines (`pitchInBytes`).
+    /// This is just `width() * size-of-one-pixel`.
+    /// Those bytes are "part of the image", while the trailing and border pixels are not.
+    ///
+    /// See_also: `pitchInBytes`.
+    int scanlineInBytes() pure const
+    {
+        return _width * pixelTypeSize(type);
+    }
+
     /// A compressed image doesn't have its pixels available.
     /// Warning: only makes sense for image that `hasData()`, with non-zero height.
     bool isStoredUpsideDown() pure const
@@ -87,22 +101,24 @@ public:
 
     /// Returns a pointer to the `y` nth line of pixels.
     /// Only possible if the image has plain pixels.
-    /// What is points to, depends on the image `type()`.
+    /// What pixel format it points to, depends on the image `type()`.
     ///
     /// ---
     /// Guarantees by layout constraints:
     ///  * next scanline (if any) is returned pointer + pitchInBytes() bytes.
     ///  * scanline pointer are aligned by given scanline alignment flags (at least).
     ///  * after each scanline there is at least a number of trailing pixels given by layout flags
-    ///  * scanline pixels can be processed by multiplicity given by layout flags, trailing pixels assure that
-    ///  * around the image, there is a border with width at least the one given by layout flags.
+    ///  * scanline pixels can be processed by multiplicity given by layout flags
+    ///  * around the image, there is a border whose width is at least the one given by layout flags.
     /// ---
     ///
-    /// For each scanline pointer, you can _always_ read/write ptr[0..pitchInBytes()] without memory error.
+    /// For each scanline pointer, you can _always_ READ `ptr[0..pitchInBytes()]` without memory error.
+    /// However, WRITING to this scanline doesn't guarantee anything by itself since the image 
+    /// could be a sub-image, and the underlying buffer could be shared. 
     ///
     /// Returns: The scanline start.
     ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
-    inout(ubyte)* scanline(int y) inout @trusted
+    inout(ubyte)* scanline(int y) inout pure @trusted
     {
         assert(hasPlainPixels());
         assert(y >= 0 && y < _height);
@@ -790,7 +806,7 @@ public:
     /// This is an area that can be safely accessed, using -pitchInBytes() and pointer offsets.
     /// The actual border width could well be higher, but there is no way of safely knowing that.
     /// See_also: `LayoutConstraints`.
-    int borderWidth()
+    int borderWidth() pure
     {
         return layoutBorderWidth(_layoutConstraints);
     }
@@ -809,7 +825,7 @@ public:
     /// The actual number of trailing pixels can well be larger than what the layout strictly tells,
     /// but we'll never know.
     /// See_also: `LayoutConstraints`.
-    int trailingPixels()
+    int trailingPixels() pure
     {
         return layoutTrailingPixels(_layoutConstraints);
     }
@@ -821,13 +837,92 @@ public:
     ///            You have to provide an alternative path using `scanline()` if it isn't.
     ///            `LAYOUT_DEFAULT` doesn't ensure leading to a gapless image, because
     ///            `LAYOUT_DEFAULT` is lack of constraints and not a constraint.
-    bool isGapless() pure
+    bool isGapless() pure const
     {
         return _width * pixelTypeSize(_type) == _pitch;
     }
 
+    bool mustBeStoredUpsideDown() pure const
+    {
+        return (_layoutConstraints & LAYOUT_VERT_FLIPPED) != 0;
+    }
+
+    bool mustNotBeStoredUpsideDown() pure const
+    {
+        return (_layoutConstraints & LAYOUT_VERT_STRAIGHT) != 0;
+    }
+
     //
     // </LAYOUT>
+    //
+
+    //
+    // <TRANSFORM>
+    //
+
+    /// Flip the image vertically.
+    /// If the image has no data, the operation is successful.
+    ///
+    /// - If the layout allows it, `flipVerticalLogical` is called. The scanline pointers are 
+    ///   inverted, and pitch is negated. This just flips the "view" of the image.
+    ///
+    /// - If there is a constraint to keep the image strictly upside-down, or strictly not 
+    ///   upside-down, then `flipVerticalPhysical` is called instead.
+    ///
+    /// Returns: `true` on success, sets an error else and return `false`.
+    bool flipVertical() pure
+    {
+        if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
+            return flipVerticalPhysical();
+        else
+            return flipVerticalLogical();
+    }
+    ///ditto
+    bool flipVerticalLogical() pure @trusted
+    {
+        if (!hasData())
+            return true; // Nothing to do
+
+        if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
+        {
+            error(kStrUnsupportedVFlip);
+            return false;
+        }
+
+        // Note: flipping the image preserve all layout properties! 
+        // What a nice design here.
+        // Border, trailing pixels, scanline alignment... they all survive vertical flip.
+        flipScanlinePointers(_width, _height, _data, _pitch);
+
+        return true;
+    }
+    ///ditto
+    bool flipVerticalPhysical() pure @trusted
+    {
+        if (!hasData())
+            return true; // Nothing to do
+
+        int H = height();
+        int Ydiv2 = H / 2;
+        int scanBytes = scanlineInBytes();
+
+        // Stupid byte per byte swap
+        for (int y = 0; y < Ydiv2; ++y)
+        {
+            ubyte* scanA = scanline(y);
+            ubyte* scanB = scanline(H - 1 - y);
+            for (int b = 0; b < scanBytes; ++b)
+            {
+                ubyte ch = scanA[b];
+                scanA[b] = scanB[b]; 
+                scanB[b] = ch;
+            }
+        }
+        return true;
+    }
+
+    //
+    // </TRANSFORM>
     //
 
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
