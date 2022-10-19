@@ -792,7 +792,7 @@ unittest
 
 /++
 +/
-auto objectsAsTable(T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
+auto objectsAsTable(bool allowMissingFields = true, T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
     @safe pure nothrow @nogc
     if (isImplicitlyConvertible!(const T, T))
 {
@@ -801,7 +801,7 @@ auto objectsAsTable(T)(return scope const(StringMap!T)[] objects, return scope c
     import mir.ndslice.slice: Slice, sliced;
     import mir.ndslice.topology: as, repeat;
 
-    auto rows = objectsAsRows(objects, header);
+    auto rows = objectsAsRows!allowMissingFields(objects, header);
 
     alias V = Variant!(typeof(rows[0]), Slice!(const(string)*));
 
@@ -829,9 +829,16 @@ unittest
         .StringMap!T;
 
     import mir.ser.text: serializeText;
-    [o1, o2, o3].objectsAsTable(["b", "c"])
-        .serializeText.should
+    [o1, o2, o3].objectsAsTable(["b", "c"]).serializeText.should
     == `[["b","c"],[2.0,null],[true,false],[null,2021-12-12]]`;
+
+    [o1, o2].objectsAsTable!false(["b"]).serializeText.should
+         == `[["b"],[2.0],[true]]`;
+
+    import std.exception: assertThrown;
+    import mir.ion.exception: IonException;
+    [o1, o2, o3].objectsAsTable!false(["b", "c"]).serializeText
+        .assertThrown!IonException;
 }
 
 /++
@@ -839,11 +846,10 @@ Contruct a lazy random-access-range (ndslice)
 Returns:
     a lazy 1-dimensional slice of lazy 1-dimensionalal slices
 +/
-auto objectsAsRows(T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
+auto objectsAsRows(bool allowMissingFields = true, T)(return scope const(StringMap!T)[] objects, return scope const(string)[] header)
     @safe pure nothrow @nogc
     if (isImplicitlyConvertible!(const T, T))
 {
-    import mir.algebraic: Nullable;
     import mir.ndslice.topology: repeat, map, zip;
 
     return header
@@ -856,10 +862,20 @@ auto objectsAsRows(T)(return scope const(StringMap!T)[] objects, return scope co
                 .map!(
                     (object, name)
                     {
-                        if (auto ptr = name in object)
-                            return Nullable!T(*ptr);
-                        else
+                        static if (allowMissingFields)
+                        {
+                            import mir.algebraic: Nullable;
+                            if (auto ptr = name in object)
+                                return Nullable!T(*ptr);
                             return Nullable!T.init;
+                        }
+                        else
+                        {
+                            if (auto ptr = name in object)
+                                return *ptr;
+                            import mir.ion.exception: IonMirException;
+                            throw new IonMirException("mir.csv.objectsAsRows: missing field ", name);
+                        }
                     }
                 )
         );
@@ -940,7 +956,7 @@ unittest
 }
 
 /++
-Ion serialization function with pretty formatting.
+CSV serialization function.
 +/
 string serializeCsv(V)(
     auto scope ref const V value,
@@ -1027,6 +1043,7 @@ unittest
     buffer.data.should == "str,2,TRUE\n3.0,2022-12-12,\n";
 }
 
+///
 struct CsvSerializer(Appender)
 {
     import mir.bignum.decimal: Decimal;
