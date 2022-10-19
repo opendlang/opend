@@ -199,6 +199,11 @@ unittest
 /// be used with constraint `newer`?
 bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older) pure
 {
+    // PERF: detect already gapless images.
+    // Could be more lax by passing effect pitch and width.
+    if (newer & LAYOUT_GAPLESS) && !(older & LAYOUT_GAPLESS))
+        return false;
+
     // PERF: Could be more lax with VFlip by detecting actual pitch.
     // if newer constraint need to be upside-down, then older constraint need it too.
     if ((newer & LAYOUT_VERT_FLIPPED) && !(older & LAYOUT_VERT_FLIPPED))
