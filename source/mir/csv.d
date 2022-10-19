@@ -50,13 +50,17 @@ struct CsvReader
     /// An input CSV text. BOM isn't supported.
     const(char)[] text;
     ///
-    uint rowLength;
+    uint nColumns;
     ///
     uint rowIndex;
     /// Scalar separator
     char separator = ',';
     /// Symbol to quote scalars
     char quote = '"';
+    ///
+    bool fill = true;
+    ///
+    bool skipEmptyLines = true;
 
     private ScopedBuffer!(char, 128) buffer;
 
@@ -142,6 +146,7 @@ struct CsvReader
         +/
         void popFront()() scope pure nothrow @nogc
             in (root)
+            in (length)
         {
             length--;
         }
@@ -160,14 +165,31 @@ struct CsvReader
                 {
                     text = text.ptr[1 .. text.length];
                     if (_expect(length == 1, false))
-                        scalar.error = Error.unexpectedSeparator;
+                    {
+                        for(;;)
+                        {
+                            auto ignored = root.readCell;
+                            if (!text.length)
+                                break;
+                            if (text[0] != separator)
+                                goto StripLineEnd;
+                            text = text.ptr[1 .. text.length];
+                        }
+                    }
                 }
                 else
                 {
-                    if (text.length)
-                        text = text.ptr[1 + (text.length > 1 && text[0] == '\r' && text[1] == '\n') .. text.length];
                     if (_expect(length != 1, false))
-                        scalar.error = Error.unexpectedRowEnd;
+                    {
+                        if (!fill)
+                            scalar.error = Error.unexpectedRowEnd;
+                    }
+                    else
+                    if (text.length)
+                    {
+                    StripLineEnd:
+                        text = text.ptr[1 + (text.length > 1 && text[0] == '\r' && text[1] == '\n') .. text.length];
+                    }
                 }
             }
             return scalar;
@@ -176,14 +198,28 @@ struct CsvReader
         uint columnIndex()() scope const @safe pure nothrow @nogc
             in (root)
         {
-            return root.rowLength - length;
+            return root.nColumns - length;
         }
     }
 
     ///
-    bool empty()() scope const pure nothrow @nogc @property
+    bool empty()() scope pure nothrow @nogc @property
     {
-        return text.length == 0;
+        if (skipEmptyLines)
+        {
+            if (text.length) for (;;)
+            {
+                if (text[0] != '\n' && text[0] != '\r')
+                    return false;
+                text = text[1 .. $];
+                if (text.length == 0)
+                    return true;
+            }
+            else
+                return true;
+        }
+        else
+            return text.length == 0;
     }
 
     /++
@@ -197,7 +233,7 @@ struct CsvReader
     ///
     Row front()() scope return pure nothrow @nogc @property
     {
-        return typeof(return)(&this, rowLength);
+        return typeof(return)(&this, nColumns);
     }
 
     /++
@@ -208,7 +244,10 @@ struct CsvReader
         char separator = ',',
         char quote = '"',
         char comment = '\0',
-        sizediff_t skipRows = 0,
+        uint skipRows = 0,
+        bool fill = true,
+        bool skipEmptyLines = true,
+        uint nColumns = 0,
     ) @safe pure @nogc
     {
         pragma(inline, false);
@@ -226,9 +265,9 @@ struct CsvReader
         if (this.text.length == 0)
             return;
 
-        for (;;)
+        if (!nColumns) for (;;)
         {
-            this.rowLength++;
+            nColumns++;
             auto scalar = readCell();
             if (scalar.error)
             {
@@ -247,6 +286,7 @@ struct CsvReader
             break;
         }
 
+        this.nColumns = nColumns;
         this.text = text;
     }
 
@@ -296,6 +336,8 @@ Slice!(string*, 2) csvToStringMatrix(
     char quote = '"',
     char comment = '\0',
     ubyte skipRows = 0,
+    bool fill = true,
+    bool skipEmptyLines = true,
 ) @trusted pure
 {
     pragma(inline, false);
@@ -313,9 +355,11 @@ Slice!(string*, 2) csvToStringMatrix(
         quote,
         comment,
         skipRows,
+        fill,
+        skipEmptyLines,
     );
 
-    auto wip = new string[table.rowLength];
+    auto wip = new string[table.nColumns];
 
     while (!table.empty)
     {
@@ -339,8 +383,8 @@ Slice!(string*, 2) csvToStringMatrix(
     }
 
     import mir.ndslice: sliced;
-    assert (app.data.length == table.rowIndex * table.rowLength);
-    return app.data.sliced(table.rowIndex, table.rowLength);
+    assert (app.data.length == table.rowIndex * table.nColumns);
+    return app.data.sliced(table.rowIndex, table.nColumns);
 }
 
 ///
@@ -348,7 +392,8 @@ version (mir_ion_test)
 @safe pure
 unittest
 {
-    auto data = `012,abc,"mno pqr",0` ~ "\n" ~ `982,def,"stuv wx",1`
+    // empty lines are allowed by default
+    auto data = `012,abc,"mno pqr",0` ~ "\n\n" ~ `982,def,"stuv wx",1`
         ~ "\n" ~ `78,ghijk,"yx",2`;
 
     auto matrix = data.csvToStringMatrix();
@@ -512,11 +557,13 @@ Slice!(CsvAlgebraic*, 2) csvToAlgebraicMatrix(
     return scope string text,
     char separator = ',',
     char quote = '"',
+    scope const CsvProxy.Conversion[] conversions = CsvProxy.init.conversions,
     char comment = '\0',
     ubyte skipRows = 0,
+    bool fill = true,
+    bool skipEmptyLines = true,
     bool parseNumbers = true,
     bool parseTimestamps = true,
-    scope const CsvProxy.Conversion[] conversions = CsvProxy.init.conversions,
     CsvAlgebraic delegate(
         return scope const(char)[] unquotedString,
         CsvAlgebraic scalar,
@@ -542,9 +589,11 @@ Slice!(CsvAlgebraic*, 2) csvToAlgebraicMatrix(
         quote,
         comment,
         skipRows,
+        fill,
+        skipEmptyLines,
     );
 
-    auto wip = new CsvAlgebraic[table.rowLength];
+    auto wip = new CsvAlgebraic[table.nColumns];
 
     DecimalExponentKey decimalKey;
     Decimal!128 decimal = void;
@@ -628,8 +677,8 @@ Slice!(CsvAlgebraic*, 2) csvToAlgebraicMatrix(
     }
 
     import mir.ndslice: sliced;
-    assert (app.data.length == table.rowIndex * table.rowLength);
-    return app.data.sliced(table.rowIndex, table.rowLength);
+    assert (app.data.length == table.rowIndex * table.nColumns);
+    return app.data.sliced(table.rowIndex, table.nColumns);
 }
 
 ///
@@ -644,8 +693,8 @@ unittest
 
     auto text =
 `Date,Open,High,Low,Close,Volume
-2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695
-2021-01-21 09:35:00,134.25,135.0,134.19,134.5,4632863`;
+2021-01-21 09:30:00,133.8,134.43,133.59,134.0,9166695,ignoreNoHeader
+2021-01-21 09:35:00,134.25,135.0,134.19,134.5`;// fill the Volume with '0'
 
     // If you don't have a header,
     // `mir.functional.Tuple` instead of MyDataFrame.
@@ -668,18 +717,19 @@ unittest
 
     MyDataFrame testValue = {
         timestamp:  [`2021-01-21 09:30:00`.Timestamp, `2021-01-21 09:35:00`.Timestamp],
-        volume:     [9166695, 4632863],
+        volume:     [9166695, 0],
         open:       [133.8,  134.25],
         high:       [134.43, 135],
         low:        [133.59, 134.19],
         close:      [134.0,  134.5],
     };
 
-    auto table = text
-        .csvToAlgebraicMatrix
-        .matrixAsDataFrame; 
+    auto table = text         // fill the missing and empty fields with '0'
+        .csvToAlgebraicMatrix(',', '"', [CsvProxy.Conversion("", 0.CsvAlgebraic)])
+        .matrixAsDataFrame;
 
-    table["Volume"][1].should == 4632863;
+    table["Volume"][0].should == 9166695;
+    table["Volume"][1].should == 0;
 
     table.serde!MyDataFrame.should == testValue;
 }
@@ -763,20 +813,20 @@ version (mir_ion_test)
 @safe pure
 unittest
 {
-    import mir.algebraic_alias.csv: CsvAlgebraic;
+    import mir.algebraic_alias.csv: T = CsvAlgebraic;
     import mir.algebraic: Nullable;
     import mir.date: Date;
     import mir.test: should;
 
-    auto o1 = ["a" : 1.CsvAlgebraic,
-               "b" : 2.0.CsvAlgebraic]
-        .StringMap!CsvAlgebraic;
-    auto o2 = ["b" : true.CsvAlgebraic,
-               "c" : false.CsvAlgebraic]
-        .StringMap!CsvAlgebraic;
-    auto o3 = ["c" : Date(2021, 12, 12).CsvAlgebraic,
-               "d" : 3.CsvAlgebraic]
-        .StringMap!CsvAlgebraic;
+    auto o1 = ["a" : 1.T,
+               "b" : 2.0.T]
+        .StringMap!T;
+    auto o2 = ["b" : true.T,
+               "c" : false.T]
+        .StringMap!T;
+    auto o3 = ["c" : Date(2021, 12, 12).T,
+               "d" : 3.T]
+        .StringMap!T;
 
     import mir.ser.text: serializeText;
     [o1, o2, o3].objectsAsTable(["b", "c"])
@@ -1281,6 +1331,10 @@ struct CsvProxy
     char comment = '\0';
     /// Skips a number of rows
     ubyte skipRows;
+    ///
+    bool fill = true;
+    ///
+    bool skipEmptyLines = true;
     /// If true the parser tries to recognsise and parse numbers.
     bool parseNumbers = true;
     /// If true the parser tries to recognsise and parse
@@ -1382,6 +1436,8 @@ struct CsvProxy
             quote,
             comment,
             skipRows,
+            fill,
+            skipEmptyLines,
         );
 
         if (hasHeader && table.empty)
