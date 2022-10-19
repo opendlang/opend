@@ -184,6 +184,17 @@ unittest
     assert(layoutBorderWidth(LAYOUT_BORDER_3) == 3);
 }
 
+/// From a layout constraint, get if being gapless is guaranteed.
+bool layoutGapless(LayoutConstraints constraints) pure
+{
+    return (constraints & LAYOUT_GAPLESS) != 0;
+}
+unittest
+{
+    assert(layoutGapless(LAYOUT_GAPLESS));
+    assert(!layoutGapless(0));
+}
+
 /// Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
 bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older) pure
@@ -222,6 +233,19 @@ bool layoutConstraintsValid(LayoutConstraints constraints) pure
 
     if (forceVFlipped && forceNonVFlipped)
         return false; // Can't be flipped and non-flipped at the same time.
+
+    // LAYOUT_GAPLESS is incompatible with almost anything
+    if (layoutGapless(constraints))
+    {
+        if (layoutMultiplicity(constraints) > 1)
+            return false;
+        if (layoutTrailingPixels(constraints) > 0)
+            return false;
+        if (layoutScanlineAlignment(constraints) > 1)
+            return false;
+        if (layoutBorderWidth(constraints) > 0)
+            return false;
+    }
 
     return true; // Those constraints are not exclusive.
 }

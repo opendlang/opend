@@ -192,7 +192,11 @@ enum LayoutConstraints
 
      // Allow to force the image representation to be stored in a certain vertical direction.
      LAYOUT_VERT_FLIPPED         = 512,  /// The whole image MUST be stored upside down. Can't be used with `LAYOUT_VERT_STRAIGHT` flag.
-     LAYOUT_VERT_STRAIGHT        = 1024; /// The whole image MUST NOT be stored upside down. Can't be used with `LAYOUT_VERT_FLIPPED` flag.
+     LAYOUT_VERT_STRAIGHT        = 1024, /// The whole image MUST NOT be stored upside down. Can't be used with `LAYOUT_VERT_FLIPPED` flag.
+
+     // No space between scanlines. 
+     // This is incompatible with scanline alignment, border, trailing pixels, and multiplicity.
+     LAYOUT_GAPLESS              = 2048; /// There must be no single trailing bytes between scanlines.
 
 
 PixelType convertPixelTypeToGreyscale(PixelType type)

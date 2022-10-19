@@ -245,17 +245,17 @@ Our benchmark results for 8-bit color images:
   assert(image.hasData());
   for (int y = 0; y < image.height(); ++y)
   {
-      ushort* scan = cast(ushort*) image.scanline(y);               
+      ushort* scan = cast(ushort*) image.scanline(y);
       for (int x = 0; x < image.width(); ++x)
       {
           ushort r = scanline[4*x + 0];
           ushort g = scanline[4*x + 1];
           ushort b = scanline[4*x + 2];
-          ushort a = scanline[4*x + 3];        
+          ushort a = scanline[4*x + 3];
       }
   }
   ```
-  > **Key concept:** You cannot access pixels in a contiguous manner in all cases. You can if `image.isGapless()` returns `true`, but there is no constraints to guarantee being gapless.
+  > **Key concept:** The default is that you do not access pixels in a contiguous manner. See 4. for layout constraints that allow you to get all pixels at once.
 
 
 &nbsp;
@@ -271,8 +271,7 @@ Our benchmark results for 8-bit color images:
 ## 4. Layout constraints
 
 One of the most interesting feature of Gamut!
-Images in Gamut can follow given constraints over the data layout.
-
+Images in Gamut can follow given constraints over the data layout.  
 
   > **Key concept:** `LayoutConstraint` are carried by images all their /
   life.
@@ -301,6 +300,14 @@ Example:
 - If you don't specify `LAYOUT_SCANLINE_ALIGNED_16`, you should not expect your scanlines to be aligned on 16-byte boundaries, even though that can happen accidentally.
 
 
+Beware not to accidentally reset constraints when resizing:
+```d
+// If you do not provide layout constraints, 
+// the one choosen is 0, the most permissive.
+image.setSize(640, 480, PixelType.rgba8, LAYOUT_TRAILING_3);
+```
+
+
 ### 4.1 Scanline alignment
     
   > **Scanline alignment** guarantees minimum alignment of each scanline.
@@ -318,7 +325,7 @@ LAYOUT_SCANLINE_ALIGNED_128
 
 ### 4.2 Layout multiplicity  
 
-> **Multiplicity** guarantees access to pixels 1, 2, 4 or 8 at a time.
+> **Multiplicity** guarantees access to pixels 1, 2, 4 or 8 at a time. It does this with excess pixels at the end of the scanline, but they need not exist if the scanline has the right width.
 
 ```d
 LAYOUT_MULTIPLICITY_1 = 0
@@ -331,7 +338,7 @@ Together with scanline alignment, this allow processing a scanline using aligned
 
 ### 4.3 Trailing pixels
 
-> **Trailing pixels** gives you up to 7 excess pixels after each scanline.
+> **Trailing pixels** gives you up to 7 excess pixels after each scanline. 
 ```d
 LAYOUT_TRAILING_0 = 0
 LAYOUT_TRAILING_1
@@ -358,3 +365,16 @@ LAYOUT_VERT_FLIPPED
 LAYOUT_VERT_STRAIGHT
 ```
 
+
+### 4.6 Gapless pixel access
+> The **Gapless** constraint force the image to have contiguous scanlines without excess bytes.
+```
+LAYOUT_GAPLESS
+```
+
+If you have both `LAYOUT_GAPLESS` and `LAYOUT_VERT_STRAIGHT`, then you can access a slice of all pixels at once, with the `ubyte[] allPixelsAtOnce()` method.
+
+  ```d
+  image.setSize(640, 480, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
+  ubyte[] allpixels = image.allPixelsAtOnce(y);
+  ```

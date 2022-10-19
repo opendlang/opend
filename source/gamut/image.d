@@ -125,6 +125,30 @@ public:
         return _data + _pitch * y;
     }
 
+    /// Returns a slice of all pixels at once in O(1). 
+    /// This is only possible if the image is stored non-flipped, and without space
+    /// between scanline.
+    /// To avoid accidental correctness, the image need the layout constraints:
+    /// `LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT`.
+    inout(ubyte)[] allPixelsAtOnce() inout pure @trusted
+    {
+        assert(hasPlainPixels());
+
+        // the image need the LAYOUT_GAPLESS flag.
+        assert(isGapless());
+
+        // the image need the LAYOUT_VERT_STRAIGHT flag.
+        assert(mustNotBeStoredUpsideDown());
+
+        // Why there is no #overflow here:
+        int psize = pixelTypeSize(_type);
+        assert(psize < 16);
+        assert(cast(long)_width * _height < GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT);
+        assert(cast(long)GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT * 16 < 0x7fffffffUL);
+        int ofs = _width * _height * psize;
+        return _data[0..ofs];
+    }
+
     //
     // </BASIC STORAGE>
     //
@@ -633,10 +657,14 @@ public:
             return false;
         }
 
+        // The asked for layout must be valid itself.
+        assert(layoutConstraintsValid(layoutConstraints));
+
         // Are the new layout constraints stricter?
         // If yes, we have more reason to convert.
         // PERF: analyzing actual layout may lead to less reallocations if the layout is accidentally compatible
         // for example scanline alignement. But this is small potatoes.
+        // Same for "gapless".
         bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, _layoutConstraints);
 
         if (_type == targetType && compatibleLayout)
@@ -836,23 +864,20 @@ public:
         return layoutTrailingPixels(_layoutConstraints);
     }
 
-    /// Returns: `true` if rows of pixels are immediately consecutive in memory.
-    ///          Meaning that there is no border or gap pixels in the data.
-    ///
-    /// Important: As of today, you CANNOT guarantee any image will be gapless. 
-    ///            You have to provide an alternative path using `scanline()` if it isn't.
-    ///            `LAYOUT_DEFAULT` doesn't ensure leading to a gapless image, because
-    ///            `LAYOUT_DEFAULT` is lack of constraints and not a constraint.
+    /// Get if being gapless is guaranteed by the layout constraints.
+    /// See_also: `allPixels()`, `LAYOUT_GAPLESS`, `LAYOUT_VERT_STRAIGHT`.
     bool isGapless() pure const
     {
-        return _width * pixelTypeSize(_type) == _pitch;
+        return layoutGapless(_layoutConstraints);
     }
 
+    /// Returns: `true` is the image is constrained to be stored upside-down.
     bool mustBeStoredUpsideDown() pure const
     {
         return (_layoutConstraints & LAYOUT_VERT_FLIPPED) != 0;
     }
 
+    /// Returns: `true` is the image is constrained to NOT be stored upside-down.
     bool mustNotBeStoredUpsideDown() pure const
     {
         return (_layoutConstraints & LAYOUT_VERT_STRAIGHT) != 0;
@@ -1071,6 +1096,7 @@ private:
         _width = width;
         _height = height;
         _pitch = pitchBytes;
+        _layoutConstraints = constraints;
         return true;
     }
 
@@ -1563,4 +1589,16 @@ void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dst
     }
     else
         assert(false);
+}
+
+
+// Test gapless pixel access
+unittest
+{
+    Image image;
+    image.setSize(16, 16, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
+    assert(image.isGapless);
+
+    ubyte[] all = image.allPixelsAtOnce();
+    assert(all !is null);
 }
