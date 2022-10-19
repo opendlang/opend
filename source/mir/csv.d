@@ -956,6 +956,44 @@ unittest
 }
 
 /++
+Returns:
+    common keys of all the objects in the observed order. 
+Params:
+    objects = array of objects (string maps)
++/
+string[] intersectionHeader(T)(return scope const(StringMap!T)[] objects)
+    @safe pure nothrow
+{
+    if (objects.length == 0)
+        return null;
+    
+    auto map = StringMap!bool(
+        objects[0].keys.dup,
+        new bool[objects[0].keys.length]);
+
+    foreach (object; objects[1 .. $])
+        foreach (key; map.keys)
+            if (key !in object)
+                map.remove(key);
+
+    return (()@trusted => cast(string[]) map.keys)();
+}
+
+///
+version (mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.test: should;
+
+    auto o1 = ["a", "b"].StringMap!int([8, 8]);
+    auto o2 = ["b", "c"].StringMap!int([8, 8]);
+    auto o3 = ["c", "d"].StringMap!int([8, 8]);
+    [o1, o2].intersectionHeader.should = ["b"];
+    [o3, o2].intersectionHeader.should = ["c"];
+}
+
+/++
 CSV serialization function.
 +/
 string serializeCsv(V)(
