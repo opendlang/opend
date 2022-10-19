@@ -23,8 +23,8 @@ import mir.stat.descriptive.univariate: Summation;
 private void putter2(Slices, T, U, Summation summation1, Summation summation2)
     (scope Slices slices, ref Summator!(T, summation1) seed1, ref Summator!(U, summation2) seed2)
 {
-    import mir.functional: RefTuple;
-    static if (is(Slices == RefTuple!(V1, V2), V1, V2)) {
+    import mir.functional: Tuple;
+    static if (is(Slices == Tuple!(V1, V2), V1, V2)) {
         seed1.put(slices[0]);
         seed2.put(slices[1]);
     } else {
