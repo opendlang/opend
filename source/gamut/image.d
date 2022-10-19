@@ -142,9 +142,9 @@ public:
 
         // Why there is no #overflow here:
         int psize = pixelTypeSize(_type);
-        assert(psize < 16);
+        assert(psize < GAMUT_MAX_PIXEL_SIZE);
         assert(cast(long)_width * _height < GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT);
-        assert(cast(long)GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT * 16 < 0x7fffffffUL);
+        assert(cast(long)GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT * GAMUT_MAX_PIXEL_SIZE < 0x7fffffffUL);
         int ofs = _width * _height * psize;
         return _data[0..ofs];
     }
@@ -338,8 +338,7 @@ public:
         assert(img._height == _height);
         assert(img._type   == _type);
 
-        // PERF: if same pitch, do a single memcpy
-        //       caution with negative pitch
+        // PERF: if both are gapless, can do a single memcpy
 
         int scanlineLen = _width * pixelTypeSize(type);
 
@@ -891,25 +890,56 @@ public:
     // <TRANSFORM>
     //
 
+    /// Flip the image data horizontally.
+    /// If the image has no data, the operation is successful.
+    bool flipHorizontally() pure @trusted
+    {
+        if (!hasData())
+            return true; // Nothing to do
+
+        ubyte[GAMUT_MAX_PIXEL_SIZE] temp;
+
+        int W = width();
+        int H = height();
+        int Xdiv2 = W / 2;
+        int scanBytes = scanlineInBytes();
+        int psize = pixelTypeSize(type);
+
+        // Stupid pixel per pixel swap
+        for (int y = 0; y < H; ++y)
+        {
+            ubyte* scan = scanline(y);
+            for (int x = 0; x < Xdiv2; ++x)
+            {
+                ubyte* pixelA = &scan[x * psize];
+                ubyte* pixelB = &scan[(W - 1 - x) * psize];
+                temp[0..psize] = pixelA[0..psize];
+                pixelA[0..psize] = pixelB[0..psize];
+                pixelB[0..psize] = temp[0..psize];
+            }
+        }
+        return true;
+    }
+
     /// Flip the image vertically.
     /// If the image has no data, the operation is successful.
     ///
-    /// - If the layout allows it, `flipVerticalLogical` is called. The scanline pointers are 
+    /// - If the layout allows it, `flipVerticallyLogical` is called. The scanline pointers are 
     ///   inverted, and pitch is negated. This just flips the "view" of the image.
     ///
     /// - If there is a constraint to keep the image strictly upside-down, or strictly not 
-    ///   upside-down, then `flipVerticalPhysical` is called instead.
+    ///   upside-down, then `flipVerticallyPhysical` is called instead.
     ///
     /// Returns: `true` on success, sets an error else and return `false`.
-    bool flipVertical() pure
+    bool flipVertically() pure
     {
         if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
-            return flipVerticalPhysical();
+            return flipVerticallyPhysical();
         else
-            return flipVerticalLogical();
+            return flipVerticallyLogical();
     }
     ///ditto
-    bool flipVerticalLogical() pure @trusted
+    bool flipVerticallyLogical() pure @trusted
     {
         if (!hasData())
             return true; // Nothing to do
@@ -928,7 +958,7 @@ public:
         return true;
     }
     ///ditto
-    bool flipVerticalPhysical() pure @trusted
+    bool flipVerticallyPhysical() pure @trusted
     {
         if (!hasData())
             return true; // Nothing to do

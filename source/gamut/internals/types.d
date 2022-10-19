@@ -53,6 +53,8 @@ int pixelTypeSize(PixelType type) pure
     }
 }
 
+enum int GAMUT_MAX_PIXEL_SIZE = 16; // keep it in sync
+
 /// Number of channels in this image type.
 int pixelTypeNumChannels(PixelType type) pure
 {
@@ -201,7 +203,7 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
 {
     // PERF: detect already gapless images.
     // Could be more lax by passing effect pitch and width.
-    if (newer & LAYOUT_GAPLESS) && !(older & LAYOUT_GAPLESS))
+    if ((newer & LAYOUT_GAPLESS) && !(older & LAYOUT_GAPLESS))
         return false;
 
     // PERF: Could be more lax with VFlip by detecting actual pitch.
