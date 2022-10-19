@@ -119,7 +119,7 @@ unittest {
 Computes the pareto inverse cumulative distribution function (InvCDF).
 
 Params:
-    x = value to evaluate InvCDF
+    p = value to evaluate InvCDF
     xMin = scale parameter
     alpha = shape parameter
 

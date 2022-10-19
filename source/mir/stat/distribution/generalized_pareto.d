@@ -140,7 +140,7 @@ unittest {
 Computes the generalized pareto inverse cumulative distribution function (InvCDF).
 
 Params:
-    x = value to evaluate InvCDF
+    p = value to evaluate InvCDF
     mu = location parameter
     sigma = scale parameter
     eta = shape parameter
