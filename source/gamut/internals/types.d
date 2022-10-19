@@ -330,10 +330,11 @@ void allocatePixelStorage(ubyte* existingData,
     int rowAlignment   = layoutScanlineAlignment(constraints);
     int trailingPixels = layoutTrailingPixels(constraints);
     int xMultiplicity  = layoutMultiplicity(constraints);
+    bool gapless       = layoutConstraintsValid(constraints);
 
     assert(border >= 0);
-    assert(rowAlignment >= 1); // Not yet implemented!
-    assert(xMultiplicity >= 1); // Not yet implemented!
+    assert(rowAlignment >= 1);
+    assert(xMultiplicity >= 1);
     assert(trailingPixels >= 0);
 
     static size_t nextMultipleOf(size_t base, size_t multiple) pure
@@ -400,6 +401,23 @@ void allocatePixelStorage(ubyte* existingData,
     pitchBytes = finalPitchInBytes;
     mallocArea = allocation;
     err = false;
+
+    // Check validity of result
+    {
+        // check gapless
+        int scanWidth = pixelSize * width;
+        if (gapless)
+            assert(scanWidth == (bytePitch < 0 ? -bytePitch : bytePitch));
+        
+        // check row alignment
+        static bool isPointerAligned(void* p, size_t alignment) pure
+        {
+            assert(alignment != 0);
+            return ( cast(size_t)p & (alignment - 1) ) == 0;
+        }        
+        assert(isPointerAligned(dataPointer, rowAlignment));
+        assert(isPointerAligned(dataPointer + pitchBytes, rowAlignment));
+    }
 }
 
 /// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
