@@ -551,6 +551,12 @@ public:
     // <CONVERSION>
     //
 
+    /// Get the image layout constraints.
+    LayoutConstraints layoutConstraints() pure const
+    {
+        return _layoutConstraints;
+    }
+
     /// Keep the same pixels and type, but change how they are arranged in memory to fit some constraints.
     bool changeLayout(LayoutConstraints layoutConstraints)
     {

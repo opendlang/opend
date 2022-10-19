@@ -115,6 +115,15 @@ Our benchmark results for 8-bit color images:
   ```
 
 
+&nbsp;
+
+
+----
+
+
+&nbsp;
+
+
 ## 2. Loading and saving an image
 
 ### **2.1 Load an `Image` from a file:**
@@ -204,6 +213,14 @@ Our benchmark results for 8-bit color images:
   The returned slice must be freed up with `core.stdc.stdlib.free`.
 
 
+&nbsp;
+
+
+----
+
+
+&nbsp;
+
 
 ## 3. Accessing image pixels
 
@@ -240,4 +257,104 @@ Our benchmark results for 8-bit color images:
   ```
   > **Key concept:** You cannot access pixels in a contiguous manner in all cases. You can if `image.isGapless()` returns `true`, but there is no constraints to guarantee being gapless.
 
+
+&nbsp;
+
+
+----
+
+
+&nbsp;
+
+
+
+## 4. Layout constraints
+
+One of the most interesting feature of Gamut!
+Images in Gamut can follow given constraints over the data layout.
+
+
+  > **Key concept:** `LayoutConstraint` are carried by images all their /
+  life.
+
+Example:
+
+  ```d
+  // Do nothing in particular.
+  LayoutConstraint constraints = LAYOUT_DEFAULT; // 0 = default
+
+  // Layout can be given directly at image creation or afterwards.
+  Image image;  
+  image.loadFromMemory(pngBytes, constraints); 
+
+  // Now the image has a 1 pixel border (at least).
+  image.changeLayout(LAYOUT_BORDER_1);
+  
+  // Those layout constraints are preserved 
+  // (but: not the excess bytes content, if reallocated)
+  image.convertToGreyscale();
+  assert(image.layoutConstraints() == LAYOUT_BORDER_1);   
+  ```
+
+**Important:** Layout constraints are about the minimum guarantee you want. Your image may be _more_ constrained than that in practice, but you can't rely on that.   
+- If you don't specify `LAYOUT_VERT_STRAIGHT`, you should expect your image to be possibly stored upside-down, and account for that possibility.
+- If you don't specify `LAYOUT_SCANLINE_ALIGNED_16`, you should not expect your scanlines to be aligned on 16-byte boundaries, even though that can happen accidentally.
+
+
+### 4.1 Scanline alignment
+    
+  > **Scanline alignment** guarantees minimum alignment of each scanline.
+
+```d
+LAYOUT_SCANLINE_ALIGNED_1 = 0
+LAYOUT_SCANLINE_ALIGNED_2
+LAYOUT_SCANLINE_ALIGNED_4
+LAYOUT_SCANLINE_ALIGNED_8
+LAYOUT_SCANLINE_ALIGNED_16
+LAYOUT_SCANLINE_ALIGNED_32
+LAYOUT_SCANLINE_ALIGNED_64
+LAYOUT_SCANLINE_ALIGNED_128
+```
+
+### 4.2 Layout multiplicity  
+
+> **Multiplicity** guarantees access to pixels 1, 2, 4 or 8 at a time.
+
+```d
+LAYOUT_MULTIPLICITY_1 = 0
+LAYOUT_MULTIPLICITY_2
+LAYOUT_MULTIPLICITY_4
+LAYOUT_MULTIPLICITY_8
+```
+Together with scanline alignment, this allow processing a scanline using aligned SIMD without processing the last few pixels differently.
+     
+
+### 4.3 Trailing pixels
+
+> **Trailing pixels** gives you up to 7 excess pixels after each scanline.
+```d
+LAYOUT_TRAILING_0 = 0
+LAYOUT_TRAILING_1
+LAYOUT_TRAILING_3
+LAYOUT_TRAILING_7
+```
+
+Allows unaligned SIMD access by itself.
+
+### 4.4 Pixel border
+
+> **Border** gives you up to 3 excess pixels around an image, eg. for filtering.
+```d
+LAYOUT_BORDER_0 = 0
+LAYOUT_BORDER_1
+LAYOUT_BORDER_2
+LAYOUT_BORDER_3
+```
+
+### 4.5 Forcing pixels to be upside down or straight
+> **Vertical** constraint force the image to be store in a certain vertical direction (by default: any).
+```
+LAYOUT_VERT_FLIPPED
+LAYOUT_VERT_STRAIGHT
+```
 
