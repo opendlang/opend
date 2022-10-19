@@ -23,6 +23,8 @@ nothrow @nogc @safe:
 
 /// Image type.
 /// Image has disabled copy ctor and postblit, to avoid accidental allocations.
+/// 
+/// TODO: force _pitch to be zero when the image has no pixel data
 struct Image
 {
 nothrow @nogc @safe:
@@ -57,16 +59,49 @@ public:
     }  
 
     /// Get the image pitch (byte distance between rows), in bytes.
-    /// This pitch can be negative.
+    ///
+    /// Warning: This pitch can be, or not be, a negative integer.
+    ///          When the image has layout constraint LAYOUT_VERT_FLIPPED, 
+    ///             it is always kept <= 0 (if the image has data).
+    ///          When the image has layout constraint LAYOUT_VERT_STRAIGHT, 
+    ///             it is always kept >= 0 (if the image has data).
     int pitchInBytes() pure const
     {
+        bool forceVFlip   = (_layoutConstraints & LAYOUT_VERT_FLIPPED) != 0;
+        bool forceNoVFlip = (_layoutConstraints & LAYOUT_VERT_STRAIGHT) != 0;
+        if (forceVFlip)
+            assert(_pitch <= 0); // Note if height were zero, _pitch could perhaps be zero.
+        if (forceNoVFlip)
+            assert(_pitch >= 0);
+
         return _pitch;
+    }
+
+    /// A compressed image doesn't have its pixels available.
+    /// Warning: only makes sense for image that `hasData()`, with non-zero height.
+    bool isStoredUpsideDown() pure const
+    {
+        assert(hasData());
+        return _pitch < 0;
     }
 
     /// Returns a pointer to the `y` nth line of pixels.
     /// Only possible if the image has plain pixels.
-    /// What is points to, dependes on the image `type()`.
-    /// Returns: The scanline start. You can read `pitchInBytes` bytes from there.
+    /// What is points to, depends on the image `type()`.
+    ///
+    /// ---
+    /// Guarantees by layout constraints:
+    ///  * next scanline (if any) is returned pointer + pitchInBytes() bytes.
+    ///  * scanline pointer are aligned by given scanline alignment flags (at least).
+    ///  * after each scanline there is at least a number of trailing pixels given by layout flags
+    ///  * scanline pixels can be processed by multiplicity given by layout flags, trailing pixels assure that
+    ///  * around the image, there is a border with width at least the one given by layout flags.
+    /// ---
+    ///
+    /// For each scanline pointer, you can _always_ read/write ptr[0..pitchInBytes()] without memory error.
+    ///
+    /// Returns: The scanline start.
+    ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
     inout(ubyte)* scanline(int y) inout @trusted
     {
         assert(hasPlainPixels());
@@ -239,7 +274,7 @@ public:
 
         if (!setStorage(width, height, type, layoutConstraints))
         {
-            error(kStrOutOfMemory);
+            // precise error set by setStorage
             return;
         }
     }
@@ -578,12 +613,14 @@ public:
 
         // Are the new layout constraints stricter?
         // If yes, we have more reason to convert.
-        // PERF: analyzing actual layout may lead to less reallocations if the layour is accidentally compatible
+        // PERF: analyzing actual layout may lead to less reallocations if the layout is accidentally compatible
         // for example scanline alignement. But this is small potatoes.
         bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, _layoutConstraints);
 
         if (_type == targetType && compatibleLayout)
         {
+            // PERF: it would be possible, if the layout only differ for stance with Vflip, to flip
+            // lines in place here. But this can be handled below with reallocation.
             _layoutConstraints = layoutConstraints;
             return true; // success, same type already, and compatible constraints
         }
@@ -591,7 +628,7 @@ public:
         if (!hasData())
         {
             _layoutConstraints = layoutConstraints;
-            return true; // success, no pixel data, so everything was "converted"
+            return true; // success, no pixel data, so everything was "converted", layout constraints do not hold
         }
 
         if ((width() == 0 || height()) == 0 && compatibleLayout)
@@ -793,9 +830,6 @@ public:
     // </LAYOUT>
     //
 
-
-
-
     @disable this(this); // Non-copyable. This would clone the image, and be expensive.
 
 
@@ -850,8 +884,9 @@ package:
     /// By default, this height is 0 (but as the image has no pixel data, this doesn't matter).
     int _height = 0;
 
-    /// Pitch in bytes between lines, when a pitch makes sense.
-    /// FUTURE: negative pitch for costless vertical flip.
+    /// Pitch in bytes between lines, when a pitch makes sense. This pitch can be, or not be, a negative integer.
+    /// When the image has layout constraint LAYOUT_VERT_FLIPPED, it is always kept <= 0.
+    /// When the image has layout constraint LAYOUT_VERT_STRAIGHT, it is always kept >= 0.
     int _pitch = 0; 
 
     /// Pointer to last known error. `null` means "no errors".
@@ -896,11 +931,18 @@ private:
 
     /// Discard ancient data, and reallocate stuff.
     /// Returns true on success, false on OOM.
+    /// When failing, sets the errored state.
     bool setStorage(int width, 
                     int height,
                     PixelType type, 
                     LayoutConstraints constraints) @trusted
     {
+        if (!layoutConstraintsValid(constraints))
+        {
+            error(kStrIllegalLayoutConstraints);
+            return false;
+        }
+
         ubyte* dataPointer;
         ubyte* mallocArea;
         int pitchBytes;
@@ -917,7 +959,10 @@ private:
                              pitchBytes,
                              err);
         if (err)
+        {
+            error(kStrOutOfMemory);
             return false;
+        }
 
         _data = dataPointer;
         _allocArea = mallocArea;

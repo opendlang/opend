@@ -184,16 +184,26 @@ unittest
     assert(layoutBorderWidth(LAYOUT_BORDER_3) == 3);
 }
 
-/// _Assuming the same `PixelType`, can an allocation made with constraint `older` 
+/// Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
 bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older)
 {
+    // PERF: Could be more lax with VFlip by detecting actual pitch.
+    // if newer constraint need to be upside-down, then older constraint need it too.
+    if ((newer & LAYOUT_VERT_FLIPPED) && !(older & LAYOUT_VERT_FLIPPED))
+        return false;
+    if ((newer & LAYOUT_VERT_STRAIGHT) && !(older & LAYOUT_VERT_STRAIGHT))
+        return false;
+
+    // PERF: This constraint can be relaxed if passed effective width and pitch
     if (layoutMultiplicity(newer) > layoutMultiplicity(older))
         return false;
 
+    // PERF: This constraint can be relaxed if passed effective width and pitch
     if (layoutTrailingPixels(newer) > layoutTrailingPixels(older))
         return false;
 
+    // PERF: This constraint can be relaxed if passed first scanline and pitch
     if (layoutScanlineAlignment(newer) > layoutScanlineAlignment(older))
         return false;
 
@@ -201,6 +211,46 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
         return false;
 
     return true; // is compatible
+}
+
+/// _Assuming the same `PixelType`, can an allocation made with constraint `older` 
+/// be used with constraint `newer`?
+bool layoutConstraintsValid(LayoutConstraints constraints)
+{
+    bool forceVFlipped    = (constraints & LAYOUT_VERT_FLIPPED) != 0;
+    bool forceNonVFlipped = (constraints & LAYOUT_VERT_STRAIGHT) != 0;
+
+    if (forceVFlipped && forceNonVFlipped)
+        return false; // Can't be flipped and non-flipped at the same time.
+
+    return true; // Those constraints are not exclusive.
+}
+
+// As input: first scanline pointer and pitch in byte.
+// As output: same, but following the constraints.
+void applyVFlipConstraintsToScanlinePointers(int width,
+                                             int height,
+                                             ref ubyte* dataPointer, 
+                                             ref int bytePitch,
+                                             LayoutConstraints constraints) @system
+{
+    assert(layoutConstraintsValid(constraints));
+
+    bool forceVFlipStorage    = (constraints & LAYOUT_VERT_FLIPPED) != 0;
+    bool forceNonVFlipStorage = (constraints & LAYOUT_VERT_STRAIGHT) != 0;
+
+    // Should we flip the first scanline pointer and pitch?
+    bool shouldFlip = ( forceVFlipStorage && bytePitch > 0) || (forceNonVFlipStorage && bytePitch < 0);
+
+    if (shouldFlip)
+    {
+        if (height >= 2) // Nothing to do for 0 or 1 row
+        {
+            ptrdiff_t offset_to_Nm1_row = cast(ptrdiff_t)(bytePitch) * (height - 1);
+            dataPointer += offset_to_Nm1_row;
+        }
+        bytePitch = -bytePitch;
+    }
 }
 
 /// Allocate pixel data. Discard ancient data if any, and reallocate with `realloc`.
@@ -213,7 +263,7 @@ bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints olde
 ///     type         Pixel data type.
 ///     width        Image width.
 ///     height       Image height.
-///     constraints  The layout constraints to follow for the scanlines and allocation.
+///     constraints  The layout constraints to follow for the scanlines and allocation. MUST be valid.
 ///     bonusBytes   If non-zero, the area mallocArea[0..bonusBytes] can be used for user storage.
 ///                  Only the caller can use as temp storage, since Image won't preserve knowledge of these
 ///                  bonusBytes once the allocation is done.
@@ -235,9 +285,10 @@ void allocatePixelStorage(ubyte* existingData,
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
                           out bool err) @trusted
-{      
+{
     assert(width >= 0); // width == 0 and height == 0 must be supported!
     assert(height >= 0);
+    assert(layoutConstraintsValid(constraints));
 
     int border         = layoutBorderWidth(constraints);
     int rowAlignment   = layoutScanlineAlignment(constraints);
@@ -283,6 +334,8 @@ void allocatePixelStorage(ubyte* existingData,
     int bytePitch = pixelSize * actualWidthInPixels;
     bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
 
+    assert(bytePitch >= 0);
+
     // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
     size_t allocationSize = bytePitch * actualHeightInPixels;
     allocationSize += (rowAlignment - 1) + bonusBytes;
@@ -302,9 +355,14 @@ void allocatePixelStorage(ubyte* existingData,
     size_t offsetToFirstMeaningfulPixel = bonusBytes + bytePitch * border + pixelSize * border;       
     ubyte* pixels = nextAlignedPointer(allocation + offsetToFirstMeaningfulPixel, rowAlignment);
 
-    dataPointer = pixels;
+    // Apply vertical constraints: will the image be stored upside-down?
+    ubyte* firstScanlinePtr = pixels;
+    int finalPitchInBytes = bytePitch;
+    applyVFlipConstraintsToScanlinePointers(width, height, firstScanlinePtr, finalPitchInBytes, constraints);
+
+    dataPointer = firstScanlinePtr;
+    pitchBytes = finalPitchInBytes;
     mallocArea = allocation;
-    pitchBytes = bytePitch;
     err = false;
 }
 

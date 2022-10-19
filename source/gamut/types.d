@@ -186,10 +186,13 @@ enum LayoutConstraints
 
      // Allow to access additional pixels in every direction, without segfault or steppig on the next scanline.
      LAYOUT_BORDER_0             = 0,   /// No particular border constraint.
-     LAYOUT_BORDER_1             = 128, /// The whole image has a border of 1 pixel addressable without segfault.
-     LAYOUT_BORDER_2             = 256, /// The whole image has a border of 2 pixels addressable without segfault.
-     LAYOUT_BORDER_3             = 384; /// The whole image has a border of 3 pixels addressable without segfault.
+     LAYOUT_BORDER_1             = 128, /// The whole image has a border of at least 1 pixel addressable without segfault.
+     LAYOUT_BORDER_2             = 256, /// The whole image has a border of at least 2 pixels addressable without segfault.
+     LAYOUT_BORDER_3             = 384, /// The whole image has a border of at least 3 pixels addressable without segfault.
 
+     // Allow to force the image representation to be stored in a certain vertical direction.
+     LAYOUT_VERT_FLIPPED         = 512,  /// The whole image MUST be stored upside down. Can't be used with `LAYOUT_VERT_STRAIGHT` flag.
+     LAYOUT_VERT_STRAIGHT        = 1024; /// The whole image MUST NOT be stored upside down. Can't be used with `LAYOUT_VERT_FLIPPED` flag.
 
 
 PixelType convertPixelTypeToGreyscale(PixelType type)
