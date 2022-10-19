@@ -378,3 +378,23 @@ If you have both `LAYOUT_GAPLESS` and `LAYOUT_VERT_STRAIGHT`, then you can acces
   image.setSize(640, 480, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
   ubyte[] allpixels = image.allPixelsAtOnce(y);
   ```
+
+
+&nbsp;
+
+
+----
+
+
+&nbsp;
+
+
+
+## 5. Geometric transforms
+
+Gamut provides a few geometric transforms.
+
+```d
+Image image;
+image.flipHorizontally(); // Flip image pixels horizontally.
+image.flipVertically();   // Flip image vertically (pixels or logically)
