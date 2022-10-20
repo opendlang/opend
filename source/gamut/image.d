@@ -25,6 +25,8 @@ nothrow @nogc @safe:
 /// Image has disabled copy ctor and postblit, to avoid accidental allocations.
 /// 
 /// TODO: force _pitch to be zero when the image has no pixel data
+/// TODO: for each public functons, we must think about what happens when the image
+/// 1. has no data  2. has no plain pixels  3. has a zero width or size
 struct Image
 {
 nothrow @nogc @safe:
@@ -231,8 +233,8 @@ public:
     }
 
     /// An image can have data (usually pixels), or not.
-    /// "Data" refers to pixel content, that can be in a decoded form (RGBA8), but also in more
-    /// complicated forms such as planar, compressed, etc.
+    /// "Data" refers to pixel content, that can be in a decoded form, but also in more
+    /// complicated forms such as planar, compressed, etc. (FUTURE)
     ///
     /// Note: An image that has no data doesn't have to follow its `LayoutConstraints`.
     ///       But an image with zero size must.
@@ -773,6 +775,7 @@ public:
     /// works if the width is a multiple of 4.
     ///
     /// So it is a bit like casting slices in D.
+    /// TODO: castTo breaks layout constraints, what to do with them?
     bool castTo(PixelType targetType) @trusted
     {
         assert(!errored()); // this should have been caught before.
