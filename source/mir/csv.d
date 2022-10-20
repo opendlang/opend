@@ -155,7 +155,7 @@ struct CsvReader
         Scalar front()() return scope pure nothrow @nogc @property
             in (root)
             in (length)
-            in (length == 1 || root.text.length)
+            // in (length == 1 || root.text.length)
         {
             auto scalar = root.readCell();
             // if (_expect(!scalar.error, true))
