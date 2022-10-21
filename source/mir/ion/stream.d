@@ -115,6 +115,8 @@ const:
                 continue;
             }
             describedValue = d.parseValue(error);
+            if (error == IonErrorCode.nop)
+                continue;
             // check if describedValue is symbol table
             if (describedValue.descriptor.type == IonTypeCode.annotations)
             {
