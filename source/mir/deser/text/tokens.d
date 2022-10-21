@@ -464,10 +464,6 @@ The Ion Text Number token
 +/
 struct IonTextNumber {
     mixin IonTextToken;
-    /+
-    What type of number is this? (integer, negative integer, decimal, etc)
-    +/
-    IonTypeCode type;
 }
 
 /+

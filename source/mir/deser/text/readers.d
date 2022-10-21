@@ -839,16 +839,8 @@ IonTextNumber readNumber(return ref IonTokenizer t) @safe @nogc pure
     }
 
     char c = t.readInput();
-    if (c == '-') {
+    if (c == '-' || c == '+') {
         c = t.readInput();
-        if (c == 0) {
-            num.type = IonTypeCode.null_;
-            return num;
-        } else {
-            num.type = IonTypeCode.nInt;
-        }
-    } else {
-        num.type = IonTypeCode.uInt;
     }
 
     immutable char leader = c;
@@ -861,7 +853,6 @@ IonTextNumber readNumber(return ref IonTokenizer t) @safe @nogc pure
 
     c = t.readInput();
     if (c == '.') {
-        num.type = IonTypeCode.decimal;
         c = t.readInput();
         if (c.isDigit) {
             immutable char decimalLeader = t.expect!("a != 0", true)(c);
@@ -873,12 +864,8 @@ IonTextNumber readNumber(return ref IonTokenizer t) @safe @nogc pure
     switch (c) {
         case 'e':
         case 'E':
-            num.type = IonTypeCode.float_;
-            readExponent();
-            break;
         case 'd':
         case 'D':
-            num.type = IonTypeCode.decimal;
             readExponent();
             break;
         default:
@@ -887,10 +874,6 @@ IonTextNumber readNumber(return ref IonTokenizer t) @safe @nogc pure
             break;
     }
 
-    if (num.type == IonTypeCode.nInt) {
-        startIndex++; // Only throw away the leading minus if this is a negative integer
-    }
-    
     c = t.expect!(t.isStopChar);
     t.unread(c);
     num.matchedText = t.input[startIndex .. t.position];
@@ -905,22 +888,21 @@ version(mir_ion_parser_test) unittest
     import mir.deser.text.tokens : IonTokenType;
     import mir.ion.type_code : IonTypeCode;
 
-    void test(string ts, string expected, IonTypeCode type, char after) {
+    void test(string ts, string expected, char after) {
         auto t = tokenizeString(ts);
         assert(t.nextToken());
         assert(t.currentToken == IonTokenType.TokenNumber);
         auto n = t.readNumber();
         assert(n.matchedText == expected);
-        assert(n.type == type);
         assert(t.readInput() == after);
     }
 
-    test("12341", "12341", IonTypeCode.uInt, 0);
-    test("-12312", "12312", IonTypeCode.nInt, 0);
-    test("0.420d2", "0.420d2", IonTypeCode.decimal, 0);
+    test("12341", "12341", 0);
+    test("-12312", "-12312", 0);
+    test("0.420d2", "0.420d2", 0);
     test("1.1999999999999999555910790149937383830547332763671875e0", 
-         "1.1999999999999999555910790149937383830547332763671875e0", IonTypeCode.float_, 0);
-    test("1.1999999999999999e0, ", "1.1999999999999999e0", IonTypeCode.float_, ',');
+         "1.1999999999999999555910790149937383830547332763671875e0", 0);
+    test("1.1999999999999999e0, ", "1.1999999999999999e0", ',');
 }
 
 /+

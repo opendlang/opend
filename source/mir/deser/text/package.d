@@ -847,12 +847,6 @@ private:
         import mir.parse;
         auto v = t.readValue!(IonTokenType.TokenNumber);
 
-        if (v.type == IonTypeCode.null_)
-        {
-            ser.putNull(v.type);
-            return;
-        }
-
         Decimal!128 dec = void;
         DecimalExponentKey exponentKey;
         // special values are handled within the tokenizer and emit different token types
@@ -861,7 +855,7 @@ private:
         // Ion spec allows this
         enum bool allowDotOnBounds = true;
         enum bool allowDExponent = true;
-        enum bool allowStartingPlus = false;
+        enum bool allowStartingPlus = true;
         enum bool allowUnderscores = true;
         enum bool allowLeadingZeros = false;
         enum bool allowExponent = true; 
@@ -885,7 +879,8 @@ private:
 
         if (exponentKey == DecimalExponentKey.none)
         {
-            dec.coefficient.sign = v.type == IonTypeCode.nInt;
+            assert(dec.coefficient.coefficients.length != 1 || dec.coefficient.coefficients[0] != 0);
+            dec.coefficient.sign = dec.coefficient.sign && dec.coefficient.coefficients.length != 0;
             // this is not a FP, so we can discard the exponent 
             ser.putValue(dec.coefficient);
         }
@@ -914,16 +909,9 @@ private:
     void onBinaryNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenBinary);
-        BigInt!128 val = void;
-        if (v[0] == '-')
-        {
-            val.fromBinaryStringImpl!(char, true)(v[3 .. $]); // skip over the negative + 0b
-            val.sign = true;
-        }
-        else
-        {
-            val.fromBinaryStringImpl!(char, true)(v[2 .. $]);
-        }
+        auto sign = v[0] == '-';
+        auto val = BigInt!128.fromBinaryString!true(v[2 + sign .. $]); // skip over the negative + 0b
+        val.sign = sign && val.coefficients.length;
         ser.putValue(val);
     }
 
@@ -931,16 +919,9 @@ private:
     void onHexNumber() @safe pure
     {
         auto v = t.readValue!(IonTokenType.TokenHex);
-        BigInt!128 val = void;
-        if (v[0] == '-')
-        {
-            val.fromHexStringImpl!(char, true)(v[3 .. $]); // skip over the negative + 0x
-            val.sign = true;
-        }
-        else
-        {
-            val.fromHexStringImpl!(char, true)(v[2 .. $]); // skip over the 0x
-        }
+        auto sign = v[0] == '-';
+        auto val = BigInt!128.fromHexString!true(v[2 + sign .. $]); // skip over the 0x
+        val.sign = sign && val.coefficients.length;
         ser.putValue(val);
     }
 
@@ -1303,7 +1284,6 @@ version (mir_ion_parser_test) unittest
     testNeg("-0x0123456789", 0x0123456789);
     testNeg("-0x0123456789abcdef", 0x0123456789abcdef);
     testNeg("-0x0123_4567_89ab_cdef", 0x0123_4567_89ab_cdef);
-
 }
 
 /// Test that infinity & negative infinity are deserialized properly.

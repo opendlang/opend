@@ -116,11 +116,17 @@ enum IonErrorCode
     ///
     cantConvertAnnotationToEnum,
     ///
+    nestedAnnotationsNotAllowed,
+    ///
     expectedIonStructForAnAssociativeArrayDeserialization,
     ///
     unexpectedComma,
     ///
     emptyIonInput,
+    ///
+    emptyOrderedStruct,
+    ///
+    negativeIntegerZero,
 }
 
 ///
@@ -192,9 +198,12 @@ string ionErrorMsg()(IonErrorCode code) @property
         "unused annotations",
         "missing annotation",
         "can't convert annotation to enum",
+        "nested annotations aren't allowed",
         "expected IonStruct for an associative array deserialization",
         "unexpected comma",
         "Ion data doesn't contain a value",
+        "empty ordered struct",
+        "negative integer zero",
     ];
     return msgs[code - IonErrorCode.min];
 }

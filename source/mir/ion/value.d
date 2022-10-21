@@ -424,6 +424,11 @@ struct IonDescribedValue
                 auto idv = IonValue(d[length .. $]).describe(error);
                 if (error)
                     return T.init;
+                if (_expect(idv.descriptor.type == IonTypeCode.annotations, false))
+                {
+                    error = IonErrorCode.nestedAnnotationsNotAllowed;
+                    return T.init;
+                }
                 return T(IonAnnotations(d[0 .. length]), idv);
             }
             else
@@ -997,7 +1002,13 @@ version(mir_ion_test) unittest
     v.should == -260;
 
     // IonNInt can't store zero according to the Ion Binary format specification.
-    assert(IonValue([0x30]).describe.get!IonNInt.getErrorCode!byte == IonErrorCode.overflowInIntegerValue);
+    IonErrorCode error;
+    IonValue([0x30]).describe(error);
+    assert(error == IonErrorCode.negativeIntegerZero);
+    IonValue([0x31, 0x00]).describe(error);
+    assert(error == IonErrorCode.negativeIntegerZero);
+    IonValue([0x3E, 0x80]).describe(error);
+    assert(error == IonErrorCode.negativeIntegerZero);
 }
 
 @safe pure
@@ -1006,9 +1017,6 @@ version(mir_ion_test) unittest
     alias AliasSeq(T...) = T;
     foreach (T; AliasSeq!(byte, short, int, long, ubyte, ushort, uint, ulong))
     {
-        assert(IonValue([0x30]).describe.get!IonNInt.getErrorCode!T == IonErrorCode.overflowInIntegerValue);
-        assert(IonValue([0x31, 0x00]).describe.get!IonNInt.getErrorCode!T == IonErrorCode.overflowInIntegerValue);
-
         static if (!__traits(isUnsigned, T))
         {   // signed
             assert(IonValue([0x31, 0x07]).describe.get!IonNInt.get!T == -7);
@@ -1169,9 +1177,6 @@ version(mir_ion_test) unittest
     long v;
     assert(IonValue([0x32, 0x01, 0x04]).describe.get!IonInt.get(v) == IonErrorCode.none);
     v.should == -260;
-
-    // IonNInt can't store zero according to the Ion Binary format specification.
-    assert(IonValue([0x30]).describe.get!IonInt.getErrorCode!byte == IonErrorCode.overflowInIntegerValue);
 }
 
 /++
@@ -1310,9 +1315,9 @@ struct IonDescribedDecimal
         value.exponent = exponent;
         if (value.coefficient.length == 0)
             return IonErrorCode.none;
-        if (bool sign = coefficient.data[0] >> 7)
+        value.coefficient.sign = coefficient.data[0] >> 7;
+        if (value.coefficient.sign)
         {
-            value.coefficient.sign = true;
             import mir.ndslice.topology: bitwise;
             assert(value
                 .coefficient
@@ -1639,15 +1644,31 @@ struct IonTimestamp
     R:
         import mir.date: maxDay;
 
+        // duration
         if (v.day == 88 || v.day == 99)
-            goto F;
         {
-            auto s = (v.month == 0) + (v.day == 0);
-            if (v.month <= 12 && s == 0 && (v.precision < Timestamp.Precision.day || v.day <= maxDay(v.year, v.month)) || s == 1 && v.precision == Timestamp.Precision.month || s == 2 && v.precision > Timestamp.Precision.day && v.year == 0)
-                goto F;
-            return IonErrorCode.illegalTimeStamp; 
         }
-    F:
+        else
+        // time of day
+        if (v.precision > v.Precision.day && v.day == 0)
+        {
+            if (v.year || v.month)
+                return IonErrorCode.illegalTimeStamp;
+        }
+        else
+        if (!v.year)
+        {
+            return IonErrorCode.illegalTimeStamp;
+        }
+        else
+        if (v.precision >= Timestamp.Precision.month)
+        {
+            if (v.month == 0 || v.month > 12)
+                return IonErrorCode.illegalTimeStamp;
+            if (v.precision > Timestamp.Precision.month && (v.day == 0 || v.day > maxDay(v.year, v.month)))
+                return IonErrorCode.illegalTimeStamp;
+        }
+
         value = v;
         return IonErrorCode.none;
     }
@@ -3270,18 +3291,43 @@ package IonDescribedValue parseValue()(ref return scope const(ubyte)[] data, out
     }
     size_t length = L;
     // if large
-    bool sortedStruct = descriptorData == 0xD1;
-    if (length == 0xE || sortedStruct)
+    if (length == 0xE)
     {
         error = parseVarUInt(data, length);
         if (error)
             return IonDescribedValue.init;
+    }
+    else
+    if (descriptorData == 0xD1)
+    {
+        error = parseVarUInt(data, length);
+        if (error)
+            return IonDescribedValue.init;
+        if (length == 0)
+        {
+            error = IonErrorCode.emptyOrderedStruct;
+            return IonDescribedValue.init;
+        }
     }
     if (_expect(length > data.length, false))
     {
         error = IonErrorCode.unexpectedEndOfData;
         return IonDescribedValue.init;
     }
+
+    if (_expect(type == IonTypeCode.nInt, false))
+    {
+        if (length) do
+        {
+            if (data[0])
+                goto R;
+            data = data[1 .. $];
+        }
+        while(--length);
+        error = IonErrorCode.negativeIntegerZero;
+        return IonDescribedValue.init;
+    }
+R:
     describedValue.data = data[0 .. length];
     data = data[length .. $];
     // NOP Padding

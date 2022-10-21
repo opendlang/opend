@@ -19,19 +19,18 @@ struct IonTestCase {
 @IonTestCase("Known-bad Ion timestamps", IonTestData.badTimestamp, true, IonDataType.all)
 void testBasicData(Test test) {
     if (test.type == IonDataType.binary) {
-        auto v = test.data.IonValueStream.serializeText;
+        auto v = test.data.ion2text;
     } else {
         const(char)[] text = cast(const(char)[])test.data;
-        auto v = text.text2ion.IonValueStream.serializeText;
+        auto v = text.text2ion.ion2text;
     }
 }
 
 @IonTestCase("Binary round-trip testing", IonTestData.roundtrip, false, IonDataType.binary)
 void testBinaryRoundTrip(Test test) {
-    IonValueStream input = test.data.IonValueStream;
-    const(char)[] text = input.serializeText;
-    const(char)[] roundtrip = text.text2ion.IonValueStream.serializeText;
-    assert(text == roundtrip);
+    const(char)[] text = test.data.ion2text;
+    const(char)[] roundtrip = text.text2ion.ion2text;
+    assert(text == roundtrip, "\nexcpected: " ~ text ~ "\n      got: " ~ roundtrip ~ "\n");
 }
 
 @IonTestCase("Text round-trip testing", IonTestData.roundtrip, false, IonDataType.text)
@@ -69,7 +68,7 @@ void testEquivs(Test test) {
     import mir.ion.value;
     IonValueStream input;
     if (test.type == IonDataType.binary) {
-        input = test.data.IonValueStream.serializeText.text2ion.IonValueStream;
+        input = test.data.ion2text.text2ion.IonValueStream;
     } else {
         const(char)[] text = cast(const(char)[])test.data;
         input = text.text2ion.IonValueStream;
@@ -113,7 +112,7 @@ void testNonEquivs(Test test) {
     import mir.ion.value;
     IonValueStream input;
     if (test.type == IonDataType.binary) {
-        input = test.data.IonValueStream.serializeText.text2ion.IonValueStream;
+        input = test.data.ion2text.text2ion.IonValueStream;
     } else {
         const(char)[] text = cast(const(char)[])test.data;
         input = text.text2ion.IonValueStream;
@@ -144,7 +143,7 @@ void testNonEquivs(Test test) {
                 if (i++ == 0) {
                     first = value;
                 } else {
-                    assert(value != first);
+                    assert(value != first, );
                 }
             }
         }

@@ -886,7 +886,10 @@ size_t ionPutIntField()(
 {
     auto data = value.unsigned.coefficients;
     if (data.length == 0)
-        return 0;
+    {
+        *ptr = value.sign << 7;
+        return value.sign;
+    }
     size_t ret = .ionPutIntField(ptr, data[$ - 1], value.sign);
     data = data[0 .. $ - 1];
     foreach_reverse (d; data)
@@ -1871,7 +1874,7 @@ size_t ionPut()(
     )
 {
     size_t length;
-    if (value.coefficient.coefficients.length == 0)
+    if (value.coefficient.coefficients.length == 0 && value.sign == false && value.exponent == 0)
         goto L;
     length = ionPutVarInt(ptr + 1, value.exponent);
     length += ionPutIntField(ptr + 1 + length, value.signedCoefficient);
@@ -1919,18 +1922,18 @@ version(mir_ion_test) unittest
 
 
     // 0e-3
-    assert(ionPut(data.ptr, DecimalView!size_t(false, 3, BigUIntView!size_t.fromHexString("00")).lightConst) == 2);
+    assert(ionPut(data.ptr, DecimalView!size_t(false, 3, BigUIntView!size_t([0])).lightConst) == 2);
     assert(data[0] == 0x51);
     assert(data[1] == 0x83);
 
     // -0e+0
-    assert(ionPut(data.ptr, DecimalView!size_t(true, 0, BigUIntView!size_t.fromHexString("00")).lightConst) == 3);
+    assert(ionPut(data.ptr, DecimalView!size_t(true, 0, BigUIntView!size_t([0])).lightConst) == 3);
     assert(data[0] == 0x52);
     assert(data[1] == 0x80);
     assert(data[2] == 0x80);
 
     // 0e+0
-    assert(ionPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t.fromHexString("00")).lightConst) == 2);
+    assert(ionPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t([0])).lightConst) == 2);
     assert(data[0] == 0x51);
     assert(data[1] == 0x80);
 
@@ -1993,18 +1996,18 @@ version(mir_ion_test) unittest
 
 
     // 0e-3
-    assert(joyPut(data.ptr, DecimalView!size_t(false, 3, BigUIntView!size_t.fromHexString("00")).lightConst) == 2);
+    assert(joyPut(data.ptr, DecimalView!size_t(false, 3, BigUIntView!size_t([0])).lightConst) == 2);
     assert(data[0] == 0x83);
     assert(data[1] == 0x51);
 
     // -0e+0
-    assert(joyPut(data.ptr, DecimalView!size_t(true, 0, BigUIntView!size_t.fromHexString("00")).lightConst) == 3);
+    assert(joyPut(data.ptr, DecimalView!size_t(true, 0, BigUIntView!size_t([0])).lightConst) == 3);
     assert(data[0] == 0x80);
     assert(data[1] == 0x80);
     assert(data[2] == 0x52);
 
     // 0e+0
-    assert(joyPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t.fromHexString("00")).lightConst) == 2);
+    assert(joyPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t([0])).lightConst) == 2);
     assert(data[0] == 0x80);
     assert(data[1] == 0x51);
 
