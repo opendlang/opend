@@ -79,6 +79,9 @@ static immutable ION_GOOD_TEST_DATA_SKIP = [
     // We shouldn't have a IonValueStream that's fully empty in real data
     "good/empty.ion",
     "good/blank.ion",
+    // Mir supports up to 1024 bytes big integers/decimal for coefficient.
+    // This test requires 1201 bytes for coefficient.
+    "good/intBigSize1201.10n",
 ];
 
 static immutable ION_GOOD_TYPECODES_TEST_DATA_SKIP = [];
