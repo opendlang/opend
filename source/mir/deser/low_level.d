@@ -513,7 +513,8 @@ IonErrorCode deserializeValueImpl(T)(scope IonDescribedValue data, scope ref T v
     import mir.conv: to;
 
     serdeGetProxy!T proxy;
-    deserializeValueImpl(data, proxy);
+    if (auto error = deserializeValueImpl(data, proxy))
+        return error;
     value = proxy.to!T;
     return IonErrorCode.none;
 }
