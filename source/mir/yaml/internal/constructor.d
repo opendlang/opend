@@ -379,13 +379,13 @@ Timestamp constructTimestamp(string value) @safe
     string noFraction     = "2001-12-15 2:59:43";
     string ymd            = "2002-12-14";
 
-    assert(timestamp(canonical)      == "20011215T025943.1Z", timestamp(canonical));
+    assert(timestamp(canonical)      == "20011215T025943.1Z");
     //avoiding float conversion errors
-    assert(timestamp(iso8601)        == "20011214T215943.10-05", timestamp(iso8601));
-    assert(timestamp(spaceSeparated) == "20011214T215943.10-05", timestamp(spaceSeparated));
-    assert(timestamp(noTZ)           == "20011215T025943.10Z", timestamp(noTZ));
-    assert(timestamp(noFraction)     == "20011215T025943Z", timestamp(noFraction));
-    assert(timestamp(ymd)            == "20021214", timestamp(ymd));
+    assert(timestamp(iso8601)        == "20011214T215943.10-05");
+    assert(timestamp(spaceSeparated) == "20011214T215943.10-05");
+    assert(timestamp(noTZ)           == "20011215T025943.10");
+    assert(timestamp(noFraction)     == "20011215T025943");
+    assert(timestamp(ymd)            == "20021214");
 }
 
 // Construct a string _node.

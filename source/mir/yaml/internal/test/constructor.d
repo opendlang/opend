@@ -626,7 +626,7 @@ YamlAlgebraic[] constructTimestamp() @safe
             [
                 YamlPair(
                     YamlAlgebraic("canonical").withTag("tag:yaml.org,2002:str"),
-                    YamlAlgebraic(Timestamp(2001, 12, 15, 2, 59, 43, -1, 1)).withTag("tag:yaml.org,2002:timestamp")
+                    YamlAlgebraic(Timestamp(2001, 12, 15, 2, 59, 43, -1, 1).withOffset(0)).withTag("tag:yaml.org,2002:timestamp")
                 ),
                 YamlPair(
                     YamlAlgebraic("valid iso8601").withTag("tag:yaml.org,2002:str"),
@@ -798,10 +798,10 @@ YamlAlgebraic[] timestampBugs() @safe
             [
                 "2001-12-14T21:59:43.1-05:30".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
                 "2001-12-14T21:59:43.1+05:30".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
-                "2001-12-14T21:59:43.00101Z".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
+                "2001-12-14T21:59:43.00101".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
                 "2001-12-14T21:59:43+01".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
                 "2001-12-14T21:59:43-01:30".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp"),
-                "2005-07-08T17:35:04.517600Z".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp")
+                "2005-07-08T17:35:04.517600".Timestamp.YamlAlgebraic.withTag("tag:yaml.org,2002:timestamp")
             ].dup).withTag("tag:yaml.org,2002:seq")
     ];
 }

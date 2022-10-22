@@ -1559,8 +1559,12 @@ struct IonTimestamp
         pragma(inline, false);
         auto d = data[];
         Timestamp v;
-        if (auto error = parseVarInt(d, v.offset))
+        bool offsetSign;
+        ushort offset;
+        if (auto error = parseVarInt(d, offset, offsetSign))
             return error;
+        if (offset || !offsetSign)
+            v.offset = offsetSign ? cast(short)(0-cast(short)offset) : offset;
         ushort year;
         if (auto error = parseVarUInt(d, year))
             return error;
@@ -1727,7 +1731,7 @@ version(mir_ion_test) unittest
         [0x69, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0x81,   ], // The same instant with 0d1 fractional seconds
     ];
 
-    auto r = Timestamp(2000, 7, 8, 2, 3, 4);
+    auto r = Timestamp(2000, 7, 8, 2, 3, 4).withOffset(0);
 
     foreach(data; set)
     {
@@ -1738,13 +1742,13 @@ version(mir_ion_test) unittest
         .describe
         .get!IonTimestamp
         .get ==
-            Timestamp(2000, 7, 8, 2, 3, 4, -2, 0));
+            Timestamp(2000, 7, 8, 2, 3, 4, -2, 0).withOffset(0));
 
     assert(IonValue([0x6A, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC3, 0x10])
         .describe
         .get!IonTimestamp
         .get ==
-            Timestamp(2000, 7, 8, 2, 3, 4, -3, 16));
+            Timestamp(2000, 7, 8, 2, 3, 4, -3, 16).withOffset(0));
 }
 
 /++
@@ -3221,14 +3225,25 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
     @safe pure nothrow @nogc
     if (is(S == byte) || is(S == short) || is(S == int) || is(S == long))
 {
+    bool neg;
+    Unsigned!S unsigned;
+    if (auto error = parseVarInt(data, unsigned, neg))
+        return error;
+    result = neg ? cast(S)(0-cast(S)unsigned) : unsigned;
+    return IonErrorCode.none;
+}
+
+private IonErrorCode parseVarInt(U)(scope ref const(ubyte)[] data, scope out U result, scope out bool neg)
+    @safe pure nothrow @nogc
+    if (is(U == ubyte) || is(U == ushort) || is(U == uint) || is(U == ulong))
+{
     version (LDC) pragma(inline, true);
-    enum mLength = S(1) << (S.sizeof * 8 / 7 * 7 - 1);
-    S length;
+    enum mLength = U(1) << (U.sizeof * 8 / 7 * 7 - 1);
+    U length;
     if (_expect(data.length == 0, false))
         return IonErrorCode.unexpectedEndOfData;
     ubyte b = data[0];
     data = data[1 .. $];
-    bool neg;
     if (b & 0x40)
     {
         neg = true;
@@ -3247,11 +3262,11 @@ private IonErrorCode parseVarInt(S)(scope ref const(ubyte)[] data, scope out S r
     L:
         if (cast(byte)b < 0)
         {
-            result = neg ? cast(S)(0-length) : length;
+            result = length;
             return IonErrorCode.none;
         }
         if (_expect(length >= mLength, false))
-            return IonErrorCode.overflowInParseVarUInt;
+            return IonErrorCode.overflowInParseVarInt;
     }
 }
 

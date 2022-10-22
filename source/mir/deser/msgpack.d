@@ -359,7 +359,7 @@ private static void handleMsgPackElement(S)(scope ref S serializer, MessagePackF
                                 else
                                     assert(0, IonErrorCode.cantParseValueStream.ionErrorMsg);
                             }
-
+                            time.offset = 0;
                             time.toString(keyBuf);
                             serializer.putKey(keyBuf.data[0 .. keyBuf.length]);
                         }
@@ -490,7 +490,7 @@ private static void handleMsgPackElement(S)(scope ref S serializer, MessagePackF
                     time.fractionCoefficient = nanosecs;
                     time.precision = Timestamp.Precision.fraction;
                 }
-
+                time.offset = 0;
                 serializer.putValue(time);
             }
             else
@@ -845,11 +845,11 @@ unittest
 {
     import mir.ser.msgpack : serializeMsgpack;
     import mir.timestamp : Timestamp;
-    assert(Timestamp(2022, 2, 14).serializeMsgpack.deserializeMsgpack!(Timestamp) == Timestamp(2022, 2, 14, 0, 0, 0));
-    assert(Timestamp(2038, 1, 19, 3, 14, 7).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2038, 1, 19, 3, 14, 7));
-    assert(Timestamp(2299, 12, 31, 23, 59, 59).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2299, 12, 31, 23, 59, 59, -9, 0));
-    assert(Timestamp(2514, 5, 30, 1, 53, 5).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2514, 5, 30, 1, 53, 5, -9, 0));
-    assert(Timestamp(2000, 7, 8, 2, 3, 4, -3, 16).serializeMsgpack.deserializeMsgpack!(Timestamp) == Timestamp(2000, 7, 8, 2, 3, 4, -9, 16000000));
+    assert(Timestamp(2022, 2, 14).serializeMsgpack.deserializeMsgpack!(Timestamp) == Timestamp(2022, 2, 14, 0, 0, 0).withOffset(0));
+    assert(Timestamp(2038, 1, 19, 3, 14, 7).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2038, 1, 19, 3, 14, 7).withOffset(0));
+    assert(Timestamp(2299, 12, 31, 23, 59, 59).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2299, 12, 31, 23, 59, 59, -9, 0).withOffset(0));
+    assert(Timestamp(2514, 5, 30, 1, 53, 5).serializeMsgpack.deserializeMsgpack!Timestamp == Timestamp(2514, 5, 30, 1, 53, 5, -9, 0).withOffset(0));
+    assert(Timestamp(2000, 7, 8, 2, 3, 4, -3, 16).serializeMsgpack.deserializeMsgpack!(Timestamp) == Timestamp(2000, 7, 8, 2, 3, 4, -9, 16000000).withOffset(0));
 }
 
 /// Test serializing maps (structs)
@@ -1114,7 +1114,7 @@ version(mir_ion_test) unittest
     import mir.timestamp : Timestamp;
 
     {
-        auto time = Timestamp(2022, 2, 14, 0, 0, 0);
+        auto time = Timestamp(2022, 2, 14, 0, 0, 0).withOffset(0);
         const(ubyte)[] data = [0x81];
         data ~= time.serializeMsgpack;
         data ~= [0xcc, 0xfe];
@@ -1122,7 +1122,7 @@ version(mir_ion_test) unittest
     }
 
     {
-        auto time = Timestamp(2038, 1, 19, 3, 14, 7);
+        auto time = Timestamp(2038, 1, 19, 3, 14, 7).withOffset(0);
         const(ubyte)[] data = [0x81];
         data ~= time.serializeMsgpack;
         data ~= [0xcc, 0xfe];
@@ -1130,40 +1130,40 @@ version(mir_ion_test) unittest
     }
 
     {
-        auto time = Timestamp(2299, 12, 31, 23, 59, 59);
+        auto time = Timestamp(2299, 12, 31, 23, 59, 59).withOffset(0);
         const(ubyte)[] data = [0x81];
         data ~= time.serializeMsgpack;
         data ~= [0xcc, 0xfe];
-        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2299, 12, 31, 23, 59, 59, -9, 0).toString(): 0xfe]);
+        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2299, 12, 31, 23, 59, 59, -9, 0).withOffset(0).toString(): 0xfe]);
     }
 
     {
-        auto time = Timestamp(2514, 5, 30, 1, 53, 5);
+        auto time = Timestamp(2514, 5, 30, 1, 53, 5).withOffset(0);
         const(ubyte)[] data = [0x81];
         data ~= time.serializeMsgpack;
         data ~= [0xcc, 0xfe];
-        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2514, 5, 30, 1, 53, 5, -9, 0).toString(): 0xfe]);
+        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2514, 5, 30, 1, 53, 5, -9, 0).withOffset(0).toString(): 0xfe]);
     }
 
     // ext8
     {
-        auto time = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16);
+        auto time = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16).withOffset(0);
         const(ubyte)[] data = [0x81];
         data ~= time.serializeMsgpack;
         data ~= [0xcc, 0xfe];
-        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16000000).toString(): 0xfe]);
+        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16000000).withOffset(0).toString(): 0xfe]);
     }
 
     // ext16
     {
         const(ubyte)[] data = [0x81, 0xc8, 0x00, 0x08, 0xff, 0x03, 0xd0, 0x90, 0x00, 0x39, 0x66, 0x8b, 0xd8, 0xcc, 0xfe];
-        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16_000_000).toString(): 0xfe]);
+        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16_000_000).withOffset(0).toString(): 0xfe]);
     }
 
     // ext32
     {
         const(ubyte)[] data = [0x81, 0xc9, 0x00, 0x00, 0x00, 0x08, 0xff, 0x03, 0xd0, 0x90, 0x00, 0x39, 0x66, 0x8b, 0xd8, 0xcc, 0xfe];
-        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16_000_000).toString(): 0xfe]);
+        assert(data.deserializeMsgpack!(int[string]) == [Timestamp(2000, 7, 8, 2, 3, 4, -9, 16_000_000).withOffset(0).toString(): 0xfe]);
     }
 }
 

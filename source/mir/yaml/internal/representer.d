@@ -163,7 +163,7 @@ YamlAlgebraic representData(const YamlAlgebraic data, YamlScalarStyle defaultSca
 unittest
 {
     import mir.conv;
-    assert(representData(YamlAlgebraic(Timestamp(2000, 3, 14, 12, 34, 56)), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("2000-03-14T12:34:56Z").withTag("tag:yaml.org,2002:timestamp"));
+    assert(representData(YamlAlgebraic(Timestamp(2000, 3, 14, 12, 34, 56)), YamlScalarStyle.none, YamlCollectionStyle.none) == YamlAlgebraic("2000-03-14T12:34:56-00:00").withTag("tag:yaml.org,2002:timestamp"));
 }
 
 @safe unittest

@@ -539,11 +539,12 @@ version(mir_ion_test) unittest
         import mir.timestamp : Timestamp;
         auto mp = testData[i];
         auto ion = mp.msgpack2ion;
-        assert(ion.ion2text == ts, ts ~ " " ~ ion.ion2text);
-        assert(ts.Timestamp.serializeIon.ion2msgpack == mp);
+        import mir.test;
+        ion.ion2text.should == ts;
+        ts.Timestamp.serializeIon.ion2msgpack.should == mp;
     }
 }
-  
+
 /++
 Converts Ion binary data to MessagePack binary data.
 +/

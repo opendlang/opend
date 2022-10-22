@@ -921,9 +921,9 @@ version(mir_ion_test) unittest
     assert(`"2021-04-24"`.deserializeJson!Date == date);
 
     auto datetime = DateTime(1982, 4, 1, 20, 59, 22);
-    assert(datetime.serializeIon.ion2text == `1982-04-01T20:59:22Z`);
-    assert(datetime.serializeText == `1982-04-01T20:59:22Z`);
-    assert(datetime.serializeJson == `"1982-04-01T20:59:22Z"`);
+    assert(datetime.serializeIon.ion2text == `1982-04-01T20:59:22-00:00`);
+    assert(datetime.serializeText == `1982-04-01T20:59:22-00:00`);
+    assert(datetime.serializeJson == `"1982-04-01T20:59:22-00:00"`);
     assert(`"1982-04-01T20:59:22Z"`.deserializeJson!DateTime == datetime);
 
     auto dt = DateTime(1982, 4, 1, 20, 59, 22);

@@ -1146,6 +1146,7 @@ version(mir_ion_parser_test) unittest
 /// Test that timestamps are de-serialized properly
 version(mir_ion_parser_test) unittest
 {
+    import mir.test;
     import mir.ion.stream;
     import mir.ion.conv : text2ion;
     import mir.ion.value : IonTimestamp;
@@ -1155,7 +1156,7 @@ version(mir_ion_parser_test) unittest
     {
         foreach(symbolTable, scope ionValue; ionData.text2ion.IonValueStream) {
             Timestamp t = ionValue.get!(IonTimestamp).get;
-            assert(expected == t);
+            t.should == expected;
         }
     }
     
@@ -1171,48 +1172,48 @@ version(mir_ion_parser_test) unittest
     test("2001-01-02", Timestamp(2001, 1, 2));
     test("2001-01-02T", Timestamp(2001, 1, 2));
     test("2001-01-02T03:04", Timestamp(2001, 1, 2, 3, 4));
-    test("2001-01-02T03:04Z", Timestamp(2001, 1, 2, 3, 4));
-    test("2001-01-02T03:04+00:00", Timestamp(2001, 1, 2, 3, 4));
+    test("2001-01-02T03:04Z", Timestamp(2001, 1, 2, 3, 4).withOffset(0));
+    test("2001-01-02T03:04+00:00", Timestamp(2001, 1, 2, 3, 4).withOffset(0));
     test("2001-01-02T03:05+00:01", Timestamp(2001, 1, 2, 3, 4).withOffset(1));
     test("2001-01-02T05:05+02:01", Timestamp(2001, 1, 2, 3, 4).withOffset(2*60+1));
     test("2001-01-02T03:04:05", Timestamp(2001, 1, 2, 3, 4, 5));
-    test("2001-01-02T03:04:05Z", Timestamp(2001, 1, 2, 3, 4, 5));
-    test("2001-01-02T03:04:05+00:00", Timestamp(2001, 1, 2, 3, 4, 5));
+    test("2001-01-02T03:04:05Z", Timestamp(2001, 1, 2, 3, 4, 5).withOffset(0));
+    test("2001-01-02T03:04:05+00:00", Timestamp(2001, 1, 2, 3, 4, 5).withOffset(0));
     test("2001-01-02T03:05:05+00:01", Timestamp(2001, 1, 2, 3, 4, 5).withOffset(1));
     test("2001-01-02T05:05:05+02:01", Timestamp(2001, 1, 2, 3, 4, 5).withOffset(2*60+1));
     test("2001-01-02T03:04:05.666", Timestamp(2001, 1, 2, 3, 4, 5, -3, 666));
-    test("2001-01-02T03:04:05.666Z", Timestamp(2001, 1, 2, 3, 4, 5, -3, 666));
-    test("2001-01-02T03:04:05.666666Z", Timestamp(2001, 1, 2, 3, 4, 5, -6, 666_666));
+    test("2001-01-02T03:04:05.666Z", Timestamp(2001, 1, 2, 3, 4, 5, -3, 666).withOffset(0));
+    test("2001-01-02T03:04:05.666666Z", Timestamp(2001, 1, 2, 3, 4, 5, -6, 666_666).withOffset(0));
     test("2001-01-02T03:54:05.666+00:50", Timestamp(2001, 1, 2, 3, 4, 5, -3, 666).withOffset(50));
     test("2001-01-02T03:54:05.666666+00:50", Timestamp(2001, 1, 2, 3, 4, 5, -6, 666_666).withOffset(50));
 
     // Time of day tests
     test("03:04", Timestamp(0, 0, 0, 3, 4));
-    test("03:04Z", Timestamp(0, 0, 0, 3, 4));
-    test("03:04+00:00", Timestamp(0, 0, 0, 3, 4));
+    test("03:04Z", Timestamp(0, 0, 0, 3, 4).withOffset(0));
+    test("03:04+00:00", Timestamp(0, 0, 0, 3, 4).withOffset(0));
     test("03:05+00:01", Timestamp(0, 0, 0, 3, 4).withOffset(1));
     test("05:05+02:01", Timestamp(0, 0, 0, 3, 4).withOffset(2*60+1));
     test("03:04:05", Timestamp(0, 0, 0, 3, 4, 5));
-    test("03:04:05Z", Timestamp(0, 0, 0, 3, 4, 5));
-    test("03:04:05+00:00", Timestamp(0, 0, 0, 3, 4, 5));
+    test("03:04:05Z", Timestamp(0, 0, 0, 3, 4, 5).withOffset(0));
+    test("03:04:05+00:00", Timestamp(0, 0, 0, 3, 4, 5).withOffset(0));
     test("03:05:05+00:01", Timestamp(0, 0, 0, 3, 4, 5).withOffset(1));
     test("05:05:05+02:01", Timestamp(0, 0, 0, 3, 4, 5).withOffset(2*60+1));
     test("03:04:05.666", Timestamp(0, 0, 0, 3, 4, 5, -3, 666));
-    test("03:04:05.666Z", Timestamp(0, 0, 0, 3, 4, 5, -3, 666));
-    test("03:04:05.666666Z", Timestamp(0, 0, 0, 3, 4, 5, -6, 666_666));
+    test("03:04:05.666Z", Timestamp(0, 0, 0, 3, 4, 5, -3, 666).withOffset(0));
+    test("03:04:05.666666Z", Timestamp(0, 0, 0, 3, 4, 5, -6, 666_666).withOffset(0));
     test("03:54:05.666+00:50", Timestamp(0, 0, 0, 3, 4, 5, -3, 666).withOffset(50));
     test("03:54:05.666666+00:50", Timestamp(0, 0, 0, 3, 4, 5, -6, 666_666).withOffset(50));
 
     // Mir doesn't like 03:04 only (as technically it's less precise then TimeOfDay)... ugh
     test("03:04:05", Timestamp(TimeOfDay(3, 4, 5)));
-    test("03:04:05Z", Timestamp(TimeOfDay(3, 4, 5)));
-    test("03:04:05+00:00", Timestamp(TimeOfDay(3, 4, 5)));
+    test("03:04:05Z", Timestamp(TimeOfDay(3, 4, 5)).withOffset(0));
+    test("03:04:05+00:00", Timestamp(TimeOfDay(3, 4, 5)).withOffset(0));
     test("03:05:05+00:01", Timestamp(TimeOfDay(3, 4, 5)).withOffset(1));
     test("05:05:05+02:01", Timestamp(TimeOfDay(3, 4, 5)).withOffset(2*60+1));
 
     testFail("2001-01-02T03:04+00:50", Timestamp(2001, 1, 2, 3, 4));
     testFail("2001-01-02T03:04:05+00:50", Timestamp(2001, 1, 2, 3, 4, 5));
-    testFail("2001-01-02T03:04:05.666Z", Timestamp(2001, 1, 2, 3, 4, 5));
+    testFail("2001-01-02T03:04:05.666Z", Timestamp(2001, 1, 2, 3, 4, 5).withOffset(0));
     testFail("2001-01-02T03:54:05.666+00:50", Timestamp(2001, 1, 2, 3, 4, 5));
 
     // Fake timestamps for Duration encoding
@@ -1558,7 +1559,7 @@ version (mir_ion_parser_test) unittest
     test(`[hello, world]`, `[hello,world]`);
     test(`[this::is::an::annotated::symbol, this::is::annotated::123.456]`,
          `[this::is::an::annotated::symbol,this::is::annotated::123.456]`);
-    test(`[date::of::birth::0001-01-01T00:00:00.0-00:00, date::of::birth::1970-01-01T]`,
+    test(`[date::of::birth::0001-01-01T00:00:00.0+00:00, date::of::birth::1970-01-01T]`,
          `[date::of::birth::0001-01-01T00:00:00.0Z,date::of::birth::1970-01-01]`);
     test(`['hello', "hello", '''hello''', '''hello ''''''world''']`,
          `[hello,"hello","hello","hello world"]`);

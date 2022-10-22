@@ -125,103 +125,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPutVarUInt(T)(scope ubyte* ptr, const T num)
-    if (isUnsigned!T)
-{
-    T value = num;
-    size_t length;
-    do ptr[length++] = value & 0x7F;
-    while (value >>>= 7);
-    *ptr |= 0x80;
-    return length;
-}
-
-///
-@("joyPutVarUInt")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[19] data = void;
-
-    alias AliasSeq(T...) = T;
-
-    foreach(T; AliasSeq!(ubyte, ushort, uint, ulong))
-    {
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0) == 1);
-        assert(data[0] == 0x80);
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 1) == 1);
-        assert(data[0] == 0x81);
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0x7F) == 1);
-        assert(data[0] == 0xFF);
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0xFF) == 2);
-        assert(data[0] == 0xFF);
-        assert(data[1] == 0x01);
-    }
-
-    foreach(T; AliasSeq!(ushort, uint, ulong))
-    {
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0x3FFF) == 2);
-        assert(data[0] == 0xFF);
-        assert(data[1] == 0x7F);
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0x7FFF) == 3);
-        assert(data[0] == 0xFF);
-        assert(data[1] == 0x7F);
-        assert(data[2] == 0x01);
-
-        data[] = 0;
-        assert(joyPutVarUInt!T(data.ptr, 0xFFEE) == 3);
-        assert(data[0] == 0xEE);
-        assert(data[1] == 0x7F);
-        assert(data[2] == 0x03);
-    }
-
-    data[] = 0;
-    assert(joyPutVarUInt(data.ptr, uint.max) == 5);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0x7F);
-    assert(data[2] == 0x7F);
-    assert(data[3] == 0x7F);
-    assert(data[4] == 0x0F);
-
-    data[] = 0;
-    assert(joyPutVarUInt!ulong(data.ptr, ulong.max >> 1) == 9);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0x7F);
-    assert(data[2] == 0x7F);
-    assert(data[3] == 0x7F);
-    assert(data[4] == 0x7F);
-    assert(data[5] == 0x7F);
-    assert(data[6] == 0x7F);
-    assert(data[7] == 0x7F);
-    assert(data[8] == 0x7F);
-
-    data[] = 0;
-    assert(joyPutVarUInt(data.ptr, ulong.max) == 10);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0x7F);
-    assert(data[2] == 0x7F);
-    assert(data[3] == 0x7F);
-    assert(data[4] == 0x7F);
-    assert(data[5] == 0x7F);
-    assert(data[6] == 0x7F);
-    assert(data[7] == 0x7F);
-    assert(data[8] == 0x7F);
-    assert(data[9] == 0x01);
-}
-
-/++
-+/
 size_t ionPutVarInt(T)(scope ubyte* ptr, const T num)
     if (isSigned!T)
 {
@@ -1339,52 +1242,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPut(T)(scope ubyte* ptr, const T value, bool sign = false)
-    if (isUnsigned!T)
-{
-    auto L = ionPutUIntField!T(ptr, value);
-    static if (T.sizeof <= 8)
-    {
-        ptr[L] = cast(ubyte) (0x20 | (sign << 4) | L);
-        return L + 1;
-    }
-    else
-    {
-        static assert(0, "cent and ucent types not supported by mir.ion for now");
-    }
-}
-
-///
-@("joyPutInteger0")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[19] data = void;
-    assert(joyPut(data.ptr, 0u) == 1);
-    assert(data[0] == 0x20);
-    assert(joyPut(data.ptr, 0u, true) == 1);
-    assert(data[0] == 0x30);
-    assert(joyPut(data.ptr, 0xFFu) == 2);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0x21);
-    assert(joyPut(data.ptr, 0xFFu, true) == 2);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0x31);
-
-    assert(joyPut(data.ptr, ulong.max, true) == 9);
-    assert(data[0] == 0xFF);
-    assert(data[1] == 0xFF);
-    assert(data[2] == 0xFF);
-    assert(data[3] == 0xFF);
-    assert(data[4] == 0xFF);
-    assert(data[5] == 0xFF);
-    assert(data[6] == 0xFF);
-    assert(data[7] == 0xFF);
-    assert(data[8] == 0x38);
-}
-
-/++
-+/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (isSigned!T && isIntegral!T)
 {
@@ -1409,34 +1266,6 @@ version(mir_ion_test) unittest
     assert(data[0] == 0x22);
     assert(data[1] == 0x01);
     assert(data[2] == 0x02);
-}
-
-/++
-+/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (isSigned!T && isIntegral!T)
-{
-    bool sign = value < 0;
-    T num = value;
-    if (sign)
-        num = cast(T)(0-num);
-    return joyPut!(Unsigned!T)(ptr, num, sign);
-}
-
-///
-@("joyPutInteger1")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[19] data = void;
-    assert(joyPut(data.ptr, -16) == 2);
-    assert(data[0] == 0x10);
-    assert(data[1] == 0x31);
-
-    assert(joyPut(data.ptr, 258) == 3);
-    assert(data[0] == 0x01);
-    assert(data[1] == 0x02);
-    assert(data[2] == 0x22);
 }
 
 private auto byteData(T)(const T value)
@@ -1508,42 +1337,6 @@ version(mir_ion_test) unittest
     assert(data[2] == 0x00);
     assert(data[3] == 0x00);
     assert(data[4] == 0x00);
-}
-
-/++
-+/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == float))
-{
-    auto num = *cast(uint*)&value;
-    auto s = (num != 0) << 2;
-    *cast(ubyte[4]*) ptr = byteData(num);
-    ptr[s] = cast(ubyte)(0x40 + s);
-    return 1 + s;
-}
-
-///
-@("joyPutIntegerFloat")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[5] data;
-    assert(joyPut(data.ptr, -16f) == 5);
-    assert(data[0] == 0xC1);
-    assert(data[1] == 0x80);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x44);
-
-    assert(joyPut(data.ptr, 0f) == 1);
-    assert(data[0] == 0x40);
-
-    assert(joyPut(data.ptr, -0f) == 5);
-    assert(data[0] == 0x80);
-    assert(data[1] == 0x00);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x44);
 }
 
 /++
@@ -1634,50 +1427,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == double))
-{
-    auto num = *cast(ulong*)&value;
-    auto s = (num != 0) << 3;
-    *cast(ubyte[8]*) ptr = byteData(num);
-    ptr[s] = cast(ubyte)(0x40 + s);
-    return 1 + s;
-}
-
-///
-@("joyPutIntegerDouble")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[9] data;
-    assert(joyPut(data.ptr, -16.0) == 9);
-    assert(data[0] == 0xC0);
-    assert(data[1] == 0x30);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x00);
-    assert(data[5] == 0x00);
-    assert(data[6] == 0x00);
-    assert(data[7] == 0x00);
-    assert(data[8] == 0x48);
-
-    assert(joyPut(data.ptr, 0.0) == 1);
-    assert(data[0] == 0x40);
-
-    assert(joyPut(data.ptr, -0.0) == 9);
-    assert(data[0] == 0x80);
-    assert(data[1] == 0x00);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x00);
-    assert(data[5] == 0x00);
-    assert(data[6] == 0x00);
-    assert(data[7] == 0x00);
-    assert(data[8] == 0x48);
-}
-
-/++
-+/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == real))
 {
@@ -1717,46 +1466,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == real))
-{
-    return joyPut!double(ptr, value);
-}
-
-///
-@("joyPutIntegerReal")
-@system pure nothrow @nogc
-version(mir_ion_test) unittest
-{
-    ubyte[9] data;
-    assert(joyPut(data.ptr, -16.0L) == 9);
-    assert(data[0] == 0xC0);
-    assert(data[1] == 0x30);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x00);
-    assert(data[5] == 0x00);
-    assert(data[6] == 0x00);
-    assert(data[7] == 0x00);
-    assert(data[8] == 0x48);
-
-    assert(joyPut(data.ptr, 0.0L) == 1);
-    assert(data[0] == 0x40);
-
-    assert(joyPut(data.ptr, -0.0L) == 9);
-    assert(data[0] == 0x80);
-    assert(data[1] == 0x00);
-    assert(data[2] == 0x00);
-    assert(data[3] == 0x00);
-    assert(data[4] == 0x00);
-    assert(data[5] == 0x00);
-    assert(data[6] == 0x00);
-    assert(data[7] == 0x00);
-    assert(data[8] == 0x48);
-}
-
-/++
-+/
 size_t ionPut()(
     scope ubyte* ptr,
     BigUIntView!(const size_t) value,
@@ -1773,28 +1482,6 @@ version(mir_ion_test) unittest
     assert(ionPut(data.ptr, BigUIntView!size_t.fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219").lightConst) == 32);
     assert(data[0] == 0x2E);
     assert(data[1] == 0x9E);
-    // assert(data[2 .. 32] == BigUIntView!(ubyte, WordEndian.big).fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219").coefficients);
-}
-
-/++
-+/
-size_t joyPut()(
-    scope ubyte* ptr,
-    BigUIntView!(const size_t) value,
-    )
-{
-    return joyPut(ptr, value.signed);
-}
-
-@("joyPutBigUIntView")
-pure
-version(mir_ion_test) unittest
-{
-    ubyte[32] data;
-    // big unsigned integer
-    assert(joyPut(data.ptr, BigUIntView!size_t.fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219").lightConst) == 32);
-    assert(data[31] == 0x2E);
-    assert(data[30] == 0x9E);
     // assert(data[2 .. 32] == BigUIntView!(ubyte, WordEndian.big).fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219").coefficients);
 }
 
@@ -1842,28 +1529,6 @@ version(mir_ion_test) unittest
     assert(data[0] == 0x32);
     assert(data[1] == 0x45);
     assert(data[2] == 0xbe);
-}
-
-/++
-+/
-size_t joyPut()(
-    scope ubyte* ptr,
-    BigIntView!(const size_t) value,
-    )
-{
-    auto length = ionPutUIntField(ptr, value.unsigned);
-    return joyPutEnd(ptr, value.sign ? IonTypeCode.nInt : IonTypeCode.uInt, length);
-}
-
-@("joyPutBigIntView")
-pure
-version(mir_ion_test) unittest
-{
-    import mir.test;
-    ubyte[9] data;
-    // big signed integer
-    data[0 .. joyPut(data.ptr, -BigUIntView!size_t.fromHexString("45be").lightConst)]
-        .should == [0x45, 0xbe, 0x32];
 }
 
 /++
@@ -1959,71 +1624,6 @@ version(mir_ion_test) unittest
     // assert(data[0] == 0x50);
 }
 
-/++
-+/
-size_t joyPut()(
-    scope ubyte* ptr,
-    DecimalView!(const size_t) value,
-    )
-{
-    size_t length;
-    if (value.coefficient.coefficients.length || value.sign)
-    {
-        length = ionPutVarInt(ptr, value.exponent);
-        length += ionPutIntField(ptr + length, value.signedCoefficient);
-    }
-    return joyPutEnd(ptr, IonTypeCode.decimal, length);
-}
-
-@("joyPutDecimalView")
-pure
-version(mir_ion_test) unittest
-{
-    import mir.test;
-
-    ubyte[34] data;
-    // 0.6
-    assert(joyPut(data.ptr, DecimalView!size_t(false, -1, BigUIntView!size_t.fromHexString("06")).lightConst) == 3);
-    assert(data[0] == 0xC1);
-    assert(data[1] == 0x06);
-    assert(data[2] == 0x52);
-
-    // -0.6
-    assert(joyPut(data.ptr, DecimalView!size_t(true, -1, BigUIntView!size_t.fromHexString("06")).lightConst) == 3);
-    assert(data[0] == 0xC1);
-    assert(data[1] == 0x86);
-    assert(data[2] == 0x52);
-
-
-    // 0e-3
-    assert(joyPut(data.ptr, DecimalView!size_t(false, 3, BigUIntView!size_t([0])).lightConst) == 2);
-    assert(data[0] == 0x83);
-    assert(data[1] == 0x51);
-
-    // -0e+0
-    assert(joyPut(data.ptr, DecimalView!size_t(true, 0, BigUIntView!size_t([0])).lightConst) == 3);
-    assert(data[0] == 0x80);
-    assert(data[1] == 0x80);
-    assert(data[2] == 0x52);
-
-    // 0e+0
-    assert(joyPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t([0])).lightConst) == 2);
-    assert(data[0] == 0x80);
-    assert(data[1] == 0x51);
-
-    // 0e+0 (minimal)
-    assert(joyPut(data.ptr, DecimalView!size_t(false, 0, BigUIntView!size_t.init).lightConst) == 1);
-    assert(data[0] == 0x50);
-
-    // big decimal
-    data[0 .. joyPut(data.ptr, DecimalView!size_t(false, -9, BigUIntView!size_t.fromHexString("88BF4748507FB9900ADB624CCFF8D78897DC900FB0460327D4D86D327219")).lightConst)]
-        .should == [0xC9, 0x00, 0x88, 0xBF, 0x47, 0x48, 0x50, 0x7F, 0xB9, 0x90, 0x0A, 0xDB, 0x62, 0x4C, 0xCF, 0xF8, 0xD7, 0x88, 0x97, 0xDC, 0x90, 0x0F, 0xB0, 0x46, 0x03, 0x27, 0xD4, 0xD8, 0x6D, 0x32, 0x72, 0x19, 0xA0, 0x5E];
-
-    // -12.345
-    data[0 .. joyPut(data.ptr, DecimalView!size_t(true, -3, BigUIntView!size_t.fromHexString("3039")).lightConst)]
-        .should == [0xC3, 0xB0, 0x39, 0x53];
-}
-
 ///
 size_t ionPutDecimal()(scope ubyte* ptr, bool sign, ulong coefficient, long exponent)
 {
@@ -2075,27 +1675,15 @@ size_t ionPutDecimalR()(scope ubyte* ptr, bool sign, ulong coefficient, long exp
     }
 }
 
-///
-size_t joyPutDecimal()(scope ubyte* ptr, bool sign, ulong coefficient, long exponent)
-{
-    version(LDC)
-        pragma(inline, true);
-    size_t length;
-    if (coefficient || sign)
-    {
-        length = ionPutVarInt(ptr, exponent);
-        length += ionPutIntField(ptr + length, coefficient, sign);
-    }
-    return joyPutEnd(ptr, IonTypeCode.decimal, length);
-}
-
 /++
 +/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == Timestamp))
 {
     size_t ret = 1;
-    ret += ionPutVarInt(ptr + ret, value.offset);
+    ret += value.isLocalTime ?
+        ionPutVarInt(ptr + ret, ubyte.init, true):
+        ionPutVarInt(ptr + ret, value.offset);
     ret += ionPutVarUInt(ptr + ret, cast(ushort)value.year);
     if (value.precision >= Timestamp.precision.month)
     {
@@ -2146,72 +1734,16 @@ version(mir_ion_test) unittest
     ubyte[20] data;
 
     ubyte[] result = [0x68, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84];
-    auto ts = Timestamp(2000, 7, 8, 2, 3, 4);
+    auto ts = Timestamp(2000, 7, 8, 2, 3, 4).withOffset(0);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 
     result = [0x69, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC2];
-    ts = Timestamp(2000, 7, 8, 2, 3, 4, -2, 0);
+    ts = Timestamp(2000, 7, 8, 2, 3, 4, -2, 0).withOffset(0);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
 
     result = [0x6A, 0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC3, 0x10];
-    ts = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16);
+    ts = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16).withOffset(0);
     assert(data[0 .. ionPut(data.ptr, ts)] == result);
-}
-
-/++
-+/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == Timestamp))
-{
-    size_t length;
-    length += ionPutVarInt(ptr + length, value.offset);
-    length += ionPutVarUInt(ptr + length, cast(ushort)value.year);
-    if (value.precision >= Timestamp.precision.month)
-    {
-        ptr[length++] = cast(ubyte) (0x80 | value.month);
-        if (value.precision >= Timestamp.precision.day)
-        {
-            ptr[length++] = cast(ubyte) (0x80 | value.day);
-            if (value.precision >= Timestamp.precision.minute)
-            {
-                ptr[length++] = cast(ubyte) (0x80 | value.hour);
-                ptr[length++] = cast(ubyte) (0x80 | value.minute);
-                if (value.precision >= Timestamp.precision.second)
-                {
-                    ptr[length++] = cast(ubyte) (0x80 | value.second);
-                    if (value.precision > Timestamp.precision.second) //fraction
-                    {
-                        length += ionPutVarInt(ptr + length, value.fractionExponent);
-                        length += ionPutIntField(ptr + length, long(value.fractionCoefficient));
-                    }
-                }
-            }
-        }
-    }
-
-    return joyPutEnd(ptr, IonTypeCode.timestamp, length);
-}
-
-///
-@("joyPutTimestamp")
-version(mir_ion_test) unittest
-{
-    import mir.test;
-    import mir.timestamp;
-
-    ubyte[20] data;
-
-    ubyte[] result = [0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0x68];
-    auto ts = Timestamp(2000, 7, 8, 2, 3, 4);
-    data[0 .. joyPut(data.ptr, ts)].should == result;
-
-    result = [0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC2, 0x69];
-    ts = Timestamp(2000, 7, 8, 2, 3, 4, -2, 0);
-    data[0 .. joyPut(data.ptr, ts)].should == result;
-
-    result = [0x80, 0x0F, 0xD0, 0x87, 0x88, 0x82, 0x83, 0x84, 0xC3, 0x10, 0x6A];
-    ts = Timestamp(2000, 7, 8, 2, 3, 4, -3, 16);
-    data[0 .. joyPut(data.ptr, ts)].should == result;
 }
 
 /++
@@ -2260,27 +1792,6 @@ version(mir_ion_test) unittest
     ubyte[] result = [0x72, 0x01, 0xFF];
     auto id = 0x1FFu;
     assert(data[0 .. ionPutSymbolId(data.ptr, id)] == result);
-}
-
-/++
-+/
-size_t joyPutSymbolId(T)(scope ubyte* ptr, const T value)
-    if (isUnsigned!T)
-{
-    auto length = ionPutUIntField(ptr, value);
-    ptr[length] = cast(ubyte)(0x70 | length);
-    return length + 1;
-}
-
-///
-@("joyPutSymbolId")
-version(mir_ion_test) unittest
-{
-    ubyte[8] data;
-
-    ubyte[] result = [0x01, 0xFF, 0x72];
-    auto id = 0x1FFu;
-    assert(data[0 .. joyPutSymbolId(data.ptr, id)] == result);
 }
 
 /++
@@ -2342,34 +1853,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPut()(scope ubyte* ptr, scope const(char)[] value)
-{
-    if (__ctfe)
-        ptr[0 .. value.length] = cast(const(ubyte)[])value;
-    else
-        memcpy(ptr, value.ptr, value.length);
-    return joyPutEnd(ptr, IonTypeCode.string, value.length);
-}
-
-///
-@("joyPutString")
-version(mir_ion_test) unittest
-{
-    import mir.test;
-
-    ubyte[20] data;
-
-    ubyte[] result = ['v', 'a', 'l', 'u', 'e', 0x85];
-    auto str = "value";
-    assert(data[0 .. joyPut(data.ptr, str)] == result);
-
-    result = cast(ubyte[])"hexadecimal23456" ~ [ubyte(0x90), ubyte(0x8E)];
-    str = "hexadecimal23456";
-    data[0 .. joyPut(data.ptr, str)].should == result;
-}
-
-/++
-+/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == Clob))
 {
@@ -2405,35 +1888,6 @@ version(mir_ion_test) unittest
 
 /++
 +/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == Clob))
-{
-    if (__ctfe)
-        ptr[0 .. value.data.length] = cast(const(ubyte)[])value.data;
-    else
-        memcpy(ptr, value.data.ptr, value.data.length);
-    return joyPutEnd(ptr, IonTypeCode.clob, value.data.length);
-}
-
-///
-@("joyPutCLOB")
-version(mir_ion_test) unittest
-{
-    import mir.lob;
-
-    ubyte[20] data;
-
-    ubyte[] result = ['v', 'a', 'l', 'u', 'e', 0x95];
-    auto str = Clob("value");
-    assert(data[0 .. joyPut(data.ptr, str)] == result);
-
-    result = cast(ubyte[])"hexadecimal23456" ~ [ubyte(0x90), ubyte(0x9E)] ;
-    str = Clob("hexadecimal23456");
-    assert(data[0 .. joyPut(data.ptr, str)] == result);
-}
-
-/++
-+/
 size_t ionPut(T)(scope ubyte* ptr, const T value)
     if (is(T == Blob))
 {
@@ -2465,35 +1919,6 @@ version(mir_ion_test) unittest
     result = [ubyte(0xAE), ubyte(0x90)] ~ cast(ubyte[])"hexadecimal23456";
     payload = Blob(cast(ubyte[])"hexadecimal23456");
     assert(data[0 .. ionPut(data.ptr, payload)] == result);
-}
-
-/++
-+/
-size_t joyPut(T)(scope ubyte* ptr, const T value)
-    if (is(T == Blob))
-{
-    if (__ctfe)
-        ptr[0 .. value.data.length] = cast(const(ubyte)[])value.data;
-    else
-        memcpy(ptr, value.data.ptr, value.data.length);
-    return joyPutEnd(ptr, IonTypeCode.blob, value.data.length);
-}
-
-///
-@("joyPutBLOB")
-version(mir_ion_test) unittest
-{
-    import mir.lob;
-
-    ubyte[20] data;
-
-    ubyte[] result = ['v', 'a', 'l', 'u', 'e', 0xA5];
-    auto payload = Blob(cast(ubyte[])"value");
-    assert(data[0 .. joyPut(data.ptr, payload)] == result);
-
-    result = cast(ubyte[])"hexadecimal23456" ~ [ubyte(0x90), ubyte(0xAE)];
-    payload = Blob(cast(ubyte[])"hexadecimal23456");
-    assert(data[0 .. joyPut(data.ptr, payload)] == result);
 }
 
 /++
@@ -2606,61 +2031,6 @@ Running ./mir-ion-test-library`;
     result ~= cast(ubyte[])bm;
     len = ionPut(data.ptr + pos, bm);
     assert(data[0 .. ionPutEnd(data.ptr, IonTypeCode.list, len)] == result);
-}
-
-/++
-+/
-size_t joyPutEnd()(ubyte* ptr, IonTypeCode tc, size_t length)
-{
-    version(LDC) pragma(inline, true);
-    if (length < 0xE)
-    {
-        ptr[length] = cast(ubyte) ((tc << 4) | length);
-        return length + 1;
-    }
-    else
-    {
-        length += joyPutVarUInt(ptr + length, length);
-        ptr[length] = cast(ubyte) ((tc << 4) | 0xE);
-        return length + 1;
-    }
-}
-
-///
-@("joyPutEnd")
-version(mir_ion_test) unittest
-{
-    import mir.ion.type_code;
-
-    ubyte[1024] data;
-
-    ubyte[] result = [0xB0];
-    assert(data[0 .. joyPutEnd(data.ptr, IonTypeCode.list, 0)] == result);
-
-    result = cast(ubyte[])"hello" ~ [ubyte(0x85), ubyte(0xB6)];
-    auto len = joyPut(data.ptr, "hello");
-    assert(data[0 .. joyPutEnd(data.ptr, IonTypeCode.list, len)] == result);
-
-    result = cast(ubyte[])"hello world!!!";
-    result ~= [0x8E, 0x8E, 0x90, 0xCE];
-    len = joyPut(data.ptr, "hello world!!!");
-    assert(data[0 .. joyPutEnd(data.ptr, IonTypeCode.sexp, len)] == result);
-
-    auto bm = `
-Generating test runner configuration 'mir-ion-test-library' for 'library' (library).
-Performing "unittest" build using /Users/9il/dlang/ldc2/bin/ldc2 for x86_64.
-mir-core 1.1.7: target for configuration "library" is up to date.
-mir-algorithm 3.9.2: target for configuration "default" is up to date.
-mir-cpuid 1.2.6: target for configuration "library" is up to date.
-mir-ion 0.5.7+commit.70.g7dcac11: building configuration "mir-ion-test-library"...
-Linking...
-To force a rebuild of up-to-date targets, run again with --force.
-Running ./mir-ion-test-library`;
-
-    result = cast(ubyte[])bm;
-    result ~= [0xAD, 0x04, 0x8E, 0xB0, 0x04, 0xBE];
-    len = joyPut(data.ptr, bm);
-    assert(data[0 .. joyPutEnd(data.ptr, IonTypeCode.list, len)] == result);
 }
 
 /++
