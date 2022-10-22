@@ -306,7 +306,7 @@ struct This
     string toString() { return typeof(this).stringof; }
 }
 
-private struct TagInfo(T, string name, udas...)
+private template TagInfo(T, string name, udas...)
     if (udas.length <= 3)
 {
     import std.meta: staticIndexOf;
