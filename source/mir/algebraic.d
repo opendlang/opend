@@ -1327,7 +1327,7 @@ struct Algebraic(T__...)
                         hash = hashOf(trustedGet!T.hashOf, i ^ hash);
                     else
                     {
-                        debug pragma(msg, "Mir warning: can't compute hash. Expexted `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
+                        debug pragma(msg, "Mir warning: couldn't compute hash. Expected a `size_t toHash() scope @safe const pure nothrow @nogc` method for " ~ T.stringof);
                         hash = i;
                     }
                     break S;
