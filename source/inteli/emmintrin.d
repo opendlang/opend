@@ -4330,6 +4330,13 @@ void _mm_store_pd (double* mem_addr, __m128d a) pure @trusted
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = a;
 }
+unittest
+{
+    align(16) double[2] A;
+    __m128d B = _mm_setr_pd(-8.0, 9.0);
+    _mm_store_pd(A.ptr, B);
+    assert(A == [-8.0, 9.0]);
+}
 
 /// Store the lower double-precision (64-bit) floating-point element from `a` into 2 contiguous elements in memory. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
@@ -4485,7 +4492,7 @@ unittest
 }
 
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
-/// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte
+/// from `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte
 /// boundary or a general-protection exception may be generated.
 void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
 {
@@ -4501,7 +4508,6 @@ void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
             store <2 x double> %1, <2 x double>* %0, align 16, !nontemporal !0
             ret void`;
         LDCInlineIREx!(prefix, ir, "", void, double2*, double2)(cast(double2*)mem_addr, a);
-
     }
     else
     {
@@ -4510,7 +4516,13 @@ void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
         *dest = a;
     }
 }
-// TODO untitest
+unittest
+{
+    align(16) double[2] A;
+    __m128d B = _mm_setr_pd(-8.0, 9.0);
+    _mm_stream_pd(A.ptr, B);
+    assert(A == [-8.0, 9.0]);
+}
 
 /// Store 128-bits of integer data from a into memory using a non-temporal memory hint.
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception
@@ -4529,7 +4541,6 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
             store <4 x i32> %1, <4 x i32>* %0, align 16, !nontemporal !0
             ret void`;
         LDCInlineIREx!(prefix, ir, "", void, int4*, int4)(cast(int4*)mem_addr, a);
-
     }
     else
     {
