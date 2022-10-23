@@ -4549,7 +4549,13 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
         *dest = a;
     }
 }
-// TODO untitest
+unittest
+{
+    align(16) int[4] A;
+    __m128i B = _mm_setr_epi32(-8, 9, 10, -11);
+    _mm_stream_si128(cast(__m128i*)A.ptr, B);
+    assert(A == [-8, 9, 10, -11]);
+}
 
 /// Store 32-bit integer a into memory using a non-temporal hint to minimize cache
 /// pollution. If the cache line containing address `mem_addr` is already in the cache,
@@ -4575,7 +4581,12 @@ void _mm_stream_si32 (int* mem_addr, int a) pure @trusted
         *mem_addr = a;
     }
 }
-// TODO untitest
+unittest
+{
+    int A;
+    _mm_stream_si32(&A, -34);
+    assert(A == -34);
+}
 
 /// Store 64-bit integer a into memory using a non-temporal hint to minimize
 /// cache pollution. If the cache line containing address `mem_addr` is already
@@ -4602,7 +4613,12 @@ void _mm_stream_si64 (long* mem_addr, long a) pure @trusted
         *mem_addr = a;
     }
 }
-// TODO untitest
+unittest
+{
+    long A;
+    _mm_stream_si64(&A, -46);
+    assert(A == -46);
+}
 
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
