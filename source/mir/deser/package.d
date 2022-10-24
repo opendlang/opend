@@ -782,9 +782,9 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                     else
                     {
                         pragma(msg, "Mir warning: can't safely cast from "
-                            ~ (const V).stringof
+                            ~ (const serdeGetProxy!T).stringof
                             ~ " to "
-                            ~ (const Proxy).stringof
+                            ~ T.stringof
                         );
                         value = ()@trusted{return cast(T)temporal;}();
                     }
@@ -796,9 +796,9 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                     else
                     {
                         pragma(msg, "Mir warning: can't safely cast from "
-                            ~ (const V).stringof
+                            ~ (const serdeGetProxy!T).stringof
                             ~ " to "
-                            ~ (const Proxy).stringof
+                            ~ T.stringof
                         );
                         value = ()@trusted{return to!T(move(temporal));}();
                     }
