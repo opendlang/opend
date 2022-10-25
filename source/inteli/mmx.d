@@ -18,6 +18,7 @@ nothrow @nogc:
 // Important: you don't need to call _mm_empty when using "MMX" capabilities of intel-intrinsics,
 // since it just generates the right IR and cleaning-up FPU registers is up to the codegen.
 // intel-intrinsics is just semantics.
+// Even GDC does not seem to use mm0-mm7 registers, instead preferring xmm0-xmm7.
 
 
 /// Add packed 16-bit integers in `a` and `b`.
@@ -319,11 +320,10 @@ unittest
 /// Empty the MMX state, which marks the x87 FPU registers as available for 
 /// use by x87 instructions. 
 /// This instruction is supposed to be used at the end of all MMX technology procedures.
-/// This is useless when using `intel-intrinsics`, at least with LDC and DMD.
+/// But this is useless when using `intel-intrinsics`, with all D compilers.
 void _mm_empty() pure @safe
 {
     // do nothing, see comment on top of file
-    // TODO: not sure for GDC, do something?
 }
 
 
