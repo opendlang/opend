@@ -1901,7 +1901,7 @@ unittest
 }
 
 /// Load 64-bit integer from memory into the first element of result. Zero out the other.
-// Note: strange signature since the memory doesn't have to aligned (Issue #60)
+// Note: strange signature since the memory doesn't have to aligned (Issue #60), and doesn't have to be 128-bit
 __m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted // TODO signature
 {
     pragma(inline, true);
@@ -4659,7 +4659,14 @@ __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
     pragma(inline, true);
     return a - b;
 }
-// TODO untitest
+unittest
+{
+    __m128d A = _mm_setr_pd(4000.0, -8.0);
+    __m128d B = _mm_setr_pd(12.0, -8450.0);
+    __m128d C = _mm_sub_pd(A, B);
+    double[2] correct =     [3988.0, 8442.0];
+    assert(C.array == correct);
+}
 
 /// Subtract the lower double-precision (64-bit) floating-point element in `b` from the lower double-precision (64-bit) 
 /// floating-point element in `a`, store that in the lower element of result, and copy the upper element from `a` to the
