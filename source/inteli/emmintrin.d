@@ -4704,7 +4704,14 @@ __m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
     pragma(inline, true);
     return a - b;
 }
-// TODO unittest
+unittest
+{
+    __m64 A, B;
+    A = -1214;
+    B = 489415;
+    __m64 C = _mm_sub_si64(B, A);
+    assert(C.array[0] == 489415 + 1214);
+}
 
 /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
 __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
