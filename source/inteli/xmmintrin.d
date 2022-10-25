@@ -1939,7 +1939,14 @@ __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
     else
         return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
-// TODO unittest
+unittest
+{
+    __m128 A = cast(__m128) _mm_set1_epi32(0x80000000);
+    __m128 B = _mm_setr_ps(4.0f, -5.0, -9.5f, float.infinity);
+    __m128 C = _mm_or_ps(A, B);
+    float[4] correct = [-4.0f, -5.0, -9.5f, -float.infinity];
+    assert(C.array == correct);
+}
 
 deprecated("Use _mm_avg_pu8 instead") alias _m_pavgb = _mm_avg_pu8;///
 deprecated("Use _mm_avg_pu16 instead") alias _m_pavgw = _mm_avg_pu16;///
@@ -2706,7 +2713,7 @@ __m128 _mm_sqrt_ss(__m128 a) @trusted
         return __builtin_ia32_sqrtss(a);
     }
     // PERF DMD
-    // TODO: report this crash in dmd -b unittest-release
+    // TODO: enable when https://issues.dlang.org/show_bug.cgi?id=23437 is fixed for good
     /*else static if (DMD_with_DSIMD)
     {
         return cast(__m128) __simd(XMM.SQRTSS, a);
@@ -2787,16 +2794,8 @@ unittest
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
     pragma(inline, true);
-    // PERF: this crash DMD 2.100, TODO check if fixed later, as similar thing was reported
-    /*static if (DMD_with_DSIMD)
-    {
-        cast(void) __simd_sto(XMM.STOHPS, *cast(float4*)p, a);
-    }
-    else */
-    {
-        long2 la = cast(long2)a;
-        (*p).ptr[0] = la.array[1];
-    }
+    long2 la = cast(long2)a;
+    (*p).ptr[0] = la.array[1];
 }
 unittest
 {
@@ -2810,17 +2809,8 @@ unittest
 void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
     pragma(inline, true);
-    // PERF: this crash DMD 2.100, TODO check if fixed later, as similar thing was reported
-    /*
-    static if (DMD_with_DSIMD)
-    {
-        cast(void) __simd_sto(XMM.STOLPS, *cast(float4*)p, a);
-    }
-    else */
-    {
-        long2 la = cast(long2)a;
-        (*p).ptr[0] = la.array[0];
-    }
+    long2 la = cast(long2)a;
+    (*p).ptr[0] = la.array[0];
 }
 unittest
 {
@@ -3085,7 +3075,14 @@ __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
 }
-// TODO unittest
+unittest
+{
+    __m128 A = cast(__m128) _mm_set1_epi32(0x80000000);
+    __m128 B = _mm_setr_ps(4.0f, -5.0, -9.5f, float.infinity);
+    __m128 C = _mm_xor_ps(A, B);
+    float[4] correct = [-4.0f, 5.0, 9.5f, -float.infinity];
+    assert(C.array == correct);
+}
 
 private
 {
