@@ -42,6 +42,8 @@ public import mir.stat.distribution.pareto: paretoInvCDF;
 ///
 public import mir.stat.distribution.poisson: poissonInvCDF;
 ///
+public import mir.stat.distribution.students_t: studentsTInvCDF;
+///
 public import mir.stat.distribution.uniform: uniformInvCDF;
 ///
 public import mir.stat.distribution.uniform_discrete: uniformDiscreteInvCDF;

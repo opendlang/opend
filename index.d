@@ -36,6 +36,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,pareto)) $(TD Pareto Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,students_t)) $(TD Student's t Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Continuous Uniform Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform_discrete)) $(TD Discrete Uniform Probability Distribution ))
 )
