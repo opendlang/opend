@@ -1233,13 +1233,38 @@ bool convertScanlines(PixelType srcType, const(ubyte)* src, int srcPitch,
     if (pixelTypeIsCompressed(srcType) || pixelTypeIsCompressed(destType))
         return false; // No support
 
-    // For each scanline
-    for (int y = 0; y < height; ++y)
+    if (srcType == interType)
     {
-        convertToIntermediateScanline(srcType, src, interType, interBuf, width);
-        convertFromIntermediate(interType, interBuf, destType, dest, width);
-        src += srcPitch;
-        dest += destPitch;
+        // Source type is already in the intermediate type format.
+        // Do not use the interbuf.
+        for (int y = 0; y < height; ++y)
+        {
+            convertFromIntermediate(srcType, src, destType, dest, width);
+            src += srcPitch;
+            dest += destPitch;
+        }
+    }
+    else if (destType == interType)
+    {
+        // Destination type is the intermediate type.
+        // Do not use the interbuf.
+        for (int y = 0; y < height; ++y)
+        {
+            convertToIntermediateScanline(srcType, src, destType, dest, width);
+            src += srcPitch;
+            dest += destPitch;
+        }
+    }
+    else
+    {
+        // For each scanline
+        for (int y = 0; y < height; ++y)
+        {
+            convertToIntermediateScanline(srcType, src, interType, interBuf, width);
+            convertFromIntermediate(interType, interBuf, destType, dest, width);
+            src += srcPitch;
+            dest += destPitch;
+        }
     }
     return true;
 }
