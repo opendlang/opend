@@ -136,7 +136,7 @@ template to(T)
                             {
                                 import mir.appender: UnsafeArrayBuffer;
                                 alias C = Unqual!(ForeachType!T);
-                                C[64] array = '\0';
+                                C[64] array = void;
                                 auto buffer = UnsafeArrayBuffer!C(array);
                             }
                             else
