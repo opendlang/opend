@@ -26,6 +26,8 @@ public import mir.stat.distribution.exponential: exponentialCDF;
 ///
 public import mir.stat.distribution.gamma: gammaCDF;
 ///
+public import mir.stat.distribution.generalized_pareto: generalizedParetoCDF;
+///
 public import mir.stat.distribution.geometric: geometricCDF;
 ///
 public import mir.stat.distribution.gev: gevCDF;
@@ -34,7 +36,11 @@ public import mir.stat.distribution.negative_binomial: negativeBinomialCDF;
 ///
 public import mir.stat.distribution.normal: normalCDF;
 ///
+public import mir.stat.distribution.pareto: paretoCDF;
+///
 public import mir.stat.distribution.poisson: poissonCDF;
+///
+public import mir.stat.distribution.students_t: studentsTCDF;
 ///
 public import mir.stat.distribution.uniform: uniformCDF;
 ///
