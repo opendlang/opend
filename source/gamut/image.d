@@ -1210,12 +1210,13 @@ private:
 
 private:
 
-
-
 // FUTURE: this will also manage color conversion.
 PixelType intermediateConversionType(PixelType srcType, PixelType destType)
 {
-    return PixelType.rgbaf32; // PERF: smaller intermediate types
+    if (pixelTypeExpressibleInRGBA8(srcType) && pixelTypeExpressibleInRGBA8(destType))
+        return PixelType.rgba8;
+
+    return PixelType.rgbaf32;
 }
 
 // This converts scanline per scanline, using an intermediate format to lessen the number of conversions.
@@ -1272,7 +1273,63 @@ void convertToIntermediateScanline(PixelType srcType,
                                    PixelType dstType, 
                                    ubyte* dest, int width) @system
 {
-    if (dstType == PixelType.rgbaf32)
+    if (dstType == PixelType.rgba8)
+    {
+        ubyte* outb = dest;
+        switch(srcType) with (PixelType)
+        {
+            case l8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte b = src[x];
+                    *outb++ = b;
+                    *outb++ = b;
+                    *outb++ = b;
+                    *outb++ = 255;
+                }
+                break;
+            }
+            case la8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    ubyte b = src[x*2];
+                    *outb++ = b;
+                    *outb++ = b;
+                    *outb++ = b;
+                    *outb++ = src[x*2+1];
+                }
+                break;
+            }
+            case rgb8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    *outb++ = src[x*3+0];
+                    *outb++ = src[x*3+1];
+                    *outb++ = src[x*3+2];
+                    *outb++ = 255;
+                }
+                break;
+            }
+            case rgba8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    *outb++ = src[x*4+0];
+                    *outb++ = src[x*4+1];
+                    *outb++ = src[x*4+2];
+                    *outb++ = src[x*4+3];
+                }
+                break;
+            }
+
+            default:
+                assert(false); // should not use rgba8 as intermediate type
+        }
+    }
+    else if (dstType == PixelType.rgbaf32)
     {
         float* outp = cast(float*) dest;
 
@@ -1462,7 +1519,53 @@ void convertToIntermediateScanline(PixelType srcType,
 
 void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dstType, ubyte* dest, int width) @system
 {
-    if (srcType == PixelType.rgbaf32)
+    if (srcType == PixelType.rgba8)
+    {
+        alias inp = src;
+        switch(dstType) with (PixelType)
+        {
+            case l8:
+            {
+                for (int x = 0; x < width; ++x)
+                    dest[x] = inp[4*x];
+                break;
+            }
+            case la8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    dest[2*x+0] = inp[4*x+0];
+                    dest[2*x+1] = inp[4*x+3];
+                }
+                break;
+            }
+            case rgb8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    dest[3*x+0] = inp[4*x+0];
+                    dest[3*x+1] = inp[4*x+1];
+                    dest[3*x+2] = inp[4*x+2];
+                }
+                break;
+            }
+            case rgba8:
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    dest[4*x+0] = inp[4*x+0];
+                    dest[4*x+1] = inp[4*x+1];
+                    dest[4*x+2] = inp[4*x+2];
+                    dest[4*x+3] = inp[4*x+3];
+                }
+                break;
+            }
+
+            default:
+                assert(false); // should not use rgba8 as intermediate type
+        }
+    }
+    else if (srcType == PixelType.rgbaf32)
     {    
         const(float)* inp = cast(const(float)*) src;
 

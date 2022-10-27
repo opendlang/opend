@@ -26,6 +26,8 @@ int main(string[] args)
     double mean_decode_mpps = 0;
     double mean_bpp = 0;
 
+    long timeStart = getTickUs();
+
     int N = 0;
     foreach(f; files)
     {
@@ -79,12 +81,16 @@ int main(string[] args)
             image2.saveToFile(path, ImageFormat.PNG);
         }
     }
+    long timeTotal = getTickUs() - timeStart;
     mean_encode_mpps /= N;
     mean_decode_mpps /= N;
     mean_bpp /= N;
     writefln("\nTOTAL  decode mpps   encode mpps      bit-per-pixel");
     writefln("          %8.2f      %8.2f           %8.5f", mean_decode_mpps, mean_encode_mpps, mean_bpp);
    
+    
+    double totalSecs = timeTotal / 1000000.0;
+    writefln("\nTOTAL  time = %s secs\n", totalSecs);
 
     return 0;
 }

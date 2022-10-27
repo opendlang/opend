@@ -77,7 +77,7 @@ int pixelTypeNumChannels(PixelType type) pure
 }
 
 /// Is this type 8-bit?
-int pixelTypeIs8Bit(PixelType type) pure
+bool pixelTypeIs8Bit(PixelType type) pure
 {
     switch(type) with (PixelType)
     {
@@ -92,7 +92,7 @@ int pixelTypeIs8Bit(PixelType type) pure
 }
 
 /// Is this type 16-bit?
-int pixelTypeIs16Bit(PixelType type) pure
+bool pixelTypeIs16Bit(PixelType type) pure
 {
     switch(type) with (PixelType)
     {
@@ -119,6 +119,12 @@ int pixelTypeIsFP32(PixelType type) pure
         default:
             return false;
     }
+}
+
+/// Can this pixel type be losslessly expressed in rgba8?
+bool pixelTypeExpressibleInRGBA8(PixelType type) pure
+{
+    return pixelTypeIs8Bit(type);
 }
 
 /// Check if these image dimensions are valid in Gamut.
