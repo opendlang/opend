@@ -490,13 +490,12 @@ T studentsTLPDF(T)(const T x, const T nu)
     if (isFloatingPoint!T)
     in (nu > 0, "nu must be greater than zero")
 {
-    import mir.math.common: log, pow, sqrt;
-    import mir.math.internal.xlogy: xlogy;
+    import mir.math.common: log;
     import mir.stat.distribution.normal: normalLPDF;
     import std.mathspecial: logGamma;
 
     if (nu != T.infinity) {
-        return logGamma((nu + 1) * 0.5) - logGamma(nu * 0.5) - 0.5 * log(nu) - log(T(SQRTPI)) + xlogy(-(nu + 1) * 0.5, 1 + (x * x) / nu);
+        return logGamma((nu + 1) * 0.5) - logGamma(nu * 0.5) - 0.5 * log(nu * T(PI)) - 0.5 * (nu + 1) * log(1 + (x * x) / nu);
     } else {
         return normalLPDF(x);
     }
