@@ -47,28 +47,7 @@ T normalCCDF(T)(const T x, const T mean, const T stdDev)
 T normalCCDF(T)(const T a)
     if (isFloatingPoint!T)
 {
-    pragma(inline, false);
-    import mir.math.common: fabs, sqrt;
-    import mir.math.constant: SQRT1_2;
-    import mir.math.func.normal: erf, erfce, expx2;
-
-    T x = a * T(SQRT1_2);
-    T z = fabs(x);
-
-    if (z < 1)
-    {
-        return 0.5f - 0.5f * erf(x);
-    }
-    else
-    {
-        T y = 0.5f * erfce(z);
-        /* Multiply by exp(-x^2 / 2)  */
-        z = expx2(a, -1);
-        y = y * sqrt(z);
-        if (x < 0)
-            y = 1 - y;
-        return y;
-    }
+    return normalCDF(-a);
 }
 
 ///
@@ -91,6 +70,14 @@ unittest {
     assert(3.0.normalCCDF.approxEqual(1 - normalCDF(3.0)));
     assert((-7.0).normalCCDF(1, 4).approxEqual(1 - normalCDF(-7.0, 1, 4)));
     assert(9.0.normalCCDF(1, 4).approxEqual(1 - normalCDF(9.0, 1, 4)));
+}
+
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest {
+    import mir.math.common: approxEqual;
+    assert(normalCCDF(double.infinity).approxEqual(1 - normalCDF(double.infinity)));
+    assert(normalCCDF(-double.infinity).approxEqual(1 - normalCDF(-double.infinity)));
 }
 
 ///

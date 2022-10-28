@@ -32,6 +32,8 @@ public import mir.stat.distribution.geometric: geometricCDF;
 ///
 public import mir.stat.distribution.gev: gevCDF;
 ///
+public import mir.stat.distribution.log_normal: logNormalCDF;
+///
 public import mir.stat.distribution.negative_binomial: negativeBinomialCDF;
 ///
 public import mir.stat.distribution.normal: normalCDF;
