@@ -19,7 +19,6 @@ Computes the Log-normal probability distribution function (PDF).
 
 Params:
     x = value to evaluate PDF
-    nu = degrees of freedom
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
@@ -78,7 +77,6 @@ Computes the Log-normal cumulative distribution function (CDF).
 
 Params:
     x = value to evaluate CDF
-    nu = degrees of freedom
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
@@ -98,7 +96,6 @@ Ditto, with location and scale parameters (by standardizing `x`).
 
 Params:
     x = value to evaluate CDF
-    nu = degrees of freedom
     mean = location parameter
     stdDev = scale parameter
 +/
@@ -136,7 +133,6 @@ Computes the Student's t complementary cumulative distribution function (CCDF).
 
 Params:
     x = value to evaluate CCDF
-    nu = degrees of freedom
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
