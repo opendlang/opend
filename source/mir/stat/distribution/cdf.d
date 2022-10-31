@@ -24,6 +24,8 @@ public import mir.stat.distribution.chi2: chi2CDF;
 ///
 public import mir.stat.distribution.exponential: exponentialCDF;
 ///
+public import mir.stat.distribution.f: fCDF;
+///
 public import mir.stat.distribution.gamma: gammaCDF;
 ///
 public import mir.stat.distribution.generalized_pareto: generalizedParetoCDF;

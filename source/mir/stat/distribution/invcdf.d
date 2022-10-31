@@ -26,6 +26,8 @@ public import mir.stat.distribution.cornish_fisher: cornishFisherInvCDF;
 ///
 public import mir.stat.distribution.exponential: exponentialInvCDF;
 ///
+public import mir.stat.distribution.f: fInvCDF;
+///
 public import mir.stat.distribution.gamma: gammaInvCDF;
 ///
 public import mir.stat.distribution.generalized_pareto: generalizedParetoInvCDF;
