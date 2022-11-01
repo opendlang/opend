@@ -661,12 +661,21 @@ public:
         // The asked for layout must be valid itself.
         assert(layoutConstraintsValid(layoutConstraints));
 
-        // Are the new layout constraints stricter?
-        // If yes, we have more reason to convert.
-        // PERF: analyzing actual layout may lead to less reallocations if the layout is accidentally compatible
-        // for example scanline alignement. But this is small potatoes.
-        // Same for "gapless".
-        bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, _layoutConstraints);
+        if (!hasData())
+        {
+            _layoutConstraints = layoutConstraints;
+            return true; // success, no pixel data, so everything was "converted", layout constraints do not hold
+        }
+
+        // Detect if the particular hazard of allocation have given the image "ad-hoc" constraints
+        // we didn't strictly require. Typically, if the image is already vertically straight, no need to 
+        // reallocate just for that.
+        LayoutConstraints adhocConstraints = getAdHocLayoutConstraints();
+
+        enum bool useAdHoc = true; // FUTURE: remove once deemed harmless
+
+        // Are the new layout constraints already valid?
+        bool compatibleLayout = layoutConstraintsCompatible(layoutConstraints, useAdHoc ? adhocConstraints : _layoutConstraints);
 
         if (_type == targetType && compatibleLayout)
         {
@@ -674,12 +683,6 @@ public:
             // lines in place here. But this can be handled below with reallocation.
             _layoutConstraints = layoutConstraints;
             return true; // success, same type already, and compatible constraints
-        }
-
-        if (!hasData())
-        {
-            _layoutConstraints = layoutConstraints;
-            return true; // success, no pixel data, so everything was "converted", layout constraints do not hold
         }
 
         if ((width() == 0 || height()) == 0 && compatibleLayout)
@@ -698,13 +701,11 @@ public:
         assert(_data !is null);
 
         // PERF: do some conversions in place? if target type is smaller then input, always possible
-        // PERF: smaller intermediate formats are possible.
 
-        // Do we need to perform a conversion scanline by scanline, using
-        // a scratch buffer?
+        // Do we need to convert scanline by scanline, using a scratch buffer?
         bool needConversionWithIntermediateType = targetType != _type;
         PixelType interType = intermediateConversionType(_type, targetType);
-        int interBufSize = width * pixelTypeSize(interType); // PERF: could align that buffer
+        int interBufSize = width * pixelTypeSize(interType);
         int bonusBytes = needConversionWithIntermediateType ? interBufSize : 0;
 
         ubyte* dest; // first scanline
@@ -831,8 +832,9 @@ public:
     //
 
     /// On how many bytes each scanline is aligned.
-    /// Useful to know for 
+    /// Useful to know for SIMD.
     /// The actual alignment could be higher than what the layout constraints strictly tells.
+    /// See_also: `LayoutConstraints`.
     int scanlineAlignment()
     {
         return layoutScanlineAlignment(_layoutConstraints);
@@ -848,7 +850,7 @@ public:
     }
 
     /// Get the multiplicity of pixels in a single scanline.
-    /// The actual mulitplicity could well be higher.
+    /// The actual multiplicity could well be higher.
     /// See_also: `LayoutConstraints`.
     int pixelMultiplicity()
     {
@@ -857,7 +859,7 @@ public:
 
     /// Get the guaranteed number of scanline trailing pixels, from the layout constraints.
     /// Each scanline is followed by at least that much out-of-image pixels, that can be safely
-    /// addressed.
+    /// READ.
     /// The actual number of trailing pixels can well be larger than what the layout strictly tells,
     /// but we'll never know.
     /// See_also: `LayoutConstraints`.
@@ -1204,6 +1206,98 @@ private:
         if (plugin.detectProc(&io, handle))
             return true;
         return false;
+    }
+
+    // When we look at this Image, what are some constraints that it could spontaneously follow?
+    // Also look at existing _layoutConstraints.
+    // Params:
+    //     preferGapless Generates a LayoutConstraints with LAYOUT_GAPLESS rather than other things.
+    //
+    // Warning: the LayoutConstraints it returns is not necessarilly user-valid, it can contain both
+    //          scanline alignment and gapless constraints. This should NEVER be kept as actual constraints.
+    LayoutConstraints getAdHocLayoutConstraints()
+    {
+        assert(hasData());
+
+        // An image that doesn't own its data can't infer some adhoc constraints, or the conditions are stricter.        
+        bool owned = isOwned;
+
+        int pitch = pitchInBytes();
+        int absPitch = pitch >= 0 ? pitch : -pitch;
+        int scanLen = scanlineInBytes();
+        int pixelSize = pixelTypeSize(type);
+        int width = _width;
+        int excessBytes = scanLen - absPitch;
+        int excessPixels = excessBytes / pixelSize;
+        assert(excessBytes >= 0 && excessPixels >= 0);
+        
+        LayoutConstraints c = 0;
+
+        // Multiplicity constraint: take largest of inferred, and _layoutConstraints-related.
+        {
+            int multi = pixelMultiplicity(); // as much is guaranteed by the _constraint
+
+            // the multiplicity inferred by looking at how many pixel can fit at the end of the scanline
+            int inferredWithGap = 1; 
+            if (excessPixels >= 7)
+                inferredWithGap = 8;
+            else if (excessPixels >= 3)
+                inferredWithGap = 4;
+            else if (excessPixels >= 1)
+                inferredWithGap = 2;
+
+            // the multiplicity inferred by looking at width divisibility
+            // Slight note: this is not fully complete, a 2-width + 2 trailing pixels => 4-multiplicity
+            int inferredWithWidth = 1;
+            if ( (width % 2) == 0) inferredWithWidth = 2;
+            if ( (width % 4) == 0) inferredWithWidth = 4;
+            if ( (width % 8) == 0) inferredWithWidth = 8;
+
+            // take max
+            if (multi < inferredWithGap)   multi = inferredWithGap;
+            if (multi < inferredWithWidth) multi = inferredWithWidth;
+            assert(multi == 1 || multi == 2 || multi == 4 || multi == 8);
+
+            if (multi == 8)
+                c |= LAYOUT_MULTIPLICITY_8;
+            else if (multi == 4)
+                c |= LAYOUT_MULTIPLICITY_4;
+            else if (multi == 2)
+                c |= LAYOUT_MULTIPLICITY_2;
+        }
+
+        // Trailing bytes constraint: infer is the largest, no need to look at _layoutConstraints.
+        {
+            if (excessPixels >= 7)
+                c |= LAYOUT_TRAILING_7;
+            else if (excessPixels >= 3)
+                c |= LAYOUT_TRAILING_3;
+            else if (excessPixels >= 1)
+                c |= LAYOUT_TRAILING_1;
+        }
+
+        // scanline alignment: infer is the largest, since the constraints shows in pitch and pointer address
+        {
+            LayoutConstraints firstScanAlign = getPointerAlignment(cast(size_t)_data);
+            LayoutConstraints pitchAlign = getPointerAlignment(cast(size_t)absPitch);
+            LayoutConstraints allScanlinesAlign = firstScanAlign < pitchAlign ? firstScanAlign : pitchAlign;
+            c |= allScanlinesAlign;
+        }
+
+        // vertical
+        if (pitch >= 0)
+            c |= LAYOUT_VERT_STRAIGHT;
+        if (pitch <= 0)
+            c |= LAYOUT_VERT_FLIPPED;
+
+        // gapless
+        if (pitch == absPitch)
+            c |= LAYOUT_GAPLESS;
+
+        // Border constraint: can only trust the _constraint. Cannot infer more.
+        c |= (_layoutConstraints & LAYOUT_BORDER_MASK);
+
+        return c;
     }
 }
 

@@ -64,7 +64,7 @@ int main(string[] args)
         Image image;
         Image* result = &image;
 
-        image.loadFromFile(input);
+        image.loadFromFile(input, LAYOUT_VERT_STRAIGHT | LAYOUT_GAPLESS);
 
 
         if (image.errored)

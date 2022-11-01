@@ -13,6 +13,13 @@ import gamut.types;
 
 nothrow @nogc @safe:
 
+enum LayoutConstraints
+    LAYOUT_MULTIPLICITY_MASK     = 3,
+    LAYOUT_TRAILING_MASK         = 12,
+    LAYOUT_BORDER_MASK           = 384,
+    LAYOUT_SCANLINE_ALIGNED_MASK = 112;
+
+
 /// Returns: `true` if this `PixelType` is "plain", meaning that it's 1/2/3/4 channel of L/LA/RGB/RGBA data.
 /// Currently: all images are plain, or have no data.
 bool pixelTypeIsPlain(PixelType t) pure
@@ -179,6 +186,20 @@ unittest
     assert(layoutScanlineAlignment(LAYOUT_SCANLINE_ALIGNED_128) == 128);
 }
 
+
+/// What is the scanline alignement of such a pointer?
+LayoutConstraints getPointerAlignment(size_t ptr)
+{
+    if ( (ptr & 127) == 0) return LAYOUT_SCANLINE_ALIGNED_128;
+    if ( (ptr & 63) == 0) return LAYOUT_SCANLINE_ALIGNED_64;
+    if ( (ptr & 31) == 0) return LAYOUT_SCANLINE_ALIGNED_32;
+    if ( (ptr & 15) == 0) return LAYOUT_SCANLINE_ALIGNED_16;
+    if ( (ptr & 7) == 0) return LAYOUT_SCANLINE_ALIGNED_8;
+    if ( (ptr & 3) == 0) return LAYOUT_SCANLINE_ALIGNED_4;
+    if ( (ptr & 1) == 0) return LAYOUT_SCANLINE_ALIGNED_2;
+    return LAYOUT_SCANLINE_ALIGNED_1;
+}
+
 /// From a layout constraint, get surrounding border width.
 int layoutBorderWidth(LayoutConstraints constraints) pure
 {
@@ -205,29 +226,23 @@ unittest
 
 /// Assuming the same `PixelType`, can an allocation made with constraint `older` 
 /// be used with constraint `newer`?
+/// Note: `older` doesn't need to be a valid LayoutConstraints, but newer must be. 
 bool layoutConstraintsCompatible(LayoutConstraints newer, LayoutConstraints older) pure
 {
-    // PERF: detect already gapless images.
-    // Could be more lax by passing effect pitch and width.
     if ((newer & LAYOUT_GAPLESS) && !(older & LAYOUT_GAPLESS))
         return false;
 
-    // PERF: Could be more lax with VFlip by detecting actual pitch.
-    // if newer constraint need to be upside-down, then older constraint need it too.
     if ((newer & LAYOUT_VERT_FLIPPED) && !(older & LAYOUT_VERT_FLIPPED))
         return false;
     if ((newer & LAYOUT_VERT_STRAIGHT) && !(older & LAYOUT_VERT_STRAIGHT))
         return false;
 
-    // PERF: This constraint can be relaxed if passed effective width and pitch
     if (layoutMultiplicity(newer) > layoutMultiplicity(older))
         return false;
 
-    // PERF: This constraint can be relaxed if passed effective width and pitch
     if (layoutTrailingPixels(newer) > layoutTrailingPixels(older))
         return false;
 
-    // PERF: This constraint can be relaxed if passed first scanline and pitch
     if (layoutScanlineAlignment(newer) > layoutScanlineAlignment(older))
         return false;
 

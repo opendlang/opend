@@ -53,9 +53,10 @@ ImageFormatPlugin makeQOIXPlugin()
     return p;
 }
 
-// IMPORTANT: QOIX uses two possible codecs internally
-//   - "QOIX" in qoi2avg.d for RGB8 and RGBA8
-//   - qoiplane for L8
+// IMPORTANT: QOIX uses 3 possible codecs internally
+//   - QOI2AVG in qoi2avg.d for RGB8 and RGBA8
+//   - QOI-Plane for L8/LA8
+//   - QOI-10b for 16-bit (lossy)
 
 version(decodeQOIX)
 void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
@@ -211,8 +212,7 @@ bool saveQOIX(ref const(Image) image, IOStream *io, IOHandle handle, int page, i
         return false;
     scope(exit) free(encoded);
 
-    // Write all output at once. This is rather bad, could be done progressively.
-    // PERF: adapt qoi writer to output in our own buffer directly.
+    // Write all output at once.
     if (qoilen != io.write(encoded, 1, qoilen, handle))
         return false;
 
