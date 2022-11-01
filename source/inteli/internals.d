@@ -311,10 +311,9 @@ int convertFloatToInt32UsingMXCSR(float value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
-        // TODO: this is a bug, it won't preserve registers when optimized
         result = __asm!int(`vldr s2, $1
                             vcvtr.s32.f32 s2, s2
-                            vmov $0, s2`, "=r,m", value);
+                            vmov $0, s2`, "=r,m,~{s2}", value);
     }
     else static if (LDC_with_ARM64)
     {
@@ -353,10 +352,9 @@ int convertDoubleToInt32UsingMXCSR(double value) @trusted
     }
     else static if (LDC_with_ARM32)
     {
-        // TODO: bug, doesn't preserve registers
         result = __asm!int(`vldr d2, $1
                             vcvtr.s32.f64 s2, d2
-                            vmov $0, s2`, "=r,m", value);
+                            vmov $0, s2`, "=r,m,~{s2},~{d2}", value);
     }
     else static if (LDC_with_ARM64)
     {
