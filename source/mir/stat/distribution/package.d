@@ -26,6 +26,8 @@ public import mir.stat.distribution.cornish_fisher;
 ///
 public import mir.stat.distribution.exponential;
 ///
+public import mir.stat.distribution.f;
+///
 public import mir.stat.distribution.gamma;
 ///
 public import mir.stat.distribution.generalized_pareto;

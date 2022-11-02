@@ -24,6 +24,8 @@ public import mir.stat.distribution.chi2: chi2PDF;
 ///
 public import mir.stat.distribution.exponential: exponentialPDF;
 ///
+public import mir.stat.distribution.f: fPDF;
+///
 public import mir.stat.distribution.gamma: gammaPDF;
 ///
 public import mir.stat.distribution.generalized_pareto: generalizedParetoPDF;

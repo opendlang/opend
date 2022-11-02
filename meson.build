@@ -29,6 +29,7 @@ sources_list = [
     'mir/stat/distribution/binomial',
     'mir/stat/distribution/cornish_fisher',
     'mir/stat/distribution/exponential',
+    'mir/stat/distribution/f',
     'mir/stat/distribution/generalized_pareto',
     'mir/stat/distribution/geometric',
     'mir/stat/distribution/negative_binomial',
