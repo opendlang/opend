@@ -26,11 +26,10 @@ See_also:
 @safe pure nothrow @nogc
 T logNormalPDF(T)(const T x)
     if (isFloatingPoint!T)
-    in (x >= 0, "x must be greater than or equal to zero")
+    in (x > 0, "x must be greater than zero")
 {
     import mir.math.common: log;
     import mir.stat.distribution.normal: normalPDF;
-    if (x == 0) return 0;
     return x.log.normalPDF / x;
 }
 
@@ -45,12 +44,11 @@ Params:
 @safe pure nothrow @nogc
 T logNormalPDF(T)(const T x, const T mean, const T stdDev)
     if (isFloatingPoint!T)
-    in (x >= 0, "x must be greater than or equal to zero")
+    in (x > 0, "x must be greater than zero")
     in (stdDev > 0, "stdDev must be greater than zero")
 {
     import mir.math.common: log;
     import mir.stat.distribution.normal: normalPDF;
-    if (x == 0) return 0;
     return x.log.normalPDF(mean, stdDev) / x;
 }
 
@@ -60,13 +58,11 @@ version(mir_stat_test)
 unittest {
     import mir.test: shouldApprox;
 
-    logNormalPDF(0.0).shouldApprox == 0;
     logNormalPDF(1.0).shouldApprox == 0.3989423;
     logNormalPDF(2.0).shouldApprox == 0.156874;
     logNormalPDF(3.0).shouldApprox == 0.07272826;
 
     // Can include location/scale
-    logNormalPDF(0.0, 1, 2).shouldApprox == 0;
     logNormalPDF(1.0, 1, 2).shouldApprox == 0.1760327;
     logNormalPDF(2.0, 1, 2).shouldApprox == 0.09856858;
     logNormalPDF(3.0, 1, 2).shouldApprox == 0.06640961;
@@ -258,11 +254,10 @@ See_also:
 @safe pure nothrow @nogc
 T logNormalLPDF(T)(const T x)
     if (isFloatingPoint!T)
-    in (x >= 0, "x must be greater than or equal to zero")
+    in (x > 0, "x must be greater than zero")
 {
     import mir.math.common: log;
     import mir.stat.distribution.normal: normalLPDF;
-    if (x == 0) return -T.infinity;
     return x.log.normalLPDF - log(x);
 }
 
@@ -277,12 +272,11 @@ Params:
 @safe pure nothrow @nogc
 T logNormalLPDF(T)(const T x, const T mean, const T stdDev)
     if (isFloatingPoint!T)
-    in (x >= 0, "x must be greater than or equal to zero")
+    in (x > 0, "x must be greater than zero")
     in (stdDev > 0, "stdDev must be greater than zero")
 {
     import mir.math.common: log;
     import mir.stat.distribution.normal: normalLPDF;
-    if (x == 0) return -T.infinity;
     return x.log.normalLPDF(mean, stdDev) - log(x);
 }
 
@@ -293,13 +287,11 @@ unittest {
     import mir.math.common: log;
     import mir.test: shouldApprox;
 
-    logNormalLPDF(0.0).shouldApprox == -double.infinity;
     logNormalLPDF(1.0).shouldApprox == log(0.3989423);
     logNormalLPDF(2.0).shouldApprox == log(0.156874);
     logNormalLPDF(3.0).shouldApprox == log(0.07272826);
 
     // Can include location/scale
-    logNormalLPDF(0.0, 1, 2).shouldApprox == -double.infinity;
     logNormalLPDF(1.0, 1, 2).shouldApprox == log(0.1760327);
     logNormalLPDF(2.0, 1, 2).shouldApprox == log(0.09856858);
     logNormalLPDF(3.0, 1, 2).shouldApprox == log(0.06640961);
