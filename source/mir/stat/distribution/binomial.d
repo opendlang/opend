@@ -16,7 +16,7 @@ import mir.internal.utility: isFloatingPoint;
 import mir.stat.distribution.poisson: PoissonAlgo;
 
 /++
-Algorithms used to calculate binomial dstribution.
+Algorithms used to calculate binomial distribution.
 
 `BinomialAlgo.direct` can be more time-consuming for large values of the number
 of events (`k`) or the number of trials (`n`). Additional algorithms are
@@ -31,18 +31,18 @@ enum BinomialAlgo {
     +/
     direct,
     /++
-    Approximates poisson distribution with normal distribution. Generally a better approximation when
+    Approximates binomial distribution with normal distribution. Generally a better approximation when
     `n > 20` and `p` is far from 0 or 1, but a variety of rules of thumb can help determine when it is 
     appropriate to use.
     +/
     approxNormal,
     /++
-    Approximates poisson distribution with normal distribution (including continuity correction). More 
+    Approximates binomial distribution with normal distribution (including continuity correction). More 
     accurate than `BinomialAlgo.approxNormal`.
     +/
     approxNormalContinuityCorrection,
     /++
-    Approximates poisson distribution with poisson distribution (also requires specifying poissonAlgo). 
+    Approximates binomial distribution with poisson distribution (also requires specifying poissonAlgo). 
     Generally a better approximation when `n >= 20` and `p <= 0.05` or when `n >= 100` and `np <= 10`.
     +/
     approxPoisson
