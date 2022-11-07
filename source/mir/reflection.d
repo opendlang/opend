@@ -27,7 +27,7 @@ template isStdNullable(T)
 {
     import std.traits : hasMember;
 
-    T* aggregate;
+    private __gshared T* aggregate;
 
     enum bool isStdNullable =
         hasMember!(T, "isNull") &&
@@ -525,7 +525,7 @@ Checks if member is property.
 +/
 template isProperty(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
 
     static if (__traits(compiles, isSomeFunction!(__traits(getMember, *aggregate, member))))
     {
@@ -804,7 +804,7 @@ private template SerdeFieldsAndPropertiesImpl(T)
     alias isProperty = ApplyLeft!(.isProperty, T);
     alias hasField = ApplyLeft!(.hasField, T);
     alias isOriginalMember = ApplyLeft!(.isOriginalMember, T);
-    T* aggregate;
+    private __gshared T* aggregate;
     template hasReflectSerde(string member)
     {
         static if (is(typeof(__traits(getMember, *aggregate, member))))
@@ -837,27 +837,27 @@ private template SerdeFieldsAndPropertiesImpl(T)
 // check if the member is readable
 private template isReadable(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
     enum bool isReadable = __traits(compiles, { static fun(T)(auto ref T t) {} fun(__traits(getMember, *aggregate, member)); });
 }
 
 // check if the member is readable/writeble?
 private template isReadableAndWritable(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
     enum bool isReadableAndWritable = __traits(compiles, __traits(getMember, *aggregate, member) = __traits(getMember, *aggregate, member));
 }
 
 package template isPublic(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
     enum bool isPublic = !__traits(getProtection, __traits(getMember, *aggregate, member)).privateOrPackage;
 }
 
 // check if the member is property
 private template isSetter(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
     static if (__traits(compiles, isSomeFunction!(__traits(getMember, *aggregate, member))))
     {
         static if (isSomeFunction!(__traits(getMember, *aggregate, member)))
@@ -875,7 +875,7 @@ private template isSetter(T, string member)
 
 private template isGetter(T, string member)
 {
-    T* aggregate;
+    private __gshared T* aggregate;
     static if (__traits(compiles, isSomeFunction!(__traits(getMember, *aggregate, member))))
     {
         static if (isSomeFunction!(__traits(getMember, *aggregate, member)))
