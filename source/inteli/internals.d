@@ -64,6 +64,8 @@ version(GNU)
             enum GDC_with_SSE42 = __traits(compiles, __builtin_ia32_pcmpgtq);
             enum GDC_with_AVX = __traits(compiles, __builtin_ia32_vbroadcastf128_pd256);
             enum GDC_with_AVX2 = __traits(compiles, __builtin_ia32_gathersiv2df);
+            enum GDC_with_BMI2 = __traits(compiles, __builtin_ia32_pext_si);
+
         }
         else
         {
@@ -76,10 +78,10 @@ version(GNU)
             enum GDC_with_SSE42 = false;
             enum GDC_with_AVX = false;
             enum GDC_with_AVX2 = false;
+            enum GDC_with_BMI2 = false;
         }
 
         enum GDC_with_SHA = false; // TODO: detect that
-        enum GDC_with_BMI2 = false; // TODO: detect that
     }
     else
     {

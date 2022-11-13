@@ -91,17 +91,18 @@ private T bzhi(T)(T a, uint index)
     return dst;
 }
 
-/// Multiply unsigned 32-bit integers `a` and `b`, store the low 32-bits of the result in dst, and store the high 32-bits in `hi`. This does not read or write arithmetic flags.
-/// TODO: the implementation _does_ set arithmetic flags, unless the x86 instruction mulx is indeed selected.
+/// Multiply unsigned 32-bit integers `a` and `b`, store the low 32-bits of the result in dst, 
+/// and store the high 32-bits in `hi`. This does not read or write arithmetic flags.
+/// Note: the implementation _does_ set arithmetic flags, unlike the instruction semantics say.
+///       But, those particular semantics don't exist at the level of intrinsics.
 uint _mulx_u32 (uint a, uint b, uint* hi)
 {
-    /+
-        dst[31:0] := (a * b)[31:0]
-        MEM[hi+31:hi] := (a * b)[63:32]
-    +/
+    // Note: that does NOT generate mulx with LDC, and there seems to be no way to do that for
+    // some reason, even with LLVM IR.
+    // Also same with GDC.
     ulong result = cast(ulong) a * b;
-    *hi = cast(uint) ((result >>> 32) & 0xFFFF_FFFF);
-    return cast(uint) (result & 0xFFFF_FFFF);
+    *hi = cast(uint) (result >>> 32);
+    return cast(uint)result;
 }
 @system unittest
 {
@@ -110,8 +111,10 @@ uint _mulx_u32 (uint a, uint b, uint* hi)
     assert (hi == 0x014B_66DC);
 }
 
-/// Multiply unsigned 64-bit integers `a` and `b`, store the low 64-bits of the result in dst, and store the high 64-bits in `hi`. This does not read or write arithmetic flags.
-/// TODO: the implementation _does_ set arithmetic flags, unless the x86 instruction mulx is indeed selected.
+/// Multiply unsigned 64-bit integers `a` and `b`, store the low 64-bits of the result in dst, and 
+/// store the high 64-bits in `hi`. This does not read or write arithmetic flags.
+/// Note: the implementation _does_ set arithmetic flags, unlike the instruction semantics say.
+///       But, those particular semantics don't exist at the level of intrinsics.
 ulong _mulx_u64 (ulong a, ulong b, ulong* hi)
 {
     /+
@@ -264,7 +267,8 @@ private T pdep(T)(T a, T mask)
 }
 
 
-/// Extract bits from unsigned 32-bit integer `a` at the corresponding bit locations specified by `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
+/// Extract bits from unsigned 32-bit integer `a` at the corresponding bit locations specified by 
+/// `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
 uint _pext_u32 (uint a, uint mask)
 {
     static if (GDC_or_LDC_with_BMI2)
@@ -285,7 +289,8 @@ unittest
            assert (_pext_u32(0x1234_5678, 0x0F0F_0F0F) == 0x2468);
 }
 
-/// Extract bits from unsigned 64-bit integer `a` at the corresponding bit locations specified by `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
+/// Extract bits from unsigned 64-bit integer `a` at the corresponding bit locations specified by 
+/// `mask` to contiguous low bits in dst; the remaining upper bits in dst are set to zero.
 ulong _pext_u64 (ulong a, ulong mask)
 {
     static if (GDC_or_LDC_with_BMI2)
