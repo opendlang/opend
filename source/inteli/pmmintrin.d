@@ -25,8 +25,11 @@ nothrow @nogc:
 /// floating-point elements in `a` to/from packed elements in `b`.
 __m128d _mm_addsub_pd (__m128d a, __m128d b) pure @trusted
 {
-    // PERF DMD
-    static if (GDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128d) __simd(XMM.ADDSUBPD, a, b);
+    }
+    else static if (GDC_with_SSE3)
     {
         return __builtin_ia32_addsubpd(a, b);
     }
@@ -53,8 +56,11 @@ unittest
 /// floating-point elements in `a` to/from packed elements in `b`.
 float4 _mm_addsub_ps (float4 a, float4 b) pure @trusted
 {
-    // PERF DMD
-    static if (GDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128) __simd(XMM.ADDSUBPS, a, b);
+    }
+    else static if (GDC_with_SSE3)
     {
         return __builtin_ia32_addsubps(a, b);
     }
@@ -84,7 +90,11 @@ unittest
 __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
 {
     // PERF: ARM64?
-    static if (GDC_or_LDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128d) __simd(XMM.HADDPD, a, b);
+    }
+    else static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_haddpd(a, b);
     }
@@ -107,7 +117,11 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
 {
-    static if (GDC_or_LDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128) __simd(XMM.HADDPS, a, b);
+    }
+    else static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_haddps(a, b);
     }
@@ -137,7 +151,11 @@ unittest
 __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
 {
     // PERF ARM64, not clear if there is better
-    static if (GDC_or_LDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128d) __simd(XMM.HSUBPD, a, b);
+    }
+    else static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_hsubpd(a, b);
     }
@@ -160,7 +178,11 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
 {
-    static if (GDC_or_LDC_with_SSE3)
+    static if (DMD_with_DSIMD_and_SSE3)
+    {
+        return cast(__m128) __simd(XMM.HSUBPS, a, b);
+    }
+    else static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_hsubps(a, b);
     }

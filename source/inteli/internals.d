@@ -222,15 +222,50 @@ version(DigitalMars)
         enum DMD_with_32bit_asm = false;
 
     version (D_SIMD)
+    {
         enum DMD_with_DSIMD = !SSESizedVectorsAreEmulated;
+
+        // Note: further instruction sets with DMD require having AVX.
+        // Rationale: other compiler target sse2 by default. Unless we provide -mcpu=native,
+        // not sure how we want SSE3 to SSE4.2 to be enabled.
+
+        version(D_AVX)
+        {
+            enum DMD_with_DSIMD_and_SSE3  = true;
+            enum DMD_with_DSIMD_and_SSSE3 = true;
+            enum DMD_with_DSIMD_and_SSE41 = true;
+            enum DMD_with_DSIMD_and_SSE42 = true;
+            enum DMD_with_DSIMD_and_AVX   = true;
+        }
+        else
+        {
+            enum DMD_with_DSIMD_and_SSE3  = false;
+            enum DMD_with_DSIMD_and_SSSE3 = false;
+            enum DMD_with_DSIMD_and_SSE41 = false;
+            enum DMD_with_DSIMD_and_SSE42 = false;
+            enum DMD_with_DSIMD_and_AVX   = false;
+        }
+    }
     else
+    {
         enum DMD_with_DSIMD = false;
+        enum DMD_with_DSIMD_and_SSE3  = false;
+        enum DMD_with_DSIMD_and_SSSE3 = false;
+        enum DMD_with_DSIMD_and_SSE41 = false;
+        enum DMD_with_DSIMD_and_SSE42 = false;
+        enum DMD_with_DSIMD_and_AVX   = false;
+    }
 }
 else
 {
     enum DMD_with_asm = false;
     enum DMD_with_32bit_asm = false;
     enum DMD_with_DSIMD = false;
+    enum DMD_with_DSIMD_and_SSE3  = false;
+    enum DMD_with_DSIMD_and_SSSE3 = false;
+    enum DMD_with_DSIMD_and_SSE41 = false;
+    enum DMD_with_DSIMD_and_SSE42 = false;
+    enum DMD_with_DSIMD_and_AVX   = false;
 }
 
 
