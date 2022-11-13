@@ -857,7 +857,37 @@ unittest
 
 // TODO __m256d _mm256_floor_pd (__m256d a)
 // TODO __m256 _mm256_floor_ps (__m256 a)
-// TODO __m256d _mm256_hadd_pd (__m256d a, __m256d b)
+
+/// Horizontally add adjacent pairs of double-precision (64-bit) floating-point elements in `a` and `b`. 
+__m256d _mm256_hadd_pd (__m256d a, __m256d b) pure @trusted
+{
+    static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_haddpd256(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_haddpd256(a, b);
+    }
+    else
+    {
+        __m256d res;
+        res.ptr[0] = a.array[1] + a.array[0];
+        res.ptr[1] = b.array[1] + b.array[0];
+        res.ptr[2] = a.array[3] + a.array[2];
+        res.ptr[3] = b.array[3] + b.array[2];
+        return res;
+    }
+}
+unittest
+{
+    __m256d A =_mm256_setr_pd(1.5, 2.0, 21.0, 9.0);
+    __m256d B =_mm256_setr_pd(1.0, 7.0, 100.0, 14.0);
+    __m256d C = _mm256_hadd_pd(A, B);
+    double[4] correct =      [3.5, 8.0, 30.0, 114.0];
+    assert(C.array == correct);
+}
+
 // TODO __m256 _mm256_hadd_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_hsub_pd (__m256d a, __m256d b)
 // TODO __m256 _mm256_hsub_ps (__m256 a, __m256 b)
