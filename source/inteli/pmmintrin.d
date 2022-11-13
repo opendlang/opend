@@ -27,7 +27,7 @@ __m128d _mm_addsub_pd (__m128d a, __m128d b) pure @trusted
 {
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128d) __simd(XMM.ADDSUBPD, a, b);
+        return cast(__m128d) __simd(XMM.ADDSUBPD, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_with_SSE3)
     {
@@ -58,7 +58,7 @@ float4 _mm_addsub_ps (float4 a, float4 b) pure @trusted
 {
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128) __simd(XMM.ADDSUBPS, a, b);
+        return cast(__m128) __simd(XMM.ADDSUBPS, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_with_SSE3)
     {
@@ -92,7 +92,7 @@ __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
     // PERF: ARM64?
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128d) __simd(XMM.HADDPD, a, b);
+        return cast(__m128d) __simd(XMM.HADDPD, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_or_LDC_with_SSE3)
     {
@@ -119,7 +119,7 @@ __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
 {
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128) __simd(XMM.HADDPS, a, b);
+        return cast(__m128) __simd(XMM.HADDPS, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_or_LDC_with_SSE3)
     {
@@ -153,7 +153,7 @@ __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
     // PERF ARM64, not clear if there is better
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128d) __simd(XMM.HSUBPD, a, b);
+        return cast(__m128d) __simd(XMM.HSUBPD, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_or_LDC_with_SSE3)
     {
@@ -180,7 +180,7 @@ __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
 {
     static if (DMD_with_DSIMD_and_SSE3)
     {
-        return cast(__m128) __simd(XMM.HSUBPS, a, b);
+        return cast(__m128) __simd(XMM.HSUBPS, cast(void16)a, cast(void16)b);
     }
     else static if (GDC_or_LDC_with_SSE3)
     {
