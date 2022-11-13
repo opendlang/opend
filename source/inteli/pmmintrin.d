@@ -87,9 +87,12 @@ __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
     {
         return __builtin_ia32_haddpd(a, b);
     }
+    else static if (GDC_with_SSE3)
+    {
+        return __builtin_ia32_haddpd(a, b);
+    }
     else
     {
-       // On GDC this generates haddpd with -O1
         __m128d res; // PERF =void;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = b.array[1] + b.array[0];
