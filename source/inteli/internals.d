@@ -225,26 +225,28 @@ version(DigitalMars)
     {
         enum DMD_with_DSIMD = !SSESizedVectorsAreEmulated;
 
-        // Note: further instruction sets with DMD require having AVX.
-        // Rationale: other compiler target sse2 by default. Unless we provide -mcpu=native,
-        // not sure how we want SSE3 to SSE4.2 to be enabled.
+        // Going further, does DMD has SSE4.1 through -mcpu?
+        static if (DMD_with_DSIMD)
+            enum bool DMD_with_DSIMD_and_SSE41 = __traits(compiles, int4(0) * int4(0));
+        else
+            enum bool DMD_with_DSIMD_and_SSE41 = false;
+
+        // No DMD way to detect those instruction sets => pessimize
+        // would be cool to have a way to detect support for this at CT
+        enum DMD_with_DSIMD_and_SSE3  = DMD_with_DSIMD_and_SSE41; 
+        enum DMD_with_DSIMD_and_SSSE3 = DMD_with_DSIMD_and_SSE41;
 
         version(D_AVX)
-        {
-            enum DMD_with_DSIMD_and_SSE3  = true;
-            enum DMD_with_DSIMD_and_SSSE3 = true;
-            enum DMD_with_DSIMD_and_SSE41 = true;
-            enum DMD_with_DSIMD_and_SSE42 = true;
             enum DMD_with_DSIMD_and_AVX   = true;
-        }
         else
-        {
-            enum DMD_with_DSIMD_and_SSE3  = false;
-            enum DMD_with_DSIMD_and_SSSE3 = false;
-            enum DMD_with_DSIMD_and_SSE41 = false;
-            enum DMD_with_DSIMD_and_SSE42 = false;
             enum DMD_with_DSIMD_and_AVX   = false;
-        }
+
+        version(D_AVX2)
+            enum DMD_with_DSIMD_and_AVX2  = true;
+        else
+            enum DMD_with_DSIMD_and_AVX2  = false;
+
+        enum DMD_with_DSIMD_and_SSE42 = DMD_with_DSIMD_and_AVX;
     }
     else
     {
@@ -254,6 +256,7 @@ version(DigitalMars)
         enum DMD_with_DSIMD_and_SSE41 = false;
         enum DMD_with_DSIMD_and_SSE42 = false;
         enum DMD_with_DSIMD_and_AVX   = false;
+        enum DMD_with_DSIMD_and_AVX2  = false;
     }
 }
 else
@@ -266,6 +269,7 @@ else
     enum DMD_with_DSIMD_and_SSE41 = false;
     enum DMD_with_DSIMD_and_SSE42 = false;
     enum DMD_with_DSIMD_and_AVX   = false;
+    enum DMD_with_DSIMD_and_AVX2  = false;
 }
 
 
