@@ -32,7 +32,7 @@
 | SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse3`)   | Yes    | Yes (use `-msse3`) |
 | SSSE3 | Yes (use `-mcpu`) | Yes (use `-mattr=+ssse3`)  | Yes    | Yes  (use `-mssse3`) |
 | SSE4.1| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse4.1`) | Yes    | Yes  (use `-msse4.1`) |
-| SSE4.2| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse4.2`) | Yes (use -mattr=+crc)   | Yes (use `-msse4.2`) |
+| SSE4.2| Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse4.2`) | Yes (use `-mattr=+crc`)   | Yes (use `-msse4.2`) |
 | BMI2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+bmi2`)   | Yes | Yes (use `-mbmi2`)  |
 | AVX   | WIP and slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | WIP (use `-mattr=+avx`) | WIP | WIP (use `-mavx`) |
 | AVX2  | Partly and slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Partly (use `-mattr=+avx2`) | Partly | Partly (use `-mavx2`) |
