@@ -83,11 +83,8 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
 {
-    static if (LDC_with_SSE3)
-    {
-        return __builtin_ia32_haddpd(a, b);
-    }
-    else static if (GDC_with_SSE3)
+    // PERF: ARM64?
+    static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_haddpd(a, b);
     }
@@ -120,7 +117,7 @@ __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
     }
     else
     {    
-        __m128 res; // PERF =void;
+        __m128 res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = a.array[3] + a.array[2];
         res.ptr[2] = b.array[1] + b.array[0];
@@ -202,7 +199,7 @@ __m128d _mm_loaddup_pd (const(double)* mem_addr) pure @trusted
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
     // Same for GDC with -O1
     double value = *mem_addr;
-    __m128d res; // PERF =void;
+    __m128d res;
     res.ptr[0] = value;
     res.ptr[1] = value;
     return res;
@@ -239,11 +236,18 @@ unittest
 /// Duplicate odd-indexed single-precision (32-bit) floating-point elements from `a`.
 __m128 _mm_movehdup_ps (__m128 a) pure @trusted
 {
-    // Generates movshdup since LDC 1.3 with -O1 -mattr=+sse3
-    // PERF but GDC never generates it
-    a.ptr[0] = a.array[1];
-    a.ptr[2] = a.array[3];
-    return a;
+    static if (GDC_with_SSE3)
+    {
+        return __builtin_ia32_movshdup (a);
+    }
+    else
+    {
+        // Generates movshdup since LDC 1.3 with -O1 -mattr=+sse3
+        a.ptr[0] = a.array[1];
+        a.ptr[2] = a.array[3];
+        return a;
+    }
+    
 }
 unittest
 {
@@ -255,11 +259,17 @@ unittest
 /// Duplicate even-indexed single-precision (32-bit) floating-point elements from `a`.
 __m128 _mm_moveldup_ps (__m128 a) pure @trusted
 {
-    // Generates movsldup since LDC 1.3 with -O1 -mattr=+sse3
-    // PERF but GDC never generates it
-    a.ptr[1] = a.array[0];
-    a.ptr[3] = a.array[2];
-    return a;
+    static if (GDC_with_SSE3)
+    {
+        return __builtin_ia32_movsldup (a);
+    }
+    else
+    {
+        // Generates movsldup since LDC 1.3 with -O1 -mattr=+sse3
+        a.ptr[1] = a.array[0];
+        a.ptr[3] = a.array[2];
+        return a;
+    }
 }
 unittest
 {
