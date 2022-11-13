@@ -1015,7 +1015,7 @@ int _mm_cvtss_si32 (__m128 a) @safe // PERF GDC
     {
         return __builtin_ia32_cvtss2si(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_cvtss2si(a);
     }
@@ -1592,7 +1592,7 @@ __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
     {
         return __builtin_ia32_maxps(a, b);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_maxps(a, b);
     }
@@ -1636,7 +1636,7 @@ __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
     {
         return __builtin_ia32_maxss(a, b);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_maxss(a, b); 
     }
@@ -1680,7 +1680,7 @@ __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
     {
         return __builtin_ia32_minps(a, b);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         // not technically needed, but better perf in debug mode
         return __builtin_ia32_minps(a, b);
@@ -1725,7 +1725,7 @@ __m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
     {
         return __builtin_ia32_minss(a, b);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_minss(a, b);
     }
@@ -1848,7 +1848,7 @@ int _mm_movemask_ps (__m128 a) pure @trusted
     {
         return __builtin_ia32_movmskps(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_movmskps(a);
     }
@@ -2114,7 +2114,7 @@ __m128 _mm_rcp_ps (__m128 a) pure @trusted
     {
         return __builtin_ia32_rcpps(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_rcpps(a);
     }
@@ -2154,7 +2154,7 @@ __m128 _mm_rcp_ss (__m128 a) pure @trusted
     {
         return __builtin_ia32_rcpss(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_rcpss(a);
     }
@@ -2232,7 +2232,7 @@ __m128 _mm_rsqrt_ps (__m128 a) pure @trusted
     {
         return __builtin_ia32_rsqrtps(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_rsqrtps(a);
     }
@@ -2278,7 +2278,7 @@ __m128 _mm_rsqrt_ss (__m128 a) pure @trusted
     {
         return __builtin_ia32_rsqrtss(a);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         return __builtin_ia32_rsqrtss(a);
     }
@@ -2562,7 +2562,7 @@ void _mm_sfence() @trusted
         else
             static assert(false);
     }
-    else static if (LDC_with_SSE1)
+    else static if (LDC_with_SSE)
     {
         __builtin_ia32_sfence();
     }

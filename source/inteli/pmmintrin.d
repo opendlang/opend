@@ -93,7 +93,7 @@ __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
     }
     else
     {
-        __m128d res; // PERF =void;
+        __m128d res;
         res.ptr[0] = a.array[1] + a.array[0];
         res.ptr[1] = b.array[1] + b.array[0];
         return res;
@@ -106,12 +106,11 @@ unittest
     assert( _mm_hadd_pd(A, B).array ==_mm_setr_pd(3.5, 3.0).array );
 }
 
-// PERF: for GDC, detect SSE3 and use the relevant builtin
 /// Horizontally add adjacent pairs of single-precision (32-bit) 
 /// floating-point elements in `a` and `b`.
 __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
 {
-    static if (LDC_with_SSE3)
+    static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_haddps(a, b);
     }
@@ -140,14 +139,14 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
 {
-    static if (LDC_with_SSE3)
+    // PERF ARM64, not clear if there is better
+    static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_hsubpd(a, b);
     }
     else
-    {        
-        // On GDC this generates hsubpd with -O1
-        __m128d res; // PERF =void;
+    {
+        __m128d res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = b.array[0] - b.array[1];
         return res;
@@ -164,7 +163,7 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
 {
-    static if (LDC_with_SSE3)
+    static if (GDC_or_LDC_with_SSE3)
     {
         return __builtin_ia32_hsubps(a, b);
     }
@@ -177,8 +176,7 @@ __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
     }
     else
     {
-        // PERF: GDC doesn't generate the right instruction, do something
-        __m128 res; // PERF =void;
+        __m128 res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = a.array[2] - a.array[3];
         res.ptr[2] = b.array[0] - b.array[1];

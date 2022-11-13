@@ -142,7 +142,7 @@ version(LDC)
         enum LDC_with_ARM32 = true;
         enum LDC_with_ARM64 = false;
         enum LDC_with_ARM64_CRC = false;
-        enum LDC_with_SSE1 = false;
+        enum LDC_with_SSE = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
         enum LDC_with_SSSE3 = false;
@@ -159,7 +159,7 @@ version(LDC)
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = true; // implies "has Neon"
         enum LDC_with_ARM64_CRC = __traits(targetHasFeature, "crc");
-        enum LDC_with_SSE1 = false;
+        enum LDC_with_SSE = false;
         enum LDC_with_SSE2 = false;
         enum LDC_with_SSE3 = false;
         enum LDC_with_SSSE3 = false;
@@ -176,7 +176,7 @@ version(LDC)
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = false;
         enum LDC_with_ARM64_CRC = false;
-        enum LDC_with_SSE1 = __traits(targetHasFeature, "sse");
+        enum LDC_with_SSE = __traits(targetHasFeature, "sse");
         enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
         enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
         enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
@@ -193,7 +193,7 @@ else
     enum LDC_with_ARM32 = false;
     enum LDC_with_ARM64 = false;
     enum LDC_with_ARM64_CRC = false;
-    enum LDC_with_SSE1 = false;
+    enum LDC_with_SSE = false;
     enum LDC_with_SSE2 = false;
     enum LDC_with_SSE3 = false;
     enum LDC_with_SSSE3 = false;
@@ -236,7 +236,11 @@ else
 
 // Sometimes, can be helpful to merge builtin code, however keep in mind that
 // LDC and GDC builtins often subtly diverse, wrt. unsigned vs signed vectors, 
-// return types, purity...
+// return types, purity... test it in Godbolt! this is safer with float and double intrinsics.
+enum GDC_or_LDC_with_SSE  = GDC_with_SSE  || LDC_with_SSE;
+enum GDC_or_LDC_with_SSE2 = GDC_with_SSE2 || LDC_with_SSE2;
+enum GDC_or_LDC_with_SSE3 = GDC_with_SSE3 || LDC_with_SSE3;
+
 enum GDC_or_LDC_with_AVX  = GDC_with_AVX  || LDC_with_AVX;
 enum GDC_or_LDC_with_AVX2 = GDC_with_AVX2 || LDC_with_AVX2;
 enum GDC_or_LDC_with_SHA  = GDC_with_SHA  || LDC_with_SHA;
