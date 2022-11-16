@@ -1741,10 +1741,10 @@ void ztrtri_(ref char uplo, ref char diag, ref lapackint n, _cdouble *a, ref lap
 
 /// Solves a triangular system of linear equations AX=B,
 /// A**T X=B or A**H X=B.
-void strtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float *b, ref lapackint ldb, ref lapackint info);
-void dtrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, double *b, ref lapackint ldb, ref lapackint info);
-void ctrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, ref lapackint info);
-void ztrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, ref lapackint info);
+void strtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, const float *a, ref lapackint lda, float *b, ref lapackint ldb, ref lapackint info);
+void dtrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, const double *a, ref lapackint lda, double *b, ref lapackint ldb, ref lapackint info);
+void ctrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, const _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, ref lapackint info);
+void ztrtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, ref lapackint nrhs, const _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, ref lapackint info);
 
 /// Computes an RQ factorization of an upper trapezoidal matrix.
 void stzrqf_(ref lapackint m, ref lapackint n, float *a, ref lapackint lda, float *tau, ref lapackint info);
