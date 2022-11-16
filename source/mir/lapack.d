@@ -1271,6 +1271,66 @@ unittest
 }
 
 ///
+size_t gtsv(T)(
+    Slice!(T*) dl,
+    Slice!(T*) d,
+    Slice!(T*) du,
+    Slice!(T*, 2, Canonical) b,
+    )
+in (d.length == 0 && dl.length == 0 || dl.length + 1 == d.length, "gtsv: 'dl' has to have length equal to N - 1, where N is length of 'd'.")
+in (du.length == dl.length, "gtsv: 'du' has to have length equal to N - 1, where N is length of 'd'.")
+in (d.length!0 == b.length!1, "gtsv: The input 'b' has to be N-by-NRHS matrix where N is length of 'd'.")
+out (info; info >= 0)
+{
+    
+    lapackint n = cast(lapackint) b.length!1;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info;
+
+    lapack.gtsv_(n, nrhs, dl.iterator, d.iterator, du.iterator, b.iterator, ldb, info);
+    return info;
+}
+
+unittest
+{
+    alias s = gtsv!float;
+    alias d = gtsv!double;
+    alias c = gtsv!_cfloat;
+    alias z = gtsv!_cdouble;
+}
+
+///
+size_t trtrs(T)(
+    char uplo,
+    char diag,
+    char trans,
+    Slice!(const(T)*, 2, Canonical) a,
+    Slice!(T*, 2, Canonical) b,
+    )
+in (a.length!0 == a.length!1, "trtrs: The input 'a' must be a square matrix.")
+in (a.length!0 == b.length!1, "trtrs: The input 'b' has to be N-by-NRHS matrix where N is order of 'a'.")
+out (info; info >= 0)
+{
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info;
+
+    lapack.trtrs_(uplo, diag, trans, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
+    return info;
+}
+
+unittest
+{
+    alias s = trtrs!float;
+    alias d = trtrs!double;
+    alias c = trtrs!_cfloat;
+    alias z = trtrs!_cdouble;
+}
+
+///
 template tptri(T)
 {
     /// `tptri` for upper triangular input.
