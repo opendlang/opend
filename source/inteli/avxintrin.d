@@ -904,23 +904,9 @@ __m256d _mm256_hsub_pd (__m256d a, __m256d b) pure @trusted
     {
         return __builtin_ia32_hsubpd256(a, b);
     }
-    else static if (LDC_with_ARM64)
+    else 
     {
         // 2 zip1, 2 zip2, 2 fsub... I don't think there is better in arm64
-        __m256d A = void, B = void;
-        A.ptr[0] = a.array[0];
-        A.ptr[1] = b.array[0];
-        A.ptr[2] = a.array[2];
-        A.ptr[3] = b.array[2];
-        B.ptr[0] = a.array[1];
-        B.ptr[1] = b.array[1];
-        B.ptr[2] = a.array[3];
-        B.ptr[3] = b.array[3];
-
-        return A - B;
-    }
-    else
-    {
         __m256d res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = b.array[0] - b.array[1];
