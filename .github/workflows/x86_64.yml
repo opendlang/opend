@@ -19,19 +19,15 @@ jobs:
                     - ldc-1.24.0
                 exclude:
                     - dc: dmd-latest
-                    - os: macOS-latest
-                exclude:
+                      os: macOS-latest
                     - dc: dmd-2.097.0
-                    - os: macOS-latest
-                exclude:
+                      os: macOS-latest
                     - dc: dmd-2.096.1
-                    - os: macOS-latest
-                exclude:
+                      os: macOS-latest
                     - dc: dmd-2.095.1
-                    - os: macOS-latest
-                exclude:
+                      os: macOS-latest
                     - dc: dmd-2.094.2
-                    - os: macOS-latest
+                      os: macOS-latest
 
         runs-on: ${{ matrix.os }}
         steps:
