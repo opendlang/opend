@@ -858,7 +858,8 @@ unittest
 // TODO __m256d _mm256_floor_pd (__m256d a)
 // TODO __m256 _mm256_floor_ps (__m256 a)
 
-/// Horizontally add adjacent pairs of double-precision (64-bit) floating-point elements in `a` and `b`. 
+/// Horizontally add adjacent pairs of double-precision (64-bit) floating-point elements in `a` 
+/// and `b`. 
 __m256d _mm256_hadd_pd (__m256d a, __m256d b) pure @trusted
 {
     static if (LDC_with_AVX)
@@ -890,6 +891,54 @@ unittest
 
 // TODO __m256 _mm256_hadd_ps (__m256 a, __m256 b)
 // TODO __m256d _mm256_hsub_pd (__m256d a, __m256d b)
+
+/// Horizontally subtract adjacent pairs of double-precision (64-bit) floating-point elements in
+/// `a` and `b`. 
+__m256d _mm256_hsub_pd (__m256d a, __m256d b) pure @trusted
+{
+    static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_hsubpd256(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_hsubpd256(a, b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // 2 zip1, 2 zip2, 2 fsub... I don't think there is better in arm64
+        __m256d A = void, B = void;
+        A.ptr[0] = a.array[0];
+        A.ptr[1] = b.array[0];
+        A.ptr[2] = a.array[2];
+        A.ptr[3] = b.array[2];
+        B.ptr[0] = a.array[1];
+        B.ptr[1] = b.array[1];
+        B.ptr[2] = a.array[3];
+        B.ptr[3] = b.array[3];
+
+        return A - B;
+    }
+    else
+    {
+        __m256d res;
+        res.ptr[0] = a.array[0] - a.array[1];
+        res.ptr[1] = b.array[0] - b.array[1];
+        res.ptr[2] = a.array[2] - a.array[3];
+        res.ptr[3] = b.array[2] - b.array[3];
+        return res;
+    }
+}
+unittest
+{
+    __m256d A =_mm256_setr_pd(1.5, 2.0, 21.0, 9.0);
+    __m256d B =_mm256_setr_pd(1.0, 7.0, 100.0, 14.0);
+    __m256d C = _mm256_hsub_pd(A, B);
+    double[4] correct =      [-0.5, -6.0, 12.0, 86.0];
+    assert(C.array == correct);
+}
+
+
 // TODO __m256 _mm256_hsub_ps (__m256 a, __m256 b)
 // TODO __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
 // TODO __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)

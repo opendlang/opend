@@ -150,7 +150,6 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
 {
-    // PERF ARM64, not clear if there is better
     static if (DMD_with_DSIMD_and_SSE3)
     {
         return cast(__m128d) __simd(XMM.HSUBPD, cast(void16)a, cast(void16)b);
@@ -161,6 +160,7 @@ __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
     }
     else
     {
+        // yep, sounds optimal for ARM64 too. Strangely enough.
         __m128d res;
         res.ptr[0] = a.array[0] - a.array[1];
         res.ptr[1] = b.array[0] - b.array[1];
