@@ -2318,7 +2318,40 @@ unittest
 }
 
 // TODO void _mm256_stream_pd (double * mem_addr, __m256d a)
-// TODO void _mm256_stream_ps (float * mem_addr, __m256 a)
+
+/// Store 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from
+/// `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 32-byte 
+/// boundary or a general-protection exception may be generated.
+void _mm256_stream_ps (float* mem_addr, __m256 a) pure @system
+{
+    // PERF DMD
+    // PERF GDC + SSE2
+    version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <8 x float> %1, <8 x float>* %0, align 32, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, float8*, float8)(cast(float8*)mem_addr, a);
+    }   
+    else static if (GDC_with_AVX)
+    {
+        __builtin_ia32_movntps256 (mem_addr, a);
+    }
+    else
+    {
+        // Regular store instead.
+        __m256* dest = cast(__m256*)mem_addr;
+        *dest = a;
+    }
+}
+unittest
+{
+    align(32) float[8] mem;
+    float[8] correct = [5, -6, -7, 8, 1, 2, 3, 4];
+    _mm256_stream_ps(mem.ptr, _mm256_setr_ps(5, -6, -7, 8, 1, 2, 3, 4));
+    assert(mem == correct);
+}
 
 /// Store 256-bits of integer data from `a` into memory using a non-temporal memory hint. 
 /// `mem_addr` must be aligned on a 32-byte boundary or a general-protection exception may be
@@ -2327,6 +2360,7 @@ unittest
 void _mm256_stream_si256 (__m256i * mem_addr, __m256i a) pure @trusted
 {
     // PERF DMD
+    // PERF GDC
     version(LDC)
     {
         enum prefix = `!0 = !{ i32 1 }`;
