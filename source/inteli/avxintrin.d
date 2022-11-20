@@ -659,7 +659,41 @@ unittest
 // TODO __m256 _mm256_cmp_ps (__m256 a, __m256 b, const int imm8)
 // TODO __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
 // TODO __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
-// TODO __m256d _mm256_cvtepi32_pd (__m128i a)
+
+/// Convert packed signed 32-bit integers in a to packed double-precision (64-bit) floating-point 
+/// elements.
+__m256d _mm256_cvtepi32_pd (__m128i a) pure @trusted
+{
+    version(LDC)
+    {
+        enum ir = `
+            %r = sitofp <4 x i32> %0 to <4 x double>
+            ret <4 x double> %r`;
+        return LDCInlineIR!(ir, double4, __m128i)(a);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cvtdq2pd256(a);
+    }
+    else
+    {
+        double4 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    }
+}
+unittest
+{
+    __m256d R = _mm256_cvtepi32_pd(_mm_set1_epi32(54));
+    double[4] correct = [54.0, 54, 54, 54];
+    assert(R.array == correct);
+}
+
+
+
 // TODO __m256 _mm256_cvtepi32_ps (__m256i a)
 // TODO __m128i _mm256_cvtpd_epi32 (__m256d a)
 

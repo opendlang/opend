@@ -1187,7 +1187,7 @@ unittest
 
 /// Convert packed 32-bit integers in `a` to packed double-precision (64-bit)
 /// floating-point elements.
- __m128d _mm_cvtepi32_pd (__m128i a) pure @trusted
+__m128d _mm_cvtepi32_pd (__m128i a) pure @trusted
 {
     version(LDC)
     {
