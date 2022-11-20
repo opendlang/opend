@@ -778,11 +778,44 @@ unittest
     assert(R.array == correct);
 }
 
+/// Return the lower double-precision (64-bit) floating-point element of `a`.
+double _mm256_cvtsd_f64 (__m256d a) pure @safe
+{
+    return a.array[0];
+}
 
-// TODO double _mm256_cvtsd_f64 (__m256d a)
-// TODO int _mm256_cvtsi256_si32 (__m256i a)
-// TODO float _mm256_cvtss_f32 (__m256 a)
-// TODO __m128i _mm256_cvttpd_epi32 (__m256d a)
+/// Return the lower 32-bit integer in `a`.
+int _mm256_cvtsi256_si32 (__m256i a) pure @safe
+{
+    return (cast(int8)a).array[0];
+}
+
+/// Return the lower single-precision (32-bit) floating-point element of `a`.
+float _mm256_cvtss_f32 (__m256 a) pure @safe
+{
+    return a.array[0];
+}
+
+/// Convert packed double-precision (64-bit) floating-point elements in `a` to packed 32-bit 
+/// integers with truncation.
+__m128i _mm256_cvttpd_epi32 (__m256d a) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return cast(__m128i)__builtin_ia32_cvttpd2dq256(a);
+    }
+    else
+    {
+        __m128i r;
+        r.ptr[0] = cast(int)a.array[0];
+        r.ptr[1] = cast(int)a.array[1];
+        r.ptr[2] = cast(int)a.array[2];
+        r.ptr[3] = cast(int)a.array[3];
+        return r;
+    }
+}
+
 // TODO __m256i _mm256_cvttps_epi32 (__m256 a)
 
 /// Divide packed double-precision (64-bit) floating-point elements in `a` by packed elements in `b`.
