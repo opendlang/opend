@@ -2495,10 +2495,138 @@ __m256i _mm256_undefined_si256 () pure @safe
     return r;
 }
 
-// TODO __m256d _mm256_unpackhi_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_unpackhi_ps (__m256 a, __m256 b)
-// TODO __m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
-// TODO __m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
+/// Unpack and interleave double-precision (64-bit) floating-point elements from the high half of 
+/// each 128-bit lane in `a` and `b`.
+__m256d _mm256_unpackhi_pd (__m256d a, __m256d b) pure @trusted
+{
+    version(LDC)
+    {
+        return shufflevectorLDC!(double4, 1, 5, 3, 7)(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_unpckhpd256 (a, b);
+    }
+    else
+    {
+        __m256d r;
+        r.ptr[0] = a.array[1];
+        r.ptr[1] = b.array[1];
+        r.ptr[2] = a.array[3];
+        r.ptr[3] = b.array[3];
+        return r;
+    } 
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2, 3, 4);
+    __m256d B = _mm256_setr_pd(5.0, 6, 7, 8);
+    __m256d C = _mm256_unpackhi_pd(A, B);
+    double[4] correct =       [2.0, 6, 4, 8];
+    assert(C.array == correct);
+}
+
+
+/// Unpack and interleave double-precision (64-bit) floating-point elements from the high half of 
+/// each 128-bit lane in `a` and `b`.
+__m256 _mm256_unpackhi_ps (__m256 a, __m256 b) pure @trusted
+{
+    version(LDC)
+    {
+        return shufflevectorLDC!(float8, 2, 10, 3, 11, 6, 14, 7, 15)(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_unpckhps256 (a, b);
+    }
+    else
+    {
+        __m256 r;
+        r.ptr[0] = a.array[2];
+        r.ptr[1] = b.array[2];
+        r.ptr[2] = a.array[3];
+        r.ptr[3] = b.array[3];
+        r.ptr[4] = a.array[6];
+        r.ptr[5] = b.array[6];
+        r.ptr[6] = a.array[7];
+        r.ptr[7] = b.array[7];
+        return r;
+    } 
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(0.0f,  1,  2,  3,  4,  5,  6,  7);
+    __m256 B = _mm256_setr_ps(8.0f,  9, 10, 11, 12, 13, 14, 15);
+    __m256 C = _mm256_unpackhi_ps(A, B);
+    float[8] correct =       [2.0f, 10,  3, 11,  6, 14,  7, 15];
+    assert(C.array == correct);
+}
+
+/// Unpack and interleave double-precision (64-bit) floating-point elements from the low half of 
+/// each 128-bit lane in `a` and `b`.
+__m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
+{
+    version(LDC)
+    {
+        return shufflevectorLDC!(double4, 0, 4, 2, 6)(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_unpcklpd256 (a, b);
+    }
+    else
+    {
+        __m256d r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = b.array[0];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = b.array[2];
+        return r;        
+    } 
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2, 3, 4);
+    __m256d B = _mm256_setr_pd(5.0, 6, 7, 8);
+    __m256d C = _mm256_unpacklo_pd(A, B);
+    double[4] correct =       [1.0, 5, 3, 7];
+    assert(C.array == correct);
+}
+
+/// Unpack and interleave single-precision (32-bit) floating-point elements from the low half of
+/// each 128-bit lane in `a` and `b`.
+__m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
+{
+    version(LDC)
+    {
+        return shufflevectorLDC!(float8, 0, 8, 1, 9, 4, 12, 5, 13)(a, b);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_unpcklps256 (a, b);
+    }
+    else
+    {
+        __m256 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = b.array[0];
+        r.ptr[2] = a.array[1];
+        r.ptr[3] = b.array[1];
+        r.ptr[4] = a.array[4];
+        r.ptr[5] = b.array[4];
+        r.ptr[6] = a.array[5];
+        r.ptr[7] = b.array[5];
+        return r;        
+    } 
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(0.0f,  1,  2,  3,  4,  5,  6,  7);
+    __m256 B = _mm256_setr_ps(8.0f,  9, 10, 11, 12, 13, 14, 15);
+    __m256 C = _mm256_unpacklo_ps(A, B);
+    float[8] correct =       [0.0f,  8,  1,  9,  4, 12,  5, 13];
+    assert(C.array == correct);
+}
 
 /// Compute the bitwise XOR of packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m256d _mm256_xor_pd (__m256d a, __m256d b) pure @safe
