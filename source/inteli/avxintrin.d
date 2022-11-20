@@ -1064,7 +1064,47 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256 _mm256_hadd_ps (__m256 a, __m256 b)
+/// Horizontally add adjacent pairs of single-precision (32-bit) floating-point elements in `a` and
+/// `b`.
+__m256 _mm256_hadd_ps (__m256 a, __m256 b) pure @trusted
+{
+    // PERD DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_haddps256(a, b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        __m128 a_hi = _mm256_extractf128_ps!1(a);
+        __m128 a_lo = _mm256_extractf128_ps!0(a);
+        __m128 b_hi = _mm256_extractf128_ps!1(b);
+        __m128 b_lo = _mm256_extractf128_ps!0(b);
+        __m128 hi = vpaddq_f32(a_hi, b_hi);
+        __m128 lo = vpaddq_f32(a_lo, b_lo);
+        return _mm256_set_m128(hi, lo);
+    }
+    else
+    {    
+        __m256 res;
+        res.ptr[0] = a.array[1] + a.array[0];
+        res.ptr[1] = a.array[3] + a.array[2];
+        res.ptr[2] = b.array[1] + b.array[0];
+        res.ptr[3] = b.array[3] + b.array[2];
+        res.ptr[4] = a.array[5] + a.array[4];
+        res.ptr[5] = a.array[7] + a.array[6];
+        res.ptr[6] = b.array[5] + b.array[4];
+        res.ptr[7] = b.array[7] + b.array[6];
+        return res;
+    }
+}
+unittest
+{
+    __m256 A =_mm256_setr_ps(1.0f, 2.0f, 3.0f, 5.0f, 1.0f, 2.0f, 3.0f, 5.0f);
+    __m256 B =_mm256_setr_ps(1.5f, 2.0f, 3.5f, 4.0f, 1.5f, 2.0f, 3.5f, 5.0f);
+    __m256 R = _mm256_hadd_ps(A, B);
+    float[8] correct =      [3.0f, 8.0f, 3.5f, 7.5f, 3.0f, 8.0f, 3.5f, 8.5f];
+    assert(R.array == correct);
+}
 
 /// Horizontally subtract adjacent pairs of double-precision (64-bit) floating-point elements in
 /// `a` and `b`. 
@@ -1096,6 +1136,8 @@ unittest
 
 
 // TODO __m256 _mm256_hsub_ps (__m256 a, __m256 b)
+
+
 // TODO __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
 // TODO __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
 // TODO __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
@@ -1694,6 +1736,7 @@ __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
     }
     else
     {
+        // TODO: BUG, doesn't work if AVX vector is emulated, but SSE vector is not
         // PERF: this crash on DMD v100.2 on Linux x86_64, find out why since 
         // it would be better performance wise
         // Note: probably because emulated AVX vectors have no alignment requisites!
