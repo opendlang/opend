@@ -641,6 +641,7 @@ unittest
 
 // TODO __m256d _mm256_ceil_pd (__m256d a)
 // TODO __m256 _mm256_ceil_ps (__m256 a)
+
 // TODO __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
 // TODO __m256d _mm256_cmp_pd (__m256d a, __m256d b, const int imm8)
 // TODO __m128 _mm_cmp_ps (__m128 a, __m128 b, const int imm8)
@@ -1064,7 +1065,6 @@ unittest
 }
 
 // TODO __m256 _mm256_hadd_ps (__m256 a, __m256 b)
-// TODO __m256d _mm256_hsub_pd (__m256d a, __m256d b)
 
 /// Horizontally subtract adjacent pairs of double-precision (64-bit) floating-point elements in
 /// `a` and `b`. 
