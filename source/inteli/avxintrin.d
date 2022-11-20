@@ -2317,11 +2317,45 @@ unittest
     assert(B == correct);
 }
 
-// TODO void _mm256_stream_pd (double * mem_addr, __m256d a)
+/// Store 256-bits (composed of 4 packed single-precision (64-bit) floating-point elements) from
+/// `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 32-byte 
+/// boundary or a general-protection exception may be generated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
+void _mm256_stream_pd (double* mem_addr, __m256d a) pure @system
+{
+    // PERF DMD
+    // PERF GDC + SSE2
+    version(LDC)
+    {
+        enum prefix = `!0 = !{ i32 1 }`;
+        enum ir = `
+            store <4 x double> %1, <4 x double>* %0, align 32, !nontemporal !0
+            ret void`;
+        LDCInlineIREx!(prefix, ir, "", void, double4*, double4)(cast(double4*)mem_addr, a);
+    }   
+    else static if (GDC_with_AVX) // any hope to be non-temporal? Using SSE2 instructions.
+    {
+        __builtin_ia32_movntpd256 (mem_addr, a);
+    }
+    else
+    {
+        // Regular store instead.
+        __m256d* dest = cast(__m256d*)mem_addr;
+        *dest = a;
+    }
+}
+unittest
+{
+    align(32) double[4] mem;
+    double[4] correct = [5.0, -6, -7, 8];
+    _mm256_stream_pd(mem.ptr, _mm256_setr_pd(5.0, -6, -7, 8));
+    assert(mem == correct);
+}
 
 /// Store 256-bits (composed of 8 packed single-precision (32-bit) floating-point elements) from
 /// `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 32-byte 
 /// boundary or a general-protection exception may be generated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm256_stream_ps (float* mem_addr, __m256 a) pure @system
 {
     // PERF DMD
@@ -2357,6 +2391,7 @@ unittest
 /// `mem_addr` must be aligned on a 32-byte boundary or a general-protection exception may be
 /// generated.
 /// Note: there isn't any particular instruction in AVX to do that. It just defers to SSE2.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm256_stream_si256 (__m256i * mem_addr, __m256i a) pure @trusted
 {
     // PERF DMD

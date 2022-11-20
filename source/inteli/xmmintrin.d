@@ -2882,6 +2882,7 @@ unittest
 }
 
 /// Store 64-bits of integer data from `a` into memory using a non-temporal memory hint.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_pi (__m64* mem_addr, __m64 a) pure @trusted
 {
     _mm_stream_si64(cast(long*)mem_addr, a.array[0]);
@@ -2890,6 +2891,7 @@ void _mm_stream_pi (__m64* mem_addr, __m64 a) pure @trusted
 /// Store 128-bits (composed of 4 packed single-precision (32-bit) floating-point elements) from 
 /// `a`s into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte 
 /// boundary or a general-protection exception may be generated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_ps (float* mem_addr, __m128 a)
 {
     // PERF DMD D_SIMD

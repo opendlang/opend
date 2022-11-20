@@ -4494,6 +4494,7 @@ unittest
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
 /// from `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte
 /// boundary or a general-protection exception may be generated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
 {
     // PERF DMD D_SIMD
@@ -4527,6 +4528,7 @@ unittest
 /// Store 128-bits of integer data from a into memory using a non-temporal memory hint.
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception
 /// may be generated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
 {
     // PERF DMD D_SIMD
@@ -4560,6 +4562,7 @@ unittest
 /// Store 32-bit integer a into memory using a non-temporal hint to minimize cache
 /// pollution. If the cache line containing address `mem_addr` is already in the cache,
 /// the cache will be updated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_si32 (int* mem_addr, int a) pure @trusted
 {
     // PERF DMD D_SIMD
@@ -4591,6 +4594,7 @@ unittest
 /// Store 64-bit integer a into memory using a non-temporal hint to minimize
 /// cache pollution. If the cache line containing address `mem_addr` is already
 /// in the cache, the cache will be updated.
+/// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_si64 (long* mem_addr, long a) pure @trusted
 {
     // PERF DMD D_SIMD
