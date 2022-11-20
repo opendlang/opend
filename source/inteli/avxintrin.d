@@ -1056,9 +1056,66 @@ unittest
 // TODO __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
 // TODO __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
 // TODO __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
-// TODO __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
-// TODO __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
-// TODO __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+
+
+/// Copy `a`, then insert 128 bits (composed of 2 packed double-precision (64-bit) 
+/// floating-point elements) from `b` at the location specified by `imm8`.
+__m256d _mm256_insertf128_pd(int imm8)(__m256d a, __m128d b) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        enum ubyte lane = imm8 & 1;
+        return __builtin_ia32_vinsertf128_pd256(a, b, lane);
+    }
+    else
+    {
+        __m256d r = a;
+        enum int index = (imm8 & 1) ? 2 : 0;
+        r.ptr[index] = b.array[0];
+        r.ptr[index+1] = b.array[1];
+        return r;
+    }
+}
+
+/// Copy `a` then insert 128 bits (composed of 4 packed single-precision (32-bit) floating-point
+/// elements) from `b`, at the location specified by `imm8`.
+__m256 _mm256_insertf128_ps(int imm8)(__m256 a, __m128 b) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        enum ubyte lane = imm8 & 1;
+        return __builtin_ia32_vinsertf128_ps256(a, b, lane);
+    }
+    else
+    {
+        __m256 r = a;
+        enum int index = (imm8 & 1) ? 4 : 0;
+        r.ptr[index] = b.array[0];
+        r.ptr[index+1] = b.array[1];
+        r.ptr[index+2] = b.array[2];
+        r.ptr[index+3] = b.array[3];
+        return r;
+    }
+}
+
+/// Copy `a`, then insert 128 bits from `b` at the location specified by `imm8`.
+__m256i _mm256_insertf128_si256(int imm8)(__m256i a, __m128i b) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        enum ubyte lane = imm8 & 1;
+        return cast(__m256i) __builtin_ia32_vinsertf128_si256 (cast(int8)a, b, lane);
+    }
+    else
+    {
+        long2 lb = cast(long2)b;
+        __m256i r = a;
+        enum int index = (imm8 & 1) ? 2 : 0;
+        r.ptr[index] = lb.array[0];
+        r.ptr[index+1] = lb.array[1];
+        return r;
+    }
+}
 
 /// Load 256-bits of integer data from unaligned memory into dst. 
 /// This intrinsic may perform better than `_mm256_loadu_si256` when the data crosses a cache 
@@ -1598,6 +1655,7 @@ __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
     {
         // PERF: this crash on DMD v100.2 on Linux x86_64, find out why since 
         // it would be better performance wise
+        // Note: probably because emulated AVX vectors have no alignment requisites!
         __m256 r = void;
         __m128* p = cast(__m128*)(&r);
         p[0] = lo;
