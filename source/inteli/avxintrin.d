@@ -662,9 +662,67 @@ unittest
 // TODO __m256d _mm256_cvtepi32_pd (__m128i a)
 // TODO __m256 _mm256_cvtepi32_ps (__m256i a)
 // TODO __m128i _mm256_cvtpd_epi32 (__m256d a)
-// TODO __m128 _mm256_cvtpd_ps (__m256d a)
+
+
+/// Convert packed double-precision (64-bit) floating-point elements in `a` to packed single-precision (32-bit) 
+/// floating-point elements.
+__m128 _mm256_cvtpd_ps (__m256d a) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_cvtpd2ps256(a);
+    }
+    else
+    {
+        __m128 r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2, 3, 5);
+    __m128 R = _mm256_cvtpd_ps(A);
+    float[4] correct = [1.0f, 2, 3, 5];
+    assert(R.array == correct);
+}
+
+
 // TODO __m256i _mm256_cvtps_epi32 (__m256 a)
-// TODO __m256d _mm256_cvtps_pd (__m128 a)
+
+/// Convert packed single-precision (32-bit) floating-point elements in `a`` to packed double-precision 
+/// (64-bit) floating-point elements.
+__m256d _mm256_cvtps_pd (__m128 a) pure @trusted
+{   
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_cvtps2pd256(a); // LDC doesn't have the builtin
+    }
+    else
+    {
+        // LDC: x86, needs -O2 to generate cvtps2pd since LDC 1.2.0
+        __m256d r;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = a.array[2];
+        r.ptr[3] = a.array[3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1.0f, 2, 3, 5);
+    __m256d R = _mm256_cvtps_pd(A);
+    double[4] correct = [1.0, 2, 3, 5];
+    assert(R.array == correct);
+}
+
+
 // TODO double _mm256_cvtsd_f64 (__m256d a)
 // TODO int _mm256_cvtsi256_si32 (__m256i a)
 // TODO float _mm256_cvtss_f32 (__m256 a)
@@ -2421,16 +2479,6 @@ void _mm256_zeroupper () pure @safe
 
 /+
 
-
-
-pragma(LDC_intrinsic, "llvm.x86.avx.cvt.pd2.ps.256")
-    float4 __builtin_ia32_cvtpd2ps256(double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.cvt.pd2dq.256")
-    int4 __builtin_ia32_cvtpd2dq256(double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.cvt.ps2dq.256")
-    int8 __builtin_ia32_cvtps2dq256(float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.pd2dq.256")
     int4 __builtin_ia32_cvttpd2dq256(double4) pure @safe;
