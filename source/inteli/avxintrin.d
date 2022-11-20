@@ -57,11 +57,7 @@ unittest
 __m256d _mm256_addsub_pd (__m256d a, __m256d b) pure @trusted
 {
     // PERF DMD
-    static if (GDC_with_AVX)
-    {
-        return __builtin_ia32_addsubpd256(a, b);
-    }
-    else static if (LDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_addsubpd256(a, b);
     }
@@ -91,11 +87,7 @@ unittest
 __m256 _mm256_addsub_ps (__m256 a, __m256 b) pure @trusted
 {
     // PERF DMD
-    static if (GDC_with_AVX)
-    {
-        return __builtin_ia32_addsubps256(a, b);
-    }
-    else static if (LDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_addsubps256(a, b);
     }
@@ -320,11 +312,7 @@ __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask) @trusted
 {
     // PERF DMD
     // PERF LDC/GDC without AVX could use two intrinsics for each part
-    static if (GDC_with_AVX)
-    {
-        return __builtin_ia32_blendvps256(a, b, mask);
-    }
-    else static if (LDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_blendvps256(a, b, mask);
     }
@@ -830,13 +818,9 @@ __m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
 {
     // PERF DMD
     // PERF without AVX, can use 2 _mm_dp_ps exactly (beware the imm8 is tricky)
-    static if (GDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_dpps256(a, b, cast(ubyte)imm8);
-    }
-    else static if (LDC_with_AVX)
-    {
-        return __builtin_ia32_dpps256(a, b, cast(byte)imm8);
     }
     else
     {
@@ -988,11 +972,7 @@ unittest
 /// and `b`. 
 __m256d _mm256_hadd_pd (__m256d a, __m256d b) pure @trusted
 {
-    static if (LDC_with_AVX)
-    {
-        return __builtin_ia32_haddpd256(a, b);
-    }
-    else static if (GDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_haddpd256(a, b);
     }
@@ -1022,11 +1002,7 @@ unittest
 /// `a` and `b`. 
 __m256d _mm256_hsub_pd (__m256d a, __m256d b) pure @trusted
 {
-    static if (LDC_with_AVX)
-    {
-        return __builtin_ia32_hsubpd256(a, b);
-    }
-    else static if (GDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_hsubpd256(a, b);
     }
@@ -1123,14 +1099,9 @@ __m256i _mm256_insertf128_si256(int imm8)(__m256i a, __m128i b) pure @trusted
 __m256i _mm256_lddqu_si256(const(__m256i)* mem_addr) @trusted
 {
     // PERF DMD D_SIMD
-    static if (GDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return cast(__m256i) __builtin_ia32_lddqu256(cast(const(char)*)mem_addr);
-    }
-    else static if (LDC_with_AVX)
-    {
-        // unfortunately builtin is not marked pure
-        return cast(__m256i) __builtin_ia32_lddqu256(cast(const void*)mem_addr);
     }
     else
         return _mm256_loadu_si256(mem_addr);
