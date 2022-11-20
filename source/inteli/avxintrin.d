@@ -815,8 +815,43 @@ __m128i _mm256_cvttpd_epi32 (__m256d a) pure @trusted
         return r;
     }
 }
+unittest
+{
+    __m256d A = _mm256_set_pd(4.7, -1000.9, -7.1, 3.1);
+    __m128i R = _mm256_cvttpd_epi32(A);
+    int[4] correct = [3, -7, -1000, 4];
+    assert(R.array == correct);
+}
 
-// TODO __m256i _mm256_cvttps_epi32 (__m256 a)
+/// Convert packed single-precision (32-bit) floating-point elements in `a`.
+__m256i _mm256_cvttps_epi32 (__m256 a) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return cast(__m256i)__builtin_ia32_cvttps2dq256(a);
+    }
+    else
+    {
+        int8 r;
+        r.ptr[0] = cast(int)a.array[0];
+        r.ptr[1] = cast(int)a.array[1];
+        r.ptr[2] = cast(int)a.array[2];
+        r.ptr[3] = cast(int)a.array[3];
+        r.ptr[4] = cast(int)a.array[4];
+        r.ptr[5] = cast(int)a.array[5];
+        r.ptr[6] = cast(int)a.array[6];
+        r.ptr[7] = cast(int)a.array[7];
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_set_ps(4.7, -1000.9, -7.1, 3.1, 1.4, 2.9, -2.9, 0);
+    int8 R = cast(int8) _mm256_cvttps_epi32(A);
+    int[8] correct = [0, -2, 2, 1, 3, -7, -1000, 4];
+    assert(R.array == correct);
+}
 
 /// Divide packed double-precision (64-bit) floating-point elements in `a` by packed elements in `b`.
 __m256d _mm256_div_pd (__m256d a, __m256d b) pure @safe
