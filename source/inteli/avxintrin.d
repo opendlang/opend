@@ -692,9 +692,43 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed signed 32-bit integers in `a` to packed single-precision (32-bit) floating-point 
+/// elements.
+__m256 _mm256_cvtepi32_ps (__m256i a) pure @trusted
+{
+    version(LDC)
+    {
+        enum ir = `
+            %r = sitofp <8 x i32> %0 to <8 x float>
+            ret <8 x float> %r`;
+        return LDCInlineIR!(ir, float8, int8)(cast(int8)a);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cvtdq2ps256(cast(int8)a);
+    }
+    else
+    {
+        int8 ia = cast(int8)a;
+        __m256 r;
+        r.ptr[0] = ia.array[0];
+        r.ptr[1] = ia.array[1];
+        r.ptr[2] = ia.array[2];
+        r.ptr[3] = ia.array[3];
+        r.ptr[4] = ia.array[4];
+        r.ptr[5] = ia.array[5];
+        r.ptr[6] = ia.array[6];
+        r.ptr[7] = ia.array[7];
+        return r;
+    }
+}
+unittest
+{
+    __m256 R = _mm256_cvtepi32_ps(_mm256_set1_epi32(5));
+    float[8] correct = [5.0f, 5, 5, 5, 5, 5, 5, 5];
+    assert(R.array == correct);
+}
 
-
-// TODO __m256 _mm256_cvtepi32_ps (__m256i a)
 // TODO __m128i _mm256_cvtpd_epi32 (__m256d a)
 
 
@@ -2703,10 +2737,67 @@ void _mm256_zeroupper () pure @safe
     
 }
 
-// TODO __m256d _mm256_zextpd128_pd256 (__m128d a)
+/// Cast vector of type `__m128d` to type `__m256d`; the upper 128 bits of the result are zeroed.
+__m256d _mm256_zextpd128_pd256 (__m128d a) pure @trusted
+{
+    __m256d r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    r.ptr[2] = 0;
+    r.ptr[3] = 0;
+    return r;
+}
+unittest
+{
+    __m256d R = _mm256_zextpd128_pd256(_mm_setr_pd(2.0, -3.0));
+    double[4] correct = [2.0, -3, 0, 0];
+    assert(R.array == correct);
+}
+
+// Note: those two needs _mm256_insertf128_ps implemented
 // TODO __m256 _mm256_zextps128_ps256 (__m128 a)
 // TODO __m256i _mm256_zextsi128_si256 (__m128i a)
 
+/+
+
+/// Cast vector of type `__m128` to type `__m256`; the upper 128 bits of the result are zeroed.
+__m256 _mm256_zextps128_ps256 (__m128 a) pure @trusted
+{
+/* version(GNU)
+{
+return _mm256_insertf128_ps (_mm256_setzero_ps (), __A, 0);
+}
+else */
+{
+    __m256 r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    r.ptr[2] = a.array[2];
+    r.ptr[3] = a.array[3];
+    r.ptr[4] = 0;
+    r.ptr[5] = 0;
+    r.ptr[6] = 0;
+    r.ptr[7] = 0;
+    return r;
+}
+}
+
+/// Cast vector of type `__m128i` to type `__m256i`; the upper 128 bits of the result are zeroed. 
+__m256i _mm256_zextsi128_si256 (__m128i a) pure @trusted
+{
+    // PERF LDC
+    __m256i r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    r.ptr[2] = a.array[2];
+    r.ptr[3] = a.array[3];
+    r.ptr[4] = 0;
+    r.ptr[5] = 0;
+    r.ptr[6] = 0;
+    r.ptr[7] = 0;
+    return r;
+}
++/
 
 /+
 
