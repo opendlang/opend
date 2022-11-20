@@ -659,7 +659,7 @@ __m256d _mm256_cvtepi32_pd (__m128i a) pure @trusted
             ret <4 x double> %r`;
         return LDCInlineIR!(ir, double4, __m128i)(a);
     }
-    else static if (GDC_with_SSE2)
+    else static if (GDC_with_AVX)
     {
         return __builtin_ia32_cvtdq2pd256(a);
     }
@@ -691,7 +691,7 @@ __m256 _mm256_cvtepi32_ps (__m256i a) pure @trusted
             ret <8 x float> %r`;
         return LDCInlineIR!(ir, float8, int8)(cast(int8)a);
     }
-    else static if (GDC_with_SSE2)
+    else static if (GDC_with_AVX)
     {
         return __builtin_ia32_cvtdq2ps256(cast(int8)a);
     }
