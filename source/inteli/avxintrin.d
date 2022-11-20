@@ -1174,9 +1174,8 @@ unittest
 
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
-// TODO: take void* as input, make that @system
 // See this dlang forum post => https://forum.dlang.org/thread/vymrsngsfibkmqsqffce@forum.dlang.org
-__m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
+__m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted // TODO: signature
 {
     // PERF DMD
     static if (GDC_with_AVX)
@@ -1533,9 +1532,12 @@ __m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
 // TODO __m256d _mm256_permutevar_pd (__m256d a, __m256i b)
 // TODO __m128 _mm_permutevar_ps (__m128 a, __m128i b)
 // TODO __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
+
 // TODO __m256 _mm256_rcp_ps (__m256 a)
+
 // TODO __m256d _mm256_round_pd (__m256d a, int rounding)
 // TODO __m256 _mm256_round_ps (__m256 a, int rounding)
+
 // TODO __m256 _mm256_rsqrt_ps (__m256 a)
 
 
@@ -2812,50 +2814,41 @@ unittest
     assert(R.array == correct);
 }
 
-// Note: those two needs _mm256_insertf128_ps implemented
-// TODO __m256 _mm256_zextps128_ps256 (__m128 a)
-// TODO __m256i _mm256_zextsi128_si256 (__m128i a)
-
-/+
-
 /// Cast vector of type `__m128` to type `__m256`; the upper 128 bits of the result are zeroed.
 __m256 _mm256_zextps128_ps256 (__m128 a) pure @trusted
 {
-/* version(GNU)
-{
-return _mm256_insertf128_ps (_mm256_setzero_ps (), __A, 0);
+    double2 la = cast(double2)a;
+    double4 r;
+    r.ptr[0] = la.array[0];
+    r.ptr[1] = la.array[1];
+    r.ptr[2] = 0;
+    r.ptr[3] = 0;
+    return cast(__m256)r;
 }
-else */
+unittest
 {
-    __m256 r;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = a.array[1];
-    r.ptr[2] = a.array[2];
-    r.ptr[3] = a.array[3];
-    r.ptr[4] = 0;
-    r.ptr[5] = 0;
-    r.ptr[6] = 0;
-    r.ptr[7] = 0;
-    return r;
-}
+    __m256 R = _mm256_zextps128_ps256(_mm_setr_ps(2.0, -3.0, 4, -5));
+    float[8] correct = [2.0, -3, 4, -5, 0, 0, 0, 0];
+    assert(R.array == correct);
 }
 
 /// Cast vector of type `__m128i` to type `__m256i`; the upper 128 bits of the result are zeroed. 
 __m256i _mm256_zextsi128_si256 (__m128i a) pure @trusted
 {
-    // PERF LDC
+    long2 la = cast(long2)a;
     __m256i r;
-    r.ptr[0] = a.array[0];
-    r.ptr[1] = a.array[1];
-    r.ptr[2] = a.array[2];
-    r.ptr[3] = a.array[3];
-    r.ptr[4] = 0;
-    r.ptr[5] = 0;
-    r.ptr[6] = 0;
-    r.ptr[7] = 0;
+    r.ptr[0] = la.array[0];
+    r.ptr[1] = la.array[1];
+    r.ptr[2] = 0;
+    r.ptr[3] = 0;
     return r;
 }
-+/
+unittest
+{
+    __m256i R = _mm256_zextsi128_si256(_mm_setr_epi64(-1, 99));
+    long[4] correct = [-1, 99, 0, 0];
+    assert(R.array == correct);
+}
 
 /+
 
