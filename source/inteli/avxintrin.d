@@ -1134,9 +1134,32 @@ unittest
     assert(C.array == correct);
 }
 
-
-// TODO __m256 _mm256_hsub_ps (__m256 a, __m256 b)
-
+__m256 _mm256_hsub_ps (__m256 a, __m256 b) pure @trusted
+{
+    // PERD DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_hsubps256(a, b);
+    }
+    else
+    {
+        __m128 a_hi = _mm256_extractf128_ps!1(a);
+        __m128 a_lo = _mm256_extractf128_ps!0(a);
+        __m128 b_hi = _mm256_extractf128_ps!1(b);
+        __m128 b_lo = _mm256_extractf128_ps!0(b);
+        __m128 hi = _mm_hsub_ps(a_hi, b_hi);
+        __m128 lo = _mm_hsub_ps(a_lo, b_lo);
+        return _mm256_set_m128(hi, lo);
+    }
+}
+unittest
+{
+    __m256 A =_mm256_setr_ps(1.0f, 2.0f, 3.0f, 5.0f, 1.0f, 2.0f, 3.0f, 5.0f);
+    __m256 B =_mm256_setr_ps(1.5f, 2.0f, 3.5f, 4.0f, 1.5f, 2.0f, 3.5f, 5.0f);
+    __m256 R = _mm256_hsub_ps(A, B);
+    float[8] correct =   [-1.0f, -2.0f, -0.5f, -0.5f, -1.0f, -2.0f, -0.5f, -1.5f];
+    assert(R.array == correct);
+}
 
 // TODO __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
 // TODO __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
