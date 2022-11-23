@@ -1169,6 +1169,14 @@ __m256i _mm256_insert_epi16 (__m256i a, short i, const int index) pure @trusted
     sa.ptr[index & 15] = i;
     return cast(__m256i)sa;
 }
+unittest
+{
+    __m256i A = _mm256_set1_epi16(1);
+    short16 R = cast(short16) _mm256_insert_epi16(A, 2, 16 + 16 + 7);
+    short[16] correct = [1, 1, 1, 1, 1, 1, 1, 2, 
+                         1, 1, 1, 1, 1, 1, 1, 1 ];
+    assert(R.array == correct);
+}
 
 /// Copy `a`, and insert the 32-bit integer `i` into the result at the location specified by 
 /// `index & 7`.
@@ -1178,6 +1186,13 @@ __m256i _mm256_insert_epi32 (__m256i a, int i, const int index) pure @trusted
     ia.ptr[index & 7] = i;
     return cast(__m256i)ia;
 }
+unittest
+{
+    __m256i A = _mm256_set1_epi32(1);
+    int8 R = cast(int8) _mm256_insert_epi32(A, -2, 8 + 8 + 1);
+    int[8] correct = [1, -2, 1, 1, 1, 1, 1, 1];
+    assert(R.array == correct);
+}
 
 /// Copy `a`, and insert the 64-bit integer `i` into the result at the location specified by 
 /// `index & 3`.
@@ -1185,6 +1200,13 @@ __m256i _mm256_insert_epi64(__m256i a, long i, const int index) pure @trusted
 {
     a.ptr[index & 3] = i;
     return a;
+}
+unittest
+{
+    __m256i A = _mm256_set1_epi64(1);
+    long4 R = cast(long4) _mm256_insert_epi64(A, -2, 2 - 4 - 4);
+    long[4] correct = [1, 1, -2, 1];
+    assert(R.array == correct);
 }
 
 /// Copy `a`, and insert the 8-bit integer `i` into the result at the location specified by 
@@ -1194,6 +1216,14 @@ __m256i _mm256_insert_epi8(__m256i a, byte i, const int index) pure @trusted
     byte32 ba = cast(byte32)a;
     ba.ptr[index & 31] = i;
     return cast(__m256i)ba;
+}
+unittest
+{
+    __m256i A = _mm256_set1_epi8(1);
+    byte32 R = cast(byte32) _mm256_insert_epi8(A, -2, 7 - 32 - 32);
+    byte[32] correct = [1, 1, 1, 1, 1, 1, 1,-2, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ];
+    assert(R.array == correct);
 }
 
 /// Copy `a`, then insert 128 bits (composed of 2 packed double-precision (64-bit) 
@@ -1954,6 +1984,7 @@ unittest
         assert(a.array[i] == 31);
 }
 
+
 /// Broadcast 64-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi64x (long a)
 {
@@ -1965,6 +1996,8 @@ unittest
     for (int i = 0; i < 4; ++i)
         assert(a.array[i] == -31);
 }
+///ditto
+alias _mm256_set1_epi64 = _mm256_set1_epi64x; // #BONUS, not sure why this isn't in Intel Intrinsics API.
 
 /// Broadcast 8-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi8 (byte a) pure @trusted
