@@ -2144,7 +2144,8 @@ const:
     }
 
     ///
-    size_t walkLength() scope const @property @safe pure @nogc {
+    size_t walkLength() scope const @property @safe pure @nogc
+    {
         size_t length;
         IonErrorCode firstError;
         foreach (IonErrorCode error, scope IonDescribedValue value; this)
@@ -2394,7 +2395,8 @@ const:
     }
 
     ///
-    size_t walkLength() scope const @property @safe pure @nogc {
+    size_t walkLength() scope const @property @safe pure @nogc
+    {
         size_t length;
         IonErrorCode firstError;
         foreach (IonErrorCode error, scope IonDescribedValue value; this)
@@ -2710,9 +2712,9 @@ const:
     }
 
     ///
-    size_t walkLength() scope const @property @safe pure @nogc {
+    size_t walkLength(out IonErrorCode firstError) scope const @property @safe pure @nogc
+    {
         size_t length;
-        IonErrorCode firstError;
         foreach (IonErrorCode error, size_t symbolID, scope IonDescribedValue value; this)
         {
             length++;
@@ -2722,6 +2724,14 @@ const:
                 break;
             }
         }
+        return length;
+    }
+
+    ///
+    size_t walkLength() scope const @property @safe pure @nogc
+    {
+        IonErrorCode firstError;
+        auto length = this.walkLength(firstError);
         if (firstError)
             throw firstError.ionException;
         return length;
