@@ -610,6 +610,7 @@ version(mir_ion_test) unittest
 /// serdeLikeStruct
 unittest
 {
+    import mir.test: should;
     import mir.ser.text: serializeText;
     import mir.deser.text: deserializeText;
     import mir.serde: serdeLikeStruct, serdeProxy;
@@ -644,7 +645,7 @@ unittest
     }
 
     assert(S().serializeText == `{obj:{a:1,b:2,c:3}}`);
-    assert(`{obj:{a:1,b:2,c:3}}`.deserializeText!S.obj.sum == 6);
+    `{obj:{a:1,b:2,c:3}}`.deserializeText!S.obj.sum.should == 6;
 
     // attribute on type + opApply
     @serdeLikeStruct

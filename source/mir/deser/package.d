@@ -592,7 +592,6 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
         else
         static if (isStringMap!T)
         {
-            import mir.conv;
             if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
                 return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
             if (data.descriptor.L == 0xF)
@@ -602,18 +601,28 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
             }
             auto ionValue = data.trustedGet!IonStruct;
 
+            IonErrorCode lengthError;
+            auto length = ionValue.walkLength;
+            if (lengthError)
+                return lengthError.ionException;
+            auto keys = new string[length];
+            auto values = new typeof(value[string.init])[length];
+            size_t i;
             foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; ionValue)
             {
                 if (error)
                     return error.ionException;
                 if (symbolId >= table.length)
                     return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
-                import mir.conv: to;
-                if (auto errorMsg = deserializeValue(elem, 
-                    (ref () @trusted pure => value.require(table[symbolId].to!string))(),
-                    table, tableIndex))
-                    return errorMsg;
+                static if (tableKind == TableKind.immutableRuntime)
+                    keys[i] = table[symbolId];
+                else
+                    keys[i] = table[symbolId].idup;
+                if (auto exception = deserializeValue(elem, values[i], table, tableIndex))
+                    return exception;
+                i++;
             }
+            value = T(keys, values);
             return null;
         }
         else
