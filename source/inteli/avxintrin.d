@@ -1161,11 +1161,40 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
-// TODO __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
-// TODO __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
-// TODO __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
+/// Copy `a`, and insert the 16-bit integer `i` into the result at the location specified by 
+/// `index & 15`.
+__m256i _mm256_insert_epi16 (__m256i a, short i, const int index) pure @trusted
+{
+    short16 sa = cast(short16)a;
+    sa.ptr[index & 15] = i;
+    return cast(__m256i)sa;
+}
 
+/// Copy `a`, and insert the 32-bit integer `i` into the result at the location specified by 
+/// `index & 7`.
+__m256i _mm256_insert_epi32 (__m256i a, int i, const int index) pure @trusted
+{
+    int8 ia = cast(int8)a;
+    ia.ptr[index & 7] = i;
+    return cast(__m256i)ia;
+}
+
+/// Copy `a`, and insert the 64-bit integer `i` into the result at the location specified by 
+/// `index & 3`.
+__m256i _mm256_insert_epi64(__m256i a, long i, const int index) pure @trusted
+{
+    a.ptr[index & 3] = i;
+    return a;
+}
+
+/// Copy `a`, and insert the 8-bit integer `i` into the result at the location specified by 
+/// `index & 31`.
+__m256i _mm256_insert_epi8(__m256i a, byte i, const int index) pure @trusted
+{
+    byte32 ba = cast(byte32)a;
+    ba.ptr[index & 31] = i;
+    return cast(__m256i)ba;
+}
 
 /// Copy `a`, then insert 128 bits (composed of 2 packed double-precision (64-bit) 
 /// floating-point elements) from `b` at the location specified by `imm8`.
