@@ -2146,8 +2146,18 @@ const:
     ///
     size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
-        foreach (scope IonDescribedValue value; this)
+        IonErrorCode firstError;
+        foreach (IonErrorCode error, scope IonDescribedValue value; this)
+        {
             length++;
+            if (error)
+            {
+                firstError = error;
+                break;
+            }
+        }
+        if (firstError)
+            throw firstError.ionException;
         return length;
     }
 }
@@ -2386,8 +2396,18 @@ const:
     ///
     size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
-        foreach (scope IonDescribedValue value; this)
+        IonErrorCode firstError;
+        foreach (IonErrorCode error, scope IonDescribedValue value; this)
+        {
             length++;
+            if (error)
+            {
+                firstError = error;
+                break;
+            }
+        }
+        if (firstError)
+            throw firstError.ionException;
         return length;
     }
 }
@@ -2692,8 +2712,18 @@ const:
     ///
     size_t walkLength() scope const @property @safe pure @nogc {
         size_t length;
-        foreach (size_t symbolID, scope IonDescribedValue value; this)
+        IonErrorCode firstError;
+        foreach (IonErrorCode error, size_t symbolID, scope IonDescribedValue value; this)
+        {
             length++;
+            if (error)
+            {
+                firstError = error;
+                break;
+            }
+        }
+        if (firstError)
+            throw firstError.ionException;
         return length;
     }
 }
