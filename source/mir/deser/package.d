@@ -718,6 +718,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                 import mir.conv;
                 if (data.descriptor.type != IonTypeCode.null_ && data.descriptor.type != IonTypeCode.struct_)
                     return IonErrorCode.expectedIonStructForAnAssociativeArrayDeserialization.ionException;
+                value = value.init;
                 if (data.descriptor.L != 0xF)
                 foreach (IonErrorCode error, size_t symbolId, scope IonDescribedValue elem; data.trustedGet!IonStruct)
                 {
