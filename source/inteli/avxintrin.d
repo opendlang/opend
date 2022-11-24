@@ -1497,10 +1497,62 @@ unittest
 }
 
 
-// TODO __m128d _mm_maskload_pd (double const * mem_addr, __m128i mask)
+/*
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd")
+    double2 __builtin_ia32_maskloadpd(const void*, long2);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd.256")
+    double4 __builtin_ia32_maskloadpd256(const void*, long4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps")
+    float4 __builtin_ia32_maskloadps(const void*, int4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
+    float8 __builtin_ia32_maskloadps256(const void*, int8);
+    */
+
+
+/// Load packed double-precision (64-bit) floating-point elements from memory using `mask` 
+/// (elements are zeroed out when the high bit of the corresponding element is not set).
+__m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO report that the builtin is impure
+        return __builtin_ia32_maskloadpd(mem_addr, cast(long2)mask);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_maskloadpd(cast(double2*)mem_addr, cast(long2)mask);
+    }
+    else
+    {
+        long2 lmask = cast(long2)mask;
+        double2 r;
+        r.ptr[0] = (lmask.array[0] < 0) ? mem_addr[0] : 0.0;
+        r.ptr[1] = (lmask.array[1] < 0) ? mem_addr[1] : 0.0;
+        return r;
+    }
+}
+unittest
+{
+    double A = 7.5;
+    double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));  // can address invalid memory with mask load and writes!
+    double[2] correct = [7.5, 0];
+    assert(B.array == correct);
+}
+
+
 // TODO __m256d _mm256_maskload_pd (double const * mem_addr, __m256i mask)
-// TODO __m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
+
+//__m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
 // TODO __m256 _mm256_maskload_ps (float const * mem_addr, __m256i mask)
+
+
+
+
 // TODO void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a)
 // TODO void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
 // TODO void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)
@@ -3020,36 +3072,6 @@ unittest
 /+
 
 
-pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.pd2dq.256")
-    int4 __builtin_ia32_cvttpd2dq256(double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.cvtt.ps2dq.256")
-    int8 __builtin_ia32_cvttps2dq256(float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.hadd.pd.256")
-    double4 __builtin_ia32_haddpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.hadd.ps.256")
-    float8 __builtin_ia32_haddps256(float8, float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.hsub.pd.256")
-    double4 __builtin_ia32_hsubpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.hsub.ps.256")
-    float8 __builtin_ia32_hsubps256(float8, float8) pure @safe;
-
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd")
-    double2 __builtin_ia32_maskloadpd(const void*, long2);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd.256")
-    double4 __builtin_ia32_maskloadpd256(const void*, long4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps")
-    float4 __builtin_ia32_maskloadps(const void*, int4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
-    float8 __builtin_ia32_maskloadps256(const void*, int8);
 
 pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.pd")
     void __builtin_ia32_maskstorepd(void*, long2, double2);
@@ -3062,8 +3084,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps.256")
     void __builtin_ia32_maskstoreps256(void*, int8, float8);
-
-
 
 pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.pd.256")
     int __builtin_ia32_movmskpd256(double4) pure @safe;
