@@ -1653,11 +1653,57 @@ unittest
     assert(B.array == correct);
 }
 
+/// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
+void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        __builtin_ia32_maskstorepd(mem_addr, cast(long2)mask, a);
+    }
+    else static if (GDC_with_AVX)
+    {
+        __builtin_ia32_maskstorepd(cast(double2*)mem_addr, cast(long2)mask, a);
+    }
+    else
+    {
+        long2 imask = cast(long2)mask;
+        foreach(n; 0..2)
+            if (imask.array[n] < 0)
+                mem_addr[n] = a.array[n];
+    }
+}
+// TODO unittest
 
 
-// TODO void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a)
 // TODO void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
-// TODO void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)
+
+/// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
+void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        __builtin_ia32_maskstoreps(mem_addr, mask, a);
+    }
+    else static if (GDC_with_AVX)
+    {
+        __builtin_ia32_maskstoreps(cast(float4*)mem_addr, mask, a);
+    }
+    else
+    {
+        int4 imask = cast(int4)mask;
+        foreach(n; 0..4)
+            if (imask.array[n] < 0)
+                mem_addr[n] = a.array[n];
+    }
+}
+// TODO unittest
+
 // TODO void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
 
 /// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
@@ -3182,17 +3228,6 @@ unittest
 
 
 
-pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.pd")
-    void __builtin_ia32_maskstorepd(void*, long2, double2);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.pd.256")
-    void __builtin_ia32_maskstorepd256(void*, long4, double4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps")
-    void __builtin_ia32_maskstoreps(void*, int4, float4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskstore.ps.256")
-    void __builtin_ia32_maskstoreps256(void*, int8, float8);
 
 pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.pd.256")
     int __builtin_ia32_movmskpd256(double4) pure @safe;
