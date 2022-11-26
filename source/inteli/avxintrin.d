@@ -1511,6 +1511,15 @@ pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
     float8 __builtin_ia32_maskloadps256(const void*, int8);
     */
 
+version(DigitalMars)
+{
+    // this avoids a bug with DMD < 2.099 -a x86 -O
+    private enum bool maskLoadWorkaround = (__VERSION__ < 2099);
+}
+else
+{
+    private enum bool maskLoadWorkaround = false;
+}
 
 /// Load packed double-precision (64-bit) floating-point elements from memory using `mask` 
 /// (elements are zeroed out when the high bit of the corresponding element is not set).
@@ -1540,10 +1549,13 @@ __m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) /* pure */ @syst
 }
 unittest
 {
-    double A = 7.5;
-    double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));
-    double[2] correct = [7.5, 0];
-    assert(B.array == correct);
+    static if (!maskLoadWorkaround) 
+    {
+        double A = 7.5;
+        double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));
+        double[2] correct = [7.5, 0];
+        assert(B.array == correct);
+    }
 }
 
 /// Load packed double-precision (64-bit) floating-point elements from memory using `mask`
@@ -1576,10 +1588,13 @@ __m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @sys
 }
 unittest
 {
-    double[3] A = [7.5, 1, 2];
-    double4 B = _mm256_maskload_pd(A.ptr, _mm256_setr_epi64(1, -1, -1, 1));
-    double[4] correct = [0.0, 1, 2, 0];
-    assert(B.array == correct);
+    static if (!maskLoadWorkaround)
+    {
+        double[3] A = [7.5, 1, 2];
+        double4 B = _mm256_maskload_pd(A.ptr, _mm256_setr_epi64(1, -1, -1, 1));
+        double[4] correct = [0.0, 1, 2, 0];
+        assert(B.array == correct);
+    }
 }
 
 /// Load packed single-precision (32-bit) floating-point elements from memory using mask (elements
@@ -1612,10 +1627,13 @@ __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
 }
 unittest
 {
-    float[3] A = [7.5f, 1, 2];
-    float4 B = _mm_maskload_ps(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
-    float[4] correct = [0.0f, 1, 2, 0];
-    assert(B.array == correct);
+    static if (!maskLoadWorkaround)
+    {
+        float[3] A = [7.5f, 1, 2];
+        float4 B = _mm_maskload_ps(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
+        float[4] correct = [0.0f, 1, 2, 0];
+        assert(B.array == correct);
+    }
 }
 
 /// Load packed single-precision (32-bit) floating-point elements from memory using `mask`
