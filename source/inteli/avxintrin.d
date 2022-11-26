@@ -1514,7 +1514,9 @@ pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
 
 /// Load packed double-precision (64-bit) floating-point elements from memory using `mask` 
 /// (elements are zeroed out when the high bit of the corresponding element is not set).
-__m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) @system
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
+__m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
     // PERF ARM64
@@ -1539,17 +1541,117 @@ __m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) @system
 unittest
 {
     double A = 7.5;
-    double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));  // can address invalid memory with mask load and writes!
+    double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));
     double[2] correct = [7.5, 0];
     assert(B.array == correct);
 }
 
+/// Load packed double-precision (64-bit) floating-point elements from memory using `mask`
+/// (elements are zeroed out when the high bit of the corresponding element is not set).
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
+__m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        return __builtin_ia32_maskloadpd256(mem_addr, mask);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_maskloadpd256(cast(double4*)mem_addr, mask);
+    }
+    else
+    {
+        long4 imask = cast(long4)mask;
+        double4 r;
+        r.ptr[0] = (imask.array[0] < 0) ? mem_addr[0] : 0.0;
+        r.ptr[1] = (imask.array[1] < 0) ? mem_addr[1] : 0.0;
+        r.ptr[2] = (imask.array[2] < 0) ? mem_addr[2] : 0.0;
+        r.ptr[3] = (imask.array[3] < 0) ? mem_addr[3] : 0.0;
+        return r;
+    }
+}
+unittest
+{
+    double[3] A = [7.5, 1, 2];
+    double4 B = _mm256_maskload_pd(A.ptr, _mm256_setr_epi64(1, -1, -1, 1));
+    double[4] correct = [0.0, 1, 2, 0];
+    assert(B.array == correct);
+}
 
-// TODO __m256d _mm256_maskload_pd (double const * mem_addr, __m256i mask)
+/// Load packed single-precision (32-bit) floating-point elements from memory using mask (elements
+/// are zeroed out when the high bit of the corresponding element is not set).
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
+__m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        return __builtin_ia32_maskloadps(mem_addr, mask);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_maskloadps(cast(float4*)mem_addr, mask);
+    }
+    else
+    {
+        int4 imask = cast(int4)mask;
+        float4 r;
+        r.ptr[0] = (imask.array[0] < 0) ? mem_addr[0] : 0.0f;
+        r.ptr[1] = (imask.array[1] < 0) ? mem_addr[1] : 0.0f;
+        r.ptr[2] = (imask.array[2] < 0) ? mem_addr[2] : 0.0f;
+        r.ptr[3] = (imask.array[3] < 0) ? mem_addr[3] : 0.0f;
+        return r;
+    }
+}
+unittest
+{
+    float[3] A = [7.5f, 1, 2];
+    float4 B = _mm_maskload_ps(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
+    float[4] correct = [0.0f, 1, 2, 0];
+    assert(B.array == correct);
+}
 
-//__m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
-// TODO __m256 _mm256_maskload_ps (float const * mem_addr, __m256i mask)
-
+/// Load packed single-precision (32-bit) floating-point elements from memory using `mask`
+/// (elements are zeroed out when the high bit of the corresponding element is not set).
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
+__m256 _mm256_maskload_ps (const(float)* mem_addr, __m256i mask) /*pure*/ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        return __builtin_ia32_maskloadps256(mem_addr, cast(int8)mask);
+    }
+    else static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_maskloadps256(cast(float8*)mem_addr, cast(int8)mask);
+    }
+    else
+    {
+        int8 imask = cast(int8)mask;
+        float8 r;
+        foreach(n; 0..8)
+            r.ptr[n] = (imask.array[n] < 0) ? mem_addr[n] : 0.0f;
+        return r;
+    }
+}
+unittest
+{
+    float[6] A = [7.5f, 1, 2, 3, 4, 5];
+    __m256i  M = _mm256_setr_epi32(1,     -1,  1, -1, 1, -1, -1, 1);
+    float8 B = _mm256_maskload_ps(A.ptr - 1, M);
+    float[8] correct =            [0.0f, 7.5f, 0,  2, 0,  4,  5, 0];
+    assert(B.array == correct);
+}
 
 
 
@@ -1824,6 +1926,9 @@ unittest
     long[4] correct = [long.max, long.min, 42, -1];
     assert(A.array == correct);
 }
+
+///ditto
+alias _mm256_set_epi64 = _mm256_set_epi64x; // #BONUS, not sure why this isn't in Intel Intrinsics API.
 
 /// Set packed 8-bit integers with the supplied values.
 __m256i _mm256_set_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24, 
@@ -2167,6 +2272,8 @@ unittest
     long[4] correct = [-1, 42, long.min, long.max];
     assert(A.array == correct);
 }
+///ditto
+alias _mm256_setr_epi64 = _mm256_setr_epi64x; // #BONUS, not sure why this isn't in Intel Intrinsics API.
 
 /// Set packed 8-bit integers with the supplied values in reverse order.
 __m256i _mm256_setr_epi8 (byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24,
@@ -2514,6 +2621,8 @@ unittest
     _mm256_store_si256(cast(__m256i*)(mem.ptr), _mm256_setr_epi64x(5, -6, -7, 8));
     assert(mem == correct);
 }
+
+///
 
 /// Store 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) from 
 /// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
