@@ -1716,7 +1716,7 @@ void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @sy
     // PERF ARM64
     static if (LDC_with_AVX)
     {
-        // MAYDO that the builtin is impure
+        // MAYDO report that the builtin is impure
         __builtin_ia32_maskstoreps(mem_addr, mask, a);
     }
     else static if (GDC_with_AVX)
@@ -1741,7 +1741,37 @@ unittest
     assert(A == correct);
 }
 
-// TODO void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
+/// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
+void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a) /* pure */ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO report that the builtin is impure
+        __builtin_ia32_maskstoreps256(mem_addr, cast(int8)mask, a);
+    }
+    else static if (GDC_with_AVX)
+    {
+        __builtin_ia32_maskstoreps256(cast(float8*)mem_addr, cast(int8)mask, a);
+    }
+    else
+    {
+        int8 imask = cast(int8)mask;
+        foreach(n; 0..8)
+            if (imask.array[n] < 0)
+                mem_addr[n] = a.array[n];
+    }
+}
+unittest
+{
+    float[6] A = [0.0f, 1, 2, 3, 4, 5];
+    __m256i M = _mm256_setr_epi32(0, -1, 0, -1, 0, -1, -1, 0);
+    __m256 B = _mm256_set1_ps(6.0f);
+    _mm256_maskstore_ps(A.ptr - 1,  M, B);
+    float[6] correct = [6.0f, 1, 6, 3, 6, 6];
+    assert(A == correct);
+}
 
 /// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
 /// packed maximum values.
