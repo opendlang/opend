@@ -1705,7 +1705,37 @@ unittest
     assert(A == correct);
 }
 
-// TODO void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
+/// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
+void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a) /* pure */ @system
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (LDC_with_AVX)
+    {
+        // MAYDO that the builtin is impure
+        __builtin_ia32_maskstorepd256(mem_addr, cast(long4)mask, a);
+    }
+    else static if (GDC_with_AVX)
+    {
+        __builtin_ia32_maskstorepd256(cast(double4*)mem_addr, cast(long4)mask, a);
+    }
+    else
+    {
+        long4 imask = cast(long4)mask;
+        foreach(n; 0..4)
+            if (imask.array[n] < 0)
+                mem_addr[n] = a.array[n];
+    }
+}
+unittest
+{
+    double[3] A = [0.0, 1, 2];
+    __m256i M = _mm256_setr_epi64x(-9, 0, -1, 0);
+    __m256d B = _mm256_setr_pd(2, 3, 4, 5);
+    _mm256_maskstore_pd(A.ptr, M, B);
+    double[3] correct = [2.0, 1, 4];
+    assert(A == correct);
+}
 
 /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
