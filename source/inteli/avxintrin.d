@@ -1672,6 +1672,8 @@ unittest
 }
 
 /// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
 void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @system
 {
     // PERF DMD
@@ -1693,12 +1695,21 @@ void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @s
                 mem_addr[n] = a.array[n];
     }
 }
-// TODO unittest
-
+unittest
+{
+    double[2] A = [0.0, 1.0];
+    __m128i M = _mm_setr_epi64(-1, 0);
+    __m128d B = _mm_setr_pd(2.0, 3.0);
+    _mm_maskstore_pd(A.ptr, M, B);
+    double[2] correct = [2.0, 1.0];
+    assert(A == correct);
+}
 
 // TODO void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
 
 /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
+/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
+/// only when needed.
 void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @system
 {
     // PERF DMD
@@ -1720,7 +1731,15 @@ void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @sy
                 mem_addr[n] = a.array[n];
     }
 }
-// TODO unittest
+unittest
+{
+    float[3] A = [0.0f, 1, 2];
+    __m128i M = _mm_setr_epi32(-1, 0, -1, 0);
+    __m128 B = _mm_setr_ps(2, 3, 4, 5);
+    _mm_maskstore_ps(A.ptr, M, B);
+    float[3] correct = [2.0f, 1, 4];
+    assert(A == correct);
+}
 
 // TODO void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
 
