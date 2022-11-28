@@ -226,4 +226,14 @@ mixin template TestUtils() {
             this.s = s;
         }
     }
+
+    private interface NoGcInterface {
+        int getNumber() @nogc;
+    }
+    private class NoGcClassImplementingNoGcInterface : NoGcInterface{
+        int getNumber() @nogc {
+            return 42;
+        }
+    }
+
 }

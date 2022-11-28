@@ -256,6 +256,14 @@ mixin TestUtils;
     assert(NoGcClass.numClasses == 0);
 }
 
+@("@nogc class implementing @nogc interface ")
+@nogc unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    {
+        Unique!(NoGcInterface, Mallocator) ptr = Unique!(NoGcClassImplementingNoGcInterface, Mallocator).construct;
+        assert(ptr.getNumber == 42);
+    }
+}
 
 version(DIP1000) {
     @("borrow")
