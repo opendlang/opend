@@ -260,9 +260,11 @@ mixin TestUtils;
 @nogc unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     {
-        Unique!(NoGcInterface, Mallocator) ptr = Unique!(NoGcClassImplementingNoGcInterface, Mallocator).construct;
+        Unique!(NoGcInterface, Mallocator) ptr = Unique!(NoGcClassImplementingNoGcInterface, Mallocator)(42);
         assert(ptr.getNumber == 42);
+        assert(NoGcClassImplementingNoGcInterface.numClasses == 1);
     }
+    assert(NoGcClassImplementingNoGcInterface.numClasses == 0);
 }
 
 version(DIP1000) {
