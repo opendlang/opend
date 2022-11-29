@@ -2,7 +2,7 @@
 Base reflection utilities.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-Authors: Ilia Ki 
+Authors: Ilia Ki
 Macros:
 +/
 module mir.reflection;
@@ -851,7 +851,25 @@ private template isReadableAndWritable(T, string member)
 package template isPublic(T, string member)
 {
     private __gshared T* aggregate;
-    enum bool isPublic = !__traits(getProtection, __traits(getMember, *aggregate, member)).privateOrPackage;
+    static if (__traits(compiles, { auto _ = __traits(getProtection, __traits(getMember, *aggregate, member)); }))
+        enum bool isPublic = !__traits(getProtection, __traits(getMember, *aggregate, member)).privateOrPackage;
+    else
+        enum bool isPublic = false;
+}
+
+version(unittest)
+{
+    final class ZipArchive
+    {
+    public:
+        static const ushort zip64ExtractVersion = 45;
+    }
+}
+
+///
+version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
+{
+    static assert(!isPublic!(ZipArchive, "zip64ExtractVersion"));
 }
 
 // check if the member is property
