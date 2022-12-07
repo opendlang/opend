@@ -834,7 +834,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
 
                 auto originalId = id;
                 if (!prepareSymbolId(id, tableIndex))
-                    return IonErrorCode.symbolIdIsTooLargeForTheCurrentSymbolTable.ionException;
+                    goto Default;
 
                 switch (id)
                 {
@@ -851,18 +851,22 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
                             return null;
                         }
                     }}
+                 Default:
                  default:
                         static if (hasUDA!(T, serdeIgnoreCase))
-                            ionValue = table[id];
+                            ionValue = table[originalId];
                         else
                             return IonErrorCode.expectedEnumValue.ionException;
                 }
             }
-            import mir.serde: serdeParseEnum;
-            IonErrorCode error;
-            ionValue = data.get!(const(char)[])(error);
-            if (error)
-                return error.ionException;
+            else
+            {
+                import mir.serde: serdeParseEnum;
+                IonErrorCode error;
+                ionValue = data.get!(const(char)[])(error);
+                if (error)
+                    return error.ionException;
+            }
             if (serdeParseEnum(ionValue, value))
                 return null;
             return IonErrorCode.expectedEnumValue.ionException;

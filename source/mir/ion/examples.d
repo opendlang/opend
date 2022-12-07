@@ -1686,6 +1686,7 @@ unittest
         .should == value;
 }
 
+version(mir_ion_test)
 @safe pure
 unittest
 {
@@ -1713,4 +1714,15 @@ unittest
     config.serializeText.should == "stirFuture::contract::7";
     `stirFuture::contract::7`
         .deserializeText!(Variant!StirFutureConfig).should == config;
+}
+
+version(mir_ion_test)
+@safe pure
+unittest
+{
+    import mir.deser.text;
+    import mir.serde;
+    @serdeIgnoreCase enum E { a, b }
+    assert (`b`.deserializeText!E == E.b);
+    assert (`B`.deserializeText!E == E.b);
 }
