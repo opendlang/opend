@@ -279,6 +279,8 @@ else
 enum GDC_or_LDC_with_SSE  = GDC_with_SSE  || LDC_with_SSE;
 enum GDC_or_LDC_with_SSE2 = GDC_with_SSE2 || LDC_with_SSE2;
 enum GDC_or_LDC_with_SSE3 = GDC_with_SSE3 || LDC_with_SSE3;
+enum GDC_or_LDC_with_SSE41 = GDC_with_SSE41 || LDC_with_SSE41;
+enum GDC_or_LDC_with_SSE42 = GDC_with_SSE42 || LDC_with_SSE42;
 
 enum GDC_or_LDC_with_AVX  = GDC_with_AVX  || LDC_with_AVX;
 enum GDC_or_LDC_with_AVX2 = GDC_with_AVX2 || LDC_with_AVX2;

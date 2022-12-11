@@ -679,22 +679,19 @@ unittest
     assert(B.array[0..2] == correct);
 }
 
-// TODO comment
+/// Round the packed double-precision (64-bit) floating-point elements in `a` up to an integer 
+/// value, and store the results as packed double-precision floating-point elements.
 __m256d _mm256_ceil_pd (__m256d a) @trusted
 {
-    // TODO ARM64
-   /* static if (LDC_with_ARM64)
+    static if (LDC_with_ARM64)
     {
-        // LDC arm64 acceptable since 1.8 -O2
-        // Unfortunately x86 intrinsics force a round-trip back to double2
-        // ARM neon semantics wouldn't have that
-        long2 l = vcvtpq_s64_f64(a);
-        double2 r;
-        r.ptr[0] = l.array[0];
-        r.ptr[1] = l.array[1];
-        return r;
+         __m128d lo = _mm256_extractf128_pd!0(a);
+        __m128d hi = _mm256_extractf128_pd!1(a);
+        __m128d ilo = _mm_ceil_pd(lo);
+        __m128d ihi = _mm_ceil_pd(hi);
+        return _mm256_set_m128d(ihi, ilo);
     }
-    else*/
+    else
     {
         return _mm256_round_pd!2(a);
     }
@@ -707,22 +704,19 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO comment
+/// Round the packed single-precision (32-bit) floating-point elements in `a` up to an integer 
+/// value, and store the results as packed single-precision floating-point elements.
 __m256 _mm256_ceil_ps (__m256 a) @trusted
 {
-    // TODO ARM64
-  /*  static if (LDC_with_ARM64)
+    static if (LDC_with_ARM64)
     {
-        // LDC arm64 acceptable since 1.8 -O1
-        int4 l = vcvtpq_s32_f32(a);
-        float4 r;
-        r.ptr[0] = l.array[0];
-        r.ptr[1] = l.array[1];
-        r.ptr[2] = l.array[2];
-        r.ptr[3] = l.array[3];
-        return r;
+        __m128 lo = _mm256_extractf128_ps!0(a);
+        __m128 hi = _mm256_extractf128_ps!1(a);
+        __m128 ilo = _mm_ceil_ps(lo);
+        __m128 ihi = _mm_ceil_ps(hi);
+        return _mm256_set_m128(ihi, ilo);
     }
-    else */
+    else
     {
         return _mm256_round_ps!2(a);
     }
@@ -2221,13 +2215,18 @@ unittest
 __m256 _mm256_round_ps(int rounding)(__m256 a) @trusted
 {
     // PERF DMD
-    static if (GDC_with_AVX)
+    static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_roundps256(a, rounding);
     }
-    else static if (LDC_with_AVX)
+    else static if (GDC_or_LDC_with_SSE41)
     {
-        return __builtin_ia32_roundps256(a, rounding);
+        // we can use _mm_round_ps
+        __m128 lo = _mm256_extractf128_ps!0(a);
+        __m128 hi = _mm256_extractf128_ps!1(a);
+        __m128 ilo = _mm_round_ps!rounding(lo); // unfortunately _mm_round_ps isn't fast for arm64, so we avoid that in that case
+        __m128 ihi = _mm_round_ps!rounding(hi);
+        return _mm256_set_m128(ihi, ilo);
     }
     else
     {

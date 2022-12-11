@@ -1792,11 +1792,8 @@ unittest
 ///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
 __m128 _mm_round_ps(int rounding)(__m128 a) @trusted
 {
-    static if (GDC_with_SSE41)
-    {
-        return __builtin_ia32_roundps(a, rounding);
-    }
-    else static if (LDC_with_SSE41)
+    // PERF ARM64: there is duplication because this isn't optimal for ARM64, so it is avoided externally
+    static if (GDC_or_LDC_with_SSE41)
     {
         return __builtin_ia32_roundps(a, rounding);
     }
