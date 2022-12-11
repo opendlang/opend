@@ -2117,10 +2117,78 @@ unittest
     float[8] correct =       [1.0, 1.0, -9.0, 100000.0f     , 1, 2, 2, 1];
 }
 
+/// Duplicate even-indexed double-precision (64-bit) floating-point elements from `a`.
+__m256d _mm256_movedup_pd (__m256d a) @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_movddup256 (a);
+    }
+    else
+    {
+        a.ptr[1] = a.array[0];
+        a.ptr[3] = a.array[2];
+        return a;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2, 3, 4);
+    A = _mm256_movedup_pd(A);
+    double[4] correct = [1.0, 1, 3, 3];
+    assert(A.array == correct);
+}
 
-// TODO __m256d _mm256_movedup_pd (__m256d a)
-// TODO __m256 _mm256_movehdup_ps (__m256 a)
-// TODO __m256 _mm256_moveldup_ps (__m256 a)
+/// Duplicate odd-indexed single-precision (32-bit) floating-point elements from `a`.
+__m256 _mm256_movehdup_ps (__m256 a) @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_movshdup256 (a);
+    }
+    else
+    {
+        a.ptr[0] = a.array[1];
+        a.ptr[2] = a.array[3];
+        a.ptr[4] = a.array[5];
+        a.ptr[6] = a.array[7];
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.0f, 2, 3, 4, 5, 6, 7, 8);
+    A = _mm256_movehdup_ps(A);
+    float[8] correct = [2.0, 2, 4, 4, 6, 6, 8, 8];
+    assert(A.array == correct);
+}
+
+/// Duplicate even-indexed single-precision (32-bit) floating-point elements from `a`.
+__m256 _mm256_moveldup_ps (__m256 a) @trusted
+{
+    // PERF DMD D_SIMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_movsldup256 (a);
+    }
+    else
+    {
+        a.ptr[1] = a.array[0];
+        a.ptr[3] = a.array[2];
+        a.ptr[5] = a.array[4];
+        a.ptr[7] = a.array[6];
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.0f, 2, 3, 4, 5, 6, 7, 8);
+    A = _mm256_moveldup_ps(A);
+    float[8] correct = [1.0, 1, 3, 3, 5, 5, 7, 7];
+    assert(A.array == correct);
+}
 // TODO int _mm256_movemask_pd (__m256d a)
 // TODO int _mm256_movemask_ps (__m256 a)
 
