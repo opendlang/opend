@@ -681,7 +681,7 @@ unittest
 
 /// Round the packed double-precision (64-bit) floating-point elements in `a` up to an integer 
 /// value, and store the results as packed double-precision floating-point elements.
-__m256d _mm256_ceil_pd (__m256d a) @trusted
+__m256d _mm256_ceil_pd (__m256d a) @safe
 {
     static if (LDC_with_ARM64)
     {
@@ -706,7 +706,7 @@ unittest
 
 /// Round the packed single-precision (32-bit) floating-point elements in `a` up to an integer 
 /// value, and store the results as packed single-precision floating-point elements.
-__m256 _mm256_ceil_ps (__m256 a) @trusted
+__m256 _mm256_ceil_ps (__m256 a) @safe
 {
     static if (LDC_with_ARM64)
     {
