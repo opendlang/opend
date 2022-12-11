@@ -2192,7 +2192,7 @@ unittest
 
 /// Set each bit of result mask based on the most significant bit of the corresponding packed 
 /// double-precision (64-bit) floating-point element in `a`.
-int _mm256_movemask_pd (__m256d a)
+int _mm256_movemask_pd (__m256d a) @safe
 {
     // PERF: DMD
     static if (GDC_or_LDC_with_AVX)
@@ -2225,8 +2225,43 @@ unittest
     assert(_mm256_movemask_pd(A) == 1 + 2 + 8);
 }
 
-
-// TODO int _mm256_movemask_ps (__m256 a)
+/// Set each bit of mask result based on the most significant bit of the corresponding packed 
+/// single-precision (32-bit) floating-point element in `a`.
+int _mm256_movemask_ps (__m256 a) @safe
+{
+    // PERF: DMD
+    // PERF GDC without AVX
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_movmskps256(a);
+    }
+    else version(LDC)
+    {
+         // this doesn't benefit GDC (unable to inline), but benefits both LDC with SSE2 and ARM64
+        __m128 A_lo = _mm256_extractf128_ps!0(a);
+        __m128 A_hi = _mm256_extractf128_ps!1(a);
+        return (_mm_movemask_ps(A_hi) << 4) | _mm_movemask_ps(A_lo);
+    }
+    else
+    {
+        int8 lv = cast(int8)a;
+        int r = 0;
+        if (lv.array[0] < 0) r += 1;
+        if (lv.array[1] < 0) r += 2;
+        if (lv.array[2] < 0) r += 4;
+        if (lv.array[3] < 0) r += 8;
+        if (lv.array[4] < 0) r += 16;
+        if (lv.array[5] < 0) r += 32;
+        if (lv.array[6] < 0) r += 64;
+        if (lv.array[7] < 0) r += 128;
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(-1, -double.infinity, 0, -1, 1, double.infinity, -2, -double.nan);
+    assert(_mm256_movemask_ps(A) == 1 + 2 + 8 + 64 + 128);
+}
 
 /// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m256d _mm256_mul_pd (__m256d a, __m256d b) pure @safe
