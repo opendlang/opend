@@ -42,6 +42,27 @@ import inteli.internals;
 public import inteli.smmintrin;
 public import inteli.tmmintrin;
 
+
+
+// In x86, LDC earlier version may have trouble preserving the stack pointer when an unsupported
+// 256-bit vector type is passed, and AVX is disabled.
+// This leads to disabling some intrinsics in this particular situation, since they are not safe for
+// the caller.
+version(LDC)
+{
+    version(X86)
+    {
+        enum llvm256BitStackWorkaroundIn32BitX86 = __VERSION__ < 2099;
+    }
+    else 
+        enum llvm256BitStackWorkaroundIn32BitX86 = false;
+}
+else
+    enum llvm256BitStackWorkaroundIn32BitX86 = false;
+
+
+
+
 nothrow @nogc:
 
 /// Add packed double-precision (64-bit) floating-point elements in `a` and `b`.
@@ -1787,37 +1808,41 @@ unittest
     assert(A == correct);
 }
 
+
 /// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
 /// See: "Note about mask load/store" to know why you must address valid memory only.
-void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a) /* pure */ @system
+static if (!llvm256BitStackWorkaroundIn32BitX86)
 {
-    // PERF DMD
-    // PERF ARM64
-    static if (LDC_with_AVX)
+    void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a) /* pure */ @system
     {
-        // MAYDO that the builtin is impure
-        __builtin_ia32_maskstorepd256(mem_addr, cast(long4)mask, a);
+        // PERF DMD
+        // PERF ARM64
+        static if (LDC_with_AVX)
+        {
+            // MAYDO that the builtin is impure
+            __builtin_ia32_maskstorepd256(mem_addr, cast(long4)mask, a);
+        }
+        else static if (GDC_with_AVX)
+        {
+            __builtin_ia32_maskstorepd256(cast(double4*)mem_addr, cast(long4)mask, a);
+        }
+        else
+        {
+            long4 imask = cast(long4)mask;
+            foreach(n; 0..4)
+                if (imask.array[n] < 0)
+                    mem_addr[n] = a.array[n];
+        }
     }
-    else static if (GDC_with_AVX)
+    unittest
     {
-        __builtin_ia32_maskstorepd256(cast(double4*)mem_addr, cast(long4)mask, a);
+        double[3] A = [0.0, 1, 2];
+        __m256i M = _mm256_setr_epi64x(-9, 0, -1, 0);
+        __m256d B = _mm256_setr_pd(2, 3, 4, 5);
+        _mm256_maskstore_pd(A.ptr, M, B);
+        double[3] correct = [2.0, 1, 4];
+        assert(A == correct);
     }
-    else
-    {
-        long4 imask = cast(long4)mask;
-        foreach(n; 0..4)
-            if (imask.array[n] < 0)
-                mem_addr[n] = a.array[n];
-    }
-}
-unittest
-{
-    double[3] A = [0.0, 1, 2];
-    __m256i M = _mm256_setr_epi64x(-9, 0, -1, 0);
-    __m256d B = _mm256_setr_pd(2, 3, 4, 5);
-    _mm256_maskstore_pd(A.ptr, M, B);
-    double[3] correct = [2.0, 1, 4];
-    assert(A == correct);
 }
 
 /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
