@@ -1928,8 +1928,8 @@ __m128 _mm_round_ss(int rounding)(__m128 a, __m128 b) @trusted
                 a.ptr[0] = b0;       
 
                 // Convert back to double to achieve the rounding
-                // The problem is that a 64-bit double can't represent all the values 
-                // a 64-bit integer can (and vice-versa). So this function won't work for
+                // The problem is that a 32-bit float can't represent all the values 
+                // a 32-bit integer can (and vice-versa). So this function won't work for
                 // large values. (TODO: what range exactly?)
                 _MM_SET_ROUNDING_MODE(old);
                 return a;
@@ -1946,8 +1946,8 @@ __m128 _mm_round_ss(int rounding)(__m128 a, __m128 b) @trusted
             a.ptr[0] = b0;       
 
             // Convert back to double to achieve the rounding
-            // The problem is that a 64-bit double can't represent all the values 
-            // a 64-bit integer can (and vice-versa). So this function won't work for
+            // The problem is that a 32-bit float can't represent all the values 
+            // a 32-bit integer can (and vice-versa). So this function won't work for
             // large values. (TODO: what range exactly?)
             _MM_SET_ROUNDING_MODE(old);
             return a;
