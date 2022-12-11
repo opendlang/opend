@@ -707,7 +707,7 @@ unittest
     assert(A.array == correct);
 }
 
-
+// TODO comment
 __m256 _mm256_ceil_ps (__m256 a) @trusted
 {
     // TODO ARM64
@@ -727,15 +727,13 @@ __m256 _mm256_ceil_ps (__m256 a) @trusted
         return _mm256_round_ps!2(a);
     }
 }
-//TODO
-/+
 unittest
 {
     __m256 A = _mm256_setr_ps(1.3f, -2.12f, 53.6f, -2.7f, -1.3f, 2.12f, -53.6f, 2.7f);
     __m256 C = _mm256_ceil_ps(A);
     float[8] correct       = [2.0f, -2.0f,  54.0f, -2.0f, -1,    3,     -53,    3];
     assert(C.array == correct);
-}+/
+}
 
 
 // TODO __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
@@ -844,11 +842,46 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO
-__m256i _mm256_cvtps_epi32 (__m256 a)
+/// Convert packed single-precision (32-bit) floating-point elements in `a` to packed 32-bit 
+/// integers, using the current rounding mode.
+__m256i _mm256_cvtps_epi32 (__m256 a) @trusted
 {
-    assert(false);
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return cast(__m256i) __builtin_ia32_cvtps2dq256(a);
+    }
+    else
+    {
+        __m128 lo = _mm256_extractf128_ps!0(a);
+        __m128 hi = _mm256_extractf128_ps!1(a);
+        __m128i ilo = _mm_cvtps_epi32(lo);
+        __m128i ihi = _mm_cvtps_epi32(hi);
+        return _mm256_set_m128i(ihi, ilo);
+    }
 }
+unittest
+{
+    uint savedRounding = _MM_GET_ROUNDING_MODE();
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+    __m256i A = _mm256_cvtps_epi32(_mm256_setr_ps(1.4f, -2.1f, 53.5f, -2.9f, -1.4f, 2.1f, -53.5f, 2.9f));
+    assert( (cast(int8)A).array == [1, -2, 54, -3, -1, 2, -54, 3]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+    A = _mm256_cvtps_epi32(_mm256_setr_ps(1.3f, -2.11f, 53.4f, -2.8f, -1.3f, 2.11f, -53.4f, 2.8f));
+    assert( (cast(int8)A).array == [1, -3, 53, -3, -2, 2, -54, 2]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
+    A = _mm256_cvtps_epi32(_mm256_setr_ps(1.3f, -2.12f, 53.6f, -2.7f, -1.3f, 2.12f, -53.6f, 2.7f));
+    assert( (cast(int8)A).array == [2, -2, 54, -2, -1, 3, -53, 3]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+    A = _mm256_cvtps_epi32(_mm256_setr_ps(1.4f, -2.17f, 53.8f, -2.91f, -1.4f, 2.17f, -53.8f, 2.91f));
+    assert( (cast(int8)A).array == [1, -2, 53, -2, -1, 2, -53, 2]);
+
+    _MM_SET_ROUNDING_MODE(savedRounding);
+}
+
 
 /// Convert packed single-precision (32-bit) floating-point elements in `a`` to packed double-precision 
 /// (64-bit) floating-point elements.
@@ -3574,9 +3607,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.ptestz.256")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
     float8 __builtin_ia32_rcpps256(float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.round.ps.256")
-    float8 __builtin_ia32_roundps256(float8, int) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.rsqrt.ps.256")
     float8 __builtin_ia32_rsqrtps256(float8) pure @safe;
