@@ -16,6 +16,25 @@ module inteli.avxintrin;
 // With GDC, use "dflags-gdc": ["-mavx"] or equivalent to actively
 // generate AVX instructions.
 
+
+/// IMPORTANT NOTE ABOUT MASK LOAD/STORE:
+///
+/// In theory, masked load/store can adress unadressable memory provided the mask is zero.
+/// In practice, that is not the case for the following reasons:
+/// 
+/// - AMD manual says:
+///   "Exception and trap behavior for elements not selected for loading or storing from/to memory
+///   is implementation dependent. For instance, a given implementation may signal a data 
+///   breakpoint or a page fault for doublewords that are zero-masked and not actually written."
+///
+/// - Intel fetches the whole cacheline anyway:
+///   https://erik.science/2019/06/21/AVX-fun.html
+///   "Even if the mask is stored in the special mask registers, it will still first fetch the data
+///    before checking the mask."
+///
+/// So intel-intrinsics adopted the tightened semantics of only adressing fully addressable memory 
+/// with masked loads and stores.
+
 public import inteli.types;
 import inteli.internals;
 
@@ -1525,6 +1544,7 @@ else
 /// (elements are zeroed out when the high bit of the corresponding element is not set).
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
 /// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 __m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
@@ -1560,8 +1580,7 @@ unittest
 
 /// Load packed double-precision (64-bit) floating-point elements from memory using `mask`
 /// (elements are zeroed out when the high bit of the corresponding element is not set).
-/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
-/// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 __m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @system
 {
     // PERF DMD
@@ -1601,6 +1620,7 @@ unittest
 /// are zeroed out when the high bit of the corresponding element is not set).
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
 /// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
@@ -1640,6 +1660,7 @@ unittest
 /// (elements are zeroed out when the high bit of the corresponding element is not set).
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
 /// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 __m256 _mm256_maskload_ps (const(float)* mem_addr, __m256i mask) /*pure*/ @system
 {
     // PERF DMD
@@ -1674,6 +1695,7 @@ unittest
 /// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
 /// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @system
 {
     // PERF DMD
@@ -1706,6 +1728,7 @@ unittest
 }
 
 /// Store packed double-precision (64-bit) floating-point elements from `a` into memory using `mask`.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a) /* pure */ @system
 {
     // PERF DMD
@@ -1740,6 +1763,7 @@ unittest
 /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
 /// Note: emulating that instruction isn't efficient, since it needs to perform memory access
 /// only when needed.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @system
 {
     // PERF DMD
@@ -1772,6 +1796,7 @@ unittest
 }
 
 /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
+/// See: "Note about mask load/store" to know why you must address valid memory only.
 void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a) /* pure */ @system
 {
     // PERF DMD

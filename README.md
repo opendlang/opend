@@ -146,6 +146,12 @@ Without that Intel documentation, it's impractical to write sizeable SIMD code.
 - 32-bit ARM has a different nearest rounding mode as compared to AArch64 and x86. Numbers with a 0.5 fractional part (such as `-4.5`) may not round in the same direction. This shouldn't affect you.
 
 
+### Notable differences between x86 instruction semantics and `intel-intrinsics` semantics
+
+Masked load/store MUST address fully addressable memory, even if their mask is zero. Pad your buffers.
+
+
+
 ### Video introduction
 
 In this DConf 2019 talk, Auburn Sounds:
