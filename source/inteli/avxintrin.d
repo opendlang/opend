@@ -39,6 +39,7 @@ public import inteli.types;
 import inteli.internals;
 
 // Pull in all previous instruction set intrinsics.
+public import inteli.smmintrin;
 public import inteli.tmmintrin;
 
 nothrow @nogc:
@@ -657,9 +658,64 @@ unittest
     assert(B.array[0..2] == correct);
 }
 
+// TODO comment
+__m256d _mm256_ceil_pd (__m256d a) @trusted
+{
+    // TODO ARM64
+   /* static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O2
+        // Unfortunately x86 intrinsics force a round-trip back to double2
+        // ARM neon semantics wouldn't have that
+        long2 l = vcvtpq_s64_f64(a);
+        double2 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        return r;
+    }
+    else*/
+    {
+        return _mm256_round_pd!2(a);
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.3f, -2.12f, 53.6f, -2.7f);
+    A = _mm256_ceil_pd(A);
+    double[4] correct = [2.0, -2.0, 54.0, -2.0];
+    assert(A.array == correct);
+}
 
-// TODO __m256d _mm256_ceil_pd (__m256d a)
-// TODO __m256 _mm256_ceil_ps (__m256 a)
+
+__m256 _mm256_ceil_ps (__m256 a) @trusted
+{
+    // TODO ARM64
+  /*  static if (LDC_with_ARM64)
+    {
+        // LDC arm64 acceptable since 1.8 -O1
+        int4 l = vcvtpq_s32_f32(a);
+        float4 r;
+        r.ptr[0] = l.array[0];
+        r.ptr[1] = l.array[1];
+        r.ptr[2] = l.array[2];
+        r.ptr[3] = l.array[3];
+        return r;
+    }
+    else */
+    {
+        return _mm256_round_ps!2(a);
+    }
+}
+//TODO
+/+
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.3f, -2.12f, 53.6f, -2.7f, -1.3f, 2.12f, -53.6f, 2.7f);
+    __m256 C = _mm256_ceil_ps(A);
+    float[8] correct       = [2.0f, -2.0f,  54.0f, -2.0f, -1,    3,     -53,    3];
+    assert(C.array == correct);
+}+/
+
 
 // TODO __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
 // TODO __m256d _mm256_cmp_pd (__m256d a, __m256d b, const int imm8)
