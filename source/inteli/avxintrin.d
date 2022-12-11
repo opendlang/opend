@@ -767,8 +767,11 @@ unittest
     assert(R.array == correct);
 }
 
-
-// TODO __m256i _mm256_cvtps_epi32 (__m256 a)
+// TODO
+__m256i _mm256_cvtps_epi32 (__m256 a)
+{
+    assert(false);
+}
 
 /// Convert packed single-precision (32-bit) floating-point elements in `a`` to packed double-precision 
 /// (64-bit) floating-point elements.
@@ -967,6 +970,7 @@ unittest
 }
 
 /// Extract a 128-bits lane from `a`, selected with `index` (0 or 1).
+/// Note: `_mm256_extractf128_pd!0` is equivalent to `_mm256_castpd256_pd128`.
 __m128d _mm256_extractf128_pd(ubyte imm8)(__m256d a) pure @trusted
 {
     // PERF DMD D_SIMD
@@ -2020,8 +2024,129 @@ __m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
 
 // TODO __m256 _mm256_rcp_ps (__m256 a)
 
-// TODO __m256d _mm256_round_pd (__m256d a, int rounding)
-// TODO __m256 _mm256_round_ps (__m256 a, int rounding)
+
+
+/// Round the packed double-precision (64-bit) floating-point elements in `a` using the 
+/// rounding parameter, and store the results as packed double-precision floating-point elements.
+/// Rounding is done according to the rounding[3:0] parameter, which can be one of:
+///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
+///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
+///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
+///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
+///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
+__m256d _mm256_round_pd(int rounding)(__m256d a) @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_roundpd256(a, rounding);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_roundpd256(a, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            // PERF: non-AVX x86, would probably be faster to convert those double at once to int64
+
+            __m128d A_lo = _mm256_extractf128_pd!0(a);
+            __m128d A_hi = _mm256_extractf128_pd!1(a);
+
+            // Convert to 64-bit integers one by one
+            long x0 = _mm_cvtsd_si64(A_lo);
+            long x2 = _mm_cvtsd_si64(A_hi);
+            A_lo.ptr[0] = A_lo.array[1];
+            A_hi.ptr[0] = A_hi.array[1];
+            long x1 = _mm_cvtsd_si64(A_lo);
+            long x3 = _mm_cvtsd_si64(A_hi);
+
+            return _mm256_setr_pd(x0, x1, x2, x3);
+        }
+        else
+        {
+            version(GNU) pragma(inline, false); // this was required for SSE4.1 rounding, let it here
+
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            
+            __m128d A_lo = _mm256_extractf128_pd!0(a);
+            __m128d A_hi = _mm256_extractf128_pd!1(a);
+
+            // Convert to 64-bit integers one by one
+            long x0 = _mm_cvtsd_si64(A_lo);
+            long x2 = _mm_cvtsd_si64(A_hi);
+            A_lo.ptr[0] = A_lo.array[1];
+            A_hi.ptr[0] = A_hi.array[1];
+            long x1 = _mm_cvtsd_si64(A_lo);
+            long x3 = _mm_cvtsd_si64(A_hi);
+
+            // Convert back to double to achieve the rounding
+            // The problem is that a 64-bit double can't represent all the values 
+            // a 64-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            _MM_SET_ROUNDING_MODE(old);
+            return _mm256_setr_pd(x0, x1, x2, x3);
+        }
+    }
+}
+unittest
+{
+    // tested in other intrinsics
+}
+
+/// Round the packed single-precision (32-bit) floating-point elements in `a` using the 
+/// rounding parameter, and store the results as packed single-precision floating-point elements.
+/// Rounding is done according to the rounding[3:0] parameter, which can be one of:
+///    (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC) // round to nearest, and suppress exceptions
+///    (_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)     // round down, and suppress exceptions
+///    (_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)     // round up, and suppress exceptions
+///    (_MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)        // truncate, and suppress exceptions
+///    _MM_FROUND_CUR_DIRECTION // use MXCSR.RC; see _MM_SET_ROUNDING_MODE
+__m256 _mm256_round_ps(int rounding)(__m256 a) @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_roundps256(a, rounding);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_roundps256(a, rounding);
+    }
+    else
+    {
+        static if (rounding & _MM_FROUND_CUR_DIRECTION)
+        {
+            __m256i integers = _mm256_cvtps_epi32(a);
+            return _mm256_cvtepi32_ps(integers);
+        }
+        else
+        {
+            version(LDC) pragma(inline, false); // else _MM_SET_ROUNDING_MODE and _mm_cvtps_epi32 gets shuffled
+            uint old = _MM_GET_ROUNDING_MODE();
+            _MM_SET_ROUNDING_MODE((rounding & 3) << 13);
+            scope(exit) _MM_SET_ROUNDING_MODE(old);
+
+            // Convert to 32-bit integers
+            __m256i integers = _mm256_cvtps_epi32(a);
+
+            // Convert back to float to achieve the rounding
+            // The problem is that a 32-float can't represent all the values 
+            // a 32-bit integer can (and vice-versa). So this function won't work for
+            // large values. (TODO: what range exactly?)
+            __m256 result = _mm256_cvtepi32_ps(integers);
+
+            return result;
+        }
+    }
+}
+unittest
+{
+    // tested in other intrinsics
+}
+
 
 // TODO __m256 _mm256_rsqrt_ps (__m256 a)
 
@@ -3368,9 +3493,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.ptestz.256")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
     float8 __builtin_ia32_rcpps256(float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.round.pd.256")
-    double4 __builtin_ia32_roundpd256(double4, int) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.round.ps.256")
     float8 __builtin_ia32_roundps256(float8, int) pure @safe;
