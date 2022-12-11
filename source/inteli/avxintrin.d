@@ -1161,8 +1161,55 @@ unittest
     assert(l1.array == correct[4..8]);
 }
 
-// TODO __m256d _mm256_floor_pd (__m256d a)
-// TODO __m256 _mm256_floor_ps (__m256 a)
+/// Round the packed double-precision (64-bit) floating-point elements in `a` down to an integer 
+/// value, and store the results as packed double-precision floating-point elements.
+__m256d _mm256_floor_pd (__m256d a) @safe
+{
+    static if (LDC_with_ARM64)
+    {
+        __m128d lo = _mm256_extractf128_pd!0(a);
+        __m128d hi = _mm256_extractf128_pd!1(a);
+        __m128d ilo = _mm_floor_pd(lo);
+        __m128d ihi = _mm_floor_pd(hi);
+        return _mm256_set_m128d(ihi, ilo);
+    }
+    else
+    {
+        return _mm256_round_pd!1(a);
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.3f, -2.12f, 53.6f, -2.7f);
+    A = _mm256_floor_pd(A);
+    double[4] correct = [1.0, -3.0, 53.0, -3.0];
+    assert(A.array == correct);
+}
+
+/// Round the packed single-precision (32-bit) floating-point elements in `a` down to an integer 
+/// value, and store the results as packed single-precision floating-point elements.
+__m256 _mm256_floor_ps (__m256 a) @safe
+{
+    static if (LDC_with_ARM64)
+    {
+        __m128 lo = _mm256_extractf128_ps!0(a);
+        __m128 hi = _mm256_extractf128_ps!1(a);
+        __m128 ilo = _mm_floor_ps(lo);
+        __m128 ihi = _mm_floor_ps(hi);
+        return _mm256_set_m128(ihi, ilo);
+    }
+    else
+    {
+        return _mm256_round_ps!1(a);
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1.3f, -2.12f, 53.6f, -2.7f, -1.3f, 2.12f, -53.6f, 2.7f);
+    __m256 C = _mm256_floor_ps(A);
+    float[8] correct       = [1.0f, -3.0f,  53.0f, -3.0f, -2,    2,     -54,    2];
+    assert(C.array == correct);
+}
 
 /// Horizontally add adjacent pairs of double-precision (64-bit) floating-point elements in `a` 
 /// and `b`. 
@@ -1623,21 +1670,6 @@ unittest
     assert(R.array == correct);
 }
 
-
-/*
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd")
-    double2 __builtin_ia32_maskloadpd(const void*, long2);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.pd.256")
-    double4 __builtin_ia32_maskloadpd256(const void*, long4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps")
-    float4 __builtin_ia32_maskloadps(const void*, int4);
-
-pragma(LDC_intrinsic, "llvm.x86.avx.maskload.ps.256")
-    float8 __builtin_ia32_maskloadps256(const void*, int8);
-    */
-
 version(DigitalMars)
 {
     // this avoids a bug with DMD < 2.099 -a x86 -O
@@ -1907,37 +1939,40 @@ unittest
     assert(A == correct);
 }
 
-/// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
-/// See: "Note about mask load/store" to know why you must address valid memory only.
-void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a) /* pure */ @system
+static if (!llvm256BitStackWorkaroundIn32BitX86)
 {
-    // PERF DMD
-    // PERF ARM64
-    static if (LDC_with_AVX)
+    /// Store packed single-precision (32-bit) floating-point elements from `a` into memory using `mask`.
+    /// See: "Note about mask load/store" to know why you must address valid memory only.
+    void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a) /* pure */ @system
     {
-        // MAYDO report that the builtin is impure
-        __builtin_ia32_maskstoreps256(mem_addr, cast(int8)mask, a);
+        // PERF DMD
+        // PERF ARM64
+        static if (LDC_with_AVX)
+        {
+            // MAYDO report that the builtin is impure
+            __builtin_ia32_maskstoreps256(mem_addr, cast(int8)mask, a);
+        }
+        else static if (GDC_with_AVX)
+        {
+            __builtin_ia32_maskstoreps256(cast(float8*)mem_addr, cast(int8)mask, a);
+        }
+        else
+        {
+            int8 imask = cast(int8)mask;
+            foreach(n; 0..8)
+                if (imask.array[n] < 0)
+                    mem_addr[n] = a.array[n];
+        }
     }
-    else static if (GDC_with_AVX)
+    unittest
     {
-        __builtin_ia32_maskstoreps256(cast(float8*)mem_addr, cast(int8)mask, a);
+        float[6] A = [0.0f, 1, 2, 3, 4, 5];
+        __m256i M = _mm256_setr_epi32(0, -1, 0, -1, 0, -1, -1, 0);
+        __m256 B = _mm256_set1_ps(6.0f);
+        _mm256_maskstore_ps(A.ptr - 1,  M, B);
+        float[6] correct = [6.0f, 1, 6, 3, 6, 6];
+        assert(A == correct);
     }
-    else
-    {
-        int8 imask = cast(int8)mask;
-        foreach(n; 0..8)
-            if (imask.array[n] < 0)
-                mem_addr[n] = a.array[n];
-    }
-}
-unittest
-{
-    float[6] A = [0.0f, 1, 2, 3, 4, 5];
-    __m256i M = _mm256_setr_epi32(0, -1, 0, -1, 0, -1, -1, 0);
-    __m256 B = _mm256_set1_ps(6.0f);
-    _mm256_maskstore_ps(A.ptr - 1,  M, B);
-    float[6] correct = [6.0f, 1, 6, 3, 6, 6];
-    assert(A == correct);
 }
 
 /// Compare packed double-precision (64-bit) floating-point elements in `a` and `b`, and return 
