@@ -806,7 +806,29 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m128i _mm256_cvtpd_epi32 (__m256d a)
+/// Convert packed double-precision (64-bit) floating-point elements in `a` to packed 32-bit 
+/// integers. Follows the current rounding mode.
+__m128i _mm256_cvtpd_epi32 (__m256d a) @safe
+{
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_cvtpd2dq256(a);
+    }
+    else
+    {
+        __m128d lo = _mm256_extractf128_pd!0(a);
+        __m128d hi = _mm256_extractf128_pd!1(a);
+        __m128i ilo = _mm_cvtpd_epi32(lo); // Only lower 64-bit contains significant values
+        __m128i ihi = _mm_cvtpd_epi32(hi);
+        return _mm_unpacklo_epi64(ilo, ihi);
+    }
+}
+unittest
+{
+    int4 A = _mm256_cvtpd_epi32(_mm256_setr_pd(61.0, 55.0, -100, 1_000_000));
+    int[4] correct = [61, 55, -100, 1_000_000];
+    assert(A.array == correct);
+}
 
 
 /// Convert packed double-precision (64-bit) floating-point elements in `a` to packed single-precision (32-bit) 
