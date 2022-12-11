@@ -2529,16 +2529,8 @@ unittest
 int _mm_movemask_pd(__m128d v) pure @safe
 {
     // PERF: Not possible in D_SIMD because of https://issues.dlang.org/show_bug.cgi?id=8047
-    static if (GDC_with_SSE2)
+    static if (GDC_or_LDC_with_SSE2)
     {
-        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-        /// packed double-precision (64-bit) floating-point element in `v`.
-        return __builtin_ia32_movmskpd(v);
-    }
-    else static if (LDC_with_SSE2)
-    {
-        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-        /// packed double-precision (64-bit) floating-point element in `v`.
         return __builtin_ia32_movmskpd(v);
     }
     else

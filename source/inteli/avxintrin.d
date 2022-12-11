@@ -2189,7 +2189,43 @@ unittest
     float[8] correct = [1.0, 1, 3, 3, 5, 5, 7, 7];
     assert(A.array == correct);
 }
-// TODO int _mm256_movemask_pd (__m256d a)
+
+/// Set each bit of result mask based on the most significant bit of the corresponding packed 
+/// double-precision (64-bit) floating-point element in `a`.
+int _mm256_movemask_pd (__m256d a)
+{
+    // PERF: DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_movmskpd256(a);
+    }
+    else static if (LDC_with_SSE2)
+    {
+        // this doesn't benefit GDC, and not clear for arm64.
+        __m128d A_lo = _mm256_extractf128_pd!0(a);
+        __m128d A_hi = _mm256_extractf128_pd!1(a);
+
+        return (_mm_movemask_pd(A_hi) << 2) | _mm_movemask_pd(A_lo);
+    }
+    else
+    {
+        // Fortunately, branchless on arm64
+        long4 lv = cast(long4)a;
+        int r = 0;
+        if (lv.array[0] < 0) r += 1;
+        if (lv.array[1] < 0) r += 2;
+        if (lv.array[2] < 0) r += 3;
+        if (lv.array[3] < 0) r += 4;
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = cast(__m128d) _mm_set_epi64x(-1, 0);
+    assert(_mm_movemask_pd(A) == 2);
+}
+
+
 // TODO int _mm256_movemask_ps (__m256 a)
 
 /// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`.
