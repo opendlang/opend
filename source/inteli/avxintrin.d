@@ -2318,7 +2318,7 @@ __m256d _mm256_round_pd(int rounding)(__m256d a) @trusted
             // Convert back to double to achieve the rounding
             // The problem is that a 64-bit double can't represent all the values 
             // a 64-bit integer can (and vice-versa). So this function won't work for
-            // large values. (TODO: what range exactly?)
+            // large values. (FUTURE: what range exactly?)
             _MM_SET_ROUNDING_MODE(old);
             return _mm256_setr_pd(x0, x1, x2, x3);
         }
@@ -2373,7 +2373,7 @@ __m256 _mm256_round_ps(int rounding)(__m256 a) @trusted
             // Convert back to float to achieve the rounding
             // The problem is that a 32-float can't represent all the values 
             // a 32-bit integer can (and vice-versa). So this function won't work for
-            // large values. (TODO: what range exactly?)
+            // large values. (FUTURE: what range exactly?)
             __m256 result = _mm256_cvtepi32_ps(integers);
 
             return result;
@@ -2386,8 +2386,52 @@ unittest
 }
 
 
-// TODO __m256 _mm256_rsqrt_ps (__m256 a)
-
+/// Compute the approximate reciprocal square root of packed single-precision (32-bit) 
+/// floating-point elements in `a`. The maximum relative error for this approximation is less than
+/// 1.5*2^-12.
+__m256 _mm256_rsqrt_ps (__m256 a) pure @trusted
+{
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_rsqrtps256(a);
+    }
+    else version(LDC)
+    {
+        a[0] = 1.0f / llvm_sqrt(a[0]);
+        a[1] = 1.0f / llvm_sqrt(a[1]);
+        a[2] = 1.0f / llvm_sqrt(a[2]);
+        a[3] = 1.0f / llvm_sqrt(a[3]);
+        a[4] = 1.0f / llvm_sqrt(a[4]);
+        a[5] = 1.0f / llvm_sqrt(a[5]);
+        a[6] = 1.0f / llvm_sqrt(a[6]);
+        a[7] = 1.0f / llvm_sqrt(a[7]);
+        return a;
+    }
+    else
+    {
+        a.ptr[0] = 1.0f / sqrt(a.array[0]);
+        a.ptr[1] = 1.0f / sqrt(a.array[1]);
+        a.ptr[2] = 1.0f / sqrt(a.array[2]);
+        a.ptr[3] = 1.0f / sqrt(a.array[3]);
+        a.ptr[4] = 1.0f / sqrt(a.array[4]);
+        a.ptr[5] = 1.0f / sqrt(a.array[5]);
+        a.ptr[6] = 1.0f / sqrt(a.array[6]);
+        a.ptr[7] = 1.0f / sqrt(a.array[7]);
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(2.34f, 70000.0f, 0.00001f, 345.5f, 2.34f, 70000.0f, 0.00001f, 345.5f);
+    __m256 groundTruth = _mm256_setr_ps(0.65372045f, 0.00377964473f, 316.227766f, 0.05379921937f,
+                                        0.65372045f, 0.00377964473f, 316.227766f, 0.05379921937f);
+    __m256 result = _mm256_rsqrt_ps(A);
+    foreach(i; 0..8)
+    {
+        double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
+        assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    }
+}
 
 /// Set packed 16-bit integers with the supplied values.
 __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
@@ -3732,8 +3776,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.ptestz.256")
 pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
     float8 __builtin_ia32_rcpps256(float8) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.rsqrt.ps.256")
-    float8 __builtin_ia32_rsqrtps256(float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd")
     double2 __builtin_ia32_vpermilvarpd(double2, long2) pure @safe;
