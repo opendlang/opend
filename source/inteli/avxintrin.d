@@ -2214,15 +2214,15 @@ int _mm256_movemask_pd (__m256d a)
         int r = 0;
         if (lv.array[0] < 0) r += 1;
         if (lv.array[1] < 0) r += 2;
-        if (lv.array[2] < 0) r += 3;
-        if (lv.array[3] < 0) r += 4;
+        if (lv.array[2] < 0) r += 4;
+        if (lv.array[3] < 0) r += 8;
         return r;
     }
 }
 unittest
 {
-    __m128d A = cast(__m128d) _mm_set_epi64x(-1, 0);
-    assert(_mm_movemask_pd(A) == 2);
+    __m256d A = _mm256_setr_pd(-1, -double.infinity, 0, -1);
+    assert(_mm256_movemask_pd(A) == 1 + 2 + 8);
 }
 
 
