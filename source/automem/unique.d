@@ -37,7 +37,7 @@ struct Unique(
 
     alias Type = UniqueType;
 
-    static if(is(Type == class))
+    static if(is(Type == class) || is(Type == interface))
         alias Pointer = Type;
     else
         alias Pointer = Type*;
@@ -174,7 +174,7 @@ private:
                 auto repr = (cast(void*)_object)[0..__traits(classInstanceSize, Type)];
                 GC.removeRange(&repr[(void*).sizeof]);
             }();
-        } else static if (supportGC && hasIndirections!Type) {
+        } else static if (supportGC && hasIndirections!Type && !is(Type == interface)) {
             () @trusted {
                 GC.removeRange(_object);
             }();
@@ -238,7 +238,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 
         u._object = () @trusted { return u._allocator.make!Type(forward!args); }();
 
-        static if (is(Type == class)) {
+        static if (is(Type == class) || is(Type == interface)) {
             () @trusted {
                 auto repr = (cast(void*)u._object)[0..__traits(classInstanceSize, Type)];
                 if (supportGC && !(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers)) {
