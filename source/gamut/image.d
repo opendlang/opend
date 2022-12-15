@@ -21,6 +21,13 @@ public import gamut.types: ImageFormat;
 
 nothrow @nogc @safe:
 
+/// Deallocate pixel data. Everything allocated with `allocatePixelStorage` or disowned eventually needs
+/// to be through that function.
+void freeImageData(void* mallocArea) @trusted
+{
+    deallocatePixelStorage(mallocArea);
+}
+
 /// Image type.
 /// Image has disabled copy ctor and postblit, to avoid accidental allocations.
 /// 
@@ -34,7 +41,7 @@ nothrow @nogc @safe:
 ///                      /         \                          
 ///                hasData()  or    no-data            Also: hasNonZeroSize(). 
 ///            ___/     |   \______                          Images with a type have a width and height (that can be zero).
-///           /         |          \
+///           /         |          \                   Also: isOwned() exist for image that are hasData().
 ///   isPlanar or hasPlainPixels or isCompressed       Planar and compressed images are not implemented.
 ///                                                    Only image with hasData() have to follow the LayoutConstraints,
 ///                                                    though all image have a LayoutConstraints.
@@ -43,6 +50,7 @@ nothrow @nogc @safe:
 ///   #type     => the calling Image must have a type.
 ///   #data     => the calling Image must have data (implies #type)
 ///   #plain    => the calling Image must have plain-pixels.
+///   #own      => the calling Image must have data AND own it.
 /// It is a programming error to call a function that doesn't follow the tag constraints.
 ///
 struct Image
@@ -299,6 +307,21 @@ public:
     bool isOwned() pure const
     {
         return hasData() && (_allocArea !is null);
+    }
+
+    /// Disown the image allocation data.
+    /// This return both the pixel _data (same as and the allocation data
+    /// The data MUST be freed with `freeImageData`.
+    /// The image still points into that data, and you must ensure the data lifetime exceeeds
+    /// the image lifetime.
+    /// Tags: #type #own #data 
+    ubyte* disownData() pure 
+    {
+        assert(isOwned());
+        ubyte* r = _allocArea;
+        _allocArea = null;
+        assert(!isOwned());
+        return r;
     }
 
     /// An image can have plain pixels, which means:
