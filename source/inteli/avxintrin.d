@@ -3268,8 +3268,6 @@ unittest
     assert(mem == correct);
 }
 
-///
-
 /// Store 256-bits (composed of 4 packed double-precision (64-bit) floating-point elements) from 
 /// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
 void _mm256_storeu_pd (double * mem_addr, __m256d a) pure @system
@@ -3559,12 +3557,58 @@ unittest
     assert(a.array == correct);
 }
 
+/// Compute the bitwise AND of 128 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 128-bit value, and set ZF to 1 if the 
+/// sign bit of each 64-bit element in the intermediate value is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of `a` and then AND with `b`, producing an intermediate value, and 
+/// set CF to 1 if the sign bit of each 64-bit element in the intermediate value is zero, 
+/// otherwise set CF to 0. Return the CF value.
+/*int _mm_testc_pd (__m128d a, __m128d b)
+{
 
-// TODO int _mm_testc_pd (__m128d a, __m128d b)
+}*/
+
 // TODO int _mm256_testc_pd (__m256d a, __m256d b)
 // TODO int _mm_testc_ps (__m128 a, __m128 b)
 // TODO int _mm256_testc_ps (__m256 a, __m256 b)
-// TODO int _mm256_testc_si256 (__m256i a, __m256i b)
+
+/// Compute the bitwise NOT of `a` and then AND with `b`, and return 1 if the result is zero,
+/// otherwise return 0.
+/// In other words, test if all bits masked by `b` are also 1 in `a`.
+int _mm256_testc_si256 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF ARM64
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_ptestc256(cast(long4)a, cast(long4)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // better to split than do vanilla (down to 10 inst)
+        __m128i lo_a = _mm256_extractf128_si256!0(a);
+        __m128i lo_b = _mm256_extractf128_si256!0(b);
+        __m128i hi_a = _mm256_extractf128_si256!0(a);
+        __m128i hi_b = _mm256_extractf128_si256!1(b);
+        return _mm_testc_si128(lo_a, lo_b) & _mm_testc_si128(hi_a, hi_b);
+    }
+    else
+    {
+        __m256i c = ~a & b;
+        long[4] zero = [0, 0, 0, 0];
+        return c.array == zero;
+    }
+}
+unittest
+{
+    __m256i A  = _mm256_setr_epi64(0x01, 0x02, 0x04, 0xf8);
+    __m256i M1 = _mm256_setr_epi64(0xfe, 0xfd, 0x00, 0x00);
+    __m256i M2 = _mm256_setr_epi64(0x00, 0x00, 0x04, 0x00);
+    assert(_mm256_testc_si256(A, A) == 1);
+    assert(_mm256_testc_si256(A, M1) == 0);
+    assert(_mm256_testc_si256(A, M2) == 1);
+}
+
+
 // TODO int _mm_testnzc_pd (__m128d a, __m128d b)
 // TODO int _mm256_testnzc_pd (__m256d a, __m256d b)
 // TODO int _mm_testnzc_ps (__m128 a, __m128 b)
