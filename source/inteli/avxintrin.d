@@ -1733,8 +1733,8 @@ unittest
 {
     static if (!maskLoadWorkaround) 
     {
-        double A = 7.5;
-        double2 B = _mm_maskload_pd(&A, _mm_setr_epi64(-1, 1));
+        double[2] A = [7.5, 1];
+        double2 B = _mm_maskload_pd(A.ptr, _mm_setr_epi64(-1, 1));
         double[2] correct = [7.5, 0];
         assert(B.array == correct);
     }
@@ -1771,7 +1771,7 @@ unittest
 {
     static if (!maskLoadWorkaround)
     {
-        double[3] A = [7.5, 1, 2];
+        double[4] A = [7.5, 1, 2, 3];
         double4 B = _mm256_maskload_pd(A.ptr, _mm256_setr_epi64(1, -1, -1, 1));
         double[4] correct = [0.0, 1, 2, 0];
         assert(B.array == correct);
@@ -1811,7 +1811,7 @@ unittest
 {
     static if (!maskLoadWorkaround)
     {
-        float[3] A = [7.5f, 1, 2];
+        float[4] A = [7.5f, 1, 2, 3];
         float4 B = _mm_maskload_ps(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
         float[4] correct = [0.0f, 1, 2, 0];
         assert(B.array == correct);
@@ -1847,9 +1847,9 @@ __m256 _mm256_maskload_ps (const(float)* mem_addr, __m256i mask) /*pure*/ @syste
 }
 unittest
 {
-    float[6] A = [7.5f, 1, 2, 3, 4, 5];
+    float[8] A                  = [1,   7.5f,  1,  2, 3,  4,  5, 6];
     __m256i  M = _mm256_setr_epi32(1,     -1,  1, -1, 1, -1, -1, 1);
-    float8 B = _mm256_maskload_ps(A.ptr - 1, M);
+    float8 B = _mm256_maskload_ps(A.ptr, M);
     float[8] correct =            [0.0f, 7.5f, 0,  2, 0,  4,  5, 0];
     assert(B.array == correct);
 }
@@ -1917,11 +1917,11 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
     }
     unittest
     {
-        double[3] A = [0.0, 1, 2];
+        double[4] A = [0.0, 1, 2, 3];
         __m256i M = _mm256_setr_epi64x(-9, 0, -1, 0);
         __m256d B = _mm256_setr_pd(2, 3, 4, 5);
         _mm256_maskstore_pd(A.ptr, M, B);
-        double[3] correct = [2.0, 1, 4];
+        double[4] correct = [2.0, 1, 4, 3];
         assert(A == correct);
     }
 }
@@ -1953,11 +1953,11 @@ void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @sy
 }
 unittest
 {
-    float[3] A = [0.0f, 1, 2];
+    float[4] A = [0.0f, 1, 2, 6];
     __m128i M = _mm_setr_epi32(-1, 0, -1, 0);
     __m128 B = _mm_setr_ps(2, 3, 4, 5);
     _mm_maskstore_ps(A.ptr, M, B);
-    float[3] correct = [2.0f, 1, 4];
+    float[4] correct = [2.0f, 1, 4, 6];
     assert(A == correct);
 }
 
@@ -1988,11 +1988,11 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
     }
     unittest
     {
-        float[6] A = [0.0f, 1, 2, 3, 4, 5];
-        __m256i M = _mm256_setr_epi32(0, -1, 0, -1, 0, -1, -1, 0);
+        float[8] A                 = [0.0f, 0, 1,  2, 3,  4,  5, 7];
+        __m256i M = _mm256_setr_epi32(  0, -1, 0, -1, 0, -1, -1, 0);
         __m256 B = _mm256_set1_ps(6.0f);
-        _mm256_maskstore_ps(A.ptr - 1,  M, B);
-        float[6] correct = [6.0f, 1, 6, 3, 6, 6];
+        _mm256_maskstore_ps(A.ptr, M, B);
+        float[8] correct           = [0.0f, 6, 1,  6, 3,  6,  6, 7];
         assert(A == correct);
     }
 }
