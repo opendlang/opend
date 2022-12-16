@@ -3557,16 +3557,33 @@ unittest
     assert(a.array == correct);
 }
 
-/// Compute the bitwise AND of 128 bits (representing double-precision (64-bit) floating-point 
-/// elements) in `a` and `b`, producing an intermediate 128-bit value, and set ZF to 1 if the 
-/// sign bit of each 64-bit element in the intermediate value is zero, otherwise set ZF to 0. 
 /// Compute the bitwise NOT of `a` and then AND with `b`, producing an intermediate value, and 
-/// set CF to 1 if the sign bit of each 64-bit element in the intermediate value is zero, 
-/// otherwise set CF to 0. Return the CF value.
-/*int _mm_testc_pd (__m128d a, __m128d b)
+/// return 1 if the sign bit of each 64-bit element in the intermediate value is zero, 
+/// otherwise return 0.
+int _mm_testc_pd (__m128d a, __m128d b) pure @trusted
 {
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestcpd(a, b);
+    }
+    else
+    {
+        long2 la = cast(long2)a;
+        long2 lb = cast(long2)b;
+        long2 r = ~la & lb;
+        return r.array[0] >= 0 && r.array[1] >= 0;
+    }
+}
+unittest
+{
+    __m128d A  = _mm_setr_pd(-1, 1);
+    __m128d B = _mm_setr_pd(-1, -1);
+    __m128d C = _mm_setr_pd(1, -1);
+    assert(_mm_testc_pd(A, A) == 1);
+    assert(_mm_testc_pd(A, B) == 0);
+    assert(_mm_testc_pd(B, A) == 1);
+}
 
-}*/
 
 // TODO int _mm256_testc_pd (__m256d a, __m256d b)
 // TODO int _mm_testc_ps (__m128 a, __m128 b)
@@ -3577,7 +3594,6 @@ unittest
 /// In other words, test if all bits masked by `b` are also 1 in `a`.
 int _mm256_testc_si256 (__m256i a, __m256i b) pure @trusted
 {
-    // PERF ARM64
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_ptestc256(cast(long4)a, cast(long4)b);

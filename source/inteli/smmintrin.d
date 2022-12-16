@@ -2026,7 +2026,7 @@ int _mm_test_mix_ones_zeros (__m128i a, __m128i mask) @trusted
 /// Compute the bitwise NOT of a and then AND with b, and return 1 if the 
 /// result is zero, otherwise return 0.
 /// In other words, test if all bits masked by `b` are 1 in `a`.
-int _mm_testc_si128 (__m128i a, __m128i b) @trusted
+int _mm_testc_si128 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
