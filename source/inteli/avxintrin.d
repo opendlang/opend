@@ -3584,10 +3584,125 @@ unittest
     assert(_mm_testc_pd(B, A) == 1);
 }
 
+///ditto
+int _mm256_testc_pd (__m256d a, __m256d b) pure @safe
+{
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestcpd256(a, b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // better to split than do vanilla (down to 10 inst)
+        __m128d lo_a = _mm256_extractf128_pd!0(a);
+        __m128d lo_b = _mm256_extractf128_pd!0(b);
+        __m128d hi_a = _mm256_extractf128_pd!1(a);
+        __m128d hi_b = _mm256_extractf128_pd!1(b);
+        return _mm_testc_pd(lo_a, lo_b) & _mm_testc_pd(hi_a, hi_b);
+    }
+    else
+    {
+        long4 la = cast(long4)a;
+        long4 lb = cast(long4)b;
+        long4 r = ~la & lb;
+        return r.array[0] >= 0 && r.array[1] >= 0 && r.array[2] >= 0 && r.array[3] >= 0;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(-1, 1, -1, 1);
+    __m256d B = _mm256_setr_pd(-1, -1, -1, -1);
+    __m256d C = _mm256_setr_pd(1, -1, 1, -1);
+    assert(_mm256_testc_pd(A, A) == 1);
+    assert(_mm256_testc_pd(A, B) == 0);
+    assert(_mm256_testc_pd(B, A) == 1);
+}
 
-// TODO int _mm256_testc_pd (__m256d a, __m256d b)
-// TODO int _mm_testc_ps (__m128 a, __m128 b)
-// TODO int _mm256_testc_ps (__m256 a, __m256 b)
+/// Compute the bitwise NOT of `a` and then AND with `b`, producing an intermediate value, and 
+/// return 1 if the sign bit of each 32-bit element in the intermediate value is zero, 
+/// otherwise return 0.
+int _mm_testc_ps (__m128 a, __m128 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestcps(a, b);
+    }   
+    else static if (LDC_with_ARM64)
+    {
+        int4 la = cast(int4)a;
+        int4 lb = cast(int4)b;
+        int4 r = ~la & lb;
+        int4 shift;
+        shift = 31;
+        r >>= shift;
+        int[4] zero = [0, 0, 0, 0];
+        return r.array == zero;
+    }
+    else
+    {
+        int4 la = cast(int4)a;
+        int4 lb = cast(int4)b;
+        int4 r = ~la & lb;
+        return r.array[0] >= 0 && r.array[1] >= 0 && r.array[2] >= 0 && r.array[3] >= 0;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-1, 1, -1, 1);
+    __m128 B = _mm_setr_ps(-1, -1, -1, -1);
+    __m128 C = _mm_setr_ps(1, -1, 1, -1);
+    assert(_mm_testc_ps(A, A) == 1);
+    assert(_mm_testc_ps(A, B) == 0);
+    assert(_mm_testc_ps(B, A) == 1);
+}
+
+///ditto
+int _mm256_testc_ps (__m256 a, __m256 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestcps256(a, b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        int8 la = cast(int8)a;
+        int8 lb = cast(int8)b;
+        int8 r = ~la & lb;
+        int8 shift;
+        shift = 31;
+        r >>= shift;
+        int[8] zero = [0, 0, 0, 0, 0, 0, 0, 0];
+        return r.array == zero;
+    }
+    else
+    {
+        int8 la = cast(int8)a;
+        int8 lb = cast(int8)b;
+        int8 r = ~la & lb;
+        return r.array[0] >= 0 
+            && r.array[1] >= 0
+            && r.array[2] >= 0
+            && r.array[3] >= 0
+            && r.array[4] >= 0
+            && r.array[5] >= 0
+            && r.array[6] >= 0
+            && r.array[7] >= 0;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(-1,  1, -1,  1, -1,  1, -1,  1);
+    __m256 B = _mm256_setr_ps(-1, -1, -1, -1, -1, -1, -1, -1);
+    __m256 C = _mm256_setr_ps( 1, -1,  1, -1,  1,  1,  1,  1);
+    assert(_mm256_testc_ps(A, A) == 1);
+    assert(_mm256_testc_ps(B, B) == 1);
+    assert(_mm256_testc_ps(A, B) == 0);
+    assert(_mm256_testc_ps(B, A) == 1);
+    assert(_mm256_testc_ps(C, B) == 0);
+    assert(_mm256_testc_ps(B, C) == 1);
+}
 
 /// Compute the bitwise NOT of `a` and then AND with `b`, and return 1 if the result is zero,
 /// otherwise return 0.
@@ -3603,7 +3718,7 @@ int _mm256_testc_si256 (__m256i a, __m256i b) pure @trusted
         // better to split than do vanilla (down to 10 inst)
         __m128i lo_a = _mm256_extractf128_si256!0(a);
         __m128i lo_b = _mm256_extractf128_si256!0(b);
-        __m128i hi_a = _mm256_extractf128_si256!0(a);
+        __m128i hi_a = _mm256_extractf128_si256!1(a);
         __m128i hi_b = _mm256_extractf128_si256!1(b);
         return _mm_testc_si128(lo_a, lo_b) & _mm_testc_si128(hi_a, hi_b);
     }
