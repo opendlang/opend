@@ -651,11 +651,13 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
     chunks_len = size - cast(int)(qoi_padding.sizeof);
 
+    int px_pos = 0;
+
     for (int posy = 0; posy < desc.height; ++posy)
     {
         for (int posx = 0; posx < desc.width; ++posx)
-        {      
-            const int px_pos = posy * samplesPerRow + posx * channels;
+        {
+
             if (run > 0) 
             {
                 run--;
@@ -740,12 +742,26 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
             }
 
             decodedScanline[posx] = px;
+
+            switch(channels)
+            {
+                default:
+                case 4:
+                    *cast(qoi_rgba_t*)(pixels + px_pos) = px;
+                    break;
+                case 3:
+                    pixels[px_pos + 0] = px.rgba.r;
+                    pixels[px_pos + 1] = px.rgba.g;
+                    pixels[px_pos + 2] = px.rgba.b;
+                    break;
+            }
+
+            px_pos += channels;
         }
 
         // convert just-decoded scanline into output type
-        ubyte* line = cast(ubyte*)(pixels + desc.pitchBytes * posy);
+ /+       ubyte* line = cast(ubyte*)(pixels + desc.pitchBytes * posy);
 
-        // Expand 10 bit to 16-bits
         switch(channels)
         {
             case 4:
@@ -767,7 +783,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                 break;
             default:
                 assert(false);
-        }
+        } +/
 
         // swap decoded scanline buffers
         {
