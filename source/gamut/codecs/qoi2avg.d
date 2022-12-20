@@ -495,7 +495,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                             bytes[p++] = px.rgba.g;
                             bytes[p++] = px.rgba.b;
                             bytes[p++] = px.rgba.a;
-                            continue;
+                            goto pixel_encoded;
                         }
                     }
 
@@ -503,7 +503,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     {
                         px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
                         px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
-                        px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;                     
+                        px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
                     }
 
                     byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -556,6 +556,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                     }
                 }
             }
+
+            pixel_encoded:
 
             px_pos += channels;
         }
@@ -657,7 +659,6 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     {
         for (int posx = 0; posx < desc.width; ++posx)
         {
-
             if (run > 0) 
             {
                 run--;
@@ -671,6 +672,8 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                     px_ref.rgba.g = (px.rgba.g + lastDecodedScanline[posx].rgba.g + 1) >> 1;
                     px_ref.rgba.b = (px.rgba.b + lastDecodedScanline[posx].rgba.b + 1) >> 1;
                 } 
+
+                decode_op:
 
                 int b1 = bytes[p++];
                 if (b1 < 0x80) {        /* QOI_OP_LUMA */
@@ -708,7 +711,7 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                 }
                 else if (b1 < 0xf0) {       /* QOI_OP_ADIFF */
                     px.rgba.a += (b1 & 7) - 4;
-                    continue;
+                    goto decode_op;
                 }
                 else if (b1 < 0xf8) {       /* QOI_OP_RUN */
                     run = b1 & 7;
