@@ -628,11 +628,18 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
 
     desc.pitchBytes = samplesPerRow;
 
+    int pixel_data_size = desc.width * desc.height * channels;
+    int decoded_scanline_size = desc.width * 4;  
+
     int num_samples = desc.width * desc.height * channels;
-    ubyte* pixels = cast(ubyte *) QOI_MALLOC(num_samples);
+    ubyte* pixels = cast(ubyte *) QOI_MALLOC(pixel_data_size + 2 * decoded_scanline_size);
     if (!pixels) {
         return null;
     }
+
+    // double-buffered scanline, this is intended to speed up decoding
+    qoi_rgba_t* decodedScanline = cast(qoi_rgba_t*)(&pixels[pixel_data_size]);
+    qoi_rgba_t* lastDecodedScanline = cast(qoi_rgba_t*)(&pixels[pixel_data_size + decoded_scanline_size]);
 
     assert(channels != 1 && channels != 2);
 
@@ -643,7 +650,6 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     px.rgba.a = 255;
 
     chunks_len = size - cast(int)(qoi_padding.sizeof);
-
 
     for (int posy = 0; posy < desc.height; ++posy)
     {
@@ -659,9 +665,9 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                 px_ref.v = px.v;
                 if (posy > 0 && enableAveragePrediction) 
                 {
-                    px_ref.rgba.r = (px.rgba.r + pixels[px_pos - samplesPerRow + 0] + 1) >> 1;
-                    px_ref.rgba.g = (px.rgba.g + pixels[px_pos - samplesPerRow + 1] + 1) >> 1;
-                    px_ref.rgba.b = (px.rgba.b + pixels[px_pos - samplesPerRow + 2] + 1) >> 1;
+                    px_ref.rgba.r = (px.rgba.r + lastDecodedScanline[posx].rgba.r + 1) >> 1;
+                    px_ref.rgba.g = (px.rgba.g + lastDecodedScanline[posx].rgba.g + 1) >> 1;
+                    px_ref.rgba.b = (px.rgba.b + lastDecodedScanline[posx].rgba.b + 1) >> 1;
                 } 
 
                 int b1 = bytes[p++];
@@ -733,19 +739,41 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
                 }
             }
 
-            switch(channels)
-            {
-                default:
-                case 4:
-                    *cast(qoi_rgba_t*)(pixels + px_pos) = px;
-                    break;
-                case 3:
-                    pixels[px_pos + 0] = px.rgba.r;
-                    pixels[px_pos + 1] = px.rgba.g;
-                    pixels[px_pos + 2] = px.rgba.b;
-                    break;
-            }
+            decodedScanline[posx] = px;
+        }
 
+        // convert just-decoded scanline into output type
+        ubyte* line = cast(ubyte*)(pixels + desc.pitchBytes * posy);
+
+        // Expand 10 bit to 16-bits
+        switch(channels)
+        {
+            case 4:
+                for (int posx = 0; posx < desc.width; ++posx)
+                {
+                    qoi_rgba_t decodedPx = decodedScanline[posx]; // No particular conversion to do
+                    *cast(uint*)(&line[posx * 4]) = decodedPx.v;
+                }
+                break;
+
+            case 3:
+                for (int posx = 0; posx < desc.width; ++posx)
+                {
+                    qoi_rgba_t decodedPx = decodedScanline[posx]; // No particular conversion to do
+                    line[posx * 3 + 0] = decodedPx.rgba.r;
+                    line[posx * 3 + 1] = decodedPx.rgba.g;
+                    line[posx * 3 + 2] = decodedPx.rgba.b;
+                }
+                break;
+            default:
+                assert(false);
+        }
+
+        // swap decoded scanline buffers
+        {
+            qoi_rgba_t* temp = decodedScanline;
+            decodedScanline = lastDecodedScanline;
+            lastDecodedScanline = temp;
         }
     }
 
