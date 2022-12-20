@@ -155,7 +155,7 @@ public:
     /// Tags: #type #data #plain
     inout(ubyte)* scanline(int y) inout pure @trusted
     {
-        assert(hasPlainPixels());
+        assert(isPlainPixels());
         assert(y >= 0 && y < _height);
         return _data + _pitch * y;
     }
@@ -168,7 +168,7 @@ public:
     /// Tags: #type #data #plain
     inout(ubyte)[] allPixelsAtOnce() inout pure @trusted
     {
-        assert(hasPlainPixels());
+        assert(isPlainPixels());
 
         // the image need the LAYOUT_GAPLESS flag.
         assert(isGapless());
@@ -315,6 +315,8 @@ public:
     /// The image still points into that data, and you must ensure the data lifetime exceeeds
     /// the image lifetime.
     /// Tags: #type #own #data 
+    /// Warning: this return the malloc'ed area, NOT the image data itself.
+    ///          However, with the constraints
     ubyte* disownData() pure 
     {
         assert(isOwned());
@@ -328,7 +330,8 @@ public:
     ///   1. it has data (and as such, a type)
     ///   2. those are in a plain decoded format (not a compressed texture, not planar, etc).
     /// Tags: none.
-    bool hasPlainPixels() pure const
+    deprecated alias hasPlainPixels = isPlainPixels;
+    bool isPlainPixels() pure const
     {
         return hasData() && pixelTypeIsPlain(_type); // Note: all formats are plain, for now.
     }
@@ -448,7 +451,7 @@ public:
     /// Tags: #type #data #plain.
     Image clone() const
     {
-        assert(hasPlainPixels());
+        assert(isPlainPixels());
 
         Image r;
         r.setSize(_width, _height, _type, _layoutConstraints);
@@ -463,7 +466,7 @@ public:
     /// Tags: #type #data #plain.
     void copyPixelsTo(ref Image img) const @trusted
     {
-        assert(hasPlainPixels());
+        assert(isPlainPixels());
 
         assert(img._width  == _width);
         assert(img._height == _height);
@@ -642,7 +645,7 @@ public:
             return false;
         }
 
-        if (!hasPlainPixels)
+        if (!isPlainPixels)
             return false; // no data that is pixels, impossible to save that.
 
         const(ImageFormatPlugin)* plugin = &g_plugins[fif];

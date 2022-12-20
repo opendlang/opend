@@ -124,8 +124,6 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    // TODO: support desc.colorspace information
-
     image._allocArea = decoded;
     image._data = decoded;
     image._width = desc.width;

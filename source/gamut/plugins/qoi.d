@@ -154,7 +154,7 @@ bool saveQOI(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     desc.width = image._width;
     desc.height = image._height;
     desc.pitchBytes = image._pitch;
-    desc.colorspace = QOI_SRGB; // TODO: support other colorspace somehow, or at least fail if not SRGB
+    desc.colorspace = QOI_SRGB; // FUTURE: support other colorspace somehow, or at least fail if not SRGB
         
     switch (image._type)
     {
