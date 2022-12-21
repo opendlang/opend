@@ -416,7 +416,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // double-buffered scanline, this is intended to speed up decoding
     qoi_rgba_t* inputScanline     = cast(qoi_rgba_t*)(bytes + max_size);
     qoi_rgba_t* lastInputScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size);
-    qoi_rgba_t* predictedScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size + predicted_scanline_size);
+    qoi_rgba_t* predictedScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size*2);
 
     qoi_write_32(bytes, &p, QOIX_MAGIC);
     qoi_write_32(bytes, &p, desc.width);
@@ -453,7 +453,7 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     {
         const(ubyte)* line = data + desc.pitchBytes * posy;
 
-        // Convert input scanline to rgba8 if needed
+        // Convert one input scanline at once to rgba8
         if (desc.channels == 4)
         {
             // PERF: replace by pointer swap
@@ -858,8 +858,6 @@ private:
     }
 */
 
-// PERF: technically we could predict two pixels at once.
-// could predict a whole scanline at once, since it is lossless.
 static RGBA locoIntraPredictionSIMD(RGBA a, RGBA b, RGBA c)
 {
     // load RGBA8 pixels
