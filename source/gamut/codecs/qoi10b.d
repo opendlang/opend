@@ -6,6 +6,7 @@ import core.stdc.stdlib: realloc, malloc, free;
 import core.stdc.string: memset;
 
 import gamut.codecs.qoi2avg;
+import inteli.emmintrin;
 
 /// A QOI-inspired codec for 10-bit images, called "QOI-10b". 
 /// Input image is 16-bit ushort, but only 10-bits gets encoded making it lossy.
@@ -78,11 +79,16 @@ import gamut.codecs.qoi2avg;
 /// [ ]           QOI_OP_RGBA      48          28     11111110rrrrrrrrrr[ggggggggggbbbbbbbbbb]aaaaaaaaaa
 /// [ ]           QOI_OP_END        8           8     11111111
 
+// Note: LOCO-I predictor doesn't really work here, it slowdown quite a bit for 0.5% bitrate improvement.
+//       Not sure what happens here.
+
 enum ubyte QOI_OP_ADIFF2 = 0xf8;
 
 enum int WORST_OPCODE_BITS = 48;
 
 enum enableAveragePrediction = true; 
+
+enum bool newpred = false;//true;
 
 enum INDEX_BITS = 8; // original = 6
 enum INDEX_SIZE = 1 << INDEX_BITS;
@@ -229,6 +235,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             const(ushort)* line = cast(const(ushort*))(data + desc.pitchBytes * posy);
    
             // 1. First convert the scanline to full qoi10_rgba_t to serve as predictor.
+
             for (int posx = 0; posx < desc.width; ++posx)
             {
                 qoi10_rgba_t pixel;
@@ -341,9 +348,29 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
 
                     if (posy > 0 && enableAveragePrediction)
                     {
-                        px_ref.r = (px_ref.r + lastScanlineConverted[posx].r + 1) >> 1;
-                        px_ref.g = (px_ref.g + lastScanlineConverted[posx].g + 1) >> 1;
-                        px_ref.b = (px_ref.b + lastScanlineConverted[posx].b + 1) >> 1;
+                        static if (newpred)
+                        {
+                            if (posx == 0)
+                            {
+                                // first pixel in the row, take above pixel
+                                px_ref.r = lastScanlineConverted[posx].r;
+                                px_ref.g = lastScanlineConverted[posx].g;
+                                px_ref.b = lastScanlineConverted[posx].b;
+                            }
+                            else 
+                            {
+                                qoi10_rgba_t pred = locoIntraPredictionSIMD(px_ref, lastScanlineConverted[posx], lastScanlineConverted[posx-1]);
+                                px_ref.r = pred.r;
+                                px_ref.g = pred.g;
+                                px_ref.b = pred.b;
+                            }
+                        }
+                        else
+                        {
+                            px_ref.r = (px_ref.r + lastScanlineConverted[posx].r + 1) >> 1;
+                            px_ref.g = (px_ref.g + lastScanlineConverted[posx].g + 1) >> 1;
+                            px_ref.b = (px_ref.b + lastScanlineConverted[posx].b + 1) >> 1;
+                        }
                     }
 
                     int vg   = (px.g - px_ref.g) & 1023;
@@ -583,9 +610,29 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
                 if (posy > 0 && enableAveragePrediction)
                 {
-                    px_ref.r = (px_ref.r + lastDecodedScanline[posx].r + 1) >> 1;
-                    px_ref.g = (px_ref.g + lastDecodedScanline[posx].g + 1) >> 1;
-                    px_ref.b = (px_ref.b + lastDecodedScanline[posx].b + 1) >> 1;
+                    static if (newpred)
+                    {
+                        if (posx == 0)
+                        {
+                            // first pixel in the row, take above pixel
+                            px_ref.r = lastDecodedScanline[posx].r;
+                            px_ref.g = lastDecodedScanline[posx].g;
+                            px_ref.b = lastDecodedScanline[posx].b;
+                        }
+                        else 
+                        {
+                            qoi10_rgba_t pred = locoIntraPredictionSIMD(px_ref, lastDecodedScanline[posx], lastDecodedScanline[posx-1]);
+                            px_ref.r = pred.r;
+                            px_ref.g = pred.g;
+                            px_ref.b = pred.b;
+                        }
+                    }
+                    else
+                    {
+                        px_ref.r = (px_ref.r + lastDecodedScanline[posx].r + 1) >> 1;
+                        px_ref.g = (px_ref.g + lastDecodedScanline[posx].g + 1) >> 1;
+                        px_ref.b = (px_ref.b + lastDecodedScanline[posx].b + 1) >> 1;
+                    }
                 }
 
                 decode_next_op:
@@ -741,6 +788,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
         // convert just-decoded scanline into output type
         ushort* line      = cast(ushort*)(pixels + desc.pitchBytes * posy);
 
+        // PERF: can be 4 different loops here?
         for (int posx = 0; posx < desc.width; ++posx)
         {
             qoi10_rgba_t px16b = decodedScanline[posx]; // 0..1023 components
@@ -784,4 +832,69 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
 
     finished:
     return pixels;
+}
+
+static qoi10_rgba_t locoIntraPredictionSIMD(qoi10_rgba_t a, qoi10_rgba_t b, qoi10_rgba_t c)
+{
+    // load RGBA16 pixels
+    __m128i A = _mm_loadu_si64(&a); 
+    __m128i B = _mm_loadu_si64(&b);
+    __m128i C = _mm_loadu_si64(&c);
+
+    // Max predictor (A + B - C)
+    __m128i P = _mm_sub_epi16(_mm_add_epi16(A, B), C);
+    __m128i maxAB = _mm_max_epi16(A, B);
+    __m128i minAB = _mm_min_epi16(A, B);
+
+    // 1111 where we should use max(A, B)
+    __m128i maxMask = _mm_cmple_epi16(C, minAB);
+
+    // 1111 where we should use min(A, B)
+    __m128i minMask = _mm_cmpge_epi16(C, maxAB);
+
+    P = (P & (~minMask)) | (minAB & minMask);
+    P = (P & (~maxMask)) | (maxAB & maxMask);
+
+    // Get back to 10-bit, clip
+
+    __m128i Z = _mm_setzero_si128();
+    __m128i m1023 = _mm_set1_epi16(1023);
+    P = _mm_max_epi16(P, Z);
+    P = _mm_min_epi16(P, m1023);
+
+    qoi10_rgba_t r;
+    _mm_storel_epi64(cast(__m128i*)&r, P);
+
+    return r;
+}
+
+/+
+static short locoIntraPrediction(short a, short b, short c)
+{
+    short max_ab = a > b ? a : b;
+    short min_ab = a < b ? a : b;
+    if (c >= max_ab)
+        return cast(short)min_ab;
+    else if (c <= min_ab)
+        return cast(short)max_ab;
+    else
+    {
+        int d = a + b - c;
+        if (d < 0)
+            d = 0;
+        if (d > 1023)
+            d = 1023;
+        return cast(short)d;
+    }
+}
++/
+
+private __m128i _mm_cmple_epi16(__m128i a, __m128i b) pure @safe
+{
+    return _mm_or_si128(_mm_cmplt_epi16(a, b), _mm_cmpeq_epi16(a, b));
+}
+
+private __m128i _mm_cmpge_epi16(__m128i a, __m128i b)
+{
+    return _mm_or_si128(_mm_cmpgt_epi16(a, b), _mm_cmpeq_epi16(a, b));
 }
