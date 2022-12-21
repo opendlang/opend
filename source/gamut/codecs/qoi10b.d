@@ -67,7 +67,7 @@ import inteli.emmintrin;
 ///
 /// Optimized?    Opcode       Bits(RGB)   Bits(grey)  Meaning
 /// [ ]           QOI_OP_LUMA      14           6     0ggggg[rrrrbbbb]  (less g or more g => doesn't work)
-/// [ ]           free slot        10          10     10......
+/// [ ]           QOI_OP_LUMA0     12           6     10gggg[rrrbbb]
 /// [ ]           QOI_OP_LUMA2     22          10     110ggggggg[rrrrrrbbbbbb]
 /// [ ]           QOI_OP_LUMA3     30          14     11100ggggggggg[rrrrrrrrbbbbbbbb]
 /// [ ]           QOI_OP_ADIFF     10          10     11101xxxxx
@@ -358,20 +358,18 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         assert(vg_b == 0);
                     }
 
-                /*     static int bitc(int c)
+
+                    if ( ( (vg_r >= (1024- 4)) || (vg_r <  4) ) &&  // fits in 3 bits?
+                         ( (vg   >= (1024-8)) || (vg   < 8) ) &&    // fits in 4 bits?
+                        ( (vg_b >= (1024- 4)) || (vg_b <  4) ) )   // fits in 3 bits?
                     {
-                        if (c > 512) return c - 1024;
-                            else
-                                return c;
-
+                        outputBits(0x20 | (vg & 0x0f), 6); // QOI_OP_LUMA0
+                        if (!streamIsGrey)
+                        {
+                            outputBits( (vg_r << 3) | (vg_b & 7), 6);
+                        }
                     }
-
-                   
-                    import core.stdc.stdio;
-                    if (!streamIsGrey)
-                        printf("%4d, %4d, %4d\n", bitc(vg_r), bitc(vg), bitc(vg_b));
-*/
-                    if ( ( (vg_r >= (1024- 8)) || (vg_r <  8) ) &&  // fits in 4 bits?
+                    else if ( ( (vg_r >= (1024- 8)) || (vg_r <  8) ) &&  // fits in 4 bits?
                          ( (vg   >= (1024-16)) || (vg   < 16) ) &&  // fits in 5 bits?
                          ( (vg_b >= (1024- 8)) || (vg_b <  8) ) )   // fits in 4 bits?
                     {
@@ -643,7 +641,33 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.r = px.g;
                         px.b = px.g;
                     }
-               }
+                }
+                else if (op < 0xc0)    // QOI_OP_LUMA0 10xxxx
+                {
+                    // 10gggg[rrrggg]
+
+                    int vg = (op >> 2) & 15;  // vg is a signed 4-bit number
+                    vg = (vg << 28) >> 28;   // extends sign
+                    px.g = (px_ref.g + vg       ) & 1023;
+                    if (!streamIsGrey)
+                    {
+                        uint remain = readBits(4);
+                        int vg_r = ((op & 3) << 1) | (remain >> 3);
+                        int vg_b = remain & 7;
+                        vg_r = (vg_r << 29) >> 29;
+                        vg_b = (vg_b << 29) >> 29;
+                        px.r = (px_ref.r + vg + vg_r) & 1023;
+                        px.b = (px_ref.b + vg + vg_b) & 1023;
+                    }
+                    else
+                    {
+                        // Rewind two bits, this is always possible
+                        rewindInputBit();
+                        rewindInputBit();
+                        px.r = px.g;
+                        px.b = px.g;
+                    }
+                }
                 else if (op < 0xe0)    // QOI_OP_LUMA2
                 {
                     int vg   = ((op & 31) << 2) | readBits(2); // vg is a signed 7-bit number
@@ -661,7 +685,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.r = px.g;
                         px.b = px.g;
                     }
-               }
+                }
                 else if (op < 0xe8)    // QOI_OP_LUMA3
                 {
                     int vg   = ((op & 7) << 6) | readBits(6); // vg is a signed 9-bit number
