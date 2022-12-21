@@ -1,8 +1,6 @@
 /++
 $(H2 CSV/TSV parsing)
 
-DRAFT
-
 $(LREF CsvProxy) can be serialized to Ion, JSON, MsgPack, or YAML
 and then deserialized to a specified type.
 That approachs allows to use the same mir deserialization
