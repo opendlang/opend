@@ -73,8 +73,6 @@ enum QOIX_HEADER_OFFSET_BITDEPTH = 14;
 enum QOIX_HEADER_OFFSET_COMPRESSION = 16;
 
 
-version = enableLocoIntra;
-
 /*
 
 The decoder and encoder start with {r: 0, g: 0, b: 0, a: 255} as the previous
@@ -398,10 +396,9 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // Before encoding a scanline, it is converted to RGBA8.
     // This is double buffered, to help with prediction.
     int converted_scanline_size = desc.width * 4;  
-    int predicted_scanline_size = desc.width * 4;  
 
     // Allocated 3 rgba8 scanlines for the need of encoding.
-    int extraAllocSize = converted_scanline_size*2 + predicted_scanline_size;
+    int extraAllocSize = converted_scanline_size*2;
 
     // Overallocate to make room for everything.
     int max_size = desc.width * desc.height * (desc.channels + 1) + QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof);
@@ -416,7 +413,6 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // double-buffered scanline, this is intended to speed up decoding
     qoi_rgba_t* inputScanline     = cast(qoi_rgba_t*)(bytes + max_size);
     qoi_rgba_t* lastInputScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size);
-    qoi_rgba_t* predictedScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size*2);
 
     qoi_write_32(bytes, &p, QOIX_MAGIC);
     qoi_write_32(bytes, &p, desc.width);
@@ -520,7 +516,8 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
-                    // PERF: compute predictor for whole scanline in advance
+                    // Note: computing this predictor for the whole scanline in advance, even with 2x pixels at once, was slower.
+                    // because in normal times, you don't compute this predictor all the time.
                     if (posy > 0)
                     {
                         if (posx == 0)
@@ -892,25 +889,6 @@ static RGBA locoIntraPredictionSIMD(RGBA a, RGBA b, RGBA c)
     _mm_storeu_si32(&r, P);
 
     return r;
-}
-
-static ubyte locoIntraPrediction(int a, int b, int c)
-{
-    int max_ab = a > b ? a : b;
-    int min_ab = a < b ? a : b;
-    if (c >= max_ab)
-        return cast(ubyte)min_ab;
-    else if (c <= min_ab)
-        return cast(ubyte)max_ab;
-    else
-    {
-        int d = a + b - c;
-        if (d < 0)
-            d = 0;
-        if (d > 255)
-            d = 0;
-        return cast(ubyte)d;
-    }
 }
 
 private __m128i _mm_cmple_epi16(__m128i a, __m128i b) pure @safe
