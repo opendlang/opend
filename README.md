@@ -37,7 +37,7 @@ Our benchmark results for 8-bit color images:
 
 - QOIX and QOI generally outperforms PNG in decoding speed and encoding speed.
 - QOIX outperforms QOI in compression efficiency at the cost of speed:
-  * because it's based upon qoi2avg, a better QOI variant for RGB and RGBA images
+  * because it's based upon better intra predictors
   * because it is followed by LZ4, which removes some of the QOI worst cases.
 - QOIX adds support for 8-bit greyscale and greyscale + alpha images, with a "QOI-plane" custom codec.
 - QOIX adds support for 10-bit images, with a "QOI-10b" custom codec. It is lossy but outperform PNG 16-bit in everyway apart from being lossless.
