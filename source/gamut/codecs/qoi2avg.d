@@ -452,11 +452,11 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     for (int posy = 0; posy < desc.height; ++posy)
     {
         const(ubyte)* line = data + desc.pitchBytes * posy;
-        const(ubyte)* lineAbove = (posy > 0) ? (data + desc.pitchBytes * (posy - 1)) : null;
 
         // Convert input scanline to rgba8 if needed
         if (desc.channels == 4)
         {
+            // PERF: replace by pointer swap
             memcpy(inputScanline, line, desc.pitchBytes);
         }
         else
@@ -520,22 +520,23 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
+                    // PERF: compute predictor for whole scanline in advance
                     if (posy > 0)
                     {
                         if (posx == 0)
                         {
                             // first pixel in the row, take above pixel
-                            px_ref.rgba.r = lineAbove[posx * channels + 0];
-                            px_ref.rgba.g = lineAbove[posx * channels + 1];
-                            px_ref.rgba.b = lineAbove[posx * channels + 2];
+                            RGBA pred = lastInputScanline[posx].rgba;
+                            px_ref.rgba.r = pred.r;
+                            px_ref.rgba.g = pred.g;
+                            px_ref.rgba.b = pred.b;
                         }
                         else 
                         {
-                            // PERF use SIMD for prediciton. To do that, need to convert input to RGBA8* first, per scanline
-
-                            px_ref.rgba.r = locoIntraPrediction(px_ref.rgba.r, lineAbove[posx * channels + 0], lineAbove[(posx-1) * channels + 0]);
-                            px_ref.rgba.g = locoIntraPrediction(px_ref.rgba.g, lineAbove[posx * channels + 1], lineAbove[(posx-1) * channels + 1]);
-                            px_ref.rgba.b = locoIntraPrediction(px_ref.rgba.b, lineAbove[posx * channels + 2], lineAbove[(posx-1) * channels + 2]);
+                            RGBA pred = locoIntraPredictionSIMD(px_ref.rgba, lastInputScanline[posx].rgba, lastInputScanline[posx-1].rgba);
+                            px_ref.rgba.r = pred.r;
+                            px_ref.rgba.g = pred.g;
+                            px_ref.rgba.b = pred.b;
                         }
                     }
 
@@ -593,6 +594,13 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
             pixel_encoded:
 
             px_pos += channels;
+        }
+
+        // swap input scanline buffers
+        {
+            qoi_rgba_t* temp = inputScanline;
+            inputScanline = lastInputScanline;
+            lastInputScanline = temp;
         }
     }
 
