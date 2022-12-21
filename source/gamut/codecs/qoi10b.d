@@ -67,7 +67,7 @@ import inteli.emmintrin;
 ///
 /// Optimized?    Opcode       Bits(RGB)   Bits(grey)  Meaning
 /// [ ]           QOI_OP_LUMA      14           6     0ggggg[rrrrbbbb]  (less g or more g => doesn't work)
-/// [x]           QOI_OP_INDEX     10          10     10xxxxxxxx
+/// [ ]           free slot        10          10     10......
 /// [ ]           QOI_OP_LUMA2     22          10     110ggggggg[rrrrrrbbbbbb]
 /// [ ]           QOI_OP_LUMA3     30          14     11100ggggggggg[rrrrrrrrbbbbbbbb]
 /// [ ]           QOI_OP_ADIFF     10          10     11101xxxxx
@@ -89,11 +89,6 @@ enum int WORST_OPCODE_BITS = 48;
 enum enableAveragePrediction = true; 
 
 enum bool newpred = false;//true;
-
-enum INDEX_BITS = 8; // original = 6
-enum INDEX_SIZE = 1 << INDEX_BITS;
-enum INDEX_MASK = INDEX_SIZE-1;
-
 
 static immutable ubyte[5] qoi10b_padding = [255,255,255,255,255];
 
@@ -136,23 +131,18 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     // At worst, each pixel take 38 bit to be encoded.
     int num_pixels = desc.width * desc.height;
 
-    int index_size = cast(int)(qoi10_rgba_t.sizeof) * INDEX_SIZE;
-    int scanline_size = cast(int)(qoi10_rgba_t.sizeof) * desc.width;
+   int scanline_size = cast(int)(qoi10_rgba_t.sizeof) * desc.width;
 
     int max_size = cast(int) (cast(long)num_pixels * WORST_OPCODE_BITS + 7) / 8 + QOIX_HEADER_SIZE + cast(int)(qoi10b_padding.sizeof);
 
     ubyte* stream;
 
     int p = 0; // write index into output stream
-    ubyte* bytes = cast(ubyte*) QOI_MALLOC(max_size + index_size + 2 * scanline_size);
+    ubyte* bytes = cast(ubyte*) QOI_MALLOC(max_size + 2 * scanline_size);
     if (!bytes) 
     {
         return null;
     }
-
-    // the index table is allocated after the result image
-    qoi10_rgba_t* index = cast(qoi10_rgba_t*)(&bytes[max_size]);
-    memset(index, 0, INDEX_SIZE * qoi10_rgba_t.sizeof);
 
     qoi_write_32(bytes, &p, QOIX_MAGIC);
     qoi_write_32(bytes, &p, desc.width);
@@ -200,8 +190,8 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     qoi10_rgba_t px_ref = initialPredictor;
 
     // To serve as predictor
-    qoi10_rgba_t* scanlineConverted     = cast(qoi10_rgba_t*)(&bytes[max_size + index_size]);
-    qoi10_rgba_t* lastScanlineConverted = cast(qoi10_rgba_t*)(&bytes[max_size + index_size + scanline_size]);
+    qoi10_rgba_t* scanlineConverted     = cast(qoi10_rgba_t*)(&bytes[max_size]);
+    qoi10_rgba_t* lastScanlineConverted = cast(qoi10_rgba_t*)(&bytes[max_size + scanline_size]);
 
     ubyte[1024] index_lookup;
     uint index_pos = 0;
@@ -303,22 +293,7 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                 if (run > 0) 
                     encodeRun();
 
-                int hash = QOI10b_COLOR_HASH(px);
-                if (index[index_lookup[hash]] == px) 
                 {
-                    ubyte indlookup = index_lookup[hash];
-                    assert(indlookup < INDEX_SIZE);
-                    outputBits(2, 2); // QOI_OP_INDEX 
-                    outputBits(index_lookup[hash], INDEX_BITS);
-                }
-                else
-                {
-                    index_lookup[hash] = cast(ubyte) index_pos;
-                    index[index_pos] = px;
-                    index_pos = (index_pos + 1) & INDEX_MASK;
-
-                    // Can we hit one of the top pixels or the left pixel exactly?
-                    
                     int va = (px.a - px_ref.a) & 1023;
                     if (va) 
                     {
@@ -383,6 +358,19 @@ ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         assert(vg_b == 0);
                     }
 
+                /*     static int bitc(int c)
+                    {
+                        if (c > 512) return c - 1024;
+                            else
+                                return c;
+
+                    }
+
+                   
+                    import core.stdc.stdio;
+                    if (!streamIsGrey)
+                        printf("%4d, %4d, %4d\n", bitc(vg_r), bitc(vg), bitc(vg_b));
+*/
                     if ( ( (vg_r >= (1024- 8)) || (vg_r <  8) ) &&  // fits in 4 bits?
                          ( (vg   >= (1024-16)) || (vg   < 16) ) &&  // fits in 5 bits?
                          ( (vg_b >= (1024- 8)) || (vg_b <  8) ) )   // fits in 4 bits?
@@ -478,7 +466,6 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
     uint header_magic;
 
     int p = 0, run = 0;
-    int index_pos = 0;
 
     if (data == null || desc == null ||
         (channels < 0 || channels > 4) ||
@@ -523,25 +510,20 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
     desc.pitchBytes = stride;         
 
     int pixel_data_size = stride * desc.height;
-    int index_data_size = INDEX_SIZE * cast(int)qoi10_rgba_t.sizeof;
     int decoded_scanline_size = desc.width * cast(int)qoi10_rgba_t.sizeof;
 
-    ubyte* pixels = cast(ubyte*) QOI_MALLOC(pixel_data_size + index_data_size + 2 * decoded_scanline_size);
+    ubyte* pixels = cast(ubyte*) QOI_MALLOC(pixel_data_size + 2 * decoded_scanline_size);
     if (!pixels) {
         return null;
     }
 
-    qoi10_rgba_t* index = cast(qoi10_rgba_t*)(&pixels[pixel_data_size]);
-
     // double-buffered scanline, for correct average predictors
     // (else we can't decode 4/3 channels to 1/2 with average prediction, the predictors would be wrong
     //  if taken from the decoded output)
-    qoi10_rgba_t* decodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size + index_data_size]);
-    qoi10_rgba_t* lastDecodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size + index_data_size + decoded_scanline_size]);
+    qoi10_rgba_t* decodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size]);
+    qoi10_rgba_t* lastDecodedScanline = cast(qoi10_rgba_t*)(&pixels[pixel_data_size + decoded_scanline_size]);
 
     assert(channels >= 1 && channels <= 4);
-
-    memset(index, 0, INDEX_SIZE * qoi10_rgba_t.sizeof);
 
     int currentBit = 7;
 
@@ -661,17 +643,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.r = px.g;
                         px.b = px.g;
                     }
-                    index[index_pos++ & INDEX_MASK] = px;
-                }
-                else if (op < 0xc0)     // QOI_OP_INDEX
-                {
-                    assert(INDEX_BITS >= 6);
-                    int ibits = INDEX_BITS;
-                    int ind = op & 63;
-                    ibits -= 6;
-                    ind = ind << ibits | readBits(ibits);
-                    px = index[ind];
-                }
+               }
                 else if (op < 0xe0)    // QOI_OP_LUMA2
                 {
                     int vg   = ((op & 31) << 2) | readBits(2); // vg is a signed 7-bit number
@@ -689,8 +661,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.r = px.g;
                         px.b = px.g;
                     }
-                    index[index_pos++ & INDEX_MASK] = px;
-                }
+               }
                 else if (op < 0xe8)    // QOI_OP_LUMA3
                 {
                     int vg   = ((op & 7) << 6) | readBits(6); // vg is a signed 9-bit number
@@ -708,7 +679,6 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.r = px.g;
                         px.b = px.g;
                     }
-                    index[index_pos++ & INDEX_MASK] = px;
                 }  
                 else if (op < 0xf0)    // QOI_OP_ADIFF
                 {
@@ -746,8 +716,7 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.g = px.r;
                         px.b = px.r;
                     }
-                    index[index_pos++ & INDEX_MASK] = px;
-                }
+               }
                 else if (op == QOI_OP_RGBA)
                 {
                     px.r = cast(ushort) readBits(10);
@@ -762,14 +731,12 @@ ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels)
                         px.b = px.r;
                     }
                     px.a = cast(ushort) readBits(10);
-                    index[index_pos++ & INDEX_MASK] = px;
                 }
                 else if (op == QOI_OP_GRAY)
                 {
                     px.r = cast(ushort) readBits(10);
                     px.g = px.r;
                     px.b = px.r;
-                    index[index_pos++ & INDEX_MASK] = px;
                 }                    
                 else if (op == QOI_OP_END)
                 {
