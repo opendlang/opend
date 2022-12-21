@@ -32,7 +32,7 @@ Our benchmark results for 8-bit color images:
 |-------|-------------|-------------|---------------|
 | PNG (stb) | 89.73   | 14.34       | 10.29693      |
 | QOI   | 201.9       | 150.8       | 10.35162      |
-| QOIX  | 179.0       | 95.86       | 7.93607       |
+| QOIX  | 179.0       | 125.0       | 7.93607       |
 
 
 - QOIX and QOI generally outperforms PNG in decoding speed and encoding speed.
