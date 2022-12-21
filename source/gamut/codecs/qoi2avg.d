@@ -373,7 +373,7 @@ is set to the size in bytes of the encoded data.
 The returned qoi data should be free()d after use. */
 ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
-    int i, max_size, stride, p, run;
+    int i, stride, p, run;
     int px_len, px_end, px_pos, channels;
     ubyte* bytes;
     ubyte[1024] index_lookup;
@@ -393,14 +393,30 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         return null;
     }
 
-    max_size = desc.width * desc.height * (desc.channels + 1) + QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof);
+    int pixel_data_size = desc.width * desc.height * channels;
+
+    // Before encoding a scanline, it is converted to RGBA8.
+    // This is double buffered, to help with prediction.
+    int converted_scanline_size = desc.width * 4;  
+    int predicted_scanline_size = desc.width * 4;  
+
+    // Allocated 3 rgba8 scanlines for the need of encoding.
+    int extraAllocSize = converted_scanline_size*2 + predicted_scanline_size;
+
+    // Overallocate to make room for everything.
+    int max_size = desc.width * desc.height * (desc.channels + 1) + QOIX_HEADER_SIZE + cast(int)(qoi_padding.sizeof);
 
     p = 0;
-    bytes = cast(ubyte*) QOI_MALLOC(max_size);
+    bytes = cast(ubyte*) QOI_MALLOC(max_size + extraAllocSize);
     if (!bytes) 
     {
         return null;
     }
+
+    // double-buffered scanline, this is intended to speed up decoding
+    qoi_rgba_t* inputScanline     = cast(qoi_rgba_t*)(bytes + max_size);
+    qoi_rgba_t* lastInputScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size);
+    qoi_rgba_t* predictedScanline = cast(qoi_rgba_t*)(bytes + max_size + converted_scanline_size + predicted_scanline_size);
 
     qoi_write_32(bytes, &p, QOIX_MAGIC);
     qoi_write_32(bytes, &p, desc.width);
@@ -432,27 +448,30 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
     assert (channels != 1 && channels != 2);
 
 
+
     for (int posy = 0; posy < desc.height; ++posy)
     {
         const(ubyte)* line = data + desc.pitchBytes * posy;
         const(ubyte)* lineAbove = (posy > 0) ? (data + desc.pitchBytes * (posy - 1)) : null;
 
+        // Convert input scanline to rgba8 if needed
+        if (desc.channels == 4)
+        {
+            memcpy(inputScanline, line, desc.pitchBytes);
+        }
+        else
+        {
+            assert(desc.channels == 3);
+            for (int posx = 0; posx < desc.width; ++posx)
+            {
+                inputScanline[posx].rgba = RGBA(line[posx * 3 + 0], line[posx * 3 + 1], line[posx * 3 + 2], 255);
+            }
+        }
+
         for (int posx = 0; posx < desc.width; ++posx)
         {
             px_ref.v = px.v;
-
-            switch(channels)
-            {
-                default:
-                case 4:
-                    px = *cast(qoi_rgba_t *)(&line[posx * 4]);
-                    break;
-                case 3:     
-                    px.rgba.r = line[posx * 3 + 0];
-                    px.rgba.g = line[posx * 3 + 1];
-                    px.rgba.b = line[posx * 3 + 2];
-                    break;
-            }
+            px = inputScanline[posx];
 
             if (px.v == px_ref.v) {
                 run++;
