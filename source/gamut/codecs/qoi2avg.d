@@ -3,7 +3,9 @@ module gamut.codecs.qoi2avg;
 nothrow @nogc:
 
 import core.stdc.stdlib: realloc, malloc, free;
-import core.stdc.string: memset;
+import core.stdc.string: memset, memcpy;
+
+import inteli.emmintrin;
 
 /// Note: this is a translation of "QOI2" mods by @wbd73
 /// revealed in https://github.com/nigeltao/qoi2-bikeshed/issues/34
@@ -71,7 +73,7 @@ enum QOIX_HEADER_OFFSET_BITDEPTH = 14;
 enum QOIX_HEADER_OFFSET_COMPRESSION = 16;
 
 
-private enum enableAveragePrediction = true; 
+version = enableLocoIntra;
 
 /*
 
@@ -499,11 +501,23 @@ ubyte* qoix_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
                         }
                     }
 
-                    if (posy > 0 && enableAveragePrediction)
+                    if (posy > 0)
                     {
-                        px_ref.rgba.r = (px_ref.rgba.r + lineAbove[posx * channels + 0] + 1) >> 1;
-                        px_ref.rgba.g = (px_ref.rgba.g + lineAbove[posx * channels + 1] + 1) >> 1;
-                        px_ref.rgba.b = (px_ref.rgba.b + lineAbove[posx * channels + 2] + 1) >> 1;
+                        if (posx == 0)
+                        {
+                            // first pixel in the row, take above pixel
+                            px_ref.rgba.r = lineAbove[posx * channels + 0];
+                            px_ref.rgba.g = lineAbove[posx * channels + 1];
+                            px_ref.rgba.b = lineAbove[posx * channels + 2];
+                        }
+                        else 
+                        {
+                            // PERF use SIMD for prediciton. To do that, need to convert input to RGBA8* first, per scanline
+
+                            px_ref.rgba.r = locoIntraPrediction(px_ref.rgba.r, lineAbove[posx * channels + 0], lineAbove[(posx-1) * channels + 0]);
+                            px_ref.rgba.g = locoIntraPrediction(px_ref.rgba.g, lineAbove[posx * channels + 1], lineAbove[(posx-1) * channels + 1]);
+                            px_ref.rgba.b = locoIntraPrediction(px_ref.rgba.b, lineAbove[posx * channels + 2], lineAbove[(posx-1) * channels + 2]);
+                        }
                     }
 
                     byte vg   = cast(byte)(px.rgba.g - px_ref.rgba.g);
@@ -666,12 +680,25 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
             else if (p < chunks_len) 
             {
                 px_ref.v = px.v;
-                if (posy > 0 && enableAveragePrediction) 
+
+                if (posy > 0)
                 {
-                    px_ref.rgba.r = (px.rgba.r + lastDecodedScanline[posx].rgba.r + 1) >> 1;
-                    px_ref.rgba.g = (px.rgba.g + lastDecodedScanline[posx].rgba.g + 1) >> 1;
-                    px_ref.rgba.b = (px.rgba.b + lastDecodedScanline[posx].rgba.b + 1) >> 1;
-                } 
+                    if (posx == 0)
+                    {
+                        // first pixel in the row, take above pixel
+                        px_ref.rgba.r = lastDecodedScanline[posx].rgba.r;
+                        px_ref.rgba.g = lastDecodedScanline[posx].rgba.g;
+                        px_ref.rgba.b = lastDecodedScanline[posx].rgba.b;
+                    }
+                    else 
+                    {
+                        // Called I-LOCO intra prediction
+                        RGBA pred = locoIntraPredictionSIMD(px.rgba, lastDecodedScanline[posx].rgba, lastDecodedScanline[posx-1].rgba);
+                        px_ref.rgba.r = pred.r;
+                        px_ref.rgba.g = pred.g;
+                        px_ref.rgba.b = pred.b;
+                    }
+                }
 
                 decode_op:
 
@@ -754,11 +781,8 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
         switch(channels)
         {
             case 4:
-                for (int posx = 0; posx < desc.width; ++posx)
-                {
-                    qoi_rgba_t decodedPx = decodedScanline[posx]; // No particular conversion to do
-                    *cast(uint*)(&line[posx * 4]) = decodedPx.v;
-                }
+                // No particular conversion to do
+                memcpy(line, &decodedScanline[0], desc.width * 4);
                 break;
 
             case 3:
@@ -783,4 +807,93 @@ ubyte* qoix_decode(const(void)* data, int size, qoi_desc *desc, int channels) {
     }
 
     return pixels;
+}
+
+private:
+
+/* Perform LOCO-I prediction independently over the 4 channels.
+
+
+    int max_ab = a > b ? a : b;
+    int min_ab = a < b ? a : b;
+    if (c >= max_ab)
+        return cast(ubyte)min_ab;
+    else if (c <= min_ab)
+        return cast(ubyte)max_ab;
+    else
+    {
+        int d = a + b - c;
+        if (d < 0)
+            d = 0;
+        if (d > 255)
+            d = 0;
+        return cast(ubyte)d;
+    }
+*/
+
+// PERF: technically we could predict two pixels at once.
+// could predict a whole scanline at once, since it is lossless.
+static RGBA locoIntraPredictionSIMD(RGBA a, RGBA b, RGBA c)
+{
+    // load RGBA8 pixels
+    __m128i A = _mm_loadu_si32(&a); 
+    __m128i B = _mm_loadu_si32(&b);
+    __m128i C = _mm_loadu_si32(&c);
+
+    // extend to 16-bits
+    __m128i Z = _mm_setzero_si128();
+    A = _mm_unpacklo_epi8(A, Z);
+    B = _mm_unpacklo_epi8(B, Z);
+    C = _mm_unpacklo_epi8(C, Z);
+
+    // Max predictor (A + B - C)
+    __m128i P = _mm_sub_epi16(_mm_add_epi16(A, B), C);
+    __m128i maxAB = _mm_max_epi16(A, B);
+    __m128i minAB = _mm_min_epi16(A, B);
+
+    // 1111 where we should use max(A, B)
+    __m128i maxMask = _mm_cmple_epi16(C, minAB);
+
+    // 1111 where we should use min(A, B)
+    __m128i minMask = _mm_cmpge_epi16(C, maxAB);
+
+    P = (P & (~minMask)) | (minAB & minMask);
+    P = (P & (~maxMask)) | (maxAB & maxMask);
+
+    // Get back to u8
+    P = _mm_packus_epi16(P, Z);
+
+    RGBA r;
+    _mm_storeu_si32(&r, P);
+
+    return r;
+}
+
+static ubyte locoIntraPrediction(int a, int b, int c)
+{
+    int max_ab = a > b ? a : b;
+    int min_ab = a < b ? a : b;
+    if (c >= max_ab)
+        return cast(ubyte)min_ab;
+    else if (c <= min_ab)
+        return cast(ubyte)max_ab;
+    else
+    {
+        int d = a + b - c;
+        if (d < 0)
+            d = 0;
+        if (d > 255)
+            d = 0;
+        return cast(ubyte)d;
+    }
+}
+
+private __m128i _mm_cmple_epi16(__m128i a, __m128i b) pure @safe
+{
+    return _mm_or_si128(_mm_cmplt_epi16(a, b), _mm_cmpeq_epi16(a, b));
+}
+
+private __m128i _mm_cmpge_epi16(__m128i a, __m128i b)
+{
+    return _mm_or_si128(_mm_cmpgt_epi16(a, b), _mm_cmpeq_epi16(a, b));
 }
