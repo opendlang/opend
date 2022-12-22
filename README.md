@@ -24,6 +24,11 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - DDS: BC7 encoded, 8-bit, RGB/RGBA
 
 
+## Changelog
+
+- **v2.x.y** QOIX bitstream changed. Ways to disown and deallocate image allocation pointer.
+- **v1.x.y** Initial release.
+
 ## Why QOIX?
 
 Our benchmark results for 8-bit color images:
