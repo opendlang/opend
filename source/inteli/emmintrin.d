@@ -2080,6 +2080,8 @@ unittest
     assert(A.array == correct);
 }
 
+// TODO _mm_loadu_si16
+
 /// Load unaligned 32-bit integer from memory into the first element of result.
 __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
 {
@@ -2096,6 +2098,8 @@ unittest
     int[4] correct = [42, 0, 0, 0];
     assert(A.array == correct);
 }
+
+// TODO _mm_loadu_si64
 
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
@@ -4514,6 +4518,8 @@ unittest
     assert(R[1..5] == correct);
 }
 
+// TODO _mm_storeu_si16
+
 /// Store 32-bit integer from the first element of `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_si32 (void* mem_addr, __m128i a) pure @trusted
@@ -4528,6 +4534,8 @@ unittest
     _mm_storeu_si32(&arr[1], _mm_setr_epi32(-1, -2, -6, -7));
     assert(arr == [-24, -1]);
 }
+
+// TODO _mm_storeu_si64
 
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
 /// from `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte

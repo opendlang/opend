@@ -90,7 +90,7 @@ enum int _SIDD_BIT_MASK = 0;
 /// **Mask only**: return the byte/word mask.
 enum int _SIDD_UNIT_MASK = 64;
 
-/// So SSE4.2 has a lot of hard-to-understand instructions. Here is another explanations.
+/// So SSE4.2 has a lot of hard-to-understand instructions. Here is another explanation.
 ///
 /// Alternative explanation of imm8
 ///
@@ -436,7 +436,7 @@ unittest
     __m128i mmA = _mm_loadu_si128(cast(__m128i*)A.ptr);
     __m128i mmB = _mm_loadu_si128(cast(__m128i*)B.ptr);
 
-    // Find which letters from B where found in A.
+    // Find which letters from B were found in A.
     int res = _mm_cmpestro!(_SIDD_UBYTE_OPS 
                           | _SIDD_CMP_EQUAL_ANY
                           | _SIDD_BIT_MASK)(mmA, 12, mmB, -6);
