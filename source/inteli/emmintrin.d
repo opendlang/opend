@@ -671,6 +671,29 @@ __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed 16-bit integers elements in `a` and `b` for greater-than-or-equal.
+/// #BONUS
+__m128i _mm_cmpge_epi16 (__m128i a, __m128i b) pure @safe
+{
+    version (LDC)
+    {
+        // LDC ARM64: generates cmge since -O1
+        return cast(__m128i) greaterOrEqualMask!short8(cast(short8)a, cast(short8)b);
+    }
+    else
+    {        
+        return _mm_xor_si128(_mm_cmpeq_epi16(a, b), _mm_cmpgt_epi16(a, b));
+    }
+}
+unittest
+{
+    short8   A = [-3, -2, -32768,  0,  0,  1,  2,  3];
+    short8   B = [ 4,  3,  32767,  1,  0, -1, -2, -3];
+    short[8] E = [ 0,  0,      0,  0,  -1, -1, -1, -1];
+    short8   R = cast(short8)(_mm_cmpge_epi16(cast(__m128i)A, cast(__m128i)B));
+    assert(R.array == E);
+}
+
 /// Compare packed double-precision (64-bit) floating-point elements 
 /// in `a` and `b` for greater-than-or-equal.
 __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
@@ -801,6 +824,29 @@ __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
     {
         return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
     }
+}
+
+/// Compare packed 16-bit integers elements in `a` and `b` for greater-than-or-equal.
+/// #BONUS
+__m128i _mm_cmple_epi16 (__m128i a, __m128i b) pure @safe
+{
+    version (LDC)
+    {
+        // LDC ARM64: generates cmge since -O1
+        return cast(__m128i) greaterOrEqualMask!short8(cast(short8)b, cast(short8)a);
+    }
+    else
+    {
+        return _mm_xor_si128(_mm_cmpeq_epi16(b, a), _mm_cmpgt_epi16(b, a));
+    }
+}
+unittest
+{
+    short8   A = [-3, -2, -32768,  1,  0,  1,  2,  3];
+    short8   B = [ 4,  3,  32767,  0,  0, -1, -2, -3];
+    short[8] E = [-1, -1,     -1,  0,  -1, 0,  0,  0];
+    short8   R = cast(short8)(_mm_cmple_epi16(cast(__m128i)A, cast(__m128i)B));
+    assert(R.array == E);
 }
 
 /// Compare packed double-precision (64-bit) floating-point elements 
