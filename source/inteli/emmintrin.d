@@ -2080,7 +2080,22 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO _mm_loadu_si16
+/// Load unaligned 16-bit integer from memory into the first element of result.
+__m128i _mm_loadu_si16 (const(void)* mem_addr) pure @system
+{
+    pragma(inline, true);
+    short r = *cast(short*)(mem_addr);
+    short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
+    result.ptr[0] = r;
+    return cast(__m128i)result;
+}
+unittest
+{
+    short r = 42;
+    short8 A = cast(short8) _mm_loadu_si16(&r);
+    short[8] correct = [42, 0, 0, 0, 0, 0, 0, 0];
+    assert(A.array == correct);
+}
 
 /// Load unaligned 32-bit integer from memory into the first element of result.
 __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
@@ -2099,7 +2114,22 @@ unittest
     assert(A.array == correct);
 }
 
-// TODO _mm_loadu_si64
+/// Load unaligned 64-bit integer from memory into the first element of result.
+__m128i _mm_loadu_si64 (const(void)* mem_addr) @system
+{
+    pragma(inline, true);
+    auto pLong = cast(const(long)*)mem_addr;
+    long2 r = [0, 0];
+    r.ptr[0] = *pLong;
+    return cast(__m128i)r;
+}
+unittest
+{
+    long A = 0x7878787870707070;
+    long2 R = cast(long2) _mm_loadu_si64(&A);
+    long[2] correct = [0x7878787870707070, 0];
+    assert(R.array == correct);
+}
 
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
