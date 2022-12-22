@@ -4518,7 +4518,7 @@ unittest
 
 /// Store 128-bits of integer data from `a` into memory. `mem_addr` does not need to be aligned on any particular 
 /// boundary.
-void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @trusted // TODO: signature is wrong, mem_addr is not aligned
+void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @trusted // TODO: signature is wrong, mem_addr is not aligned. Make it @system
 {
     // PERF: DMD
     pragma(inline, true);
@@ -4706,7 +4706,7 @@ __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(short8)a - cast(short8)b);
 }
-// TODO untitest
+// TODO unittest
 
 /// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
@@ -4714,7 +4714,7 @@ __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(int4)a - cast(int4)b);
 }
-// TODO untitest
+// TODO unittest
 
 /// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
 __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
@@ -4722,7 +4722,7 @@ __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(long2)a - cast(long2)b);
 }
-// TODO untitest
+// TODO unittest
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
@@ -4730,7 +4730,7 @@ __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(byte16)a - cast(byte16)b);
 }
-// TODO untitest
+// TODO unittest
 
 /// Subtract packed double-precision (64-bit) floating-point elements in `b` from packed double-precision (64-bit) 
 /// floating-point elements in `a`.
@@ -5431,7 +5431,14 @@ __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)(cast(__m128i)a ^ cast(__m128i)b);
 }
-// TODO unittest
+unittest
+{
+    __m128d A = _mm_setr_pd(-4.0, 6.0);
+    __m128d B = _mm_setr_pd(4.0, -6.0);
+    long2 R = cast(long2) _mm_xor_pd(A, B);
+    long[2] correct = [long.min, long.min];
+    assert(R.array == correct);
+}
 
 /// Compute the bitwise XOR of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
