@@ -4548,11 +4548,23 @@ unittest
     assert(R[1..5] == correct);
 }
 
-// TODO _mm_storeu_si16
+/// Store 16-bit integer from the first element of `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
+void _mm_storeu_si16 (void* mem_addr, __m128i a) pure @system
+{
+    short* dest = cast(short*)mem_addr;
+    *dest = (cast(short8)a).array[0];
+}
+unittest
+{
+    short[2] arr = [-24, 12];
+    _mm_storeu_si16(&arr[1], _mm_set1_epi16(26));
+    assert(arr == [-24, 26]);
+}
 
 /// Store 32-bit integer from the first element of `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
-void _mm_storeu_si32 (void* mem_addr, __m128i a) pure @trusted
+void _mm_storeu_si32 (void* mem_addr, __m128i a) pure @trusted // TODO should really be @ssytem
 {
     pragma(inline, true);
     int* dest = cast(int*)mem_addr;
@@ -4566,6 +4578,23 @@ unittest
 }
 
 // TODO _mm_storeu_si64
+
+/// Store 64-bit integer from the first element of `a` into memory. 
+/// `mem_addr` does not need to be aligned on any particular boundary.
+void _mm_storeu_si64 (void* mem_addr, __m128i a) pure @system
+{
+    pragma(inline, true);
+    long* dest = cast(long*)mem_addr;
+    long2 la = cast(long2)a;
+    *dest = la.array[0];
+}
+unittest
+{
+    long[3] A = [1, 2, 3];
+    _mm_storeu_si64(&A[1], _mm_set_epi64x(0x1_0000_0000, 0x1_0000_0000));
+    long[3] correct = [1, 0x1_0000_0000, 3];
+    assert(A == correct);
+}
 
 /// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
 /// from `a` into memory using a non-temporal memory hint. `mem_addr` must be aligned on a 16-byte
