@@ -2098,7 +2098,7 @@ unittest
 }
 
 /// Load unaligned 32-bit integer from memory into the first element of result.
-__m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
+__m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted // TODO: should be @system actually
 {
     pragma(inline, true);
     int r = *cast(int*)(mem_addr);
@@ -2115,7 +2115,7 @@ unittest
 }
 
 /// Load unaligned 64-bit integer from memory into the first element of result.
-__m128i _mm_loadu_si64 (const(void)* mem_addr) @system
+__m128i _mm_loadu_si64 (const(void)* mem_addr) pure @system
 {
     pragma(inline, true);
     auto pLong = cast(const(long)*)mem_addr;
