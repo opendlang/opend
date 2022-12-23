@@ -4778,7 +4778,14 @@ __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(byte16)a - cast(byte16)b);
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi8(16,  127, 1, 2, 3, 4, 6, 6, 16,  127, 1, 2, 3, 4, 6, 6);
+    __m128i B = _mm_setr_epi8(15, -128, 6, 8, 3, 1, 5, 6, 16,  127, 1, 2, 3, 4, 6, 6);
+    byte16 C = cast(byte16) _mm_sub_epi8(A, B);
+    byte[16] correct =       [ 1,   -1,-5,-6, 0, 3, 1, 0,  0,    0, 0, 0, 0, 0, 0, 0];
+    assert(C.array == correct);
+}
 
 /// Subtract packed double-precision (64-bit) floating-point elements in `b` from packed double-precision (64-bit) 
 /// floating-point elements in `a`.
