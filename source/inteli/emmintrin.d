@@ -5500,7 +5500,14 @@ __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
 {
     return a ^ b;
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi64(975394, 619809709);
+    __m128i B = _mm_setr_epi64(-920275025, -6);
+    long2 R = cast(long2) _mm_xor_si128(A, B);
+    long[2] correct = [975394 ^ (-920275025L), 619809709L ^ -6];
+    assert(R.array == correct);
+}
 
 unittest
 {
