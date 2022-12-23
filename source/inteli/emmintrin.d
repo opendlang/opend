@@ -4577,8 +4577,6 @@ unittest
     assert(arr == [-24, -1]);
 }
 
-// TODO _mm_storeu_si64
-
 /// Store 64-bit integer from the first element of `a` into memory. 
 /// `mem_addr` does not need to be aligned on any particular boundary.
 void _mm_storeu_si64 (void* mem_addr, __m128i a) pure @system
@@ -4735,7 +4733,14 @@ __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(short8)a - cast(short8)b);
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi16(16,  32767, 1, 2,    3, 4, 6, 6);
+    __m128i B = _mm_setr_epi16(15, -32768, 6, 8, 1000, 1, 5, 6);
+    short8 C = cast(short8) _mm_sub_epi16(A, B);
+    short[8] correct =        [ 1,     -1,-5,-6, -997, 3, 1, 0];
+    assert(C.array == correct);
+}
 
 /// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
@@ -4743,7 +4748,14 @@ __m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(int4)a - cast(int4)b);
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi32(16, int.max, 1, 8);
+    __m128i B = _mm_setr_epi32(15, int.min, 6, 2);
+    int4 C = cast(int4) _mm_sub_epi32(A, B);
+    int[4] correct =          [ 1,      -1,-5, 6];
+    assert(C.array == correct);
+}
 
 /// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
 __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
@@ -4751,7 +4763,14 @@ __m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
     pragma(inline, true);
     return cast(__m128i)(cast(long2)a - cast(long2)b);
 }
-// TODO unittest
+unittest
+{
+    __m128i A = _mm_setr_epi64(  16, long.max);
+    __m128i B = _mm_setr_epi64( 199, long.min);
+    long2 C = cast(long2) _mm_sub_epi64(A, B);
+    long[2] correct =         [-183,       -1];
+    assert(C.array == correct);
+}
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
