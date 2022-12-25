@@ -1267,7 +1267,11 @@ unittest
 /// floating-point elements.
 __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128)__simd(XMM.CVTDQ2PS, cast(void16) a);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cvtdq2ps(a);
     }
