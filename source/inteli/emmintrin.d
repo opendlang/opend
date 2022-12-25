@@ -2087,20 +2087,35 @@ unittest
     assert(A.array == correct);
 }
 
-/// Load unaligned 16-bit integer from memory into the first element of result.
-__m128i _mm_loadu_si16 (const(void)* mem_addr) pure @system
+/// Load unaligned 16-bit integer from memory into the first element, fill with zeroes otherwise.
+__m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted // TODO: should be @system actually
 {
-    pragma(inline, true);
-    short r = *cast(short*)(mem_addr);
-    short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
-    result.ptr[0] = r;
-    return cast(__m128i)result;
+    static if (DMD_with_DSIMD)
+    {
+        int r = *cast(short*)(mem_addr);
+        return cast(__m128i) __simd(XMM.LODD, *cast(__m128i*)&r);
+    }
+    else version(DigitalMars)
+    {
+        // Workaround issue: https://issues.dlang.org/show_bug.cgi?id=21672
+        // DMD cannot handle the below code...
+        align(16) short[8] r = [0, 0, 0, 0, 0, 0, 0, 0];
+        r[0] = *cast(short*)(mem_addr);
+        return *cast(int4*)(r.ptr);
+    }
+    else
+    {
+        short r = *cast(short*)(mem_addr);
+        short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
+        result.ptr[0] = r;
+        return cast(__m128i)result;
+    }
 }
 unittest
 {
-    short r = 42;
+    short r = 13;
     short8 A = cast(short8) _mm_loadu_si16(&r);
-    short[8] correct = [42, 0, 0, 0, 0, 0, 0, 0];
+    short[8] correct = [13, 0, 0, 0, 0, 0, 0, 0];
     assert(A.array == correct);
 }
 
@@ -2122,20 +2137,28 @@ unittest
 }
 
 /// Load unaligned 64-bit integer from memory into the first element of result.
+/// Upper 64-bit is zeroed.
 __m128i _mm_loadu_si64 (const(void)* mem_addr) pure @system
 {
     pragma(inline, true);
-    auto pLong = cast(const(long)*)mem_addr;
-    long2 r = [0, 0];
-    r.ptr[0] = *pLong;
-    return cast(__m128i)r;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.LODQ, *cast(__m128i*)mem_addr);
+    }
+    else
+    {    
+        auto pLong = cast(const(long)*)mem_addr;
+        long2 r = [0, 0];
+        r.ptr[0] = *pLong;
+        return cast(__m128i)r;
+    }
 }
 unittest
 {
-    long A = 0x7878787870707070;
-    long2 R = cast(long2) _mm_loadu_si64(&A);
-    long[2] correct = [0x7878787870707070, 0];
-    assert(R.array == correct);
+    long r = 446446446446;
+    long2 A = cast(long2) _mm_loadu_si64(&r);
+    long[2] correct = [446446446446, 0];
+    assert(A.array == correct);
 }
 
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
