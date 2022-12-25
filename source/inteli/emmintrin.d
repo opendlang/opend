@@ -3861,6 +3861,10 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
     {
         return _mm_setzero_si128();
     }
+    else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd_ib(XMM.PSLLDQ, op, bytes);
+    }
     else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
@@ -4337,6 +4341,10 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @trusted
     static if (bytes & 0xF0)
     {
         return _mm_setzero_si128();
+    }
+    else static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd_ib(XMM.PSRLDQ, v, bytes);
     }
     else static if (GDC_with_SSE2)
     {
