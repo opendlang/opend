@@ -2894,7 +2894,7 @@ void _mm_stream_pi (__m64* mem_addr, __m64 a) pure @trusted
 /// Note: non-temporal stores should be followed by `_mm_sfence()` for reader threads.
 void _mm_stream_ps (float* mem_addr, __m128 a)
 {
-    // PERF DMD D_SIMD
+    // TODO report this bug: DMD generates no stream instruction when using D_SIMD
     static if (GDC_with_SSE)
     {
         return __builtin_ia32_movntps(mem_addr, a); 
@@ -3075,7 +3075,14 @@ unittest
 /// Compute the bitwise XOR of packed single-precision (32-bit) floating-point elements in `a` and `b`.
 __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
-    return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
+    static if (DMD_with_DSIMD)
+    {
+        return __simd(XMM.XORPS, a, b);
+    }
+    else
+    {
+        return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
+    }
 }
 unittest
 {
