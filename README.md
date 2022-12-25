@@ -27,7 +27,7 @@
 |       | DMD x86/x86_64        | LDC x86/x86_64         | LDC arm64            | GDC x86_64              |
 |-------|-----------------------|------------------------|----------------------|-------------------------|
 | MMX   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                      | Yes    | Yes |
-| SSE   | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                      | Yes    | Yes |
+| SSE   | Yes | Yes                      | Yes    | Yes |
 | SSE2  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes                      | Yes    | Yes |
 | SSE3  | Yes but slow ([#42](https://github.com/AuburnSounds/intel-intrinsics/issues/42)) | Yes (use `-mattr=+sse3`)   | Yes    | Yes (use `-msse3`) |
 | SSSE3 | Yes (use `-mcpu`) | Yes (use `-mattr=+ssse3`)  | Yes    | Yes  (use `-mssse3`) |
