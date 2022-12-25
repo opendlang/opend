@@ -1951,10 +1951,17 @@ unittest
 __m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted // TODO signature
 {
     pragma(inline, true);
-    auto pLong = cast(const(long)*)mem_addr;
-    long2 r = [0, 0];
-    r.ptr[0] = *pLong;
-    return cast(__m128i)(r);
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.LODQ, *cast(__m128i*)mem_addr);
+    }
+    else
+    {
+        auto pLong = cast(const(long)*)mem_addr;
+        long2 r = [0, 0];
+        r.ptr[0] = *pLong;
+        return cast(__m128i)(r);
+    }
 }
 unittest
 {
