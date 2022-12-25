@@ -292,10 +292,18 @@ unittest
 }
 
 /// Add packed unsigned 16-bit integers in `a` and `b` using unsigned saturation.
-// PERF: #GDC version?
 __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
 {
-    version(LDC)
+    static if (DMD_with_DSIMD)
+    {
+        // Note: DMD generates a reverted paddusw vs LDC and GDC, but that doesn't change the result anyway
+        return cast(__m128i) __simd(XMM.PADDUSW, a, b);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return cast(__m128i) __builtin_ia32_paddusw128(cast(short8)a, cast(short8)b);
+    }
+    else version(LDC)
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
@@ -375,7 +383,14 @@ unittest
 /// floating-point elements in `a` and then AND with `b`.
 __m128d _mm_andnot_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d)( ~(cast(long2)a) & cast(long2)b);
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128d) __simd(XMM.ANDNPD, a, b);
+    }
+    else
+    {
+        return cast(__m128d)( ~(cast(long2)a) & cast(long2)b);
+    }
 }
 unittest
 {
@@ -394,14 +409,21 @@ unittest
 /// in `a` and then AND with `b`.
 __m128i _mm_andnot_si128 (__m128i a, __m128i b) pure @safe
 {
-    return (~a) & b;
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PANDN, a, b);
+    }
+    else
+    {
+        return (~a) & b;
+    }
 }
 unittest
 {
-    __m128i A = _mm_set1_epi32(7);
-    __m128i B = _mm_set1_epi32(14);
+    __m128i A = _mm_setr_epi32(7, -2, 9, 54654);
+    __m128i B = _mm_setr_epi32(14, 78, 111, -256);
     __m128i R = _mm_andnot_si128(A, B);
-    int[4] correct = [8, 8, 8, 8];
+    int[4] correct = [8, 0, 102, -54784];
     assert(R.array == correct);
 }
 
