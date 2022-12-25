@@ -430,7 +430,11 @@ unittest
 /// Average packed unsigned 16-bit integers in `a` and `b`.
 __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PAVGW, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pavgw128(cast(short8)a, cast(short8)b);
     }
@@ -476,7 +480,11 @@ unittest
 /// Average packed unsigned 8-bit integers in `a` and `b`.
 __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PAVGB, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pavgb128(cast(ubyte16)a, cast(ubyte16)b);
     }
