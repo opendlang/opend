@@ -3077,7 +3077,7 @@ __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
     static if (DMD_with_DSIMD)
     {
-        return __simd(XMM.XORPS, a, b);
+        return cast(__m128) __simd(XMM.XORPS, cast(void16) a, cast(void16) b);
     }
     else
     {
