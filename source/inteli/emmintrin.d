@@ -79,7 +79,11 @@ unittest
 /// and copy the upper element from `a` to the upper element of destination. 
 __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128d) __simd(XMM.ADDSD, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_addsd(a, b);
     }
@@ -120,6 +124,7 @@ unittest
 /// Add 64-bit integers `a` and `b`.
 __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
 {
+    // PERF DMD
     pragma(inline, true);
     return a + b;
 }
@@ -127,9 +132,13 @@ __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
 /// Add packed 16-bit integers in `a` and `b` using signed saturation.
 __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
     {
-        return cast(__m128i)__builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
+        return cast(__m128i) __simd(XMM.PADDSW, a, b);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return cast(__m128i) __builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
     }
     else version(LDC)
     {
@@ -176,7 +185,11 @@ unittest
 /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
 __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PADDSB, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_paddsb128(cast(ubyte16)a, cast(ubyte16)b);
     }
@@ -224,10 +237,17 @@ unittest
 }
 
 /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
-// PERF: #GDC version?
 __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
 {
-    version(LDC)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PADDUSB, a, b);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return cast(__m128i) __builtin_ia32_paddusb128(cast(ubyte16)a, cast(ubyte16)b);
+    }
+    else version(LDC)
     {
         static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
