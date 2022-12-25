@@ -1748,15 +1748,12 @@ unittest
 /// copy the lower 2 elements from `a` to the lower 2 elements of result
 __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @trusted
 {    
-    // PERF DMD
-    // Disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
-    /*
-    static if (DMD_with_DSIMD)
+    // Was disabled because of https://issues.dlang.org/show_bug.cgi?id=19443
+    static if (DMD_with_DSIMD && __VERSION__ >= 2101)
     {
         return cast(__m128) __simd(XMM.MOVLHPS, a, b);
     }
     else
-    */
     {
         a.ptr[2] = b.array[0];
         a.ptr[3] = b.array[1];
