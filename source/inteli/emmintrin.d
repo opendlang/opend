@@ -4597,7 +4597,8 @@ unittest
 {
     short[2] arr = [-24, 12];
     _mm_storeu_si16(&arr[1], _mm_set1_epi16(26));
-    assert(arr == [-24, 26]);
+    short[2] correct = [-24, 26];
+    assert(arr == correct);
 }
 
 /// Store 32-bit integer from the first element of `a` into memory. 
