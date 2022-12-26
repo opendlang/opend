@@ -3748,12 +3748,38 @@ unittest
 
 
 
-// TODO int _mm_testz_pd (__m128d a, __m128d b)
+/// Compute the bitwise AND of 128 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 128-bit value, return 1 if the sign bit of
+/// each 64-bit element in the intermediate value is zero, otherwise return 0.
+/// In other words, return 1 if `a` and `b` don't both have a negative number as the same place.
+int _mm_testz_pd (__m128d a, __m128d b) pure @trusted
+{
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestzpd(a, b);
+    }
+    else
+    {
+        long2 la = cast(long2)a;
+        long2 lb = cast(long2)b;
+        long2 r = la & lb;
+        return r.array[0] >= 0 && r.array[1] >= 0;
+    }
+}
+unittest
+{
+    __m128d A  = _mm_setr_pd(-1, 1);
+    __m128d B = _mm_setr_pd(-1, -1);
+    __m128d C = _mm_setr_pd(1, -1);
+    assert(_mm_testz_pd(A, A) == 0);
+    assert(_mm_testz_pd(A, B) == 0);
+    assert(_mm_testz_pd(C, A) == 1);
+}
+
+
 // TODO int _mm256_testz_pd (__m256d a, __m256d b)
 // TODO int _mm_testz_ps (__m128 a, __m128 b)
 // TODO int _mm256_testz_ps (__m256 a, __m256 b)
-
-
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in 
 /// and return 1 if the result is zero, otherwise return 0.
