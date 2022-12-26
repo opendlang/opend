@@ -3764,11 +3764,11 @@ int _mm_testz_pd (__m128d a, __m128d b) pure @trusted
     }
     else
     {
-        // PERF: do the generic version more like simde
         long2 la = cast(long2)a;
         long2 lb = cast(long2)b;
         long2 r = la & lb;
-        return r.array[0] >= 0 && r.array[1] >= 0;
+        long m = r.array[0] | r.array[1];
+        return (~m >> 63) & 1;
     }
 }
 unittest
@@ -3810,8 +3810,58 @@ unittest
     assert(_mm256_testz_pd(C, A) == 1);
 }
 
-// TODO int _mm_testz_ps (__m128 a, __m128 b)
-// TODO int _mm256_testz_ps (__m256 a, __m256 b)
+/// Compute the bitwise AND of 128 bits (representing double-precision (32-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 128-bit value, return 1 if the sign bit of
+/// each 32-bit element in the intermediate value is zero, otherwise return 0.
+/// In other words, return 1 if `a` and `b` don't both have a negative number as the same place.
+int _mm_testz_ps (__m128 a, __m128 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestzps(a, b);
+    }
+    else
+    {
+        int4 la = cast(int4)a;
+        int4 lb = cast(int4)b;
+        int4 r = la & lb;
+        int m = r.array[0] | r.array[1] | r.array[2] | r.array[3];
+        return (~m >> 31) & 1;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-1,  1, -1,  1);
+    __m128 B = _mm_setr_ps( 1,  1, -1,  1);
+    __m128 C = _mm_setr_ps( 1, -1,  1, -1);
+    assert(_mm_testz_ps(A, A) == 0);
+    assert(_mm_testz_ps(A, B) == 0);
+    assert(_mm_testz_ps(C, A) == 1);
+    assert(_mm_testz_ps(C, B) == 1);
+}
+
+/// Compute the bitwise AND of 256 bits (representing double-precision (32-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 256-bit value, return 1 if the sign bit of
+/// each 32-bit element in the intermediate value is zero, otherwise return 0.
+/// In other words, return 1 if `a` and `b` don't both have a negative number as the same place.
+int _mm256_testz_ps (__m256 a, __m256 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestzps256(a, b);
+    }
+    else
+    {
+        int8 la = cast(int8)a;
+        int8 lb = cast(int8)b;
+        int8 r = la & lb;
+        int m = r.array[0] | r.array[1] | r.array[2] | r.array[3]
+            | r.array[4] | r.array[5] | r.array[6] | r.array[7];
+        return (~m >> 31) & 1;
+    }
+}
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in 
 /// and return 1 if the result is zero, otherwise return 0.
