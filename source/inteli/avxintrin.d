@@ -3568,6 +3568,7 @@ int _mm_testc_pd (__m128d a, __m128d b) pure @trusted
     }
     else
     {
+        // PERF: maybe do the generic version more like simde
         long2 la = cast(long2)a;
         long2 lb = cast(long2)b;
         long2 r = ~la & lb;
@@ -3602,6 +3603,7 @@ int _mm256_testc_pd (__m256d a, __m256d b) pure @safe
     }
     else
     {
+        // PERF: do the generic version more like simde, maybe this get rids of arm64 version
         long4 la = cast(long4)a;
         long4 lb = cast(long4)b;
         long4 r = ~la & lb;
@@ -3641,6 +3643,7 @@ int _mm_testc_ps (__m128 a, __m128 b) pure @safe
     }
     else
     {
+        // PERF: do the generic version more like simde, maybe this get rids of arm64 version
         int4 la = cast(int4)a;
         int4 lb = cast(int4)b;
         int4 r = ~la & lb;
@@ -3678,6 +3681,7 @@ int _mm256_testc_ps (__m256 a, __m256 b) pure @safe
     }
     else
     {
+        // PERF: do the generic version more like simde, maybe this get rids of arm64 version
         int8 la = cast(int8)a;
         int8 lb = cast(int8)b;
         int8 r = ~la & lb;
@@ -3760,6 +3764,7 @@ int _mm_testz_pd (__m128d a, __m128d b) pure @trusted
     }
     else
     {
+        // PERF: do the generic version more like simde
         long2 la = cast(long2)a;
         long2 lb = cast(long2)b;
         long2 r = la & lb;
@@ -3776,8 +3781,35 @@ unittest
     assert(_mm_testz_pd(C, A) == 1);
 }
 
+/// Compute the bitwise AND of 256 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 256-bit value, return 1 if the sign bit of
+/// each 64-bit element in the intermediate value is zero, otherwise return 0.
+/// In other words, return 1 if `a` and `b` don't both have a negative number as the same place.
+int _mm256_testz_pd (__m256d a, __m256d b) pure @trusted
+{
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestzpd256(a, b);
+    }
+    else
+    {
+        long4 la = cast(long4)a;
+        long4 lb = cast(long4)b;
+        long4 r = la & lb;
+        long r2 = r.array[0] | r.array[1] | r.array[2] | r.array[3];
+        return (~r2 >> 63) & 1;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(-1, 1, -1, 1);
+    __m256d B = _mm256_setr_pd(1,  1, -1, 1);
+    __m256d C = _mm256_setr_pd(1, -1, 1, -1);
+    assert(_mm256_testz_pd(A, A) == 0);
+    assert(_mm256_testz_pd(A, B) == 0);
+    assert(_mm256_testz_pd(C, A) == 1);
+}
 
-// TODO int _mm256_testz_pd (__m256d a, __m256d b)
 // TODO int _mm_testz_ps (__m128 a, __m128 b)
 // TODO int _mm256_testz_ps (__m256 a, __m256 b)
 
@@ -4144,17 +4176,9 @@ pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps")
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps.256")
     float8 __builtin_ia32_vpermilvarps256(float8, int8) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.pd")
-    int __builtin_ia32_vtestcpd(double2, double2) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.pd.256")
-    int __builtin_ia32_vtestcpd256(double4, double4) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.ps")
-    int __builtin_ia32_vtestcps(float4, float4) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestc.ps.256")
-    int __builtin_ia32_vtestcps256(float8, float8) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.pd")
     int __builtin_ia32_vtestnzcpd(double2, double2) pure @safe;
@@ -4167,12 +4191,6 @@ pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps.256")
     int __builtin_ia32_vtestnzcps256(float8, float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.pd")
-    int __builtin_ia32_vtestzpd(double2, double2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.pd.256")
-    int __builtin_ia32_vtestzpd256(double4, double4) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.ps")
     int __builtin_ia32_vtestzps(float4, float4) pure @safe;
