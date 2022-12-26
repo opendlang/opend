@@ -3745,11 +3745,94 @@ unittest
 // TODO int _mm_testnzc_ps (__m128 a, __m128 b)
 // TODO int _mm256_testnzc_ps (__m256 a, __m256 b)
 // TODO int _mm256_testnzc_si256 (__m256i a, __m256i b)
+
+
+
 // TODO int _mm_testz_pd (__m128d a, __m128d b)
 // TODO int _mm256_testz_pd (__m256d a, __m256d b)
 // TODO int _mm_testz_ps (__m128 a, __m128 b)
 // TODO int _mm256_testz_ps (__m256 a, __m256 b)
-// TODO int _mm256_testz_si256 (__m256i a, __m256i b)
+
+
+
+/// Compute the bitwise AND of 256 bits (representing integer data) in 
+/// and return 1 if the result is zero, otherwise return 0.
+/// In other words, test if all bits masked by `b` are 0 in `a`.
+int _mm256_testz_si256 (__m256i a, __m256i b) @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_ptestz256(cast(long4)a, cast(long4)b);
+    }
+    else static if (LDC_with_AVX)
+    {
+        return __builtin_ia32_ptestz256(cast(long4)a, cast(long4)b);
+    }
+    else version(LDC)
+    {
+        // better to split than do vanilla (down to 8 inst in arm64)
+        __m128i lo_a = _mm256_extractf128_si256!0(a);
+        __m128i lo_b = _mm256_extractf128_si256!0(b);
+        __m128i hi_a = _mm256_extractf128_si256!1(a);
+        __m128i hi_b = _mm256_extractf128_si256!1(b);
+        return _mm_testz_si128(lo_a, lo_b) & _mm_testz_si128(hi_a, hi_b);
+    }
+    else
+    {
+        __m256i c = a & b;
+        long[4] zero = [0, 0, 0, 0];
+        return c.array == zero;
+    }
+}
+unittest
+{
+    __m256i A  = _mm256_setr_epi32(0x01, 0x02, 0x04, 0xf8, 0x01, 0x02, 0x04, 0xf8);
+    __m256i M1 = _mm256_setr_epi32(0xfe, 0xfd, 0x00, 0x07, 0xfe, 0xfd, 0x00, 0x07);
+    __m256i M2 = _mm256_setr_epi32(0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00);
+    assert(_mm256_testz_si256(A, A) == 0);
+    assert(_mm256_testz_si256(A, M1) == 1);
+    assert(_mm256_testz_si256(A, M2) == 0);
+}
+
+/+
+/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
+/// and return 1 if the result is zero, otherwise return 0.
+/// In other words, test if all bits masked by `b` are 0 in `a`.
+int _mm_testz_si128 (__m128i a, __m128i b) @trusted
+{
+    // PERF DMD
+    static if (GDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_SSE41)
+    {
+        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // Acceptable since LDC 1.8 -02
+        long2 s64 = vandq_s64(cast(long2)a, cast(long2)b);
+        return !(vgetq_lane_s64(s64, 0) | vgetq_lane_s64(s64, 1));
+    }
+    else 
+    {
+        __m128i c = a & b;
+        int[4] zero = [0, 0, 0, 0];
+        return c.array == zero;
+    }    
+}
+unittest
+{
+    __m128i A  = _mm_setr_epi32(0x01, 0x02, 0x04, 0xf8);
+    __m128i M1 = _mm_setr_epi32(0xfe, 0xfd, 0x00, 0x07);
+    __m128i M2 = _mm_setr_epi32(0x00, 0x00, 0x04, 0x00);
+    assert(_mm_testz_si128(A, A) == 0);
+    assert(_mm_testz_si128(A, M1) == 1);
+    assert(_mm_testz_si128(A, M2) == 0);
+}
++/
 
 /// Return vector of type __m256d with undefined elements.
 __m256d _mm256_undefined_pd () pure @safe
