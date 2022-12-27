@@ -3782,7 +3782,6 @@ int _mm_testnzc_pd (__m128d a, __m128d b) pure @safe
 }
 unittest
 {
-    __m128d PP = _mm_setr_pd( 1,  1);
     __m128d PM = _mm_setr_pd( 1, -1);
     __m128d MP = _mm_setr_pd(-1,  1);
     __m128d MM = _mm_setr_pd(-1, -1);
@@ -3825,7 +3824,6 @@ int _mm256_testnzc_pd (__m256d a, __m256d b) pure @safe
 }
 unittest
 {
-    __m256d PP = _mm256_setr_pd( 1,  1, 1, 1);
     __m256d PM = _mm256_setr_pd( 1, -1, 1, 1);
     __m256d MP = _mm256_setr_pd(-1,  1, 1, 1);
     __m256d MM = _mm256_setr_pd(-1, -1, 1, 1);
@@ -3836,8 +3834,90 @@ unittest
     assert(_mm256_testnzc_pd(MM, MM) == 0);
 }
 
-// TODO int _mm_testnzc_ps (__m128 a, __m128 b)
-// TODO int _mm256_testnzc_ps (__m256 a, __m256 b)
+/// Compute the bitwise AND of 128 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 128-bit value, and set ZF to 1 if the 
+/// sign bit of each 32-bit element in the intermediate value is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of a and then AND with b, producing an intermediate value, and set
+/// CF to 1 if the sign bit of each 32-bit element in the intermediate value is zero, otherwise
+/// set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
+///
+/// In other words: there is at least one negative number in `b` that correspond to a positive number in `a`,
+///             AND there is at least one negative number in `b` that correspond to a negative number in `a`.
+int _mm_testnzc_ps (__m128 a, __m128 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestnzcps(a, b);
+    }
+    else
+    {
+        int4 la = cast(int4)a;
+        int4 lb = cast(int4)b;
+        int4 r = la & lb;
+        int m = r.array[0] | r.array[1] | r.array[2] | r.array[3];
+        int ZF = (~m >> 31) & 1;
+        int4 r2 = ~la & lb;
+        int m2 = r2.array[0] | r2.array[1] | r2.array[2] | r2.array[3];
+        int CF = (~m2 >> 31) & 1;
+        return (CF | ZF) == 0;
+    }
+}
+unittest
+{
+    __m128 PM = _mm_setr_ps( 1, -1, 1, 1);
+    __m128 MP = _mm_setr_ps(-1,  1, 1, 1);
+    __m128 MM = _mm_setr_ps(-1, -1, 1, 1);
+    assert(_mm_testnzc_ps(PM, MP) == 0);
+    assert(_mm_testnzc_ps(PM, MM) == 1);
+    assert(_mm_testnzc_ps(MP, MP) == 0);
+    assert(_mm_testnzc_ps(MP, MM) == 1);
+    assert(_mm_testnzc_ps(MM, MM) == 0);
+}
+
+/// Compute the bitwise AND of 256 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 256-bit value, and set ZF to 1 if the 
+/// sign bit of each 32-bit element in the intermediate value is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of a and then AND with b, producing an intermediate value, and set
+/// CF to 1 if the sign bit of each 32-bit element in the intermediate value is zero, otherwise
+/// set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
+///
+/// In other words: there is at least one negative number in `b` that correspond to a positive number in `a`,
+///             AND there is at least one negative number in `b` that correspond to a negative number in `a`.
+int _mm256_testnzc_ps (__m256 a, __m256 b) pure @safe
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestnzcps256(a, b);
+    }
+    else
+    {
+        int8 la = cast(int8)a;
+        int8 lb = cast(int8)b;
+        int8 r = la & lb;
+        int m = r.array[0] | r.array[1] | r.array[2] | r.array[3]
+            |   r.array[4] | r.array[5] | r.array[6] | r.array[7];
+        int ZF = (~m >> 31) & 1;
+        int8 r2 = ~la & lb;
+        int m2 = r2.array[0] | r2.array[1] | r2.array[2] | r2.array[3]
+               | r2.array[4] | r2.array[5] | r2.array[6] | r2.array[7];
+        int CF = (~m2 >> 31) & 1;
+        return (CF | ZF) == 0;
+    }
+}
+unittest
+{
+    __m256 PM = _mm256_setr_ps(1, 1, 1, 1,  1, -1, 1, 1);
+    __m256 MP = _mm256_setr_ps(1, 1, 1, 1, -1,  1, 1, 1);
+    __m256 MM = _mm256_setr_ps(1, 1, 1, 1, -1, -1, 1, 1);
+    assert(_mm256_testnzc_ps(PM, MP) == 0);
+    assert(_mm256_testnzc_ps(PM, MM) == 1);
+    assert(_mm256_testnzc_ps(MP, MP) == 0);
+    assert(_mm256_testnzc_ps(MP, MM) == 1);
+    assert(_mm256_testnzc_ps(MM, MM) == 0);
+}
+
 // TODO int _mm256_testnzc_si256 (__m256i a, __m256i b)
 
 
@@ -4282,23 +4362,8 @@ unittest
 
 /+
 
-
-
-
-pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.pd.256")
-    int __builtin_ia32_movmskpd256(double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.movmsk.ps.256")
-    int __builtin_ia32_movmskps256(float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.ptestc.256")
-    int __builtin_ia32_ptestc256(long4, long4) pure @safe;
-
 pragma(LDC_intrinsic, "llvm.x86.avx.ptestnzc.256")
     int __builtin_ia32_ptestnzc256(long4, long4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.ptestz.256")
-    int __builtin_ia32_ptestz256(long4, long4) pure @safe;
 
 pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
     float8 __builtin_ia32_rcpps256(float8) pure @safe;
@@ -4316,26 +4381,5 @@ pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps")
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps.256")
     float8 __builtin_ia32_vpermilvarps256(float8, int8) pure @safe;
 
-
-
-
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.pd")
-    int __builtin_ia32_vtestnzcpd(double2, double2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.pd.256")
-    int __builtin_ia32_vtestnzcpd256(double4, double4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps")
-    int __builtin_ia32_vtestnzcps(float4, float4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestnzc.ps.256")
-    int __builtin_ia32_vtestnzcps256(float8, float8) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.ps")
-    int __builtin_ia32_vtestzps(float4, float4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vtestz.ps.256")
-    int __builtin_ia32_vtestzps256(float8, float8) pure @safe;
 
 +/
