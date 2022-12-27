@@ -3357,7 +3357,7 @@ unittest
 /// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
 void _mm256_storeu2_m128 (float* hiaddr, float* loaddr, __m256 a) pure @system
 {
-    // This performed way better on GDC, and similarly in LDC, vs using other intrinsics
+    // This is way better on GDC, and similarly in LDC, vs using other intrinsics
     loaddr[0] = a.array[0];
     loaddr[1] = a.array[1];
     loaddr[2] = a.array[2];
@@ -3934,10 +3934,12 @@ int _mm256_testnzc_si256 (__m256i a, __m256i b) pure @trusted
     }
     else
     {
+        // Need to defer to _mm_testnzc_si128 if possible, for more speed
         __m256i c = a & b;
         __m256i d = ~a & b;
-        long[4] zero = [0, 0, 0, 0];
-        return !( (c.array == zero) || (d.array == zero));
+        long m = c.array[0] | c.array[1] | c.array[2] | c.array[3];
+        long n = d.array[0] | d.array[1] | d.array[2] | d.array[3];
+        return (m != 0) & (n != 0);
     }
 }
 unittest
