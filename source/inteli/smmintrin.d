@@ -2006,7 +2006,10 @@ int _mm_test_all_zeros (__m128i a, __m128i mask) @safe
     return _mm_testz_si128(a, mask); // it's really the same, but with a good name
 }
 
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and mask, and set ZF to 1 if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with mask, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
+/// Compute the bitwise AND of 128 bits (representing integer data) in `a` and mask, and set ZF to 1 
+/// if the result is zero, otherwise set ZF to 0. Compute the bitwise NOT of a and then AND with 
+/// mask, and set CF to 1 if the result is zero, otherwise set CF to 0. Return 1 if both the ZF and
+/// CF values are zero, otherwise return 0.
 int _mm_test_mix_ones_zeros (__m128i a, __m128i mask) @trusted
 {
     return _mm_testnzc_si128(a, mask);
