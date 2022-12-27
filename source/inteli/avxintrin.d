@@ -3918,9 +3918,37 @@ unittest
     assert(_mm256_testnzc_ps(MM, MM) == 0);
 }
 
-// TODO int _mm256_testnzc_si256 (__m256i a, __m256i b)
-
-
+/// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`, 
+/// and set ZF to 1 if the result is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of `a` and then AND with `b`, and set CF to 1 if the 
+/// result is zero, otherwise set CF to 0. 
+/// Return 1 if both the ZF and CF values are zero, otherwise return 0.
+int _mm256_testnzc_si256 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF ARM64
+    // PERF DMD
+    // PERF LDC without AVX
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_ptestnzc256(cast(long4) a, cast(long4) b);
+    }
+    else
+    {
+        __m256i c = a & b;
+        __m256i d = ~a & b;
+        long[4] zero = [0, 0, 0, 0];
+        return !( (c.array == zero) || (d.array == zero));
+    }
+}
+unittest
+{
+    __m256i A  = _mm256_setr_epi32(0x01, 0x02, 0x04, 0xf8, 0, 0, 0, 0);
+    __m256i M  = _mm256_setr_epi32(0x01, 0x40, 0x00, 0x00, 0, 0, 0, 0);
+    __m256i Z = _mm256_setzero_si256();
+    assert(_mm256_testnzc_si256(A, Z) == 0);
+    assert(_mm256_testnzc_si256(A, M) == 1);
+    assert(_mm256_testnzc_si256(A, A) == 0);
+}
 
 /// Compute the bitwise AND of 128 bits (representing double-precision (64-bit) floating-point 
 /// elements) in `a` and `b`, producing an intermediate 128-bit value, return 1 if the sign bit of
