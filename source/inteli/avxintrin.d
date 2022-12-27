@@ -3750,9 +3750,9 @@ unittest
 /// CF to 1 if the sign bit of each 64-bit element in the intermediate value is zero, otherwise
 /// set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
 ///
-/// In other words: there are negative numbers in `b` that correspond to a positive number in `a`,
-///                 AND there is also negative numbers in `b` that correspond to a negative number in `a`.
-int _mm_testnzc_pd (__m128d a, __m128d b) pure @trusted
+/// In other words: there is at least one negative number in `b` that correspond to a positive number in `a`,
+///             AND there is at least one negative number in `b` that correspond to a negative number in `a`.
+int _mm_testnzc_pd (__m128d a, __m128d b) pure @safe
 {
     // PERF DMD
     static if (GDC_or_LDC_with_AVX)
@@ -3774,10 +3774,9 @@ int _mm_testnzc_pd (__m128d a, __m128d b) pure @trusted
         long2 r = la & lb;
         long m = r.array[0] | r.array[1];
         int ZF = (~m >> 63) & 1;
-
-        // PERF: use or mask?
         long2 r2 = ~la & lb;
-        int CF = r2.array[0] >= 0 && r2.array[1] >= 0;
+        long m2 = r2.array[0] | r2.array[1];
+        int CF = (~m2 >> 63) & 1;
         return (CF | ZF) == 0;
     }
 }
@@ -3794,7 +3793,49 @@ unittest
     assert(_mm_testnzc_pd(MM, MM) == 0);
 }
 
-// TODO int _mm256_testnzc_pd (__m256d a, __m256d b)
+/// Compute the bitwise AND of 256 bits (representing double-precision (64-bit) floating-point 
+/// elements) in `a` and `b`, producing an intermediate 256-bit value, and set ZF to 1 if the 
+/// sign bit of each 64-bit element in the intermediate value is zero, otherwise set ZF to 0. 
+/// Compute the bitwise NOT of a and then AND with b, producing an intermediate value, and set
+/// CF to 1 if the sign bit of each 64-bit element in the intermediate value is zero, otherwise
+/// set CF to 0. Return 1 if both the ZF and CF values are zero, otherwise return 0.
+///
+/// In other words: there is at least one negative number in `b` that correspond to a positive number in `a`,
+///             AND there is at least one negative number in `b` that correspond to a negative number in `a`.
+int _mm256_testnzc_pd (__m256d a, __m256d b) pure @safe
+{
+    // PERF DMD
+    // PERF ARM64
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vtestnzcpd256(a, b);
+    }
+    else
+    {
+        long4 la = cast(long4)a;
+        long4 lb = cast(long4)b;
+        long4 r = la & lb;
+        long m = r.array[0] | r.array[1] | r.array[2] | r.array[3];
+        int ZF = (~m >> 63) & 1;
+        long4 r2 = ~la & lb;
+        long m2 = r2.array[0] | r2.array[1] | r2.array[2] | r2.array[3];
+        int CF = (~m2 >> 63) & 1;
+        return (CF | ZF) == 0;
+    }
+}
+unittest
+{
+    __m256d PP = _mm256_setr_pd( 1,  1, 1, 1);
+    __m256d PM = _mm256_setr_pd( 1, -1, 1, 1);
+    __m256d MP = _mm256_setr_pd(-1,  1, 1, 1);
+    __m256d MM = _mm256_setr_pd(-1, -1, 1, 1);
+    assert(_mm256_testnzc_pd(PM, MP) == 0);
+    assert(_mm256_testnzc_pd(PM, MM) == 1);
+    assert(_mm256_testnzc_pd(MP, MP) == 0);
+    assert(_mm256_testnzc_pd(MP, MM) == 1);
+    assert(_mm256_testnzc_pd(MM, MM) == 0);
+}
+
 // TODO int _mm_testnzc_ps (__m128 a, __m128 b)
 // TODO int _mm256_testnzc_ps (__m256 a, __m256 b)
 // TODO int _mm256_testnzc_si256 (__m256i a, __m256i b)
