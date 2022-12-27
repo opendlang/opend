@@ -2227,7 +2227,7 @@ unittest
 
 /// Set each bit of mask result based on the most significant bit of the corresponding packed 
 /// single-precision (32-bit) floating-point element in `a`.
-int _mm256_movemask_ps (__m256 a) @safe
+int _mm256_movemask_ps (__m256 a) @system
 {
     // PERF: DMD
     // PERF GDC without AVX
@@ -2240,6 +2240,12 @@ int _mm256_movemask_ps (__m256 a) @safe
          // this doesn't benefit GDC (unable to inline), but benefits both LDC with SSE2 and ARM64
         __m128 A_lo = _mm256_extractf128_ps!0(a);
         __m128 A_hi = _mm256_extractf128_ps!1(a);
+        _mm256_print_ps(a);
+        _mm_print_ps(A_lo);
+        _mm_print_ps(A_hi);
+        import core.stdc.stdio;
+        printf("Mask = %d\n", _mm_movemask_ps(A_hi));
+        printf("Mask = %d\n", _mm_movemask_ps(A_lo));
         return (_mm_movemask_ps(A_hi) << 4) | _mm_movemask_ps(A_lo);
     }
     else
