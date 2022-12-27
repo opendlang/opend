@@ -342,7 +342,7 @@ unittest
     __m256d M = _mm256_setr_pd(-3.0, 2.0, 1.0, -4.0);
     __m256d R = _mm256_blendv_pd(A, B, M);
     double[4] correct1 = [5.0, 2.0, 3.0, 8.0];
-    assert(R.array == correct1); // Note: probably the same NaN-mask oddity exist on arm64+linux than with _mm_blendv_pd
+    assert(R.array == correct1);
 }
 
 /// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` 
@@ -384,7 +384,7 @@ unittest
     __m256 M = _mm256_setr_ps(-3.0f, 2.0f, 1.0f, -4.0f, -3.0f, 2.0f, 1.0f, -4.0f);
     __m256 R = _mm256_blendv_ps(A, B, M);
     float[8] correct1 = [5.0f, 2.0f, 3.0f, 8.0f, 5.0f, 2.0f, 3.0f, 8.0f];
-    assert(R.array == correct1); // Note: probably the same NaN-mask oddity exist on arm64+linux than with _mm_blendv_pd
+    assert(R.array == correct1);
 }
 
 /// Broadcast 128 bits from memory (composed of 2 packed double-precision (64-bit)
@@ -2259,13 +2259,8 @@ int _mm256_movemask_ps (__m256 a) @system
 }
 unittest
 {
-    import core.stdc.stdio;
-    float a = float.nan;
-    float b = -float.nan;
-    printf("+nan = %x, -nan = %x\n", *cast(int*)&a, *cast(int*)&b);
-
-    __m256 A = _mm256_setr_ps(-1, -double.infinity, 0, -1, 1, double.infinity, -2, -double.nan);
-    assert(_mm256_movemask_ps(A) == 1 + 2 + 8 + 64 + 128);
+    __m256 A = _mm256_setr_ps(-1, -double.infinity, 0, -1, 1, double.infinity, -2, double.nan);
+    assert(_mm256_movemask_ps(A) == 1 + 2 + 8 + 64);
 }
 
 /// Multiply packed double-precision (64-bit) floating-point elements in `a` and `b`.

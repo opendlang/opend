@@ -145,6 +145,7 @@ Without that Intel documentation, it's impractical to write sizeable SIMD code.
 
 - 32-bit ARM has a different nearest rounding mode as compared to AArch64 and x86. Numbers with a 0.5 fractional part (such as `-4.5`) may not round in the same direction. This shouldn't affect you.
 
+- Some ARM architecture do not represent the sign bit for NaN. Just writing `-float.nan` or `-double.nan` will loose the sign bit! This isn't related to `intel-intrinsics`.
 
 ### Notable differences between x86 instruction semantics and `intel-intrinsics` semantics
 

@@ -224,18 +224,12 @@ unittest
     double[2] correct1 = [3.0, 2.0];
     assert(R1.array == correct1);
 
-    // BUG: LDC _mm_blendv_pd doesn't work with NaN mask in arm64 Linux for some unknown reason.
-    // but it does work in arm64 macOS
-    // yields different results despite FP seemingly not being used
-    version(linux)
-    {}
-    else
-    {
-        __m128d M2 = _mm_setr_pd(double.nan, -double.nan);
-        __m128d R2 = _mm_blendv_pd(A, B, M2);
-        double[2] correct2 = [1.0, 4.0];
-        assert(R2.array == correct2);
-    }
+    // Note: wouldn't work with -double.nan, since in some AArch64 archs the NaN sign bit is lost
+    // See Issue #78
+    __m128d M2 = _mm_setr_pd(double.nan, double.infinity);
+    __m128d R2 = _mm_blendv_pd(A, B, M2);
+    double[2] correct2 = [1.0, 2.0];
+    assert(R2.array == correct2);
 }
 
 
@@ -274,21 +268,16 @@ unittest
     __m128 A  = _mm_setr_ps( 0.0f, 1.0f, 2.0f, 3.0f);
     __m128 B  = _mm_setr_ps( 4.0f, 5.0f, 6.0f, 7.0f);
     __m128 M1 = _mm_setr_ps(-3.0f, 2.0f, 1.0f, -10000.0f);
-    __m128 M2 = _mm_setr_ps(float.nan, -float.nan, -0.0f, +0.0f);
+    __m128 M2 = _mm_setr_ps(float.nan, float.nan, -0.0f, +0.0f);
     __m128 R1 = _mm_blendv_ps(A, B, M1);
     __m128 R2 = _mm_blendv_ps(A, B, M2);
     float[4] correct1 =    [ 4.0f, 1.0f, 2.0f, 7.0f];
-    float[4] correct2 =    [ 0.0f, 5.0f, 6.0f, 3.0f];
+    float[4] correct2 =    [ 0.0f, 1.0f, 6.0f, 3.0f];
     assert(R1.array == correct1);
 
-    // BUG: like above, LDC _mm_blendv_ps doesn't work with NaN mask in arm64 Linux for some unknown reason.
-    // yields different results despite FP seemingly not being used
-    version(linux)
-    {}
-    else
-    {
-        assert(R2.array == correct2);
-    }
+    // Note: wouldn't work with -float.nan, since in some AArch64 archs the NaN sign bit is lost
+    // See Issue #78
+    assert(R2.array == correct2);
 }
 
 /// Round the packed double-precision (64-bit) floating-point elements in `a` up to an integer value, 
