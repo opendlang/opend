@@ -2326,7 +2326,39 @@ __m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
 // TODO __m128 _mm_permutevar_ps (__m128 a, __m128i b)
 // TODO __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
 
-// TODO __m256 _mm256_rcp_ps (__m256 a)
+/// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements
+/// in `a`. The maximum relative error for this approximation is less than 1.5*2^-12.
+__m256 _mm256_rcp_ps (__m256 a) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_rcpps256(a);
+    }
+    else
+    {        
+        a.ptr[0] = 1.0f / a.array[0];
+        a.ptr[1] = 1.0f / a.array[1];
+        a.ptr[2] = 1.0f / a.array[2];
+        a.ptr[3] = 1.0f / a.array[3];
+        a.ptr[4] = 1.0f / a.array[4];
+        a.ptr[5] = 1.0f / a.array[5];
+        a.ptr[6] = 1.0f / a.array[6];
+        a.ptr[7] = 1.0f / a.array[7];
+        return a;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(2.34f, -70000.0f, 0.00001f, 345.5f, 9, -46, 1869816, 55583);
+    __m256 groundTruth = _mm256_set1_ps(1.0f) / A;
+    __m256 result = _mm256_rcp_ps(A);
+    foreach(i; 0..8)
+    {
+        double relError = (cast(double)(groundTruth.array[i]) / result.array[i]) - 1;
+        assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
+    }
+}
 
 
 
@@ -4394,10 +4426,6 @@ unittest
 
 pragma(LDC_intrinsic, "llvm.x86.avx.ptestnzc.256")
     int __builtin_ia32_ptestnzc256(long4, long4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.rcp.ps.256")
-    float8 __builtin_ia32_rcpps256(float8) pure @safe;
-
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd")
     double2 __builtin_ia32_vpermilvarpd(double2, long2) pure @safe;
