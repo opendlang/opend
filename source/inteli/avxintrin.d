@@ -2237,15 +2237,9 @@ int _mm256_movemask_ps (__m256 a) @system
     }
     else version(LDC)
     {
-         // this doesn't benefit GDC (unable to inline), but benefits both LDC with SSE2 and ARM64
+        // this doesn't benefit GDC (unable to inline), but benefits both LDC with SSE2 and ARM64
         __m128 A_lo = _mm256_extractf128_ps!0(a);
         __m128 A_hi = _mm256_extractf128_ps!1(a);
-        _mm256_print_ps(a);
-        _mm_print_ps(A_lo);
-        _mm_print_ps(A_hi);
-        import core.stdc.stdio;
-        printf("Mask = %d\n", _mm_movemask_ps(A_hi));
-        printf("Mask = %d\n", _mm_movemask_ps(A_lo));
         return (_mm_movemask_ps(A_hi) << 4) | _mm_movemask_ps(A_lo);
     }
     else
@@ -2265,6 +2259,11 @@ int _mm256_movemask_ps (__m256 a) @system
 }
 unittest
 {
+    import core.stdc.stdio;
+    float a = float.nan;
+    float b = -float.nan;
+    printf("+nan = %x, -nan = %x\n", *cast(int*)&a, *cast(int*)&b);
+
     __m256 A = _mm256_setr_ps(-1, -double.infinity, 0, -1, 1, double.infinity, -2, -double.nan);
     assert(_mm256_movemask_ps(A) == 1 + 2 + 8 + 64 + 128);
 }
