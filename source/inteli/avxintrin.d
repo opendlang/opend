@@ -1534,7 +1534,7 @@ unittest
 /// Load 256-bits of integer data from memory. `mem_addr` does not need to be aligned on
 /// any particular boundary.
 // See this dlang forum post => https://forum.dlang.org/thread/vymrsngsfibkmqsqffce@forum.dlang.org
-__m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted // TODO: signature
+__m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_AVX)
@@ -2638,7 +2638,7 @@ __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
         __m256 r = __builtin_ia32_ps256_ps(lo);
         return __builtin_ia32_vinsertf128_ps256(r, hi, 1);
     }
-    else version(DigitalMars)
+    else
     {
         __m256 r = void;
         r.ptr[0] = lo.array[0];
@@ -2651,18 +2651,16 @@ __m256 _mm256_set_m128 (__m128 hi, __m128 lo) pure @trusted
         r.ptr[7] = hi.array[3];
         return r;
     }
-    else
-    {
-        // TODO: BUG, doesn't work if AVX vector is emulated, but SSE vector is not
-        // PERF: this crash on DMD v100.2 on Linux x86_64, find out why since 
-        // it would be better performance wise
-        // Note: probably because emulated AVX vectors have no alignment requisites!
+
+    /*
+        // BUG, doesn't work if AVX vector is emulated, but SSE vector is not
+        // See issue #108
         __m256 r = void;
         __m128* p = cast(__m128*)(&r);
         p[0] = lo;
         p[1] = hi;
         return r;
-    }
+    */
 }
 unittest
 {
@@ -2775,13 +2773,21 @@ unittest
 /// Broadcast 16-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi16 (short a) pure @trusted
 {
-    // workaround https://issues.dlang.org/show_bug.cgi?id=21469
-    // It used to ICE, now the codegen is just wrong.
-    // TODO report this backend issue.
     version(DigitalMars) 
     {
-        short16 v = a;
-        return cast(__m256i) v;
+        // workaround https://issues.dlang.org/show_bug.cgi?id=21469
+        // It used to ICE, after that the codegen was just wrong.
+        // No issue anymore in DMD 2.101, we can eventually remove that
+        static if (__VERSION__ < 2101)
+        {
+            short16 v = a;
+            return cast(__m256i) v;
+        }
+        else
+        {
+            pragma(inline, true);
+            return cast(__m256i)(short16(a));
+        }
     }
     else
     {
@@ -2799,12 +2805,19 @@ unittest
 /// Broadcast 32-bit integer `a` to all elements.
 __m256i _mm256_set1_epi32 (int a) pure @trusted
 {
-    // Bad codegen else in DMD.
-    // TODO report this backend issue.
     version(DigitalMars) 
     {
-        int8 v = a;
-        return cast(__m256i) v;
+        // No issue anymore in DMD 2.101, we can eventually remove that
+        static if (__VERSION__ < 2101)
+        {
+            int8 v = a;
+            return cast(__m256i) v;
+        }
+        else
+        {
+            pragma(inline, true);
+            return cast(__m256i)(int8(a));
+        }
     }
     else
     {
@@ -3430,7 +3443,7 @@ unittest
 /// Store the high and low 128-bit halves (each composed of integer data) from `a` into memory two 
 /// different 128-bit locations. 
 /// `hiaddr` and `loaddr` do not need to be aligned on any particular boundary.
-void _mm256_storeu2_m128i (__m128i* hiaddr, __m128i* loaddr, __m256i a) pure @trusted // TODO: signature
+void _mm256_storeu2_m128i (__m128i* hiaddr, __m128i* loaddr, __m256i a) pure @trusted
 {
     long* hi = cast(long*)hiaddr;
     long* lo = cast(long*)loaddr;
