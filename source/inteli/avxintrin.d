@@ -2675,8 +2675,38 @@ unittest
     assert(C.array == RC);
 }
 
+/// Shuffle single-precision (32-bit) floating-point elements in `a` using the control in `b`.
+__m128 _mm_permutevar_ps (__m128 a, __m128i b) pure @trusted
+{
+    // PERF ARM64
+    // PERF LDC without AVX
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return cast(__m128) __builtin_ia32_vpermilvarps(a, cast(int4)b);
+    }
+    else
+    {
+        int4 bi = cast(int4)b;
+        __m128 r;
+        r.ptr[0] = a.array[ (bi.array[0] & 3) ];
+        r.ptr[1] = a.array[ (bi.array[1] & 3) ];
+        r.ptr[2] = a.array[ (bi.array[2] & 3) ];
+        r.ptr[3] = a.array[ (bi.array[3] & 3) ];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(5, 6, 7, 8);
+    __m128 B = _mm_permutevar_ps(A, _mm_setr_epi32(2, 1, 0, 2 + 4));
+    __m128 C = _mm_permutevar_ps(A, _mm_setr_epi32(2, 3 + 8, 1, 0));
+    float[4] RB = [7, 6, 5, 7];
+    float[4] RC = [7, 8, 6, 5];
+    assert(B.array == RB);
+    assert(C.array == RC);
+}
 
-// TODO __m128 _mm_permutevar_ps (__m128 a, __m128i b)
 // TODO __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
 
 /// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements
