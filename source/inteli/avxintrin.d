@@ -2613,7 +2613,8 @@ unittest
 }
 
 /// Shuffle double-precision (64-bit) floating-point elements in `a` using the control in `b`.
-/// Warning: the selector is in bit 1, not bit 0, of each 64-bit element.
+/// Warning: the selector is in bit 1, not bit 0, of each 64-bit element!
+///          This is really not intuitive.
 __m128d _mm_permutevar_pd(__m128d a, __m128i b) pure @trusted
 {
     // PERF ARM64 doesn't seem that great in arm64
@@ -2642,8 +2643,39 @@ unittest
     assert(C.array == RC);
 }
 
+///ditto
+__m256d _mm256_permutevar_pd (__m256d a, __m256i b) pure @trusted
+{
+    // PERF ARM64
+    // PERF DMD
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return cast(__m256d) __builtin_ia32_vpermilvarpd256(a, cast(long4)b);
+    }
+    else
+    {
+        long4 bl = cast(long4)b;
+        __m256d r;
+        r.ptr[0] = a.array[ (bl.array[0] & 2) >> 1];
+        r.ptr[1] = a.array[ (bl.array[1] & 2) >> 1];
+        r.ptr[2] = a.array[2 + ((bl.array[2] & 2) >> 1)];
+        r.ptr[3] = a.array[2 + ((bl.array[3] & 2) >> 1)];
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(5, 6, 7, 8);
+    __m256d B = _mm256_permutevar_pd(A, _mm256_setr_epi64(2, 1, 0, 2));
+    __m256d C = _mm256_permutevar_pd(A, _mm256_setr_epi64(1 + 2 + 4, 2, 2, 0));
+    // yup, this is super strange, it's actually taking bit 1 and not bit 0 of each 64-bit element
+    double[4] RB = [6, 5, 7, 8];
+    double[4] RC = [6, 6, 8, 7];
+    assert(B.array == RB);
+    assert(C.array == RC);
+}
 
-// TODO __m256d _mm256_permutevar_pd (__m256d a, __m256i b)
+
 // TODO __m128 _mm_permutevar_ps (__m128 a, __m128i b)
 // TODO __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
 
