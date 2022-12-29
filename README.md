@@ -149,7 +149,8 @@ Without that Intel documentation, it's impractical to write sizeable SIMD code.
 
 ### Notable differences between x86 instruction semantics and `intel-intrinsics` semantics
 
-Masked load/store MUST address fully addressable memory, even if their mask is zero. Pad your buffers.
+- Masked load/store MUST address fully addressable memory, even if their mask is zero. Pad your buffers.
+- Some AVX float comparisons have an option to signal quiet NaN. This is not followed by intel-intrinsics.
 
 
 
