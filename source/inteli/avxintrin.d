@@ -358,6 +358,7 @@ __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask) @trusted
         // with -mavx2 but not -mavx.
         // Not sure what is the reason, and there is a replacement sequence.
         // PERF: Sounds like a bug, similar to _mm_blendv_pd
+        // or maybe the instruction in unsafe?
         return __builtin_ia32_blendvpd256(a, b, mask);
     }
     else static if (LDC_with_AVX)
@@ -3114,7 +3115,7 @@ __m256i _mm256_set_m128i (__m128i hi, __m128i lo) pure @trusted
         __m256i r = cast(long4) __builtin_ia32_si256_si (lo);
         return cast(long4) __builtin_ia32_vinsertf128_si256(cast(int8)r, hi, 1);
     }
-    else version(DigitalMars)
+    else
     {
         int8 r = void;
         r.ptr[0] = lo.array[0];
@@ -3126,16 +3127,6 @@ __m256i _mm256_set_m128i (__m128i hi, __m128i lo) pure @trusted
         r.ptr[6] = hi.array[2];
         r.ptr[7] = hi.array[3];
         return cast(long4)r;
-    }
-    else
-    {
-        // TODO: this is buggy
-        // PERF Does this also vcrash for DMD? with DMD v100.2 on Linux x86_64
-        __m256i r = void;
-        __m128i* p = cast(__m128i*)(&r);
-        p[0] = lo;
-        p[1] = hi;
-        return r;
     }
 }
 unittest
