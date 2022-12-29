@@ -35,6 +35,48 @@ module inteli.avxintrin;
 /// So intel-intrinsics adopted the tightened semantics of only adressing fully addressable memory 
 /// with masked loads and stores.
 
+
+/// Some AVX intrinsics takes a float comparison constant.
+/// When labelled "ordered" it means "AND ordered"
+/// When labelled "unordered" it means "OR unordered"
+alias _CMP_EQ = int;
+///ditto
+enum : _CMP_EQ
+{
+    _CMP_EQ_OQ    = 0x00, // Equal (ordered, non-signaling)
+    _CMP_LT_OS    = 0x01, // Less-than (ordered, signaling)
+    _CMP_LE_OS    = 0x02, // Less-than-or-equal (ordered, signaling)
+    _CMP_UNORD_Q  = 0x03, // Unordered (non-signaling)
+    _CMP_NEQ_UQ   = 0x04, // Not-equal (unordered, non-signaling)
+    _CMP_NLT_US   = 0x05, // Not-less-than (unordered, signaling)
+    _CMP_NLE_US   = 0x06, // Not-less-than-or-equal (unordered, signaling)
+    _CMP_ORD_Q    = 0x07, // Ordered (nonsignaling)
+    _CMP_EQ_UQ    = 0x08, // Equal (unordered, non-signaling)
+    _CMP_NGE_US   = 0x09, // Not-greater-than-or-equal (unordered, signaling)
+    _CMP_NGT_US   = 0x0a, // Not-greater-than (unordered, signaling)
+    _CMP_FALSE_OQ = 0x0b, // False (ordered, non-signaling)
+    _CMP_NEQ_OQ   = 0x0c, // Not-equal (ordered, non-signaling)
+    _CMP_GE_OS    = 0x0d, // Greater-than-or-equal (ordered, signaling)
+    _CMP_GT_OS    = 0x0e, // Greater-than (ordered, signaling)
+    _CMP_TRUE_UQ  = 0x0f, // True (unordered, non-signaling)
+    _CMP_EQ_OS    = 0x10, // Equal (ordered, signaling)
+    _CMP_LT_OQ    = 0x11, // Less-than (ordered, non-signaling)
+    _CMP_LE_OQ    = 0x12, // Less-than-or-equal (ordered, non-signaling)
+    _CMP_UNORD_S  = 0x13, // Unordered (signaling)
+    _CMP_NEQ_US   = 0x14, // Not-equal (unordered, signaling)
+    _CMP_NLT_UQ   = 0x15, // Not-less-than (unordered, non-signaling)
+    _CMP_NLE_UQ   = 0x16, // Not-less-than-or-equal (unordered, non-signaling)
+    _CMP_ORD_S    = 0x17, // Ordered (signaling)
+    _CMP_EQ_US    = 0x18, // Equal (unordered, signaling)
+    _CMP_NGE_UQ   = 0x19, // Not-greater-than-or-equal (unordered, non-signaling)
+    _CMP_NGT_UQ   = 0x1a, // Not-greater-than (unordered, non-signaling)
+    _CMP_FALSE_OS = 0x1b, // False (ordered, signaling)
+    _CMP_NEQ_OS   = 0x1c, // Not-equal (ordered, signaling)
+    _CMP_GE_OQ    = 0x1d, // Greater-than-or-equal (ordered, non-signaling)
+    _CMP_GT_OQ    = 0x1e, // Greater-than (ordered, non-signaling)
+    _CMP_TRUE_US  = 0x1f  // (unordered, signaling)
+}
+
 public import inteli.types;
 import inteli.internals;
 
@@ -729,13 +771,73 @@ unittest
     assert(C.array == correct);
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements in `a` and `b` based on the 
+/// comparison operand specified by `imm8`. 
+__m128d _mm_cmp_pd(int imm8)(__m128d a, __m128d b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(__m128d) cmppd!comparison(a, b);
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(double.infinity, double.nan);
+    __m128d B = _mm_setr_pd(3.0,             4.0);
+    long2 R = cast(long2) _mm_cmp_pd!_CMP_GT_OS(A, B);
+    long[2] correct = [-1, 0];
+    assert(R.array == correct);
 
-// TODO __m128d _mm_cmp_pd (__m128d a, __m128d b, const int imm8)
-// TODO __m256d _mm256_cmp_pd (__m256d a, __m256d b, const int imm8)
-// TODO __m128 _mm_cmp_ps (__m128 a, __m128 b, const int imm8)
-// TODO __m256 _mm256_cmp_ps (__m256 a, __m256 b, const int imm8)
-// TODO __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
-// TODO __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
+    long2 R2 = cast(long2) _mm_cmp_pd!_CMP_NLE_UQ(A, B);
+    long[2] correct2 = [-1, -1];
+    assert(R2.array == correct2);
+}
+
+///ditto
+__m256d _mm256_cmp_pd(int imm8)(__m256d a, __m256d b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(__m256d) cmppd256!comparison(a, b);
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(1.0, 2.0, 3.0, double.nan);
+    __m256d B = _mm256_setr_pd(3.0, 2.0, 1.0, double.nan);
+    __m256i R = cast(__m256i) _mm256_cmp_pd!_CMP_LT_OS(A, B);
+    long[4] correct = [-1, 0, 0, 0];
+    assert(R.array == correct);
+}
+
+/// Compare packed double-precision (32-bit) floating-point elements in `a` and `b` based on the 
+/// comparison operand specified by `imm8`. 
+__m128 _mm_cmp_ps(int imm8)(__m128 a, __m128 b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(__m128) cmpps!comparison(a, b);
+}
+
+///ditto
+_m256 _mm256_cmp_ps(int imm8)(__m256 a, __m256 b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(_m256) cmpps256!comparison(a, b);
+}
+
+/// Compare the lower double-precision (64-bit) floating-point element in `a` and `b` based on the
+/// comparison operand specified by `imm8`, store the result in the lower element of result, and 
+/// copy the upper element from `a` to the upper element of result.
+__m128d _mm_cmp_sd(int imm8)(__m128d a, __m128d b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(_m256) cmpsd!comparison(a, b);
+}
+
+/// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` based on the
+/// comparison operand specified by `imm8`, store the result in the lower element of result, and 
+/// copy the upper 3 packed elements from `a` to the upper elements of result.
+__m128 _mm_cmp_ss(int imm8)(__m128 a, __m128 b) pure @safe
+{
+    enum comparison = mapAVXFPComparison(imm8);
+    return cast(_m256) cmpss!comparison(a, b);
+}
 
 /// Convert packed signed 32-bit integers in a to packed double-precision (64-bit) floating-point 
 /// elements.
@@ -829,7 +931,6 @@ unittest
     int[4] correct = [61, 55, -100, 1_000_000];
     assert(A.array == correct);
 }
-
 
 /// Convert packed double-precision (64-bit) floating-point elements in `a` to packed single-precision (32-bit) 
 /// floating-point elements.
@@ -2314,7 +2415,33 @@ __m256 _mm256_or_ps (__m256 a, __m256 b) pure @safe
     return cast(__m256)( cast(__m256i)a | cast(__m256i)b );
 }
 
-// TODO __m128d _mm_permute_pd (__m128d a, int imm8)
+/// Shuffle double-precision (64-bit) floating-point elements in `a` using the control in `imm8`.
+__m128d _mm_permute_pd(int imm8)(__m128d a) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vpermilpd(a, imm8 & 3);
+    }
+    else
+    {
+        // Shufflevector not particularly better for LDC
+        __m128d r;
+        r.ptr[0] = a.array[imm8 & 1];
+        r.ptr[1] = a.array[(imm8 >> 1) & 1];
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(5, 6);
+    __m128d B = _mm_permute_pd!1(A);
+    __m128d C = _mm_permute_pd!3(A);
+    double[2] RB = [6, 5];
+    double[2] RC = [6, 6];
+    assert(B.array == RB);
+    assert(C.array == RC);
+}
+
 // TODO __m256d _mm256_permute_pd (__m256d a, int imm8)
 // TODO __m128 _mm_permute_ps (__m128 a, int imm8)
 // TODO __m256 _mm256_permute_ps (__m256 a, int imm8)
@@ -4437,9 +4564,6 @@ unittest
 
 /+
 
-pragma(LDC_intrinsic, "llvm.x86.avx.ptestnzc.256")
-    int __builtin_ia32_ptestnzc256(long4, long4) pure @safe;
-
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd")
     double2 __builtin_ia32_vpermilvarpd(double2, long2) pure @safe;
 
@@ -4451,6 +4575,5 @@ pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps")
 
 pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps.256")
     float8 __builtin_ia32_vpermilvarps256(float8, int8) pure @safe;
-
 
 +/

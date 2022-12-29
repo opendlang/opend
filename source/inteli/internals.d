@@ -848,6 +848,7 @@ version(unittest)
 
 enum FPComparison
 {
+    false_,// always false
     oeq,   // ordered and equal
     ogt,   // ordered and greater than
     oge,   // ordered and greater than or equal
@@ -862,10 +863,12 @@ enum FPComparison
     ule,   // unordered or less than or equal ("ngt")
     une,   // unordered or not equal ("neq")
     uno,   // unordered (either nans)
+    true_, // always true
 }
 
 private static immutable string[FPComparison.max+1] FPComparisonToString =
 [
+    "false",
     "oeq",
     "ogt",
     "oge",
@@ -880,7 +883,35 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
     "ule",
     "une",
     "uno",
+    "true"
 ];
+
+// AVX FP comparison to FPComparison
+FPComparison mapAVXFPComparison(int imm8) pure @safe
+{
+    // Always map on non-signalling
+    static immutable FPComparison[16] mapping =
+    [
+        FPComparison.oeq, // _CMP_EQ_OQ
+        FPComparison.olt, // _CMP_LT_OS
+        FPComparison.ole, // _CMP_LE_OS
+        FPComparison.uno, // _CMP_UNORD_Q
+        FPComparison.une, // _CMP_NEQ_UQ // TODO does it mean net-equal OR unordered?
+        FPComparison.uge, // _CMP_NLT_US
+        FPComparison.ugt, // _CMP_NLE_US
+        FPComparison.ord, // _CMP_ORD_Q
+        FPComparison.ueq,   // _CMP_EQ_UQ  
+        FPComparison.ult,   // _CMP_NGE_US 
+        FPComparison.ule,   // _CMP_NGT_US 
+        FPComparison.false_,// _CMP_FALSE_OQ
+        FPComparison.one,   // _CMP_NEQ_OQ
+        FPComparison.oge,   // _CMP_GE_OS
+        FPComparison.ogt,   // _CMP_GT_OS
+        FPComparison.true_  // _CMP_TRUE_UQ
+    ];
+
+    return mapping[imm8 & 0x0f]; // note: signalling NaN information is mixed up
+}
 
 // Individual float comparison: returns -1 for true or 0 for false.
 // Useful for DMD and testing
@@ -889,6 +920,7 @@ private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
     bool unordered = isnan(a) || isnan(b);
     final switch(comparison) with(FPComparison)
     {
+        case false_: return false;
         case oeq: return a == b;
         case ogt: return a > b;
         case oge: return a >= b;
@@ -903,6 +935,7 @@ private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
         case ule: return unordered || (a <= b);
         case une: return (a != b); // NaN with != always yields true
         case uno: return unordered;
+        case true_: return true;
     }
 }
 
@@ -919,6 +952,16 @@ version(LDC)
         return LDCInlineIR!(ir, int4, float4, float4)(a, b);
     }
 
+    ///ditto
+    package int8 cmpps256(FPComparison comparison)(float8 a, float8 b) pure @safe
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` <8 x float> %0, %1
+            %r = sext <8 x i1> %cmp to <8 x i32>
+            ret <8 x i32> %r`;
+        return LDCInlineIR!(ir, int8, float8, float8)(a, b);
+    }
+
     /// Provides packed double comparisons
     package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
@@ -928,6 +971,16 @@ version(LDC)
             ret <2 x i64> %r`;
 
         return LDCInlineIR!(ir, long2, double2, double2)(a, b);
+    }
+
+    ///ditto 
+    package long4 cmppd256(FPComparison comparison)(double4 a, double4 b) pure @safe
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` <4 x double> %0, %1
+            %r = sext <4 x i1> %cmp to <4 x i64>
+            ret <4 x i64> %r`;
+        return LDCInlineIR!(ir, long4, double4, double4)(a, b);
     }
 
     /// CMPSS-style comparisons
@@ -986,12 +1039,32 @@ else
         }
         return result;
     }
+    ///ditto
+    package int8 cmpps256(FPComparison comparison)(float8 a, float8 b) pure @trusted
+    {
+        int8 result;
+        foreach(i; 0..8)
+        {
+            result.ptr[i] = compareFloat!float(comparison, a.array[i], b.array[i]) ? -1 : 0;
+        }
+        return result;
+    }
 
     /// Provides packed double comparisons
     package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @trusted
     {
         long2 result;
         foreach(i; 0..2)
+        {
+            result.ptr[i] = compareFloat!double(comparison, a.array[i], b.array[i]) ? -1 : 0;
+        }
+        return result;
+    }
+    ///ditto
+    package long4 cmppd256(FPComparison comparison)(double4 a, double4 b) pure @trusted
+    {
+        long4 result;
+        foreach(i; 0..4)
         {
             result.ptr[i] = compareFloat!double(comparison, a.array[i], b.array[i]) ? -1 : 0;
         }
