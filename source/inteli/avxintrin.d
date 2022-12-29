@@ -2477,7 +2477,7 @@ unittest
 }
 
 /// Shuffle single-precision (32-bit) floating-point elements in `a` using the control in `imm8`.
-__m128 _mm_permute_ps(int imm8)(__m128 a)
+__m128 _mm_permute_ps(int imm8)(__m128 a) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_AVX)
@@ -2486,7 +2486,8 @@ __m128 _mm_permute_ps(int imm8)(__m128 a)
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(float4, (imm8 >> 0) & 3, (imm8 >> 2) & 3, (imm8 >> 4) & 3, (imm8 >> 6) & 3)(a, a);
+        return shufflevectorLDC!(float4, (imm8 >> 0) & 3, (imm8 >> 2) & 3, (imm8 >> 4) & 3, 
+            (imm8 >> 6) & 3)(a, a);
     }
     else
     {
@@ -2506,12 +2507,110 @@ unittest
     __m128 R = _mm_permute_ps!(1 + 4 * 3 + 16 * 0 + 64 * 2)(A);
     float[4] correct = [1.0f, 3, 0, 2];
     assert(R.array == correct);
+}
+
+/// Shuffle single-precision (32-bit) floating-point elements in `a` within 128-bit lanes using 
+/// the control in `imm8`. The same shuffle is applied in lower and higher 128-bit lane.
+__m256 _mm256_permute_ps(int imm8)(__m256 a,) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vpermilps256(a, cast(ubyte)imm8);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(float8, 
+            (imm8 >> 0) & 3, (imm8 >> 2) & 3, (imm8 >> 4) & 3, (imm8 >> 6) & 3,
+            4 + ((imm8 >> 0) & 3), 4 + ((imm8 >> 2) & 3), 4 + ((imm8 >> 4) & 3), 
+            4 + ((imm8 >> 6) & 3))(a, a);
+    }
+    else
+    {
+        __m256 r;
+        r.ptr[0] = a.array[(imm8 >> 0) & 3];
+        r.ptr[1] = a.array[(imm8 >> 2) & 3];
+        r.ptr[2] = a.array[(imm8 >> 4) & 3];
+        r.ptr[3] = a.array[(imm8 >> 6) & 3];
+        r.ptr[4] = a.array[4 + ((imm8 >> 0) & 3)];
+        r.ptr[5] = a.array[4 + ((imm8 >> 2) & 3)];
+        r.ptr[6] = a.array[4 + ((imm8 >> 4) & 3)];
+        r.ptr[7] = a.array[4 + ((imm8 >> 6) & 3)];
+        return r;
+    }
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(0.0f, 1, 2, 3, 4, 5, 6, 7);
+    __m256 R = _mm256_permute_ps!(1 + 4 * 3 + 16 * 0 + 64 * 2)(A);
+    float[8] correct = [1.0f, 3, 0, 2, 5, 7, 4, 6];
+    assert(R.array == correct);
 } 
 
-// TODO __m256 _mm256_permute_ps (__m256 a, int imm8)
-// TODO __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
-// TODO __m256 _mm256_permute2f128_ps (__m256 a, __m256 b, int imm8)
-// TODO __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+/// Shuffle 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) 
+/// selected by `imm8` from `a` and `b`.
+__m256d _mm256_permute2f128_pd(int imm8)(__m256d a, __m256d b) pure @safe
+{
+    return cast(__m256d) _mm256_permute2f128_si256!imm8(cast(__m256i)a, cast(__m256i)b);
+}
+///ditto
+__m256d _mm256_permute2f128_ps(int imm8)(__m256 a, __m256 b) pure @safe
+{
+    return cast(__m256) _mm256_permute2f128_si256!imm8(cast(__m256i)a, cast(__m256i)b);
+}
+///ditto
+__m256i _mm256_permute2f128_si256(int imm8)(__m256i a, __m256i b) pure @trusted
+{
+    static if (GDC_with_AVX)
+    {
+        return cast(__m256i) __builtin_ia32_vperm2f128_si256(cast(int8)a, cast(int8)b, cast(ubyte)imm8);
+    }
+    else 
+    {
+        static __m128i SELECT4(int imm4)(__m256i a, __m256i b) pure @trusted
+        {
+            static assert(imm4 >= 0 && imm4 <= 15);
+            static if (imm4 & 8)
+            {
+                return _mm_setzero_si128();
+            }
+            else static if ((imm4 & 2) == 0)
+            {
+                long2 r;
+                enum int index = 2*(imm4 & 1);
+                r.ptr[0] = a.array[index+0];
+                r.ptr[1] = a.array[index+1];
+                return cast(__m128i)r;
+            }
+            else
+            {
+                static assert( (imm4 & 2) != 0);
+                long2 r;
+                enum int index = 2*(imm4 & 1);
+                r.ptr[0] = b.array[index+0];
+                r.ptr[1] = b.array[index+1];
+                return cast(__m128i)r;
+            }
+        }
+
+        long4 r;
+        __m128i lo = SELECT4!(imm8 & 15)(a, b);
+        __m128i hi = SELECT4!((imm8 >> 4) & 15)(a, b);
+        return _mm256_set_m128i(hi, lo);
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(8.0, 1, 2, 3);
+    __m256d B = _mm256_setr_pd(4.0, 5, 6, 7);
+    __m256d R = _mm256_permute2f128_pd!(128 + 2)(A, B);
+    double[4] correct = [4.0, 5.0, 0.0, 0.0];
+    assert(R.array == correct);
+
+    __m256d R2 = _mm256_permute2f128_pd!(3*16 + 1)(A, B);
+    double[4] correct2 = [2.0, 3.0, 6.0, 7.0];
+    assert(R2.array == correct2);
+}
 
 // TODO __m128d _mm_permutevar_pd (__m128d a, __m128i b)
 // TODO __m256d _mm256_permutevar_pd (__m256d a, __m256i b)
@@ -2906,6 +3005,7 @@ __m256i _mm256_set_m128i (__m128i hi, __m128i lo) pure @trusted
     }
     else
     {
+        // TODO: this is buggy
         // PERF Does this also vcrash for DMD? with DMD v100.2 on Linux x86_64
         __m256i r = void;
         __m128i* p = cast(__m128i*)(&r);
