@@ -2424,7 +2424,7 @@ __m128d _mm_permute_pd(int imm8)(__m128d a) pure @trusted
     }
     else
     {
-        // Shufflevector not particularly better for LDC
+        // Shufflevector not particularly better for LDC here
         __m128d r;
         r.ptr[0] = a.array[imm8 & 1];
         r.ptr[1] = a.array[(imm8 >> 1) & 1];
@@ -2442,7 +2442,39 @@ unittest
     assert(C.array == RC);
 }
 
-// TODO __m256d _mm256_permute_pd (__m256d a, int imm8)
+__m256d _mm256_permute_pd(int imm8)(__m256d a) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vpermilpd256(a, imm8 & 15);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(double4,        
+                                       (imm8 >> 0) & 1,
+                                     ( (imm8 >> 1) & 1),
+                                 2 + ( (imm8 >> 2) & 1),
+                                 2 + ( (imm8 >> 3) & 1) )(a, a);
+    }
+    else
+    {
+        __m256d r;
+        r.ptr[0] = a.array[ imm8       & 1];
+        r.ptr[1] = a.array[(imm8 >> 1) & 1];
+        r.ptr[2] = a.array[2 + ((imm8 >> 2) & 1)];
+        r.ptr[3] = a.array[2 + ((imm8 >> 3) & 1)];
+        return r;
+    }
+}
+unittest
+{
+    __m256d A = _mm256_setr_pd(0.0, 1, 2, 3);
+    __m256d R = _mm256_permute_pd!(1 + 4)(A);
+    double[4] correct = [1.0, 0, 3, 2];
+    assert(R.array == correct);
+}
+
 // TODO __m128 _mm_permute_ps (__m128 a, int imm8)
 // TODO __m256 _mm256_permute_ps (__m256 a, int imm8)
 // TODO __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
