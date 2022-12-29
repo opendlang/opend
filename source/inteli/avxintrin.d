@@ -2707,7 +2707,41 @@ unittest
     assert(C.array == RC);
 }
 
-// TODO __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
+///ditto
+__m256 _mm256_permutevar_ps (__m256 a, __m256i b) pure @trusted
+{
+    // PERF ARM64 catastrophic
+    // PERF LDC without AVX, real bad
+    // PERF GDC
+    static if (GDC_or_LDC_with_AVX)
+    {
+        return __builtin_ia32_vpermilvarps256(a, cast(int8)b);
+    }
+    else
+    {
+        int8 bi = cast(int8)b;
+        __m256 r;
+        r.ptr[0] = a.array[ (bi.array[0] & 3) ];
+        r.ptr[1] = a.array[ (bi.array[1] & 3) ];
+        r.ptr[2] = a.array[ (bi.array[2] & 3) ];
+        r.ptr[3] = a.array[ (bi.array[3] & 3) ];
+        r.ptr[4] = a.array[ 4 + (bi.array[4] & 3) ];
+        r.ptr[5] = a.array[ 4 + (bi.array[5] & 3) ];
+        r.ptr[6] = a.array[ 4 + (bi.array[6] & 3) ];
+        r.ptr[7] = a.array[ 4 + (bi.array[7] & 3) ];
+        return r;
+    } 
+}
+unittest
+{
+    __m256 A = _mm256_setr_ps(1, 2, 3, 4, 5, 6, 7, 8);
+    __m256 B = _mm256_permutevar_ps(A, _mm256_setr_epi32(2,     1, 0, 2, 3, 2, 1, 0));
+    __m256 C = _mm256_permutevar_ps(A, _mm256_setr_epi32(2, 3 + 8, 1, 0, 2, 3, 0, 1));
+    float[8] RB = [3.0f, 2, 1, 3, 8, 7, 6, 5];
+    float[8] RC = [3.0f, 4, 2, 1, 7, 8, 5, 6];
+    assert(B.array == RB);
+    assert(C.array == RC);
+}
 
 /// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements
 /// in `a`. The maximum relative error for this approximation is less than 1.5*2^-12.
@@ -2742,8 +2776,6 @@ unittest
         assert(abs_double(relError) < 0.00037); // 1.5*2^-12 is 0.00036621093
     }
 }
-
-
 
 /// Round the packed double-precision (64-bit) floating-point elements in `a` using the 
 /// rounding parameter, and store the results as packed double-precision floating-point elements.
@@ -3215,7 +3247,6 @@ unittest
     for (int i = 0; i < 8; ++i)
         assert(a.array[i] == 31);
 }
-
 
 /// Broadcast 64-bit integer `a` to all elements of the return value.
 __m256i _mm256_set1_epi64x (long a)
@@ -4532,45 +4563,6 @@ unittest
     assert(_mm256_testz_si256(A, M2) == 0);
 }
 
-/+
-/// Compute the bitwise AND of 128 bits (representing integer data) in a and b, 
-/// and return 1 if the result is zero, otherwise return 0.
-/// In other words, test if all bits masked by `b` are 0 in `a`.
-int _mm_testz_si128 (__m128i a, __m128i b) @trusted
-{
-    // PERF DMD
-    static if (GDC_with_SSE41)
-    {
-        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
-    }
-    else static if (LDC_with_SSE41)
-    {
-        return __builtin_ia32_ptestz128(cast(long2)a, cast(long2)b);
-    }
-    else static if (LDC_with_ARM64)
-    {
-        // Acceptable since LDC 1.8 -02
-        long2 s64 = vandq_s64(cast(long2)a, cast(long2)b);
-        return !(vgetq_lane_s64(s64, 0) | vgetq_lane_s64(s64, 1));
-    }
-    else 
-    {
-        __m128i c = a & b;
-        int[4] zero = [0, 0, 0, 0];
-        return c.array == zero;
-    }    
-}
-unittest
-{
-    __m128i A  = _mm_setr_epi32(0x01, 0x02, 0x04, 0xf8);
-    __m128i M1 = _mm_setr_epi32(0xfe, 0xfd, 0x00, 0x07);
-    __m128i M2 = _mm_setr_epi32(0x00, 0x00, 0x04, 0x00);
-    assert(_mm_testz_si128(A, A) == 0);
-    assert(_mm_testz_si128(A, M1) == 1);
-    assert(_mm_testz_si128(A, M2) == 0);
-}
-+/
-
 /// Return vector of type __m256d with undefined elements.
 __m256d _mm256_undefined_pd () pure @safe
 {
@@ -4739,7 +4731,7 @@ __m256 _mm256_xor_ps (__m256 a, __m256 b) pure @safe
 
 void _mm256_zeroall () pure @safe
 {
-    // PERF: DMD needs to do it explicitely if AVX is ever used.
+    // PERF: DMD needs to do it explicitely if AVX is ever used one day.
 
     static if (GDC_with_AVX)
     {
@@ -4747,7 +4739,7 @@ void _mm256_zeroall () pure @safe
     }
     else
     {
-        // Do nothing. The transitions penalty are supposed handled by the backend.
+        // Do nothing. The transitions penalty are supposed handled by the backend (eg: LLVM).
     }
 }
 
@@ -4761,7 +4753,7 @@ void _mm256_zeroupper () pure @safe
     }
     else
     {
-        // Do nothing. The transitions penalty are supposed handled by the backend.
+        // Do nothing. The transitions penalty are supposed handled by the backend (eg: LLVM).
     }
     
 }
@@ -4818,19 +4810,3 @@ unittest
     long[4] correct = [-1, 99, 0, 0];
     assert(R.array == correct);
 }
-
-/+
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd")
-    double2 __builtin_ia32_vpermilvarpd(double2, long2) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.pd.256")
-    double4 __builtin_ia32_vpermilvarpd256(double4, long4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps")
-    float4 __builtin_ia32_vpermilvarps(float4, int4) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.avx.vpermilvar.ps.256")
-    float8 __builtin_ia32_vpermilvarps256(float8, int8) pure @safe;
-
-+/
