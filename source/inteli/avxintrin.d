@@ -2442,6 +2442,7 @@ unittest
     assert(C.array == RC);
 }
 
+///ditto
 __m256d _mm256_permute_pd(int imm8)(__m256d a) pure @trusted
 {
     // PERF DMD
@@ -2475,11 +2476,43 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m128 _mm_permute_ps (__m128 a, int imm8)
+/// Shuffle single-precision (32-bit) floating-point elements in `a` using the control in `imm8`.
+__m128 _mm_permute_ps(int imm8)(__m128 a)
+{
+    // PERF DMD
+    static if (GDC_with_AVX)
+    {
+        return __builtin_ia32_vpermilps(a, cast(ubyte)imm8);
+    }
+    else version(LDC)
+    {
+        return shufflevectorLDC!(float4, (imm8 >> 0) & 3, (imm8 >> 2) & 3, (imm8 >> 4) & 3, (imm8 >> 6) & 3)(a, a);
+    }
+    else
+    {
+        // PERF: could use _mm_shuffle_ps which is a super set
+        // when AVX isn't available
+        __m128 r;
+        r.ptr[0] = a.array[(imm8 >> 0) & 3];
+        r.ptr[1] = a.array[(imm8 >> 2) & 3];
+        r.ptr[2] = a.array[(imm8 >> 4) & 3];
+        r.ptr[3] = a.array[(imm8 >> 6) & 3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(0.0f, 1, 2, 3);
+    __m128 R = _mm_permute_ps!(1 + 4 * 3 + 16 * 0 + 64 * 2)(A);
+    float[4] correct = [1.0f, 3, 0, 2];
+    assert(R.array == correct);
+} 
+
 // TODO __m256 _mm256_permute_ps (__m256 a, int imm8)
 // TODO __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
 // TODO __m256 _mm256_permute2f128_ps (__m256 a, __m256 b, int imm8)
 // TODO __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+
 // TODO __m128d _mm_permutevar_pd (__m128d a, __m128i b)
 // TODO __m256d _mm256_permutevar_pd (__m256d a, __m256i b)
 // TODO __m128 _mm_permutevar_ps (__m128 a, __m128i b)
