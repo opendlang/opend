@@ -10,3 +10,4 @@ module gamut;
 public import gamut.image;
 public import gamut.types;
 public import gamut.io;
+public import gamut.scanline; // scanline conversion is also in the public API!

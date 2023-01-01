@@ -13,6 +13,7 @@ import core.stdc.string: strlen;
 import gamut.types;
 import gamut.io;
 import gamut.plugin;
+import gamut.scanline;
 import gamut.internals.cstring;
 import gamut.internals.errors;
 import gamut.internals.types;
@@ -42,7 +43,7 @@ void freeImageData(void* mallocArea) @trusted
 ///                hasData()  or    no-data            Also: hasNonZeroSize(). 
 ///            ___/     |   \______                          Images with a type have a width and height (that can be zero).
 ///           /         |          \                   Also: isOwned() exist for image that are hasData().
-///   isPlanar or hasPlainPixels or isCompressed       Planar and compressed images are not implemented.
+///   isPlanar or isPlainPixels  or isCompressed       Planar and compressed images are not implemented yet.
 ///                                                    Only image with hasData() have to follow the LayoutConstraints,
 ///                                                    though all image have a LayoutConstraints.
 ///
@@ -1904,14 +1905,7 @@ void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dst
             }
             case la8:
             {
-                ubyte* s = dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte b = cast(ubyte)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 255.0f / 3.0f);
-                    ubyte a = cast(ubyte)(0.5f + inp[4*x+3] * 255.0f);
-                    *s++ = b;
-                    *s++ = a;
-                }
+                scanline_convert_rgbaf32_to_la8(inp, dest, width);
                 break;
             }
             case la16:
@@ -2058,7 +2052,7 @@ unittest
     assert(image.errored());
     assert(!image.hasData());
 
-    assert(!image.hasPlainPixels());
+    assert(!image.isPlainPixels());
     assert(!image.isPlanar());
     assert(!image.isCompressed());
 }
@@ -2076,7 +2070,7 @@ unittest
     assert(image.hasType());
     assert(!image.errored());
     assert(!image.hasData());
-    assert(!image.hasPlainPixels());
+    assert(!image.isPlainPixels());
     assert(!image.isPlanar());
     assert(!image.isCompressed());
     assert(image.hasNonZeroSize());
@@ -2094,7 +2088,7 @@ unittest
     assert(image.hasType());
     assert(!image.errored());
     assert(image.hasData());
-    assert(image.hasPlainPixels());
+    assert(image.isPlainPixels());
     assert(!image.isPlanar());
     assert(!image.isCompressed());
     assert(image.hasNonZeroSize());
@@ -2118,7 +2112,7 @@ unittest
         assert(image.hasType());
         assert(!image.errored());
         assert(image.hasData()); // It has data, just, it has a zero size.
-        assert(image.hasPlainPixels());
+        assert(image.isPlainPixels());
         assert(!image.isPlanar());
         assert(!image.isCompressed()); 
         assert(!image.hasNonZeroSize());
