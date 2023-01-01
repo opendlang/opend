@@ -236,7 +236,7 @@ enum LayoutConstraints
      LAYOUT_GAPLESS               = 2048; /// There must be no single trailing bytes between scanlines.
 
 
-PixelType convertPixelTypeToGreyscale(PixelType type)
+PixelType convertPixelTypeToGreyscale(PixelType type) pure
 {
     PixelType t = PixelType.unknown;
     final switch(type) with (PixelType)
@@ -258,7 +258,7 @@ PixelType convertPixelTypeToGreyscale(PixelType type)
     return t;
 }
 
-PixelType convertPixelTypeToRGB(PixelType type)
+PixelType convertPixelTypeToRGB(PixelType type) pure
 {
     PixelType t = PixelType.unknown;
     final switch(type) with (PixelType)
@@ -280,7 +280,7 @@ PixelType convertPixelTypeToRGB(PixelType type)
     return t;
 }
 
-PixelType convertPixelTypeToAddAlphaChannel(PixelType type)
+PixelType convertPixelTypeToAddAlphaChannel(PixelType type) pure
 {
     PixelType t = PixelType.unknown;
     final switch(type) with (PixelType)
@@ -302,7 +302,7 @@ PixelType convertPixelTypeToAddAlphaChannel(PixelType type)
     return t;
 }
 
-PixelType convertPixelTypeToDropAlphaChannel(PixelType type)
+PixelType convertPixelTypeToDropAlphaChannel(PixelType type) pure
 {
     PixelType t = PixelType.unknown;
     final switch(type) with (PixelType)
@@ -324,7 +324,7 @@ PixelType convertPixelTypeToDropAlphaChannel(PixelType type)
     return t;
 }
 
-PixelType convertPixelTypeTo8Bit(PixelType type)
+PixelType convertPixelTypeTo8Bit(PixelType type) pure
 {
     PixelType t = PixelType.unknown;       
     final switch(type) with (PixelType)
@@ -346,7 +346,7 @@ PixelType convertPixelTypeTo8Bit(PixelType type)
     return t;
 }
 
-PixelType convertPixelTypeTo16Bit(PixelType type)
+PixelType convertPixelTypeTo16Bit(PixelType type) pure
 {
     PixelType t = PixelType.unknown;       
     final switch(type) with (PixelType)
@@ -369,7 +369,7 @@ PixelType convertPixelTypeTo16Bit(PixelType type)
 }
 
 
-PixelType convertPixelTypeToFP32(PixelType type)
+PixelType convertPixelTypeToFP32(PixelType type) pure
 {
     PixelType t = PixelType.unknown;       
     final switch(type) with (PixelType)

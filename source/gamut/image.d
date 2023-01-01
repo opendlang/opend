@@ -283,6 +283,30 @@ public:
         return _type != PixelType.unknown;
     }
 
+    /// Is the image type represented by 8-bit components?
+    /// Tags: #type.
+    bool is8Bit() pure const
+    {
+        assert(hasType);
+        return convertPixelTypeTo8Bit(_type) == _type;
+    }
+
+    /// Is the image type represented by 16-bit components?
+    /// Tags: #type.
+    bool is16Bit() pure const
+    {
+        assert(hasType);
+        return convertPixelTypeTo16Bit(_type) == _type;
+    }
+
+    /// Is the image type represented by 32-bit floating point components?
+    /// Tags: #type.
+    bool isFP32() pure const
+    {
+        assert(hasType);
+        return convertPixelTypeToFP32(_type) == _type;
+    }
+    
     /// An image can have data (usually pixels), or not.
     /// "Data" refers to pixel content, that can be in a decoded form, but also in more
     /// complicated forms such as planar, compressed, etc. (FUTURE)
@@ -725,7 +749,8 @@ public:
 
     /// Keep the same pixels and type, but change how they are arranged in memory to fit some constraints.
     /// Tags: #type
-    bool changeLayout(LayoutConstraints layoutConstraints)
+    deprecated("use setLayout instead") alias changeLayout = setLayout;
+    bool setLayout(LayoutConstraints layoutConstraints)
     {
         return convertTo(_type, layoutConstraints);
     }
@@ -1869,152 +1894,21 @@ void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dst
     else if (srcType == PixelType.rgbaf32)
     {    
         const(float)* inp = cast(const(float)*) src;
-
         final switch(dstType) with (PixelType)
         {
             case unknown: assert(false);
-            case l8:
-            {
-                ubyte* s = dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte b = cast(ubyte)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 255.0f / 3.0f);
-                    *s++ = b;
-                }
-                break;
-            }
-            case l16:
-            {
-                ushort* s = cast(ushort*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ushort b = cast(ushort)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 65535.0f / 3.0f);
-                    *s++ = b;
-                }
-                break;
-            }
-            case lf32:
-            {
-                float* s = cast(float*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) / 3.0f;
-                    *s++ = b;
-                }
-                break;
-            }
-            case la8:
-            {
-                scanline_convert_rgbaf32_to_la8(inp, dest, width);
-                break;
-            }
-            case la16:
-            {
-                ushort* s = cast(ushort*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ushort b = cast(ushort)(0.5f + (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) * 65535.0f / 3.0f);
-                    ushort a = cast(ushort)(0.5f + inp[4*x+3] * 65535.0f);
-                    *s++ = b;
-                    *s++ = a;
-                }
-                break;
-            }
-            case laf32:
-            {
-                float* s = cast(float*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = (inp[4*x+0] + inp[4*x+1] + inp[4*x+2]) / 3.0f;
-                    float a = inp[4*x+3];
-                    *s++ = b;
-                    *s++ = a;
-                }
-                break;
-            }
-            case rgb8:
-            {
-                ubyte* s = dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte r = cast(ubyte)(0.5f + inp[4*x+0] * 255.0f);
-                    ubyte g = cast(ubyte)(0.5f + inp[4*x+1] * 255.0f);
-                    ubyte b = cast(ubyte)(0.5f + inp[4*x+2] * 255.0f);
-                    *s++ = r;
-                    *s++ = g;
-                    *s++ = b;
-                }
-                break;
-            }
-            case rgb16:
-            {
-                ushort* s = cast(ushort*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ushort r = cast(ushort)(0.5f + inp[4*x+0] * 65535.0f);
-                    ushort g = cast(ushort)(0.5f + inp[4*x+1] * 65535.0f);
-                    ushort b = cast(ushort)(0.5f + inp[4*x+2] * 65535.0f);
-                    *s++ = r;
-                    *s++ = g;
-                    *s++ = b;
-                }
-                break;
-            }
-            case rgbf32:
-            {
-                float* s = cast(float*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    *s++ = inp[4*x+0];
-                    *s++ = inp[4*x+1];
-                    *s++ = inp[4*x+2];
-                }
-                break;
-            }
-            case rgba8:
-            {
-                ubyte* s = dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte r = cast(ubyte)(0.5f + inp[4*x+0] * 255.0f);
-                    ubyte g = cast(ubyte)(0.5f + inp[4*x+1] * 255.0f);
-                    ubyte b = cast(ubyte)(0.5f + inp[4*x+2] * 255.0f);
-                    ubyte a = cast(ubyte)(0.5f + inp[4*x+3] * 255.0f);
-                    *s++ = r;
-                    *s++ = g;
-                    *s++ = b;
-                    *s++ = a;
-                }
-                break;
-            }
-            case rgba16:
-            {
-                ushort* s = cast(ushort*)dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    ushort r = cast(ushort)(0.5f + inp[4*x+0] * 65535.0f);
-                    ushort g = cast(ushort)(0.5f + inp[4*x+1] * 65535.0f);
-                    ushort b = cast(ushort)(0.5f + inp[4*x+2] * 65535.0f);
-                    ushort a = cast(ushort)(0.5f + inp[4*x+3] * 65535.0f);
-                    *s++ = r;
-                    *s++ = g;
-                    *s++ = b;
-                    *s++ = a;
-                }
-                break;
-            }
-            case rgbaf32:
-            {
-                float* s = cast(float*) dest;
-                for (int x = 0; x < width; ++x)
-                {
-                    *s++ = inp[4*x+0];
-                    *s++ = inp[4*x+1];
-                    *s++ = inp[4*x+2];
-                    *s++ = inp[4*x+3];
-                }
-                break;
-            }
+            case l8:      scanline_convert_rgbaf32_to_l8     (src, dest, width); break;
+            case l16:     scanline_convert_rgbaf32_to_l16    (src, dest, width); break;
+            case lf32:    scanline_convert_rgbaf32_to_lf32   (src, dest, width); break;
+            case la8:     scanline_convert_rgbaf32_to_la8    (src, dest, width); break;
+            case la16:    scanline_convert_rgbaf32_to_la16   (src, dest, width); break;
+            case laf32:   scanline_convert_rgbaf32_to_laf32  (src, dest, width); break;
+            case rgb8:    scanline_convert_rgbaf32_to_rgb8   (src, dest, width); break;
+            case rgb16:   scanline_convert_rgbaf32_to_rgb16  (src, dest, width); break;
+            case rgbf32:  scanline_convert_rgbaf32_to_rgbf32 (src, dest, width); break;
+            case rgba8:   scanline_convert_rgbaf32_to_rgba8  (src, dest, width); break;
+            case rgba16:  scanline_convert_rgbaf32_to_rgba16 (src, dest, width); break;
+            case rgbaf32: scanline_convert_rgbaf32_to_rgbaf32(src, dest, width); break;
         }
     }
     else
