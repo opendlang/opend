@@ -1850,43 +1850,10 @@ void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dst
         alias inp = src;
         switch(dstType) with (PixelType)
         {
-            case l8:
-            {
-                for (int x = 0; x < width; ++x)
-                    dest[x] = inp[4*x];
-                break;
-            }
-            case la8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    dest[2*x+0] = inp[4*x+0];
-                    dest[2*x+1] = inp[4*x+3];
-                }
-                break;
-            }
-            case rgb8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    dest[3*x+0] = inp[4*x+0];
-                    dest[3*x+1] = inp[4*x+1];
-                    dest[3*x+2] = inp[4*x+2];
-                }
-                break;
-            }
-            case rgba8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    dest[4*x+0] = inp[4*x+0];
-                    dest[4*x+1] = inp[4*x+1];
-                    dest[4*x+2] = inp[4*x+2];
-                    dest[4*x+3] = inp[4*x+3];
-                }
-                break;
-            }
-
+            case l8:      scanline_convert_rgba8_to_l8    (src, dest, width); break;
+            case la8:     scanline_convert_rgba8_to_la8   (src, dest, width); break;
+            case rgb8:    scanline_convert_rgba8_to_rgb8  (src, dest, width); break;
+            case rgba8:   scanline_convert_rgba8_to_rgba8 (src, dest, width); break;
             default:
                 assert(false); // should not use rgba8 as intermediate type
         }

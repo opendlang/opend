@@ -25,6 +25,52 @@ nothrow:
 alias scanlineConversionFunction_t = void function(const(ubyte)* inScan, ubyte* outScan, int width, void* userData);
 
 
+
+//
+// FROM rgba8 TO xxxx
+//
+
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to L 8-bit (0 to 255).
+void scanline_convert_rgba8_to_l8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    for (int x = 0; x < width; ++x)
+    {
+        outScan[x] = inScan[4*x];
+    }
+}
+
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to LA 8-bit (0 to 255).
+void scanline_convert_rgba8_to_la8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    for (int x = 0; x < width; ++x)
+    {
+        outScan[2*x+0] = inScan[4*x+0];
+        outScan[2*x+1] = inScan[4*x+3];
+    }
+}
+
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to RGB 8-bit (0 to 255).
+void scanline_convert_rgba8_to_rgb8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    for (int x = 0; x < width; ++x)
+    {
+        outScan[3*x+0] = inScan[4*x+0];
+        outScan[3*x+1] = inScan[4*x+1];
+        outScan[3*x+2] = inScan[4*x+2];
+    }
+}
+
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to RGBA 8-bit (0 to 255).
+void scanline_convert_rgba8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    memcpy(outScan, inScan, width * 4 * ubyte.sizeof);
+}
+
+//
+// FROM rgbaf32 TO xxxx
+//
+
+
 /// Convert a row of pixel from RGBA 32-bit float (0 to 1.0) float to L 8-bit (0 to 255).
 void scanline_convert_rgbaf32_to_l8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
 {
