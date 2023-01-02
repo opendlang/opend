@@ -26,6 +26,47 @@ alias scanlineConversionFunction_t = void function(const(ubyte)* inScan, ubyte* 
 
 
 
+
+//
+// FROM xxxx TO rgba8
+// 
+
+void scanline_convert_l8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    ubyte* outb = outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        ubyte b = inScan[x];
+        *outb++ = b;
+        *outb++ = b;
+        *outb++ = b;
+        *outb++ = 255;
+    }
+}
+void scanline_convert_la8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    ubyte* outb = outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        ubyte b = inScan[x*2];
+        *outb++ = b;
+        *outb++ = b;
+        *outb++ = b;
+        *outb++ = inScan[x*2+1];
+    }
+}
+void scanline_convert_rgb8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    ubyte* outb = outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        *outb++ = inScan[x*3+0];
+        *outb++ = inScan[x*3+1];
+        *outb++ = inScan[x*3+2];
+        *outb++ = 255;
+    }
+}
+
 //
 // FROM rgba8 TO xxxx
 //
@@ -67,9 +108,181 @@ void scanline_convert_rgba8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int w
 }
 
 //
-// FROM rgbaf32 TO xxxx
+// FROM xxxx TO rgbaf32
 //
 
+void scanline_convert_l8_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ubyte)* s = inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = s[x] / 255.0f;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_l16_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ushort)* s = cast(const(ushort)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = s[x] / 65535.0f;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_lf32_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(float)* s = cast(const(float)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = s[x];
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_la8_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ubyte)* s = inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = *s++ / 255.0f;
+        float a = *s++ / 255.0f;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = a;
+    }
+}
+
+void scanline_convert_la16_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ushort)* s = cast(const(ushort)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = *s++ / 65535.0f;
+        float a = *s++ / 65535.0f;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = a;
+    }
+}
+
+void scanline_convert_laf32_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(float)* s = cast(const(float)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float b = *s++;
+        float a = *s++;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = b;
+        *outp++ = a;
+    }
+}
+
+void scanline_convert_rgb8_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ubyte)* s = inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float r = *s++ / 255.0f;
+        float g = *s++ / 255.0f;
+        float b = *s++ / 255.0f;
+        *outp++ = r;
+        *outp++ = g;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_rgb16_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ushort)* s = cast(const(ushort)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float r = *s++ / 65535.0f;
+        float g = *s++ / 65535.0f;
+        float b = *s++ / 65535.0f;
+        *outp++ = r;
+        *outp++ = g;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_rgbf32_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(float)* s = cast(const(float)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float r = *s++;
+        float g = *s++;
+        float b = *s++;
+        *outp++ = r;
+        *outp++ = g;
+        *outp++ = b;
+        *outp++ = 1.0f;
+    }
+}
+
+void scanline_convert_rgba8_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ubyte)* s = inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float r = *s++ / 255.0f;
+        float g = *s++ / 255.0f;
+        float b = *s++ / 255.0f;
+        float a = *s++ / 255.0f;
+        *outp++ = r;
+        *outp++ = g;
+        *outp++ = b;
+        *outp++ = a;
+    }
+}
+
+void scanline_convert_rgba16_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    const(ushort)* s = cast(const(ushort)*) inScan;
+    float* outp = cast(float*) outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        float r = *s++ / 65535.0f;
+        float g = *s++ / 65535.0f;
+        float b = *s++ / 65535.0f;
+        float a = *s++ / 65535.0f;
+        *outp++ = r;
+        *outp++ = g;
+        *outp++ = b;
+        *outp++ = a;
+    }
+}
+
+//
+// FROM rgbaf32 TO xxxx
+//
 
 /// Convert a row of pixel from RGBA 32-bit float (0 to 1.0) float to L 8-bit (0 to 255).
 void scanline_convert_rgbaf32_to_l8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)

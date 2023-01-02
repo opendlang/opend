@@ -1601,246 +1601,37 @@ void convertToIntermediateScanline(PixelType srcType,
 {
     if (dstType == PixelType.rgba8)
     {
-        ubyte* outb = dest;
         switch(srcType) with (PixelType)
         {
-            case l8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte b = src[x];
-                    *outb++ = b;
-                    *outb++ = b;
-                    *outb++ = b;
-                    *outb++ = 255;
-                }
-                break;
-            }
-            case la8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    ubyte b = src[x*2];
-                    *outb++ = b;
-                    *outb++ = b;
-                    *outb++ = b;
-                    *outb++ = src[x*2+1];
-                }
-                break;
-            }
-            case rgb8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    *outb++ = src[x*3+0];
-                    *outb++ = src[x*3+1];
-                    *outb++ = src[x*3+2];
-                    *outb++ = 255;
-                }
-                break;
-            }
-            case rgba8:
-            {
-                for (int x = 0; x < width; ++x)
-                {
-                    *outb++ = src[x*4+0];
-                    *outb++ = src[x*4+1];
-                    *outb++ = src[x*4+2];
-                    *outb++ = src[x*4+3];
-                }
-                break;
-            }
-
+            case l8:      scanline_convert_l8_to_rgba8    (src, dest, width); break;
+            case la8:     scanline_convert_la8_to_rgba8   (src, dest, width); break;
+            case rgb8:    scanline_convert_rgb8_to_rgba8  (src, dest, width); break;
+            case rgba8:   scanline_convert_rgba8_to_rgba8 (src, dest, width); break;
             default:
                 assert(false); // should not use rgba8 as intermediate type
         }
     }
     else if (dstType == PixelType.rgbaf32)
     {
-        float* outp = cast(float*) dest;
-
         final switch(srcType) with (PixelType)
         {
             case unknown: assert(false);
-            case l8:
-            {
-                const(ubyte)* s = src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = s[x] / 255.0f;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case l16:
-            {
-                const(ushort)* s = cast(const(ushort)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = s[x] / 65535.0f;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case lf32:
-            {
-                const(float)* s = cast(const(float)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = s[x];
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case la8:
-            {
-                const(ubyte)* s = src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = *s++ / 255.0f;
-                    float a = *s++ / 255.0f;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
-            case la16:
-            {
-                const(ushort)* s = cast(const(ushort)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = *s++ / 65535.0f;
-                    float a = *s++ / 65535.0f;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
-            case laf32:
-            {
-                const(float)* s = cast(const(float)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float b = *s++;
-                    float a = *s++;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
-            case rgb8:
-            {
-                const(ubyte)* s = src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++ / 255.0f;
-                    float g = *s++ / 255.0f;
-                    float b = *s++ / 255.0f;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case rgb16:
-            {
-                const(ushort)* s = cast(const(ushort)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++ / 65535.0f;
-                    float g = *s++ / 65535.0f;
-                    float b = *s++ / 65535.0f;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case rgbf32:
-            {
-                const(float)* s = cast(const(float)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++;
-                    float g = *s++;
-                    float b = *s++;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = 1.0f;
-                }
-                break;
-            }
-            case rgba8:
-            {
-                const(ubyte)* s = src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++ / 255.0f;
-                    float g = *s++ / 255.0f;
-                    float b = *s++ / 255.0f;
-                    float a = *s++ / 255.0f;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
-            case rgba16:
-            {
-                const(ushort)* s = cast(const(ushort)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++ / 65535.0f;
-                    float g = *s++ / 65535.0f;
-                    float b = *s++ / 65535.0f;
-                    float a = *s++ / 65535.0f;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
-            case rgbaf32:
-            {
-                const(float)* s = cast(const(float)*) src;
-                for (int x = 0; x < width; ++x)
-                {
-                    float r = *s++;
-                    float g = *s++;
-                    float b = *s++;
-                    float a = *s++;
-                    *outp++ = r;
-                    *outp++ = g;
-                    *outp++ = b;
-                    *outp++ = a;
-                }
-                break;
-            }
+            case l8:      scanline_convert_l8_to_rgbaf32     (src, dest, width); break;
+            case l16:     scanline_convert_l16_to_rgbaf32    (src, dest, width); break;
+            case lf32:    scanline_convert_lf32_to_rgbaf32   (src, dest, width); break;
+            case la8:     scanline_convert_la8_to_rgbaf32    (src, dest, width); break;
+            case la16:    scanline_convert_la16_to_rgbaf32   (src, dest, width); break;
+            case laf32:   scanline_convert_laf32_to_rgbaf32  (src, dest, width); break;
+            case rgb8:    scanline_convert_rgb8_to_rgbaf32   (src, dest, width); break;
+            case rgb16:   scanline_convert_rgb16_to_rgbaf32  (src, dest, width); break;
+            case rgbf32:  scanline_convert_rgbf32_to_rgbaf32 (src, dest, width); break;
+            case rgba8:   scanline_convert_rgba8_to_rgbaf32  (src, dest, width); break;
+            case rgba16:  scanline_convert_rgba16_to_rgbaf32 (src, dest, width); break;
+            case rgbaf32: scanline_convert_rgbaf32_to_rgbaf32(src, dest, width); break;
         }
     }
     else
         assert(false);
-
 }
 
 void convertFromIntermediate(PixelType srcType, const(ubyte)* src, PixelType dstType, ubyte* dest, int width) @system
