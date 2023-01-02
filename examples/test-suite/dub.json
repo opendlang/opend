@@ -1,0 +1,10 @@
+{
+    "name": "test-suite",
+    "description": "Regression testing for Gamut loading.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    }
+}
