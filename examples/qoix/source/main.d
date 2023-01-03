@@ -56,7 +56,6 @@ int main(string[] args)
         if (qoix_encoded is null)
             throw new Exception("encoding failed");
 
-        scope(exit) free(qoix_encoded.ptr);
         double qoix_size_kb = qoix_encoded.length / 1024.0;
         double qoix_decode_ms = measure( { image.loadFromMemory(qoix_encoded); } );
         double qoix_encode_mpps = (width * height * 1.0e-6) / (qoix_encode_ms * 0.001);

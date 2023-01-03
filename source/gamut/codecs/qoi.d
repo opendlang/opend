@@ -429,6 +429,9 @@ void *qoi_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len)
         bytes[p++] = qoi_padding[i];
     }
 
+    // PERF, realloc here to take less memory
+    // Check encoding speed reg in QOIX example
+
     *out_len = p;
     return bytes;
 }

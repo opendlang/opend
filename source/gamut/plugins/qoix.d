@@ -292,6 +292,10 @@ ubyte* qoix_lz4_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
         free(lz4Data);
         *out_len = qoilen;
         assert(qoix[QOIX_HEADER_OFFSET_COMPRESSION] == QOIX_COMPRESSION_NONE);
+
+        // tighten the QOIX allocation in order to save bytes
+        qoix = cast(ubyte*) realloc(qoix, qoilen);
+
         return qoix; // return original QOIX
     }
 }
