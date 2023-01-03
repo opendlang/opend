@@ -2373,21 +2373,75 @@ private:
         immutable int Y_ofs = k * 8;
         immutable int Cb_ofs = Y_ofs + 64 * m_expanded_blocks_per_component;
         immutable int Cr_ofs = Y_ofs + 64 * m_expanded_blocks_per_component * 2;
-        for (int j = 0; j < 8; j++)
-        {
-          int y = Py[Y_ofs + j];
-          int cb = Py[Cb_ofs + j];
-          int cr = Py[Cr_ofs + j];
 
-          __m128i zero = _mm_setzero_si128();
-          __m128i A = _mm_setr_epi32(y + m_crr.ptr[cr], 
-                                     y + ((m_crg.ptr[cr] + m_cbg.ptr[cb]) >> 16),
-                                     y + m_cbb.ptr[cb],
-                                     255);
-          A = _mm_packs_epi32(A, zero);
-          A = _mm_packus_epi16(A, zero);
-          _mm_storeu_si32(&d[0], A);
-          d += 4;
+        const(int*) pm_crr = m_crr.ptr;
+        const(int*) pm_crg = m_crg.ptr;
+        const(int*) pm_cbg = m_cbg.ptr;
+        const(int*) pm_cbb = m_cbb.ptr;
+
+        for (int j = 0; j + 3 < 8; j += 4)
+        {
+            __m128i mm_y  = _mm_loadu_si32(cast(__m128i*) &Py[Y_ofs + j]);
+            __m128i mm_cb = _mm_loadu_si32(cast(__m128i*) &Py[Cb_ofs + j]);
+            __m128i mm_cr = _mm_loadu_si32(cast(__m128i*) &Py[Cr_ofs + j]);
+            __m128i zero = _mm_setzero_si128();
+
+            // Extend u8 to i32
+            mm_y  = _mm_unpacklo_epi8(mm_y, zero);
+            mm_cb = _mm_unpacklo_epi8(mm_cb, zero);
+            mm_cr = _mm_unpacklo_epi8(mm_cr, zero);
+            mm_y  = _mm_unpacklo_epi16(mm_y, zero);
+            mm_cb = _mm_unpacklo_epi16(mm_cb, zero);
+            mm_cr = _mm_unpacklo_epi16(mm_cr, zero);
+
+            // Avoid table here, since we use SIMD
+
+            //m_crr.ptr[i] = ( FIX!(1.40200f)  * (i - 128) + ONE_HALF) >> SCALEBITS;
+            //m_crg.ptr[i] = (-FIX!(0.71414f)) * (i - 128);
+            //m_cbg.ptr[i] = (-FIX!(0.34414f)) * (i - 128) + ONE_HALF;
+            //m_cbb.ptr[i] = ( FIX!(1.77200f)  * (i - 128) + ONE_HALF) >> SCALEBITS;            
+
+            __m128i mm_128 = _mm_set1_epi32(128);
+
+            __m128i mm_crr = (mm_cr - mm_128) * _mm_set1_epi32( FIX!(1.40200f) );
+            __m128i mm_crg = (mm_cr - mm_128) * _mm_set1_epi32(-FIX!(0.71414f) );
+            __m128i mm_cbg = (mm_cb - mm_128) * _mm_set1_epi32(-FIX!(0.34414f) );
+            __m128i mm_cbb = (mm_cb - mm_128) * _mm_set1_epi32( FIX!(1.77200f) );
+
+            __m128i mm_ONE_HALF = _mm_set1_epi32(ONE_HALF);
+            mm_crr += mm_ONE_HALF;
+            mm_cbg += mm_ONE_HALF;
+            mm_cbb += mm_ONE_HALF;
+            mm_crr = _mm_srai_epi32(mm_crr, 16);
+            mm_cbb = _mm_srai_epi32(mm_cbb, 16);
+
+            mm_crg = _mm_srai_epi32(mm_crg + mm_cbg, 16);
+            mm_crr += mm_y;
+            mm_crg += mm_y;
+            mm_cbb += mm_y;
+
+            // We want to store these bytes (read in cols)
+            //    |
+            //    v 
+            //    A         B          C        D
+            // mm_crr[0] mm_crr[1] mm_crr[2] mm_crr[3]
+            // mm_crg[0] mm_crg[1] mm_crg[2] mm_crg[3]
+            // mm_cbb[0] mm_cbb[1] mm_cbb[2] mm_cbb[3]
+            //   255       255        255      255
+
+            // 4x4 transpose
+            __m128 A = cast(__m128) mm_crr;
+            __m128 B = cast(__m128) mm_crg;
+            __m128 C = cast(__m128) mm_cbb;
+            __m128 D = cast(__m128) _mm_set1_epi32(255);
+            _MM_TRANSPOSE4_PS(A, B, C, D);
+
+            // Now pack
+            __m128i Ai = _mm_packs_epi32(cast(__m128i)A, cast(__m128i)B);
+            __m128i Ci = _mm_packs_epi32(cast(__m128i)C, cast(__m128i)D);
+            Ai = _mm_packus_epi16(Ai, Ci);
+            _mm_storeu_si128(cast(__m128i*) &d[0], Ai);
+            d += 16;
         }
       }
 
