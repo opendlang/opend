@@ -24,9 +24,15 @@ nothrow @nogc @safe:
 
 /// Deallocate pixel data. Everything allocated with `allocatePixelStorage` or disowned eventually needs
 /// to be through that function.
-void freeImageData(void* mallocArea) @trusted
+void freeImageData(void* mallocArea) @system
 {
     deallocatePixelStorage(mallocArea);
+}
+
+/// Deallocate an encoded image created with `saveToMemory`.
+void freeEncodedImage(ubyte[] encodedImage) @system
+{
+    deallocateEncodedImage(encodedImage);
 }
 
 /// Image type.
@@ -670,9 +676,10 @@ public:
     }
 
     /// Saves the image into a new memory location.
-    /// The returned data must be released with a call to `free`.
+    /// The returned data must be released with a call to `freeEncodedImage`.
     /// Returns: `null` if saving failed.
-    /// Warning: this is NOT GC-allocated.
+    /// Warning: this is NOT GC-allocated, so this allocation will leak unless you call 
+    /// `freeEncodedImage` after use.
     /// Tags: none.
     ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const @trusted
     {
@@ -1887,4 +1894,66 @@ unittest
     // Overlapping scanlines is illegal
     image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch-1);
     assert(image.errored);
+}
+
+// Test encodings
+@trusted unittest 
+{
+    ubyte[3][3] pixels = 
+    [ [ 255, 0, 0],
+      [ 15, 64, 255],
+      [ 0, 255, 255] ];
+
+    Image image;
+    int width = 3;
+    int height = 1;
+    int pitch = 3 * 3; /* whatever */
+    image.createViewFromData(&pixels[0][0], width, height, PixelType.rgb8, pitch);
+    assert(!image.errored);
+
+    void checkEncode(const(ubyte)[] encoded, bool lossless) nothrow @trusted
+    {
+        assert(encoded !is null);
+        Image image;
+        image.loadFromMemory(encoded);
+        image.convertTo(PixelType.rgb8);
+        assert(!image.errored);
+
+        assert(image.width == 3);
+        assert(image.height == 1);
+
+        ubyte* l0 = image.scanline(0);
+        if (lossless) 
+        {
+            assert(l0[0..9] == [255, 0, 0, 15, 64, 255, 0, 255, 255]);
+        }
+    }
+
+    version(encodePNG)
+    {
+        ubyte[] png = image.saveToMemory(ImageFormat.PNG);        
+        checkEncode(png, true);
+        freeEncodedImage(png);
+    }
+
+    version(encodeJPEG)
+    {
+        ubyte[] jpeg = image.saveToMemory(ImageFormat.JPEG);
+        checkEncode(jpeg, false);
+        freeEncodedImage(jpeg);
+    }
+
+    version(encodeQOI)
+    {
+        ubyte[] qoi = image.saveToMemory(ImageFormat.QOI);
+        checkEncode(qoi, true);
+        freeEncodedImage(qoi);
+    }
+
+    version(encodeQOIX)
+    {
+        ubyte[] qoix = image.saveToMemory(ImageFormat.QOIX);
+        checkEncode(qoi, true);
+        freeEncodedImage(qoix);
+    }
 }

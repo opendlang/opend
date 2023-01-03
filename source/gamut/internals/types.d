@@ -458,11 +458,17 @@ void allocatePixelStorage(ubyte* existingData,
     }
 }
 
-/// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
-/// to be through that function.
-void deallocatePixelStorage(void* mallocArea) @trusted
+// Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
+// to be through that function.
+void deallocatePixelStorage(void* mallocArea) @system
 {
     free(mallocArea);
+}
+
+// Deallocate encoded image.
+void deallocateEncodedImage(ubyte[] encodedImage) @system
+{
+    free(encodedImage.ptr);
 }
 
 bool validLoadFlags(LoadFlags loadFlags) pure
@@ -479,7 +485,6 @@ bool validLoadFlags(LoadFlags loadFlags) pure
 
     return true;
 }
-
 
 
 // Load flags to components asked, intended for an image decoder. 

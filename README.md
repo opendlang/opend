@@ -231,10 +231,10 @@ Another way to create an `Image` is to load an encoded image.
   ```d
   Image image;
   ubyte[] qoixEncoded = image.saveToMemory(ImageFormat.QOIX);
-  scope(exit) free(qoix_encoded.ptr);
+  scope(exit) freeEncodedImage(qoix_encoded);
   ```
 
-  The returned slice must be freed up with `core.stdc.stdlib.free`.
+  The returned slice must be freed up with `freeEncodedImage`.
 
 
 &nbsp;

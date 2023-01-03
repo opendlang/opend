@@ -51,6 +51,7 @@ int main(string[] args)
 
         ubyte[] qoix_encoded;
         double qoix_encode_ms = measure( { qoix_encoded = image.saveToMemory(ImageFormat.QOIX); } );
+        scope(exit) freeEncodedImage(qoix_encoded);
 
         if (qoix_encoded is null)
             throw new Exception("encoding failed");
