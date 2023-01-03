@@ -8,6 +8,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 module gamut.internals.types;
 
 import core.stdc.stdlib: realloc, free;
+import core.stdc.string: memset;
 
 import gamut.types;
 
@@ -331,6 +332,7 @@ void applyVFlipConstraintsToScanlinePointers(int width,
 ///     bonusBytes   If non-zero, the area mallocArea[0..bonusBytes] can be used for user storage.
 ///                  Only the caller can use as temp storage, since Image won't preserve knowledge of these
 ///                  bonusBytes once the allocation is done.
+///     clearWithZeroes Should fill the whole allocated area with zeroes (so that includes borders and gap bytes).
 ///     dataPointer  The pointer to the first scanline.
 ///     mallocArea   The pointer to the allocation beginning. Will be different from dataPointer and
 ///                  must be kept somewhere.
@@ -345,6 +347,7 @@ void allocatePixelStorage(ubyte* existingData,
                           int height, 
                           LayoutConstraints constraints,
                           int bonusBytes,
+                          bool clearWithZeroes,
                           out ubyte* dataPointer, // first scanline
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
@@ -358,7 +361,7 @@ void allocatePixelStorage(ubyte* existingData,
     int rowAlignment   = layoutScanlineAlignment(constraints);
     int trailingPixels = layoutTrailingPixels(constraints);
     int xMultiplicity  = layoutMultiplicity(constraints);
-    bool gapless       = layoutConstraintsValid(constraints);
+    bool gapless       = layoutGapless(constraints);
 
     assert(border >= 0);
     assert(rowAlignment >= 1);
@@ -414,6 +417,13 @@ void allocatePixelStorage(ubyte* existingData,
     {
         err = true;
         return;
+    }
+
+    // Optional by zero clearing of allocation area.
+    // PERF: realloc made a useless copy in that case.
+    if (clearWithZeroes && (allocationSize > 0))
+    {
+        memset(allocation, 0, allocationSize);
     }
 
     // Compute pointer to pixel data itself.

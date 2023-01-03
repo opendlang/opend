@@ -113,11 +113,28 @@ Our benchmark results for 8-bit color images:
 
 
 
-### **1.3 Create an uninitialized image:**
+### **1.3 Create an image:**
+
+> Different ways to create an `Image`:
+> - `create()` or regular constructor `this()` creates a new owned image filled with zeros.
+> - `createNoInit()` or `setSize()` creates a new owned uninitialized image.
+> - `createViewFromData()` creates a view into existing data.
+> - `createNoData()` creates a new image with no data pointed to. _(this is rare)_
+
   ```d
-  Image image;
+  // Create with zero initialization.
+  Image image = Image(640, 480, PixelType.rgba8); 
+  image.create(640, 480, PixelType.rgba8);
+
+  // Create with no initialization.
   image.setSize(640, 480, PixelType.rgba8);
+  image.createNoInit(640, 480, PixelType.rgba8);
+
+  // Create view into existing data.
+  image.createViewFromData(data.ptr, pitchbytes, w, h, PixelType.rgb8);
   ```
+
+  At creation time, the `Image` forgets about its former life, and leaves any `errored()` state.
 
 
 &nbsp;
@@ -132,6 +149,8 @@ Our benchmark results for 8-bit color images:
 ## 2. Loading and saving an image
 
 ### **2.1 Load an `Image` from a file:**
+
+Another way to create an `Image` is to load an encoded image.
 
   ```d
   Image image;

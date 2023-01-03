@@ -145,6 +145,8 @@ public:
     ///  * after each scanline there is at least a number of trailing pixels given by layout flags
     ///  * scanline pixels can be processed by multiplicity given by layout flags
     ///  * around the image, there is a border whose width is at least the one given by layout flags.
+    ///  * it is valid, if the layout guarantees a border, to adress additional scanlines below 0 and
+    ///    above height()-1
     /// ---
     ///
     /// For each scanline pointer, you can _always_ READ `ptr[0..pitchInBytes()]` without memory error.
@@ -153,11 +155,14 @@ public:
     ///
     /// Returns: The scanline start.
     ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
+    ///          If the layout has a border, you can adress pixels with a X coordinate in:
+    ///          -borderWidth to width - 1 + borderWidth.
     /// Tags: #type #data #plain
     inout(ubyte)* scanline(int y) inout pure @trusted
     {
         assert(isPlainPixels());
-        assert(y >= 0 && y < _height);
+        int borderWidth = layoutBorderWidth(_layoutConstraints);
+        assert( (y >= -borderWidth) && (y < _height + borderWidth) );
         return _data + _pitch * y;
     }
 
@@ -394,67 +399,101 @@ public:
     // <INITIALIZE>
     //
 
-    /// Clear the image and initialize a new image, with given dimensions and plain pixels.
+    /// Clear the image, and creates a new owned image, with given dimensions and plain pixels.
+    /// The image data is cleared with zeroes.
     /// Tags: none.
-    this(int width, 
-         int height, 
+    this(int width, int height, 
          PixelType type = PixelType.rgba8,
          LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        setSize(width, height, type, layoutConstraints);
+        create(width, height, type, layoutConstraints);
     }
     ///ditto
-    void setSize(int width, 
-                 int height, 
-                 PixelType type = PixelType.rgba8,
-                 LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    void create(int width, int height, 
+                PixelType type = PixelType.rgba8,
+                LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        // PERF: Pessimized, because we don't know if we have been borrowed from...
-        //       Not sure what to do.
-        cleanupBitmapAndTypeIfAny();
-
-        clearError();
-
-        if (width < 0 || height < 0)
-        {
-            error(kStrIllegalNegativeDimension);
+        if (!forgetPreviousUsage(width, height))
             return;
-        }
 
-        if (!imageIsValidSize(width, height))
-        {
-            error(kStrImageTooLarge);
-            return;
-        }
-
-        if (!setStorage(width, height, type, layoutConstraints))
+        if (!setStorage(width, height, type, layoutConstraints, true))
         {
             // precise error set by setStorage
             return;
         }
     }
 
+    /// Clear the image, and creates a new owned image, with given dimensions and plain pixels.
+    /// The image data is left uninitialized, so it may contain data from former allocations.
+    /// Tags: none.
+    void createNoInit(int width, int height, 
+                      PixelType type = PixelType.rgba8,
+                      LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    {
+        if (!forgetPreviousUsage(width, height))
+            return;
+
+        if (!setStorage(width, height, type, layoutConstraints, false))
+        {
+            // precise error set by setStorage
+            return;
+        }
+    }
+    ///ditto
+    alias setSize = createNoInit;
+
+    // TODO createView from another Image + a rect
+
+    /// Create a view into existing data.
+    /// The image data is considered read/write, and not owned.
+    /// No layout constraints are assumed.
+    /// The input scanlines must NOT overlap.
+    /// Params:
+    ///    data         Pointer to first scanline pixels.
+    ///    width        Width of input data in pixels.
+    ///    height       Height of input data in pixels.
+    ///    type         Type of pixels for the created view.
+    ///    pitchInBytes Byte offset between two consecutive rows of pixels.
+    ///                 Can not be too small as the scanline would overlap, in this case the 
+    ///                 image will be left in an errored state.
+    /// Tags: none.
+    void createViewFromData(void* data, 
+                            int width, 
+                            int height, 
+                            PixelType type,
+                            int pitchInBytes) @system
+    {
+        if (!forgetPreviousUsage(width, height))
+            return;
+
+        // If scanlines overlap, there is a problem.
+        int minPitch = pixelTypeSize(type) * width;
+        int absPitch = pitchInBytes >= 0 ? pitchInBytes : -pitchInBytes;
+        if (absPitch < minPitch)
+        {
+            error(kStrOverlappingScanlines);
+            return;
+        }
+
+        _data = cast(ubyte*) data;
+        _allocArea = null; // not owned
+        _type = type;
+        _width = width;
+        _height = height;
+        _pitch = pitchInBytes;
+        _layoutConstraints = LAYOUT_DEFAULT; // No constraint whatsoever, we lack that information
+    }
+
+    deprecated("Use createWithNoData instead") alias initWithNoData = createWithNoData;
+
     /// Initialize an image with no data, for example if you wanted an image without the pixel content.
     /// Tags: none.
-    void initWithNoData(int width, 
-                        int height, 
-                        PixelType type = PixelType.rgba8,
-                        LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    void createWithNoData(int width, int height, 
+                          PixelType type = PixelType.rgba8,
+                          LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        cleanupBitmapAndTypeIfAny();
-        clearError();
-
-        if (width < 0 || height < 0)
-        {
-            error(kStrIllegalNegativeDimension);
+        if (!forgetPreviousUsage(width, height))
             return;
-        }
-
-        if (!imageIsValidSize(width, height))
-        {
-            error(kStrImageTooLarge);
-            return;
-        }
 
         if (!layoutConstraintsValid(layoutConstraints))
         {
@@ -891,12 +930,14 @@ public:
         ubyte* newAllocArea;  // the result of realloc-ed
         int destPitch;
         bool err;
+        bool clearWithZeroes = false; // no need, since all pixels will be rewritten
         allocatePixelStorage(null, // so that the former allocation keep existing for the copy
                              targetType,
                              width,
                              height,
                              layoutConstraints,
                              bonusBytes,
+                             clearWithZeroes,
                              dest,
                              newAllocArea,
                              destPitch,
@@ -1267,6 +1308,28 @@ private:
         return width * pixelTypeSize(type);
     }
 
+    // Used by creation functions, this makes some checks too.
+    bool forgetPreviousUsage(int newWidth, int newHeight) @safe
+    {
+        // FUTURE: Note that this invalidates any borrow we could have here...
+        cleanupBitmapAndTypeIfAny();
+
+        clearError();
+
+        if (newWidth < 0 || newHeight < 0)
+        {
+            error(kStrIllegalNegativeDimension);
+            return false;
+        }
+
+        if (!imageIsValidSize(newWidth, newHeight))
+        {
+            error(kStrImageTooLarge);
+            return false;
+        }
+        return true;
+    }
+
     void cleanupBitmapAndTypeIfAny() @safe
     {
         cleanupBitmapIfAny();
@@ -1303,7 +1366,8 @@ private:
     bool setStorage(int width, 
                     int height,
                     PixelType type, 
-                    LayoutConstraints constraints) @trusted
+                    LayoutConstraints constraints,
+                    bool clearWithZeroes) @trusted
     {
         if (!layoutConstraintsValid(constraints))
         {
@@ -1322,6 +1386,7 @@ private:
                              height,
                              constraints,
                              0,
+                             clearWithZeroes,
                              dataPointer,
                              mallocArea,
                              pitchBytes,
@@ -1732,7 +1797,7 @@ unittest
 unittest
 {
     Image image;
-    image.setSize(3, 5, PixelType.rgba8);
+    image.createNoInit(3, 5, PixelType.rgba8);
     assert(image.hasType());
     assert(image.isOwned());
     assert(image.width == 3);
@@ -1746,6 +1811,26 @@ unittest
     assert(image.hasNonZeroSize());
     image.convertTo16Bit();
     Image B = image.clone();
+}
+
+// Semantics for zero initialization
+ @trusted unittest
+{
+    // Create with initialization and a border. Every pixel should be zero, including border.
+    Image image;
+
+    image.create(5, 4, PixelType.l8, LAYOUT_BORDER_3 | LAYOUT_GAPLESS); // impossible layout
+    assert(image.errored());
+
+    image.create(5, 4, PixelType.l8, LAYOUT_BORDER_3); // can create image with border
+    for (int y = -3; y < 4 + 3; ++y)
+    {
+        ubyte* scan = image.scanline(y);
+        for (int x = -3; x < 5 + 3; ++x)
+        {
+            assert(scan[x] == 0);
+        }
+    }
 }
 
 // Semantics for image with plain pixels, but with zero width and height.
@@ -1774,4 +1859,32 @@ unittest
     zeroSizeChecks(image);
     Image B = image.clone();
     zeroSizeChecks(B);
+}
+
+@trusted unittest
+{
+    ushort[4][3] pixels = 
+    [ [ 5, 5, 5, 5],
+      [ 5, 6, 5, 5],
+      [ 5, 5, 5, 7] ];
+    Image image;
+    int width = 4;
+    int height = 3;
+    int pitch = width * cast(int)ushort.sizeof; 
+    image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch);
+    assert(!image.errored);
+    ushort* l0 = cast(ushort*) image.scanline(0);
+    ushort* l1 = cast(ushort*) image.scanline(1);
+    ushort* l2 = cast(ushort*) image.scanline(2);
+    assert(l0[0..4] == [5, 5, 5, 5]);
+    assert(l1[1] == 6);
+    assert(l2[0..4] == [5, 5, 5, 7]);
+
+    // Upside down data
+    image.createViewFromData(&pixels[2][0], width, height, PixelType.l16, -pitch);
+    assert(!image.errored);
+
+    // Overlapping scanlines is illegal
+    image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch-1);
+    assert(image.errored);
 }
