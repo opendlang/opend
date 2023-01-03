@@ -25,7 +25,7 @@
         },
         {
             "name": "audio-plugin",
-            "versions": [               "encodePNG",              "encodeQOIX",
+            "versions": [               "encodePNG",                            
                           "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX" ]
         },
         {
