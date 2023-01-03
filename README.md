@@ -131,7 +131,7 @@ Our benchmark results for 8-bit color images:
   image.createNoInit(640, 480, PixelType.rgba8);
 
   // Create view into existing data.
-  image.createViewFromData(data.ptr, pitchbytes, w, h, PixelType.rgb8);
+  image.createViewFromData(data.ptr, w, h, PixelType.rgb8, pitchbytes);
   ```
 
   At creation time, the `Image` forgets about its former life, and leaves any `errored()` state.
