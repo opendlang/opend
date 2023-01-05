@@ -140,13 +140,13 @@ public:
         return _pitch < 0;
     }
 
-    /// Returns a pointer to the `y` nth line of pixels.
+    /// Returns a scanline pointer to the `y` nth line of pixels.
     /// Only possible if the image has plain pixels.
     /// What pixel format it points to, depends on the image `type()`.
     ///
     /// ---
     /// Guarantees by layout constraints:
-    ///  * next scanline (if any) is returned pointer + pitchInBytes() bytes.
+    ///  * next scanptr (if any) is returned pointer + pitchInBytes() bytes.
     ///  * scanline pointer are aligned by given scanline alignment flags (at least).
     ///  * after each scanline there is at least a number of trailing pixels given by layout flags
     ///  * scanline pixels can be processed by multiplicity given by layout flags
@@ -155,8 +155,8 @@ public:
     ///    above height()-1
     /// ---
     ///
-    /// For each scanline pointer, you can _always_ READ `ptr[0..pitchInBytes()]` without memory error.
-    /// However, WRITING to this scanline doesn't guarantee anything by itself since the image 
+    /// For each scanline pointer, you can _always_ READ `ptr[0..abs(pitchInBytes())]` without memory error.
+    /// However, WRITING to this scanline excess pixels doesn't guarantee anything by itself since the image 
     /// could be a sub-image, and the underlying buffer could be shared. 
     ///
     /// Returns: The scanline start.
@@ -164,12 +164,28 @@ public:
     ///          If the layout has a border, you can adress pixels with a X coordinate in:
     ///          -borderWidth to width - 1 + borderWidth.
     /// Tags: #type #data #plain
-    inout(ubyte)* scanline(int y) inout pure @trusted
+    inout(void)* scanptr(int y) inout pure @trusted
     {
         assert(isPlainPixels());
         int borderWidth = layoutBorderWidth(_layoutConstraints);
         assert( (y >= -borderWidth) && (y < _height + borderWidth) );
         return _data + _pitch * y;
+    }
+
+    /// Returns a slice to the `y` nth line of pixels.
+    /// Only possible if the image has plain pixels.
+    /// What pixel format it points to, depends on the image `type()`.
+    ///
+    /// Horizontally: trailing pixels, gap bytes, and border pixels are NOT included in that scanline, which is
+    /// only the nominal image extent.
+    ///
+    /// However, vertically it is valid to adress scanlines on top and bottom of an image that has a border.
+    ///
+    /// Returns: The whole `y`th row of pixels.
+    /// Tags: #type #data #plain
+    inout(void)[] scanline(int y) inout pure @trusted
+    {
+        return scanptr(y)[0..scanlineInBytes()];
     }
 
     /// Returns a slice of all pixels at once in O(1). 
@@ -1153,7 +1169,7 @@ public:
         // Stupid pixel per pixel swap
         for (int y = 0; y < H; ++y)
         {
-            ubyte* scan = scanline(y);
+            ubyte* scan = cast(ubyte*) scanline(y);
             for (int x = 0; x < Xdiv2; ++x)
             {
                 ubyte* pixelA = &scan[x * psize];
@@ -1218,8 +1234,8 @@ public:
         // Stupid byte per byte swap
         for (int y = 0; y < Ydiv2; ++y)
         {
-            ubyte* scanA = scanline(y);
-            ubyte* scanB = scanline(H - 1 - y);
+            ubyte* scanA = cast(ubyte*) scanline(y);
+            ubyte* scanB = cast(ubyte*) scanline(H - 1 - y);
             for (int b = 0; b < scanBytes; ++b)
             {
                 ubyte ch = scanA[b];
@@ -1832,7 +1848,7 @@ unittest
     image.create(5, 4, PixelType.l8, LAYOUT_BORDER_3); // can create image with border
     for (int y = -3; y < 4 + 3; ++y)
     {
-        ubyte* scan = image.scanline(y);
+        ubyte* scan = cast(ubyte*) image.scanline(y);
         for (int x = -3; x < 5 + 3; ++x)
         {
             assert(scan[x] == 0);
@@ -1922,16 +1938,22 @@ unittest
         assert(image.width == 3);
         assert(image.height == 1);
 
-        ubyte* l0 = image.scanline(0);
+        ubyte* l0 = cast(ubyte*) image.scanptr(0);
         if (lossless) 
         {
             assert(l0[0..9] == [255, 0, 0, 15, 64, 255, 0, 255, 255]);
+        }
+
+        ubyte[] wl0 = cast(ubyte[]) image.scanline(0);
+        if (lossless) 
+        {
+            assert(wl0 == [255, 0, 0, 15, 64, 255, 0, 255, 255]);
         }
     }
 
     version(encodePNG)
     {
-        ubyte[] png = image.saveToMemory(ImageFormat.PNG);        
+        ubyte[] png = image.saveToMemory(ImageFormat.PNG);
         checkEncode(png, true);
         freeEncodedImage(png);
     }

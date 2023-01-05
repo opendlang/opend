@@ -258,9 +258,10 @@ Another way to create an `Image` is to load an encoded image.
 
 ### **3.2 Access a row of pixels:**
   ```d
-  ubyte* scan = image.scanline(y);
+  void* scan = image.scanptr(y);  // get pointer to start of pixel row
+  void[] row = image.scanline(y); // get slice of pixel row
   ```
-  > **Key concept:** The scanline is `ubyte*` but the type it points to depends upon the `PixelType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image.
+  > **Key concept:** The scanline is `void*` because the type it points to depends upon the `PixelType`. In a given scanline, the bytes `scan[0..abs(pitchInBytes())]` are all accessible, even if they may be outside of the image (trailing pixels, gap bytes for alignment, border pixels).
 
 
 ### **3.3 Iterate on pixels:**
@@ -269,7 +270,7 @@ Another way to create an `Image` is to load an encoded image.
   assert(image.hasData());
   for (int y = 0; y < image.height(); ++y)
   {
-      ushort* scan = cast(ushort*) image.scanline(y);
+      ushort* scan = cast(ushort*) image.scanptr(y);
       for (int x = 0; x < image.width(); ++x)
       {
           ushort r = scanline[4*x + 0];

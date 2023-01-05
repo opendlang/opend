@@ -140,7 +140,7 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
                 {
                     if (y*4 + ly < height)
                     {
-                        const(ubyte)* line = image.scanline(y*4 + ly);
+                        const(ubyte)* line = cast(const(ubyte)*) image.scanline(y*4 + ly);
                         const(ubyte)* pixel = &line[x * 4 * channels];
 
                         assert(x*4 < width);
@@ -148,6 +148,8 @@ bool saveDDS(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
                         int avail_x = 4;
                         if (x*4 + 4 > width) 
                             avail_x = width - x*4;
+
+                        // PERF: use gamut.scanline here
 
                         switch (channels)
                         {
