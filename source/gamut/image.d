@@ -53,9 +53,10 @@ void freeEncodedImage(ubyte[] encodedImage) @system
 ///                                                    Only image with hasData() have to follow the LayoutConstraints,
 ///                                                    though all image have a LayoutConstraints.
 ///
-///                        is16Bit()
-///                         /
-///    isFP32()----isValid()----- is8Bit()             Different subtypes of image can be possible.
+///     is8Bit  or   is16Bit  or    isFP32             Image components can be stored in 8-bit ubyte, 16-bit ushort, or float
+///          \____      |    ______/
+///               \     |   /
+///                 isValid()
 ///            ___/     |   \______                    Planar and compressed images are not implemented yet, so it's only
 ///           /         |          \                   "plain pixels" for now.
 ///   isPlanar or isPlainPixels  or isCompressed
@@ -69,7 +70,7 @@ void freeEncodedImage(ubyte[] encodedImage) @system
 ///   #data     => the calling Image must have data (requires #valid)
 ///   #plain    => the calling Image must have plain-pixels.
 ///   #own      => the calling Image must have data AND own it.
-/// It is a programming error to call a function that doesn't follow the tag constraints.
+/// It is a programming error to call a function that doesn't follow the tag constraints (will assert)
 ///
 struct Image
 {
