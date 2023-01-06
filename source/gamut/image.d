@@ -62,6 +62,8 @@ void freeEncodedImage(ubyte[] encodedImage) @system
 ///                                                    Also: hasNonZeroSize(). 
 ///                                                    Images with a type have a width and height (and that size can be zero!).
 ///
+/// IMPORTANT: there is no constness in Image. All Image are considered read/write, with no const concept.
+///
 /// Public Functions are labelled this way:
 ///   #valid    => the calling Image must have a type (ie. not in error state).
 ///   #data     => the calling Image must have data (requires #valid)

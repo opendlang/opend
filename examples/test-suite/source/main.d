@@ -13,6 +13,6 @@ void testIssue35()
 {
     Image image;
     image.loadFromFile("test-images/issue35.jpg", LOAD_RGB | LOAD_8BIT | LOAD_ALPHA | LAYOUT_VERT_STRAIGHT | LAYOUT_GAPLESS);
-    assert(!image.errored);
+    assert(!image.isError);
     image.saveToFile("output/issue35.png");
 }

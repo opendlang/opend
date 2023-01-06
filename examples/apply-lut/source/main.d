@@ -66,7 +66,7 @@ int main(string[] args)
             
             Image image;
             image.loadFromFile(input);
-            if (image.errored)
+            if (image.isError)
                 throw new Exception(to!string(image.errorMessage));
 
             PixelType origType = image.type();
