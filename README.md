@@ -30,7 +30,7 @@
 
 ## How to use it?
 
-- Add audio-formats as dependency to your `dub.json` or `dub.sdl`.
+- Add `audio-formats` as dependency to your `dub.json` or `dub.sdl`.
 - See the [transcode example](https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/source/main.d) for usage.
 
 ## What formats are supported exactly?
