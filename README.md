@@ -98,7 +98,7 @@ Our benchmark results for 8-bit color images:
       rgb16,
       rgbf32,
       rgba8,
-      rgba16,   
+      rgba16,
       rgbaf32
   }
   ```
@@ -119,7 +119,7 @@ Our benchmark results for 8-bit color images:
 > - `create()` or regular constructor `this()` creates a new owned image filled with zeros.
 > - `createNoInit()` or `setSize()` creates a new owned uninitialized image.
 > - `createViewFromData()` creates a view into existing data.
-> - `createNoData()` creates a new image with no data pointed to. _(this is rare)_
+> - `createNoData()` creates a new image with no data pointed to (still has a type, size...).
 
   ```d
   // Create with zero initialization.
@@ -134,7 +134,10 @@ Our benchmark results for 8-bit color images:
   image.createViewFromData(data.ptr, w, h, PixelType.rgb8, pitchbytes);
   ```
 
-  At creation time, the `Image` forgets about its former life, and leaves any `errored()` state.
+ - At creation time, the `Image` forgets about its former life, and leaves any `isError()` state or former data/type
+ - `Image.init` is in `isError()` state
+ - `isValid()` can be used instead of `!isError()`
+ - Being valid == not being error == having a `PixelType`
 
 
 &nbsp;
@@ -155,7 +158,7 @@ Another way to create an `Image` is to load an encoded image.
   ```d
   Image image;
   image.loadFromFile("logo.png");
-  if (image.errored)
+  if (image.isError)
       throw new Exception(image.errorMessage);
   ```
 
@@ -171,6 +174,8 @@ Another way to create an `Image` is to load an encoded image.
   auto pngBytes = cast(const(ubyte)[]) import("logo.png"); 
   Image image;
   image.loadFromMemory(pngBytes);
+  if (!image.isValid) 
+      throw new Exception(image.errorMessage());
   ```
   > **Key concept:** You can force the loaded image to be a certain type using `LoadFlags`.
 
