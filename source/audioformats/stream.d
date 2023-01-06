@@ -1388,8 +1388,11 @@ private:
             // Is it an OGG?
             {
                 //"In my test files the maximal-size usage is ~150KB", so let's take a bit more
-                _oggBuffer.reallocBuffer(200 * 1024);
-
+                //
+                // Issue #28 actually taking even more than that for Q10 OGG encodes.
+                // This new threshold supports all streams encoded with OGG and Audacity, but not 
+                // sure of correctness in absolute terms.
+                _oggBuffer.reallocBuffer(220 * 1024);
                 stb_vorbis_alloc alloc;
                 alloc.alloc_buffer = cast(ubyte*)(_oggBuffer.ptr);
                 alloc.alloc_buffer_length_in_bytes = cast(int)(_oggBuffer.length);
