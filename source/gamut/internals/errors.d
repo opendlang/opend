@@ -10,6 +10,7 @@ module gamut.internals.errors;
 
 
 // Some error messages are shared between format plugins, save a few bytes.
+static immutable string kStrImageHasNoType             = "Image has no type";
 static immutable string kStrCannotOpenFile             = "Cannot open file";
 static immutable string kStrFileCloseFailed            = "fclose() failed";
 static immutable string kStrImageDecodingFailed        = "Image decoding failed";

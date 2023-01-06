@@ -42,20 +42,29 @@ void freeEncodedImage(ubyte[] encodedImage) @system
 ///
 /// Images are subtyped like this:
 ///
-///                 Image                              All image can also be: errored() or not.
-///                /     \
-///          no-type  or  hasType()                    
-///                      /         \                          
-///                hasData()  or    no-data            Also: hasNonZeroSize(). 
-///            ___/     |   \______                          Images with a type have a width and height (that can be zero).
-///           /         |          \                   Also: isOwned() exist for image that are hasData().
-///   isPlanar or isPlainPixels  or isCompressed       Planar and compressed images are not implemented yet.
+///                 Image                              Images can be: isError() or isValid().
+///                /     \                             Image start their life as Image.init in error state.
+///        isError()  or  isValid()                    Image that are `isValid` have a known PixelType, unlike `isError` images.
+///                      /         \
+///                hasData()  or   !hasData()          Images that have a type can have a data pointer or not.
+///                                                    If it has no type, it implicitely has no data, and asking if it has data 
+///                                                    is forbidden.
+///                                                    Also: isOwned() exist for image that are hasData().
 ///                                                    Only image with hasData() have to follow the LayoutConstraints,
 ///                                                    though all image have a LayoutConstraints.
 ///
+///                        is16Bit()
+///                         /
+///    isFP32()----isValid()----- is8Bit()             Different subtypes of image can be possible.
+///            ___/     |   \______                    Planar and compressed images are not implemented yet, so it's only
+///           /         |          \                   "plain pixels" for now.
+///   isPlanar or isPlainPixels  or isCompressed
+///                                                    Also: hasNonZeroSize(). 
+///                                                    Images with a type have a width and height (and that size can be zero!).
+///
 /// Public Functions are labelled this way:
-///   #type     => the calling Image must have a type.
-///   #data     => the calling Image must have data (implies #type)
+///   #valid    => the calling Image must have a type (ie. not in error state).
+///   #data     => the calling Image must have data (requires #valid)
 ///   #plain    => the calling Image must have plain-pixels.
 ///   #own      => the calling Image must have data AND own it.
 /// It is a programming error to call a function that doesn't follow the tag constraints.
@@ -78,18 +87,18 @@ public:
     }
 
     /// Returns: Width of image in pixels.
-    /// Tags: #type
+    /// Tags: #valid
     int width() pure const
     {
-        assert(hasType());
+        assert(isValid());
         return _width;
     }
 
     /// Returns: Height of image in pixels.
-    /// Tags: #type
+    /// Tags: #valid
     int height() pure const
     {
-        assert(hasType());
+        assert(isValid());
         return _height;
     }  
 
@@ -102,10 +111,10 @@ public:
     ///             it is always kept >= 0 (if the image has data).
     ///
     /// See_also: `scanlineInBytes`.
-    /// Tags: #type #data
+    /// Tags: #valid #data
     int pitchInBytes() pure const
     {
-        assert(hasType() && hasData());
+        assert(isValid() && hasData());
 
         bool forceVFlip   = (_layoutConstraints & LAYOUT_VERT_FLIPPED) != 0;
         bool forceNoVFlip = (_layoutConstraints & LAYOUT_VERT_STRAIGHT) != 0;
@@ -124,7 +133,7 @@ public:
     /// Those bytes are "part of the image", while the trailing and border pixels are not.
     ///
     /// See_also: `pitchInBytes`.
-    /// Tags: #type #data
+    /// Tags: #valid #data
     int scanlineInBytes() pure const
     {
         assert(hasData());
@@ -133,7 +142,7 @@ public:
 
     /// A compressed image doesn't have its pixels available.
     /// Warning: only makes sense for image that `hasData()`, with non-zero height.
-    /// Tags: #type #data
+    /// Tags: #valid #data
     bool isStoredUpsideDown() pure const
     {
         assert(hasData());
@@ -163,7 +172,7 @@ public:
     ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
     ///          If the layout has a border, you can adress pixels with a X coordinate in:
     ///          -borderWidth to width - 1 + borderWidth.
-    /// Tags: #type #data #plain
+    /// Tags: #valid #data #plain
     inout(void)* scanptr(int y) inout pure @trusted
     {
         assert(isPlainPixels());
@@ -182,7 +191,7 @@ public:
     /// However, vertically it is valid to adress scanlines on top and bottom of an image that has a border.
     ///
     /// Returns: The whole `y`th row of pixels.
-    /// Tags: #type #data #plain
+    /// Tags: #valid #data #plain
     inout(void)[] scanline(int y) inout pure @trusted
     {
         return scanptr(y)[0..scanlineInBytes()];
@@ -193,7 +202,7 @@ public:
     /// between scanline.
     /// To avoid accidental correctness, the image need the layout constraints:
     /// `LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT`.
-    /// Tags: #type #data #plain
+    /// Tags: #valid #data #plain
     inout(ubyte)[] allPixelsAtOnce() inout pure @trusted
     {
         assert(isPlainPixels());
@@ -282,12 +291,22 @@ public:
     // <GETTING STATUS AND CAPABILITIES>
     //
 
-    /// Was there an error as a result of calling a public method of `Image`?
-    /// It is now unusable.
+    /// The image is unusable and has no known `PixelType`, nor any data pointed to.
+    /// You can reach this state with OOM, failing to load a source image, etc.
+    /// Always return `!isError()`.
     /// Tags: none.
-    bool errored() pure const
+    deprecated("Use isError() or isValid() instead") alias errored = isError;
+    bool isError() pure const
     {
         return _error !is null;
+    }
+
+    /// Im  ge is valid, meaning it is not in error state.
+    /// Always return `!isError()`.
+    /// Tags: none.
+    bool isValid() pure const
+    {
+        return _error is null;
     }
 
     /// The error message (null if no error currently held).
@@ -305,32 +324,44 @@ public:
     /// Not a lot of operations are available if there is no type.
     /// Note: An image that has no must necessarily have no data.
     /// Tags: none.
-    bool hasType() pure const
+    deprecated("Use isValid() or isError() instead") bool hasType() pure const
     {
         return _type != PixelType.unknown;
     }
 
+    invariant()
+    {
+        if (_error is null)
+        {
+            assert(_type != PixelType.unknown);
+        }
+        else if (_error is null)
+        {
+            assert(_type == PixelType.unknown);
+        }
+    }
+
     /// Is the image type represented by 8-bit components?
-    /// Tags: #type.
+    /// Tags: #valid.
     bool is8Bit() pure const
     {
-        assert(hasType);
+        assert(isValid);
         return convertPixelTypeTo8Bit(_type) == _type;
     }
 
     /// Is the image type represented by 16-bit components?
-    /// Tags: #type.
+    /// Tags: #valid.
     bool is16Bit() pure const
     {
-        assert(hasType);
+        assert(isValid);
         return convertPixelTypeTo16Bit(_type) == _type;
     }
 
     /// Is the image type represented by 32-bit floating point components?
-    /// Tags: #type.
+    /// Tags: #valid.
     bool isFP32() pure const
     {
-        assert(hasType);
+        assert(isValid);
         return convertPixelTypeToFP32(_type) == _type;
     }
     
@@ -341,14 +372,13 @@ public:
     /// Note: An image that has no data doesn't have to follow its `LayoutConstraints`.
     ///       But an image with zero size must.
     /// An image that "has data" also "has a type".
-    /// Tags: none.
+    /// Tags: #valid.
     bool hasData() pure const
     {
-        if (_data)
-        {
-            // Having _data is a superset of having a _type. Else, it's a gamut internal error.
-            assert(hasType());
-        }
+        // If you crash here, the image is errored, and you should have checked for it.
+        // It doesn't make sense to ask if an image has data, if it doesn't have a type (error state).
+        // "Having data" is a superset of having a _type.
+        assert(isValid());
 
         return _data !is null;
     }
@@ -366,7 +396,7 @@ public:
     /// The data MUST be freed with `freeImageData`.
     /// The image still points into that data, and you must ensure the data lifetime exceeeds
     /// the image lifetime.
-    /// Tags: #type #own #data 
+    /// Tags: #valid #own #data 
     /// Warning: this return the malloc'ed area, NOT the image data itself.
     ///          However, with the constraints
     ubyte* disownData() pure 
@@ -378,31 +408,33 @@ public:
         return r;
     }
 
-    /// An image can have plain pixels, which means:
-    ///   1. it has data (and as such, a type)
-    ///   2. those are in a plain decoded format (not a compressed texture, not planar, etc).
-    /// Tags: none.
+    /// A plain pixel image is for example rgba8, and has `scanline()` access.
+    /// Currently only one supported.
+    /// Tags: #valid.
     deprecated alias hasPlainPixels = isPlainPixels;
     bool isPlainPixels() pure const
     {
-        return hasData() && pixelTypeIsPlain(_type); // Note: all formats are plain, for now.
+        assert(isValid);
+        return pixelTypeIsPlain(_type); // Note: all formats are plain, for now.
     }
 
     /// A planar image is for example YUV420.
-    /// If the image is planar, its lines are not accessible like that.
+    /// If the image is planar, its rows are not accessible like that.
     /// Currently not supported.
-    /// Tags: none.
+    /// Tags: #valid.
     bool isPlanar() pure const
     {
-        return hasData() && pixelTypeIsPlanar(_type);
+        assert(isValid);
+        return pixelTypeIsPlanar(_type);
     }
 
     /// A compressed image doesn't have its pixels available.
     /// Currently not supported.
-    /// Tags: none.
+    /// Tags: #valid.
     bool isCompressed() pure const
     {
-        return hasData() && pixelTypeIsCompressed(_type);
+        assert(isValid);
+        return pixelTypeIsCompressed(_type);
     }
 
     /// An image for which width > 0 and height > 0.
@@ -534,7 +566,7 @@ public:
 
     /// Clone an existing image. 
     /// This image should have plain pixels.
-    /// Tags: #type #data #plain.
+    /// Tags: #valid #data #plain.
     Image clone() const
     {
         assert(isPlainPixels());
@@ -549,7 +581,7 @@ public:
     }
 
     /// Copy pixels to an image with same size and type. Both images should have plain pixels.
-    /// Tags: #type #data #plain.
+    /// Tags: #valid #data #plain.
     void copyPixelsTo(ref Image img) const @trusted
     {
         assert(isPlainPixels());
@@ -605,7 +637,7 @@ public:
         }
         
         loadFromFileInternal(fif, cstr.storage, flags);
-        return !errored();
+        return isValid();
     }
 
     /// Load an image from a memory location.
@@ -632,7 +664,7 @@ public:
         io.setupForMemoryIO();
         loadFromStreamInternal(fif, io, cast(IOHandle)&mem, flags);
 
-        return !errored();
+        return isValid();
     }
     ///ditto
     bool loadFromMemory(const(void)[] bytes, int flags = 0) @trusted
@@ -657,7 +689,7 @@ public:
         ImageFormat fif = identifyFormatFromStream(io, handle);
 
         loadFromStreamInternal(fif, io, handle, flags);
-        return !errored();
+        return isValid();
     }
     
     /// Saves an image to a file, detecting the format from the path extension.
@@ -669,7 +701,7 @@ public:
     /// Tags: none.
     bool saveToFile(const(char)[] path, int flags = 0) @trusted
     {
-        assert(!errored); // else, nothing to save
+        assert(isValid()); // else, nothing to save
         CString cstr = CString(path);
 
         ImageFormat fif = identifyImageFormatFromFilename(cstr.storage);
@@ -686,7 +718,7 @@ public:
     /// Tags: none.
     bool saveToFile(ImageFormat fif, const(char)[] path, int flags = 0) const @trusted
     {
-        assert(!errored); // else, nothing to save
+        assert(isValid()); // else, nothing to save
         CString cstr = CString(path);
         return saveToFileInternal(fif, cstr.storage, flags);
     }
@@ -699,7 +731,7 @@ public:
     /// Tags: none.
     ubyte[] saveToMemory(ImageFormat fif, int flags = 0) const @trusted
     {
-        assert(!errored); // else, nothing to save
+        assert(isValid()); // else, nothing to save
 
         // Open stream for read/write access.
         MemoryFile mem;
@@ -724,7 +756,7 @@ public:
     /// Tags: none.
     bool saveToStream(ImageFormat fif, ref IOStream io, IOHandle handle, int flags = 0) const @trusted
     {
-        assert(!errored); // else, nothing to save
+        assert(isValid()); // else, nothing to save
 
         if (fif == ImageFormat.unknown)
         {
@@ -810,7 +842,7 @@ public:
     }
 
     /// Keep the same pixels and type, but change how they are arranged in memory to fit some constraints.
-    /// Tags: #type
+    /// Tags: #valid
     deprecated("use setLayout instead") alias changeLayout = setLayout;
     bool setLayout(LayoutConstraints layoutConstraints)
     {
@@ -819,14 +851,14 @@ public:
 
     /// Convert the image to greyscale, using a greyscale transformation (all channels weighted equally).
     /// Alpha is preserved if existing.
-    /// Tags: #type
+    /// Tags: #valid
     bool convertToGreyscale(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToGreyscale(_type), layoutConstraints);
     }
 
     /// Convert the image to a greyscale + alpha equivalent, using duplication and/or adding an opaque alpha channel.
-    /// Tags: #type
+    /// Tags: #valid
     bool convertToGreyscaleAlpha(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToAddAlphaChannel( convertPixelTypeToGreyscale(_type) ), layoutConstraints);
@@ -834,49 +866,49 @@ public:
 
     /// Convert the image to a RGB equivalent, using duplication if greyscale.
     /// Alpha is preserved if existing.
-    /// Tags: #type
+    /// Tags: #valid
     bool convertToRGB(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToRGB(_type), layoutConstraints);
     }
 
     /// Convert the image to a RGBA equivalent, using duplication and/or adding an opaque alpha channel.
-    /// Tags: #type
+    /// Tags: #valid
     bool convertToRGBA(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToAddAlphaChannel( convertPixelTypeToRGB(_type) ), layoutConstraints);
     }
 
     /// Add an opaque alpha channel if not-existing already.
-    /// Tags: #type
+    /// Tags: #valid
     bool addAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToAddAlphaChannel(_type), layoutConstraints);
     }
 
     /// Removes the alpha channel if not-existing already.
-    /// Tags: #type
+    /// Tags: #valid
     bool dropAlphaChannel(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToDropAlphaChannel(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 8-bit per component.
-    /// Tags: #type
+    /// Tags: #valid
     bool convertTo8Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeTo8Bit(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 16-bit per component.
-    /// Tags: #type.
+    /// Tags: #valid.
     bool convertTo16Bit(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeTo16Bit(_type), layoutConstraints);
     }
 
     /// Convert the image bit-depth to 32-bit float per component.
-    /// Tags: #type.
+    /// Tags: #valid.
     bool convertToFP32(LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         return convertTo( convertPixelTypeToFP32(_type), layoutConstraints);
@@ -887,11 +919,10 @@ public:
     /// You can also change the layout constraints at the same time.
     ///
     /// Returns: true on success.
-    /// Tags: #type.
+    /// Tags: #valid.
     bool convertTo(PixelType targetType, LayoutConstraints layoutConstraints = LAYOUT_DEFAULT) @trusted
     {
-        assert(!errored()); // this should have been caught before.
-        assert(hasType());
+        assert(isValid()); // this should have been caught before.
 
         if (targetType == PixelType.unknown)
         {
@@ -904,6 +935,7 @@ public:
 
         if (!hasData())
         {
+            _type = targetType;
             _layoutConstraints = layoutConstraints;
             return true; // success, no pixel data, so everything was "converted", layout constraints do not hold
         }
@@ -1008,6 +1040,7 @@ public:
         _allocArea = newAllocArea; // now own the new one.
         _type = targetType;
         _pitch = destPitch;
+        _error = null;
         return true;
     }
 
@@ -1020,11 +1053,10 @@ public:
     ///
     /// So it is a bit like casting slices in D.
     /// TODO: castTo breaks layout constraints, what to do with them?
-    /// Tags: #type.
+    /// Tags: #valid.
     bool castTo(PixelType targetType) @trusted
     {
-        assert(hasType());
-        assert(!errored()); // this should have been caught before.
+        assert(isValid());
         if (targetType == PixelType.unknown)
         {
             error(kStrInvalidPixelTypeCast);
@@ -1150,10 +1182,10 @@ public:
 
     /// Flip the image data horizontally.
     /// If the image has no data, the operation is successful.
-    /// Tags: #type.
+    /// Tags: #valid.
     bool flipHorizontally() pure @trusted
     {
-        assert(hasType());
+        assert(isValid());
 
         if (!hasData())
             return true; // Nothing to do
@@ -1192,10 +1224,10 @@ public:
     ///   upside-down, then `flipVerticallyPhysical` is called instead.
     ///
     /// Returns: `true` on success, sets an error else and return `false`.
-    /// Tags: #type.
+    /// Tags: #valid.
     bool flipVertically() pure
     {
-        assert(hasType());
+        assert(isValid());
 
         if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
             return flipVerticallyPhysical();
@@ -1277,6 +1309,9 @@ package:
     {
         assert(msg !is null);
         _error = assumeZeroTerminated(msg);
+
+        // must loose type
+        _type = PixelType.unknown;
     }
 
     /// The type of the data pointed to.
@@ -1362,20 +1397,19 @@ private:
     void cleanupBitmapIfAny() @trusted
     {
         cleanupBitmapIfOwned();
-        _data = null;        
-        assert(!hasData());
+        _data = null;
     }
 
     void cleanupTypeIfAny()
     {
         _type = PixelType.unknown;
-        assert(!hasType());
+        _error = assumeZeroTerminated(kStrImageHasNoType);
     }
 
     // If owning an allocation, free it, else keep it.
     void cleanupBitmapIfOwned() @trusted
-    {   
-        if (isOwned())
+    {        
+        if (_allocArea !is null)
         {
             deallocatePixelStorage(_allocArea);
             _allocArea = null;
@@ -1779,22 +1813,15 @@ unittest
 {
     Image image;
 
-    // An image that is uninitialized as pixel type.
+    // An image that is uninitialized has no pixel type, and is in error state.
     assert(image.type() == PixelType.unknown);
-    assert(!image.hasType());
-
-    // No type implies "no-data".
-    assert(!image.hasData());
+    assert(!image.isValid());
+    assert(image.isError());
 
     // You can load an image. If it fails, it will have no type.
     image.loadFromFile("unkonwn-special-file");
-    assert(!image.hasType());
-    assert(image.errored());
-    assert(!image.hasData());
-
-    assert(!image.isPlainPixels());
-    assert(!image.isPlanar());
-    assert(!image.isCompressed());
+    assert(!image.isValid());
+    assert(image.isError());
 }
 
 // Semantics for image without data (but with a type).
@@ -1804,13 +1831,12 @@ unittest
     image.initWithNoData(450, 614, PixelType.rgba8);
     assert(!image.hasData());
     assert(!image.isOwned());
-    assert(image.hasType());
+    assert(image.isValid());
     assert(image.width == 450);
     assert(image.height == 614);
-    assert(image.hasType());
     assert(!image.errored());
     assert(!image.hasData());
-    assert(!image.isPlainPixels());
+    assert(image.isPlainPixels());
     assert(!image.isPlanar());
     assert(!image.isCompressed());
     assert(image.hasNonZeroSize());
@@ -1821,11 +1847,11 @@ unittest
 {
     Image image;
     image.createNoInit(3, 5, PixelType.rgba8);
-    assert(image.hasType());
+    assert(image.isValid());
     assert(image.isOwned());
     assert(image.width == 3);
     assert(image.height == 5);
-    assert(image.hasType());
+    assert(image.isValid());
     assert(!image.errored());
     assert(image.hasData());
     assert(image.isPlainPixels());
@@ -1865,11 +1891,10 @@ unittest
 
     static void zeroSizeChecks(ref Image image) @safe
     {
-        assert(image.hasType());
+        assert(image.isValid());
         assert(image.isOwned());
         assert(image.width == 0);
         assert(image.height == 0);
-        assert(image.hasType());
         assert(!image.errored());
         assert(image.hasData()); // It has data, just, it has a zero size.
         assert(image.isPlainPixels());
