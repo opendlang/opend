@@ -41,7 +41,7 @@
                 "printed:font": "*",
                 "binrange": "~>1.0",
                 "printed:htmlcolors": "*",
-                "gamut": "~>0.0"
+                "gamut": "~>2.0"
             }
         },
         {

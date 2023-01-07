@@ -685,7 +685,7 @@ private:
                     int p = 0;
                     for (int y = 0; y < height; ++y)
                     {
-                        ubyte* scan = gimage.scanline(y);
+                        ubyte* scan = cast(ubyte*) gimage.scanptr(y);
                         for (int x = 0; x < width; ++x)
                         {
                             rgbData[p++] = scan[x * channels + 0];
@@ -705,7 +705,7 @@ private:
                         int p = 0;
                         for (int y = 0; y < height; ++y)
                         {
-                            ubyte* scan = gimage.scanline(y);
+                            ubyte* scan = cast(ubyte*) gimage.scanptr(y);
                             for (int x = 0; x < width; ++x)
                             {
                                 alphaData[p++] = scan[x * 4 + 3];
