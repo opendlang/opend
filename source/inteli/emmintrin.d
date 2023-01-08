@@ -1969,7 +1969,7 @@ unittest
 
 /// Load 128-bits of integer data from memory into dst. 
 /// `mem_addr` must be aligned on a 16-byte boundary or a general-protection exception may be generated.
-__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted // TODO: shoudln't be trusted because alignment, Issue #62
+__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @safe
 {
     pragma(inline, true);
     return *mem_addr;
@@ -2001,8 +2001,9 @@ unittest
 }
 
 /// Load 64-bit integer from memory into the first element of result. Zero out the other.
-// Note: strange signature since the memory doesn't have to aligned (Issue #60), and doesn't have to be 128-bit
-__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted // TODO signature
+/// Note: strange signature since the memory doesn't have to aligned, and should point to addressable 64-bit, not 128-bit.
+/// You may use `_mm_loadu_si64` instead.
+__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted
 {
     pragma(inline, true);
     static if (DMD_with_DSIMD)
