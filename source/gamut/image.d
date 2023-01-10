@@ -1062,6 +1062,7 @@ public:
         assert(isValid());
         if (targetType == PixelType.unknown)
         {
+            // TODO: should cleanup data
             error(kStrInvalidPixelTypeCast);
             return false;
         }
@@ -1097,6 +1098,7 @@ public:
         }
         else
         {
+            // TODO: should cleanup data
             error(kStrInvalidPixelTypeCast);
             return false;
         }
@@ -1423,7 +1425,7 @@ private:
     /// Discard ancient data, and reallocate stuff.
     /// Returns true on success, false on OOM.
     /// When failing, sets the errored state.
-    bool setStorage(int width, 
+    public bool setStorage(int width,  // TEMP public
                     int height,
                     PixelType type, 
                     LayoutConstraints constraints,

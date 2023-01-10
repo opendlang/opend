@@ -7,7 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.internals.types;
 
-import core.stdc.stdlib: realloc, free;
+import core.stdc.stdlib: malloc, realloc, free;
 import core.stdc.string: memset;
 
 import gamut.types;
@@ -408,9 +408,27 @@ void allocatePixelStorage(ubyte* existingData,
     size_t allocationSize = bytePitch * actualHeightInPixels;
     allocationSize += (rowAlignment - 1) + bonusBytes;
 
-    // We don't need to preserve former data, nor to align the allocation.
-    // Note: allocationSize can legally be zero.
-    ubyte* allocation = cast(ubyte*) realloc(existingData, allocationSize);
+    // PERF: on Windows, reusing previous allocation is much faster for same alloc size
+    //       314x faster             vs free+malloc for same size
+    //       10x faster              vs free+malloc for decreasing size 1 by 1
+    //       424x slower (quadratic) vs free+malloc for increasing size 1 by 1
+    //       0.5x slower             vs free+malloc for random size
+    // If we store the allocation as slice, we could use the right way to realloc everytime.
+    enum ENABLE_REALLOC = true; // TODO
+
+    ubyte* allocation;
+    static if (ENABLE_REALLOC)
+    {
+        // We don't need to preserve former data, nor to align the allocation.
+        // Note: allocationSize can legally be zero.
+        allocation = cast(ubyte*) realloc(existingData, allocationSize);
+    }
+    else
+    {
+        free(existingData);
+        existingData = null;
+        allocation = cast(ubyte*) malloc(allocationSize);
+    }
 
     // realloc is allowed to return null if zero bytes required.
     if (allocationSize != 0 && allocation is null) 
