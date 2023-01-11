@@ -332,17 +332,20 @@ public:
         return _type != PixelType.unknown;
     }
 
+    // Enable this when debugging gamut
+    /*
     invariant()
     {
         if (_error is null)
         {
             assert(_type != PixelType.unknown);
         }
-        else if (_error is null)
+        else if (_error !is null)
         {
             assert(_type == PixelType.unknown);
         }
     }
+    */
 
     /// Is the image type represented by 8-bit components?
     /// Tags: #valid.
