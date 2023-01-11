@@ -25,22 +25,31 @@ void testReallocSpeed()
 
     Image image;
 
-    long before = a.getTickUs();
 
-    foreach(n; 0..1)
+    long testRealloc(long delegate(int i) pure nothrow @nogc @safe getWidth, long delegate(int i) getHeight)
     {
-        foreach(i; 0..4095)
+        long before = a.getTickUs();
+        foreach(n; 0..100)
         {
-            int width = 2048;
-            int height = 2048;
-            image.setStorage(width,  // TEMP public
-                             height,PixelType.rgba8, 
-                             0,
-                             false);
+            foreach(i; 0..256)
+            {
+                int width  = cast(int) getWidth(cast(int)i);
+                int height = cast(int) getHeight(cast(int)i);
+                image.setStorage(width, height,PixelType.rgba8, 0, false);
+            }
         }
+        long after = a.getTickUs();
+        return after - before;
     }
-    long after = a.getTickUs();
-    writefln("temps = %s", after - before);
+
+    writefln("image sizing with fixed      size = %s", testRealloc( i => 256, 
+                                                                    j => 256 ) );
+    writefln("image sizing with increasing size = %s", testRealloc( i => 1 + i, 
+                                                                    j => 1 + j ) );
+    writefln("image sizing with decreasing size = %s", testRealloc( (int j){ return (256 - j); }, 
+                                                                    (int j){ return (256 - j); } ));
+    writefln("image sizing with random     size = %s", testRealloc( (int i){ return 1 + ((i * cast(long)24986598365983) & 255); }, 
+                                                                    (int i){ return 1 + ((i * cast(long)24986598421) & 255); } ));
 
 
 }
