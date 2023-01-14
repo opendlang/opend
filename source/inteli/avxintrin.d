@@ -402,12 +402,9 @@ unittest
 
 /// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` 
 /// using `mask`.
-/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` 
-/// using `mask`.
 __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask) @trusted
 {
     // PERF DMD
-    // PERF LDC/GDC without AVX could use two intrinsics for each part
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_blendvps256(a, b, mask);
@@ -423,7 +420,8 @@ __m256 _mm256_blendv_ps (__m256 a, __m256 b, __m256 mask) @trusted
     }
     else
     {
-        __m256 r = void; // PERF =void;
+        // In both LDC and GDC with SSE4.1, this generates blendvps as fallback
+        __m256 r;
         int8 lmask = cast(int8)mask;
         for (int n = 0; n < 8; ++n)
         {
