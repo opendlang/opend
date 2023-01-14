@@ -2059,7 +2059,6 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
     void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a) /* pure */ @system
     {
         // PERF DMD
-        // PERF ARM64
         static if (LDC_with_AVX)
         {
             // MAYDO report that the builtin is impure
