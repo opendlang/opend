@@ -1856,7 +1856,6 @@ unittest
 __m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO that the builtin is impure
@@ -1868,13 +1867,9 @@ __m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @sys
     }
     else
     {
-        long4 imask = cast(long4)mask;
-        double4 r;
-        r.ptr[0] = (imask.array[0] < 0) ? mem_addr[0] : 0.0;
-        r.ptr[1] = (imask.array[1] < 0) ? mem_addr[1] : 0.0;
-        r.ptr[2] = (imask.array[2] < 0) ? mem_addr[2] : 0.0;
-        r.ptr[3] = (imask.array[3] < 0) ? mem_addr[3] : 0.0;
-        return r;
+        __m256d a = _mm256_loadu_pd(mem_addr);
+        __m256d zero = _mm256_setzero_pd();
+        return _mm256_blendv_pd(zero, a, cast(double4)mask);
     }
 }
 unittest
@@ -1896,7 +1891,6 @@ unittest
 __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO that the builtin is impure
@@ -1932,7 +1926,6 @@ unittest
 __m256 _mm256_maskload_ps (const(float)* mem_addr, __m256i mask) /*pure*/ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO that the builtin is impure
@@ -1944,11 +1937,9 @@ __m256 _mm256_maskload_ps (const(float)* mem_addr, __m256i mask) /*pure*/ @syste
     }
     else
     {
-        int8 imask = cast(int8)mask;
-        float8 r;
-        foreach(n; 0..8)
-            r.ptr[n] = (imask.array[n] < 0) ? mem_addr[n] : 0.0f;
-        return r;
+        __m256 a = _mm256_loadu_ps(mem_addr);
+        __m256 zero = _mm256_setzero_ps();
+        return _mm256_blendv_ps(zero, a, cast(float8)mask);
     }
 }
 unittest
