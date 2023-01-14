@@ -1908,13 +1908,9 @@ __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
     }
     else
     {
-        int4 imask = cast(int4)mask;
-        float4 r;
-        r.ptr[0] = (imask.array[0] < 0) ? mem_addr[0] : 0.0f;
-        r.ptr[1] = (imask.array[1] < 0) ? mem_addr[1] : 0.0f;
-        r.ptr[2] = (imask.array[2] < 0) ? mem_addr[2] : 0.0f;
-        r.ptr[3] = (imask.array[3] < 0) ? mem_addr[3] : 0.0f;
-        return r;
+        __m128 a = _mm_loadu_ps(mem_addr);
+        __m128 zero = _mm_setzero_ps();
+        return _mm_blendv_ps(zero, a, cast(float4)mask);
     }
 }
 unittest
