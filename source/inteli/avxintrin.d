@@ -369,7 +369,7 @@ __m256d _mm256_blendv_pd (__m256d a, __m256d b, __m256d mask) @trusted
         // Amazingly enough, GCC/GDC generates the vblendvpd instruction
         // with -mavx2 but not -mavx.
         // Not sure what is the reason, and there is a replacement sequence.
-        // PERF: Sounds like a bug, similar to _mm_blendv_pd
+        // Sounds like a bug, similar to _mm_blendv_pd
         // or maybe the instruction in unsafe?
         return __builtin_ia32_blendvpd256(a, b, mask);
     }
@@ -531,7 +531,7 @@ unittest
 /// Broadcast a single-precision (32-bit) floating-point element from memory to all elements.
 __m128 _mm_broadcast_ss (const(float)* mem_addr) pure @trusted
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_vbroadcastss(mem_addr);
@@ -557,7 +557,7 @@ unittest
 
 __m256 _mm256_broadcast_ss (const(float)* mem_addr)
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_vbroadcastss256 (mem_addr);
@@ -1146,13 +1146,14 @@ unittest
 __m256 _mm256_dp_ps(int imm8)(__m256 a, __m256 b)
 {
     // PERF DMD
-    // PERF without AVX, can use 2 _mm_dp_ps exactly (beware the imm8 is tricky)
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_dpps256(a, b, cast(ubyte)imm8);
     }
     else
     {
+        // Note: in LDC with SSE4.1 but no AVX, we _could_ increase perf a bit by using two 
+        // _mm_dp_ps.
         __m256 zero = _mm256_setzero_ps();
         enum ubyte op = (imm8 >>> 4) & 15;
         __m256 temp = _mm256_blend_ps!( op | (op << 4) )(zero, a * b);
@@ -1211,7 +1212,7 @@ unittest
 /// Note: `_mm256_extractf128_pd!0` is equivalent to `_mm256_castpd256_pd128`.
 __m128d _mm256_extractf128_pd(ubyte imm8)(__m256d a) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         // Note: needs to be a template intrinsics because of this builtin.
@@ -1239,7 +1240,7 @@ unittest
 ///ditto
 __m128 _mm256_extractf128_ps(ubyte imm8)(__m256 a) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_vextractf128_ps256(a, imm8 & 1);
@@ -1268,7 +1269,7 @@ unittest
 ///ditto
 __m128i _mm256_extractf128_si256(ubyte imm8)(__m256i a) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         // Note: if it weren't for this GDC intrinsic, _mm256_extractf128_si256
@@ -1594,11 +1595,11 @@ __m256i _mm256_insertf128_si256(int imm8)(__m256i a, __m128i b) pure @trusted
 }
 
 /// Load 256-bits of integer data from unaligned memory into dst. 
-/// This intrinsic may perform better than `_mm256_loadu_si256` when the data crosses a cache 
+/// This intrinsic may run better than `_mm256_loadu_si256` when the data crosses a cache 
 /// line boundary.
 __m256i _mm256_lddqu_si256(const(__m256i)* mem_addr) @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return cast(__m256i) __builtin_ia32_lddqu256(cast(const(char)*)mem_addr);
@@ -2113,7 +2114,7 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
 /// packed maximum values.
 __m256d _mm256_max_pd (__m256d a, __m256d b) pure @trusted
 {    
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_maxpd256(a, b);
@@ -2141,7 +2142,7 @@ unittest
 /// packed maximum values.
 __m256 _mm256_max_ps (__m256 a, __m256 b) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_maxps256(a, b);
@@ -2173,7 +2174,7 @@ unittest
 /// packed minimum values.
 __m256d _mm256_min_pd (__m256d a, __m256d b) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_minpd256(a, b);
@@ -2201,7 +2202,7 @@ unittest
 /// packed maximum values.
 __m256 _mm256_min_ps (__m256 a, __m256 b) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_minps256(a, b);
@@ -2232,7 +2233,7 @@ unittest
 /// Duplicate even-indexed double-precision (64-bit) floating-point elements from `a`.
 __m256d _mm256_movedup_pd (__m256d a) @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_movddup256 (a);
@@ -2255,7 +2256,7 @@ unittest
 /// Duplicate odd-indexed single-precision (32-bit) floating-point elements from `a`.
 __m256 _mm256_movehdup_ps (__m256 a) @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_movshdup256 (a);
@@ -2280,7 +2281,7 @@ unittest
 /// Duplicate even-indexed single-precision (32-bit) floating-point elements from `a`.
 __m256 _mm256_moveldup_ps (__m256 a) @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_movsldup256 (a);
@@ -2306,7 +2307,7 @@ unittest
 /// double-precision (64-bit) floating-point element in `a`.
 int _mm256_movemask_pd (__m256d a) @safe
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_movmskpd256(a);
@@ -2341,7 +2342,7 @@ unittest
 /// single-precision (32-bit) floating-point element in `a`.
 int _mm256_movemask_ps (__m256 a) @system
 {
-    // PERF: DMD
+    // PERF DMD
     // PERF GDC without AVX
     static if (GDC_or_LDC_with_AVX)
     {
@@ -3552,7 +3553,7 @@ unittest
 /// control in `imm8`.
 __m256d _mm256_shuffle_pd(int imm8)(__m256d a, __m256d b) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_shufpd256(a, b, imm8);
@@ -3588,7 +3589,7 @@ unittest
 /// the control in `imm8`.
 __m256 _mm256_shuffle_ps(int imm8)(__m256 a, __m256 b) pure @trusted
 {
-    // PERF DMD D_SIMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_shufps256(a, b, imm8);
@@ -3733,7 +3734,7 @@ unittest
 /// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
 void _mm256_storeu_pd (double * mem_addr, __m256d a) pure @system
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         __builtin_ia32_storeupd256(mem_addr, a);
@@ -3760,7 +3761,7 @@ unittest
 /// `a` into memory. `mem_addr` does not need to be aligned on any particular boundary.
 void _mm256_storeu_ps (float* mem_addr, __m256 a) pure @system
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         __builtin_ia32_storeups256(mem_addr, a);
@@ -3788,7 +3789,7 @@ unittest
 ///  on any particular boundary.
 void _mm256_storeu_si256 (__m256i* mem_addr, __m256i a) pure @trusted
 {
-    // PERF: DMD
+    // PERF DMD
     static if (GDC_with_AVX)
     {
         __builtin_ia32_storedqu256(cast(char*)mem_addr, cast(ubyte32) a);
@@ -4732,7 +4733,7 @@ __m256 _mm256_xor_ps (__m256 a, __m256 b) pure @safe
 
 void _mm256_zeroall () pure @safe
 {
-    // PERF: DMD needs to do it explicitely if AVX is ever used one day.
+    // PERF DMD needs to do it explicitely if AVX is ever used one day.
 
     static if (GDC_with_AVX)
     {
@@ -4746,7 +4747,7 @@ void _mm256_zeroall () pure @safe
 
 void _mm256_zeroupper () pure @safe
 {
-    // PERF: DMD needs to do it explicitely if AVX is ever used.
+    // PERF DMD needs to do it explicitely if AVX is ever used.
 
     static if (GDC_with_AVX)
     {
