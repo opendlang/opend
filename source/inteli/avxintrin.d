@@ -1958,7 +1958,6 @@ unittest
 void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO that the builtin is impure
@@ -1970,10 +1969,9 @@ void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a) /* pure */ @s
     }
     else
     {
-        long2 imask = cast(long2)mask;
-        foreach(n; 0..2)
-            if (imask.array[n] < 0)
-                mem_addr[n] = a.array[n];
+        __m128d source = _mm_loadu_pd(mem_addr);
+        __m128d r = _mm_blendv_pd(source, a, cast(double2) mask);
+        _mm_storeu_pd(mem_addr, r);
     }
 }
 unittest
@@ -1994,7 +1992,6 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
     void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a) /* pure */ @system
     {
         // PERF DMD
-        // PERF ARM64
         static if (LDC_with_AVX)
         {
             // MAYDO that the builtin is impure
@@ -2006,10 +2003,9 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
         }
         else
         {
-            long4 imask = cast(long4)mask;
-            foreach(n; 0..4)
-                if (imask.array[n] < 0)
-                    mem_addr[n] = a.array[n];
+            __m256d source = _mm256_loadu_pd(mem_addr);
+            __m256d r = _mm256_blendv_pd(source, a, cast(double4) mask);
+            _mm256_storeu_pd(mem_addr, r);
         }
     }
     unittest
@@ -2030,7 +2026,6 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
 void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO report that the builtin is impure
@@ -2042,10 +2037,9 @@ void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)  /* pure */ @sy
     }
     else
     {
-        int4 imask = cast(int4)mask;
-        foreach(n; 0..4)
-            if (imask.array[n] < 0)
-                mem_addr[n] = a.array[n];
+        __m128 source = _mm_loadu_ps(mem_addr);
+        __m128 r = _mm_blendv_ps(source, a, cast(float4) mask);
+        _mm_storeu_ps(mem_addr, r);
     }
 }
 unittest
@@ -2077,10 +2071,9 @@ static if (!llvm256BitStackWorkaroundIn32BitX86)
         }
         else
         {
-            int8 imask = cast(int8)mask;
-            foreach(n; 0..8)
-                if (imask.array[n] < 0)
-                    mem_addr[n] = a.array[n];
+            __m256 source = _mm256_loadu_ps(mem_addr);
+            __m256 r = _mm256_blendv_ps(source, a, cast(float8) mask);
+            _mm256_storeu_ps(mem_addr, r);
         }
     }
     unittest
