@@ -101,7 +101,8 @@ unittest
 }
 
 
-/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using control mask `imm8`.
+/// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using control 
+/// mask `imm8`.
 // Note: changed signature, GDC needs a compile-time value for imm8.
 __m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
 {

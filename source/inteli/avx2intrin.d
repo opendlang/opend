@@ -160,7 +160,16 @@ __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
 {
     return a | b;
 }
-// TODO unittest and thus force inline
+unittest
+{
+    long A = 0x55555555_55555555;
+    long B = 0xAAAAAAAA_AAAAAAAA;
+    __m256i vA = _mm256_set_epi64(A, B, A, B);
+    __m256i vB = _mm256_set_epi64(B, A, 0, B);
+    __m256i R  = _mm256_or_si256(vA, vB);
+    long[4] correct = [B, A, -1, -1];
+    assert(R.array == correct);
+}
 
 /// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each
 /// consecutive 8 differences to produce two unsigned 16-bit integers, and pack these unsigned 16-bit integers in the

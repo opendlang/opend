@@ -323,10 +323,22 @@ __m256 _mm256_blend_ps(int imm8)(__m256 a, __m256 b) pure @trusted
 {
     static assert(imm8 >= 0 && imm8 < 256);
     // PERF DMD
-    // PERF ARM64: not awesome with some constant values, up to 8/9 instructions
     static if (GDC_with_AVX)
     {
         return __builtin_ia32_blendps256 (a, b, imm8);
+    }
+    else version(LDC)
+    {
+        // LDC x86: generates a vblendps since LDC 1.1 -O0
+        //   arm64: pretty good, four instructions worst case
+        return shufflevectorLDC!(float8, (imm8 & 1) ? 8 : 0,
+                                 (imm8 & 2) ? 9 : 1,
+                                 (imm8 & 4) ? 10 : 2,
+                                 (imm8 & 8) ? 11 : 3,
+                                 (imm8 & 16) ? 12 : 4,
+                                 (imm8 & 32) ? 13 : 5,
+                                 (imm8 & 64) ? 14 : 6,
+                                 (imm8 & 128) ? 15 : 7)(a, b);
     }
     else
     {
