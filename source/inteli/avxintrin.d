@@ -1808,11 +1808,11 @@ unittest
 version(DigitalMars)
 {
     // this avoids a bug with DMD < 2.099 -a x86 -O
-    private enum bool maskLoadWorkaround = (__VERSION__ < 2099);
+    private enum bool maskLoadWorkaroundDMD = (__VERSION__ < 2099);
 }
 else
 {
-    private enum bool maskLoadWorkaround = false;
+    private enum bool maskLoadWorkaroundDMD = false;
 }
 
 /// Load packed double-precision (64-bit) floating-point elements from memory using `mask` 
@@ -1823,7 +1823,6 @@ else
 __m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
-    // PERF ARM64
     static if (LDC_with_AVX)
     {
         // MAYDO report that the builtin is impure
@@ -1835,16 +1834,14 @@ __m128d _mm_maskload_pd (const(double)* mem_addr, __m128i mask) /* pure */ @syst
     }
     else
     {
-        long2 lmask = cast(long2)mask;
-        double2 r;
-        r.ptr[0] = (lmask.array[0] < 0) ? mem_addr[0] : 0.0;
-        r.ptr[1] = (lmask.array[1] < 0) ? mem_addr[1] : 0.0;
-        return r;
+        __m128d a = _mm_loadu_pd(mem_addr);
+        __m128d zero = _mm_setzero_pd();
+        return _mm_blendv_pd(zero, a, cast(double2)mask);
     }
 }
 unittest
 {
-    static if (!maskLoadWorkaround) 
+    static if (!maskLoadWorkaroundDMD) 
     {
         double[2] A = [7.5, 1];
         double2 B = _mm_maskload_pd(A.ptr, _mm_setr_epi64(-1, 1));
@@ -1882,7 +1879,7 @@ __m256d _mm256_maskload_pd (const(double)* mem_addr, __m256i mask) /*pure*/ @sys
 }
 unittest
 {
-    static if (!maskLoadWorkaround)
+    static if (!maskLoadWorkaroundDMD)
     {
         double[4] A = [7.5, 1, 2, 3];
         double4 B = _mm256_maskload_pd(A.ptr, _mm256_setr_epi64(1, -1, -1, 1));
@@ -1922,7 +1919,7 @@ __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
 }
 unittest
 {
-    static if (!maskLoadWorkaround)
+    static if (!maskLoadWorkaroundDMD)
     {
         float[4] A = [7.5f, 1, 2, 3];
         float4 B = _mm_maskload_ps(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
