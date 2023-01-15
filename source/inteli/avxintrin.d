@@ -2605,13 +2605,15 @@ unittest
 ///          This is really not intuitive.
 __m128d _mm_permutevar_pd(__m128d a, __m128i b) pure @trusted
 {
-    // PERF ARM64 doesn't seem that great in arm64
     static if (GDC_or_LDC_with_AVX)
     {
         return cast(__m128d) __builtin_ia32_vpermilvarpd(a, cast(long2)b);
     }
     else
     {
+        // This isn't great in ARM64, TBL or TBX instructions can't do that.
+        // that could fit the bill, if it had 64-bit operands. But it only has 8-bit operands.
+        // SVE2 could do it with svtbx[_f64] probably.
         long2 bl = cast(long2)b;
         __m128d r;
         r.ptr[0] = a.array[ (bl.array[0] & 2) >> 1];
@@ -2634,7 +2636,6 @@ unittest
 ///ditto
 __m256d _mm256_permutevar_pd (__m256d a, __m256i b) pure @trusted
 {
-    // PERF ARM64
     // PERF DMD
     static if (GDC_or_LDC_with_AVX)
     {
@@ -2642,6 +2643,9 @@ __m256d _mm256_permutevar_pd (__m256d a, __m256i b) pure @trusted
     }
     else
     {
+        // This isn't great in ARM64, TBL or TBX instructions can't do that.
+        // that could fit the bill, if it had 64-bit operands. But it only has 8-bit operands.
+        // SVE2 could do it with svtbx[_f64] probably.
         long4 bl = cast(long4)b;
         __m256d r;
         r.ptr[0] = a.array[ (bl.array[0] & 2) >> 1];
@@ -2664,17 +2668,39 @@ unittest
 }
 
 /// Shuffle single-precision (32-bit) floating-point elements in `a` using the control in `b`.
-__m128 _mm_permutevar_ps (__m128 a, __m128i b) pure @trusted
+__m128 _mm_permutevar_ps (__m128 a, __m128i b) @trusted
 {
-    // PERF ARM64
-    // PERF LDC without AVX
     // PERF DMD
+
+    enum bool implementWithByteShuffle = GDC_with_SSSE3 || LDC_with_SSSE3 || LDC_with_ARM64;
+
     static if (GDC_or_LDC_with_AVX)
     {
         return cast(__m128) __builtin_ia32_vpermilvarps(a, cast(int4)b);
     }
+    else static if (implementWithByteShuffle)
+    {
+        // This workaround is worth it: in GDC with SSSE3, in LDC with SSSE3, in ARM64 (neon)
+        int4 bi = cast(int4)b;
+        int4 three;
+        three = 3;
+        bi = _mm_slli_epi32(bi & three, 2);
+        // bi is [ind0 0 0 0 ind1 0 0 0 ind2 0 0 0 ind3 0 0 0]
+        bi = bi | _mm_slli_si128!1(bi);
+        bi = bi | _mm_slli_si128!2(bi);
+        // bi is now [ind0 ind0 ind0 ind0 ind1 ind1 ind1 ind1 ind2 ind2 ind2 ind2 ind3 ind3 ind3 ind3]
+        byte16 bytesIndices = cast(byte16)bi;
+        align(16) static immutable byte[16] mmAddBase_u8 = [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3];
+        bytesIndices = bytesIndices + *cast(byte16*)mmAddBase_u8.ptr;
+
+        // which allows us to make a single _mm_shuffle_epi8
+        return cast(__m128) _mm_shuffle_epi8(cast(__m128i)a, cast(__m128i)bytesIndices);
+    }
     else
     {
+        // This isn't great in ARM64, TBL or TBX instructions can't do that.
+        // that could fit the bill, if it had 64-bit operands. But it only has 8-bit operands.
+        // SVE2 could do it with svtbx[_f64] probably.
         int4 bi = cast(int4)b;
         __m128 r;
         r.ptr[0] = a.array[ (bi.array[0] & 3) ];
@@ -2698,9 +2724,9 @@ unittest
 ///ditto
 __m256 _mm256_permutevar_ps (__m256 a, __m256i b) pure @trusted
 {
-    // PERF ARM64 catastrophic
-    // PERF LDC without AVX, real bad
-    // PERF GDC
+    // In order to do those two, it is necessary to use _mm_shuffle_epi8 and reconstruct the integers afterwards.
+    // PERF ARM64 catastrophic, do it with _mm_permutevar_ps
+    // PERF without AVX, real bad, makes 8 memory access
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_vpermilvarps256(a, cast(int8)b);

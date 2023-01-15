@@ -3945,6 +3945,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
     }
     else static if (GDC_with_SSE2)
     {
+        pragma(inline, true); // else it doesn't seem to be inlined at all by GDC TODO _mm_srli_si128
         return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
     }
     else version(LDC)
