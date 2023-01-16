@@ -3638,8 +3638,17 @@ __m256d _mm256_sqrt_pd (__m256d a) pure @trusted
         return __builtin_ia32_sqrtpd256(a);
     } 
     else version(LDC)
-    {    
-        return llvm_sqrt(a);
+    {   
+        static if (__VERSION__ >= 2084) 
+            return llvm_sqrt(a); // that capability appeared in LDC 1.14
+        else
+        {
+            a.ptr[0] = llvm_sqrt(a.array[0]);
+            a.ptr[1] = llvm_sqrt(a.array[1]);
+            a.ptr[2] = llvm_sqrt(a.array[2]);
+            a.ptr[3] = llvm_sqrt(a.array[3]);
+            return a;
+        }
     }    
     else
     {
@@ -3665,8 +3674,21 @@ __m256 _mm256_sqrt_ps (__m256 a) pure @trusted
         return __builtin_ia32_sqrtps256(a);
     } 
     else version(LDC)
-    {    
-        return llvm_sqrt(a);
+    {  
+        static if (__VERSION__ >= 2084) 
+            return llvm_sqrt(a); // that capability appeared in LDC 1.14
+        else
+        {  
+            a.ptr[0] = llvm_sqrt(a.array[0]);
+            a.ptr[1] = llvm_sqrt(a.array[1]);
+            a.ptr[2] = llvm_sqrt(a.array[2]);
+            a.ptr[3] = llvm_sqrt(a.array[3]);
+            a.ptr[4] = llvm_sqrt(a.array[4]);
+            a.ptr[5] = llvm_sqrt(a.array[5]);
+            a.ptr[6] = llvm_sqrt(a.array[6]);
+            a.ptr[7] = llvm_sqrt(a.array[7]);
+            return a;
+        }
     }    
     else
     {
@@ -3889,7 +3911,7 @@ void _mm256_stream_pd (double* mem_addr, __m256d a) pure @system
 {
     // PERF DMD
     // PERF GDC + SSE2
-    version(LDC)
+    static if (LDC_with_InlineIREx)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -3924,7 +3946,7 @@ void _mm256_stream_ps (float* mem_addr, __m256 a) pure @system
 {
     // PERF DMD
     // PERF GDC + SSE2
-    version(LDC)
+    static if (LDC_with_InlineIREx)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -3960,7 +3982,7 @@ void _mm256_stream_si256 (__m256i * mem_addr, __m256i a) pure @trusted
 {
     // PERF DMD
     // PERF GDC
-    version(LDC)
+    static if (LDC_with_InlineIREx)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `

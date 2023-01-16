@@ -1957,7 +1957,7 @@ __m128i _mm_stream_load_si128 (__m128i * mem_addr) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_movntdqa(cast(long2*)mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_InlineIREx)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `

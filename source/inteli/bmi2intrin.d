@@ -124,6 +124,18 @@ ulong _mulx_u64 (ulong a, ulong b, ulong* hi)
 
     version(LDC)
     {
+        static if (__VERSION__ >= 2094)
+            enum bool withLDCIR = true;
+        else
+            enum bool withLDCIR = false;
+    }
+    else
+    {
+        enum bool withLDCIR = false;
+    }
+
+    static if (withLDCIR)
+    {
         // LDC x86: Generates mulx from -O0
         enum ir = `
             %4 = zext i64 %0 to i128

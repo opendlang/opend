@@ -125,15 +125,19 @@ version(LDC)
     // Since LDC 1.13, using the new ldc.llvmasm.__ir variants instead of inlineIR
     static if (__VERSION__ >= 2083)
     {
-         import ldc.llvmasm;
-         alias LDCInlineIR = __ir_pure;
+        import ldc.llvmasm;
+        alias LDCInlineIR = __ir_pure;
 
-         // A version of inline IR with prefix/suffix didn't exist before LDC 1.13
-         alias LDCInlineIREx = __irEx_pure; 
+        // A version of inline IR with prefix/suffix didn't exist before LDC 1.13
+        alias LDCInlineIREx = __irEx_pure; 
+
+        enum bool LDC_with_InlineIREx = true;
     }
     else
     {
         alias LDCInlineIR = inlineIR;
+
+        enum bool LDC_with_InlineIREx = false;
     }
 
     version(ARM)
@@ -203,6 +207,7 @@ else
     enum LDC_with_AVX2 = false;
     enum LDC_with_SHA = false;
     enum LDC_with_BMI2 = false;
+    enum LDC_with_InlineIREx = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;

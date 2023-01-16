@@ -2839,7 +2839,7 @@ void _mm_stream_ps (float* mem_addr, __m128 a)
     {
         return __builtin_ia32_movntps(mem_addr, a); 
     }
-    else version(LDC)
+    else static if (LDC_with_InlineIREx)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
