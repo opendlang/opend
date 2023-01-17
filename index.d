@@ -42,6 +42,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,students_t)) $(TD Student's t Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Continuous Uniform Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform_discrete)) $(TD Discrete Uniform Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,weibull)) $(TD Weibull Probability Distribution ))
 )
 
 Macros:

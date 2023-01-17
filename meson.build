@@ -41,6 +41,7 @@ sources_list = [
     'mir/stat/distribution/students_t',
     'mir/stat/distribution/uniform',
     'mir/stat/distribution/uniform_discrete',
+    'mir/stat/distribution/weibull',
     'mir/stat/distribution/gev',
 ]
 

@@ -51,3 +51,5 @@ public import mir.stat.distribution.students_t: studentsTPDF;
 public import mir.stat.distribution.uniform: uniformPDF;
 ///
 public import mir.stat.distribution.uniform_discrete: uniformDiscretePMF;
+///
+public import mir.stat.distribution.weibull: weibullPDF;

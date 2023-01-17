@@ -53,3 +53,5 @@ public import mir.stat.distribution.students_t: studentsTInvCDF;
 public import mir.stat.distribution.uniform: uniformInvCDF;
 ///
 public import mir.stat.distribution.uniform_discrete: uniformDiscreteInvCDF;
+///
+public import mir.stat.distribution.weibull: weibullInvCDF;

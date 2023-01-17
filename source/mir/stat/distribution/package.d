@@ -53,3 +53,5 @@ public import mir.stat.distribution.students_t;
 public import mir.stat.distribution.uniform;
 ///
 public import mir.stat.distribution.uniform_discrete;
+///
+public import mir.stat.distribution.weibull;
