@@ -152,6 +152,7 @@ version(LDC)
         enum LDC_with_SSSE3 = false;
         enum LDC_with_SSE41 = false;
         enum LDC_with_SSE42 = false;
+        enum LDC_with_CRC32 = false;
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
         enum LDC_with_SHA = false;
@@ -169,6 +170,7 @@ version(LDC)
         enum LDC_with_SSSE3 = false;
         enum LDC_with_SSE41 = false;
         enum LDC_with_SSE42 = false;
+        enum LDC_with_CRC32 = false;
         enum LDC_with_AVX = false;
         enum LDC_with_AVX2 = false;
         enum LDC_with_SHA = false;
@@ -186,6 +188,18 @@ version(LDC)
         enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
         enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1");
         enum LDC_with_SSE42 = __traits(targetHasFeature, "sse4.2");
+
+        // Since LDC 1.30, crc32 is a separate (and sufficient) attribute from sse4.2
+        // As of Jan 2023, GDC doesn't make that distinction, -msse4.2 includes -mcrc32 for GDC.
+        static if (__VERSION__ >= 2100)
+        {
+            enum LDC_with_CRC32 = __traits(targetHasFeature, "crc32");
+        }
+        else
+        {
+            enum LDC_with_CRC32 = __traits(targetHasFeature, "sse4.2"); // crc32 used to be included in sse4.2
+        }
+
         enum LDC_with_AVX = __traits(targetHasFeature, "avx");
         enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2");
         enum LDC_with_SHA = __traits(targetHasFeature, "sha");
@@ -203,6 +217,7 @@ else
     enum LDC_with_SSSE3 = false;
     enum LDC_with_SSE41 = false;
     enum LDC_with_SSE42 = false;
+    enum LDC_with_CRC32 = false;
     enum LDC_with_AVX = false;
     enum LDC_with_AVX2 = false;
     enum LDC_with_SHA = false;

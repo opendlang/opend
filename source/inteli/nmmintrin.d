@@ -16,7 +16,9 @@ import core.bitop: bsf, bsr;
 // Note: this header will work whether you have SSE4.2 enabled or not.
 // With LDC, use "dflags-ldc": ["-mattr=+sse4.2"] or equivalent to actively 
 // generate SSE4.2 instruction (they are often enabled with -O1 or greater).
-// Additionally, you need ["-mattr=+crc"] on ARM if you want hardware CRC instructions.
+// - Additionally, you need ["-mattr=+crc"] on ARM if you want hardware CRC instructions.
+// - Since LDC 1.30, you need ["-mattr=+crc32"] on x86_64 if you want hardware CRC instructions,
+//   it is not considered implied by sse4.2 anymore.
 // With GDC, use "dflags-gdc": ["-msse4.2"] or equivalent to generate SSE4.2 instructions.
 
 nothrow @nogc:
@@ -866,7 +868,7 @@ uint _mm_crc32_u16 (uint crc, ushort v) @safe
     {
         return __builtin_ia32_crc32hi(crc, v);
     }
-    else static if (LDC_with_SSE42)
+    else static if (LDC_with_CRC32)
     {
         return __builtin_ia32_crc32hi(crc, v);
     }
@@ -900,7 +902,7 @@ uint _mm_crc32_u32 (uint crc, uint v) @safe
     {
         return __builtin_ia32_crc32si(crc, v);
     }
-    else static if (LDC_with_SSE42)
+    else static if (LDC_with_CRC32)
     {
         return __builtin_ia32_crc32si(crc, v);
     }
@@ -933,7 +935,7 @@ unittest
 ulong _mm_crc32_u64 (ulong crc, ulong v)
 {
     version(X86_64)
-        enum bool hasX86Intrin = GDC_with_SSE42 || LDC_with_SSE42;
+        enum bool hasX86Intrin = GDC_with_SSE42 || LDC_with_CRC32;
     else
         enum bool hasX86Intrin = false; // intrinsics not available in 32-bit
 
@@ -978,7 +980,7 @@ uint _mm_crc32_u8 (uint crc, ubyte v) @safe
     {
         return __builtin_ia32_crc32qi(crc, v);
     }
-    else static if (LDC_with_SSE42)
+    else static if (LDC_with_CRC32)
     {
         return __builtin_ia32_crc32qi(crc, v);
     }
@@ -1013,7 +1015,7 @@ static if (GDC_with_SSE42)
     else
         enum bool NeedCRC32CTable = true;
 }
-else static if (LDC_with_SSE42)
+else static if (LDC_with_CRC32)
 {
     version(X86_64)
         enum bool NeedCRC32CTable = false;
