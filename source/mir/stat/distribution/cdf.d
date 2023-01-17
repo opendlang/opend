@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion: betaProportionCDF;
 ///
 public import mir.stat.distribution.binomial: binomialCDF;
 ///
+public import mir.stat.distribution.cauchy: cauchyCDF;
+///
 public import mir.stat.distribution.chi2: chi2CDF;
 ///
 public import mir.stat.distribution.exponential: exponentialCDF;

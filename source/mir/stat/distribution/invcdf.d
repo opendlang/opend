@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion: betaProportionInvCDF;
 ///
 public import mir.stat.distribution.binomial: binomialInvCDF;
 ///
+public import mir.stat.distribution.cauchy: cauchyInvCDF;
+///
 public import mir.stat.distribution.chi2: chi2InvCDF;
 ///
 public import mir.stat.distribution.cornish_fisher: cornishFisherInvCDF;

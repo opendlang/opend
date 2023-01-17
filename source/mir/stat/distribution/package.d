@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion;
 ///
 public import mir.stat.distribution.binomial;
 ///
+public import mir.stat.distribution.cauchy;
+///
 public import mir.stat.distribution.chi2;
 ///
 public import mir.stat.distribution.cornish_fisher;
