@@ -50,6 +50,8 @@ public import mir.stat.distribution.pareto: paretoPDF;
 ///
 public import mir.stat.distribution.poisson: poissonPMF;
 ///
+public import mir.stat.distribution.rayleigh: rayleighPDF;
+///
 public import mir.stat.distribution.students_t: studentsTPDF;
 ///
 public import mir.stat.distribution.uniform: uniformPDF;

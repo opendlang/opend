@@ -52,6 +52,8 @@ public import mir.stat.distribution.pareto;
 ///
 public import mir.stat.distribution.poisson;
 ///
+public import mir.stat.distribution.rayleigh;
+///
 public import mir.stat.distribution.students_t;
 ///
 public import mir.stat.distribution.uniform;
