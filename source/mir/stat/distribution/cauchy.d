@@ -15,7 +15,7 @@ import mir.internal.utility: isFloatingPoint;
 import mir.math.common: log;
 import mir.math.constant: PI;
 
-enum real LOGPI = log(PI);
+private enum real LOGPI = log(PI);
 
 /++
 Computes the Cauchy probability distribution function (PDF).
@@ -39,14 +39,14 @@ Ditto, with location and scale parameters (by standardizing `x`).
 
 Params:
     x = value to evaluate PDF
-    x0 = location parameter
-    gamma = scale parameter
+    location = location parameter
+    scale = scale parameter
 +/
-T cauchyPDF(T)(const T x, const T x0, const T gamma)
+T cauchyPDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
-    in (gamma > 0, "gamma must be greater than zero")
+    in (scale > 0, "scale must be greater than zero")
 {
-    return cauchyPDF((x - x0) / gamma) / gamma;
+    return cauchyPDF((x - location) / scale) / scale;
 }
 
 ///
@@ -96,14 +96,14 @@ Ditto, with location and scale parameters (by standardizing `x`).
 
 Params:
     x = value to evaluate CDF
-    x0 = location parameter
-    gamma = scale parameter
+    location = location parameter
+    scale = scale parameter
 +/
-T cauchyCDF(T)(const T x, const T x0, const T gamma)
+T cauchyCDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
-    in (gamma > 0, "gamma must be greater than zero")
+    in (scale > 0, "scale must be greater than zero")
 {
-    return cauchyCDF((x - x0) / gamma);
+    return cauchyCDF((x - location) / scale);
 }
 
 ///
@@ -150,14 +150,14 @@ Ditto, with location and scale parameters (by standardizing `x`).
 
 Params:
     x = value to evaluate CCDF
-    x0 = location parameter
-    gamma = scale parameter
+    location = location parameter
+    scale = scale parameter
 +/
-T cauchyCCDF(T)(const T x, const T x0, const T gamma)
+T cauchyCCDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
-    in (gamma > 0, "gamma must be greater than zero")
+    in (scale > 0, "scale must be greater than zero")
 {
-    return cauchyCDF((x0 - x) / gamma);
+    return cauchyCDF((location - x) / scale);
 }
 
 ///
@@ -188,7 +188,7 @@ unittest {
 Computes the Cauchy inverse cumulative distribution function (InvCDF).
 
 Params:
-    x = value to evaluate InvCDF
+    p = value to evaluate InvCDF
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
@@ -215,17 +215,17 @@ T cauchyInvCDF(T)(const T p)
 Ditto, with location and scale parameters.
 
 Params:
-    p = value to evaluate CCDF
-    x0 = location parameter
-    gamma = scale parameter
+    p = value to evaluate InvCDF
+    location = location parameter
+    scale = scale parameter
 +/
-T cauchyInvCDF(T)(const T p, const T x0, const T gamma)
+T cauchyInvCDF(T)(const T p, const T location, const T scale)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
-    in (gamma > 0, "gamma must be greater than zero")
+    in (scale > 0, "scale must be greater than zero")
 {
-     return x0 + gamma * cauchyInvCDF(p);
+     return location + scale * cauchyInvCDF(p);
 }
 
 ///
@@ -273,16 +273,16 @@ Ditto, with location and scale parameters (by standardizing `x`).
 
 Params:
     x = value to evaluate LPDF
-    x0 = location parameter
-    gamma = scale parameter
+    location = location parameter
+    scale = scale parameter
 +/
-T cauchyLPDF(T)(const T x, const T x0, const T gamma)
+T cauchyLPDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
-    in (gamma > 0, "gamma must be greater than zero")
+    in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: log;
 
-    return cauchyLPDF((x - x0) / gamma) - log(gamma);
+    return cauchyLPDF((x - location) / scale) - log(scale);
 }
 
 ///
