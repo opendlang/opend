@@ -34,6 +34,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,generalized_pareto)) $(TD Generalized Pareto Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,geometric)) $(TD Geometric Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,gev)) $(TD Generalized Extreme Value Probability Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,laplace)) $(TD Laplace Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,log_normal)) $(TD Log-normal Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,logistic)) $(TD Logistic Probability Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,negative_binomial)) $(TD Negative Binomial Probability Distribution ))

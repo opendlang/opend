@@ -38,6 +38,8 @@ public import mir.stat.distribution.geometric: geometricInvCDF;
 ///
 public import mir.stat.distribution.gev: gevInvCDF;
 ///
+public import mir.stat.distribution.laplace: laplaceInvCDF;
+///
 public import mir.stat.distribution.log_normal: logNormalInvCDF;
 ///
 public import mir.stat.distribution.logistic: logisticInvCDF;

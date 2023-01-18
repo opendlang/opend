@@ -38,6 +38,8 @@ public import mir.stat.distribution.geometric;
 ///
 public import mir.stat.distribution.gev;
 ///
+public import mir.stat.distribution.laplace;
+///
 public import mir.stat.distribution.log_normal;
 ///
 public import mir.stat.distribution.logistic;
