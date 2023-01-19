@@ -30,7 +30,6 @@
         },
         {
             "name": "no-codecs",
-            "comment": "this is just for testing",
             "versions": [  ]
         }
     ]

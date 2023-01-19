@@ -47,7 +47,7 @@ import gamut.types;
 import gamut.internals.binop;
 import core.stdc.string : memcpy, memset;
 import core.stdc.stdlib : malloc, free;
-import inteli.emmintrin;
+import inteli.smmintrin;
 
 version(decodeJPEG):
 
@@ -2394,7 +2394,7 @@ private:
             mm_cb = _mm_unpacklo_epi16(mm_cb, zero);
             mm_cr = _mm_unpacklo_epi16(mm_cr, zero);
 
-            // Avoid table here, since we use SIMD
+            // Avoid table here, since we use SIMD            
 
             //m_crr.ptr[i] = ( FIX!(1.40200f)  * (i - 128) + ONE_HALF) >> SCALEBITS;
             //m_crg.ptr[i] = (-FIX!(0.71414f)) * (i - 128);
@@ -2403,10 +2403,13 @@ private:
 
             __m128i mm_128 = _mm_set1_epi32(128);
 
-            __m128i mm_crr = (mm_cr - mm_128) * _mm_set1_epi32( FIX!(1.40200f) );
-            __m128i mm_crg = (mm_cr - mm_128) * _mm_set1_epi32(-FIX!(0.71414f) );
-            __m128i mm_cbg = (mm_cb - mm_128) * _mm_set1_epi32(-FIX!(0.34414f) );
-            __m128i mm_cbb = (mm_cb - mm_128) * _mm_set1_epi32( FIX!(1.77200f) );
+            // PERF: would be faster better as short multiplication here, 
+            // do we need that much precision???
+
+            __m128i mm_crr = _mm_mullo_epi32 (mm_cr - mm_128, _mm_set1_epi32( FIX!(1.40200f) ) );
+            __m128i mm_crg = _mm_mullo_epi32 (mm_cr - mm_128, _mm_set1_epi32(-FIX!(0.71414f) ) );
+            __m128i mm_cbg = _mm_mullo_epi32 (mm_cb - mm_128, _mm_set1_epi32(-FIX!(0.34414f) ) );
+            __m128i mm_cbb = _mm_mullo_epi32 (mm_cb - mm_128, _mm_set1_epi32( FIX!(1.77200f) ) );
 
             __m128i mm_ONE_HALF = _mm_set1_epi32(ONE_HALF);
             mm_crr += mm_ONE_HALF;
