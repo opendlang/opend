@@ -26,13 +26,12 @@ See_also:
 +/
 T weibullPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
+    in (x >= 0, "x must be greater than or equal to zero")
     in (shape > 0, "shape must be greater than zero")
     in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: exp, pow;
-   
-    if (x < 0)
-        return 0;
+
     const T x_scale = x / scale;
     return (shape / scale) * pow(x_scale, shape - 1) * exp(-pow(x_scale, shape));
 }
@@ -78,13 +77,12 @@ See_also:
 +/
 T weibullCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
+    in (x >= 0, "x must be greater than or equal to zero")
     in (shape > 0, "shape must be greater than zero")
     in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: exp, pow;
 
-    if (x < 0)
-        return 0;
     return 1 - exp(-pow(x / scale, shape));
 }
 
@@ -119,13 +117,12 @@ See_also:
 +/
 T weibullCCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
+    in (x >= 0, "x must be greater than or equal to zero")
     in (shape > 0, "shape must be greater than zero")
     in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: exp, pow;
 
-    if (x < 0)
-        return 1;
     return exp(-pow(x / scale, shape));
 }
 
@@ -203,14 +200,13 @@ See_also:
 +/
 T weibullLPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
+    in (x >= 0, "x must be greater than or equal to zero")
     in (shape > 0, "shape must be greater than zero")
     in (scale > 0, "scale must be greater than zero")
 {
     import mir.math.common: log, pow;
     import mir.math.internal.xlogy: xlogy;
 
-    if (x < 0)
-        return -T.infinity;
     const T x_scale = x / scale;
     return log(shape / scale) + xlogy(shape - 1, x_scale) - pow(x_scale, shape);
 }
