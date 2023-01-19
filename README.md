@@ -87,6 +87,8 @@ __m128 add_4x_floats(__m128 a, __m128 b)
 
 [See available operators...](https://dlang.org/spec/simd.html#vector_op_intrinsics)
 
+> _One exception to this is `int4` * `int4`. Older GDC and current DMD do not have this operator. Instead, do use `_mm_mullo_epi32` from `inteli.smmintrin` module._
+
 
 ### Individual element access
 
