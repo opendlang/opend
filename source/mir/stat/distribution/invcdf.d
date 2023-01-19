@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion: betaProportionInvCDF;
 ///
 public import mir.stat.distribution.binomial: binomialInvCDF;
 ///
+public import mir.stat.distribution.cauchy: cauchyInvCDF;
+///
 public import mir.stat.distribution.chi2: chi2InvCDF;
 ///
 public import mir.stat.distribution.cornish_fisher: cornishFisherInvCDF;
@@ -36,7 +38,11 @@ public import mir.stat.distribution.geometric: geometricInvCDF;
 ///
 public import mir.stat.distribution.gev: gevInvCDF;
 ///
+public import mir.stat.distribution.laplace: laplaceInvCDF;
+///
 public import mir.stat.distribution.log_normal: logNormalInvCDF;
+///
+public import mir.stat.distribution.logistic: logisticInvCDF;
 ///
 public import mir.stat.distribution.negative_binomial: negativeBinomialInvCDF;
 ///
@@ -46,8 +52,12 @@ public import mir.stat.distribution.pareto: paretoInvCDF;
 ///
 public import mir.stat.distribution.poisson: poissonInvCDF;
 ///
+public import mir.stat.distribution.rayleigh: rayleighInvCDF;
+///
 public import mir.stat.distribution.students_t: studentsTInvCDF;
 ///
 public import mir.stat.distribution.uniform: uniformInvCDF;
 ///
 public import mir.stat.distribution.uniform_discrete: uniformDiscreteInvCDF;
+///
+public import mir.stat.distribution.weibull: weibullInvCDF;
