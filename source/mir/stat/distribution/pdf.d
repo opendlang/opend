@@ -20,6 +20,8 @@ public import mir.stat.distribution.beta_proportion: betaProportionPDF;
 ///
 public import mir.stat.distribution.binomial: binomialPMF;
 ///
+public import mir.stat.distribution.categorical: categoricalPMF;
+///
 public import mir.stat.distribution.cauchy: cauchyPDF;
 ///
 public import mir.stat.distribution.chi2: chi2PDF;
