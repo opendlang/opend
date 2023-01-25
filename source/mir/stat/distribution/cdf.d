@@ -38,6 +38,8 @@ public import mir.stat.distribution.geometric: geometricCDF;
 ///
 public import mir.stat.distribution.gev: gevCDF;
 ///
+public import mir.stat.distribution.hypergeometric: hypergeometricCDF;
+///
 public import mir.stat.distribution.laplace: laplaceCDF;
 ///
 public import mir.stat.distribution.log_normal: logNormalCDF;
