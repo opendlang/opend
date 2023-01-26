@@ -1080,7 +1080,7 @@ struct Algebraic(T__...)
 
     /// Construct an algebraic type from its subset.
     this(RhsTypes...)(Algebraic!RhsTypes rhs)
-        if (allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
+        if (!(hasElaborateCopyConstructor!(Algebraic!T__) && is(Algebraic!RhsTypes == typeof(this)))  && allSatisfy!(Contains!AllowedTypes, Algebraic!RhsTypes.AllowedTypes))
     {
         import core.lifetime: move;
         static if (is(RhsTypes == Types__))
