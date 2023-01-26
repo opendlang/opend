@@ -25,9 +25,9 @@ See_also:
 +/
 @safe pure nothrow @nogc
 double uniformDiscretePMF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return 1.0 / (upper - lower + 1);
 }
@@ -55,9 +55,9 @@ See_also:
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteCDF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return (cast(double) x - lower + 1) / (upper - lower + 1);
 }
@@ -89,9 +89,9 @@ See_also:
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteCCDF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return (cast(double) upper - x) / (upper - lower + 1);
 }
@@ -124,9 +124,9 @@ See_also:
 @safe pure nothrow @nogc
 size_t uniformDiscreteInvCDF(T)(const T p, const size_t lower = 0, const size_t upper = 1)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(lower < upper, "lower must be less than upper")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (lower < upper, "lower must be less than upper")
 {
     size_t n = upper - lower + 1;
     if (p * n <= 1) {
@@ -166,9 +166,9 @@ See_also:
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteLPMF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
+    in (lower < upper, "lower must be less than upper")
 {
     import mir.math.common: log;
 

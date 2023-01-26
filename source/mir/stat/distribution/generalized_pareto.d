@@ -28,9 +28,9 @@ See_also:
 @safe pure nothrow @nogc
 T generalizedParetoPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -69,9 +69,9 @@ See_also:
 @safe pure nothrow @nogc
 T generalizedParetoCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -110,9 +110,9 @@ See_also:
 @safe pure nothrow @nogc
 T generalizedParetoCCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -153,7 +153,7 @@ T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
-    in(sigma > 0, "sigma must be greater than zero")
+    in (sigma > 0, "sigma must be greater than zero")
 {
     import mir.math.common: pow;
     import std.math.exponential: log1p;
@@ -194,9 +194,9 @@ See_also:
 @safe pure nothrow @nogc
 T generalizedParetoLPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: log;
     import mir.math.internal.xlogy: xlogy;

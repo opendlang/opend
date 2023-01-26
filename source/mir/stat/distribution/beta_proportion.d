@@ -27,11 +27,11 @@ See_also:
 @safe pure nothrow @nogc
 T betaProportionPDF(T)(const T x, const T mu, const T kappa)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(mu > 0, "mu must be greater than zero")
-    in(mu < 1, "mu must be less than one")
-    in(kappa > 0, "kappa must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (mu > 0, "mu must be greater than zero")
+    in (mu < 1, "mu must be less than one")
+    in (kappa > 0, "kappa must be greater than zero")
 {
     import mir.stat.distribution.beta: betaPDF;
 
@@ -65,11 +65,11 @@ See_also:
 @safe pure nothrow @nogc
 T betaProportionCDF(T)(const T x, const T mu, const T kappa)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(mu > 0, "mu must be greater than zero")
-    in(mu < 1, "mu must be less than one")
-    in(kappa > 0, "kappa must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (mu > 0, "mu must be greater than zero")
+    in (mu < 1, "mu must be less than one")
+    in (kappa > 0, "kappa must be greater than zero")
 {
     import mir.stat.distribution.beta: betaCDF;
 
@@ -103,11 +103,11 @@ See_also:
 @safe pure nothrow @nogc
 T betaProportionCCDF(T)(const T x, const T mu, const T kappa)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(mu > 0, "mu must be greater than zero")
-    in(mu < 1, "mu must be less than one")
-    in(kappa > 0, "kappa must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (mu > 0, "mu must be greater than zero")
+    in (mu < 1, "mu must be less than one")
+    in (kappa > 0, "kappa must be greater than zero")
 {
     import mir.stat.distribution.beta: betaCCDF;
 
@@ -141,11 +141,11 @@ See_also:
 @safe pure nothrow @nogc
 T betaProportionInvCDF(T)(const T p, const T mu, const T kappa)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(mu > 0, "mu must be greater than zero")
-    in(mu < 1, "mu must be less than one")
-    in(kappa > 0, "kappa must be greater than zero")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (mu > 0, "mu must be greater than zero")
+    in (mu < 1, "mu must be less than one")
+    in (kappa > 0, "kappa must be greater than zero")
 {
     import mir.stat.distribution.beta: betaInvCDF;
 
@@ -179,11 +179,11 @@ See_also:
 @safe pure nothrow @nogc
 T betaProportionLPDF(T)(const T x, const T mu, const T kappa)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(mu > 0, "mu must be greater than zero")
-    in(mu < 1, "mu must be less than one")
-    in(kappa > 0, "kappa must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (mu > 0, "mu must be greater than zero")
+    in (mu < 1, "mu must be less than one")
+    in (kappa > 0, "kappa must be greater than zero")
 {
     import mir.stat.distribution.beta: betaLPDF;
 

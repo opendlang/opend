@@ -27,9 +27,9 @@ See_also:
 @safe pure nothrow @nogc
 T paretoPDF(T)(const T x, const T xMin, const T alpha)
     if (isFloatingPoint!T)
-    in(x >= xMin, "x must be greater than or equal to xMin")
-    in(xMin > 0, "xMin must be greater than zero")
-    in(alpha > 0, "alpha must be greater than zero")
+    in (x >= xMin, "x must be greater than or equal to xMin")
+    in (xMin > 0, "xMin must be greater than zero")
+    in (alpha > 0, "alpha must be greater than zero")
 {
     import mir.math.common: pow;
 
@@ -61,9 +61,9 @@ See_also:
 @safe pure nothrow @nogc
 T paretoCDF(T)(const T x, const T xMin, const T alpha)
     if (isFloatingPoint!T)
-    in(x >= xMin, "x must be greater than or equal to xMin")
-    in(xMin > 0, "xMin must be greater than zero")
-    in(alpha > 0, "alpha must be greater than zero")
+    in (x >= xMin, "x must be greater than or equal to xMin")
+    in (xMin > 0, "xMin must be greater than zero")
+    in (alpha > 0, "alpha must be greater than zero")
 {
     import mir.math.common: pow;
 
@@ -95,9 +95,9 @@ See_also:
 @safe pure nothrow @nogc
 T paretoCCDF(T)(const T x, const T xMin, const T alpha)
     if (isFloatingPoint!T)
-    in(x >= xMin, "x must be greater than or equal to xMin")
-    in(xMin > 0, "xMin must be greater than zero")
-    in(alpha > 0, "alpha must be greater than zero")
+    in (x >= xMin, "x must be greater than or equal to xMin")
+    in (xMin > 0, "xMin must be greater than zero")
+    in (alpha > 0, "alpha must be greater than zero")
 {
     import mir.math.common: pow;
 
@@ -131,8 +131,8 @@ T paretoInvCDF(T)(const T p, const T xMin, const T alpha)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
-    in(xMin > 0, "xMin must be greater than zero")
-    in(alpha > 0, "alpha must be greater than zero")
+    in (xMin > 0, "xMin must be greater than zero")
+    in (alpha > 0, "alpha must be greater than zero")
 {
     import mir.math.common: pow;
 
@@ -164,9 +164,9 @@ See_also:
 @safe pure nothrow @nogc
 T paretoLPDF(T)(const T x, const T xMin, const T alpha)
     if (isFloatingPoint!T)
-    in(x >= xMin, "x must be greater than or equal to xMin")
-    in(xMin > 0, "xMin must be greater than zero")
-    in(alpha > 0, "alpha must be greater than zero")
+    in (x >= xMin, "x must be greater than or equal to xMin")
+    in (xMin > 0, "xMin must be greater than zero")
+    in (alpha > 0, "alpha must be greater than zero")
 {
     import mir.math.common: log;
     import mir.math.internal.xlogy: xlogy;

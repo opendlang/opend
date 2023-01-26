@@ -26,8 +26,8 @@ See_also:
 @safe pure nothrow @nogc
 T bernoulliPMF(T)(const bool x, const T p)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     return p * x + (1 - p) * (1 - x);
 }
@@ -58,8 +58,8 @@ See_also:
 @safe pure nothrow @nogc
 T bernoulliCDF(T)(const bool x, const T p)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     return x + (1 - x) * (1 - p);
 }
@@ -90,8 +90,8 @@ See_also:
 @safe pure nothrow @nogc
 T bernoulliCCDF(T)(const bool x, const T p)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     return (1 - x) * p;
 }
@@ -122,10 +122,10 @@ See_also:
 @safe pure nothrow @nogc
 bool bernoulliInvCDF(T)(const T q, const T p)
     if (isFloatingPoint!T)
-    in(q >= 0, "q must be greater than or equal to 0")
-    in(q <= 1, "q must be less than or equal to 1")
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     return q > p; // this ensures bernoulliInvCDF(a, a) == false, which is consistent with bernoulliCDF(false, a) == a
 }
@@ -165,8 +165,8 @@ See_also:
 @safe pure nothrow @nogc
 T bernoulliLPMF(T)(const bool x, const T p)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.internal.xlogy: xlogy, xlog1py;
 

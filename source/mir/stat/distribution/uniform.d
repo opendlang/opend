@@ -27,9 +27,9 @@ See_also:
 @safe pure nothrow @nogc
 T uniformPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
-    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in (lower < upper, "lower must be less than upper")
 {
     return 1.0L / (upper - lower);
 }
@@ -58,9 +58,9 @@ See_also:
 @safe pure nothrow @nogc
 T uniformCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
-    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in (lower < upper, "lower must be less than upper")
 {
     return (x - lower) / (upper - lower);
 }
@@ -89,9 +89,9 @@ See_also:
 @safe pure nothrow @nogc
 T uniformCCDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
-    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in (lower < upper, "lower must be less than upper")
 {
     return (upper - x) / (upper - lower);
 }
@@ -120,9 +120,9 @@ See_also:
 @safe pure nothrow @nogc
 T uniformInvCDF(T)(const T p, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(lower < upper, "lower must be less than upper")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (lower < upper, "lower must be less than upper")
 {
     return lower + p * (upper - lower);
 }
@@ -151,9 +151,9 @@ See_also:
 @safe pure nothrow @nogc
 T uniformLPDF(T)(const T x, const T lower = 0, const T upper = 1)
     if (isFloatingPoint!T)
-    in(x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound in uniform probability distribution")
+    in (x <= upper, "x must be less than or equal to upper bound in uniform probability distribution")
+    in (lower < upper, "lower must be less than upper")
 {
     import mir.math.common: log;
 

@@ -27,10 +27,10 @@ See_also:
 @safe pure nothrow @nogc
 T betaPDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import mir.math.common: pow;
     import std.mathspecial: betaFunc = beta;
@@ -63,10 +63,10 @@ See_also:
 @safe pure nothrow @nogc
 T betaCDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncomplete;
 
@@ -98,10 +98,10 @@ See_also:
 @safe pure nothrow @nogc
 T betaCCDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncomplete;
 
@@ -133,10 +133,10 @@ See_also:
 @safe pure nothrow @nogc
 T betaInvCDF(T)(const T p, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncompleteInverse;
 
@@ -168,10 +168,10 @@ See_also:
 @safe pure nothrow @nogc
 T betaLPDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import mir.math.internal.log_beta: logBeta;
     import mir.math.internal.xlogy: xlogy, xlog1py;
