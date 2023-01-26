@@ -3,9 +3,9 @@ This module contains algorithms for the Generalized Extreme Value Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
-Authors: Ilia Ki
+Authors: Ilia Ki, John Michael Hall
 
-Copyright: 2022-3 Ilia Ki.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -26,8 +26,8 @@ Params:
 +/
 T gevPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in (xi <= 0 || x >= mu - sigma / xi)
-    in (xi >= 0 || x <= mu - sigma / xi)
+    in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")
+    in (xi <= 0 || x >= mu - sigma / xi, "if xi is greater than zero, xi must be greater than or equal to mu - sigma / xi")
 {
     auto s = (x - mu) / sigma;
     if (xi.fabs <= T.min_normal)
@@ -53,6 +53,15 @@ unittest
     gevPDF(-1, 2, 3, 0.0).shouldApprox == 0.1793740787340172;
 }
 
+// Checking v <= 0 branch
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.test: should;
+    gevPDF(-1.0, 0, 1, 1).should == 0;
+}
+
 /++
 Computes the generalized extreme value cumulatve distribution function (CDF).
 
@@ -64,8 +73,8 @@ Params:
 +/
 T gevCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in (xi <= 0 || x >= mu - sigma / xi)
-    in (xi >= 0 || x <= mu - sigma / xi)
+    in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")
+    in (xi <= 0 || x >= mu - sigma / xi, "if xi is greater than zero, xi must be greater than or equal to mu - sigma / xi")
 {
     auto s = (x - mu) / sigma;
     if (xi.fabs <= T.min_normal)
@@ -86,6 +95,16 @@ unittest
     gevCDF(-3, 2, 3, -0.5).shouldApprox == 0.034696685646156494;
     gevCDF(-1, 2, 3, +0.5).shouldApprox == 0.01831563888873418;
     gevCDF(-1, 2, 3, 0.0).shouldApprox == 0.06598803584531254;
+}
+
+// Checking v <= 0 branch
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.test: should;
+    gevCDF(-1.0, 0, 1, 1).should == 0;
+    gevCDF(1.0, 0, 1, -1).should == 1;
 }
 
 /++
