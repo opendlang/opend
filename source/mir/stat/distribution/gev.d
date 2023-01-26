@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Generalized Extreme Value Distribution.
+This module contains algorithms for the Generalized Extreme Value (GEV) Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -16,13 +16,16 @@ import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fabs, exp, pow, log;
 
 /++
-Computes the generalized extreme value probability density function (PDF).
+Computes the generalized extreme value (GEV) probability density function (PDF).
 
 Params:
     x = value to evaluate
     mu = location
     sigma = scale
     xi = shape
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
 T gevPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
@@ -63,13 +66,16 @@ unittest
 }
 
 /++
-Computes the generalized extreme value cumulatve distribution function (CDF).
+Computes the generalized extreme value (GEV) cumulatve distribution function (CDF).
 
 Params:
     x = value to evaluate
     mu = location
     sigma = scale
     xi = shape
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
 T gevCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
@@ -108,13 +114,16 @@ unittest
 }
 
 /++
-Computes the generalized extreme value inverse cumulative distribution function (InvCDF).
+Computes the generalized extreme value (GEV) inverse cumulative distribution function (InvCDF).
 
 Params:
     p = value to evaluate
     mu = location
     sigma = scale
     xi = shape
+
+See_also:
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
 T gevInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
