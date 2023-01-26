@@ -1,20 +1,14 @@
-/**
+/++
+This module contains algorithms for the Generalized Extreme Value Distribution.
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-*/
-/**
- * Generalized extreme value distribution
- *
- * Copyright: Ilia Ki, 2022
- * Authors: Ilia Ki
- */
-/**
- * Macros:
- *  NAN = $(RED NAN)
- *  INTEGRAL = &#8747;
- *  POWER = $1<sup>$2</sup>
- *      <caption>Special Values</caption>
- *      $0</table>
- */
+
+Authors: Ilia Ki
+
+Copyright: 2022-3 Ilia Ki.
+
++/
+
 module mir.stat.distribution.gev;
 
 import mir.internal.utility: isFloatingPoint;
@@ -22,7 +16,7 @@ import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fabs, exp, pow, log;
 
 /++
-Computes the generalized extreme value probability distribution function (PDF).
+Computes the generalized extreme value probability density function (PDF).
 
 Params:
     x = value to evaluate

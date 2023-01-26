@@ -1,11 +1,12 @@
 /++
-This module contains algorithms for the chi-squared continuous distribution.
+This module contains algorithms for the Chi-squared Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: Ilia Ki, John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
+
 +/
 module mir.stat.distribution.chi2;
 
@@ -19,7 +20,7 @@ Params:
     k = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared Distribution)
 +/
 @safe pure nothrow @nogc
 T chi2PDF(T)(const T x, const uint k)
@@ -49,7 +50,7 @@ Params:
     k = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared Distribution)
 +/
 @safe pure nothrow @nogc
 T chi2CDF(T)(const T x, const uint k)
@@ -79,7 +80,7 @@ Params:
     k = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared Distribution)
 +/
 @safe pure nothrow @nogc
 T chi2CCDF(T)(const T x, const uint k)
@@ -109,7 +110,7 @@ Params:
     k = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared Distribution)
 +/
 @safe pure nothrow @nogc
 T chi2InvCDF(T)(const T x, const uint k)
@@ -139,7 +140,7 @@ Params:
     k = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Chi-squared_distribution, Chi-squared Distribution)
 +/
 @safe pure nothrow @nogc
 T chi2LPDF(T)(const T x, const uint k)

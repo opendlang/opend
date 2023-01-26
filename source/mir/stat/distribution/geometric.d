@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the geometric probability distribution.
+This module contains algorithms for the Geometric Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -20,7 +20,7 @@ Params:
     k = value to evaluate PMF
     p = `true` probability
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, geometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution)
 +/
 @safe pure @nogc nothrow
 T geometricPMF(T)(const size_t k, const T p)
@@ -51,7 +51,7 @@ Params:
     k = value to evaluate CDF
     p = `true` probability
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, geometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution)
 +/
 @safe pure @nogc nothrow
 T geometricCDF(T)(const size_t k, const T p)
@@ -102,7 +102,7 @@ Params:
     k = value to evaluate CCDF
     p = `true` probability
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, geometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution)
 +/
 @safe pure @nogc nothrow
 T geometricCCDF(T)(const size_t k, const T p)
@@ -153,7 +153,7 @@ Params:
     prob = value to evaluate InvCDF
     p = `true` probability
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, geometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution)
 +/
 @safe pure @nogc nothrow
 T geometricInvCDF(T)(const T prob, const T p)
@@ -209,7 +209,7 @@ Params:
     k = value to evaluate LPMF
     p = `true` probability
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, geometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution)
 +/
 @safe pure @nogc nothrow
 T geometricLPMF(T)(const size_t k, const T p)

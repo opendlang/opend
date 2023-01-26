@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Weibull distribution.
+This module contains algorithms for the Weibull Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -22,7 +22,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
 T weibullPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -73,7 +73,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
 T weibullCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -113,7 +113,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
 T weibullCCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -153,7 +153,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
 T weibullInvCDF(T)(const T p, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -196,7 +196,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
 T weibullLPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)

@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Rayleigh distribution.
+This module contains algorithms for the Rayleigh Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -20,7 +20,7 @@ Params:
     x = value to evaluate PDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighPDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -72,7 +72,7 @@ Params:
     x = value to evaluate CDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -121,7 +121,7 @@ Params:
     x = value to evaluate CCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighCCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -170,7 +170,7 @@ Params:
     p = value to evaluate InvCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighInvCDF(T)(const T p)
     if (isFloatingPoint!T)
@@ -227,7 +227,7 @@ Params:
     x = value to evaluate LPDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighLPDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -245,7 +245,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
 T rayleighLPDF(T)(const T x, const T scale)
     if (isFloatingPoint!T)

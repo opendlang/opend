@@ -1,11 +1,12 @@
 /++
-This module contains algorithms for the gamma distribution.
+This module contains algorithms for the Gamma Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: Ilia Ki, John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
+
 +/
 
 module mir.stat.distribution.gamma;
@@ -27,7 +28,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -131,7 +132,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 @safe pure nothrow @nogc
 T gammaCDF(T)(const T x, const T shape, const T scale = 1)
@@ -181,7 +182,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 @safe pure nothrow @nogc
 T gammaCCDF(T)(const T x, const T shape, const T scale = 1)
@@ -232,7 +233,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 
 @safe pure nothrow @nogc
@@ -311,7 +312,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, gamma probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 @safe pure nothrow @nogc
 T gammaLPDF(T)(const T x, const T shape, const T scale = 1)

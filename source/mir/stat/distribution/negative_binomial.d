@@ -1,14 +1,14 @@
 /++
-This module contains algorithms for the negative binomial probability distribution.
+This module contains algorithms for the Negative Binomial Distribution.
 
-There are multiple alternative formulations of the negative binomial distribution. The
+There are multiple alternative formulations of the Negative Binomial Distribution. The
 formulation in this module uses the number of Bernoulli trials until `r` successes. 
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -27,7 +27,7 @@ Params:
 
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T negativeBinomialPMF(T)(const size_t k, const size_t r, const T p)
@@ -81,7 +81,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T fp_negativeBinomialPMF(T)(const size_t k, const size_t r, const T p)
@@ -138,7 +138,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T negativeBinomialCDF(T)(const size_t k, const size_t r, const T p)
@@ -199,7 +199,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T negativeBinomialCCDF(T)(const size_t k, const size_t r, const T p)
@@ -283,7 +283,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 size_t negativeBinomialInvCDF(T)(const T prob, const size_t r, const T p)
@@ -391,7 +391,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, negative binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T negativeBinomialLPMF(T)(const size_t k, const size_t r, const T p)

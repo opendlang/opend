@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Cauchy probability distribution.
+This module contains algorithms for the Cauchy Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -18,13 +18,13 @@ import mir.math.constant: PI;
 private enum real LOGPI = log(PI);
 
 /++
-Computes the Cauchy probability distribution function (PDF).
+Computes the Cauchy probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
 T cauchyPDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -80,7 +80,7 @@ Params:
     x = value to evaluate CDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
 T cauchyCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -137,7 +137,7 @@ Params:
     x = value to evaluate CCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
 T cauchyCCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -191,7 +191,7 @@ Params:
     p = value to evaluate InvCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
 T cauchyInvCDF(T)(const T p)
     if (isFloatingPoint!T)
@@ -254,13 +254,13 @@ unittest {
 }
 
 /++
-Computes the Cauchy log probability distribution function (LPDF).
+Computes the Cauchy log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
 T cauchyLPDF(T)(const T x)
     if (isFloatingPoint!T)

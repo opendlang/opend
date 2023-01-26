@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the F probability distribution.
+This module contains algorithms for the F Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,7 +14,7 @@ module mir.stat.distribution.f;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the F probability distribution function (PDF).
+Computes the F probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
@@ -22,7 +22,7 @@ Params:
     df2 = degrees of freedom parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F Distribution)
 +/
 @safe pure nothrow @nogc
 T fPDF(T)(const T x, const T df1, const T df2)
@@ -61,7 +61,7 @@ Params:
     df2 = degrees of freedom parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F Distribution)
 +/
 @safe pure nothrow @nogc
 T fCDF(T)(const T x, const T df1, const T df2)
@@ -96,7 +96,7 @@ Params:
     df2 = degrees of freedom parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F Distribution)
 +/
 @safe pure nothrow @nogc
 T fCCDF(T)(const T x, const T df1, const T df2)
@@ -131,7 +131,7 @@ Params:
     df2 = degrees of freedom parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F Distribution)
 +/
 @safe pure nothrow @nogc
 T fInvCDF(T)(const T p, const T df1, const T df2)
@@ -166,7 +166,7 @@ unittest {
 }
 
 /++
-Computes the F log probability distribution function (LPDF).
+Computes the F log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
@@ -174,7 +174,7 @@ Params:
     df2 = degrees of freedom parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/F-distribution, F Distribution)
 +/
 @safe pure nothrow @nogc
 T fLPDF(T)(const T x, const T df1, const T df2)

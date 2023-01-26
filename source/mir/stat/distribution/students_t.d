@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the Student's t probability distribution.
+This module contains algorithms for the Student's t Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -20,14 +20,14 @@ enum real SQRTPI = sqrt(PI);
 enum real SQRTPIINV = 1 / SQRTPI;
 
 /++
-Computes the Student's t probability distribution function (PDF).
+Computes the Student's t probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
     nu = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t-distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution)
 +/
 @safe pure nothrow @nogc
 T studentsTPDF(T)(const T x, const T nu)
@@ -133,7 +133,7 @@ Params:
     nu = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t-distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution)
 +/
 @safe pure nothrow @nogc
 T studentsTCDF(T)(const T x, const T nu)
@@ -248,7 +248,7 @@ Params:
     nu = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t-distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution)
 +/
 @safe pure nothrow @nogc
 T studentsTCCDF(T)(const T x, const T nu)
@@ -348,7 +348,7 @@ Params:
     nu = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t-distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution)
 +/
 @safe pure nothrow @nogc
 T studentsTInvCDF(T)(const T p, const T nu)
@@ -476,14 +476,14 @@ unittest {
 
 
 /++
-Computes the Student's t log probability distribution function (LPDF).
+Computes the Student's t log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
     nu = degrees of freedom
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t-distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution)
 +/
 @safe pure nothrow @nogc
 T studentsTLPDF(T)(const T x, const T nu)

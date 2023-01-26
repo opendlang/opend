@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Laplace distribution.
+This module contains algorithms for the Laplace Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -20,7 +20,7 @@ Params:
     x = value to evaluate PDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplacePDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -73,7 +73,7 @@ Params:
     x = value to evaluate CDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplaceCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -130,7 +130,7 @@ Params:
     x = value to evaluate CCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplaceCCDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -187,7 +187,7 @@ Params:
     p = value to evaluate InvCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplaceInvCDF(T)(const T p)
     if (isFloatingPoint!T)
@@ -249,7 +249,7 @@ Params:
     x = value to evaluate LPDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplaceLPDF(T)(const T x)
     if (isFloatingPoint!T)
@@ -269,7 +269,7 @@ Params:
     scale = scale parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Laplace_distribution, Laplace Distribution)
 +/
 T laplaceLPDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)

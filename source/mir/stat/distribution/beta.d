@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the beta probability distribution.
+This module contains algorithms for the Beta Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,7 +14,7 @@ module mir.stat.distribution.beta;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the beta probability distribution function (PDF).
+Computes the beta probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
@@ -22,7 +22,7 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaPDF(T)(const T x, const T alpha, const T beta)
@@ -58,7 +58,7 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaCDF(T)(const T x, const T alpha, const T beta)
@@ -93,7 +93,7 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaCCDF(T)(const T x, const T alpha, const T beta)
@@ -128,7 +128,7 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaInvCDF(T)(const T p, const T alpha, const T beta)
@@ -155,7 +155,7 @@ unittest {
 }
 
 /++
-Computes the beta log probability distribution function (LPDF).
+Computes the beta log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
@@ -163,7 +163,7 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaLPDF(T)(const T x, const T alpha, const T beta)

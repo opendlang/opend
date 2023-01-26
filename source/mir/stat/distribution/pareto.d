@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the pareto probability distribution.
+This module contains algorithms for the Pareto Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,7 +14,7 @@ module mir.stat.distribution.pareto;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the pareto probability distribution function (PDF).
+Computes the pareto probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
@@ -22,7 +22,7 @@ Params:
     alpha = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T paretoPDF(T)(const T x, const T xMin, const T alpha)
@@ -56,7 +56,7 @@ Params:
     alpha = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T paretoCDF(T)(const T x, const T xMin, const T alpha)
@@ -90,7 +90,7 @@ Params:
     alpha = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T paretoCCDF(T)(const T x, const T xMin, const T alpha)
@@ -124,7 +124,7 @@ Params:
     alpha = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T paretoInvCDF(T)(const T p, const T xMin, const T alpha)
@@ -151,7 +151,7 @@ unittest {
 }
 
 /++
-Computes the pareto log probability distribution function (LPDF).
+Computes the pareto log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
@@ -159,7 +159,7 @@ Params:
     alpha = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Pareto_distribution, Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T paretoLPDF(T)(const T x, const T xMin, const T alpha)

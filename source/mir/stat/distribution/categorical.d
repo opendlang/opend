@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Categorical distribution.
+This module contains algorithms for the Categorical Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -31,10 +31,10 @@ Computes the Categorical probability mass function (PMF).
 
 Params:
     x = value to evaluate PMF
-    p = slice containing the probability associated with the Categorical distribution
+    p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 T categoricalPMF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
@@ -67,10 +67,10 @@ Computes the Categorical cumulative distribution function (CDF).
 
 Params:
     x = value to evaluate CDF
-    p = slice containing the probability associated with the Categorical distribution
+    p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 T categoricalCDF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
@@ -103,10 +103,10 @@ Computes the Categorical complementary cumulative distribution function (CCDF).
 
 Params:
     x = value to evaluate CCDF
-    p = slice containing the probability associated with the Categorical distribution
+    p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 T categoricalCCDF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
@@ -139,10 +139,10 @@ Computes the Categorical inverse cumulative distribution function (InvCDF).
 
 Params:
     prob = value to evaluate InvCDF
-    p = slice containing the probability associated with the Categorical distribution
+    p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 size_t categoricalInvCDF(T)(const T prob, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
@@ -193,10 +193,10 @@ Computes the Categorical log probability mass function (LPMF).
 
 Params:
     x = value to evaluate LPMF
-    p = slice containing the probability associated with the Categorical distribution
+    p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 T categoricalLPMF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)

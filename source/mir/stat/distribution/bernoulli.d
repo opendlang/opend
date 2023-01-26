@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the bernoulli probability distribution.
+This module contains algorithms for the Bernoulli Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -21,7 +21,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, Bernoulli Distribution)
 +/
 @safe pure nothrow @nogc
 T bernoulliPMF(T)(const bool x, const T p)
@@ -53,7 +53,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, Bernoulli Distribution)
 +/
 @safe pure nothrow @nogc
 T bernoulliCDF(T)(const bool x, const T p)
@@ -85,7 +85,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, Bernoulli Distribution)
 +/
 @safe pure nothrow @nogc
 T bernoulliCCDF(T)(const bool x, const T p)
@@ -117,7 +117,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, Bernoulli Distribution)
 +/
 @safe pure nothrow @nogc
 bool bernoulliInvCDF(T)(const T q, const T p)
@@ -160,7 +160,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, bernoulli probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Bernoulli_distribution, Bernoulli Distribution)
 +/
 @safe pure nothrow @nogc
 T bernoulliLPMF(T)(const bool x, const T p)

@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the binomial probability distribution.
+This module contains algorithms for the Binomial Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -23,7 +23,7 @@ of events (`k`) or the number of trials (`n`). Additional algorithms are
 provided to the user to choose the trade-off between running time and accuracy.
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 enum BinomialAlgo {
     /++
@@ -114,7 +114,7 @@ Params:
     poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 template binomialPMF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
@@ -202,7 +202,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 T fp_binomialPMF(T)(const size_t k, const size_t n, const T p)
@@ -322,7 +322,7 @@ Params:
     poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 template binomialCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
@@ -485,7 +485,7 @@ Params:
     poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.gamma)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 template binomialCCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
@@ -682,7 +682,7 @@ Params:
     poissonAlgo = algorithm for poisson approximation (default: PoissonAlgo.direct)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 @safe pure nothrow @nogc
 template binomialInvCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
@@ -803,7 +803,7 @@ Params:
     p = `true` probability
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, binomial probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Binomial_distribution, Binomial Distribution)
 +/
 T binomialLPMF(T)(const size_t k, const size_t n, const T p)
     if (isFloatingPoint!T)
