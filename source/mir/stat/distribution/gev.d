@@ -171,8 +171,8 @@ See_also:
 +/
 T gevInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in (p >= 0)
-    in (p <= 1)
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
 {
     auto logp = log(p);
     if (xi.fabs <= T.min_normal)
