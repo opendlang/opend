@@ -2,6 +2,33 @@
 This module contains algorithms for transforming data that are useful in
 statistical applications.
 
+$(SCRIPT inhibitQuickIndex = 1;)
+$(DIVC quickindex,
+$(BOOKTABLE ,
+$(TR $(TH Function Name) $(TH Description)
+)
+    $(TR $(TD $(LREF center))
+        $(TD Subtracts the mean (or using some other function) from each element
+        of a slice.
+    ))
+    $(TR $(TD $(LREF robustScale))
+        $(TD Subtracts the median and divides by the difference between a lower
+        and upper quantile from each element of a slice.
+    ))
+    $(TR $(TD $(LREF scale))
+        $(TD Subtracts the mean (or using some other function) and divides by
+        the standard deviation (or using some other function) from each element
+        of a slice.
+    ))
+    $(TR $(TD $(LREF sweep))
+        $(TD Applies a function and an operation to each element of a slice.
+    ))
+    $(TR $(TD $(LREF zscore))
+        $(TD Subtracts the mean and divides by the standard deviation from each
+        element of a slice.
+    ))
+))
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall, Ilya Yaroshenko
@@ -279,7 +306,7 @@ is equivalent to `center` when passing `d = 1`.
 
 Params:
     centralTendency = function used to center input, default is `mean`
-    dispersion = function used to , default is `dispersion`
+    dispersion = function used as divisor, default is `dispersion`
 Returns:
     The scaled result
 See_also:
