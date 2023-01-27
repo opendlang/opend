@@ -4,11 +4,11 @@
 
 This package includes statistical algorithms, including but not limited to:
 - [Descriptive statistics](http://mir-stat.libmir.org/mir_stat_descriptive.html)
-- [Probability distributions] (http://mir-stat.libmir.org/mir_stat_distribution.html)
-- [Statistical inference] (https://github.com/libmir/mir-stat/blob/master/source/mir/stat/inference.d)
-- [Data Transformations] (https://github.com/libmir/mir-stat/blob/master/source/mir/stat/transform.d)
+- [Probability distributions](http://mir-stat.libmir.org/mir_stat_distribution.html)
+- [Statistical inference](https://github.com/libmir/mir-stat/blob/master/source/mir/stat/inference.d)
+- [Data Transformations](https://github.com/libmir/mir-stat/blob/master/source/mir/stat/transform.d)
 
-#### [Full Documentation]
+#### Full Documentation
 [mir-stat.libmir.org](http://mir-stat.libmir.org/)
 
 #### Example
