@@ -569,16 +569,16 @@ unittest {
 
 private
 @safe pure nothrow @nogc
-size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size_t n, const T p)
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T q, const size_t n, const T p)
     if (isFloatingPoint!T && binomialAlgo == BinomialAlgo.direct)
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
-    if (prob == 0) {
+    if (q == 0) {
         return 0;
-    } else if (prob == 1) {
+    } else if (q == 1) {
         return n;
     }
 
@@ -586,26 +586,26 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     if ((n > 20 && (p > 0.25 && p < 0.75)) ||
         (n * p > 9 * (1 - p) && n * (1 - p) > 9 * p) ||
         (n * p >= 5 && n * (1 - p) >= 5)) {
-        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxNormalContinuityCorrection)(prob, n, p);
+        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxNormalContinuityCorrection)(q, n, p);
     } else if ((n >= 20 && p <= 0.05) ||
                (n >= 100 && n * p <= 10)) {
-        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxPoisson, PoissonAlgo.approxNormalContinuityCorrection)(prob, n, p);
+        guess = binomialInvCDFImpl!(T, BinomialAlgo.approxPoisson, PoissonAlgo.approxNormalContinuityCorrection)(q, n, p);
     }
     T cdfGuess = binomialCDF!(binomialAlgo)(guess, n, p);
 
-    if (prob <= cdfGuess) {
+    if (q <= cdfGuess) {
         if (guess == 0) {
             return guess;
         }
         for (size_t i = (guess - 1); guess >= 0; i--) {
             cdfGuess -= binomialPMF!(binomialAlgo)(i + 1, n, p);
-            if (prob > cdfGuess) {
+            if (q > cdfGuess) {
                 guess = i + 1;
                 break;
             }
         }
     } else {
-        while(prob > cdfGuess) {
+        while(q > cdfGuess) {
             guess++;
             cdfGuess += binomialPMF!(binomialAlgo)(guess, n, p);
         }
@@ -615,12 +615,12 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
 
 private
 @safe pure nothrow @nogc
-size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size_t n, const T p)
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T q, const size_t n, const T p)
     if (isFloatingPoint!T &&
         (binomialAlgo == BinomialAlgo.approxNormal || 
          binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection))
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
@@ -630,7 +630,7 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     T mu = n * p;
     T std = sqrt(mu * (1 - p));
 
-    // Handles case where prob is small or large, better than just using probLowerBound = 0 or probUpperBound = 0
+    // Handles case where q is small or large, better than just using probLowerBound = 0 or probUpperBound = 0
     T probLowerBound = 0;
     T probUpperBound = 1;
     T lowerValue = 0;
@@ -641,13 +641,13 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
     }
     probLowerBound = normalCDF(lowerValue, mu, std);
     probUpperBound = normalCDF(upperValue, mu, std);
-    if (prob <= probLowerBound) {
+    if (q <= probLowerBound) {
         return 0;
-    } else if (prob >= probUpperBound) {
+    } else if (q >= probUpperBound) {
         return n;
     }
 
-    auto result = normalInvCDF(prob, mu, std);
+    auto result = normalInvCDF(q, mu, std);
     static if (binomialAlgo == BinomialAlgo.approxNormalContinuityCorrection) {
         result = result - 0.5;
     }
@@ -656,17 +656,17 @@ size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo)(const T prob, const size
 
 private
 @safe pure nothrow @nogc
-size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const T prob, const size_t n, const T p)
+size_t binomialInvCDFImpl(T, BinomialAlgo binomialAlgo, PoissonAlgo poissonAlgo)(const T q, const size_t n, const T p)
     if (isFloatingPoint!T &&
         binomialAlgo == BinomialAlgo.approxPoisson && poissonAlgo != PoissonAlgo.gamma)
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.stat.distribution.poisson: poissonInvCDF;
 
-    return poissonInvCDF!poissonAlgo(prob, n * p);
+    return poissonInvCDF!poissonAlgo(q, n * p);
 }
 
 /++
@@ -691,21 +691,21 @@ template binomialInvCDF(BinomialAlgo binomialAlgo = BinomialAlgo.direct,
 {
     /++
     Params:
-    prob = value to evaluate InvCDF
+    q = value to evaluate InvCDF
     n = number of trials
     p = `true` probability
     +/
-    size_t binomialInvCDF(T)(const T prob, const size_t n, const T p)
+    size_t binomialInvCDF(T)(const T q, const size_t n, const T p)
         if (isFloatingPoint!T)
-        in (prob >= 0, "prob must be greater than or equal to 0")
-        in (prob <= 1, "prob must be less than or equal to 1")
+        in (q >= 0, "q must be greater than or equal to 0")
+        in (q <= 1, "q must be less than or equal to 1")
         in (p >= 0, "p must be greater than or equal to 0")
         in (p <= 1, "p must be less than or equal to 1")
     {
         static if (binomialAlgo != BinomialAlgo.approxPoisson)
-            return binomialInvCDFImpl!(T, binomialAlgo)(prob, n, p);
+            return binomialInvCDFImpl!(T, binomialAlgo)(q, n, p);
         else
-            return binomialInvCDFImpl!(T, binomialAlgo, poissonAlgo)(prob, n, p);
+            return binomialInvCDFImpl!(T, binomialAlgo, poissonAlgo)(q, n, p);
     }
 }
 

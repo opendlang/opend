@@ -138,16 +138,16 @@ unittest
 Computes the Categorical inverse cumulative distribution function (InvCDF).
 
 Params:
-    prob = value to evaluate InvCDF
+    q = value to evaluate InvCDF
     p = slice containing the probability associated with the Categorical Distribution
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
-size_t categoricalInvCDF(T)(const T prob, const Slice!(T*, 1) p)
+size_t categoricalInvCDF(T)(const T q, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p.sum.approxEqual(1.0), "p must sum to 1")
     in (p.all!("a >= 0"), "p must be greater than or equal to 0")
     in (p.all!("a <= 1"), "p must be less than or equal to 1")
@@ -157,7 +157,7 @@ size_t categoricalInvCDF(T)(const T prob, const Slice!(T*, 1) p)
     Unqual!T s = 0.0;
     size_t i;
     s += p[i];
-    while (prob > s) {
+    while (q > s) {
         i++;
         s += p[i];
     }

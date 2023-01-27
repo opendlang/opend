@@ -245,28 +245,28 @@ unittest {
 
 private
 @safe pure nothrow @nogc
-size_t negativeBinomialInvCDFSearch(T)(const size_t guess, ref T cdfGuess, const T prob, const size_t r, const T p, const size_t searchIncrement)
+size_t negativeBinomialInvCDFSearch(T)(const size_t guess, ref T cdfGuess, const T q, const size_t r, const T p, const size_t searchIncrement)
     if (isFloatingPoint!T)
     in (r > 0, "number of failures must be larger than zero")
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
     size_t guessNew = guess;
-    if (prob <= cdfGuess) {
+    if (q <= cdfGuess) {
         T cdfGuessPrevious;
         while (guessNew > 0) {
             cdfGuessPrevious = cdfGuess;
             cdfGuess = negativeBinomialCDF(guessNew - searchIncrement, r, p);
-            if (prob > cdfGuess) {
+            if (q > cdfGuess) {
                 cdfGuess = cdfGuessPrevious;
                 break;
             }
             guessNew = guessNew > searchIncrement ? guessNew - searchIncrement : 0;
         }
     } else {
-        while (prob > cdfGuess) {
+        while (q > cdfGuess) {
             guessNew = guessNew + searchIncrement;
             cdfGuess = negativeBinomialCDF(guessNew, r, p);
         }
@@ -278,7 +278,7 @@ size_t negativeBinomialInvCDFSearch(T)(const size_t guess, ref T cdfGuess, const
 Computes the negative binomial inverse cumulative distribution function (InvCDF).
 
 Params:
-    prob = value to evaluate InvCDF
+    q = value to evaluate InvCDF
     r = number of successes until stopping
     p = `true` probability
 
@@ -286,20 +286,20 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution)
 +/
 @safe pure nothrow @nogc
-size_t negativeBinomialInvCDF(T)(const T prob, const size_t r, const T p)
+size_t negativeBinomialInvCDF(T)(const T q, const size_t r, const T p)
     if (isFloatingPoint!T)
     in (r > 0, "number of failures must be larger than zero")
-    in (prob >= 0, "prob must be greater than or equal to 0")
-    in (prob <= 1, "prob must be less than or equal to 1")
+    in (q >= 0, "q must be greater than or equal to 0")
+    in (q <= 1, "q must be less than or equal to 1")
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
 {
     import mir.math.common: floor, sqrt;
     import mir.stat.distribution.normal: normalInvCDF;
 
-    if (prob == 0) {
+    if (q == 0) {
         return 0;
-    } else if (prob == 1) {
+    } else if (q == 1) {
         return size_t.max;
     }
 
@@ -307,7 +307,7 @@ size_t negativeBinomialInvCDF(T)(const T prob, const size_t r, const T p)
     T mu = r * (1 - p) / p;
     T pre_std = sqrt(r * (1 - p));
     T std = pre_std / p;
-    T z = normalInvCDF(prob);
+    T z = normalInvCDF(q);
     if (r > 20 && p > 0.25 && p < 0.75) {
         guess = cast(size_t) floor(mu + std * z - 0.5);
     } else {
@@ -317,20 +317,20 @@ size_t negativeBinomialInvCDF(T)(const T prob, const size_t r, const T p)
     T cdfGuess = negativeBinomialCDF(guess, r, p);
 
     if (guess < 10_000) {
-        return negativeBinomialInvCDFSearch(guess, cdfGuess, prob, r, p, 1);
+        return negativeBinomialInvCDFSearch(guess, cdfGuess, q, r, p, 1);
     } else {
         // Faster search for large values of guess
         size_t searchIncrement = cast(size_t) floor(guess * 0.001);
         size_t searchIncrementPrevious;
         do {
             searchIncrementPrevious = searchIncrement;
-            guess = negativeBinomialInvCDFSearch(guess, cdfGuess, prob, r, p, searchIncrement);
+            guess = negativeBinomialInvCDFSearch(guess, cdfGuess, q, r, p, searchIncrement);
             searchIncrement = cast(size_t) floor(searchIncrement * 0.01);
         } while (searchIncrementPrevious > 0 && searchIncrement > guess * (10 * T.epsilon));
         if (searchIncrementPrevious <= 1) {
             return guess;
         } else {
-            return negativeBinomialInvCDFSearch(guess, cdfGuess, prob, r, p, 1);
+            return negativeBinomialInvCDFSearch(guess, cdfGuess, q, r, p, 1);
         }
     }
 }
