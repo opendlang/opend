@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the hypergeometric probability distribution.
+This module contains algorithms for the Hypergeometric Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
@@ -142,7 +142,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 T hypergeometricPMF(T, HypergeometricAlgo hypergeometricAlgo = HypergeometricAlgo.direct)
@@ -234,7 +234,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 T fp_hypergeometricPMF(T = Fp!128)(const size_t k, const size_t N, const size_t K, const size_t n)
@@ -370,7 +370,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 T hypergeometricCDF(T, HypergeometricAlgo hypergeometricAlgo = HypergeometricAlgo.direct)
@@ -546,7 +546,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 T hypergeometricCCDF(T, HypergeometricAlgo hypergeometricAlgo = HypergeometricAlgo.direct)
@@ -760,7 +760,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 size_t hypergeometricInvCDF(T, HypergeometricAlgo hypergeometricAlgo = HypergeometricAlgo.direct)
@@ -898,7 +898,7 @@ Params:
     K = number of relevant objects in population
     n = number of draws
 
-See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, hypergeometric probability distribution)
+See_also: $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution)
 +/
 @safe pure @nogc nothrow
 T hypergeometricLPMF(T = double)(const size_t k, const size_t N, const size_t K, const size_t n)

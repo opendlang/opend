@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the poisson probability distribution.
+This module contains algorithms for the Poisson Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -22,7 +22,7 @@ of events (`k`) or the rate of occurences (`lambda`). Additional algorithms are
 provided to the user to choose the trade-off between running time and accuracy.
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 enum PoissonAlgo {
     /++
@@ -99,7 +99,7 @@ Params:
     poissonAlgo = algorithm for calculating PMF (default: PoissonAlgo.direct)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 template poissonPMF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
@@ -190,7 +190,7 @@ Params:
     lambda = expected rate of occurence
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 T fp_poissonPMF(T)(const size_t k, const T lambda)
@@ -272,7 +272,7 @@ Params:
     poissonAlgo = algorithm for calculating CDF (default: PoissonAlgo.direct)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 template poissonCDF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
@@ -397,7 +397,7 @@ Params:
     poissonAlgo = algorithm for calculating CCDF (default: PoissonAlgo.direct)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 template poissonCCDF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
@@ -571,7 +571,7 @@ Params:
     poissonAlgo = algorithm for calculating InvCDF (default: PoissonAlgo.direct)
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 template poissonInvCDF(PoissonAlgo poissonAlgo = PoissonAlgo.direct)
@@ -706,7 +706,7 @@ Params:
     lambda = expected rate of occurence
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, poisson probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Poisson_distribution, Poisson Distribution)
 +/
 @safe pure nothrow @nogc
 T poissonLPMF(T)(const size_t k, const T lambda)

@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the generalized pareto probability distribution.
+This module contains algorithms for the Generalized Pareto Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,7 +14,7 @@ module mir.stat.distribution.generalized_pareto;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the generalized pareto probability distribution function (PDF).
+Computes the generalized pareto probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
@@ -23,14 +23,14 @@ Params:
     xi = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, Generalized Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T generalizedParetoPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -64,14 +64,14 @@ Params:
     xi = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, Generalized Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T generalizedParetoCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -105,14 +105,14 @@ Params:
     xi = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, Generalized Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T generalizedParetoCCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: exp, pow;
 
@@ -146,14 +146,14 @@ Params:
     xi = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, Generalized Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
     in (p <= 1, "p must be less than or equal to 1")
-    in(sigma > 0, "sigma must be greater than zero")
+    in (sigma > 0, "sigma must be greater than zero")
 {
     import mir.math.common: pow;
     import std.math.exponential: log1p;
@@ -180,7 +180,7 @@ unittest {
 }
 
 /++
-Computes the generalized pareto log probability distribution function (LPDF).
+Computes the generalized pareto log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
@@ -189,14 +189,14 @@ Params:
     xi = shape parameter
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, generalized pareto probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Generalized_Pareto_distribution, Generalized Pareto Distribution)
 +/
 @safe pure nothrow @nogc
 T generalizedParetoLPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
-    in(sigma > 0, "sigma must be greater than zero")
-    in(x >= mu, "x must be greater than or equal to mu")
-    in(xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
+    in (sigma > 0, "sigma must be greater than zero")
+    in (x >= mu, "x must be greater than or equal to mu")
+    in (xi >= 0 || (xi < 0 && x <= (mu - sigma / xi)), "if xi is less than zero, x must be less than mu - sigma / xi")
 {
     import mir.math.common: log;
     import mir.math.internal.xlogy: xlogy;

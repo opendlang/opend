@@ -1,21 +1,20 @@
 /**
-License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
-*/
-/**
  * Normal Distribution
  *
  * Copyright: Based on the CEPHES math library, which is
  *            Copyright (C) 1994 Stephen L. Moshier (moshier@world.std.com).
  * Authors:   Stephen L. Moshier, ported to D by Don Clugston and David Nadlinger. Adopted to Mir by Ilya Yaroshenko.
- */
-/**
- * Macros:
- *  NAN = $(RED NAN)
- *  INTEGRAL = &#8747;
- *  POWER = $1<sup>$2</sup>
- *      <caption>Special Values</caption>
- *      $0</table>
- */
+*/
+/++
+This module contains algorithms for the Normal Distribution.
+
+License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
+
+Authors: John Michael Hall
+
+Copyright: 2022-3 Mir Stat Authors.
+
++/
 
 module mir.stat.distribution.normal;
 
@@ -33,7 +32,7 @@ Params:
     stdDev = standard deviation
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, normal probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, Normal Distribution)
 +/
 @safe pure nothrow @nogc
 T normalCCDF(T)(const T x, const T mean, const T stdDev)
@@ -84,7 +83,7 @@ unittest {
 enum real LOGSQRT2PI = 0.91893853320467274178032973640561764L; // log(sqrt(2pi))
 
 /++
-Computes the normal log probability distribution function (LPDF)
+Computes the normal log probability density function (LPDF)
 
 Params:
     x = value to evaluate LPDF
@@ -92,7 +91,7 @@ Params:
     stdDev = standard deviation
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, normal probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, Normal Distribution)
 +/
 @safe pure nothrow @nogc
 T normalLPDF(T)(const T x, const T mean, const T stdDev)

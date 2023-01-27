@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the Log-normal probability distribution.
+This module contains algorithms for the Log-normal Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,13 +14,13 @@ module mir.stat.distribution.log_normal;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the Log-normal probability distribution function (PDF).
+Computes the Log-normal probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution)
 +/
 @safe pure nothrow @nogc
 T logNormalPDF(T)(const T x)
@@ -91,7 +91,7 @@ Params:
     x = value to evaluate CDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution)
 +/
 @safe pure nothrow @nogc
 T logNormalCDF(T)(const T x)
@@ -147,7 +147,7 @@ Params:
     x = value to evaluate CCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution)
 +/
 @safe pure nothrow @nogc
 T logNormalCCDF(T)(const T x)
@@ -203,7 +203,7 @@ Params:
     p = value to evaluate InvCDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution)
 +/
 @safe pure nothrow @nogc
 T logNormalInvCDF(T)(const T p)
@@ -259,13 +259,13 @@ unittest {
 }
 
 /++
-Computes the Log-normal log probability distribution function (LPDF).
+Computes the Log-normal log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution)
 +/
 @safe pure nothrow @nogc
 T logNormalLPDF(T)(const T x)

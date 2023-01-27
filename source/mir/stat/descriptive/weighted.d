@@ -14,7 +14,9 @@ NDSLICEREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, ndslice, $1)$(NBSP
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T3=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+
 +/
+
 module mir.stat.descriptive.weighted;
 
 import mir.math.sum: Summator, ResolveSummationType;

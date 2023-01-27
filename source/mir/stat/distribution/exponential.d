@@ -1,11 +1,12 @@
+
 /++
-This module contains algorithms for the exponential probability distribution.
+This module contains algorithms for the Exponential Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,14 +15,14 @@ module mir.stat.distribution.exponential;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the exponential probability distribution function (PDF).
+Computes the exponential probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
     lambda = number of events in an interval
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, exponential probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution)
 +/
 @safe pure nothrow @nogc
 T exponentialPDF(T)(const T x, const T lambda)
@@ -46,14 +47,14 @@ unittest {
 }
 
 /++
-Computes the exponential cumulatve distribution function (CDF).
+Computes the exponential cumulative distribution function (CDF).
 
 Params:
     x = value to evaluate CDF
     lambda = number of events in an interval
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, exponential probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution)
 +/
 @safe pure nothrow @nogc
 T exponentialCDF(T)(const T x, const T lambda)
@@ -85,7 +86,7 @@ Params:
     lambda = number of events in an interval
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, exponential probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution)
 +/
 @safe pure nothrow @nogc
 T exponentialCCDF(T)(const T x, const T lambda)
@@ -117,7 +118,7 @@ Params:
     lambda = number of events in an interval
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, exponential probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution)
 +/
 
 @safe pure nothrow @nogc
@@ -144,14 +145,14 @@ unittest {
 }
 
 /++
-Computes the exponential log probability distribution function (LPDF).
+Computes the exponential log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
     lambda = number of events in an interval
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, exponential probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution)
 +/
 @safe pure nothrow @nogc
 T exponentialLPDF(T)(const T x, const T lambda)

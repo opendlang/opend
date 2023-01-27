@@ -1,11 +1,11 @@
 /++
-This module contains algorithms for the beta probability distribution.
+This module contains algorithms for the Beta Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 +/
 
@@ -14,7 +14,7 @@ module mir.stat.distribution.beta;
 import mir.internal.utility: isFloatingPoint;
 
 /++
-Computes the beta probability distribution function (PDF).
+Computes the beta probability density function (PDF).
 
 Params:
     x = value to evaluate PDF
@@ -22,15 +22,15 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaPDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import mir.math.common: pow;
     import std.mathspecial: betaFunc = beta;
@@ -58,15 +58,15 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaCDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncomplete;
 
@@ -93,15 +93,15 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaCCDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncomplete;
 
@@ -128,15 +128,15 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaInvCDF(T)(const T p, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import std.mathspecial: betaIncompleteInverse;
 
@@ -155,7 +155,7 @@ unittest {
 }
 
 /++
-Computes the beta log probability distribution function (LPDF).
+Computes the beta log probability density function (LPDF).
 
 Params:
     x = value to evaluate LPDF
@@ -163,15 +163,15 @@ Params:
     beta = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, beta probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution)
 +/
 @safe pure nothrow @nogc
 T betaLPDF(T)(const T x, const T alpha, const T beta)
     if (isFloatingPoint!T)
-    in(x >= 0, "x must be greater than or equal to 0")
-    in(x <= 1, "x must be less than or equal to 1")
-    in(alpha > 0, "alpha must be greater than zero")
-    in(beta > 0, "beta must be greater than zero")
+    in (x >= 0, "x must be greater than or equal to 0")
+    in (x <= 1, "x must be less than or equal to 1")
+    in (alpha > 0, "alpha must be greater than zero")
+    in (beta > 0, "beta must be greater than zero")
 {
     import mir.math.internal.log_beta: logBeta;
     import mir.math.internal.xlogy: xlogy, xlog1py;

@@ -1,11 +1,12 @@
 /++
-This module contains algorithms for the discrete uniform probability distribution.
+This module contains algorithms for the Discrete Uniform Distribution.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
+
 +/
 
 module mir.stat.distribution.uniform_discrete;
@@ -21,13 +22,13 @@ Params:
     upper = upper bound
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, discrete uniform probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, Discrete Uniform Distribution)
 +/
 @safe pure nothrow @nogc
 double uniformDiscretePMF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound")
+    in (x <= upper, "x must be less than or equal to upper bound")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return 1.0 / (upper - lower + 1);
 }
@@ -51,13 +52,13 @@ Params:
     upper = upper bound
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, discrete uniform probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, Discrete Uniform Distribution)
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteCDF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound")
+    in (x <= upper, "x must be less than or equal to upper bound")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return (cast(double) x - lower + 1) / (upper - lower + 1);
 }
@@ -85,13 +86,13 @@ Params:
     upper = upper bound
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, discrete uniform probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, Discrete Uniform Distribution)
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteCCDF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower <= upper, "lower must be less than or equal to upper")
+    in (x >= lower, "x must be greater than or equal to lower bound")
+    in (x <= upper, "x must be less than or equal to upper bound")
+    in (lower <= upper, "lower must be less than or equal to upper")
 {
     return (cast(double) upper - x) / (upper - lower + 1);
 }
@@ -119,14 +120,14 @@ Params:
     upper = upper bound
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, discrete uniform probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, Discrete Uniform Distribution)
 +/
 @safe pure nothrow @nogc
 size_t uniformDiscreteInvCDF(T)(const T p, const size_t lower = 0, const size_t upper = 1)
     if (isFloatingPoint!T)
-    in(p >= 0, "p must be greater than or equal to 0")
-    in(p <= 1, "p must be less than or equal to 1")
-    in(lower < upper, "lower must be less than upper")
+    in (p >= 0, "p must be greater than or equal to 0")
+    in (p <= 1, "p must be less than or equal to 1")
+    in (lower < upper, "lower must be less than upper")
 {
     size_t n = upper - lower + 1;
     if (p * n <= 1) {
@@ -162,13 +163,13 @@ Params:
     upper = upper bound
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, discrete uniform probability distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Discrete_uniform_distribution, Discrete Uniform Distribution)
 +/
 @safe pure nothrow @nogc
 double uniformDiscreteLPMF(const size_t x, const size_t lower = 0, const size_t upper = 1)
-    in(x >= lower, "x must be greater than or equal to lower bound in discrete uniform probability distribution")
-    in(x <= upper, "x must be less than or equal to upper bound in discrete uniform probability distribution")
-    in(lower < upper, "lower must be less than upper")
+    in (x >= lower, "x must be greater than or equal to lower bound")
+    in (x <= upper, "x must be less than or equal to upper bound")
+    in (lower < upper, "lower must be less than upper")
 {
     import mir.math.common: log;
 
