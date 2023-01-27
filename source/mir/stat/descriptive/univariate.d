@@ -1,6 +1,64 @@
 /++
 This module contains algorithms for univariate descriptive statistics.
 
+$(SCRIPT inhibitQuickIndex = 1;)
+$(DIVC quickindex,
+$(BOOKTABLE,
+$(TR $(TH Category) $(TH Symbols))
+    $(TR $(TD Location) $(TD
+        $(MATHREF stat, gmean)
+        $(MATHREF stat, hmean)
+        $(MATHREF stat, mean)
+        $(MATHREF stat, median)
+    ))
+    $(TR $(TD Deviation) $(TD
+        $(LREF dispersion)
+        $(LREF entropy)
+        $(LREF interquartileRange)
+        $(LREF medianAbsoluteDeviation)
+        $(LREF quantile)
+        $(MATHREF stat, standardDeviation)
+        $(MATHREF stat, variance)
+    ))
+    $(TR $(TD Higher Moments, etc.) $(TD
+        $(LREF kurtosis)
+        $(LREF skewness)
+    ))
+    $(TR $(TD Other Moment Functions) $(TD
+        $(LREF centralMoment)
+        $(LREF coefficientOfVariation)
+        $(LREF moment)
+        $(LREF rawMoment)
+        $(LREF standardizedMoment)
+    ))
+    $(TR $(TD Accumulators) $(TD
+        $(LREF EntropyAccumulator)
+        $(MATHREF stat, GMeanAccumulator)
+        $(LREF KurtosisAccumulator)
+        $(MATHREF stat, MeanAccumulator)
+        $(LREF MomentAccumulator)
+        $(LREF SkewnessAccumulator)
+        $(MATHREF stat, VarianceAccumulator)
+        $(LREF entropy)
+    ))
+    $(TR $(TD Algorithms) $(TD
+        $(LREF KurtosisAlgo)
+        $(LREF MomentAlgo)
+        $(LREF QuantileAlgo)
+        $(LREF SkewnessAlgo)
+        $(LREF StandardizedMomentAlgo)
+        $(MATHREF stat, VarianceAlgo)
+    ))
+    $(TR $(TD Types) $(TD
+        $(LREF entropyType)
+        $(MATHREF stat, gmeanType)
+        $(MATHREF stat, meanType)
+        $(LREF quantileType)
+        $(MATHREF stat, statType)
+        $(MATHREF stat, stdevType)
+    ))
+))
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall, Ilya Yaroshenko
@@ -132,7 +190,9 @@ enum QuantileAlgo {
     type9
 }
 
-package(mir.stat) template quantileType(T, QuantileAlgo quantileAlgo)
+///
+package(mir.stat)
+template quantileType(T, QuantileAlgo quantileAlgo)
 {
     static if (quantileAlgo == QuantileAlgo.type1 ||
                quantileAlgo == QuantileAlgo.type3)
