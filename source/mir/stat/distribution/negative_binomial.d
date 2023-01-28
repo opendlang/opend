@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Negative Binomial Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Negative_binomial_distribution, Negative Binomial Distribution).
 
 There are multiple alternative formulations of the Negative Binomial Distribution. The
 formulation in this module uses the number of Bernoulli trials until `r` successes. 

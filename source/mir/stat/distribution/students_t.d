@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Student's t Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Student%27s_t-distribution, Student's t Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

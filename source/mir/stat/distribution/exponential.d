@@ -1,6 +1,5 @@
-
 /++
-This module contains algorithms for the Exponential Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Exponential_distribution, Exponential Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

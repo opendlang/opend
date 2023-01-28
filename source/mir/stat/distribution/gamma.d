@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Gamma Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

@@ -6,7 +6,7 @@
  * Authors:   Stephen L. Moshier, ported to D by Don Clugston and David Nadlinger. Adopted to Mir by Ilya Yaroshenko.
 */
 /++
-This module contains algorithms for the Normal Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, Normal Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

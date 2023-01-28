@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Geometric Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Geometric_distribution, Geometric Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

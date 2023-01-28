@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Cornish-Fisher expansion
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Cornish%E2%80%93Fisher_expansion, Cornish-Fisher Expansion).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

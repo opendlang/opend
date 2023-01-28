@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the continuous Uniform Distribution.
+This module contains algorithms for the continuous $(LINK2 https://en.wikipedia.org/wiki/Continuous_uniform_distribution, Uniform Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

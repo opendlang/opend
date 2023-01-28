@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Log-normal Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Log-normal_distribution, Log-normal Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

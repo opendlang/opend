@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Cauchy Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

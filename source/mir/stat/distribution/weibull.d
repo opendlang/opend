@@ -1,5 +1,5 @@
 /++
-This module contains algorithms for the Weibull Distribution.
+This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution).
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
