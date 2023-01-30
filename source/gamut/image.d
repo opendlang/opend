@@ -579,7 +579,7 @@ public:
 
         Image r;
         r.setSize(_width, _height, _type, _layoutConstraints);
-        if (r.errored)
+        if (r.isError)
             return r;
 
         copyPixelsTo(r);
