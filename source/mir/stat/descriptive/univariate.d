@@ -39,7 +39,6 @@ $(TR $(TH Category) $(TH Symbols))
         $(LREF MomentAccumulator)
         $(LREF SkewnessAccumulator)
         $(MATHREF stat, VarianceAccumulator)
-        $(LREF entropy)
     ))
     $(TR $(TD Algorithms) $(TD
         $(LREF KurtosisAlgo)
