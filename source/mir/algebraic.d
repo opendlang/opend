@@ -1166,7 +1166,7 @@ struct Algebraic(T__...)
                     }
                     else
                     {
-                        storage__ = () inout {
+                        storage__ = () inout @trusted {
                             mixin(`inout Storage__ ret = { _member_` ~ i.stringof ~ ` : rhs.trustedGet!T };`);
                             return ret;
                         } ();
