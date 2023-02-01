@@ -26,6 +26,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
+@safe pure nothrow @nogc
 T cauchyPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -42,6 +43,7 @@ Params:
     location = location parameter
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T cauchyPDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")
@@ -82,6 +84,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
+@safe pure nothrow @nogc
 T cauchyCDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -99,6 +102,7 @@ Params:
     location = location parameter
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T cauchyCDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")
@@ -139,6 +143,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
+@safe pure nothrow @nogc
 T cauchyCCDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -153,6 +158,7 @@ Params:
     location = location parameter
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T cauchyCCDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")
@@ -193,6 +199,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
+@safe pure nothrow @nogc
 T cauchyInvCDF(T)(const T p)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -219,6 +226,7 @@ Params:
     location = location parameter
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T cauchyInvCDF(T)(const T p, const T location, const T scale)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -262,6 +270,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Cauchy_distribution, Cauchy Distribution)
 +/
+@safe pure nothrow @nogc
 T cauchyLPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -276,6 +285,7 @@ Params:
     location = location parameter
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T cauchyLPDF(T)(const T x, const T location, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")

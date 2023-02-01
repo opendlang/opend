@@ -22,6 +22,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -37,6 +38,7 @@ Params:
     x = value to evaluate PDF
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T rayleighPDF(T)(const T x, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")
@@ -74,6 +76,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighCDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -123,6 +126,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighCCDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -138,6 +142,7 @@ Params:
     x = value to evaluate CCDF
     scale = scale parameter
 +/
+@safe pure nothrow @nogc
 T rayleighCCDF(T)(const T x, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "scale must be greater than zero")
@@ -172,6 +177,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighInvCDF(T)(const T p)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -192,6 +198,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Logistic_distribution, Logistic probability distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighInvCDF(T)(const T p, const T scale)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -229,6 +236,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighLPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
@@ -247,6 +255,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Rayleigh_distribution, Rayleigh Distribution)
 +/
+@safe pure nothrow @nogc
 T rayleighLPDF(T)(const T x, const T scale)
     if (isFloatingPoint!T)
     in (scale > 0, "shape must be greater than zero")
