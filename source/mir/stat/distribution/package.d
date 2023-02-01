@@ -26,7 +26,7 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Convenience Modules (with public imports))
     $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,pdf)) $(TD Probability Density Functions ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,pdf)) $(TD Probability Density/Mass Functions ))
     $(TR $(TDNW $(MREF mir,stat,distribution,cdf)) $(TD Cumulative Distribution Functions ))
     $(TR $(TDNW $(MREF mir,stat,distribution,invcdf)) $(TD Inverse Cumulative Distribution Functions ))
     $(LEADINGROW Univariate Discrete Distributions)
