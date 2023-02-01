@@ -39,7 +39,7 @@ class Image
         gamut.image.Image img;
         img.loadFromMemory(data, LOAD_NO_PIXELS);
 
-        if (img.errored)
+        if (img.isError)
             throw new Exception("Can't decode image.");
 
         _width = img.width();
