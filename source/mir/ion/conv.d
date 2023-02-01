@@ -70,7 +70,7 @@ template serde(T)
             static immutable compileTimeTable = IonSystemSymbolTable_v1 ~ keys;
             symbolTable = compileTimeTable;
         }
-        auto ionValue = serializer.data.IonValue.describe();
+        auto ionValue = ()@trusted {return serializer.data.IonValue.describe();}();
         return deserializeIon!T(target, symbolTable, ionValue);
     }
 
