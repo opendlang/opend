@@ -288,7 +288,7 @@ struct CsvReader
         this.text = text;
     }
 
-    private Scalar readCell()() scope return @trusted pure nothrow @nogc
+    private Scalar readCell()() return scope @trusted pure nothrow @nogc
     {
         // if skipLeftSpaces// TODO then stripLeft csv
         auto quoted = text.length && text[0] == quote;
