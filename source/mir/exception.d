@@ -266,7 +266,7 @@ mixin template MirThrowableImpl()
     Constructs a string using the `print` function.
     +/
     this(Args...)(auto ref scope const Args args, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null) pure
-        if (Args.length > 1)
+        if (Args.length > 1 && !is(Args[$ - 1] == Throwable))
     {
         static assert (__traits(compiles, {import mir.format;}), "MirThrowableImpl needs mir-algorithm for mir.format and exception formatting.");
         import mir.format;
@@ -274,6 +274,17 @@ mixin template MirThrowableImpl()
         foreach(ref arg; args)
             buf.print(arg);
         this(buf.data, file, line, nextInChain);
+    }
+
+    this(Args...)(auto ref scope const Args args) pure @trusted
+        if (Args.length > 4 && is(Args[$ - 1] == Throwable))
+    {
+        static assert (__traits(compiles, {import mir.format;}), "MirThrowableImpl needs mir-algorithm for mir.format and exception formatting.");
+        import mir.format;
+        auto buf = stringBuf();
+        foreach(ref arg; args[0 .. $ - 3])
+            buf.print(arg);
+        this(buf.data, args[$ - 3 .. $ - 1], cast() args[$ - 1]);
     }
 }
 
