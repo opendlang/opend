@@ -189,7 +189,13 @@ enum QuantileAlgo {
     type9
 }
 
-///
+/++
+For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
+this is an alias to the $(MATHREF stat, meanType) of `T`
+
+For `QuantileAlgo.type1` and `QuantileAlgo.type3`, this is an alias to the
+$(MATHREF sum, elementType) of `T`.
++/
 package(mir.stat)
 template quantileType(T, QuantileAlgo quantileAlgo)
 {
@@ -4291,7 +4297,12 @@ unittest
     assert(m0.entropy.approxEqual(-2.327497));
 }
 
-///
+/++
+If `T` is a floating point type, this is an alias to the unqualified type.
+
+If `T` is not a floating point type, this will alias a `double` type if `T`
+is summable and implicitly convertible to a floating point type.
++/
 package(mir)
 template entropyType(T)
 {
