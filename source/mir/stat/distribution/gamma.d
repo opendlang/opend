@@ -31,7 +31,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
 @safe pure nothrow @nogc
-auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
+T gammaPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
@@ -46,7 +46,7 @@ auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
         } else if (shape < 1) {
             return T.infinity;
         } else {
-            return T(1.0) / scale;
+            return 1 / scale;
         }
     }
 
@@ -56,7 +56,7 @@ auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
 
 /// ditto
 @safe pure nothrow @nogc
-auto gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
+T gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
@@ -68,7 +68,7 @@ auto gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
         if (shape > 1) {
             return 0;
         } else {
-            return T(1.0) / scale;
+            return 1 / scale;
         }
     }
 
