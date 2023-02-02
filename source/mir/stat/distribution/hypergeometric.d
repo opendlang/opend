@@ -134,7 +134,7 @@ T hypergeometricPMFImpl(T, HypergeometricAlgo hypergeometricAlgo)
 Computes the hypergeometric probability mass function (PMF).
 
 Additional algorithms may be provided for calculating PMF that allow trading off
-time and accuracy. If `approxPoisson` is provided,`PoissonAlgo.gamma` is assumed.
+time and accuracy. If `approxPoisson` is provided, `PoissonAlgo.gamma` is assumed.
 
 Params:
     k = value to evaluate PMF (e.g. number of correct draws of object of interest)
@@ -358,7 +358,7 @@ T hypergeometricCDFImpl(T, HypergeometricAlgo hypergeometricAlgo)
 Computes the hypergeometric cumulative distribution function (CDF).
 
 Additional algorithms may be provided for calculating CDF that allow trading off
-time and accuracy. If `approxPoisson` is provided,`PoissonAlgo.gamma` is assumed.
+time and accuracy. If `approxPoisson` is provided, `PoissonAlgo.gamma` is assumed.
 
 Setting `hypergeometricAlgo = HypergeometricAlgo.direct` results in direct
 summation being used, which can result in significant slowdowns for large values
@@ -534,7 +534,7 @@ T hypergeometricCCDFImpl(T, HypergeometricAlgo hypergeometricAlgo)
 Computes the hypergeometric complementary cumulative distribution function (CCDF).
 
 Additional algorithms may be provided for calculating CCDF that allow trading off
-time and accuracy. If `approxPoisson` is provided,`PoissonAlgo.gamma` is assumed.
+time and accuracy. If `approxPoisson` is provided, `PoissonAlgo.gamma` is assumed.
 
 Setting `hypergeometricAlgo = HypergeometricAlgo.direct` results in direct
 summation being used, which can result in significant slowdowns for large values
@@ -748,7 +748,9 @@ size_t hypergeometricInvCDFImpl(T, HypergeometricAlgo hypergeometricAlgo)
 Computes the hypergeometric inverse cumulative distribution function (InvCDF).
 
 Additional algorithms may be provided for calculating InvCDF that allow trading off
-time and accuracy. If `approxPoisson` is provided,`PoissonAlgo.gamma` is assumed.
+time and accuracy. If `approxPoisson` is provided, `PoissonAlgo.direct` is assumed.
+This is different from other functions that use `PoissonAlgo.gamma` since in this
+case it does not provide the same result.
 
 Setting `hypergeometricAlgo = HypergeometricAlgo.direct` results in direct
 summation being used, which can result in significant slowdowns for large values
