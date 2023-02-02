@@ -1,6 +1,10 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution).
 
+This module uses the shape/scale parameterization of the gamma distribution. To
+use the shape/rate parameterization, apply the inverse to the rate and pass it
+as the scale parameter.
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: Ilia Ki, John Michael Hall
