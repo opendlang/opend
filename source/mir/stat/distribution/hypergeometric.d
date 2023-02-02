@@ -1,6 +1,15 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Hypergeometric_distribution, Hypergeometric Distribution).
 
+There are multiple alternative parameterizations of the Hypergeometric Distribution.
+The formulation in this module measures the number of draws (`k`) with a
+specific feature in `n` total draws without replacement from a population of
+size `N` such that `K` of these have the feature of interest.
+
+`HypergeometricAlgo.direct` can be more time-consuming for large values of the
+parameters. Additional algorithms are provided to the user to choose the
+trade-off between running time and accuracy.
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
