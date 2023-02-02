@@ -30,6 +30,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
+@safe pure nothrow @nogc
 auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
@@ -54,6 +55,7 @@ auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
 }
 
 /// ditto
+@safe pure nothrow @nogc
 auto gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
@@ -235,7 +237,6 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
-
 @safe pure nothrow @nogc
 T gammaInvCDF(T)(const T p, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
