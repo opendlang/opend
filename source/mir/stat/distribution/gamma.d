@@ -22,7 +22,7 @@ Computes the gamma probability density function (PDF).
 
 `shape` values less than `1` are supported when it is a floating point type.
 
-If `shape is passed as a `size_t` type (or a type convertible to that), then the
+If `shape` is passed as a `size_t` type (or a type convertible to that), then the
 PDF is calculated using the relationship with the poisson distribution (i.e.
 replacing the `gamma` function with the `factorial`).
 
@@ -307,7 +307,7 @@ Computes the gamma log probability density function (LPDF).
 
 `shape` values less than `1` are supported when it is a floating point type.
 
-If `shape is passed as a `size_t` type (or a type convertible to that), then the
+If `shape` is passed as a `size_t` type (or a type convertible to that), then the
 LPDF is calculated using the relationship with the poisson distribution (i.e.
 replacing the `logGamma` function with the `logFactorial`).
 
