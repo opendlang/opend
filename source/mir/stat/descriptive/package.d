@@ -1,6 +1,15 @@
 /++
 This package publicly imports `mir.stat.descriptive.*` modules.
 
+$(BOOKTABLE ,
+    $(TR
+        $(TH Modules)
+        $(TH Description)
+    )
+    $(TR $(TDNW $(MREF mir,stat,descriptive,univariate)) $(TD Univariate Descriptive statistics ))
+    $(TR $(TDNW $(MREF mir,stat,descriptive,weighted)) $(TD Descriptive statistics with weights ))
+)
+
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: John Michael Hall, Ilya Yaroshenko
