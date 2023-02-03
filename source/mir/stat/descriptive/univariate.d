@@ -1947,7 +1947,8 @@ unittest
 }
 
 /++
-Skew algorithms.
+Skew algorithms (currently an alias to $(LREF KurtosisAlgo).
+
 See_also:
     $(WEB en.wikipedia.org/wiki/Skewness, Skewness),
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
