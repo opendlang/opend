@@ -107,7 +107,7 @@ These algorithms match the same provided in R's (as of version 3.6.2) `quantile`
 function. In turn, these were discussed in Hyndman and Fan (1996). 
 
 All sample quantiles are defined as weighted averages of consecutive order
-statistics. For each QuantileAlgo, the sample quantile is given by
+statistics. For each `quantileAlgo`, the sample quantile is given by
 (using R's 1-based indexing notation):
 
     (1 - `gamma`) * `x$(SUBSCRIPT j)` + `gamma` * `x$(SUBSCRIPT j + 1)`
@@ -190,10 +190,10 @@ enum QuantileAlgo {
 }
 
 /++
-For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
+For all $(LREF QuantileAlgo) except $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3),
 this is an alias to the $(MATHREF stat, meanType) of `T`
 
-For `QuantileAlgo.type1` and `QuantileAlgo.type3`, this is an alias to the
+For $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3), this is an alias to the
 $(MATHREF sum, elementType) of `T`.
 +/
 package(mir.stat)
@@ -436,7 +436,7 @@ Computes the quantile(s) of the input, given one or more probabilities `p`.
 
 By default, if `p` is a $(NDSLICEREF slice, Slice), built-in dynamic array, or type
 with `asSlice`, then the output type is a reference-counted copy of the input. A
-run-time parameter is provided to instead overwrite the input in-place.
+compile-time parameter is provided to instead overwrite the input in-place.
 
 For all $(LREF QuantileAlgo) except $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3),
 by default, if `F` is not floating point type or complex type, then the result
