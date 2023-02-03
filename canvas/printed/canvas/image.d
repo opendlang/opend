@@ -16,6 +16,7 @@ import std.array;
 /// Represented an encoded image (JPEG or PNG).
 class Image
 {
+    /// Input is an image file.
     this(const(char)[] relativePath)
     {
         ubyte[] dataFromFile = cast(ubyte[])( std.file.read(relativePath) );
@@ -23,7 +24,8 @@ class Image
         this( assumeUnique(dataFromFile) );
     }
 
-    this(immutable(ubyte)[] data)
+    /// Input is PNG or JPEG memory image directly.
+    this(const(ubyte)[] data)
     {
         // embed for future use
         _data = data.idup;
