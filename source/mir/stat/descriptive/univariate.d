@@ -4191,6 +4191,7 @@ unittest
 ///
 struct EntropyAccumulator(T, Summation summation)
 {
+    import mir.math.internal.xlogy: xlog;
     import mir.primitives: hasShape;
     import std.traits: isIterable;
 
@@ -4232,23 +4233,6 @@ struct EntropyAccumulator(T, Summation summation)
     {
         summator.put(e.summator.sum);
     }
-}
-
-import mir.internal.utility: isFloatingPoint;
-
-/++
-Returns x * log(x)
-
-Returns:
-    x * log(x)
-+/
-private F xlog(F)(const F x)
-    if (isFloatingPoint!F)
-{
-    import mir.math.common: log;
-
-    assert(x >= 0, "xlog: x must be greater than or equal to zero");
-    return x ? x * log(x) : F(0);
 }
 
 /// test basic functionality
