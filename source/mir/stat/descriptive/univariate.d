@@ -1952,7 +1952,7 @@ unittest
 }
 
 /++
-Skew algorithms (currently an alias to $(LREF KurtosisAlgo).
+Skew algorithms (currently an alias to $(LREF KurtosisAlgo)).
 
 See_also:
     $(WEB en.wikipedia.org/wiki/Skewness, Skewness),
