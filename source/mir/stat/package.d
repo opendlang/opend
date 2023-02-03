@@ -63,7 +63,7 @@ public import mir.stat.inference;
 ///
 public import mir.stat.transform;
 
-// Matche comment above to ensure no errors
+// Match comment above to ensure no errors
 version(mir_stat_test)
 @safe pure nothrow
 unittest
