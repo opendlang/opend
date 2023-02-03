@@ -1,5 +1,5 @@
 /++
-This package publicly imports `mir.stat.distribution.*PDF` modules.
+This package publicly imports `mir.stat.distribution.*PDF` & `.*PMF` modules.
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 

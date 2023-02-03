@@ -24,6 +24,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
+@safe pure nothrow @nogc
 T weibullPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to zero")
@@ -75,6 +76,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
+@safe pure nothrow @nogc
 T weibullCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to zero")
@@ -115,6 +117,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
+@safe pure nothrow @nogc
 T weibullCCDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to zero")
@@ -155,6 +158,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
+@safe pure nothrow @nogc
 T weibullInvCDF(T)(const T p, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -198,6 +202,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Weibull_distribution, Weibull Distribution)
 +/
+@safe pure nothrow @nogc
 T weibullLPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to zero")

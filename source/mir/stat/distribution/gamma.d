@@ -1,6 +1,10 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution).
 
+This module uses the shape/scale parameterization of the gamma distribution. To
+use the shape/rate parameterization, apply the inverse to the rate and pass it
+as the scale parameter.
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: Ilia Ki, John Michael Hall
@@ -18,7 +22,7 @@ Computes the gamma probability density function (PDF).
 
 `shape` values less than `1` are supported when it is a floating point type.
 
-If `shape is passed as a `size_t` type (or a type convertible to that), then the
+If `shape` is passed as a `size_t` type (or a type convertible to that), then the
 PDF is calculated using the relationship with the poisson distribution (i.e.
 replacing the `gamma` function with the `factorial`).
 
@@ -30,7 +34,8 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
-auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
+@safe pure nothrow @nogc
+T gammaPDF(T)(const T x, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
@@ -45,7 +50,7 @@ auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
         } else if (shape < 1) {
             return T.infinity;
         } else {
-            return T(1.0) / scale;
+            return 1 / scale;
         }
     }
 
@@ -54,7 +59,8 @@ auto gammaPDF(T)(const T x, const T shape, const T scale = 1)
 }
 
 /// ditto
-auto gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
+@safe pure nothrow @nogc
+T gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
     if (isFloatingPoint!T)
     in (x >= 0, "x must be greater than or equal to 0")
     in (shape > 0, "shape must be greater than zero")
@@ -66,7 +72,7 @@ auto gammaPDF(T)(const T x, const size_t shape, const T scale = 1)
         if (shape > 1) {
             return 0;
         } else {
-            return T(1.0) / scale;
+            return 1 / scale;
         }
     }
 
@@ -235,7 +241,6 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Gamma Distribution)
 +/
-
 @safe pure nothrow @nogc
 T gammaInvCDF(T)(const T p, const T shape, const T scale = 1)
     if (isFloatingPoint!T)
@@ -302,7 +307,7 @@ Computes the gamma log probability density function (LPDF).
 
 `shape` values less than `1` are supported when it is a floating point type.
 
-If `shape is passed as a `size_t` type (or a type convertible to that), then the
+If `shape` is passed as a `size_t` type (or a type convertible to that), then the
 LPDF is calculated using the relationship with the poisson distribution (i.e.
 replacing the `logGamma` function with the `logFactorial`).
 

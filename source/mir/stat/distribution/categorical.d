@@ -16,7 +16,9 @@ import mir.internal.utility: isFloatingPoint;
 import mir.math.common: approxEqual;
 import mir.ndslice.slice: Slice, SliceKind;
 
-private T sum(T)(const Slice!(T*, 1) p) {
+private
+@safe pure nothrow @nogc
+T sum(T)(const Slice!(T*, 1) p) {
     import std.traits: Unqual;
 
     Unqual!T output = 0;
@@ -36,6 +38,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
+@safe pure nothrow @nogc
 T categoricalPMF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
@@ -72,6 +75,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
+@safe pure nothrow @nogc
 T categoricalCDF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
@@ -108,6 +112,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
+@safe pure nothrow @nogc
 T categoricalCCDF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
@@ -144,6 +149,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
+@safe pure nothrow @nogc
 size_t categoricalInvCDF(T)(const T q, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (q >= 0, "q must be greater than or equal to 0")
@@ -198,6 +204,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
+@safe pure nothrow @nogc
 T categoricalLPMF(T)(const size_t x, const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")

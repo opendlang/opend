@@ -27,6 +27,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
+@safe pure nothrow @nogc
 T gevPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")
@@ -78,6 +79,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
+@safe pure nothrow @nogc
 T gevCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")
@@ -127,6 +129,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
+@safe pure nothrow @nogc
 T gevCCDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")
@@ -169,6 +172,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
+@safe pure nothrow @nogc
 T gevInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (p >= 0, "p must be greater than or equal to 0")
@@ -204,6 +208,7 @@ Params:
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Generalized_extreme_value_distribution, Generalized Extreme Value (GEV) Distribution)
 +/
+@safe pure nothrow @nogc
 T gevLPDF(T)(const T x, const T mu, const T sigma, const T xi)
     if (isFloatingPoint!T)
     in (xi >= 0 || x <= mu - sigma / xi, "if xi is less than zero, x must be less than or equal to mu - sigma / xi")

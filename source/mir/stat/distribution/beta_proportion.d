@@ -1,11 +1,18 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution).
 
+An alternate parameterization of the Beta distribution in terms of the mean of
+the distribution and the sum of its shape parameters (also known as the sample
+size of the Beta distribution). 
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall
 
 Copyright: 2022-3 Mir Stat Authors.
+
+Macros:
+DISTREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, distribution, $1)$(NBSP)
 
 +/
 
@@ -22,7 +29,8 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
+    $(DISTREF beta, binomialPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionPDF(T)(const T x, const T mu, const T kappa)
@@ -60,7 +68,8 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
+    $(DISTREF beta, binomialCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCDF(T)(const T x, const T mu, const T kappa)
@@ -98,7 +107,8 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
+    $(DISTREF beta, binomialCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCCDF(T)(const T x, const T mu, const T kappa)
@@ -136,7 +146,8 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
+    $(DISTREF beta, binomialInvCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionInvCDF(T)(const T p, const T mu, const T kappa)
@@ -174,7 +185,8 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
+    $(DISTREF beta, binomialLPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionLPDF(T)(const T x, const T mu, const T kappa)

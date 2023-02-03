@@ -11,6 +11,23 @@ module mir.math.internal.xlogy;
 
 import mir.internal.utility: isFloatingPoint;
 
+/++
+Returns x * log(x)
+
+Returns:
+    x * log(x)
++/
+package(mir)
+@safe pure nothrow @nogc
+T xlog(T)(const T x)
+    if (isFloatingPoint!T)
+{
+    import mir.math.common: log;
+
+    assert(x >= 0, "xlog: x must be greater than or equal to zero");
+    return x ? x * log(x) : 0;
+}
+
 package(mir)
 @safe pure nothrow @nogc
 T xlogy(T)(const T x, const T y)

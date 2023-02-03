@@ -1,21 +1,29 @@
 /++
 This package publicly imports `mir.stat.distribution.*` modules.
 
-Each individual distribution module contains - when feasible - functions for:
-- Probability density/mass functions (e.g. `distributionPDF`/`distributionPMF`)
-- Cumulative distriution functions (e.g. `distributionCDF`)
-- Complementary cumulative distribution functions (e.g. `distributionCCDF`)
-- Inverse cumulative distribution functions (e.g. `distributionInvCDF`)
-- Log probaiity density/mass functions (e.g. `distributionLPDF`/`distributionLPMF`)
+------
+import mir.math.common: pow;
+import mir.stat.distribution;
+import mir.test: shouldApprox;
 
-In addition, convenience modules are provided (`mir.stat.distribution.pdf`, 
-`mir.stat.distribution.cdf`, `mir.stat.distribution.invcdf`) that publicly
+4.binomialPMF(6, 2.0 / 3).shouldApprox == (15.0 * pow(2.0 / 3, 4) * pow(1.0 / 3, 2));
+------
+
+Each individual distribution module contains - where feasible - functions for:
+- Probability density/mass functions (e.g. `mir.stat.distribution.*PDF`/`mir.stat.distribution.*PMF`)
+- Cumulative distriution functions (e.g. `mir.stat.distribution.*CDF`)
+- Complementary cumulative distribution functions (e.g. `mir.stat.distribution.*CCDF`)
+- Inverse cumulative distribution functions (e.g. `mir.stat.distribution.*InvCDF`)
+- Log probaiity density/mass functions (e.g. `mir.stat.distribution.*LPDF`/`mir.stat.distribution.*LPMF`)
+
+In addition, convenience modules are provided ($(MREF mir,stat,distribution,pdf), 
+$(MREF mir,stat,distribution,cdf), $(MREF mir,stat,distribution,pdf)) that publicly
 import only the respective functions from each individual distribution module 
 (note: the pdf module also contains pmfs). 
 
 Some (discrete) distributions include multiple algorithms for calculating the
 included functions. The default is a direct calculation with others being
-approximations. As a convention, these modules leave it to te user to determine
+approximations. As a convention, these modules leave it to the user to determine
 when to switch between the different approximations. Care should be taken if
 more extreme parameters are used as it can have an impact on speed.
 
@@ -26,7 +34,7 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Convenience Modules (with public imports))
     $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,pdf)) $(TD Probability Density Functions ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,pdf)) $(TD Probability Density/Mass Functions ))
     $(TR $(TDNW $(MREF mir,stat,distribution,cdf)) $(TD Cumulative Distribution Functions ))
     $(TR $(TDNW $(MREF mir,stat,distribution,invcdf)) $(TD Inverse Cumulative Distribution Functions ))
     $(LEADINGROW Univariate Discrete Distributions)
@@ -41,7 +49,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,beta_proportion)) $(TD Beta Proportion Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,cauchy)) $(TD Cauchy Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,chi2)) $(TD Chi-squared Distribution ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,cornisher_fisher)) $(TD Cornish-Fisher Expansion ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,cornish_fisher)) $(TD Cornish-Fisher Expansion ))
     $(TR $(TDNW $(MREF mir,stat,distribution,exponential)) $(TD Exponential Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,f)) $(TD F Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,gamma)) $(TD Gamma Distribution ))
@@ -123,3 +131,15 @@ public import mir.stat.distribution.uniform;
 public import mir.stat.distribution.uniform_discrete;
 ///
 public import mir.stat.distribution.weibull;
+
+// Match comment above to ensure no errors
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: pow;
+    import mir.stat.distribution;
+    import mir.test: shouldApprox;
+
+    4.binomialPMF(6, 2.0 / 3).shouldApprox == (15.0 * pow(2.0 / 3, 4) * pow(1.0 / 3, 2));
+}
