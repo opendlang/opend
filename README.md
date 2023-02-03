@@ -13,13 +13,13 @@
 ### Statistical algorithms for the D programming language (Dlang).
 
 This package includes statistical algorithms, including but not limited to:
-- [Descriptive statistics](//mir-stat.libmir.org/mir_stat_descriptive.html)
-- [Probability distributions](//mir-stat.libmir.org/mir_stat_distribution.html)
-- [Statistical inference](//mir-stat.libmir.org/mir_stat_inference.html)
-- [Data Transformations](//mir-stat.libmir.org/mir_stat_transform.html)
+- [Descriptive statistics](http://mir-stat.libmir.org/mir_stat_descriptive.html)
+- [Probability distributions](http://mir-stat.libmir.org/mir_stat_distribution.html)
+- [Statistical inference](http://mir-stat.libmir.org/mir_stat_inference.html)
+- [Data Transformations](http://mir-stat.libmir.org/mir_stat_transform.html)
 
 #### Full Documentation
-[mir-stat.libmir.org](//mir-stat.libmir.org/)
+[mir-stat.libmir.org](http://mir-stat.libmir.org/)
 
 #### Example
 ```d
