@@ -1,27 +1,36 @@
 /++
 This package publicly imports `mir.stat.*` modules.
 
+$(BOOKTABLE ,
+    $(TR
+        $(TH Modules)
+        $(TH Description)
+    )
+    $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive Statistics ))
+    $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
+    $(TR $(TDNW $(MREF mir,stat,inference)) $(TD Probability Density/Mass Functions ))
+    $(TR $(TDNW $(MREF mir,stat,transform)) $(TD Algorithms for statistical inference ))
+)
+
+## Example
 ------
 import mir.algorithm.iteration: all;
 import mir.math.common: approxEqual, pow;
+import mir.stat;
 import mir.test: shouldApprox;
 
 // mir.stat.descriptive
-import mir.stat.descriptive.univariate: mean, kurtosis;
 auto x = [1.0, 2, 3, 4];
 x.mean.shouldApprox == 2.5;
 x.kurtosis.shouldApprox == -1.2;
 
 // mir.stat.distribution
-import mir.stat.distribution.binomial: binomialPMF;
 4.binomialPMF(6, 2.0 / 3).shouldApprox == (15.0 * pow(2.0 / 3, 4) * pow(1.0 / 3, 2));
 
 // mir.stat.transform
-import mir.stat.transform: zscore;
 assert(x.zscore.all!approxEqual([-1.161895, -0.387298, 0.387298, 1.161895]));
 
 // mir.stat.inference
-import mir.stat.inference: dAgostinoPearsonTest;
 auto y = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
           2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 double p;
@@ -61,24 +70,21 @@ unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual, pow;
+    import mir.stat;
     import mir.test: shouldApprox;
     
     // mir.stat.descriptive
-    import mir.stat.descriptive.univariate: mean, kurtosis;
     auto x = [1.0, 2, 3, 4];
     x.mean.shouldApprox == 2.5;
     x.kurtosis.shouldApprox == -1.2;
     
     // mir.stat.distribution
-    import mir.stat.distribution.binomial: binomialPMF;
     4.binomialPMF(6, 2.0 / 3).shouldApprox == (15.0 * pow(2.0 / 3, 4) * pow(1.0 / 3, 2));
 
     // mir.stat.transform
-    import mir.stat.transform: zscore;
     assert(x.zscore.all!approxEqual([-1.161895, -0.387298, 0.387298, 1.161895]));
 
     // mir.stat.inference
-    import mir.stat.inference: dAgostinoPearsonTest;
     auto y = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
     double p;
