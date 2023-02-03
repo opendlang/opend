@@ -438,20 +438,22 @@ By default, if `p` is a $(NDSLICEREF slice, Slice), built-in dynamic array, or t
 with `asSlice`, then the output type is a reference-counted copy of the input. A
 run-time parameter is provided to instead overwrite the input in-place.
 
-For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
+For all $(LREF QuantileAlgo) except $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3),
 by default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
 type or a type for which `isComplex!F` is true.
 
-For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
+For $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3), the return type is the
 $(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
-    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
+    quantileAlgo = algorithm for calculating quantile (default: $(LREF QuantileAlgo.type7))
     allowModifySlice = controls whether the input is modified in place, default is false
+
 Returns:
     The quantile of all the elements in the input at probability `p`.
+
 See_also: 
     $(MATHREF stat, median),
     $(MATHREF sum, partitionAt),
@@ -1108,18 +1110,19 @@ By default, this function computes the result using $(LREF quantile), i.e.
 providing a low value, as in `result = quantile(x, 1 - low) - quantile(x, low)`
 and both a low and high value, as in `result = quantile(x, high) - quantile(x, low)`.
 
-For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
+For all $(LREF QuantileAlgo) except $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3),
 by default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
 type or a type for which `isComplex!F` is true.
 
-For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
+For $(LREF QuantileAlgo.type1) and $(LREF QuantileAlgo.type3), the return type is the
 $(MATHREF sum, elementType) of the input.
 
 Params:
     F = controls type of output
-    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
+    quantileAlgo = algorithm for calculating quantile (default: $(LREF QuantileAlgo.type7))
     allowModifySlice = controls whether the input is modified in place, default is false
+
 Returns:
     The interquartile range of the input. 
 
@@ -1463,6 +1466,7 @@ By default, if `F` is not floating point type, then the result will have a
 
 Params:
     F = output type
+
 Returns:
     The median absolute deviation of the input
 +/
@@ -1622,6 +1626,7 @@ Params:
     centralTendency = function that will produce the value that the input is centered about, default is `mean`
     transform = function to transform centered values, default squares the centered values
     summarize = function to summarize the transformed centered values, default is `mean`
+
 Returns:
     The dispersion of the input
 +/
@@ -2592,6 +2597,7 @@ Params:
     F = controls type of output
     skewnessAlgo = algorithm for calculating skewness (default: SkewnessAlgo.online)
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The skewness of the input, must be floating point or complex type
 +/
@@ -3736,6 +3742,7 @@ Params:
     F = controls type of output
     kurtosisAlgo = algorithm for calculating kurtosis (default: KurtosisAlgo.online)
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The kurtosis of the input, must be floating point
 +/
@@ -4322,6 +4329,7 @@ By default, if `F` is not a floating point type, then the result will have a
 Params:
     F = controls type of output
     summation = algorithm for summing the individual entropy values (default: Summation.appropriate)
+
 Returns:
     The entropy of all the elements in the input, must be floating point type
 
@@ -4585,8 +4593,10 @@ Params:
     F = controls type of output
     varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The coefficient of varition of the input, must be floating point type
+
 See_also:
     $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation)
 +/
@@ -5336,6 +5346,7 @@ Params:
     F = controls type of output
     N = controls n-th raw moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The n-th raw moment of the input, must be floating point or complex type
 +/
@@ -5578,6 +5589,7 @@ Params:
     F = controls type of output
     N = controls n-th central moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The n-th central moment of the input, must be floating point or complex type
 +/
@@ -5851,6 +5863,7 @@ Params:
     F = controls type of output
     N = controls n-th standardized moment
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The n-th standardized moment of the input, must be floating point
 +/
@@ -6171,6 +6184,7 @@ Params:
     N = controls n-th standardized moment
     momentAlgo = type of moment to be calculated
     summation = algorithm for calculating sums (default: Summation.appropriate)
+
 Returns:
     The n-th moment of the input, must be floating point or complex type
 +/
