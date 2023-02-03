@@ -29,7 +29,7 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
     $(DISTREF beta, binomialPDF)
 +/
 @safe pure nothrow @nogc
@@ -68,7 +68,7 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
     $(DISTREF beta, binomialCDF)
 +/
 @safe pure nothrow @nogc
@@ -107,7 +107,7 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
     $(DISTREF beta, binomialCDF)
 +/
 @safe pure nothrow @nogc
@@ -146,7 +146,7 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
     $(DISTREF beta, binomialInvCDF)
 +/
 @safe pure nothrow @nogc
@@ -185,7 +185,7 @@ Params:
     kappa = shape parameter #2
 
 See_also:
-    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution)
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
     $(DISTREF beta, binomialLPDF)
 +/
 @safe pure nothrow @nogc
