@@ -2698,9 +2698,7 @@ __m128 _mm_permutevar_ps (__m128 a, __m128i b) @trusted
     }
     else
     {
-        // This isn't great in ARM64, TBL or TBX instructions can't do that.
-        // that could fit the bill, if it had 64-bit operands. But it only has 8-bit operands.
-        // SVE2 could do it with svtbx[_f64] probably.
+
         int4 bi = cast(int4)b;
         __m128 r;
         r.ptr[0] = a.array[ (bi.array[0] & 3) ];
@@ -2722,14 +2720,25 @@ unittest
 }
 
 ///ditto
-__m256 _mm256_permutevar_ps (__m256 a, __m256i b) pure @trusted
+__m256 _mm256_permutevar_ps (__m256 a, __m256i b) @trusted
 {
     // In order to do those two, it is necessary to use _mm_shuffle_epi8 and reconstruct the integers afterwards.
-    // PERF ARM64 catastrophic, do it with _mm_permutevar_ps
-    // PERF without AVX, real bad, makes 8 memory access
+    enum bool implementWithByteShuffle = GDC_with_SSSE3 || LDC_with_SSSE3 || LDC_with_ARM64;
+
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_vpermilvarps256(a, cast(int8)b);
+    }
+    else static if (implementWithByteShuffle)
+    {
+        // because we don't have 256-bit vectors, split and use _mm_permutevar_ps
+        __m128 a_lo = _mm256_extractf128_ps!0(a);
+        __m128 a_hi = _mm256_extractf128_ps!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128 r_lo = _mm_permutevar_ps(a_lo, b_lo);
+        __m128 r_hi = _mm_permutevar_ps(a_hi, b_hi);
+        return _mm256_set_m128(r_hi, r_lo);
     }
     else
     {
