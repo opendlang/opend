@@ -2605,9 +2605,27 @@ unittest
 ///          This is really not intuitive.
 __m128d _mm_permutevar_pd(__m128d a, __m128i b) pure @trusted
 {
+    enum bool implementWithByteShuffle = GDC_with_SSSE3 || LDC_with_SSSE3 || LDC_with_ARM64;
+
     static if (GDC_or_LDC_with_AVX)
     {
         return cast(__m128d) __builtin_ia32_vpermilvarpd(a, cast(long2)b);
+    }
+    else static if (implementWithByteShuffle)
+    {
+        align(16) static immutable byte[16] mmAddBase_u8 = [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7];
+        align(16) static immutable byte[16] mmBroadcast_u8 = [0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8];
+        int4 bi = cast(int4)b;
+        long2 two;
+        two = 2;
+        bi = _mm_slli_epi64(cast(__m128i)( (cast(long2)bi) & two), 2);
+        bi = _mm_shuffle_epi8(bi, *cast(__m128i*)mmBroadcast_u8.ptr);
+        // bi is now [ind0 ind0 ind0 ind0 ind0 ind0 ind0 ind0 ind1 ind1 ind1 ind1 ind1 ind1 ind1 ind1 ]
+        byte16 bytesIndices = cast(byte16)bi;
+        bytesIndices = bytesIndices + *cast(byte16*)mmAddBase_u8.ptr;
+
+        // which allows us to make a single _mm_shuffle_epi8
+        return cast(__m128d) _mm_shuffle_epi8(cast(__m128i)a, cast(__m128i)bytesIndices);
     }
     else
     {

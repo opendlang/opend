@@ -1095,7 +1095,7 @@ unittest
 
 
 /// Shuffle packed 8-bit integers in `a` according to shuffle control mask in the corresponding 8-bit element of `b`.
-__m128i _mm_shuffle_epi8 (__m128i a, __m128i b) @trusted
+__m128i _mm_shuffle_epi8 (__m128i a, __m128i b) pure @trusted
 {
     // This is the lovely pshufb.
     // PERF DMD
