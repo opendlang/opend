@@ -25,7 +25,44 @@ public import inteli.avxintrin;
 nothrow @nogc:
 
 /// Compute the absolute value of packed signed 16-bit integers in `a`.
-// TODO __m256i _mm256_abs_epi16 (__m256i a) pure @safe
+__m256i _mm256_abs_epi16 (__m256i a) @trusted
+{
+    // PERF DMD
+    version(LDC)
+        enum split = true; // akways beneficial in LDC neon, ssse3, or even sse2
+    else
+        enum split = GDC_with_SSSE3;
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pabsw256(cast(short16)a);
+    }
+    else static if (__VERSION__ >= 2097 && LDC_with_AVX2)
+    {
+        // Before LDC 1.27 llvm.abs LLVM intrinsic didn't exist, and hence 
+        // no good way to do abs(256-bit)
+        return cast(__m256i) inteli_llvm_abs!short16(cast(short16)a, false);
+    }    
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_abs_epi16(a_lo);
+        __m128i r_hi = _mm_abs_epi16(a_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }    
+    else
+    {        
+        short16 sa = cast(short16)a;
+        for (int i = 0; i < 8; ++i)
+        {
+            short s = sa.array[i];
+            sa.ptr[i] = s >= 0 ? s : cast(short)(-cast(int)(s));
+        }  
+        return cast(__m256i)sa;
+    }
+}
+
 // TODO __m256i _mm256_abs_epi32 (__m256i a) pure @safe
 // TODO __m256i _mm256_abs_epi8 (__m256i a) pure @safe
 

@@ -1299,6 +1299,18 @@ __m128i to_m128i(__m64 a) pure @trusted
     }
 }
 
+
+// ADDITIONAL LLVM INTRINSICS
+// Basically LDC didn't add them yet
+version(LDC)
+{
+    static if (__VERSION__ >= 2097) // LDC 1.27+
+    {
+        pragma(LDC_intrinsic, "llvm.abs.i#")
+            T inteli_llvm_abs(T)(T val, bool attrib);
+    }
+}
+
 // ADDITIONAL x86 INTRINSICS
 // Absent from ldc.gccbuiltins_x86 for some reason, but needed.
 // https://github.com/ldc-developers/llvm-project/blob/ldc-release/12.x/llvm/include/llvm/IR/IntrinsicsX86.td
