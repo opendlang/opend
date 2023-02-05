@@ -94,8 +94,11 @@ version(LDC)
 {
     enum LDC_with_SSE = __traits(targetHasFeature, "sse");
     enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
+    enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
     enum LDC_with_AVX = __traits(targetHasFeature, "avx");
+    enum LDC_with_AVX2 = __traits(targetHasFeature, "avx");
     enum LDC_with_ARM64 = __traits(targetHasFeature, "neon");
+    enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1");
     alias shufflevectorLDC = shufflevector;
 }
 else
@@ -103,22 +106,31 @@ else
     enum LDC_with_SSE = false;
     enum LDC_with_SSE2 = false;
     enum LDC_with_AVX = false;
+    enum LDC_with_AVX2 = false;
     enum LDC_with_ARM64 = false;
+    enum LDC_with_SSSE3 = false;
+    enum LDC_with_SSE41 = false;
 }
 
 version(GNU)
 {
     static if (__VERSION__ >= 2100) // Starting at GDC 12.1
     {
+        enum GDC_with_AVX2 = __traits(compiles, __builtin_ia32_broadcastmb128);
         enum GDC_with_AVX = __traits(compiles, __builtin_ia32_vbroadcastf128_pd256);
         enum GDC_with_SSE2 = true;
         enum GDC_with_SSE = true;
+        enum GDC_with_SSE41 = false;
+        enum GDC_with_SSSE3 = __traits(compiles, __builtin_ia32_pshufb128);
     }
     else
     {
         enum GDC_with_SSE = false;
         enum GDC_with_SSE2 = false;
         enum GDC_with_AVX = false;
+        enum GDC_with_AVX2 = false;
+        enum GDC_with_SSE41 = false;
+        enum GDC_with_SSSE3 = false;
     }
 }
 else
@@ -126,7 +138,13 @@ else
     enum GDC_with_SSE = false;
     enum GDC_with_SSE2 = false;
     enum GDC_with_AVX = false;
+    enum GDC_with_AVX2 = false;
+    enum GDC_with_SSE41 = false;
+    enum GDC_with_SSSE3 = false;
 }
+enum GDC_or_LDC_with_AVX = LDC_with_AVX || GDC_with_AVX;
+enum GDC_or_LDC_with_AVX2 = LDC_with_AVX2 || GDC_with_AVX2;
+
 
 version(LDC)
 {
