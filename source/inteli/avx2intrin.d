@@ -24,12 +24,24 @@ public import inteli.avxintrin;
 
 nothrow @nogc:
 
+/// Compute the absolute value of packed signed 16-bit integers in `a`.
 // TODO __m256i _mm256_abs_epi16 (__m256i a) pure @safe
 // TODO __m256i _mm256_abs_epi32 (__m256i a) pure @safe
 // TODO __m256i _mm256_abs_epi8 (__m256i a) pure @safe
 
-
-// TODO __m256i _mm256_add_epi16 (__m256i a, __m256i b) pure @safe
+/// Add packed 16-bit integers in `a` and `b`.
+__m256i _mm256_add_epi16 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return cast(__m256i)(cast(short16)a + cast(short16)b);
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi16( -7, -1, 0, 9, -100, 100, 234, 432, -32768, 32767, 0, -1, -20000, 0,  6, -2);
+    short16 R = cast(short16) _mm256_add_epi16(A, A);
+    short[16] correct         = [ -14, -2, 0, 18, -200, 200, 468, 864,     0,    -2, 0, -2,  25536, 0, 12, -4 ];
+    assert(R.array == correct);
+}
 
 /// Add packed 32-bit integers in `a` and `b`.
 __m256i _mm256_add_epi32(__m256i a, __m256i b) pure @safe
@@ -54,6 +66,7 @@ unittest
 // TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`.
+// TODO verify
 __m256i _mm256_and_si256 (__m256i a, __m256i b) pure @safe
 {
     pragma(inline, true);
@@ -107,6 +120,7 @@ unittest
 // TODO __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @safe
 
 /// Zero-extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
+// TODO verify
 __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -148,6 +162,7 @@ unittest
 /// Extract 128 bits (composed of integer data) from `a`, selected with `imm8`.
 __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
     if ( (imm8 == 0) || (imm8 == 1) )
+// TODO verify
 {
     pragma(inline, true);
 
@@ -225,6 +240,7 @@ unittest
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
 /// and pack the results in destination.
+// TODO verify
 __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -284,6 +300,7 @@ unittest
 // TODO __m256i _mm256_mullo_epi32 (__m256i a, __m256i b) pure @safe
 
 /// Compute the bitwise OR of 256 bits (representing integer data) in `a` and `b`.
+// TODO verify
 __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
 {
     return a | b;
@@ -313,6 +330,7 @@ unittest
 /// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each
 /// consecutive 8 differences to produce two unsigned 16-bit integers, and pack these unsigned 16-bit integers in the
 /// low 16 bits of 64-bit elements in result.
+// TODO verify
 __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -373,6 +391,7 @@ unittest
 // TODO __m256i _mm256_sll_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
+// TODO verify
 __m256i _mm256_slli_epi16(__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -411,6 +430,7 @@ unittest
 }
 
 /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
+// TODO verify
 __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -474,6 +494,7 @@ unittest
 // TODO __m256i _mm256_srl_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
+// TODO verify
 __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -517,6 +538,7 @@ unittest
 }
 
 /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
+// TODO verify
 __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -590,7 +612,244 @@ unittest
 
 /// Compute the bitwise XOR of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_xor_si256 (__m256i a, __m256i b) pure @safe
+// TODO verify
 {
     return a ^ b;
 }
 // TODO unittest and thus force inline
+
+
+/+
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.d")
+int4 __builtin_ia32_gatherd_d(int4, const void*, int4, int4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.d.256")
+int8 __builtin_ia32_gatherd_d256(int8, const void*, int8, int8, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.pd")
+double2 __builtin_ia32_gatherd_pd(double2, const void*, int4, double2, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.pd.256")
+double4 __builtin_ia32_gatherd_pd256(double4, const void*, int4, double4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.ps")
+float4 __builtin_ia32_gatherd_ps(float4, const void*, int4, float4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.ps.256")
+float8 __builtin_ia32_gatherd_ps256(float8, const void*, int8, float8, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.q")
+long2 __builtin_ia32_gatherd_q(long2, const void*, int4, long2, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.d.q.256")
+long4 __builtin_ia32_gatherd_q256(long4, const void*, int4, long4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.d")
+int4 __builtin_ia32_gatherq_d(int4, const void*, long2, int4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.d.256")
+int4 __builtin_ia32_gatherq_d256(int4, const void*, long4, int4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.pd")
+double2 __builtin_ia32_gatherq_pd(double2, const void*, long2, double2, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.pd.256")
+double4 __builtin_ia32_gatherq_pd256(double4, const void*, long4, double4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.ps")
+float4 __builtin_ia32_gatherq_ps(float4, const void*, long2, float4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.ps.256")
+float4 __builtin_ia32_gatherq_ps256(float4, const void*, long4, float4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.q")
+long2 __builtin_ia32_gatherq_q(long2, const void*, long2, long2, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.gather.q.q.256")
+long4 __builtin_ia32_gatherq_q256(long4, const void*, long4, long4, byte);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskload.d")
+int4 __builtin_ia32_maskloadd(const void*, int4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskload.d.256")
+int8 __builtin_ia32_maskloadd256(const void*, int8);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskload.q")
+long2 __builtin_ia32_maskloadq(const void*, long2);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskload.q.256")
+long4 __builtin_ia32_maskloadq256(const void*, long4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskstore.d")
+void __builtin_ia32_maskstored(void*, int4, int4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskstore.d.256")
+void __builtin_ia32_maskstored256(void*, int8, int8);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskstore.q")
+void __builtin_ia32_maskstoreq(void*, long2, long2);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.maskstore.q.256")
+void __builtin_ia32_maskstoreq256(void*, long4, long4);
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.mpsadbw")
+short16 __builtin_ia32_mpsadbw256(byte32, byte32, byte) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.packssdw")
+short16 __builtin_ia32_packssdw256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.packsswb")
+byte32 __builtin_ia32_packsswb256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.packusdw")
+short16 __builtin_ia32_packusdw256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.packuswb")
+byte32 __builtin_ia32_packuswb256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pavg.b")
+byte32 __builtin_ia32_pavgb256(byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pavg.w")
+short16 __builtin_ia32_pavgw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pblendvb")
+byte32 __builtin_ia32_pblendvb256(byte32, byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.permd")
+int8 __builtin_ia32_permvarsi256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.permps")
+float8 __builtin_ia32_permvarsf256(float8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phadd.d")
+int8 __builtin_ia32_phaddd256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phadd.sw")
+short16 __builtin_ia32_phaddsw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phadd.w")
+short16 __builtin_ia32_phaddw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phsub.d")
+int8 __builtin_ia32_phsubd256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phsub.sw")
+short16 __builtin_ia32_phsubsw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.phsub.w")
+short16 __builtin_ia32_phsubw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmadd.ub.sw")
+short16 __builtin_ia32_pmaddubsw256(byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmadd.wd")
+int8 __builtin_ia32_pmaddwd256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmovmskb")
+int __builtin_ia32_pmovmskb256(byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmul.hr.sw")
+short16 __builtin_ia32_pmulhrsw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmulh.w")
+short16 __builtin_ia32_pmulhw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pmulhu.w")
+short16 __builtin_ia32_pmulhuw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psad.bw")
+long4 __builtin_ia32_psadbw256(byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pshuf.b")
+byte32 __builtin_ia32_pshufb256(byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psign.b")
+byte32 __builtin_ia32_psignb256(byte32, byte32) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psign.d")
+int8 __builtin_ia32_psignd256(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psign.w")
+short16 __builtin_ia32_psignw256(short16, short16) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psll.d")
+int8 __builtin_ia32_pslld256(int8, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psll.q")
+long4 __builtin_ia32_psllq256(long4, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psll.w")
+short16 __builtin_ia32_psllw256(short16, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pslli.d")
+int8 __builtin_ia32_pslldi256(int8, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pslli.q")
+long4 __builtin_ia32_psllqi256(long4, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.pslli.w")
+short16 __builtin_ia32_psllwi256(short16, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psllv.d")
+int4 __builtin_ia32_psllv4si(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psllv.d.256")
+int8 __builtin_ia32_psllv8si(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psllv.q")
+long2 __builtin_ia32_psllv2di(long2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psllv.q.256")
+long4 __builtin_ia32_psllv4di(long4, long4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psra.d")
+int8 __builtin_ia32_psrad256(int8, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psra.w")
+short16 __builtin_ia32_psraw256(short16, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrai.d")
+int8 __builtin_ia32_psradi256(int8, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrai.w")
+short16 __builtin_ia32_psrawi256(short16, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrav.d")
+int4 __builtin_ia32_psrav4si(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrav.d.256")
+int8 __builtin_ia32_psrav8si(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrl.d")
+int8 __builtin_ia32_psrld256(int8, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrl.q")
+long4 __builtin_ia32_psrlq256(long4, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrl.w")
+short16 __builtin_ia32_psrlw256(short16, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrli.d")
+int8 __builtin_ia32_psrldi256(int8, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrli.q")
+long4 __builtin_ia32_psrlqi256(long4, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrli.w")
+short16 __builtin_ia32_psrlwi256(short16, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrlv.d")
+int4 __builtin_ia32_psrlv4si(int4, int4) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrlv.d.256")
+int8 __builtin_ia32_psrlv8si(int8, int8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrlv.q")
+long2 __builtin_ia32_psrlv2di(long2, long2) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.avx2.psrlv.q.256")
+long4 __builtin_ia32_psrlv4di(long4, long4) pure @safe;
+
++/
