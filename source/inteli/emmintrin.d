@@ -4378,6 +4378,7 @@ unittest
 /// Shift packed 64-bit integers in `a` right by `imm8` while shifting in zeros.
 __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_psrlqi128(cast(long2)a, cast(ubyte)imm8);

@@ -4303,15 +4303,13 @@ int _mm_testnzc_pd (__m128d a, __m128d b) pure @safe
         //   "There is a pair of matching negative numbers in a and b, 
         //   AND also there is a negative number in b, that is matching a positive number in a"
         // Phew.
-        long2 la = cast(long2)a;
-        long2 lb = cast(long2)b;
-        long2 r = la & lb;
-        long m = r.array[0] | r.array[1];
-        int ZF = (~m >> 63) & 1;
-        long2 r2 = ~la & lb;
-        long m2 = r2.array[0] | r2.array[1];
-        int CF = (~m2 >> 63) & 1;
-        return (CF | ZF) == 0;
+
+        // courtesy of simd-everywhere
+        __m128i m = _mm_and_si128(cast(__m128i)a, cast(__m128i)b);
+        __m128i m2 = _mm_andnot_si128(cast(__m128i)a, cast(__m128i)b);
+        m = _mm_srli_epi64(m, 63);
+        m2 = _mm_srli_epi64(m2, 63);
+        return cast(int)( m.array[0] | m.array[2]) & (m2.array[0] | m2.array[2]);
     }
 }
 unittest
