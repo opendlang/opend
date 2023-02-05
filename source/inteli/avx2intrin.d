@@ -24,6 +24,13 @@ public import inteli.avxintrin;
 
 nothrow @nogc:
 
+// TODO __m256i _mm256_abs_epi16 (__m256i a) pure @safe
+// TODO __m256i _mm256_abs_epi32 (__m256i a) pure @safe
+// TODO __m256i _mm256_abs_epi8 (__m256i a) pure @safe
+
+
+// TODO __m256i _mm256_add_epi16 (__m256i a, __m256i b) pure @safe
+
 /// Add packed 32-bit integers in `a` and `b`.
 __m256i _mm256_add_epi32(__m256i a, __m256i b) pure @safe
 {
@@ -37,6 +44,14 @@ unittest
     int[8] correct = [ -14, -2, 0, 18, -200, 200, 468, 864 ];
     assert(R.array == correct);
 }
+
+// TODO __m256i _mm256_add_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_add_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_and_si256 (__m256i a, __m256i b) pure @safe
@@ -52,6 +67,44 @@ unittest
     int[8] correct = [6, 6, 6, 6, 6, 6, 6, 6];
     assert(R.array == correct);
 }
+
+// TODO __m256i _mm256_andnot_si256 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_avg_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_avg_epu8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8) pure @safe
+// TODO __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8) pure @safe
+// TODO __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8) pure @safe
+// TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
+// TODO __m128i _mm_broadcastb_epi8 (__m128i a) pure @safe
+// TODO __m256i _mm256_broadcastb_epi8 (__m128i a) pure @safe
+// TODO __m128i _mm_broadcastd_epi32 (__m128i a) pure @safe
+// TODO __m256i _mm256_broadcastd_epi32 (__m128i a) pure @safe
+// TODO __m128i _mm_broadcastq_epi64 (__m128i a) pure @safe
+// TODO __m256i _mm256_broadcastq_epi64 (__m128i a) pure @safe
+// TODO __m128d _mm_broadcastsd_pd (__m128d a) pure @safe
+// TODO __m256d _mm256_broadcastsd_pd (__m128d a) pure @safe
+// TODO __m256i _mm_broadcastsi128_si256 (__m128i a) pure @safe
+// TODO __m256i _mm256_broadcastsi128_si256 (__m128i a) pure @safe
+// TODO __m128 _mm_broadcastss_ps (__m128 a) pure @safe
+// TODO __m256 _mm256_broadcastss_ps (__m128 a) pure @safe
+// TODO __m128i _mm_broadcastw_epi16 (__m128i a) pure @safe
+// TODO __m256i _mm256_broadcastw_epi16 (__m128i a) pure @safe
+// TODO __m256i _mm256_bslli_epi128 (__m256i a, const int imm8) pure @safe
+// TODO __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8) pure @safe
+// TODO __m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpgt_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_cvtepi16_epi32 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepi16_epi64 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepi32_epi64 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepi8_epi16 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepi8_epi32 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @safe
 
 /// Zero-extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
 __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
@@ -83,6 +136,14 @@ unittest
     int[8] correct = [65535, 0, 32768, 32767, 65535, 0, 32768, 32767];
     assert(C.array == correct);
 }
+
+// TODO __m256i _mm256_cvtepu16_epi64 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepu32_epi64 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @safe
+// TODO __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @safe
+// TODO int _mm256_extract_epi16 (__m256i a, const int index) pure @safe
+// TODO int _mm256_extract_epi8 (__m256i a, const int index) pure @safe
 
 /// Extract 128 bits (composed of integer data) from `a`, selected with `imm8`.
 __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
@@ -121,6 +182,46 @@ unittest
     assert(R1.array == correct1);
 }
 
+// TODO __m256i _mm256_hadd_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_hadd_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_hadds_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_hsub_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_hsub_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_hsubs_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale) pure @safe
+// TODO __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i vindex, __m256i mask, const int scale) pure @safe
+// TODO __m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale) pure @safe
+// TODO __m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale) pure @safe
+// TODO __m128d _mm_i32gather_pd (double const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128d _mm_mask_i32gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale) pure @safe
+// TODO __m256d _mm256_i32gather_pd (double const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m256d _mm256_mask_i32gather_pd (__m256d src, double const* base_addr, __m128i vindex, __m256d mask, const int scale) pure @safe
+// TODO __m128 _mm_i32gather_ps (float const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128 _mm_mask_i32gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale) pure @safe
+// TODO __m256 _mm256_i32gather_ps (float const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m256 _mm256_mask_i32gather_ps (__m256 src, float const* base_addr, __m256i vindex, __m256 mask, const int scale) pure @safe
+// TODO __m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128i _mm_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale) pure @safe
+// TODO __m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale) pure @safe
+// TODO __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale) pure @safe
+// TODO __m256i _mm256_i64gather_epi64 (__int64 const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale) pure @safe
+// TODO __m128d _mm_i64gather_pd (double const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128d _mm_mask_i64gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale) pure @safe
+// TODO __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m256d _mm256_mask_i64gather_pd (__m256d src, double const* base_addr, __m256i vindex, __m256d mask, const int scale) pure @safe
+// TODO __m128 _mm_i64gather_ps (float const* base_addr, __m128i vindex, const int scale) pure @safe
+// TODO __m128 _mm_mask_i64gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale) pure @safe
+// TODO __m128 _mm256_i64gather_ps (float const* base_addr, __m256i vindex, const int scale) pure @safe
+// TODO __m128 _mm256_mask_i64gather_ps (__m128 src, float const* base_addr, __m256i vindex, __m128 mask, const int scale) pure @safe
+// TODO __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8) pure @safe
+
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
 /// and pack the results in destination.
@@ -155,6 +256,33 @@ unittest
     assert(R.array == correct);
 }
 
+// TODO __m256i _mm256_maddubs_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask) pure @safe
+// TODO __m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask) pure @safe
+// TODO __m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask) pure @safe
+// TODO __m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask) pure @safe
+// TODO __m256i _mm256_max_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_max_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_max_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_max_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_max_epu32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_max_epu8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epu32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_min_epu8 (__m256i a, __m256i b) pure @safe
+// TODO int _mm256_movemask_epi8 (__m256i a) pure @safe
+// TODO __m256i _mm256_mpsadbw_epu8 (__m256i a, __m256i b, const int imm8) pure @safe
+// TODO __m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mul_epu32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mulhi_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mulhi_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mulhrs_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mullo_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_mullo_epi32 (__m256i a, __m256i b) pure @safe
+
 /// Compute the bitwise OR of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
 {
@@ -170,6 +298,17 @@ unittest
     long[4] correct = [B, A, -1, -1];
     assert(R.array == correct);
 }
+
+// TODO __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_packs_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_packs_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_packus_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_packus_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8) pure @safe
+// TODO __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8) pure @safe
+// TODO __m256d _mm256_permute4x64_pd (__m256d a, const int imm8) pure @safe
+// TODO __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx) pure @safe
+// TODO __m256 _mm256_permutevar8x32_ps (__m256 a, __m256i idx) pure @safe
 
 /// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each
 /// consecutive 8 differences to produce two unsigned 16-bit integers, and pack these unsigned 16-bit integers in the
@@ -220,6 +359,18 @@ unittest
                       0];
     assert(R.array == correct);
 }
+
+
+// TODO __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8) pure @safe
+// TODO __m256i _mm256_shuffle_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_shufflehi_epi16 (__m256i a, const int imm8) pure @safe
+// TODO __m256i _mm256_shufflelo_epi16 (__m256i a, const int imm8) pure @safe
+// TODO __m256i _mm256_sign_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sign_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sign_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sll_epi16 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_sll_epi32 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_sll_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
 __m256i _mm256_slli_epi16(__m256i a, int imm8) pure @trusted
@@ -305,6 +456,22 @@ unittest
     int[8] expectedD = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
     assert(D.array == expectedD);
 }
+
+// TODO __m256i _mm256_slli_epi64 (__m256i a, int imm8) pure @safe
+// TODO __m256i _mm256_slli_si256 (__m256i a, const int imm8) pure @safe
+// TODO __m128i _mm_sllv_epi32 (__m128i a, __m128i count) pure @safe
+// TODO __m256i _mm256_sllv_epi32 (__m256i a, __m256i count) pure @safe
+// TODO __m128i _mm_sllv_epi64 (__m128i a, __m128i count) pure @safe
+// TODO __m256i _mm256_sllv_epi64 (__m256i a, __m256i count) pure @safe
+// TODO __m256i _mm256_sra_epi16 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_sra_epi32 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srai_epi16 (__m256i a, int imm8) pure @safe
+// TODO __m256i _mm256_srai_epi32 (__m256i a, int imm8) pure @safe
+// TODO __m128i _mm_srav_epi32 (__m128i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srav_epi32 (__m256i a, __m256i count) pure @safe
+// TODO __m256i _mm256_srl_epi16 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srl_epi32 (__m256i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srl_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
 __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
@@ -397,10 +564,33 @@ unittest
     assert(C.array == expectedC);
 }
 
+// TODO __m256i _mm256_srli_epi64 (__m256i a, int imm8) pure @safe
+// TODO __m256i _mm256_srli_si256 (__m256i a, const int imm8) pure @safe
+// TODO __m128i _mm_srlv_epi32 (__m128i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srlv_epi32 (__m256i a, __m256i count) pure @safe
+// TODO __m128i _mm_srlv_epi64 (__m128i a, __m128i count) pure @safe
+// TODO __m256i _mm256_srlv_epi64 (__m256i a, __m256i count) pure @safe
+// TODO __m256i _mm256_stream_load_si256 (__m256i const* mem_addr) pure @safe
+// TODO __m256i _mm256_sub_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sub_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sub_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_sub_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_subs_epu8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpackhi_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpackhi_epi8 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpacklo_epi16 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b) pure @safe
+// TODO __m256i _mm256_unpacklo_epi8 (__m256i a, __m256i b) pure @safe
+
 /// Compute the bitwise XOR of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_xor_si256 (__m256i a, __m256i b) pure @safe
 {
     return a ^ b;
 }
 // TODO unittest and thus force inline
-
