@@ -4336,7 +4336,6 @@ unittest
 int _mm256_testnzc_pd (__m256d a, __m256d b) pure @safe
 {
     // PERF DMD
-    // PERF ARM64
     static if (GDC_or_LDC_with_AVX)
     {
         return __builtin_ia32_vtestnzcpd256(a, b);
