@@ -26,7 +26,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 
 ## Changelog
 
-- **v2.x.y** QOIX bitstream changed. Ways to disown and deallocate image allocation pointer.
+- **v2.x.y** QOIX bitstream changed. Ways to disown and deallocate image allocation pointer. It's safe to update to latest tag in the same major version. Do keep a 16-bit source in case the bitstream changes.
 - **v1.x.y** Initial release.
 
 ## Why QOIX?
