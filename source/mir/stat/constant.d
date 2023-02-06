@@ -15,10 +15,14 @@ import mir.math.common: log, sqrt;
 import mir.math.constant: PI;
 
 ///
-enum real LOGPI = log(PI);
+enum real LOGPI =      0x1.250d048e7a1bd0bd5f956c6a843f4p+0L;  // log(pi)
 ///
-enum real LOGSQRT2PI = 0.91893853320467274178032973640561764L; // log(sqrt(2pi))
+enum real LOGSQRT2PI = 0x0.eb3f8e4325f5a53494bc900144192p+0L;  // log(sqrt(2pi))
 ///
-enum real SQRTPI = sqrt(PI);
+enum real SQRTPI =     0x1.c5bf891b4ef6aa79c3b0520d5db93p+0L; // sqrt(PI);
 ///
-enum real SQRTPIINV = 1 / SQRTPI;
+enum real SQRTPIINV =  0x0.906eba8214db688d71d48a7f6bfec3p+0L; // 1/sqrt(pi)
+
+
+
+                       
