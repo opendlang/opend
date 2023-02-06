@@ -1,8 +1,8 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution).
 
-An alternate parameterization of the Beta distribution in terms of the mean of
-the distribution and the sum of its shape parameters (also known as the sample
+An alternate parameterization of the $(MREF mir,stat,distribution,beta) distribuion in terms of 
+the mean of the distribution and the sum of its shape parameters (also known as the sample
 size of the Beta distribution). 
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
