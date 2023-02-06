@@ -30,7 +30,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialPDF)
+    $(DISTREF beta, betaPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionPDF(T)(const T x, const T mu, const T kappa)
@@ -69,7 +69,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialCDF)
+    $(DISTREF beta, betaCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCDF(T)(const T x, const T mu, const T kappa)
@@ -108,7 +108,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialCDF)
+    $(DISTREF beta, betaCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCCDF(T)(const T x, const T mu, const T kappa)
@@ -147,7 +147,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialInvCDF)
+    $(DISTREF beta, betaInvCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionInvCDF(T)(const T p, const T mu, const T kappa)
@@ -186,7 +186,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialLPDF)
+    $(DISTREF beta, betaLPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionLPDF(T)(const T x, const T mu, const T kappa)
