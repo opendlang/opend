@@ -6,6 +6,7 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
+    $(TR $(TDNW $(MREF mir,stat,constant)) $(TD Constants used in other statistical modules ))
     $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive Statistics ))
     $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
     $(TR $(TDNW $(MREF mir,stat,inference)) $(TD Probability Density/Mass Functions ))
@@ -54,6 +55,8 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat;
 
+///
+public import mir.stat.constant;
 ///
 public import mir.stat.descriptive;
 ///

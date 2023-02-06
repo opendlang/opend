@@ -12,10 +12,6 @@ Copyright: 2023 Mir Stat Authors.
 module mir.stat.distribution.cauchy;
 
 import mir.internal.utility: isFloatingPoint;
-import mir.math.common: log;
-import mir.math.constant: PI;
-
-private enum real LOGPI = log(PI);
 
 /++
 Computes the Cauchy probability density function (PDF).
@@ -274,6 +270,9 @@ See_also:
 T cauchyLPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
+    import mir.math.common: log;
+    import mir.stat.constant: LOGPI;
+
     return -T(LOGPI) - log(1 + x * x);
 }
 
