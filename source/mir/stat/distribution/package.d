@@ -17,7 +17,7 @@ Each individual distribution module contains - where feasible - functions for:
 - Log probaiity density/mass functions (e.g. `mir.stat.distribution.*LPDF`/`mir.stat.distribution.*LPMF`)
 
 In addition, convenience modules are provided ($(MREF mir,stat,distribution,pdf), 
-$(MREF mir,stat,distribution,cdf), $(MREF mir,stat,distribution,pdf)) that publicly
+$(MREF mir,stat,distribution,cdf), $(MREF mir,stat,distribution,invcdf)) that publicly
 import only the respective functions from each individual distribution module 
 (note: the pdf module also contains pmfs). 
 
