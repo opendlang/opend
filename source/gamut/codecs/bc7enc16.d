@@ -2,6 +2,9 @@
 /// D translation of bc7enc16 d3b037f33b8c6df184177a0ae6a0f4cfec1434ad
 module gamut.codecs.bc7enc16;
 
+version(encodeDDS):
+
+
 import core.stdc.string: memset, memcpy;
 import std.math: abs, sqrt, floor;
 import gamut.internals.mutex;

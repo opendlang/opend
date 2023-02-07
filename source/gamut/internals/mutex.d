@@ -7,6 +7,9 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.internals.mutex;
 
+version(encodeDDS) version = needsMutex;
+version(needsMutex):
+
 import core.atomic;
 import core.stdc.stdlib : malloc, free;
 import core.lifetime : emplace;
