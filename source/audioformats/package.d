@@ -15,7 +15,7 @@ public import audioformats.stream;
 public import audioformats.internals: AudioFormatsException;
 
 /// Frees an exception thrown by audio-formats.
-void destroyAudioFormatException(AudioFormatsException e)
+void destroyAudioFormatException(AudioFormatsException e) nothrow @nogc
 {
     import audioformats.internals;
     destroyFree!AudioFormatsException(e);
