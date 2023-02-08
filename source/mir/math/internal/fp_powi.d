@@ -11,6 +11,7 @@ module mir.math.internal.fp_powi;
 
 import mir.bignum.fp: Fp;
 
+///
 package(mir)
 T fp_powi(T)(const T x, size_t i)
     if (is(T == Fp!size, size_t size))

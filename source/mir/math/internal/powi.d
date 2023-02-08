@@ -12,6 +12,7 @@ module mir.math.internal.powi;
 import mir.internal.utility: isFloatingPoint;
 import std.traits: isSigned, isUnsigned, Unqual;
 
+///
 package(mir)
 Unqual!T powi(T, U)(T x, U i)
     if (isFloatingPoint!(Unqual!(T)) && isSigned!(Unqual!(U)))
@@ -20,6 +21,7 @@ Unqual!T powi(T, U)(T x, U i)
     return powi(cast(Unqual!(T)) x, cast(Unqual!(U)) i);
 }
 
+///
 package(mir)
 double powi(T, U)(T x, U i)
     if (!isFloatingPoint!(Unqual!(T)) && is(Unqual!(T) : double) && isSigned!(Unqual!(U)))
@@ -28,6 +30,7 @@ double powi(T, U)(T x, U i)
     return powi(cast(double) x, cast(Unqual!(U)) i);
 }
 
+///
 package(mir)
 Unqual!T powi(T, U)(T x, U i)
     if (isFloatingPoint!(Unqual!(T)) && isUnsigned!(Unqual!(U)))
@@ -37,6 +40,7 @@ Unqual!T powi(T, U)(T x, U i)
     return powi(cast(Unqual!(T)) x, cast(int) i);
 }
 
+///
 package(mir)
 double powi(T, U)(T x, U i)
     if (!isFloatingPoint!(Unqual!(T)) && is(Unqual!(T) : double) && isUnsigned!(Unqual!(U)))
@@ -46,6 +50,7 @@ double powi(T, U)(T x, U i)
     return powi(cast(double) x, cast(int) i);
 }
 
+///
 package(mir)
 Unqual!T powi(T)(T x, size_t i)
     if (!isFloatingPoint!(Unqual!(T)) && !is(Unqual!(T) : double))
@@ -63,7 +68,7 @@ Unqual!T powi(T)(T x, size_t i)
     }
 }
 
-version(mir_stat_test_mircomplex)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {

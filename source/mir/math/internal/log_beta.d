@@ -11,6 +11,7 @@ module mir.math.internal.log_beta;
 
 import mir.internal.utility: isFloatingPoint;
 
+///
 package(mir)
 @safe pure nothrow @nogc
 T logBeta(T)(const T alpha, const T beta)

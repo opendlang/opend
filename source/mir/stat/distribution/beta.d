@@ -1,6 +1,8 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Distribution).
 
+An alternate parameterization of this distribution is provided in $(MREF mir,stat,distribution,beta_proportion).
+
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall

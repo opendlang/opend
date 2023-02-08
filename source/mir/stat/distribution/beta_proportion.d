@@ -1,8 +1,8 @@
 /++
 This module contains algorithms for the $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution).
 
-An alternate parameterization of the Beta distribution in terms of the mean of
-the distribution and the sum of its shape parameters (also known as the sample
+An alternate parameterization of the $(MREF mir,stat,distribution,beta) distribuion in terms of 
+the mean of the distribution and the sum of its shape parameters (also known as the sample
 size of the Beta distribution). 
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
@@ -30,7 +30,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialPDF)
+    $(DISTREF beta, betaPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionPDF(T)(const T x, const T mu, const T kappa)
@@ -69,7 +69,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialCDF)
+    $(DISTREF beta, betaCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCDF(T)(const T x, const T mu, const T kappa)
@@ -108,7 +108,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialCDF)
+    $(DISTREF beta, betaCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionCCDF(T)(const T x, const T mu, const T kappa)
@@ -147,7 +147,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialInvCDF)
+    $(DISTREF beta, betaInvCDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionInvCDF(T)(const T p, const T mu, const T kappa)
@@ -186,7 +186,7 @@ Params:
 
 See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Beta Proportion Distribution),
-    $(DISTREF beta, binomialLPDF)
+    $(DISTREF beta, betaLPDF)
 +/
 @safe pure nothrow @nogc
 T betaProportionLPDF(T)(const T x, const T mu, const T kappa)

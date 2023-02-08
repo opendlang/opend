@@ -79,9 +79,6 @@ unittest {
     assert(normalCCDF(-double.infinity).approxEqual(1 - normalCDF(-double.infinity)));
 }
 
-///
-enum real LOGSQRT2PI = 0.91893853320467274178032973640561764L; // log(sqrt(2pi))
-
 /++
 Computes the normal log probability density function (LPDF)
 
@@ -107,6 +104,7 @@ T normalLPDF(T)(const T x)
     if (isFloatingPoint!T)
 {
     import mir.math.common: pow;
+    import mir.stat.constant: LOGSQRT2PI;
 
     return -0.5 * pow(x, 2) - T(LOGSQRT2PI);
 }

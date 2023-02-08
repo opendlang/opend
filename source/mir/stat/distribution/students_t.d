@@ -13,12 +13,6 @@ module mir.stat.distribution.students_t;
 
 import mir.internal.utility: isFloatingPoint;
 
-import mir.math.constant: PI;
-import mir.math.common: sqrt;
-
-enum real SQRTPI = sqrt(PI);
-enum real SQRTPIINV = 1 / SQRTPI;
-
 /++
 Computes the Student's t probability density function (PDF).
 
@@ -35,11 +29,12 @@ T studentsTPDF(T)(const T x, const T nu)
     in (nu > 0, "nu must be greater than zero")
 {
     import mir.math.common: pow, sqrt;
+    import mir.stat.constant: M_SQRTPI;
     import mir.stat.distribution.normal: normalPDF;
     import std.mathspecial: gamma;
 
     if (nu != T.infinity) {
-        return (gamma((nu + 1) * 0.5) / gamma(nu * 0.5)) / sqrt(nu) * T(SQRTPIINV) * pow(1 + (x * x) / nu, -(nu + 1) * 0.5);
+        return (gamma((nu + 1) * 0.5) / gamma(nu * 0.5)) / sqrt(nu) * T(M_SQRTPI) * pow(1 + (x * x) / nu, -(nu + 1) * 0.5);
     } else {
         return normalPDF(x);
     }
@@ -491,11 +486,13 @@ T studentsTLPDF(T)(const T x, const T nu)
     in (nu > 0, "nu must be greater than zero")
 {
     import mir.math.common: log;
+    import mir.stat.constant: LOGPI;
     import mir.stat.distribution.normal: normalLPDF;
+    import std.math.exponential: log1p;
     import std.mathspecial: logGamma;
 
     if (nu != T.infinity) {
-        return logGamma((nu + 1) * 0.5) - logGamma(nu * 0.5) - 0.5 * log(nu * T(PI)) - 0.5 * (nu + 1) * log(1 + (x * x) / nu);
+        return logGamma((nu + 1) * 0.5) - logGamma(nu * 0.5) - 0.5 * (log(nu) + T(LOGPI) + (nu + 1) * log1p((x * x) / nu));
     } else {
         return normalLPDF(x);
     }

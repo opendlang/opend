@@ -28,6 +28,7 @@ T xlog(T)(const T x)
     return x ? x * log(x) : 0;
 }
 
+///
 package(mir)
 @safe pure nothrow @nogc
 T xlogy(T)(const T x, const T y)
@@ -51,6 +52,7 @@ unittest
     assert(xlogy(0.5, 4).approxEqual(0.5 * log(4.0)));
 }
 
+///
 package(mir)
 @safe pure nothrow @nogc
 T xlog1py(T)(const T x, const T y)

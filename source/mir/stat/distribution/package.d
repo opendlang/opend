@@ -17,7 +17,7 @@ Each individual distribution module contains - where feasible - functions for:
 - Log probaiity density/mass functions (e.g. `mir.stat.distribution.*LPDF`/`mir.stat.distribution.*LPMF`)
 
 In addition, convenience modules are provided ($(MREF mir,stat,distribution,pdf), 
-$(MREF mir,stat,distribution,cdf), $(MREF mir,stat,distribution,pdf)) that publicly
+$(MREF mir,stat,distribution,cdf), $(MREF mir,stat,distribution,invcdf)) that publicly
 import only the respective functions from each individual distribution module 
 (note: the pdf module also contains pmfs). 
 
@@ -43,6 +43,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,geometric)) $(TD Geometric Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,hypergeometric)) $(TD Hypergeometric Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,negative_binomial)) $(TD Negative Binomial Distribution ))
+    $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform_discrete)) $(TD Discrete Uniform Distribution ))
     $(LEADINGROW Univariate Continuous Distributions)
     $(TR $(TDNW $(MREF mir,stat,distribution,beta)) $(TD Beta Distribution ))
@@ -60,7 +61,6 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat,distribution,logistic)) $(TD Logistic Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,normal)) $(TD Normal Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,pareto)) $(TD Pareto Distribution ))
-    $(TR $(TDNW $(MREF mir,stat,distribution,poisson)) $(TD Poisson Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,rayleigh)) $(TD Rayleigh Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,students_t)) $(TD Student's t Distribution ))
     $(TR $(TDNW $(MREF mir,stat,distribution,uniform)) $(TD Continuous Uniform Distribution ))
