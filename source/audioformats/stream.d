@@ -637,7 +637,7 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
     ///          When that number is less than `frames`, it means the stream had a write error.
-    int writeSamplesFloat(float* inData, int frames) nothrow @nogc
+    int writeSamplesFloat(const(float)* inData, int frames) nothrow @nogc
     {
         assert(_io && _io.write !is null);
 
@@ -667,7 +667,7 @@ public: // This is also part of the public API
         }
     }
     ///ditto
-    int writeSamplesFloat(float[] inData) nothrow @nogc
+    int writeSamplesFloat(const(float)[] inData) nothrow @nogc
     {
         assert( (inData.length % _numChannels) == 0);
         return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
@@ -687,11 +687,11 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
     ///          When that number is less than `frames`, it means the stream had a write error.
-    int writeSamplesDouble(double* inData, int frames) nothrow @nogc
+    int writeSamplesDouble(const(double)* inData, int frames) nothrow @nogc
     {
-        assert(_io && _io.write !is null);
+        assert (_io && _io.write !is null);
 
-        switch(_format)
+        switch (_format)
         {
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there
@@ -721,7 +721,7 @@ public: // This is also part of the public API
         }
     }
     ///ditto
-    int writeSamplesDouble(double[] inData) nothrow @nogc
+    int writeSamplesDouble(const(double)[] inData) nothrow @nogc
     {
         assert( (inData.length % _numChannels) == 0);
         return writeSamplesDouble(inData.ptr, cast(int)(inData.length / _numChannels));
@@ -1104,6 +1104,16 @@ public: // This is also part of the public API
 
         finalizeEncodingIfNeeded(); 
         return memoryContext.buffer[0..memoryContext.size];
+    }
+
+    // Finalize encoding and get internal buffer, which is disowned by the `AudioStream`.
+    // The caller has to call `freeEncodedAudio` manually.
+    // This can be exactly one time, if a growable owned buffer was used.
+    const(ubyte)[] finalizeAndGetEncodedResultDisown() @nogc
+    {
+        const(ubyte)[] buf = finalizeAndGetEncodedResult();
+        memoryContext.disownBuffer();
+        return buf;
     }
 
 private:
@@ -1727,6 +1737,14 @@ struct MemoryContext
         size = 0;
         cursor = 0;
         capacity = 0;
+    }
+
+    // caller guarantees the buffer will be freed with `free`.
+    void disownBuffer() nothrow @nogc
+    {
+        assert(bufferIsOwned);
+        bufferIsOwned = false;
+        bufferCanGrow = false;
     }
 
     ~this()
