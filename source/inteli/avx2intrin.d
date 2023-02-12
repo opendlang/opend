@@ -233,7 +233,6 @@ unittest
 // TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`.
-// TODO verify
 __m256i _mm256_and_si256 (__m256i a, __m256i b) pure @safe
 {
     pragma(inline, true);
@@ -482,7 +481,6 @@ unittest
 // TODO __m256i _mm256_mullo_epi32 (__m256i a, __m256i b) pure @safe
 
 /// Compute the bitwise OR of 256 bits (representing integer data) in `a` and `b`.
-// TODO verify
 __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
 {
     return a | b;
@@ -498,7 +496,6 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_or_si256 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_packs_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_packs_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_packus_epi16 (__m256i a, __m256i b) pure @safe
