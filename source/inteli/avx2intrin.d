@@ -248,7 +248,22 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_andnot_si256 (__m256i a, __m256i b) pure @safe
+/// Compute the bitwise NOT of 256 bits (representing integer data) in `a` and then AND with `b`.
+__m256i _mm256_andnot_si256 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return (~a) & b;
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(7, -2, 9, 54654, 7, -2, 9, 54654);
+    __m256i B = _mm256_setr_epi32(14, 78, 111, -256, 14, 78, 111, -256);
+    int8 R = cast(int8) _mm256_andnot_si256(A, B);
+    int[8] correct = [8, 0, 102, -54784, 8, 0, 102, -54784];
+    assert(R.array == correct);
+}
+
+
 // TODO __m256i _mm256_avg_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_avg_epu8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8) pure @safe
