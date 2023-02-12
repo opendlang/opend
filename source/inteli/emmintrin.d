@@ -142,27 +142,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PADDSW since LDC 1.15 -O0
-            // ARM: Generates sqadd.8h since LDC 1.21 -O1, really bad in <= 1.20            
-            enum prefix = `declare <8 x i16> @llvm.sadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
-            enum ir = `
-                %r = call <8 x i16> @llvm.sadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
-                ret <8 x i16> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            short[8] res; // PERF =void;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else
-            return cast(__m128i) __builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
+        return cast(__m128i) inteli_llvm_adds!short8(cast(short8)a, cast(short8)b);
     }
     else
     {
@@ -195,27 +175,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PADDSB since LDC 1.15 -O0
-            // ARM: Generates sqadd.16b since LDC 1.21 -O1, really bad in <= 1.20
-            enum prefix = `declare <16 x i8> @llvm.sadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
-            enum ir = `
-                %r = call <16 x i8> @llvm.sadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
-                ret <16 x i8> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            byte[16] res; // PERF =void;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else
-            return cast(__m128i) __builtin_ia32_paddsb128(cast(byte16)a, cast(byte16)b);
+        return cast(__m128i) inteli_llvm_adds!byte16(cast(byte16)a, cast(byte16)b);
     }
     else
     {
@@ -249,27 +209,7 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PADDUSB since LDC 1.15 -O0
-            // ARM: Generates uqadd.16b since LDC 1.21 -O1
-            enum prefix = `declare <16 x i8> @llvm.uadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
-            enum ir = `
-                %r = call <16 x i8> @llvm.uadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
-                ret <16 x i8> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            ubyte[16] res; // PERF =void;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) + cast(ubyte)(sb.array[i]));
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else
-            return __builtin_ia32_paddusb128(a, b);
+        return cast(__m128i) inteli_llvm_addus!byte16(cast(byte16)a, cast(byte16)b);
     }
     else
     {
@@ -305,27 +245,7 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PADDUSW since LDC 1.15 -O0
-            // ARM: Generates uqadd.8h since LDC 1.21 -O1
-            enum prefix = `declare <8 x i16> @llvm.uadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
-            enum ir = `
-                %r = call <8 x i16> @llvm.uadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
-                ret <8 x i16> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            ushort[8] res; // PERF =void;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                res[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]));
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else
-            return __builtin_ia32_paddusw128(a, b);
+        return cast(__m128i) inteli_llvm_addus!short8(cast(short8)a, cast(short8)b);
     }
     else
     {
@@ -4944,38 +4864,14 @@ unittest
     assert(C.array[0] == 489415 + 1214);
 }
 
-/// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
+/// Subtract packed signed 16-bit integers in `b` from packed 16-bit integers in `a` using
+/// saturation.
 __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
 {
+    // PERF DMD psubsw
     version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // Generates PSUBSW since LDC 1.15 -O0
-            /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-            
-            enum prefix = `declare <8 x i16> @llvm.ssub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
-            enum ir = `
-                %r = call <8 x i16> @llvm.ssub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
-                ret <8 x i16> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
-            short[8] res; // PERF: =void;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else static if (LDC_with_SSE2)
-        {
-            return cast(__m128i) __builtin_ia32_psubsw128(cast(short8) a, cast(short8) b);
-        }
-        else
-            static assert(false);
+        return cast(__m128i) inteli_llvm_subs!short8(cast(short8)a, cast(short8)b);
     }
     else static if (GDC_with_SSE2)
     {
@@ -4999,36 +4895,13 @@ unittest
     assert(res.array == correctResult);
 }
 
-/// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
+/// Subtract packed signed 8-bit integers in `b` from packed 8-bit integers in `a` using
+/// saturation.
 __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PSUBSB since LDC 1.15 -O0
-            // ARM: Generates sqsub.16b since LDC 1.21 -O0
-            enum prefix = `declare <16 x i8> @llvm.ssub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
-            enum ir = `
-                %r = call <16 x i8> @llvm.ssub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
-                ret <16 x i8> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            byte[16] res; // PERF =void;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else static if (LDC_with_SSE2)
-        {
-            return cast(__m128i) __builtin_ia32_psubsb128(cast(byte16) a, cast(byte16) b);
-        }
-        else
-            static assert(false);
+        return cast(__m128i) inteli_llvm_subs!byte16(cast(byte16)a, cast(byte16)b);
     }
     else static if (GDC_with_SSE2)
     {
@@ -5052,39 +4925,12 @@ unittest
     assert(res.array == correctResult);
 }
 
-/// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
+/// Subtract packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PSUBUSW since LDC 1.15 -O0
-            // ARM: Generates uqsub.8h since LDC 1.21 -O0
-            enum prefix = `declare <8 x i16> @llvm.usub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
-            enum ir = `
-                %r = call <8 x i16> @llvm.usub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
-                ret <8 x i16> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation 
-        {
-            short[8] res; // PERF =void;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-            {
-                int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
-                res[i] = saturateSignedIntToUnsignedShort(sum);
-            }
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
-        else static if (LDC_with_SSE2)
-        {
-            return cast(__m128i) __builtin_ia32_psubusw128(a, b);
-        }
-        else 
-            static assert(false);
+        return cast(__m128i) inteli_llvm_subus!short8(cast(short8)a, cast(short8)b);
     }
     else static if (GDC_with_SSE2)
     {
@@ -5111,40 +4957,12 @@ unittest
     assert(R.array == correct);
 }
 
-/// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+/// Subtract packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
     {
-        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
-        {
-            // x86: Generates PSUBUSB since LDC 1.15 -O0
-            // ARM: Generates uqsub.16b since LDC 1.21 -O0
-            enum prefix = `declare <16 x i8> @llvm.usub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
-            enum ir = `
-                %r = call <16 x i8> @llvm.usub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
-                ret <16 x i8> %r`;
-            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
-        }
-        else static if (LDC_with_ARM) // Raspberry ships with LDC 1.12, no saturation
-        {
-            /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
-            __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
-            {
-                ubyte[16] res; // PERF =void;
-                byte16 sa = cast(byte16)a;
-                byte16 sb = cast(byte16)b;
-                foreach(i; 0..16)
-                    res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
-                return _mm_loadu_si128(cast(int4*)res.ptr);
-            }
-        }
-        else static if (LDC_with_SSE2)
-        {
-            return __builtin_ia32_psubusb128(a, b);
-        }
-        else 
-            static assert(false);
+        return cast(__m128i) inteli_llvm_subus!byte16(cast(byte16)a, cast(byte16)b);
     }
     else static if (GDC_with_SSE2)
     {

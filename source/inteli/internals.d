@@ -1309,6 +1309,18 @@ version(LDC)
         pragma(LDC_intrinsic, "llvm.abs.i#")
             T inteli_llvm_abs(T)(T val, bool attrib);
     }
+
+    static if (__VERSION__ >= 2092) // LDC 1.22+
+    {
+        pragma(LDC_intrinsic, "llvm.sadd.sat.i#")
+            T inteli_llvm_adds(T)(T a, T b) pure @safe;
+        pragma(LDC_intrinsic, "llvm.ssub.sat.i#")
+            T inteli_llvm_subs(T)(T a, T b) pure @safe;
+        pragma(LDC_intrinsic, "llvm.uadd.sat.i#")
+            T inteli_llvm_addus(T)(T a, T b) pure @safe;
+        pragma(LDC_intrinsic, "llvm.usub.sat.i#")
+            T inteli_llvm_subus(T)(T a, T b) pure @safe;
+    }
 }
 
 // ADDITIONAL x86 INTRINSICS
