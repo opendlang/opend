@@ -118,7 +118,55 @@ unittest
     assert(B.array == correct);
 }
 
-// TODO __m256i _mm256_abs_epi8 (__m256i a) pure @safe
+/// Compute the absolute value of packed signed 8-bit integers in `a`.
+__m256i _mm256_abs_epi8 (__m256i a) @trusted
+{
+    // PERF DMD
+    // PERF GDC in SSSE3 to AVX doesn't use pabsb and split is catastrophic because of _mm_min_epu8
+    version(LDC)
+        enum split = true; // akways beneficial in LDC neon, ssse3, sse2
+    else
+        enum split = false;
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pabsb256(cast(ubyte32)a);
+    }
+    else static if (__VERSION__ >= 2097 && LDC_with_AVX2)
+    {
+        // Before LDC 1.27 llvm.abs LLVM intrinsic didn't exist, and hence 
+        // no good way to do abs(256-bit)
+        return cast(__m256i) inteli_llvm_abs!byte32(cast(byte32)a, false);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_abs_epi8(a_lo);
+        __m128i r_hi = _mm_abs_epi8(a_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else
+    {
+        // Basically this loop is poison for LDC optimizer
+        byte32 sa = cast(byte32)a;
+        for (int i = 0; i < 32; ++i)
+        {
+            byte s = sa.array[i];
+            sa.ptr[i] = s >= 0 ? s : cast(byte)(-cast(int)(s));
+        }
+        return cast(__m256i)sa;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi8(0, -1, -128, -127, 127,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,
+                                 0, -1, -128, -126, 127, -6, -5, -4, -3, -2, 0, 1, 2, 3, 4, 5);
+    byte32 B = cast(byte32) _mm256_abs_epi8(A);
+    byte[32] correct =          [0,  1, -128,  127, 127,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0,
+                                 0,  1, -128,  126, 127,  6,  5,  4,  3,  2, 0, 1, 2, 3, 4, 5];
+    assert(B.array == correct);
+}
 
 /// Add packed 16-bit integers in `a` and `b`.
 __m256i _mm256_add_epi16 (__m256i a, __m256i b) pure @safe
