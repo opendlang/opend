@@ -196,7 +196,20 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_add_epi64 (__m256i a, __m256i b) pure @safe
+/// Add packed 64-bit integers in `a` and `b`.
+__m256i _mm256_add_epi64 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return a + b;
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(-1, 0x8000_0000_0000_0000, 42, -12);
+    long4 R = cast(__m256i) _mm256_add_epi64(A, A);
+    long[4] correct = [ -2, 0, 84, -24 ];
+    assert(R.array == correct);
+}
+
 // TODO __m256i _mm256_add_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @safe
