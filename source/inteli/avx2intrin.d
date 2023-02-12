@@ -248,7 +248,13 @@ __m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @trusted
         return cast(__m256i)r;
     }
 }
-// TODO unittest
+unittest
+{
+    short16 res = cast(short16) _mm256_adds_epi16(_mm256_setr_epi16( 7,  6,  5, -32768, 3, 3, 32767,   0,  7,  6,  5, -32768, 3, 3, 32767,   0),
+                                                  _mm256_setr_epi16( 7,  6,  5, -30000, 3, 1,     1, -10,  7,  6,  5, -30000, 3, 1,     1, -10));
+    static immutable short[16] correctResult                    =  [14, 12, 10, -32768, 6, 4, 32767, -10, 14, 12, 10, -32768, 6, 4, 32767, -10];
+    assert(res.array == correctResult);
+}
 
 /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
 __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @trusted

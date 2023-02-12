@@ -156,9 +156,9 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
 }
 unittest
 {
-    short8 res = cast(short8) _mm_adds_epi16(_mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0),
-                                             _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0));
-    static immutable short[8] correctResult = [0, 2, 4, 6, 8, 10, 12, 14];
+    short8 res = cast(short8) _mm_adds_epi16(_mm_setr_epi16( 7,  6,  5, -32768, 3, 3, 32767,   0),
+                                             _mm_setr_epi16( 7,  6,  5, -30000, 3, 1,     1, -10));
+    static immutable short[8] correctResult             =  [14, 12, 10, -32768, 6, 4, 32767, -10];
     assert(res.array == correctResult);
 }
 
