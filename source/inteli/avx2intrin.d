@@ -54,7 +54,7 @@ __m256i _mm256_abs_epi16 (__m256i a) @trusted
     else
     {        
         short16 sa = cast(short16)a;
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 16; ++i)
         {
             short s = sa.array[i];
             sa.ptr[i] = s >= 0 ? s : cast(short)(-cast(int)(s));
@@ -62,8 +62,62 @@ __m256i _mm256_abs_epi16 (__m256i a) @trusted
         return cast(__m256i)sa;
     }
 }
+unittest
+{
+    __m256i A = _mm256_setr_epi16(0, -1, -32768, 32767, 10, -10, 1000, -1000,
+                                  1, -1, -32768, 32767, 12, -13, 1000, -1040);
+    short16 B = cast(short16) _mm256_abs_epi16(A);
+    short[16] correct = [0, 1, -32768, 32767, 10, 10, 1000, 1000,
+                         1, 1, -32768, 32767, 12, 13, 1000, 1040];
+    assert(B.array == correct);
+}
 
-// TODO __m256i _mm256_abs_epi32 (__m256i a) pure @safe
+/// Compute the absolute value of packed signed 32-bit integers in `a`.
+__m256i _mm256_abs_epi32 (__m256i a) @trusted
+{
+    // PERF DMD
+    version(LDC)
+        enum split = true; // always beneficial in LDC neon, ssse3, or even sse2
+    else
+        enum split = false; // GDC manages to split and use pabsd in SSSE3 without guidance
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pabsd256(cast(int8)a);
+    }
+    else static if (__VERSION__ >= 2097 && LDC_with_AVX2)
+    {
+        // Before LDC 1.27 llvm.abs LLVM intrinsic didn't exist, and hence 
+        // no good way to do abs(256-bit)
+        return cast(__m256i) inteli_llvm_abs!int8(cast(int8)a, false);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_abs_epi32(a_lo);
+        __m128i r_hi = _mm_abs_epi32(a_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else
+    {
+        int8 sa = cast(int8)a;
+        for (int i = 0; i < 8; ++i)
+        {
+            int s = sa.array[i];
+            sa.ptr[i] = (s >= 0 ? s : -s);
+        }
+        return cast(__m256i)sa;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(0, -1, -2_147_483_648, -2_147_483_647, -1, 0, -2_147_483_648, -2_147_483_646);
+    int8 B = cast(int8) _mm256_abs_epi32(A);
+    int[8] correct = [0, 1, -2_147_483_648, 2_147_483_647, 1, 0, -2_147_483_648, 2_147_483_646];
+    assert(B.array == correct);
+}
+
 // TODO __m256i _mm256_abs_epi8 (__m256i a) pure @safe
 
 /// Add packed 16-bit integers in `a` and `b`.
