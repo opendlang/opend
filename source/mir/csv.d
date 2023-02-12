@@ -246,7 +246,7 @@ struct CsvReader
         bool fill = true,
         bool skipEmptyLines = true,
         uint nColumns = 0,
-    ) @safe pure @nogc
+    ) @trusted pure @nogc
     {
         pragma(inline, false);
 
@@ -266,7 +266,7 @@ struct CsvReader
         if (!nColumns) for (;;)
         {
             nColumns++;
-            scope scalar = readCell();
+            auto scalar = readCell();
             if (scalar.error)
             {
                 import mir.ion.exception: IonException;
