@@ -226,10 +226,101 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @safe
+/// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
+__m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_paddsw256(cast(short16)a, cast(short16)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_adds!short16(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        short16 r;
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        foreach(i; 0..16)
+            r.ptr[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+        return cast(__m256i)r;
+    }
+}
+// TODO unittest
+
+/// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
+__m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_paddsb256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_adds!byte32(cast(byte32)a, cast(byte32)b);
+    }
+    else
+    {
+        byte32 r;
+        byte32 sa = cast(byte32)a;
+        byte32 sb = cast(byte32)b;
+        foreach(i; 0..32)
+            r.ptr[i] = saturateSignedWordToSignedByte(sa.array[i] + sb.array[i]);
+        return cast(__m256i)r;
+    }
+}
+// TODO unittest
+
+/// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
+__m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_paddusw256(cast(short16)a, cast(short16)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_addus!short16(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        short16 r;
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        foreach(i; 0..16)
+            r.ptr[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]));
+        return cast(__m256i)r;
+    }
+}
+// TODO unittest
+
+/// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
+__m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_paddusb256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_addus!byte32(cast(byte32)a, cast(byte32)b);
+    }
+    else
+    {
+        byte32 r;
+        byte32 sa = cast(byte32)a;
+        byte32 sb = cast(byte32)b;
+        foreach(i; 0..32)
+            r.ptr[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) + cast(ubyte)(sb.array[i]));
+        return cast(__m256i)r;
+    }
+}
+// TODO unittest
+
+
+
 // TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`.
