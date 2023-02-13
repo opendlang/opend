@@ -18,7 +18,7 @@ import mir.ndslice.slice: Slice, SliceKind;
 
 private
 @safe pure nothrow @nogc
-T sum(T)(const Slice!(T*, 1) p) {
+T sum(T)(scope const Slice!(T*, 1) p) {
     import std.traits: Unqual;
 
     Unqual!T output = 0;
@@ -39,7 +39,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 @safe pure nothrow @nogc
-T categoricalPMF(T)(const size_t x, const Slice!(T*, 1) p)
+T categoricalPMF(T)(const size_t x, scope const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
     in (p.sum.approxEqual(1.0), "p must sum to 1")
@@ -76,7 +76,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 @safe pure nothrow @nogc
-T categoricalCDF(T)(const size_t x, const Slice!(T*, 1) p)
+T categoricalCDF(T)(const size_t x, scope const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
     in (p.sum.approxEqual(1.0), "p must sum to 1")
@@ -113,7 +113,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 @safe pure nothrow @nogc
-T categoricalCCDF(T)(const size_t x, const Slice!(T*, 1) p)
+T categoricalCCDF(T)(const size_t x, scope const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
     in (p.sum.approxEqual(1.0), "p must sum to 1")
@@ -150,7 +150,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 @safe pure nothrow @nogc
-size_t categoricalInvCDF(T)(const T q, const Slice!(T*, 1) p)
+size_t categoricalInvCDF(T)(const T q, scope const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (q >= 0, "q must be greater than or equal to 0")
     in (q <= 1, "q must be less than or equal to 1")
@@ -205,7 +205,7 @@ See_also:
     $(LINK2 https://en.wikipedia.org/wiki/Categorical_distribution, Categorical Distribution)
 +/
 @safe pure nothrow @nogc
-T categoricalLPMF(T)(const size_t x, const Slice!(T*, 1) p)
+T categoricalLPMF(T)(const size_t x, scope const Slice!(T*, 1) p)
     if (isFloatingPoint!T)
     in (x < p.length, "x must be less than the length of p")
     in (p.sum.approxEqual(1.0), "p must sum to 1")
