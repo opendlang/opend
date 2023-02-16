@@ -241,12 +241,16 @@ import test_allocator;
     int i = 1;
     int j = 2;
 
-    int* oops;
+    int** oops;
     scope vec = vector(&i, &j);
-    int* ok;
+    int** ok;
 
-    static assert(!__traits(compiles, oops = vec[0]));
-    ok = vec[0];
+    // Taking address of `ref` return not allowed in older dmd versions
+    static if (__VERSION__ >= 2101)
+    {
+        static assert(!__traits(compiles, oops = &vec[0]));
+        ok = &vec[0];
+    }
 }
 
 
