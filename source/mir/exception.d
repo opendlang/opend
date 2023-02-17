@@ -65,7 +65,20 @@ unittest
     {
         import mir.exception;
         try throw new MirException("Hi D", 2, "!");
-        catch(Exception e) assert(e.msg == "Hi D2!");
+        catch(MirException e) assert(e.scopeMessage == "Hi D2!");
+    }
+}
+
+/// Generic style, GC allocated MSG
+version (mir_test) static if (NOGCEXP && HASFORMAT)
+@safe pure nothrow @nogc
+unittest
+{
+    static if (__traits(compiles, (()@nogc {import mir.format;})()))
+    {
+        import mir.exception;
+        try throw new MirException("Hi D", 2, "!");
+        catch(Exception e) assert(e.message == "Hi D2!");
     }
 }
 
@@ -79,7 +92,7 @@ unittest
         import mir.exception;
         import mir.format;
         try throw new MirException(stringBuf() << "Hi D" << 2 << "!" << getData);
-        catch(Exception e) assert(e.msg == "Hi D2!");
+        catch(Exception e) assert(e.scopeMessage == "Hi D2!");
     }
 }
 
@@ -221,6 +234,18 @@ mixin template MirThrowableImpl()
     private char[maxMirExceptionMsgLen] _payload = void;
     import mir.exception: maxMirExceptionMsgLen, mirExceptionInitilizePayloadImpl;
 
+    const(char)[] _msg;
+
+    override string message() const @safe pure nothrow
+    {
+        return msg ? msg : _msg.idup;
+    }
+
+    const(char)[] scopeMessage() scope const @safe pure nothrow @nogc
+    {
+        return msg ? msg : _msg;
+    }
+
     /++
     Params:
         msg = message. No-scope `msg` is assumed to have the same lifetime as the throwable. scope strings are copied to internal buffer.
@@ -228,15 +253,17 @@ mixin template MirThrowableImpl()
         line = line number
         nextInChain = next exception in the chain (optional)
     +/
-    @nogc @safe pure nothrow this(scope const(char)[] msg, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null)
+    @nogc @trusted pure nothrow this(scope const(char)[] msg, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null)
     {
-        super((() @trusted => cast(immutable) mirExceptionInitilizePayloadImpl(_payload, msg))(), file, line, nextInChain);
+        this._msg = mirExceptionInitilizePayloadImpl(_payload, msg);
+        super(null, file, line, nextInChain);
     }
 
     /// ditto
-    @nogc @safe pure nothrow this(scope const(char)[] msg, Throwable nextInChain, string file = __FILE__, size_t line = __LINE__)
+    @nogc @trusted pure nothrow this(scope const(char)[] msg, Throwable nextInChain, string file = __FILE__, size_t line = __LINE__)
     {
-        super((() @trusted => cast(immutable) mirExceptionInitilizePayloadImpl(_payload, msg))(), file, line, nextInChain);
+        this._msg = mirExceptionInitilizePayloadImpl(_payload, msg);
+        super(null, file, line, nextInChain);
     }
 
     /// ditto
