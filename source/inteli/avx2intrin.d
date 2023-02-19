@@ -277,7 +277,13 @@ __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @trusted
         return cast(__m256i)r;
     }
 }
-// TODO unittest
+unittest
+{
+    byte32 res = cast(byte32) _mm256_adds_epi8(_mm256_setr_epi8(15, 14, 13, 12, 11, 127, 9, 8, 7, 6, 5, -128, 3, 2, 1, 0, 15, 14, 13, 12, 11, 127, 9, 8, 7, 6, 5, -128, 3, 2, 1, 0),
+                                               _mm256_setr_epi8(15, 14, 13, 12, 11,  10, 9, 8, 7, 6, 5,   -4, 3, 2, 1, 0, 15, 14, 13, 12, 11,  10, 9, 8, 7, 6, 5,   -4, 3, 2, 1, 0));
+    static immutable byte[32] correctResult                  = [30, 28, 26, 24, 22, 127,18,16,14,12,10, -128, 6, 4, 2, 0, 30, 28, 26, 24, 22, 127,18,16,14,12,10, -128, 6, 4, 2, 0]; 
+    assert(res.array == correctResult);
+}
 
 /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @trusted
@@ -300,7 +306,13 @@ __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @trusted
         return cast(__m256i)r;
     }
 }
-// TODO unittest
+unittest
+{
+    short16 res = cast(short16) _mm256_adds_epu16(_mm256_set_epi16(3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0),
+                                             _mm256_set_epi16(3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0));
+    static immutable short[16] correctResult = [0, cast(short)65535, 4, 6, 0, cast(short)65535, 4, 6, 0, cast(short)65535, 4, 6, 0, cast(short)65535, 4, 6];
+    assert(res.array == correctResult);
+}
 
 /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @trusted

@@ -189,10 +189,10 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
 }
 unittest
 {
-    byte16 res = cast(byte16) _mm_adds_epi8(_mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
-                                            _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-    static immutable byte[16] correctResult = [0, 2, 4, 6, 8, 10, 12, 14,
-                                               16, 18, 20, 22, 24, 26, 28, 30];
+    byte16 res = cast(byte16) _mm_adds_epi8(_mm_set_epi8(15, 14, 13, 12, 11, 127, 9, 8, 7, 6, 5, -128, 3, 2, 1, 0),
+                                            _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, -4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult = [0, 2, 4, 6, -128, 10, 12, 14,
+                                               16, 18, 127, 22, 24, 26, 28, 30];
     assert(res.array == correctResult);
 }
 
