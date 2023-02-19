@@ -347,7 +347,57 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
+/// Concatenate pairs of 16-byte blocks in `a` and `b` into a 32-byte temporary result, shift the 
+/// result right by `imm8` bytes, and return the low 16 bytes of that in each lane.
+__m256i _mm256_alignr_epi8(ubyte count)(__m256i a, __m256i b) pure @trusted
+{
+    version(LDC)
+        enum bool split = true;
+    else
+        enum bool split = true;
+
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i)__builtin_ia32_palignr256(a, b, count * 8);
+    }
+    else static if (split)
+    {
+        // Note that palignr 256-bit does the same as palignr 128-bit by lane. Can split.
+        // With LDC 1.24 + avx2 feature + -02, that correctly gives a AVX2 vpalignr despite being split.
+        // I guess we could do it with a big 32-items shufflevector but not sure if best.
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);        
+        __m128i r_lo = _mm_alignr_epi8!count(a_lo, b_lo);
+        __m128i r_hi = _mm_alignr_epi8!count(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);   
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8( 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16);
+    __m128i B = _mm_setr_epi8(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+    __m256i AA = _mm256_set_m128i(A, A);
+    __m256i BB = _mm256_set_m128i(B, B);
+
+    {
+        byte32 C = cast(byte32) _mm256_alignr_epi8!0(AA, BB);
+        byte[32] correct = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+        assert(C.array == correct);
+    }
+    {
+        byte32 C = cast(byte32) _mm256_alignr_epi8!20(AA, BB);
+        byte[32] correct = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0];
+        assert(C.array == correct);
+    }
+    {
+        byte32 C = cast(byte32) _mm256_alignr_epi8!34(AA, BB);
+        byte[32] correct = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert(C.array == correct);
+    }
+}
 
 /// Compute the bitwise AND of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_and_si256 (__m256i a, __m256i b) pure @safe
