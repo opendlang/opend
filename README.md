@@ -165,7 +165,7 @@ Another way to create an `Image` is to load an encoded image.
   You can then read `width()`, `height()`, `type()`, etc...
 
   > **There is no exceptions in Gamut.** Instead the Image itself has an error API:
-  > - `bool errored()` return `true` if the `Image` is in an error state. In an error state, the image can't be used anymore until recreated (for example, loading another file).
+  > - `bool isError()` return `true` if the `Image` is in an error state. In an error state, the image can't be used anymore until recreated (for example, loading another file).
   > - `const(char)[] errorMessage()` is then available, and is guaranteed to be zero-terminated.
 
 
@@ -199,7 +199,7 @@ Another way to create an `Image` is to load an encoded image.
   Image image;  
   image.loadFromMemory(pngBytes, LOAD_RGB | LOAD_ALPHA | LOAD_8BIT);  // force PixelType.rgba8 
   ```
-  Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT`.
+  Not all load flags are compatible, for example `LOAD_8BIT` and `LOAD_16BIT` cannot be used together.
     
 
 ### **2.3 Save an image to a file:**
