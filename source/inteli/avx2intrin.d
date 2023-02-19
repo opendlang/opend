@@ -259,6 +259,7 @@ unittest
 /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
 __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_paddsb256(cast(ubyte32)a, cast(ubyte32)b);
@@ -288,6 +289,7 @@ unittest
 /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_paddusw256(cast(short16)a, cast(short16)b);
@@ -317,6 +319,7 @@ unittest
 /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @trusted
 {
+    // PERF DMD
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_paddusb256(cast(ubyte32)a, cast(ubyte32)b);
@@ -335,9 +338,14 @@ __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @trusted
         return cast(__m256i)r;
     }
 }
-// TODO unittest
-
-
+unittest
+{
+    __m256i A          = _mm256_setr_epi8(0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, cast(byte)255, 0, 0, 0, 0, 0, 0, 0, 0, cast(byte)136, 0, 0, 0, cast(byte)136, 0, 0, 0, 0, 0, 0);
+    __m256i B          = _mm256_setr_epi8(0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,             1, 0, 0, 0, 0, 0, 0, 0, 0, cast(byte)136, 0, 0, 0,            40, 0, 0, 0, 0, 0, 0);
+    byte32 R = cast(byte32) _mm256_adds_epu8(A, B);
+    static immutable byte[32] correct =  [0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, cast(byte)255, 0, 0, 0, 0, 0, 0, 0, 0, cast(byte)255, 0, 0, 0, cast(byte)176, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correct);
+}
 
 // TODO __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int imm8) pure @safe
 
