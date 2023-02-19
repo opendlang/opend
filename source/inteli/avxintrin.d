@@ -826,10 +826,10 @@ __m128 _mm_cmp_ps(int imm8)(__m128 a, __m128 b) pure @safe
 }
 
 ///ditto
-_m256 _mm256_cmp_ps(int imm8)(__m256 a, __m256 b) pure @safe
+__m256 _mm256_cmp_ps(int imm8)(__m256 a, __m256 b) pure @safe
 {
     enum comparison = mapAVXFPComparison(imm8);
-    return cast(_m256) cmpps256!comparison(a, b);
+    return cast(__m256) cmpps256!comparison(a, b);
 }
 
 /// Compare the lower double-precision (64-bit) floating-point element in `a` and `b` based on the
@@ -838,7 +838,7 @@ _m256 _mm256_cmp_ps(int imm8)(__m256 a, __m256 b) pure @safe
 __m128d _mm_cmp_sd(int imm8)(__m128d a, __m128d b) pure @safe
 {
     enum comparison = mapAVXFPComparison(imm8);
-    return cast(_m256) cmpsd!comparison(a, b);
+    return cast(__m128d) cmpsd!comparison(a, b);
 }
 
 /// Compare the lower single-precision (32-bit) floating-point element in `a` and `b` based on the
@@ -847,7 +847,7 @@ __m128d _mm_cmp_sd(int imm8)(__m128d a, __m128d b) pure @safe
 __m128 _mm_cmp_ss(int imm8)(__m128 a, __m128 b) pure @safe
 {
     enum comparison = mapAVXFPComparison(imm8);
-    return cast(_m256) cmpss!comparison(a, b);
+    return cast(__m128) cmpss!comparison(a, b);
 }
 
 /// Convert packed signed 32-bit integers in a to packed double-precision (64-bit) floating-point 
