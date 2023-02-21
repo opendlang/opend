@@ -1613,7 +1613,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_video_decode_h265 )) {
             enum VK_EXT_video_decode_h265 = 1;
 
-            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 5;
+            enum VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION = 6;
             enum const( char )* VK_EXT_VIDEO_DECODE_H265_EXTENSION_NAME = "VK_EXT_video_decode_h265";
             
             struct VkVideoDecodeH265ProfileInfoEXT {
@@ -1652,8 +1652,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkStructureType                 sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT;
                 const( void )*                  pNext;
                 StdVideoDecodeH265PictureInfo*  pStdPictureInfo;
-                uint32_t                        sliceCount;
-                const( uint32_t )*              pSliceOffsets;
+                uint32_t                        sliceSegmentCount;
+                const( uint32_t )*              pSliceSegmentOffsets;
             }
             
             struct VkVideoDecodeH265DpbSlotInfoEXT {
