@@ -116,7 +116,7 @@ package(mir) bool anyEmptyShape(size_t N)(scope const auto ref size_t[N] shape) 
 }
 
 ///
-bool anyEmpty(Range)(scope const auto ref Range range) @property
+bool anyEmpty(Range)(scope auto ref Range range) @property
     if (hasShape!Range || __traits(hasMember, Range, "anyEmpty") || is(ReturnType!((Range r) => r.empty) == bool))
 {
     static if (__traits(hasMember, Range, "anyEmpty"))
