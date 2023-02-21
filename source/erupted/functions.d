@@ -506,6 +506,9 @@ extern( System ) {
     // VK_EXT_image_compression_control
     alias PFN_vkGetImageSubresourceLayout2EXT                                   = void      function( VkDevice device, VkImage image, const( VkImageSubresource2EXT )* pSubresource, VkSubresourceLayout2EXT* pLayout );
 
+    // VK_EXT_device_fault
+    alias PFN_vkGetDeviceFaultInfoEXT                                           = VkResult  function( VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo );
+
     // VK_EXT_vertex_input_dynamic_state
     alias PFN_vkCmdSetVertexInputEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const( VkVertexInputBindingDescription2EXT )* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const( VkVertexInputAttributeDescription2EXT )* pVertexAttributeDescriptions );
 
@@ -533,6 +536,22 @@ extern( System ) {
     alias PFN_vkCmdDrawMultiEXT                                                 = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawInfoEXT )* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride );
     alias PFN_vkCmdDrawMultiIndexedEXT                                          = void      function( VkCommandBuffer commandBuffer, uint32_t drawCount, const( VkMultiDrawIndexedInfoEXT )* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const( int32_t )* pVertexOffset );
 
+    // VK_EXT_opacity_micromap
+    alias PFN_vkCreateMicromapEXT                                               = VkResult  function( VkDevice device, const( VkMicromapCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkMicromapEXT* pMicromap );
+    alias PFN_vkDestroyMicromapEXT                                              = void      function( VkDevice device, VkMicromapEXT micromap, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkCmdBuildMicromapsEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t infoCount, const( VkMicromapBuildInfoEXT )* pInfos );
+    alias PFN_vkBuildMicromapsEXT                                               = VkResult  function( VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const( VkMicromapBuildInfoEXT )* pInfos );
+    alias PFN_vkCopyMicromapEXT                                                 = VkResult  function( VkDevice device, VkDeferredOperationKHR deferredOperation, const( VkCopyMicromapInfoEXT )* pInfo );
+    alias PFN_vkCopyMicromapToMemoryEXT                                         = VkResult  function( VkDevice device, VkDeferredOperationKHR deferredOperation, const( VkCopyMicromapToMemoryInfoEXT )* pInfo );
+    alias PFN_vkCopyMemoryToMicromapEXT                                         = VkResult  function( VkDevice device, VkDeferredOperationKHR deferredOperation, const( VkCopyMemoryToMicromapInfoEXT )* pInfo );
+    alias PFN_vkWriteMicromapsPropertiesEXT                                     = VkResult  function( VkDevice device, uint32_t micromapCount, const( VkMicromapEXT )* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride );
+    alias PFN_vkCmdCopyMicromapEXT                                              = void      function( VkCommandBuffer commandBuffer, const( VkCopyMicromapInfoEXT )* pInfo );
+    alias PFN_vkCmdCopyMicromapToMemoryEXT                                      = void      function( VkCommandBuffer commandBuffer, const( VkCopyMicromapToMemoryInfoEXT )* pInfo );
+    alias PFN_vkCmdCopyMemoryToMicromapEXT                                      = void      function( VkCommandBuffer commandBuffer, const( VkCopyMemoryToMicromapInfoEXT )* pInfo );
+    alias PFN_vkCmdWriteMicromapsPropertiesEXT                                  = void      function( VkCommandBuffer commandBuffer, uint32_t micromapCount, const( VkMicromapEXT )* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery );
+    alias PFN_vkGetDeviceMicromapCompatibilityEXT                               = void      function( VkDevice device, const( VkMicromapVersionInfoEXT )* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility );
+    alias PFN_vkGetMicromapBuildSizesEXT                                        = void      function( VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const( VkMicromapBuildInfoEXT )* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo );
+
     // VK_EXT_pageable_device_local_memory
     alias PFN_vkSetDeviceMemoryPriorityEXT                                      = void      function( VkDevice device, VkDeviceMemory memory, float priority );
 
@@ -540,9 +559,49 @@ extern( System ) {
     alias PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      = void      function( VkDevice device, const( VkDescriptorSetBindingReferenceVALVE )* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping );
     alias PFN_vkGetDescriptorSetHostMappingVALVE                                = void      function( VkDevice device, VkDescriptorSet descriptorSet, void** ppData );
 
+    // VK_EXT_extended_dynamic_state3
+    alias PFN_vkCmdSetTessellationDomainOriginEXT                               = void      function( VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin );
+    alias PFN_vkCmdSetDepthClampEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, VkBool32 depthClampEnable );
+    alias PFN_vkCmdSetPolygonModeEXT                                            = void      function( VkCommandBuffer commandBuffer, VkPolygonMode polygonMode );
+    alias PFN_vkCmdSetRasterizationSamplesEXT                                   = void      function( VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples );
+    alias PFN_vkCmdSetSampleMaskEXT                                             = void      function( VkCommandBuffer commandBuffer, VkSampleCountFlagBits samples, const( VkSampleMask )* pSampleMask );
+    alias PFN_vkCmdSetAlphaToCoverageEnableEXT                                  = void      function( VkCommandBuffer commandBuffer, VkBool32 alphaToCoverageEnable );
+    alias PFN_vkCmdSetAlphaToOneEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, VkBool32 alphaToOneEnable );
+    alias PFN_vkCmdSetLogicOpEnableEXT                                          = void      function( VkCommandBuffer commandBuffer, VkBool32 logicOpEnable );
+    alias PFN_vkCmdSetColorBlendEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const( VkBool32 )* pColorBlendEnables );
+    alias PFN_vkCmdSetColorBlendEquationEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const( VkColorBlendEquationEXT )* pColorBlendEquations );
+    alias PFN_vkCmdSetColorWriteMaskEXT                                         = void      function( VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const( VkColorComponentFlags )* pColorWriteMasks );
+    alias PFN_vkCmdSetRasterizationStreamEXT                                    = void      function( VkCommandBuffer commandBuffer, uint32_t rasterizationStream );
+    alias PFN_vkCmdSetConservativeRasterizationModeEXT                          = void      function( VkCommandBuffer commandBuffer, VkConservativeRasterizationModeEXT conservativeRasterizationMode );
+    alias PFN_vkCmdSetExtraPrimitiveOverestimationSizeEXT                       = void      function( VkCommandBuffer commandBuffer, float extraPrimitiveOverestimationSize );
+    alias PFN_vkCmdSetDepthClipEnableEXT                                        = void      function( VkCommandBuffer commandBuffer, VkBool32 depthClipEnable );
+    alias PFN_vkCmdSetSampleLocationsEnableEXT                                  = void      function( VkCommandBuffer commandBuffer, VkBool32 sampleLocationsEnable );
+    alias PFN_vkCmdSetColorBlendAdvancedEXT                                     = void      function( VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const( VkColorBlendAdvancedEXT )* pColorBlendAdvanced );
+    alias PFN_vkCmdSetProvokingVertexModeEXT                                    = void      function( VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode );
+    alias PFN_vkCmdSetLineRasterizationModeEXT                                  = void      function( VkCommandBuffer commandBuffer, VkLineRasterizationModeEXT lineRasterizationMode );
+    alias PFN_vkCmdSetLineStippleEnableEXT                                      = void      function( VkCommandBuffer commandBuffer, VkBool32 stippledLineEnable );
+    alias PFN_vkCmdSetDepthClipNegativeOneToOneEXT                              = void      function( VkCommandBuffer commandBuffer, VkBool32 negativeOneToOne );
+    alias PFN_vkCmdSetViewportWScalingEnableNV                                  = void      function( VkCommandBuffer commandBuffer, VkBool32 viewportWScalingEnable );
+    alias PFN_vkCmdSetViewportSwizzleNV                                         = void      function( VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const( VkViewportSwizzleNV )* pViewportSwizzles );
+    alias PFN_vkCmdSetCoverageToColorEnableNV                                   = void      function( VkCommandBuffer commandBuffer, VkBool32 coverageToColorEnable );
+    alias PFN_vkCmdSetCoverageToColorLocationNV                                 = void      function( VkCommandBuffer commandBuffer, uint32_t coverageToColorLocation );
+    alias PFN_vkCmdSetCoverageModulationModeNV                                  = void      function( VkCommandBuffer commandBuffer, VkCoverageModulationModeNV coverageModulationMode );
+    alias PFN_vkCmdSetCoverageModulationTableEnableNV                           = void      function( VkCommandBuffer commandBuffer, VkBool32 coverageModulationTableEnable );
+    alias PFN_vkCmdSetCoverageModulationTableNV                                 = void      function( VkCommandBuffer commandBuffer, uint32_t coverageModulationTableCount, const( float )* pCoverageModulationTable );
+    alias PFN_vkCmdSetShadingRateImageEnableNV                                  = void      function( VkCommandBuffer commandBuffer, VkBool32 shadingRateImageEnable );
+    alias PFN_vkCmdSetRepresentativeFragmentTestEnableNV                        = void      function( VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable );
+    alias PFN_vkCmdSetCoverageReductionModeNV                                   = void      function( VkCommandBuffer commandBuffer, VkCoverageReductionModeNV coverageReductionMode );
+
     // VK_EXT_shader_module_identifier
     alias PFN_vkGetShaderModuleIdentifierEXT                                    = void      function( VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier );
     alias PFN_vkGetShaderModuleCreateInfoIdentifierEXT                          = void      function( VkDevice device, const( VkShaderModuleCreateInfo )* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier );
+
+    // VK_NV_optical_flow
+    alias PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV                      = VkResult  function( VkPhysicalDevice physicalDevice, const( VkOpticalFlowImageFormatInfoNV )* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties );
+    alias PFN_vkCreateOpticalFlowSessionNV                                      = VkResult  function( VkDevice device, const( VkOpticalFlowSessionCreateInfoNV )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkOpticalFlowSessionNV* pSession );
+    alias PFN_vkDestroyOpticalFlowSessionNV                                     = void      function( VkDevice device, VkOpticalFlowSessionNV session, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkBindOpticalFlowSessionImageNV                                   = VkResult  function( VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout );
+    alias PFN_vkCmdOpticalFlowExecuteNV                                         = void      function( VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const( VkOpticalFlowExecuteInfoNV )* pExecuteInfo );
 
     // VK_QCOM_tile_properties
     alias PFN_vkGetFramebufferTilePropertiesQCOM                                = VkResult  function( VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties );
@@ -1075,6 +1134,9 @@ __gshared {
     // VK_EXT_image_compression_control
     PFN_vkGetImageSubresourceLayout2EXT                                   vkGetImageSubresourceLayout2EXT;
 
+    // VK_EXT_device_fault
+    PFN_vkGetDeviceFaultInfoEXT                                           vkGetDeviceFaultInfoEXT;
+
     // VK_EXT_vertex_input_dynamic_state
     PFN_vkCmdSetVertexInputEXT                                            vkCmdSetVertexInputEXT;
 
@@ -1102,6 +1164,22 @@ __gshared {
     PFN_vkCmdDrawMultiEXT                                                 vkCmdDrawMultiEXT;
     PFN_vkCmdDrawMultiIndexedEXT                                          vkCmdDrawMultiIndexedEXT;
 
+    // VK_EXT_opacity_micromap
+    PFN_vkCreateMicromapEXT                                               vkCreateMicromapEXT;
+    PFN_vkDestroyMicromapEXT                                              vkDestroyMicromapEXT;
+    PFN_vkCmdBuildMicromapsEXT                                            vkCmdBuildMicromapsEXT;
+    PFN_vkBuildMicromapsEXT                                               vkBuildMicromapsEXT;
+    PFN_vkCopyMicromapEXT                                                 vkCopyMicromapEXT;
+    PFN_vkCopyMicromapToMemoryEXT                                         vkCopyMicromapToMemoryEXT;
+    PFN_vkCopyMemoryToMicromapEXT                                         vkCopyMemoryToMicromapEXT;
+    PFN_vkWriteMicromapsPropertiesEXT                                     vkWriteMicromapsPropertiesEXT;
+    PFN_vkCmdCopyMicromapEXT                                              vkCmdCopyMicromapEXT;
+    PFN_vkCmdCopyMicromapToMemoryEXT                                      vkCmdCopyMicromapToMemoryEXT;
+    PFN_vkCmdCopyMemoryToMicromapEXT                                      vkCmdCopyMemoryToMicromapEXT;
+    PFN_vkCmdWriteMicromapsPropertiesEXT                                  vkCmdWriteMicromapsPropertiesEXT;
+    PFN_vkGetDeviceMicromapCompatibilityEXT                               vkGetDeviceMicromapCompatibilityEXT;
+    PFN_vkGetMicromapBuildSizesEXT                                        vkGetMicromapBuildSizesEXT;
+
     // VK_EXT_pageable_device_local_memory
     PFN_vkSetDeviceMemoryPriorityEXT                                      vkSetDeviceMemoryPriorityEXT;
 
@@ -1109,9 +1187,49 @@ __gshared {
     PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      vkGetDescriptorSetLayoutHostMappingInfoVALVE;
     PFN_vkGetDescriptorSetHostMappingVALVE                                vkGetDescriptorSetHostMappingVALVE;
 
+    // VK_EXT_extended_dynamic_state3
+    PFN_vkCmdSetTessellationDomainOriginEXT                               vkCmdSetTessellationDomainOriginEXT;
+    PFN_vkCmdSetDepthClampEnableEXT                                       vkCmdSetDepthClampEnableEXT;
+    PFN_vkCmdSetPolygonModeEXT                                            vkCmdSetPolygonModeEXT;
+    PFN_vkCmdSetRasterizationSamplesEXT                                   vkCmdSetRasterizationSamplesEXT;
+    PFN_vkCmdSetSampleMaskEXT                                             vkCmdSetSampleMaskEXT;
+    PFN_vkCmdSetAlphaToCoverageEnableEXT                                  vkCmdSetAlphaToCoverageEnableEXT;
+    PFN_vkCmdSetAlphaToOneEnableEXT                                       vkCmdSetAlphaToOneEnableEXT;
+    PFN_vkCmdSetLogicOpEnableEXT                                          vkCmdSetLogicOpEnableEXT;
+    PFN_vkCmdSetColorBlendEnableEXT                                       vkCmdSetColorBlendEnableEXT;
+    PFN_vkCmdSetColorBlendEquationEXT                                     vkCmdSetColorBlendEquationEXT;
+    PFN_vkCmdSetColorWriteMaskEXT                                         vkCmdSetColorWriteMaskEXT;
+    PFN_vkCmdSetRasterizationStreamEXT                                    vkCmdSetRasterizationStreamEXT;
+    PFN_vkCmdSetConservativeRasterizationModeEXT                          vkCmdSetConservativeRasterizationModeEXT;
+    PFN_vkCmdSetExtraPrimitiveOverestimationSizeEXT                       vkCmdSetExtraPrimitiveOverestimationSizeEXT;
+    PFN_vkCmdSetDepthClipEnableEXT                                        vkCmdSetDepthClipEnableEXT;
+    PFN_vkCmdSetSampleLocationsEnableEXT                                  vkCmdSetSampleLocationsEnableEXT;
+    PFN_vkCmdSetColorBlendAdvancedEXT                                     vkCmdSetColorBlendAdvancedEXT;
+    PFN_vkCmdSetProvokingVertexModeEXT                                    vkCmdSetProvokingVertexModeEXT;
+    PFN_vkCmdSetLineRasterizationModeEXT                                  vkCmdSetLineRasterizationModeEXT;
+    PFN_vkCmdSetLineStippleEnableEXT                                      vkCmdSetLineStippleEnableEXT;
+    PFN_vkCmdSetDepthClipNegativeOneToOneEXT                              vkCmdSetDepthClipNegativeOneToOneEXT;
+    PFN_vkCmdSetViewportWScalingEnableNV                                  vkCmdSetViewportWScalingEnableNV;
+    PFN_vkCmdSetViewportSwizzleNV                                         vkCmdSetViewportSwizzleNV;
+    PFN_vkCmdSetCoverageToColorEnableNV                                   vkCmdSetCoverageToColorEnableNV;
+    PFN_vkCmdSetCoverageToColorLocationNV                                 vkCmdSetCoverageToColorLocationNV;
+    PFN_vkCmdSetCoverageModulationModeNV                                  vkCmdSetCoverageModulationModeNV;
+    PFN_vkCmdSetCoverageModulationTableEnableNV                           vkCmdSetCoverageModulationTableEnableNV;
+    PFN_vkCmdSetCoverageModulationTableNV                                 vkCmdSetCoverageModulationTableNV;
+    PFN_vkCmdSetShadingRateImageEnableNV                                  vkCmdSetShadingRateImageEnableNV;
+    PFN_vkCmdSetRepresentativeFragmentTestEnableNV                        vkCmdSetRepresentativeFragmentTestEnableNV;
+    PFN_vkCmdSetCoverageReductionModeNV                                   vkCmdSetCoverageReductionModeNV;
+
     // VK_EXT_shader_module_identifier
     PFN_vkGetShaderModuleIdentifierEXT                                    vkGetShaderModuleIdentifierEXT;
     PFN_vkGetShaderModuleCreateInfoIdentifierEXT                          vkGetShaderModuleCreateInfoIdentifierEXT;
+
+    // VK_NV_optical_flow
+    PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV                      vkGetPhysicalDeviceOpticalFlowImageFormatsNV;
+    PFN_vkCreateOpticalFlowSessionNV                                      vkCreateOpticalFlowSessionNV;
+    PFN_vkDestroyOpticalFlowSessionNV                                     vkDestroyOpticalFlowSessionNV;
+    PFN_vkBindOpticalFlowSessionImageNV                                   vkBindOpticalFlowSessionImageNV;
+    PFN_vkCmdOpticalFlowExecuteNV                                         vkCmdOpticalFlowExecuteNV;
 
     // VK_QCOM_tile_properties
     PFN_vkGetFramebufferTilePropertiesQCOM                                vkGetFramebufferTilePropertiesQCOM;
@@ -1409,6 +1527,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
     // VK_EXT_acquire_drm_display
     vkAcquireDrmDisplayEXT                                            = cast( PFN_vkAcquireDrmDisplayEXT                                            ) vkGetInstanceProcAddr( instance, "vkAcquireDrmDisplayEXT" );
     vkGetDrmDisplayEXT                                                = cast( PFN_vkGetDrmDisplayEXT                                                ) vkGetInstanceProcAddr( instance, "vkGetDrmDisplayEXT" );
+
+    // VK_NV_optical_flow
+    vkGetPhysicalDeviceOpticalFlowImageFormatsNV                      = cast( PFN_vkGetPhysicalDeviceOpticalFlowImageFormatsNV                      ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceOpticalFlowImageFormatsNV" );
 }
 
 
@@ -1817,6 +1938,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_image_compression_control
     vkGetImageSubresourceLayout2EXT                   = cast( PFN_vkGetImageSubresourceLayout2EXT                   ) vkGetInstanceProcAddr( instance, "vkGetImageSubresourceLayout2EXT" );
 
+    // VK_EXT_device_fault
+    vkGetDeviceFaultInfoEXT                           = cast( PFN_vkGetDeviceFaultInfoEXT                           ) vkGetInstanceProcAddr( instance, "vkGetDeviceFaultInfoEXT" );
+
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetVertexInputEXT" );
 
@@ -1844,6 +1968,22 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiEXT" );
     vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdDrawMultiIndexedEXT" );
 
+    // VK_EXT_opacity_micromap
+    vkCreateMicromapEXT                               = cast( PFN_vkCreateMicromapEXT                               ) vkGetInstanceProcAddr( instance, "vkCreateMicromapEXT" );
+    vkDestroyMicromapEXT                              = cast( PFN_vkDestroyMicromapEXT                              ) vkGetInstanceProcAddr( instance, "vkDestroyMicromapEXT" );
+    vkCmdBuildMicromapsEXT                            = cast( PFN_vkCmdBuildMicromapsEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdBuildMicromapsEXT" );
+    vkBuildMicromapsEXT                               = cast( PFN_vkBuildMicromapsEXT                               ) vkGetInstanceProcAddr( instance, "vkBuildMicromapsEXT" );
+    vkCopyMicromapEXT                                 = cast( PFN_vkCopyMicromapEXT                                 ) vkGetInstanceProcAddr( instance, "vkCopyMicromapEXT" );
+    vkCopyMicromapToMemoryEXT                         = cast( PFN_vkCopyMicromapToMemoryEXT                         ) vkGetInstanceProcAddr( instance, "vkCopyMicromapToMemoryEXT" );
+    vkCopyMemoryToMicromapEXT                         = cast( PFN_vkCopyMemoryToMicromapEXT                         ) vkGetInstanceProcAddr( instance, "vkCopyMemoryToMicromapEXT" );
+    vkWriteMicromapsPropertiesEXT                     = cast( PFN_vkWriteMicromapsPropertiesEXT                     ) vkGetInstanceProcAddr( instance, "vkWriteMicromapsPropertiesEXT" );
+    vkCmdCopyMicromapEXT                              = cast( PFN_vkCmdCopyMicromapEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdCopyMicromapEXT" );
+    vkCmdCopyMicromapToMemoryEXT                      = cast( PFN_vkCmdCopyMicromapToMemoryEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdCopyMicromapToMemoryEXT" );
+    vkCmdCopyMemoryToMicromapEXT                      = cast( PFN_vkCmdCopyMemoryToMicromapEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdCopyMemoryToMicromapEXT" );
+    vkCmdWriteMicromapsPropertiesEXT                  = cast( PFN_vkCmdWriteMicromapsPropertiesEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdWriteMicromapsPropertiesEXT" );
+    vkGetDeviceMicromapCompatibilityEXT               = cast( PFN_vkGetDeviceMicromapCompatibilityEXT               ) vkGetInstanceProcAddr( instance, "vkGetDeviceMicromapCompatibilityEXT" );
+    vkGetMicromapBuildSizesEXT                        = cast( PFN_vkGetMicromapBuildSizesEXT                        ) vkGetInstanceProcAddr( instance, "vkGetMicromapBuildSizesEXT" );
+
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetInstanceProcAddr( instance, "vkSetDeviceMemoryPriorityEXT" );
 
@@ -1851,9 +1991,48 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
     vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetHostMappingVALVE" );
 
+    // VK_EXT_extended_dynamic_state3
+    vkCmdSetTessellationDomainOriginEXT               = cast( PFN_vkCmdSetTessellationDomainOriginEXT               ) vkGetInstanceProcAddr( instance, "vkCmdSetTessellationDomainOriginEXT" );
+    vkCmdSetDepthClampEnableEXT                       = cast( PFN_vkCmdSetDepthClampEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthClampEnableEXT" );
+    vkCmdSetPolygonModeEXT                            = cast( PFN_vkCmdSetPolygonModeEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetPolygonModeEXT" );
+    vkCmdSetRasterizationSamplesEXT                   = cast( PFN_vkCmdSetRasterizationSamplesEXT                   ) vkGetInstanceProcAddr( instance, "vkCmdSetRasterizationSamplesEXT" );
+    vkCmdSetSampleMaskEXT                             = cast( PFN_vkCmdSetSampleMaskEXT                             ) vkGetInstanceProcAddr( instance, "vkCmdSetSampleMaskEXT" );
+    vkCmdSetAlphaToCoverageEnableEXT                  = cast( PFN_vkCmdSetAlphaToCoverageEnableEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdSetAlphaToCoverageEnableEXT" );
+    vkCmdSetAlphaToOneEnableEXT                       = cast( PFN_vkCmdSetAlphaToOneEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetAlphaToOneEnableEXT" );
+    vkCmdSetLogicOpEnableEXT                          = cast( PFN_vkCmdSetLogicOpEnableEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdSetLogicOpEnableEXT" );
+    vkCmdSetColorBlendEnableEXT                       = cast( PFN_vkCmdSetColorBlendEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetColorBlendEnableEXT" );
+    vkCmdSetColorBlendEquationEXT                     = cast( PFN_vkCmdSetColorBlendEquationEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetColorBlendEquationEXT" );
+    vkCmdSetColorWriteMaskEXT                         = cast( PFN_vkCmdSetColorWriteMaskEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdSetColorWriteMaskEXT" );
+    vkCmdSetRasterizationStreamEXT                    = cast( PFN_vkCmdSetRasterizationStreamEXT                    ) vkGetInstanceProcAddr( instance, "vkCmdSetRasterizationStreamEXT" );
+    vkCmdSetConservativeRasterizationModeEXT          = cast( PFN_vkCmdSetConservativeRasterizationModeEXT          ) vkGetInstanceProcAddr( instance, "vkCmdSetConservativeRasterizationModeEXT" );
+    vkCmdSetExtraPrimitiveOverestimationSizeEXT       = cast( PFN_vkCmdSetExtraPrimitiveOverestimationSizeEXT       ) vkGetInstanceProcAddr( instance, "vkCmdSetExtraPrimitiveOverestimationSizeEXT" );
+    vkCmdSetDepthClipEnableEXT                        = cast( PFN_vkCmdSetDepthClipEnableEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthClipEnableEXT" );
+    vkCmdSetSampleLocationsEnableEXT                  = cast( PFN_vkCmdSetSampleLocationsEnableEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdSetSampleLocationsEnableEXT" );
+    vkCmdSetColorBlendAdvancedEXT                     = cast( PFN_vkCmdSetColorBlendAdvancedEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetColorBlendAdvancedEXT" );
+    vkCmdSetProvokingVertexModeEXT                    = cast( PFN_vkCmdSetProvokingVertexModeEXT                    ) vkGetInstanceProcAddr( instance, "vkCmdSetProvokingVertexModeEXT" );
+    vkCmdSetLineRasterizationModeEXT                  = cast( PFN_vkCmdSetLineRasterizationModeEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdSetLineRasterizationModeEXT" );
+    vkCmdSetLineStippleEnableEXT                      = cast( PFN_vkCmdSetLineStippleEnableEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEnableEXT" );
+    vkCmdSetDepthClipNegativeOneToOneEXT              = cast( PFN_vkCmdSetDepthClipNegativeOneToOneEXT              ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthClipNegativeOneToOneEXT" );
+    vkCmdSetViewportWScalingEnableNV                  = cast( PFN_vkCmdSetViewportWScalingEnableNV                  ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportWScalingEnableNV" );
+    vkCmdSetViewportSwizzleNV                         = cast( PFN_vkCmdSetViewportSwizzleNV                         ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportSwizzleNV" );
+    vkCmdSetCoverageToColorEnableNV                   = cast( PFN_vkCmdSetCoverageToColorEnableNV                   ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageToColorEnableNV" );
+    vkCmdSetCoverageToColorLocationNV                 = cast( PFN_vkCmdSetCoverageToColorLocationNV                 ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageToColorLocationNV" );
+    vkCmdSetCoverageModulationModeNV                  = cast( PFN_vkCmdSetCoverageModulationModeNV                  ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageModulationModeNV" );
+    vkCmdSetCoverageModulationTableEnableNV           = cast( PFN_vkCmdSetCoverageModulationTableEnableNV           ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageModulationTableEnableNV" );
+    vkCmdSetCoverageModulationTableNV                 = cast( PFN_vkCmdSetCoverageModulationTableNV                 ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageModulationTableNV" );
+    vkCmdSetShadingRateImageEnableNV                  = cast( PFN_vkCmdSetShadingRateImageEnableNV                  ) vkGetInstanceProcAddr( instance, "vkCmdSetShadingRateImageEnableNV" );
+    vkCmdSetRepresentativeFragmentTestEnableNV        = cast( PFN_vkCmdSetRepresentativeFragmentTestEnableNV        ) vkGetInstanceProcAddr( instance, "vkCmdSetRepresentativeFragmentTestEnableNV" );
+    vkCmdSetCoverageReductionModeNV                   = cast( PFN_vkCmdSetCoverageReductionModeNV                   ) vkGetInstanceProcAddr( instance, "vkCmdSetCoverageReductionModeNV" );
+
     // VK_EXT_shader_module_identifier
     vkGetShaderModuleIdentifierEXT                    = cast( PFN_vkGetShaderModuleIdentifierEXT                    ) vkGetInstanceProcAddr( instance, "vkGetShaderModuleIdentifierEXT" );
     vkGetShaderModuleCreateInfoIdentifierEXT          = cast( PFN_vkGetShaderModuleCreateInfoIdentifierEXT          ) vkGetInstanceProcAddr( instance, "vkGetShaderModuleCreateInfoIdentifierEXT" );
+
+    // VK_NV_optical_flow
+    vkCreateOpticalFlowSessionNV                      = cast( PFN_vkCreateOpticalFlowSessionNV                      ) vkGetInstanceProcAddr( instance, "vkCreateOpticalFlowSessionNV" );
+    vkDestroyOpticalFlowSessionNV                     = cast( PFN_vkDestroyOpticalFlowSessionNV                     ) vkGetInstanceProcAddr( instance, "vkDestroyOpticalFlowSessionNV" );
+    vkBindOpticalFlowSessionImageNV                   = cast( PFN_vkBindOpticalFlowSessionImageNV                   ) vkGetInstanceProcAddr( instance, "vkBindOpticalFlowSessionImageNV" );
+    vkCmdOpticalFlowExecuteNV                         = cast( PFN_vkCmdOpticalFlowExecuteNV                         ) vkGetInstanceProcAddr( instance, "vkCmdOpticalFlowExecuteNV" );
 
     // VK_QCOM_tile_properties
     vkGetFramebufferTilePropertiesQCOM                = cast( PFN_vkGetFramebufferTilePropertiesQCOM                ) vkGetInstanceProcAddr( instance, "vkGetFramebufferTilePropertiesQCOM" );
@@ -2298,6 +2477,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_EXT_image_compression_control
     vkGetImageSubresourceLayout2EXT                   = cast( PFN_vkGetImageSubresourceLayout2EXT                   ) vkGetDeviceProcAddr( device, "vkGetImageSubresourceLayout2EXT" );
 
+    // VK_EXT_device_fault
+    vkGetDeviceFaultInfoEXT                           = cast( PFN_vkGetDeviceFaultInfoEXT                           ) vkGetDeviceProcAddr( device, "vkGetDeviceFaultInfoEXT" );
+
     // VK_EXT_vertex_input_dynamic_state
     vkCmdSetVertexInputEXT                            = cast( PFN_vkCmdSetVertexInputEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetVertexInputEXT" );
 
@@ -2325,6 +2507,22 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdDrawMultiEXT                                 = cast( PFN_vkCmdDrawMultiEXT                                 ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiEXT" );
     vkCmdDrawMultiIndexedEXT                          = cast( PFN_vkCmdDrawMultiIndexedEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDrawMultiIndexedEXT" );
 
+    // VK_EXT_opacity_micromap
+    vkCreateMicromapEXT                               = cast( PFN_vkCreateMicromapEXT                               ) vkGetDeviceProcAddr( device, "vkCreateMicromapEXT" );
+    vkDestroyMicromapEXT                              = cast( PFN_vkDestroyMicromapEXT                              ) vkGetDeviceProcAddr( device, "vkDestroyMicromapEXT" );
+    vkCmdBuildMicromapsEXT                            = cast( PFN_vkCmdBuildMicromapsEXT                            ) vkGetDeviceProcAddr( device, "vkCmdBuildMicromapsEXT" );
+    vkBuildMicromapsEXT                               = cast( PFN_vkBuildMicromapsEXT                               ) vkGetDeviceProcAddr( device, "vkBuildMicromapsEXT" );
+    vkCopyMicromapEXT                                 = cast( PFN_vkCopyMicromapEXT                                 ) vkGetDeviceProcAddr( device, "vkCopyMicromapEXT" );
+    vkCopyMicromapToMemoryEXT                         = cast( PFN_vkCopyMicromapToMemoryEXT                         ) vkGetDeviceProcAddr( device, "vkCopyMicromapToMemoryEXT" );
+    vkCopyMemoryToMicromapEXT                         = cast( PFN_vkCopyMemoryToMicromapEXT                         ) vkGetDeviceProcAddr( device, "vkCopyMemoryToMicromapEXT" );
+    vkWriteMicromapsPropertiesEXT                     = cast( PFN_vkWriteMicromapsPropertiesEXT                     ) vkGetDeviceProcAddr( device, "vkWriteMicromapsPropertiesEXT" );
+    vkCmdCopyMicromapEXT                              = cast( PFN_vkCmdCopyMicromapEXT                              ) vkGetDeviceProcAddr( device, "vkCmdCopyMicromapEXT" );
+    vkCmdCopyMicromapToMemoryEXT                      = cast( PFN_vkCmdCopyMicromapToMemoryEXT                      ) vkGetDeviceProcAddr( device, "vkCmdCopyMicromapToMemoryEXT" );
+    vkCmdCopyMemoryToMicromapEXT                      = cast( PFN_vkCmdCopyMemoryToMicromapEXT                      ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryToMicromapEXT" );
+    vkCmdWriteMicromapsPropertiesEXT                  = cast( PFN_vkCmdWriteMicromapsPropertiesEXT                  ) vkGetDeviceProcAddr( device, "vkCmdWriteMicromapsPropertiesEXT" );
+    vkGetDeviceMicromapCompatibilityEXT               = cast( PFN_vkGetDeviceMicromapCompatibilityEXT               ) vkGetDeviceProcAddr( device, "vkGetDeviceMicromapCompatibilityEXT" );
+    vkGetMicromapBuildSizesEXT                        = cast( PFN_vkGetMicromapBuildSizesEXT                        ) vkGetDeviceProcAddr( device, "vkGetMicromapBuildSizesEXT" );
+
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                      = cast( PFN_vkSetDeviceMemoryPriorityEXT                      ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );
 
@@ -2332,9 +2530,48 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
     vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetHostMappingVALVE" );
 
+    // VK_EXT_extended_dynamic_state3
+    vkCmdSetTessellationDomainOriginEXT               = cast( PFN_vkCmdSetTessellationDomainOriginEXT               ) vkGetDeviceProcAddr( device, "vkCmdSetTessellationDomainOriginEXT" );
+    vkCmdSetDepthClampEnableEXT                       = cast( PFN_vkCmdSetDepthClampEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetDepthClampEnableEXT" );
+    vkCmdSetPolygonModeEXT                            = cast( PFN_vkCmdSetPolygonModeEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetPolygonModeEXT" );
+    vkCmdSetRasterizationSamplesEXT                   = cast( PFN_vkCmdSetRasterizationSamplesEXT                   ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizationSamplesEXT" );
+    vkCmdSetSampleMaskEXT                             = cast( PFN_vkCmdSetSampleMaskEXT                             ) vkGetDeviceProcAddr( device, "vkCmdSetSampleMaskEXT" );
+    vkCmdSetAlphaToCoverageEnableEXT                  = cast( PFN_vkCmdSetAlphaToCoverageEnableEXT                  ) vkGetDeviceProcAddr( device, "vkCmdSetAlphaToCoverageEnableEXT" );
+    vkCmdSetAlphaToOneEnableEXT                       = cast( PFN_vkCmdSetAlphaToOneEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetAlphaToOneEnableEXT" );
+    vkCmdSetLogicOpEnableEXT                          = cast( PFN_vkCmdSetLogicOpEnableEXT                          ) vkGetDeviceProcAddr( device, "vkCmdSetLogicOpEnableEXT" );
+    vkCmdSetColorBlendEnableEXT                       = cast( PFN_vkCmdSetColorBlendEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetColorBlendEnableEXT" );
+    vkCmdSetColorBlendEquationEXT                     = cast( PFN_vkCmdSetColorBlendEquationEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetColorBlendEquationEXT" );
+    vkCmdSetColorWriteMaskEXT                         = cast( PFN_vkCmdSetColorWriteMaskEXT                         ) vkGetDeviceProcAddr( device, "vkCmdSetColorWriteMaskEXT" );
+    vkCmdSetRasterizationStreamEXT                    = cast( PFN_vkCmdSetRasterizationStreamEXT                    ) vkGetDeviceProcAddr( device, "vkCmdSetRasterizationStreamEXT" );
+    vkCmdSetConservativeRasterizationModeEXT          = cast( PFN_vkCmdSetConservativeRasterizationModeEXT          ) vkGetDeviceProcAddr( device, "vkCmdSetConservativeRasterizationModeEXT" );
+    vkCmdSetExtraPrimitiveOverestimationSizeEXT       = cast( PFN_vkCmdSetExtraPrimitiveOverestimationSizeEXT       ) vkGetDeviceProcAddr( device, "vkCmdSetExtraPrimitiveOverestimationSizeEXT" );
+    vkCmdSetDepthClipEnableEXT                        = cast( PFN_vkCmdSetDepthClipEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDepthClipEnableEXT" );
+    vkCmdSetSampleLocationsEnableEXT                  = cast( PFN_vkCmdSetSampleLocationsEnableEXT                  ) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEnableEXT" );
+    vkCmdSetColorBlendAdvancedEXT                     = cast( PFN_vkCmdSetColorBlendAdvancedEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetColorBlendAdvancedEXT" );
+    vkCmdSetProvokingVertexModeEXT                    = cast( PFN_vkCmdSetProvokingVertexModeEXT                    ) vkGetDeviceProcAddr( device, "vkCmdSetProvokingVertexModeEXT" );
+    vkCmdSetLineRasterizationModeEXT                  = cast( PFN_vkCmdSetLineRasterizationModeEXT                  ) vkGetDeviceProcAddr( device, "vkCmdSetLineRasterizationModeEXT" );
+    vkCmdSetLineStippleEnableEXT                      = cast( PFN_vkCmdSetLineStippleEnableEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEnableEXT" );
+    vkCmdSetDepthClipNegativeOneToOneEXT              = cast( PFN_vkCmdSetDepthClipNegativeOneToOneEXT              ) vkGetDeviceProcAddr( device, "vkCmdSetDepthClipNegativeOneToOneEXT" );
+    vkCmdSetViewportWScalingEnableNV                  = cast( PFN_vkCmdSetViewportWScalingEnableNV                  ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWScalingEnableNV" );
+    vkCmdSetViewportSwizzleNV                         = cast( PFN_vkCmdSetViewportSwizzleNV                         ) vkGetDeviceProcAddr( device, "vkCmdSetViewportSwizzleNV" );
+    vkCmdSetCoverageToColorEnableNV                   = cast( PFN_vkCmdSetCoverageToColorEnableNV                   ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageToColorEnableNV" );
+    vkCmdSetCoverageToColorLocationNV                 = cast( PFN_vkCmdSetCoverageToColorLocationNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageToColorLocationNV" );
+    vkCmdSetCoverageModulationModeNV                  = cast( PFN_vkCmdSetCoverageModulationModeNV                  ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageModulationModeNV" );
+    vkCmdSetCoverageModulationTableEnableNV           = cast( PFN_vkCmdSetCoverageModulationTableEnableNV           ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageModulationTableEnableNV" );
+    vkCmdSetCoverageModulationTableNV                 = cast( PFN_vkCmdSetCoverageModulationTableNV                 ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageModulationTableNV" );
+    vkCmdSetShadingRateImageEnableNV                  = cast( PFN_vkCmdSetShadingRateImageEnableNV                  ) vkGetDeviceProcAddr( device, "vkCmdSetShadingRateImageEnableNV" );
+    vkCmdSetRepresentativeFragmentTestEnableNV        = cast( PFN_vkCmdSetRepresentativeFragmentTestEnableNV        ) vkGetDeviceProcAddr( device, "vkCmdSetRepresentativeFragmentTestEnableNV" );
+    vkCmdSetCoverageReductionModeNV                   = cast( PFN_vkCmdSetCoverageReductionModeNV                   ) vkGetDeviceProcAddr( device, "vkCmdSetCoverageReductionModeNV" );
+
     // VK_EXT_shader_module_identifier
     vkGetShaderModuleIdentifierEXT                    = cast( PFN_vkGetShaderModuleIdentifierEXT                    ) vkGetDeviceProcAddr( device, "vkGetShaderModuleIdentifierEXT" );
     vkGetShaderModuleCreateInfoIdentifierEXT          = cast( PFN_vkGetShaderModuleCreateInfoIdentifierEXT          ) vkGetDeviceProcAddr( device, "vkGetShaderModuleCreateInfoIdentifierEXT" );
+
+    // VK_NV_optical_flow
+    vkCreateOpticalFlowSessionNV                      = cast( PFN_vkCreateOpticalFlowSessionNV                      ) vkGetDeviceProcAddr( device, "vkCreateOpticalFlowSessionNV" );
+    vkDestroyOpticalFlowSessionNV                     = cast( PFN_vkDestroyOpticalFlowSessionNV                     ) vkGetDeviceProcAddr( device, "vkDestroyOpticalFlowSessionNV" );
+    vkBindOpticalFlowSessionImageNV                   = cast( PFN_vkBindOpticalFlowSessionImageNV                   ) vkGetDeviceProcAddr( device, "vkBindOpticalFlowSessionImageNV" );
+    vkCmdOpticalFlowExecuteNV                         = cast( PFN_vkCmdOpticalFlowExecuteNV                         ) vkGetDeviceProcAddr( device, "vkCmdOpticalFlowExecuteNV" );
 
     // VK_QCOM_tile_properties
     vkGetFramebufferTilePropertiesQCOM                = cast( PFN_vkGetFramebufferTilePropertiesQCOM                ) vkGetDeviceProcAddr( device, "vkGetFramebufferTilePropertiesQCOM" );

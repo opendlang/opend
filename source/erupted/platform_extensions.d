@@ -200,7 +200,7 @@ mixin template Platform_Extensions( extensions... ) {
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionKHR} );
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkVideoSessionParametersKHR} );
             
-            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 6;
+            enum VK_KHR_VIDEO_QUEUE_SPEC_VERSION = 7;
             enum const( char )* VK_KHR_VIDEO_QUEUE_EXTENSION_NAME = "VK_KHR_video_queue";
             
             enum VkQueryResultStatusKHR {
@@ -377,7 +377,7 @@ mixin template Platform_Extensions( extensions... ) {
             struct VkVideoReferenceSlotInfoKHR {
                 VkStructureType                          sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
                 const( void )*                           pNext;
-                int8_t                                   slotIndex;
+                int32_t                                  slotIndex;
                 const( VkVideoPictureResourceInfoKHR )*  pPictureResource;
             }
             
