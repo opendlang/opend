@@ -511,6 +511,14 @@ struct DispatchDevice {
         vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
         vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetHostMappingVALVE" );
 
+        // VK_NV_copy_memory_indirect
+        vkCmdCopyMemoryIndirectNV                         = cast( PFN_vkCmdCopyMemoryIndirectNV                         ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryIndirectNV" );
+        vkCmdCopyMemoryToImageIndirectNV                  = cast( PFN_vkCmdCopyMemoryToImageIndirectNV                  ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryToImageIndirectNV" );
+
+        // VK_NV_memory_decompression
+        vkCmdDecompressMemoryNV                           = cast( PFN_vkCmdDecompressMemoryNV                           ) vkGetDeviceProcAddr( device, "vkCmdDecompressMemoryNV" );
+        vkCmdDecompressMemoryIndirectCountNV              = cast( PFN_vkCmdDecompressMemoryIndirectCountNV              ) vkGetDeviceProcAddr( device, "vkCmdDecompressMemoryIndirectCountNV" );
+
         // VK_EXT_extended_dynamic_state3
         vkCmdSetTessellationDomainOriginEXT               = cast( PFN_vkCmdSetTessellationDomainOriginEXT               ) vkGetDeviceProcAddr( device, "vkCmdSetTessellationDomainOriginEXT" );
         vkCmdSetDepthClampEnableEXT                       = cast( PFN_vkCmdSetDepthClampEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetDepthClampEnableEXT" );
@@ -1047,6 +1055,14 @@ struct DispatchDevice {
     // VK_VALVE_descriptor_set_host_mapping
     void      GetDescriptorSetLayoutHostMappingInfoVALVE( const( VkDescriptorSetBindingReferenceVALVE )* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping ) { vkGetDescriptorSetLayoutHostMappingInfoVALVE( vkDevice, pBindingReference, pHostMapping ); }
     void      GetDescriptorSetHostMappingVALVE( VkDescriptorSet descriptorSet, void** ppData ) { vkGetDescriptorSetHostMappingVALVE( vkDevice, descriptorSet, ppData ); }
+
+    // VK_NV_copy_memory_indirect
+    void      CmdCopyMemoryIndirectNV( VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride ) { vkCmdCopyMemoryIndirectNV( commandBuffer, copyBufferAddress, copyCount, stride ); }
+    void      CmdCopyMemoryToImageIndirectNV( VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const( VkImageSubresourceLayers )* pImageSubresources ) { vkCmdCopyMemoryToImageIndirectNV( commandBuffer, copyBufferAddress, copyCount, stride, dstImage, dstImageLayout, pImageSubresources ); }
+
+    // VK_NV_memory_decompression
+    void      CmdDecompressMemoryNV( uint32_t decompressRegionCount, const( VkDecompressMemoryRegionNV )* pDecompressMemoryRegions ) { vkCmdDecompressMemoryNV( commandBuffer, decompressRegionCount, pDecompressMemoryRegions ); }
+    void      CmdDecompressMemoryIndirectCountNV( VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride ) { vkCmdDecompressMemoryIndirectCountNV( commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride ); }
 
     // VK_EXT_extended_dynamic_state3
     void      CmdSetTessellationDomainOriginEXT( VkTessellationDomainOrigin domainOrigin ) { vkCmdSetTessellationDomainOriginEXT( commandBuffer, domainOrigin ); }
@@ -1691,6 +1707,14 @@ struct DispatchDevice {
     // VK_VALVE_descriptor_set_host_mapping
     PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      vkGetDescriptorSetLayoutHostMappingInfoVALVE;
     PFN_vkGetDescriptorSetHostMappingVALVE                vkGetDescriptorSetHostMappingVALVE;
+
+    // VK_NV_copy_memory_indirect
+    PFN_vkCmdCopyMemoryIndirectNV                         vkCmdCopyMemoryIndirectNV;
+    PFN_vkCmdCopyMemoryToImageIndirectNV                  vkCmdCopyMemoryToImageIndirectNV;
+
+    // VK_NV_memory_decompression
+    PFN_vkCmdDecompressMemoryNV                           vkCmdDecompressMemoryNV;
+    PFN_vkCmdDecompressMemoryIndirectCountNV              vkCmdDecompressMemoryIndirectCountNV;
 
     // VK_EXT_extended_dynamic_state3
     PFN_vkCmdSetTessellationDomainOriginEXT               vkCmdSetTessellationDomainOriginEXT;

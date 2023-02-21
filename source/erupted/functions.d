@@ -559,6 +559,14 @@ extern( System ) {
     alias PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      = void      function( VkDevice device, const( VkDescriptorSetBindingReferenceVALVE )* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping );
     alias PFN_vkGetDescriptorSetHostMappingVALVE                                = void      function( VkDevice device, VkDescriptorSet descriptorSet, void** ppData );
 
+    // VK_NV_copy_memory_indirect
+    alias PFN_vkCmdCopyMemoryIndirectNV                                         = void      function( VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride );
+    alias PFN_vkCmdCopyMemoryToImageIndirectNV                                  = void      function( VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const( VkImageSubresourceLayers )* pImageSubresources );
+
+    // VK_NV_memory_decompression
+    alias PFN_vkCmdDecompressMemoryNV                                           = void      function( VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const( VkDecompressMemoryRegionNV )* pDecompressMemoryRegions );
+    alias PFN_vkCmdDecompressMemoryIndirectCountNV                              = void      function( VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride );
+
     // VK_EXT_extended_dynamic_state3
     alias PFN_vkCmdSetTessellationDomainOriginEXT                               = void      function( VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin );
     alias PFN_vkCmdSetDepthClampEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, VkBool32 depthClampEnable );
@@ -1186,6 +1194,14 @@ __gshared {
     // VK_VALVE_descriptor_set_host_mapping
     PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE                      vkGetDescriptorSetLayoutHostMappingInfoVALVE;
     PFN_vkGetDescriptorSetHostMappingVALVE                                vkGetDescriptorSetHostMappingVALVE;
+
+    // VK_NV_copy_memory_indirect
+    PFN_vkCmdCopyMemoryIndirectNV                                         vkCmdCopyMemoryIndirectNV;
+    PFN_vkCmdCopyMemoryToImageIndirectNV                                  vkCmdCopyMemoryToImageIndirectNV;
+
+    // VK_NV_memory_decompression
+    PFN_vkCmdDecompressMemoryNV                                           vkCmdDecompressMemoryNV;
+    PFN_vkCmdDecompressMemoryIndirectCountNV                              vkCmdDecompressMemoryIndirectCountNV;
 
     // VK_EXT_extended_dynamic_state3
     PFN_vkCmdSetTessellationDomainOriginEXT                               vkCmdSetTessellationDomainOriginEXT;
@@ -1991,6 +2007,14 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
     vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetHostMappingVALVE" );
 
+    // VK_NV_copy_memory_indirect
+    vkCmdCopyMemoryIndirectNV                         = cast( PFN_vkCmdCopyMemoryIndirectNV                         ) vkGetInstanceProcAddr( instance, "vkCmdCopyMemoryIndirectNV" );
+    vkCmdCopyMemoryToImageIndirectNV                  = cast( PFN_vkCmdCopyMemoryToImageIndirectNV                  ) vkGetInstanceProcAddr( instance, "vkCmdCopyMemoryToImageIndirectNV" );
+
+    // VK_NV_memory_decompression
+    vkCmdDecompressMemoryNV                           = cast( PFN_vkCmdDecompressMemoryNV                           ) vkGetInstanceProcAddr( instance, "vkCmdDecompressMemoryNV" );
+    vkCmdDecompressMemoryIndirectCountNV              = cast( PFN_vkCmdDecompressMemoryIndirectCountNV              ) vkGetInstanceProcAddr( instance, "vkCmdDecompressMemoryIndirectCountNV" );
+
     // VK_EXT_extended_dynamic_state3
     vkCmdSetTessellationDomainOriginEXT               = cast( PFN_vkCmdSetTessellationDomainOriginEXT               ) vkGetInstanceProcAddr( instance, "vkCmdSetTessellationDomainOriginEXT" );
     vkCmdSetDepthClampEnableEXT                       = cast( PFN_vkCmdSetDepthClampEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthClampEnableEXT" );
@@ -2529,6 +2553,14 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_VALVE_descriptor_set_host_mapping
     vkGetDescriptorSetLayoutHostMappingInfoVALVE      = cast( PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE      ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutHostMappingInfoVALVE" );
     vkGetDescriptorSetHostMappingVALVE                = cast( PFN_vkGetDescriptorSetHostMappingVALVE                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetHostMappingVALVE" );
+
+    // VK_NV_copy_memory_indirect
+    vkCmdCopyMemoryIndirectNV                         = cast( PFN_vkCmdCopyMemoryIndirectNV                         ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryIndirectNV" );
+    vkCmdCopyMemoryToImageIndirectNV                  = cast( PFN_vkCmdCopyMemoryToImageIndirectNV                  ) vkGetDeviceProcAddr( device, "vkCmdCopyMemoryToImageIndirectNV" );
+
+    // VK_NV_memory_decompression
+    vkCmdDecompressMemoryNV                           = cast( PFN_vkCmdDecompressMemoryNV                           ) vkGetDeviceProcAddr( device, "vkCmdDecompressMemoryNV" );
+    vkCmdDecompressMemoryIndirectCountNV              = cast( PFN_vkCmdDecompressMemoryIndirectCountNV              ) vkGetDeviceProcAddr( device, "vkCmdDecompressMemoryIndirectCountNV" );
 
     // VK_EXT_extended_dynamic_state3
     vkCmdSetTessellationDomainOriginEXT               = cast( PFN_vkCmdSetTessellationDomainOriginEXT               ) vkGetDeviceProcAddr( device, "vkCmdSetTessellationDomainOriginEXT" );
