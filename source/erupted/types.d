@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 231;
+enum VK_HEADER_VERSION = 232;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -16122,7 +16122,7 @@ enum const( char )* VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME = "VK_EXT_muta
 // - VK_ARM_shader_core_builtins -
 enum VK_ARM_shader_core_builtins = 1;
 
-enum VK_ARM_SHADER_CORE_BUILTINS_SPEC_VERSION = 1;
+enum VK_ARM_SHADER_CORE_BUILTINS_SPEC_VERSION = 2;
 enum const( char )* VK_ARM_SHADER_CORE_BUILTINS_EXTENSION_NAME = "VK_ARM_shader_core_builtins";
 
 struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM {
@@ -16134,6 +16134,7 @@ struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM {
 struct VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM {
     VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM;
     void*            pNext;
+    uint64_t         shaderCoreMask;
     uint32_t         shaderCoreCount;
     uint32_t         shaderWarpsPerCore;
 }
