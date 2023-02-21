@@ -488,6 +488,9 @@ extern( System ) {
     // VK_EXT_line_rasterization
     alias PFN_vkCmdSetLineStippleEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern );
 
+    // VK_EXT_swapchain_maintenance1
+    alias PFN_vkReleaseSwapchainImagesEXT                                       = VkResult  function( VkDevice device, const( VkReleaseSwapchainImagesInfoEXT )* pReleaseInfo );
+
     // VK_NV_device_generated_commands
     alias PFN_vkGetGeneratedCommandsMemoryRequirementsNV                        = void      function( VkDevice device, const( VkGeneratedCommandsMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2* pMemoryRequirements );
     alias PFN_vkCmdPreprocessGeneratedCommandsNV                                = void      function( VkCommandBuffer commandBuffer, const( VkGeneratedCommandsInfoNV )* pGeneratedCommandsInfo );
@@ -1136,6 +1139,9 @@ __gshared {
 
     // VK_EXT_line_rasterization
     PFN_vkCmdSetLineStippleEXT                                            vkCmdSetLineStippleEXT;
+
+    // VK_EXT_swapchain_maintenance1
+    PFN_vkReleaseSwapchainImagesEXT                                       vkReleaseSwapchainImagesEXT;
 
     // VK_NV_device_generated_commands
     PFN_vkGetGeneratedCommandsMemoryRequirementsNV                        vkGetGeneratedCommandsMemoryRequirementsNV;
@@ -1966,6 +1972,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                                   = cast( PFN_vkCmdSetLineStippleEXT                                   ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
 
+    // VK_EXT_swapchain_maintenance1
+    vkReleaseSwapchainImagesEXT                              = cast( PFN_vkReleaseSwapchainImagesEXT                              ) vkGetInstanceProcAddr( instance, "vkReleaseSwapchainImagesEXT" );
+
     // VK_NV_device_generated_commands
     vkGetGeneratedCommandsMemoryRequirementsNV               = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV               ) vkGetInstanceProcAddr( instance, "vkGetGeneratedCommandsMemoryRequirementsNV" );
     vkCmdPreprocessGeneratedCommandsNV                       = cast( PFN_vkCmdPreprocessGeneratedCommandsNV                       ) vkGetInstanceProcAddr( instance, "vkCmdPreprocessGeneratedCommandsNV" );
@@ -2525,6 +2534,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                                   = cast( PFN_vkCmdSetLineStippleEXT                                   ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
+
+    // VK_EXT_swapchain_maintenance1
+    vkReleaseSwapchainImagesEXT                              = cast( PFN_vkReleaseSwapchainImagesEXT                              ) vkGetDeviceProcAddr( device, "vkReleaseSwapchainImagesEXT" );
 
     // VK_NV_device_generated_commands
     vkGetGeneratedCommandsMemoryRequirementsNV               = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV               ) vkGetDeviceProcAddr( device, "vkGetGeneratedCommandsMemoryRequirementsNV" );

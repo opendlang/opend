@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 236;
+enum VK_HEADER_VERSION = 237;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -773,6 +773,15 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR                                          = 1000269004,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR                            = 1000269005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT                         = 1000273000,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT                                                   = 1000274000,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT                                   = 1000274001,
+    VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT                                     = 1000274002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT                       = 1000275000,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT                                           = 1000275001,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT                                    = 1000275002,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT                                            = 1000275003,
+    VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT                                  = 1000275004,
+    VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT                                          = 1000275005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV                    = 1000277000,
     VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV                                       = 1000277001,
     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV                             = 1000277002,
@@ -1690,6 +1699,15 @@ enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR                             
 enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR;
 enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR                           = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT                        = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT                                                  = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
+enum VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT                                  = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT;
+enum VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT                                    = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT                                          = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT                                   = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT                                           = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT                                         = VkStructureType.VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV;
 enum VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV                                      = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV;
 enum VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV                            = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV;
@@ -9020,12 +9038,14 @@ enum VkSwapchainCreateFlagBitsKHR : VkSwapchainCreateFlagsKHR {
     VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR      = 0x00000001,
     VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR                        = 0x00000002,
     VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR                   = 0x00000004,
+    VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT       = 0x00000008,
     VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR                   = 0x7FFFFFFF
 }
 
 enum VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR     = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR;
 enum VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR                       = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR;
 enum VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR                  = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR;
+enum VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT      = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT;
 enum VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR                  = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR;
 
 alias VkDeviceGroupPresentModeFlagsKHR = VkFlags;
@@ -13885,6 +13905,112 @@ struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT {
 }
 
 
+// - VK_EXT_surface_maintenance1 -
+enum VK_EXT_surface_maintenance1 = 1;
+
+enum VK_EXT_SURFACE_MAINTENANCE_1_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME = "VK_EXT_surface_maintenance1";
+
+alias VkPresentScalingFlagsEXT = VkFlags;
+enum VkPresentScalingFlagBitsEXT : VkPresentScalingFlagsEXT {
+    VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT                = 0x00000001,
+    VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT      = 0x00000002,
+    VK_PRESENT_SCALING_STRETCH_BIT_EXT                   = 0x00000004,
+    VK_PRESENT_SCALING_FLAG_BITS_MAX_ENUM_EXT            = 0x7FFFFFFF
+}
+
+enum VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT               = VkPresentScalingFlagBitsEXT.VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT;
+enum VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT     = VkPresentScalingFlagBitsEXT.VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT;
+enum VK_PRESENT_SCALING_STRETCH_BIT_EXT                  = VkPresentScalingFlagBitsEXT.VK_PRESENT_SCALING_STRETCH_BIT_EXT;
+enum VK_PRESENT_SCALING_FLAG_BITS_MAX_ENUM_EXT           = VkPresentScalingFlagBitsEXT.VK_PRESENT_SCALING_FLAG_BITS_MAX_ENUM_EXT;
+
+alias VkPresentGravityFlagsEXT = VkFlags;
+enum VkPresentGravityFlagBitsEXT : VkPresentGravityFlagsEXT {
+    VK_PRESENT_GRAVITY_MIN_BIT_EXT               = 0x00000001,
+    VK_PRESENT_GRAVITY_MAX_BIT_EXT               = 0x00000002,
+    VK_PRESENT_GRAVITY_CENTERED_BIT_EXT          = 0x00000004,
+    VK_PRESENT_GRAVITY_FLAG_BITS_MAX_ENUM_EXT    = 0x7FFFFFFF
+}
+
+enum VK_PRESENT_GRAVITY_MIN_BIT_EXT              = VkPresentGravityFlagBitsEXT.VK_PRESENT_GRAVITY_MIN_BIT_EXT;
+enum VK_PRESENT_GRAVITY_MAX_BIT_EXT              = VkPresentGravityFlagBitsEXT.VK_PRESENT_GRAVITY_MAX_BIT_EXT;
+enum VK_PRESENT_GRAVITY_CENTERED_BIT_EXT         = VkPresentGravityFlagBitsEXT.VK_PRESENT_GRAVITY_CENTERED_BIT_EXT;
+enum VK_PRESENT_GRAVITY_FLAG_BITS_MAX_ENUM_EXT   = VkPresentGravityFlagBitsEXT.VK_PRESENT_GRAVITY_FLAG_BITS_MAX_ENUM_EXT;
+
+struct VkSurfacePresentModeEXT {
+    VkStructureType   sType = VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
+    void*             pNext;
+    VkPresentModeKHR  presentMode;
+}
+
+struct VkSurfacePresentScalingCapabilitiesEXT {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT;
+    void*                     pNext;
+    VkPresentScalingFlagsEXT  supportedPresentScaling;
+    VkPresentGravityFlagsEXT  supportedPresentGravityX;
+    VkPresentGravityFlagsEXT  supportedPresentGravityY;
+    VkExtent2D                minScaledImageExtent;
+    VkExtent2D                maxScaledImageExtent;
+}
+
+struct VkSurfacePresentModeCompatibilityEXT {
+    VkStructureType    sType = VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT;
+    void*              pNext;
+    uint32_t           presentModeCount;
+    VkPresentModeKHR*  pPresentModes;
+}
+
+
+// - VK_EXT_swapchain_maintenance1 -
+enum VK_EXT_swapchain_maintenance1 = 1;
+
+enum VK_EXT_SWAPCHAIN_MAINTENANCE_1_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME = "VK_EXT_swapchain_maintenance1";
+
+struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         swapchainMaintenance1;
+}
+
+struct VkSwapchainPresentFenceInfoEXT {
+    VkStructureType    sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
+    void*              pNext;
+    uint32_t           swapchainCount;
+    const( VkFence )*  pFences;
+}
+
+struct VkSwapchainPresentModesCreateInfoEXT {
+    VkStructureType             sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT;
+    void*                       pNext;
+    uint32_t                    presentModeCount;
+    const( VkPresentModeKHR )*  pPresentModes;
+}
+
+struct VkSwapchainPresentModeInfoEXT {
+    VkStructureType             sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT;
+    void*                       pNext;
+    uint32_t                    swapchainCount;
+    const( VkPresentModeKHR )*  pPresentModes;
+}
+
+struct VkSwapchainPresentScalingCreateInfoEXT {
+    VkStructureType           sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT;
+    const( void )*            pNext;
+    VkPresentScalingFlagsEXT  scalingBehavior;
+    VkPresentGravityFlagsEXT  presentGravityX;
+    VkPresentGravityFlagsEXT  presentGravityY;
+}
+
+struct VkReleaseSwapchainImagesInfoEXT {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT;
+    const( void )*      pNext;
+    VkSwapchainKHR      swapchain;
+    uint32_t            imageIndexCount;
+    const( uint32_t )*  pImageIndices;
+}
+
+
 // - VK_EXT_shader_demote_to_helper_invocation -
 enum VK_EXT_shader_demote_to_helper_invocation = 1;
 
@@ -16120,7 +16246,7 @@ enum VK_DIRECT_DRIVER_LOADING_MODE_MAX_ENUM_LUNARG       = VkDirectDriverLoading
 
 alias VkDirectDriverLoadingFlagsLUNARG = VkFlags;
 
-alias PFN_vkGetInstanceProcAddr = PFN_vkVoidFunction function(
+alias PFN_vkGetInstanceProcAddrLUNARG = PFN_vkVoidFunction function(
     VkInstance instance, const char* pName
 );
 
@@ -16128,7 +16254,7 @@ struct VkDirectDriverLoadingInfoLUNARG {
     VkStructureType                   sType = VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG;
     void*                             pNext;
     VkDirectDriverLoadingFlagsLUNARG  flags;
-    PFN_vkGetInstanceProcAddr         pfnGetInstanceProcAddr;
+    PFN_vkGetInstanceProcAddrLUNARG   pfnGetInstanceProcAddr;
 }
 
 struct VkDirectDriverLoadingListLUNARG {

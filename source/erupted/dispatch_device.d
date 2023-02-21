@@ -444,6 +444,9 @@ struct DispatchDevice {
         // VK_EXT_line_rasterization
         vkCmdSetLineStippleEXT                                   = cast( PFN_vkCmdSetLineStippleEXT                                   ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
 
+        // VK_EXT_swapchain_maintenance1
+        vkReleaseSwapchainImagesEXT                              = cast( PFN_vkReleaseSwapchainImagesEXT                              ) vkGetDeviceProcAddr( device, "vkReleaseSwapchainImagesEXT" );
+
         // VK_NV_device_generated_commands
         vkGetGeneratedCommandsMemoryRequirementsNV               = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV               ) vkGetDeviceProcAddr( device, "vkGetGeneratedCommandsMemoryRequirementsNV" );
         vkCmdPreprocessGeneratedCommandsNV                       = cast( PFN_vkCmdPreprocessGeneratedCommandsNV                       ) vkGetDeviceProcAddr( device, "vkCmdPreprocessGeneratedCommandsNV" );
@@ -1001,6 +1004,9 @@ struct DispatchDevice {
 
     // VK_EXT_line_rasterization
     void      CmdSetLineStippleEXT( uint32_t lineStippleFactor, uint16_t lineStipplePattern ) { vkCmdSetLineStippleEXT( commandBuffer, lineStippleFactor, lineStipplePattern ); }
+
+    // VK_EXT_swapchain_maintenance1
+    VkResult  ReleaseSwapchainImagesEXT( const( VkReleaseSwapchainImagesInfoEXT )* pReleaseInfo ) { return vkReleaseSwapchainImagesEXT( vkDevice, pReleaseInfo ); }
 
     // VK_NV_device_generated_commands
     void      GetGeneratedCommandsMemoryRequirementsNV( const( VkGeneratedCommandsMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetGeneratedCommandsMemoryRequirementsNV( vkDevice, pInfo, pMemoryRequirements ); }
@@ -1666,6 +1672,9 @@ struct DispatchDevice {
 
     // VK_EXT_line_rasterization
     PFN_vkCmdSetLineStippleEXT                                   vkCmdSetLineStippleEXT;
+
+    // VK_EXT_swapchain_maintenance1
+    PFN_vkReleaseSwapchainImagesEXT                              vkReleaseSwapchainImagesEXT;
 
     // VK_NV_device_generated_commands
     PFN_vkGetGeneratedCommandsMemoryRequirementsNV               vkGetGeneratedCommandsMemoryRequirementsNV;
