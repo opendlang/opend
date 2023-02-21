@@ -61,7 +61,7 @@ enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );  // Patch version s
 extern( System ):
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 233;
+enum VK_HEADER_VERSION = 235;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -821,6 +821,19 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT                                         = 1000311011,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV                                    = 1000314008,
     VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV                                                       = 1000314009,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT                           = 1000316000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT               = 1000316001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT                             = 1000316002,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT                                                = 1000316003,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT                                                    = 1000316004,
+    VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                    = 1000316005,
+    VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                     = 1000316006,
+    VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                = 1000316007,
+    VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                   = 1000316008,
+    VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT                             = 1000316010,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT                                         = 1000316011,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT                = 1000316012,
+    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                    = 1000316009,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT                     = 1000320000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT                   = 1000320001,
     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT                                  = 1000320002,
@@ -1722,6 +1735,19 @@ enum VK_STRUCTURE_TYPE_EXPORT_METAL_SHARED_EVENT_INFO_EXT                       
 enum VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT                                        = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT;
 enum VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV                                   = VkStructureType.VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV;
 enum VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV                                                      = VkStructureType.VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT              = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT                            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT                                               = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT;
+enum VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT                                                   = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
+enum VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                   = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+enum VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                    = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+enum VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                               = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+enum VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                                  = VkStructureType.VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+enum VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT                            = VkStructureType.VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT                                        = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+enum VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT               = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT;
+enum VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT                   = VkStructureType.VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT                    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT;
@@ -4106,6 +4132,7 @@ enum VkImageCreateFlagBits : VkImageCreateFlags {
     VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV                                = 0x00002000,
     VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT            = 0x00001000,
     VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT                                   = 0x00004000,
+    VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT             = 0x00010000,
     VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT        = 0x00040000,
     VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT                           = 0x00020000,
     VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM                 = 0x00008000,
@@ -4133,6 +4160,7 @@ enum VK_IMAGE_CREATE_DISJOINT_BIT                                        = VkIma
 enum VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV                               = VkImageCreateFlagBits.VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV;
 enum VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT           = VkImageCreateFlagBits.VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
 enum VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT                                  = VkImageCreateFlagBits.VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+enum VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT            = VkImageCreateFlagBits.VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
 enum VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT       = VkImageCreateFlagBits.VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
 enum VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT                          = VkImageCreateFlagBits.VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
 enum VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM                = VkImageCreateFlagBits.VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM;
@@ -4469,6 +4497,7 @@ enum VkBufferCreateFlagBits : VkBufferCreateFlags {
     VK_BUFFER_CREATE_SPARSE_ALIASED_BIT                          = 0x00000004,
     VK_BUFFER_CREATE_PROTECTED_BIT                               = 0x00000008,
     VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT           = 0x00000010,
+    VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT    = 0x00000020,
     VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT       = VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,
     VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR       = VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,
     VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM                          = 0x7FFFFFFF
@@ -4479,6 +4508,7 @@ enum VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT                       = VkBufferCreat
 enum VK_BUFFER_CREATE_SPARSE_ALIASED_BIT                         = VkBufferCreateFlagBits.VK_BUFFER_CREATE_SPARSE_ALIASED_BIT;
 enum VK_BUFFER_CREATE_PROTECTED_BIT                              = VkBufferCreateFlagBits.VK_BUFFER_CREATE_PROTECTED_BIT;
 enum VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT          = VkBufferCreateFlagBits.VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+enum VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT   = VkBufferCreateFlagBits.VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
 enum VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT      = VkBufferCreateFlagBits.VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT;
 enum VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR      = VkBufferCreateFlagBits.VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
 enum VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM                         = VkBufferCreateFlagBits.VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM;
@@ -4505,6 +4535,9 @@ enum VkBufferUsageFlagBits : VkBufferUsageFlags {
     VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR                                 = 0x00000400,
     VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR                                     = 0x00008000,
     VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR                                     = 0x00010000,
+    VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT                            = 0x00200000,
+    VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT                           = 0x00400000,
+    VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT                   = 0x04000000,
     VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT                       = 0x00800000,
     VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT                                     = 0x01000000,
     VK_BUFFER_USAGE_RAY_TRACING_BIT_NV                                           = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
@@ -4533,6 +4566,9 @@ enum VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR                     
 enum VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR                                = VkBufferUsageFlagBits.VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
 enum VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR                                    = VkBufferUsageFlagBits.VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
 enum VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR                                    = VkBufferUsageFlagBits.VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
+enum VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT                           = VkBufferUsageFlagBits.VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+enum VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT                          = VkBufferUsageFlagBits.VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+enum VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT                  = VkBufferUsageFlagBits.VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT;
 enum VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT                      = VkBufferUsageFlagBits.VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT;
 enum VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT                                    = VkBufferUsageFlagBits.VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT;
 enum VK_BUFFER_USAGE_RAY_TRACING_BIT_NV                                          = VkBufferUsageFlagBits.VK_BUFFER_USAGE_RAY_TRACING_BIT_NV;
@@ -4543,14 +4579,16 @@ alias VkBufferViewCreateFlags = VkFlags;
 
 alias VkImageViewCreateFlags = VkFlags;
 enum VkImageViewCreateFlagBits : VkImageViewCreateFlags {
-    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT    = 0x00000001,
-    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT   = 0x00000002,
-    VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                      = 0x7FFFFFFF
+    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT            = 0x00000001,
+    VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT        = 0x00000004,
+    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT           = 0x00000002,
+    VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                              = 0x7FFFFFFF
 }
 
-enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT   = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT;
-enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT  = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT;
-enum VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                     = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM;
+enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT           = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT;
+enum VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT       = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT          = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT;
+enum VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                             = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkShaderModuleCreateFlags = VkFlags;
 
 alias VkPipelineCacheCreateFlags = VkFlags;
@@ -4602,6 +4640,7 @@ enum VkPipelineCreateFlagBits : VkPipelineCreateFlags {
     VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR                          = 0x00000080,
     VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV                                          = 0x00040000,
     VK_PIPELINE_CREATE_LIBRARY_BIT_KHR                                                   = 0x00000800,
+    VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT                                         = 0x20000000,
     VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT                        = 0x00800000,
     VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT                                    = 0x00000400,
     VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV                                   = 0x00100000,
@@ -4641,6 +4680,7 @@ enum VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR                              
 enum VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR                         = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR;
 enum VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV                                         = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV;
 enum VK_PIPELINE_CREATE_LIBRARY_BIT_KHR                                                  = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+enum VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT                                        = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 enum VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT                       = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 enum VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT                                   = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
 enum VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV                                  = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV;
@@ -4791,6 +4831,7 @@ alias VkSamplerCreateFlags = VkFlags;
 enum VkSamplerCreateFlagBits : VkSamplerCreateFlags {
     VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT                         = 0x00000001,
     VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT   = 0x00000002,
+    VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT   = 0x00000008,
     VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT              = 0x00000004,
     VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM                  = 0x00000010,
     VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM                         = 0x7FFFFFFF
@@ -4798,6 +4839,7 @@ enum VkSamplerCreateFlagBits : VkSamplerCreateFlags {
 
 enum VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT                        = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
 enum VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT  = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT;
+enum VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT  = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
 enum VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT             = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_NON_SEAMLESS_CUBE_MAP_BIT_EXT;
 enum VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM                 = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_IMAGE_PROCESSING_BIT_QCOM;
 enum VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM                        = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM;
@@ -4824,6 +4866,8 @@ alias VkDescriptorSetLayoutCreateFlags = VkFlags;
 enum VkDescriptorSetLayoutCreateFlagBits : VkDescriptorSetLayoutCreateFlags {
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT           = 0x00000002,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR              = 0x00000001,
+    VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT            = 0x00000010,
+    VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT  = 0x00000020,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT               = 0x00000004,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT       = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE             = VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,
@@ -4832,6 +4876,8 @@ enum VkDescriptorSetLayoutCreateFlagBits : VkDescriptorSetLayoutCreateFlags {
 
 enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT          = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR             = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
+enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT           = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT;
 enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT              = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT;
 enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT      = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
 enum VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE            = VkDescriptorSetLayoutCreateFlagBits.VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE;
@@ -8004,6 +8050,7 @@ enum VkAccessFlagBits2 : VkAccessFlags2 {
     VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR             = 0x00400000,
     VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT                = 0x01000000,
     VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT        = 0x00080000,
+    VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT                   = 0x20000000000,
     VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI                  = 0x8000000000,
     VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR                = 0x10000000000,
     VK_ACCESS_2_MICROMAP_READ_BIT_EXT                            = 0x100000000000,
@@ -8072,6 +8119,7 @@ enum VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR             = VkAccessFlagB
 enum VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR            = VkAccessFlagBits2.VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 enum VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT               = VkAccessFlagBits2.VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT;
 enum VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT       = VkAccessFlagBits2.VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT;
+enum VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT                  = VkAccessFlagBits2.VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT;
 enum VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI                 = VkAccessFlagBits2.VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI;
 enum VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR               = VkAccessFlagBits2.VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR;
 enum VK_ACCESS_2_MICROMAP_READ_BIT_EXT                           = VkAccessFlagBits2.VK_ACCESS_2_MICROMAP_READ_BIT_EXT;
@@ -14288,6 +14336,146 @@ enum VK_QCOM_RENDER_PASS_STORE_OPS_SPEC_VERSION = 2;
 enum const( char )* VK_QCOM_RENDER_PASS_STORE_OPS_EXTENSION_NAME = "VK_QCOM_render_pass_store_ops";
 
 
+// - VK_EXT_descriptor_buffer -
+enum VK_EXT_descriptor_buffer = 1;
+
+mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkAccelerationStructureKHR} );
+
+enum VK_EXT_DESCRIPTOR_BUFFER_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME = "VK_EXT_descriptor_buffer";
+
+struct VkPhysicalDeviceDescriptorBufferPropertiesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+    void*            pNext;
+    VkBool32         combinedImageSamplerDescriptorSingleArray;
+    VkBool32         bufferlessPushDescriptors;
+    VkBool32         allowSamplerImageViewPostSubmitCreation;
+    VkDeviceSize     descriptorBufferOffsetAlignment;
+    uint32_t         maxDescriptorBufferBindings;
+    uint32_t         maxResourceDescriptorBufferBindings;
+    uint32_t         maxSamplerDescriptorBufferBindings;
+    uint32_t         maxEmbeddedImmutableSamplerBindings;
+    uint32_t         maxEmbeddedImmutableSamplers;
+    size_t           bufferCaptureReplayDescriptorDataSize;
+    size_t           imageCaptureReplayDescriptorDataSize;
+    size_t           imageViewCaptureReplayDescriptorDataSize;
+    size_t           samplerCaptureReplayDescriptorDataSize;
+    size_t           accelerationStructureCaptureReplayDescriptorDataSize;
+    size_t           samplerDescriptorSize;
+    size_t           combinedImageSamplerDescriptorSize;
+    size_t           sampledImageDescriptorSize;
+    size_t           storageImageDescriptorSize;
+    size_t           uniformTexelBufferDescriptorSize;
+    size_t           robustUniformTexelBufferDescriptorSize;
+    size_t           storageTexelBufferDescriptorSize;
+    size_t           robustStorageTexelBufferDescriptorSize;
+    size_t           uniformBufferDescriptorSize;
+    size_t           robustUniformBufferDescriptorSize;
+    size_t           storageBufferDescriptorSize;
+    size_t           robustStorageBufferDescriptorSize;
+    size_t           inputAttachmentDescriptorSize;
+    size_t           accelerationStructureDescriptorSize;
+    VkDeviceSize     maxSamplerDescriptorBufferRange;
+    VkDeviceSize     maxResourceDescriptorBufferRange;
+    VkDeviceSize     samplerDescriptorBufferAddressSpaceSize;
+    VkDeviceSize     resourceDescriptorBufferAddressSpaceSize;
+    VkDeviceSize     descriptorBufferAddressSpaceSize;
+}
+
+struct VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT;
+    void*            pNext;
+    size_t           combinedImageSamplerDensityMapDescriptorSize;
+}
+
+struct VkPhysicalDeviceDescriptorBufferFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         descriptorBuffer;
+    VkBool32         descriptorBufferCaptureReplay;
+    VkBool32         descriptorBufferImageLayoutIgnored;
+    VkBool32         descriptorBufferPushDescriptors;
+}
+
+struct VkDescriptorAddressInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT;
+    void*            pNext;
+    VkDeviceAddress  address;
+    VkDeviceSize     range;
+    VkFormat         format;
+}
+
+struct VkDescriptorBufferBindingInfoEXT {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+    void*               pNext;
+    VkDeviceAddress     address;
+    VkBufferUsageFlags  usage;
+}
+
+struct VkDescriptorBufferBindingPushDescriptorBufferHandleEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT;
+    void*            pNext;
+    VkBuffer         buffer;
+}
+
+union VkDescriptorDataEXT {
+    const( VkSampler )*                   pSampler;
+    const( VkDescriptorImageInfo )*       pCombinedImageSampler;
+    const( VkDescriptorImageInfo )*       pInputAttachmentImage;
+    const( VkDescriptorImageInfo )*       pSampledImage;
+    const( VkDescriptorImageInfo )*       pStorageImage;
+    const( VkDescriptorAddressInfoEXT )*  pUniformTexelBuffer;
+    const( VkDescriptorAddressInfoEXT )*  pStorageTexelBuffer;
+    const( VkDescriptorAddressInfoEXT )*  pUniformBuffer;
+    const( VkDescriptorAddressInfoEXT )*  pStorageBuffer;
+    VkDeviceAddress                       accelerationStructure;
+}
+
+struct VkDescriptorGetInfoEXT {
+    VkStructureType      sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
+    const( void )*       pNext;
+    VkDescriptorType     type;
+    VkDescriptorDataEXT  data;
+}
+
+struct VkBufferCaptureDescriptorDataInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_BUFFER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+    const( void )*   pNext;
+    VkBuffer         buffer;
+}
+
+struct VkImageCaptureDescriptorDataInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_IMAGE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+    const( void )*   pNext;
+    VkImage          image;
+}
+
+struct VkImageViewCaptureDescriptorDataInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+    const( void )*   pNext;
+    VkImageView      imageView;
+}
+
+struct VkSamplerCaptureDescriptorDataInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_SAMPLER_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+    const( void )*   pNext;
+    VkSampler        sampler;
+}
+
+struct VkOpaqueCaptureDescriptorDataCreateInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT;
+    const( void )*   pNext;
+    const( void )*   opaqueCaptureDescriptorData;
+}
+
+struct VkAccelerationStructureCaptureDescriptorDataInfoEXT {
+    VkStructureType             sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
+    const( void )*              pNext;
+    VkAccelerationStructureKHR  accelerationStructure;
+    VkAccelerationStructureNV   accelerationStructureNV;
+}
+
+
 // - VK_EXT_graphics_pipeline_library -
 enum VK_EXT_graphics_pipeline_library = 1;
 
@@ -16259,8 +16447,6 @@ struct VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM {
 // - VK_KHR_acceleration_structure -
 enum VK_KHR_acceleration_structure = 1;
 
-mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkAccelerationStructureKHR} );
-
 enum VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION = 13;
 enum const( char )* VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME = "VK_KHR_acceleration_structure";
 
@@ -16283,11 +16469,13 @@ enum VK_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR   = VkBuildAccelerationSt
 alias VkAccelerationStructureCreateFlagsKHR = VkFlags;
 enum VkAccelerationStructureCreateFlagBitsKHR : VkAccelerationStructureCreateFlagsKHR {
     VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR       = 0x00000001,
+    VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT    = 0x00000008,
     VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV                               = 0x00000004,
     VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR                      = 0x7FFFFFFF
 }
 
 enum VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR      = VkAccelerationStructureCreateFlagBitsKHR.VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+enum VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT   = VkAccelerationStructureCreateFlagBitsKHR.VK_ACCELERATION_STRUCTURE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
 enum VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV                              = VkAccelerationStructureCreateFlagBitsKHR.VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV;
 enum VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR                     = VkAccelerationStructureCreateFlagBitsKHR.VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR;
 
