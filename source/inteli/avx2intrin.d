@@ -491,12 +491,112 @@ unittest
 // TODO __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8) pure @safe
 // TODO __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8) pure @safe
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
-// TODO __m128i _mm_broadcastb_epi8 (__m128i a) pure @safe
-// TODO __m256i _mm256_broadcastb_epi8 (__m128i a) pure @safe
-// TODO __m128i _mm_broadcastd_epi32 (__m128i a) pure @safe
-// TODO __m256i _mm256_broadcastd_epi32 (__m128i a) pure @safe
-// TODO __m128i _mm_broadcastq_epi64 (__m128i a) pure @safe
-// TODO __m256i _mm256_broadcastq_epi64 (__m128i a) pure @safe
+
+/// Broadcast the low packed 8-bit integer from `a` to all elements of result.
+__m128i _mm_broadcastb_epi8 (__m128i a) pure @safe
+{
+    byte16 ba = cast(byte16)a;
+    byte16 r;
+    r = ba.array[0];
+    return cast(__m128i)r;
+}
+unittest
+{
+    byte16 A;
+    A.ptr[0] = 2;
+    byte16 B = cast(byte16) _mm_broadcastb_epi8(cast(__m128i)A);
+    byte[16] correct = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+    assert(B.array == correct);
+}
+
+/// Bro0adcast the low packed 8-bit integer from `a` to all elements of result.
+__m256i _mm256_broadcastb_epi8(__m128i a) pure @safe
+{
+    byte16 ba = cast(byte16)a;
+    byte32 r;
+    r = ba.array[0];
+    return cast(__m256i)r;
+}
+unittest
+{
+    byte16 A;
+    A.ptr[0] = 2;
+    byte32 B = cast(byte32) _mm256_broadcastb_epi8(cast(__m128i)A);
+    byte[32] correct = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 32-bit integer from `a` to all elements of result.
+__m128i _mm_broadcastd_epi32 (__m128i a) pure @safe
+{
+    int4 ba = cast(int4)a;
+    int4 r;
+    r = ba.array[0];
+    return cast(__m128i)r;
+}
+unittest
+{
+    int4 A;
+    A.ptr[0] = -2;
+    int4 B = cast(int4) _mm_broadcastd_epi32(cast(__m128i)A);
+    int[4] correct = [-2, -2, -2, -2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 32-bit integer from `a` to all elements of result.
+__m256i _mm256_broadcastd_epi32 (__m128i a) pure @safe
+{
+    int4 ba = cast(int4)a;
+    int8 r;
+    r = ba.array[0];
+    return cast(__m256i)r;
+}
+unittest
+{
+    int4 A;
+    A.ptr[0] = -2;
+    int8 B = cast(int8) _mm256_broadcastd_epi32(cast(__m128i)A);
+    int[8] correct = [-2, -2, -2, -2, -2, -2, -2, -2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 64-bit integer from `a` to all elements of result.
+__m128i _mm_broadcastq_epi64 (__m128i a) pure @safe
+{
+    long2 ba = cast(long2)a;
+    long2 r;
+    r = ba.array[0];
+    return cast(__m128i)r;
+}
+unittest
+{
+    long2 A;
+    A.ptr[0] = -2;
+    long2 B = cast(long2) _mm_broadcastq_epi64(cast(__m128i)A);
+    long[2] correct = [-2, -2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 64-bit integer from `a` to all elements of result.
+__m256i _mm256_broadcastq_epi64 (__m128i a) pure @safe
+{
+    long2 ba = cast(long2)a;
+    long4 r;
+    r = ba.array[0];
+    return cast(__m256i)r;
+}
+unittest
+{
+    long2 A;
+    A.ptr[0] = -2;
+    long4 B = cast(long4) _mm256_broadcastq_epi64(cast(__m128i)A);
+    long[4] correct = [-2, -2, -2, -2];
+    assert(B.array == correct);
+}
+
+
+
 // TODO __m128d _mm_broadcastsd_pd (__m128d a) pure @safe
 // TODO __m256d _mm256_broadcastsd_pd (__m128d a) pure @safe
 // TODO __m256i _mm_broadcastsi128_si256 (__m128i a) pure @safe
@@ -504,6 +604,8 @@ unittest
 // TODO __m128 _mm_broadcastss_ps (__m128 a) pure @safe
 // TODO __m256 _mm256_broadcastss_ps (__m128 a) pure @safe
 // TODO __m128i _mm_broadcastw_epi16 (__m128i a) pure @safe
+
+
 // TODO __m256i _mm256_broadcastw_epi16 (__m128i a) pure @safe
 // TODO __m256i _mm256_bslli_epi128 (__m256i a, const int imm8) pure @safe
 // TODO __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8) pure @safe
