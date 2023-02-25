@@ -595,18 +595,129 @@ unittest
     assert(B.array == correct);
 }
 
+/// Broadcast the low double-precision (64-bit) floating-point element from `a` to all elements of result.
+__m128d _mm_broadcastsd_pd (__m128d a) pure @safe
+{
+    double2 r;
+    r = a.array[0];
+    return r;
+}
+unittest
+{
+    double2 A;
+    A.ptr[0] = 2;
+    double2 B = _mm_broadcastsd_pd(A);
+    double[2] correct = [2.0, 2.0];
+    assert(B.array == correct);
+}
 
+/// Broadcast the low double-precision (64-bit) floating-point element from `a` to all elements of result.
+__m256d _mm256_broadcastsd_pd (__m128d a) pure @safe
+{
+    double4 r;
+    r = a.array[0];
+    return r;
+}
+unittest
+{
+    double2 A;
+    A.ptr[0] = 3;
+    double4 B = _mm256_broadcastsd_pd(A);
+    double[4] correct = [3.0, 3, 3, 3];
+    assert(B.array == correct);
+}
 
-// TODO __m128d _mm_broadcastsd_pd (__m128d a) pure @safe
-// TODO __m256d _mm256_broadcastsd_pd (__m128d a) pure @safe
-// TODO __m256i _mm_broadcastsi128_si256 (__m128i a) pure @safe
-// TODO __m256i _mm256_broadcastsi128_si256 (__m128i a) pure @safe
-// TODO __m128 _mm_broadcastss_ps (__m128 a) pure @safe
-// TODO __m256 _mm256_broadcastss_ps (__m128 a) pure @safe
-// TODO __m128i _mm_broadcastw_epi16 (__m128i a) pure @safe
+/// Broadcast 128 bits of integer data from ``a to all 128-bit lanes in result.
+__m256i _mm_broadcastsi128_si256 (__m128i a) pure @trusted
+{
+    // PERF GDC
+    long2 ba = cast(long2)a;
+    long4 r;
+    r.ptr[0] = ba.array[0];
+    r.ptr[1] = ba.array[1];
+    r.ptr[2] = ba.array[0];
+    r.ptr[3] = ba.array[1];
+    return cast(__m256i)r;
+}
+unittest
+{
+    long2 A;
+    A.ptr[0] = 34;
+    A.ptr[1] = -56;
+    long4 B = cast(long4) _mm_broadcastsi128_si256(cast(__m128i)A);
+    long[4] correct = [34, -56, 34, -56];
+    assert(B.array == correct);
+}
 
+///ditto
+alias _mm256_broadcastsi128_si256 = _mm_broadcastsi128_si256; // intrinsics is duplicated in the Guide, for some reason
 
-// TODO __m256i _mm256_broadcastw_epi16 (__m128i a) pure @safe
+/// Broadcast the low single-precision (32-bit) floating-point element from `a` to all elements of result.
+__m128 _mm_broadcastss_ps (__m128 a) pure @safe
+{
+    float4 r;
+    r = a.array[0];
+    return r;
+}
+unittest
+{
+    float4 A;
+    A.ptr[0] = 2;
+    float4 B = _mm_broadcastss_ps(A);
+    float[4] correct = [2.0f, 2, 2, 2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low single-precision (32-bit) floating-point element from `a` to all elements of result.
+__m256 _mm256_broadcastss_ps (__m128 a) pure @safe
+{
+    float8 r;
+    r = a.array[0];
+    return r;
+}
+unittest
+{
+    float4 A;
+    A.ptr[0] = 2;
+    float8 B = _mm256_broadcastss_ps(A);
+    float[8] correct = [2.0f, 2, 2, 2, 2, 2, 2, 2];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 16-bit integer from `a` to all elements of result.
+__m128i _mm_broadcastw_epi16 (__m128i a) pure @safe
+{
+    short8 ba = cast(short8)a;
+    short8 r;
+    r = ba.array[0];
+    return cast(__m128i)r;
+}
+unittest
+{
+    short8 A;
+    A.ptr[0] = 13;
+    short8 B = cast(short8) _mm_broadcastw_epi16(cast(__m128i)A);
+    short[8] correct = [13, 13, 13, 13, 13, 13, 13, 13];
+    assert(B.array == correct);
+}
+
+/// Broadcast the low packed 16-bit integer from `a` to all elements of result.
+__m256i _mm256_broadcastw_epi16 (__m128i a) pure @safe
+{
+    short8 ba = cast(short8)a;
+    short16 r;
+    r = ba.array[0];
+    return cast(__m256i)r;
+}
+unittest
+{
+    short8 A;
+    A.ptr[0] = 13;
+    short16 B = cast(short16) _mm256_broadcastw_epi16(cast(__m128i)A);
+    short[16] correct = [13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13];
+    assert(B.array == correct);
+}
+
 // TODO __m256i _mm256_bslli_epi128 (__m256i a, const int imm8) pure @safe
 // TODO __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8) pure @safe
 // TODO __m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @safe
