@@ -433,7 +433,7 @@ __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
         byte16 sr = void;
         foreach(i; 0..16)
         {
-            sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
+            sr.ptr[i] = cast(ubyte)( (cast(ubyte)(sa.array[i]) + cast(ubyte)(sb.array[i]) + 1) >> 1 );
         }
         return cast(int4)sr;
     }
