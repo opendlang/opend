@@ -104,7 +104,7 @@ unittest
 /// Blend packed single-precision (32-bit) floating-point elements from `a` and `b` using control 
 /// mask `imm8`.
 // Note: changed signature, GDC needs a compile-time value for imm8.
-__m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
+__m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) pure @trusted
 {
     // PERF DMD
     static assert(imm8 >= 0 && imm8 < 16);
@@ -123,7 +123,8 @@ __m128 _mm_blend_ps(int imm8)(__m128 a, __m128 b) @trusted
     }
     else
     {
-        __m128 r; // PERF =void;
+        // PERF GDC without SSE4.1 is quite bad
+        __m128 r;
         for (int n = 0; n < 4; ++n)
         {
             r.ptr[n] = (imm8 & (1 << n)) ? b.array[n] : a.array[n];

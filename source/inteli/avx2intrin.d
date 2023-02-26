@@ -488,7 +488,35 @@ unittest
 
 
 // TODO __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8) pure @safe
-// TODO __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8) pure @safe
+
+/// Blend packed 32-bit integers from `a` and `b` using control mask `imm8`.
+__m128i _mm_blend_epi32(int imm8)(__m128i a, __m128i b) pure @trusted
+{
+    // This one is interesting, it is functionally equivalent to SSE4.1 blendps (_mm_blend_ps)
+    // So without AVX2 we can always fallback to _mm_blend_ps
+    // And indeed, a shufflevector!int4 doesn't even use vpblendd with LDC, and prefer
+    // blendps and shufps so why bother.
+
+    // PERF DMD
+    static assert(imm8 >= 0 && imm8 < 16);
+    static if (GDC_with_AVX2)
+    {
+        return __builtin_ia32_pblendd128(a, b, imm8);
+    }
+    else
+    {
+        return cast(__m128i) _mm_blend_ps!imm8(cast(__m128)a, cast(__m128)b);
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, 1,  2,  3);
+    __m128i B = _mm_setr_epi32(8, 9, 10, 11);
+    int4 C = _mm_blend_epi32!13(A, B); // 1101
+    int[4] correct =    [8, 1, 10, 11];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8) pure @safe
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
 
@@ -631,7 +659,9 @@ unittest
 /// Note: also exist with name `_mm256_broadcastsi128_si256` which is identical.
 __m256i _mm_broadcastsi128_si256 (__m128i a) pure @trusted
 {
-    // PERF GDC
+    // Note that GDC will prefer vinserti128 to vbroadcast, for some reason
+    // So in the end it's the same as naive code.
+    // For this reason, __builtin_ia32_vbroadcastsi256 isn't used
     long2 ba = cast(long2)a;
     long4 r;
     r.ptr[0] = ba.array[0];
