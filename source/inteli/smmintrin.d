@@ -40,11 +40,12 @@ enum int _MM_FROUND_NEARBYINT = (_MM_FROUND_NO_EXC    | _MM_FROUND_CUR_DIRECTION
 
 /// Blend packed 16-bit integers from `a` and `b` using control mask `imm8`, and store the results.
 // Note: changed signature, GDC needs a compile-time value for imm8.
-__m128i _mm_blend_epi16(int imm8)(__m128i a, __m128i b) @trusted
+__m128i _mm_blend_epi16(int imm8)(__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
     {
+        pragma(inline, true); // else wouldn't inline in _mm256_blend_epi16
         return cast(__m128i) __builtin_ia32_pblendw128(cast(short8)a, cast(short8)b, imm8);
     }
     else 

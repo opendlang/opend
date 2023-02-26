@@ -486,10 +486,40 @@ unittest
         assert(avg.array[i] == cast(byte)134);
 }
 
+/// Blend packed 16-bit integers from `a` and `b` within 128-bit lanes using 8-bit control
+/// mask `imm8`, in each of the two lanes.
+/// Note: this is functionally equivalent to two `_mm_blend_epi16`.
+__m256i _mm256_blend_epi16(int imm8) (__m256i a, __m256i b) pure @trusted
+{
+    // PERF DMD
+    assert(imm8 >= 0 && imm8 < 256);
+    enum bool split = true; // makes things better, except on ARM32 which is no better than naive
 
-// TODO __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8) pure @safe
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pblendw256(cast(short16)a, cast(short16)b, imm8);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_blend_epi16!(imm8)(a_lo, b_lo);
+        __m128i r_hi = _mm_blend_epi16!(imm8)(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi16(0, 1,  2,  3,  4,  5,  6,  7,  0, -1,  -2,  -3,  -4,  -5,  -6,  -7);
+    __m256i B = _mm256_setr_epi16(8, 9, 10, 11, 12, 13, 14, 15, -8, -9, -10, -11, -12, -13, -14, -15);
+    short16 C = cast(short16) _mm256_blend_epi16!147(A, B); // 10010011 10010011
+    short[16] correct =        [8, 9,  2,  3, 12,  5,  6, 15, -8, -9,  -2, -3, -12,  -5,  -6, -15];
+    assert(C.array == correct);
+}
 
-/// Blend packed 32-bit integers from `a` and `b` using control mask `imm8`.
+/// Blend packed 32-bit integers from `a` and `b` using 4-bit control mask `imm8`.
 __m128i _mm_blend_epi32(int imm8)(__m128i a, __m128i b) pure @trusted
 {
     // This one is interesting, it is functionally equivalent to SSE4.1 blendps (_mm_blend_ps)
@@ -517,7 +547,33 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8) pure @safe
+/// Blend packed 32-bit integers from `a` and `b` using 8-bit control mask `imm8`.
+__m256i _mm256_blend_epi32(int imm8)(__m256i a, __m256i b) pure @trusted
+{
+    // This one is functionally equivalent to AVX _mm256_blend_ps, except with integers.
+    // With LDC, doing a shufflevector here would select the vblendps instruction anyway,
+    // so we might as well defer to _mm256_blend_ps.
+
+    // PERF DMD
+    static assert(imm8 >= 0 && imm8 < 256);
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pblendd256 (cast(int8)a, cast(int8)b, imm8);
+    }
+    else
+    {
+        return cast(__m256i) _mm256_blend_ps!imm8(cast(__m256)a, cast(__m256)b);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(0, 1,  2,  3,  4,  5,  6,  7);
+    __m256i B = _mm256_setr_epi32(8, 9, 10, 11, 12, 13, 147, 15);
+    int8 C = cast(int8) _mm256_blend_epi32!0xe7(A, B);
+    int[8] correct =             [8, 9, 10,  3,  4, 13, 147, 15];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
 
 /// Broadcast the low packed 8-bit integer from `a` to all elements of result.
