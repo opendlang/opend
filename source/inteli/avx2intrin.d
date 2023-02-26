@@ -628,6 +628,7 @@ unittest
 }
 
 /// Broadcast 128 bits of integer data from ``a to all 128-bit lanes in result.
+/// Note: also exist with name `_mm256_broadcastsi128_si256` which is identical.
 __m256i _mm_broadcastsi128_si256 (__m128i a) pure @trusted
 {
     // PERF GDC
