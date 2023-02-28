@@ -442,7 +442,7 @@ enum bool isTypeSet(T...) = is(T == TypeSet!T);
 /++
 Variant Type (aka Algebraic Type).
 
-The impllementation is defined as
+The implementation is defined as
 ----
 alias Variant(T...) = Algebraic!(TypeSet!T);
 ----
@@ -710,7 +710,7 @@ version(mir_core_test) unittest
 /++
 Nullable $(LREF Variant) Type (aka Algebraic Type).
 
-The impllementation is defined as
+The implementation is defined as
 ----
 alias Nullable(T...) = Variant!(typeof(null), T);
 ----
