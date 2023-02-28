@@ -315,7 +315,7 @@ struct IOCallbacks
 template RIFFChunkId(string id)
 {
     static assert(id.length == 4);
-    uint RIFFChunkId = (cast(ubyte)(id[0]) << 24)
+    __gshared uint RIFFChunkId = (cast(ubyte)(id[0]) << 24)
         | (cast(ubyte)(id[1]) << 16)
         | (cast(ubyte)(id[2]) << 8)
         | (cast(ubyte)(id[3]));
