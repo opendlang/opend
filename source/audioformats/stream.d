@@ -1369,23 +1369,15 @@ private:
             // Check if it's a WAV.
 
             _io.seek(0, false, userData);
-
-            try
+            _wavDecoder = mallocNew!WAVDecoder(_io, userData);
+            if(_wavDecoder.scan() == WAVDecoder.WAVError.none)
             {
-                _wavDecoder = mallocNew!WAVDecoder(_io, userData);
-                _wavDecoder.scan();
-
                 // WAV detected
                 _format = AudioFileFormat.wav;
                 _sampleRate = _wavDecoder._sampleRate;
                 _numChannels = _wavDecoder._channels;
                 _lengthInFrames = _wavDecoder._lengthInFrames;
                 return;
-            }
-            catch(AudioFormatsException e)
-            {
-                // not a WAV
-                destroyFree(e);
             }
             destroyFree(_wavDecoder);
             _wavDecoder = null;
