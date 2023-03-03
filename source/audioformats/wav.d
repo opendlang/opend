@@ -15,10 +15,27 @@ import audioformats.internals;
 version(decodeWAV)
 {
     /// Use both for scanning and decoding
+
     final class WAVDecoder
     {
     public:
     @nogc:
+
+        static struct WAVError
+        {
+            @nogc nothrow pure @safe:
+            string reason;
+            string file;
+            size_t line;
+            static WAVError none() {return WAVError("","",0);}
+
+            this(string reason, string file = __FILE__, size_t line = __LINE__)
+            {
+                this.reason = reason;
+                this.file = file;
+                this.line = line;
+            }
+        }
 
         static immutable ubyte[16] KSDATAFORMAT_SUBTYPE_IEEE_FLOAT = 
         [3, 0, 0, 0, 0, 0, 16, 0, 128, 0, 0, 170, 0, 56, 155, 113];
@@ -30,20 +47,20 @@ version(decodeWAV)
         }
 
         // After scan, we know _sampleRate, _lengthInFrames, and _channels, and can call `readSamples`
-        void scan()
+        WAVError scan()
         {
             // check RIFF header
             {
                 uint chunkId, chunkSize;
                 _io.readRIFFChunkHeader(_userData, chunkId, chunkSize);
                 if (chunkId != RIFFChunkId!"RIFF")
-                    throw mallocNew!AudioFormatsException("Expected RIFF chunk.");
+                    return WAVError("Expected RIFF chunk.");
 
                 if (chunkSize < 4)
-                    throw mallocNew!AudioFormatsException("RIFF chunk is too small to contain a format.");
+                    return WAVError("RIFF chunk is too small to contain a format.");
 
                 if (_io.read_uint_BE(_userData) !=  RIFFChunkId!"WAVE")
-                    throw mallocNew!AudioFormatsException("Expected WAVE format.");
+                    return WAVError("Expected WAVE format.");
             }
 
             bool foundFmt = false;
@@ -70,34 +87,34 @@ version(decodeWAV)
                 if (chunkId == RIFFChunkId!"fmt ")
                 {
                     if (foundFmt)
-                        throw mallocNew!AudioFormatsException("Found several 'fmt ' chunks in RIFF file.");
+                        return WAVError("Found several 'fmt ' chunks in RIFF file.");
 
                     foundFmt = true;
 
                     if (chunkSize < 16)
-                        throw mallocNew!AudioFormatsException("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
+                        return WAVError("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
 
                     _audioFormat = _io.read_ushort_LE(_userData);
                     bool isWFE = _audioFormat == WAVE_FORMAT_EXTENSIBLE;
 
                     if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE && !isWFE)
-                        throw mallocNew!AudioFormatsException("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
+                        return WAVError("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
 
                     _channels = _io.read_ushort_LE(_userData);
 
                     _sampleRate = _io.read_uint_LE(_userData);
                     if (_sampleRate <= 0)
-                        throw mallocNew!AudioFormatsException("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
+                        return WAVError("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
 
                     uint bytesPerSec = _io.read_uint_LE(_userData);
                     int bytesPerFrame = _io.read_ushort_LE(_userData);
                     bitsPerSample = _io.read_ushort_LE(_userData);
 
                     if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32 && bitsPerSample != 64) 
-                        throw mallocNew!AudioFormatsException("Unsupported bitdepth");
+                        return WAVError("Unsupported bitdepth");
 
                     if (bytesPerFrame != (bitsPerSample / 8) * _channels)
-                        throw mallocNew!AudioFormatsException("Invalid bytes-per-second, data might be corrupted.");
+                        return WAVError("Invalid bytes-per-second, data might be corrupted.");
 
                     // Sometimes there is no cbSize
                     if (chunkSize >= 18)
@@ -117,10 +134,10 @@ version(decodeWAV)
                                     _audioFormat = FloatingPointIEEE;
                                 }
                                 else
-                                    throw mallocNew!AudioFormatsException("Unsupported GUID in WAVE_FORMAT_EXTENSIBLE.");
+                                    return WAVError("Unsupported GUID in WAVE_FORMAT_EXTENSIBLE.");
                             }
                             else
-                                throw mallocNew!AudioFormatsException("Unsupported WAVE_FORMAT_EXTENSIBLE.");
+                                return WAVError("Unsupported WAVE_FORMAT_EXTENSIBLE.");
 
                             _io.skip(chunkSize - (18 + 2 + 4 + 16), _userData);
                         }
@@ -138,15 +155,15 @@ version(decodeWAV)
                 else if (chunkId == RIFFChunkId!"data")
                 {
                     if (foundData)
-                        throw mallocNew!AudioFormatsException("Found several 'data' chunks in RIFF file.");
+                        return WAVError("Found several 'data' chunks in RIFF file.");
 
                     if (!foundFmt)
-                        throw mallocNew!AudioFormatsException("'fmt ' chunk expected before the 'data' chunk.");
+                        return WAVError("'fmt ' chunk expected before the 'data' chunk.");
 
                     _bytePerSample = bitsPerSample / 8;
                     uint frameSize = _channels * _bytePerSample;
                     if (chunkSize % frameSize != 0)
-                        throw mallocNew!AudioFormatsException("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
+                        return WAVError("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
 
                     uint numFrames = chunkSize / frameSize;
                     _lengthInFrames = numFrames;
@@ -164,14 +181,16 @@ version(decodeWAV)
             }
 
             if (!foundFmt)
-                throw mallocNew!AudioFormatsException("'fmt ' chunk not found.");
+                return WAVError("'fmt ' chunk not found.");
 
             if (!foundData)
-                throw mallocNew!AudioFormatsException("'data' chunk not found.");
+                return WAVError("'data' chunk not found.");
 
             // Get ready to decode
             _io.seek(_samplesOffsetInFile, false, _userData);
             _framePosition = 0; // seek to start
+
+            return WAVError.none;
         }
 
         /// Returns: false in case of failure.
