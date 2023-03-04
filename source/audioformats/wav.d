@@ -11,6 +11,8 @@ import core.stdc.stdlib: rand, RAND_MAX;
 import audioformats.io;
 import audioformats.internals;
 
+@nogc:
+nothrow:
 
 version(decodeWAV)
 {
@@ -20,6 +22,7 @@ version(decodeWAV)
     {
     public:
     @nogc:
+    nothrow:
 
         static struct WAVError
         {
@@ -52,14 +55,17 @@ version(decodeWAV)
             // check RIFF header
             {
                 uint chunkId, chunkSize;
-                _io.readRIFFChunkHeader(_userData, chunkId, chunkSize);
+                bool err;
+                _io.readRIFFChunkHeader(_userData, chunkId, chunkSize, &err);
+                if (err)
+                    return WAVError("Cannot read RIFF header");
                 if (chunkId != RIFFChunkId!"RIFF")
                     return WAVError("Expected RIFF chunk.");
 
                 if (chunkSize < 4)
                     return WAVError("RIFF chunk is too small to contain a format.");
 
-                if (_io.read_uint_BE(_userData) !=  RIFFChunkId!"WAVE")
+                if (_io.read_uint_BE(_userData, &err) !=  RIFFChunkId!"WAVE")
                     return WAVError("Expected WAVE format.");
             }
 
@@ -76,14 +82,22 @@ version(decodeWAV)
                 // extra 0 byte after an AFAn chunk, very odd
                 if (_io.remainingBytesToRead(_userData) == 1)
                 {
-                    if (_io.peek_ubyte(_userData) == 0)
-                        break;
+                    bool err;
+                    ubyte res = _io.peek_ubyte(_userData, &err);
+                    if (err)
+                        return WAVError("cannot read ubyte");
+                    if (res == 0)
+                        break;                    
                 }
 
                 // Question: is there any reason to parse the whole WAV file? This prevents streaming.
 
                 uint chunkId, chunkSize;
-                _io.readRIFFChunkHeader(_userData, chunkId, chunkSize); 
+                bool err;
+                _io.readRIFFChunkHeader(_userData, chunkId, chunkSize, &err); 
+                if (err)
+                    return WAVError("Cannot read RIFF header");
+
                 if (chunkId == RIFFChunkId!"fmt ")
                 {
                     if (foundFmt)
@@ -94,21 +108,26 @@ version(decodeWAV)
                     if (chunkSize < 16)
                         return WAVError("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
 
-                    _audioFormat = _io.read_ushort_LE(_userData);
+                    _audioFormat = _io.read_ushort_LE(_userData, &err);
+                    if (err) return WAVError("Cannot read WAV format");
                     bool isWFE = _audioFormat == WAVE_FORMAT_EXTENSIBLE;
 
                     if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE && !isWFE)
                         return WAVError("Unsupported audio format, only PCM and IEEE float and WAVE_FORMAT_EXTENSIBLE are supported.");
 
-                    _channels = _io.read_ushort_LE(_userData);
+                    _channels = _io.read_ushort_LE(_userData, &err);
+                    if (err) return WAVError("Cannot read number of channels");
 
-                    _sampleRate = _io.read_uint_LE(_userData);
+                    _sampleRate = _io.read_uint_LE(_userData, &err);
                     if (_sampleRate <= 0)
                         return WAVError("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
 
-                    uint bytesPerSec = _io.read_uint_LE(_userData);
-                    int bytesPerFrame = _io.read_ushort_LE(_userData);
-                    bitsPerSample = _io.read_ushort_LE(_userData);
+                    uint bytesPerSec = _io.read_uint_LE(_userData, &err);
+                    if (err) return WAVError("Cannot read bytesPerSec");
+                    int bytesPerFrame = _io.read_ushort_LE(_userData, &err);
+                    if (err) return WAVError("Cannot read bytesPerFrame");
+                    bitsPerSample = _io.read_ushort_LE(_userData, &err);
+                    if (err) return WAVError("Cannot read bitsPerSample");
 
                     if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32 && bitsPerSample != 64) 
                         return WAVError("Unsupported bitdepth");
@@ -119,15 +138,19 @@ version(decodeWAV)
                     // Sometimes there is no cbSize
                     if (chunkSize >= 18)
                     {
-                        ushort cbSize = _io.read_ushort_LE(_userData);
+                        ushort cbSize = _io.read_ushort_LE(_userData, &err);
+                        if (err) return WAVError("Cannot read cbSize");
 
                         if (isWFE)
                         {
                             if (cbSize >= 22)
                             {
-                                ushort wReserved = _io.read_ushort_LE(_userData);
-                                uint dwChannelMask = _io.read_uint_LE(_userData);
-                                ubyte[16] SubFormat = _io.read_guid(_userData);
+                                ushort wReserved = _io.read_ushort_LE(_userData, &err);
+                                if (err) return WAVError("Cannot read wReserved");
+                                uint dwChannelMask = _io.read_uint_LE(_userData, &err);
+                                if (err) return WAVError("Cannot read dwChannelMask");
+                                ubyte[16] SubFormat = _io.read_guid(_userData, &err);
+                                if (err) return WAVError("Cannot read SubFormat");
 
                                 if (SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
                                 {
@@ -216,8 +239,10 @@ version(decodeWAV)
         // read interleaved samples
         // `outData` should have enough room for frames * _channels
         // Returs: Frames actually read.
-        int readSamples(T)(T* outData, int maxFrames)
+        int readSamples(T)(T* outData, int maxFrames, bool* err)
         {
+            *err = false;
+
             assert(_framePosition <= _lengthInFrames);
             int available = _lengthInFrames - _framePosition;
 
@@ -231,70 +256,88 @@ version(decodeWAV)
 
             uint n = 0;
 
-            try
-            {
+           
                 if (_audioFormat == FloatingPointIEEE)
+            {
+                if (_bytePerSample == 4)
                 {
-                    if (_bytePerSample == 4)
+                    for (n = 0; n < numSamples; ++n)
                     {
-                        for (n = 0; n < numSamples; ++n)
-                            outData[n] = _io.read_float_LE(_userData);
+                        float sample = _io.read_float_LE(_userData, err);
+                        if (*err)
+                            return 0; // could return n, but well
+                        outData[n] = sample;                        
                     }
-                    else if (_bytePerSample == 8)
-                    {
-                        for (n = 0; n < numSamples; ++n)
-                            outData[n] = _io.read_double_LE(_userData);
-                    }
-                    else
-                        throw mallocNew!AudioFormatsException("Unsupported bit-depth for floating point data, should be 32 or 64.");
                 }
-                else if (_audioFormat == LinearPCM)
+                else if (_bytePerSample == 8)
                 {
-                    if (_bytePerSample == 1)
+                    for (n = 0; n < numSamples; ++n)
                     {
-                        for (n = 0; n < numSamples; ++n)
-                        {
-                            ubyte b = _io.read_ubyte(_userData);
-                            outData[n] = (b - 128) / 127.0;
-                        }
+                        double sample = _io.read_double_LE(_userData, err);
+                        if (*err)
+                            return 0; // ditto
+                        outData[n] = sample;
                     }
-                    else if (_bytePerSample == 2)
-                    {
-                        for (n = 0; n < numSamples; ++n)
-                        {
-                            short s = _io.read_ushort_LE(_userData);
-                            outData[n] = s / 32767.0;
-                        }
-                    }
-                    else if (_bytePerSample == 3)
-                    {
-                        for (n = 0; n < numSamples; ++n)
-                        {
-                            int s = _io.read_24bits_LE(_userData);
-                            // duplicate sign bit
-                            s = (s << 8) >> 8;
-                            outData[n] = s / 8388607.0;
-                        }
-                    }
-                    else if (_bytePerSample == 4)
-                    {
-                        for (n = 0; n < numSamples; ++n)
-                        {
-                            int s = _io.read_uint_LE(_userData);
-                            outData[n] = s / 2147483648.0;
-                        }
-                    }
-                    else
-                        throw mallocNew!AudioFormatsException("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
                 }
                 else
-                    assert(false); // should have been handled earlier, crash
+                {
+                    *err = true;
+                    return 0; // Unsupported bit-depth for floating point data, should be 32 or 64.
+                }
             }
-            catch(AudioFormatsException e)
+            else if (_audioFormat == LinearPCM)
             {
-                destroyFree(e); // well this is really unexpected, since no read should fail in this loop
-                return 0;
+                if (_bytePerSample == 1)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        ubyte b = _io.read_ubyte(_userData, err);
+                        if (*err)
+                            return 0; // ditto
+                        outData[n] = (b - 128) / 127.0;
+                    }
+                }
+                else if (_bytePerSample == 2)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        short s = _io.read_ushort_LE(_userData, err);
+                        if (*err)
+                            return 0; // ditto
+                        outData[n] = s / 32767.0;
+                    }
+                }
+                else if (_bytePerSample == 3)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        int s = _io.read_24bits_LE(_userData, err);
+                        if (*err)
+                            return 0; // ditto
+                        // duplicate sign bit
+                        s = (s << 8) >> 8;
+                        outData[n] = s / 8388607.0;
+                    }
+                }
+                else if (_bytePerSample == 4)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        int s = _io.read_uint_LE(_userData, err);
+                        if (*err)
+                            return 0; // ditto
+                        outData[n] = s / 2147483648.0;
+                    }
+                }
+                else
+                {
+                    // Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.
+                    *err = true;
+                    return 0;
+                }
             }
+            else
+                assert(false); // should have been handled earlier, crash
 
             // Return number of integer samples read
             return frames;
@@ -323,6 +366,7 @@ version(encodeWAV)
     {
     public:
     @nogc:
+    nothrow:
         enum Format
         {
             s8,
@@ -337,8 +381,15 @@ version(encodeWAV)
             return fmt <= Format.s24le;
         }
 
-        this(IOCallbacks* io, void* userData, int sampleRate, int numChannels, Format format, bool enableDither)
+        this(IOCallbacks* io, 
+             void* userData, 
+             int sampleRate, 
+             int numChannels, 
+             Format format, 
+             bool enableDither,
+             bool* err)
         {
+            *err = false;
             _io = io;
             _userData = userData;
             _channels = numChannels;
@@ -347,7 +398,11 @@ version(encodeWAV)
 
             // Avoids a number of edge cases.
             if (_channels < 0 || _channels > 1024)
-                throw mallocNew!AudioFormatsException("Can't save a WAV with this numnber of channels.");
+            {
+                // Can't save a WAV with this numnber of channels.
+                *err = true;
+                return;
+            }
 
             // RIFF header
             // its size will be overwritten at finalizing

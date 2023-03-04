@@ -15,6 +15,8 @@ nothrow @nogc
 
 struct IOCallbacks
 {
+nothrow @nogc:
+
     ioSeekCallback seek;
     ioTellCallback tell;
     ioGetFileLengthCallback getFileLength;
@@ -28,12 +30,12 @@ struct IOCallbacks
 
     // <reading>
 
-    bool nothingToReadAnymore(void* userData) @nogc
+    bool nothingToReadAnymore(void* userData)
     {
         return remainingBytesToRead(userData) <= 0;
     }
 
-    long remainingBytesToRead(void* userData) @nogc
+    long remainingBytesToRead(void* userData)
     {
         long cursor = tell(userData);
         long fileLength = getFileLength(userData);
@@ -41,34 +43,49 @@ struct IOCallbacks
         return fileLength - cursor;
     }
   
-    ubyte peek_ubyte(void* userData) @nogc
+    /// Read one ubyte from stream and advance the stream cursor.
+    /// On error, return an error, the stream then is considered invalid.
+    ubyte peek_ubyte(void* userData, bool* err)
     {
-        ubyte b = read_ubyte(userData);
-        seek(tell(userData) - 1, false, userData);
+        ubyte b = read_ubyte(userData, err);
+        if (*err)
+            return 0;
+
+        *err = seek(tell(userData) - 1, false, userData);
         return b;
     }
 
-    ubyte read_ubyte(void* userData) @nogc
+    /// Read one ubyte from stream and advance the stream cursor.
+    /// On error, return 0 and an error, stream is then considered invalid.
+    ubyte read_ubyte(void* userData, bool* err)
     {
         ubyte b;
         if (1 == read(&b, 1, userData))
         {
+            *err = false;
             return b;
         }
-        throw mallocNew!AudioFormatsException("expected ubyte");
+        *err = true;
+        return 0;
     }
 
-    ubyte[16] read_guid(void* userData) @nogc
+    /// Reads a 16-byte UUID from the stream and advance cursor.
+    /// On error, the stream is considered invalid, and the return value is undefined behaviour.
+    ubyte[16] read_guid(void* userData, bool* err)
     {
         ubyte[16] b;
         if (16 == read(&b, 16, userData))
         {
+            *err = false;
             return b;
         }
-        throw mallocNew!AudioFormatsException("expected a GUID");
+        *err = true;
+        return b;
     }
 
-    ushort read_ushort_LE(void* userData) @nogc
+    /// Read one Little Endian ushort from stream and advance the stream cursor.
+    /// On error, return 0 and an error, stream is then considered invalid.
+    ushort read_ushort_LE(void* userData, bool* err)
     {
         ubyte[2] v;
         if (2 == read(v.ptr, 2, userData))
@@ -79,13 +96,20 @@ struct IOCallbacks
                 v[0] = v[1];
                 v[1] = v0;
             }
+
+            *err = false;
             return *cast(ushort*)(v.ptr);
         }
         else
-            throw mallocNew!AudioFormatsException("expected ushort");
+        {
+            *err = true;
+            return 0;
+        }
     }
 
-    uint read_uint_BE(void* userData) @nogc
+    /// Read one Big Endian 32-bit unsigned int from stream and advance the stream cursor.
+    /// On error, return 0 and an error, stream is then considered invalid.
+    uint read_uint_BE(void* userData, bool* err)
     {
         ubyte[4] v;
         if (4 == read(v.ptr, 4, userData))
@@ -99,13 +123,19 @@ struct IOCallbacks
                 v[1] = v[2];
                 v[2] = v1;
             }
+            *err = false;
             return *cast(uint*)(v.ptr);
         }
         else
-            throw mallocNew!AudioFormatsException("expected uint");
+        {
+            *err = true;
+            return 0;
+        }
     }
 
-    uint read_uint_LE(void* userData) @nogc
+    /// Read one Little Endian 32-bit unsigned int from stream and advance the stream cursor.
+    /// On error, return 0 and an error, stream is then considered invalid.
+    uint read_uint_LE(void* userData, bool* err)
     {
         ubyte[4] v;
         if (4 == read(v.ptr, 4, userData))
@@ -119,30 +149,47 @@ struct IOCallbacks
                 v[1] = v[2];
                 v[2] = v1;
             }
+            *err = false;
             return *cast(uint*)(v.ptr);
         }
         else
-            throw mallocNew!AudioFormatsException("expected uint");
+        {
+            *err = true;
+            return 0;
+        }
     }
 
-    uint read_24bits_LE(void* userData) @nogc
+    /// Read one Little Endian 24-bit unsigned int from stream and advance the stream cursor.
+    /// On error, return 0 and an error, stream is then considered invalid.
+    uint read_24bits_LE(void* userData, bool *err)
     {
         ubyte[3] v;
         if (3 == read(v.ptr, 3, userData))
         {
+            *err = false;
             return v[0] | (v[1] << 8) | (v[2] << 16);
         }
         else
-            throw mallocNew!AudioFormatsException("expected 24-bit int");
+        {
+            *err = true;
+            return 0;
+        }
     }
 
-    float read_float_LE(void* userData) @nogc
+    /// Read one Little Endian 32-bit float from stream and advance the stream cursor.
+    /// On error, return `float.nan` and an error, stream is then considered invalid.
+    float read_float_LE(void* userData, bool* err)
     {
-        uint u = read_uint_LE(userData);
-        return *cast(float*)(&u);
+        uint u = read_uint_LE(userData, err);
+        if (*err)
+            return float.nan;
+        else
+            return *cast(float*)(&u);
     }
 
-    double read_double_LE(void* userData) @nogc
+    /// Read one Little Endian 64-bit float from stream and advance the stream cursor.
+    /// On error, return `double.nan` and an error, stream is then considered invalid.
+    double read_double_LE(void* userData, bool* err)
     {
         ubyte[8] v;
         if (8 == read(v.ptr, 8, userData))
@@ -165,13 +212,26 @@ struct IOCallbacks
             return *cast(double*)(v.ptr);
         }
         else
-            throw mallocNew!AudioFormatsException("expected double");
+        {
+            *err = true;
+            return double.nan;
+        }
     }
 
-    void readRIFFChunkHeader(void* userData, ref uint chunkId, ref uint chunkSize) @nogc
+    /// Read one Lthe two fields of a RIFF header: chunk ID and chunk size.
+    /// On error, return values are undefined behaviour.
+    void readRIFFChunkHeader(void* userData, 
+                             ref uint chunkId, 
+                             ref uint chunkSize,
+                             bool* err)
     {
-        chunkId = read_uint_BE(userData);
-        chunkSize = read_uint_LE(userData);
+        // chunk ID is read as Big Endian uint
+        chunkId = read_uint_BE(userData, err);
+        if (*err)
+            return;
+
+        // chunk size is read as Little Endian uint
+        chunkSize = read_uint_LE(userData, err);
     }
 
     // </reading>
@@ -180,7 +240,9 @@ struct IOCallbacks
 
     string writeFailureMessage = "write failure";
 
-    void write_uint_BE(void* userData, uint value) @nogc
+    /// Write a Big Endian 32-bit unsigned int to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_uint_BE(void* userData, uint value)
     {
         ubyte[4] v;
         *cast(uint*)(v.ptr) = value;
@@ -193,18 +255,19 @@ struct IOCallbacks
             v[1] = v[2];
             v[2] = v1;
         }
-
-        if (4 != write(v.ptr, 4, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return (4 == write(v.ptr, 4, userData));
     }
 
-    void write_byte(void* userData, byte value) @nogc
+    /// Write a 8-bit signed int to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_byte(void* userData, byte value)
     {
-        if (1 != write(&value, 1, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 1 == write(&value, 1, userData);
     }
 
-    void write_short_LE(void* userData, short value) @nogc
+    /// Write a 8-bit signed int to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_short_LE(void* userData, short value)
     {
         ubyte[2] v;
         *cast(ushort*)(v.ptr) = value;
@@ -214,11 +277,12 @@ struct IOCallbacks
             v[0] = v[1];
             v[1] = v0;
         }
-        if (2 != write(v.ptr, 2, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 2 == write(v.ptr, 2, userData);
     }
 
-    void write_24bits_LE(void* userData, int value) @nogc
+    /// Write a Little Endian 24-bit signed int to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_24bits_LE(void* userData, int value)
     {
         ubyte[4] v;
         *cast(int*)(v.ptr) = value;
@@ -231,21 +295,26 @@ struct IOCallbacks
             v[1] = v[2];
             v[2] = v1;
         }
-        if (3 != write(v.ptr, 3, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 3 == write(v.ptr, 3, userData);
     }
 
-    void write_float_LE(void* userData, float value) @nogc
+    /// Write a Little Endian 32-bit float to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_float_LE(void* userData, float value)
     {
-        write_uint_LE(userData, *cast(uint*)(&value));
+        return write_uint_LE(userData, *cast(uint*)(&value));
     }
 
-    void write_double_LE(void* userData, float value) @nogc
+    /// Write a Little Endian 64-bit double to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_double_LE(void* userData, float value)
     {
-        write_ulong_LE(userData, *cast(ulong*)(&value));
+        return write_ulong_LE(userData, *cast(ulong*)(&value));
     }
 
-    void write_ulong_LE(void* userData, ulong value) @nogc
+    /// Write a Little Endian 64-bit unsigned integer to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_ulong_LE(void* userData, ulong value)
     {
         ubyte[8] v;
         *cast(ulong*)(v.ptr) = value;
@@ -265,11 +334,12 @@ struct IOCallbacks
             v[4] = v3;
         }
 
-        if (8 != write(v.ptr, 8, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 8 == write(v.ptr, 8, userData);
     }
 
-    void write_uint_LE(void* userData, uint value) @nogc
+    /// Write a Little Endian 32-bit unsigned integer to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_uint_LE(void* userData, uint value)
     {
         ubyte[4] v;
         *cast(uint*)(v.ptr) = value;
@@ -283,11 +353,12 @@ struct IOCallbacks
             v[2] = v1;
         }
 
-        if (4 != write(v.ptr, 4, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 4 == write(v.ptr, 4, userData);
     }
 
-    void write_ushort_LE(void* userData, ushort value) @nogc
+    /// Write a Little Endian 16-bit unsigned integer to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool write_ushort_LE(void* userData, ushort value)
     {
         ubyte[2] v;
         *cast(ushort*)(v.ptr) = value;
@@ -297,15 +368,16 @@ struct IOCallbacks
             v[0] = v[1];
             v[1] = v0;
         }
-
-        if (2 != write(v.ptr, 2, userData))
-            throw mallocNew!AudioFormatsException(writeFailureMessage);
+        return 2 == write(v.ptr, 2, userData);
     }
 
-    void writeRIFFChunkHeader(void* userData, uint chunkId, uint chunkSize) @nogc
+    /// Write a RIFF header to stream and advance cursor.
+    /// Returns: `true` on success, else stream is invalid.
+    bool writeRIFFChunkHeader(void* userData, uint chunkId, uint chunkSize)
     {
-        write_uint_BE(userData, chunkId);
-        write_uint_LE(userData, chunkSize);
+        if (!write_uint_BE(userData, chunkId))
+            return false;
+        return write_uint_LE(userData, chunkSize);
     }
 
     // </writing>

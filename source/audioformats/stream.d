@@ -88,7 +88,7 @@ enum audiostreamUnknownLength = -1;
 public struct AudioStream
 {
 public: // This is also part of the public API
-
+ 
 
     /// Opens an audio stream that decodes from a file.
     /// This stream will be opened for reading only.
@@ -247,6 +247,14 @@ public: // This is also part of the public API
     ~this() @nogc
     {
         cleanUp();
+    }
+
+    /// FUTURE: will replace Exception.
+    /// A Stream that is `isError` cannot be used except for initialization again.
+    /// Work in progress, only WAV for now.
+    bool isError()
+    {
+        return _isError;
     }
 
     /// Returns: File format of this stream.
@@ -488,8 +496,15 @@ public: // This is also part of the public API
                 version(decodeWAV)
                 {
                     assert(_wavDecoder !is null);
-                    int readFrames = _wavDecoder.readSamples!float(outData, frames); 
-                    return readFrames;
+                    bool err;
+                    int readFrames = _wavDecoder.readSamples!float(outData, frames, &err); 
+                    if (err)
+                    {
+                        _isError = true;
+                        return 0;
+                    }
+                    else
+                        return readFrames;
                 }
                 else
                 {
@@ -566,7 +581,13 @@ public: // This is also part of the public API
                 version(decodeWAV)
                 {
                     assert(_wavDecoder !is null);
-                    int readFrames = _wavDecoder.readSamples!double(outData, frames); 
+                    bool err;
+                    int readFrames = _wavDecoder.readSamples!double(outData, frames, &err); 
+                    if (err)
+                    {
+                        _isError = true;
+                        return 0;
+                    }
                     return readFrames;
                 }
                 else
@@ -1131,6 +1152,7 @@ private:
     float _sampleRate; 
     int _numChannels;
     long _lengthInFrames;
+    bool _isError;
 
     float[] _floatDecodeBuf;
 
@@ -1585,7 +1607,10 @@ private:
                     case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
                     case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
                 }
-                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither);
+                bool err;
+                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither, &err);
+                if (err)
+                    throw mallocNew!AudioFormatsException("Can't create WAVEncoder");
                 break;
             }
             case unknown:
