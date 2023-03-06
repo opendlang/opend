@@ -238,12 +238,12 @@ mixin template MirThrowableImpl()
 
     override string message() const @safe pure nothrow
     {
-        return msg ? msg : _msg.idup;
+        return _msg ? _msg.idup : msg;
     }
 
     const(char)[] scopeMessage() scope const @safe pure nothrow @nogc
     {
-        return msg ? msg : _msg;
+        return _msg ? _msg : msg;
     }
 
     /++
@@ -256,14 +256,14 @@ mixin template MirThrowableImpl()
     @nogc @trusted pure nothrow this(scope const(char)[] msg, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null)
     {
         this._msg = mirExceptionInitilizePayloadImpl(_payload, msg);
-        super(null, file, line, nextInChain);
+        super(cast(immutable)this._msg, file, line, nextInChain);
     }
 
     /// ditto
     @nogc @trusted pure nothrow this(scope const(char)[] msg, Throwable nextInChain, string file = __FILE__, size_t line = __LINE__)
     {
         this._msg = mirExceptionInitilizePayloadImpl(_payload, msg);
-        super(null, file, line, nextInChain);
+        super(cast(immutable)this._msg, file, line, nextInChain);
     }
 
     /// ditto
