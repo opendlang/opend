@@ -86,6 +86,7 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
+    import mir.math.sum: sum;
     import mir.ndslice.slice: sliced;
     import mir.test: shouldApprox;
 
