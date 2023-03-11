@@ -464,7 +464,7 @@ LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = nu
     Slice!(const(T)*) u,
 )
 {
-    auto fInst = delegate(Slice!(const(T)*) x, Slice!(T*) y)
+    scope fInst = delegate(Slice!(const(T)*) x, Slice!(T*) y)
     {
         f(x, y);
     };
@@ -476,7 +476,7 @@ LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = nu
         enum LeastSquaresJacobian!T gInst = null;
     else
     {
-        auto gInst = delegate(Slice!(const(T)*) x, Slice!(T*, 2) J)
+        scope gInst = delegate(Slice!(const(T)*) x, Slice!(T*, 2) J)
         {
             g(x, J);
         };
@@ -494,7 +494,7 @@ LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = nu
         enum LeastSquaresThreadManager tmInst = null;
     else
     {
-        auto tmInst = delegate(
+        scope tmInst = delegate(
             uint count,
             scope LeastSquaresTask task)
         {
@@ -888,8 +888,7 @@ LeastSquaresResult!T optimizeLeastSquaresImplGeneric(T)
 { typeof(return) ret; with(ret) with(settings){
     pragma(inline, false);
     import mir.algorithm.iteration: all;
-    import mir.blas;
-    import mir.lapack;
+    import mir.blas: axpy, gemv, scal, ger, copy, axpy, dot, swap, symv, iamax, syrk, Uplo, nrm2;
     import mir.math.common;
     import mir.math.sum: sum;
     import mir.ndslice.allocation: stdcUninitSlice;

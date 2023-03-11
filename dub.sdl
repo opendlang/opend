@@ -4,7 +4,7 @@ description "Optimisation Framework"
 copyright "Copyright © 2018, Kaleidic Associates and Symmetry Investments"
 targetType "library"
 license "BSL-1.0"
-dependency "mir-lapack" version="~>1.2.3"
+dependency "mir-lapack" version=">=1.2.3"
 dependency "mir-algorithm" version=">=3.7.19"
 
 buildType "better-c-release" {
