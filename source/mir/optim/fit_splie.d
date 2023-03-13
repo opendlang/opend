@@ -19,12 +19,12 @@ Params:
     x = fixed X values of the spline
     l = lower bounds for spline(X) values
     u = upper bounds for spline(X) values
-    lambda = coefficient for the integral of the squre of the second derivative
+    lambda = coefficient for the integral of the square of the second derivative
     configuration = spline configuration (optional)
 Returns: $(FitSplineResult)
 +/
 FitSplineResult!T fitSpline(alias d = "a - b", T)(
-    scope ref LeastSquaresSettings!T settings,
+    scope const ref LeastSquaresSettings!T settings,
     scope const T[2][] points,
     scope const T[] x,
     scope const T[] l,
@@ -71,9 +71,7 @@ FitSplineResult!T fitSpline(alias d = "a - b", T)(
             foreach (i; 1 .. x.length)
             {
                 T rd = ret.spline.withTwoDerivatives(x[i])[1];
-                auto one_3a = fabs(rd - ld) < T.min_normal ? 0 : (x[i] - x[i - 1]) / (rd - ld);
-                auto part = (rd * rd * rd - ld * ld * ld) * one_3a;
-                integral += part;
+                integral += (rd * rd + rd * ld + ld * ld) * (x[i] - x[i - 1]);
                 ld = rd;
             }
             assert(integral >= 0);
@@ -86,9 +84,10 @@ FitSplineResult!T fitSpline(alias d = "a - b", T)(
     return ret;
 }
 
-// @safe pure
+@safe pure
 unittest
 {
+    import mir.test;
 
     LeastSquaresSettings!double settings;
 
@@ -101,6 +100,7 @@ unittest
 
     auto u = new double[x.length];
     u[] = +double.infinity;
+    import mir.stdio;
 
     double[2][] points = [
         [x[0] + 0.5, -0.68361541],
@@ -117,23 +117,23 @@ unittest
 
     auto result = settings.fitSpline(points, x, l, u, 0);
 
-    import mir.test;
     foreach (i; 0 .. x.length)
         result.spline(x[i]).shouldApprox == y[i];
 
     result = settings.fitSpline(points, x, l, u, 1);
 
+    // this case sensetive for numeric noise
     y = [
-        0.19875353860959075,
-        5.937879391669947,
-        7.453487834452171,
-        5.1234828581238085,
-        11.909020925809962,
-        13.702552020227897,
-        16.980081698933578,
-        7.86933302057737,
-        16.20347598950289,
-        19.57309893410659,
+        0.1971683531479794,
+        5.936895050720581,
+        7.451651002121712,
+        5.122509287945581,
+        11.908292461047825,
+        13.701350302891292,
+        16.97948422229589,
+        7.868130112291985,
+        16.20637990062554,
+        19.58302823176968,
     ];
 
     foreach (i; 0 .. x.length)

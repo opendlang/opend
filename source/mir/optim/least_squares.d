@@ -163,7 +163,7 @@ Params:
 See_also: $(LREF optimizeLeastSquares)
 +/
 LeastSquaresResult!T optimize(alias f, alias g = null, alias tm = null, T)(
-    scope ref LeastSquaresSettings!T settings,
+    scope const ref LeastSquaresSettings!T settings,
     size_t m,
     Slice!(T*) x,
     Slice!(const(T)*) l,
@@ -182,7 +182,7 @@ LeastSquaresResult!T optimize(alias f, alias g = null, alias tm = null, T)(
 
 /// ditto
 LeastSquaresResult!T optimize(alias f, TaskPool, T)(
-    scope ref LeastSquaresSettings!T settings,
+    scope const ref LeastSquaresSettings!T settings,
     size_t m,
     Slice!(T*) x,
     Slice!(const(T)*) l,
@@ -457,7 +457,7 @@ Params:
 See_also: $(LREF optimize)
 +/
 LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = null, T)(
-    scope ref LeastSquaresSettings!T settings,
+    scope const ref LeastSquaresSettings!T settings,
     size_t m,
     Slice!(T*) x,
     Slice!(const(T)*) l,
@@ -520,7 +520,7 @@ LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = nu
 Status string for low (extern) and middle (nothrow) levels D API.
 Params:
     st = optimization status
-Returns: description for $(LeastSquaresStatus)
+Returns: description for $(LeastSquaresStatus)furtherImprovement
 +/
 pragma(inline, false)
 string leastSquaresStatusString(LeastSquaresStatus st) @safe pure nothrow @nogc
@@ -592,7 +592,7 @@ Params:
 pragma(inline, false)
 LeastSquaresResult!double optimizeLeastSquaresD
     (
-        scope ref LeastSquaresSettings!double settings,
+        scope const ref LeastSquaresSettings!double settings,
         size_t m,
         Slice!(double*) x,
         Slice!(const(double)*) l,
@@ -612,7 +612,7 @@ LeastSquaresResult!double optimizeLeastSquaresD
 pragma(inline, false)
 LeastSquaresResult!float optimizeLeastSquaresS
     (
-        scope ref LeastSquaresSettings!float settings,
+        scope const ref LeastSquaresSettings!float settings,
         size_t m,
         Slice!(float*) x,
         Slice!(const(float)*) l,
@@ -702,7 +702,7 @@ extern(C) @safe nothrow @nogc
     pragma(inline, false)
     LeastSquaresResult!double mir_optimize_least_squares_d
         (
-            scope ref LeastSquaresSettings!double settings,
+            scope const ref LeastSquaresSettings!double settings,
             size_t m,
             size_t n,
             double* x,
@@ -726,7 +726,7 @@ extern(C) @safe nothrow @nogc
     pragma(inline, false)
     LeastSquaresResult!float mir_optimize_least_squares_s
         (
-            scope ref LeastSquaresSettings!float settings,
+            scope const ref LeastSquaresSettings!float settings,
             size_t m,
             size_t n,
             float* x,
@@ -800,7 +800,7 @@ private:
 
 LeastSquaresResult!T optimizeLeastSquaresImplGenericBetterC(T)
     (
-        scope ref LeastSquaresSettings!T settings,
+        scope const ref LeastSquaresSettings!T settings,
         size_t m,
         size_t n,
         T* x,
@@ -874,7 +874,7 @@ LeastSquaresResult!T optimizeLeastSquaresImplGenericBetterC(T)
 // LM algorithm
 LeastSquaresResult!T optimizeLeastSquaresImplGeneric(T)
     (
-        scope ref LeastSquaresSettings!T settings,
+        scope const ref LeastSquaresSettings!T settings,
         size_t m,
         Slice!(T*) x,
         Slice!(const(T)*) lower,
@@ -940,7 +940,7 @@ LeastSquaresResult!T optimizeLeastSquaresImplGeneric(T)
     if (!(T.min_normal.sqrt <= lambdaDecrease && lambdaDecrease <= 1))
         { status = LeastSquaresStatus.badLambdaParams; return ret; }
 
-    maxAge = maxAge ? maxAge : g ? 3 : 2 * n;
+    auto maxAge = settings.maxAge ? settings.maxAge : g ? 3 : 2 * n;
 
     if (!tm) tm = delegate(uint count, scope LeastSquaresTask task) pure @nogc nothrow @trusted
     {
