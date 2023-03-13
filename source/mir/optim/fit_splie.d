@@ -19,6 +19,7 @@ Params:
     x = fixed X values of the spline
     l = lower bounds for spline(X) values
     u = upper bounds for spline(X) values
+    lambda = coefficient for the integral of the squre of the second derivative
     configuration = spline configuration (optional)
 Returns: $(FitSplineResult)
 +/
@@ -28,22 +29,24 @@ FitSplineResult!T fitSpline(alias d = "a - b", T)(
     scope const T[] x,
     scope const T[] l,
     scope const T[] u,
+    const T lambda = 0,
     SplineConfiguration!T configuration = SplineConfiguration!T(),
 ) @nogc @trusted pure
     if ((is(T == float) || is(T == double)))
+    in (lambda >= 0)
 {
     pragma(inline, false);
 
+    import mir.functional: naryFun;
+    import mir.math.common: sqrt, fabs;
     import mir.ndslice.slice: sliced, Slice;
+    import mir.rc.array;
 
-    if (points.length < x.length)
+    if (points.length < x.length && lambda == 0)
     {
-        static immutable exc = new Exception("fitSpline: points.length has to be greater or equal x.length");
+        static immutable exc = new Exception("fitSpline: points.length has to be greater or equal x.length when lambda is 0.0");
         throw exc;
     }
-
-    import mir.functional: naryFun;
-    import mir.rc.array;
 
     FitSplineResult!T ret;
 
@@ -52,22 +55,38 @@ FitSplineResult!T fitSpline(alias d = "a - b", T)(
     auto y = x.length.RCArray!T;
     y[][] = 0;
 
-    scope f = delegate(scope Slice!(const (T)*) x, scope Slice!(T*) y)
+    scope f = delegate(scope Slice!(const (T)*) splineY, scope Slice!(T*) y)
     {
-        assert(y.length == points.length);
-        ret.spline._values = x;
+        assert(y.length == points.length + !lambda);
+        ret.spline._values = splineY;
         with(configuration)
             ret.spline._computeDerivatives(kind, param, leftBoundary, rightBoundary);
         foreach (i, ref point; points)
             y[i] = naryFun!d(ret.spline(point[0]), point[1]);
+
+        T integral = 0;
+        if (lambda)
+        {
+            T ld = ret.spline.withTwoDerivatives(x[0])[1];
+            foreach (i; 1 .. x.length)
+            {
+                T rd = ret.spline.withTwoDerivatives(x[i])[1];
+                auto one_3a = fabs(rd - ld) < T.min_normal ? 0 : (x[i] - x[i - 1]) / (rd - ld);
+                auto part = (rd * rd * rd - ld * ld * ld) * one_3a;
+                integral += part;
+                ld = rd;
+            }
+            assert(integral >= 0);
+        }
+        y[$ - 1] = sqrt(integral * lambda / 3);
     };
 
-    ret.leastSquaresResult = optimize!(f)(settings, points.length, y[].sliced, l.sliced, u.sliced);
+    ret.leastSquaresResult = optimize!(f)(settings, points.length + !lambda, y[].sliced, l[].sliced, u[].sliced);
 
     return ret;
 }
 
-@safe pure
+// @safe pure
 unittest
 {
 
@@ -94,11 +113,29 @@ unittest
         [x[7] + 0.5,  4.52730869],
         [x[8] + 0.5, 19.22825394],
         [x[9] + 0.5, -2.3242592 ],
-    ]; // length of X or more
+    ];
 
-    auto result = settings.fitSpline(points, x, l, u);
+    auto result = settings.fitSpline(points, x, l, u, 0);
 
     import mir.test;
+    foreach (i; 0 .. x.length)
+        result.spline(x[i]).shouldApprox == y[i];
+
+    result = settings.fitSpline(points, x, l, u, 1);
+
+    y = [
+        0.19875353860959075,
+        5.937879391669947,
+        7.453487834452171,
+        5.1234828581238085,
+        11.909020925809962,
+        13.702552020227897,
+        16.980081698933578,
+        7.86933302057737,
+        16.20347598950289,
+        19.57309893410659,
+    ];
+
     foreach (i; 0 .. x.length)
         result.spline(x[i]).shouldApprox == y[i];
 }
