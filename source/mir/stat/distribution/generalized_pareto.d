@@ -156,7 +156,7 @@ T generalizedParetoInvCDF(T)(const T p, const T mu, const T sigma, const T xi)
     in (sigma > 0, "sigma must be greater than zero")
 {
     import mir.math.common: pow;
-    import std.math.exponential: log1p;
+    import mir.math.internal.log1p: log1p;
 
     T output;
     if (xi != 0) {

@@ -127,7 +127,7 @@ T exponentialInvCDF(T)(const T p, const T lambda)
     in (p < 1, "p must be less than or equal to 1")
     in (lambda > 0, "lambda must be greater than zero")
 {
-    import std.math.exponential: log1p;
+    import mir.math.internal.log1p: log1p;
 
     return -log1p(-p) / lambda;
 }
