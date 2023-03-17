@@ -33,4 +33,17 @@ static if (__VERSION__ != 2102) {
     real log1p(const real x) {
         return log(x + 1);
     }
+    
+    version(mir_stat_test)
+    @safe pure nothrow @nogc
+    unittest {
+        import std.math.exponential: log;
+        import mir.test: shouldApprox;
+        float x1 = -0.0125;
+        double x2 = x1;
+        real x3 = x1;
+        x1.log1p.shouldApprox == -0.0125787822;
+        x2.log1p.shouldApprox == -0.0125787822;
+        x3.log1p.shouldApprox == -0.0125787822;
+    }
 }
