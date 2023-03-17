@@ -486,9 +486,9 @@ T studentsTLPDF(T)(const T x, const T nu)
     in (nu > 0, "nu must be greater than zero")
 {
     import mir.math.common: log;
+    import mir.math.internal.log1p: log1p;
     import mir.stat.constant: LOGPI;
     import mir.stat.distribution.normal: normalLPDF;
-    import std.math.exponential: log1p;
     import std.mathspecial: logGamma;
 
     if (nu != T.infinity) {

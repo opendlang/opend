@@ -58,7 +58,7 @@ package(mir)
 T xlog1py(T)(const T x, const T y)
     if (isFloatingPoint!T)
 {
-    import std.math.exponential: log1p;
+    import mir.math.internal.log1p: log1p;
 
     if (x == 0)
         return 0;
