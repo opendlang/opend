@@ -166,7 +166,7 @@ Another way to create an `Image` is to load an encoded image.
 
   > **There is no exceptions in Gamut.** Instead the Image itself has an error API:
   > - `bool isError()` return `true` if the `Image` is in an error state. In an error state, the image can't be used anymore until recreated (for example, loading another file).
-  > - `const(char)[] errorMessage()` is then available, and is guaranteed to be zero-terminated.
+  > - `const(char)[] errorMessage()` is then available, and is guaranteed to be zero-terminated with an extra byte.
 
 
 ### **2.2 Load an image from memory:**
@@ -303,8 +303,7 @@ Another way to create an `Image` is to load an encoded image.
 One of the most interesting feature of Gamut!
 Images in Gamut can follow given constraints over the data layout.  
 
-  > **Key concept:** `LayoutConstraint` are carried by images all their /
-  life.
+  > **Key concept:** `LayoutConstraint` are carried by images all their life.
 
 Example:
 
@@ -390,7 +389,7 @@ LAYOUT_BORDER_3
 
 ### 4.5 Forcing pixels to be upside down or straight
 > **Vertical** constraint force the image to be store in a certain vertical direction (by default: any).
-```
+```d
 LAYOUT_VERT_FLIPPED
 LAYOUT_VERT_STRAIGHT
 ```
@@ -398,7 +397,7 @@ LAYOUT_VERT_STRAIGHT
 
 ### 4.6 Gapless pixel access
 > The **Gapless** constraint force the image to have contiguous scanlines without excess bytes.
-```
+```d
 LAYOUT_GAPLESS
 ```
 
