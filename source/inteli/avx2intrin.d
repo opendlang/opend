@@ -816,14 +816,66 @@ unittest
 // TODO __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cvtepi16_epi32 (__m128i a) pure @safe
-// TODO __m256i _mm256_cvtepi16_epi64 (__m128i a) pure @safe
-// TODO __m256i _mm256_cvtepi32_epi64 (__m128i a) pure @safe
+
+
+/// Sign extend packed 16-bit integers in `a` to packed 64-bit integers.
+__m256i _mm256_cvtepi16_epi64 (__m128i a) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovsxwq256(cast(short8)a);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %v = shufflevector <8 x i16> %0,<8 x i16> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
+            %r = sext <4 x i16> %v to <4 x i64>
+            ret <4 x i64> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, long4, short8)(cast(short8)a);
+    }
+    else
+    {
+        // LDC x86 generates vpmovsxwq since LDC 1.12 -O1
+        short8 sa = cast(short8)a;
+        long4 r;
+        r.ptr[0] = sa.array[0];
+        r.ptr[1] = sa.array[1];
+        r.ptr[2] = sa.array[2];
+        r.ptr[3] = sa.array[3];
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(-1, 0, short.min, short.max, 2, 3, 4, 5);
+    long4 C = cast(long4) _mm256_cvtepi16_epi64(A);
+    long[4] correct = [-1, 0, short.min, short.max];
+    assert(C.array == correct);
+}
+
+/// Sign extend packed 32-bit integers in `a` to packed 64-bit integers.
+__m256i _mm256_cvtepi32_epi64 (__m128i a) pure @trusted
+{
+    long4 r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[1];
+    r.ptr[2] = a.array[2];
+    r.ptr[3] = a.array[3];
+    return cast(__m256i)r;
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(-1, 0, int.min, int.max);
+    long4 C = cast(long4) _mm256_cvtepi32_epi64(A);
+    long[4] correct = [-1, 0, int.min, int.max];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_cvtepi8_epi16 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepi8_epi32 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @safe
 
 /// Zero-extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
-// TODO verify
 __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -833,8 +885,7 @@ __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
     else
     {
         short8 sa = cast(short8)a;
-        int8 r; // PERF =void;
-        // Explicit cast to unsigned to get *zero* extension (instead of sign extension).
+        int8 r;
         r.ptr[0] = cast(ushort)sa.array[0];
         r.ptr[1] = cast(ushort)sa.array[1];
         r.ptr[2] = cast(ushort)sa.array[2];
@@ -854,7 +905,43 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_cvtepu16_epi64 (__m128i a) pure @safe
+/// Zero-extend packed unsigned 16-bit integers in `a` to packed 64-bit integers.
+__m256i _mm256_cvtepu16_epi64(__m128i a) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovzxwq256(cast(short8)a);
+    }
+    else static if (LDC_with_ARM64)
+    {
+        // 3 inst since LDC 1.29 -O2
+        short8 sa = cast(short8)a;
+        short4 s4a = vget_low_s16(sa);
+        int4 su32 = vmovl_u16(s4a);
+        // Note: much trouble with ARM-like intrinsics like vmovl_low_s32, once inline they wouldn't perform.
+        // Instead, call _mm256_cvtepi32_epi64.
+        return _mm256_cvtepi32_epi64(cast(__m128i) su32);
+    }
+    else
+    {
+        // LDC x86 generates vpmovzxwq since LDC 1.12 -O1
+        short8 sa = cast(short8)a;
+        long4 r;
+        r.ptr[0] = cast(ushort)sa.array[0];
+        r.ptr[1] = cast(ushort)sa.array[1];
+        r.ptr[2] = cast(ushort)sa.array[2];
+        r.ptr[3] = cast(ushort)sa.array[3];
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(-1, 0, -32768, 32767, -1, 0, -32768, 32767);
+    long4 C = cast(long4) _mm256_cvtepu16_epi64(A);
+    long[4] correct = [65535, 0, 32768, 32767];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_cvtepu32_epi64 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @safe

@@ -1343,6 +1343,10 @@ static if (LDC_with_ARM64)
     // https://github.com/ldc-developers/llvm-project/blob/ldc-release/11.x/llvm/include/llvm/IR/IntrinsicsAArch64.td
     // Also: https://developer.arm.com/architectures/instruction-sets/intrinsics/
 
+    // Note: it is helpful to verify, in case of complex sequence of intrinsics, that the result is actually false.
+    // Some intrinsics have trouble when inlined inside another, such as vmovl_low_s32. In this case, it's better to use builtins 
+    // from backend to have an inlining that still match the instruction.
+
     pragma(LDC_intrinsic, "llvm.aarch64.crc32cb")
         uint __crc32cb(uint a, uint b) pure @safe;
 
@@ -1629,6 +1633,16 @@ static if (LDC_with_ARM64)
 
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smin.v8i16")
         short8 vminq_s16(short8 a, short8 b) pure @safe;
+
+    int4 vmovl_u16(short4 a) pure @trusted
+    {
+        int4 r;
+        r.ptr[0] = cast(ushort)a.array[0];
+        r.ptr[1] = cast(ushort)a.array[1];
+        r.ptr[2] = cast(ushort)a.array[2];
+        r.ptr[3] = cast(ushort)a.array[3];
+        return r;
+    }
 
     int2 vmovn_s64(long2 a) pure @trusted
     {
