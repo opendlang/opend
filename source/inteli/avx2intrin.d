@@ -859,8 +859,33 @@ unittest
 // TODO __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @safe
-// TODO int _mm256_extract_epi16 (__m256i a, const int index) pure @safe
-// TODO int _mm256_extract_epi8 (__m256i a, const int index) pure @safe
+
+/// Extract a 16-bit integer from `a`, selected with index.
+int _mm256_extract_epi16 (__m256i a, int index) pure @trusted
+{
+    short16 sa = cast(short16)a;
+    return sa.ptr[index & 15];
+}
+unittest
+{
+    short16 b;
+    b = 43;
+    assert(_mm256_extract_epi16(cast(__m256i)b, 7) == 43);
+}
+
+/// Extract a 8-bit integer from `a`, selected with index.
+int _mm256_extract_epi8 (__m256i a, int index) pure @trusted
+{
+    byte32 sa = cast(byte32)a;
+    return sa.ptr[index & 31];
+}
+unittest
+{
+    byte32 b;
+    b = -44;
+    assert(_mm256_extract_epi8(cast(__m256i)b, 5) == -44);
+    assert(_mm256_extract_epi8(cast(__m256i)b, 5 + 32) == -44);
+}
 
 /// Extract 128 bits (composed of integer data) from `a`, selected with `imm8`.
 __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
