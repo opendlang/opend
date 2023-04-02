@@ -997,7 +997,7 @@ __m256i _mm256_cvtepu32_epi64 (__m128i a) pure @trusted
         r.ptr[1] = cast(uint)a.array[1];
         r.ptr[2] = cast(uint)a.array[2];
         r.ptr[3] = cast(uint)a.array[3];
-        return cast(__m256i)r;
+        return cast(__m256i)r; 
     }
 }
 unittest
@@ -1008,7 +1008,40 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @safe
+
+/// Zero-extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
+__m256i _mm256_cvtepu8_epi16 (__m128i a) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovzxbw256(cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %r = zext <16 x i8> %0 to <16 x i16>
+            ret <16 x i16> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, short16, byte16)(cast(byte16)a);
+    }
+    else
+    {
+        short16 r;
+        byte16 ba = cast(byte16)a;
+        for (int n = 0; n < 16; ++n)
+        {
+            r.ptr[n] = cast(ubyte)ba.array[n];
+        }
+        return cast(__m256i)r; 
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(-1, 0, -128, 127, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+    short16 C = cast(short16) _mm256_cvtepu8_epi16(A);
+    short[16] correct     = [255, 0,  128, 127, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @safe
 
