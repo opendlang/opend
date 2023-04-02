@@ -976,7 +976,38 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_cvtepu32_epi64 (__m128i a) pure @safe
+/// Zero-extend packed unsigned 32-bit integers in `a` to packed 64-bit integers.
+__m256i _mm256_cvtepu32_epi64 (__m128i a) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovzxdq256(cast(int4)a);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %r = zext <4 x i32> %0 to <4 x i64>
+            ret <4 x i64> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, long4, int4)(cast(int4)a);
+    }
+    else
+    {
+        long4 r;
+        r.ptr[0] = cast(uint)a.array[0];
+        r.ptr[1] = cast(uint)a.array[1];
+        r.ptr[2] = cast(uint)a.array[2];
+        r.ptr[3] = cast(uint)a.array[3];
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(-1, 0, int.min, int.max);
+    long4 C = cast(long4) _mm256_cvtepu32_epi64(A);
+    long[4] correct = [uint.max, 0, 2_147_483_648, int.max];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @safe
