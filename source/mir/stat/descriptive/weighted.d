@@ -19,8 +19,7 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat.descriptive.weighted;
 
-import mir.math.sum: Summator, ResolveSummationType;
-import mir.stat.descriptive.univariate: Summation;
+import mir.math.sum: ResolveSummationType, Summation, Summator;
 
 private void putter2(Slices, T, U, Summation summation1, Summation summation2)
     (scope Slices slices, ref Summator!(T, summation1) seed1, ref Summator!(U, summation2) seed2)
@@ -196,14 +195,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
-    import mir.stat.descriptive.univariate: Summation;
+    import mir.test: should;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     x.put([0.0, 1, 2, 3, 4].sliced, [0.2, 0.2, 0.2, 0.2, 0.2].sliced);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
     x.put(5, 0.0);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
 }
 
 // dynamic array test, assume weights sum to 1
@@ -211,9 +211,12 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
+    import mir.math.sum: Summation;
+    import mir.test: should;
+
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     x.put([0.0, 1, 2, 3, 4], [0.2, 0.2, 0.2, 0.2, 0.2]);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
 }
 
 // static array test, assume weights sum to 1
@@ -221,11 +224,14 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
+    import mir.math.sum: Summation;
+    import mir.test: should;
+
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     static immutable y = [0.0, 1, 2, 3, 4];
     static immutable w = [0.2, 0.2, 0.2, 0.2, 0.2];
     x.put(y, w);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
 }
 
 // 2-d slice test, assume weights sum to 1
@@ -233,8 +239,9 @@ version(mir_stat_test)
 @safe pure
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.fuse: fuse;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     auto y = [
@@ -246,7 +253,7 @@ unittest
         [4.0 / 21, 5.0 / 21, 6.0 / 21]
     ].fuse;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // universal 2-d slice test, assume weights sum to 1, using map
@@ -254,14 +261,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: iota, map, universal;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     auto y = iota([2, 3]).universal;
     auto w = iota([2, 3], 1).map!(a => a / 21.0).universal;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // 2-d canonical slice test, assume weights sum to 1, using map
@@ -269,14 +277,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: canonical, iota, map;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     auto y = iota([2, 3]).canonical;
     auto w = iota([2, 3], 1).map!(a => a / 21.0).canonical;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 /// Do not assume weights sum to 1
@@ -284,15 +293,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
-    import mir.stat.descriptive.univariate: Summation;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     x.put([0.0, 1, 2, 3, 4].sliced, [1, 2, 3, 4, 5].sliced);
-    assert(x.wmean.approxEqual(40.0 / 15));
+    x.wmean.shouldApprox == 40.0 / 15;
     x.put(5, 6);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // dynamic array test, do not assume weights sum to 1
@@ -300,11 +309,12 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     x.put([0.0, 1, 2, 3, 4], [1, 2, 3, 4, 5]);
-    assert(x.wmean.approxEqual(40.0 / 15));
+    x.wmean.shouldApprox == 40.0 / 15;
 }
 
 // static array test, do not assume weights sum to 1
@@ -312,12 +322,14 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
+
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     static immutable y = [0.0, 1, 2, 3, 4];
     static immutable w = [1, 2, 3, 4, 5];
     x.put(y, w);
-    assert(x.wmean.approxEqual(40.0 / 15));
+    x.wmean.shouldApprox == 40.0 / 15;
 }
 
 // 2-d slice test, do not assume weights sum to 1
@@ -325,8 +337,9 @@ version(mir_stat_test)
 @safe pure
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.fuse: fuse;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = [
@@ -338,7 +351,7 @@ unittest
         [4.0, 5, 6]
     ].fuse;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // universal slice test, do not assume weights sum to 1
@@ -346,14 +359,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: iota, universal;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota(6).universal;
     auto w = iota([6], 1).universal;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // canonical slice test, do not assume weights sum to 1
@@ -361,14 +375,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: canonical, iota;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota(6).canonical;
     auto w = iota([6], 1).canonical;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // 2-d universal slice test, do not assume weights sum to 1
@@ -376,14 +391,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: iota, universal;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota([2, 3]).universal;
     auto w = iota([2, 3], 1).universal;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // 2-d canonical slice test, do not assume weights sum to 1
@@ -391,14 +407,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.topology: canonical, iota;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota([2, 3]).canonical;
     auto w = iota([2, 3], 1).canonical;
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 /// Assume no weights, like MeanAccumulator
@@ -406,14 +423,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
-    import mir.stat.descriptive.univariate: Summation;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     x.put([0.0, 1, 2, 3, 4].sliced);
-    assert(x.wmean == 2);
+    x.wmean.shouldApprox == 2;
     x.put(5);
-    assert(x.wmean == 2.5);
+    x.wmean.shouldApprox == 2.5;
 }
 
 // dynamic array test, assume no weights
@@ -421,11 +439,13 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
+    import mir.test: should;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     x.put([0.0, 1, 2, 3, 4]);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
 }
 
 // static array test, assume no weights
@@ -433,10 +453,13 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
+    import mir.math.sum: Summation;
+    import mir.test: should;
+
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     static immutable y = [0.0, 1, 2, 3, 4];
     x.put(y);
-    assert(x.wmean == 2);
+    x.wmean.should == 2;
 }
 
 // Adding WMeanAccmulators
@@ -444,6 +467,9 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
+
     double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25];
     double[] y = [2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
     
@@ -452,7 +478,7 @@ unittest
     WMeanAccumulator!(float, Summation.pairwise, AssumeWeights.primary) m1;
     m1.put(y);
     m0.put(m1);
-    assert(m0.wmean == 29.25 / 12);
+    m0.wmean.shouldApprox == 29.25 / 12;
 }
 
 // repeat test, assume weights sum to 1
@@ -460,15 +486,16 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: slicedField;
     import mir.ndslice.topology: iota, map, repeat;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota(6);
     auto w = repeat(1.0, 6).map!(a => a / 6.0).slicedField;
     x.put(y, w);
-    assert(x.wmean.approxEqual(15.0 / 6));
+    x.wmean.shouldApprox == 15.0 / 6;
 }
 
 // repeat test, do not assume weights sum to 1
@@ -476,15 +503,16 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import mir.ndslice.slice: slicedField;
     import mir.ndslice.topology: iota, repeat;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota(6);
     auto w = repeat(1.0, 6).slicedField;
     x.put(y, w);
-    assert(x.wmean.approxEqual(15.0 / 6));
+    x.wmean.shouldApprox == 15.0 / 6;
 }
 
 // range test without shape, assume weights sum to 1
@@ -492,15 +520,16 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
     import std.algorithm: map;
     import std.range: iota;
+    import mir.test: shouldApprox;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.sumToOne) x;
     auto y = iota(6);
     auto w = iota(1, 7).map!(a => a / 21.0);
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // range test without shape, do not assume weights sum to 1
@@ -508,14 +537,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
     import std.range: iota;
 
     WMeanAccumulator!(double, Summation.pairwise, AssumeWeights.primary) x;
     auto y = iota(6);
     auto w = iota(1, 7);
     x.put(y, w);
-    assert(x.wmean.approxEqual(70.0 / 21));
+    x.wmean.shouldApprox == 70.0 / 21;
 }
 
 // complex test, do not assume weights sum to 1
@@ -524,12 +554,13 @@ version(mir_stat_test)
 unittest
 {
     import mir.complex;
-    import mir.complex.math: capproxEqual = approxEqual;
+    import mir.math.sum: Summation;
+    import mir.test: should;
     alias C = Complex!double;
 
     WMeanAccumulator!(C, Summation.pairwise, AssumeWeights.primary, double) x;
     x.put([C(1, 3), C(2), C(3)]);
-    assert(x.wmean.capproxEqual(C(6, 3) / 3));
+    x.wmean.should == C(2, 1);
 }
 
 /++
@@ -722,16 +753,15 @@ version(mir_stat_test)
 unittest
 {
     import mir.complex;
-    import mir.complex.math: capproxEqual = approxEqual;
-    import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
+    import mir.test: should, shouldApprox;
     alias C = Complex!double;
 
-    assert(wmean([1.0, 2, 3], [1, 2, 3]) == (1.0 + 4.0 + 9.0) / 6);
-    assert(wmean!true([1.0, 2, 3], [1.0 / 6, 2.0 / 6, 3.0 / 6]).approxEqual((1.0 + 4.0 + 9.0) / 6));
-    assert(wmean([C(1, 3), C(2), C(3)], [1, 2, 3]).capproxEqual(C((1.0 + 4.0 + 9.0) / 6, 3.0 / 6)));
+    wmean([1.0, 2, 3], [1, 2, 3]).shouldApprox == (1.0 + 4.0 + 9.0) / 6;
+    wmean!true([1.0, 2, 3], [1.0 / 6, 2.0 / 6, 3.0 / 6]).shouldApprox == (1.0 + 4.0 + 9.0) / 6;
+    wmean([C(1, 3), C(2), C(3)], [1, 2, 3]).should == C(14.0 / 6, 3.0 / 6);
 
-    assert(wmean!float([0, 1, 2, 3, 4, 5].sliced(3, 2), [1, 2, 3, 4, 5, 6].sliced(3, 2)).approxEqual(70.0 / 21));
+    wmean!float([0, 1, 2, 3, 4, 5].sliced(3, 2), [1, 2, 3, 4, 5, 6].sliced(3, 2)).shouldApprox == 70.0 / 21;
 
     static assert(is(typeof(wmean!float([1, 2, 3], [1, 2, 3])) == float));
 }
@@ -741,14 +771,15 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.ndslice.slice: sliced;
     import mir.complex;
+    import mir.ndslice.slice: sliced;
+    import mir.test: should;
     alias C = Complex!double;
 
-    assert(wmean([1.0, 2, 3]) == 2);
-    assert(wmean([C(1, 3), C(2), C(3)]) == C(2, 1));
+    wmean([1.0, 2, 3]).should == 2;
+    wmean([C(1, 3), C(2), C(3)]).should == C(2, 1);
 
-    assert(wmean!float([0, 1, 2, 3, 4, 5].sliced(3, 2)) == 2.5);
+    wmean!float([0, 1, 2, 3, 4, 5].sliced(3, 2)).should == 2.5;
 
     static assert(is(typeof(wmean!float([1, 2, 3])) == float));
 }
@@ -760,15 +791,16 @@ unittest
 {
     import mir.ndslice.slice: sliced;
     import mir.ndslice.topology: iota, map;
+    import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
     auto w = iota([12], 1);
     auto w_SumToOne = w.map!(a => a / 78.0);
 
-    assert(x.wmean == 29.25 / 12);
-    assert(x.wmean(w) == 203.0 / 78);
-    assert(x.wmean!true(w_SumToOne) == 203.0 / 78);
+    x.wmean.shouldApprox == 29.25 / 12;
+    x.wmean(w).shouldApprox == 203.0 / 78;
+    x.wmean!true(w_SumToOne).shouldApprox == 203.0 / 78;
 }
 
 /// Weighted mean of matrix
@@ -778,6 +810,7 @@ unittest
 {
     import mir.ndslice.fuse: fuse;
     import mir.ndslice.topology: iota, map;
+    import mir.test: shouldApprox;
 
     auto x = [
         [0.0, 1.0, 1.5, 2.0, 3.5, 4.25],
@@ -786,9 +819,9 @@ unittest
     auto w = iota([2, 6], 1);
     auto w_SumToOne = w.map!(a => a / 78.0);
 
-    assert(x.wmean == 29.25 / 12);
-    assert(x.wmean(w) == 203.0 / 78);
-    assert(x.wmean!true(w_SumToOne) == 203.0 / 78);
+    x.wmean.shouldApprox == 29.25 / 12;
+    x.wmean(w).shouldApprox == 203.0 / 78;
+    x.wmean!true(w_SumToOne).shouldApprox == 203.0 / 78;
 }
 
 /// Column mean of matrix
@@ -825,6 +858,7 @@ unittest
 {
     import mir.ndslice.slice: sliced;
     import mir.ndslice.topology: repeat, universal;
+    import mir.test: shouldApprox;
 
     //Set sum algorithm (also for weights) or output type
 
@@ -834,17 +868,17 @@ unittest
     auto w1 = [1, 1, 1, 1].sliced;
     auto w2 = [0.25, 0.25, 0.25, 0.25].sliced;
 
-    assert(x.wmean!"kbn"(w1) == 20_000 / 4);
-    assert(x.universal.wmean!(true, "kbn")(w2.universal) == 20_000 / 4);
-    assert(x.universal.wmean!("kbn", true)(w2.universal) == 20_000 / 4);
-    assert(x.universal.wmean!("kbn", true, "pairwise")(w2.universal) == 20_000 / 4);
-    assert(x.universal.wmean!(true, "kbn", "pairwise")(w2.universal) == 20_000 / 4);
-    assert(x.wmean!"kb2"(w1) == 20_000 / 4);
-    assert(x.wmean!"precise"(w1) == 20_000 / 4);
-    assert(x.wmean!(double, "precise")(w1) == 20_000.0 / 4);
+    x.wmean!"kbn"(w1).shouldApprox == 20_000 / 4;
+    x.wmean!(true, "kbn")(w2).shouldApprox == 20_000 / 4;
+    x.wmean!("kbn", true)(w2).shouldApprox == 20_000 / 4;
+    x.wmean!("kbn", true, "pairwise")(w2).shouldApprox == 20_000 / 4;
+    x.wmean!(true, "kbn", "pairwise")(w2).shouldApprox == 20_000 / 4;
+    x.wmean!"kb2"(w1).shouldApprox == 20_000 / 4;
+    x.wmean!"precise"(w1).shouldApprox == 20_000 / 4;
+    x.wmean!(double, "precise")(w1).shouldApprox == 20_000.0 / 4;
 
     auto y = uint.max.repeat(3);
-    assert(y.wmean!ulong([1, 1, 1].sliced.universal) == 12884901885 / 3);
+    y.wmean!ulong([1, 1, 1].sliced.universal).shouldApprox == 12884901885 / 3;
 }
 
 /++
@@ -857,6 +891,7 @@ unittest
 {
     import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
 
     auto x = [0, 1, 1, 2, 4, 4,
               2, 7, 5, 1, 2, 0].sliced;
@@ -864,10 +899,10 @@ unittest
               7, 8, 9, 10, 11, 12].sliced;
 
     auto y = x.wmean(w);
-    assert(y.approxEqual(204.0 / 78, 1.0e-10));
+    y.shouldApprox(1.0e-10) == 204.0 / 78;
     static assert(is(typeof(y) == double));
 
-    assert(x.wmean!float(w).approxEqual(204f / 78, 1.0e-10));
+    x.wmean!float(w).shouldApprox(1.0e-10) == 204f / 78;
 }
 
 /++
@@ -878,14 +913,14 @@ version(mir_test_weighted)
 @safe pure nothrow
 unittest
 {
-    import mir.complex.math: approxEqual;
-    import mir.ndslice.slice: sliced;
     import mir.complex;
+    import mir.ndslice.slice: sliced;
+    import mir.test: should;
     alias C = Complex!double;
 
     auto x = [C(1.0, 2), C(2, 3), C(3, 4), C(4, 5)].sliced;
     auto w = [1, 2, 3, 4].sliced;
-    assert(x.wmean(w).approxEqual(C(3, 4)));
+    x.wmean(w).should == C(3, 4);
 }
 
 /// Compute weighted mean tensors along specified dimention of tensors
@@ -929,7 +964,8 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    assert([1.0, 2, 3, 4].wmean == 2.5);
+    import mir.test: should;
+    [1.0, 2, 3, 4].wmean.should == 2.5;
 }
 
 // additional alongDim tests
@@ -938,7 +974,6 @@ version(mir_stat_test)
 unittest
 {
     import mir.algorithm.iteration: all;
-    import mir.math.common: approxEqual;
     import mir.math.stat: meanType;
     import mir.ndslice.topology: iota, alongDim, map;
 
@@ -954,14 +989,15 @@ version(mir_stat_test)
 unittest
 {
     import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
 
     static immutable x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
                           2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
     static immutable w = [1.0, 2, 3,  4,  5,  6,
                             7, 8, 9, 10, 11, 12];
 
-    assert(x.wmean == 29.25 / 12);
-    assert(x.wmean(w) == 203.0 / 78);
+    x.wmean.shouldApprox == 29.25 / 12;
+    x.wmean(w).shouldApprox == 203.0 / 78;
 }
 
 /++
