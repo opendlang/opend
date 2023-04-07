@@ -908,7 +908,39 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_cvtepi8_epi16 (__m128i a) pure @safe
+/// Sign extend packed 8-bit integers in `a` to packed 16-bit integers.
+__m256i _mm256_cvtepi8_epi16 (__m128i a) pure @trusted
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovzxbw256(cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %r = sext <16 x i8> %0 to <16 x i16>
+            ret <16 x i16> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, short16, byte16)(cast(byte16)a);
+    }
+    else
+    {
+        short16 r;
+        byte16 ba = cast(byte16)a;
+        for (int n = 0; n < 16; ++n)
+        {
+            r.ptr[n] = ba.array[n];
+        }
+        return cast(__m256i)r; 
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(-1, 0, byte.min, byte.max, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+    short16 C = cast(short16) _mm256_cvtepi8_epi16(A);
+    short[16] correct = [-1, 0, byte.min, byte.max, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_cvtepi8_epi32 (__m128i a) pure @safe
 // TODO __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @safe
 
@@ -1076,7 +1108,40 @@ unittest
     assert(C.array == correct);
 }
 
-// TODO __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @safe
+/// Zero-extend packed unsigned 8-bit integers in `a` to packed 64-bit integers.
+__m256i _mm256_cvtepu8_epi64 (__m128i a) pure @trusted
+{
+    // PERF ARM64+LDC, not awesome
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmovzxbq256(cast(ubyte16)a);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %v = shufflevector <16 x i8> %0,<16 x i8> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
+            %r = zext <4 x i8> %v to <4 x i64>
+            ret <4 x i64> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, long4, byte16)(cast(byte16)a);
+    }
+    else
+    {
+        long4 r;
+        byte16 ba = cast(byte16)a;
+        for (int n = 0; n < 4; ++n)
+        {
+            r.ptr[n] = cast(ubyte)ba.array[n];
+        }
+        return cast(__m256i)r; 
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(-1, 0, -128, 127, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+    long4 C = cast(long4) _mm256_cvtepu8_epi64(A);
+    long[4] correct     = [255, 0,  128, 127];
+    assert(C.array == correct);
+}
 
 /// Extract a 16-bit integer from `a`, selected with index.
 int _mm256_extract_epi16 (__m256i a, int index) pure @trusted
