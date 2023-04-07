@@ -122,6 +122,15 @@ version(LDC)
     public import ldc.intrinsics;
     public import ldc.llvmasm: __asm;
 
+    version (X86)
+        private enum bool some_x86 = true;
+    else version (X86_64)
+        private enum bool some_x86 = true;
+    else
+        private enum bool some_x86 = false;
+
+    
+
     // Since LDC 1.13, using the new ldc.llvmasm.__ir variants instead of inlineIR
     static if (__VERSION__ >= 2083)
     {
@@ -176,34 +185,62 @@ version(LDC)
         enum LDC_with_SHA = false;
         enum LDC_with_BMI2 = false;
     }
-    else
+    else static if (some_x86)
     {
         public import ldc.gccbuiltins_x86;
+
+        // Workaround LDC 1.32.0 having NO builtins at all.
+        // See LDC issue 4347 https://github.com/ldc-developers/ldc/issues/4347
+        enum LDC_has_some_x86_builtins = __traits(compiles, __builtin_ia32_clflush); // This one must be available in all of LDC history.
+
+        static if (!LDC_has_some_x86_builtins)
+        {
+            // in case our __builtin_ia32_clflush workaround breaks
+            pragma(msg, "Warning: LDC v1.32.0 has no SIMD builtins. intel-intrinsics will use slow path. Please avoid LDC 1.32.0");
+        }
+
         enum LDC_with_ARM32 = false;
         enum LDC_with_ARM64 = false;
         enum LDC_with_ARM64_CRC = false;
-        enum LDC_with_SSE = __traits(targetHasFeature, "sse");
-        enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2");
-        enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3");
-        enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3");
-        enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1");
-        enum LDC_with_SSE42 = __traits(targetHasFeature, "sse4.2");
+        enum LDC_with_SSE = __traits(targetHasFeature, "sse") && LDC_has_some_x86_builtins;
+        enum LDC_with_SSE2 = __traits(targetHasFeature, "sse2") && LDC_has_some_x86_builtins;
+        enum LDC_with_SSE3 = __traits(targetHasFeature, "sse3") && LDC_has_some_x86_builtins;
+        enum LDC_with_SSSE3 = __traits(targetHasFeature, "ssse3") && LDC_has_some_x86_builtins;
+        enum LDC_with_SSE41 = __traits(targetHasFeature, "sse4.1") && LDC_has_some_x86_builtins;
+        enum LDC_with_SSE42 = __traits(targetHasFeature, "sse4.2") && LDC_has_some_x86_builtins;
 
         // Since LDC 1.30, crc32 is a separate (and sufficient) attribute from sse4.2
         // As of Jan 2023, GDC doesn't make that distinction, -msse4.2 includes -mcrc32 for GDC.
         static if (__VERSION__ >= 2100)
         {
-            enum LDC_with_CRC32 = __traits(targetHasFeature, "crc32");
+            enum LDC_with_CRC32 = __traits(targetHasFeature, "crc32") && LDC_has_some_x86_builtins;
         }
         else
         {
-            enum LDC_with_CRC32 = __traits(targetHasFeature, "sse4.2"); // crc32 used to be included in sse4.2
+            enum LDC_with_CRC32 = __traits(targetHasFeature, "sse4.2") && LDC_has_some_x86_builtins; // crc32 used to be included in sse4.2
         }
 
-        enum LDC_with_AVX = __traits(targetHasFeature, "avx");
-        enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2");
-        enum LDC_with_SHA = __traits(targetHasFeature, "sha");
-        enum LDC_with_BMI2 = __traits(targetHasFeature, "bmi2");
+        enum LDC_with_AVX = __traits(targetHasFeature, "avx") && LDC_has_some_x86_builtins;
+        enum LDC_with_AVX2 = __traits(targetHasFeature, "avx2") && LDC_has_some_x86_builtins;
+        enum LDC_with_SHA = __traits(targetHasFeature, "sha") && LDC_has_some_x86_builtins;
+        enum LDC_with_BMI2 = __traits(targetHasFeature, "bmi2") && LDC_has_some_x86_builtins;
+    }
+    else
+    {
+        enum LDC_with_ARM32 = false;
+        enum LDC_with_ARM64 = false;
+        enum LDC_with_ARM64_CRC = false;
+        enum LDC_with_SSE = false;
+        enum LDC_with_SSE2 = false;
+        enum LDC_with_SSE3 = false;
+        enum LDC_with_SSSE3 = false;
+        enum LDC_with_SSE41 = false;
+        enum LDC_with_SSE42 = false;
+        enum LDC_with_CRC32 = false;
+        enum LDC_with_AVX = false;
+        enum LDC_with_AVX2 = false;
+        enum LDC_with_SHA = false;
+        enum LDC_with_BMI2 = false;
     }
 }
 else

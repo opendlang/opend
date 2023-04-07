@@ -1038,7 +1038,7 @@ unittest
 /// Convert the lower single-precision (32-bit) floating-point element in `a` to a 64-bit integer.
 long _mm_cvtss_si64 (__m128 a) @safe
 {
-    version(LDC)
+    static if (LDC_with_SSE2)
     {
         version(X86_64)
         {

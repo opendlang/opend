@@ -230,8 +230,10 @@ unittest
 {
     version(LDC)
     {
-        double a = 7.5;
-        assert(_mm_loaddup_pd(&a) == _mm_set_pd(7.5, 7.5));
+        double A = 7.5;
+        double2 B = _mm_loaddup_pd(&A);
+        double[2] correct = [7.5, 7.5];
+        assert(B.array == correct);        
     }
     else
     {

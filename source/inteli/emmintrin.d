@@ -1496,7 +1496,7 @@ unittest
 /// Convert the lower double-precision (64-bit) floating-point element in `a` to a 64-bit integer.
 long _mm_cvtsd_si64 (__m128d a) @trusted
 {
-    version (LDC)
+    static if (LDC_with_SSE2)
     {
         version (X86_64)
         {
@@ -1505,7 +1505,7 @@ long _mm_cvtsd_si64 (__m128d a) @trusted
         else
         {
             // Note: In 32-bit x86, there is no way to convert from float/double to 64-bit integer
-            // using SSE instructions only. So the builtin doesn't exit for this arch.
+            // using SSE instructions only. So the builtin doesn't exist for this arch.
             return convertDoubleToInt64UsingMXCSR(a[0]);
         }
     }
