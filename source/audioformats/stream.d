@@ -22,6 +22,9 @@ version(decodeMOD) import audioformats.pocketmod;
 version(decodeWAV) import audioformats.wav;
 else version(encodeWAV) import audioformats.wav;
 
+version(decodeQOA) import audioformats.qoa;
+else version(encodeQOA) import audioformats.qoa;
+
 version(decodeXM) import audioformats.libxm;
 
 /// Library for sound file decoding and encoding.
@@ -37,6 +40,7 @@ enum AudioFileFormat
     flac, /// FLAC format
     ogg,  /// OGG  format
     opus, /// Opus format
+    qoa,  /// QOI format https://qoaformat.org/
     mod,  /// ProTracker MOD format
     xm,   /// FastTracker II Extended Module format
     unknown
@@ -72,6 +76,7 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
         case flac:    return "flac";
         case ogg:     return "ogg";
         case opus:    return "opus";
+        case qoa:     return "qoa";
         case mod:     return "mod";
         case xm:      return "xm";
         case unknown: return "unknown";
@@ -280,6 +285,7 @@ public: // This is also part of the public API
             case flac:
             case ogg:
             case opus:
+            case qoa:
                 return false;
             case mod:
             case xm:
@@ -302,6 +308,7 @@ public: // This is also part of the public API
             case flac:
             case ogg:
             case opus:
+            case qoa:
                 return true;
             case mod:
             case xm:
@@ -511,6 +518,25 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
 
+            case AudioFileFormat.qoa:
+                version(decodeQOA)
+                {
+                    bool err;
+                    int readFrames = _qoaDecoder.readSamples!float(outData, frames, &err); 
+                    if (err)
+                    {
+                        _isError = true;
+                        return 0;
+                    }
+                    else
+                        return readFrames;
+                }
+                else
+                {
+                    assert(false);
+                }
+
+
             case AudioFileFormat.xm:
                 version(decodeXM)
                 {
@@ -668,6 +694,7 @@ public: // This is also part of the public API
             case AudioFileFormat.flac:
             case AudioFileFormat.ogg:
             case AudioFileFormat.opus:
+            case AudioFileFormat.qoa:
             case AudioFileFormat.mod:
             case AudioFileFormat.xm:
             case AudioFileFormat.unknown:
@@ -766,6 +793,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
             case mod:
@@ -787,6 +815,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
             case mod:
@@ -809,6 +838,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
 
@@ -841,6 +871,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
             case mod:
@@ -862,6 +893,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
             case mod:
@@ -883,6 +915,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
 
@@ -907,6 +940,7 @@ public: // This is also part of the public API
             case ogg:
             case opus:
             case wav:
+            case qoa:
             case unknown:
                 assert(false);
 
@@ -967,6 +1001,8 @@ public: // This is also part of the public API
                 }
                 else
                     assert(false);
+            case qoa:
+                assert(false); // TODO: a bit like OGG
             case ogg:
                 version(decodeOGG)
                 {
@@ -1054,6 +1090,9 @@ public: // This is also part of the public API
                 else 
                     assert(false);
 
+            case qoa:
+                assert(false); // TODO
+
             case opus:
                 version(decodeOPUS)
                 {
@@ -1104,6 +1143,7 @@ public: // This is also part of the public API
             case opus:
             case mod:
             case xm:
+            case qoa:
                 assert(false); // unsupported output encoding
             case wav:
                 { 
@@ -1176,6 +1216,10 @@ private:
     version(decodeWAV)
     {
         WAVDecoder _wavDecoder;
+    }
+    version(decodeQOA)
+    {
+        QOADecoder _qoaDecoder;
     }
     version(decodeMOD)
     {
@@ -1405,6 +1449,21 @@ private:
             _wavDecoder = null;
         }
 
+        version(decodeQOA)
+        {
+            // Check if it's a QOA.
+            _io.seek(0, false, userData);
+            qoa_desc qoaDesc;
+            if (_qoaDecoder.initialize(_io, userData, &qoaDesc))
+            {
+                _format = AudioFileFormat.qoa;
+                _sampleRate = qoaDesc.samplerate;  // Note: overflow possible on cast from uint to int
+                _numChannels = qoaDesc.channels;   // Note: overflow possible on cast
+                _lengthInFrames = qoaDesc.samples; // Note: overflow possible on cast
+                return;
+            }
+        }
+
         version(decodeOGG)
         {
             _io.seek(0, false, userData);
@@ -1593,6 +1652,8 @@ private:
                 throw mallocNew!AudioFormatsException("Unsupported encoding format: MOD");
             case xm:
                 throw mallocNew!AudioFormatsException("Unsupported encoding format: XM");
+            case qoa:
+                throw mallocNew!AudioFormatsException("Unsupported encoding format: QOA");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
