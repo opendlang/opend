@@ -977,24 +977,29 @@ unittest
     assert(C.array == correct);
 }
 
+/// Sign extend packed 8-bit integers in the low 8 bytes of `a` to packed 64-bit integers.
 __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @trusted
 {
+    // PERF This is rather bad in GDC without AVX
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_pmovsxbq256(cast(ubyte16)a);
     }
+    else static if (LDC_with_ARM64)
+    {
+        // 4 inst since LDC 1.22 -O2 
+        return _mm256_cvtepi16_epi64(_mm_cvtepi8_epi16(a));
+    }
     else version(LDC)
     {
-        // PERF ARM64 is bad
         enum ir = `
-            %v = shufflevector <16 x i8> %0,<16 x i8> undef, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
+            %v = shufflevector <16 x i8> %0,<16 x i8> undef, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
             %r = sext <4 x i8> %v to <4 x i64>
             ret <4 x i64> %r`;
         return cast(__m256i) LDCInlineIR!(ir, long4, byte16)(cast(byte16)a);
     }
     else
     {
-        // PERF This is rather bad in GDC without AVX, or with DMD
         long4 r;
         byte16 ba = cast(byte16)a;
         for (int n = 0; n < 4; ++n)
@@ -1011,7 +1016,6 @@ unittest
     long[4] correct = [-1, 0, byte.min, byte.max];
     assert(C.array == correct);
 }
-
 
 /// Zero-extend packed unsigned 16-bit integers in `a` to packed 32-bit integers.
 __m256i _mm256_cvtepu16_epi32(__m128i a) pure @trusted
@@ -1108,7 +1112,6 @@ unittest
     long[4] correct = [uint.max, 0, 2_147_483_648, int.max];
     assert(C.array == correct);
 }
-
 
 /// Zero-extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
 __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @trusted

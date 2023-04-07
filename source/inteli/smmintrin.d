@@ -536,7 +536,7 @@ unittest
 
 
 /// Sign extend packed 8-bit integers in `a` to packed 16-bit integers.
-__m128i _mm_cvtepi8_epi16 (__m128i a) @trusted
+__m128i _mm_cvtepi8_epi16 (__m128i a) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
@@ -743,29 +743,24 @@ unittest
 
 
 /// Zero extend packed unsigned 8-bit integers in `a` to packed 16-bit integers.
-__m128i _mm_cvtepu8_epi16 (__m128i a) @trusted
+__m128i _mm_cvtepu8_epi16 (__m128i a) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
     {
         return cast(__m128i) __builtin_ia32_pmovzxbw128(cast(ubyte16)a);
     }
+    else version(LDC)
+    {
+        enum ir = `
+            %v = shufflevector <16 x i8> %0,<16 x i8> %0, <8 x i32> <i32 0, i32 1,i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>
+            %r = zext <8 x i8> %v to <8 x i16>
+            ret <8 x i16> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, short8, byte16)(cast(byte16)a);
+    }
     else
     {
-        // LDC x86: generates pmovzxbw since LDC 1.12 -O1 also good without SSE4.1
-        //     arm64: ushll since LDC 1.12 -O1
-        // PERF: catastrophic with GDC without SSE4.1
-        byte16 sa = cast(byte16)a;
-        short8 r;
-        r.ptr[0] = cast(ubyte)sa.array[0];
-        r.ptr[1] = cast(ubyte)sa.array[1];
-        r.ptr[2] = cast(ubyte)sa.array[2];
-        r.ptr[3] = cast(ubyte)sa.array[3];
-        r.ptr[4] = cast(ubyte)sa.array[4];
-        r.ptr[5] = cast(ubyte)sa.array[5];
-        r.ptr[6] = cast(ubyte)sa.array[6];
-        r.ptr[7] = cast(ubyte)sa.array[7];
-        return cast(__m128i)r;
+        return _mm_unpacklo_epi8(a, _mm_setzero_si128());
     }
 }
 unittest
