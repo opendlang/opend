@@ -14,6 +14,7 @@ $(BOOKTABLE ,
     $(TR $(TDNW $(MREF mir,stat)) $(TD Publicly imports `mir.stat.*` modules ))
     $(LEADINGROW Descriptive Statistics)
     $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive statistics ))
+    $(TR $(TDNW $(MREF mir,stat,descriptive,multivariate)) $(TD Multivariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,univariate)★) $(TD Univariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,weighted)) $(TD Descriptive statistics with weights ))
     $(LEADINGROW Other Statistical Modules)

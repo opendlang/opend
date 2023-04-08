@@ -6,6 +6,7 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
+    $(TR $(TDNW $(MREF mir,stat,descriptive,multivariate)) $(TD Multivariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,univariate)) $(TD Univariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,weighted)) $(TD Descriptive statistics with weights ))
 )
@@ -27,6 +28,8 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat.descriptive;
 
+///
+public import mir.stat.descriptive.multivariate;
 ///
 public import mir.stat.descriptive.univariate;
 ///
