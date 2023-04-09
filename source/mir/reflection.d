@@ -866,8 +866,7 @@ version(unittest)
     }
 }
 
-///
-version (mir_core_test) @nogc nothrow pure @safe version(mir_core_test) unittest
+version (mir_core_test) @nogc nothrow pure @safe unittest
 {
     static assert(!isPublic!(ZipArchive, "zip64ExtractVersion"));
 }
