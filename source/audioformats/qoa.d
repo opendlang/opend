@@ -259,10 +259,8 @@ int qoa_clamp_s16(int v) pure
 	return v;
 }
 
-qoa_uint64_t qoa_read_u64(const(ubyte)* bytes, uint *p) pure
+qoa_uint64_t qoa_read_u64(const(ubyte)* bytes) pure
 {
-	bytes += *p;
-	*p += 8;
 	return 
 		(cast(qoa_uint64_t)(bytes[0]) << 56) | (cast(qoa_uint64_t)(bytes[1]) << 48) |
 		(cast(qoa_uint64_t)(bytes[2]) << 40) | (cast(qoa_uint64_t)(bytes[3]) << 32) |
@@ -453,51 +451,64 @@ uint qoa_max_frame_size(qoa_desc *qoa)
 	return QOA_FRAME_SIZE(qoa.channels, QOA_SLICES_PER_FRAME);
 }
 
-uint qoa_decode_header(const(ubyte)* bytes, int size, qoa_desc *qoa) 
+// Note: was changed, qoa_desc is allocated on heap
+uint qoa_decode_header(IOCallbacks* io, void* userData, qoa_desc** qoadesc) 
 {
 	uint p = 0;
-	if (size < QOA_MIN_FILESIZE) 
+	if (io.remainingBytesToRead(userData) < QOA_MIN_FILESIZE) 
     {
 		return 0;
 	}
 
+	ubyte[8] bytes;
+	if (8 != io.read(bytes.ptr, 8, userData))
+		return 0;
+
 	/* Read the file header, verify the magic number ('qoaf') and read the 
 	total number of samples. */
-	qoa_uint64_t file_header = qoa_read_u64(bytes, &p);
+	qoa_uint64_t file_header = qoa_read_u64(bytes.ptr);
 
 	if ((file_header >> 32) != QOA_MAGIC) {
 		return 0;
 	}
 
-	qoa.samples = file_header & 0xffffffff;
-	if (!qoa.samples) {
+    qoa_desc* desc = cast(qoa_desc*) QOA_MALLOC(qoa_desc.sizeof);
+	*qoadesc = desc;
+
+	desc.samples = file_header & 0xffffffff;
+	if (!(desc.samples))
 		return 0;
-	}
 
 	/* Peek into the first frame header to get the number of channels and
 	the samplerate. */
-	qoa_uint64_t frame_header = qoa_read_u64(bytes, &p);
-	qoa.channels   = (frame_header >> 56) & 0x0000ff;
-	qoa.samplerate = (frame_header >> 32) & 0xffffff;
+	if (8 != io.read(bytes.ptr, 8, userData))
+		return 0;
+	qoa_uint64_t frame_header = qoa_read_u64(bytes.ptr);
+	desc.channels   = (frame_header >> 56) & 0x0000ff;
+	desc.samplerate = (frame_header >> 32) & 0xffffff;
 
-	if (qoa.channels == 0 || qoa.samples == 0 || qoa.samplerate == 0) {
+	if (desc.channels == 0 || desc.samples == 0 || desc.samplerate == 0) {
 		return 0;
 	}
 
 	return 8;
 }
 
-uint qoa_decode_frame(const(ubyte)* bytes, uint size, qoa_desc *qoa, short *sample_data, uint *frame_len) 
+uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sample_data, uint *frame_len) 
 {
 	uint p = 0;
 	*frame_len = 0;
 
-	if (size < 8 + QOA_LMS_LEN * 4 * qoa.channels) {
+	if (io.remainingBytesToRead(userData) < 8 + QOA_LMS_LEN * 4 * qoa.channels)
 		return 0;
-	}
 
 	/* Read and verify the frame header */
-	qoa_uint64_t frame_header = qoa_read_u64(bytes, &p);
+
+	ubyte[8] bytes;
+	if (8 != io.read(bytes.ptr, 8, userData))
+		return 0;
+
+	qoa_uint64_t frame_header = qoa_read_u64(bytes.ptr);
 	int channels   = (frame_header >> 56) & 0x0000ff;
 	int samplerate = (frame_header >> 32) & 0xffffff;
 	int samples    = (frame_header >> 16) & 0x00ffff;
@@ -507,21 +518,27 @@ uint qoa_decode_frame(const(ubyte)* bytes, uint size, qoa_desc *qoa, short *samp
 	int num_slices = data_size / 8;
 	int max_total_samples = num_slices * QOA_SLICE_LEN;
 
+	if (io.remainingBytesToRead(userData) < frame_size - 8)
+		return 0;
 	if (
 		channels != qoa.channels || 
 		samplerate != qoa.samplerate ||
-		frame_size > size ||
 		samples * channels > max_total_samples
 	) 
     {
 		return 0;
 	}
 
-
 	/* Read the LMS state: 4 x 2 bytes history, 4 x 2 bytes weights per channel */
-	for (int c = 0; c < channels; c++) {
-		qoa_uint64_t history = qoa_read_u64(bytes, &p);
-		qoa_uint64_t weights = qoa_read_u64(bytes, &p);
+	for (int c = 0; c < channels; c++) 
+    {
+		// PERF: introduce a primitive to read ulong BE directly
+		if (8 != io.read(bytes.ptr, 8, userData))
+            return 0;
+		qoa_uint64_t history = qoa_read_u64(bytes.ptr);
+		if (8 != io.read(bytes.ptr, 8, userData))
+            return 0;
+		qoa_uint64_t weights = qoa_read_u64(bytes.ptr);
 		for (int i = 0; i < QOA_LMS_LEN; i++) {
 			qoa.lms[c].history[i] = (cast(short)(history >> 48));
 			history <<= 16;
@@ -536,7 +553,9 @@ uint qoa_decode_frame(const(ubyte)* bytes, uint size, qoa_desc *qoa, short *samp
     {
 		for (int c = 0; c < channels; c++) 
         {
-			qoa_uint64_t slice = qoa_read_u64(bytes, &p);
+			if (8 != io.read(bytes.ptr, 8, userData))
+                return 0;
+			qoa_uint64_t slice = qoa_read_u64(bytes.ptr);
 
 			int scalefactor = (slice >> 60) & 0xf;
 			int slice_start = sample_index * channels + c;
@@ -560,6 +579,7 @@ uint qoa_decode_frame(const(ubyte)* bytes, uint size, qoa_desc *qoa, short *samp
 	return p;
 }
 
+/+
 short* qoa_decode(const(ubyte)* bytes, int size, qoa_desc *qoa) 
 {
 	uint p = qoa_decode_header(bytes, size, qoa);
@@ -586,7 +606,7 @@ short* qoa_decode(const(ubyte)* bytes, int size, qoa_desc *qoa)
 
 	qoa.samples = sample_index;
 	return sample_data;
-}
+}+/
 
 // Streaming decoder for QOA.
 public struct QOADecoder
@@ -595,27 +615,37 @@ nothrow @nogc:
 	IOCallbacks* io;
 	void* userData;
 	short* buffer = null;
-	int remain = 0; // nothing in decoding buf
+	qoa_desc* desc;
+
+	int numChannels;
+	int totalFrames;
+	float samplerate;
+
+	int bufStart; // start of buffer
+	int bufStop; // end of buffer (bufStop - bufStart) is the number of frames in buffer
 
 	// return true if this is a QOA. Taint io.
-	bool initialize(IOCallbacks* io, void* userData, qoa_desc* desc)
+	bool initialize(IOCallbacks* io, void* userData)
     {
 		this.io = io;
 		this.userData = userData;
 
-		ubyte[16] firstBytes;
-
-		if (io.read(firstBytes.ptr, 16, userData) != 16)
+		if (qoa_decode_header(io, userData, &desc) != 8)
 			return false;
 
-		if (qoa_decode_header(firstBytes.ptr, 16, desc) != 8)
-			return false;
+		this.numChannels = desc.channels;
+		this.totalFrames = desc.samples;
+		this.samplerate = desc.samplerate;
 
 		if (!io.seek(8, false, userData))
 			return false;
 
 		// We need a single QOA_FRAME_LEN buffer for decoding.
-		buffer = cast(short*) QOA_MALLOC(short.sizeof * QOA_FRAME_LEN);
+		buffer = cast(short*) QOA_MALLOC(short.sizeof * QOA_FRAME_LEN * numChannels);
+
+		bufStart = 0; // Nothing in buffer
+		bufStop = 0;
+
 		return true; // Note: we've read 16 bytes, so we seek to byte 8 (begin of first frame).
     }
 
@@ -623,10 +653,50 @@ nothrow @nogc:
     {
 		QOA_FREE(buffer);
 		buffer = null;
+
+		QOA_FREE(desc);
+		desc = null;
     }
 
 	int readSamples(T)(T* outData, int frames, bool* err)
     {
-		assert(false);
+		int offsetFrames = 0;
+		while (frames > 0)
+        {
+			// If no more data in buffer, read a frame
+			if (bufStop - bufStart == 0)
+            {
+				uint frameLen;
+                qoa_decode_frame(io, userData, desc, buffer, &frameLen);
+
+				if (frameLen == 0)
+					return offsetFrames;
+
+				bufStart = 0;
+				bufStop = frameLen;
+            }
+
+			// How many samples we have in buffers? Take them.
+			int inStore = bufStop - bufStart;
+			if (inStore > frames)
+                inStore = frames;
+
+			enum float F = 1.0f / short.max;
+
+			for (int n = 0; n < inStore; ++n)
+            {
+				for (int ch = 0; ch < numChannels; ++ch)
+                {
+					int index = n*numChannels+ch;
+					outData[offsetFrames*numChannels + index] = buffer[bufStart*numChannels + index] * F;
+                }
+            }
+
+			bufStart += inStore;
+			offsetFrames += inStore;
+			frames -= inStore;
+			assert(bufStart <= bufStop);
+        }
+		return offsetFrames;
     }
 }

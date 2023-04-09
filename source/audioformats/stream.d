@@ -621,6 +621,24 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
 
+           case AudioFileFormat.qoa:
+                version(decodeQOA)
+                {
+                    bool err;
+                    int readFrames = _qoaDecoder.readSamples!double(outData, frames, &err); 
+                    if (err)
+                    {
+                        _isError = true;
+                        return 0;
+                    }
+                    else
+                        return readFrames;
+                }
+                else
+                {
+                    assert(false);
+                }
+
             case AudioFileFormat.flac:
             {
                 version(decodeFLAC)
@@ -1453,13 +1471,13 @@ private:
         {
             // Check if it's a QOA.
             _io.seek(0, false, userData);
-            qoa_desc qoaDesc;
-            if (_qoaDecoder.initialize(_io, userData, &qoaDesc))
+            
+            if (_qoaDecoder.initialize(_io, userData))
             {
                 _format = AudioFileFormat.qoa;
-                _sampleRate = qoaDesc.samplerate;  // Note: overflow possible on cast from uint to int
-                _numChannels = qoaDesc.channels;   // Note: overflow possible on cast
-                _lengthInFrames = qoaDesc.samples; // Note: overflow possible on cast
+                _sampleRate = _qoaDecoder.samplerate;  // Note: overflow possible on cast from uint to int
+                _numChannels = _qoaDecoder.numChannels;   // Note: overflow possible on cast
+                _lengthInFrames = _qoaDecoder.totalFrames; // Note: overflow possible on cast
                 return;
             }
         }
@@ -1690,7 +1708,7 @@ private:
 
 // AudioStream should be able to go on a smallish 32-bit stack,
 // and malloc the rest on the heap when needed.
-static assert(AudioStream.sizeof <= 256); 
+static assert(AudioStream.sizeof <= 280); 
 
 private: // not meant to be imported at all
 
