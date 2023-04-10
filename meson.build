@@ -1,4 +1,4 @@
-project('mir-stat', 'd', version : '0.0.10', license: 'BSL-1.0')
+project('mir-stat', 'd', version : '0.1.6', license: 'BSL-1.0')
 
 description = 'Dlang Statistical Package'
 
