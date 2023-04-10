@@ -24,10 +24,6 @@ template LightScopeOf(T)
         static if (__traits(hasMember, T, "lightScope"))
             alias LightScopeOf = typeof(T.init.lightScope());
         else
-        static if (__traits(hasMember, TemplateArgsOf!T[0], "lightScope")) { // handles case where first template argument is RC
-            alias U = TemplateOf!T;
-            alias LightScopeOf = U!(typeof(TemplateArgsOf!T[0].init.lightScope()), TemplateArgsOf!T[1..$]);
-        } else
         static if (is(T == immutable))
             alias LightScopeOf = LightImmutableOf!T;
         else
@@ -36,20 +32,6 @@ template LightScopeOf(T)
         else
             alias LightScopeOf = T;
     }
-}
-
-@safe pure @nogc nothrow
-version(mir_core_test)
-unittest {
-    static struct Foo(T) {
-        T x;
-    }
-    static struct Bar(U) {
-        U y;
-        U lightScope() { return U.init;}
-    }
-    static assert(is(LightScopeOf!(Foo!double) == Foo!double));
-    static assert(is(LightScopeOf!(Foo!(Bar!double)) == Foo!double));
 }
 
 /++

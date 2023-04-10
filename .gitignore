@@ -24,4 +24,3 @@ files
 mir-core-test-library
 bench_ldexp_frexp
 builddir
-*.pdb
