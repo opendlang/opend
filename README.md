@@ -4,7 +4,7 @@
 
 ## Features
 
-- ✅ Decode from WAV / MP3 / FLAC / OPUS / OGG / MOD / XM
+- ✅ Decode from WAV / MP3 / FLAC / OPUS / OGG / QOA / MOD / XM
 - ✅ Encode to WAV
 - ✅ File and memory support
 - ✅ Seeking support
@@ -23,6 +23,8 @@
 - Doesn't depend upon `dplug:core` anymore.
 - All exceptions thrown by `audio-formats` are now `AudioFormatsException`.  
   They must be clean-up with `destroyAudioFormatException`.
+- **v2.1** QOA format decoding support (https://github.com/phoboslab/qoa). 
+  Note that the QOA bitstream isn't finalized, and will change. 
 
 ### 🔔 `audio-formats` v1
 - Initial release.
@@ -42,6 +44,7 @@
 | 📀 FLAC  | Yes        | No       | Sample          |
 | 📀 OPUS  | Yes (LGPL) | No       | Sample          |
 | 📀 OGG   | Yes        | No       | Sample          |
+| 📀 QOA   | Yes        | No       | Sample          |
 | 📀 MOD   | Yes        | No       | Pattern+Row     |
 | 📀 XM    | Yes        | No       | Pattern+Row     |
 
@@ -52,7 +55,8 @@ _Some of these decoders were originally translated by Ketmar, who did the heavy-
 ## License 
 
 - ⚖️ Boost license otherwise.
-- ⚖️ LGPL v2.1 with OPUS decoding.
+- ⚖️ MIT license when including QOA.
+- ⚖️ LGPL v2.1 for OPUS.
 (use DUB subconfigurations) to choose, default is boost.
 
 ## External links and references

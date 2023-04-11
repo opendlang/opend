@@ -159,6 +159,38 @@ nothrow @nogc:
         }
     }
 
+    /// Read one Big Endian 64-bit integer from stream and advance the stream cursor.
+    /// On error, return `0` and an error, stream is then considered invalid.
+    ulong read_ulong_BE(void* userData, bool* err)
+    {
+        ubyte[8] v;
+        if (8 == read(v.ptr, 8, userData))
+        {
+            version(LittleEndian)
+            {
+                ubyte v0 = v[0];
+                v[0] = v[7];
+                v[7] = v0;
+                ubyte v1 = v[1];
+                v[1] = v[6];
+                v[6] = v1;
+                ubyte v2 = v[2];
+                v[2] = v[5];
+                v[5] = v2;
+                ubyte v3 = v[3];
+                v[3] = v[4];
+                v[4] = v3;
+            }
+            *err = false;
+            return *cast(ulong*)(v.ptr);
+        }
+        else
+        {
+            *err = true;
+            return 0;
+        }
+    }
+
     /// Read one Little Endian 24-bit unsigned int from stream and advance the stream cursor.
     /// On error, return 0 and an error, stream is then considered invalid.
     uint read_24bits_LE(void* userData, bool *err)
@@ -209,6 +241,7 @@ nothrow @nogc:
                 v[3] = v[4];
                 v[4] = v3;
             }
+            *err = false;
             return *cast(double*)(v.ptr);
         }
         else

@@ -75,14 +75,36 @@ slice is then dequantized using the qoa_dequant_tab[] and added to the
 prediction. The result is clamped to int16 to form the final output sample.
 
 */
+/*
+MIT License
+
+Copyright (c) 2022-2023 Dominic Szablewski
+Copyright (c) 2023 Guillaume Piolat
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 module audioformats.qoa;
 
 import audioformats.io;
 import core.stdc.stdlib: malloc, free;
 alias QOA_MALLOC = malloc;
 alias QOA_FREE = free;
-
-
 
 nothrow @nogc private:
 
@@ -93,7 +115,6 @@ enum int QOA_SLICES_PER_FRAME = 256;
 enum int QOA_FRAME_LEN = QOA_SLICES_PER_FRAME * QOA_SLICE_LEN;
 enum int QOA_LMS_LEN = 4;
 enum uint QOA_MAGIC = 0x716f6166; /* 'qoaf' in BE*/
-
 
 uint QOA_FRAME_SIZE(uint channels, uint slices) pure
 {
@@ -259,14 +280,6 @@ int qoa_clamp_s16(int v) pure
 	return v;
 }
 
-qoa_uint64_t qoa_read_u64(const(ubyte)* bytes) pure
-{
-	return 
-		(cast(qoa_uint64_t)(bytes[0]) << 56) | (cast(qoa_uint64_t)(bytes[1]) << 48) |
-		(cast(qoa_uint64_t)(bytes[2]) << 40) | (cast(qoa_uint64_t)(bytes[3]) << 32) |
-		(cast(qoa_uint64_t)(bytes[4]) << 24) | (cast(qoa_uint64_t)(bytes[5]) << 16) |
-		(cast(qoa_uint64_t)(bytes[6]) <<  8) | (cast(qoa_uint64_t)(bytes[7]) <<  0);
-}
 
 void qoa_write_u64(qoa_uint64_t v, ubyte* bytes, uint *p) pure
 {
@@ -460,13 +473,13 @@ uint qoa_decode_header(IOCallbacks* io, void* userData, qoa_desc** qoadesc)
 		return 0;
 	}
 
-	ubyte[8] bytes;
-	if (8 != io.read(bytes.ptr, 8, userData))
-		return 0;
+	bool err;
 
 	/* Read the file header, verify the magic number ('qoaf') and read the 
 	total number of samples. */
-	qoa_uint64_t file_header = qoa_read_u64(bytes.ptr);
+	qoa_uint64_t file_header = io.read_ulong_BE(userData, &err);
+	if (err)
+		return 0;
 
 	if ((file_header >> 32) != QOA_MAGIC) {
 		return 0;
@@ -481,9 +494,9 @@ uint qoa_decode_header(IOCallbacks* io, void* userData, qoa_desc** qoadesc)
 
 	/* Peek into the first frame header to get the number of channels and
 	the samplerate. */
-	if (8 != io.read(bytes.ptr, 8, userData))
+	qoa_uint64_t frame_header = io.read_ulong_BE(userData, &err);
+	if (err)
 		return 0;
-	qoa_uint64_t frame_header = qoa_read_u64(bytes.ptr);
 	desc.channels   = (frame_header >> 56) & 0x0000ff;
 	desc.samplerate = (frame_header >> 32) & 0xffffff;
 
@@ -503,12 +516,10 @@ uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sam
 		return 0;
 
 	/* Read and verify the frame header */
-
-	ubyte[8] bytes;
-	if (8 != io.read(bytes.ptr, 8, userData))
+	bool err;
+	qoa_uint64_t frame_header = io.read_ulong_BE(userData, &err);
+	if (err)
 		return 0;
-
-	qoa_uint64_t frame_header = qoa_read_u64(bytes.ptr);
 	int channels   = (frame_header >> 56) & 0x0000ff;
 	int samplerate = (frame_header >> 32) & 0xffffff;
 	int samples    = (frame_header >> 16) & 0x00ffff;
@@ -532,13 +543,12 @@ uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sam
 	/* Read the LMS state: 4 x 2 bytes history, 4 x 2 bytes weights per channel */
 	for (int c = 0; c < channels; c++) 
     {
-		// PERF: introduce a primitive to read ulong BE directly
-		if (8 != io.read(bytes.ptr, 8, userData))
+		qoa_uint64_t history = io.read_ulong_BE(userData, &err);
+		if (err) 
             return 0;
-		qoa_uint64_t history = qoa_read_u64(bytes.ptr);
-		if (8 != io.read(bytes.ptr, 8, userData))
+		qoa_uint64_t weights = io.read_ulong_BE(userData, &err);
+		if (err) 
             return 0;
-		qoa_uint64_t weights = qoa_read_u64(bytes.ptr);
 		for (int i = 0; i < QOA_LMS_LEN; i++) {
 			qoa.lms[c].history[i] = (cast(short)(history >> 48));
 			history <<= 16;
@@ -547,15 +557,14 @@ uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sam
 		}
 	}
 
-
 	/* Decode all slices for all channels in this frame */
 	for (int sample_index = 0; sample_index < samples; sample_index += QOA_SLICE_LEN) 
     {
 		for (int c = 0; c < channels; c++) 
         {
-			if (8 != io.read(bytes.ptr, 8, userData))
+			qoa_uint64_t slice = io.read_ulong_BE(userData, &err);
+			if (err) 
                 return 0;
-			qoa_uint64_t slice = qoa_read_u64(bytes.ptr);
 
 			int scalefactor = (slice >> 60) & 0xf;
 			int slice_start = sample_index * channels + c;
@@ -579,35 +588,6 @@ uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sam
 	return p;
 }
 
-/+
-short* qoa_decode(const(ubyte)* bytes, int size, qoa_desc *qoa) 
-{
-	uint p = qoa_decode_header(bytes, size, qoa);
-	if (!p) {
-		return null;
-	}
-
-	/* Calculate the required size of the sample buffer and allocate */
-	int total_samples = qoa.samples * qoa.channels;
-	short *sample_data = cast(short*) QOA_MALLOC(total_samples * short.sizeof);
-
-	uint sample_index = 0;
-	uint frame_len;
-	uint frame_size;
-
-	/* Decode all frames */
-	do {
-		short *sample_ptr = sample_data + sample_index * qoa.channels;
-		frame_size = qoa_decode_frame(bytes + p, size - p, qoa, sample_ptr, &frame_len);
-
-		p += frame_size;
-		sample_index += frame_len;
-	} while (frame_size && sample_index < qoa.samples);
-
-	qoa.samples = sample_index;
-	return sample_data;
-}+/
-
 // Streaming decoder for QOA.
 public struct QOADecoder
 {
@@ -624,6 +604,59 @@ nothrow @nogc:
 	int bufStart; // start of buffer
 	int bufStop; // end of buffer (bufStop - bufStart) is the number of frames in buffer
 
+	int currentPositionFrame = -1;
+
+	bool seekPosition(int positionFrame)
+    {
+		if (currentPositionFrame == positionFrame)
+			return true;
+
+		// A QOA file has an 8 byte file header, followed by a number of frames. Each frame 
+        // consists of an 8 byte frame header, the current 16 byte en-/decoder state per
+        // channel and 256 slices per channel. Each slice is 8 bytes wide and encodes 20 
+        // samples of audio data.
+
+		// Forget current decoding buffer content.
+		bufStop = 0;
+        bufStart = 0;
+
+		uint sliceIndex = positionFrame / QOA_SLICE_LEN;
+		uint frameIndex = sliceIndex / QOA_SLICES_PER_FRAME;
+
+		int remain = positionFrame - frameIndex*QOA_SLICES_PER_FRAME*QOA_SLICE_LEN;
+		assert(remain >= 0);
+
+		uint byteSizeOfFullFrame = QOA_FRAME_SIZE(numChannels, QOA_SLICES_PER_FRAME);
+		uint frameOffset = 8 + byteSizeOfFullFrame * frameIndex;
+
+		// goto this frame
+        if (!io.seek(frameOffset, false, userData))
+			return false;
+
+		if (remain > 0)
+        {
+			// Read complete slice, refill buffer.
+			uint frameLen;
+            qoa_decode_frame(io, userData, desc, buffer, &frameLen);
+			bufStart = 0;
+            bufStop = frameLen;
+
+			// Then read some sample to advance.
+			bool err;
+			int res = readSamples!float(null, remain, &err);
+			if (res != remain || err)
+				return false; // Note: in this case currentPositionFrame is left invalid...
+        }	
+
+		currentPositionFrame = positionFrame;
+		return true;
+    }
+
+	int tellPosition()
+    {
+		return currentPositionFrame;
+    }
+
 	// return true if this is a QOA. Taint io.
 	bool initialize(IOCallbacks* io, void* userData)
     {
@@ -639,6 +672,7 @@ nothrow @nogc:
 
 		if (!io.seek(8, false, userData))
 			return false;
+		currentPositionFrame = 0;
 
 		// We need a single QOA_FRAME_LEN buffer for decoding.
 		buffer = cast(short*) QOA_MALLOC(short.sizeof * QOA_FRAME_LEN * numChannels);
@@ -681,19 +715,23 @@ nothrow @nogc:
 			if (inStore > frames)
                 inStore = frames;
 
-			enum float F = 1.0f / short.max;
-
-			for (int n = 0; n < inStore; ++n)
+			if (outData !is null)
             {
-				for (int ch = 0; ch < numChannels; ++ch)
-                {
-					int index = n*numChannels+ch;
-					outData[offsetFrames*numChannels + index] = buffer[bufStart*numChannels + index] * F;
-                }
+				enum float F = 1.0f / short.max;
+
+				for (int n = 0; n < inStore; ++n)
+				{
+					for (int ch = 0; ch < numChannels; ++ch)
+					{
+						int index = n*numChannels+ch;
+						outData[offsetFrames*numChannels + index] = buffer[bufStart*numChannels + index] * F;
+					}
+				}
             }
 
 			bufStart += inStore;
 			offsetFrames += inStore;
+			currentPositionFrame += inStore;
 			frames -= inStore;
 			assert(bufStart <= bufStop);
         }

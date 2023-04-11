@@ -12,7 +12,7 @@ import core.stdc.stdlib;
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus|mod|xm} output.wav");
+        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus|qoa|mod|xm} output.wav");
 
     string inputPath = args[1];
     string outputPath = args[2];

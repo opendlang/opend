@@ -983,7 +983,7 @@ public: // This is also part of the public API
 
     /// Seeking. Subsequent reads start from multi-channel frame index `frames`.
     /// Only available for input streams, for streams whose `canSeek()` returns `true`.
-    /// Warning: `seekPosition(lengthInFrames)` is Undefined Behaviour for now. (it works in MP3
+    /// Warning: `seekPosition(lengthInFrames)` is Undefined Behaviour for now. (it works in MP3).
     bool seekPosition(int frame)
     {
         assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
@@ -1019,8 +1019,19 @@ public: // This is also part of the public API
                 }
                 else
                     assert(false);
+
             case qoa:
-                assert(false); // TODO: a bit like OGG
+            {
+                version(decodeQOA)
+                {
+                    if (frame < 0 || frame > _lengthInFrames)
+                        return false;
+                    return _qoaDecoder.seekPosition(frame);
+                }
+                else
+                    assert(false);
+            }
+
             case ogg:
                 version(decodeOGG)
                 {
@@ -1084,7 +1095,7 @@ public: // This is also part of the public API
     /// Tell. Returns the current position in multichannel frames. -1 on error.
     int tellPosition()
     {
-        assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same sense with modules.
+        assert(isOpenForReading() && !isModule() && canSeek()); // seeking doesn't have the same meaning with modules.
         final switch(_format) with (AudioFileFormat)
         {
             case mp3: 
@@ -1109,7 +1120,10 @@ public: // This is also part of the public API
                     assert(false);
 
             case qoa:
-                assert(false); // TODO
+                version(decodeQOA)
+                    return _qoaDecoder.tellPosition();
+                else
+                    assert(false);
 
             case opus:
                 version(decodeOPUS)
