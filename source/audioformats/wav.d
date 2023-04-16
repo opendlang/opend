@@ -536,6 +536,11 @@ version(encodeWAV)
             }
         }
 
+        ~this()
+        {
+             _ditherBuf.reallocBuffer(0);
+        }
+
     private:
         void* _userData;
         IOCallbacks* _io;
@@ -598,7 +603,7 @@ SOFTWARE.
 +/
 /// This is based upon TPDF Dither by Chris Johnson / AirWindows
 /// though the algorithm changed quite a bit, tuned on 8-bit dither by ear.
-struct TPDFDither
+public struct TPDFDither
 {
 nothrow:
 @nogc:
