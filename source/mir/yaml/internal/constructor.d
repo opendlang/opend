@@ -247,13 +247,13 @@ long constructLong(string str) @safe
             long base = 1;
             foreach_reverse(digit; value.split(':'))
             {
-                val += to!long(digit) * base;
+                val += stdTo!long(digit) * base;
                 base *= 60;
             }
             result = sign * val;
         }
         //Decimal.
-        else{result = sign * to!long(value);}
+        else{result = sign * stdTo!long(value);}
 
     return result;
 }
