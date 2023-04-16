@@ -627,7 +627,8 @@ nothrow @nogc:
     int writeSamples(T)(const(T)* inSamples, int frames, bool* err)
     {
         // Optional dither here.
-        ditherInput(inSamples, frames * numChannels, 32767.0f); // TODO: dither should progably be higher for QOA
+        // TODO: number here should probably be higher for QOA, because no dithering sounds better. Dithering disabled for now.
+        ditherInput(inSamples, frames * numChannels, 32767.0f); 
 
         int enqueued = 0; // frames put in buffer
 
@@ -721,8 +722,9 @@ nothrow @nogc:
             _ditherBuf[n] = inSamples[n];
         }
 
-        if (enableDither)
-            _tpdf.process(_ditherBuf.ptr, frames, scaleFactor);
+        //TODO: for now, no-dithering sounds better. Tune dithering.
+        //if (enableDither)
+        //    _tpdf.process(_ditherBuf.ptr, frames, scaleFactor);
     }
 
 
