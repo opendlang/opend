@@ -12,7 +12,7 @@ import core.stdc.stdlib;
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus|qoa|mod|xm} output.wav");
+        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus|qoa|mod|xm} output.{wav|qoa}");
 
     string inputPath = args[1];
     string outputPath = args[2];
@@ -49,7 +49,14 @@ void main(string[] args)
         options.sampleFormat = AudioSampleFormat.s24;
         options.enableDither = true;
 
-        output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels, options);
+        bool isQOA = outputPath.length > 4 && outputPath[$-4..$] == ".qoa";
+        AudioFileFormat outFormat = AudioFileFormat.wav;
+        if (isQOA) 
+        {
+            outFormat = AudioFileFormat.qoa;
+        }
+
+        output.openToFile(outputPath, outFormat, sampleRate, channels, options);
 
         // Chunked encode/decode
         int totalFrames = 0;

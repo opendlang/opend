@@ -40,7 +40,7 @@ enum AudioFileFormat
     flac, /// FLAC format
     ogg,  /// OGG  format
     opus, /// Opus format
-    qoa,  /// QOI format https://qoaformat.org/
+    qoa,  /// QOA format https://qoaformat.org/
     mod,  /// ProTracker MOD format
     xm,   /// FastTracker II Extended Module format
     unknown
@@ -56,13 +56,13 @@ enum AudioSampleFormat
     fp64  /// 64-bit floating-point
 }
 
-/// An optional struct, passed when encoding a sound.
+/// An optional struct, passed when encoding a sound (WAV or QOA).
 struct EncodingOptions
 {
-    /// The desired sample bitdepth to encode with.
+    /// The desired sample bitdepth to encode with. This ignored for QOA.
     AudioSampleFormat sampleFormat = AudioSampleFormat.fp32; // defaults to 32-bit float
 
-    /// Enable dither when exporting 8-bit, 16-bit, 24-bit WAV
+    /// Enable dither when exporting 8-bit, 16-bit, 24-bit WAV, or QOA
     bool enableDither = true;
 }
 
@@ -712,12 +712,26 @@ public: // This is also part of the public API
             case AudioFileFormat.flac:
             case AudioFileFormat.ogg:
             case AudioFileFormat.opus:
-            case AudioFileFormat.qoa:
             case AudioFileFormat.mod:
             case AudioFileFormat.xm:
             case AudioFileFormat.unknown:
             {
                 assert(false); // Shouldn't have arrived here, such encoding aren't supported.
+            }
+            case AudioFileFormat.qoa:
+            {
+                version(encodeQOA)
+                {
+                    bool err;
+                    int writtenFrames = _qoaEncoder.writeSamples!float(inData, frames, &err);
+                    if (err)
+                        return 0;
+                    return writtenFrames;
+                }
+                else
+                {
+                    assert(false, "no support for WAV encoding");
+                }
             }
             case AudioFileFormat.wav:
             {
@@ -763,6 +777,22 @@ public: // This is also part of the public API
                 // One shouldn't ever get there
                 assert(false);
 
+            case AudioFileFormat.qoa:
+                {
+                    version(encodeQOA)
+                    {
+                        bool err;
+                        int writtenFrames = _qoaEncoder.writeSamples!double(inData, frames, &err);
+                        if (err)
+                            return 0;
+                        return writtenFrames;
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+
             case AudioFileFormat.wav:
                 {
                     version(encodeWAV)
@@ -771,12 +801,12 @@ public: // This is also part of the public API
                     }
                     else
                     {
-                        assert(false, "no support for WAV encoding");
+                        assert(false);
                     }
                 }
 
             default:
-                // Decode to float buffer, and then convert
+                // Convert to float buffer, and then convert
                 if (_floatDecodeBuf.length < frames * _numChannels)
                     _floatDecodeBuf.reallocBuffer(frames * _numChannels);
 
@@ -1175,12 +1205,28 @@ public: // This is also part of the public API
             case opus:
             case mod:
             case xm:
+                assert(false);
+
             case qoa:
-                assert(false); // unsupported output encoding
+                { 
+                    version(encodeQOA)
+                    {
+                        _qoaEncoder.finalizeEncoding();
+                        break;
+                    }
+                    else 
+                        assert(false);
+                }
+
             case wav:
                 { 
-                    _wavEncoder.finalizeEncoding();
-                    break;
+                    version(encodeWAV)
+                    {
+                        _wavEncoder.finalizeEncoding();
+                        break;
+                    }
+                    else
+                        assert(false);
                 }
             case unknown:
                 assert(false);
@@ -1252,6 +1298,10 @@ private:
     version(decodeQOA)
     {
         QOADecoder _qoaDecoder;
+    }
+    version(encodeQOA)
+    {
+        QOAEncoder _qoaEncoder;
     }
     version(decodeMOD)
     {
@@ -1670,6 +1720,9 @@ private:
         _sampleRate = sampleRate;
         _numChannels = numChannels;
 
+        // Note: fractional sample rates not supported by QOA and WAV, signal an integer one
+        int isampleRate = cast(int)(sampleRate + 0.5f);
+
         final switch(format) with (AudioFileFormat)
         {
             case mp3:
@@ -1685,31 +1738,44 @@ private:
             case xm:
                 throw mallocNew!AudioFormatsException("Unsupported encoding format: XM");
             case qoa:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: QOA");
+            {
+                version(encodeQOA)
+                {
+                    bool err;
+                    _qoaEncoder.initialize(_io, userData, isampleRate, numChannels, options.enableDither, &err);
+                    if (err)
+                        throw mallocNew!AudioFormatsException("Can't create QOA encoder");
+                    break;
+                }
+                else
+                    throw mallocNew!AudioFormatsException("Unsupported encoding format: QOA");
+            }
             case wav:
             {
-                // Note: fractional sample rates not supported by WAV, signal an integer one
-                int isampleRate = cast(int)(sampleRate + 0.5f);
-
-                WAVEncoder.Format wavfmt;
-                final switch (options.sampleFormat)
+                version(encodeWAV)
                 {
-                    case AudioSampleFormat.s8:   wavfmt = WAVEncoder.Format.s8; break;
-                    case AudioSampleFormat.s16:  wavfmt = WAVEncoder.Format.s16le; break;
-                    case AudioSampleFormat.s24:  wavfmt = WAVEncoder.Format.s24le; break;
-                    case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
-                    case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
+                    WAVEncoder.Format wavfmt;
+                    final switch (options.sampleFormat)
+                    {
+                        case AudioSampleFormat.s8:   wavfmt = WAVEncoder.Format.s8; break;
+                        case AudioSampleFormat.s16:  wavfmt = WAVEncoder.Format.s16le; break;
+                        case AudioSampleFormat.s24:  wavfmt = WAVEncoder.Format.s24le; break;
+                        case AudioSampleFormat.fp32: wavfmt = WAVEncoder.Format.fp32le; break;
+                        case AudioSampleFormat.fp64: wavfmt = WAVEncoder.Format.fp64le; break;
+                    }
+                    bool err;
+                    _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither, &err);
+                    if (err)
+                        throw mallocNew!AudioFormatsException("Can't create WAV encoder");
+                    break;
                 }
-                bool err;
-                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither, &err);
-                if (err)
-                    throw mallocNew!AudioFormatsException("Can't create WAVEncoder");
-                break;
+                else
+                    throw mallocNew!AudioFormatsException("Unsupported encoding format: WAV");
             }
             case unknown:
                 throw mallocNew!AudioFormatsException("Can't encode using 'unknown' coding");
-        }        
-    }   
+        }
+    }
 
     void finalizeEncodingIfNeeded() @nogc
     {
@@ -1722,7 +1788,7 @@ private:
 
 // AudioStream should be able to go on a smallish 32-bit stack,
 // and malloc the rest on the heap when needed.
-static assert(AudioStream.sizeof <= 280); 
+static assert(AudioStream.sizeof <= 384); 
 
 private: // not meant to be imported at all
 

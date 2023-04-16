@@ -99,9 +99,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+/**
+Note: was extended to support seeking (input only), 
+     - chunk decoding and encoding to avoid having the whole song in memory
+     - encoding 16-bit dither
+*/
 module audioformats.qoa;
 
 import audioformats.io;
+import audioformats.wav; // for dither
+import audioformats.internals;
 import core.stdc.stdlib: malloc, free;
 alias QOA_MALLOC = malloc;
 alias QOA_FREE = free;
@@ -281,64 +288,51 @@ int qoa_clamp_s16(int v) pure
 }
 
 
-void qoa_write_u64(qoa_uint64_t v, ubyte* bytes, uint *p) pure
-{
-    bytes += *p;
-    *p += 8;
-    bytes[0] = (v >> 56) & 0xff;
-    bytes[1] = (v >> 48) & 0xff;
-    bytes[2] = (v >> 40) & 0xff;
-    bytes[3] = (v >> 32) & 0xff;
-    bytes[4] = (v >> 24) & 0xff;
-    bytes[5] = (v >> 16) & 0xff;
-    bytes[6] = (v >>  8) & 0xff;
-    bytes[7] = (v >>  0) & 0xff;
-}
 
 
 /* -----------------------------------------------------------------------------
     Encoder */
 
-uint qoa_encode_header(qoa_desc *qoa, ubyte* bytes) pure
-{
-    uint p = 0;
-    qoa_write_u64((cast(qoa_uint64_t)QOA_MAGIC << 32) | qoa.samples, bytes, &p);
-    return p;
-}
 
-uint qoa_encode_frame(const short *sample_data, qoa_desc *qoa, uint frame_len, ubyte* bytes) pure
+bool qoa_encode_frame(IOCallbacks* io, 
+                      void* userData, 
+                      const(short)* sample_data, 
+                      qoa_desc *desc, 
+                      uint frame_len)
 {
-    uint channels = qoa.channels;
+    uint channels = desc.channels;
 
-    uint p = 0;
     uint slices = (frame_len + QOA_SLICE_LEN - 1) / QOA_SLICE_LEN;
     uint frame_size = QOA_FRAME_SIZE(channels, slices);
 
-    /* Write the frame header */
-    qoa_write_u64((
-        cast(qoa_uint64_t)qoa.channels   << 56 |
-        cast(qoa_uint64_t)qoa.samplerate << 32 |
+    if (!io.write_ulong_BE(userData, 
+        cast(qoa_uint64_t)desc.channels   << 56 |
+        cast(qoa_uint64_t)desc.samplerate << 32 |
         cast(qoa_uint64_t)frame_len       << 16 |
         cast(qoa_uint64_t)frame_size
-    ), bytes, &p);
+    ))
+        return false;
 
     /* Write the current LMS state */
     for (int c = 0; c < channels; c++) {
         qoa_uint64_t weights = 0;
         qoa_uint64_t history = 0;
         for (int i = 0; i < QOA_LMS_LEN; i++) {
-            history = (history << 16) | (qoa.lms[c].history[i] & 0xffff);
-            weights = (weights << 16) | (qoa.lms[c].weights[i] & 0xffff);
+            history = (history << 16) | (desc.lms[c].history[i] & 0xffff);
+            weights = (weights << 16) | (desc.lms[c].weights[i] & 0xffff);
         }
-        qoa_write_u64(history, bytes, &p);
-        qoa_write_u64(weights, bytes, &p);
+        if (!io.write_ulong_BE(userData, history))
+            return false;
+        if (!io.write_ulong_BE(userData, weights))
+            return false;
     }
 
     /* We encode all samples with the channels interleaved on a slice level.
     E.g. for stereo: (ch-0, slice 0), (ch 1, slice 0), (ch 0, slice 1), ...*/
-    for (int sample_index = 0; sample_index < frame_len; sample_index += QOA_SLICE_LEN) {
-
-        for (int c = 0; c < channels; c++) {
+    for (int sample_index = 0; sample_index < frame_len; sample_index += QOA_SLICE_LEN) 
+    {
+        for (int c = 0; c < channels; c++) 
+        {
             int slice_len = qoa_clamp(QOA_SLICE_LEN, 0, frame_len - sample_index);
             int slice_start = sample_index * channels + c;
             int slice_end = (sample_index + slice_len) * channels + c;          
@@ -350,16 +344,17 @@ uint qoa_encode_frame(const short *sample_data, qoa_desc *qoa, uint frame_len, u
             qoa_uint64_t best_slice;
             qoa_lms_t best_lms;
 
-            for (int scalefactor = 0; scalefactor < 16; scalefactor++) {
-
+            for (int scalefactor = 0; scalefactor < 16; scalefactor++) 
+            {
                 /* We have to reset the LMS state to the last known good one
                 before trying each scalefactor, as each pass updates the LMS
                 state when encoding. */
-                qoa_lms_t lms = qoa.lms[c];
+                qoa_lms_t lms = desc.lms[c];
                 qoa_uint64_t slice = scalefactor;
                 qoa_uint64_t current_error = 0;
 
-                for (int si = slice_start; si < slice_end; si += channels) {
+                for (int si = slice_start; si < slice_end; si += channels) 
+                {
                     int sample = sample_data[si];
                     int predicted = qoa_lms_predict(&lms);
 
@@ -372,7 +367,8 @@ uint qoa_encode_frame(const short *sample_data, qoa_desc *qoa, uint frame_len, u
 
                     long error = (sample - reconstructed);
                     current_error += error * error;
-                    if (current_error > best_error) {
+                    if (current_error > best_error) 
+                    {
                         break;
                     }
 
@@ -380,79 +376,30 @@ uint qoa_encode_frame(const short *sample_data, qoa_desc *qoa, uint frame_len, u
                     slice = (slice << 3) | quantized;
                 }
 
-                if (current_error < best_error) {
+                if (current_error < best_error) 
+                {
                     best_error = current_error;
                     best_slice = slice;
                     best_lms = lms;
                 }
             }
 
-            qoa.lms[c] = best_lms;
+            desc.lms[c] = best_lms;
             
             /* If this slice was shorter than QOA_SLICE_LEN, we have to left-
             shift all encoded data, to ensure the rightmost bits are the empty
             ones. This should only happen in the last frame of a file as all
             slices are completely filled otherwise. */
             best_slice <<= (QOA_SLICE_LEN - slice_len) * 3;
-            qoa_write_u64(best_slice, bytes, &p);
+
+            if (!io.write_ulong_BE(userData, best_slice))
+                return false;
         }
     }
     
-    return p;
+    return true;
 }
 
-void *qoa_encode(const short *sample_data, qoa_desc *qoa, uint *out_len) 
-{
-    if (
-        qoa.samples == 0 || 
-        qoa.samplerate == 0 || qoa.samplerate > 0xffffff ||
-        qoa.channels == 0 || qoa.channels > QOA_MAX_CHANNELS
-    ) {
-        return null;
-    }
-
-    /* Calculate the encoded size and allocate */
-    uint num_frames = (qoa.samples + QOA_FRAME_LEN-1) / QOA_FRAME_LEN;
-    uint num_slices = (qoa.samples + QOA_SLICE_LEN-1) / QOA_SLICE_LEN;
-    uint encoded_size = 8 +                    /* 8 byte file header */
-        num_frames * 8 +                               /* 8 byte frame headers */
-        num_frames * QOA_LMS_LEN * 4 * qoa.channels + /* 4 * 4 bytes lms state per channel */
-        num_slices * 8 * qoa.channels;                /* 8 byte slices */
-
-    ubyte* bytes = cast(ubyte*) QOA_MALLOC(encoded_size);
-
-    for (int c = 0; c < qoa.channels; c++) 
-    {
-        /* Set the initial LMS weights to {0, 0, -1, 2}. This helps with the 
-        prediction of the first few ms of a file. */
-        qoa.lms[c].weights[0] = 0;
-        qoa.lms[c].weights[1] = 0;
-        qoa.lms[c].weights[2] = -(1<<13);
-        qoa.lms[c].weights[3] =  (1<<14);
-
-        /* Explicitly set the history samples to 0, as we might have some
-        garbage in there. */
-        for (int i = 0; i < QOA_LMS_LEN; i++) {
-            qoa.lms[c].history[i] = 0;
-        }
-    }
-
-
-    /* Encode the header and go through all frames */
-    uint p = qoa_encode_header(qoa, bytes);
-    
-    int frame_len = QOA_FRAME_LEN;
-    for (int sample_index = 0; sample_index < qoa.samples; sample_index += frame_len) 
-    {
-        frame_len = qoa_clamp(QOA_FRAME_LEN, 0, qoa.samples - sample_index);        
-        const short *frame_samples = sample_data + sample_index * qoa.channels;
-        uint frame_size = qoa_encode_frame(frame_samples, qoa, frame_len, bytes + p);
-        p += frame_size;
-    }
-
-    *out_len = p;
-    return bytes;
-}
 
 
 
@@ -586,6 +533,199 @@ uint qoa_decode_frame(IOCallbacks* io, void* userData, qoa_desc *qoa, short *sam
 
     *frame_len = samples;
     return p;
+}
+
+
+// Streaming encoder for QOA. Queues samples until a full frame can be produced.
+public struct QOAEncoder
+{
+nothrow @nogc:
+    IOCallbacks* io;
+    void* userData;
+    int sampleRate;
+    int numChannels;
+
+    // dither
+    TPDFDither _tpdf;
+    double[] _ditherBuf;
+    bool enableDither;
+    
+    qoa_desc* desc;
+
+    short* buffer; // buffer[0..count] is the staging area before encoding
+    int count;
+    uint framesEncoded;
+
+    void initialize(IOCallbacks* io, void* userData, int sampleRate, int numChannels, bool enableDither, bool* err)
+    {        
+        this.io = io;
+        this.userData = userData;
+        this.sampleRate = sampleRate;
+        this.numChannels = numChannels;
+        this.enableDither = enableDither;
+
+        desc = cast(qoa_desc*) QOA_MALLOC(qoa_desc.sizeof);
+        desc.channels = numChannels;
+        desc.samplerate = sampleRate;
+        desc.samples = 0;
+
+        framesEncoded = 0;
+
+        for (int c = 0; c < desc.channels; c++) 
+        {
+            /* Set the initial LMS weights to {0, 0, -1, 2}. This helps with the 
+            prediction of the first few ms of a file. */
+            desc.lms[c].weights[0] = 0;
+            desc.lms[c].weights[1] = 0;
+            desc.lms[c].weights[2] = -(1<<13);
+            desc.lms[c].weights[3] =  (1<<14);
+
+            /* Explicitly set the history samples to 0, as we might have some
+            garbage in there. */
+            for (int i = 0; i < QOA_LMS_LEN; i++)
+            {
+                desc.lms[c].history[i] = 0;
+            }
+        }
+
+        // We need a single QOA_FRAME_LEN buffer for encoding a full frame.
+        buffer = cast(short*) QOA_MALLOC(short.sizeof * QOA_FRAME_LEN * numChannels);
+        if (!buffer)
+        {
+            *err = true;
+            return;
+        }
+        count = 0;
+
+        if (desc.samplerate == 0 || desc.samplerate > 0xffffff || desc.channels == 0 || desc.channels > QOA_MAX_CHANNELS)
+        {
+            *err = true;
+            return;
+        }
+
+        // Skip QOA header for now
+        if (!io.write_ulong_BE(userData, 0))
+        {
+            *err = true;
+            return;
+        }
+
+        *err = false;
+    }
+
+    ~this()
+    {
+        QOA_FREE(buffer);
+        buffer = null;
+
+        QOA_FREE(desc);
+        desc = null;
+
+        _ditherBuf.reallocBuffer(0);
+    }
+
+    int writeSamples(T)(const(T)* inSamples, int frames, bool* err)
+    {
+        // Optional dither here.
+        ditherInput(inSamples, frames * numChannels, 32767.0f); // TODO: dither should progably be higher for QOA
+
+        int enqueued = 0; // frames put in buffer
+
+        while (enqueued < frames)
+        {
+            int maxToEnqueue = frames - enqueued;
+            int storeRoom = QOA_FRAME_LEN - count;
+            int toEnqueue = storeRoom < maxToEnqueue ? storeRoom : maxToEnqueue;
+
+            for (int n = 0; n < toEnqueue; ++n)
+            {
+                for (int ch = 0; ch < numChannels; ++ch)
+                {
+                    int index = n*numChannels+ch;
+                    double x = _ditherBuf[index];
+                    int s = cast(int)(32768.5 + x * 32767.0);
+                    s -= 32768;
+                    assert(s >= -32767 && s <= 32767);
+                    buffer[(count+n)*numChannels+ch] = cast(short)s;
+                }
+            }
+            count += toEnqueue;
+            
+            if (count == QOA_FRAME_LEN)
+            {
+                bool success = outputFrame(QOA_FRAME_LEN);
+                if (!success)
+                {
+                    *err = true;
+                    return enqueued; // was an error
+                }
+            }
+
+            enqueued += toEnqueue;
+        }
+        *err = false;
+        return enqueued;
+    }
+
+    bool outputFrame(int frames)
+    {
+        assert(frames > 0);
+        if (frames + framesEncoded < framesEncoded) // overflow, QOA too long
+            return false;
+
+        bool success = qoa_encode_frame(io, userData, buffer, desc, frames);
+        if (!success)
+            return false;
+
+        framesEncoded += frames;
+        count = 0;
+        return true;
+    }
+
+    // true on success.
+    bool finalizeEncoding()
+    {
+        // 1. Encode remaining queued samples.
+        if (count > 0)
+        {
+            if (!outputFrame(count))
+                return false;
+        }
+
+        // 2. Finalize file.
+        long end = io.tell(userData);
+        
+        // Overwrite `samples` value in QOA header.
+        if (!io.seek(0, false, userData))
+            return false;
+       
+        if (!io.write_ulong_BE(userData, (cast(qoa_uint64_t)QOA_MAGIC << 32) | framesEncoded))
+            return false;
+
+        // Put back cursor at the end.
+        // Note: finalizeEncoding could technically be called several time, and encoding could continue.
+        // But not supported by audio-formats API.
+        if (!io.seek(end, false, userData))
+            return false;
+
+        return true;
+    }
+
+    void ditherInput(T)(T* inSamples, int frames, double scaleFactor)
+    {
+        if (_ditherBuf.length < frames)
+            _ditherBuf.reallocBuffer(frames);
+
+        for (int n = 0; n < frames; ++n)
+        {
+            _ditherBuf[n] = inSamples[n];
+        }
+
+        if (enableDither)
+            _tpdf.process(_ditherBuf.ptr, frames, scaleFactor);
+    }
+
+
 }
 
 // Streaming decoder for QOA.

@@ -1,10 +1,15 @@
 {
     "name": "transcode",
     "description": "Decode MP3/WAV input, output a WAV.",
-    "license": "BSL-1.0",
+    "license": "LGPL-2.1+BSL-1.0+MIT",
 
     "dependencies": 
     {
         "audio-formats": { "path": "../.." }
+    },
+
+    "subConfigurations":
+    {
+        "audio-formats": "lgpl"
     }
 }

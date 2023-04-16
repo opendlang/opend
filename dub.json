@@ -6,17 +6,17 @@
     "configurations": [
         {
             "name": "boost",
-            "versions": ["decodeWAV",              "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
+            "versions": ["decodeWAV",                           "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
                          "encodeWAV"]
         },
         {
             "name": "mit",
-            "versions": ["decodeWAV", "decodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
+            "versions": ["decodeWAV", "decodeQOA", "encodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
                          "encodeWAV" ]
         },
         {
             "name": "lgpl",
-            "versions": ["decodeWAV", "decodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS", "decodeMOD", "decodeXM",
+            "versions": ["decodeWAV", "decodeQOA", "encodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS", "decodeMOD", "decodeXM",
                          "encodeWAV"]
         }
     ]
