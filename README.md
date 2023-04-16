@@ -4,8 +4,8 @@
 
 ## Features
 
-- ✅ Decode from WAV / MP3 / FLAC / OPUS / OGG / QOA / MOD / XM
-- ✅ Encode to WAV
+- ✅ Decode from WAV / QOA / MP3 / FLAC / OPUS / OGG / MOD / XM
+- ✅ Encode to WAV / QOA
 - ✅ File and memory support
 - ✅ Seeking support
 - ✅ Chunked support
@@ -25,6 +25,7 @@
   They must be clean-up with `destroyAudioFormatException`.
 - **v2.1** QOA format decoding support (https://github.com/phoboslab/qoa). 
   Note that the QOA bitstream isn't finalized, and will change. 
+- **v2.2** QOA format encoding support.
 
 ### 🔔 `audio-formats` v1
 - Initial release.
@@ -44,7 +45,7 @@
 | 📀 FLAC  | Yes        | No       | Sample          |
 | 📀 OPUS  | Yes (LGPL) | No       | Sample          |
 | 📀 OGG   | Yes        | No       | Sample          |
-| 📀 QOA   | Yes        | No       | Sample          |
+| 📀 QOA   | Yes        | Yes      | Sample          |
 | 📀 MOD   | Yes        | No       | Pattern+Row     |
 | 📀 XM    | Yes        | No       | Pattern+Row     |
 
