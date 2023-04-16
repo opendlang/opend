@@ -10,7 +10,7 @@
 - ✅ Seeking support
 - ✅ Chunked support
 - ✅ `float` and `double` support
-- ✅ WAV encoding with dithering when reducing bit-depth
+- ✅ Encoding with dithering when reducing bit-depth
 - ✅ `nothrow @nogc` API
 - ✅ Archs: `x86` / `x86_64` / `arm64`
 
