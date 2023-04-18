@@ -55,7 +55,7 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 246;
+enum VK_HEADER_VERSION = 247;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -15009,7 +15009,7 @@ struct VkPhysicalDevice4444FormatsFeaturesEXT {
 // - VK_EXT_device_fault -
 enum VK_EXT_device_fault = 1;
 
-enum VK_EXT_DEVICE_FAULT_SPEC_VERSION = 1;
+enum VK_EXT_DEVICE_FAULT_SPEC_VERSION = 2;
 enum const( char )* VK_EXT_DEVICE_FAULT_EXTENSION_NAME = "VK_EXT_device_fault";
 
 enum VkDeviceFaultAddressTypeEXT {
@@ -15086,6 +15086,8 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT {
     uint32_t                                   applicationNameOffset;
     uint32_t                                   applicationVersion;
     uint32_t                                   engineNameOffset;
+    uint32_t                                   engineVersion;
+    uint32_t                                   apiVersion;
 }
 
 
@@ -15753,7 +15755,7 @@ enum const( char )* VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME = "VK_EXT_load_stor
 // - VK_HUAWEI_cluster_culling_shader -
 enum VK_HUAWEI_cluster_culling_shader = 1;
 
-enum VK_HUAWEI_CLUSTER_CULLING_SHADER_SPEC_VERSION = 1;
+enum VK_HUAWEI_CLUSTER_CULLING_SHADER_SPEC_VERSION = 2;
 enum const( char )* VK_HUAWEI_CLUSTER_CULLING_SHADER_EXTENSION_NAME = "VK_HUAWEI_cluster_culling_shader";
 
 struct VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI {
