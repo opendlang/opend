@@ -43,17 +43,6 @@ extern( System ):
 // - VK_VERSION_1_0 -
 enum VK_VERSION_1_0 = 1;
 
-
-// DEPRECATED: This define is deprecated. VK_MAKE_API_VERSION should be used instead.
-deprecated( "These defines have been deprecated, use VK_MAKE_API_VERSION and VK_API_VERSION_ variants instead!" ) {
-    pure {
-        uint VK_MAKE_VERSION( uint major, uint minor, uint patch ) { return ( major << 22 ) | ( minor << 12 ) | patch; }
-        uint VK_VERSION_MAJOR( uint ver ) { return ver >> 22; }
-        uint VK_VERSION_MINOR( uint ver ) { return ( ver >> 12 ) & 0x3FF; }
-        uint VK_VERSION_PATCH( uint ver ) { return ver & 0xFFF; }
-    }
-}
-
 pure {
     uint VK_MAKE_API_VERSION( uint variant, uint major, uint minor, uint patch ) { return ( variant << 29 ) | ( major << 22 ) | ( minor << 12 ) | patch; }
     uint VK_API_VERSION_VARIANT( uint ver ) { return ver >> 29; }
@@ -66,10 +55,21 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 240;
+enum VK_HEADER_VERSION = 241;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
+
+// DEPRECATED: This define is deprecated. VK_MAKE_API_VERSION should be used instead.
+deprecated( "These defines have been deprecated, use VK_MAKE_API_VERSION and VK_API_VERSION_ variants instead!" ) {
+    pure {
+        uint VK_MAKE_VERSION( uint major, uint minor, uint patch ) { return ( major << 22 ) | ( minor << 12 ) | patch; }
+        uint VK_VERSION_MAJOR( uint ver ) { return ver >> 22; }
+        uint VK_VERSION_MINOR( uint ver ) { return ( ver >> 12 ) & 0x3FF; }
+        uint VK_VERSION_PATCH( uint ver ) { return ver & 0xFFF; }
+    }
+}
+
 
 alias VkBool32 = uint32_t;
 alias VkDeviceAddress = uint64_t;
@@ -931,6 +931,9 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT                          = 1000411000,
     VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT                     = 1000411001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT                  = 1000412000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM                                 = 1000415000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT                       = 1000418000,
+    VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT                                          = 1000418001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE                 = 1000420000,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE                                     = 1000420001,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE                              = 1000420002,
@@ -982,6 +985,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM                          = 1000497000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM                        = 1000497001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT                = 1000498000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM              = 1000510000,
+    VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM                = 1000510001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES                                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES                             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT                                               = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -1857,6 +1862,9 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI 
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT                    = VkStructureType.VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM                                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT                                         = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE;
 enum VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE                                    = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE;
 enum VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE                             = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE;
@@ -1908,6 +1916,8 @@ enum VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT                  
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM                       = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM;
+enum VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM               = VkStructureType.VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES                                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES                            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
 enum VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT                                              = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
@@ -3262,10 +3272,13 @@ enum VkDynamicState {
     VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE                    = 1000377004,
     VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV                       = 1000087000,
     VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT                       = 1000099000,
+    VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT                = 1000099001,
+    VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT                  = 1000099002,
     VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT                        = 1000143000,
     VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR         = 1000347000,
     VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV            = 1000164004,
     VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV             = 1000164006,
+    VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV                 = 1000205000,
     VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV                        = 1000205001,
     VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR                   = 1000226000,
     VK_DYNAMIC_STATE_LINE_STIPPLE_EXT                            = 1000259000,
@@ -3348,10 +3361,13 @@ enum VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE                          = VkDynamicStat
 enum VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE                   = VkDynamicState.VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE;
 enum VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV                      = VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV;
 enum VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT                      = VkDynamicState.VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT;
+enum VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT               = VkDynamicState.VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT;
+enum VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT                 = VkDynamicState.VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT;
 enum VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT                       = VkDynamicState.VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT;
 enum VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR        = VkDynamicState.VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR;
 enum VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV           = VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV;
 enum VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV            = VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV;
+enum VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV                = VkDynamicState.VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV;
 enum VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV                       = VkDynamicState.VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV;
 enum VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR                  = VkDynamicState.VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;
 enum VK_DYNAMIC_STATE_LINE_STIPPLE_EXT                           = VkDynamicState.VK_DYNAMIC_STATE_LINE_STIPPLE_EXT;
@@ -11684,7 +11700,7 @@ struct VkPipelineViewportSwizzleStateCreateInfoNV {
 // - VK_EXT_discard_rectangles -
 enum VK_EXT_discard_rectangles = 1;
 
-enum VK_EXT_DISCARD_RECTANGLES_SPEC_VERSION = 1;
+enum VK_EXT_DISCARD_RECTANGLES_SPEC_VERSION = 2;
 enum const( char )* VK_EXT_DISCARD_RECTANGLES_EXTENSION_NAME = "VK_EXT_discard_rectangles";
 
 enum VkDiscardRectangleModeEXT {
@@ -13025,7 +13041,7 @@ struct VkPhysicalDeviceShaderImageFootprintFeaturesNV {
 // - VK_NV_scissor_exclusive -
 enum VK_NV_scissor_exclusive = 1;
 
-enum VK_NV_SCISSOR_EXCLUSIVE_SPEC_VERSION = 1;
+enum VK_NV_SCISSOR_EXCLUSIVE_SPEC_VERSION = 2;
 enum const( char )* VK_NV_SCISSOR_EXCLUSIVE_EXTENSION_NAME = "VK_NV_scissor_exclusive";
 
 struct VkPipelineViewportExclusiveScissorStateCreateInfoNV {
@@ -15697,6 +15713,42 @@ struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT {
 }
 
 
+// - VK_ARM_shader_core_properties -
+enum VK_ARM_shader_core_properties = 1;
+
+enum VK_ARM_SHADER_CORE_PROPERTIES_SPEC_VERSION = 1;
+enum const( char )* VK_ARM_SHADER_CORE_PROPERTIES_EXTENSION_NAME = "VK_ARM_shader_core_properties";
+
+struct VkPhysicalDeviceShaderCorePropertiesARM {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM;
+    void*            pNext;
+    uint32_t         pixelRate;
+    uint32_t         texelRate;
+    uint32_t         fmaRate;
+}
+
+
+// - VK_EXT_image_sliced_view_of_3d -
+enum VK_EXT_image_sliced_view_of_3d = 1;
+
+enum VK_EXT_IMAGE_SLICED_VIEW_OF_3D_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME = "VK_EXT_image_sliced_view_of_3d";
+enum VK_REMAINING_3D_SLICES_EXT = (~0U);
+
+struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         imageSlicedViewOf3D;
+}
+
+struct VkImageViewSlicedCreateInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
+    const( void )*   pNext;
+    uint32_t         sliceOffset;
+    uint32_t         sliceCount;
+}
+
+
 // - VK_VALVE_descriptor_set_host_mapping -
 enum VK_VALVE_descriptor_set_host_mapping = 1;
 
@@ -16450,6 +16502,26 @@ struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT {
     VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
     void*            pNext;
     VkBool32         pipelineLibraryGroupHandles;
+}
+
+
+// - VK_QCOM_multiview_per_view_render_areas -
+enum VK_QCOM_multiview_per_view_render_areas = 1;
+
+enum VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_SPEC_VERSION = 1;
+enum const( char )* VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_EXTENSION_NAME = "VK_QCOM_multiview_per_view_render_areas";
+
+struct VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM;
+    void*            pNext;
+    VkBool32         multiviewPerViewRenderAreas;
+}
+
+struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM;
+    const( void )*      pNext;
+    uint32_t            perViewRenderAreaCount;
+    const( VkRect2D )*  pPerViewRenderAreas;
 }
 
 

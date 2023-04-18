@@ -376,6 +376,8 @@ struct DispatchDevice {
 
         // VK_EXT_discard_rectangles
         vkCmdSetDiscardRectangleEXT                              = cast( PFN_vkCmdSetDiscardRectangleEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
+        vkCmdSetDiscardRectangleEnableEXT                        = cast( PFN_vkCmdSetDiscardRectangleEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEnableEXT" );
+        vkCmdSetDiscardRectangleModeEXT                          = cast( PFN_vkCmdSetDiscardRectangleModeEXT                          ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleModeEXT" );
 
         // VK_EXT_hdr_metadata
         vkSetHdrMetadataEXT                                      = cast( PFN_vkSetHdrMetadataEXT                                      ) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
@@ -436,6 +438,7 @@ struct DispatchDevice {
         vkCmdDrawMeshTasksIndirectCountNV                        = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV                        ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountNV" );
 
         // VK_NV_scissor_exclusive
+        vkCmdSetExclusiveScissorEnableNV                         = cast( PFN_vkCmdSetExclusiveScissorEnableNV                         ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorEnableNV" );
         vkCmdSetExclusiveScissorNV                               = cast( PFN_vkCmdSetExclusiveScissorNV                               ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorNV" );
 
         // VK_NV_device_diagnostic_checkpoints
@@ -961,6 +964,8 @@ struct DispatchDevice {
 
     // VK_EXT_discard_rectangles
     void      CmdSetDiscardRectangleEXT( uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const( VkRect2D )* pDiscardRectangles ) { vkCmdSetDiscardRectangleEXT( commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles ); }
+    void      CmdSetDiscardRectangleEnableEXT( VkBool32 discardRectangleEnable ) { vkCmdSetDiscardRectangleEnableEXT( commandBuffer, discardRectangleEnable ); }
+    void      CmdSetDiscardRectangleModeEXT( VkDiscardRectangleModeEXT discardRectangleMode ) { vkCmdSetDiscardRectangleModeEXT( commandBuffer, discardRectangleMode ); }
 
     // VK_EXT_hdr_metadata
     void      SetHdrMetadataEXT( uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkHdrMetadataEXT )* pMetadata ) { vkSetHdrMetadataEXT( vkDevice, swapchainCount, pSwapchains, pMetadata ); }
@@ -1018,6 +1023,7 @@ struct DispatchDevice {
     void      CmdDrawMeshTasksIndirectCountNV( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawMeshTasksIndirectCountNV( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
 
     // VK_NV_scissor_exclusive
+    void      CmdSetExclusiveScissorEnableNV( uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const( VkBool32 )* pExclusiveScissorEnables ) { vkCmdSetExclusiveScissorEnableNV( commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissorEnables ); }
     void      CmdSetExclusiveScissorNV( uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const( VkRect2D )* pExclusiveScissors ) { vkCmdSetExclusiveScissorNV( commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors ); }
 
     // VK_NV_device_diagnostic_checkpoints
@@ -1643,6 +1649,8 @@ struct DispatchDevice {
 
     // VK_EXT_discard_rectangles
     PFN_vkCmdSetDiscardRectangleEXT                              vkCmdSetDiscardRectangleEXT;
+    PFN_vkCmdSetDiscardRectangleEnableEXT                        vkCmdSetDiscardRectangleEnableEXT;
+    PFN_vkCmdSetDiscardRectangleModeEXT                          vkCmdSetDiscardRectangleModeEXT;
 
     // VK_EXT_hdr_metadata
     PFN_vkSetHdrMetadataEXT                                      vkSetHdrMetadataEXT;
@@ -1703,6 +1711,7 @@ struct DispatchDevice {
     PFN_vkCmdDrawMeshTasksIndirectCountNV                        vkCmdDrawMeshTasksIndirectCountNV;
 
     // VK_NV_scissor_exclusive
+    PFN_vkCmdSetExclusiveScissorEnableNV                         vkCmdSetExclusiveScissorEnableNV;
     PFN_vkCmdSetExclusiveScissorNV                               vkCmdSetExclusiveScissorNV;
 
     // VK_NV_device_diagnostic_checkpoints

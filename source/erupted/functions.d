@@ -408,6 +408,8 @@ extern( System ) {
 
     // VK_EXT_discard_rectangles
     alias PFN_vkCmdSetDiscardRectangleEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const( VkRect2D )* pDiscardRectangles );
+    alias PFN_vkCmdSetDiscardRectangleEnableEXT                                 = void      function( VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable );
+    alias PFN_vkCmdSetDiscardRectangleModeEXT                                   = void      function( VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode );
 
     // VK_EXT_hdr_metadata
     alias PFN_vkSetHdrMetadataEXT                                               = void      function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkHdrMetadataEXT )* pMetadata );
@@ -473,6 +475,7 @@ extern( System ) {
     alias PFN_vkCmdDrawMeshTasksIndirectCountNV                                 = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 
     // VK_NV_scissor_exclusive
+    alias PFN_vkCmdSetExclusiveScissorEnableNV                                  = void      function( VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const( VkBool32 )* pExclusiveScissorEnables );
     alias PFN_vkCmdSetExclusiveScissorNV                                        = void      function( VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const( VkRect2D )* pExclusiveScissors );
 
     // VK_NV_device_diagnostic_checkpoints
@@ -1081,6 +1084,8 @@ __gshared {
 
     // VK_EXT_discard_rectangles
     PFN_vkCmdSetDiscardRectangleEXT                                       vkCmdSetDiscardRectangleEXT;
+    PFN_vkCmdSetDiscardRectangleEnableEXT                                 vkCmdSetDiscardRectangleEnableEXT;
+    PFN_vkCmdSetDiscardRectangleModeEXT                                   vkCmdSetDiscardRectangleModeEXT;
 
     // VK_EXT_hdr_metadata
     PFN_vkSetHdrMetadataEXT                                               vkSetHdrMetadataEXT;
@@ -1146,6 +1151,7 @@ __gshared {
     PFN_vkCmdDrawMeshTasksIndirectCountNV                                 vkCmdDrawMeshTasksIndirectCountNV;
 
     // VK_NV_scissor_exclusive
+    PFN_vkCmdSetExclusiveScissorEnableNV                                  vkCmdSetExclusiveScissorEnableNV;
     PFN_vkCmdSetExclusiveScissorNV                                        vkCmdSetExclusiveScissorNV;
 
     // VK_NV_device_diagnostic_checkpoints
@@ -1950,6 +1956,8 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_discard_rectangles
     vkCmdSetDiscardRectangleEXT                              = cast( PFN_vkCmdSetDiscardRectangleEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleEXT" );
+    vkCmdSetDiscardRectangleEnableEXT                        = cast( PFN_vkCmdSetDiscardRectangleEnableEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleEnableEXT" );
+    vkCmdSetDiscardRectangleModeEXT                          = cast( PFN_vkCmdSetDiscardRectangleModeEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleModeEXT" );
 
     // VK_EXT_hdr_metadata
     vkSetHdrMetadataEXT                                      = cast( PFN_vkSetHdrMetadataEXT                                      ) vkGetInstanceProcAddr( instance, "vkSetHdrMetadataEXT" );
@@ -2010,6 +2018,7 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdDrawMeshTasksIndirectCountNV                        = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV                        ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectCountNV" );
 
     // VK_NV_scissor_exclusive
+    vkCmdSetExclusiveScissorEnableNV                         = cast( PFN_vkCmdSetExclusiveScissorEnableNV                         ) vkGetInstanceProcAddr( instance, "vkCmdSetExclusiveScissorEnableNV" );
     vkCmdSetExclusiveScissorNV                               = cast( PFN_vkCmdSetExclusiveScissorNV                               ) vkGetInstanceProcAddr( instance, "vkCmdSetExclusiveScissorNV" );
 
     // VK_NV_device_diagnostic_checkpoints
@@ -2532,6 +2541,8 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_discard_rectangles
     vkCmdSetDiscardRectangleEXT                              = cast( PFN_vkCmdSetDiscardRectangleEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
+    vkCmdSetDiscardRectangleEnableEXT                        = cast( PFN_vkCmdSetDiscardRectangleEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEnableEXT" );
+    vkCmdSetDiscardRectangleModeEXT                          = cast( PFN_vkCmdSetDiscardRectangleModeEXT                          ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleModeEXT" );
 
     // VK_EXT_hdr_metadata
     vkSetHdrMetadataEXT                                      = cast( PFN_vkSetHdrMetadataEXT                                      ) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
@@ -2592,6 +2603,7 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdDrawMeshTasksIndirectCountNV                        = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV                        ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountNV" );
 
     // VK_NV_scissor_exclusive
+    vkCmdSetExclusiveScissorEnableNV                         = cast( PFN_vkCmdSetExclusiveScissorEnableNV                         ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorEnableNV" );
     vkCmdSetExclusiveScissorNV                               = cast( PFN_vkCmdSetExclusiveScissorNV                               ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorNV" );
 
     // VK_NV_device_diagnostic_checkpoints
