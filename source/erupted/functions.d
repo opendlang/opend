@@ -585,6 +585,10 @@ extern( System ) {
     alias PFN_vkGetDeviceMicromapCompatibilityEXT                               = void      function( VkDevice device, const( VkMicromapVersionInfoEXT )* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility );
     alias PFN_vkGetMicromapBuildSizesEXT                                        = void      function( VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const( VkMicromapBuildInfoEXT )* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo );
 
+    // VK_HUAWEI_cluster_culling_shader
+    alias PFN_vkCmdDrawClusterHUAWEI                                            = void      function( VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ );
+    alias PFN_vkCmdDrawClusterIndirectHUAWEI                                    = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset );
+
     // VK_EXT_pageable_device_local_memory
     alias PFN_vkSetDeviceMemoryPriorityEXT                                      = void      function( VkDevice device, VkDeviceMemory memory, float priority );
 
@@ -1253,6 +1257,10 @@ __gshared {
     PFN_vkCmdWriteMicromapsPropertiesEXT                                  vkCmdWriteMicromapsPropertiesEXT;
     PFN_vkGetDeviceMicromapCompatibilityEXT                               vkGetDeviceMicromapCompatibilityEXT;
     PFN_vkGetMicromapBuildSizesEXT                                        vkGetMicromapBuildSizesEXT;
+
+    // VK_HUAWEI_cluster_culling_shader
+    PFN_vkCmdDrawClusterHUAWEI                                            vkCmdDrawClusterHUAWEI;
+    PFN_vkCmdDrawClusterIndirectHUAWEI                                    vkCmdDrawClusterIndirectHUAWEI;
 
     // VK_EXT_pageable_device_local_memory
     PFN_vkSetDeviceMemoryPriorityEXT                                      vkSetDeviceMemoryPriorityEXT;
@@ -2101,6 +2109,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetDeviceMicromapCompatibilityEXT                      = cast( PFN_vkGetDeviceMicromapCompatibilityEXT                      ) vkGetInstanceProcAddr( instance, "vkGetDeviceMicromapCompatibilityEXT" );
     vkGetMicromapBuildSizesEXT                               = cast( PFN_vkGetMicromapBuildSizesEXT                               ) vkGetInstanceProcAddr( instance, "vkGetMicromapBuildSizesEXT" );
 
+    // VK_HUAWEI_cluster_culling_shader
+    vkCmdDrawClusterHUAWEI                                   = cast( PFN_vkCmdDrawClusterHUAWEI                                   ) vkGetInstanceProcAddr( instance, "vkCmdDrawClusterHUAWEI" );
+    vkCmdDrawClusterIndirectHUAWEI                           = cast( PFN_vkCmdDrawClusterIndirectHUAWEI                           ) vkGetInstanceProcAddr( instance, "vkCmdDrawClusterIndirectHUAWEI" );
+
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                             = cast( PFN_vkSetDeviceMemoryPriorityEXT                             ) vkGetInstanceProcAddr( instance, "vkSetDeviceMemoryPriorityEXT" );
 
@@ -2678,6 +2690,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdWriteMicromapsPropertiesEXT                         = cast( PFN_vkCmdWriteMicromapsPropertiesEXT                         ) vkGetDeviceProcAddr( device, "vkCmdWriteMicromapsPropertiesEXT" );
     vkGetDeviceMicromapCompatibilityEXT                      = cast( PFN_vkGetDeviceMicromapCompatibilityEXT                      ) vkGetDeviceProcAddr( device, "vkGetDeviceMicromapCompatibilityEXT" );
     vkGetMicromapBuildSizesEXT                               = cast( PFN_vkGetMicromapBuildSizesEXT                               ) vkGetDeviceProcAddr( device, "vkGetMicromapBuildSizesEXT" );
+
+    // VK_HUAWEI_cluster_culling_shader
+    vkCmdDrawClusterHUAWEI                                   = cast( PFN_vkCmdDrawClusterHUAWEI                                   ) vkGetDeviceProcAddr( device, "vkCmdDrawClusterHUAWEI" );
+    vkCmdDrawClusterIndirectHUAWEI                           = cast( PFN_vkCmdDrawClusterIndirectHUAWEI                           ) vkGetDeviceProcAddr( device, "vkCmdDrawClusterIndirectHUAWEI" );
 
     // VK_EXT_pageable_device_local_memory
     vkSetDeviceMemoryPriorityEXT                             = cast( PFN_vkSetDeviceMemoryPriorityEXT                             ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );

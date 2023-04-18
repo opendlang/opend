@@ -535,6 +535,10 @@ struct DispatchDevice {
         vkGetDeviceMicromapCompatibilityEXT                      = cast( PFN_vkGetDeviceMicromapCompatibilityEXT                      ) vkGetDeviceProcAddr( device, "vkGetDeviceMicromapCompatibilityEXT" );
         vkGetMicromapBuildSizesEXT                               = cast( PFN_vkGetMicromapBuildSizesEXT                               ) vkGetDeviceProcAddr( device, "vkGetMicromapBuildSizesEXT" );
 
+        // VK_HUAWEI_cluster_culling_shader
+        vkCmdDrawClusterHUAWEI                                   = cast( PFN_vkCmdDrawClusterHUAWEI                                   ) vkGetDeviceProcAddr( device, "vkCmdDrawClusterHUAWEI" );
+        vkCmdDrawClusterIndirectHUAWEI                           = cast( PFN_vkCmdDrawClusterIndirectHUAWEI                           ) vkGetDeviceProcAddr( device, "vkCmdDrawClusterIndirectHUAWEI" );
+
         // VK_EXT_pageable_device_local_memory
         vkSetDeviceMemoryPriorityEXT                             = cast( PFN_vkSetDeviceMemoryPriorityEXT                             ) vkGetDeviceProcAddr( device, "vkSetDeviceMemoryPriorityEXT" );
 
@@ -1110,6 +1114,10 @@ struct DispatchDevice {
     void      CmdWriteMicromapsPropertiesEXT( uint32_t micromapCount, const( VkMicromapEXT )* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteMicromapsPropertiesEXT( commandBuffer, micromapCount, pMicromaps, queryType, queryPool, firstQuery ); }
     void      GetDeviceMicromapCompatibilityEXT( const( VkMicromapVersionInfoEXT )* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility ) { vkGetDeviceMicromapCompatibilityEXT( vkDevice, pVersionInfo, pCompatibility ); }
     void      GetMicromapBuildSizesEXT( VkAccelerationStructureBuildTypeKHR buildType, const( VkMicromapBuildInfoEXT )* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo ) { vkGetMicromapBuildSizesEXT( vkDevice, buildType, pBuildInfo, pSizeInfo ); }
+
+    // VK_HUAWEI_cluster_culling_shader
+    void      CmdDrawClusterHUAWEI( uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ ) { vkCmdDrawClusterHUAWEI( commandBuffer, groupCountX, groupCountY, groupCountZ ); }
+    void      CmdDrawClusterIndirectHUAWEI( VkBuffer buffer, VkDeviceSize offset ) { vkCmdDrawClusterIndirectHUAWEI( commandBuffer, buffer, offset ); }
 
     // VK_EXT_pageable_device_local_memory
     void      SetDeviceMemoryPriorityEXT( VkDeviceMemory memory, float priority ) { vkSetDeviceMemoryPriorityEXT( vkDevice, memory, priority ); }
@@ -1793,6 +1801,10 @@ struct DispatchDevice {
     PFN_vkCmdWriteMicromapsPropertiesEXT                         vkCmdWriteMicromapsPropertiesEXT;
     PFN_vkGetDeviceMicromapCompatibilityEXT                      vkGetDeviceMicromapCompatibilityEXT;
     PFN_vkGetMicromapBuildSizesEXT                               vkGetMicromapBuildSizesEXT;
+
+    // VK_HUAWEI_cluster_culling_shader
+    PFN_vkCmdDrawClusterHUAWEI                                   vkCmdDrawClusterHUAWEI;
+    PFN_vkCmdDrawClusterIndirectHUAWEI                           vkCmdDrawClusterIndirectHUAWEI;
 
     // VK_EXT_pageable_device_local_memory
     PFN_vkSetDeviceMemoryPriorityEXT                             vkSetDeviceMemoryPriorityEXT;
