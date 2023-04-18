@@ -321,6 +321,10 @@ struct DispatchDevice {
         vkGetPipelineExecutableStatisticsKHR                     = cast( PFN_vkGetPipelineExecutableStatisticsKHR                     ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
         vkGetPipelineExecutableInternalRepresentationsKHR        = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR        ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+        // VK_KHR_map_memory2
+        vkMapMemory2KHR                                          = cast( PFN_vkMapMemory2KHR                                          ) vkGetDeviceProcAddr( device, "vkMapMemory2KHR" );
+        vkUnmapMemory2KHR                                        = cast( PFN_vkUnmapMemory2KHR                                        ) vkGetDeviceProcAddr( device, "vkUnmapMemory2KHR" );
+
         // VK_KHR_synchronization2
         vkCmdWriteBufferMarker2AMD                               = cast( PFN_vkCmdWriteBufferMarker2AMD                               ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );
         vkGetQueueCheckpointData2NV                              = cast( PFN_vkGetQueueCheckpointData2NV                              ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointData2NV" );
@@ -909,6 +913,10 @@ struct DispatchDevice {
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
     VkResult  GetPipelineExecutableStatisticsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics ) { return vkGetPipelineExecutableStatisticsKHR( vkDevice, pExecutableInfo, pStatisticCount, pStatistics ); }
     VkResult  GetPipelineExecutableInternalRepresentationsKHR( const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations ) { return vkGetPipelineExecutableInternalRepresentationsKHR( vkDevice, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations ); }
+
+    // VK_KHR_map_memory2
+    VkResult  MapMemory2KHR( const( VkMemoryMapInfoKHR )* pMemoryMapInfo, void** ppData ) { return vkMapMemory2KHR( vkDevice, pMemoryMapInfo, ppData ); }
+    VkResult  UnmapMemory2KHR( const( VkMemoryUnmapInfoKHR )* pMemoryUnmapInfo ) { return vkUnmapMemory2KHR( vkDevice, pMemoryUnmapInfo ); }
 
     // VK_KHR_synchronization2
     void      CmdWriteBufferMarker2AMD( VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarker2AMD( commandBuffer, stage, dstBuffer, dstOffset, marker ); }
@@ -1593,6 +1601,10 @@ struct DispatchDevice {
     PFN_vkGetPipelineExecutablePropertiesKHR                     vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                     vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR        vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_map_memory2
+    PFN_vkMapMemory2KHR                                          vkMapMemory2KHR;
+    PFN_vkUnmapMemory2KHR                                        vkUnmapMemory2KHR;
 
     // VK_KHR_synchronization2
     PFN_vkCmdWriteBufferMarker2AMD                               vkCmdWriteBufferMarker2AMD;

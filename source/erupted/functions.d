@@ -339,6 +339,10 @@ extern( System ) {
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
     alias PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations );
 
+    // VK_KHR_map_memory2
+    alias PFN_vkMapMemory2KHR                                                   = VkResult  function( VkDevice device, const( VkMemoryMapInfoKHR )* pMemoryMapInfo, void** ppData );
+    alias PFN_vkUnmapMemory2KHR                                                 = VkResult  function( VkDevice device, const( VkMemoryUnmapInfoKHR )* pMemoryUnmapInfo );
+
     // VK_KHR_synchronization2
     alias PFN_vkCmdWriteBufferMarker2AMD                                        = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
     alias PFN_vkGetQueueCheckpointData2NV                                       = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData );
@@ -1014,6 +1018,10 @@ __gshared {
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
     PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 vkGetPipelineExecutableInternalRepresentationsKHR;
+
+    // VK_KHR_map_memory2
+    PFN_vkMapMemory2KHR                                                   vkMapMemory2KHR;
+    PFN_vkUnmapMemory2KHR                                                 vkUnmapMemory2KHR;
 
     // VK_KHR_synchronization2
     PFN_vkCmdWriteBufferMarker2AMD                                        vkCmdWriteBufferMarker2AMD;
@@ -1901,6 +1909,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkGetPipelineExecutableStatisticsKHR                     = cast( PFN_vkGetPipelineExecutableStatisticsKHR                     ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR        = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR        ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
+    // VK_KHR_map_memory2
+    vkMapMemory2KHR                                          = cast( PFN_vkMapMemory2KHR                                          ) vkGetInstanceProcAddr( instance, "vkMapMemory2KHR" );
+    vkUnmapMemory2KHR                                        = cast( PFN_vkUnmapMemory2KHR                                        ) vkGetInstanceProcAddr( instance, "vkUnmapMemory2KHR" );
+
     // VK_KHR_synchronization2
     vkCmdWriteBufferMarker2AMD                               = cast( PFN_vkCmdWriteBufferMarker2AMD                               ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarker2AMD" );
     vkGetQueueCheckpointData2NV                              = cast( PFN_vkGetQueueCheckpointData2NV                              ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointData2NV" );
@@ -2485,6 +2497,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkGetPipelineExecutablePropertiesKHR                     = cast( PFN_vkGetPipelineExecutablePropertiesKHR                     ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR                     = cast( PFN_vkGetPipelineExecutableStatisticsKHR                     ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
     vkGetPipelineExecutableInternalRepresentationsKHR        = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR        ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
+
+    // VK_KHR_map_memory2
+    vkMapMemory2KHR                                          = cast( PFN_vkMapMemory2KHR                                          ) vkGetDeviceProcAddr( device, "vkMapMemory2KHR" );
+    vkUnmapMemory2KHR                                        = cast( PFN_vkUnmapMemory2KHR                                        ) vkGetDeviceProcAddr( device, "vkUnmapMemory2KHR" );
 
     // VK_KHR_synchronization2
     vkCmdWriteBufferMarker2AMD                               = cast( PFN_vkCmdWriteBufferMarker2AMD                               ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarker2AMD" );

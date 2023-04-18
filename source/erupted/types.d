@@ -55,7 +55,7 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 243;
+enum VK_HEADER_VERSION = 244;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -765,6 +765,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR                                               = 1000269003,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR                                          = 1000269004,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR                            = 1000269005,
+    VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR                                                        = 1000271000,
+    VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR                                                      = 1000271001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT                         = 1000273000,
     VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT                                                   = 1000274000,
     VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT                                   = 1000274001,
@@ -1694,6 +1696,8 @@ enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR                       
 enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR                                              = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR;
 enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR;
 enum VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR                           = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
+enum VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR                                                       = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR;
+enum VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR                                                     = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT                        = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT                                                  = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT;
 enum VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT                                  = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT;
@@ -10543,6 +10547,31 @@ struct VkPipelineExecutableInternalRepresentationKHR {
     VkBool32                         isText;
     size_t                           dataSize;
     void*                            pData;
+}
+
+
+// - VK_KHR_map_memory2 -
+enum VK_KHR_map_memory2 = 1;
+
+enum VK_KHR_MAP_MEMORY_2_SPEC_VERSION = 1;
+enum const( char )* VK_KHR_MAP_MEMORY_2_EXTENSION_NAME = "VK_KHR_map_memory2";
+
+alias VkMemoryUnmapFlagsKHR = VkFlags;
+
+struct VkMemoryMapInfoKHR {
+    VkStructureType   sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR;
+    const( void )*    pNext;
+    VkMemoryMapFlags  flags;
+    VkDeviceMemory    memory;
+    VkDeviceSize      offset;
+    VkDeviceSize      size;
+}
+
+struct VkMemoryUnmapInfoKHR {
+    VkStructureType        sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR;
+    const( void )*         pNext;
+    VkMemoryUnmapFlagsKHR  flags;
+    VkDeviceMemory         memory;
 }
 
 
