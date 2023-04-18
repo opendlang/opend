@@ -41,6 +41,7 @@ enum FUCHSIA_external_memory;
 enum FUCHSIA_external_semaphore;
 enum FUCHSIA_buffer_collection;
 enum QNX_screen_surface;
+enum NV_displacement_micromap;
 
 
 /// extensions to a specific platform are grouped in these enum sequences
@@ -50,7 +51,7 @@ alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
 alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive, NV_acquire_winrt_display );
-alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_portability_subset, KHR_video_encode_queue, EXT_video_encode_h264, EXT_video_encode_h265 );
+alias ENABLE_BETA_EXTENSIONS       = AliasSeq!( KHR_portability_subset, KHR_video_encode_queue, EXT_video_encode_h264, EXT_video_encode_h265, NV_displacement_micromap );
 alias USE_PLATFORM_GGP             = AliasSeq!( GGP_stream_descriptor_surface, GGP_frame_token );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
@@ -1555,6 +1556,60 @@ mixin template Platform_Extensions( extensions... ) {
             
             alias PFN_vkCreateScreenSurfaceQNX                                          = VkResult  function( VkInstance instance, const( VkScreenSurfaceCreateInfoQNX )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
             alias PFN_vkGetPhysicalDeviceScreenPresentationSupportQNX                   = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, const( _screen_window )* window );
+        }
+
+        // VK_NV_displacement_micromap : types and function pointer type aliases
+        else static if( __traits( isSame, extension, NV_displacement_micromap )) {
+            enum VK_NV_displacement_micromap = 1;
+
+            enum VK_NV_DISPLACEMENT_MICROMAP_SPEC_VERSION = 1;
+            enum const( char )* VK_NV_DISPLACEMENT_MICROMAP_EXTENSION_NAME = "VK_NV_displacement_micromap";
+            
+            enum VkDisplacementMicromapFormatNV {
+                VK_DISPLACEMENT_MICROMAP_FORMAT_64_TRIANGLES_64_BYTES_NV     = 1,
+                VK_DISPLACEMENT_MICROMAP_FORMAT_256_TRIANGLES_128_BYTES_NV   = 2,
+                VK_DISPLACEMENT_MICROMAP_FORMAT_1024_TRIANGLES_128_BYTES_NV  = 3,
+                VK_DISPLACEMENT_MICROMAP_FORMAT_MAX_ENUM_NV                  = 0x7FFFFFFF
+            }
+            
+            enum VK_DISPLACEMENT_MICROMAP_FORMAT_64_TRIANGLES_64_BYTES_NV    = VkDisplacementMicromapFormatNV.VK_DISPLACEMENT_MICROMAP_FORMAT_64_TRIANGLES_64_BYTES_NV;
+            enum VK_DISPLACEMENT_MICROMAP_FORMAT_256_TRIANGLES_128_BYTES_NV  = VkDisplacementMicromapFormatNV.VK_DISPLACEMENT_MICROMAP_FORMAT_256_TRIANGLES_128_BYTES_NV;
+            enum VK_DISPLACEMENT_MICROMAP_FORMAT_1024_TRIANGLES_128_BYTES_NV = VkDisplacementMicromapFormatNV.VK_DISPLACEMENT_MICROMAP_FORMAT_1024_TRIANGLES_128_BYTES_NV;
+            enum VK_DISPLACEMENT_MICROMAP_FORMAT_MAX_ENUM_NV                 = VkDisplacementMicromapFormatNV.VK_DISPLACEMENT_MICROMAP_FORMAT_MAX_ENUM_NV;
+            
+            struct VkPhysicalDeviceDisplacementMicromapFeaturesNV {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_FEATURES_NV;
+                void*            pNext;
+                VkBool32         displacementMicromap;
+            }
+            
+            struct VkPhysicalDeviceDisplacementMicromapPropertiesNV {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISPLACEMENT_MICROMAP_PROPERTIES_NV;
+                void*            pNext;
+                uint32_t         maxDisplacementMicromapSubdivisionLevel;
+            }
+            
+            struct VkAccelerationStructureTrianglesDisplacementMicromapNV {
+                VkStructureType                sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_DISPLACEMENT_MICROMAP_NV;
+                void*                          pNext;
+                VkFormat                       displacementBiasAndScaleFormat;
+                VkFormat                       displacementVectorFormat;
+                VkDeviceOrHostAddressConstKHR  displacementBiasAndScaleBuffer;
+                VkDeviceSize                   displacementBiasAndScaleStride;
+                VkDeviceOrHostAddressConstKHR  displacementVectorBuffer;
+                VkDeviceSize                   displacementVectorStride;
+                VkDeviceOrHostAddressConstKHR  displacedMicromapPrimitiveFlags;
+                VkDeviceSize                   displacedMicromapPrimitiveFlagsStride;
+                VkIndexType                    indexType;
+                VkDeviceOrHostAddressConstKHR  indexBuffer;
+                VkDeviceSize                   indexStride;
+                uint32_t                       baseTriangle;
+                uint32_t                       usageCountsCount;
+                const( VkMicromapUsageEXT )*   pUsageCounts;
+                const( VkMicromapUsageEXT* )*  ppUsageCounts;
+                VkMicromapEXT                  micromap;
+            }
+            
         }
 
         __gshared {
