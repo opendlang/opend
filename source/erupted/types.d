@@ -55,7 +55,7 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 241;
+enum VK_HEADER_VERSION = 242;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -811,6 +811,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR                                                = 1000299004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV                             = 1000300000,
     VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV                                   = 1000300001,
+    VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV                                               = 1000310000,
     VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT                                        = 1000311000,
     VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT                                              = 1000311001,
     VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT                                               = 1000311002,
@@ -1742,6 +1743,7 @@ enum VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR                            
 enum VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR                                               = VkStructureType.VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV                            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV                                  = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV;
+enum VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV                                              = VkStructureType.VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV;
 enum VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT                                       = VkStructureType.VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT                                             = VkStructureType.VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT;
 enum VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT                                              = VkStructureType.VK_STRUCTURE_TYPE_EXPORT_METAL_DEVICE_INFO_EXT;
@@ -14375,6 +14377,19 @@ enum VK_QCOM_render_pass_store_ops = 1;
 
 enum VK_QCOM_RENDER_PASS_STORE_OPS_SPEC_VERSION = 2;
 enum const( char )* VK_QCOM_RENDER_PASS_STORE_OPS_EXTENSION_NAME = "VK_QCOM_render_pass_store_ops";
+
+
+// - VK_NV_low_latency -
+enum VK_NV_low_latency = 1;
+
+enum VK_NV_LOW_LATENCY_SPEC_VERSION = 1;
+enum const( char )* VK_NV_LOW_LATENCY_EXTENSION_NAME = "VK_NV_low_latency";
+
+struct VkQueryLowLatencySupportNV {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV;
+    const( void )*   pNext;
+    void*            pQueriedLowLatencyData;
+}
 
 
 // - VK_EXT_descriptor_buffer -
