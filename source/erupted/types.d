@@ -55,7 +55,7 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 245;
+enum VK_HEADER_VERSION = 246;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
@@ -166,6 +166,7 @@ enum VkResult {
     VK_OPERATION_NOT_DEFERRED_KHR                                = 1000268003,
     VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR                    = -1000299000,
     VK_ERROR_COMPRESSION_EXHAUSTED_EXT                           = -1000338000,
+    VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT                      = 1000482000,
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR                              = VK_ERROR_OUT_OF_POOL_MEMORY,
     VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR                         = VK_ERROR_INVALID_EXTERNAL_HANDLE,
     VK_ERROR_FRAGMENTATION_EXT                                   = VK_ERROR_FRAGMENTATION,
@@ -223,6 +224,7 @@ enum VK_OPERATION_DEFERRED_KHR                                   = VkResult.VK_O
 enum VK_OPERATION_NOT_DEFERRED_KHR                               = VkResult.VK_OPERATION_NOT_DEFERRED_KHR;
 enum VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR                   = VkResult.VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR;
 enum VK_ERROR_COMPRESSION_EXHAUSTED_EXT                          = VkResult.VK_ERROR_COMPRESSION_EXHAUSTED_EXT;
+enum VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT                     = VkResult.VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT;
 enum VK_ERROR_OUT_OF_POOL_MEMORY_KHR                             = VkResult.VK_ERROR_OUT_OF_POOL_MEMORY_KHR;
 enum VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR                        = VkResult.VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR;
 enum VK_ERROR_FRAGMENTATION_EXT                                  = VkResult.VK_ERROR_FRAGMENTATION_EXT;
@@ -918,6 +920,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT                                    = 1000392000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT                                  = 1000392001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT                           = 1000393000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT                             = 1000395000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT                           = 1000395001,
     VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT                                                    = 1000396000,
     VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT                                                  = 1000396001,
     VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT                                                     = 1000396002,
@@ -978,6 +982,9 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV                           = 1000464010,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT                              = 1000465000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT                     = 1000466000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT                                 = 1000482000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT                               = 1000482001,
+    VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT                                                     = 1000482002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM                              = 1000484000,
     VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM                                                       = 1000484001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC                               = 1000485000,
@@ -1165,6 +1172,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR                               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
     VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR                                      = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
     VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR                                       = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
+    VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT                              = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO,
     VK_STRUCTURE_TYPE_MAX_ENUM                                                                   = 0x7FFFFFFF
 }
 
@@ -1852,6 +1860,8 @@ enum VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT                       
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT                                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT                            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT                                                   = VkStructureType.VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT;
 enum VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT                                                 = VkStructureType.VK_STRUCTURE_TYPE_MICROMAP_VERSION_INFO_EXT;
 enum VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT                                                    = VkStructureType.VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT;
@@ -1912,6 +1922,9 @@ enum VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV                             
 enum VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV                          = VkStructureType.VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_PRIVATE_DATA_INFO_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT                             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT                    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT                                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT                              = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT                                                    = VkStructureType.VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM                             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM;
 enum VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM                                                      = VkStructureType.VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC                              = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC;
@@ -2099,6 +2112,7 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR               
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR                              = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR;
 enum VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR                                     = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR;
 enum VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR                                      = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR;
+enum VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT                             = VkStructureType.VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_MAX_ENUM                                                                  = VkStructureType.VK_STRUCTURE_TYPE_MAX_ENUM;
 
 enum VkPipelineCacheHeaderVersion {
@@ -2238,6 +2252,7 @@ enum VkObjectType {
     VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA             = 1000366000,
     VK_OBJECT_TYPE_MICROMAP_EXT                          = 1000396000,
     VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV               = 1000464000,
+    VK_OBJECT_TYPE_SHADER_EXT                            = 1000482000,
     VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR        = VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE,
     VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR          = VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION,
     VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT                 = VK_OBJECT_TYPE_PRIVATE_DATA_SLOT,
@@ -2292,6 +2307,7 @@ enum VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV          = VkObjectType.VK_OBJEC
 enum VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA            = VkObjectType.VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA;
 enum VK_OBJECT_TYPE_MICROMAP_EXT                         = VkObjectType.VK_OBJECT_TYPE_MICROMAP_EXT;
 enum VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV              = VkObjectType.VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV;
+enum VK_OBJECT_TYPE_SHADER_EXT                           = VkObjectType.VK_OBJECT_TYPE_SHADER_EXT;
 enum VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR       = VkObjectType.VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR;
 enum VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR         = VkObjectType.VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR;
 enum VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT                = VkObjectType.VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT;
@@ -15485,6 +15501,29 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT {
 }
 
 
+// - VK_EXT_shader_tile_image -
+enum VK_EXT_shader_tile_image = 1;
+
+enum VK_EXT_SHADER_TILE_IMAGE_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME = "VK_EXT_shader_tile_image";
+
+struct VkPhysicalDeviceShaderTileImageFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         shaderTileImageColorReadAccess;
+    VkBool32         shaderTileImageDepthReadAccess;
+    VkBool32         shaderTileImageStencilReadAccess;
+}
+
+struct VkPhysicalDeviceShaderTileImagePropertiesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT;
+    void*            pNext;
+    VkBool32         shaderTileImageCoherentReadAccelerated;
+    VkBool32         shaderTileImageReadSampleFromPixelRateInvocation;
+    VkBool32         shaderTileImageReadFromHelperInvocation;
+}
+
+
 // - VK_EXT_opacity_micromap -
 enum VK_EXT_opacity_micromap = 1;
 
@@ -16434,6 +16473,77 @@ struct VkPhysicalDevicePipelineProtectedAccessFeaturesEXT {
     void*            pNext;
     VkBool32         pipelineProtectedAccess;
 }
+
+
+// - VK_EXT_shader_object -
+enum VK_EXT_shader_object = 1;
+
+mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkShaderEXT} );
+
+enum VK_EXT_SHADER_OBJECT_SPEC_VERSION = 1;
+enum const( char )* VK_EXT_SHADER_OBJECT_EXTENSION_NAME = "VK_EXT_shader_object";
+
+enum VkShaderCodeTypeEXT {
+    VK_SHADER_CODE_TYPE_BINARY_EXT       = 0,
+    VK_SHADER_CODE_TYPE_SPIRV_EXT        = 1,
+    VK_SHADER_CODE_TYPE_MAX_ENUM_EXT     = 0x7FFFFFFF
+}
+
+enum VK_SHADER_CODE_TYPE_BINARY_EXT      = VkShaderCodeTypeEXT.VK_SHADER_CODE_TYPE_BINARY_EXT;
+enum VK_SHADER_CODE_TYPE_SPIRV_EXT       = VkShaderCodeTypeEXT.VK_SHADER_CODE_TYPE_SPIRV_EXT;
+enum VK_SHADER_CODE_TYPE_MAX_ENUM_EXT    = VkShaderCodeTypeEXT.VK_SHADER_CODE_TYPE_MAX_ENUM_EXT;
+
+alias VkShaderCreateFlagsEXT = VkFlags;
+enum VkShaderCreateFlagBitsEXT : VkShaderCreateFlagsEXT {
+    VK_SHADER_CREATE_LINK_STAGE_BIT_EXT                          = 0x00000001,
+    VK_SHADER_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT         = 0x00000002,
+    VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT              = 0x00000004,
+    VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT                      = 0x00000008,
+    VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT                       = 0x00000010,
+    VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT    = 0x00000020,
+    VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT     = 0x00000040,
+    VK_SHADER_CREATE_FLAG_BITS_MAX_ENUM_EXT                      = 0x7FFFFFFF
+}
+
+enum VK_SHADER_CREATE_LINK_STAGE_BIT_EXT                         = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+enum VK_SHADER_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT        = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT;
+enum VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT             = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT;
+enum VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT                     = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
+enum VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT                      = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT;
+enum VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT   = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT;
+enum VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT    = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT;
+enum VK_SHADER_CREATE_FLAG_BITS_MAX_ENUM_EXT                     = VkShaderCreateFlagBitsEXT.VK_SHADER_CREATE_FLAG_BITS_MAX_ENUM_EXT;
+
+struct VkPhysicalDeviceShaderObjectFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         shaderObject;
+}
+
+struct VkPhysicalDeviceShaderObjectPropertiesEXT {
+    VkStructureType          sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT;
+    void*                    pNext;
+    uint8_t[ VK_UUID_SIZE ]  shaderBinaryUUID;
+    uint32_t                 shaderBinaryVersion;
+}
+
+struct VkShaderCreateInfoEXT {
+    VkStructureType                  sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    const( void )*                   pNext;
+    VkShaderCreateFlagsEXT           flags;
+    VkShaderStageFlagBits            stage;
+    VkShaderStageFlags               nextStage;
+    VkShaderCodeTypeEXT              codeType;
+    size_t                           codeSize;
+    const( void )*                   pCode;
+    const( char )*                   pName;
+    uint32_t                         setLayoutCount;
+    const( VkDescriptorSetLayout )*  pSetLayouts;
+    uint32_t                         pushConstantRangeCount;
+    const( VkPushConstantRange )*    pPushConstantRanges;
+    const( VkSpecializationInfo )*   pSpecializationInfo;
+}
+alias VkShaderRequiredSubgroupSizeCreateInfoEXT = VkPipelineShaderStageRequiredSubgroupSizeCreateInfo;
 
 
 // - VK_QCOM_tile_properties -

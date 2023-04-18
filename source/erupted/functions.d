@@ -655,6 +655,12 @@ extern( System ) {
     alias PFN_vkBindOpticalFlowSessionImageNV                                   = VkResult  function( VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout );
     alias PFN_vkCmdOpticalFlowExecuteNV                                         = void      function( VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const( VkOpticalFlowExecuteInfoNV )* pExecuteInfo );
 
+    // VK_EXT_shader_object
+    alias PFN_vkCreateShadersEXT                                                = VkResult  function( VkDevice device, uint32_t createInfoCount, const( VkShaderCreateInfoEXT )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkShaderEXT* pShaders );
+    alias PFN_vkDestroyShaderEXT                                                = void      function( VkDevice device, VkShaderEXT shader, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkGetShaderBinaryDataEXT                                          = VkResult  function( VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData );
+    alias PFN_vkCmdBindShadersEXT                                               = void      function( VkCommandBuffer commandBuffer, uint32_t stageCount, const( VkShaderStageFlagBits )* pStages, const( VkShaderEXT )* pShaders );
+
     // VK_QCOM_tile_properties
     alias PFN_vkGetFramebufferTilePropertiesQCOM                                = VkResult  function( VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties );
     alias PFN_vkGetDynamicRenderingTilePropertiesQCOM                           = VkResult  function( VkDevice device, const( VkRenderingInfo )* pRenderingInfo, VkTilePropertiesQCOM* pProperties );
@@ -1334,6 +1340,12 @@ __gshared {
     PFN_vkDestroyOpticalFlowSessionNV                                     vkDestroyOpticalFlowSessionNV;
     PFN_vkBindOpticalFlowSessionImageNV                                   vkBindOpticalFlowSessionImageNV;
     PFN_vkCmdOpticalFlowExecuteNV                                         vkCmdOpticalFlowExecuteNV;
+
+    // VK_EXT_shader_object
+    PFN_vkCreateShadersEXT                                                vkCreateShadersEXT;
+    PFN_vkDestroyShaderEXT                                                vkDestroyShaderEXT;
+    PFN_vkGetShaderBinaryDataEXT                                          vkGetShaderBinaryDataEXT;
+    PFN_vkCmdBindShadersEXT                                               vkCmdBindShadersEXT;
 
     // VK_QCOM_tile_properties
     PFN_vkGetFramebufferTilePropertiesQCOM                                vkGetFramebufferTilePropertiesQCOM;
@@ -2192,6 +2204,12 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkBindOpticalFlowSessionImageNV                          = cast( PFN_vkBindOpticalFlowSessionImageNV                          ) vkGetInstanceProcAddr( instance, "vkBindOpticalFlowSessionImageNV" );
     vkCmdOpticalFlowExecuteNV                                = cast( PFN_vkCmdOpticalFlowExecuteNV                                ) vkGetInstanceProcAddr( instance, "vkCmdOpticalFlowExecuteNV" );
 
+    // VK_EXT_shader_object
+    vkCreateShadersEXT                                       = cast( PFN_vkCreateShadersEXT                                       ) vkGetInstanceProcAddr( instance, "vkCreateShadersEXT" );
+    vkDestroyShaderEXT                                       = cast( PFN_vkDestroyShaderEXT                                       ) vkGetInstanceProcAddr( instance, "vkDestroyShaderEXT" );
+    vkGetShaderBinaryDataEXT                                 = cast( PFN_vkGetShaderBinaryDataEXT                                 ) vkGetInstanceProcAddr( instance, "vkGetShaderBinaryDataEXT" );
+    vkCmdBindShadersEXT                                      = cast( PFN_vkCmdBindShadersEXT                                      ) vkGetInstanceProcAddr( instance, "vkCmdBindShadersEXT" );
+
     // VK_QCOM_tile_properties
     vkGetFramebufferTilePropertiesQCOM                       = cast( PFN_vkGetFramebufferTilePropertiesQCOM                       ) vkGetInstanceProcAddr( instance, "vkGetFramebufferTilePropertiesQCOM" );
     vkGetDynamicRenderingTilePropertiesQCOM                  = cast( PFN_vkGetDynamicRenderingTilePropertiesQCOM                  ) vkGetInstanceProcAddr( instance, "vkGetDynamicRenderingTilePropertiesQCOM" );
@@ -2780,6 +2798,12 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkDestroyOpticalFlowSessionNV                            = cast( PFN_vkDestroyOpticalFlowSessionNV                            ) vkGetDeviceProcAddr( device, "vkDestroyOpticalFlowSessionNV" );
     vkBindOpticalFlowSessionImageNV                          = cast( PFN_vkBindOpticalFlowSessionImageNV                          ) vkGetDeviceProcAddr( device, "vkBindOpticalFlowSessionImageNV" );
     vkCmdOpticalFlowExecuteNV                                = cast( PFN_vkCmdOpticalFlowExecuteNV                                ) vkGetDeviceProcAddr( device, "vkCmdOpticalFlowExecuteNV" );
+
+    // VK_EXT_shader_object
+    vkCreateShadersEXT                                       = cast( PFN_vkCreateShadersEXT                                       ) vkGetDeviceProcAddr( device, "vkCreateShadersEXT" );
+    vkDestroyShaderEXT                                       = cast( PFN_vkDestroyShaderEXT                                       ) vkGetDeviceProcAddr( device, "vkDestroyShaderEXT" );
+    vkGetShaderBinaryDataEXT                                 = cast( PFN_vkGetShaderBinaryDataEXT                                 ) vkGetDeviceProcAddr( device, "vkGetShaderBinaryDataEXT" );
+    vkCmdBindShadersEXT                                      = cast( PFN_vkCmdBindShadersEXT                                      ) vkGetDeviceProcAddr( device, "vkCmdBindShadersEXT" );
 
     // VK_QCOM_tile_properties
     vkGetFramebufferTilePropertiesQCOM                       = cast( PFN_vkGetFramebufferTilePropertiesQCOM                       ) vkGetDeviceProcAddr( device, "vkGetFramebufferTilePropertiesQCOM" );

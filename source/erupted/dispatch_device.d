@@ -604,6 +604,12 @@ struct DispatchDevice {
         vkBindOpticalFlowSessionImageNV                          = cast( PFN_vkBindOpticalFlowSessionImageNV                          ) vkGetDeviceProcAddr( device, "vkBindOpticalFlowSessionImageNV" );
         vkCmdOpticalFlowExecuteNV                                = cast( PFN_vkCmdOpticalFlowExecuteNV                                ) vkGetDeviceProcAddr( device, "vkCmdOpticalFlowExecuteNV" );
 
+        // VK_EXT_shader_object
+        vkCreateShadersEXT                                       = cast( PFN_vkCreateShadersEXT                                       ) vkGetDeviceProcAddr( device, "vkCreateShadersEXT" );
+        vkDestroyShaderEXT                                       = cast( PFN_vkDestroyShaderEXT                                       ) vkGetDeviceProcAddr( device, "vkDestroyShaderEXT" );
+        vkGetShaderBinaryDataEXT                                 = cast( PFN_vkGetShaderBinaryDataEXT                                 ) vkGetDeviceProcAddr( device, "vkGetShaderBinaryDataEXT" );
+        vkCmdBindShadersEXT                                      = cast( PFN_vkCmdBindShadersEXT                                      ) vkGetDeviceProcAddr( device, "vkCmdBindShadersEXT" );
+
         // VK_QCOM_tile_properties
         vkGetFramebufferTilePropertiesQCOM                       = cast( PFN_vkGetFramebufferTilePropertiesQCOM                       ) vkGetDeviceProcAddr( device, "vkGetFramebufferTilePropertiesQCOM" );
         vkGetDynamicRenderingTilePropertiesQCOM                  = cast( PFN_vkGetDynamicRenderingTilePropertiesQCOM                  ) vkGetDeviceProcAddr( device, "vkGetDynamicRenderingTilePropertiesQCOM" );
@@ -1190,6 +1196,12 @@ struct DispatchDevice {
     void      DestroyOpticalFlowSessionNV( VkOpticalFlowSessionNV session ) { vkDestroyOpticalFlowSessionNV( vkDevice, session, pAllocator ); }
     VkResult  BindOpticalFlowSessionImageNV( VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout ) { return vkBindOpticalFlowSessionImageNV( vkDevice, session, bindingPoint, view, layout ); }
     void      CmdOpticalFlowExecuteNV( VkOpticalFlowSessionNV session, const( VkOpticalFlowExecuteInfoNV )* pExecuteInfo ) { vkCmdOpticalFlowExecuteNV( commandBuffer, session, pExecuteInfo ); }
+
+    // VK_EXT_shader_object
+    VkResult  CreateShadersEXT( uint32_t createInfoCount, const( VkShaderCreateInfoEXT )* pCreateInfos, VkShaderEXT* pShaders ) { return vkCreateShadersEXT( vkDevice, createInfoCount, pCreateInfos, pAllocator, pShaders ); }
+    void      DestroyShaderEXT( VkShaderEXT shader ) { vkDestroyShaderEXT( vkDevice, shader, pAllocator ); }
+    VkResult  GetShaderBinaryDataEXT( VkShaderEXT shader, size_t* pDataSize, void* pData ) { return vkGetShaderBinaryDataEXT( vkDevice, shader, pDataSize, pData ); }
+    void      CmdBindShadersEXT( uint32_t stageCount, const( VkShaderStageFlagBits )* pStages, const( VkShaderEXT )* pShaders ) { vkCmdBindShadersEXT( commandBuffer, stageCount, pStages, pShaders ); }
 
     // VK_QCOM_tile_properties
     VkResult  GetFramebufferTilePropertiesQCOM( VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties ) { return vkGetFramebufferTilePropertiesQCOM( vkDevice, framebuffer, pPropertiesCount, pProperties ); }
@@ -1884,6 +1896,12 @@ struct DispatchDevice {
     PFN_vkDestroyOpticalFlowSessionNV                            vkDestroyOpticalFlowSessionNV;
     PFN_vkBindOpticalFlowSessionImageNV                          vkBindOpticalFlowSessionImageNV;
     PFN_vkCmdOpticalFlowExecuteNV                                vkCmdOpticalFlowExecuteNV;
+
+    // VK_EXT_shader_object
+    PFN_vkCreateShadersEXT                                       vkCreateShadersEXT;
+    PFN_vkDestroyShaderEXT                                       vkDestroyShaderEXT;
+    PFN_vkGetShaderBinaryDataEXT                                 vkGetShaderBinaryDataEXT;
+    PFN_vkCmdBindShadersEXT                                      vkCmdBindShadersEXT;
 
     // VK_QCOM_tile_properties
     PFN_vkGetFramebufferTilePropertiesQCOM                       vkGetFramebufferTilePropertiesQCOM;
