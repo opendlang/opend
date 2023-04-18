@@ -449,9 +449,9 @@ struct StdVideoDecodeH264ReferenceInfo {
 enum vulkan_video_codec_h264std_encode = 1;
 
 // Vulkan 0.9 provisional Vulkan video H.264 encode std specification version number
-enum VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_8 = VK_MAKE_VIDEO_STD_VERSION( 0, 9, 8 );
+enum VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_9 = VK_MAKE_VIDEO_STD_VERSION( 0, 9, 9 );
 
-enum VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION = VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_8;
+enum VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION = VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_9;
 enum const( char )* VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME = "VK_STD_vulkan_video_codec_h264_encode";
 
 struct StdVideoEncodeH264WeightTableFlags {
@@ -484,7 +484,7 @@ struct StdVideoEncodeH264PictureInfoFlags {
 struct StdVideoEncodeH264ReferenceInfoFlags {
 }
 
-struct StdVideoEncodeH264RefMgmtFlags {
+struct StdVideoEncodeH264ReferenceListsInfoFlags {
 }
 
 struct StdVideoEncodeH264RefListModEntry {
@@ -501,13 +501,18 @@ struct StdVideoEncodeH264RefPicMarkingEntry {
     uint16_t                      max_long_term_frame_idx_plus1;
 }
 
-struct StdVideoEncodeH264RefMemMgmtCtrlOperations {
-    StdVideoEncodeH264RefMgmtFlags                  flags;
+struct StdVideoEncodeH264ReferenceListsInfo {
+    StdVideoEncodeH264ReferenceListsInfoFlags       flags;
+    uint8_t                                         refPicList0EntryCount;
+    uint8_t                                         refPicList1EntryCount;
     uint8_t                                         refList0ModOpCount;
-    const( StdVideoEncodeH264RefListModEntry )*     pRefList0ModOperations;
     uint8_t                                         refList1ModOpCount;
-    const( StdVideoEncodeH264RefListModEntry )*     pRefList1ModOperations;
     uint8_t                                         refPicMarkingOpCount;
+    uint8_t[7]                                      reserved1;
+    const( uint8_t )*                               pRefPicList0Entries;
+    const( uint8_t )*                               pRefPicList1Entries;
+    const( StdVideoEncodeH264RefListModEntry )*     pRefList0ModOperations;
+    const( StdVideoEncodeH264RefListModEntry )*     pRefList1ModOperations;
     const( StdVideoEncodeH264RefPicMarkingEntry )*  pRefPicMarkingOperations;
 }
 
@@ -515,6 +520,7 @@ struct StdVideoEncodeH264PictureInfo {
     StdVideoEncodeH264PictureInfoFlags  flags;
     uint8_t                             seq_parameter_set_id;
     uint8_t                             pic_parameter_set_id;
+    uint16_t                            reserved1;
     StdVideoH264PictureType             pictureType;
     uint32_t                            frame_num;
     int32_t                             PicOrderCnt;
@@ -522,6 +528,7 @@ struct StdVideoEncodeH264PictureInfo {
 
 struct StdVideoEncodeH264ReferenceInfo {
     StdVideoEncodeH264ReferenceInfoFlags  flags;
+    StdVideoH264PictureType               pictureType;
     uint32_t                              FrameNum;
     int32_t                               PicOrderCnt;
     uint16_t                              long_term_pic_num;
@@ -539,6 +546,8 @@ struct StdVideoEncodeH264SliceHeader {
     StdVideoH264DisableDeblockingFilterIdc   disable_deblocking_filter_idc;
     int8_t                                   slice_alpha_c0_offset_div2;
     int8_t                                   slice_beta_offset_div2;
+    uint16_t                                 reserved1;
+    uint32_t                                 reserved2;
     const( StdVideoEncodeH264WeightTable )*  pWeightTable;
 }
 
@@ -970,9 +979,9 @@ struct StdVideoDecodeH265ReferenceInfo {
 enum vulkan_video_codec_h265std_encode = 1;
 
 // Vulkan 0.9 provisional Vulkan video H.265 encode std specification version number
-enum VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_API_VERSION_0_9_9 = VK_MAKE_VIDEO_STD_VERSION( 0, 9, 9 );
+enum VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_API_VERSION_0_9_10 = VK_MAKE_VIDEO_STD_VERSION( 0, 9, 10 );
 
-enum VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION = VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_API_VERSION_0_9_9;
+enum VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION = VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_API_VERSION_0_9_10;
 enum const( char )* VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_EXTENSION_NAME = "VK_STD_vulkan_video_codec_h265_encode";
 
 struct StdVideoEncodeH265WeightTableFlags {
@@ -1030,15 +1039,18 @@ struct StdVideoEncodeH265SliceSegmentHeader {
     const( StdVideoEncodeH265WeightTable )*                  pWeightTable;
 }
 
-struct StdVideoEncodeH265ReferenceModificationFlags {
+struct StdVideoEncodeH265ReferenceListsInfoFlags {
 }
 
-struct StdVideoEncodeH265ReferenceModifications {
-    StdVideoEncodeH265ReferenceModificationFlags  flags;
-    uint8_t                                       referenceList0ModificationsCount;
-    const( uint8_t )*                             pReferenceList0Modifications;
-    uint8_t                                       referenceList1ModificationsCount;
-    const( uint8_t )*                             pReferenceList1Modifications;
+struct StdVideoEncodeH265ReferenceListsInfo {
+    StdVideoEncodeH265ReferenceListsInfoFlags  flags;
+    uint8_t                                    num_ref_idx_l0_active_minus1;
+    uint8_t                                    num_ref_idx_l1_active_minus1;
+    uint16_t                                   reserved1;
+    const( uint8_t )*                          pRefPicList0Entries;
+    const( uint8_t )*                          pRefPicList1Entries;
+    const( uint8_t )*                          pRefList0Modifications;
+    const( uint8_t )*                          pRefList1Modifications;
 }
 
 struct StdVideoEncodeH265PictureInfoFlags {
@@ -1050,8 +1062,8 @@ struct StdVideoEncodeH265PictureInfo {
     uint8_t                             sps_video_parameter_set_id;
     uint8_t                             pps_seq_parameter_set_id;
     uint8_t                             pps_pic_parameter_set_id;
-    int32_t                             PicOrderCntVal;
     uint8_t                             TemporalId;
+    int32_t                             PicOrderCntVal;
 }
 
 struct StdVideoEncodeH265ReferenceInfoFlags {
@@ -1059,6 +1071,7 @@ struct StdVideoEncodeH265ReferenceInfoFlags {
 
 struct StdVideoEncodeH265ReferenceInfo {
     StdVideoEncodeH265ReferenceInfoFlags  flags;
+    StdVideoH265PictureType               PictureType;
     int32_t                               PicOrderCntVal;
     uint8_t                               TemporalId;
 }
