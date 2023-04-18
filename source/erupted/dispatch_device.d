@@ -265,6 +265,21 @@ struct DispatchDevice {
         // VK_KHR_display_swapchain
         vkCreateSharedSwapchainsKHR                              = cast( PFN_vkCreateSharedSwapchainsKHR                              ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+        // VK_KHR_video_queue
+        vkCreateVideoSessionKHR                                  = cast( PFN_vkCreateVideoSessionKHR                                  ) vkGetDeviceProcAddr( device, "vkCreateVideoSessionKHR" );
+        vkDestroyVideoSessionKHR                                 = cast( PFN_vkDestroyVideoSessionKHR                                 ) vkGetDeviceProcAddr( device, "vkDestroyVideoSessionKHR" );
+        vkGetVideoSessionMemoryRequirementsKHR                   = cast( PFN_vkGetVideoSessionMemoryRequirementsKHR                   ) vkGetDeviceProcAddr( device, "vkGetVideoSessionMemoryRequirementsKHR" );
+        vkBindVideoSessionMemoryKHR                              = cast( PFN_vkBindVideoSessionMemoryKHR                              ) vkGetDeviceProcAddr( device, "vkBindVideoSessionMemoryKHR" );
+        vkCreateVideoSessionParametersKHR                        = cast( PFN_vkCreateVideoSessionParametersKHR                        ) vkGetDeviceProcAddr( device, "vkCreateVideoSessionParametersKHR" );
+        vkUpdateVideoSessionParametersKHR                        = cast( PFN_vkUpdateVideoSessionParametersKHR                        ) vkGetDeviceProcAddr( device, "vkUpdateVideoSessionParametersKHR" );
+        vkDestroyVideoSessionParametersKHR                       = cast( PFN_vkDestroyVideoSessionParametersKHR                       ) vkGetDeviceProcAddr( device, "vkDestroyVideoSessionParametersKHR" );
+        vkCmdBeginVideoCodingKHR                                 = cast( PFN_vkCmdBeginVideoCodingKHR                                 ) vkGetDeviceProcAddr( device, "vkCmdBeginVideoCodingKHR" );
+        vkCmdEndVideoCodingKHR                                   = cast( PFN_vkCmdEndVideoCodingKHR                                   ) vkGetDeviceProcAddr( device, "vkCmdEndVideoCodingKHR" );
+        vkCmdControlVideoCodingKHR                               = cast( PFN_vkCmdControlVideoCodingKHR                               ) vkGetDeviceProcAddr( device, "vkCmdControlVideoCodingKHR" );
+
+        // VK_KHR_video_decode_queue
+        vkCmdDecodeVideoKHR                                      = cast( PFN_vkCmdDecodeVideoKHR                                      ) vkGetDeviceProcAddr( device, "vkCmdDecodeVideoKHR" );
+
         // VK_KHR_external_memory_fd
         vkGetMemoryFdKHR                                         = cast( PFN_vkGetMemoryFdKHR                                         ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
         vkGetMemoryFdPropertiesKHR                               = cast( PFN_vkGetMemoryFdPropertiesKHR                               ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
@@ -831,6 +846,21 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     VkResult  CreateSharedSwapchainsKHR( uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, VkSwapchainKHR* pSwapchains ) { return vkCreateSharedSwapchainsKHR( vkDevice, swapchainCount, pCreateInfos, pAllocator, pSwapchains ); }
+
+    // VK_KHR_video_queue
+    VkResult  CreateVideoSessionKHR( const( VkVideoSessionCreateInfoKHR )* pCreateInfo, VkVideoSessionKHR* pVideoSession ) { return vkCreateVideoSessionKHR( vkDevice, pCreateInfo, pAllocator, pVideoSession ); }
+    void      DestroyVideoSessionKHR( VkVideoSessionKHR videoSession ) { vkDestroyVideoSessionKHR( vkDevice, videoSession, pAllocator ); }
+    VkResult  GetVideoSessionMemoryRequirementsKHR( VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements ) { return vkGetVideoSessionMemoryRequirementsKHR( vkDevice, videoSession, pMemoryRequirementsCount, pMemoryRequirements ); }
+    VkResult  BindVideoSessionMemoryKHR( VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const( VkBindVideoSessionMemoryInfoKHR )* pBindSessionMemoryInfos ) { return vkBindVideoSessionMemoryKHR( vkDevice, videoSession, bindSessionMemoryInfoCount, pBindSessionMemoryInfos ); }
+    VkResult  CreateVideoSessionParametersKHR( const( VkVideoSessionParametersCreateInfoKHR )* pCreateInfo, VkVideoSessionParametersKHR* pVideoSessionParameters ) { return vkCreateVideoSessionParametersKHR( vkDevice, pCreateInfo, pAllocator, pVideoSessionParameters ); }
+    VkResult  UpdateVideoSessionParametersKHR( VkVideoSessionParametersKHR videoSessionParameters, const( VkVideoSessionParametersUpdateInfoKHR )* pUpdateInfo ) { return vkUpdateVideoSessionParametersKHR( vkDevice, videoSessionParameters, pUpdateInfo ); }
+    void      DestroyVideoSessionParametersKHR( VkVideoSessionParametersKHR videoSessionParameters ) { vkDestroyVideoSessionParametersKHR( vkDevice, videoSessionParameters, pAllocator ); }
+    void      CmdBeginVideoCodingKHR( const( VkVideoBeginCodingInfoKHR )* pBeginInfo ) { vkCmdBeginVideoCodingKHR( commandBuffer, pBeginInfo ); }
+    void      CmdEndVideoCodingKHR( const( VkVideoEndCodingInfoKHR )* pEndCodingInfo ) { vkCmdEndVideoCodingKHR( commandBuffer, pEndCodingInfo ); }
+    void      CmdControlVideoCodingKHR( const( VkVideoCodingControlInfoKHR )* pCodingControlInfo ) { vkCmdControlVideoCodingKHR( commandBuffer, pCodingControlInfo ); }
+
+    // VK_KHR_video_decode_queue
+    void      CmdDecodeVideoKHR( const( VkVideoDecodeInfoKHR )* pDecodeInfo ) { vkCmdDecodeVideoKHR( commandBuffer, pDecodeInfo ); }
 
     // VK_KHR_external_memory_fd
     VkResult  GetMemoryFdKHR( const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd ) { return vkGetMemoryFdKHR( vkDevice, pGetFdInfo, pFd ); }
@@ -1493,6 +1523,21 @@ struct DispatchDevice {
 
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                              vkCreateSharedSwapchainsKHR;
+
+    // VK_KHR_video_queue
+    PFN_vkCreateVideoSessionKHR                                  vkCreateVideoSessionKHR;
+    PFN_vkDestroyVideoSessionKHR                                 vkDestroyVideoSessionKHR;
+    PFN_vkGetVideoSessionMemoryRequirementsKHR                   vkGetVideoSessionMemoryRequirementsKHR;
+    PFN_vkBindVideoSessionMemoryKHR                              vkBindVideoSessionMemoryKHR;
+    PFN_vkCreateVideoSessionParametersKHR                        vkCreateVideoSessionParametersKHR;
+    PFN_vkUpdateVideoSessionParametersKHR                        vkUpdateVideoSessionParametersKHR;
+    PFN_vkDestroyVideoSessionParametersKHR                       vkDestroyVideoSessionParametersKHR;
+    PFN_vkCmdBeginVideoCodingKHR                                 vkCmdBeginVideoCodingKHR;
+    PFN_vkCmdEndVideoCodingKHR                                   vkCmdEndVideoCodingKHR;
+    PFN_vkCmdControlVideoCodingKHR                               vkCmdControlVideoCodingKHR;
+
+    // VK_KHR_video_decode_queue
+    PFN_vkCmdDecodeVideoKHR                                      vkCmdDecodeVideoKHR;
 
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                         vkGetMemoryFdKHR;

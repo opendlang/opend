@@ -268,6 +268,23 @@ extern( System ) {
     // VK_KHR_display_swapchain
     alias PFN_vkCreateSharedSwapchainsKHR                                       = VkResult  function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkSwapchainKHR* pSwapchains );
 
+    // VK_KHR_video_queue
+    alias PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR                           = VkResult  function( VkPhysicalDevice physicalDevice, const( VkVideoProfileInfoKHR )* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities );
+    alias PFN_vkGetPhysicalDeviceVideoFormatPropertiesKHR                       = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceVideoFormatInfoKHR )* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties );
+    alias PFN_vkCreateVideoSessionKHR                                           = VkResult  function( VkDevice device, const( VkVideoSessionCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkVideoSessionKHR* pVideoSession );
+    alias PFN_vkDestroyVideoSessionKHR                                          = void      function( VkDevice device, VkVideoSessionKHR videoSession, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkGetVideoSessionMemoryRequirementsKHR                            = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements );
+    alias PFN_vkBindVideoSessionMemoryKHR                                       = VkResult  function( VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const( VkBindVideoSessionMemoryInfoKHR )* pBindSessionMemoryInfos );
+    alias PFN_vkCreateVideoSessionParametersKHR                                 = VkResult  function( VkDevice device, const( VkVideoSessionParametersCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters );
+    alias PFN_vkUpdateVideoSessionParametersKHR                                 = VkResult  function( VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const( VkVideoSessionParametersUpdateInfoKHR )* pUpdateInfo );
+    alias PFN_vkDestroyVideoSessionParametersKHR                                = void      function( VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkCmdBeginVideoCodingKHR                                          = void      function( VkCommandBuffer commandBuffer, const( VkVideoBeginCodingInfoKHR )* pBeginInfo );
+    alias PFN_vkCmdEndVideoCodingKHR                                            = void      function( VkCommandBuffer commandBuffer, const( VkVideoEndCodingInfoKHR )* pEndCodingInfo );
+    alias PFN_vkCmdControlVideoCodingKHR                                        = void      function( VkCommandBuffer commandBuffer, const( VkVideoCodingControlInfoKHR )* pCodingControlInfo );
+
+    // VK_KHR_video_decode_queue
+    alias PFN_vkCmdDecodeVideoKHR                                               = void      function( VkCommandBuffer commandBuffer, const( VkVideoDecodeInfoKHR )* pDecodeInfo );
+
     // VK_KHR_external_memory_fd
     alias PFN_vkGetMemoryFdKHR                                                  = VkResult  function( VkDevice device, const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd );
     alias PFN_vkGetMemoryFdPropertiesKHR                                        = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties );
@@ -920,6 +937,23 @@ __gshared {
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                                       vkCreateSharedSwapchainsKHR;
 
+    // VK_KHR_video_queue
+    PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR                           vkGetPhysicalDeviceVideoCapabilitiesKHR;
+    PFN_vkGetPhysicalDeviceVideoFormatPropertiesKHR                       vkGetPhysicalDeviceVideoFormatPropertiesKHR;
+    PFN_vkCreateVideoSessionKHR                                           vkCreateVideoSessionKHR;
+    PFN_vkDestroyVideoSessionKHR                                          vkDestroyVideoSessionKHR;
+    PFN_vkGetVideoSessionMemoryRequirementsKHR                            vkGetVideoSessionMemoryRequirementsKHR;
+    PFN_vkBindVideoSessionMemoryKHR                                       vkBindVideoSessionMemoryKHR;
+    PFN_vkCreateVideoSessionParametersKHR                                 vkCreateVideoSessionParametersKHR;
+    PFN_vkUpdateVideoSessionParametersKHR                                 vkUpdateVideoSessionParametersKHR;
+    PFN_vkDestroyVideoSessionParametersKHR                                vkDestroyVideoSessionParametersKHR;
+    PFN_vkCmdBeginVideoCodingKHR                                          vkCmdBeginVideoCodingKHR;
+    PFN_vkCmdEndVideoCodingKHR                                            vkCmdEndVideoCodingKHR;
+    PFN_vkCmdControlVideoCodingKHR                                        vkCmdControlVideoCodingKHR;
+
+    // VK_KHR_video_decode_queue
+    PFN_vkCmdDecodeVideoKHR                                               vkCmdDecodeVideoKHR;
+
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                                  vkGetMemoryFdKHR;
     PFN_vkGetMemoryFdPropertiesKHR                                        vkGetMemoryFdPropertiesKHR;
@@ -1521,6 +1555,10 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
     vkGetDisplayPlaneCapabilitiesKHR                                  = cast( PFN_vkGetDisplayPlaneCapabilitiesKHR                                  ) vkGetInstanceProcAddr( instance, "vkGetDisplayPlaneCapabilitiesKHR" );
     vkCreateDisplayPlaneSurfaceKHR                                    = cast( PFN_vkCreateDisplayPlaneSurfaceKHR                                    ) vkGetInstanceProcAddr( instance, "vkCreateDisplayPlaneSurfaceKHR" );
 
+    // VK_KHR_video_queue
+    vkGetPhysicalDeviceVideoCapabilitiesKHR                           = cast( PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR                           ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceVideoCapabilitiesKHR" );
+    vkGetPhysicalDeviceVideoFormatPropertiesKHR                       = cast( PFN_vkGetPhysicalDeviceVideoFormatPropertiesKHR                       ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceVideoFormatPropertiesKHR" );
+
     // VK_KHR_performance_query
     vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   = cast( PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   ) vkGetInstanceProcAddr( instance, "vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR" );
     vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           = cast( PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR" );
@@ -1792,6 +1830,21 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                              = cast( PFN_vkCreateSharedSwapchainsKHR                              ) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
+
+    // VK_KHR_video_queue
+    vkCreateVideoSessionKHR                                  = cast( PFN_vkCreateVideoSessionKHR                                  ) vkGetInstanceProcAddr( instance, "vkCreateVideoSessionKHR" );
+    vkDestroyVideoSessionKHR                                 = cast( PFN_vkDestroyVideoSessionKHR                                 ) vkGetInstanceProcAddr( instance, "vkDestroyVideoSessionKHR" );
+    vkGetVideoSessionMemoryRequirementsKHR                   = cast( PFN_vkGetVideoSessionMemoryRequirementsKHR                   ) vkGetInstanceProcAddr( instance, "vkGetVideoSessionMemoryRequirementsKHR" );
+    vkBindVideoSessionMemoryKHR                              = cast( PFN_vkBindVideoSessionMemoryKHR                              ) vkGetInstanceProcAddr( instance, "vkBindVideoSessionMemoryKHR" );
+    vkCreateVideoSessionParametersKHR                        = cast( PFN_vkCreateVideoSessionParametersKHR                        ) vkGetInstanceProcAddr( instance, "vkCreateVideoSessionParametersKHR" );
+    vkUpdateVideoSessionParametersKHR                        = cast( PFN_vkUpdateVideoSessionParametersKHR                        ) vkGetInstanceProcAddr( instance, "vkUpdateVideoSessionParametersKHR" );
+    vkDestroyVideoSessionParametersKHR                       = cast( PFN_vkDestroyVideoSessionParametersKHR                       ) vkGetInstanceProcAddr( instance, "vkDestroyVideoSessionParametersKHR" );
+    vkCmdBeginVideoCodingKHR                                 = cast( PFN_vkCmdBeginVideoCodingKHR                                 ) vkGetInstanceProcAddr( instance, "vkCmdBeginVideoCodingKHR" );
+    vkCmdEndVideoCodingKHR                                   = cast( PFN_vkCmdEndVideoCodingKHR                                   ) vkGetInstanceProcAddr( instance, "vkCmdEndVideoCodingKHR" );
+    vkCmdControlVideoCodingKHR                               = cast( PFN_vkCmdControlVideoCodingKHR                               ) vkGetInstanceProcAddr( instance, "vkCmdControlVideoCodingKHR" );
+
+    // VK_KHR_video_decode_queue
+    vkCmdDecodeVideoKHR                                      = cast( PFN_vkCmdDecodeVideoKHR                                      ) vkGetInstanceProcAddr( instance, "vkCmdDecodeVideoKHR" );
 
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                                         = cast( PFN_vkGetMemoryFdKHR                                         ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
@@ -2355,6 +2408,21 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                              = cast( PFN_vkCreateSharedSwapchainsKHR                              ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
+
+    // VK_KHR_video_queue
+    vkCreateVideoSessionKHR                                  = cast( PFN_vkCreateVideoSessionKHR                                  ) vkGetDeviceProcAddr( device, "vkCreateVideoSessionKHR" );
+    vkDestroyVideoSessionKHR                                 = cast( PFN_vkDestroyVideoSessionKHR                                 ) vkGetDeviceProcAddr( device, "vkDestroyVideoSessionKHR" );
+    vkGetVideoSessionMemoryRequirementsKHR                   = cast( PFN_vkGetVideoSessionMemoryRequirementsKHR                   ) vkGetDeviceProcAddr( device, "vkGetVideoSessionMemoryRequirementsKHR" );
+    vkBindVideoSessionMemoryKHR                              = cast( PFN_vkBindVideoSessionMemoryKHR                              ) vkGetDeviceProcAddr( device, "vkBindVideoSessionMemoryKHR" );
+    vkCreateVideoSessionParametersKHR                        = cast( PFN_vkCreateVideoSessionParametersKHR                        ) vkGetDeviceProcAddr( device, "vkCreateVideoSessionParametersKHR" );
+    vkUpdateVideoSessionParametersKHR                        = cast( PFN_vkUpdateVideoSessionParametersKHR                        ) vkGetDeviceProcAddr( device, "vkUpdateVideoSessionParametersKHR" );
+    vkDestroyVideoSessionParametersKHR                       = cast( PFN_vkDestroyVideoSessionParametersKHR                       ) vkGetDeviceProcAddr( device, "vkDestroyVideoSessionParametersKHR" );
+    vkCmdBeginVideoCodingKHR                                 = cast( PFN_vkCmdBeginVideoCodingKHR                                 ) vkGetDeviceProcAddr( device, "vkCmdBeginVideoCodingKHR" );
+    vkCmdEndVideoCodingKHR                                   = cast( PFN_vkCmdEndVideoCodingKHR                                   ) vkGetDeviceProcAddr( device, "vkCmdEndVideoCodingKHR" );
+    vkCmdControlVideoCodingKHR                               = cast( PFN_vkCmdControlVideoCodingKHR                               ) vkGetDeviceProcAddr( device, "vkCmdControlVideoCodingKHR" );
+
+    // VK_KHR_video_decode_queue
+    vkCmdDecodeVideoKHR                                      = cast( PFN_vkCmdDecodeVideoKHR                                      ) vkGetDeviceProcAddr( device, "vkCmdDecodeVideoKHR" );
 
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                                         = cast( PFN_vkGetMemoryFdKHR                                         ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
