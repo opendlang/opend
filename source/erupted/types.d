@@ -25,9 +25,9 @@ alias int64_t   = long;
 
 enum VK_NULL_HANDLE = null;
 
-enum VK_DEFINE_HANDLE( string name ) = "struct " ~ name ~ "_handle; alias " ~ name ~ " = " ~ name ~ "_handle*;";
+enum VK_DEFINE_HANDLE( string name ) = "struct " ~ name ~ "_T; alias " ~ name ~ " = " ~ name ~ "_T*;";
 
-version( X86_64 ) {
+version( D_LP64 ) {
     alias VK_DEFINE_NON_DISPATCHABLE_HANDLE( string name ) = VK_DEFINE_HANDLE!name;
     enum VK_NULL_ND_HANDLE = null;
 } else {
@@ -55,7 +55,7 @@ pure {
 enum VK_API_VERSION_1_0 = VK_MAKE_API_VERSION( 0, 1, 0, 0 );	// Patch version should always be set to 0
 
 // Version of this file (corresponding c header)
-enum VK_HEADER_VERSION = 247;
+enum VK_HEADER_VERSION = 248;
 
 // Complete version of this file (corresponding c header)
 enum VK_HEADER_VERSION_COMPLETE = VK_MAKE_API_VERSION( 0, 1, 3, VK_HEADER_VERSION );
