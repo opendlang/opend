@@ -27,6 +27,11 @@
             "dflags-dmd": ["-mcpu=native"],
             "dflags-gdc": ["-march=native"]
         },
+        "unittest-release-below-avx": {
+            "buildOptions": ["unittests", "optimize", "inline"],
+            "dflags-ldc": ["-mattr=+sse4.2"],
+            "dflags-gdc": ["-msse4.2"]
+        },
         "unittest-arm32": {
             "buildOptions": ["unittests", "debugMode", "debugInfo"],
             "dflags-ldc": ["-mtriple=arm-linux-gnueabihf"]
