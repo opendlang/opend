@@ -574,6 +574,7 @@ unittest
     assert(C.array == correct);
 }
 
+// Note: do that one after _mm256_cmpgt_epi8, _mm256_xor_si256, _mm256_subs_epu8
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
 
 /// Broadcast the low packed 8-bit integer from `a` to all elements of result.
@@ -1693,11 +1694,17 @@ unittest
 
 /// Compute the bitwise XOR of 256 bits (representing integer data) in `a` and `b`.
 __m256i _mm256_xor_si256 (__m256i a, __m256i b) pure @safe
-// TODO verify
 {
     return a ^ b;
 }
-// TODO unittest and thus force inline
+unittest
+{
+    __m256i A = _mm256_setr_epi64(975394,    619809709,    -1,    54);
+    __m256i B = _mm256_setr_epi64(-920275025,       -6, 85873, 96644);
+    long4 R = cast(long4) _mm256_xor_si256(A, B);
+    long[4] correct = [975394 ^ (-920275025L), 619809709L ^ -6, (-1) ^ 85873, 54 ^ 96644];
+    assert(R.array == correct);
+}
 
 
 /+
