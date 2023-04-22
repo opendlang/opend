@@ -228,19 +228,10 @@ __m128d _mm_loaddup_pd (const(double)* mem_addr) pure @trusted
 }
 unittest
 {
-    version(LDC)
-    {
-        double A = 7.5;
-        double2 B = _mm_loaddup_pd(&A);
-        double[2] correct = [7.5, 7.5];
-        assert(B.array == correct);        
-    }
-    else
-    {
-        double a = 7.5;
-        // For some reason, this line used to break with LDC, but not when isolated! Was never reported.
-        assert(_mm_loaddup_pd(&a).array == _mm_set_pd(7.5, 7.5).array);
-    }
+    double a = 7.5;
+    __m128d A = _mm_loaddup_pd(&a);
+    double[2] correct = [7.5, 7.5];
+    assert(A.array == correct);
 }
 
 /// Duplicate the low double-precision (64-bit) floating-point element from `a`.
