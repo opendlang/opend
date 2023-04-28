@@ -2012,38 +2012,32 @@ const:
     {
         return varianceAccumulator.count;
     }
-
     ///
     F mean(F = T)() @property
     {
-        return varianceAccumulator.mean;
+        return varianceAccumulator.mean!F;
     }
-
+    ///
+    F variance(F = T)(bool isPopulation) @property
+    {
+        return varianceAccumulator.variance!F(isPopulation);
+    }
     ///
     F skewness(F = T)(bool isPopulation)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
-
+        assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
+        assert(varianceAccumulator.variance(true) > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
+    }
+    do
+    {
         import mir.math.common: sqrt;
 
-        F mu = varianceAccumulator.mean!F;
-        F varP = varianceAccumulator.variance!F(true);
-        assert(varP > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
-
-        F avg_centeredSumOfCubes = cast(F) sumOfCubes.sum / cast(F) count - cast(F) 3 * mu * varP - (mu * mu * mu);
-
-        if (isPopulation == false) {
-            F varS = varianceAccumulator.variance!F(false);
-            assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-
-            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
-
-            return avg_centeredSumOfCubes / (varS * varS.sqrt) * mult;
-        } else {
-            
-            return avg_centeredSumOfCubes / (varP * varP.sqrt);
-        }
+        F mu = mean!F;
+        F avg_centeredSumOfCubes = cast(F) sumOfCubes.sum / count - cast(F) 3 * mu * variance!F(true) - (mu * mu * mu);
+        F var = variance!F(isPopulation);
+        return avg_centeredSumOfCubes / (var * var.sqrt) *
+                (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
 
@@ -2052,10 +2046,10 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual, pow;
+    import mir.math.common: pow;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
-    import mir.test;
+    import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -2067,16 +2061,16 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v;
     v.put(x);
-    assert(v.skewness(PopulationTrueRT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
+    v.skewness(PopulationTrueRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+    v.skewness(PopulationTrueCT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+    v.skewness(PopulationFalseRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
+    v.skewness(PopulationFalseCT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
 
     v.put(4.0);
-    assert(v.skewness(PopulationTrueRT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0)));
+    v.skewness(PopulationTrueRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
+    v.skewness(PopulationTrueCT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
+    v.skewness(PopulationFalseRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
+    v.skewness(PopulationFalseCT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
 }
 
 ///
@@ -2159,32 +2153,27 @@ const:
     ///
     F mean(F = T)() @property
     {
-        return meanAccumulator.mean;
+        return meanAccumulator.mean!F;
     }
-
+    ///
+    F variance(F = T)(bool isPopulation) @property
+    {
+        return cast(F) centeredSumOfSquares.sum / (count + isPopulation - 1);
+    }
     ///
     F skewness(F = T)(bool isPopulation)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
-
+        assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
+        assert(centeredSumOfSquares.sum > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
+    }
+    do
+    {
         import mir.math.common: sqrt;
-
-        if (isPopulation == false) {
-            assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-
-            F varS = centeredSumOfSquares.sum / (F(count - 1));
-            assert(varS > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
-
-            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
-
-            return (centeredSumOfCubes.sum / cast(F) count) / (varS * varS.sqrt) * mult;
-        } else {
-            F varP = centeredSumOfSquares.sum / F(count);
-            assert(varP > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
-
-            return (centeredSumOfCubes.sum / cast(F) count) / (varP * varP.sqrt);
-        }
+        
+        F var = variance!F(isPopulation);
+        return cast(F) centeredSumOfCubes.sum / count / (var * var.sqrt) *
+                (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
 
@@ -2322,21 +2311,16 @@ const:
 
     ///
     F skewness(F = T)(bool isPopulation)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
-
+        assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
+    }
+    do
+    {
         import mir.math.common: sqrt;
 
-        if (isPopulation == false) {
-            assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-
-            F mult = (cast(F) sqrt(cast(F) (count * (count - 1)))) / (cast(F) (count - 2));
-
-            return cast(F) scaledSumOfCubes / cast(F) count * mult;
-        } else {
-            return cast(F) scaledSumOfCubes / cast(F) count;
-        }
+        return cast(F) scaledSumOfCubes / count *
+                (cast(F) sqrt(cast(F) (count * (count + isPopulation - 1)))) / (cast(F) (count + 2 * isPopulation - 2));
     }
 }
 
@@ -2474,31 +2458,25 @@ const:
     {
         return cast(F) 0;
     }
-
+    ///
+    F variance(F = T)(bool isPopulation) @property
+    {
+        return varianceAccumulator.variance!F(isPopulation);
+    }
     ///
     F skewness(F = T)(bool isPopulation)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "SkewnessAccumulator.skewness: count must be larger than zero");
-
+        assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
+        assert(variance(true) > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
+    }
+    do
+    {
         import mir.math.common: sqrt;
 
-        F avg_centeredSumOfCubes = cast(F) centeredSumOfCubes.sum / cast(F) count;
-        if (isPopulation == false) {
-            assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-
-            F var = varianceAccumulator.variance!F(false);
-            assert(var > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
-
-            F mult = cast(F) (count * count) / ((count - 1) * (count - 2));
-
-            return avg_centeredSumOfCubes / (var * var.sqrt) * mult;
-        } else {
-            F var = varianceAccumulator.variance!F(true);
-            assert(var > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
-
-            return avg_centeredSumOfCubes / (var * var.sqrt);
-        }
+        F var = variance!F(isPopulation);
+        return cast(F) centeredSumOfCubes.sum / count / (var * var.sqrt) *
+            (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
 
@@ -2602,10 +2580,9 @@ Params:
 Returns:
     The skewness of the input, must be floating point or complex type
 +/
-template skewness(
-    F, 
-    SkewnessAlgo skewnessAlgo = SkewnessAlgo.online, 
-    Summation summation = Summation.appropriate)
+template skewness(F, 
+                  SkewnessAlgo skewnessAlgo = SkewnessAlgo.online, 
+                  Summation summation = Summation.appropriate)
 {
     import std.traits: isIterable;
 
@@ -2636,9 +2613,8 @@ template skewness(
 }
 
 /// ditto
-template skewness(
-    SkewnessAlgo skewnessAlgo = SkewnessAlgo.online, 
-    Summation summation = Summation.appropriate)
+template skewness(SkewnessAlgo skewnessAlgo = SkewnessAlgo.online, 
+                  Summation summation = Summation.appropriate)
 {
     import std.traits: isIterable;
 
