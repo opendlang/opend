@@ -157,42 +157,42 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F sumOfProducts(F = T)() const @property
+    F sumOfProducts(F = T)() @property
     {
         return cast(F) summatorOfProducts.sum;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return sumOfProducts!F - sumLeft!F * sumRight!F / count;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return sumOfProducts!F / (count + isPopulation - 1) -
             (sumLeft!F * sumRight!F) * (F(1) / (count * (count + isPopulation - 1)));
@@ -423,37 +423,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!T / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -682,37 +682,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -950,37 +950,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return 0;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return 0;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return 0;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return 0;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1262,37 +1262,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
