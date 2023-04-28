@@ -1246,7 +1246,6 @@ unittest
 /// Extract 128 bits (composed of integer data) from `a`, selected with `imm8`.
 __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
     if ( (imm8 == 0) || (imm8 == 1) )
-// TODO verify
 {
     pragma(inline, true);
 
@@ -1375,7 +1374,59 @@ unittest
 // TODO __m256i _mm256_min_epu8 (__m256i a, __m256i b) pure @safe
 // TODO int _mm256_movemask_epi8 (__m256i a) pure @safe
 // TODO __m256i _mm256_mpsadbw_epu8 (__m256i a, __m256i b, const int imm8) pure @safe
-// TODO __m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @safe
+
+/// Multiply the low signed 32-bit integers from each packed 64-bit element in `a` and `b`, and 
+/// return the signed 64-bit results.
+__m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @trusted
+{
+    //bool split = false;
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmuldq128(cast(int8)a, cast(int8)b);
+    }
+    else version(LDC)
+    {
+        enum ir = `
+            %ia = shufflevector <8 x i32> %0,<8 x i32> %0, <4 x i32> <i32 0, i32 2, i32 4, i32 6>
+            %ib = shufflevector <8 x i32> %1,<8 x i32> %1, <4 x i32> <i32 0, i32 2, i32 4, i32 6>
+            %la = sext <4 x i32> %ia to <4 x i64>
+            %lb = sext <4 x i32> %ib to <4 x i64>
+            %r = mul <4 x i64> %la, %lb
+            ret <4 x i64> %r`;
+        return cast(__m256i) LDCInlineIR!(ir, long4, int8, int8)(cast(int8)a, cast(int8)b);
+    }
+    /*
+    else static if (LDC_with_ARM64)  
+    {
+        // 3 instructions since LDC 1.8 -O2
+        // But had to make vmull_s32 be a builtin else it wouldn't optimize to smull
+        int2 a_lo = vmovn_s64(cast(long2)a);
+        int2 b_lo = vmovn_s64(cast(long2)b);
+        return cast(__m128i) vmull_s32(a_lo, b_lo);
+    }*/
+    else
+    {
+        int8 ia = cast(int8)a;
+        int8 ib = cast(int8)b;
+        long4 r;
+        r.ptr[0] = cast(long)ia.array[0] * ib.array[0];
+        r.ptr[1] = cast(long)ia.array[2] * ib.array[2];
+        r.ptr[2] = cast(long)ia.array[4] * ib.array[4];
+        r.ptr[3] = cast(long)ia.array[6] * ib.array[6];
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(61616461, 1915324654, 4564061, 3, 61616466, 1915324654, 4564061, 3);
+    __m256i B = _mm256_setr_epi32(49716422, -915616216, -121144, 0, 49716422, -915616216, -121145, 0);
+    long4 R = cast(long4) _mm256_mul_epi32(A, B);
+    long[4] correct = [cast(long)61616461 * 49716422, cast(long)4564061 * -121144, cast(long)61616466 * 49716422, cast(long)4564061 * -121145];
+    assert(R.array == correct);
+}
+
+
 // TODO __m256i _mm256_mul_epu32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_mulhi_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_mulhi_epu16 (__m256i a, __m256i b) pure @safe
