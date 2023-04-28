@@ -15,6 +15,14 @@ buildType "unittest" {
     //versions "mir_stat_test_fp"
     dflags "-lowmem"
 }
+configuration "unittest-perf" {
+    dependency "mir-random" version=">=2.2.19"
+}
+buildType "unittest-perf" {
+    buildOptions "unittests" "releaseMode" "optimize" "inline"
+    dflags "-mcpu=native"
+    versions "mir_stat_test_cov_performance"
+}
 buildType "unittest-dip1008" {
     buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_stat_test"
@@ -28,7 +36,7 @@ buildType "unittest-dip1000" {
 buildType "unittest-cov" {
     buildOptions "unittests" "coverage" "debugMode" "debugInfo"
     versions "mir_stat_test"
-    //versions "mir_stat_test" "mir_stat_test_fp"
+    //versions "mir_stat_test_fp"
     dflags "-lowmem"
 }
 buildType "unittest-release" {

@@ -12,6 +12,7 @@ sources_list = [
     'mir/math/internal/log_beta',
     'mir/math/internal/log_binomial',
     'mir/math/internal/xlogy',
+    'mir/stat/descriptive/multivariate',
     'mir/stat/descriptive/univariate',
     'mir/stat/descriptive/weighted',
     'mir/stat/descriptive/package',
