@@ -205,6 +205,8 @@ Next:
                     {
                         memcpy(_textBuffer.ptr + _textBuffer.length - text.length, text.ptr, text.length);
                         text = _textBuffer[$ - text.length .. $];
+                        if (text.length == 0)
+                            goto unexpectedEnd;
                     }
                     size_t index = text.length - 1;
                     auto indexG = index >> 6;

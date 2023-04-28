@@ -392,6 +392,7 @@ JSON serialization function.
 alias serializeJson = serializeJsonPretty!"";
 
 ///
+version(mir_ion_test)
 unittest
 {
     struct S
@@ -403,6 +404,7 @@ unittest
     assert(serializeJson(S("str", 4)) == `{"foo":"str","bar":4}`);
 }
 
+version(mir_ion_test)
 unittest
 {
     import mir.ser.json: serializeJson;
@@ -417,6 +419,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.serde: serdeIgnoreDefault;
@@ -475,6 +478,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.serde: serdeIgnoreIn;
@@ -489,6 +493,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.deser.json;
@@ -503,6 +508,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.serde: serdeIgnoreOutIf;
@@ -518,6 +524,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.rc.array;
@@ -526,6 +533,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.deser.json;
@@ -549,6 +557,7 @@ unittest
 /++
 JSON serialization for custom outputt range.
 +/
+version(mir_ion_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -589,6 +598,7 @@ template serializeJsonPretty(string sep = "\t")
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     static struct S { int a; }
@@ -596,6 +606,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -649,6 +660,7 @@ template jsonSerializer(string sep = "")
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import std.array;

@@ -1726,3 +1726,15 @@ unittest
     assert (`b`.deserializeText!E == E.b);
     assert (`B`.deserializeText!E == E.b);
 }
+
+version(mir_ion_test)
+@safe pure
+unittest
+{
+    import std.exception: assertThrown;
+    import mir.ion.conv;
+    "\"".json2ion.assertThrown;
+    "??:? [0x55d24c502acd]".json2ion.assertThrown;
+    "??:? [0x55d24c502acd]\"".json2ion.assertThrown;
+    "??:? [0x55d24c502acd]\"}".json2ion.assertThrown;
+}

@@ -513,6 +513,7 @@ string serializeText(V)(auto scope ref const V value, int serdeTarget = SerdeTar
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     struct S
@@ -524,6 +525,7 @@ unittest
     assert(serializeText(S("str", 4)) == `{foo:"str",bar:4}`, serializeText(S("str", 4)));
 }
 
+version(mir_ion_test)
 unittest
 {
     import mir.ser.text: serializeText;
@@ -596,6 +598,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.serde: serdeIgnoreIn;
@@ -610,6 +613,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.deser.ion;
@@ -624,6 +628,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.serde: serdeIgnoreOutIf;
@@ -639,6 +644,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.rc.array;
@@ -647,6 +653,7 @@ unittest
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.deser.ion;
@@ -692,6 +699,7 @@ void serializeText(Appender, V)(scope ref Appender appender, auto scope ref cons
 }
 
 ///
+version(mir_ion_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -719,6 +727,7 @@ template serializeTextPretty(string sep = "\t")
 }
 
 ///
+version(mir_ion_test)
 // @safe pure nothrow @nogc
 unittest
 {
@@ -772,6 +781,7 @@ template textSerializer(string sep = "")
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import std.array;
