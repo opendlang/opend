@@ -1379,14 +1379,14 @@ unittest
 /// return the signed 64-bit results.
 __m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @trusted
 {
-    //bool split = false;
-    // PERF DMD
+    // PERF LDC + SSE2 to SSSE3
     static if (GDC_with_AVX2)
     {
-        return cast(__m256i) __builtin_ia32_pmuldq128(cast(int8)a, cast(int8)b);
+        return cast(__m256i) __builtin_ia32_pmuldq256(cast(int8)a, cast(int8)b);
     }
-    else version(LDC)
+    else static if (LDC_with_SSE41 || LDC_with_AVX2) 
     {
+        // good with LDC + SSE4.1 to AVX2, else need to split
         enum ir = `
             %ia = shufflevector <8 x i32> %0,<8 x i32> %0, <4 x i32> <i32 0, i32 2, i32 4, i32 6>
             %ib = shufflevector <8 x i32> %1,<8 x i32> %1, <4 x i32> <i32 0, i32 2, i32 4, i32 6>
@@ -1396,25 +1396,16 @@ __m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @trusted
             ret <4 x i64> %r`;
         return cast(__m256i) LDCInlineIR!(ir, long4, int8, int8)(cast(int8)a, cast(int8)b);
     }
-    /*
-    else static if (LDC_with_ARM64)  
-    {
-        // 3 instructions since LDC 1.8 -O2
-        // But had to make vmull_s32 be a builtin else it wouldn't optimize to smull
-        int2 a_lo = vmovn_s64(cast(long2)a);
-        int2 b_lo = vmovn_s64(cast(long2)b);
-        return cast(__m128i) vmull_s32(a_lo, b_lo);
-    }*/
     else
     {
-        int8 ia = cast(int8)a;
-        int8 ib = cast(int8)b;
-        long4 r;
-        r.ptr[0] = cast(long)ia.array[0] * ib.array[0];
-        r.ptr[1] = cast(long)ia.array[2] * ib.array[2];
-        r.ptr[2] = cast(long)ia.array[4] * ib.array[4];
-        r.ptr[3] = cast(long)ia.array[6] * ib.array[6];
-        return cast(__m256i)r;
+        // split, very beneficial with LDC+ARM64
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_mul_epi32(a_lo, b_lo);
+        __m128i r_hi = _mm_mul_epi32(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest

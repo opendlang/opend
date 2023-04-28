@@ -1573,7 +1573,7 @@ unittest
 }
 
 /// Multiply the low signed 32-bit integers from each packed 64-bit element in a and b, and store the signed 64-bit results in dst.
-__m128i _mm_mul_epi32 (__m128i a, __m128i b) @trusted
+__m128i _mm_mul_epi32 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
