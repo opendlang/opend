@@ -1703,7 +1703,9 @@ unittest
 
     auto e = [E];
     auto time = benchmarkRandom2!(fs)(n, m, output);
+    writeln("Covariance performance test");
     foreach (size_t i; 0 .. fs.length) {
         writeln("Function ", i + 1, ", Algo: ", e[i], ", Output: ", output[i], ", Elapsed time: ", time[i]);
     }
+    writeln();
 }
