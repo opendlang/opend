@@ -68,7 +68,7 @@ enum CovarianceAlgo
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isMutable!T && covarianceAlgo == CovarianceAlgo.naive)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -123,8 +123,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -319,7 +319,7 @@ unittest
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isFloatingPoint!T && isMutable!T && covarianceAlgo == CovarianceAlgo.online)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -378,8 +378,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -593,7 +593,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 {
     import mir.functional: naryFun;
     import mir.math.stat: MeanAccumulator;
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -639,8 +639,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     this(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         import mir.primitives: elementCount, hasShape;
 
@@ -869,7 +869,7 @@ unittest
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isMutable!T && covarianceAlgo == CovarianceAlgo.assumeZeroMean)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: Slice, SliceKind, hasAsSlice, isConvertibleToSlice, isSlice;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -920,8 +920,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -1137,7 +1137,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     if (isFloatingPoint!T && isMutable!T && covarianceAlgo == CovarianceAlgo.hybrid)
 {
     import mir.functional: naryFun;
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -1198,8 +1198,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         import mir.primitives: elementCount, hasShape;
 
