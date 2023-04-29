@@ -2242,7 +2242,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
          skewnessAlgo == SkewnessAlgo.threePass))
 {
     import mir.functional: naryFun;
-    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     ///
     size_t count;
@@ -2276,17 +2276,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     }
 
     ///
-    this(U)(U[] array)
+    this(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
-    }
-
-    ///
-    this(T)(T withAsSlice)
-        if (hasAsSlice!T)
-    {
-        this(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        this(x.toSlice);
     }
 
 const:
@@ -3319,7 +3313,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
          kurtosisAlgo == KurtosisAlgo.threePass))
 {
     import mir.functional: naryFun;
-    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -3347,17 +3341,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
     ///
-    this(U)(U[] array)
+    this(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
-    }
-
-    ///
-    this(T)(T withAsSlice)
-        if (hasAsSlice!T)
-    {
-        this(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        this(x.toSlice);
     }
 
     ///
