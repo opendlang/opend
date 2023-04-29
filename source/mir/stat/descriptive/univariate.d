@@ -2054,23 +2054,14 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-
     SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v;
     v.put(x);
-    v.skewness(PopulationTrueRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
-    v.skewness(PopulationTrueCT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
-    v.skewness(PopulationFalseRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
-    v.skewness(PopulationFalseCT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
+    v.skewness(true).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+    v.skewness(false).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
 
     v.put(4.0);
-    v.skewness(PopulationTrueRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
-    v.skewness(PopulationTrueCT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
-    v.skewness(PopulationFalseRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
-    v.skewness(PopulationFalseCT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
+    v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
+    v.skewness(false).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
 }
 
 ///
@@ -2189,23 +2180,14 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.skewness(PopulationTrueRT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
+    assert(v.skewness(true).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
+    assert(v.skewness(false).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0)));
 
     v.put(4.0);
-    assert(v.skewness(PopulationTrueRT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0)));
+    assert(v.skewness(true).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
+    assert(v.skewness(false).approxEqual((100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0)));
 }
 
 // Can put slice
@@ -2336,22 +2318,13 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-
     auto v = SkewnessAccumulator!(double, SkewnessAlgo.twoPass, Summation.naive)(x);
-    assert(v.skewness(PopulationTrueRT).approxEqual(12.000999 / 12));
-    assert(v.skewness(PopulationTrueCT).approxEqual(12.000999 / 12));
-    assert(v.skewness(PopulationFalseRT).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
-    assert(v.skewness(PopulationFalseCT).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
+    assert(v.skewness(true).approxEqual(12.000999 / 12));
+    assert(v.skewness(false).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
 
     auto w = SkewnessAccumulator!(double, SkewnessAlgo.threePass, Summation.naive)(x);
-    assert(w.skewness(PopulationTrueRT).approxEqual(12.000999 / 12));
-    assert(w.skewness(PopulationTrueCT).approxEqual(12.000999 / 12));
-    assert(w.skewness(PopulationFalseRT).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
-    assert(w.skewness(PopulationFalseCT).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
+    assert(w.skewness(true).approxEqual(12.000999 / 12));
+    assert(w.skewness(false).approxEqual(12.000999 / 12 * sqrt(12.0 * 11.0) / 10.0));
 }
 
 // check withAsSlice
@@ -2494,23 +2467,14 @@ unittest
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
     auto x = a.center;
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-
     SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.skewness(PopulationTrueRT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * 12.0 ^^ 2 / (11.0 * 10.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * 12.0 ^^ 2 / (11.0 * 10.0)));
+    assert(v.skewness(true).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
+    assert(v.skewness(false).approxEqual((117.005859 / 12) / pow(54.765625 / 11, 1.5) * 12.0 ^^ 2 / (11.0 * 10.0)));
 
     v.put(4.0);
-    assert(v.skewness(PopulationTrueRT).approxEqual((181.005859 / 13) / pow(70.765625 / 13, 1.5)));
-    assert(v.skewness(PopulationTrueCT).approxEqual((181.005859 / 13) / pow(70.765625 / 13, 1.5)));
-    assert(v.skewness(PopulationFalseRT).approxEqual((181.005859 / 13) / pow(70.765625 / 12, 1.5) * 13.0 ^^ 2 / (12.0 * 11.0)));
-    assert(v.skewness(PopulationFalseCT).approxEqual((181.005859 / 13) / pow(70.765625 / 12, 1.5) * 13.0 ^^ 2 / (12.0 * 11.0)));
+    assert(v.skewness(true).approxEqual((181.005859 / 13) / pow(70.765625 / 13, 1.5)));
+    assert(v.skewness(false).approxEqual((181.005859 / 13) / pow(70.765625 / 12, 1.5) * 13.0 ^^ 2 / (12.0 * 11.0)));
 }
 
 // Can put slices
@@ -2817,26 +2781,21 @@ unittest
     auto a = [1.0, 1e98, 1, -1e98].sliced;
     auto x = a * 10_000;
 
-    bool populationTrueRT = true;
-    bool populationFalseRT = false;
-    enum PopulationTrueCT = true;
-
     /++
     Due to Floating Point precision, when centering `x`, subtracting the mean 
     from the second and fourth numbers has no effect. Further, after centering 
     and squaring `x`, the first and third numbers in the slice have precision 
     too low to be included in the centered sum of squares. 
     +/
-    assert(x.skewness(populationFalseRT).approxEqual(0.0));
-    assert(x.skewness(populationTrueRT).approxEqual(0.0));
-    assert(x.skewness(PopulationTrueCT).approxEqual(0.0));
+    assert(x.skewness(false).approxEqual(0.0));
+    assert(x.skewness(true).approxEqual(0.0));
 
     assert(x.skewness!("online").approxEqual(0.0));
     assert(x.skewness!("online", "kbn").approxEqual(0.0));
     assert(x.skewness!("online", "kb2").approxEqual(0.0));
     assert(x.skewness!("online", "precise").approxEqual(0.0));
     assert(x.skewness!(double, "online", "precise").approxEqual(0.0));
-    assert(x.skewness!(double, "online", "precise")(populationTrueRT).approxEqual(0.0));
+    assert(x.skewness!(double, "online", "precise")(true).approxEqual(0.0));
 
     auto y = [uint.max - 2, uint.max - 1, uint.max].sliced;
     auto z = y.skewness!(ulong, "threePass");
@@ -3139,40 +3098,23 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum RawTrueCT = true;
-    enum RawFalseCT = false;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
-
     KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
     v.put(x);
 
-    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
-    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
-    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
-    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
-    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
-    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
-    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
-    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
+    v.kurtosis(true, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(true, false).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(false, false).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(false, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
 
-    v.skewness(PopulationTrueRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+    v.skewness(true).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
 
     v.put(4.0);
-    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
-    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
-    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
-    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
-    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
-    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
-    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
-    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
+    v.kurtosis(true, true).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(true, false).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(false, false).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(false, true).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
 
-    v.skewness(PopulationTrueRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
+    v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
 }
 
 ///
@@ -3312,35 +3254,18 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum RawTrueCT = true;
-    enum RawFalseCT = false;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
-
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
     v.put(x);
-    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
-    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
-    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
-    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
-    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
-    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
-    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
-    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
+    v.kurtosis(true, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(true, false).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(false, false).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(false, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
 
     v.put(4.0);
-    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
-    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
-    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
-    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
-    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
-    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
-    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
-    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
+    v.kurtosis(true, true).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(true, false).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(false, false).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(false, true).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
 }
 
 // Can put slice
@@ -3469,34 +3394,17 @@ unittest
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum RawTrueCT = true;
-    enum RawFalseCT = false;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
-
     KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive) v = x;
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual(38.062853 / 12));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual(38.062853 / 12));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual(38.062853 / 12 - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual(38.062853 / 12 - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
+    assert(v.kurtosis(true, true).approxEqual(38.062853 / 12));
+    assert(v.kurtosis(true, false).approxEqual(38.062853 / 12 - 3.0));
+    assert(v.kurtosis(false, true).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
+    assert(v.kurtosis(false, false).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
 
     KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive) w = x;
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual(38.062853 / 12));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual(38.062853 / 12));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual(38.062853 / 12 - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual(38.062853 / 12 - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
+    assert(v.kurtosis(true, true).approxEqual(38.062853 / 12));
+    assert(v.kurtosis(true, false).approxEqual(38.062853 / 12 - 3.0));
+    assert(v.kurtosis(false, true).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)) + 3.0);
+    assert(v.kurtosis(false, false).approxEqual(38.062853 / 12 * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
 }
 
 // check withAsSlice
@@ -3638,35 +3546,18 @@ unittest
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
     auto x = a.center;
 
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum RawTrueCT = true;
-    enum RawFalseCT = false;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
-
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
+    assert(v.kurtosis(true, true).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
+    assert(v.kurtosis(true, false).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
+    assert(v.kurtosis(false, false).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
+    assert(v.kurtosis(false, true).approxEqual(792.784119 / pow(54.765625 / 11, 2.0) * (12.0 * 13.0) / (11.0 * 10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
 
     v.put(4.0);
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
+    assert(v.kurtosis(true, true).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0)));
+    assert(v.kurtosis(true, false).approxEqual((1048.784119 / 13) / pow(70.765625 / 13, 2.0) - 3.0));
+    assert(v.kurtosis(false, false).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
+    assert(v.kurtosis(false, true).approxEqual(1048.784119 / pow(70.765625 / 12, 2.0) * (13.0 * 14.0) / (12.0 * 11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
 }
 
 // Can put slice
@@ -3708,15 +3599,6 @@ unittest
     auto b = a.center;
     auto x = b[0 .. 6];
     auto y = b[6 .. $];
-
-    enum PopulationTrueCT = true;
-    enum PopulationFalseCT = false;
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum RawTrueCT = true;
-    enum RawFalseCT = false;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
 
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
@@ -3989,14 +3871,6 @@ unittest
     auto a = [1.0, 1e72, 1, -1e72].sliced;
     auto x = a * 10_000;
 
-    bool PopulationTrueRT = true;
-    bool PopulationFalseRT = false;
-    enum PopulationTrueCT = true;
-
-    enum RawTrueCT = true;
-    bool RawTrueRT = true;
-    bool RawFalseRT = false;
-
     /++
     Due to Floating Point precision, when centering `x`, subtracting the mean 
     from the second and fourth numbers has no effect. Further, after centering 
@@ -4004,20 +3878,18 @@ unittest
     have precision too low to be included in the centered sum of cubes. 
     +/
     assert(x.kurtosis.approxEqual(1.5));
-    assert(x.kurtosis(PopulationFalseRT).approxEqual(1.5));
-    assert(x.kurtosis(PopulationTrueRT).approxEqual(-1.0));
-    assert(x.kurtosis(PopulationTrueCT).approxEqual(-1.0));
-    assert(x.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual(2.0));
-    assert(x.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual(4.5));
-    assert(x.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual(2.0));
+    assert(x.kurtosis(false).approxEqual(1.5));
+    assert(x.kurtosis(true).approxEqual(-1.0));
+    assert(x.kurtosis(true, true).approxEqual(2.0));
+    assert(x.kurtosis(false, true).approxEqual(4.5));
 
     assert(x.kurtosis!("online").approxEqual(1.5));
     assert(x.kurtosis!("online", "kbn").approxEqual(1.5));
     assert(x.kurtosis!("online", "kb2").approxEqual(1.5));
     assert(x.kurtosis!("online", "precise").approxEqual(1.5));
     assert(x.kurtosis!(double, "online", "precise").approxEqual(1.5));
-    assert(x.kurtosis!(double, "online", "precise")(PopulationTrueRT).approxEqual(-1.0));
-    assert(x.kurtosis!(double, "online", "precise")(PopulationTrueRT, RawTrueRT).approxEqual(2.0));
+    assert(x.kurtosis!(double, "online", "precise")(true).approxEqual(-1.0));
+    assert(x.kurtosis!(double, "online", "precise")(true, true).approxEqual(2.0));
 
     auto y = [uint.max - 3, uint.max - 2, uint.max - 1, uint.max].sliced;
     auto z = y.kurtosis!(ulong, "threePass");
