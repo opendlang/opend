@@ -98,7 +98,7 @@ public import mir.math.sum: Summation;
 import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
 import mir.math.sum: Summator, ResolveSummationType;
-import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 import std.traits: isMutable;
 
 /++
@@ -468,7 +468,7 @@ template quantile(F,
                               quantileAlgo == QuantileAlgo.type3))
 {
     import mir.math.sum: elementType;
-    import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind, sliced;
     import mir.ndslice.topology: flattened;
     import std.traits: Unqual;
 
@@ -571,32 +571,21 @@ template quantile(F,
     }
 
     /// ditto
-    quantileType!(F, quantileAlgo) quantile(G)(F[] array, G p)
-        if (isFloatingPoint!(Unqual!G))
+    auto quantile(SliceLike, G)(SliceLike x, G p)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike &&
+            isFloatingPoint!(Unqual!G))
     {
-        alias FF = typeof(return);
-        return .quantile!(FF, quantileAlgo, allowModifySlice)(array.sliced, p);
+        import mir.ndslice.slice: toSlice;
+        return quantile(x.toSlice, p);
     }
 
     /// ditto
-    auto quantile(G)(F[] array, G[] p)
-        if (isFloatingPoint!(Unqual!G))
+    auto quantile(SliceLikeX, SliceLikeP)(SliceLikeX x, SliceLikeP p)
+        if (isConvertibleToSlice!SliceLikeX && !isSlice!SliceLikeX &&
+            isConvertibleToSlice!SliceLikeP && !isSlice!SliceLikeP)
     {
-        return quantile(array.sliced, p.sliced);
-    }
-
-    /// ditto
-    auto quantile(T, G)(T withAsSlice, G p)
-        if (hasAsSlice!T && isFloatingPoint!(Unqual!G))
-    {
-        return quantile(withAsSlice.asSlice, p);
-    }
-
-    /// ditto
-    auto quantile(T, U)(T withAsSlice, U p)
-        if (hasAsSlice!T && hasAsSlice!U)
-    {
-        return quantile(withAsSlice.asSlice, p.asSlice);
+        import mir.ndslice.slice: toSlice;
+        return quantile(x.toSlice, p.toSlice);
     }
 }
 
@@ -606,7 +595,7 @@ template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
                   bool allowModifyProbability = false)
 {
     import mir.math.sum: elementType;
-    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import std.traits: Unqual;
 
     /++
@@ -643,35 +632,23 @@ template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
     }
 
     /// ditto
-    auto quantile(T, G)(T[] array, G p)
-        if (isFloatingPoint!(Unqual!G))
+    auto quantile(SliceLike, G)(SliceLike x, G p)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike &&
+            isFloatingPoint!(Unqual!G))
     {
-        alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(array, p);
+        import mir.ndslice.slice: toSlice;
+        alias F = quantileType!(typeof(x.toSlice), quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(x, p);
     }
 
     /// ditto
-    auto quantile(T, G)(T[] array, G[] p)
-        if (isFloatingPoint!(Unqual!G))
+    auto quantile(SliceLikeX, SliceLikeP)(SliceLikeX x, SliceLikeP p)
+        if (isConvertibleToSlice!SliceLikeX && !isSlice!SliceLikeX &&
+            isConvertibleToSlice!SliceLikeP && !isSlice!SliceLikeP)
     {
-        alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(array, p);
-    }
-
-    /// ditto
-    auto quantile(T, G)(T withAsSlice, G p)
-        if (hasAsSlice!T && isFloatingPoint!(Unqual!G))
-    {
-        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(withAsSlice, p);
-    }
-
-    /// ditto
-    auto quantile(T, U)(T withAsSlice, U p)
-        if (hasAsSlice!T && hasAsSlice!U)
-    {
-        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(withAsSlice, p);
+        import mir.ndslice.slice: toSlice;
+        alias F = quantileType!(typeof(x.toSlice), quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(x, p);
     }
 }
 
@@ -1133,7 +1110,7 @@ See_also:
 template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
                             bool allowModifySlice = false)
 {
-    import mir.ndslice.slice: Slice, SliceKind;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     /++
     Params:
@@ -1198,14 +1175,12 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         return .interquartileRange!(FF, quantileAlgo, allowModifySlice)(array.sliced);
     }
 
-    /++
-    Params:
-        withAsSlice = withAsSlice
-    +/
-    @fmamath auto interquartileRange(T)(T withAsSlice)
-        if (hasAsSlice!T)
+    /// ditto
+    @fmamath auto interquartileRange(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        return interquartileRange(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        return interquartileRange(x.toSlice);
     }
 }
 
@@ -1213,7 +1188,7 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
 template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
                             bool allowModifySlice = false)
 {
-    import mir.ndslice.slice: Slice, SliceKind;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     /// ditto
     @fmamath quantileType!(Slice!(Iterator), quantileAlgo)
@@ -1262,11 +1237,12 @@ template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
     }
 
     /// ditto
-    @fmamath auto interquartileRange(T)(T withAsSlice)
-        if (hasAsSlice!T)
+    @fmamath auto interquartileRange(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
-        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        alias F = quantileType!(typeof(x.toSlice), quantileAlgo);
+        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(x);
     }
 }
 
@@ -1514,10 +1490,11 @@ template medianAbsoluteDeviation(F)
 }
 
 /// ditto
-@fmamath auto medianAbsoluteDeviation(T)(T withAsSlice)
-    if (hasAsSlice!T)
+@fmamath auto medianAbsoluteDeviation(SliceLike)(SliceLike x)
+    if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
 {
-    return medianAbsoluteDeviation(withAsSlice.asSlice);
+    import mir.ndslice.slice: toSlice;
+    return medianAbsoluteDeviation(x.toSlice);
 }
 
 /// Simple example
@@ -1637,7 +1614,7 @@ template dispersion(
     alias summarize = mean)
 {
     import mir.functional: naryFun;
-    import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
+    import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind, sliced;
 
     static if (__traits(isSame, naryFun!transform, transform))
     {
@@ -1654,7 +1631,7 @@ template dispersion(
 
             return summarize(slice.move.center!centralTendency.map!transform);
         }
-        
+
         /// ditto
         @fmamath auto dispersion(T)(scope const T[] ar...)
         {
@@ -1662,10 +1639,11 @@ template dispersion(
         }
 
         /// ditto
-        @fmamath auto dispersion(T)(T withAsSlice)
-            if (hasAsSlice!T)
+        @fmamath auto dispersion(SliceLike)(SliceLike x)
+            if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
         {
-            return dispersion(withAsSlice.asSlice);
+            import mir.ndslice.slice: toSlice;
+            return dispersion(x.toSlice);
         }
     }
     else
