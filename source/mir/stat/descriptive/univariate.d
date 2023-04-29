@@ -62,7 +62,7 @@ License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
 Authors: John Michael Hall, Ilya Yaroshenko
 
-Copyright: 2022 Mir Stat Authors.
+Copyright: 2022-3 Mir Stat Authors.
 
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
@@ -215,7 +215,7 @@ template quantileType(T, QuantileAlgo quantileAlgo)
     }
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -256,7 +256,7 @@ unittest
     static assert(is(quantileType!(float[], QuantileAlgo.type9) == float));
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -273,7 +273,7 @@ unittest
     static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -290,7 +290,7 @@ unittest
     static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -305,7 +305,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -318,7 +318,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == Complex!float));
 }
 
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -692,7 +692,7 @@ template quantile(string quantileAlgo,
 }
 
 /// Simple example
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -711,7 +711,7 @@ unittest
 }
 
 //no change in x by default
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -728,7 +728,7 @@ unittest
 }
 
 /// Modify probability in place
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -747,7 +747,7 @@ unittest
 }
 
 /// Quantile of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -766,7 +766,7 @@ unittest
 }
 
 /// Quantile of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest 
 {
@@ -788,7 +788,7 @@ unittest
 }
 
 /// Row quantile of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -816,7 +816,7 @@ unittest
 }
 
 /// Allow modification of input
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -832,7 +832,7 @@ unittest
 }
 
 /// Double-check probability is not modified
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -851,7 +851,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -873,7 +873,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -893,7 +893,7 @@ unittest
 }
 
 /// Support for integral and user-defined types for type 1 & 3
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -915,7 +915,7 @@ unittest
 }
 
 /// Compute quantile along specified dimention of tensors
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -943,7 +943,7 @@ unittest
 }
 
 /// Support for array
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -960,7 +960,7 @@ unittest
 }
 
 //@nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest 
 {
@@ -980,7 +980,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1006,7 +1006,7 @@ unittest
 }
 
 //x.length = 20, qtile at tenths
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1030,7 +1030,7 @@ unittest
 }
 
 //x.length = 20, qtile at 5s
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1054,7 +1054,7 @@ unittest
 }
 
 //x.length = 21, qtile at tenths
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1079,7 +1079,7 @@ unittest
 }
 
 //x.length = 21, qtile at 5s
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1283,7 +1283,7 @@ template interquartileRange(string quantileAlgo, bool allowModifySlice = false)
 }
 
 /// Simple example
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1298,7 +1298,7 @@ unittest
 }
 
 //no change in x by default
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1314,7 +1314,7 @@ unittest
 }
 
 /// Interquartile Range of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1328,7 +1328,7 @@ unittest
 }
 
 /// Interquartile Range of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest 
 {
@@ -1345,7 +1345,7 @@ unittest
 }
 
 /// Allow modification of input
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1361,7 +1361,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1383,7 +1383,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1404,7 +1404,7 @@ unittest
 }
 
 /// Support for array
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1416,7 +1416,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1436,7 +1436,7 @@ unittest
 }
 
 // Arbitrary test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest 
 {
@@ -1446,7 +1446,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest 
 {
@@ -1521,7 +1521,7 @@ template medianAbsoluteDeviation(F)
 }
 
 /// Simple example
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1535,7 +1535,7 @@ unittest
 }
 
 /// Median Absolute Deviation of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1549,7 +1549,7 @@ unittest
 }
 
 /// Median Absolute Deviation of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -1565,7 +1565,7 @@ unittest
 }
 
 /// Median Absolute Deviation of dynamic array
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1578,7 +1578,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1592,7 +1592,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1673,7 +1673,7 @@ template dispersion(
 }
 
 /// Simple examples
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1695,7 +1695,7 @@ unittest
 }
 
 /// Dispersion of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1709,7 +1709,7 @@ unittest
 }
 
 /// Dispersion of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -1725,7 +1725,7 @@ unittest
 }
 
 /// Column dispersion of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -1752,7 +1752,7 @@ unittest
 }
 
 /// Can also set functions to change type of dispersion that is used
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe
 unittest
 {
@@ -1788,7 +1788,7 @@ unittest
 For integral slices, pass output type to `centralTendency`, `transform`, and 
 `summary` functions as template parameter to ensure output type is correct.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1809,7 +1809,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1824,7 +1824,7 @@ unittest
 }
 
 // std.complex test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1841,7 +1841,7 @@ Dispersion works for complex numbers and other user-defined types (provided that
 the `centralTendency`, `transform`, and `summary` functions are defined for those
 types)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1854,7 +1854,7 @@ unittest
 }
 
 /// Compute mean tensors along specified dimention of tensors
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -1882,7 +1882,7 @@ unittest
 }
 
 /// Arbitrary dispersion
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1896,7 +1896,7 @@ unittest
 }
 
 // UFCS UT
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1905,7 +1905,7 @@ unittest
 }
 
 // Confirm type output is correct
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -1921,7 +1921,7 @@ unittest
 }
 
 // @nogc UT
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure @nogc nothrow
 unittest
 {
@@ -1935,7 +1935,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -2042,7 +2042,7 @@ const:
 }
 
 /// naive
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2178,7 +2178,7 @@ const:
 }
 
 /// online
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2209,7 +2209,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2231,7 +2231,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2325,7 +2325,7 @@ const:
 }
 
 /// twoPass & threePass
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2355,7 +2355,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2378,7 +2378,7 @@ unittest
 }
 
 // check dynamic array
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2481,7 +2481,7 @@ const:
 }
 
 /// assumeZeroMean
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2514,7 +2514,7 @@ unittest
 }
 
 // Can put slices
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2540,7 +2540,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2655,7 +2655,7 @@ template skewness(string skewnessAlgo, string summation = "appropriate")
 }
 
 /// Simple example
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2673,7 +2673,7 @@ unittest
 }
 
 /// Skewness of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2687,7 +2687,7 @@ unittest
 }
 
 /// Skewness of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -2703,7 +2703,7 @@ unittest
 }
 
 /// Column skewness of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -2730,7 +2730,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -2767,7 +2767,7 @@ unittest
 }
 
 // Alt version with x a tenth of above's value
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -2804,7 +2804,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2848,7 +2848,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2869,7 +2869,7 @@ unittest
 Skewness works for other user-defined types (provided they
 can be converted to a floating point)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2885,7 +2885,7 @@ unittest
 }
 
 /// Compute skewness along specified dimention of tensors
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -2913,7 +2913,7 @@ unittest
 }
 
 /// Arbitrary skewness
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -2922,7 +2922,7 @@ unittest
 }
 
 // Check skewness vector UFCS
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2931,7 +2931,7 @@ unittest
 }
 
 // Double-check correct output types
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -2946,7 +2946,7 @@ unittest
 }
 
 // @nogc skewness test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure @nogc nothrow
 unittest
 {
@@ -2961,7 +2961,7 @@ unittest
 }
 
 // Test skewness with values
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3058,9 +3058,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
 
     ///
-    alias skewnessAccumulator this;
-
-    ///
     Summator!(T, summation) sumOfQuarts;
 
     ///
@@ -3083,20 +3080,40 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
 const:
-
+    ///
+    size_t count()
+    {
+        return skewnessAccumulator.count;
+    }
+    ///
+    F mean(F = T)()
+    {
+        return skewnessAccumulator.mean!F;
+    }
+    ///
+    F variance(F = T)(bool isPopulation)
+    {
+        return skewnessAccumulator.variance!F(isPopulation);
+    }
+    ///
+    F skewness(F = T)(bool isPopulation)
+    {
+        return skewnessAccumulator.skewness!F(isPopulation);
+    }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
-
-        F mu = skewnessAccumulator.varianceAccumulator.meanAccumulator.mean!F;
+        assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
+        assert(variance(true) > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
+    }
+    do
+    {
+        F mu = mean!F;
         F avg_sumOfSquares = cast(F) skewnessAccumulator.varianceAccumulator.sumOfSquares.sum / count;
-        F varP = avg_sumOfSquares - mu * mu;
-        assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
-
         auto  mu2 = mu * mu;
         auto  mu4 = mu2 * mu2;
+        F varP = avg_sumOfSquares - mu2;
         F avg_sumOfCubes = cast(F) skewnessAccumulator.sumOfCubes.sum / count;
         F avg_sumOfQuarts = cast(F) sumOfQuarts.sum / count;
         F fourthCentralMoment = avg_sumOfQuarts - 
@@ -3104,27 +3121,20 @@ const:
             6 * mu2 * avg_sumOfSquares - 
             3 * mu4;
         F kurt = fourthCentralMoment / (varP * varP);
-
-        if (isPopulation == false) {
-            assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
-
-            F mult1 = F((count - 1) * (count + 1)) / ((count - 2) * (count - 3));
-            F mult2 = F((count - 1) * (count - 1)) / ((count - 2) * (count - 3));
-            F excessKurtosis = kurt * mult1 - 3 * mult2;
-            return excessKurtosis + 3 * isRaw;
-        } else {
-            return kurt - 3 * !isRaw;
-        }
+        F mult1 = cast(F) (count + isPopulation - 1) * (count - isPopulation + 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        F mult2 = cast(F) (count + isPopulation - 1) * (count + isPopulation - 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        return kurt * mult1 + 3 * (isRaw - mult2);
     }
 }
 
 /// naive
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual, pow;
+    import mir.math.common: pow;
     import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -3141,28 +3151,28 @@ unittest
     KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
     v.put(x);
 
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
+    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
+    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
 
-    assert(v.skewness(PopulationTrueRT).approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
+    v.skewness(PopulationTrueRT).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
 
     v.put(4.0);
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
+    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
+    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
 
-    assert(v.skewness(PopulationTrueRT).approxEqual((100.238166 / 13) / pow(57.019231 / 13, 1.5)));
+    v.skewness(PopulationTrueRT).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
 }
 
 ///
@@ -3190,10 +3200,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
 
     ///
-    alias skewnessAccumulator this;
-
-    ///
-    Summator!(T, summation) centeredSumOfQuarts;
+    Summator!(T, summation) centeredSummatorOfQuarts;
 
     ///
     void put(Range)(Range r)
@@ -3210,15 +3217,15 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     {
         T deltaOld = x;
         if (count > 0) {
-            deltaOld -= meanAccumulator.mean;
+            deltaOld -= mean;
         }
         skewnessAccumulator.meanAccumulator.put(x);
-        T deltaNew = x - meanAccumulator.mean;
-        centeredSumOfQuarts.put((deltaOld * deltaOld * deltaOld * deltaOld) * (cast(T) ((count - 1) * (count * count - 3 * count + 3))) / (cast(T) (count * count * count)) +
-                                cast(T) 6 * deltaOld * deltaOld * centeredSumOfSquares.sum / (cast(T) (count * count)) -
-                                cast(T) 4 * deltaOld * (centeredSumOfCubes.sum / (cast(T) count)));
+        T deltaNew = x - mean;
+        centeredSummatorOfQuarts.put((deltaOld * deltaOld * deltaOld * deltaOld) * (cast(T) ((count - 1) * (count * count - 3 * count + 3))) / (cast(T) (count * count * count)) +
+                                cast(T) 6 * deltaOld * deltaOld * centeredSumOfSquares!T / (cast(T) (count * count)) -
+                                cast(T) 4 * deltaOld * (centeredSumOfCubes!T / (cast(T) count)));
         skewnessAccumulator.centeredSumOfCubes.put((deltaOld * deltaOld * deltaOld) * cast(T) (count - 1) * (count - 2) / (cast(T) (count * count)) -
-                               cast(T) 3 * deltaOld * centeredSumOfSquares.sum / (cast(T) count));
+                               cast(T) 3 * deltaOld * centeredSumOfSquares!T / (cast(T) count));
         skewnessAccumulator.centeredSumOfSquares.put(deltaOld * deltaNew);
     }
 
@@ -3228,54 +3235,79 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         size_t oldCount = count;
         T delta = v.mean;
         if (oldCount > 0) {
-            delta -= meanAccumulator.mean;
+            delta -= mean;
         }
-        skewnessAccumulator.meanAccumulator.put!T(v.meanAccumulator);
-        centeredSumOfQuarts.put(v.centeredSumOfQuarts.sum + 
+        skewnessAccumulator.meanAccumulator.put!T(v.skewnessAccumulator.meanAccumulator);
+        centeredSummatorOfQuarts.put(v.centeredSummatorOfQuarts.sum + 
                                delta * delta * delta * delta * (cast(T) ((v.count * oldCount) * (oldCount * oldCount - v.count * oldCount + v.count * v.count))) / (cast(T) (count * count * count)) +
-                               cast(T) 6 * delta * delta * (cast(T) (oldCount * oldCount) * v.centeredSumOfSquares.sum + cast(T) (v.count * v.count) * centeredSumOfSquares.sum) / (cast(T) (count * count)) +
-                               cast(T) 4 * delta * (cast(T) oldCount * v.centeredSumOfCubes.sum - cast(T) v.count * centeredSumOfCubes.sum) / (cast(T) count));
-        skewnessAccumulator.centeredSumOfCubes.put(v.centeredSumOfCubes.sum + 
+                               cast(T) 6 * delta * delta * (cast(T) (oldCount * oldCount) * v.centeredSumOfSquares!T + cast(T) (v.count * v.count) * centeredSumOfSquares!T) / (cast(T) (count * count)) +
+                               cast(T) 4 * delta * (cast(T) oldCount * v.centeredSumOfCubes!T - cast(T) v.count * centeredSumOfCubes!T) / (cast(T) count));
+        skewnessAccumulator.centeredSumOfCubes.put(v.centeredSumOfCubes!T + 
                                delta * delta * delta * cast(T) v.count * cast(T) oldCount * cast(T) (oldCount - v.count) / cast(T) (count * count) +
-                               cast(T) 3 * delta * (cast(T) oldCount * v.centeredSumOfSquares.sum - cast(T) v.count * centeredSumOfSquares.sum) / cast(T) count);
-        skewnessAccumulator.centeredSumOfSquares.put(v.centeredSumOfSquares.sum + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
+                               cast(T) 3 * delta * (cast(T) oldCount * v.centeredSumOfSquares!T - cast(T) v.count * centeredSumOfSquares!T) / cast(T) count);
+        skewnessAccumulator.centeredSumOfSquares.put(v.centeredSumOfSquares!T + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
     }
 
 const:
-
+    ///
+    size_t count()
+    {
+        return skewnessAccumulator.count;
+    }
+    ///
+    F centeredSumOfQuarts(F = T)()
+    {
+        return cast(F) centeredSummatorOfQuarts.sum;
+    }
+    ///
+    F centeredSumOfCubes(F = T)()
+    {
+        return cast(F) skewnessAccumulator.centeredSumOfCubes.sum;
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) skewnessAccumulator.centeredSumOfSquares.sum;
+    }
+    ///
+    F mean(F = T)()
+    {
+        return skewnessAccumulator.mean!F;
+    }
+    ///
+    F variance(F = T)(bool isPopulation)
+    {
+        return skewnessAccumulator.variance!F(isPopulation);
+    }
+    ///
+    F skewness(F = T)(bool isPopulation)
+    {
+        return skewnessAccumulator.skewness!F(isPopulation);
+    }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
-
-        if (isPopulation == false) {
-            assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
-
-            F varS = F(skewnessAccumulator.centeredSumOfSquares.sum) / (count - 1);
-            assert(varS > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
-
-            F mult1 = (cast(F) (count * (count + 1))) / (F(count - 1) * (count - 2) * (count - 3));
-            F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
-            F excessKurtosis = F(centeredSumOfQuarts.sum) / (varS * varS) * mult1 - cast(F) 3 * mult2;
-            return excessKurtosis + 3 * isRaw;
-        } else {
-            F varP = F(skewnessAccumulator.centeredSumOfSquares.sum) / count;
-            assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
-
-            F rawKurtosis = F(centeredSumOfQuarts.sum) / count / (varP * varP);
-            return rawKurtosis - 3 * !isRaw;
-        }
+        assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
+        assert(variance(true) > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
+    }
+    do
+    {
+        F var = variance!F(isPopulation);
+        F mult1 = cast(F) count * (count - isPopulation + 1) / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        F mult2 = cast(F) ((count + isPopulation - 1) * (count + isPopulation - 1)) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        return centeredSumOfQuarts!F / (var * var) * mult1 + 3 * (isRaw - mult2);
     }
 }
 
 /// online
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
     import mir.math.common: approxEqual, pow;
     import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -3291,28 +3323,28 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3.0));
+    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) - 3;
+    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0);
+    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
+    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0) * (11.0 * 13.0) / (10.0 * 9.0) - 3.0 * (11.0 * 11.0) / (10.0 * 9.0) + 3;
 
     v.put(4.0);
-    assert(v.kurtosis(PopulationTrueRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueCT, RawTrueCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0)));
-    assert(v.kurtosis(PopulationTrueRT, RawFalseRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationTrueCT, RawFalseCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3.0));
-    assert(v.kurtosis(PopulationFalseRT, RawFalseRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseCT, RawFalseCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0)));
-    assert(v.kurtosis(PopulationFalseRT, RawTrueRT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
-    assert(v.kurtosis(PopulationFalseCT, RawTrueCT).approxEqual((745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3.0));
+    v.kurtosis(PopulationTrueRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(PopulationTrueCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0);
+    v.kurtosis(PopulationTrueRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(PopulationTrueCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) - 3;
+    v.kurtosis(PopulationFalseRT, RawFalseRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(PopulationFalseCT, RawFalseCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0);
+    v.kurtosis(PopulationFalseRT, RawTrueRT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
+    v.kurtosis(PopulationFalseCT, RawTrueCT).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
 }
 
 // Can put slice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3324,16 +3356,16 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(46.944607));
-    assert(v.centeredSumOfSquares.sum.approxEqual(12.552083));
+    assert(v.centeredSumOfQuarts.approxEqual(46.944607));
+    assert(v.centeredSumOfSquares.approxEqual(12.552083));
 
     v.put(y);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(792.784119));
-    assert(v.centeredSumOfSquares.sum.approxEqual(54.765625));
+    assert(v.centeredSumOfQuarts.approxEqual(792.784119));
+    assert(v.centeredSumOfSquares.approxEqual(54.765625));
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3345,14 +3377,14 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(46.944607));
-    assert(v.centeredSumOfSquares.sum.approxEqual(12.552083));
+    assert(v.centeredSumOfQuarts.approxEqual(46.944607));
+    assert(v.centeredSumOfSquares.approxEqual(12.552083));
 
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) w;
     w.put(y);
     v.put(w);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(792.784119));
-    assert(v.centeredSumOfSquares.sum.approxEqual(54.765625));
+    assert(v.centeredSumOfQuarts.approxEqual(792.784119));
+    assert(v.centeredSumOfSquares.approxEqual(54.765625));
 }
 
 ///
@@ -3413,26 +3445,21 @@ const:
 
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
+        assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
+    }
+    do
+    {
+        F mult1 = cast(F) (count + isPopulation - 1) * (count - isPopulation + 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        F mult2 = cast(F) (count + isPopulation - 1) * (count + isPopulation - 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
 
-        if (isPopulation == false) {
-            assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
-
-            F mult1 = (cast(F) ((count - 1) * (count + 1))) / (cast(F) (count - 2) * (count - 3));
-            F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
-
-            F excessKurtosis = (cast(F) scaledSumOfQuarts / cast(F) count) * mult1 - 3 * mult2;
-            return excessKurtosis + 3 * isRaw;
-        } else {
-            return scaledSumOfQuarts / cast(F) count - 3 * !isRaw;
-        }
+        return cast(F) scaledSumOfQuarts / count * mult1 + 3 * (isRaw - mult2);
     }  
 }
 
 /// twoPass & threePass
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3473,7 +3500,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -3496,7 +3523,7 @@ unittest
 }
 
 // check dynamic slice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3576,36 +3603,30 @@ const:
     {
         return cast(F) 0;
     }
-
+    ///
+    F variance(F = T)(bool isPopulation) @property
+    {
+        return varianceAccumulator.variance!F(isPopulation);
+    }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
-        if (isFloatingPoint!F)
+    in
     {
-        assert(count > 0, "KurtosisAccumulator.kurtosis: count must be larger than zero");
+        assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
+        assert(variance(true) > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
+    }
+    do
+    {
+        F var = variance!F(isPopulation);
+        F mult1 = cast(F) count * (count - isPopulation + 1) / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
+        F mult2 = cast(F) (count + isPopulation - 1) * (count + isPopulation - 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
 
-        if (isPopulation == false) {
-            assert(count > 3, "KurtosisAccumulator.kurtosis: count must be larger than three");
-
-            F varS = varianceAccumulator.variance!F(false);
-            assert(varS > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
-
-            F mult1 = (cast(F) (count * (count + 1))) / (F(count - 1) * (count - 2) * (count - 3));
-            F mult2 = (cast(F) ((count - 1) * (count - 1))) / (cast(F) (count - 2) * (count - 3));
-
-            F excessKurtosis = F(centeredSumOfQuarts.sum) / (varS * varS) * mult1 - 3 * mult2;
-            return excessKurtosis + 3 * isRaw;
-        } else {
-            F varP = varianceAccumulator.variance!F(true);
-            assert(varP > 0, "KurtosisAccumulator.kurtosis: variance must be larger than zero");
-
-            F rawKurtosis = (cast(F) centeredSumOfQuarts.sum / cast(F) count) / (varP * varP);
-            return rawKurtosis - 3 * !isRaw;
-        }
+        return cast(F) centeredSumOfQuarts.sum / (var * var) * mult1 + 3 * (isRaw - mult2);
     }
 }
 
 /// assumeZeroMean
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3649,7 +3670,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3674,7 +3695,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3802,7 +3823,7 @@ template kurtosis(string kurtosisAlgo, string summation = "appropriate")
 }
 
 /// Simple example
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3822,7 +3843,7 @@ unittest
 }
 
 /// Kurtosis of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3836,7 +3857,7 @@ unittest
 }
 
 /// Kurtosis of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -3852,7 +3873,7 @@ unittest
 }
 
 /// Column kurtosis of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -3880,7 +3901,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3917,7 +3938,7 @@ unittest
 }
 
 // Alt version with x a hundred of above's value
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -3954,7 +3975,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4008,7 +4029,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4029,7 +4050,7 @@ unittest
 Kurtosis works for other user-defined types (provided they can be converted to a
 floating point)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4046,7 +4067,7 @@ unittest
 }
 
 /// Compute kurtosis along specified dimention of tensors
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -4076,7 +4097,7 @@ unittest
 }
 
 /// Arbitrary kurtosis
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -4087,7 +4108,7 @@ unittest
 }
 
 // Check kurtosis vector UFCS
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4097,7 +4118,7 @@ unittest
 }
 
 // Double-check correct output types
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4112,7 +4133,7 @@ unittest
 }
 
 // @nogc kurtosis test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure @nogc nothrow
 unittest
 {
@@ -4127,7 +4148,7 @@ unittest
 }
 
 // Test all using values
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4213,7 +4234,7 @@ struct EntropyAccumulator(T, Summation summation)
 }
 
 /// test basic functionality
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4228,7 +4249,7 @@ unittest
 }
 
 // test floats
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4243,7 +4264,7 @@ unittest
 }
 
 // test put EntropyAccumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4369,7 +4390,7 @@ template entropy(string summation)
 }
 
 ///
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4384,7 +4405,7 @@ unittest
 }
 
 /// Entropy of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4399,7 +4420,7 @@ unittest
 }
 
 /// Entropy of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -4414,7 +4435,7 @@ unittest
 }
 
 /// Column entropy of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -4444,7 +4465,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4466,7 +4487,7 @@ unittest
 For integral slices, pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4484,7 +4505,7 @@ unittest
 }
 
 /// Arbitrary entropy
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -4495,7 +4516,7 @@ unittest
 }
 
 // Dynamic array / UFCS
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4506,7 +4527,7 @@ unittest
 }
 
 // Check type of alongDim result
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4521,7 +4542,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure @nogc nothrow
 unittest
 {
@@ -4644,7 +4665,7 @@ template coefficientOfVariation(string varianceAlgo, string summation = "appropr
 }
 
 ///
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4660,7 +4681,7 @@ unittest
 }
 
 /// Coefficient of variation of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4674,7 +4695,7 @@ unittest
 }
 
 /// Coefficient of variation of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -4690,7 +4711,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4716,7 +4737,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 //@safe pure nothrow
 unittest
 {
@@ -4760,7 +4781,7 @@ unittest
 For integral slices, pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4781,7 +4802,7 @@ unittest
 coefficientOfVariation works for other user-defined types (provided they
 can be converted to a floating point)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4798,7 +4819,7 @@ unittest
 }
 
 /// Arbitrary coefficientOfVariation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -4809,7 +4830,7 @@ unittest
 }
 
 // Dynamic array / UFCS
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4820,7 +4841,7 @@ unittest
 }
 
 // Check type of alongDim result
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -4835,7 +4856,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure @nogc nothrow
 unittest
 {
@@ -5042,7 +5063,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
 }
 
 /// Raw moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5064,7 +5085,7 @@ unittest
 }
 
 // Raw Moment: test putting accumulator
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5089,7 +5110,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5109,7 +5130,7 @@ unittest
 }
 
 // Raw Moment: test std.complex
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5127,7 +5148,7 @@ unittest
 }
 
 /// Central moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5145,7 +5166,7 @@ unittest
 }
 
 // Central moment: dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5162,7 +5183,7 @@ unittest
 }
 
 // Central moment: withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5183,7 +5204,7 @@ unittest
 }
 
 // Central moment: Test N == 1
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5202,7 +5223,7 @@ unittest
 }
 
 /// Standardized moment with scaled calculation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5221,7 +5242,7 @@ unittest
 }
 
 // standardized moment: dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5238,7 +5259,7 @@ unittest
 }
 
 // standardized moment: withAsSlice test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5259,7 +5280,7 @@ unittest
 }
 
 // standardized moment: Test N == 2
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5278,7 +5299,7 @@ unittest
 }
 
 // standardized moment: Test N == 1
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5390,7 +5411,7 @@ template rawMoment(size_t N, string summation)
 }
 
 /// Basic implementation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5405,7 +5426,7 @@ unittest
 }
 
 /// Raw Moment of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5421,7 +5442,7 @@ unittest
 }
 
 /// Raw Moment of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -5439,7 +5460,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5474,7 +5495,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5492,7 +5513,7 @@ unittest
 rawMoment works for complex numbers and other user-defined types (that are either
 implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5505,7 +5526,7 @@ unittest
 }
 
 /// Arbitrary raw moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5516,7 +5537,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5526,7 +5547,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5645,7 +5666,7 @@ template centralMoment(size_t N, string summation)
 }
 
 /// Basic implementation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5660,7 +5681,7 @@ unittest
 }
 
 /// Central Moment of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5674,7 +5695,7 @@ unittest
 }
 
 /// Central Moment of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -5690,7 +5711,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5725,7 +5746,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5743,7 +5764,7 @@ unittest
 centralMoment works for complex numbers and other user-defined types (that are
 either implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5756,7 +5777,7 @@ unittest
 }
 
 /// Arbitrary central moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5767,7 +5788,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5777,7 +5798,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5791,7 +5812,7 @@ unittest
 }
 
 // test special casing
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5945,7 +5966,7 @@ template standardizedMoment(size_t N, string standardizedMomentAlgo, string vari
 }
 
 /// Basic implementation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5962,7 +5983,7 @@ unittest
 }
 
 /// Standardized Moment of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -5976,7 +5997,7 @@ unittest
 }
 
 /// Standardized Moment of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -5992,7 +6013,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -6020,7 +6041,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6057,7 +6078,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct. By default, they get converted to double.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6075,7 +6096,7 @@ unittest
 }
 
 /// Arbitrary standardized moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6087,7 +6108,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6097,7 +6118,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6111,7 +6132,7 @@ unittest
 }
 
 // test special casing
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6257,7 +6278,7 @@ template moment(size_t N, string momentAlgo, string summation = "appropriate")
 }
 
 /// Basic implementation
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6284,7 +6305,7 @@ unittest
 }
 
 /// Standardized Moment of vector
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6298,7 +6319,7 @@ unittest
 }
 
 /// Standardized Moment of matrix
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure
 unittest
 {
@@ -6317,7 +6338,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct. By default, they get converted to double.
 +/
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6335,7 +6356,7 @@ unittest
 }
 
 /// Arbitrary standardized moment
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6346,7 +6367,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
@@ -6356,7 +6377,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test)
+version(mir_stat_test_uni)
 @safe pure nothrow @nogc
 unittest
 {
