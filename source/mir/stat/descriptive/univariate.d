@@ -2005,7 +2005,7 @@ const:
     in
     {
         assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-        assert(varianceAccumulator.variance(true) > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
+        assert(variance(true) > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
     }
     do
     {
