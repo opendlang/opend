@@ -1625,11 +1625,10 @@ template dispersion(
         @fmamath auto dispersion(Iterator, size_t N, SliceKind kind)(
             Slice!(Iterator, N, kind) slice)
         {
-            import core.lifetime: move;
             import mir.ndslice.topology: map;
             import mir.math.stat: center;
 
-            return summarize(slice.move.center!centralTendency.map!transform);
+            return summarize(slice.center!centralTendency.map!transform);
         }
 
         /// ditto
@@ -2393,7 +2392,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
     {
-        import core.lifetime: move;
         import mir.ndslice.topology: vmap, map;
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
@@ -2402,7 +2400,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
         assert(variance(true) > 0, "SkewnessAccumulator.this: must divide by positive standard deviation");
 
-        scaledSummatorOfCubes.put(slice.move.
+        scaledSummatorOfCubes.put(slice.
             vmap(LeftOp!("-", T)(mean)).
             vmap(LeftOp!("*", T)(1 / variance(true).sqrt)).
             map!(naryFun!"a * a * a"));
@@ -3494,7 +3492,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
     {
-        import core.lifetime: move;
         import mir.ndslice.topology: vmap, map;
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
@@ -3510,7 +3507,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         assert(varianceAccumulator.variance(true) > 0, "KurtosisAccumulator.this: must divide by positive standard deviation");
 
         import mir.math.sum: sum;
-        scaledSumOfQuarts = sum!(T, summation)(slice.move.
+        scaledSumOfQuarts = sum!(T, summation)(slice.
             vmap(LeftOp!("-", T)(varianceAccumulator.mean)).
             vmap(LeftOp!("*", T)(1 / varianceAccumulator.variance(true).sqrt)).
             map!(naryFun!"(a * a) * (a * a)"));
@@ -4997,7 +4994,6 @@ struct MomentAccumulator(T, size_t N, Summation summation)
 
         static if (hasShape!Range)
         {
-            import core.lifetime: move;
             import mir.ndslice.internal: LeftOp;
             import mir.ndslice.topology: vmap, map;
             import mir.primitives: elementCount;
@@ -5005,17 +5001,14 @@ struct MomentAccumulator(T, size_t N, Summation summation)
             count += r.elementCount;
             static if (N == 1)
             {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m))
+                summator.put(r.vmap(LeftOp!("-", T)(m))
                     );
             } else static if (N == 2) {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).map!"a * a"
+                summator.put(r.vmap(LeftOp!("-", T)(m)).map!"a * a"
                     );
             } else {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).
-                        map!(a => a.powi(N))
+                summator.put(r.vmap(LeftOp!("-", T)(m)).
+                               map!(a => a.powi(N))
                     );
             }
         }
@@ -5037,7 +5030,6 @@ struct MomentAccumulator(T, size_t N, Summation summation)
 
         static if (hasShape!Range)
         {
-            import core.lifetime: move;
             import mir.ndslice.internal: LeftOp;
             import mir.ndslice.topology: vmap, map;
             import mir.primitives: elementCount;
@@ -5045,21 +5037,18 @@ struct MomentAccumulator(T, size_t N, Summation summation)
             count += r.elementCount;
             static if (N == 1)
             {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("*", T)(1 / s))
+                summator.put(r.vmap(LeftOp!("-", T)(m)).
+                               vmap(LeftOp!("*", T)(1 / s))
                     );
             } else static if (N == 2) {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("*", T)(1 / s)).
-                        map!"a * a"
+                summator.put(r.vmap(LeftOp!("-", T)(m)).
+                               vmap(LeftOp!("*", T)(1 / s)).
+                               map!"a * a"
                     );
             } else {
-                summator.put(r.move.
-                        vmap(LeftOp!("-", T)(m)).
-                        vmap(LeftOp!("*", T)(1 / s)).
-                        map!(a => a.powi(N))
+                summator.put(r.vmap(LeftOp!("-", T)(m)).
+                               vmap(LeftOp!("*", T)(1 / s)).
+                               map!(a => a.powi(N))
                     );
             }
 
@@ -5658,14 +5647,12 @@ template centralMoment(F, size_t N, Summation summation = Summation.appropriate)
     @fmamath meanType!F centralMoment(Range)(Range r)
         if (isIterable!Range)
     {
-        import core.lifetime: move;
-
         alias G = typeof(return);
         static if (N > 1) {
             MeanAccumulator!(G, ResolveSummationType!(summation, Range, G)) meanAccumulator;
             MomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G)) momentAccumulator;
             meanAccumulator.put(r.lightScope);
-            momentAccumulator.put(r.move, meanAccumulator.mean);
+            momentAccumulator.put(r, meanAccumulator.mean);
             return momentAccumulator.moment;
         } else {
             return cast(G) 0.0;
@@ -5935,8 +5922,6 @@ template standardizedMoment(F, size_t N,
     @fmamath stdevType!F standardizedMoment(Range)(Range r)
         if (isIterable!Range)
     {
-        import core.lifetime: move;
-        
         alias G = typeof(return);
         static if (N > 2) {
             auto varianceAccumulator = VarianceAccumulator!(G, varianceAlgo, ResolveSummationType!(summation, Range, G))(r.lightScope);
@@ -5944,12 +5929,12 @@ template standardizedMoment(F, size_t N,
             static if (standardizedMomentAlgo == StandardizedMomentAlgo.scaled) {
                 import mir.math.common: sqrt;
 
-                momentAccumulator.put(r.move, varianceAccumulator.mean, varianceAccumulator.variance(true).sqrt);
+                momentAccumulator.put(r, varianceAccumulator.mean, varianceAccumulator.variance(true).sqrt);
                 return momentAccumulator.moment;
             } else static if (standardizedMomentAlgo == StandardizedMomentAlgo.centered) {
                 import mir.math.common: pow;
 
-                momentAccumulator.put(r.move, varianceAccumulator.mean);
+                momentAccumulator.put(r, varianceAccumulator.mean);
                 return momentAccumulator.moment / pow(varianceAccumulator.variance(true), N / 2);
             }
         } else static if (N == 2) {
