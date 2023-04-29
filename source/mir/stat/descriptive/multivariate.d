@@ -618,14 +618,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
      }
      do
     {
-        import core.lifetime: move;
         import mir.ndslice.internal: LeftOp;
         import mir.ndslice.topology: map, vmap, zip;
 
         _count = x.length;
         summatorLeft.put(x.lightScope);
         summatorRight.put(y.lightScope);
-        centeredSummatorOfProducts.put(x.move.vmap(LeftOp!("-", T)(meanLeft)).zip(y.move.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
+        centeredSummatorOfProducts.put(x.vmap(LeftOp!("-", T)(meanLeft)).zip(y.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
     }
 
     ///
@@ -1177,14 +1176,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     }
     do
     {
-        import core.lifetime: move;
         import mir.ndslice.internal: LeftOp;
         import mir.ndslice.topology: map, vmap, zip;
 
         _count += x.length;
         summatorLeft.put(x.lightScope);
         summatorRight.put(y.lightScope);
-        centeredSummatorOfProducts.put(x.move.vmap(LeftOp!("-", T)(meanLeft)).zip(y.move.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
+        centeredSummatorOfProducts.put(x.vmap(LeftOp!("-", T)(meanLeft)).zip(y.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
     }
 
     ///
