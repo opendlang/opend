@@ -602,11 +602,11 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     ///
     alias S = Summator!(T, summation);
     ///
-    S summatorLeft;
+    private S summatorLeft;
     ///
-    S summatorRight;
+    private S summatorRight;
     ///
-    S centeredSummatorOfProducts;
+    private S centeredSummatorOfProducts;
 
     ///
     this(IteratorX, IteratorY, SliceKind kindX, SliceKind kindY)(
