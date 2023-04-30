@@ -3210,7 +3210,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
+    private SkewnessAccumulator!(T, cast(SkewnessAlgo) kurtosisAlgo, summation) skewnessAccumulator;
     ///
     private Summator!(T, summation) summatorOfQuarts;
 
@@ -3339,7 +3339,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
+    private SkewnessAccumulator!(T, cast(SkewnessAlgo) kurtosisAlgo, summation) skewnessAccumulator;
     ///
     private Summator!(T, summation) centeredSummatorOfQuarts;
 
