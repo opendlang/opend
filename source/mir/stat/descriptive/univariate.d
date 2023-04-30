@@ -1930,13 +1930,46 @@ unittest
 }
 
 /++
-Skew algorithms (currently an alias to $(LREF KurtosisAlgo)).
+Skewness algorithms.
 
 See_also:
     $(WEB en.wikipedia.org/wiki/Skewness, Skewness),
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
 +/
-alias SkewnessAlgo = KurtosisAlgo;
+enum SkewnessAlgo
+{
+    /++
+    Similar to Welford's algorithm for updating variance, but adjusted for skewness.
+    Can also `put` another SkewnessAccumulator of the same type, which
+    uses the parallel algorithm from Terriberry that extends the work of Chan et
+    al. 
+    +/
+    online,
+    /++
+    Calculates skewness using
+    (E(x^^3) - 3 * mu * sigma ^^ 2 + mu ^^ 3) / (sigma ^^ 3)
+
+    This algorithm can be numerically unstable.
+    +/
+    naive,
+
+    /++
+    Calculates skewness by first calculating the mean, then calculating
+    (E((x - E(x)) ^^ 3) / (E((x - E(x)) ^^ 2) ^^ 1.5)
+    +/
+    twoPass,
+
+    /++
+    Calculates skewness by first calculating the mean, then the standard deviation, then calculating
+    E(((x - E(x)) / (E((x - E(x)) ^^ 2) ^^ 0.5)) ^^ 3)
+    +/
+    threePass,
+
+    /++
+    Calculates skewness assuming the mean of the input is zero. 
+    +/
+    assumeZeroMean,
+}
 
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
@@ -3133,7 +3166,7 @@ See_also:
 enum KurtosisAlgo
 {
     /++
-    Similar to Welford's algorithm for updating variance, but adjusted for skewness and
+    Similar to Welford's algorithm for updating variance, but adjusted for
     kurtosis. Can also `put` another KurtosisAccumulator of the same type, which
     uses the parallel algorithm from Terriberry that extends the work of Chan et
     al. 
@@ -3144,30 +3177,24 @@ enum KurtosisAlgo
     (E(x^^4) - 4 * E(x) * E(x ^^ 3) + 6 * (E(x) ^^ 2) E(X ^^ 2) + 3 E(x) ^^ 4) / sigma ^ 2 
     (allowing for adjustments for population/sample kurtosis). 
 
-    Calculates skewness using
-    (E(x^^3) - 3 * mu * sigma ^^ 2 + mu ^^ 3) / (sigma ^^ 3) (alowing for
-    adjustments for population/sample skewness).
-    
     This algorithm can be numerically unstable.
     +/
     naive,
 
     /++
-    Calculates skewness and kurtosis using a two-pass algorithm whereby the input is first
-    centered by the mean and then it is squared (to get the variance) and then the
-    appropriate power and summed.
+    Calculates kurtosis by first calculating the mean, then calculating
+    (E((x - E(x)) ^^ 4) / (E((x - E(x)) ^^ 2) ^^ 2)
     +/
     twoPass,
 
     /++
-    Calculates skewness and kurtosis using a three-pass algorithm whereby the input is first
-    scaled by the mean and standard deviation (using $(MATHREF stat, VarianceAccumulator.twoPass))
-    taken to the relevant power and then summed.
+    Calculates kurtosis by first calculating the mean, then the standard deviation, then calculating
+    E(((x - E(x)) / (E((x - E(x)) ^^ 2) ^^ 0.5)) ^^ 4)
     +/
     threePass,
 
     /++
-    Calculates skewness and kurtosis assuming the mean of the input is zero. 
+    Calculates kurtosis assuming the mean of the input is zero. 
     +/
     assumeZeroMean,
 }
