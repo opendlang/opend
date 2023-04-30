@@ -3959,7 +3959,7 @@ void _mm256_stream_pd (double* mem_addr, __m256d a) pure @system
 {
     // PERF DMD
     // PERF GDC + SSE2
-    static if (LDC_with_InlineIREx)
+    static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -3994,7 +3994,7 @@ void _mm256_stream_ps (float* mem_addr, __m256 a) pure @system
 {
     // PERF DMD
     // PERF GDC + SSE2
-    static if (LDC_with_InlineIREx)
+    static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -4030,7 +4030,7 @@ void _mm256_stream_si256 (__m256i * mem_addr, __m256i a) pure @trusted
 {
     // PERF DMD
     // PERF GDC
-    static if (LDC_with_InlineIREx)
+    static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `

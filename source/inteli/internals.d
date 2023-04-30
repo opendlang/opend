@@ -143,8 +143,17 @@ version(LDC)
     else
     {
         alias LDCInlineIR = inlineIR;
-
         enum bool LDC_with_InlineIREx = false;
+    }
+
+    // This is used to disable LDC feature that are expensive at compile time: everything that relies on inline LLVM IR.
+    version(D_Optimized)
+    {
+        enum bool LDC_with_optimizations = true;
+    }
+    else
+    {
+        enum bool LDC_with_optimizations = false;
     }
 
     version(ARM)
@@ -258,6 +267,7 @@ else
     enum LDC_with_SHA = false;
     enum LDC_with_BMI2 = false;
     enum LDC_with_InlineIREx = false;
+    enum bool LDC_with_optimizations = false;
 }
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
@@ -1017,7 +1027,7 @@ private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
     }
 }
 
-version(LDC)
+static if (LDC_with_optimizations) // this save time for bigger projects, since LDCInlineIR gets more expensive there.
 {
     /// Provides packed float comparisons
     package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @safe

@@ -4640,7 +4640,7 @@ void _mm_stream_pd (double* mem_addr, __m128d a) pure @system
     {
         return __builtin_ia32_movntpd(mem_addr, a); 
     }
-    else static if (LDC_with_InlineIREx)
+    else static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -4674,7 +4674,7 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a) pure @trusted
     {
         return __builtin_ia32_movntdq (cast(long2*)mem_addr, cast(long2)a); 
     }
-    else static if (LDC_with_InlineIREx)
+    else static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -4708,7 +4708,7 @@ void _mm_stream_si32 (int* mem_addr, int a) pure @trusted
     {
         return __builtin_ia32_movnti(mem_addr, a);
     }
-    else static if (LDC_with_InlineIREx)
+    else static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
@@ -4740,7 +4740,7 @@ void _mm_stream_si64 (long* mem_addr, long a) pure @trusted
     {
         return __builtin_ia32_movnti64(mem_addr, a);
     }
-    else static if (LDC_with_InlineIREx)
+    else static if (LDC_with_InlineIREx && LDC_with_optimizations)
     {
         enum prefix = `!0 = !{ i32 1 }`;
         enum ir = `
