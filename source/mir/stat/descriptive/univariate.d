@@ -2723,6 +2723,9 @@ Params:
 
 Returns:
     The skewness of the input, must be floating point or complex type
+
+See_also:
+    $(LREF SkewnessAlgo)
 +/
 template skewness(F, 
                   SkewnessAlgo skewnessAlgo = SkewnessAlgo.online, 
@@ -3159,6 +3162,7 @@ unittest
 
 /++
 Kurtosis algorithms.
+
 See_also:
     $(WEB en.wikipedia.org/wiki/Kurtosis, Kurtosis),
     $(WEB en.wikipedia.org/wiki/Algorithms_for_calculating_variance, Algorithms for calculating variance)
@@ -3991,6 +3995,9 @@ Params:
 
 Returns:
     The kurtosis of the input, must be floating point
+
+See_also:
+    $(LREF KurtosisAlgo)
 +/
 template kurtosis(
     F, 
