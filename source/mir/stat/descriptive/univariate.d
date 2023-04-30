@@ -1946,6 +1946,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
+    private VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
+    ///
+    private Summator!(T, summation) summatorOfCubes;
+
+    ///
     this(Range)(Range r)
         if (isIterable!Range)
     {
@@ -1958,12 +1963,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     {
         this.put(x);
     }
-
-    ///
-    VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
-
-    ///
-    Summator!(T, summation) sumOfCubes;
 
     ///
     void put(Range)(Range r)
@@ -1979,7 +1978,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     void put()(T x)
     {
         varianceAccumulator.put(x);
-        sumOfCubes.put(x * x * x);
+        summatorOfCubes.put(x * x * x);
     }
 
 const:
@@ -1999,6 +1998,10 @@ const:
     {
         return varianceAccumulator.variance!F(isPopulation);
     }
+    F sumOfCubes(F = T)()
+    {
+        return cast(F) summatorOfCubes.sum;
+    }
     ///
     F skewness(F = T)(bool isPopulation)
     in
@@ -2011,7 +2014,7 @@ const:
         import mir.math.common: sqrt;
 
         F mu = mean!F;
-        F avg_centeredSumOfCubes = cast(F) sumOfCubes.sum / count - cast(F) 3 * mu * variance!F(true) - (mu * mu * mu);
+        F avg_centeredSumOfCubes = sumOfCubes!F / count - 3 * mu * variance!F(true) - (mu * mu * mu);
         F var = variance!F(isPopulation);
         return avg_centeredSumOfCubes / (var * var.sqrt) *
                 (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
@@ -2049,6 +2052,13 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfSquares;
+    ///
+    private Summator!(T, summation) centeredSummatorOfCubes;
+
+    ///
     this(Range)(Range r)
         if (isIterable!Range)
     {
@@ -2061,15 +2071,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     {
         this.put(x);
     }
-
-    ///
-    MeanAccumulator!(T, summation) meanAccumulator;
-
-    ///
-    Summator!(T, summation) centeredSumOfSquares;
-
-    ///
-    Summator!(T, summation) centeredSumOfCubes;
 
     ///
     void put(Range)(Range r)
@@ -2086,13 +2087,13 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     {
         T deltaOld = x;
         if (count > 0) {
-            deltaOld -= meanAccumulator.mean;
+            deltaOld -= mean;
         }
         meanAccumulator.put(x);
-        T deltaNew = x - meanAccumulator.mean;
-        centeredSumOfCubes.put((deltaOld ^^ 3) * (cast(T) (count - 1) * (count - 2)) / (cast(T) (count * count)) -
-                               3 * deltaOld * centeredSumOfSquares.sum / (cast(T) count));
-        centeredSumOfSquares.put(deltaOld * deltaNew);
+        T deltaNew = x - mean;
+        centeredSummatorOfCubes.put(deltaOld * deltaOld * deltaOld * (count - 1) * (count - 2) / (count * count) -
+                                    3 * deltaOld * centeredSumOfSquares / count);
+        centeredSummatorOfSquares.put(deltaOld * deltaNew);
     }
 
     ///
@@ -2101,13 +2102,13 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         size_t oldCount = count;
         T delta = v.mean;
         if (oldCount > 0) {
-            delta -= meanAccumulator.mean;
+            delta -= mean;
         }
         meanAccumulator.put!T(v.meanAccumulator);
-        centeredSumOfCubes.put(v.centeredSumOfCubes.sum + 
-                               delta * delta * delta * (cast(T) v.count * oldCount * (oldCount - v.count)) / (cast(T) (count * count)) +
-                               3 * delta * ((cast(T) oldCount) * v.centeredSumOfSquares.sum - (cast(T) v.count) * centeredSumOfSquares.sum) / (cast(T) count));
-        centeredSumOfSquares.put(v.centeredSumOfSquares.sum + delta * delta * (cast(T) v.count * oldCount) / (cast(T) count));
+        centeredSummatorOfCubes.put(v.centeredSumOfCubes + 
+                                    delta * delta * delta * v.count * oldCount * (oldCount - v.count) / (count * count) +
+                                    3 * delta * (oldCount * v.centeredSumOfSquares - v.count * centeredSumOfSquares) / count);
+        centeredSummatorOfSquares.put(v.centeredSumOfSquares + delta * delta * v.count * oldCount / count);
     }
 
 const:
@@ -2117,7 +2118,6 @@ const:
     {
         return meanAccumulator.count;
     }
-
     ///
     F mean(F = T)() @property
     {
@@ -2126,21 +2126,31 @@ const:
     ///
     F variance(F = T)(bool isPopulation) @property
     {
-        return cast(F) centeredSumOfSquares.sum / (count + isPopulation - 1);
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) centeredSummatorOfSquares.sum;
+    }
+    ///
+    F centeredSumOfCubes(F = T)()
+    {
+        return cast(F) centeredSummatorOfCubes.sum;
     }
     ///
     F skewness(F = T)(bool isPopulation)
     in
     {
         assert(count > 2, "SkewnessAccumulator.skewness: count must be larger than two");
-        assert(centeredSumOfSquares.sum > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
+        assert(centeredSumOfSquares > 0, "SkewnessAccumulator.skewness: variance must be larger than zero");
     }
     do
     {
         import mir.math.common: sqrt;
         
         F var = variance!F(isPopulation);
-        return cast(F) centeredSumOfCubes.sum / count / (var * var.sqrt) *
+        return centeredSumOfCubes!F / count / (var * var.sqrt) *
                 (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
@@ -2181,12 +2191,12 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfCubes.sum.approxEqual(4.071181));
-    assert(v.centeredSumOfSquares.sum.approxEqual(12.552083));
+    assert(v.centeredSumOfCubes.approxEqual(4.071181));
+    assert(v.centeredSumOfSquares.approxEqual(12.552083));
 
     v.put(y);
-    assert(v.centeredSumOfCubes.sum.approxEqual(117.005859));
-    assert(v.centeredSumOfSquares.sum.approxEqual(54.765625));
+    assert(v.centeredSumOfCubes.approxEqual(117.005859));
+    assert(v.centeredSumOfSquares.approxEqual(54.765625));
 }
 
 // Can put SkewnessAccumulator
@@ -2202,14 +2212,14 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfCubes.sum.approxEqual(4.071181));
-    assert(v.centeredSumOfSquares.sum.approxEqual(12.552083));
+    assert(v.centeredSumOfCubes.approxEqual(4.071181));
+    assert(v.centeredSumOfSquares.approxEqual(12.552083));
 
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) w;
     w.put(y);
     v.put(w);
-    assert(v.centeredSumOfCubes.sum.approxEqual(117.005859));
-    assert(v.centeredSumOfSquares.sum.approxEqual(54.765625));
+    assert(v.centeredSumOfCubes.approxEqual(117.005859));
+    assert(v.centeredSumOfSquares.approxEqual(54.765625));
 }
 
 ///
@@ -2508,8 +2518,12 @@ unittest
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.assumeZeroMean)
 {
-    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
     import std.traits: isIterable;
+
+    ///
+    private VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfCubes;
 
     ///
     this(Range)(Range r)
@@ -2525,12 +2539,6 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     }
 
     ///
-    VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
-
-    ///
-    Summator!(T, summation) centeredSumOfCubes;
-
-    ///
     void put(Range)(Range r)
         if (isIterable!Range)
     {
@@ -2544,14 +2552,14 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     void put()(T x)
     {
         varianceAccumulator.put(x);
-        centeredSumOfCubes.put(x * x * x);
+        centeredSummatorOfCubes.put(x * x * x);
     }
 
     ///
     void put()(SkewnessAccumulator!(T, skewnessAlgo, summation) v)
     {
         varianceAccumulator.put(v.varianceAccumulator);
-        centeredSumOfCubes.put(v.centeredSumOfCubes.sum);
+        centeredSummatorOfCubes.put(v.centeredSumOfCubes);
     }
 
 const:
@@ -2561,7 +2569,6 @@ const:
     {
         return varianceAccumulator.count;
     }
-
     ///
     F mean(F = T)() @property
     {
@@ -2571,6 +2578,10 @@ const:
     F variance(F = T)(bool isPopulation) @property
     {
         return varianceAccumulator.variance!F(isPopulation);
+    }
+    F centeredSumOfCubes(F = T)() @property
+    {
+        return cast() centeredSummatorOfCubes.sum;
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -2584,7 +2595,7 @@ const:
         import mir.math.common: sqrt;
 
         F var = variance!F(isPopulation);
-        return cast(F) centeredSumOfCubes.sum / count / (var * var.sqrt) *
+        return centeredSumOfCubes!F / count / (var * var.sqrt) *
             (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
@@ -2631,11 +2642,11 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfCubes.sum.approxEqual(-11.206543));
+    assert(v.centeredSumOfCubes.approxEqual(-11.206543));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(13.49219));
 
     v.put(y);
-    assert(v.centeredSumOfCubes.sum.approxEqual(117.005859));
+    assert(v.centeredSumOfCubes.approxEqual(117.005859));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(54.765625));
 }
 
@@ -2656,13 +2667,13 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfCubes.sum.approxEqual(-11.206543));
+    assert(v.centeredSumOfCubes.approxEqual(-11.206543));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(13.49219));
 
     SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) w;
     w.put(y);
     v.put(w);
-    assert(v.centeredSumOfCubes.sum.approxEqual(117.005859));
+    assert(v.centeredSumOfCubes.approxEqual(117.005859));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(54.765625));
 }
 
@@ -3168,6 +3179,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
+    private SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
+    ///
+    private Summator!(T, summation) summatorOfQuarts;
+
+    ///
     this(Range)(Range r)
         if (isIterable!Range)
     {
@@ -3180,12 +3196,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     {
         this.put(x);
     }
-
-    ///
-    SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
-
-    ///
-    Summator!(T, summation) sumOfQuarts;
 
     ///
     void put(Range)(Range r)
@@ -3203,7 +3213,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         skewnessAccumulator.put(x);
         auto x2 = x * x;
         auto x4 = x2 * x2;
-        sumOfQuarts.put(x4);
+        summatorOfQuarts.put(x4);
     }
 
 const:
@@ -3221,6 +3231,11 @@ const:
     F variance(F = T)(bool isPopulation)
     {
         return skewnessAccumulator.variance!F(isPopulation);
+    }
+    ///
+    F sumOfQuarts(F = T)()
+    {
+        return cast(F) summatorOfQuarts.sum;
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -3241,8 +3256,8 @@ const:
         auto  mu2 = mu * mu;
         auto  mu4 = mu2 * mu2;
         F varP = avg_sumOfSquares - mu2;
-        F avg_sumOfCubes = cast(F) skewnessAccumulator.sumOfCubes.sum / count;
-        F avg_sumOfQuarts = cast(F) sumOfQuarts.sum / count;
+        F avg_sumOfCubes = skewnessAccumulator.sumOfCubes!F / count;
+        F avg_sumOfQuarts = sumOfQuarts!F / count;
         F fourthCentralMoment = avg_sumOfQuarts - 
             4 * mu * avg_sumOfCubes + 
             6 * mu2 * avg_sumOfSquares - 
@@ -3293,6 +3308,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
+    private SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfQuarts;
+
+    ///
     this(Range)(Range r)
         if (isIterable!Range)
     {
@@ -3305,12 +3325,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     {
         this.put(x);
     }
-
-    ///
-    SkewnessAccumulator!(T, kurtosisAlgo, summation) skewnessAccumulator;
-
-    ///
-    Summator!(T, summation) centeredSummatorOfQuarts;
 
     ///
     void put(Range)(Range r)
@@ -3334,9 +3348,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         centeredSummatorOfQuarts.put((deltaOld * deltaOld * deltaOld * deltaOld) * (cast(T) ((count - 1) * (count * count - 3 * count + 3))) / (cast(T) (count * count * count)) +
                                 cast(T) 6 * deltaOld * deltaOld * centeredSumOfSquares!T / (cast(T) (count * count)) -
                                 cast(T) 4 * deltaOld * (centeredSumOfCubes!T / (cast(T) count)));
-        skewnessAccumulator.centeredSumOfCubes.put((deltaOld * deltaOld * deltaOld) * cast(T) (count - 1) * (count - 2) / (cast(T) (count * count)) -
+        skewnessAccumulator.centeredSummatorOfCubes.put((deltaOld * deltaOld * deltaOld) * cast(T) (count - 1) * (count - 2) / (cast(T) (count * count)) -
                                cast(T) 3 * deltaOld * centeredSumOfSquares!T / (cast(T) count));
-        skewnessAccumulator.centeredSumOfSquares.put(deltaOld * deltaNew);
+        skewnessAccumulator.centeredSummatorOfSquares.put(deltaOld * deltaNew);
     }
 
     ///
@@ -3352,10 +3366,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
                                delta * delta * delta * delta * (cast(T) ((v.count * oldCount) * (oldCount * oldCount - v.count * oldCount + v.count * v.count))) / (cast(T) (count * count * count)) +
                                cast(T) 6 * delta * delta * (cast(T) (oldCount * oldCount) * v.centeredSumOfSquares!T + cast(T) (v.count * v.count) * centeredSumOfSquares!T) / (cast(T) (count * count)) +
                                cast(T) 4 * delta * (cast(T) oldCount * v.centeredSumOfCubes!T - cast(T) v.count * centeredSumOfCubes!T) / (cast(T) count));
-        skewnessAccumulator.centeredSumOfCubes.put(v.centeredSumOfCubes!T + 
+        skewnessAccumulator.centeredSummatorOfCubes.put(v.centeredSumOfCubes!T + 
                                delta * delta * delta * cast(T) v.count * cast(T) oldCount * cast(T) (oldCount - v.count) / cast(T) (count * count) +
                                cast(T) 3 * delta * (cast(T) oldCount * v.centeredSumOfSquares!T - cast(T) v.count * centeredSumOfSquares!T) / cast(T) count);
-        skewnessAccumulator.centeredSumOfSquares.put(v.centeredSumOfSquares!T + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
+        skewnessAccumulator.centeredSummatorOfSquares.put(v.centeredSumOfSquares!T + delta * delta * cast(T) v.count * cast(T) oldCount / cast(T) count);
     }
 
 const:
@@ -3372,12 +3386,12 @@ const:
     ///
     F centeredSumOfCubes(F = T)()
     {
-        return cast(F) skewnessAccumulator.centeredSumOfCubes.sum;
+        return skewnessAccumulator.centeredSumOfCubes!F;
     }
     ///
     F centeredSumOfSquares(F = T)()
     {
-        return cast(F) skewnessAccumulator.centeredSumOfSquares.sum;
+        return skewnessAccumulator.centeredSumOfSquares!F;
     }
     ///
     F mean(F = T)()
@@ -3623,6 +3637,24 @@ unittest
     assert(v.scaledSumOfQuarts.approxEqual(38.062853));
 }
 
+// Test input range
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
+    import std.range: iota;
+    import std.algorithm: map;
+
+    auto x1 = iota(0, 5);
+    auto v1 = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x1);
+    v1.kurtosis(false, true).shouldApprox == 1.8;
+    auto x2 = x1.map!(a => 2 * a);
+    auto v2 = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x2);
+    v2.kurtosis(false, true).shouldApprox == 1.8;
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && 
@@ -3760,6 +3792,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
+    VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
+    ///
+    Summator!(T, summation) centeredSummatorOfQuarts;
+
+    ///
     this(Range)(Range r)
         if (isIterable!Range)
     {
@@ -3772,11 +3809,6 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         this.put(x);
     }
 
-    ///
-    VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
-
-    ///
-    Summator!(T, summation) centeredSumOfQuarts;
 
     ///
     void put(Range)(Range r)
@@ -3792,14 +3824,14 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     void put()(T x)
     {
         varianceAccumulator.put(x);
-        centeredSumOfQuarts.put(x * x * x * x);
+        centeredSummatorOfQuarts.put(x * x * x * x);
     }
 
     ///
     void put()(KurtosisAccumulator!(T, kurtosisAlgo, summation) v)
     {
         varianceAccumulator.put(v.varianceAccumulator);
-        centeredSumOfQuarts.put(v.centeredSumOfQuarts.sum);
+        centeredSummatorOfQuarts.put(v.centeredSummatorOfQuarts.sum);
     }
 
 const:
@@ -3809,7 +3841,6 @@ const:
     {
         return varianceAccumulator.count;
     }
-
     ///
     F mean(F = T)() @property
     {
@@ -3819,6 +3850,10 @@ const:
     F variance(F = T)(bool isPopulation) @property
     {
         return varianceAccumulator.variance!F(isPopulation);
+    }
+    F centeredSumOfQuarts(F = T)() @property
+    {
+        return cast(F) centeredSummatorOfQuarts.sum;
     }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
@@ -3833,7 +3868,7 @@ const:
         F mult1 = cast(F) count * (count - isPopulation + 1) / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
         F mult2 = cast(F) (count + isPopulation - 1) * (count + isPopulation - 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
 
-        return cast(F) centeredSumOfQuarts.sum / (var * var) * mult1 + 3 * (isRaw - mult2);
+        return centeredSumOfQuarts!F / (var * var) * mult1 + 3 * (isRaw - mult2);
     }
 }
 
@@ -3881,11 +3916,11 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(52.44613647));
+    assert(v.centeredSumOfQuarts.approxEqual(52.44613647));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(13.4921875));
 
     v.put(y);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(792.784119));
+    assert(v.centeredSumOfQuarts.approxEqual(792.784119));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(54.765625));
 }
 
@@ -3906,13 +3941,13 @@ unittest
 
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(52.44613647));
+    assert(v.centeredSumOfQuarts.approxEqual(52.44613647));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(13.4921875));
 
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) w;
     w.put(y);
     v.put(w);
-    assert(v.centeredSumOfQuarts.sum.approxEqual(792.784119));
+    assert(v.centeredSumOfQuarts.approxEqual(792.784119));
     assert(v.varianceAccumulator.centeredSumOfSquares.sum.approxEqual(54.765625));
 }
 
