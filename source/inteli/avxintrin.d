@@ -4661,7 +4661,9 @@ __m256d _mm256_unpackhi_pd (__m256d a, __m256d b) pure @trusted
 {
     version(LDC)
     {
-        return shufflevectorLDC!(double4, 1, 5, 3, 7)(a, b);
+        enum ir = `%r = shufflevector <4 x double> %0, <4 x double> %1, <4 x i32> <i32 1, i32 5, i32 3, i32 7>
+                   ret <4 x double> %r`;
+        return LDCInlineIR!(ir, double4, double4, double4)(a, b);
     }
     else static if (GDC_with_AVX)
     {
@@ -4693,7 +4695,9 @@ __m256 _mm256_unpackhi_ps (__m256 a, __m256 b) pure @trusted
 {
     version(LDC)
     {
-        return shufflevectorLDC!(float8, 2, 10, 3, 11, 6, 14, 7, 15)(a, b);
+        enum ir = `%r = shufflevector <8 x float> %0, <8 x float> %1, <8 x i32> <i32 2, i32 10, i32 3, i32 11, i32 6, i32 14, i32 7, i32 15>
+            ret <8 x float> %r`;
+        return LDCInlineIR!(ir, float8, float8, float8)(a, b);
     }
     else static if (GDC_with_AVX)
     {
@@ -4728,7 +4732,9 @@ __m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
 {
     version(LDC)
     {
-        return shufflevectorLDC!(double4, 0, 4, 2, 6)(a, b);
+        enum ir = `%r = shufflevector <4 x double> %0, <4 x double> %1, <4 x i32> <i32 0, i32 4, i32 2, i32 6>
+            ret <4 x double> %r`;
+        return LDCInlineIR!(ir, double4, double4, double4)(a, b);
     }
     else static if (GDC_with_AVX)
     {
@@ -4759,7 +4765,9 @@ __m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
 {
     version(LDC)
     {
-        return shufflevectorLDC!(float8, 0, 8, 1, 9, 4, 12, 5, 13)(a, b);
+        enum ir = `%r = shufflevector <8 x float> %0, <8 x float> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 4, i32 12, i32 5, i32 13>
+            ret <8 x float> %r`;
+        return LDCInlineIR!(ir, float8, float8, float8)(a, b);
     }
     else static if (GDC_with_AVX)
     {

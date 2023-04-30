@@ -5023,8 +5023,9 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        return cast(__m128i) shufflevectorLDC!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
-                                              (cast(short8)a, cast(short8)b);
+        enum ir = `%r = shufflevector <8 x i16> %0, <8 x i16> %1, <8 x i32> <i32 4, i32 12, i32 5, i32 13, i32 6, i32 14, i32 7, i32 15>
+                   ret <8 x i16> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
     else static if (DMD_with_32bit_asm)
     {
@@ -5213,7 +5214,9 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        return cast(__m128i) shufflevectorLDC!(short8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(short8)a, cast(short8)b);
+        enum ir = `%r = shufflevector <8 x i16> %0, <8 x i16> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 2, i32 10, i32 3, i32 11>
+            ret <8 x i16> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
     else static if (DMD_with_32bit_asm)
     {
