@@ -875,7 +875,9 @@ __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @trusted
 {   
     version(LDC)
     {
-        return cast(__m64) shufflevectorLDC!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
+        enum ir = `%r = shufflevector <4 x i16> %0, <4 x i16> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
+                   ret <4 x i16> %r`;
+        return cast(__m64) LDCInlineIR!(ir, short4, short4, short4)(cast(short4)a, cast(short4)b);
     }
     else
     {
@@ -924,7 +926,9 @@ __m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
 {
     version(LDC)
     {
-        return cast(__m64) shufflevectorLDC!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
+        enum ir = `%r = shufflevector <8 x i8> %0, <8 x i8> %1, <8 x i32> <i32 4, i32 12, i32 5, i32 13, i32 6, i32 14, i32 7, i32 15>
+                   ret <8 x i8> %r`;
+        return cast(__m64) LDCInlineIR!(ir, byte8, byte8, byte8)(cast(byte8)a, cast(byte8)b);
     }
     else
     {
@@ -999,7 +1003,9 @@ __m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
 {
     version(LDC)
     {
-        return cast(__m64) shufflevectorLDC!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
+        enum ir = `%r = shufflevector <8 x i8> %0, <8 x i8> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 2, i32 10, i32 3, i32 11>
+            ret <8 x i8> %r`;
+        return cast(__m64) LDCInlineIR!(ir, byte8, byte8, byte8)(cast(byte8)a, cast(byte8)b);
     }
     else
     {
