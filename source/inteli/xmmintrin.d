@@ -2960,7 +2960,9 @@ __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(__m128, 2, 6, 3, 7)(a, b);
+        enum ir = `%r = shufflevector <4 x float> %0, <4 x float> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
+                  ret <4 x float> %r`;
+        return LDCInlineIR!(ir, float4, float4, float4)(a, b);
     }
     else
     {
@@ -2991,7 +2993,9 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(__m128, 0, 4, 1, 5)(a, b);
+        enum ir = `%r = shufflevector <4 x float> %0, <4 x float> %1, <4 x i32> <i32 0, i32 4, i32 1, i32 5>
+                   ret <4 x float> %r`;
+        return LDCInlineIR!(ir, float4, float4, float4)(a, b);
     }
     else
     {

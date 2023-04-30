@@ -5072,7 +5072,9 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
+        enum ir = `%r = shufflevector <4 x i32> %0, <4 x i32> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
+                   ret <4 x i32> %r`;
+        return LDCInlineIR!(ir, int4, int4, int4)(cast(int4)a, cast(int4)b);
     }
     else
     {
@@ -5138,9 +5140,9 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        return cast(__m128i)shufflevectorLDC!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
-                                                      12, 28, 13, 29, 14, 30, 15, 31)
-            (cast(byte16)a, cast(byte16)b);
+        enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 8, i32 24, i32 9, i32 25, i32 10, i32 26, i32 11, i32 27, i32 12, i32 28, i32 13, i32 29, i32 14, i32 30, i32 15, i32 31>
+                   ret <16 x i8> %r`;
+        return cast(__m128i)LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
     }
     else
     {
@@ -5185,7 +5187,9 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @trusted
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(__m128d, 1, 3)(a, b);
+        enum ir = `%r = shufflevector <2 x double> %0, <2 x double> %1, <2 x i32> <i32 1, i32 3>
+                   ret <2 x double> %r`;
+        return LDCInlineIR!(ir, double2, double2, double2)(a, b);
     }
     else
     {
@@ -5264,7 +5268,9 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
     }
     else version(LDC)
     {
-        return shufflevectorLDC!(int4, 0, 4, 1, 5)(cast(int4)a, cast(int4)b);
+        enum ir = `%r = shufflevector <4 x i32> %0, <4 x i32> %1, <4 x i32> <i32 0, i32 4, i32 1, i32 5>
+            ret <4 x i32> %r`;
+        return LDCInlineIR!(ir, int4, int4, int4)(cast(int4)a, cast(int4)b);
     }
     else
     {
