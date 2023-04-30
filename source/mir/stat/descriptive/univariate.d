@@ -3143,15 +3143,15 @@ enum KurtosisAlgo
 
     /++
     Calculates skewness and kurtosis using a two-pass algorithm whereby the input is first
-    scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.online))
-    and then the sum of quarts is calculated from that. 
+    centered by the mean and then it is squared (to get the variance) and then the
+    appropriate power and summed.
     +/
     twoPass,
 
     /++
     Calculates skewness and kurtosis using a three-pass algorithm whereby the input is first
-    scaled by the mean and variance (using $(MATHREF stat, VarianceAccumulator.twoPass))
-    and then the sum of quarts is calculated from that. 
+    scaled by the mean and standard deviation (using $(MATHREF stat, VarianceAccumulator.twoPass))
+    taken to the relevant power and then summed.
     +/
     threePass,
 
