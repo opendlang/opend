@@ -205,7 +205,11 @@ unittest
 /// Compare packed 16-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_with_MMX)
+    static if (SIMD_COMPARISON_MASKS_8B)
+    {
+        return cast(__m64)(cast(short4)a > cast(short4)b);
+    }
+    else static if (GDC_with_MMX)
     { 
         return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
     }
@@ -226,7 +230,11 @@ unittest
 /// Compare packed 32-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_with_MMX)
+    static if (SIMD_COMPARISON_MASKS_8B)
+    {
+        return cast(__m64)(cast(int2)a > cast(int2)b);
+    }
+    else static if (GDC_with_MMX)
     {
         return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
     }
@@ -244,10 +252,14 @@ unittest
     assert(R.array == E);
 }
 
-/// Compare packed 8-bit integers in `a` and `b` for greater-than.
+/// Compare packed signed 8-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_with_MMX)
+    static if (SIMD_COMPARISON_MASKS_8B)
+    {
+        return cast(__m64)(cast(byte8)a > cast(byte8)b);
+    }
+    else static if (GDC_with_MMX)
     {
         return cast(__m64) __builtin_ia32_pcmpgtb (cast(ubyte8)a, cast(ubyte8)b);
     }

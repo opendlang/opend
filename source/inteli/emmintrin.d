@@ -645,7 +645,11 @@ __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 /// #BONUS
 __m128i _mm_cmpge_epi16 (__m128i a, __m128i b) pure @safe
 {
-    version (LDC)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128i)(cast(short8)a >= cast(short8)b);
+    }
+    else version (LDC)
     {
         // LDC ARM64: generates cmge since -O1
         return cast(__m128i) greaterOrEqualMask!short8(cast(short8)a, cast(short8)b);
@@ -697,7 +701,11 @@ __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 /// Compare packed 16-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128i)(cast(short8)a > cast(short8)b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pcmpgtw128(cast(short8)a, cast(short8)b);
     }
@@ -718,7 +726,11 @@ unittest
 /// Compare packed 32-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128i)(cast(int4)a > cast(int4)b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpgtd128(a, b); 
     }
@@ -739,20 +751,13 @@ unittest
 /// Compare packed 8-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
-    // Workaround of a GCC bug here.
-    // Of course the GCC builtin is buggy and generates a weird (and wrong) sequence
-    // with __builtin_ia32_pcmpgtb128.
-    // GCC's emmintrin.h uses comparison operators we don't have instead.
-    // PERF: this is a quite severe GDC performance problem.
-    // Could be workarounded with inline assembly, or another algorithm I guess.
-  
-  /*
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
     {
-        return cast(__m128i) __builtin_ia32_pcmpgtb128(cast(ubyte16)a, cast(ubyte16)b);
+        return cast(__m128i)(cast(byte16)a > cast(byte16)b);
     }
-    else */
+    else
     {
+        // Note: __builtin_ia32_pcmpgtb128 is buggy, do not use with GDC
         return cast(__m128i) greaterMask!byte16(cast(byte16)a, cast(byte16)b);
     }
 }
@@ -800,7 +805,11 @@ __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 /// #BONUS
 __m128i _mm_cmple_epi16 (__m128i a, __m128i b) pure @safe
 {
-    version (LDC)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128i)(cast(short8)a <= cast(short8)b);
+    }
+    else version (LDC)
     {
         // LDC ARM64: generates cmge since -O1
         return cast(__m128i) greaterOrEqualMask!short8(cast(short8)b, cast(short8)a);

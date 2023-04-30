@@ -129,8 +129,6 @@ version(LDC)
     else
         private enum bool some_x86 = false;
 
-    
-
     // Since LDC 1.13, using the new ldc.llvmasm.__ir variants instead of inlineIR
     static if (__VERSION__ >= 2083)
     {
@@ -343,6 +341,19 @@ enum GDC_or_LDC_with_AVX  = GDC_with_AVX  || LDC_with_AVX;
 enum GDC_or_LDC_with_AVX2 = GDC_with_AVX2 || LDC_with_AVX2;
 enum GDC_or_LDC_with_SHA  = GDC_with_SHA  || LDC_with_SHA;
 enum GDC_or_LDC_with_BMI2 = GDC_with_BMI2 || LDC_with_BMI2;
+
+static if (__VERSION__ >= 2102)
+{
+    enum SIMD_COMPARISON_MASKS_8B  = !MMXSizedVectorsAreEmulated; // can do < <= => > with builtin 8 bytes __vectors.
+    enum SIMD_COMPARISON_MASKS_16B = !SSESizedVectorsAreEmulated; // can do < <= => > with builtin 16 bytes __vectors.
+    enum SIMD_COMPARISON_MASKS_32B = !AVXSizedVectorsAreEmulated; // can do < <= => > with builtin 32 bytes __vectors.
+}
+else
+{
+    enum SIMD_COMPARISON_MASKS_8B = false;
+    enum SIMD_COMPARISON_MASKS_16B = false;
+    enum SIMD_COMPARISON_MASKS_32B = false;
+}
 
 
 static if (LDC_with_ARM32)
