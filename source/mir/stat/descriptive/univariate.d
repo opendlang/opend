@@ -2185,6 +2185,11 @@ const:
     }
     ///
     F variance(F = T)(bool isPopulation) @property
+    in
+    {
+        assert(count > 1, "SkewnessAccumulator.variance: count must be larger than one");
+    }
+    do
     {
         return centeredSumOfSquares!F / (count + isPopulation - 1);
     }
@@ -2349,6 +2354,11 @@ const:
     }
     ///
     F variance(F = T)(bool isPopulation)
+    in
+    {
+        assert(count > 1, "SkewnessAccumulator.variance: count must be larger than one");
+    }
+    do
     {
         return cast(F) centeredSummatorOfSquares.sum / (count + isPopulation - 1);
     }
@@ -3250,7 +3260,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private SkewnessAccumulator!(T, cast(SkewnessAlgo) kurtosisAlgo, summation) skewnessAccumulator;
+    private VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
+    ///
+    private Summator!(T, summation) summatorOfCubes;
     ///
     private Summator!(T, summation) summatorOfQuarts;
 
@@ -3281,14 +3293,16 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     void put()(T x)
     {
-        skewnessAccumulator.put(x);
+        varianceAccumulator.put(x);
+        summatorOfCubes.put(x * x * x);
         summatorOfQuarts.put(x * x * x * x);
     }
 /* TODO: Need to fix varianceAccumulator
     ///
     void put(U, Summation sumAlgo)(KurtosisAccumulator!(U, kurtosisAlgo, sumAlgo) v)
     {
-        skewnessAccumulator.put(v.skewnessAccumulator);
+        varianceAccumulator.put(v.varianceAccumulator);
+        summatorOfCubes.put(v.sumOfCubes!T);
         summatorOfQuarts.put(v.sumOfQuarts!T);
     }
 */
@@ -3297,17 +3311,22 @@ const:
     ///
     size_t count()
     {
-        return skewnessAccumulator.count;
+        return varianceAccumulator.count;
     }
     ///
     F mean(F = T)()
     {
-        return skewnessAccumulator.mean!F;
+        return varianceAccumulator.mean!F;
     }
     ///
     F variance(F = T)(bool isPopulation)
     {
-        return skewnessAccumulator.variance!F(isPopulation);
+        return varianceAccumulator.variance!F(isPopulation);
+    }
+    ///
+    F sumOfCubes(F = T)()
+    {
+        return cast(F) summatorOfCubes.sum;
     }
     ///
     F sumOfQuarts(F = T)()
@@ -3316,8 +3335,20 @@ const:
     }
     ///
     F skewness(F = T)(bool isPopulation)
+    in
     {
-        return skewnessAccumulator.skewness!F(isPopulation);
+        assert(count > 2, "KurtosisAccumulator.skewness: count must be larger than two");
+        assert(variance(true) > 0, "KurtosisAccumulator.skewness: variance must be larger than zero");
+    }
+    do
+    {
+        import mir.math.common: sqrt;
+
+        F mu = mean!F;
+        F avg_centeredSumOfCubes = sumOfCubes!F / count - 3 * mu * variance!F(true) - (mu * mu * mu);
+        F var = variance!F(isPopulation);
+        return avg_centeredSumOfCubes / (var * var.sqrt) *
+                (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
@@ -3329,11 +3360,11 @@ const:
     do
     {
         F mu = mean!F;
-        F avg_sumOfSquares = cast(F) skewnessAccumulator.varianceAccumulator.sumOfSquares.sum / count;
+        F avg_sumOfSquares = cast(F) varianceAccumulator.sumOfSquares.sum / count;
         auto  mu2 = mu * mu;
         auto  mu4 = mu2 * mu2;
         F varP = avg_sumOfSquares - mu2;
-        F avg_sumOfCubes = skewnessAccumulator.sumOfCubes!F / count;
+        F avg_sumOfCubes = sumOfCubes!F / count;
         F avg_sumOfQuarts = sumOfQuarts!F / count;
         F fourthCentralMoment = avg_sumOfQuarts - 
             4 * mu * avg_sumOfCubes + 
@@ -3407,7 +3438,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private SkewnessAccumulator!(T, cast(SkewnessAlgo) kurtosisAlgo, summation) skewnessAccumulator;
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfSquares;
+    ///
+    private Summator!(T, summation) centeredSummatorOfCubes;
     ///
     private Summator!(T, summation) centeredSummatorOfQuarts;
 
@@ -3442,14 +3477,14 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         if (count > 0) {
             deltaOld -= mean;
         }
-        skewnessAccumulator.meanAccumulator.put(x);
+        meanAccumulator.put(x);
         T deltaNew = x - mean;
         centeredSummatorOfQuarts.put(deltaOld * deltaOld * deltaOld * deltaOld * ((count - 1) * (count * count - 3 * count + 3)) / (count * count * count) +
                                 6 * deltaOld * deltaOld * centeredSumOfSquares!T / (count * count) -
                                 4 * deltaOld * centeredSumOfCubes!T / count);
-        skewnessAccumulator.centeredSummatorOfCubes.put(deltaOld * deltaOld * deltaOld * (count - 1) * (count - 2) / (count * count) -
+        centeredSummatorOfCubes.put(deltaOld * deltaOld * deltaOld * (count - 1) * (count - 2) / (count * count) -
                                3 * deltaOld * centeredSumOfSquares!T / count);
-        skewnessAccumulator.centeredSummatorOfSquares.put(deltaOld * deltaNew);
+        centeredSummatorOfSquares.put(deltaOld * deltaNew);
     }
 
     ///
@@ -3460,22 +3495,22 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         if (oldCount > 0) {
             delta -= mean;
         }
-        skewnessAccumulator.meanAccumulator.put!T(v.skewnessAccumulator.meanAccumulator);
+        meanAccumulator.put!T(v.meanAccumulator);
         centeredSummatorOfQuarts.put(v.centeredSumOfQuarts!T + 
                                delta * delta * delta * delta * ((v.count * oldCount) * (oldCount * oldCount - v.count * oldCount + v.count * v.count)) / (count * count * count) +
                                6 * delta * delta * ((oldCount * oldCount) * v.centeredSumOfSquares!T + (v.count * v.count) * centeredSumOfSquares!T) / (count * count) +
                                4 * delta * (oldCount * v.centeredSumOfCubes!T - v.count * centeredSumOfCubes!T) / count);
-        skewnessAccumulator.centeredSummatorOfCubes.put(v.centeredSumOfCubes!T + 
+        centeredSummatorOfCubes.put(v.centeredSumOfCubes!T + 
                                delta * delta * delta * v.count * oldCount * (oldCount - v.count) / (count * count) +
                                3 * delta * (oldCount * v.centeredSumOfSquares!T - v.count * centeredSumOfSquares!T) / count);
-        skewnessAccumulator.centeredSummatorOfSquares.put(v.centeredSumOfSquares!T + delta * delta * v.count * oldCount / count);
+        centeredSummatorOfSquares.put(v.centeredSumOfSquares!T + delta * delta * v.count * oldCount / count);
     }
 
 const:
     ///
     size_t count()
     {
-        return skewnessAccumulator.count;
+        return meanAccumulator.count;
     }
     ///
     F centeredSumOfQuarts(F = T)()
@@ -3485,27 +3520,42 @@ const:
     ///
     F centeredSumOfCubes(F = T)()
     {
-        return skewnessAccumulator.centeredSumOfCubes!F;
+        return cast(F) centeredSummatorOfCubes.sum;
     }
     ///
     F centeredSumOfSquares(F = T)()
     {
-        return skewnessAccumulator.centeredSumOfSquares!F;
+        return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
     F mean(F = T)()
     {
-        return skewnessAccumulator.mean!F;
+        return meanAccumulator.mean!F;
     }
     ///
     F variance(F = T)(bool isPopulation)
+    in
     {
-        return skewnessAccumulator.variance!F(isPopulation);
+        assert(count > 1, "KurtosisAccumulator.variance: count must be larger than one");
+    }
+    do
+    {
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
     }
     ///
     F skewness(F = T)(bool isPopulation)
+    in
     {
-        return skewnessAccumulator.skewness!F(isPopulation);
+        assert(count > 2, "KurtosisAccumulator.skewness: count must be larger than two");
+        assert(centeredSumOfSquares > 0, "KurtosisAccumulator.skewness: variance must be larger than zero");
+    }
+    do
+    {
+        import mir.math.common: sqrt;
+        
+        F var = variance!F(isPopulation);
+        return centeredSumOfCubes!F / count / (var * var.sqrt) *
+                (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
@@ -3660,6 +3710,11 @@ const:
     }
     ///
     F variance(F = T)(bool isPopulation)
+    in
+    {
+        assert(count > 1, "SkewnessAccumulator.variance: count must be larger than 1");
+    }
+    do
     {
         return cast(F) centeredSummatorOfSquares.sum / (count + isPopulation - 1);
     }
