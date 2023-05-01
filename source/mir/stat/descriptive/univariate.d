@@ -2196,7 +2196,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     }
 
     ///
-    void put(U, Summation sumAlgo)(SkewnessAccumulator!(U, skewnessAlgo, sumAlgo) v)
+    void put(U, SkewnessAlgo skewAlgo, Summation sumAlgo)(SkewnessAccumulator!(U, skewAlgo, sumAlgo) v)
     {
         size_t oldCount = count;
         T delta = v.mean;
@@ -2740,6 +2740,12 @@ const:
     F mean(F = T)() @property
     {
         return cast(F) 0;
+    }
+    ///
+    private MeanAccumulator!(F, summation) meanAccumulator(F = T)()
+    {
+        MeanAccumulator!(F, summation) m = { _count, Summator!(F, summation)(0) };
+        return m;
     }
     ///
     F variance(F = T)(bool isPopulation) @property
@@ -4201,6 +4207,12 @@ const:
     F mean(F = T)() @property
     {
         return cast(F) 0;
+    }
+    ///
+    private MeanAccumulator!(F, summation) meanAccumulator(F = T)()
+    {
+        MeanAccumulator!(F, summation) m = { _count, Summator!(F, summation)(0) };
+        return m;
     }
     ///
     F variance(F = T)(bool isPopulation) @property
