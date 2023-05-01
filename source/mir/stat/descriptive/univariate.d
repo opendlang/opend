@@ -1976,6 +1976,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.naive)
 {
     import mir.functional: naryFun;
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
@@ -2003,13 +2004,9 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
-        meanAccumulator.put(r);
-        T x2 = void;
         foreach(x; r)
         {
-            x2 = x * x;
-            summatorOfSquares.put(x2);
-            summatorOfCubes.put(x2 * x);
+            this.put(x);
         }
     }
 
@@ -2146,6 +2143,7 @@ unittest
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.online)
 {
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
@@ -2331,7 +2329,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
-    import std.traits: isIterable;
+    import std.range: isInputRange;
 
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
@@ -2364,16 +2362,14 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     this(Range)(Range range)
-        if (isIterable!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
     {
+        import std.algorithm: map;
         meanAccumulator.put(range);
-        
-        T delta = void;
-        foreach (e; range) {
-            delta = e - mean;
-            centeredSummatorOfSquares.put(delta * delta);
-            centeredSummatorOfCubes.put(delta * delta * delta);
-        }
+
+        auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a");
+        centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
+        centeredSummatorOfCubes.put(centeredRangeMultiplier.map!"a[1]");
     }
 
 const:
@@ -2501,8 +2497,9 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.threePass)
 {
     import mir.functional: naryFun;
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
+    import std.range: isInputRange;
 
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
@@ -2537,7 +2534,19 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         this(x.toSlice);
     }
 
-    // TODO: Get working with any input range (I believe requires enhancement to VarianceAccumulator)
+    ///
+    this(Range)(Range range)
+        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+    {
+        import mir.math.common: sqrt;
+        import std.algorithm: map;
+
+        meanAccumulator.put(range);
+        auto centeredRange = range.map!(a => (a - mean));
+        centeredSummatorOfSquares.put(centeredRange.map!"a * a");
+        auto scaledRange = centeredRange.map!(a => a / variance(true).sqrt);
+        scaledSummatorOfCubes.put(scaledRange.map!"a * a * a");
+    }
 
 const:
 
@@ -2638,10 +2647,29 @@ unittest
     assert(v.scaledSumOfCubes.approxEqual(12.000999));
 }
 
+// Test input range
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: Summation;
+    import mir.test: should;
+    import std.range: iota;
+    import std.algorithm: map;
+
+    auto x1 = iota(0, 5);
+    auto v1 = SkewnessAccumulator!(double, SkewnessAlgo.threePass, Summation.naive)(x1);
+    v1.skewness(true).should == 0;
+    auto x2 = x1.map!(a => 2 * a);
+    auto v2 = SkewnessAccumulator!(double, SkewnessAlgo.threePass, Summation.naive)(x2);
+    v2.skewness(true).should == 0;
+}
+
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.assumeZeroMean)
 {
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
@@ -3327,6 +3355,7 @@ unittest
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.naive)
 {
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
@@ -3356,14 +3385,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
-        meanAccumulator.put(r);
-        T x2 = void;
         foreach(x; r)
         {
-            x2 = x * x;
-            summatorOfSquares.put(x2);
-            summatorOfCubes.put(x2 * x);
-            summatorOfQuarts.put(x2 * x2);
+            this.put(x);
         }
     }
 
@@ -3452,14 +3476,13 @@ const:
         F mu = mean!F;
         F avg_sumOfSquares = sumOfSquares!F / count;
         auto  mu2 = mu * mu;
-        auto  mu4 = mu2 * mu2;
         F varP = avg_sumOfSquares - mu2;
         F avg_sumOfCubes = sumOfCubes!F / count;
         F avg_sumOfQuarts = sumOfQuarts!F / count;
         F fourthCentralMoment = avg_sumOfQuarts - 
             4 * mu * avg_sumOfCubes + 
             6 * mu2 * avg_sumOfSquares - 
-            3 * mu4;
+            3 * mu2 * mu2;
         F kurt = fourthCentralMoment / (varP * varP);
         F mult1 = cast(F) (count + isPopulation - 1) * (count - isPopulation + 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
         F mult2 = cast(F) (count + isPopulation - 1) * (count + isPopulation - 1) / ((count + 2 * isPopulation - 2) * (count + 3 * isPopulation - 3));
@@ -3542,6 +3565,7 @@ unittest
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.online)
 {
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
@@ -3757,7 +3781,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
-    import std.traits: isIterable;
+    import std.range: isInputRange;
 
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
@@ -3790,16 +3814,14 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
 
     ///
     this(Range)(Range range)
-        if (isIterable!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
     {
+        import std.algorithm: map;
         meanAccumulator.put(range);
-        
-        T delta = void;
-        foreach (e; range) {
-            delta = e - mean;
-            centeredSummatorOfSquares.put(delta * delta);
-            centeredSummatorOfQuarts.put(delta * delta * delta * delta);
-        }
+
+        auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a * a");
+        centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
+        centeredSummatorOfQuarts.put(centeredRangeMultiplier.map!"a[1]");
     }
 
 const:
@@ -3925,7 +3947,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.threePass)
 {
     import mir.functional: naryFun;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
+    import std.range: isInputRange;
 
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
@@ -3960,7 +3984,19 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         this(x.toSlice);
     }
 
-    // TODO: Get working with any input range (I believe requires enhancement to VarianceAccumulator)
+    ///
+    this(Range)(Range range)
+        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+    {
+        import mir.math.common: sqrt;
+        import std.algorithm: map;
+
+        meanAccumulator.put(range);
+        auto centeredRange = range.map!(a => (a - mean));
+        centeredSummatorOfSquares.put(centeredRange.map!"a * a");
+        auto scaledRange = centeredRange.map!(a => a / variance(true).sqrt);
+        scaledSummatorOfQuarts.put(scaledRange.map!"a * a * a * a");
+    }
 
 const:
 
@@ -4062,10 +4098,29 @@ unittest
     assert(v.scaledSumOfQuarts.approxEqual(38.062853));
 }
 
+// Test input range
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
+    import std.range: iota;
+    import std.algorithm: map;
+
+    auto x1 = iota(0, 5);
+    auto v1 = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x1);
+    v1.kurtosis(false, true).shouldApprox == 1.8;
+    auto x2 = x1.map!(a => 2 * a);
+    auto v2 = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x2);
+    v2.kurtosis(false, true).shouldApprox == 1.8;
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.assumeZeroMean)
 {
+    import mir.math.sum: Summator;
     import std.traits: isIterable;
 
     ///
