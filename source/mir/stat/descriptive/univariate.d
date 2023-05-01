@@ -2157,7 +2157,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     }
 
     ///
-    void put()(SkewnessAccumulator!(T, skewnessAlgo, summation) v)
+    void put(U, Summation sumAlgo)(SkewnessAccumulator!(U, skewnessAlgo, sumAlgo) v)
     {
         size_t oldCount = count;
         T delta = v.mean;
@@ -2165,10 +2165,10 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
             delta -= mean;
         }
         meanAccumulator.put!T(v.meanAccumulator);
-        centeredSummatorOfCubes.put(v.centeredSumOfCubes + 
+        centeredSummatorOfCubes.put(v.centeredSumOfCubes!T + 
                                     delta * delta * delta * v.count * oldCount * (oldCount - v.count) / (count * count) +
-                                    3 * delta * (oldCount * v.centeredSumOfSquares - v.count * centeredSumOfSquares) / count);
-        centeredSummatorOfSquares.put(v.centeredSumOfSquares + delta * delta * v.count * oldCount / count);
+                                    3 * delta * (oldCount * v.centeredSumOfSquares!T - v.count * centeredSumOfSquares!T) / count);
+        centeredSummatorOfSquares.put(v.centeredSumOfSquares!T + delta * delta * v.count * oldCount / count);
     }
 
 const:
@@ -3453,7 +3453,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
     ///
-    void put()(KurtosisAccumulator!(T, kurtosisAlgo, summation) v)
+    void put(U, Summation sumAlgo)(KurtosisAccumulator!(U, kurtosisAlgo, sumAlgo) v)
     {
         size_t oldCount = count;
         T delta = v.mean;
