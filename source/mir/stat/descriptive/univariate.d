@@ -2396,7 +2396,12 @@ const:
     }
     do
     {
-        return cast(F) centeredSummatorOfSquares.sum / (count + isPopulation - 1);
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
     F scaledSumOfCubes(F = T)()
@@ -2500,7 +2505,9 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     ///
-    private VarianceAccumulator!(T, VarianceAlgo.twoPass, summation) varianceAccumulator;
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfSquares;
     ///
     private Summator!(T, summation) scaledSummatorOfCubes;
 
@@ -2511,7 +2518,8 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
 
-        varianceAccumulator = typeof(varianceAccumulator)(slice.lightScope);
+        meanAccumulator.put(slice.lightScope);
+        centeredSummatorOfSquares.put(slice.vmap(LeftOp!("-", T)(mean)).map!(naryFun!"a * a"));
 
         assert(variance(true) > 0, "SkewnessAccumulator.this: must divide by positive standard deviation");
 
@@ -2536,16 +2544,27 @@ const:
     ///
     size_t count()()
     {
-        return varianceAccumulator.count;
+        return meanAccumulator.count;
     }
     ///
     F mean(F = T)()
     {
-        return varianceAccumulator.mean!F;
+        return meanAccumulator.mean!F;
     }
+    ///
     F variance(F = T)(bool isPopulation)
+    in
     {
-        return varianceAccumulator.variance!F(isPopulation);
+        assert(count > 1, "SkewnessAccumulator.variance: count must be larger than one");
+    }
+    do
+    {
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
     F scaledSumOfCubes(F = T)()
@@ -3803,7 +3822,12 @@ const:
     }
     do
     {
-        return cast(F) centeredSummatorOfSquares.sum / (count + isPopulation - 1);
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
     F scaledSumOfQuarts(F = T)()
@@ -3904,7 +3928,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 
     ///
-    private VarianceAccumulator!(T, VarianceAlgo.twoPass, summation) varianceAccumulator;
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) centeredSummatorOfSquares;
     ///
     private Summator!(T, summation) scaledSummatorOfQuarts;
 
@@ -3915,7 +3941,8 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
 
-        varianceAccumulator = typeof(varianceAccumulator)(slice.lightScope);
+        meanAccumulator.put(slice.lightScope);
+        centeredSummatorOfSquares.put(slice.vmap(LeftOp!("-", T)(mean)).map!(naryFun!"a * a"));
 
         assert(variance(true) > 0, "KurtosisAccumulator.this: must divide by positive standard deviation");
 
@@ -3940,16 +3967,27 @@ const:
     ///
     size_t count()()
     {
-        return varianceAccumulator.count;
+        return meanAccumulator.count;
     }
     ///
     F mean(F = T)()
     {
-        return varianceAccumulator.mean!F;
+        return meanAccumulator.mean!F;
     }
+    ///
     F variance(F = T)(bool isPopulation)
+    in
     {
-        return varianceAccumulator.variance!F(isPopulation);
+        assert(count > 1, "SkewnessAccumulator.variance: count must be larger than 1");
+    }
+    do
+    {
+        return centeredSumOfSquares!F / (count + isPopulation - 1);
+    }
+    ///
+    F centeredSumOfSquares(F = T)()
+    {
+        return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
     F scaledSumOfQuarts(F = T)()
