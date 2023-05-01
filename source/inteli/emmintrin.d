@@ -562,7 +562,11 @@ unittest
 /// Compare packed 16-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_8B)
+    {
+        return cast(__m128i)(cast(short8)a == cast(short8)b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pcmpeqw128(cast(short8)a, cast(short8)b);
     }
