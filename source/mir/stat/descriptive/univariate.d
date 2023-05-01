@@ -1979,7 +1979,9 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) summatorOfSquares;
     ///
     private Summator!(T, summation) summatorOfCubes;
 
@@ -2001,46 +2003,64 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
+        meanAccumulator.put(r);
+        T x2 = void;
         foreach(x; r)
         {
-            this.put(x);
+            x2 = x * x;
+            summatorOfSquares.put(x2);
+            summatorOfCubes.put(x2 * x);
         }
     }
 
     ///
     void put()(T x)
     {
-        varianceAccumulator.put(x);
-        summatorOfCubes.put(x * x * x);
+        meanAccumulator.put(x);
+        T x2 = x * x;
+        summatorOfSquares.put(x2);
+        summatorOfCubes.put(x2 * x);
     }
-/* TODO: Need to fix varianceAccumulator
-    ///
+
     void put(U, Summation sumAlgo)(SkewnessAccumulator!(U, skewnessAlgo, sumAlgo) v)
     {
-        varianceAccumulator.put(v.varianceAccumulator);
+        meanAccumulator.put(v.meanAccumulator);
+        summatorOfSquares.put(v.sumOfSquares!T);
         summatorOfCubes.put(v.sumOfCubes!T);
     }
-*/
+
 const:
 
     ///
     size_t count() @property
     {
-        return varianceAccumulator.count;
+        return meanAccumulator.count;
     }
     ///
     F mean(F = T)() @property
     {
-        return varianceAccumulator.mean!F;
+        return meanAccumulator.mean!F;
     }
     ///
     F variance(F = T)(bool isPopulation) @property
+    in
     {
-        return varianceAccumulator.variance!F(isPopulation);
+        assert(count > 1, "SkewnessAccumulator.varaince: count must be larger than one");
     }
+    do
+    {
+        return sumOfSquares!F / (count + isPopulation - 1) - 
+            mean!F * mean!F * count / (count + isPopulation - 1);
+    }
+    ///
     F sumOfCubes(F = T)()
     {
         return cast(F) summatorOfCubes.sum;
+    }
+    ///
+    F sumOfSquares(F = T)()
+    {
+        return cast(F) summatorOfSquares.sum;
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -2083,7 +2103,7 @@ unittest
     v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
     v.skewness(false).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
 }
-/* TODO: Need to fix
+
 // Can put SkewnessAccumulator
 version(mir_stat_test_uni)
 @safe pure nothrow
@@ -2103,11 +2123,28 @@ unittest
     v.put(w);
     v.skewness(true).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
 }
-*/
+
+// Test input range
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: Summation;
+    import mir.test: should;
+    import std.range: iota;
+    import std.algorithm: map;
+
+    auto x1 = iota(0, 5);
+    auto v1 = SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive)(x1);
+    v1.skewness(true).should == 0;
+    auto x2 = x1.map!(a => 2 * a);
+    auto v2 = SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive)(x2);
+    v2.skewness(true).should == 0;
+}
+
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
-    if (isMutable!T && 
-        skewnessAlgo == SkewnessAlgo.online)
+    if (isMutable!T && skewnessAlgo == SkewnessAlgo.online)
 {
     import std.traits: isIterable;
 
@@ -2289,8 +2326,7 @@ unittest
 
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
-    if (isMutable!T && 
-        skewnessAlgo == SkewnessAlgo.twoPass)
+    if (isMutable!T && skewnessAlgo == SkewnessAlgo.twoPass)
 {
     import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
@@ -2457,8 +2493,7 @@ unittest
 
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
-    if (isMutable!T && 
-        skewnessAlgo == SkewnessAlgo.threePass)
+    if (isMutable!T && skewnessAlgo == SkewnessAlgo.threePass)
 {
     import mir.functional: naryFun;
     import mir.math.sum: Summator;
@@ -3276,7 +3311,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    private VarianceAccumulator!(T, VarianceAlgo.naive, summation) varianceAccumulator;
+    private MeanAccumulator!(T, summation) meanAccumulator;
+    ///
+    private Summator!(T, summation) summatorOfSquares;
     ///
     private Summator!(T, summation) summatorOfCubes;
     ///
@@ -3300,45 +3337,62 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
+        meanAccumulator.put(r);
+        T x2 = void;
         foreach(x; r)
         {
-            this.put(x);
+            x2 = x * x;
+            summatorOfSquares.put(x2);
+            summatorOfCubes.put(x2 * x);
+            summatorOfQuarts.put(x2 * x2);
         }
     }
 
     ///
     void put()(T x)
     {
-        varianceAccumulator.put(x);
-        T x3 = x * x * x;
-        summatorOfCubes.put(x3);
-        summatorOfQuarts.put(x3 * x);
+        meanAccumulator.put(x);
+        T x2 = x * x;
+        summatorOfSquares.put(x2);
+        summatorOfCubes.put(x2 * x);
+        summatorOfQuarts.put(x2 * x2);
     }
-/* TODO: Need to fix varianceAccumulator
+
     ///
     void put(U, Summation sumAlgo)(KurtosisAccumulator!(U, kurtosisAlgo, sumAlgo) v)
     {
-        varianceAccumulator.put(v.varianceAccumulator);
+        meanAccumulator.put(v.meanAccumulator);
+        summatorOfSquares.put(v.sumOfSquares!T);
         summatorOfCubes.put(v.sumOfCubes!T);
         summatorOfQuarts.put(v.sumOfQuarts!T);
     }
-*/
 
 const:
     ///
     size_t count()
     {
-        return varianceAccumulator.count;
+        return meanAccumulator.count;
     }
     ///
     F mean(F = T)()
     {
-        return varianceAccumulator.mean!F;
+        return meanAccumulator.mean!F;
     }
     ///
-    F variance(F = T)(bool isPopulation)
+    F variance(F = T)(bool isPopulation) @property
+    in
     {
-        return varianceAccumulator.variance!F(isPopulation);
+        assert(count > 1, "SkewnessAccumulator.varaince: count must be larger than one");
+    }
+    do
+    {
+        return sumOfSquares!F / (count + isPopulation - 1) - 
+            mean!F * mean!F * count / (count + isPopulation - 1);
+    }
+    ///
+    F sumOfSquares(F = T)()
+    {
+        return cast(F) summatorOfSquares.sum;
     }
     ///
     F sumOfCubes(F = T)()
@@ -3377,7 +3431,7 @@ const:
     do
     {
         F mu = mean!F;
-        F avg_sumOfSquares = cast(F) varianceAccumulator.sumOfSquares.sum / count;
+        F avg_sumOfSquares = sumOfSquares!F / count;
         auto  mu2 = mu * mu;
         auto  mu4 = mu2 * mu2;
         F varP = avg_sumOfSquares - mu2;
@@ -3425,7 +3479,6 @@ unittest
     v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
 }
 
-/* TODO: Need to fix
 // Can put KurtosisAccumulator
 version(mir_stat_test_uni)
 @safe pure nothrow
@@ -3445,12 +3498,30 @@ unittest
     v.put(w);
     v.kurtosis(true, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
 }
-*/
+
+// Test input range
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
+    import std.range: iota;
+    import std.algorithm: map;
+
+    auto x1 = iota(0, 5);
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v1;
+    v1.put(x1);
+    v1.kurtosis(false, true).shouldApprox == 1.8;
+    auto x2 = x1.map!(a => 2 * a);
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v2;
+    v2.put(x2);
+    v2.kurtosis(false, true).shouldApprox == 1.8;
+}
 
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
-    if (isMutable!T && 
-        kurtosisAlgo == KurtosisAlgo.online)
+    if (isMutable!T && kurtosisAlgo == KurtosisAlgo.online)
 {
     import std.traits: isIterable;
 
@@ -3662,8 +3733,7 @@ unittest
 
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
-    if (isMutable!T && 
-        kurtosisAlgo == KurtosisAlgo.twoPass)
+    if (isMutable!T && kurtosisAlgo == KurtosisAlgo.twoPass)
 {
     import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
@@ -3828,8 +3898,7 @@ unittest
 
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
-    if (isMutable!T && 
-        kurtosisAlgo == KurtosisAlgo.threePass)
+    if (isMutable!T && kurtosisAlgo == KurtosisAlgo.threePass)
 {
     import mir.functional: naryFun;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
