@@ -438,7 +438,7 @@ __m128i _mm_cvtepi16_epi32 (__m128i a) @trusted
     {
         return cast(__m128i)__builtin_ia32_pmovsxwd128(cast(short8)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: Generates pmovsxwd since LDC 1.1 -O0, also good in arm64
         enum ir = `
@@ -474,7 +474,7 @@ __m128i _mm_cvtepi16_epi64 (__m128i a) @trusted
     {
         return cast(__m128i)__builtin_ia32_pmovsxwq128(cast(short8)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: Generates pmovsxwq since LDC 1.1 -O0, also good in arm64
         enum ir = `
@@ -508,7 +508,7 @@ __m128i _mm_cvtepi32_epi64 (__m128i a) @trusted
     {
         return cast(__m128i)__builtin_ia32_pmovsxdq128(cast(int4)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: Generates pmovsxdq since LDC 1.1 -O0, also good in arm64
         enum ir = `
@@ -544,7 +544,7 @@ __m128i _mm_cvtepi8_epi16 (__m128i a) pure @trusted
         alias ubyte16 = __vector(ubyte[16]);
         return cast(__m128i)__builtin_ia32_pmovsxbw128(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: pmovsxbw generated since LDC 1.1.0 -O0 
         // LDC ARM64: sshll generated since LDC 1.8.0 -O1
@@ -581,7 +581,7 @@ __m128i _mm_cvtepi8_epi32 (__m128i a) @trusted
         alias ubyte16 = __vector(ubyte[16]);
         return cast(__m128i)__builtin_ia32_pmovsxbd128(cast(ubyte16)a);
     }
-    else static if (LDC_with_SSE41)
+    else static if (LDC_with_SSE41 && LDC_with_optimizations)
     {
         // LDC x86: Generates pmovsxbd since LDC 1.1 -O0
         enum ir = `
@@ -620,7 +620,7 @@ __m128i _mm_cvtepi8_epi64 (__m128i a) @trusted
         alias ubyte16 = __vector(ubyte[16]);
         return cast(__m128i)__builtin_ia32_pmovsxbq128(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: Generates pmovsxbq since LDC 1.1 -O0, 
         // LDC arm64: it's ok since LDC 1.8 -O1
@@ -750,7 +750,7 @@ __m128i _mm_cvtepu8_epi16 (__m128i a) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pmovzxbw128(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <16 x i8> %0,<16 x i8> %0, <8 x i32> <i32 0, i32 1,i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>
@@ -1580,7 +1580,7 @@ __m128i _mm_mul_epi32 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pmuldq128(cast(int4)a, cast(int4)b);
     }
-    else static if (LDC_with_SSE41)
+    else static if (LDC_with_SSE41 && LDC_with_optimizations)
     {
         // For some reason, clang has the builtin but it's not in IntrinsicsX86.td
         // Use IR instead.

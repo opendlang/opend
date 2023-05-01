@@ -367,7 +367,7 @@ __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
         // Exists since LDC 1.18
         return cast(__m128i) __builtin_ia32_pavgw128(cast(short8)a, cast(short8)b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // Generates pavgw even in LDC 1.0, even in -O0
         // But not in ARM
@@ -422,7 +422,7 @@ __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) vrhadd_u8(cast(byte16)a, cast(byte16)b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // Generates pavgb even in LDC 1.0, even in -O0
         // But not in ARM
@@ -1224,7 +1224,7 @@ unittest
 /// floating-point elements.
 __m128d _mm_cvtepi32_pd (__m128i a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         // Generates cvtdq2pd since LDC 1.0, even without optimizations
         enum ir = `
@@ -1264,7 +1264,7 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
     {
         return __builtin_ia32_cvtdq2ps(a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // See #86 for why we had to resort to LLVM IR.
         // Plain code below was leading to catastrophic behaviour. 
@@ -1318,7 +1318,7 @@ __m128i _mm_cvtpd_epi32 (__m128d a) @trusted
             case _MM_ROUND_TOWARD_ZERO_ARM: i = vcvtzq_s64_f64(a); break;
         }
         int4 zero = 0;
-        return cast(__m128i) shufflevectorLDC!(int4, 0, 2, 4, 6)(cast(int4)i, zero);
+        return cast(__m128i) shufflevectorLDC!(int4, 0, 2, 4, 6)(cast(int4)i, zero); // PERF: this slow down build for nothing, test without shufflevector
     }
     else
     {
@@ -1456,7 +1456,7 @@ unittest
 /// in `a` to packed double-precision (64-bit) floating-point elements.
 __m128d _mm_cvtps_pd (__m128 a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         // Generates cvtps2pd since LDC 1.0 -O0
         enum ir = `
@@ -2008,7 +2008,7 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @trusted
     {
         return __builtin_ia32_loadupd(mem_addr); 
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return loadUnaligned!(double2)(mem_addr);
     }
@@ -2059,7 +2059,7 @@ __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_loaddqu(cast(const(char*))mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return loadUnaligned!(__m128i)(cast(int*)mem_addr);
     }
@@ -4531,7 +4531,7 @@ void _mm_storeu_pd (double* mem_addr, __m128d a) pure @trusted // TODO: signatur
     {
         __builtin_ia32_storeupd(mem_addr, a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!double2(a, mem_addr);
     }
@@ -4560,7 +4560,7 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @trusted // TODO: sign
     {
         __builtin_ia32_storedqu(cast(char*)mem_addr, cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!__m128i(a, cast(int*)mem_addr);
     }
@@ -5040,7 +5040,7 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_punpckhwd128(cast(short8) a, cast(short8) b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x i16> %0, <8 x i16> %1, <8 x i32> <i32 4, i32 12, i32 5, i32 13, i32 6, i32 14, i32 7, i32 15>
                    ret <8 x i16> %r`;
@@ -5089,7 +5089,7 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
     {
         return __builtin_ia32_punpckhdq128(a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x i32> %0, <4 x i32> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
                    ret <4 x i32> %r`;
@@ -5204,7 +5204,7 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @trusted
     {
         return __builtin_ia32_unpckhpd(a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <2 x double> %0, <2 x double> %1, <2 x i32> <i32 1, i32 3>
                    ret <2 x double> %r`;
@@ -5235,7 +5235,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_punpcklwd128(cast(short8) a, cast(short8) b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x i16> %0, <8 x i16> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 2, i32 10, i32 3, i32 11>
             ret <8 x i16> %r`;
@@ -5285,7 +5285,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
     {
         return __builtin_ia32_punpckldq128(a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x i32> %0, <4 x i32> %1, <4 x i32> <i32 0, i32 4, i32 1, i32 5>
             ret <4 x i32> %r`;
@@ -5402,7 +5402,7 @@ __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @trusted
     {
         return __builtin_ia32_unpcklpd(a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <2 x double> %0, <2 x double> %1, <2 x i32> <i32 0, i32 2>
                    ret <2 x double> %r`;

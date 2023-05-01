@@ -3811,7 +3811,7 @@ void _mm256_storeu_pd (double * mem_addr, __m256d a) pure @system
     {
         __builtin_ia32_storeupd256(mem_addr, a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!__m256d(a, mem_addr);
     }
@@ -3838,7 +3838,7 @@ void _mm256_storeu_ps (float* mem_addr, __m256 a) pure @system
     {
         __builtin_ia32_storeups256(mem_addr, a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!__m256(a, mem_addr);
     }
@@ -3866,7 +3866,7 @@ void _mm256_storeu_si256 (__m256i* mem_addr, __m256i a) pure @trusted
     {
         __builtin_ia32_storedqu256(cast(char*)mem_addr, cast(ubyte32) a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!__m256i(a, cast(long*)mem_addr);
     }
@@ -4659,7 +4659,7 @@ __m256i _mm256_undefined_si256 () pure @safe
 /// each 128-bit lane in `a` and `b`.
 __m256d _mm256_unpackhi_pd (__m256d a, __m256d b) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x double> %0, <4 x double> %1, <4 x i32> <i32 1, i32 5, i32 3, i32 7>
                    ret <4 x double> %r`;
@@ -4693,7 +4693,7 @@ unittest
 /// each 128-bit lane in `a` and `b`.
 __m256 _mm256_unpackhi_ps (__m256 a, __m256 b) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x float> %0, <8 x float> %1, <8 x i32> <i32 2, i32 10, i32 3, i32 11, i32 6, i32 14, i32 7, i32 15>
             ret <8 x float> %r`;
@@ -4730,7 +4730,7 @@ unittest
 /// each 128-bit lane in `a` and `b`.
 __m256d _mm256_unpacklo_pd (__m256d a, __m256d b)
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x double> %0, <4 x double> %1, <4 x i32> <i32 0, i32 4, i32 2, i32 6>
             ret <4 x double> %r`;
@@ -4763,7 +4763,7 @@ unittest
 /// each 128-bit lane in `a` and `b`.
 __m256 _mm256_unpacklo_ps (__m256 a, __m256 b)
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x float> %0, <8 x float> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 4, i32 12, i32 5, i32 13>
             ret <8 x float> %r`;

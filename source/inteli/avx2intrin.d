@@ -825,7 +825,7 @@ __m256i _mm256_cvtepi16_epi32 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovsxwd256(cast(short8)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = sext <8 x i16> %0 to <8 x i32>
@@ -863,7 +863,7 @@ __m256i _mm256_cvtepi16_epi64 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovsxwq256(cast(short8)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <8 x i16> %0,<8 x i16> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
@@ -916,7 +916,7 @@ __m256i _mm256_cvtepi8_epi16 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovsxbw256(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = sext <16 x i8> %0 to <16 x i16>
@@ -949,7 +949,7 @@ __m256i _mm256_cvtepi8_epi32 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovsxbd256(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <16 x i8> %0,<16 x i8> undef, <8 x i32> <i32 0, i32 1,i32 2, i32 3, i32 4, i32 5,i32 6, i32 7>
@@ -991,7 +991,7 @@ __m256i _mm256_cvtepi8_epi64 (__m128i a) pure @trusted
         // 4 inst since LDC 1.22 -O2 
         return _mm256_cvtepi16_epi64(_mm_cvtepi8_epi16(a));
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <16 x i8> %0,<16 x i8> undef, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
@@ -1055,7 +1055,7 @@ __m256i _mm256_cvtepu16_epi64(__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovzxwq256(cast(short8)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <8 x i16> %0,<8 x i16> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
@@ -1089,7 +1089,7 @@ __m256i _mm256_cvtepu32_epi64 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovzxdq256(cast(int4)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = zext <4 x i32> %0 to <4 x i64>
@@ -1121,7 +1121,7 @@ __m256i _mm256_cvtepu8_epi16 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovzxbw256(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = zext <16 x i8> %0 to <16 x i16>
@@ -1154,7 +1154,7 @@ __m256i _mm256_cvtepu8_epi32 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovzxbd256(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <16 x i8> %0,<16 x i8> %0, <8 x i32> <i32 0, i32 1,i32 2, i32 3, i32 4, i32 5,i32 6, i32 7>
@@ -1189,7 +1189,7 @@ __m256i _mm256_cvtepu8_epi64 (__m128i a) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmovzxbq256(cast(ubyte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `
             %v = shufflevector <16 x i8> %0,<16 x i8> %0, <4 x i32> <i32 0, i32 1,i32 2, i32 3>
@@ -1253,7 +1253,7 @@ __m128i _mm256_extracti128_si256(int imm8)(__m256i a) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_extract128i256(a, imm8);
     }
-    else version (LDC)
+    else static if (LDC_with_optimizations)
     {
         enum str = (imm8 == 1) ? "<i32 2, i32 3>" : "<i32 0, i32 1>";
         enum ir = "%r = shufflevector <4 x i64> %0, <4 x i64> undef, <2 x i32>" ~ str ~ "\n" ~
@@ -1384,7 +1384,7 @@ __m256i _mm256_mul_epi32 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pmuldq256(cast(int8)a, cast(int8)b);
     }
-    else static if (LDC_with_SSE41 || LDC_with_AVX2) 
+    else static if ( (LDC_with_SSE41 || LDC_with_AVX2) && LDC_with_optimizations) 
     {
         // good with LDC + SSE4.1 to AVX2, else need to split
         enum ir = `
