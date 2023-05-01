@@ -394,8 +394,24 @@ unittest
 /// Compare packed 64-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b) @trusted
 {
-    // PERF DMD
-    static if (GDC_with_SSE41)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        version(DigitalMars)
+        {
+            // DMD doesn't recognize long2 == long2
+            long2 la = cast(long2)a;
+            long2 lb = cast(long2)b;
+            long2 res;
+            res.ptr[0] = (la.array[0] == lb.array[0]) ? -1 : 0;
+            res.ptr[1] = (la.array[1] == lb.array[1]) ? -1 : 0;
+            return cast(__m128i)res;
+        }
+        else
+        {
+            return cast(__m128i)(cast(long2)a == cast(long2)b);
+        }
+    }
+    else static if (GDC_with_SSE41)
     {
         return cast(__m128i)__builtin_ia32_pcmpeqq(cast(long2)a, cast(long2)b);
     }
