@@ -3203,6 +3203,19 @@ enum KurtosisAlgo
     assumeZeroMean,
 }
 
+// Make sure skew algos and kurtosis algos match up
+version(mir_stat_test_uni)
+@safe pure nothrow @nogc
+unittest
+{
+    import std.conv: to;
+    static assert(SkewnessAlgo.online.to!int == KurtosisAlgo.online.to!int);
+    static assert(SkewnessAlgo.naive.to!int == KurtosisAlgo.naive.to!int);
+    static assert(SkewnessAlgo.twoPass.to!int == KurtosisAlgo.twoPass.to!int);
+    static assert(SkewnessAlgo.threePass.to!int == KurtosisAlgo.threePass.to!int);
+    static assert(SkewnessAlgo.assumeZeroMean.to!int == KurtosisAlgo.assumeZeroMean.to!int);
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.naive)
