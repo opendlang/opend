@@ -1982,9 +1982,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) summatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) summatorOfCubes;
+    private S summatorOfSquares;
+    ///
+    private S summatorOfCubes;
 
     ///
     this(Range)(Range r)
@@ -2149,9 +2151,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfCubes;
+    private S centeredSummatorOfSquares;
+    ///
+    private S centeredSummatorOfCubes;
 
     ///
     this(Range)(Range r)
@@ -2334,9 +2338,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfCubes;
+    private S centeredSummatorOfSquares;
+    ///
+    private S centeredSummatorOfCubes;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -2504,9 +2510,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) scaledSummatorOfCubes;
+    private S centeredSummatorOfSquares;
+    ///
+    private S scaledSummatorOfCubes;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -2675,9 +2683,11 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     private size_t _count;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfCubes;
+    private S centeredSummatorOfSquares;
+    ///
+    private S centeredSummatorOfCubes;
 
     ///
     this(Range)(Range r)
@@ -3361,11 +3371,13 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) summatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) summatorOfCubes;
+    private S summatorOfSquares;
     ///
-    private Summator!(T, summation) summatorOfQuarts;
+    private S summatorOfCubes;
+    ///
+    private S summatorOfQuarts;
 
     ///
     this(Range)(Range r)
@@ -3571,11 +3583,13 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfCubes;
+    private S centeredSummatorOfSquares;
     ///
-    private Summator!(T, summation) centeredSummatorOfQuarts;
+    private S centeredSummatorOfCubes;
+    ///
+    private S centeredSummatorOfQuarts;
 
     ///
     this(Range)(Range r)
@@ -3786,9 +3800,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfQuarts;
+    private S centeredSummatorOfSquares;
+    ///
+    private S centeredSummatorOfQuarts;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -3954,9 +3970,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     private MeanAccumulator!(T, summation) meanAccumulator;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) scaledSummatorOfQuarts;
+    private S centeredSummatorOfSquares;
+    ///
+    private S scaledSummatorOfQuarts;
 
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
@@ -4126,9 +4144,11 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     private size_t _count;
     ///
-    private Summator!(T, summation) centeredSummatorOfSquares;
+    alias S = Summator!(T, summation);
     ///
-    private Summator!(T, summation) centeredSummatorOfQuarts;
+    private S centeredSummatorOfSquares;
+    ///
+    private S centeredSummatorOfQuarts;
 
     ///
     this(Range)(Range r)
