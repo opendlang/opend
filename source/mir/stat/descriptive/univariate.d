@@ -2013,7 +2013,14 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
         varianceAccumulator.put(x);
         summatorOfCubes.put(x * x * x);
     }
-
+/* TODO: Need to fix varianceAccumulator
+    ///
+    void put(U, Summation sumAlgo)(SkewnessAccumulator!(U, skewnessAlgo, sumAlgo) v)
+    {
+        varianceAccumulator.put(v.varianceAccumulator);
+        summatorOfCubes.put(v.sumOfCubes!T);
+    }
+*/
 const:
 
     ///
@@ -2076,7 +2083,27 @@ unittest
     v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
     v.skewness(false).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
 }
+/* TODO: Need to fix
+// Can put SkewnessAccumulator
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: pow;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
 
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25].sliced;
+    auto y = [2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v;
+    v.put(x);
+    SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) w;
+    w.put(y);
+    v.put(w);
+    v.skewness(true).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+}
+*/
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && 
@@ -2589,10 +2616,10 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     }
 
     ///
-    void put()(SkewnessAccumulator!(T, skewnessAlgo, summation) v)
+    void put(U, Summation sumAlgo)(SkewnessAccumulator!(U, skewnessAlgo, sumAlgo) v)
     {
         varianceAccumulator.put(v.varianceAccumulator);
-        centeredSummatorOfCubes.put(v.centeredSumOfCubes);
+        centeredSummatorOfCubes.put(v.centeredSumOfCubes!T);
     }
 
 const:
@@ -3255,10 +3282,16 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     void put()(T x)
     {
         skewnessAccumulator.put(x);
-        auto x2 = x * x;
-        auto x4 = x2 * x2;
-        summatorOfQuarts.put(x4);
+        summatorOfQuarts.put(x * x * x * x);
     }
+/* TODO: Need to fix varianceAccumulator
+    ///
+    void put(U, Summation sumAlgo)(KurtosisAccumulator!(U, kurtosisAlgo, sumAlgo) v)
+    {
+        skewnessAccumulator.put(v.skewnessAccumulator);
+        summatorOfQuarts.put(v.sumOfQuarts!T);
+    }
+*/
 
 const:
     ///
@@ -3343,6 +3376,28 @@ unittest
 
     v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
 }
+
+/* TODO: Need to fix
+// Can put KurtosisAccumulator
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: pow;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25].sliced;
+    auto y = [2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
+    v.put(x);
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) w;
+    w.put(y);
+    v.put(w);
+    v.kurtosis(true, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
+}
+*/
 
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
@@ -3836,9 +3891,9 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     import std.traits: isIterable;
 
     ///
-    VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
+    private VarianceAccumulator!(T, VarianceAlgo.assumeZeroMean, summation) varianceAccumulator;
     ///
-    Summator!(T, summation) centeredSummatorOfQuarts;
+    private Summator!(T, summation) centeredSummatorOfQuarts;
 
     ///
     this(Range)(Range r)
@@ -3872,10 +3927,10 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
     ///
-    void put()(KurtosisAccumulator!(T, kurtosisAlgo, summation) v)
+    void put(U, Summation sumAlgo)(KurtosisAccumulator!(U, kurtosisAlgo, sumAlgo) v)
     {
         varianceAccumulator.put(v.varianceAccumulator);
-        centeredSummatorOfQuarts.put(v.centeredSummatorOfQuarts.sum);
+        centeredSummatorOfQuarts.put(v.centeredSumOfQuarts!T);
     }
 
 const:
