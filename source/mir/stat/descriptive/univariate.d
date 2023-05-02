@@ -2262,6 +2262,12 @@ const:
         return cast(F) centeredSummatorOfCubes.sum;
     }
     ///
+    F scaledSumOfCubes(F = T)(bool isPopulation)
+    {
+        import mir.math.common: sqrt;
+        return centeredSumOfCubes!F / (variance!F(isPopulation) * variance!F(isPopulation).sqrt);
+    }
+    ///
     F skewness(F = T)(bool isPopulation)
     in
     {
@@ -2270,10 +2276,8 @@ const:
     }
     do
     {
-        import mir.math.common: sqrt;
-        
-        F var = variance!F(isPopulation);
-        return centeredSumOfCubes!F / count / (var * var.sqrt) *
+        // TODO: double-check this is right
+        return scaledSumOfCubes!F(isPopulation) / count *
                 (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
@@ -2425,10 +2429,15 @@ const:
         return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
-    F scaledSumOfCubes(F = T)()
+    F centeredSumOfCubes(F = T)()
+    {
+        return cast(F) centeredSummatorOfCubes.sum;
+    }
+    ///
+    F scaledSumOfCubes(F = T)(bool isPopulation)
     {
         import mir.math.common: sqrt;
-        return cast(F) centeredSummatorOfCubes.sum / (variance!F(true) * variance!F(true).sqrt);
+        return centeredSumOfCubes!F / (variance!F(isPopulation) * variance!F(isPopulation).sqrt);
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -2439,10 +2448,8 @@ const:
     }
     do
     {
-        import mir.math.common: sqrt;
-        
-        F var = variance!F(isPopulation);
-        return cast(F) centeredSummatorOfCubes.sum / count / (var * var.sqrt) *
+        // TODO: double-check this is right
+        return scaledSumOfCubes!F(isPopulation) / count *
                 (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
     }
 }
@@ -2469,9 +2476,9 @@ version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.math.sum: Summation;
     import mir.rc.array: RCArray;
+    import mir.test: shouldApprox;
 
     static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
                           2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -2481,7 +2488,7 @@ unittest
         e = a[i];
 
     auto v = SkewnessAccumulator!(double, SkewnessAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfCubes.approxEqual(12.000999));
+    v.scaledSumOfCubes(true).shouldApprox == 12.000999;
 }
 
 // check dynamic array
@@ -2489,14 +2496,14 @@ version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
-    import mir.math.common: approxEqual;
     import mir.math.sum: Summation;
+    import mir.test: shouldApprox;
 
     double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
                   2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     auto v = SkewnessAccumulator!(double, SkewnessAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfCubes.approxEqual(12.000999));
+    v.scaledSumOfCubes(true).shouldApprox == 12.000999;
 }
 
 // Test input range
@@ -2601,6 +2608,12 @@ const:
     F centeredSumOfSquares(F = T)()
     {
         return cast(F) centeredSummatorOfSquares.sum;
+    }
+    ///
+    F centeredSumOfCubes(F = T)()
+    {
+        import mir.math.common: sqrt;
+        return scaledSumOfCubes!F * variance!F(true) * variance!F(true).sqrt;
     }
     ///
     F scaledSumOfCubes(F = T)()
@@ -3695,6 +3708,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     }
 
 const:
+
     ///
     size_t count()
     {
@@ -3911,9 +3925,14 @@ const:
         return cast(F) centeredSummatorOfSquares.sum;
     }
     ///
+    F centeredSumOfQuarts(F = T)()
+    {
+        return cast(F) centeredSummatorOfQuarts.sum;
+    }
+    ///
     F scaledSumOfQuarts(F = T)()
     {
-        return cast(F) centeredSummatorOfQuarts.sum / (variance!F(true) * variance!F(true));
+        return centeredSumOfQuarts!F / (variance!F(true) * variance!F(true));
     }
     ///
     F kurtosis(F = T)(bool isPopulation, bool isRaw)
@@ -4085,6 +4104,11 @@ const:
     F centeredSumOfSquares(F = T)()
     {
         return cast(F) centeredSummatorOfSquares.sum;
+    }
+    ///
+    F centeredSumOfSquares(F = T)(bool isPopulation)
+    {
+        return scaledSumOfQuarts * variance!F(isPopulation) * variance!F(isPopulation);
     }
     ///
     F scaledSumOfQuarts(F = T)()
