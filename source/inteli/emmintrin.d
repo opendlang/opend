@@ -2182,6 +2182,8 @@ __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @trusted
     }
     else static if (LDC_with_ARM64)
     {
+        // PERF: Well, this is tragically bad, it is only fast on LDC 1.29
+        // after that (or before that) it breaks down
         int4 pl = vmull_s16(vget_low_s16(cast(short8)a), vget_low_s16(cast(short8)b));
         int4 ph = vmull_s16(vget_high_s16(cast(short8)a), vget_high_s16(cast(short8)b));
         int2 rl = vpadd_s32(vget_low_s32(pl), vget_high_s32(pl));
