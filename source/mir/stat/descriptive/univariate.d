@@ -2103,6 +2103,25 @@ unittest
     v.skewness(false).shouldApprox == (100.238166 / 13) / pow(57.019231 / 12, 1.5) * (13.0 ^^ 2) / (12.0 * 11.0);
 }
 
+// check two-dimensional
+version(mir_stat_test_uni)
+@safe pure
+unittest
+{
+    import mir.math.common: pow;
+    import mir.math.sum: Summation;
+    import mir.ndslice.fuse: fuse;
+    import mir.test: shouldApprox;
+
+    auto x = [[0.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+              [2.0, 7.5, 5.0, 1.0, 1.5, 0.00]].fuse;
+
+    SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v;
+    v.put(x);
+    v.skewness(true).shouldApprox == (117.005859 / 12) / pow(54.765625 / 12, 1.5);
+    v.skewness(false).shouldApprox == (117.005859 / 12) / pow(54.765625 / 11, 1.5) * (12.0 ^^ 2) / (11.0 * 10.0);
+}
+
 // Can put SkewnessAccumulator
 version(mir_stat_test_uni)
 @safe pure nothrow
@@ -3537,6 +3556,24 @@ unittest
     v.kurtosis(false, true).shouldApprox == (745.608180 / 13) / pow(57.019231 / 13, 2.0) * (12.0 * 14.0) / (11.0 * 10.0) - 3.0 * (12.0 * 12.0) / (11.0 * 10.0) + 3;
 
     v.skewness(true).shouldApprox == (100.238166 / 13) / pow(57.019231 / 13, 1.5);
+}
+
+// check two-dimensional
+version(mir_stat_test_uni)
+@safe pure
+unittest
+{
+    import mir.math.common: pow;
+    import mir.math.sum: Summation;
+    import mir.ndslice.fuse: fuse;
+    import mir.test: shouldApprox;
+
+    auto x = [[0.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+              [2.0, 7.5, 5.0, 1.0, 1.5, 0.00]].fuse;
+
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
+    v.put(x);
+    v.kurtosis(true, true).shouldApprox == (792.784119 / 12) / pow(54.765625 / 12, 2.0);
 }
 
 // Can put KurtosisAccumulator
