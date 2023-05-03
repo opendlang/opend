@@ -406,6 +406,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(U, CovarianceAlgo covAlgo, Summation sumAlgo)(CovarianceAccumulator!(U, covAlgo, sumAlgo) v)
+        if (!is(covAlgo == CovarianceAlgo.assumeZeroMean))
     {
         size_t oldCount = count;
         T deltaLeft = v.meanLeft;
@@ -552,6 +553,30 @@ unittest
     CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
     v1.put(x1, y1);
     CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v2;
+    v2.put(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -5.5 / 12;
+    v1.covariance(false).shouldApprox == -5.5 / 11;
+}
+
+// Check adding CovarianceAccumultors (naive)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto y1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto x2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto y2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
+    v1.put(x1, y1);
+    CovarianceAccumulator!(double, CovarianceAlgo.naive, Summation.naive) v2;
     v2.put(x2, y2);
     v1.put(v2);
 
@@ -1243,6 +1268,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(U, CovarianceAlgo covAlgo, Summation sumAlgo)(CovarianceAccumulator!(U, covAlgo, sumAlgo) v)
+        if (!is(covAlgo == CovarianceAlgo.assumeZeroMean))
     {
         size_t oldCount = count;
         T deltaLeft = v.meanLeft!T;
