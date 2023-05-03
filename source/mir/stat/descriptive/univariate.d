@@ -4108,8 +4108,8 @@ unittest
     KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive) w;
     w.put(y);
     v.put(w);
-    assert(v.centeredSumOfQuarts.approxEqual(622.639052));
-    assert(v.centeredSumOfSquares.approxEqual(52.885417));
+    assert(v.centeredSumOfQuarts.approxEqual(622.639052)); //note: different from above due to inconsistent centering
+    assert(v.centeredSumOfSquares.approxEqual(52.885417)); //note: different from above due to inconsistent centering
 }
 
 ///

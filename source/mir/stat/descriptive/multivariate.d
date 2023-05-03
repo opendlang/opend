@@ -631,8 +631,8 @@ unittest
     auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.assumeZeroMean, Summation.naive)(x2, y2);
     v1.put(v2);
 
-    v1.covariance(true).shouldApprox == -1.9375 / 12;
-    v1.covariance(false).shouldApprox == -1.9375 / 11;
+    v1.covariance(true).shouldApprox == -1.9375 / 12; //note: different from above due to inconsistent centering
+    v1.covariance(false).shouldApprox == -1.9375 / 11; //note: different from above due to inconsistent centering
 }
 
 // Initializing with one point
@@ -1543,8 +1543,8 @@ unittest
     auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.assumeZeroMean, Summation.naive)(x2, y2);
     v1.put(v2);
 
-    v1.covariance(true).shouldApprox == -1.9375 / 12;
-    v1.covariance(false).shouldApprox == -1.9375 / 11;
+    v1.covariance(true).shouldApprox == -1.9375 / 12; //note: different from above due to inconsistent centering
+    v1.covariance(false).shouldApprox == -1.9375 / 11; //note: different from above due to inconsistent centering
 }
 
 // Initializing with one point
