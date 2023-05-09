@@ -2478,10 +2478,12 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
     v.put(x);
-    v.variance(true).shouldApprox == x.variance(true);
-    v.variance(false).shouldApprox == x.variance(false);
-    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (x.variance(true) * sqrt(x.variance(true)));
-    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (x.variance(false) * sqrt(x.variance(false)));
+    auto varP = x.variance!"online"(true);
+    auto varS = x.variance!"online"(false);
+    v.variance(true).shouldApprox == varP;
+    v.variance(false).shouldApprox == varS;
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
 }
 
 ///
@@ -3058,7 +3060,7 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: sqrt;
-    import mir.math.stat: center;
+    import mir.math.stat: center, variance;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
     import mir.test: shouldApprox;
@@ -3069,10 +3071,12 @@ unittest
 
     SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) v;
     v.put(x);
-    v.variance(true).shouldApprox == x.variance(true);
-    v.variance(false).shouldApprox == x.variance(false);
-    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (x.variance(true) * sqrt(x.variance(true)));
-    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (x.variance(false) * sqrt(x.variance(false)));
+    auto varP = x.variance!"assumeZeroMean"(true);
+    auto varS = x.variance!"assumeZeroMean"(false);
+    v.variance(true).shouldApprox == varP;
+    v.variance(false).shouldApprox == varS;
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
 }
 
 /++
