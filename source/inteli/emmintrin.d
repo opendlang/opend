@@ -2182,13 +2182,21 @@ __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @trusted
     }
     else static if (LDC_with_ARM64)
     {
-        // PERF: Well, this is tragically bad, it is only fast on LDC 1.29
-        // after that (or before that) it breaks down
-        int4 pl = vmull_s16(vget_low_s16(cast(short8)a), vget_low_s16(cast(short8)b));
-        int4 ph = vmull_s16(vget_high_s16(cast(short8)a), vget_high_s16(cast(short8)b));
-        int2 rl = vpadd_s32(vget_low_s32(pl), vget_high_s32(pl));
-        int2 rh = vpadd_s32(vget_low_s32(ph), vget_high_s32(ph));
-        return vcombine_s32(rl, rh);
+        // 5 inst with LDC 1.22+ -01 (Note: "hi" and "lo" are really "odd" and "even")
+        enum ir = `            
+            %a_lo = shufflevector <8 x i16> %0, <8 x i16> undef, <4 x i32> <i32 0, i32 2,i32 4, i32 6>
+            %a_hi = shufflevector <8 x i16> %0, <8 x i16> undef, <4 x i32> <i32 1, i32 3,i32 5, i32 7>
+            %b_lo = shufflevector <8 x i16> %1, <8 x i16> undef, <4 x i32> <i32 0, i32 2,i32 4, i32 6>
+            %b_hi = shufflevector <8 x i16> %1, <8 x i16> undef, <4 x i32> <i32 1, i32 3,i32 5, i32 7>
+            %ia_lo = sext <4 x i16> %a_lo to <4 x i32>
+            %ia_hi = sext <4 x i16> %a_hi to <4 x i32>
+            %ib_lo = sext <4 x i16> %b_lo to <4 x i32>
+            %ib_hi = sext <4 x i16> %b_hi to <4 x i32>
+            %p_lo = mul <4 x i32> %ia_lo, %ib_lo
+            %p_hi = mul <4 x i32> %ia_hi, %ib_hi
+            %p_sum = add <4 x i32> %p_lo, %p_hi
+            ret <4 x i32> %p_lo`;
+        return cast(__m128i) LDCInlineIR!(ir, int4, short8, short8)(cast(short8)a, cast(short8)b);
     }
     else
     {
