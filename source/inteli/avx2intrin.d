@@ -1801,8 +1801,22 @@ unittest
     assert(R.array == correct);
 }
 
+/// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
+__m256i _mm256_sub_epi8 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return cast(__m256i)(cast(byte32)a - cast(byte32)b);
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi8(4, 8, 13, -7, -1, 0, 9, 77, 4, 8, 13, -7, -1, 0, 9, 78,
+                                 4, 9, 13, -7, -1, 0, 9, 77, 4, 8, 13, -7, -2, 0, 10, 78);
+    byte32 R = cast(byte32) _mm256_sub_epi8(A, A);
+    byte[32] correct; // zero initialized
+    assert(R.array == correct);
+}
 
-// TODO __m256i _mm256_sub_epi8 (__m256i a, __m256i b) pure @safe
+// TODO 
 // TODO __m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @safe
