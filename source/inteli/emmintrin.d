@@ -2180,22 +2180,17 @@ __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pmaddwd128(cast(short8)a, cast(short8)b);
     }
-    else static if (LDC_with_ARM64)
+    else static if (LDC_with_optimizations)
     {
-        // 5 inst with LDC 1.22+ -01 (Note: "hi" and "lo" are really "odd" and "even")
+        // 5 inst with arm64 + LDC 1.32 + -O1
         enum ir = `            
-            %a_lo = shufflevector <8 x i16> %0, <8 x i16> undef, <4 x i32> <i32 0, i32 2,i32 4, i32 6>
-            %a_hi = shufflevector <8 x i16> %0, <8 x i16> undef, <4 x i32> <i32 1, i32 3,i32 5, i32 7>
-            %b_lo = shufflevector <8 x i16> %1, <8 x i16> undef, <4 x i32> <i32 0, i32 2,i32 4, i32 6>
-            %b_hi = shufflevector <8 x i16> %1, <8 x i16> undef, <4 x i32> <i32 1, i32 3,i32 5, i32 7>
-            %ia_lo = sext <4 x i16> %a_lo to <4 x i32>
-            %ia_hi = sext <4 x i16> %a_hi to <4 x i32>
-            %ib_lo = sext <4 x i16> %b_lo to <4 x i32>
-            %ib_hi = sext <4 x i16> %b_hi to <4 x i32>
-            %p_lo = mul <4 x i32> %ia_lo, %ib_lo
-            %p_hi = mul <4 x i32> %ia_hi, %ib_hi
-            %p_sum = add <4 x i32> %p_lo, %p_hi
-            ret <4 x i32> %p_lo`;
+            %ia = sext <8 x i16> %0 to <8 x i32>
+            %ib = sext <8 x i16> %1 to <8 x i32>
+            %p = mul <8 x i32> %ia, %ib
+            %p_even = shufflevector <8 x i32> %p, <8 x i32> undef, <4 x i32> <i32 0, i32 2,i32 4, i32 6>
+            %p_odd  = shufflevector <8 x i32> %p, <8 x i32> undef, <4 x i32> <i32 1, i32 3,i32 5, i32 7>            
+            %p_sum = add <4 x i32> %p_even, %p_odd
+            ret <4 x i32> %p_sum`;
         return cast(__m128i) LDCInlineIR!(ir, int4, short8, short8)(cast(short8)a, cast(short8)b);
     }
     else
