@@ -874,7 +874,6 @@ version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
-    import mir.ndslice.slice: sliced;
     import mir.ndslice.topology: repeat;
 
     auto x = uint.max.repeat(3);
@@ -1497,7 +1496,7 @@ template medianAbsoluteDeviation(F)
     return medianAbsoluteDeviation(x.toSlice);
 }
 
-/// Simple example
+/// medianAbsoluteDeviation of vector
 version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
@@ -1506,18 +1505,17 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     assert(x.medianAbsoluteDeviation.approxEqual(1.25));
 }
 
-/// Median Absolute Deviation of vector
+// dynamic array test
 version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -1677,7 +1675,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -1735,7 +1732,6 @@ unittest
 {
     import mir.functional: naryFun;
     import mir.math.common: approxEqual, fabs, sqrt;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -2092,13 +2088,13 @@ const:
 
         return scaledSumOfCubes!F(isPopulation) * count /
             ((count + isPopulation - 1) * (count + 2 * isPopulation - 2));
-        /* equivalent to
+        /+ equivalent to
         F mu = mean!F;
         F avg_centeredSumOfCubes = sumOfCubes!F / count - 3 * mu * variance!F(true) - (mu * mu * mu);
         F var = variance!F(isPopulation);
         return avg_centeredSumOfCubes / (var * var.sqrt) *
                 (cast(F) count * count / ((count + isPopulation - 1) * (count + 2 * isPopulation - 2)));
-        */
+        +/
     }
 }
 
@@ -2113,7 +2109,7 @@ unittest
     import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v;
     v.put(x);
@@ -2321,7 +2317,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
     v.put(x);
@@ -2467,6 +2463,27 @@ unittest
     assert(v.centeredSumOfSquares.approxEqual(52.885417)); //note: different from above due to inconsistent centering
 }
 
+// check variance/scaledSumOfCubes
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
+    v.put(x);
+    v.variance(true).shouldApprox == x.variance(true);
+    v.variance(false).shouldApprox == x.variance(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (x.variance(true) * sqrt(x.variance(true)));
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (x.variance(false) * sqrt(x.variance(false)));
+}
+
 ///
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.twoPass)
@@ -2578,7 +2595,7 @@ const:
     }
 }
 
-///
+/// twoPass
 version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
@@ -2767,7 +2784,7 @@ const:
     }
 }
 
-///
+/// threePass
 version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
@@ -2933,6 +2950,8 @@ const:
     ///
     F scaledSumOfCubes(F = T)(bool isPopulation) @property
     {
+        import mir.math.common: sqrt;
+
         F var = variance!F(isPopulation);
         return centeredSumOfCubes!F / (var * var.sqrt);
     }
@@ -3031,6 +3050,29 @@ unittest
     v.put(w);
     assert(v.centeredSumOfCubes.approxEqual(117.005859));
     assert(v.centeredSumOfSquares.approxEqual(54.765625));
+}
+
+// check variance/scaledSumOfCubes
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.stat: center;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+    auto x = a.center;
+
+    SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive) v;
+    v.put(x);
+    v.variance(true).shouldApprox == x.variance(true);
+    v.variance(false).shouldApprox == x.variance(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (x.variance(true) * sqrt(x.variance(true)));
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (x.variance(false) * sqrt(x.variance(false)));
 }
 
 /++
@@ -3148,7 +3190,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual, pow;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -3336,8 +3377,6 @@ version(mir_stat_test_uni)
 @safe pure nothrow
 unittest
 {
-    import mir.ndslice.slice: sliced;
-
     static struct Foo {
         float x;
         alias x this;
@@ -3430,7 +3469,6 @@ unittest
 {
     import mir.math.common: approxEqual, pow;
     import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -3711,7 +3749,7 @@ unittest
     import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
     v.put(x);
@@ -3962,7 +4000,7 @@ unittest
     import mir.test: shouldApprox;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
     v.put(x);
@@ -4252,7 +4290,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     auto v = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x);
     assert(v.kurtosis(true, true).approxEqual(38.062853 / 12));
@@ -4475,7 +4513,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     auto v = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x);
     assert(v.kurtosis(true, true).approxEqual(38.062853 / 12));
@@ -4873,7 +4911,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual, pow;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -5070,7 +5107,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     static struct Foo {
         float x;
@@ -5169,7 +5205,6 @@ unittest
 {
     import mir.math.common: approxEqual, pow;
     import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -5367,7 +5402,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     assert(x.coefficientOfVariation.approxEqual(2.231299 / 2.437500));
 }
@@ -5485,7 +5520,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     static struct Foo {
         float x;
@@ -5827,7 +5861,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     MomentAccumulator!(double, 2, Summation.naive) v;
     auto m = mean(x);
@@ -5879,11 +5913,10 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     MomentAccumulator!(double, 1, Summation.naive) v;
     auto m = mean(x);
@@ -5898,11 +5931,10 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual, sqrt;
-    import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 3, Summation.naive) v;
@@ -5959,7 +5991,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 2, Summation.naive) v;
@@ -5974,11 +6006,10 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual, sqrt;
-    import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
     MomentAccumulator!(double, 1, Summation.naive) v;
@@ -6357,7 +6388,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     assert(x.centralMoment!2.approxEqual(54.76562 / 12));
 }
@@ -6485,7 +6516,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -6657,7 +6687,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     assert(x.standardizedMoment!3.approxEqual(12.000999 / 12));
 }
@@ -6803,7 +6833,6 @@ version(mir_stat_test_uni)
 unittest
 {
     import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
@@ -6979,7 +7008,7 @@ unittest
     import mir.ndslice.slice: sliced;
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
 
     assert(x.moment!(3, "standardized").approxEqual(12.000999 / 12));
 }
