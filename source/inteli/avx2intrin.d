@@ -1758,9 +1758,50 @@ unittest
 // TODO __m128i _mm_srlv_epi64 (__m128i a, __m128i count) pure @safe
 // TODO __m256i _mm256_srlv_epi64 (__m256i a, __m256i count) pure @safe
 // TODO __m256i _mm256_stream_load_si256 (__m256i const* mem_addr) pure @safe
-// TODO __m256i _mm256_sub_epi16 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_sub_epi32 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_sub_epi64 (__m256i a, __m256i b) pure @safe
+
+/// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
+__m256i _mm256_sub_epi16 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return cast(__m256i)(cast(short16)a - cast(short16)b);
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi16( -7, -1, 0, 9, -100, 100, 234, 432, -32768, 32767, 0, -1, -20000, 0,  6, -2);
+    short16 R = cast(short16) _mm256_sub_epi16(A, A);
+    short[16] correct         = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    assert(R.array == correct);
+}
+
+/// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
+__m256i _mm256_sub_epi32(__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return cast(__m256i)(cast(int8)a - cast(int8)b);
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32( -7, -1, 0, 9, -100, 100, 234, 432);
+    int8 R = cast(int8) _mm256_sub_epi32(A, A);
+    int[8] correct = [ 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(R.array == correct);
+}
+
+/// Subtract packed 64-bit integers in `b` from packed 64-bit integers in `a`.
+__m256i _mm256_sub_epi64 (__m256i a, __m256i b) pure @safe
+{
+    pragma(inline, true);
+    return a - b;
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(-1, 0x8000_0000_0000_0000, 42, -12);
+    long4 R = cast(__m256i) _mm256_sub_epi64(A, A);
+    long[4] correct = [ 0, 0, 0, 0 ];
+    assert(R.array == correct);
+}
+
+
 // TODO __m256i _mm256_sub_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @safe
