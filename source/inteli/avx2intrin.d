@@ -1879,9 +1879,38 @@ unittest
     assert(R.array == correct);
 }
 
+/// Subtract packed unsigned 16-bit integers in `b` from packed unsigned 16-bit integers in `a` 
+/// using saturation.
+__m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psubusw256(cast(short16)a, cast(short16)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_subus!short16(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        short16 r;
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        foreach(i; 0..16)
+            r.ptr[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]));
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    short16 R = cast(short16) _mm256_subs_epu16(_mm256_setr_epi16(3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0, 3,  2, cast(short)65534, 0),
+                                                _mm256_setr_epi16(3, 4,                1, 0, 3, 2,                1, 0, 3, 2,                1, 0, 3, 20, cast(short)65535, 0));
+    static immutable short[16] correct =                         [0, 0, cast(short)65534, 0, 0, 0, cast(short)65534, 0, 0, 0, cast(short)65534, 0, 0,  0,                0, 0];
+    assert(R.array == correct);
+}
 
 
-// TODO __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epu8 (__m256i a, __m256i b) pure @safe
 
 
