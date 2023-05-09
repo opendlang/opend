@@ -574,7 +574,7 @@ unittest
     assert(C.array == correct);
 }
 
-// Note: do that one after _mm256_cmpgt_epi8, _mm256_xor_si256, _mm256_subs_epu8
+// Note: do that one after _mm256_cmpgt_epi8, _mm256_subs_epu8
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
 
 /// Broadcast the low packed 8-bit integer from `a` to all elements of result.
@@ -1848,7 +1848,39 @@ unittest
 }
 
 
-// TODO __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @safe
+/// Subtract packed signed 8-bit integers in `b` from packed 8-bit integers in `a` using
+/// saturation.
+__m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psubsb256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_subs!byte32(cast(byte32)a, cast(byte32)b);
+    }
+    else
+    {
+        byte32 r;
+        byte32 sa = cast(byte32)a;
+        byte32 sb = cast(byte32)b;
+        foreach(i; 0..32)
+            r.ptr[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    byte32 R = cast(byte32) _mm256_subs_epi8(_mm256_setr_epi8(15, 14, 13, 12, 11, 127, 9, 8, 7, 6, 5, -128, 3, 2, 1, 0, 15, 14, 13, 12, 11, 126, 9, 8, 7, 6, 5, -127, 3, 2, 1, 0),
+                                             _mm256_setr_epi8(15, 14, 13, 12, 11,  10, 9, 8, 7, 6, 5,    4, 3, 2, 1, 0, 15, 14, 13, 12, 11, -10, 9, 8, 7, 6, 5,    4, 3, 2, 1, 0));
+    static immutable byte[32] correct                      = [ 0,  0,  0,  0,  0, 117, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0,  0,  0,  0,  0,  0, 127, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0]; 
+    assert(R.array == correct);
+}
+
+
+
 // TODO __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epu8 (__m256i a, __m256i b) pure @safe
 
