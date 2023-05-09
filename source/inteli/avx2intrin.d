@@ -1816,11 +1816,43 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO 
-// TODO __m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @safe
+/// Subtract packed signed 16-bit integers in `b` from packed 16-bit integers in `a` using 
+/// saturation.
+__m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF DMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psubsw256(cast(short16)a, cast(short16)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) inteli_llvm_subs!short16(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        short16 r;
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        foreach(i; 0..16)
+            r.ptr[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    short16 res = cast(short16) _mm256_subs_epi16(_mm256_setr_epi16( 7,  6,  5, -32768, 3, 3, 32766,   0,  7,  6,  5, -32750, 3, 3, 32767,   0),
+                                                  _mm256_setr_epi16( 7,  6,  5, -30000, 3, 1,    -2, -10,  7,  6,  5,    100, 3, 1,     1, -10));
+    static immutable short[16] correctResult                    =  [ 0,  0,  0,  -2768, 0, 2, 32767,  10,  0,  0,  0, -32768, 0, 2, 32766,  10];
+    assert(res.array == correctResult);
+}
+
+
 // TODO __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_subs_epu8 (__m256i a, __m256i b) pure @safe
+
+
 // TODO __m256i _mm256_unpackhi_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b) pure @safe
