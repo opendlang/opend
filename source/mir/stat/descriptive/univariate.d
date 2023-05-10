@@ -1979,6 +1979,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.naive)
 {
     import mir.functional: naryFun;
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: Summator;
     import std.traits: isIterable;
 
@@ -2189,6 +2190,7 @@ unittest
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.online)
 {
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: Summator;
     import std.traits: isIterable;
 
@@ -2678,7 +2680,7 @@ unittest
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.threePass)
 {
-    import mir.functional: naryFun;
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import std.range: isInputRange;
@@ -2695,6 +2697,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
     {
+        import mir.functional: naryFun;
         import mir.ndslice.topology: vmap, map;
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
@@ -2867,6 +2870,7 @@ unittest
 struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     if (isMutable!T && skewnessAlgo == SkewnessAlgo.assumeZeroMean)
 {
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: Summator;
     import std.traits: isIterable;
 
@@ -4002,6 +4006,7 @@ unittest
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.naive)
 {
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: Summator;
     import std.traits: isIterable;
 
@@ -4278,6 +4283,7 @@ unittest
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.online)
 {
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: Summator;
     import std.traits: isIterable;
 
@@ -4859,7 +4865,7 @@ unittest
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.threePass)
 {
-    import mir.functional: naryFun;
+    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import std.range: isInputRange;
@@ -4878,6 +4884,7 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     ///
     this(Iterator, size_t N, SliceKind kind)(Slice!(Iterator, N, kind) slice)
     {
+        import mir.functional: naryFun;
         import mir.ndslice.topology: vmap, map;
         import mir.ndslice.internal: LeftOp;
         import mir.math.common: sqrt;
