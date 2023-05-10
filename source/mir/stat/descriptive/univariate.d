@@ -1952,7 +1952,7 @@ enum SkewnessAlgo
 
     /++
     Calculates skewness by first calculating the mean, then calculating
-    (E((x - E(x)) ^^ 3) / (E((x - E(x)) ^^ 2) ^^ 1.5)
+    E((x - E(x)) ^^ 3) / (E((x - E(x)) ^^ 2) ^^ 1.5)
     +/
     twoPass,
 
@@ -3966,7 +3966,7 @@ enum KurtosisAlgo
 
     /++
     Calculates kurtosis by first calculating the mean, then calculating
-    (E((x - E(x)) ^^ 4) / (E((x - E(x)) ^^ 2) ^^ 2)
+    E((x - E(x)) ^^ 4) / (E((x - E(x)) ^^ 2) ^^ 2)
     +/
     twoPass,
 
