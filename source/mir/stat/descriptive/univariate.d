@@ -3832,6 +3832,31 @@ unittest
     v2.kurtosis(false, true).shouldApprox == 1.8;
 }
 
+// check scaledSumOfCubes/scaledSumOfQuarts/skewness
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    KurtosisAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v;
+    v.put(x);
+    auto varP = x.variance!"naive"(true);
+    auto varS = x.variance!"naive"(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
+    v.scaledSumOfQuarts(true).shouldApprox == v.centeredSumOfQuarts / (varP * varP);
+    v.scaledSumOfQuarts(false).shouldApprox == v.centeredSumOfQuarts / (varS * varS);
+    v.skewness(true).shouldApprox == x.skewness!"naive"(true);
+    v.skewness(false).shouldApprox == x.skewness!"naive"(false);
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.online)
@@ -4154,6 +4179,31 @@ unittest
     assert(v.centeredSumOfSquares.approxEqual(52.885417)); //note: different from above due to inconsistent centering
 }
 
+// check scaledSumOfCubes/scaledSumOfQuarts/skewness
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    KurtosisAccumulator!(double, KurtosisAlgo.online, Summation.naive) v;
+    v.put(x);
+    auto varP = x.variance!"online"(true);
+    auto varS = x.variance!"online"(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
+    v.scaledSumOfQuarts(true).shouldApprox == v.centeredSumOfQuarts / (varP * varP);
+    v.scaledSumOfQuarts(false).shouldApprox == v.centeredSumOfQuarts / (varS * varS);
+    v.skewness(true).shouldApprox == x.skewness!"online"(true);
+    v.skewness(false).shouldApprox == x.skewness!"online"(false);
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.twoPass)
@@ -4248,9 +4298,17 @@ const:
         return cast(F) centeredSummatorOfQuarts.sum;
     }
     ///
+    F scaledSumOfCubes(F = T)(bool isPopulation)
+    {
+        import mir.math.common: sqrt;
+        auto var = variance!F(isPopulation);
+        return centeredSumOfCubes!F / (var * var.sqrt);
+    }
+    ///
     F scaledSumOfQuarts(F = T)(bool isPopulation)
     {
-        return centeredSumOfQuarts!F / (variance!F(isPopulation) * variance!F(isPopulation));
+        auto var = variance!F(isPopulation);
+        return centeredSumOfQuarts!F / (var * var);
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -4354,6 +4412,30 @@ unittest
     auto x2 = x1.map!(a => 2 * a);
     auto v2 = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x2);
     v2.kurtosis(false, true).shouldApprox == 1.8;
+}
+
+// check scaledSumOfCubes/scaledSumOfQuarts/skewness
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto v = KurtosisAccumulator!(double, KurtosisAlgo.twoPass, Summation.naive)(x);
+    auto varP = x.variance!"twoPass"(true);
+    auto varS = x.variance!"twoPass"(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
+    v.scaledSumOfQuarts(true).shouldApprox == v.centeredSumOfQuarts / (varP * varP);
+    v.scaledSumOfQuarts(false).shouldApprox == v.centeredSumOfQuarts / (varS * varS);
+    v.skewness(true).shouldApprox == x.skewness!"twoPass"(true);
+    v.skewness(false).shouldApprox == x.skewness!"twoPass"(false);
 }
 
 ///
@@ -4474,6 +4556,17 @@ const:
         return cast(F) scaledSummatorOfQuarts.sum;
     }
     ///
+    F scaledSumOfCubes(F = T)(bool isPopulation)
+    {
+        import mir.math.common: sqrt;
+        return scaledSumOfCubes!F * (count + isPopulation - 1) * sqrt(cast(F) count + isPopulation - 1) / count / sqrt(cast(F) count);
+    }
+    ///
+    F scaledSumOfQuarts(F = T)(bool isPopulation)
+    {
+        return scaledSumOfQuarts!F * (count + isPopulation - 1) * (count + isPopulation - 1) / cast(F) count / cast(F) count;
+    }
+    ///
     F skewness(F = T)(bool isPopulation)
     in
     {
@@ -4579,6 +4672,30 @@ unittest
     v2.kurtosis(false, true).shouldApprox == 1.8;
 }
 
+// check scaledSumOfCubes/scaledSumOfQuarts/skewness
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto v = KurtosisAccumulator!(double, KurtosisAlgo.threePass, Summation.naive)(x);
+    auto varP = x.variance!"twoPass"(true);
+    auto varS = x.variance!"twoPass"(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
+    v.scaledSumOfQuarts(true).shouldApprox == v.centeredSumOfQuarts / (varP * varP);
+    v.scaledSumOfQuarts(false).shouldApprox == v.centeredSumOfQuarts / (varS * varS);
+    v.skewness(true).shouldApprox == x.skewness!"threePass"(true);
+    v.skewness(false).shouldApprox == x.skewness!"threePass"(false);
+}
+
 ///
 struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     if (isMutable!T && kurtosisAlgo == KurtosisAlgo.assumeZeroMean)
@@ -4680,6 +4797,19 @@ const:
     F centeredSumOfSquares(F = T)() @property
     {
         return cast(F) centeredSummatorOfSquares.sum;
+    }
+    ///
+    F scaledSumOfCubes(F = T)(bool isPopulation)
+    {
+        import mir.math.common: sqrt;
+        F var = variance!F(isPopulation);
+        return centeredSumOfCubes!F/ (var * var.sqrt);
+    }
+    ///
+    F scaledSumOfQuarts(F = T)(bool isPopulation)
+    {
+        F var = variance!F(isPopulation);
+        return centeredSumOfQuarts!F/ (var * var);
     }
     ///
     F skewness(F = T)(bool isPopulation)
@@ -4792,6 +4922,33 @@ unittest
     v.put(w);
     assert(v.centeredSumOfQuarts.approxEqual(792.784119));
     assert(v.centeredSumOfSquares.approxEqual(54.765625));
+}
+
+
+// check scaledSumOfCubes/scaledSumOfQuarts/skewness
+version(mir_stat_test_uni)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: sqrt;
+    import mir.math.stat: center;
+    import mir.math.sum: Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+    auto x = a.center;
+
+    auto v = KurtosisAccumulator!(double, KurtosisAlgo.assumeZeroMean, Summation.naive)(x);
+    auto varP = x.variance!"assumeZeroMean"(true);
+    auto varS = x.variance!"assumeZeroMean"(false);
+    v.scaledSumOfCubes(true).shouldApprox == v.centeredSumOfCubes / (varP * varP.sqrt);
+    v.scaledSumOfCubes(false).shouldApprox == v.centeredSumOfCubes / (varS * varS.sqrt);
+    v.scaledSumOfQuarts(true).shouldApprox == v.centeredSumOfQuarts / (varP * varP);
+    v.scaledSumOfQuarts(false).shouldApprox == v.centeredSumOfQuarts / (varS * varS);
+    v.skewness(true).shouldApprox == x.skewness!"assumeZeroMean"(true);
+    v.skewness(false).shouldApprox == x.skewness!"assumeZeroMean"(false);
 }
 
 /++
