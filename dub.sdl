@@ -11,9 +11,7 @@ toolchainRequirements frontend=">=2.097"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_stat_test_uni"
-    versions "mir_stat_test_multi"
-    //versions "mir_stat_test"
+    versions "mir_stat_test"
     //versions "mir_stat_test_fp"
     dflags "-lowmem"
 }
@@ -40,8 +38,6 @@ buildType "unittest-dip1000" {
 buildType "unittest-cov" {
     buildOptions "unittests" "coverage" "debugMode" "debugInfo"
     versions "mir_stat_test"
-    versions "mir_stat_test_multi"
-    versions "mir_stat_test_uni"
     //versions "mir_stat_test_fp"
     dflags "-lowmem"
 }

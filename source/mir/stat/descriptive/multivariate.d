@@ -200,7 +200,7 @@ const:
 }
 
 ///
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -225,7 +225,7 @@ unittest
 }
 
 // Check dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -253,7 +253,7 @@ unittest
 }
 
 // rcslice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -276,7 +276,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -300,7 +300,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -461,7 +461,7 @@ const:
 }
 
 ///
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -486,7 +486,7 @@ unittest
 }
 
 // Check dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -514,7 +514,7 @@ unittest
 }
 
 // rcslice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -537,7 +537,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -561,7 +561,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (naive)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -585,7 +585,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (twoPass)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -608,7 +608,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (assumeZeroMean)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -636,7 +636,7 @@ unittest
 }
 
 // Initializing with one point
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -648,7 +648,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -794,7 +794,7 @@ const:
 }
 
 ///
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -814,7 +814,7 @@ unittest
 }
 
 // Check dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -837,7 +837,7 @@ unittest
 }
 
 // rcslice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -860,7 +860,7 @@ unittest
 }
 
 // Check Vmap
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -882,7 +882,7 @@ unittest
 }
 
 // Initializing with one point
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -894,7 +894,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -919,7 +919,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1062,7 +1062,7 @@ const:
 }
 
 ///
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1090,7 +1090,7 @@ unittest
 }
 
 // Check dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1127,7 +1127,7 @@ unittest
 }
 
 // rcslice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1151,7 +1151,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1181,7 +1181,7 @@ unittest
 }
 
 // Initializing with one point
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1193,7 +1193,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1373,7 +1373,7 @@ const:
 }
 
 ///
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1398,7 +1398,7 @@ unittest
 }
 
 // Check dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1426,7 +1426,7 @@ unittest
 }
 
 // rcslice test
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1449,7 +1449,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1473,7 +1473,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (naive)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1497,7 +1497,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (twoPass)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1520,7 +1520,7 @@ unittest
 }
 
 // Check adding CovarianceAccumultors (assumeZeroMean)
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1548,7 +1548,7 @@ unittest
 }
 
 // Initializing with one point
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1560,7 +1560,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1661,7 +1661,7 @@ template cov(string covarianceAlgo, string summation = "appropriate")
 }
 
 /// Covariance of vectors
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1678,7 +1678,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1707,7 +1707,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1747,7 +1747,7 @@ unittest
 For integral slices, pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1767,7 +1767,7 @@ unittest
 }
 
 // make sure works with dynamic array
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1781,7 +1781,7 @@ unittest
 }
 
 /// Works with @nogc
-version(mir_stat_test_multi)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {

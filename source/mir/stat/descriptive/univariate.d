@@ -215,7 +215,7 @@ template quantileType(T, QuantileAlgo quantileAlgo)
     }
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -256,7 +256,7 @@ unittest
     static assert(is(quantileType!(float[], QuantileAlgo.type9) == float));
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -273,7 +273,7 @@ unittest
     static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -290,7 +290,7 @@ unittest
     static assert(is(quantileType!(Complex!(float)[], QuantileAlgo.type9) == Complex!float));
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -305,7 +305,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -318,7 +318,7 @@ unittest
     static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == Complex!float));
 }
 
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -669,7 +669,7 @@ template quantile(string quantileAlgo,
 }
 
 /// Simple example
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -688,7 +688,7 @@ unittest
 }
 
 //no change in x by default
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -705,7 +705,7 @@ unittest
 }
 
 /// Modify probability in place
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -724,7 +724,7 @@ unittest
 }
 
 /// Quantile of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -743,7 +743,7 @@ unittest
 }
 
 /// Quantile of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest 
 {
@@ -765,7 +765,7 @@ unittest
 }
 
 /// Row quantile of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -793,7 +793,7 @@ unittest
 }
 
 /// Allow modification of input
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -809,7 +809,7 @@ unittest
 }
 
 /// Double-check probability is not modified
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -828,7 +828,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -850,7 +850,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -870,7 +870,7 @@ unittest
 }
 
 /// Support for integral and user-defined types for type 1 & 3
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -891,7 +891,7 @@ unittest
 }
 
 /// Compute quantile along specified dimention of tensors
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -919,7 +919,7 @@ unittest
 }
 
 /// Support for array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -936,7 +936,7 @@ unittest
 }
 
 //@nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest 
 {
@@ -956,7 +956,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -982,7 +982,7 @@ unittest
 }
 
 //x.length = 20, qtile at tenths
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1006,7 +1006,7 @@ unittest
 }
 
 //x.length = 20, qtile at 5s
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1030,7 +1030,7 @@ unittest
 }
 
 //x.length = 21, qtile at tenths
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1055,7 +1055,7 @@ unittest
 }
 
 //x.length = 21, qtile at 5s
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1258,7 +1258,7 @@ template interquartileRange(string quantileAlgo, bool allowModifySlice = false)
 }
 
 /// Simple example
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1273,7 +1273,7 @@ unittest
 }
 
 //no change in x by default
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1289,7 +1289,7 @@ unittest
 }
 
 /// Interquartile Range of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1303,7 +1303,7 @@ unittest
 }
 
 /// Interquartile Range of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest 
 {
@@ -1320,7 +1320,7 @@ unittest
 }
 
 /// Allow modification of input
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1336,7 +1336,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1358,7 +1358,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1379,7 +1379,7 @@ unittest
 }
 
 /// Support for array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1391,7 +1391,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1411,7 +1411,7 @@ unittest
 }
 
 // Arbitrary test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest 
 {
@@ -1421,7 +1421,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest 
 {
@@ -1497,7 +1497,7 @@ template medianAbsoluteDeviation(F)
 }
 
 /// medianAbsoluteDeviation of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1511,7 +1511,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1524,7 +1524,7 @@ unittest
 }
 
 /// Median Absolute Deviation of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -1540,7 +1540,7 @@ unittest
 }
 
 /// Median Absolute Deviation of dynamic array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1553,7 +1553,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1567,7 +1567,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1648,7 +1648,7 @@ template dispersion(
 }
 
 /// Simple examples
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1670,7 +1670,7 @@ unittest
 }
 
 /// Dispersion of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1683,7 +1683,7 @@ unittest
 }
 
 /// Dispersion of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -1699,7 +1699,7 @@ unittest
 }
 
 /// Column dispersion of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -1726,7 +1726,7 @@ unittest
 }
 
 /// Can also set functions to change type of dispersion that is used
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe
 unittest
 {
@@ -1761,7 +1761,7 @@ unittest
 For integral slices, pass output type to `centralTendency`, `transform`, and 
 `summary` functions as template parameter to ensure output type is correct.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1782,7 +1782,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1797,7 +1797,7 @@ unittest
 }
 
 // std.complex test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1814,7 +1814,7 @@ Dispersion works for complex numbers and other user-defined types (provided that
 the `centralTendency`, `transform`, and `summary` functions are defined for those
 types)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1827,7 +1827,7 @@ unittest
 }
 
 /// Compute mean tensors along specified dimention of tensors
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -1855,7 +1855,7 @@ unittest
 }
 
 /// Arbitrary dispersion
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -1869,7 +1869,7 @@ unittest
 }
 
 // UFCS UT
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1878,7 +1878,7 @@ unittest
 }
 
 // Confirm type output is correct
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -1894,7 +1894,7 @@ unittest
 }
 
 // @nogc UT
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure @nogc nothrow
 unittest
 {
@@ -1908,7 +1908,7 @@ unittest
 }
 
 // withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -2106,7 +2106,7 @@ const:
 }
 
 /// naive
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2129,7 +2129,7 @@ unittest
 }
 
 // check two-dimensional
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -2148,7 +2148,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2168,7 +2168,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2315,7 +2315,7 @@ const:
 }
 
 /// online
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2337,7 +2337,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2359,7 +2359,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2382,7 +2382,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (naive)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2405,7 +2405,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (twoPass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2427,7 +2427,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (threePass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2449,7 +2449,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (assumeZeroMean)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2471,7 +2471,7 @@ unittest
 }
 
 // check variance/scaledSumOfCubes
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2605,7 +2605,7 @@ const:
 }
 
 /// twoPass
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2622,7 +2622,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2642,7 +2642,7 @@ unittest
 }
 
 // check dynamic array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2657,7 +2657,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2794,7 +2794,7 @@ const:
 }
 
 /// threePass
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2811,7 +2811,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2831,7 +2831,7 @@ unittest
 }
 
 // check dynamic array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2846,7 +2846,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -2985,7 +2985,7 @@ const:
 }
 
 /// assumeZeroMean
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3009,7 +3009,7 @@ unittest
 }
 
 // Can put slices
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3035,7 +3035,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3062,7 +3062,7 @@ unittest
 }
 
 // check variance/scaledSumOfCubes
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3245,7 +3245,7 @@ const:
 }
 
 /// hybrid
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3266,7 +3266,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3286,7 +3286,7 @@ unittest
 }
 
 // check dynamic array
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3301,7 +3301,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3319,7 +3319,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3340,7 +3340,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3361,7 +3361,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (naive)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3382,7 +3382,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (online)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3403,7 +3403,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (twoPass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3424,7 +3424,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (threePass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3445,7 +3445,7 @@ unittest
 }
 
 // Can put SkewnessAccumulator (assumeZeroMean)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3466,7 +3466,7 @@ unittest
 }
 
 // check variance/scaledSumOfCubes
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3579,7 +3579,7 @@ template skewness(string skewnessAlgo, string summation = "appropriate")
 }
 
 /// Simple example
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3597,7 +3597,7 @@ unittest
 }
 
 /// Skewness of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3610,7 +3610,7 @@ unittest
 }
 
 /// Skewness of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -3626,7 +3626,7 @@ unittest
 }
 
 /// Column skewness of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -3653,7 +3653,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -3688,7 +3688,7 @@ unittest
 }
 
 // Alt version with x a tenth of above's value
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -3725,7 +3725,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3764,7 +3764,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3785,7 +3785,7 @@ unittest
 Skewness works for other user-defined types (provided they
 can be converted to a floating point)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3799,7 +3799,7 @@ unittest
 }
 
 /// Compute skewness along specified dimention of tensors
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -3827,7 +3827,7 @@ unittest
 }
 
 /// Arbitrary skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -3836,7 +3836,7 @@ unittest
 }
 
 // Check skewness vector UFCS
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3845,7 +3845,7 @@ unittest
 }
 
 // Double-check correct output types
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3860,7 +3860,7 @@ unittest
 }
 
 // @nogc skewness test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure @nogc nothrow
 unittest
 {
@@ -3875,7 +3875,7 @@ unittest
 }
 
 // Test skewness with values
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -3985,7 +3985,7 @@ enum KurtosisAlgo
 }
 
 // Make sure skew algos and kurtosis algos match up
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -4161,7 +4161,7 @@ const:
 }
 
 /// naive
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4192,7 +4192,7 @@ unittest
 }
 
 // check two-dimensional
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -4210,7 +4210,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4230,7 +4230,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4250,7 +4250,7 @@ unittest
 }
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4437,7 +4437,7 @@ const:
 }
 
 /// online
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4463,7 +4463,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4484,7 +4484,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4507,7 +4507,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (naive)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4530,7 +4530,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (twoPass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4552,7 +4552,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (threePass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4574,7 +4574,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (assumeZeroMean)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4597,7 +4597,7 @@ unittest
 }
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4761,7 +4761,7 @@ const:
 }
 
 /// twoPass
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4779,7 +4779,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -4799,7 +4799,7 @@ unittest
 }
 
 // check dynamic slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4814,7 +4814,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -4832,7 +4832,7 @@ unittest
 }
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5019,7 +5019,7 @@ const:
 }
 
 /// threePass
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5037,7 +5037,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5057,7 +5057,7 @@ unittest
 }
 
 // check dynamic slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5072,7 +5072,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5090,7 +5090,7 @@ unittest
 }
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5263,7 +5263,7 @@ const:
 }
 
 /// assumeZeroMean
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5290,7 +5290,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5315,7 +5315,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5343,7 +5343,7 @@ unittest
 
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5562,7 +5562,7 @@ const:
 }
 
 /// hybrid
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5587,7 +5587,7 @@ unittest
 }
 
 // check withAsSlice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -5607,7 +5607,7 @@ unittest
 }
 
 // check dynamic slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5622,7 +5622,7 @@ unittest
 }
 
 // Test input range
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5640,7 +5640,7 @@ unittest
 }
 
 // Can put slice
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5661,7 +5661,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5682,7 +5682,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (naive)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5703,7 +5703,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (online)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5724,7 +5724,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (twoPass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5745,7 +5745,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (threePass)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5766,7 +5766,7 @@ unittest
 }
 
 // Can put KurtosisAccumulator (assumeZeroMean)
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5787,7 +5787,7 @@ unittest
 }
 
 // check scaledSumOfCubes/scaledSumOfQuarts/skewness
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5907,7 +5907,7 @@ template kurtosis(string kurtosisAlgo, string summation = "appropriate")
 }
 
 /// Simple example
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5930,7 +5930,7 @@ unittest
 }
 
 /// Kurtosis of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -5943,7 +5943,7 @@ unittest
 }
 
 /// Kurtosis of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -5959,7 +5959,7 @@ unittest
 }
 
 /// Column kurtosis of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -5987,7 +5987,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6024,7 +6024,7 @@ unittest
 }
 
 // Alt version with x a hundred of above's value
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6061,7 +6061,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6105,7 +6105,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6126,7 +6126,7 @@ unittest
 Kurtosis works for other user-defined types (provided they can be converted to a
 floating point)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6142,7 +6142,7 @@ unittest
 }
 
 /// Compute kurtosis along specified dimention of tensors
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -6172,7 +6172,7 @@ unittest
 }
 
 /// Arbitrary kurtosis
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6183,7 +6183,7 @@ unittest
 }
 
 // Check kurtosis vector UFCS
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6193,7 +6193,7 @@ unittest
 }
 
 // Double-check correct output types
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6208,7 +6208,7 @@ unittest
 }
 
 // @nogc kurtosis test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure @nogc nothrow
 unittest
 {
@@ -6223,7 +6223,7 @@ unittest
 }
 
 // Test all using values
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6407,7 +6407,7 @@ template coefficientOfVariation(string varianceAlgo, string summation = "appropr
 }
 
 ///
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6423,7 +6423,7 @@ unittest
 }
 
 /// Coefficient of variation of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6437,7 +6437,7 @@ unittest
 }
 
 /// Coefficient of variation of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -6453,7 +6453,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6479,7 +6479,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 //@safe pure nothrow
 unittest
 {
@@ -6523,7 +6523,7 @@ unittest
 For integral slices, pass output type as template parameter to ensure output
 type is correct.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6544,7 +6544,7 @@ unittest
 coefficientOfVariation works for other user-defined types (provided they
 can be converted to a floating point)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6560,7 +6560,7 @@ unittest
 }
 
 /// Arbitrary coefficientOfVariation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6571,7 +6571,7 @@ unittest
 }
 
 // Dynamic array / UFCS
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6582,7 +6582,7 @@ unittest
 }
 
 // Check type of alongDim result
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6597,7 +6597,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure @nogc nothrow
 unittest
 {
@@ -6796,7 +6796,7 @@ struct MomentAccumulator(T, size_t N, Summation summation)
 }
 
 /// Raw moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6818,7 +6818,7 @@ unittest
 }
 
 // Raw Moment: test putting accumulator
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6843,7 +6843,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6863,7 +6863,7 @@ unittest
 }
 
 // Raw Moment: test std.complex
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6881,7 +6881,7 @@ unittest
 }
 
 /// Central moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6899,7 +6899,7 @@ unittest
 }
 
 // Central moment: dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6916,7 +6916,7 @@ unittest
 }
 
 // Central moment: withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -6937,7 +6937,7 @@ unittest
 }
 
 // Central moment: Test N == 1
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6955,7 +6955,7 @@ unittest
 }
 
 /// Standardized moment with scaled calculation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6973,7 +6973,7 @@ unittest
 }
 
 // standardized moment: dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -6990,7 +6990,7 @@ unittest
 }
 
 // standardized moment: withAsSlice test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7011,7 +7011,7 @@ unittest
 }
 
 // standardized moment: Test N == 2
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7030,7 +7030,7 @@ unittest
 }
 
 // standardized moment: Test N == 1
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7141,7 +7141,7 @@ template rawMoment(size_t N, string summation)
 }
 
 /// Basic implementation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7156,7 +7156,7 @@ unittest
 }
 
 /// Raw Moment of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7172,7 +7172,7 @@ unittest
 }
 
 /// Raw Moment of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -7190,7 +7190,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7225,7 +7225,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7243,7 +7243,7 @@ unittest
 rawMoment works for complex numbers and other user-defined types (that are either
 implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7256,7 +7256,7 @@ unittest
 }
 
 /// Arbitrary raw moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7267,7 +7267,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7277,7 +7277,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7394,7 +7394,7 @@ template centralMoment(size_t N, string summation)
 }
 
 /// Basic implementation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7409,7 +7409,7 @@ unittest
 }
 
 /// Central Moment of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7423,7 +7423,7 @@ unittest
 }
 
 /// Central Moment of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -7439,7 +7439,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7474,7 +7474,7 @@ unittest
 }
 
 // mir.complex test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7492,7 +7492,7 @@ unittest
 centralMoment works for complex numbers and other user-defined types (that are
 either implicitly convertible to floating point or if `isComplex` is true)
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7505,7 +7505,7 @@ unittest
 }
 
 /// Arbitrary central moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7516,7 +7516,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7526,7 +7526,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7540,7 +7540,7 @@ unittest
 }
 
 // test special casing
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7691,7 +7691,7 @@ template standardizedMoment(size_t N, string standardizedMomentAlgo, string vari
 }
 
 /// Basic implementation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7708,7 +7708,7 @@ unittest
 }
 
 /// Standardized Moment of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7722,7 +7722,7 @@ unittest
 }
 
 /// Standardized Moment of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -7738,7 +7738,7 @@ unittest
 }
 
 /// Can also set algorithm type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -7766,7 +7766,7 @@ unittest
 }
 
 /// Can also set algorithm or output type
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7803,7 +7803,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct. By default, they get converted to double.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7821,7 +7821,7 @@ unittest
 }
 
 /// Arbitrary standardized moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7833,7 +7833,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -7843,7 +7843,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -7857,7 +7857,7 @@ unittest
 }
 
 // test special casing
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -8002,7 +8002,7 @@ template moment(size_t N, string momentAlgo, string summation = "appropriate")
 }
 
 /// Basic implementation
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -8029,7 +8029,7 @@ unittest
 }
 
 /// Standardized Moment of vector
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -8043,7 +8043,7 @@ unittest
 }
 
 /// Standardized Moment of matrix
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -8062,7 +8062,7 @@ unittest
 For integral slices, can pass output type as template parameter to ensure output
 type is correct. By default, they get converted to double.
 +/
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -8080,7 +8080,7 @@ unittest
 }
 
 /// Arbitrary standardized moment
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
@@ -8091,7 +8091,7 @@ unittest
 }
 
 // dynamic array test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -8101,7 +8101,7 @@ unittest
 }
 
 // @nogc test
-version(mir_stat_test_uni)
+version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
