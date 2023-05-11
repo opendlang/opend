@@ -40,19 +40,14 @@ template dAgostinoPearsonTest(
         if(isFloatingPoint!F && isIterable!Range)
     {
         import core.lifetime: move;
-        import mir.stat.descriptive.univariate: KurtosisAccumulator, SkewnessAccumulator;
+        import mir.stat.descriptive.univariate: KurtosisAccumulator;
         import mir.stat.distribution.chi2: chi2CCDF;
         import mir.math.sum: ResolveSummationType;
 
         KurtosisAccumulator!(F, kurtosisAlgo, ResolveSummationType!(summation, Range, F)) kurtosisAccumulator = r;
         auto kurtosisStat = kurtosisTestImpl!F(kurtosisAccumulator);
 
-        static if (kurtosisAlgo == KurtosisAlgo.naive || kurtosisAlgo == KurtosisAlgo.online)
-            alias skewnessAccumulator = kurtosisAccumulator;
-        else
-            SkewnessAccumulator!(F, kurtosisAlgo, ResolveSummationType!(summation, Range, F)) skewnessAccumulator = r.move;
-
-        auto skewnessStat = skewnessTestImpl!F(skewnessAccumulator);
+        auto skewnessStat = skewnessTestImpl!F(kurtosisAccumulator);
         auto stat = skewnessStat * skewnessStat + kurtosisStat * kurtosisStat;
         p = chi2CCDF(stat, 2);
         return stat;
@@ -105,7 +100,7 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.stat.descriptive.univariate: SkewnessAccumulator;
+    import mir.stat.descriptive.univariate: SkewnessAccumulator, SkewnessAlgo;
     import mir.math.common: approxEqual, pow;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
@@ -113,7 +108,7 @@ unittest
 
     auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-    SkewnessAccumulator!(double, KurtosisAlgo.naive, Summation.naive) v = x;
+    SkewnessAccumulator!(double, SkewnessAlgo.naive, Summation.naive) v = x;
 
     auto zsk = v.skewnessTestImpl!double;
     zsk.shouldApprox == 1.7985465327962042;

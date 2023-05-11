@@ -21,7 +21,9 @@ configuration "unittest-perf" {
 buildType "unittest-perf" {
     buildOptions "unittests" "releaseMode" "optimize" "inline"
     dflags "-mcpu=native"
-    versions "mir_stat_test_cov_performance"
+    versions "mir_stat_test_skew_performance"
+    versions "mir_stat_test_kurt_performance"
+    //versions "mir_stat_test_cov_performance"
 }
 buildType "unittest-dip1008" {
     buildOptions "unittests" "debugMode" "debugInfo"

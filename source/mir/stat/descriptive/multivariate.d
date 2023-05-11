@@ -68,7 +68,7 @@ enum CovarianceAlgo
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isMutable!T && covarianceAlgo == CovarianceAlgo.naive)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -123,8 +123,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -157,42 +157,42 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F sumOfProducts(F = T)() const @property
+    F sumOfProducts(F = T)() @property
     {
         return cast(F) summatorOfProducts.sum;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return sumOfProducts!F - sumLeft!F * sumRight!F / count;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return sumOfProducts!F / (count + isPopulation - 1) -
             (sumLeft!F * sumRight!F) * (F(1) / (count * (count + isPopulation - 1)));
@@ -319,7 +319,7 @@ unittest
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isFloatingPoint!T && isMutable!T && covarianceAlgo == CovarianceAlgo.online)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -378,8 +378,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -405,7 +405,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     }
 
     ///
-    void put(U, Summation sumAlgo)(CovarianceAccumulator!(U, covarianceAlgo, sumAlgo) v)
+    void put(U, CovarianceAlgo covAlgo, Summation sumAlgo)(CovarianceAccumulator!(U, covAlgo, sumAlgo) v)
+        if (!is(covAlgo == CovarianceAlgo.assumeZeroMean))
     {
         size_t oldCount = count;
         T deltaLeft = v.meanLeft;
@@ -423,37 +424,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!T / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -559,6 +560,81 @@ unittest
     v1.covariance(false).shouldApprox == -5.5 / 11;
 }
 
+// Check adding CovarianceAccumultors (naive)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto y1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto x2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto y2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
+    v1.put(x1, y1);
+    CovarianceAccumulator!(double, CovarianceAlgo.naive, Summation.naive) v2;
+    v2.put(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -5.5 / 12;
+    v1.covariance(false).shouldApprox == -5.5 / 11;
+}
+
+// Check adding CovarianceAccumultors (twoPass)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto y1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto x2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto y2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
+    v1.put(x1, y1);
+    auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.twoPass, Summation.naive)(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -5.5 / 12;
+    v1.covariance(false).shouldApprox == -5.5 / 11;
+}
+
+// Check adding CovarianceAccumultors (assumeZeroMean)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto a1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto b1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto a2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto b2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+    auto x1 = a1.center;
+    auto y1 = b1.center;
+    auto x2 = a2.center;
+    auto y2 = b2.center;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
+    v1.put(x1, y1);
+    auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.assumeZeroMean, Summation.naive)(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -1.9375 / 12; //note: different from above due to inconsistent centering
+    v1.covariance(false).shouldApprox == -1.9375 / 11; //note: different from above due to inconsistent centering
+}
+
 // Initializing with one point
 version(mir_stat_test)
 @safe pure nothrow
@@ -593,7 +669,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 {
     import mir.functional: naryFun;
     import mir.math.stat: MeanAccumulator;
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -602,11 +678,11 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     ///
     alias S = Summator!(T, summation);
     ///
-    S summatorLeft;
+    private S summatorLeft;
     ///
-    S summatorRight;
+    private S summatorRight;
     ///
-    S centeredSummatorOfProducts;
+    private S centeredSummatorOfProducts;
 
     ///
     this(IteratorX, IteratorY, SliceKind kindX, SliceKind kindY)(
@@ -618,14 +694,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
      }
      do
     {
-        import core.lifetime: move;
         import mir.ndslice.internal: LeftOp;
         import mir.ndslice.topology: map, vmap, zip;
 
         _count = x.length;
         summatorLeft.put(x.lightScope);
         summatorRight.put(y.lightScope);
-        centeredSummatorOfProducts.put(x.move.vmap(LeftOp!("-", T)(meanLeft)).zip(y.move.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
+        centeredSummatorOfProducts.put(x.vmap(LeftOp!("-", T)(meanLeft)).zip(y.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
     }
 
     ///
@@ -639,8 +714,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     this(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         import mir.primitives: elementCount, hasShape;
 
@@ -682,37 +757,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -869,7 +944,7 @@ unittest
 struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summation)
     if (isMutable!T && covarianceAlgo == CovarianceAlgo.assumeZeroMean)
 {
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: Slice, SliceKind, hasAsSlice, isConvertibleToSlice, isSlice;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -920,8 +995,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         do
         {
@@ -950,37 +1025,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return 0;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return 0;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return 0;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return 0;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1137,7 +1212,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     if (isFloatingPoint!T && isMutable!T && covarianceAlgo == CovarianceAlgo.hybrid)
 {
     import mir.functional: naryFun;
-    import mir.math.sum: Summator;
+    import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
 
@@ -1177,14 +1252,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     }
     do
     {
-        import core.lifetime: move;
         import mir.ndslice.internal: LeftOp;
         import mir.ndslice.topology: map, vmap, zip;
 
         _count += x.length;
         summatorLeft.put(x.lightScope);
         summatorRight.put(y.lightScope);
-        centeredSummatorOfProducts.put(x.move.vmap(LeftOp!("-", T)(meanLeft)).zip(y.move.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
+        centeredSummatorOfProducts.put(x.vmap(LeftOp!("-", T)(meanLeft)).zip(y.vmap(LeftOp!("-", T)(meanRight))).map!(naryFun!"a * b"));
     }
 
     ///
@@ -1198,8 +1272,8 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
     {
         import mir.primitives: elementCount, hasShape;
 
@@ -1262,37 +1336,37 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 const:
 
     ///
-    size_t count() const @property
+    size_t count() @property
     {
         return _count;
     }
     ///
-    F sumLeft(F = T)() const @property
+    F sumLeft(F = T)() @property
     {
         return cast(F) summatorLeft.sum;
     }
     ///
-    F sumRight(F = T)() const @property
+    F sumRight(F = T)() @property
     {
         return cast(F) summatorRight.sum;
     }
     ///
-    F meanLeft(F = T)() const @property
+    F meanLeft(F = T)() @property
     {
         return sumLeft!F / count;
     }
     ///
-    F meanRight(F = T)() const @property
+    F meanRight(F = T)() @property
     {
         return sumRight!F / count;
     }
     ///
-    F centeredSumOfProducts(F = T)() const @property
+    F centeredSumOfProducts(F = T)() @property
     {
         return cast(F) centeredSummatorOfProducts.sum;
     }
     ///
-    F covariance(F = T)(bool isPopulation) const @property
+    F covariance(F = T)(bool isPopulation) @property
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1398,7 +1472,7 @@ unittest
     v1.covariance(false).shouldApprox == -5.5 / 11;
 }
 
-// Check adding different CovarianceAccumultors
+// Check adding CovarianceAccumultors (naive)
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -1420,6 +1494,57 @@ unittest
 
     v1.covariance(true).shouldApprox == -5.5 / 12;
     v1.covariance(false).shouldApprox == -5.5 / 11;
+}
+
+// Check adding CovarianceAccumultors (twoPass)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto x1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto y1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto x2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto y2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v1;
+    v1.put(x1, y1);
+    auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.twoPass, Summation.naive)(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -5.5 / 12;
+    v1.covariance(false).shouldApprox == -5.5 / 11;
+}
+
+// Check adding CovarianceAccumultors (assumeZeroMean)
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.sum: sum, Summation;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+    import mir.test: shouldApprox;
+
+    auto a1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
+    auto b1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
+    auto a2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
+    auto b2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
+    auto x1 = a1.center;
+    auto y1 = b1.center;
+    auto x2 = a2.center;
+    auto y2 = b2.center;
+
+    CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v1;
+    v1.put(x1, y1);
+    auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.assumeZeroMean, Summation.naive)(x2, y2);
+    v1.put(v2);
+
+    v1.covariance(true).shouldApprox == -1.9375 / 12; //note: different from above due to inconsistent centering
+    v1.covariance(false).shouldApprox == -1.9375 / 11; //note: different from above due to inconsistent centering
 }
 
 // Initializing with one point
@@ -1703,7 +1828,9 @@ unittest
 
     auto e = [E];
     auto time = benchmarkRandom2!(fs)(n, m, output);
+    writeln("Covariance performance test");
     foreach (size_t i; 0 .. fs.length) {
         writeln("Function ", i + 1, ", Algo: ", e[i], ", Output: ", output[i], ", Elapsed time: ", time[i]);
     }
+    writeln();
 }
