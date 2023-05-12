@@ -26,6 +26,26 @@ alias scanlineConversionFunction_t = void function(const(ubyte)* inScan, ubyte* 
 
 
 
+//
+// FROM xxxx TO rgb8
+// (used in eg. the TGA encoder)
+
+void scanline_convert_l8_to_rgb8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    ubyte* outb = outScan;
+    for (int x = 0; x < width; ++x)
+    {
+        ubyte b = inScan[x];
+        *outb++ = b;
+        *outb++ = b;
+        *outb++ = b;
+    }
+}
+
+void scanline_convert_rgb8_to_rgb8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    memcpy(outScan, inScan, width * 3);
+}
 
 //
 // FROM xxxx TO rgba8

@@ -24,7 +24,8 @@ nothrow:
     IOStream* _io;
     void* _handle;
     PixelType _inputType;
-    scanlineConversionFunction_t scanConvert;
+    scanlineConversionFunction_t _scanConvert;
+    int _channels;
     int _width;
     int _height;
     ubyte* scanSpace;
@@ -43,19 +44,32 @@ nothrow:
         _width = width;
         _height = height;
 
-        // Always puts out a RGBA8 TGA file. (FUTURE: allow RGB8)
-        scanSpace = cast(ubyte*) malloc(width * 4);
         
         switch(inputType) with (PixelType)
         {
             case unknown: assert(false);
-            case l8:    scanConvert = &scanline_convert_l8_to_rgba8; break;
-            case la8:   scanConvert = &scanline_convert_la8_to_rgba8; break;
-            case rgb8:  scanConvert = &scanline_convert_rgb8_to_rgba8; break;
-            case rgba8: scanConvert = &scanline_convert_rgba8_to_rgba8; break;
+            case l8:
+                _channels = 3;
+                _scanConvert = &scanline_convert_l8_to_rgb8; 
+                break;
+            case la8:   
+                _channels = 4;
+                _scanConvert = &scanline_convert_la8_to_rgba8; 
+                break;
+            case rgb8:  
+                _channels = 3;
+                _scanConvert = &scanline_convert_rgb8_to_rgb8; 
+                break;
+            case rgba8: 
+                _channels = 4;
+                _scanConvert = &scanline_convert_rgba8_to_rgba8; 
+                break;
             default:
                 return false; // Unsupported format
         }
+
+        // Always puts out a RGB8 or RGBA8 TGA file.
+        scanSpace = cast(ubyte*) malloc(width * _channels);
 
         ubyte[18] header;
         header[0] = 0;
@@ -68,7 +82,7 @@ nothrow:
         header[14] = height & 0xff;
         header[15] = (height & 0xff00) >>> 8;
 
-        header[16] = 32; // 32-bit color (could be 24)
+        header[16] = cast(ubyte)(_channels * 8); // write 24 or 32
         header[17] = 0;
 
         if (18 != io.write(header.ptr, 1, 18, handle))
@@ -85,22 +99,35 @@ nothrow:
     // Note: .tga scanlines are stored reversed, call this in reverse order.
     bool encodeScanline(const(void)* scanptr)
     {
-        scanConvert(cast(const(ubyte)*)scanptr, scanSpace, _width, null);
+        _scanConvert(cast(const(ubyte)*)scanptr, scanSpace, _width, null);
 
         // swap R and B, since we need to write in BGRA order
-        for (int x = 0; x < _width; ++x)
+        if (_channels == 4)
         {
-            ubyte r = scanSpace[4*x];
-            ubyte b = scanSpace[4*x+2];
-            scanSpace[4*x+2] = r;
-            scanSpace[4*x] = b;
+            for (int x = 0; x < _width; ++x)
+            {
+                ubyte r = scanSpace[4*x];
+                ubyte b = scanSpace[4*x+2];
+                scanSpace[4*x+2] = r;
+                scanSpace[4*x] = b;
+            }
         }
+        else if (_channels == 3)
+        {
+            for (int x = 0; x < _width; ++x)
+            {
+                ubyte r = scanSpace[3*x];
+                ubyte b = scanSpace[3*x+2];
+                scanSpace[3*x+2] = r;
+                scanSpace[3*x] = b;
+            }
+        }
+        else
+            assert(false);
 
-        void* pp = scanSpace; 
-        assert(_io.write !is null);
-
-        size_t written = _io.write(scanSpace, 1, _width*4, _handle);
-        if (written != _width*4)
+        size_t nbytes = _width * _channels;
+        size_t written = _io.write(scanSpace, 1, nbytes, _handle);
+        if (written != nbytes)
             return false;
 
         return true;
