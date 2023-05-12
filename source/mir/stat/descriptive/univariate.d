@@ -3133,14 +3133,18 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     this(Range)(Range range)
-        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+        if (isIterable!Range && !isConvertibleToSlice!Range)
     {
-        import std.algorithm: map;
-        meanAccumulator.put(range);
+        static if (isInputRange!Range && is(elementType!Range : T)) {
+            import std.algorithm: map;
+            meanAccumulator.put(range);
 
-        auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a");
-        centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
-        centeredSummatorOfCubes.put(centeredRangeMultiplier.map!"a[1]");
+            auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a");
+            centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
+            centeredSummatorOfCubes.put(centeredRangeMultiplier.map!"a[1]");
+        } else {
+            this.put(range);
+        }
     }
 
     ///
@@ -3153,9 +3157,14 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
-        foreach(x; r)
-        {
-            this.put(x);
+        static if (isInputRange!Range && is(elementType!Range : T)) {
+            auto v = typeof(this)(r);
+            this.put(v);
+        } else {
+            foreach(x; r)
+            {
+                this.put(x);
+            }
         }
     }
 
@@ -3311,8 +3320,8 @@ unittest
 {
     import mir.math.sum: Summation;
     import mir.test: should;
-    import std.range: iota;
     import std.algorithm: map;
+    import std.range: chunks, iota;
 
     auto x1 = iota(0, 5);
     auto v1 = SkewnessAccumulator!(double, SkewnessAlgo.hybrid, Summation.naive)(x1);
@@ -3320,6 +3329,11 @@ unittest
     auto x2 = x1.map!(a => 2 * a);
     auto v2 = SkewnessAccumulator!(double, SkewnessAlgo.hybrid, Summation.naive)(x2);
     v2.skewness(true).should == 0;
+    SkewnessAccumulator!(double, SkewnessAlgo.hybrid, Summation.naive) v3;
+    v3.put(x1.chunks(1));
+    v3.skewness(true).should == 0;
+    auto v4 = SkewnessAccumulator!(double, SkewnessAlgo.hybrid, Summation.naive)(x1.chunks(1));
+    v4.skewness(true).should == 0;
 }
 
 // Can put slice
@@ -5421,15 +5435,19 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
 
     ///
     this(Range)(Range range)
-        if (isInputRange!Range && !isConvertibleToSlice!Range && is(elementType!Range : T))
+        if (isIterable!Range && !isConvertibleToSlice!Range)
     {
-        import std.algorithm: map;
-        meanAccumulator.put(range);
+        static if (isInputRange!Range && is(elementType!Range : T)) {
+            import std.algorithm: map;
+            meanAccumulator.put(range);
 
-        auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a", "a * a * a * a");
-        centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
-        centeredSummatorOfCubes.put(centeredRangeMultiplier.map!"a[1]");
-        centeredSummatorOfQuarts.put(centeredRangeMultiplier.map!"a[2]");
+            auto centeredRangeMultiplier = range.map!(a => (a - mean)).map!("a * a", "a * a * a", "a * a * a * a");
+            centeredSummatorOfSquares.put(centeredRangeMultiplier.map!"a[0]");
+            centeredSummatorOfCubes.put(centeredRangeMultiplier.map!"a[1]");
+            centeredSummatorOfQuarts.put(centeredRangeMultiplier.map!"a[2]");
+        } else {
+            this.put(range);
+        }
     }
 
     ///
@@ -5442,9 +5460,14 @@ struct KurtosisAccumulator(T, KurtosisAlgo kurtosisAlgo, Summation summation)
     void put(Range)(Range r)
         if (isIterable!Range)
     {
-        foreach(x; r)
-        {
-            this.put(x);
+        static if (isInputRange!Range && is(elementType!Range : T)) {
+            auto v = typeof(this)(r);
+            this.put(v);
+        } else {
+            foreach(x; r)
+            {
+                this.put(x);
+            }
         }
     }
 
@@ -5635,8 +5658,8 @@ unittest
 {
     import mir.math.sum: Summation;
     import mir.test: shouldApprox;
-    import std.range: iota;
     import std.algorithm: map;
+    import std.range: chunks, iota;
 
     auto x1 = iota(0, 5);
     auto v1 = KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive)(x1);
@@ -5644,6 +5667,11 @@ unittest
     auto x2 = x1.map!(a => 2 * a);
     auto v2 = KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive)(x2);
     v2.kurtosis(false, true).shouldApprox == 1.8;
+    KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive) v3;
+    v3.put(x1.chunks(1));
+    v1.kurtosis(false, true).shouldApprox == 1.8;
+    auto v4 = KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive)(x1.chunks(1));
+    v1.kurtosis(false, true).shouldApprox == 1.8;
 }
 
 // Can put slice
