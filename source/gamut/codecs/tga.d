@@ -82,6 +82,7 @@ nothrow:
         free(scanSpace);
     }
 
+    // Note: .tga scanlines are stored reversed, call this in reverse order.
     bool encodeScanline(const(void)* scanptr)
     {
         scanConvert(cast(const(ubyte)*)scanptr, scanSpace, _width, null);

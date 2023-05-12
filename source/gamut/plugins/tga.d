@@ -64,7 +64,7 @@ bool saveTGA(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     }
 
     // Encode scanline one by one, to allow conversion on write.
-    for (int y = 0; y < image._height; ++y)
+    for (int y = image._height - 1; y >= 0; --y)
     {
         if (!encoder.encodeScanline(image.scanptr(y)))
             return false;
