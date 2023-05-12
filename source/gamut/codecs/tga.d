@@ -15,7 +15,7 @@ import gamut.types;
 import gamut.io;
 
 
-/// This supports l8, la8, rgb8, rgba8 as input, and can output a bgra8 .TGA only
+/// This supports l8, la8, rgb8, rgba8 as input, and can output RGB8 or RGBA8 .TGA with RLE
 struct TGAEncoder
 {
 nothrow:
@@ -40,9 +40,9 @@ nothrow:
         _handle = handle;
         _enableRLE = enableRLE;
 
-        if (width > 65525) // not supported by TARGA
+        if (width > 65535) // not supported by TARGA
             return false;
-        if (height > 65525)
+        if (height > 65535)
             return false;
 
         _width = width;
