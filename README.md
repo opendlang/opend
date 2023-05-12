@@ -22,6 +22,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - QOI: 8-bit, RGB/RGBA
 - QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA
 - DDS: BC7 encoded, 8-bit, RGB/RGBA
+- TGA: 8-bit, RGB/RGBA
 
 
 ## Changelog
