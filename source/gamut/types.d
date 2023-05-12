@@ -19,7 +19,8 @@ enum ImageFormat
     PNG     =  1, /// Portable Network Graphics (*.PNG)
     QOI     =  2, /// Quite OK Image format (*.QOI)
     QOIX    =  3, /// Quite OK Image format, eXtended as in Gamut (*.QOIX)
-    DDS     =  4  /// Compressed texture formats.
+    DDS     =  4, /// Compressed texture formats.
+    TGA     =  5, /// Truevision TGA
 }
 
 /// Pixel component type.

@@ -11,17 +11,17 @@
     "configurations": [
         {
             "name": "boost+mit",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",
-                          "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS" ]
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA",
+                          "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS", "encodeTGA" ]
         },
         {
             "name": "boost",
-            "versions": [ "decodeJPEG", "decodePNG", 
-                          "encodeJPEG", "encodePNG", "encodeDDS" ]
+            "versions": [ "decodeJPEG", "decodePNG",                                         "decodeTGA",
+                          "encodeJPEG", "encodePNG", "encodeDDS",                            "encodeTGA" ]
         },              
         {
             "name": "just-decode",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX" ]
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA" ]
         },
         {
             "name": "audio-plugin",
