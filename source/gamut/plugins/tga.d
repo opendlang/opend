@@ -58,7 +58,8 @@ bool saveTGA(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
 
     TGAEncoder encoder;
 
-    if (!encoder.initialize(io, handle, image._type, image._width, image._height))
+    bool enableRLE = true; // No real reason not to enable RLE.
+    if (!encoder.initialize(io, handle, image._type, image._width, image._height, enableRLE))
     {
         return false;
     }
