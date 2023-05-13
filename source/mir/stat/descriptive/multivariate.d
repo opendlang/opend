@@ -378,17 +378,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
     {
-        do
-        {
-            assert(!(!x.empty && y.empty) && !(x.empty && !y.empty),
-                   "x and y must both be empty at the same time, one cannot be empty while the other has remaining items");
-            this.put(x.front, y.front);
-            x.popFront;
-            y.popFront;
-        } while(!x.empty || !y.empty); // Using an || instead of && so that the loop does not end early. mis-matched lengths of x and y sould be caught by above assert
+        import std.range: zip;
+        foreach(a, b; zip(x, y)) {
+            this.put(a, b);
+        }
     }
 
     ///
@@ -654,13 +650,16 @@ unittest
 {
     import mir.math.sum: Summation;
     import mir.test: should;
-    import std.range: iota;
+    import std.range: chunks, iota;
 
     auto x = iota(0, 5);
     auto y = iota(-3, 2);
     CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v;
     v.put(x, y);
     v.covariance(true).should == 10 / 5;
+    CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v2;
+    v2.put(x.chunks(1), y.chunks(1));
+    v2.covariance(true).should == 10 / 5;
 }
 
 ///
@@ -1228,20 +1227,13 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     S centeredSummatorOfProducts;
 
     ///
-    this(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && isInputRange!RangeY)
-    {
-        this.put(x, y);
-    }
-
-    ///
     this()(T x, T y)
     {
         this.put(x, y);
     }
 
     ///
-    void put(IteratorX, IteratorY, SliceKind kindX, SliceKind kindY)(
+    this(IteratorX, IteratorY, SliceKind kindX, SliceKind kindY)(
         Slice!(IteratorX, 1, kindX) x,
         Slice!(IteratorY, 1, kindY) y
     )
@@ -1262,46 +1254,65 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     }
 
     ///
-    void put(SliceLikeX, SliceLikeY)(SliceLikeX x, SliceLikeY y)
+    this(SliceLikeX, SliceLikeY)(SliceLikeX x, SliceLikeY y)
         if (isConvertibleToSlice!SliceLikeX && !isSlice!SliceLikeX &&
             isConvertibleToSlice!SliceLikeY && !isSlice!SliceLikeY)
     {
         import mir.ndslice.slice: toSlice;
-        this.put(x.toSlice, y.toSlice);
+        this(x.toSlice, y.toSlice);
+    }
+
+    ///
+   this(RangeX, RangeY)(RangeX x, RangeY y)
+        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX &&
+            isInputRange!RangeY && !isConvertibleToSlice!RangeY)
+    {
+        static if (is(elementType!RangeX : T) && is(elementType!RangeY : T)) {
+            import mir.primitives: elementCount, hasShape;
+
+            static if (hasShape!RangeX && hasShape!RangeY) {
+                assert(x.elementCount == y.elementCount);
+                _count += x.elementCount;
+                summatorLeft.put(x);
+                summatorRight.put(y);
+            } else {
+                import std.range: zip;
+
+                foreach(a, b; zip(x, y)) {
+                    _count++;
+                    summatorLeft.put(a);
+                    summatorRight.put(b);
+                }
+            }
+
+            T xMean = meanLeft;
+            T yMean = meanRight;
+            do
+            {
+                assert(!(!x.empty && y.empty) && !(x.empty && !y.empty),
+                       "x and y must both be empty at the same time, one cannot be empty while the other has remaining items");
+                centeredSummatorOfProducts.put((x.front - xMean) * (y.front - yMean));
+                x.popFront;
+                y.popFront;
+            } while(!x.empty || !y.empty); // Using an || instead of && so that the loop does not end early. mis-matched lengths of x and y sould be caught by above assert
+        } else {
+            this.put(x, y);
+        }
     }
 
     ///
     void put(RangeX, RangeY)(RangeX x, RangeY y)
-        if (isInputRange!RangeX && !isConvertibleToSlice!RangeX && is(elementType!RangeX : T) &&
-            isInputRange!RangeY && !isConvertibleToSlice!RangeY && is(elementType!RangeY : T))
+        if (isInputRange!RangeX && isInputRange!RangeY)
     {
-        import mir.primitives: elementCount, hasShape;
-
-        static if (hasShape!RangeX && hasShape!RangeY) {
-            assert(x.elementCount == y.elementCount);
-            _count += x.elementCount;
-            summatorLeft.put(x);
-            summatorRight.put(y);
+        static if (is(elementType!RangeX : T) && is(elementType!RangeY : T)) {
+            auto v = typeof(this)(x, y);
+            this.put(v);
         } else {
             import std.range: zip;
-
             foreach(a, b; zip(x, y)) {
-                _count++;
-                summatorLeft.put(a);
-                summatorRight.put(b);
+                this.put(a, b);
             }
         }
-
-        T xMean = meanLeft;
-        T yMean = meanRight;
-        do
-        {
-            assert(!(!x.empty && y.empty) && !(x.empty && !y.empty),
-                   "x and y must both be empty at the same time, one cannot be empty while the other has remaining items");
-            centeredSummatorOfProducts.put((x.front - xMean) * (y.front - yMean));
-            x.popFront;
-            y.popFront;
-        } while(!x.empty || !y.empty); // Using an || instead of && so that the loop does not end early. mis-matched lengths of x and y sould be caught by above assert
     }
 
     ///
@@ -1566,21 +1577,25 @@ unittest
 {
     import mir.math.sum: Summation;
     import mir.test: should;
-    import std.range: iota;
     import std.algorithm: map;
+    import std.range: chunks, iota;
 
     auto x1 = iota(0, 5);
     auto y1 = iota(-3, 2);
     CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v1;
     v1.put(x1, y1);
     v1.covariance(true).should == 10.0 / 5;
-
     // this version can't use elementCount
     CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v2;
     auto x2 = x1.map!(a => 2 * a);
     auto y2 = y1.map!(a => 2 * a);
     v2.put(x2, y2);
     v2.covariance(true).should == 40.0 / 5;
+    CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive) v3;
+    v3.put(x1.chunks(1), y1.chunks(1));
+    v3.covariance(true).should == 10.0 / 5;
+    auto v4 = CovarianceAccumulator!(double, CovarianceAlgo.hybrid, Summation.naive)(x1.chunks(1), y1.chunks(1));
+    v4.covariance(true).should == 10.0 / 5;
 }
 
 /++

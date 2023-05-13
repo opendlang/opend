@@ -5669,9 +5669,9 @@ unittest
     v2.kurtosis(false, true).shouldApprox == 1.8;
     KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive) v3;
     v3.put(x1.chunks(1));
-    v1.kurtosis(false, true).shouldApprox == 1.8;
+    v3.kurtosis(false, true).shouldApprox == 1.8;
     auto v4 = KurtosisAccumulator!(double, KurtosisAlgo.hybrid, Summation.naive)(x1.chunks(1));
-    v1.kurtosis(false, true).shouldApprox == 1.8;
+    v4.kurtosis(false, true).shouldApprox == 1.8;
 }
 
 // Can put slice
