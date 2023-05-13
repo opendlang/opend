@@ -248,6 +248,8 @@ nothrow:
     void* _handle;
 
     ubyte _cmapType; // 0 = not indexed      1 = indexed
+    ushort _paletteStart;
+    ushort _paletteLen;
     ubyte _imageType; 
     ubyte _cmapSize;
     ubyte _bpp;
@@ -287,8 +289,15 @@ nothrow:
             if (_imageType != 1 && _imageType != 9)
                 return false;
 
-            if (!_io.skipBytes(_handle, 4)) // discard palette location
+            _paletteStart = _io.read_ushort_LE(_handle, &err);
+            if (err)
                 return false;
+            _paletteLen = _io.read_ushort_LE(_handle, &err);
+            if (err)
+                return false;
+
+            if (_paletteLen == 0)
+                return false; // no entry in palette
 
             _cmapSize = _io.read_ubyte(_handle, &err); // check bits per palette color entry
             if (err) 
@@ -360,6 +369,7 @@ nothrow:
             return null;
 
         ubyte* data = cast(ubyte*) malloc(_width * _height * components); // SECURITY: this is bad
+        ubyte* palette = null;
 
         if ( !isIndexed && !_isRLE && !_rgb16 ) 
         {
@@ -369,17 +379,174 @@ nothrow:
                 ubyte* prow = data + row * _width * components;
                 size_t bytes = _width * components;
                 if (bytes != _io.read(prow, 1, bytes, _handle))
+                {
+                    free(data);
                     return null;
+                }
             }
         } 
         else
         {
-            assert(false); // unsupported
+            // Is there a palette?
+            if (isIndexed)
+            {
+                if (!_io.skipBytes(_handle, _paletteStart))
+                    goto errored;
+
+                palette = cast(ubyte*) malloc(_paletteLen * components); // PERF: could be allocated as extra bytes
+
+                if (_rgb16) 
+                {
+                    ubyte* pal_entry = palette;
+                    assert(components == 3);
+                    for (int i = 0; i < _paletteLen; ++i) 
+                    {
+                        stbi__tga_read_rgb16(pal_entry, &err);
+                        if (err)
+                            goto errored;
+                        pal_entry += components;
+                    }
+                } 
+                else
+                {
+                    // Read whole palette at once.
+                    size_t bytes = _paletteLen * components;
+                    if (bytes != _io.read(palette, 1, bytes, _handle))
+                        goto errored_with_palette;
+                }
+            }
+
+            int RLE_count = 0;
+            int RLE_repeating = 0;
+            int read_next_pixel = 1;
+            ubyte[4] raw_data;
+
+            // Load the data
+            for (int i = 0; i < _width * _height; ++i)
+            {
+                //   if I'm in RLE mode, do I need to get a RLE stbi__pngchunk?
+                if (_isRLE)
+                {
+                    if (RLE_count == 0)
+                    {
+                        //   yep, get the next byte as a RLE command
+                        int RLE_cmd = _io.read_ubyte(_handle, &err);
+                        if (err)
+                            goto errored_with_palette;
+
+                        RLE_count = 1 + (RLE_cmd & 127);
+                        RLE_repeating = RLE_cmd >> 7;
+                        read_next_pixel = 1;
+                    } 
+                    else if ( !RLE_repeating )
+                    {
+                        read_next_pixel = 1;
+                    }
+                } 
+                else
+                {
+                    read_next_pixel = 1;
+                }
+
+                //   OK, if I need to read a pixel, do it now
+                if ( read_next_pixel )
+                {
+                    //   load however much data we did have
+                    if (isIndexed)
+                    {
+                        // read in index, then perform the lookup
+                        int pal_idx;
+                        if (_bpp == 8)
+                            pal_idx = _io.read_ubyte(_handle, &err);
+                        else
+                            pal_idx = _io.read_ushort_LE(_handle, &err);
+                        if (err)
+                            goto errored_with_palette;
+
+                        if (pal_idx >= _paletteLen) 
+                        {
+                            // invalid index
+                            pal_idx = 0;
+                        }
+                        pal_idx *= components;
+                        for (int j = 0; j < components; ++j) 
+                        {
+                            raw_data[j] = palette[pal_idx + j];
+                        }
+                    } 
+                    else if (_rgb16) 
+                    {
+                        assert(components == 3);
+                        stbi__tga_read_rgb16(raw_data.ptr, &err);
+                        if (err)
+                            goto errored_with_palette;
+                    } 
+                    else 
+                    {
+                        //   read in the data raw
+                        for (int j = 0; j < components; ++j) 
+                        {
+                            raw_data[j] = _io.read_ubyte(_handle, &err);
+                            if (err)
+                                goto errored_with_palette;
+                        }
+                    }
+                    //   clear the reading flag for the next pixel
+                    read_next_pixel = 0;
+                } // end of reading a pixel
+
+                // copy data
+                for (int j = 0; j < components; ++j)
+                {
+                    data[i * components + j] = raw_data[j];
+                }
+
+                //   in case we're in RLE mode, keep counting down
+                --RLE_count;
+            }
+            
+            //   do I need to invert the image?
+            if (_inverted)
+            {
+                for (int j = 0; j * 2 < _height; ++j)
+                {
+                    int index1 = j * _width * components;
+                    int index2 = (_height - 1 - j) * _width * components;
+                    for (int i = _width * components; i > 0; --i)
+                    {
+                        ubyte temp = data[index1];
+                        data[index1] = data[index2];
+                        data[index2] = temp;
+                        ++index1;
+                        ++index2;
+                    }
+                }
+            }
+            free(palette);
+        }
+
+        // swap RB - if the source data was RGB16, it already is in the right order
+        if (components >= 3 && !_rgb16)
+        {
+            ubyte* tga_pixel = data;
+            for (int i = 0; i < _width * _height; ++i)
+            {
+                ubyte temp = tga_pixel[0];
+                tga_pixel[0] = tga_pixel[2];
+                tga_pixel[2] = temp;
+                tga_pixel += components;
+            }
         }
 
         *outComponents = components;
-
         return data;
+
+        errored_with_palette:
+            free(palette);
+
+        errored:
+            free(data);
+            return null;
     }
 
 
@@ -405,5 +572,28 @@ nothrow:
         default: 
             return 0;
         }
+    }
+
+    void stbi__tga_read_rgb16(ubyte* outColor, bool* err)
+    {
+        ushort px = _io.read_ushort_LE(_handle, err);
+        if (*err)
+            return;
+        
+        ushort fiveBitMask = 31;
+
+        // we have 3 channels with 5bits each
+        int r = (px >> 10) & fiveBitMask;
+        int g = (px >> 5) & fiveBitMask;
+        int b = px & fiveBitMask;
+        // Note that this saves the data in RGB(A) order, so it doesn't need to be swapped later
+        outColor[0] = cast(ubyte)((r * 255)/31);
+        outColor[1] = cast(ubyte)((g * 255)/31);
+        outColor[2] = cast(ubyte)((b * 255)/31);
+
+        // some people claim that the most significant bit might be used for alpha
+        // (possibly if an alpha-bit is set in the "image descriptor byte")
+        // but that only made 16bit test images completely translucent..
+        // so let's treat all 15 and 16bit TGAs as RGB with no alpha.
     }
 }
