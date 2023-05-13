@@ -239,5 +239,171 @@ nothrow:
     }
 }
 
+struct TGADecoder
+{
+nothrow:
+@nogc:
+
+    IOStream* _io;
+    void* _handle;
+
+    ubyte _cmapType; // 0 = not indexed      1 = indexed
+    ubyte _imageType; 
+    ubyte _cmapSize;
+    ubyte _bpp;
+    int _inverted;
+    int _width = 0;
+    int _height = 0;
+    bool _isRLE;
+    bool _rgb16;
+    ubyte _dataOffset;
+
+    bool initialize(IOStream* io, IOHandle handle)
+    {
+        _io = io;
+        _handle = handle;
+        return true;
+    }
+
+    // If successful, this is a probable TGA (header isn't very decisive...) and you can read _width/_height/_bpp
+    bool getImageInfo()
+    {
+        // Taken right from stb_image.h
+
+        bool err;
+        _dataOffset = _io.read_ubyte(_handle, &err);
+        if (err)
+            return false;
+        
+        _cmapType = _io.read_ubyte(_handle, &err);
+        if (err || _cmapType > 1)
+            return false; // only RGB or indexed allowed
+
+        _imageType = _io.read_ubyte(_handle, &err);
+        if (err) return false;
+
+        if (_cmapType == 1) // has colormap
+        {
+            if (_imageType != 1 && _imageType != 9)
+                return false;
+
+            if (!_io.skipBytes(_handle, 4)) // discard palette location
+                return false;
+
+            _cmapSize = _io.read_ubyte(_handle, &err); // check bits per palette color entry
+            if (err) 
+                return false;
+
+            if ( (_cmapSize != 8) && (_cmapSize != 15) && (_cmapSize != 16) && (_cmapSize != 24) && (_cmapSize != 32) ) 
+            {
+                return false;
+            }
+
+            if (!_io.skipBytes(_handle, 4)) // image x and y origin
+                return false;
+        }
+        else // no colormap
+        {
+            // grey and RGB, RLE or not
+            if ( (_imageType != 2) && (_imageType != 3) && (_imageType != 10) && (_imageType != 11) )
+                return false;
+
+            if (!_io.skipBytes(_handle, 9))
+                return false;
+        }
+
+        _width = _io.read_ushort_LE(_handle, &err);
+        if (err) return false;
+        _height = _io.read_ushort_LE(_handle, &err);
+        if (err) return false;
+        if (_width < 1 || _height < 1)
+            return false; // Apparently size 0 not allowed
+
+        _bpp = _io.read_ubyte(_handle, &err); //   bits per pixel
+        if (err) return false; 
+
+        if ( (_cmapType == 1) && (_bpp != 8) && (_bpp != 16) ) // for colormapped images, bpp is size of an index
+            return false;
+        if ( (_bpp != 8) && (_bpp != 15) && (_bpp != 16) && (_bpp != 24) && (_bpp != 32) )
+            return false;
+
+        return true; // OK, this is maybe a TGA
+    }
+
+    ubyte* decodeImage(int* outComponents)
+    {
+        // Bit of post-processing.
+        _isRLE = false;
+        if (_imageType >= 8) // 10 and 11 become 2 and 3
+        {
+            _imageType -= 8;
+            _isRLE = true;
+        }
+
+        bool err;
+        _inverted = _io.read_ubyte(_handle, &err); //   bits per pixel
+        if (err) 
+            return null; 
+        _inverted = 1 - ((_inverted >> 5) & 1);
+
+        bool isIndexed = _cmapType != 0;
+
+        //   If I'm paletted, then I'll use the number of bits from the palette
+        int components;
+        if (isIndexed)
+            components = stbi__tga_get_comp(_cmapSize, 0, &_rgb16);
+        else 
+            components = stbi__tga_get_comp(_bpp, (_imageType == 3), &_rgb16);
+        assert(components != 0); // should have been taken care of by earlier getImageInfo()
+
+        if (!_io.skipBytes(_handle, _dataOffset))
+            return null;
+
+        ubyte* data = cast(ubyte*) malloc(_width * _height * components); // SECURITY: this is bad
+
+        if ( !isIndexed && !_isRLE && !_rgb16 ) 
+        {
+            for (int i = 0; i < _height; ++i) 
+            {
+                int row = _inverted ? _height - i - 1 : i;
+                ubyte* prow = data + row * _width * components;
+                size_t bytes = _width * components;
+                if (bytes != _io.read(prow, 1, bytes, _handle))
+                    return null;
+            }
+        } 
+        else
+        {
+            assert(false); // unsupported
+        }
+
+        *outComponents = components;
+
+        return data;
+    }
 
 
+    int stbi__tga_get_comp(int bits_per_pixel, int is_grey, bool* is_rgb16)
+    {
+        // only RGB or RGBA (incl. 16bit) or grey allowed
+        *is_rgb16 = false;
+        switch(bits_per_pixel) 
+        {
+        case 8:  
+            return 1;
+        case 16: 
+            if(is_grey) 
+                return 2;
+            goto case 15;
+        case 15: 
+            *is_rgb16 = true;
+            return 3;
+        case 24: 
+            goto case 32;
+        case 32: 
+            return bits_per_pixel / 8;
+        default: 
+            return 0;
+        }
+    }
+}

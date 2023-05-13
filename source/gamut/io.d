@@ -125,6 +125,40 @@ nothrow @nogc @safe:
         return seek(handle, offset, SEEK_SET) == 0;
     }
 
+    /// Helper to read one ubyte in stream.
+    /// On error, sets `err` to `true` and return 0.
+    ubyte read_ubyte(IOHandle handle, bool* err) nothrow @nogc @trusted
+    {
+        ubyte v;
+        if (1 == read(&v, 1, 1, handle))
+        {
+            *err = false;
+            return v;
+        }
+        else
+        {
+            *err = true;
+            return 0;
+        }
+    }
+
+    /// Helper to read one little-endian ushort in stream.
+    /// On error, sets `err` to `true` and return 0.
+    ushort read_ushort_LE(IOHandle handle, bool* err) nothrow @nogc @trusted
+    {
+        ushort v;
+        if (2 == read(&v, 1, 2, handle))
+        {
+            *err = false;
+            return v;
+        }
+        else
+        {
+            *err = true;
+            return 0;
+        }
+    }
+
 package:
 
     /// Setup the IOStream for reading a file. The passed `IOHandle` will need to be a `FILE*`.

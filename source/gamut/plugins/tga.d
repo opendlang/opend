@@ -38,16 +38,82 @@ ImageFormatPlugin makeTGAPlugin()
 }
 
 
-version(decodePNG)
+version(decodeTGA)
 void loadTGA(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 {
-    assert(false); // Not supported yet
+    TGADecoder decoder;
+    if (!decoder.initialize(io, handle))
+    {
+        image.error(kStrImageDecodingFailed);
+        return;
+    }
+    
+    if (!decoder.getImageInfo())
+    {
+        image.error(kStrImageDecodingFailed);
+        return;
+    }
+
+    if (!imageIsValidSize(decoder._width, decoder._height))
+    {
+        image.error(kStrImageTooLarge);
+        return;
+    }
+
+    // Allocate space for loaded image, following constraints.
+    int decodedComponents;
+    ubyte* decoded = decoder.decodeImage(&decodedComponents);
+
+    if (decoded is null)
+    {
+        image.error(kStrImageDecodingFailed);
+        return;
+    }
+
+    if (decodedComponents == 1)
+        image._type = PixelType.l8;
+    else if (decodedComponents == 2)
+        image._type = PixelType.la8;
+    else if (decodedComponents == 3)
+        image._type = PixelType.rgb8;
+    else if (decodedComponents == 4)
+        image._type = PixelType.rgba8;
+
+    image._width = decoder._width;
+    image._height = decoder._height;
+    image._allocArea = decoded;
+    image._data = decoded;
+    image._pitch = decoder._width * decodedComponents;
+    image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
+    image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+    image._layoutConstraints = LAYOUT_DEFAULT;
+
+    // Convert to target type and constraints
+    image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);
 }
 
 bool detectTGA(IOStream *io, IOHandle handle) @trusted
 {
-    // TODO
-    return false;
+    // save I/O cursor
+    c_long offset = io.tell(handle);
+
+    bool res = false;
+    {
+        TGADecoder decoder;
+        if (decoder.initialize(io, handle))
+        {
+            res = decoder.getImageInfo();
+        }
+    }
+
+    // restore I/O cursor
+    if (!io.seekAbsolute(handle, offset))
+    {
+        // TODO: that rare error should propagate somehow, 
+        // we couldn't reset the cursor hence more detection will fail.
+        return false; 
+    }
+    return res;
 }
 
 version(encodeTGA)

@@ -817,9 +817,17 @@ public:
     {
         for (ImageFormat fif = ImageFormat.first; fif <= ImageFormat.max; ++fif)
         {
-            if (detectFormatFromStream(fif, io, handle))
-                return fif;
+            if (fif != ImageFormat.TGA)
+            {
+                if (detectFormatFromStream(fif, io, handle))
+                    return fif;
+            }
         }
+
+        // Note: TGA needs to be last, because the detection test is fuzzy for this one.
+        if (detectFormatFromStream(ImageFormat.TGA, io, handle))
+            return ImageFormat.TGA;
+
         return ImageFormat.unknown;
     }
 
