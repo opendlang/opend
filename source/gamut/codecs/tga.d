@@ -56,6 +56,7 @@ import gamut.io;
 
 /// This supports l8, la8, rgb8, rgba8 as input, and can output RGB8 or RGBA8 .TGA with RLE
 /// Reference: http://www.paulbourke.net/dataformats/tga/
+version(encodeTGA)
 struct TGAEncoder
 {
 nothrow:
@@ -279,6 +280,7 @@ nothrow:
     }
 }
 
+version(decodeTGA)
 struct TGADecoder
 {
 nothrow:

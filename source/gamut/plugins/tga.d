@@ -25,11 +25,11 @@ ImageFormatPlugin makeTGAPlugin()
     p.format = "TGA";
     p.extensionList = "tga";
     p.mimeTypes = "image/tga";
-    version(decodePNG)
+    version(decodeTGA)
         p.loadProc = &loadTGA;
     else
         p.loadProc = null;
-    version(encodePNG)
+    version(encodeTGA)
         p.saveProc = &saveTGA;
     else
         p.saveProc = null;

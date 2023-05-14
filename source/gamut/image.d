@@ -1995,28 +1995,33 @@ unittest
     version(encodePNG)
     {
         ubyte[] png = image.saveToMemory(ImageFormat.PNG);
-        checkEncode(png, true);
+        version(decodePNG) checkEncode(png, true);
         freeEncodedImage(png);
     }
-
     version(encodeJPEG)
     {
         ubyte[] jpeg = image.saveToMemory(ImageFormat.JPEG);
-        checkEncode(jpeg, false);
+        version(decodeJPEG) checkEncode(jpeg, false);
         freeEncodedImage(jpeg);
     }
-
     version(encodeQOI)
     {
         ubyte[] qoi = image.saveToMemory(ImageFormat.QOI);
-        checkEncode(qoi, true);
+        version(decodeQOI) checkEncode(qoi, true);
         freeEncodedImage(qoi);
     }
 
     version(encodeQOIX)
     {
         ubyte[] qoix = image.saveToMemory(ImageFormat.QOIX);
-        checkEncode(qoi, true);
+        version(decodeQOIX) checkEncode(qoi, true);
         freeEncodedImage(qoix);
+    }
+
+   version(encodeTGA)
+    {
+        ubyte[] tga = image.saveToMemory(ImageFormat.TGA);
+        version(decodeTGA) checkEncode(tga, true);
+        freeEncodedImage(tga);
     }
 }
