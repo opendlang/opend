@@ -105,6 +105,7 @@ The function either returns null on failure (invalid parameters or malloc
 failed) or a pointer to the encoded data on success. On success the out_len 
 is set to the size in bytes of the encoded data.
 The returned qoi data should be free()d after use. */
+version(encodeQOIX)
 ubyte* qoiplane_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
     if ( (desc.channels != 1 && desc.channels != 2) ||
@@ -372,6 +373,7 @@ failed) or a pointer to the decoded pixels. On success, the qoi_desc struct
 is filled with the description from the file header.
 
 The returned pixel data should be free()d after use. */
+version(decodeQOIX)
 ubyte* qoiplane_decode(const(ubyte)* data, int size, qoi_desc *desc, int channels) 
 { 
     if ((channels < 0 && channels > 2) ||

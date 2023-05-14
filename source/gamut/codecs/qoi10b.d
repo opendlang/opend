@@ -115,6 +115,7 @@ The function either returns null on failure (invalid parameters or malloc
 failed) or a pointer to the encoded data on success. On success the out_len 
 is set to the size in bytes of the encoded data.
 The returned qoi data should be free()d after use. */
+version(encodeQOIX)
 ubyte* qoi10b_encode(const(ubyte)* data, const(qoi_desc)* desc, int *out_len) 
 {
     if ( (desc.channels != 1 && desc.channels != 2 && desc.channels != 3 && desc.channels != 4) ||
@@ -458,6 +459,7 @@ failed) or a pointer to the decoded 16-bit pixels. On success, the qoi_desc stru
 is filled with the description from the file header.
 
 The returned pixel data should be free()d after use. */
+version(decodeQOIX)
 ubyte* qoi10b_decode(const(void)* data, int size, qoi_desc *desc, int channels) 
 {
     const(ubyte)* bytes;
