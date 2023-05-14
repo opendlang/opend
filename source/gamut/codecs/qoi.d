@@ -548,16 +548,3 @@ void *qoi_decode(const void *data, int size, qoi_desc *desc, int channels)
 
     return pixels;
 }
-
-bool qoi_is_qoi_image(const(ubyte)[] imageData)
-{
-    if (imageData is null)
-        return false;
-
-    if (imageData.length < QOI_HEADER_SIZE)
-        return false;
-
-    int p = 0;
-    uint header_magic = qoi_read_32(imageData.ptr, &p);
-    return header_magic == QOI_MAGIC;
-}
