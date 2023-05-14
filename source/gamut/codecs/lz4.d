@@ -35,6 +35,14 @@
 */
 module gamut.codecs.lz4;
 
+
+version(decodeQOIX)
+    version = hasLZ4;
+version(encodeQOIX)
+    version = hasLZ4;
+
+version(hasLZ4):
+
 nothrow @nogc:
 
 private import core.stdc.stdlib;
