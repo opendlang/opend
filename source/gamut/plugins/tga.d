@@ -94,26 +94,33 @@ void loadTGA(ref Image image, IOStream *io, IOHandle handle, int page, int flags
 
 bool detectTGA(IOStream *io, IOHandle handle) @trusted
 {
-    // save I/O cursor
-    c_long offset = io.tell(handle);
-
-    bool res = false;
+    version(decodeTGA)
     {
-        TGADecoder decoder;
-        if (decoder.initialize(io, handle))
+        // save I/O cursor
+        c_long offset = io.tell(handle);
+
+        bool res = false;
         {
-            res = decoder.getImageInfo();
+            TGADecoder decoder;
+            if (decoder.initialize(io, handle))
+            {
+                res = decoder.getImageInfo();
+            }
         }
-    }
 
-    // restore I/O cursor
-    if (!io.seekAbsolute(handle, offset))
-    {
-        // TODO: that rare error should propagate somehow, 
-        // we couldn't reset the cursor hence more detection will fail.
-        return false; 
+        // restore I/O cursor
+        if (!io.seekAbsolute(handle, offset))
+        {
+            // TODO: that rare error should propagate somehow, 
+            // we couldn't reset the cursor hence more detection will fail.
+            return false; 
+        }
+        return res;
     }
-    return res;
+    else
+    {
+        return false;
+    }
 }
 
 version(encodeTGA)
