@@ -262,7 +262,7 @@ Another way to create an `Image` is to load an encoded image.
   ```
 
   > **Key concept:** The image `pitch` is the distance between the start of two consecutive scanlines, in bytes.
-  **This pitch can be negative.**
+  **IMPORTANT: This pitch can be negative.**
 
 ### **3.2 Access a row of pixels:**
   ```d
@@ -391,7 +391,7 @@ LAYOUT_BORDER_3
 ```
 
 ### 4.5 Forcing pixels to be upside down or straight
-> **Vertical** constraint force the image to be store in a certain vertical direction (by default: any).
+> **Vertical** constraint forces the image to be stored in a certain vertical direction (by default: any).
 ```d
 LAYOUT_VERT_FLIPPED
 LAYOUT_VERT_STRAIGHT
