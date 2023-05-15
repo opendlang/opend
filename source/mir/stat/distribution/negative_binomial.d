@@ -103,6 +103,17 @@ unittest {
     import mir.bignum.fp: Fp, fp_log;
     import mir.test: shouldApprox;
 
+    1.fp_negativeBinomialPMF(1_000_000, Fp!128(0.75)).fp_log!double.shouldApprox == negativeBinomialLPMF(1, 1_000_000, 0.75);
+}
+
+
+// test more values
+version(mir_stat_test_fp)
+@safe pure nothrow @nogc
+unittest {
+    import mir.bignum.fp: Fp, fp_log;
+    import mir.test: shouldApprox;
+
     enum size_t val = 1_000_000;
 
     0.fp_negativeBinomialPMF(val + 5, Fp!128(0.75)).fp_log!double.shouldApprox == negativeBinomialLPMF(0, val + 5, 0.75);
@@ -372,6 +383,27 @@ unittest {
 
     size_t value;
     for (size_t i; i < 6; i++) {
+        for (double x = 0.05; x < 1; x = x + 0.05) {
+            value = x.negativeBinomialInvCDF(ns[i], ps[i]);
+            negativeBinomialCDF(value, ns[i], ps[i]).should!"a >= b"(x);
+            if (value > 0) {
+                negativeBinomialCDF(value - 1, ns[i], ps[i]).should!"a < b"(x);
+            }
+        }
+    }
+}
+
+// more detailed guess paths
+version(mir_stat_test_binom_multi)
+@safe pure nothrow
+unittest {
+    import mir.test: should;
+
+    static immutable size_t[] ns = [  25,  37,  34,    25,     25,   105];
+    static immutable double[] ps = [0.55, 0.2, 0.15, 0.05, 1.0e-8, 0.025];
+
+    size_t value;
+    for (size_t i; i < 6; i++) {
         for (double x = 0.01; x < 1; x = x + 0.01) {
             value = x.negativeBinomialInvCDF(ns[i], ps[i]);
             negativeBinomialCDF(value, ns[i], ps[i]).should!"a >= b"(x);
@@ -430,6 +462,18 @@ unittest {
 }
 
 /// Accurate values for large values of `n`
+version(mir_stat_test_fp)
+@safe pure nothrow @nogc
+unittest {
+    import mir.bignum.fp: Fp, fp_log;
+    import mir.test: shouldApprox;
+
+    enum size_t val = 1_000_000;
+
+    1.negativeBinomialLPMF(1_000_000, 0.75).shouldApprox == fp_negativeBinomialPMF(1, 1_000_000, Fp!128(0.75)).fp_log!double;
+}
+
+// testing more values
 version(mir_stat_test_fp)
 @safe pure nothrow @nogc
 unittest {
