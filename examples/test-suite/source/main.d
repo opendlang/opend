@@ -6,7 +6,8 @@ import gamut;
 
 void main(string[] args)
 { 
-  //  testIssue35();
+    testIssue35();
+    testIssue46();
     testReallocSpeed();
 }
 
@@ -16,6 +17,20 @@ void testIssue35()
     image.loadFromFile("test-images/issue35.jpg", LOAD_RGB | LOAD_8BIT | LOAD_ALPHA | LAYOUT_VERT_STRAIGHT | LAYOUT_GAPLESS);
     assert(!image.isError);
     image.saveToFile("output/issue35.png");
+}
+
+// should not fail while loading an empty file, and report an error instead
+void testIssue46()
+{
+    Image image;
+    image.loadFromFile("test-images/issue46.jpg");
+    assert(image.isError);
+
+    image.loadFromFile("test-images/issue35.jpg");
+    assert(!image.isError);
+
+    image.loadFromFile("test-images/issue46.jpg");
+    assert(image.isError);
 }
 
 void testReallocSpeed()
