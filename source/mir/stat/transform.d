@@ -52,7 +52,7 @@ import mir.math.common: fmamath;
 import mir.math.stat: mean, standardDeviation, VarianceAlgo;
 import mir.math.sum: Summation;
 import mir.stat.descriptive: QuantileAlgo;
-import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind, hasAsSlice;
 
 /++
 For each `e` of the input, applies `e op m` where `m` is the result of `fun` and
@@ -73,9 +73,6 @@ See_also:
 +/
 template sweep(alias fun, string op)
 {
-    import mir.ndslice.internal: LeftOp, ImplicitlyUnqual;
-    import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
-    import mir.ndslice.topology: vmap;
     /++
     Params:
         slice = slice
@@ -88,18 +85,13 @@ template sweep(alias fun, string op)
         auto m = fun(slice.lightScope);
         return .sweep!op(slice.move, m);
     }
-    
-    /// ditto
-    @fmamath auto sweep(T)(T[] array)
-    {
-        return sweep(array.sliced);
-    }
 
     /// ditto
-    @fmamath auto sweep(T)(T withAsSlice)
-        if (hasAsSlice!T)
+    @fmamath auto sweep(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        return sweep(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        return sweep(x.toSlice);
     }
 }
 
@@ -123,20 +115,13 @@ template sweep(string op)
 
         return slice.move.vmap(LeftOp!(op, ImplicitlyUnqual!T)(m));
     }
-        
-    /// ditto
-    @fmamath auto sweep(T)(T[] array, T m)
-    {
-        import mir.ndslice.slice: sliced;
-
-        return sweep(array.sliced, m);
-    }
 
     /// ditto
-    @fmamath auto sweep(T, U)(T withAsSlice, U m)
-        if (hasAsSlice!T)
+    @fmamath auto sweep(SliceLike, T)(SliceLike x, T m)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        return sweep(withAsSlice.asSlice, m);
+        import mir.ndslice.slice: toSlice;
+        return sweep(x.toSlice, m);
     }
 }
 
@@ -324,8 +309,6 @@ See_also:
 template scale(alias centralTendency = mean!(Summation.appropriate),
                alias dispersion = standardDeviation!(VarianceAlgo.online, Summation.appropriate))
 {
-    import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
-
     /++
     Params:
         slice = slice
@@ -341,16 +324,11 @@ template scale(alias centralTendency = mean!(Summation.appropriate),
     }
     
     /// ditto
-    @fmamath auto scale(T)(T[] array)
+    @fmamath auto scale(SliceLike)(SliceLike x)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        return scale(array.sliced);
-    }
-
-    /// ditto
-    @fmamath auto scale(T)(T withAsSlice)
-        if (hasAsSlice!T)
-    {
-        return scale(withAsSlice.asSlice);
+        import mir.ndslice.slice: toSlice;
+        return scale(x.toSlice);
     }
 }
 
@@ -373,18 +351,11 @@ Params:
 }
     
 /// ditto
-@fmamath auto scale(T, U)(T[] array, T m, U d)
+@fmamath auto scale(SliceLike, T, U)(SliceLike x, T m, U d)
+    if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
 {
-    import mir.ndslice.slice: sliced;
-
-    return scale(array.sliced, m, d);
-}
-
-/// ditto
-@fmamath auto scale(T, U, V)(T withAsSlice, U m, V d)
-    if (hasAsSlice!T)
-{
-    return scale(withAsSlice.asSlice, m, d);
+    import mir.ndslice.slice: toSlice;
+    return scale(x.toSlice, m, d);
 }
 
 /// Scale vector
@@ -562,18 +533,11 @@ template zscore(F,
     }
     
     /// ditto
-    @fmamath auto zscore(T)(T[] array, bool isPopulation = false)
+    @fmamath auto zscore(SliceLike)(SliceLike x, bool isPopulation = false)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        import mir.ndslice.slice: sliced;
-
-        return zscore(array.sliced, isPopulation);
-    }
-
-    /// ditto
-    @fmamath auto zscore(T)(T withAsSlice, bool isPopulation = false)
-        if (hasAsSlice!T)
-    {
-        return zscore(withAsSlice.asSlice, isPopulation);
+        import mir.ndslice.slice: toSlice;
+        return zscore(x.toSlice, isPopulation);
     }
 }
 
@@ -594,18 +558,12 @@ template zscore(VarianceAlgo varianceAlgo = VarianceAlgo.online,
     }
 
     /// ditto
-    @fmamath auto zscore(T)(T[] array, bool isPopulation = false)
+    @fmamath auto zscore(SliceLike)(SliceLike x, bool isPopulation = false)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        alias F = meanType!(T[]);
-        return .zscore!(F, varianceAlgo, summation)(array, isPopulation);
-    }
-
-    /// ditto
-    @fmamath auto zscore(T)(T withAsSlice, bool isPopulation = false)
-        if (hasAsSlice!T)
-    {
-        alias F = meanType!(T);
-        return .zscore!(F, varianceAlgo, summation)(withAsSlice, isPopulation);
+        import mir.ndslice.slice: toSlice;
+        alias F = meanType!(SliceLike);
+        return .zscore!(F, varianceAlgo, summation)(x.toSlice, isPopulation);
     }
 }
 
@@ -803,28 +761,13 @@ template robustScale(F,
             return scale(slice, median_value, cast(meanType!F) (high_quartile_value - low_quartile_value));
         }
     }
-    
-    /++
-    Params:
-        array = array
-        low_quartile = lower end of quartile range
-    +/
-    @fmamath auto robustScale(T)(T[] array, F low_quartile = cast(F) 0.25)
-    {
-        import mir.ndslice.slice: sliced;
 
-        return robustScale(array.sliced, low_quartile);
-    }
-
-    /++
-    Params:
-        withAsSlice = input for which hasAsSlice is true
-        low_quartile = lower end of quartile range
-    +/
-    @fmamath auto robustScale(T)(T withAsSlice, F low_quartile = cast(F) 0.25)
-        if (hasAsSlice!T)
+    /// ditto
+    @fmamath auto robustScale(SliceLike)(SliceLike x, F low_quartile = cast(F) 0.25)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        return robustScale(withAsSlice.asSlice, low_quartile);
+        import mir.ndslice.slice: toSlice;
+        return robustScale(x.toSlice, low_quartile);
     }
 }
 
@@ -852,27 +795,13 @@ template robustScale(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         return .robustScale!(F, quantileAlgo, allowModifySlice)(slice.move, cast(F) low_quartile);
     }
 
-    /++
-    Params:
-        array = array
-        low_quartile = lower end of quartile range
-    +/
-    @fmamath auto robustScale(T)(T[] array, double low_quartile = 0.25)
+    /// ditto
+    @fmamath auto robustScale(SliceLike)(SliceLike x, double low_quartile = 0.25)
+        if (isConvertibleToSlice!SliceLike && !isSlice!SliceLike)
     {
-        alias F = meanType!(T[]);
-        return .robustScale!(F, quantileAlgo, allowModifySlice)(array, cast(F) low_quartile);
-    }
-
-    /++
-    Params:
-        withAsSlice = input for which hasAsSlice is true
-        low_quartile = lower end of quartile range
-    +/
-    @fmamath auto robustScale(T)(T withAsSlice, double low_quartile = 0.25)
-        if (hasAsSlice!T)
-    {
-        alias F = meanType!(T);
-        return .robustScale!(F, quantileAlgo, allowModifySlice)(withAsSlice, cast(F) low_quartile);
+        import mir.ndslice.slice: toSlice;
+        alias F = meanType!(SliceLike);
+        return .robustScale!(F, quantileAlgo, allowModifySlice)(x.toSlice, cast(F) low_quartile);
     }
 }
 
