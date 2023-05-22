@@ -2298,6 +2298,7 @@ unittest
 /// Compare packed unsigned 8-bit integers in a and b, and return packed maximum values.
 __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
 {
+    // PERF DMD
     static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pmaxub128(cast(ubyte16)a, cast(ubyte16)b);
@@ -2323,6 +2324,7 @@ __m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
         __m128i aTob = a ^ b; // a ^ (a ^ b) == b
         __m128i mask = aTob & higher;
         return b ^ mask;
+
     }
 }
 unittest
@@ -4150,6 +4152,7 @@ __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @trusted
         //       D says "It's illegal to shift by the same or more bits 
         //       than the size of the quantity being shifted"
         //       and it's UB instead.
+        // See Issue: #56
         ubyte count = cast(ubyte) imm8;
         if (count > 31)
             count = 31;

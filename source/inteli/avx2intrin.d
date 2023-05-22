@@ -1651,7 +1651,45 @@ unittest
 // TODO __m256i _mm256_sra_epi16 (__m256i a, __m128i count) pure @safe
 // TODO __m256i _mm256_sra_epi32 (__m256i a, __m128i count) pure @safe
 // TODO __m256i _mm256_srai_epi16 (__m256i a, int imm8) pure @safe
-// TODO __m256i _mm256_srai_epi32 (__m256i a, int imm8) pure @safe
+
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m256i _mm256_srai_epi32 (__m256i a, int imm8) pure @safe
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psradi256(cast(int8)a, cast(ubyte)imm8);
+    }
+    else static if (LDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psradi256(cast(int8)a, cast(ubyte)imm8);
+    }
+    else // split
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_srai_epi32(a_lo, imm8);
+        __m128i r_hi = _mm_srai_epi32(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
+    int8 B = cast(int8) _mm256_srai_epi32(A, 1);
+    int8 B2 = cast(int8) _mm256_srai_epi32(A, 1 + 256);
+    int[8] expectedB = [ 0, 1, 1, -2, 0, 1, 1, -2];
+    assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    int8 C = cast(int8) _mm256_srai_epi32(A, 32);
+    int[8] expectedC = [ 0, 0, 0, -1, 0, 0, 0, -1];
+    assert(C.array == expectedC);
+
+    int8 D = cast(int8) _mm256_srai_epi32(A, 0);
+    int[8] expectedD = [ 0, 2, 3, -4, 0, 2, 3, -4];
+    assert(D.array == expectedD);
+}
+
 // TODO __m128i _mm_srav_epi32 (__m128i a, __m128i count) pure @safe
 // TODO __m256i _mm256_srav_epi32 (__m256i a, __m256i count) pure @safe
 // TODO __m256i _mm256_srl_epi16 (__m256i a, __m128i count) pure @safe
@@ -1672,6 +1710,7 @@ __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
     }
     else
     {
+        //PERF: with high probability, need to split without AVX2, that helped _mm256_srai_epi32
         //PERF: ARM
         short16 sa  = cast(short16)a;
         ubyte count = cast(ubyte)imm8;
@@ -1716,6 +1755,7 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
     }
     else
     {
+        // PERF: split instead
         ubyte count = cast(ubyte) imm8;
         int8 a_int8 = cast(int8) a;
 
