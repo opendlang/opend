@@ -410,7 +410,13 @@ nothrow:
         if (!_io.skipBytes(_handle, _dataOffset))
             return null;
 
-        ubyte* data = cast(ubyte*) malloc(_width * _height * components); // SECURITY: this is bad
+        long allocationSize = (cast(long)_width)*_height * components;
+        if (allocationSize > GAMUT_MAX_IMAGE_BYTES)
+            return null;
+        if (allocationSize >= cast(ulong)(size_t.max))
+            return null;
+
+        ubyte* data = cast(ubyte*) malloc(cast(size_t)allocationSize);
         ubyte* palette = null;
 
         if ( !isIndexed && !_isRLE && !_rgb16 ) 

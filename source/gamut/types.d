@@ -58,17 +58,17 @@ enum GAMUT_UNKNOWN_RESOLUTION = -1;
 /// Explanation: it is possible to have a known pixel ratio, but an unknown DPI (eg: PNG).
 enum GAMUT_UNKNOWN_ASPECT_RATIO = -1;
 
-/// No Gamut `Image` can exceed this width in gamut.
+/// No Gamut `Image` can exceed this width.
 enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;  
 
-/// No Gamut `Image` can exceed this height in gamut.
+/// No Gamut `Image` can exceed this height.
 enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
 
 /// No Gamut `Image` can have a size that exceeds this value.
-/// Note sure a gamut loader could even decode this, but theoretically possible.
 /// Technically, the true maximum is `MAX(size_t.max, GAMUT_MAX_IMAGE_BYTES)`.
 /// So this is worth 32gb. Cannot really exceed that size with just malloc/realloc.
 /// Not strictly needed, but such a large allocation is indicative of forged images / attacks anyway.
+/// For the decoders limitations themselves, see Issue #   resolution.
 enum long GAMUT_MAX_IMAGE_BYTES = 34359738368; 
 
 
