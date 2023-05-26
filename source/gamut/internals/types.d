@@ -144,10 +144,6 @@ bool imageIsValidSize(int width, int height) pure
     if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
         return false;
 
-    long pixels = cast(long)width * cast(long)height;
-    if (pixels > GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT)
-        return false;
-
     return true;
 }
 
@@ -357,6 +353,13 @@ void allocatePixelStorage(ubyte* existingData,
     assert(height >= 0);
     assert(layoutConstraintsValid(constraints));
 
+    // Width and height must be within limits.
+    if (!imageIsValidSize(width, height))
+    {
+        err = true;
+        return;
+    }
+
     int border         = layoutBorderWidth(constraints);
     int rowAlignment   = layoutScanlineAlignment(constraints);
     int trailingPixels = layoutTrailingPixels(constraints);
@@ -399,14 +402,35 @@ void allocatePixelStorage(ubyte* existingData,
 
     // Compute byte pitch and align it on `rowAlignment`
     int pixelSize = pixelTypeSize(type);
+
+    // No overflow, actualWidthInPixels is at a maximum (1<<24)+16
+    //                            and pixel size is at a maxium 16.
     int bytePitch = pixelSize * actualWidthInPixels;
     bytePitch = cast(int) nextMultipleOf(bytePitch, rowAlignment);
 
     assert(bytePitch >= 0);
 
+    // Could overflow to 64-bit here.
+    long sizeNeededBytes = cast(long)bytePitch * cast(long)actualHeightInPixels;
+    sizeNeededBytes += (rowAlignment - 1) + bonusBytes;
+    
+    // A gamut image can't take more than `GAMUT_MAX_IMAGE_BYTES` bytes
+    // in its allocation, including bonus bytes and constraint bytes.
+    if (sizeNeededBytes > GAMUT_MAX_IMAGE_BYTES)
+    {
+        err = true;
+        return;
+    }
+
+    // And the allocation length must fit in a size_t variable.
+    if (sizeNeededBytes >= size_t.max)
+    {
+        err = true; // too large image in 32-bit, typically
+        return;
+    }
+
     // How many bytes do we need for all samples? A bit more for aligning the first valid pixel.
-    size_t allocationSize = bytePitch * actualHeightInPixels;
-    allocationSize += (rowAlignment - 1) + bonusBytes;
+    size_t allocationSize = cast(size_t) sizeNeededBytes;
 
     // PERF: on Windows, reusing previous allocation is much faster for same alloc size
     //       314x faster             vs free+malloc for same size

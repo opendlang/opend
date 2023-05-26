@@ -64,8 +64,12 @@ enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;
 /// No Gamut `Image` can exceed this height in gamut.
 enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
 
-/// No Gamut `Image` can have a width x height product that exceed this value of 67 Mpixels.
-enum int GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT = 67108864;
+/// No Gamut `Image` can have a size that exceeds this value.
+/// Note sure a gamut loader could even decode this, but theoretically possible.
+/// Technically, the true maximum is `MAX(size_t.max, GAMUT_MAX_IMAGE_BYTES)`.
+/// So this is worth 32gb. Cannot really exceed that size with just malloc/realloc.
+/// Not strictly needed, but such a large allocation is indicative of forged images / attacks anyway.
+enum long GAMUT_MAX_IMAGE_BYTES = 34359738368; 
 
 
 /// Converts from meters to inches.

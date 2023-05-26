@@ -218,11 +218,17 @@ public:
 
         // Why there is no #overflow here:
         int psize = pixelTypeSize(_type);
-        assert(psize < GAMUT_MAX_PIXEL_SIZE);
-        assert(cast(long)_width * _height < GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT);
-        assert(cast(long)GAMUT_MAX_IMAGE_WIDTH_x_HEIGHT * GAMUT_MAX_PIXEL_SIZE < 0x7fffffffUL);
-        int ofs = _width * _height * psize;
-        return _data[0..ofs];
+
+        assert(psize <= GAMUT_MAX_PIXEL_SIZE);
+        assert(_width <= GAMUT_MAX_IMAGE_WIDTH);
+        assert(_height <= GAMUT_MAX_IMAGE_HEIGHT);
+
+        // Note: it should fit into size_t. 
+        // If the image size was larger than that, it couldn't have been created.
+        long numBytes = (cast(long)_width) * _height * psize;
+        assert(numBytes <= cast(ulong)(size_t.max));
+
+        return _data[0..cast(size_t)numBytes];
     }
 
     //
