@@ -3600,7 +3600,7 @@ private:
       int scanInit = init_scan(&err);
       if (err)
           return false;
-      if (scanInit)
+      if (!scanInit)
         break;
 
       dc_only_scan = (m_spectral_start == 0);
