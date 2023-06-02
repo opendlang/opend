@@ -2008,11 +2008,106 @@ unittest
 
 // TODO __m256i _mm256_unpackhi_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b) pure @safe
+
+/// Unpack and interleave 64-bit integers from the high half of each 128-bit lane in `a` and `b`, 
+/// and store the results in dst.
+__m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b) pure @trusted
+{
+    version(GNU)
+        enum split = true; // Benefits GDC in non-AVX2
+    else
+        enum split = false;
+
+    static if (GDC_with_AVX2)
+    {
+        return __builtin_ia32_punpckhqdq256(a, b);
+    }
+    else static if (LDC_with_optimizations)
+    {
+        enum ir = `%r = shufflevector <4 x i64> %0, <4 x i64> %1, <4 x i32> <i32 1, i32 5, i32 3, i32 7>
+            ret <4 x i64> %r`;
+        return cast(__m256i)LDCInlineIR!(ir, long4, long4, long4)(a, b);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_unpackhi_epi64(a_lo, b_lo);
+        __m128i r_hi = _mm_unpackhi_epi64(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else
+    {        
+        long4 R;
+        R.ptr[0] = a.array[1];
+        R.ptr[1] = b.array[1];
+        R.ptr[2] = a.array[3];
+        R.ptr[3] = b.array[3];
+        return R;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(0x22222222_22222222, 0x33333333_33333333, 2, 3);
+    __m256i B = _mm256_setr_epi64(0x44444444_44444444, 0x55555555_55555555, 4, 5);
+    long4 C = _mm256_unpackhi_epi64(A, B);
+    long[4] correct = [0x33333333_33333333, 0x55555555_55555555, 3, 5];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_unpackhi_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpacklo_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b) pure @safe
+
+/// Unpack and interleave 64-bit integers from the low half of each 128-bit lane in `a` and `b`.
+__m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b) pure @trusted
+{
+    version(GNU)
+        enum split = true; // Benefits GDC in non-AVX2
+    else
+        enum split = false;
+
+    static if (GDC_with_AVX2)
+    {
+        return __builtin_ia32_punpcklqdq256(a, b);
+    }
+    else static if (LDC_with_optimizations)
+    {
+        enum ir = `%r = shufflevector <4 x i64> %0, <4 x i64> %1, <4 x i32> <i32 0, i32 4, i32 2, i32 6>
+            ret <4 x i64> %r`;
+        return cast(__m256i)LDCInlineIR!(ir, long4, long4, long4)(a, b);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_unpacklo_epi64(a_lo, b_lo);
+        __m128i r_hi = _mm_unpacklo_epi64(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else
+    {        
+        long4 R;
+        R.ptr[0] = a.array[0];
+        R.ptr[1] = b.array[0];
+        R.ptr[2] = a.array[2];
+        R.ptr[3] = b.array[2];
+        return R;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(0x22222222_22222222, 0x33333333_33333333, 2, 3);
+    __m256i B = _mm256_setr_epi64(0x44444444_44444444, 0x55555555_55555555, 4, 5);
+    long4 C = _mm256_unpacklo_epi64(A, B);
+    long[4] correct = [0x22222222_22222222, 0x44444444_44444444, 2, 4];
+    assert(C.array == correct);
+}
+
 // TODO __m256i _mm256_unpacklo_epi8 (__m256i a, __m256i b) pure @safe
 
 /// Compute the bitwise XOR of 256 bits (representing integer data) in `a` and `b`.
