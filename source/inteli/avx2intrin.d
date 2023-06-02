@@ -808,6 +808,8 @@ unittest
 
 // TODO __m256i _mm256_bslli_epi128 (__m256i a, const int imm8) pure @safe
 // TODO __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8) pure @safe
+
+
 // TODO __m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b) pure @safe
@@ -1286,6 +1288,7 @@ unittest
 // TODO __m256i _mm256_hsub_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_hsub_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_hsubs_epi16 (__m256i a, __m256i b) pure @safe
+
 // TODO __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale) pure @safe
 // TODO __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale) pure @safe
 // TODO __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale) pure @safe
@@ -1318,7 +1321,26 @@ unittest
 // TODO __m128 _mm_mask_i64gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale) pure @safe
 // TODO __m128 _mm256_i64gather_ps (float const* base_addr, __m256i vindex, const int scale) pure @safe
 // TODO __m128 _mm256_mask_i64gather_ps (__m128 src, float const* base_addr, __m256i vindex, __m128 mask, const int scale) pure @safe
-// TODO __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8) pure @safe
+
+
+/// Copy `a` to result, then insert 128 bits from `b` into result at the location specified by 
+/// `imm8`.
+__m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8) pure @trusted
+{
+    long2 lb = cast(long2)b;
+    a.ptr[(imm8 & 1)*2  ] = lb.array[0];
+    a.ptr[(imm8 & 1)*2+1] = lb.array[1];
+    return a; 
+}
+unittest
+{
+    __m256i A = [0, 1, 2, 3];
+    long2 B = [4, 5];
+    __m256i C = _mm256_inserti128_si256(A, cast(__m128i)B, 0 + 8);
+    __m256i D = _mm256_inserti128_si256(A, cast(__m128i)B, 1);
+    assert(C.array == [4, 5, 2, 3]);
+    assert(D.array == [0, 1, 4, 5]);
+}
 
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
