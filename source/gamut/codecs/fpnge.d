@@ -14,6 +14,8 @@ module gamut.codecs.fpnge;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+version(encodePNG):
+
 import core.stdc.stdlib: malloc, free;
 import core.stdc.string: memcpy, memset;
 import inteli.nmmintrin; // SSE4.1 only, there was an AVX2 path but not translated
