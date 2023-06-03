@@ -185,7 +185,7 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         case PixelType.la8:    channels = 2; break;
         case PixelType.rgb8:   channels = 3; break;
         case PixelType.rgba8:  channels = 4; break;
-    /*    case PixelType.l16:    channels = 1; is16Bit = true; break;
+   /*     case PixelType.l16:    channels = 1; is16Bit = true; break;
         case PixelType.la16:   channels = 2; is16Bit = true; break;
         case PixelType.rgb16:  channels = 3; is16Bit = true; break;
         case PixelType.rgba16: channels = 4; is16Bit = true; break; */
