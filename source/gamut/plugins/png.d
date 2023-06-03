@@ -178,12 +178,17 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         return false;
 
     int channels = 0;
+    bool is16Bit = false;
     switch (image._type)
     {
         case PixelType.l8:     channels = 1; break;
         case PixelType.la8:    channels = 2; break;
         case PixelType.rgb8:   channels = 3; break;
         case PixelType.rgba8:  channels = 4; break;
+    /*    case PixelType.l16:    channels = 1; is16Bit = true; break;
+        case PixelType.la16:   channels = 2; is16Bit = true; break;
+        case PixelType.rgb16:  channels = 3; is16Bit = true; break;
+        case PixelType.rgba16: channels = 4; is16Bit = true; break; */
         default:
             return false;
     }
@@ -191,20 +196,47 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     int width = image._width;
     int height = image._height;
     int pitch = image._pitch;
-    int len;
-    const(ubyte)* pixels = image._data;
 
-    // PERF: use stb_image_write stbi_write_png_to_func instead.
-    ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
-    if (encoded == null)
-        return false;
+    enum bool useSTB = true;
 
-    scope(exit) free(encoded);
+    static if (useSTB)
+    {
+        int len;
+        const(ubyte)* pixels = image._data;
 
-    // Write all output at once. This is rather bad, could be done progressively.
-    // PERF: adapt stb_image_write.h to output in our own buffer directly.
-    if (len != io.write(encoded, 1, len, handle))
-        return false;
+        // PERF: use stb_image_write stbi_write_png_to_func instead.
+        ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
+        if (encoded == null)
+            return false;
+
+        scope(exit) free(encoded);
+
+        // Write all output at once. This is rather bad, could be done progressively.
+        // PERF: adapt stb_image_write.h to output in our own buffer directly.
+        if (len != io.write(encoded, 1, len, handle))
+            return false;
+    }
+    else // use FPNGE
+    {
+        import gamut.codecs.fpnge;
+
+        size_t allocSize = FPNGEOutputAllocSize(is16Bit ? 2 : 1, channels, width, height );
+        ubyte *encoded = cast(ubyte*) malloc(allocSize);
+        scope(exit) free(encoded);
+
+        // TODO: encoding tweaks?
+        size_t bytesLen = FPNGEEncode(is16Bit ? 2 : 1, channels, 
+                                      image._data, width, pitch, height, encoded, null);
+        if (bytesLen == 0)
+            return false;
+
+        // TODO: check for too large bytesLen, must fit in int
+
+        // Write all output at once. This is rather bad, could be done progressively.
+        // PERF: adapt fpnge to output in our own buffer directly.
+        if (bytesLen != io.write(encoded, 1, bytesLen, handle))
+            return false;
+    }
 
     return true;
 }
