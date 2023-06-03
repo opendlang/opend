@@ -14,7 +14,9 @@ module gamut.codecs.fpnge;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-version(encodePNG):
+
+// The translation is buggy, but original is not. Either retranslate, or find the bug.
+version(none):
 
 import core.stdc.stdlib: malloc, free;
 import core.stdc.string: memcpy, memset;

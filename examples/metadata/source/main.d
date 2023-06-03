@@ -50,6 +50,9 @@ int main(string[] args)
         if (image.errored)
             throw new Exception(image.errorMessage().idup);
 
+        writefln("Width  = %s px", image.width());
+        writefln("Height = %s px", image.height());
+        writefln("Type   = %s", image.type());
         writefln("X resolution (DPI) = %s", image.dotsPerInchX());
         writefln("Y resolution (DPI) = %s", image.dotsPerInchY());
         writefln("X resolution (PPM) = %s", image.pixelsPerMeterX());
