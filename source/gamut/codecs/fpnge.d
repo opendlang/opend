@@ -82,8 +82,6 @@ size_t FPNGEOutputAllocSize(size_t bytes_per_channel, size_t num_channels, size_
     return 1024 + 2 * bytes_per_channel * num_channels * width * height; // TODO: overflow here
 }
 
-enum FPNGE_USE_PEXT = 0;
-
 // #define MM(f) _mm_##f
 // #define MMSI(f) _mm_##f##_si128
 // #define __m128i __m128i
@@ -1381,8 +1379,10 @@ static void WriteHeader(size_t width, size_t height, size_t bytes_per_channel,
   writer.Write(24, 0);
   assert(writer.bits_in_buffer == 0);
   size_t crc_end = writer.bytes_written;
-  uint crc =
-      Crc32().update_final(writer.data + crc_start, crc_end - crc_start);
+
+  Crc32 crcHeader;
+  crcHeader.initialize();
+  uint crc = crcHeader.update_final(writer.data + crc_start, crc_end - crc_start);
   AppendBE32(crc, writer);
 
   if (cicp_colorspace == FPNGE_CICP_PQ) {
@@ -1503,6 +1503,7 @@ size_t FPNGEEncode(size_t bytes_per_channel,
   WriteHuffmanCode(huffman_table, &writer);
 
   Crc32 crc;
+  crc.initialize();
   uint s1 = 1;
   uint s2 = 0;
   for (size_t y = 0; y < height; y++) {
