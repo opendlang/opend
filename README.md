@@ -1,7 +1,6 @@
 # automem - smart pointers for D
 
-[![Build Status](https://travis-ci.org/atilaneves/automem.png?branch=master)](https://travis-ci.org/atilaneves/automem)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/atilaneves/automem?branch=master&svg=true)](https://ci.appveyor.com/project/atilaneves/automem)
+[![Build Status](https://github.com/atilaneves/automem/workflows/CI/badge.svg)](https://github.com/atilaneves/automem/actions)
 [![Coverage](https://codecov.io/gh/atilaneves/automem/branch/master/graph/badge.svg)](https://codecov.io/gh/atilaneves/automem)
 [![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/P3yCpG)
 
