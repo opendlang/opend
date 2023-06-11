@@ -76,7 +76,6 @@ int main(string[] args)
             Image image2;
             image2.loadFromMemory(qoix_encoded);
             assert(!image2.isError);
-            image2.convertTo8Bit();
             string path = "output/" ~ baseName(f) ~ ".png";
             image2.saveToFile(path, ImageFormat.PNG);
         }
