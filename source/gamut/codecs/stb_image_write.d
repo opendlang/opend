@@ -542,7 +542,15 @@ ubyte stbiw__paeth(int a, int b, int c)
 }
 
 // @OPTIMIZE: provide an option that always forces left-predict or paeth predict
-static void stbiw__encode_png_line(ubyte *pixels, int stride_bytes, int width, int height, int y, int n, int filter_type, byte* line_buffer)
+static void stbiw__encode_png_line(ubyte *pixels, 
+                                   int stride_bytes, 
+                                   int width, 
+                                   int height, 
+                                   int y, 
+                                   int n,
+                                   bool is16bit,
+                                   int filter_type, 
+                                   byte* line_buffer)
 {
    static immutable int[5] mapping  = [ 0,1,2,3,4 ];
    static immutable int[5] firstmap = [ 0,1,0,5,6 ];
@@ -552,10 +560,32 @@ static void stbiw__encode_png_line(ubyte *pixels, int stride_bytes, int width, i
    ubyte *z = pixels + stride_bytes * (stbi__flip_vertically_on_write ? height-1-y : y);
    int signed_stride = stbi__flip_vertically_on_write ? -stride_bytes : stride_bytes;
 
+   int line_bytes = width * n * (is16bit ? 2 : 1);
+
    if (type==0) {
-      memcpy(line_buffer, z, width*n);
+
+      if (is16bit)
+      {
+          version(LittleEndian)
+          {
+               // 16-bit PNG samples are actually in Big Endian
+               for (int x = 0; x < width*n; ++x)
+               {
+                   line_buffer[x*2  ] = z[x*2+1];
+                   line_buffer[x*2+1] = z[x*2  ];
+               }
+          }
+          else
+              memcpy(line_buffer, z, line_bytes);
+      }
+      else
+      {
+          memcpy(line_buffer, z, line_bytes);
+      }
       return;
    }
+
+   assert(!is16bit); // TODO: implement filters for 16-bit samples
 
    // first loop isn't optimized since it's just one pixel
    for (i = 0; i < n; ++i) {
@@ -580,27 +610,31 @@ static void stbiw__encode_png_line(ubyte *pixels, int stride_bytes, int width, i
    }
 }
 
-public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int x, int y, int n, int *out_len)
+public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int x, int y, int n, int *out_len, bool is16bit)
 {
     int force_filter = stbi_write_force_png_filter;
+
+    // TODO support filter in 16-bit output
+    if (is16bit)
+        force_filter = 0; // force no filter on 16-bit encode, help getting 16-bit compatibility
+
     static immutable int[5] ctype = [ -1, 0, 4, 2, 6 ];
     static immutable ubyte[8] sig = [ 137,80,78,71,13,10,26,10 ];
     ubyte *out_, o, filt, zlib;
     byte* line_buffer;
     int j, zlen;
 
-    if (stride_bytes == 0)
-        stride_bytes = x * n;
+    int lineBytes = x * n * (is16bit ? 2 : 1);
 
     if (force_filter >= 5) 
     {
         force_filter = -1;
     }
 
-    filt = cast(ubyte *) STBIW_MALLOC((x*n+1) * y); 
+    filt = cast(ubyte *) STBIW_MALLOC((lineBytes + 1) * y); // +1 byte for the filter type
     if (!filt) 
         return null;
-    line_buffer = cast(byte *) STBIW_MALLOC(x * n); 
+    line_buffer = cast(byte *) STBIW_MALLOC(lineBytes); 
     if (!line_buffer) 
     { 
         STBIW_FREE(filt); 
@@ -612,15 +646,16 @@ public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int 
       int filter_type;
       if (force_filter > -1) {
          filter_type = force_filter;
-         stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, force_filter, line_buffer);
+         stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, is16bit, force_filter, line_buffer);
+
       } else { // Estimate the best filter by running through all of them:
          int best_filter = 0, best_filter_val = 0x7fffffff, est, i;
          for (filter_type = 0; filter_type < 5; filter_type++) {
-            stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, filter_type, line_buffer);
+            stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, is16bit, filter_type, line_buffer);
 
             // Estimate the entropy of the line using this filter; the less, the better.
             est = 0;
-            for (i = 0; i < x*n; ++i) {
+            for (i = 0; i < x*n; ++i) { // TODO 16-bit
                est += abs(line_buffer[i]);
             }
             if (est < best_filter_val) {
@@ -628,17 +663,18 @@ public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int 
                best_filter = filter_type;
             }
          }
-         if (filter_type != best_filter) {  // If the last iteration already got us the best filter, don't redo it
-            stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, best_filter, line_buffer);
+         if (filter_type != best_filter)   // If the last iteration already got us the best filter, don't redo it
+         {
+            stbiw__encode_png_line(cast(ubyte*)(pixels), stride_bytes, x, y, j, n, is16bit, best_filter, line_buffer);
             filter_type = best_filter;
          }
       }
       // when we get here, filter_type contains the filter type, and line_buffer contains the data
-      filt[j*(x*n+1)] = cast(ubyte) filter_type;
-      STBIW_MEMMOVE(filt+j*(x*n+1)+1, line_buffer, x*n);
+      filt[j*(lineBytes+1)] = cast(ubyte) filter_type;
+      STBIW_MEMMOVE(filt+j*(lineBytes+1)+1, line_buffer, lineBytes);
    }
    STBIW_FREE(line_buffer);
-   zlib = stbi_zlib_compress(filt, y*( x*n+1), &zlen, stbi_write_png_compression_level);
+   zlib = stbi_zlib_compress(filt, y*(lineBytes+1), &zlen, stbi_write_png_compression_level);
    STBIW_FREE(filt);
    if (!zlib) 
        return null;
@@ -655,7 +691,7 @@ public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int 
    stbiw__wptag(o, "IHDR");
    stbiw__wp32(o, x);
    stbiw__wp32(o, y);
-   *o++ = 8;
+   *o++ = (is16bit ? 16 : 8);
    *o++ = STBIW_UCHAR(ctype[n]);
    *o++ = 0;
    *o++ = 0;

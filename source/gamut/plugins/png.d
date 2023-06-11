@@ -185,10 +185,10 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         case PixelType.la8:    channels = 2; break;
         case PixelType.rgb8:   channels = 3; break;
         case PixelType.rgba8:  channels = 4; break;
-      /*  case PixelType.l16:    channels = 1; is16Bit = true; break;
+        case PixelType.l16:    channels = 1; is16Bit = true; break;
         case PixelType.la16:   channels = 2; is16Bit = true; break;
         case PixelType.rgb16:  channels = 3; is16Bit = true; break;
-        case PixelType.rgba16: channels = 4; is16Bit = true; break; */
+        case PixelType.rgba16: channels = 4; is16Bit = true; break;
         default:
             return false;
     }
@@ -205,7 +205,7 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
         const(ubyte)* pixels = image._data;
 
         // PERF: use stb_image_write stbi_write_png_to_func instead.
-        ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len);
+        ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len, is16Bit);
         if (encoded == null)
             return false;
 
