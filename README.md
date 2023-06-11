@@ -18,7 +18,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 
 ## Encoding
 
-- PNG. 8-bit, RGB/RGBA
+- PNG. 8-bit, 16-bit, L/LA/RGB/RGBA
 - JPEG: 8-bit, greyscale/RGB, baseline
 - TGA: 8-bit, RGB/RGBA
 - QOI: 8-bit, RGB/RGBA
@@ -28,6 +28,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 
 ## Changelog
 
+- **v2.2.y** Added 16-bit PNG output.
 - **v2.1.y** Added TGA format support.
 - **v2.x.y** QOIX bitstream changed. Ways to disown and deallocate image allocation pointer. It's safe to update to latest tag in the same major version. Do keep a 16-bit source in case the bitstream changes.
 - **v1.x.y** Initial release.

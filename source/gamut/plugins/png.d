@@ -197,47 +197,20 @@ bool savePNG(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     int height = image._height;
     int pitch = image._pitch;
 
-    enum bool useSTB = true; // fpnge translation not ready
+    int len;
+    const(ubyte)* pixels = image._data;
 
-    static if (useSTB)
-    {
-        int len;
-        const(ubyte)* pixels = image._data;
+    // PERF: use stb_image_write stbi_write_png_to_func instead.
+    ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len, is16Bit);
+    if (encoded == null)
+        return false;
 
-        // PERF: use stb_image_write stbi_write_png_to_func instead.
-        ubyte *encoded = gamut.codecs.stb_image_write.stbi_write_png_to_mem(pixels, pitch, width, height, channels, &len, is16Bit);
-        if (encoded == null)
-            return false;
+    scope(exit) free(encoded);
 
-        scope(exit) free(encoded);
-
-        // Write all output at once. This is rather bad, could be done progressively.
-        // PERF: adapt stb_image_write.h to output in our own buffer directly.
-        if (len != io.write(encoded, 1, len, handle))
-            return false;
-    }
-    else // use FPNGE
-    {
-        import gamut.codecs.fpnge;
-
-        size_t allocSize = FPNGEOutputAllocSize(is16Bit ? 2 : 1, channels, width, height );
-        ubyte *encoded = cast(ubyte*) malloc(allocSize);
-        scope(exit) free(encoded);
-
-        // TODO: encoding tweaks?
-        size_t bytesLen = FPNGEEncode(is16Bit ? 2 : 1, channels, 
-                                      image._data, width, pitch, height, encoded, null);
-        assert(bytesLen <= allocSize);
-        if (bytesLen == 0)
-            return false;
-
-        // TODO: check for too large bytesLen, must fit in int
-
-        // Write all output at once. This is rather bad, could be done progressively.
-        // PERF: adapt fpnge to output in our own buffer directly.
-        if (bytesLen != io.write(encoded, 1, bytesLen, handle))
-            return false;
-    }
+    // Write all output at once. This is rather bad, could be done progressively.
+    // PERF: adapt stb_image_write.h to output in our own buffer directly.
+    if (len != io.write(encoded, 1, len, handle))
+        return false;
 
     return true;
 }
