@@ -585,10 +585,11 @@ static void stbiw__encode_png_line(ubyte *pixels,
       return;
    }
 
-   assert(!is16bit); // TODO: implement filters for 16-bit samples
+   int bytePerSample = n * (is16bit ? 2 : 1);
+   int leftOffset = bytePerSample;
 
    // first loop isn't optimized since it's just one pixel
-   for (i = 0; i < n; ++i) {
+   for (i = 0; i < bytePerSample; ++i) {
       switch (type) {
          case 1: line_buffer[i] = z[i]; break;
          case 2: line_buffer[i] = cast(byte)(z[i] - z[i-signed_stride]); break;
@@ -600,23 +601,36 @@ static void stbiw__encode_png_line(ubyte *pixels,
       }
    }
    switch (type) {
-      case 1: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - z[i-n]); break;
-      case 2: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - z[i-signed_stride]); break;
-      case 3: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - ((z[i-n] + z[i-signed_stride])>>1)); break;
-      case 4: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - stbiw__paeth(z[i-n], z[i-signed_stride], z[i-signed_stride-n])); break;
-      case 5: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - (z[i-n]>>1)); break;
-      case 6: for (i=n; i < width*n; ++i) line_buffer[i] = cast(byte)(z[i] - stbiw__paeth(z[i-n], 0,0)); break;
+      case 1: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - z[i-leftOffset]); break;
+      case 2: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - z[i-signed_stride]); break;
+      case 3: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - ((z[i-leftOffset] + z[i-signed_stride])>>1)); break;
+      case 4: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - stbiw__paeth(z[i-leftOffset], z[i-signed_stride], z[i-signed_stride-leftOffset])); break;
+      case 5: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - (z[i-leftOffset]>>1)); break;
+      case 6: for (i=bytePerSample; i < line_bytes; ++i) line_buffer[i] = cast(byte)(z[i] - stbiw__paeth(z[i-leftOffset], 0,0)); break;
       default: assert(0);
+   }
+
+   version(LittleEndian)
+   {
+       if (is16bit)
+       {
+           // swap bytes
+           // 16-bit PNG samples are actually in Big Endian
+           // Note that the whole prediction is happening in the native endianness.
+           // (Gamut stores 16-bit samples in native endianness).
+           for (int x = 0; x < width*n; ++x)
+           {
+               ubyte b = line_buffer[x*2  ];
+               line_buffer[x*2  ] = line_buffer[x*2+1];
+               line_buffer[x*2+1] = b;
+           }
+       }
    }
 }
 
 public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int x, int y, int n, int *out_len, bool is16bit)
 {
     int force_filter = stbi_write_force_png_filter;
-
-    // TODO support filter in 16-bit output
-    if (is16bit)
-        force_filter = 0; // force no filter on 16-bit encode, help getting 16-bit compatibility
 
     static immutable int[5] ctype = [ -1, 0, 4, 2, 6 ];
     static immutable ubyte[8] sig = [ 137,80,78,71,13,10,26,10 ];
@@ -655,7 +669,7 @@ public ubyte *stbi_write_png_to_mem(const(ubyte*) pixels, int stride_bytes, int 
 
             // Estimate the entropy of the line using this filter; the less, the better.
             est = 0;
-            for (i = 0; i < x*n; ++i) { // TODO 16-bit
+            for (i = 0; i < x*n; ++i) { // Note: adapting that entropy for 16-bit samples wins nothing.
                est += abs(line_buffer[i]);
             }
             if (est < best_filter_val) {
