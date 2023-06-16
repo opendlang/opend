@@ -1,4 +1,3 @@
 - GAMUT: allocator design
 - GAMUT: metadata
 - GAMUT: resizing
-- GAMUT: create subimages (views)
