@@ -271,13 +271,6 @@ alias MZ_MALLOC = malloc;
 alias MZ_FREE = free;
 alias MZ_REALLOC = realloc;
 
-/*#define MZ_MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define MZ_MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MZ_CLEAR_OBJ(obj) memset(&(obj), 0, sizeof(obj))
-#define MZ_CLEAR_ARR(obj) memset((obj), 0, sizeof(obj))
-#define MZ_CLEAR_PTR(obj) memset((obj), 0, sizeof(*obj))
-*/
-
 version(LittleEndian)
 {
     ushort MZ_READ_LE16(const(void)* p)
@@ -315,14 +308,6 @@ enum MZ_UINT16_MAX = 0xFFFFU;
 enum MZ_UINT32_MAX = 0xFFFFFFFFU;
 
 // end of miniz_common.h
-
-
-/*
-#include "miniz_common.h"
-#include "miniz_tdef.h"
-#include "miniz_tinfl.h"
-#include "miniz_zip.h"
-*/
 
 static assert(mz_uint16.sizeof == 2);
 static assert(mz_uint32.sizeof == 4);
@@ -1197,191 +1182,6 @@ struct tinfl_decompressor
 alias TINFL_MEMCPY = memcpy;
 alias TINFL_MEMSET = memset;
 
-/+ All kind of ugly macros
-
-            
-        
-#define TINFL_CR_RETURN(state_index, result)
-        status = result;                     \
-        r.m_state = state_index;            \
-        goto common_exit;                    \
-    case state_index:
-
-#define TINFL_CR_RETURN_FOREVER(state_index, result) \
-        for (;;)
-        {
-                status = result;
-                r.m_state = state_index;
-                goto common_exit; 
-                case state_index:
-        }
-        
-#define TINFL_GET_BYTE(state_index, c)                                                                                                                           \
-    while (pIn_buf_cur >= pIn_buf_end)                                                                                                                       \
-    {                                       
-        status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-        r.m_state = state_index;
-        goto common_exit;
-        case state_index:
-    }                                                                                                                                                        \
-    c = *pIn_buf_cur++;                                                                                                                                      \
-
-
-#define TINFL_NEED_BITS(state_index, n)                \
-do                                                 \
-{                                                  \
-        mz_uint c;                                     \
-        TINFL_GET_BYTE(state_index, c);                \
-        bit_buf |= (((tinfl_bit_buf_t)c) << num_bits); \
-        num_bits += 8;                                 \
-} while (num_bits < (mz_uint)(n))
-
-
-#define TINFL_SKIP_BITS(state_index, n)      \
-    if (num_bits < cast(mz_uint)(n))
-    {
-        do
-        {
-            mz_uint c;
-            while (pIn_buf_cur >= pIn_buf_end)                                                                                                                       \
-            {                                       
-                status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                r.m_state = state_index;
-                goto common_exit;
-                case state_index:
-            }                                                                                                                                                        \
-            c = *pIn_buf_cur++;
-            bit_buf |= ((cast(tinfl_bit_buf_t)c) << num_bits);
-            num_bits += 8;
-        } while (num_bits < cast(mz_uint)(n));
-    }                                    \
-    bit_buf >>= (n);
-    num_bits -= (n);
-
-#define TINFL_GET_BITS(state_index, b, n)    \
-                               
-    if (num_bits < cast(mz_uint)(n))
-    {
-        do
-        {
-            mz_uint c;
-            while (pIn_buf_cur >= pIn_buf_end)
-            {                                       
-                status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                r.m_state = state_index;
-                goto common_exit;
-                case state_index:
-            }                                                                                                                                                        \
-            c = *pIn_buf_cur++;
-            bit_buf |= ((cast(tinfl_bit_buf_t)c) << num_bits);
-            num_bits += 8;
-        } while (num_bits < cast(mz_uint)(n));
-    }
-    b = bit_buf & ((1 << (n)) - 1);
-    bit_buf >>= (n);
-    num_bits -= (n);
-
-
-/* TINFL_HUFF_BITBUF_FILL() is only used rarely, when the number of bytes remaining in the input buffer falls below 2. */
-/* It reads just enough bytes from the input stream that are needed to decode the next Huffman code (and absolutely no more). It works by trying to fully decode a */
-/* Huffman code by using whatever bits are currently present in the bit buffer. If this fails, it reads another byte, and tries again until it succeeds or until the */
-/* bit buffer contains >=15 bits (deflate's max. Huffman code size). */
-#define TINFL_HUFF_BITBUF_FILL(state_index, pLookUp, pTree)
-do
-{
-    temp = pLookUp[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)];
-    if (temp >= 0)
-    {
-        code_len = temp >> 9;
-        if ((code_len) && (num_bits >= code_len))
-            break;
-    }
-    else if (num_bits > TINFL_FAST_LOOKUP_BITS)
-    {
-        code_len = TINFL_FAST_LOOKUP_BITS;
-        do
-        {
-            temp = pTree[~temp + ((bit_buf >> code_len++) & 1)];
-        } while ((temp < 0) && (num_bits >= (code_len + 1)));
-        if (temp >= 0)
-            break;
-    }
-    TINFL_GET_BYTE(state_index, c);
-    bit_buf |= (((tinfl_bit_buf_t)c) << num_bits);
-    num_bits += 8;
-} while (num_bits < 15);
-
-/* TINFL_HUFF_DECODE() decodes the next Huffman coded symbol. It's more complex than you would initially expect because the zlib API expects the decompressor to never read */
-/* beyond the final byte of the deflate stream. (In other words, when this macro wants to read another byte from the input, it REALLY needs another byte in order to fully */
-/* decode the next Huffman code.) Handling this properly is particularly important on raw deflate (non-zlib) streams, which aren't followed by a byte aligned adler-32. */
-/* The slow path is only executed at the very end of the input buffer. */
-/* v1.16: The original macro handled the case at the very end of the passed-in input buffer, but we also need to handle the case where the user passes in 1+zillion bytes */
-/* following the deflate data and our non-conservative read-ahead path won't kick in here on this code. This is much trickier. */
-#define TINFL_HUFF_DECODE(state_index, sym, pLookUp, pTree)
-    int temp;
-    mz_uint code_len, c;
-    if (num_bits < 15)
-    {
-        if ((pIn_buf_end - pIn_buf_cur) < 2)
-        {
-            //TINFL_HUFF_BITBUF_FILL(state_index, pLookUp, pTree);
-            do
-            {
-                temp = pLookUp[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)];
-                if (temp >= 0)
-                {
-                    code_len = temp >> 9;
-                    if ((code_len) && (num_bits >= code_len))
-                    break;
-                }
-                else if (num_bits > TINFL_FAST_LOOKUP_BITS)
-                {
-                    code_len = TINFL_FAST_LOOKUP_BITS;
-                    do
-                    {
-                        temp = pTree[~temp + ((bit_buf >> code_len++) & 1)];
-                    } while ((temp < 0) && (num_bits >= (code_len + 1)));
-                    if (temp >= 0)
-                        break;
-                }
-                //TINFL_GET_BYTE(state_index, c);
-                while (pIn_buf_cur >= pIn_buf_end)
-                {
-                    status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                    r.m_state = state_index;
-                    goto common_exit;
-                    case state_index:
-                }
-                c = *pIn_buf_cur++;
-                bit_buf |= ((cast(tinfl_bit_buf_t)c) << num_bits);
-                num_bits += 8;
-            } while (num_bits < 15);
-        }
-        else
-        {
-            bit_buf |= (((tinfl_bit_buf_t)pIn_buf_cur[0]) << num_bits) | (((tinfl_bit_buf_t)pIn_buf_cur[1]) << (num_bits + 8));
-            pIn_buf_cur += 2;0
-            num_bits += 16;
-        }
-    }
-    if ((temp = pLookUp[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)
-        code_len = temp >> 9, temp &= 511;
-    else
-    {
-        code_len = TINFL_FAST_LOOKUP_BITS;
-        do
-        {
-            temp = pTree[~temp + ((bit_buf >> code_len++) & 1)];
-        } while (temp < 0);
-    }
-    sym = temp;
-    bit_buf >>= code_len;
-    num_bits -= code_len;
-+/
-
-//#define void MZ_CLEAR_OBJ(obj) memset(&(obj), 0, sizeof(obj))
-//#define void MZ_CLEAR_ARR(obj) memset((obj), 0, sizeof(obj))
-//#define MZ_CLEAR_PTR(obj) memset((obj), 0, sizeof(*obj))
 
 void tinfl_clear_tree(tinfl_decompressor* r)
 {
@@ -2071,7 +1871,6 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     while (pIn_buf_cur >= pIn_buf_end)
                                     {                                       
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                                        checkStatus();
                                         r.m_state = 25;
                                         goto common_exit;
                                         case 25:
@@ -2121,7 +1920,6 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     while (pIn_buf_cur >= pIn_buf_end)
                                     {
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                                        checkStatus();
                                         r.m_state = 26;
                                         goto common_exit;
                                         case 26:
