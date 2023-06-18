@@ -1,6 +1,11 @@
 module gamut.codecs.miniz;
 
+version(none):
 
+// To be able to use this and win about 5% of PNG loading time, this needs:
+// - to disable adler32 checking (like STB) on the PNG decoder size, with flags that trickle down
+// - to pass the flags that avoids zlib header parsing if it's an iphone PNG (CgBI chunk)
+// Probably we can't use the simple zlib-like wrappers for this?
 
 /* miniz.c 3.0.0 - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
    See "unlicense" statement at the end of this file.
@@ -787,7 +792,7 @@ int mz_inflateReset(mz_stream* pStream)
 int mz_inflate(mz_stream* pStream, int flush)
 {
     inflate_state *pState;
-    mz_uint n, first_call, decomp_flags = TINFL_FLAG_COMPUTE_ADLER32;
+    mz_uint n, first_call, decomp_flags = 0;//TINFL_FLAG_COMPUTE_ADLER32; // TODO: use TINFL_FLAG_DO_NOT_COMPUTE_ADLER32 if input is trusted
     size_t in_bytes, out_bytes, orig_avail_in;
     tinfl_status status;
 
@@ -1091,7 +1096,11 @@ enum
     TINFL_FLAG_PARSE_ZLIB_HEADER = 1,
     TINFL_FLAG_HAS_MORE_INPUT = 2,
     TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF = 4,
-    TINFL_FLAG_COMPUTE_ADLER32 = 8
+    TINFL_FLAG_COMPUTE_ADLER32 = 8,        // _forces_ adler compute
+
+    // _forces_ reported adler to be UB, this can be useful when the input is 
+    // trusted and you do not want to compute checksum
+    TINFL_FLAG_DO_NOT_COMPUTE_ADLER32 = 16 
 }
 
 /* Max size of LZ dictionary. */
@@ -2155,7 +2164,15 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
     r.m_dist_from_out_buf_start = dist_from_out_buf_start;
     *pIn_buf_size = pIn_buf_cur - pIn_buf_next;
     *pOut_buf_size = pOut_buf_cur - pOut_buf_next;
-    if ((decomp_flags & (TINFL_FLAG_PARSE_ZLIB_HEADER | TINFL_FLAG_COMPUTE_ADLER32)) && (status >= 0))
+
+    // invalid flag combination
+    assert( !((decomp_flags & TINFL_FLAG_COMPUTE_ADLER32) && (decomp_flags & TINFL_FLAG_DO_NOT_COMPUTE_ADLER32)));
+
+    bool checkAdler32 = (decomp_flags & (TINFL_FLAG_PARSE_ZLIB_HEADER | TINFL_FLAG_COMPUTE_ADLER32)) && (status >= 0);
+    if (decomp_flags & TINFL_FLAG_DO_NOT_COMPUTE_ADLER32)
+        checkAdler32 = false;
+
+    if (checkAdler32)
     {
         const(mz_uint8)*ptr = pOut_buf_next;
         size_t buf_len = *pOut_buf_size;

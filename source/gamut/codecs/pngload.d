@@ -118,6 +118,7 @@ To add your name to the credits, pick a random blank space in the middle and fil
 of the credits.
 */
 
+import core.stdc.config: c_ulong;
 import core.stdc.string: memcpy, memset;
 import core.stdc.stdlib: malloc, free, realloc;
 import core.atomic;
@@ -1343,7 +1344,6 @@ int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int num)
     return 1;
 }
 
-
 //version = useMiniZ;
 
 version(useMiniZ)
@@ -1361,8 +1361,8 @@ version(useMiniZ)
                                                         int parse_header)
     {
         ubyte* outBuf = cast(ubyte*) malloc(initial_size);
-        mz_ulong destLen = *outlen;
-        mz_ulong inputLen = len;
+        c_ulong destLen = *outlen;
+        c_ulong inputLen = len;
         int res = mz_uncompress2(outBuf, 
                                  &destLen, 
                                  cast(const(ubyte)*) buffer, 
