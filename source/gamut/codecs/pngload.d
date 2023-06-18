@@ -3,6 +3,8 @@
 /// This port only support PNG loading, 8-bit and 16-bit.
 module gamut.codecs.pngload;
 
+
+
 version(decodePNG):
 
 /* stb_image - v2.27 - public domain image loader - http://nothings.org/stb
@@ -1341,6 +1343,44 @@ int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int num)
     return 1;
 }
 
+
+//version = useMiniZ;
+
+version(useMiniZ)
+{
+    import gamut.codecs.miniz;
+
+    /// Params:
+    ///  buffer Input buffer
+    ///  len Length of input buffer
+    ///  initial_size Size hint for output buffer (which is realloc on growth)
+    ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(const(char)*buffer, 
+                                                        int len, 
+                                                        int initial_size, // note: stb_image gives the right initial_size, and the right outout buffer length
+                                                        int *outlen, 
+                                                        int parse_header)
+    {
+        ubyte* outBuf = cast(ubyte*) malloc(initial_size);
+        mz_ulong destLen = *outlen;
+        mz_ulong inputLen = len;
+        int res = mz_uncompress2(outBuf, 
+                                 &destLen, 
+                                 cast(const(ubyte)*) buffer, 
+                                 &inputLen);
+        *outlen = cast(int)(destLen);
+
+        const(char)* error = mz_error(res);
+        if (res != MZ_OK)
+        {
+            free(outBuf);
+            return null;
+        }
+        return outBuf;
+    }
+}
+else
+{
+
 // zlib-from-memory implementation for PNG reading
 //    because PNG allows splitting the zlib stream arbitrarily,
 //    and it's annoying structurally to have PNG call ZLIB call PNG,
@@ -1705,6 +1745,8 @@ ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(const char *buffer, int len,
         STBI_FREE(a.zout_start);
         return null;
     }
+}
+
 }
 
 
@@ -2326,7 +2368,11 @@ version(decodePNG)
                     // initial guess for decoded data size to avoid unnecessary reallocs
                     bpl = (s.img_x * z.depth + 7) / 8; // bytes per line, per component
                     raw_len = bpl * s.img_y * s.img_n /* pixels */ + s.img_y /* filter mode per row */;
-                    z.expanded = cast(stbi_uc *) stbi_zlib_decode_malloc_guesssize_headerflag(cast(char *) z.idata, ioff, raw_len, cast(int *) &raw_len, !is_iphone);
+                    z.expanded = cast(stbi_uc *) stbi_zlib_decode_malloc_guesssize_headerflag(cast(char *) z.idata, 
+                                                                                              ioff, 
+                                                                                              raw_len, 
+                                                                                              cast(int *) &raw_len, 
+                                                                                              !is_iphone);
                     if (z.expanded == null) 
                     {
                         return 0; // zlib should set error

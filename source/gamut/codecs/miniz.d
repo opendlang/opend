@@ -1,6 +1,6 @@
 module gamut.codecs.miniz;
 
-version(none):
+
 
 /* miniz.c 3.0.0 - public domain deflate/inflate, zlib-subset, ZIP reading/writing/appending, PNG writing
    See "unlicense" statement at the end of this file.
@@ -1457,7 +1457,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
     mz_uint32 i2, i3, s1, s2;
     mz_uint code_len2;
     mz_uint8 *pSrc;
-    mz_uint extra_bits, extra_bits2;
+    mz_uint extra_bits;
     int temp;
 
     switch (r.m_state)
@@ -1554,7 +1554,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                 do
                                 {
                                     while (pIn_buf_cur >= pIn_buf_end)
-                                    {                                       
+                                    {
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
                                         r.m_state = 6;
                                         goto common_exit;
@@ -1573,7 +1573,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                         else
                         {
                             while (pIn_buf_cur >= pIn_buf_end)
-                            {                                       
+                            {
                                 status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
                                 r.m_state = 7;
                                 goto common_exit;
@@ -1600,7 +1600,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                             do
                             {
                                 while (pIn_buf_cur >= pIn_buf_end)
-                                {                                       
+                                {
                                     status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
                                     r.m_state = 51;
                                     goto common_exit;
@@ -1687,7 +1687,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                 do
                                 {
                                     while (pIn_buf_cur >= pIn_buf_end)
-                                    {                                       
+                                    {
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
                                         r.m_state = 11;
                                         goto common_exit;
@@ -1715,15 +1715,15 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                 do
                                 {
                                     while (pIn_buf_cur >= pIn_buf_end)
-                                    {                                       
+                                    {
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
-                                        r.m_state = 11;
+                                        r.m_state = 14;
                                         goto common_exit;
                                         case 14:
                                     }
                                     c = *pIn_buf_cur++;
                                     bit_buf |= ((cast(tinfl_bit_buf_t)c) << num_bits);
-                                    num_bits += 14;
+                                    num_bits += 8;
                                 } while (num_bits < cast(mz_uint)(bits_));
                             }
                             s = cast(mz_uint)(bit_buf) & ((1 << (bits_)) - 1);
@@ -2071,6 +2071,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     while (pIn_buf_cur >= pIn_buf_end)
                                     {                                       
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
+                                        checkStatus();
                                         r.m_state = 25;
                                         goto common_exit;
                                         case 25:
@@ -2120,6 +2121,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     while (pIn_buf_cur >= pIn_buf_end)
                                     {
                                         status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
+                                        checkStatus();
                                         r.m_state = 26;
                                         goto common_exit;
                                         case 26:
@@ -2154,7 +2156,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                         dist = s_dist_base[dist];
                         if (num_extra)
                         {
-                            if (num_bits < cast(mz_uint)(extra_bits2))
+                            if (num_bits < cast(mz_uint)(num_extra))
                             {
                                 do
                                 {
@@ -2168,13 +2170,13 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     c2 = *pIn_buf_cur++;
                                     bit_buf |= ((cast(tinfl_bit_buf_t)c2) << num_bits);
                                     num_bits += 8;
-                                } while (num_bits < cast(mz_uint)(extra_bits));
+                                } while (num_bits < cast(mz_uint)(num_extra));
                             }
-                            num_extra = (cast(uint)bit_buf) & ((1 << (extra_bits)) - 1);
-                            bit_buf >>= (extra_bits2);
-                            num_bits -= (extra_bits2);
+                            extra_bits = (cast(uint)bit_buf) & ((1 << (num_extra)) - 1);
+                            bit_buf >>= (num_extra);
+                            num_bits -= (num_extra);
                             
-                            dist += extra_bits2;
+                            dist += extra_bits;
                         }
 
                         dist_from_out_buf_start = pOut_buf_cur - pOut_buf_start;
@@ -2308,13 +2310,13 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                     {
                         //TINFL_GET_BYTE(42, s);
                         while (pIn_buf_cur >= pIn_buf_end)
-                        {                                       
+                        {
                             status = (decomp_flags & TINFL_FLAG_HAS_MORE_INPUT) ? TINFL_STATUS_NEEDS_MORE_INPUT : TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS;
                             r.m_state = 42;
                             goto common_exit;
                             case 42:
                         }
-                        s = *pIn_buf_cur++;          
+                        s = *pIn_buf_cur++;
                     }
                     r.m_z_adler32 = (r.m_z_adler32 << 8) | s;
                 }
