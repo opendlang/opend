@@ -1338,8 +1338,10 @@ unittest
     long2 B = [4, 5];
     __m256i C = _mm256_inserti128_si256(A, cast(__m128i)B, 0 + 8);
     __m256i D = _mm256_inserti128_si256(A, cast(__m128i)B, 1);
-    assert(C.array == [4, 5, 2, 3]);
-    assert(D.array == [0, 1, 4, 5]);
+    long[4] correctC = [4, 5, 2, 3]; 
+    long[4] correctD = [0, 1, 4, 5];
+    assert(C.array == correctC);
+    assert(D.array == correctD);
 }
 
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
