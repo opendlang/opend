@@ -175,6 +175,7 @@ public:
     ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
     ///          If the layout has a border, you can adress pixels with a X coordinate in:
     ///          -borderWidth to width - 1 + borderWidth.
+    /// Note: It is also valid to call scanline() and scanptr() for images that have zero width and/or zero height.
     /// Tags: #valid #data #plain
     inout(void)* scanptr(int y) inout pure @trusted
     {
@@ -192,6 +193,7 @@ public:
     /// only the nominal image extent.
     ///
     /// However, vertically it is valid to adress scanlines on top and bottom of an image that has a border.
+    /// It is also valid to call scanline() and scanptr() for images that have zero width and/or zero height.
     ///
     /// Returns: The whole `y`th row of pixels.
     /// Tags: #valid #data #plain
