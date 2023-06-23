@@ -2115,7 +2115,62 @@ unittest
 
 // TODO __m256i _mm256_unpackhi_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_unpacklo_epi16 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b) pure @safe
+
+/// Unpack and interleave 32-bit integers from the low half of each 128-bit lane in `a` and `b`.
+__m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b) pure @trusted
+{
+    static if (GDC_with_AVX2)
+        enum bool split = false;
+    else version(GNU)
+        enum bool split = true;
+    else
+        enum bool split = false;
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(long4) __builtin_ia32_punpckldq256(cast(int8)a, cast(int8)b);
+    }
+    else static if (LDC_with_optimizations)
+    {
+        // LDC AVX2: Suprisingly, this start using vunpcklps in LDC 1.31 -O1
+        enum ir = `%r = shufflevector <8 x i32> %0, <8 x i32> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 4, i32 12, i32 5, i32 13>
+            ret <8 x i32> %r`;
+        return cast(__m256i)LDCInlineIR!(ir, int8, int8, int8)(cast(int8)a, cast(int8)b);
+    }
+    else static if (split)
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_unpacklo_epi32(a_lo, b_lo);
+        __m128i r_hi = _mm_unpacklo_epi32(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else
+    {
+        int8 R;
+        int8 ai = cast(int8)a;
+        int8 bi = cast(int8)b;
+        R.ptr[0] = ai.array[0];
+        R.ptr[1] = bi.array[0];
+        R.ptr[2] = ai.array[1];
+        R.ptr[3] = bi.array[1];
+        R.ptr[4] = ai.array[4];
+        R.ptr[5] = bi.array[4];
+        R.ptr[6] = ai.array[5];
+        R.ptr[7] = bi.array[5];
+        return cast(__m256i) R;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(0, 1,  2,  3,  4,  5,  6,  7);
+    __m256i B = _mm256_setr_epi32(8, 9, 10, 11, 12, 13, 14, 15);
+    int8 C = cast(int8) _mm256_unpacklo_epi32(A, B);
+    int[8] correct = [0, 8, 1, 9, 4, 12, 5, 13];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 64-bit integers from the low half of each 128-bit lane in `a` and `b`.
 __m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b) pure @trusted
