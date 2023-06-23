@@ -23,8 +23,8 @@
         },
         "unittest-release-inst": {
             "buildOptions": ["unittests", "optimize", "inline"],
-            "dflags-ldc": ["-mcpu=native"],
-            "dflags-dmd": ["-mcpu=native"],
+            "dflags-ldc": ["-mcpu=native", "--lowmem"],
+            "dflags-dmd": ["-mcpu=native", "-lowmem"],
             "dflags-gdc": ["-march=native"]
         },
         "unittest-release-below-avx": {
