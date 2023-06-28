@@ -240,7 +240,7 @@ Another way to create an `Image` is to load an encoded image.
   ```d
   Image image;
   ubyte[] qoixEncoded = image.saveToMemory(ImageFormat.QOIX);
-  scope(exit) freeEncodedImage(qoix_encoded);
+  scope(exit) freeEncodedImage(qoixEncoded);
   ```
 
   The returned slice must be freed up with `freeEncodedImage`.
@@ -411,6 +411,8 @@ If you have both `LAYOUT_GAPLESS` and `LAYOUT_VERT_STRAIGHT`, then you can acces
   image.setSize(640, 480, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
   ubyte[] allpixels = image.allPixelsAtOnce(y);
   ```
+
+`LAYOUT_GAPLESS` is incompatible with constraints that needs excess bytes, like borders, scanline alignment, trailing pixels...
 
 
 &nbsp;
