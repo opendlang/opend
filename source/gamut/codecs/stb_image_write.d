@@ -128,7 +128,7 @@ ubyte STBIW_UCHAR(int x)
     return cast(ubyte)(x);
 }
 
-enum int stbi_write_png_compression_level = 8;
+enum int stbi_write_png_compression_level = 5;
 enum int stbi_write_force_png_filter = -1;
 
 // Useful?
@@ -284,7 +284,7 @@ uint stbiw__zhash(ubyte *data)
 enum stbiw__ZHASH = 16384;
 
 
-enum bool pngEncodeUseMiniz = false;
+enum bool pngEncodeUseMiniz = true;
 
 static if (pngEncodeUseMiniz)
 {

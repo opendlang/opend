@@ -1,6 +1,6 @@
 module gamut.codecs.miniz;
 
-version(none):
+version(encodePNG):
 
 // To be able to use this and win about 5% of PNG loading time, this needs:
 // - to disable adler32 checking (like STB) on the PNG decoder size, with flags that trickle down
