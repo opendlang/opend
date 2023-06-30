@@ -1852,13 +1852,13 @@ unittest
 unittest
 {
     Image image;
-    image.initWithNoData(450, 614, PixelType.rgba8);
+    image.createWithNoData(450, 614, PixelType.rgba8);
     assert(!image.hasData());
     assert(!image.isOwned());
     assert(image.isValid());
     assert(image.width == 450);
     assert(image.height == 614);
-    assert(!image.errored());
+    assert(!image.isError());
     assert(!image.hasData());
     assert(image.isPlainPixels());
     assert(!image.isPlanar());
@@ -1876,7 +1876,7 @@ unittest
     assert(image.width == 3);
     assert(image.height == 5);
     assert(image.isValid());
-    assert(!image.errored());
+    assert(!image.isError());
     assert(image.hasData());
     assert(image.isPlainPixels());
     assert(!image.isPlanar());
@@ -1893,7 +1893,7 @@ unittest
     Image image;
 
     image.create(5, 4, PixelType.l8, LAYOUT_BORDER_3 | LAYOUT_GAPLESS); // impossible layout
-    assert(image.errored());
+    assert(image.isError());
 
     image.create(5, 4, PixelType.l8, LAYOUT_BORDER_3); // can create image with border
     for (int y = -3; y < 4 + 3; ++y)
@@ -1919,7 +1919,7 @@ unittest
         assert(image.isOwned());
         assert(image.width == 0);
         assert(image.height == 0);
-        assert(!image.errored());
+        assert(!image.isError());
         assert(image.hasData()); // It has data, just, it has a zero size.
         assert(image.isPlainPixels());
         assert(!image.isPlanar());
@@ -1944,7 +1944,7 @@ unittest
     int height = 3;
     int pitch = width * cast(int)ushort.sizeof; 
     image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch);
-    assert(!image.errored);
+    assert(!image.isError);
     ushort* l0 = cast(ushort*) image.scanline(0);
     ushort* l1 = cast(ushort*) image.scanline(1);
     ushort* l2 = cast(ushort*) image.scanline(2);
@@ -1954,11 +1954,11 @@ unittest
 
     // Upside down data
     image.createViewFromData(&pixels[2][0], width, height, PixelType.l16, -pitch);
-    assert(!image.errored);
+    assert(!image.isError);
 
     // Overlapping scanlines is illegal
     image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch-1);
-    assert(image.errored);
+    assert(image.isError);
 }
 
 // Test encodings
@@ -1974,7 +1974,7 @@ unittest
     int height = 1;
     int pitch = 3 * 3; /* whatever */
     image.createViewFromData(&pixels[0][0], width, height, PixelType.rgb8, pitch);
-    assert(!image.errored);
+    assert(!image.isError);
 
     void checkEncode(const(ubyte)[] encoded, bool lossless) nothrow @trusted
     {
@@ -1982,7 +1982,7 @@ unittest
         Image image;
         image.loadFromMemory(encoded);
         image.convertTo(PixelType.rgb8);
-        assert(!image.errored);
+        assert(!image.isError);
 
         assert(image.width == 3);
         assert(image.height == 1);
