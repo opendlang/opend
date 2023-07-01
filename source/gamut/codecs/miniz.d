@@ -1,6 +1,14 @@
 module gamut.codecs.miniz;
 
-version(encodePNG):
+version(encodePNG)
+{
+    version = encodeDecodePNG;
+}
+version(decodePNG)
+{
+    version = encodeDecodePNG;
+}
+version(encodeDecodePNG):
 
 // To be able to use this and win about 5% of PNG loading time, this needs:
 // - to disable adler32 checking (like STB) on the PNG decoder size, with flags that trickle down
@@ -808,8 +816,16 @@ int mz_inflateReset(mz_stream* pStream)
      decompression, described above). */
 int mz_inflate(mz_stream* pStream, int flush)
 {
+    return mz_inflate2(pStream, flush, TINFL_FLAG_COMPUTE_ADLER32);
+}
+
+// Same with decom_flags control.
+// You can use TINFL_FLAG_DO_NOT_COMPUTE_ADLER32 if input is trusted.
+int mz_inflate2(mz_stream* pStream, int flush, int decomp_flags)
+{
     inflate_state *pState;
-    mz_uint n, first_call, decomp_flags = 0;//TINFL_FLAG_COMPUTE_ADLER32; // TODO: use TINFL_FLAG_DO_NOT_COMPUTE_ADLER32 if input is trusted
+    mz_uint n, first_call;
+
     size_t in_bytes, out_bytes, orig_avail_in;
     tinfl_status status;
 
@@ -936,13 +952,15 @@ int mz_inflateEnd(mz_stream* pStream)
 /* Returns MZ_OK on success, or one of the error codes from mz_inflate() on failure. */
 int mz_uncompress2(ubyte *pDest, mz_ulong *pDest_len, const(ubyte)* pSource, mz_ulong *pSource_len)
 {
-    return mz_uncompress3(pDest, pDest_len, pSource, pSource_len, MZ_DEFAULT_WINDOW_BITS);
+    return mz_uncompress3(pDest, pDest_len, pSource, pSource_len, MZ_DEFAULT_WINDOW_BITS, false);
 }
 
 /// Same, but also specify window_bits, in case the stream has no header. This is useful for iPhone PNG.
+/// Also allows to skip Adler32 check.
 int mz_uncompress3(ubyte *pDest, mz_ulong *pDest_len, 
                    const(ubyte)* pSource, mz_ulong *pSource_len,
-                   int window_bits)
+                   int window_bits,
+                   bool trusted_input)
 {
     mz_stream stream = void;
     int status;
@@ -961,7 +979,7 @@ int mz_uncompress3(ubyte *pDest, mz_ulong *pDest_len,
     if (status != MZ_OK)
         return status;
 
-    status = mz_inflate(&stream, MZ_FINISH);
+    status = mz_inflate2(&stream, MZ_FINISH, trusted_input ? TINFL_FLAG_DO_NOT_COMPUTE_ADLER32 : TINFL_FLAG_COMPUTE_ADLER32);
     *pSource_len = *pSource_len - stream.avail_in;
     if (status != MZ_STREAM_END)
     {
