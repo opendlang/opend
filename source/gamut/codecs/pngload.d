@@ -1363,10 +1363,11 @@ version(useMiniZ)
         ubyte* outBuf = cast(ubyte*) malloc(initial_size);
         c_ulong destLen = *outlen;
         c_ulong inputLen = len;
-        int res = mz_uncompress2(outBuf, 
+        int res = mz_uncompress3(outBuf, 
                                  &destLen, 
                                  cast(const(ubyte)*) buffer, 
-                                 &inputLen);
+                                 &inputLen,
+                                 parse_header ? MZ_DEFAULT_WINDOW_BITS : -MZ_DEFAULT_WINDOW_BITS);
         *outlen = cast(int)(destLen);
 
         const(char)* error = mz_error(res);

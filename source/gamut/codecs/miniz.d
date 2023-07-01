@@ -936,6 +936,14 @@ int mz_inflateEnd(mz_stream* pStream)
 /* Returns MZ_OK on success, or one of the error codes from mz_inflate() on failure. */
 int mz_uncompress2(ubyte *pDest, mz_ulong *pDest_len, const(ubyte)* pSource, mz_ulong *pSource_len)
 {
+    return mz_uncompress3(pDest, pDest_len, pSource, pSource_len, MZ_DEFAULT_WINDOW_BITS);
+}
+
+/// Same, but also specify window_bits, in case the stream has no header. This is useful for iPhone PNG.
+int mz_uncompress3(ubyte *pDest, mz_ulong *pDest_len, 
+                   const(ubyte)* pSource, mz_ulong *pSource_len,
+                   int window_bits)
+{
     mz_stream stream = void;
     int status;
     memset(&stream, 0, stream.sizeof);
@@ -949,7 +957,7 @@ int mz_uncompress2(ubyte *pDest, mz_ulong *pDest_len, const(ubyte)* pSource, mz_
     stream.next_out = pDest;
     stream.avail_out = cast(mz_uint32)*pDest_len;
 
-    status = mz_inflateInit(&stream);
+    status = mz_inflateInit2(&stream, window_bits);
     if (status != MZ_OK)
         return status;
 
@@ -1654,7 +1662,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                                 code_len2 = TINFL_FAST_LOOKUP_BITS;
                                                 do
                                                 {
-                                                    temp = r.m_tree_2[~temp + ((bit_buf >> code_len2++) & 1)];
+                                                    temp = r.m_tree_2[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                                                 } while ((temp < 0) && (num_bits >= (code_len2 + 1)));
                                                 if (temp >= 0)
                                                     break;
@@ -1687,7 +1695,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     code_len2 = TINFL_FAST_LOOKUP_BITS;
                                     do
                                     {
-                                        temp = r.m_tree_2[~temp + ((bit_buf >> code_len2++) & 1)];
+                                        temp = r.m_tree_2[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                                     } while (temp < 0);
                                 }
                                 dist = temp;
@@ -1781,7 +1789,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                                 code_len2 = TINFL_FAST_LOOKUP_BITS;
                                                 do
                                                 {
-                                                    temp = r.m_tree_0[~temp + ((bit_buf >> code_len2++) & 1)];
+                                                    temp = r.m_tree_0[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                                                 } while ((temp < 0) && (num_bits >= (code_len2 + 1)));
                                                 if (temp >= 0)
                                                     break;
@@ -1813,7 +1821,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     code_len2 = TINFL_FAST_LOOKUP_BITS;
                                     do
                                     {
-                                        temp = r.m_tree_0[~temp + ((bit_buf >> code_len2++) & 1)];
+                                        temp = r.m_tree_0[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                                     } while (temp < 0);
                                 }
                                 counter = temp;
@@ -1849,7 +1857,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     code_len = TINFL_FAST_LOOKUP_BITS;
                                     do
                                     {
-                                        sym2 = r.m_tree_0[~sym2 + ((bit_buf >> code_len++) & 1)];
+                                        sym2 = r.m_tree_0[cast(size_t)(~sym2 + ((bit_buf >> code_len++) & 1))];
                                     } while (sym2 < 0);
                                 }
                                 counter = sym2;
@@ -1865,7 +1873,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                     code_len = TINFL_FAST_LOOKUP_BITS;
                                     do
                                     {
-                                        sym2 = r.m_tree_0[~sym2 + ((bit_buf >> code_len++) & 1)];
+                                        sym2 = r.m_tree_0[cast(size_t)(~sym2 + ((bit_buf >> code_len++) & 1))];
                                     } while (sym2 < 0);
                                 }
                                 bit_buf >>= code_len;
@@ -1937,7 +1945,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                         code_len2 = TINFL_FAST_LOOKUP_BITS;
                                         do
                                         {
-                                            temp = r.m_tree_1[~temp + ((bit_buf >> code_len2++) & 1)];
+                                            temp = r.m_tree_1[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                                         } while ((temp < 0) && (num_bits >= (code_len2 + 1)));
                                         if (temp >= 0)
                                             break;
@@ -1969,7 +1977,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                             code_len2 = TINFL_FAST_LOOKUP_BITS;
                             do
                             {
-                                temp = r.m_tree_1[~temp + ((bit_buf >> code_len2++) & 1)];
+                                temp = r.m_tree_1[cast(size_t)(~temp + ((bit_buf >> code_len2++) & 1))];
                             } while (temp < 0);
                         }
                         dist = temp;
