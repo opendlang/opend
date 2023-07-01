@@ -9,6 +9,7 @@ void main(string[] args)
     testIssue35();
     testIssue46();
     testReallocSpeed();
+    testCGBI();
 }
 
 void testIssue35()
@@ -31,6 +32,19 @@ void testIssue46()
 
     image.loadFromFile("test-images/issue46.jpg");
     assert(image.isError);
+}
+
+void testCGBI()
+{
+    // Load an iPhone PNG, saves a normal PNG
+    Image image;
+    image.loadFromFile("test-images/issue51cgbi.png");
+    assert(!image.isError);
+    image.saveToFile("output/issue51cbgi.png");
+
+    image.loadFromFile("test-images/issue51cgbi2.png");
+    assert(!image.isError);
+    image.saveToFile("output/issue51cbgi2.png");
 }
 
 void testReallocSpeed()
