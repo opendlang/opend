@@ -1342,9 +1342,9 @@ int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int num)
     return 1;
 }
 
-//version = useMiniZ;
+enum bool useMiniZ = true;
 
-version(useMiniZ)
+static if (useMiniZ)
 {
     import gamut.codecs.miniz;
 
