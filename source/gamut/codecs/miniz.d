@@ -2765,32 +2765,6 @@ static void tdefl_optimize_huffman_table(tdefl_compressor *d, int table_num, int
     }
 }
 
-/*
-#define TDEFL_PUT_BITS(b, l)
-do
-{
-    mz_uint bits = b;
-    mz_uint len = l;
-    assert(bits <= ((1U << len) - 1U));
-    d.m_bit_buffer |= (bits << d.m_bits_in);
-    d.m_bits_in += len;
-    while (d.m_bits_in >= 8)
-    {
-        if (d.m_pOutput_buf < d.m_pOutput_buf_end)
-            *d.m_pOutput_buf++ = (mz_uint8)(d.m_bit_buffer);
-        d.m_bit_buffer >>= 8;
-        d.m_bits_in -= 8;
-    }
-}
-*/
- 
-    /*
-
-    */
-/*
-
-*/
-
 __gshared static immutable mz_uint8[19] s_tdefl_packed_code_size_syms_swizzle = 
 [ 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 ];
 
