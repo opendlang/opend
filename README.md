@@ -224,7 +224,8 @@ Another way to create an `Image` is to load an encoded image.
       PNG,
       QOI,
       QOIX,
-      DDS
+      DDS,
+      TGA
   }
   ```
 
