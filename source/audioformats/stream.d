@@ -1222,6 +1222,7 @@ public: // This is also part of the public API
                 { 
                     version(encodeWAV)
                     {
+                        assert(_wavEncoder !is null);
                         _wavEncoder.finalizeEncoding();
                         break;
                     }
@@ -1247,7 +1248,7 @@ public: // This is also part of the public API
 
     // Finalize encoding and get internal buffer, which is disowned by the `AudioStream`.
     // The caller has to call `freeEncodedAudio` manually.
-    // This can be exactly one time, if a growable owned buffer was used.
+    // This can be called exactly one time, if a growable owned buffer was used.
     const(ubyte)[] finalizeAndGetEncodedResultDisown() @nogc
     {
         const(ubyte)[] buf = finalizeAndGetEncodedResult();
@@ -1996,12 +1997,16 @@ int memory_write_limited(void* inData, int bytes, void* userData) nothrow @nogc
 
     if (cursor + bytes > available)
     {
-        bytes = cast(int)(available - cursor);       
+        bytes = cast(int)(available - cursor);
     }
 
     buffer[cursor..(cursor + bytes)] = source[0..bytes];
-    context.size += bytes;
     context.cursor += bytes;
+
+    // new size is max(cursor, previous size)
+    size_t newMaxIndex = context.cursor + bytes;
+    context.size = context.size < newMaxIndex ? context.size : newMaxIndex;
+
     return bytes;
 }
 
@@ -2009,9 +2014,7 @@ int memory_write_append(void* inData, int bytes, void* userData) nothrow @nogc
 {
     MemoryContext* context = cast(MemoryContext*)userData;
     size_t cursor = context.cursor;
-    size_t size = context.size;
-    size_t available = size - cursor;
-    ubyte* buffer = context.buffer;
+    size_t available = context.capacity - cursor;
     ubyte* source = cast(ubyte*) inData;
 
     if (cursor + bytes > available)
@@ -2020,15 +2023,18 @@ int memory_write_append(void* inData, int bytes, void* userData) nothrow @nogc
         size_t newSize = cursor + bytes;
         if (newSize < oldSize * 2 + 1) 
             newSize = oldSize * 2 + 1;
-        buffer = cast(ubyte*) realloc(buffer, newSize);
+        context.buffer = cast(ubyte*) realloc(context.buffer, newSize);
         context.capacity = newSize;
 
-        assert( cursor + bytes <= available );
+        assert( cursor + bytes <= newSize );
     }
-
-    buffer[cursor..(cursor + bytes)] = source[0..bytes];
-    context.size += bytes;
+    assert(context.buffer !is null);
+    context.buffer[cursor..(cursor + bytes)] = source[0..bytes];
     context.cursor += bytes;
+
+    // new size is max(cursor, previous size)
+    size_t newMaxIndex = context.cursor + bytes;
+    context.size = context.size < newMaxIndex ? context.size : newMaxIndex;
     return bytes;
 }
 
