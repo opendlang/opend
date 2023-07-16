@@ -1766,7 +1766,6 @@ unittest
 }
 
 /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in zeros.
-// TODO verify
 __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -1777,28 +1776,14 @@ __m256i _mm256_srli_epi32 (__m256i a, int imm8) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_psrldi256(cast(int8)a, cast(ubyte)imm8);
     }
-    else
+    else 
     {
-        // PERF: split instead
-        ubyte count = cast(ubyte) imm8;
-        int8 a_int8 = cast(int8) a;
-
-        // Note: the intrinsics guarantee imm8[0..7] is taken, however
-        //       D says "It's illegal to shift by the same or more bits
-        //       than the size of the quantity being shifted"
-        //       and it's UB instead.
-        int8 r = cast(int8) _mm256_setzero_si256();
-        if (count >= 32)
-            return cast(__m256i) r;
-        r.ptr[0] = a_int8.array[0] >>> count;
-        r.ptr[1] = a_int8.array[1] >>> count;
-        r.ptr[2] = a_int8.array[2] >>> count;
-        r.ptr[3] = a_int8.array[3] >>> count;
-        r.ptr[4] = a_int8.array[4] >>> count;
-        r.ptr[5] = a_int8.array[5] >>> count;
-        r.ptr[6] = a_int8.array[6] >>> count;
-        r.ptr[7] = a_int8.array[7] >>> count;
-        return cast(__m256i) r;
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_srli_epi32(a_lo, imm8);
+        __m128i r_hi = _mm_srli_epi32(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
