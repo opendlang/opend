@@ -85,31 +85,32 @@ __m128 _mm_log_ps(__m128 x) pure @safe
     x += tmp;
     __m128 z = x * x;
     __m128 y = _ps_cephes_log_p0;
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p1);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p2);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p3);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p4);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p5);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p6);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p7);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_log_p8);
-    y = _mm_mul_ps(y, x);
-    y = _mm_mul_ps(y, z);
-    tmp = _mm_mul_ps(e, _ps_cephes_log_q1);
-    y = _mm_add_ps(y, tmp);
-    tmp = _mm_mul_ps(z, _ps_0p5);
-    y = _mm_sub_ps(y, tmp);
-    tmp = _mm_mul_ps(e, _ps_cephes_log_q2);
-    x = _mm_add_ps(x, y);
-    x = _mm_add_ps(x, tmp);
+    y *= x;
+    y += _ps_cephes_log_p1;
+    y *= x;
+    y += _ps_cephes_log_p2;
+    y *= x;
+    y += _ps_cephes_log_p3;
+    y *= x;
+    y += _ps_cephes_log_p4;
+    y *= x;
+    y += _ps_cephes_log_p5;
+    y *= x;
+    y += _ps_cephes_log_p6;
+    y *= x;
+    y += _ps_cephes_log_p7;
+    y *= x;
+    y += _ps_cephes_log_p8;
+    y *= x;
+
+    y = y * z;
+    tmp = e * _ps_cephes_log_q1;
+    y += tmp;
+    tmp = z * _ps_0p5;
+    y = y - tmp;
+    tmp = e * _ps_cephes_log_q2;
+    x += y;
+    x += tmp;
     x = _mm_or_ps(x, invalid_mask); // negative arg will be NAN
     return x;
 }
@@ -150,8 +151,8 @@ __m128 _mm_exp_ps(__m128 x) pure @safe
     x = _mm_max_ps(x, _ps_exp_lo);
 
     /* express exp(x) as exp(g + n*log(2)) */
-    fx = _mm_mul_ps(x, _ps_cephes_LOG2EF);
-    fx = _mm_add_ps(fx, _ps_0p5);
+    fx = x * _ps_cephes_LOG2EF;
+    fx += _ps_0p5;
 
     /* how to perform a floorf with SSE: just below */
     emm0 = _mm_cvttps_epi32(fx);
@@ -162,26 +163,26 @@ __m128 _mm_exp_ps(__m128 x) pure @safe
     mask = _mm_and_ps(mask, one);
     fx = tmp - mask;
 
-    tmp = _mm_mul_ps(fx, _ps_cephes_exp_C1);
-    __m128 z = _mm_mul_ps(fx, _ps_cephes_exp_C2);
+    tmp = fx * _ps_cephes_exp_C1;
+    __m128 z = fx * _ps_cephes_exp_C2;
     x -= tmp;
     x -= z;
 
     z = x * x;
 
     __m128 y = _ps_cephes_exp_p0;
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_exp_p1);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_exp_p2);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_exp_p3);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_exp_p4);
-    y = _mm_mul_ps(y, x);
-    y = _mm_add_ps(y, _ps_cephes_exp_p5);
-    y = _mm_mul_ps(y, z);
-    y = _mm_add_ps(y, x);
+    y *= x;
+    y += _ps_cephes_exp_p1;
+    y *= x;
+    y += _ps_cephes_exp_p2;
+    y *= x;
+    y += _ps_cephes_exp_p3;
+    y *= x;
+    y += _ps_cephes_exp_p4;
+    y *= x;
+    y += _ps_cephes_exp_p5;
+    y *= z;
+    y += x;
     y += one;
 
     /* build 2^n */
