@@ -1202,6 +1202,7 @@ __m128i _mm_max_epi32 (__m128i a, __m128i b) @trusted
         // ARM: smax.4s since LDC 1.8 -01
         int4 sa = cast(int4)a;
         int4 sb = cast(int4)b;
+        // TODO: avoid greaterMask if possible
         int4 greater = greaterMask!int4(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
@@ -1236,6 +1237,7 @@ __m128i _mm_max_epi8 (__m128i a, __m128i b) @trusted
         // ARM64: smax.16b since LDC 1.8.0 -O1
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
+        // TODO: avoid greaterMask if possible
         byte16 greater = cast(byte16) greaterMask!byte16(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
@@ -1306,6 +1308,7 @@ __m128i _mm_max_epu32 (__m128i a, __m128i b) @trusted
         // ARM64: umax.4s since LDC 1.8.0 -O1
         uint4 sa = cast(uint4)a;
         uint4 sb = cast(uint4)b;
+        // TODO: avoid greaterMask if possible
         uint4 greater = cast(uint4) greaterMask!uint4(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
@@ -1340,6 +1343,7 @@ __m128i _mm_min_epi32 (__m128i a, __m128i b) @trusted
         // ARM: smin.4s since LDC 1.8 -01
         int4 sa = cast(int4)a;
         int4 sb = cast(int4)b;
+        // TODO: avoid greaterMask if possible
         int4 greater = greaterMask!int4(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
     }
@@ -1374,6 +1378,7 @@ __m128i _mm_min_epi8 (__m128i a, __m128i b) @trusted
         // ARM64: smin.16b since LDC 1.8.0 -O1
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
+        // TODO: avoid greaterMask if possible
         byte16 greater = cast(byte16) greaterMask!byte16(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
     }
@@ -1408,7 +1413,10 @@ __m128i _mm_min_epu16 (__m128i a, __m128i b) @trusted
         // ARM64: umin.8h since LDC 1.8.0 -O1
         ushort8 sa = cast(ushort8)a;
         ushort8 sb = cast(ushort8)b;
-        ushort8 greater = cast(ushort8) greaterMask!ushort8(sb, sa);
+        static if (SIMD_COMPARISON_MASKS_16B)
+            ushort8 greater = (sb > sa);
+        else
+            ushort8 greater = cast(ushort8) greaterMask!ushort8(sb, sa);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
     else
@@ -1440,6 +1448,7 @@ __m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
         // ARM64: umin.4s since LDC 1.8.0 -O1
         uint4 sa = cast(uint4)a;
         uint4 sb = cast(uint4)b;
+        // TODO: avoid greaterMask if possible
         uint4 greater = cast(uint4) greaterMask!uint4(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
     }
