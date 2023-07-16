@@ -1570,7 +1570,6 @@ unittest
 // TODO __m256i _mm256_sll_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-// TODO verify
 __m256i _mm256_slli_epi16(__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -1581,17 +1580,13 @@ __m256i _mm256_slli_epi16(__m256i a, int imm8) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_psllwi256(cast(short16)a, cast(ubyte)imm8);
     }
-    else
+    else // split
     {
-        //PERF: ARM
-        short16 sa  = cast(short16)a;
-        short16 r   = cast(short16)_mm256_setzero_si256();
-        ubyte count = cast(ubyte) imm8;
-        if (count > 15)
-            return cast(__m256i)r;
-        foreach(i; 0..16)
-            r.ptr[i] = cast(short)(sa.array[i] << count);
-        return cast(__m256i)r;
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_slli_epi16(a_lo, imm8);
+        __m128i r_hi = _mm_slli_epi16(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
@@ -1609,7 +1604,6 @@ unittest
 }
 
 /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
-// TODO verify
 __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -1622,33 +1616,24 @@ __m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
     }
     else
     {
-        // Note: the intrinsics guarantee imm8[0..7] is taken, however
-        //       D says "It's illegal to shift by the same or more bits
-        //       than the size of the quantity being shifted"
-        //       and it's UB instead.
-        int8 a_int8 = cast(int8) a;
-        int8 r      = cast(int8) _mm256_setzero_si256();
-
-        ubyte count = cast(ubyte) imm8;
-        if (count > 31)
-            return cast(__m256i) r;
-
-        foreach(i; 0..8)
-            r.ptr[i] = cast(uint)(a_int8.array[i]) << count;
-        return cast(__m256i) r;
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_slli_epi32(a_lo, imm8);
+        __m128i r_hi = _mm_slli_epi32(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
 {
-    __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -4);
+    __m256i A = _mm256_setr_epi32(0, 2, 3, -4, 0, 2, 3, -9);
     int8 B = cast(int8) _mm256_slli_epi32(A, 1);
     int8 B2 = cast(int8) _mm256_slli_epi32(A, 1 + 256);
-    int[8] expectedB = [ 0, 4, 6, -8, 0, 4, 6, -8 ];
+    int[8] expectedB = [ 0, 4, 6, -8, 0, 4, 6, -18 ];
     assert(B.array == expectedB);
     assert(B2.array == expectedB);
 
     int8 C = cast(int8) _mm256_slli_epi32(A, 0);
-    int[8] expectedC = [ 0, 2, 3, -4, 0, 2, 3, -4 ];
+    int[8] expectedC = [ 0, 2, 3, -4, 0, 2, 3, -9 ];
     assert(C.array == expectedC);
 
     int8 D = cast(int8) _mm256_slli_epi32(A, 65);
