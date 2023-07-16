@@ -237,18 +237,6 @@ else
         return result;
     }
 
-    Vec notEqualMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "one" comparison
-    {
-        enum size_t Count = Vec.array.length;
-        Vec result;
-        foreach(int i; 0..Count)
-        {
-            bool cond = a.array[i] != b.array[i];
-            result.ptr[i] = cond ? TrueMask!Vec : 0;
-        }
-        return result;
-    }
-
     Vec greaterMask(Vec)(Vec a, Vec b) @trusted // for floats, equivalent to "ogt" comparison
     {
         enum size_t Count = Vec.array.length;
