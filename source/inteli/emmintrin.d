@@ -2276,8 +2276,10 @@ __m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
         // ARM: smax.8h since LDC 1.5 -01
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        // TODO: avoid greaterMask if possible
-        short8 greater = greaterMask!short8(sa, sb);
+        static if (SIMD_COMPARISON_MASKS_16B)
+            short8 greater = sa > sb;
+        else
+            short8 greater = greaterMask!short8(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
     else
@@ -2444,8 +2446,10 @@ __m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
         // ARM64: smin.8h since LDC 1.5 -01
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
-        // TODO: avoid greaterMask if possible
-        short8 greater = greaterMask!short8(sa, sb);
+        static if (SIMD_COMPARISON_MASKS_16B)
+            short8 greater = sa > sb;
+        else
+            short8 greater = greaterMask!short8(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
     }
     else
