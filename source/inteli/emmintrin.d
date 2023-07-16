@@ -3733,13 +3733,9 @@ deprecated("Use _mm_slli_epi64 instead.") __m128i _mm_sll_epi64 (__m128i a, __m1
 /// Shift packed 16-bit integers in `a` left by `count` while shifting in zeros.
 deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
 {
-    static if (LDC_with_SSE2)
+    static if (GDC_or_LDC_with_SSE2)
     {
-        return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
-    }
-    else static if (GDC_with_SSE2)
-    {
-        return cast(__m128i) _mm_sll_epi16(cast(short8)a, count);
+        return cast(__m128i)__builtin_ia32_psllw128(cast(short8)a, cast(short8)count);
     }
     else static if (DMD_with_32bit_asm)
     {
