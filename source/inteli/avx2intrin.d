@@ -1347,9 +1347,9 @@ unittest
 /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
 /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
 /// and pack the results in destination.
-// TODO verify
 __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
 {
+    // TODO: catastrophic in GDC without AVX2, LDC without AVX2, ARM64
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_pmaddwd256(cast(short16)a, cast(short16)b);
@@ -1519,9 +1519,9 @@ unittest
 /// Compute the absolute differences of packed unsigned 8-bit integers in `a` and `b`, then horizontally sum each
 /// consecutive 8 differences to produce two unsigned 16-bit integers, and pack these unsigned 16-bit integers in the
 /// low 16 bits of 64-bit elements in result.
-// TODO verify
 __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
 {
+    // TODO: catastrophic without AVX2, in ARM64, need split
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_psadbw256(cast(ubyte32)a, cast(ubyte32)b);
