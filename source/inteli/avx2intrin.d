@@ -1641,7 +1641,41 @@ unittest
     assert(D.array == expectedD);
 }
 
-// TODO __m256i _mm256_slli_epi64 (__m256i a, int imm8) pure @safe
+/// Shift packed 64-bit integers in `a` left by `imm8` while shifting in zeros.
+__m256i _mm256_slli_epi64 (__m256i a, int imm8) pure @safe
+{
+    static if (GDC_or_LDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psllqi256(cast(long4)a, cast(ubyte)imm8);
+    }
+    else
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_slli_epi64(a_lo, imm8);
+        __m128i r_hi = _mm_slli_epi64(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(23, -4, 1, long.max);
+    long4 B = cast(long4) _mm256_slli_epi64(A, 1);
+    long4 B2 = cast(long4) _mm256_slli_epi64(A, 1 + 256);
+
+    long[4] expectedB = [ 46, -8, 2, -2];
+    assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    long4 C = cast(long4) _mm256_slli_epi64(A, 0);
+    long[4] expectedC = [ 23, -4, 1, long.max ];
+    assert(C.array == expectedC);
+
+    long4 D = cast(long4) _mm256_slli_epi64(A, 65);
+    long[4] expectedD = [ 0, 0, 0, 0 ];
+    assert(D.array == expectedD);
+}
+
 // TODO __m256i _mm256_slli_si256 (__m256i a, const int imm8) pure @safe
 // TODO __m128i _mm_sllv_epi32 (__m128i a, __m128i count) pure @safe
 // TODO __m256i _mm256_sllv_epi32 (__m256i a, __m256i count) pure @safe
