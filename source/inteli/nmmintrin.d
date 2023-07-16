@@ -1198,9 +1198,9 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         {
             for (int k = 0; k < 8; ++k)
             {
-                __m128i equalMask = _mm_cmpeq_epi16(a, b);
-                equalMask = _mm_and_si128(equalMask, aValid);
-                R = _mm_or_si128(R, equalMask);
+                __m128i eqMask = _mm_cmpeq_epi16(a, b);
+                eqMask = _mm_and_si128(eqMask, aValid);
+                R = _mm_or_si128(R, eqMask);
 
                 // rotate a and aValid
                 a = _mm_or_si128(_mm_srli_si128!2(a), _mm_slli_si128!14(a));
@@ -1211,9 +1211,9 @@ __m128i cmpstrMask(int imm8)(__m128i a,
         {
             for (int k = 0; k < 16; ++k)
             {
-                __m128i equalMask = _mm_cmpeq_epi8(a, b);
-                equalMask = _mm_and_si128(equalMask, aValid);
-                R = _mm_or_si128(R, equalMask);
+                __m128i eqMask = _mm_cmpeq_epi8(a, b);
+                eqMask = _mm_and_si128(eqMask, aValid);
+                R = _mm_or_si128(R, eqMask);
 
                 // rotate a and aValid
                 a = _mm_or_si128(_mm_srli_si128!1(a), _mm_slli_si128!15(a));
@@ -1330,15 +1330,15 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 short aValidHere = (cast(short8)aValid).array[pos];
                 __m128i mmAValidHere = _mm_set1_epi16(aValidHere);
                 __m128i mmAInvalidHere = _mm_xor_si128(mmAValidHere, _mm_set1_epi32(-1));
-                __m128i equalMask = _mm_cmpeq_epi16(mmcharK, b);
+                __m128i eqMask = _mm_cmpeq_epi16(mmcharK, b);
 
                 // Where A is invalid, the comparison always holds "equal"
-                equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
+                eqMask = _mm_or_si128(eqMask, mmAInvalidHere);
 
                 // Where B is invalid, and A is valid, the comparison is forced to false
-                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValidShift, mmAInvalidHere));
+                eqMask = _mm_and_si128(eqMask, _mm_or_si128(bValidShift, mmAInvalidHere));
 
-                R = _mm_and_si128(equalMask);
+                R = _mm_and_si128(eqMask);
 
                 // drop first char of b
                 b = _mm_srli_si128!2(b);
@@ -1356,15 +1356,15 @@ __m128i cmpstrMask(int imm8)(__m128i a,
                 byte aValidHere = (cast(byte16)aValid).array[pos];            
                 __m128i mmAValidHere = _mm_set1_epi8(aValidHere);
                 __m128i mmAInvalidHere = _mm_xor_si128(mmAValidHere, _mm_set1_epi32(-1));
-                __m128i equalMask = _mm_cmpeq_epi8(mmcharK, b);
+                __m128i eqMask = _mm_cmpeq_epi8(mmcharK, b);
 
                 // Where A is invalid, the comparison always holds "equal"
-                equalMask = _mm_or_si128(equalMask, mmAInvalidHere);
+                eqMask = _mm_or_si128(eqMask, mmAInvalidHere);
 
                 // Where B is invalid, and A is valid, the comparison is forced to false
-                equalMask = _mm_and_si128(equalMask, _mm_or_si128(bValidShift, mmAInvalidHere));
+                eqMask = _mm_and_si128(eqMask, _mm_or_si128(bValidShift, mmAInvalidHere));
 
-                R = _mm_and_si128(R, equalMask);
+                R = _mm_and_si128(R, eqMask);
 
                 // drop first char of b
                 b = _mm_srli_si128!1(b);
