@@ -57,16 +57,15 @@ else version(DigitalMars)
 {
     public import core.simd;
 
-    // Note: turning this true is desirable,
-    // and leads to many bugs being discovered upstream.
-    // the fact that it works relies on many workardounds.
-    // in particular intel-intrinsics with this on is a honeypot for DMD backend bugs.
-    // What happends next is that contributors end up on a DMD bug in their PR.
-    //
-    // Failed attempts: xxx
-    //
     static if (__VERSION__ >= 2100)
     {
+        // Note: turning this true is very desirable for DMD performance,
+        // but also leads to many bugs being discovered upstream.
+        // The fact that it works at all relies on many workardounds.
+        // In particular intel-intrinsics with this "on" is a honeypot for DMD backend bugs,
+        // and a very strong DMD codegen test suite.
+        // What happens typically is that contributors end up on a DMD bug in their PR.
+        // But finally, in 2022 D_SIMD has been activated, at least for SSE and some instructions.
         enum bool tryToEnableCoreSimdWithDMD = true;
     }
     else
@@ -80,7 +79,8 @@ else version(DigitalMars)
         enum SSESizedVectorsAreEmulated = !tryToEnableCoreSimdWithDMD;
 
         // Note: with DMD, AVX-sized vectors can't be enabled yet.
-        /// On linux + x86_64, this will fail since a few operands seem to be missing. 
+        // On linux + x86_64, this will fail since a few operands seem to be missing. 
+        // FUTURE: enable AVX-sized vectors in DMD. :)
         version(D_AVX)
             enum AVXSizedVectorsAreEmulated = true;
         else
