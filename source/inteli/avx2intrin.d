@@ -1570,13 +1570,9 @@ unittest
 // TODO __m256i _mm256_sll_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` left by `imm8` while shifting in zeros.
-__m256i _mm256_slli_epi16(__m256i a, int imm8) pure @trusted
+__m256i _mm256_slli_epi16(__m256i a, int imm8) pure @safe
 {
-    static if (GDC_with_AVX2)
-    {
-        return cast(__m256i) __builtin_ia32_psllwi256(cast(short16)a, cast(ubyte)imm8);
-    }
-    else static if (LDC_with_AVX2)
+    static if (GDC_or_LDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_psllwi256(cast(short16)a, cast(ubyte)imm8);
     }
@@ -1604,13 +1600,9 @@ unittest
 }
 
 /// Shift packed 32-bit integers in `a` left by `imm8` while shifting in zeros.
-__m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @trusted
+__m256i _mm256_slli_epi32 (__m256i a, int imm8) pure @safe
 {
-    static if (GDC_with_AVX2)
-    {
-        return cast(__m256i) __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
-    }
-    else static if (LDC_with_AVX2)
+    static if (GDC_or_LDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_pslldi256(cast(int8)a, cast(ubyte)imm8);
     }
@@ -1691,8 +1683,9 @@ __m256i _mm256_srai_epi16 (__m256i a, int imm8) pure @safe
     {
         return cast(__m256i) __builtin_ia32_psrawi256(cast(short16)a, cast(ubyte)imm8);
     }
-    else // split
+    else 
     {
+        // split
         __m128i a_lo = _mm256_extractf128_si256!0(a);
         __m128i a_hi = _mm256_extractf128_si256!1(a);
         __m128i r_lo = _mm_srai_epi16(a_lo, imm8);
@@ -1718,11 +1711,7 @@ unittest
 /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
 __m256i _mm256_srai_epi32 (__m256i a, int imm8) pure @safe
 {
-    static if (GDC_with_AVX2)
-    {
-        return cast(__m256i) __builtin_ia32_psradi256(cast(int8)a, cast(ubyte)imm8);
-    }
-    else static if (LDC_with_AVX2)
+    static if (GDC_or_LDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_psradi256(cast(int8)a, cast(ubyte)imm8);
     }
