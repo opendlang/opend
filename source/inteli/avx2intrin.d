@@ -1683,7 +1683,37 @@ unittest
 // TODO __m256i _mm256_sllv_epi64 (__m256i a, __m256i count) pure @safe
 // TODO __m256i _mm256_sra_epi16 (__m256i a, __m128i count) pure @safe
 // TODO __m256i _mm256_sra_epi32 (__m256i a, __m128i count) pure @safe
-// TODO __m256i _mm256_srai_epi16 (__m256i a, int imm8) pure @safe
+
+/// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
+__m256i _mm256_srai_epi16 (__m256i a, int imm8) pure @safe
+{
+    static if (GDC_or_LDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_psrawi256(cast(short16)a, cast(ubyte)imm8);
+    }
+    else // split
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_srai_epi16(a_lo, imm8);
+        __m128i r_hi = _mm_srai_epi16(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A  = _mm256_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7, short.min, short.max, 2, 3, -4, -5, 6, 7);
+    short16 B  = cast(short16)( _mm256_srai_epi16(A, 1) );
+    short16 B2 = cast(short16)( _mm256_srai_epi16(A, 1 + 256) );
+    short[16] expectedB = [ 0, 0, 1, 1, -2, -3, 3, 3, -16384, 16383, 1, 1, -2, -3, 3, 3 ];
+    assert(B.array == expectedB);
+    assert(B2.array == expectedB);
+
+    short16 C = cast(short16)( _mm256_srai_epi16(A, 18) );
+    short[16] expectedC = [ 0, 0, 0, 0, -1, -1, 0, 0,
+                           -1, 0, 0, 0, -1, -1, 0, 0 ];
+    assert(C.array == expectedC);
+}
 
 /// Shift packed 32-bit integers in `a` right by `imm8` while shifting in sign bits.
 __m256i _mm256_srai_epi32 (__m256i a, int imm8) pure @safe
