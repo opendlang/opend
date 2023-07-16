@@ -1349,7 +1349,6 @@ unittest
 /// and pack the results in destination.
 __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
 {
-    // TODO: catastrophic in GDC without AVX2, LDC without AVX2, ARM64
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_pmaddwd256(cast(short16)a, cast(short16)b);
@@ -1360,14 +1359,14 @@ __m256i _mm256_madd_epi16 (__m256i a, __m256i b) pure @trusted
     }
     else
     {
-        short16 sa = cast(short16)a;
-        short16 sb = cast(short16)b;
-        int8 r; // PERF =void;
-        foreach(i; 0..8)
-        {
-            r.ptr[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];
-        }
-        return cast(__m256i) r;
+        // split is beneficial for ARM64, LDC and GDC without AVX2
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_madd_epi16(a_lo, b_lo);
+        __m128i r_hi = _mm_madd_epi16(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
@@ -1521,7 +1520,6 @@ unittest
 /// low 16 bits of 64-bit elements in result.
 __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
 {
-    // TODO: catastrophic without AVX2, in ARM64, need split
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_psadbw256(cast(ubyte32)a, cast(ubyte32)b);
@@ -1532,22 +1530,14 @@ __m256i _mm256_sad_epu8 (__m256i a, __m256i b) pure @trusted
     }
     else
     {
-        // PERF: ARM64/32 is lacking
-        byte32 ab = cast(byte32)a;
-        byte32 bb = cast(byte32)b;
-        ubyte[32] t;
-        foreach(i; 0..32)
-        {
-            int diff = cast(ubyte)(ab.array[i]) - cast(ubyte)(bb.array[i]);
-            if (diff < 0) diff = -diff;
-            t.ptr[i] = cast(ubyte)(diff);
-        }
-        int8 r = cast(int8) _mm256_setzero_si256();
-        r.ptr[0] = t[0]  + t[1]  + t[2]  + t[3]  + t[4]  + t[5]  + t[6]  + t[7];
-        r.ptr[2] = t[8]  + t[9]  + t[10] + t[11] + t[12] + t[13] + t[14] + t[15];
-        r.ptr[4] = t[16] + t[17] + t[18] + t[19] + t[20] + t[21] + t[22] + t[23];
-        r.ptr[6] = t[24] + t[25] + t[26] + t[27] + t[28] + t[29] + t[30] + t[31];
-        return cast(__m256i) r;
+        // split is beneficial for ARM64, LDC and GDC without AVX2
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_sad_epu8(a_lo, b_lo);
+        __m128i r_hi = _mm_sad_epu8(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
@@ -1721,7 +1711,6 @@ unittest
 // TODO __m256i _mm256_srl_epi64 (__m256i a, __m128i count) pure @safe
 
 /// Shift packed 16-bit integers in `a` right by `imm8` while shifting in zeros.
-// TODO verify
 __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
 {
     static if (GDC_with_AVX2)
@@ -1734,17 +1723,11 @@ __m256i _mm256_srli_epi16 (__m256i a, int imm8) pure @trusted
     }
     else
     {
-        //PERF: with high probability, need to split without AVX2, that helped _mm256_srai_epi32
-        //PERF: ARM
-        short16 sa  = cast(short16)a;
-        ubyte count = cast(ubyte)imm8;
-        short16 r   = cast(short16) _mm256_setzero_si256();
-        if (count >= 16)
-            return cast(__m256i)r;
-
-        foreach(i; 0..16)
-            r.ptr[i] = cast(short)(cast(ushort)(sa.array[i]) >> count);
-        return cast(__m256i)r;
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i r_lo = _mm_srli_epi16(a_lo, imm8);
+        __m128i r_hi = _mm_srli_epi16(a_hi, imm8);
+        return _mm256_set_m128i(r_hi, r_lo);
     }
 }
 unittest
