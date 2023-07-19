@@ -101,6 +101,9 @@ void mir_cpuid_init()
     static if (__VERSION__ >= 2068)
         pragma(inline, false);
 
+    if (_cpus)
+        return; // already initialized
+
     import cpuid.x86_any;
 
     mir_cpuid_x86_any_init();
@@ -337,6 +340,11 @@ void mir_cpuid_init()
 /// ditto
 
 alias cpuid_init = mir_cpuid_init;
+
+unittest // make sure a 2nd invocation after the implicit CRT constructor doesn't throw
+{
+    mir_cpuid_init();
+}
 
 pure @trusted:
 
