@@ -283,10 +283,10 @@ Another way to create an `Image` is to load an encoded image.
       ushort* scan = cast(ushort*) image.scanptr(y);
       for (int x = 0; x < image.width(); ++x)
       {
-          ushort r = scanline[4*x + 0];
-          ushort g = scanline[4*x + 1];
-          ushort b = scanline[4*x + 2];
-          ushort a = scanline[4*x + 3];
+          ushort r = scan[4*x + 0];
+          ushort g = scan[4*x + 1];
+          ushort b = scan[4*x + 2];
+          ushort a = scan[4*x + 3];
       }
   }
   ```
