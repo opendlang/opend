@@ -27,7 +27,7 @@ module commonmarkd.md4c;
 
 import core.stdc.string;
 import core.stdc.stdio;
-import core.stdc.stdlib: malloc, realloc, free;
+import core.stdc.stdlib: malloc, free;
 
 nothrow:
 @nogc:
@@ -752,7 +752,7 @@ int MD_TEMP_BUFFER(MD_CTX* ctx, SZ sz)
     {
         CHAR* new_buffer;
         SZ new_size = ((sz) + (sz) / 2 + 128) & ~127;
-        new_buffer = cast(CHAR*) realloc(ctx.buffer, new_size);
+        new_buffer = cast(CHAR*) realloc_safe(ctx.buffer, new_size);
         if (new_buffer == null) 
         {
             ctx.MD_LOG("realloc() failed.");
@@ -1667,6 +1667,20 @@ struct MD_ATTRIBUTE_BUILD
 
 enum MD_BUILD_ATTR_NO_ESCAPES = 0x0001;
 
+void* realloc_safe(void* ptr, size_t newSize)
+{
+    import core.stdc.stdlib : free, realloc;
+
+    if (newSize == 0)
+    {
+        free(ptr);
+        return null;
+    }
+
+    return realloc(ptr, newSize);
+}
+
+
 int md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
                                 MD_TEXTTYPE type, OFF off)
 {
@@ -1676,14 +1690,14 @@ int md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
 
         build.substr_alloc = (build.substr_alloc == 0 ? 8 : build.substr_alloc * 2);
 
-        new_substr_types = cast(MD_TEXTTYPE*) realloc(build.substr_types,
+        new_substr_types = cast(MD_TEXTTYPE*) realloc_safe(build.substr_types,
                                     build.substr_alloc * MD_TEXTTYPE.sizeof);
         if(new_substr_types == null) {
             ctx.MD_LOG("realloc() failed.");
             return -1;
         }
         /* Note +1 to reserve space for final offset (== raw_size). */
-        new_substr_offsets = cast(OFF*) realloc(build.substr_offsets,
+        new_substr_offsets = cast(OFF*) realloc_safe(build.substr_offsets,
                                     (build.substr_alloc+1) * OFF.sizeof);
         if(new_substr_offsets == null) {
             ctx.MD_LOG("realloc() failed.");
@@ -2069,7 +2083,7 @@ int md_build_ref_def_hashtable(MD_CTX* ctx)
         /* Append the def to the bucket list. */
         list = cast(MD_REF_DEF_LIST*) bucket;
         if(list.n_ref_defs >= list.alloc_ref_defs) {
-            MD_REF_DEF_LIST* list_tmp = cast(MD_REF_DEF_LIST*) realloc(list, MD_REF_DEF_LIST.SIZEOF( 2 * list.alloc_ref_defs ));
+            MD_REF_DEF_LIST* list_tmp = cast(MD_REF_DEF_LIST*) realloc_safe(list, MD_REF_DEF_LIST.SIZEOF( 2 * list.alloc_ref_defs ));
             if(list_tmp == null) {
                 ctx.MD_LOG("realloc() failed.");
                 goto abort;
@@ -2500,7 +2514,7 @@ int md_is_link_reference_definition(MD_CTX* ctx, const(MD_LINE)* lines, int n_li
         MD_REF_DEF* new_defs;
 
         ctx.alloc_ref_defs = (ctx.alloc_ref_defs > 0 ? ctx.alloc_ref_defs * 2 : 16);
-        new_defs = cast(MD_REF_DEF*) realloc(ctx.ref_defs, ctx.alloc_ref_defs * MD_REF_DEF.sizeof);
+        new_defs = cast(MD_REF_DEF*) realloc_safe(ctx.ref_defs, ctx.alloc_ref_defs * MD_REF_DEF.sizeof);
         if(new_defs == null) {
             ctx.MD_LOG("realloc() failed.");
             ret = -1;
@@ -2848,7 +2862,7 @@ MD_MARK* md_push_mark(MD_CTX* ctx)
         MD_MARK* new_marks;
 
         ctx.alloc_marks = (ctx.alloc_marks > 0 ? ctx.alloc_marks * 2 : 64);
-        new_marks = cast(MD_MARK*) realloc(ctx.marks, ctx.alloc_marks * MD_MARK.sizeof);
+        new_marks = cast(MD_MARK*) realloc_safe(ctx.marks, ctx.alloc_marks * MD_MARK.sizeof);
         if(new_marks == null) {
             ctx.MD_LOG("realloc() failed.");
             return null;
@@ -5240,7 +5254,7 @@ md_push_block_bytes(MD_CTX* ctx, int n_bytes)
         void* new_block_bytes;
 
         ctx.alloc_block_bytes = (ctx.alloc_block_bytes > 0 ? ctx.alloc_block_bytes * 2 : 512);
-        new_block_bytes = realloc(ctx.block_bytes, ctx.alloc_block_bytes);
+        new_block_bytes = realloc_safe(ctx.block_bytes, ctx.alloc_block_bytes);
         if(new_block_bytes == null) {
             ctx.MD_LOG("realloc() failed.");
             return null;
@@ -5888,7 +5902,7 @@ md_push_container(MD_CTX* ctx, const MD_CONTAINER* container)
         MD_CONTAINER* new_containers;
 
         ctx.alloc_containers = (ctx.alloc_containers > 0 ? ctx.alloc_containers * 2 : 16);
-        new_containers = cast(MD_CONTAINER*) realloc(ctx.containers, ctx.alloc_containers * MD_CONTAINER.sizeof);
+        new_containers = cast(MD_CONTAINER*) realloc_safe(ctx.containers, ctx.alloc_containers * MD_CONTAINER.sizeof);
         if (new_containers == null) {
             ctx.MD_LOG("realloc() failed.");
             return -1;
