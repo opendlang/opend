@@ -1162,7 +1162,7 @@ unittest
     assert(_mm_extract_pi16(A, 3) == 4);
 }
 
-/// Free aligned memory that was allocated with `_mm_malloc`.
+/// Free aligned memory that was allocated with `_mm_malloc` or `_mm_realloc`.
 void _mm_free(void * mem_addr) @trusted
 {
     // support for free(NULL)
@@ -2116,11 +2116,14 @@ unittest
     assert(R.array[3] == correct.array[3]);
 }
 
-/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, 
-/// and return a pointer to the newly allocated memory. 
-/// `_mm_free` or `alignedRealloc` with size 0 should be used to free memory that is 
-/// allocated with `_mm_malloc` or `_mm_realloc`.
-/// Previous data is preserved.
+/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, and 
+/// return a pointer to the newly allocated memory. 
+/// Previous data is preserved if any.
+///
+/// IMPORTANT: `size` MUST be > 0.
+///
+/// `_mm_free` MUST be used to free memory that is allocated with `_mm_malloc` or `_mm_realloc`.
+/// Do NOT call _mm_realloc with size = 0.
 void* _mm_realloc(void* aligned, size_t size, size_t alignment) nothrow @nogc // #BONUS
 {
     return alignedReallocImpl!true(aligned, size, alignment);
@@ -2137,7 +2140,7 @@ unittest
         foreach(n; 0..NALLOC)
         {
             size_t alignment = ALIGNMENTS[n];
-            size_t s = ( (n + t * 69096) & 0xffff );
+            size_t s = 1 + ( (n + t * 69096) & 0xffff );
             alloc[n] = _mm_realloc(alloc[n], s, alignment);
             assert(isPointerAligned(alloc[n], alignment));
             foreach(b; 0..s)
@@ -2145,16 +2148,18 @@ unittest
         }
     }
     foreach(n; 0..NALLOC)
-    {
-        alloc[n] = _mm_realloc(alloc[n], 0, ALIGNMENTS[n]);
+    {        
+        _mm_free(alloc[n]);
     }
 }
 
-/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, 
-/// and return a pointer to the newly allocated memory. 
-/// `_mm_free` or `alignedRealloc` with size 0 should be used to free memory that is 
-/// allocated with `_mm_malloc` or `_mm_realloc`.
+/// Reallocate `size` bytes of memory, aligned to the alignment specified in `alignment`, and 
+/// return a pointer to the newly allocated memory. 
 /// Previous data is discarded.
+///
+/// IMPORTANT: `size` MUST be > 0.
+///
+/// `_mm_free` MUST be used to free memory that is allocated with `_mm_malloc` or `_mm_realloc`.
 void* _mm_realloc_discard(void* aligned, size_t size, size_t alignment) nothrow @nogc // #BONUS
 {
     return alignedReallocImpl!false(aligned, size, alignment);
@@ -3088,6 +3093,11 @@ private
 
     void* alignedReallocImpl(bool PreserveDataIfResized)(void* aligned, size_t size, size_t alignment)
     {
+        // Calling `_mm_realloc`, `_mm_realloc_discard` or `realloc`  with size 0 is 
+        // Undefined Behavior, and not only since C23.
+        // Moreover, alignedReallocImpl was buggy about it.
+        assert(size != 0);
+
         if (aligned is null)
             return _mm_malloc(size, alignment);
 
@@ -3150,6 +3160,22 @@ unittest
     assert(nullAlloc != null);
     _mm_free(nullAlloc);
 }
+
+unittest
+{
+    // In C23, it is UB to call realloc with 0 size.
+    // Ensure this is not the case, ever.
+
+    int alignment = 1;
+    void* alloc = _mm_malloc(18, alignment);
+
+    // DO NOT DO THAT:
+    //_mm_realloc(alloc, 0, alignment);
+
+    // DO THAT:
+    _mm_free(alloc);
+}
+
 
 // For some reason, order of declaration is important for this one
 // so it is misplaced.
