@@ -122,7 +122,7 @@ ulong _mulx_u64 (ulong a, ulong b, ulong* hi)
         MEM[hi+63:hi]  := (a * b)[127:64]
     +/
 
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         static if (__VERSION__ >= 2094)
             enum bool withLDCIR = true;

@@ -897,7 +897,7 @@ deprecated alias _m_to_int64 = _mm_cvtm64_si64; ///ditto
 /// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @trusted
 {   
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x i16> %0, <4 x i16> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
                    ret <4 x i16> %r`;
@@ -948,7 +948,7 @@ unittest
 /// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x i8> %0, <8 x i8> %1, <8 x i32> <i32 4, i32 12, i32 5, i32 13, i32 6, i32 14, i32 7, i32 15>
                    ret <8 x i8> %r`;
@@ -1025,7 +1025,7 @@ unittest
 /// Unpack and interleave 8-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <8 x i8> %0, <8 x i8> %1, <8 x i32> <i32 0, i32 8, i32 1, i32 9, i32 2, i32 10, i32 3, i32 11>
             ret <8 x i8> %r`;

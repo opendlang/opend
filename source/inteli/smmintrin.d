@@ -1280,7 +1280,10 @@ __m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
         //       sequence that maybe should go in other min/max intrinsics? 
         ushort8 sa = cast(ushort8)a;
         ushort8 sb = cast(ushort8)b;
-        ushort8 greater = cast(ushort8) greaterMask!ushort8(sa, sb);
+        static if (SIMD_COMPARISON_MASKS_16B)
+            ushort8 greater = sa > sb;
+        else
+            ushort8 greater = cast(ushort8) greaterMask!ushort8(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );
     }
     else

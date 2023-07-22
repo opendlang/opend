@@ -408,7 +408,7 @@ enum uint _MM_ROUND_DOWN_ARM        = 0x00800000;
 enum uint _MM_ROUND_UP_ARM          = 0x00400000;
 enum uint _MM_ROUND_TOWARD_ZERO_ARM = 0x00C00000;
 enum uint _MM_ROUND_MASK_ARM        = 0x00C00000;
-enum uint _MM_FLUSH_ZERO_MASK_ARM = 0x01000000;
+enum uint _MM_FLUSH_ZERO_MASK_ARM   = 0x01000000;
 
 
 //

@@ -1451,9 +1451,21 @@ __m128 _mm_loadu_ps(const(float)* mem_addr) pure @trusted
     {
         return __builtin_ia32_loadups(mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
-        return loadUnaligned!(__m128)(mem_addr);
+        static if (LDC_with_optimizations)
+        {
+            return loadUnaligned!(__m128)(mem_addr);
+        }
+        else
+        {
+            __m128 result;
+            result.ptr[0] = mem_addr[0];
+            result.ptr[1] = mem_addr[1];
+            result.ptr[2] = mem_addr[2];
+            result.ptr[3] = mem_addr[3];
+            return result;
+        }
     }
     else version(DigitalMars)
     {
@@ -2581,7 +2593,7 @@ __m128 _mm_shuffle_ps(ubyte imm8)(__m128 a, __m128 b) pure @trusted
     {
         return cast(__m128) __simd(XMM.SHUFPS, a, b, imm8);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return shufflevectorLDC!(__m128, imm8 & 3, (imm8>>2) & 3, 
                                  4 + ((imm8>>4) & 3), 4 + ((imm8>>6) & 3) )(a, b);
@@ -2805,7 +2817,7 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @trusted // FUTURE should not
     {
         __builtin_ia32_storeups(mem_addr, a); // better in -O0
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         storeUnaligned!(float4)(a, mem_addr);
     }
@@ -2963,7 +2975,7 @@ __m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
     {
         return cast(__m128) __simd(XMM.UNPCKHPS, a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x float> %0, <4 x float> %1, <4 x i32> <i32 2, i32 6, i32 3, i32 7>
                   ret <4 x float> %r`;
@@ -2996,7 +3008,7 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
     {
         return cast(__m128) __simd(XMM.UNPCKLPS, a, b);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <4 x float> %0, <4 x float> %1, <4 x i32> <i32 0, i32 4, i32 1, i32 5>
                    ret <4 x float> %r`;

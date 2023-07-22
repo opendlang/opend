@@ -3534,7 +3534,7 @@ __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @trusted
     {
         return __builtin_ia32_pshufd(a, imm8);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return shufflevectorLDC!(int4, (imm8 >> 0) & 3,
                                  (imm8 >> 2) & 3,
@@ -3602,7 +3602,7 @@ __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pshufhw(cast(short8)a, imm8);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return cast(__m128i) shufflevectorLDC!(short8, 0, 1, 2, 3,
                                           4 + ( (imm8 >> 0) & 3 ),
@@ -3640,7 +3640,7 @@ __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pshuflw(cast(short8)a, imm8);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return cast(__m128i) shufflevectorLDC!(short8, ( (imm8 >> 0) & 3 ),
                                                        ( (imm8 >> 2) & 3 ),
@@ -3924,7 +3924,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
         pragma(inline, true); // else it doesn't seem to be inlined at all by GDC TODO _mm_srli_si128
         return cast(__m128i) __builtin_ia32_pslldqi128(cast(long2)op, cast(ubyte)(bytes * 8)); 
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return cast(__m128i) shufflevectorLDC!(byte16,
                                                16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes, 20 - bytes, 21 - bytes,
@@ -4417,7 +4417,7 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @trusted
         }
         return v;
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return cast(__m128i) shufflevectorLDC!(byte16,
                                                bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
@@ -5195,7 +5195,7 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
         }
         return a;
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 8, i32 24, i32 9, i32 25, i32 10, i32 26, i32 11, i32 27, i32 12, i32 28, i32 13, i32 29, i32 14, i32 30, i32 15, i32 31>
                    ret <16 x i8> %r`;
@@ -5393,7 +5393,7 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @trusted
         }
         return a;
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 0, i32 16, i32 1, i32 17, i32 2, i32 18, i32 3, i32 19, i32 4, i32 20, i32 5, i32 21, i32 6, i32 22, i32 7, i32 23>
             ret <16 x i8> %r`;

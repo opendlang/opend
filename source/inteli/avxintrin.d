@@ -854,7 +854,7 @@ __m128 _mm_cmp_ss(int imm8)(__m128 a, __m128 b) pure @safe
 /// elements.
 __m256d _mm256_cvtepi32_pd (__m128i a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = sitofp <4 x i32> %0 to <4 x double>
@@ -886,7 +886,7 @@ unittest
 /// elements.
 __m256 _mm256_cvtepi32_ps (__m256i a) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         enum ir = `
             %r = sitofp <8 x i32> %0 to <8 x float>
@@ -1660,7 +1660,7 @@ __m256i _mm256_loadu_si256 (const(__m256i)* mem_addr) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return loadUnaligned!(__m256i)(cast(long*)mem_addr);
     }
@@ -1704,7 +1704,7 @@ __m256d _mm256_loadu_pd (const(void)* mem_addr) pure @system
     {
         return __builtin_ia32_loadupd256 ( cast(const(double)*) mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return loadUnaligned!(__m256d)(cast(double*)mem_addr);
     }    
@@ -1735,7 +1735,7 @@ __m256 _mm256_loadu_ps (const(float)* mem_addr) pure @system
     {
         return __builtin_ia32_loadups256 ( cast(const(float)*) mem_addr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return loadUnaligned!(__m256)(cast(float*)mem_addr);
     }    
@@ -3371,7 +3371,7 @@ __m256i _mm256_setr_epi16 (short e15, short e14, short e13, short e12, short e11
     {
          return cast(__m256i) __builtin_ia32_loaddqu256(cast(const(char)*) result.ptr);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         return cast(__m256i)( loadUnaligned!(short16)(result.ptr) );
     }
@@ -3504,7 +3504,7 @@ unittest
 /// Set packed double-precision (64-bit) floating-point elements with the supplied values in reverse order.
 __m256d _mm256_setr_pd (double e3, double e2, double e1, double e0) pure @trusted
 {
-    version(LDC)
+    static if (LDC_with_optimizations)
     {
         // PERF, probably not the best
         double[4] result = [e3, e2, e1, e0];

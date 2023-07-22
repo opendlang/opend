@@ -110,7 +110,7 @@ __m128i _mm_abs_epi8 (__m128i a) @trusted
     {
         return cast(__m128i) vabsq_s8(cast(byte16)a);
     }
-    else version(LDC)
+    else static if (LDC_with_optimizations)
     {
         // LDC x86: generates pabsb since LDC 1.1 -O1
         //     arm64: generates abs since LDC 1.8 -O1
