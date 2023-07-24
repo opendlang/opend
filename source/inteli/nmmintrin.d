@@ -530,7 +530,7 @@ __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) @trusted
         // LDC x86: Optimized since LDC 1.1.0 -O1
         //   arm64: Optimized since LDC 1.8.0 -O1
         // When SSE4.2 is disabled, this gives same sequence than below.
-        if (SIMD_COMPARISON_MASKS_16B)
+        static if (SIMD_COMPARISON_MASKS_16B)
             return cast(__m128i)(la > lb);
         else
             return cast(__m128i)( greaterMask!long2(la, lb));
