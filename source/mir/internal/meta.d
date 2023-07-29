@@ -279,12 +279,6 @@ template getUDAs(T, string member, alias attribute)
         alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member));
     }
     else
-    static if (__traits(isTemplate, __traits(getMember, T, member)))
-    {
-        alias getUDAsImpl(alias overload) = Filter!(isDesiredUDA!attribute, autoGetUDAs!overload);
-        alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member));
-    }
-    else
         alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
 }
 
