@@ -169,7 +169,7 @@ final class SerializerWrapper(S) : ISerializer
     private S* serializer;
 
     ///
-    this(return scope ref S serializer) @trusted pure nothrow @nogc
+    this(return scope ref S serializer) @trusted pure nothrow @nogc scope
     {
         this.serializer = &serializer;
     }

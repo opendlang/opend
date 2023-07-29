@@ -7,7 +7,9 @@ IONREF = $(REF_ALTTEXT $(TT $2), $2, mir, ion, $1)$(NBSP)
 module mir.deser;
 
 import mir.deser.low_level;
+import mir.internal.meta: hasUDA, getUDAs;
 import mir.ion.exception;
+import mir.ion.internal.basic_types: isTuple;
 import mir.ion.symbol_table;
 import mir.ion.type_code;
 import mir.ion.value;
@@ -15,8 +17,7 @@ import mir.serde: serdeGetFinalProxy;
 import mir.small_array;
 import mir.small_string;
 import mir.utility: _expect;
-import std.traits: ForeachType, hasUDA, Unqual, isSomeChar, EnumMembers, TemplateArgsOf, getUDAs;
-import mir.ion.internal.basic_types: isTuple;
+import std.traits: ForeachType, Unqual, isSomeChar, EnumMembers, TemplateArgsOf;
 
 private alias AliasSeq(T...) = T;
 

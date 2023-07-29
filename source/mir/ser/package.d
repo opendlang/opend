@@ -14,6 +14,7 @@ import mir.ion.type_code;
 import mir.reflection;
 import std.meta;
 import std.traits;
+import mir.internal.meta: hasUDA, getUDAs;
 
 public import mir.serde;
 
@@ -583,7 +584,7 @@ private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V 
                     }
                 }
                 auto valState = serializer.beginStruct(val);
-                static if (__traits(hasMember, val, "byKeyValue"))
+                static if (__traits(compiles, {foreach (keyElem; val.byKeyValue){}}))
                 {
                     foreach (keyElem; val.byKeyValue)
                     {
