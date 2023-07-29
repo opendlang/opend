@@ -1,6 +1,256 @@
 module mir.internal.meta;
 
 /++
+    Determine if a symbol has a given
+    $(DDSUBLINK spec/attribute, uda, user-defined attribute).
+
+    See_Also:
+        $(LREF getUDAs)
+  +/
+enum hasUDA(alias symbol, alias attribute) = getUDAs!(symbol, attribute).length != 0;
+
+///
+@safe unittest
+{
+    enum E;
+    struct S {}
+
+    @("alpha") int a;
+    static assert(hasUDA!(a, "alpha"));
+    static assert(!hasUDA!(a, S));
+    static assert(!hasUDA!(a, E));
+
+    @(E) int b;
+    static assert(!hasUDA!(b, "alpha"));
+    static assert(!hasUDA!(b, S));
+    static assert(hasUDA!(b, E));
+
+    @E int c;
+    static assert(!hasUDA!(c, "alpha"));
+    static assert(!hasUDA!(c, S));
+    static assert(hasUDA!(c, E));
+
+    @(S, E) int d;
+    static assert(!hasUDA!(d, "alpha"));
+    static assert(hasUDA!(d, S));
+    static assert(hasUDA!(d, E));
+
+    @S int e;
+    static assert(!hasUDA!(e, "alpha"));
+    static assert(hasUDA!(e, S));
+    static assert(!hasUDA!(e, S()));
+    static assert(!hasUDA!(e, E));
+
+    @S() int f;
+    static assert(!hasUDA!(f, "alpha"));
+    static assert(hasUDA!(f, S));
+    static assert(hasUDA!(f, S()));
+    static assert(!hasUDA!(f, E));
+
+    @(S, E, "alpha") int g;
+    static assert(hasUDA!(g, "alpha"));
+    static assert(hasUDA!(g, S));
+    static assert(hasUDA!(g, E));
+
+    @(100) int h;
+    static assert(hasUDA!(h, 100));
+
+    struct Named { string name; }
+
+    @Named("abc") int i;
+    static assert(hasUDA!(i, Named));
+    static assert(hasUDA!(i, Named("abc")));
+    static assert(!hasUDA!(i, Named("def")));
+
+    struct AttrT(T)
+    {
+        string name;
+        T value;
+    }
+
+    @AttrT!int("answer", 42) int j;
+    static assert(hasUDA!(j, AttrT));
+    static assert(hasUDA!(j, AttrT!int));
+    static assert(!hasUDA!(j, AttrT!string));
+
+    @AttrT!string("hello", "world") int k;
+    static assert(hasUDA!(k, AttrT));
+    static assert(!hasUDA!(k, AttrT!int));
+    static assert(hasUDA!(k, AttrT!string));
+
+    struct FuncAttr(alias f) { alias func = f; }
+    static int fourtyTwo() { return 42; }
+    static size_t getLen(string s) { return s.length; }
+
+    @FuncAttr!getLen int l;
+    static assert(hasUDA!(l, FuncAttr));
+    static assert(!hasUDA!(l, FuncAttr!fourtyTwo));
+    static assert(hasUDA!(l, FuncAttr!getLen));
+    static assert(!hasUDA!(l, FuncAttr!fourtyTwo()));
+    static assert(!hasUDA!(l, FuncAttr!getLen()));
+
+    @FuncAttr!getLen() int m;
+    static assert(hasUDA!(m, FuncAttr));
+    static assert(!hasUDA!(m, FuncAttr!fourtyTwo));
+    static assert(hasUDA!(m, FuncAttr!getLen));
+    static assert(!hasUDA!(m, FuncAttr!fourtyTwo()));
+    static assert(hasUDA!(m, FuncAttr!getLen()));
+}
+
+/++
+    Gets the matching $(DDSUBLINK spec/attribute, uda, user-defined attributes)
+    from the given symbol.
+
+    If the UDA is a type, then any UDAs of the same type on the symbol will
+    match. If the UDA is a template for a type, then any UDA which is an
+    instantiation of that template will match. And if the UDA is a value,
+    then any UDAs on the symbol which are equal to that value will match.
+
+    See_Also:
+        $(LREF hasUDA)
+  +/
+template getUDAs(alias symbol, alias attribute)
+{
+    import std.meta : Filter, AliasSeq, staticMap;
+
+    static if (AliasSeq!symbol.length != 1)
+        alias getUDAs = AliasSeq!();
+    else
+    static if (__traits(compiles, __traits(getAttributes, symbol)))
+        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, symbol));
+    else
+        alias getUDAs = AliasSeq!();
+}
+
+///
+@safe unittest
+{
+    struct Attr
+    {
+        string name;
+        int value;
+    }
+
+    @Attr("Answer", 42) int a;
+    static assert(getUDAs!(a, Attr).length == 1);
+    static assert(getUDAs!(a, Attr)[0].name == "Answer");
+    static assert(getUDAs!(a, Attr)[0].value == 42);
+
+    @(Attr("Answer", 42), "string", 9999) int b;
+    static assert(getUDAs!(b, Attr).length == 1);
+    static assert(getUDAs!(b, Attr)[0].name == "Answer");
+    static assert(getUDAs!(b, Attr)[0].value == 42);
+
+    @Attr("Answer", 42) @Attr("Pi", 3) int c;
+    static assert(getUDAs!(c, Attr).length == 2);
+    static assert(getUDAs!(c, Attr)[0].name == "Answer");
+    static assert(getUDAs!(c, Attr)[0].value == 42);
+    static assert(getUDAs!(c, Attr)[1].name == "Pi");
+    static assert(getUDAs!(c, Attr)[1].value == 3);
+
+    static assert(getUDAs!(c, Attr("Answer", 42)).length == 1);
+    static assert(getUDAs!(c, Attr("Answer", 42))[0].name == "Answer");
+    static assert(getUDAs!(c, Attr("Answer", 42))[0].value == 42);
+
+    static assert(getUDAs!(c, Attr("Answer", 99)).length == 0);
+
+    struct AttrT(T)
+    {
+        string name;
+        T value;
+    }
+
+    @AttrT!uint("Answer", 42) @AttrT!int("Pi", 3) @AttrT int d;
+    static assert(getUDAs!(d, AttrT).length == 2);
+    static assert(getUDAs!(d, AttrT)[0].name == "Answer");
+    static assert(getUDAs!(d, AttrT)[0].value == 42);
+    static assert(getUDAs!(d, AttrT)[1].name == "Pi");
+    static assert(getUDAs!(d, AttrT)[1].value == 3);
+
+    static assert(getUDAs!(d, AttrT!uint).length == 1);
+    static assert(getUDAs!(d, AttrT!uint)[0].name == "Answer");
+    static assert(getUDAs!(d, AttrT!uint)[0].value == 42);
+
+    static assert(getUDAs!(d, AttrT!int).length == 1);
+    static assert(getUDAs!(d, AttrT!int)[0].name == "Pi");
+    static assert(getUDAs!(d, AttrT!int)[0].value == 3);
+
+    struct SimpleAttr {}
+
+    @SimpleAttr int e;
+    static assert(getUDAs!(e, SimpleAttr).length == 1);
+    static assert(is(getUDAs!(e, SimpleAttr)[0] == SimpleAttr));
+
+    @SimpleAttr() int f;
+    static assert(getUDAs!(f, SimpleAttr).length == 1);
+    static assert(is(typeof(getUDAs!(f, SimpleAttr)[0]) == SimpleAttr));
+
+    struct FuncAttr(alias f) { alias func = f; }
+    static int add42(int v) { return v + 42; }
+    static string concat(string l, string r) { return l ~ r; }
+
+    @FuncAttr!add42 int g;
+    static assert(getUDAs!(g, FuncAttr).length == 1);
+    static assert(getUDAs!(g, FuncAttr)[0].func(5) == 47);
+
+    static assert(getUDAs!(g, FuncAttr!add42).length == 1);
+    static assert(getUDAs!(g, FuncAttr!add42)[0].func(5) == 47);
+
+    static assert(getUDAs!(g, FuncAttr!add42()).length == 0);
+
+    static assert(getUDAs!(g, FuncAttr!concat).length == 0);
+    static assert(getUDAs!(g, FuncAttr!concat()).length == 0);
+
+    @FuncAttr!add42() int h;
+    static assert(getUDAs!(h, FuncAttr).length == 1);
+    static assert(getUDAs!(h, FuncAttr)[0].func(5) == 47);
+
+    static assert(getUDAs!(h, FuncAttr!add42).length == 1);
+    static assert(getUDAs!(h, FuncAttr!add42)[0].func(5) == 47);
+
+    static assert(getUDAs!(h, FuncAttr!add42()).length == 1);
+    static assert(getUDAs!(h, FuncAttr!add42())[0].func(5) == 47);
+
+    static assert(getUDAs!(h, FuncAttr!concat).length == 0);
+    static assert(getUDAs!(h, FuncAttr!concat()).length == 0);
+
+    @("alpha") @(42) int i;
+    static assert(getUDAs!(i, "alpha").length == 1);
+    static assert(getUDAs!(i, "alpha")[0] == "alpha");
+
+    static assert(getUDAs!(i, 42).length == 1);
+    static assert(getUDAs!(i, 42)[0] == 42);
+
+    static assert(getUDAs!(i, 'c').length == 0);
+}
+
+private template isFunction(T, string member)
+{
+    static if (is(typeof(&__traits(getMember, T, member)) U : U*) && is(U == function) ||
+               is(typeof(&__traits(getMember, T, member)) U == delegate))
+    {
+        // x is a (nested) function symbol.
+        enum isFunction = true;
+    }
+    else static if (is(__traits(getMember, T, member) T))
+    {
+        // x is a type.  Take the type of it and examine.
+        enum isFunction = is(T == function);
+    }
+    else
+        enum isFunction = false;
+}
+
+private template autoGetUDAs(alias symbol)
+{
+    import std.meta : AliasSeq;
+    static if (__traits(compiles, __traits(getAttributes, symbol)))
+        alias autoGetUDAs = __traits(getAttributes, symbol);
+    else
+        alias autoGetUDAs = AliasSeq!();
+}
+
+/++
     Gets the matching $(DDSUBLINK spec/attribute, uda, user-defined attributes)
     from the given symbol.
     If the UDA is a type, then any UDAs of the same type on the symbol will
@@ -12,12 +262,30 @@ module mir.internal.meta;
   +/
 template getUDAs(T, string member, alias attribute)
 {
-    import std.meta : Filter, AliasSeq;
+    import std.meta : Filter, AliasSeq, staticMap;
     private __gshared T* aggregate;
-    static if (__traits(compiles, __traits(getAttributes, __traits(getMember, *aggregate, member))))
-        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
-    else
+    static if (!__traits(hasMember, T, member))
         alias getUDAs = AliasSeq!();
+    else
+    static if (!__traits(compiles, __traits(getMember, *aggregate, member)))
+        alias getUDAs = AliasSeq!();
+    else
+    static if (AliasSeq!(__traits(getMember, T, member)).length != 1)
+        alias getUDAs = AliasSeq!();
+    else
+    static if (__traits(getOverloads, T, member).length > 1)
+    {
+        alias getUDAsImpl(alias overload) = Filter!(isDesiredUDA!attribute, autoGetUDAs!overload);
+        alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member));
+    }
+    else
+    static if (__traits(isTemplate, __traits(getMember, T, member)))
+    {
+        alias getUDAsImpl(alias overload) = Filter!(isDesiredUDA!attribute, autoGetUDAs!overload);
+        alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member));
+    }
+    else
+        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
 }
 
 /++
@@ -33,6 +301,7 @@ private template isDesiredUDA(alias attribute)
 {
     template isDesiredUDA(alias toCheck)
     {
+        import std.traits: isInstanceOf;
         static if (is(typeof(attribute)) && !__traits(isTemplate, attribute))
         {
             static if (__traits(compiles, toCheck == attribute))

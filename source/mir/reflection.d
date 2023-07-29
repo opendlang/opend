@@ -8,8 +8,8 @@ Macros:
 module mir.reflection;
 
 import std.meta;
-import std.traits: hasUDA, getUDAs, Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
-import mir.internal.meta: hasUDA;
+import std.traits: Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
+import mir.internal.meta: hasUDA, getUDAs;
 import mir.functional: Tuple;
 
 deprecated
