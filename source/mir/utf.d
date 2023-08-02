@@ -64,7 +64,8 @@ dchar decodeFront(scope ref inout(char)[] str) @safe pure @nogc @property
     {
         return ret;
     }
-    throw utfException;
+    import mir.exception: toMutable;
+    throw utfException.toMutable;
 }
 
 ///

@@ -15,6 +15,7 @@ import mir.reflection;
 import std.meta;
 import std.traits;
 import mir.internal.meta: hasUDA, getUDAs;
+import mir.exception: toMutable;
 
 public import mir.serde;
 
@@ -25,7 +26,7 @@ version (D_Exceptions)
 private noreturn serializeVoidHandler() @safe pure @nogc
 {
     version (D_Exceptions)
-        throw cannotSerializeVoid;
+        throw cannotSerializeVoid.toMutable;
     else
         assert(0, cannotSerializeVoidMsg);
 }
@@ -33,7 +34,7 @@ private noreturn serializeVoidHandler() @safe pure @nogc
 private noreturn serializeVoidHandlerWithSerializer(S)(scope ref S serializer) @safe pure @nogc
 {
     version (D_Exceptions)
-        throw cannotSerializeVoid;
+        throw cannotSerializeVoid.toMutable;
     else
         assert(0, cannotSerializeVoidMsg);
 }
@@ -41,7 +42,7 @@ private noreturn serializeVoidHandlerWithSerializer(S)(scope ref S serializer) @
 private noreturn serializeVoidHandlerWithSerializerAndState(S)(scope ref S serializer, size_t state) @safe pure @nogc
 {
     version (D_Exceptions)
-        throw cannotSerializeVoid;
+        throw cannotSerializeVoid.toMutable;
     else
         assert(0, cannotSerializeVoidMsg);
 }

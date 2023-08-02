@@ -10,6 +10,7 @@ import mir.ion.exception: IonException;
 import mir.serde: SerdeTarget;
 
 version(D_Exceptions) {
+    import mir.exception: toMutable;
     private static immutable bigIntConvException = new IonException("Overflow when converting BigInt");
     private static immutable msgpackAnnotationException = new IonException("MsgPack can store exactly one annotation.");
     private static immutable stringTooLargeException = new IonException("Too large of a string for MessagePack");
@@ -207,7 +208,7 @@ scope:
             else
             {
                 version(D_Exceptions)
-                    throw mapTooLargeException;
+                    throw mapTooLargeException.toMutable;
                 else
                     assert(0, "Too large of a map for MessagePack");
             }
@@ -232,7 +233,7 @@ scope:
             else
             {
                 version(D_Exceptions)
-                    throw arrayTooLargeException;
+                    throw arrayTooLargeException.toMutable;
                 else
                     assert(0, "Too large of an array for MessagePack");
             }
@@ -305,7 +306,7 @@ scope:
         void putAnnotation(scope const(char)[] annotation)
         {
             if (_annotation)
-                throw msgpackAnnotationException;
+                throw msgpackAnnotationException.toMutable;
             _annotation = true;
             putKey(annotation);
         }
@@ -451,7 +452,7 @@ scope:
         {
             auto res = cast(long)num;
             if (res != num)
-                throw bigIntConvException;
+                throw bigIntConvException.toMutable;
             putValue(res);
         }
 
@@ -504,7 +505,7 @@ scope:
             else
             {
                 version(D_Exceptions)
-                    throw stringTooLargeException;
+                    throw stringTooLargeException.toMutable;
                 else
                     assert(0, "Too large of a string for MessagePack");
             }
@@ -539,7 +540,7 @@ scope:
             else
             {
                 version(D_Exceptions)
-                    throw blobTooLargeException;
+                    throw blobTooLargeException.toMutable;
                 else
                     assert(0, "Too big of a blob for MessagePack");
             }

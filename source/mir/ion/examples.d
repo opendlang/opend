@@ -1507,13 +1507,14 @@ version(mir_ion_test) unittest
 /// Series de/serialization
 @safe version(mir_ion_test) unittest
 {
+    import mir.test;
     import mir.deser.text;
     import mir.ser.text;
     import mir.series;
     auto s = ["a", "b"].series([5, 6]);
     auto t = `{index:["a","b"],data:[5,6]}`;
     auto r = `{index:["b","a"],data:[6,5]}`;
-    assert(s.serializeText == t);
+    s.serializeText.should == t;
     assert(r.deserializeText!(typeof(s)) == s, r.deserializeText!(typeof(s)).serializeText);
 }
 

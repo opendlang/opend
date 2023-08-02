@@ -269,9 +269,10 @@ struct CsvReader
             auto scalar = readCell();
             if (scalar.error)
             {
+                import mir.exception: toMutable;
                 import mir.ion.exception: IonException;
                 static immutable exc = new IonException("mir.csv: left double quote is missing in the first row");
-                throw exc;
+                throw exc.toMutable;
 
             }
             if (this.text.length && this.text[0] == separator)
@@ -680,6 +681,7 @@ Slice!(CsvAlgebraic*, 2) csvToAlgebraicMatrix(
 }
 
 ///
+version(mir_ion_test)
 unittest
 {
     import mir.csv;

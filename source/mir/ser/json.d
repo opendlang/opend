@@ -202,12 +202,13 @@ scope:
     ///
     void putAnnotation(scope const(char)[] annotation)
     {
+        import mir.exception: toMutable;
         if (_annotation)
         {
             static if (hasDIP1008)
                 throw new IonMirException(jsonAnnotationExceptionMsg, " The second annotation is '", annotation, "'");
             else
-                throw jsonAnnotationException;
+                throw jsonAnnotationException.toMutable;
         }
         _annotation = true;
         putKey(annotation);

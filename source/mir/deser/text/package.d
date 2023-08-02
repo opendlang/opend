@@ -19,6 +19,7 @@ import mir.ion.internal.data_holder;
 import mir.ion.internal.stage3 : IonErrorInfo;
 import mir.bignum.integer;
 import std.traits : hasUDA, getUDAs;
+import mir.exception: toMutable;
 
 private mixin template Stack(T, size_t maxDepth = 1024)
 {
@@ -44,7 +45,7 @@ private mixin template Stack(T, size_t maxDepth = 1024)
     {
         if (stackLength + 1 > maxDepth) {
             version(D_Exceptions)
-                throw maxDepthException;
+                throw maxDepthException.toMutable;
             else
                 assert(0, maxDepthReachedMsg);
         }
@@ -55,7 +56,7 @@ private mixin template Stack(T, size_t maxDepth = 1024)
     {
         if (stackLength <= 0) {
             version (D_Exceptions)
-                throw cannotPopNoElementsException;
+                throw cannotPopNoElementsException.toMutable;
             else
                 assert(0, cannotPopNoElementsMsg);
         }

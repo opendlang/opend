@@ -12,11 +12,12 @@ version(D_Exceptions)
 private static void* validatePtr()(return void* ptr)
     @safe pure @nogc
 {
+    import mir.exception: toMutable;
     import mir.utility: _expect;
     if (_expect(ptr is null, false))
     {
         version(D_Exceptions)
-            throw memoryOverflowException;
+            throw memoryOverflowException.toMutable;
         else
             assert(0, memoryOverflowMessage);
     }
