@@ -265,21 +265,30 @@ template getUDAs(T, string member, alias attribute)
     import std.meta : Filter, AliasSeq, staticMap;
     private __gshared T* aggregate;
     static if (!__traits(hasMember, T, member))
-        alias getUDAs = AliasSeq!();
-    else
-    static if (!__traits(compiles, __traits(getMember, *aggregate, member)))
-        alias getUDAs = AliasSeq!();
-    else
-    static if (AliasSeq!(__traits(getMember, T, member)).length != 1)
-        alias getUDAs = AliasSeq!();
-    else
-    static if (__traits(getOverloads, T, member).length > 1)
     {
-        alias getUDAsImpl(alias overload) = Filter!(isDesiredUDA!attribute, autoGetUDAs!overload);
-        alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member));
+        alias getUDAs = AliasSeq!();
     }
     else
-        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, *aggregate, member)));
+    static if (is(T == union) && !__traits(compiles, __traits(getMember, aggregate, member)))
+    {
+
+        alias getUDAs = AliasSeq!();
+    }
+    else
+    static if (AliasSeq!(__traits(getMember, T, member)).length != 1)
+    {
+        alias getUDAs = AliasSeq!();
+    }
+    else
+    static if (__traits(getOverloads, T, member, true).length >= 1)
+    {
+        alias getUDAsImpl(alias overload) = Filter!(isDesiredUDA!attribute, autoGetUDAs!overload);
+        alias getUDAs = staticMap!(getUDAsImpl, __traits(getOverloads, T, member, true));
+    }
+    else
+    {
+        alias getUDAs = Filter!(isDesiredUDA!attribute, __traits(getAttributes, __traits(getMember, T, member)));
+    }
 }
 
 /++

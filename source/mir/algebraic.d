@@ -122,6 +122,7 @@ module mir.algebraic;
 
 import mir.internal.meta;
 import mir.functional: naryFun;
+import mir.exception: toMutable;
 
 /++
 The attribute is used to define a permanent member field in an anlgebraic type.
@@ -1759,7 +1760,7 @@ struct Algebraic(T__...)
             import mir.utility: _expect;
             if (_expect(!identifier__, false))
             {
-                throw variantNullException;
+                throw variantNullException.toMutable;
             }
             static if (AllowedTypes.length != 2)
             {
@@ -1976,7 +1977,7 @@ struct Algebraic(T__...)
                             return Ret(trustedGet!T);
                 }
                 default:
-                    throw variantMemberException;
+                    throw variantMemberException.toMutable;
             }
         }
     }
@@ -2124,7 +2125,7 @@ struct Algebraic(T__...)
             {
                 if (_expect(i != identifier__, false))
                 {
-                    throw variantException;
+                    throw variantException.toMutable;
                 }
             }
             return trustedGet!T;
@@ -4022,7 +4023,7 @@ private noreturn throwMe(T...)(auto ref T args) {
         enum simpleThrow = false;
     static if (simpleThrow)
     {
-        throw args[0];
+        throw args[0].toMutable;
     }
     else
     {

@@ -11,6 +11,7 @@ import std.meta;
 import std.traits: Parameters, isSomeFunction, FunctionAttribute, functionAttributes, EnumMembers, isAggregateType;
 import mir.internal.meta: hasUDA, getUDAs;
 import mir.functional: Tuple;
+import mir.exception: toMutable;
 
 deprecated
 package alias isSomeStruct = isAggregateType;
@@ -422,6 +423,21 @@ template getUDA(alias symbol, alias attribute)
     }
 }
 
+/// ditto
+template getUDA(T, string member, alias attribute)
+{
+    private alias all = getUDAs!(T, member, attribute);
+    static if (all.length != 1)
+        static assert(0, "Exactly one " ~ attribute.stringof ~ " attribute is required, " ~ "got " ~ all.length.stringof);
+    else
+    {
+        static if (is(typeof(all[0])))
+            enum getUDA = all[0];
+        else
+            alias getUDA = all[0];
+    }
+}
+
 /++
 Checks if T has a field member.
 +/
@@ -605,7 +621,7 @@ Note: The implementation ignores templates.
 template getSetters(T, string member)
 {
     static if (__traits(hasMember, T, member))
-        alias getSetters = Filter!(hasSingleArgument, Filter!(isPropertyImpl, __traits(getOverloads, T, member)));
+        alias getSetters = Filter!(hasSingleArgument, Filter!(isPropertyImpl, __traits(getOverloads, T, member, true)));
     else
         alias getSetters = AliasSeq!();
 }
@@ -897,7 +913,7 @@ private template isGetter(T, string member)
     {
         static if (isSomeFunction!(__traits(getMember, *aggregate, member)))
         {
-            enum bool isGetter = Filter!(hasZeroArguments, Filter!(isPropertyImpl, __traits(getOverloads, T, member))).length == 1;
+            enum bool isGetter = Filter!(hasZeroArguments, Filter!(isPropertyImpl, __traits(getOverloads, T, member, true))).length == 1;
         }
         else
         {

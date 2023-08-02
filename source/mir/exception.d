@@ -20,6 +20,30 @@ package template staticException(string fmt, string file, int line)
     static immutable staticException = new Exception(fmt, file, line);
 }
 
+@trusted pure nothrow @nogc
+Exception toMutable()(immutable Exception e)
+{
+    return cast() e;
+}
+
+@trusted pure nothrow @nogc
+Error toMutable()(immutable Error e)
+{
+    return cast() e;
+}
+
+@trusted pure nothrow @nogc
+Exception toMutable()(const Exception e)
+{
+    return cast() e;
+}
+
+@trusted pure nothrow @nogc
+Error toMutable()(const Error e)
+{
+    return cast() e;
+}
+
 ///
 auto ref enforce(string fmt, string file = __FILE__, int line = __LINE__, Expr)(scope auto return ref Expr arg) @trusted
 {
@@ -36,7 +60,7 @@ auto ref enforce(string fmt, string file = __FILE__, int line = __LINE__, Expr)(
         if (_expect(cast(bool)arg, true))
             return forward!arg;
     }
-    throw staticException!(fmt, file, line);
+    throw staticException!(fmt, file, line).toMutable;
 }
 
 ///

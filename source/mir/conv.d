@@ -6,6 +6,7 @@ Authors: Ilia Ki
 +/
 module mir.conv;
 
+import mir.exception: toMutable;
 public import core.lifetime: emplace;
 
 import std.traits;
@@ -71,7 +72,7 @@ template to(T)
                 version (D_Exceptions)
                 {
                     static immutable Exception exc = new Exception(msg);
-                    throw exc;
+                    throw exc.toMutable;
                 }
                 else
                 {
