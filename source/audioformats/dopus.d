@@ -7347,16 +7347,24 @@ public:
     clearPacket();
   }
 
-  void setup (IOCallbacks* io, void* userData) {
-    scope(failure) close();
+  void setup (IOCallbacks* io, void* userData, bool* err) {
     close();
     //if (buf.length < MaxPageSize) buf.length = MaxPageSize;
     _io = io;
     _userData = userData;
     eofhit = false;
-    if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
-    if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
-    if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+    if (!nextPage!true()) goto errored; // can't find valid OGG pages
+    if (pgcont || !pgbos) goto errored; // invalid starting Ogg page
+    if (!loadPacket()) goto errored; // can't load Ogg packet
+
+    *err = false;
+    return;
+
+    errored:
+    close();
+    *err = true; 
+    return;
+
   }
 
   static struct PageInfo {
@@ -8159,7 +8167,10 @@ public OpusFile opusOpen (IOCallbacks* io, void* userData)
   scope(failure) { av_freep(&of.commbuf); av_freep(&of.ctx.extradata); av_free(of); }
 
   io.seek(false, false, userData);
-  of.ogg.setup(io, userData);
+  bool err;
+  of.ogg.setup(io, userData, &err);
+  if (err) throw mallocNew!AudioFormatsException("setup failed");
+
   scope(failure) of.ogg.close();
 
   if (!of.ogg.findLastPage(of.lastpage)) throw mallocNew!AudioFormatsException("can't find last page");
