@@ -102,12 +102,10 @@ SOFTWARE.
 /**
 Note: was extended to support seeking (input only), 
      - chunk decoding and encoding to avoid having the whole song in memory
-     - encoding 16-bit dither
 */
 module audioformats.qoa;
 
 import audioformats.io;
-import audioformats.wav; // for dither
 import audioformats.internals;
 import core.stdc.stdlib: malloc, free;
 alias QOA_MALLOC = malloc;
@@ -545,24 +543,18 @@ nothrow @nogc:
     int sampleRate;
     int numChannels;
 
-    // dither
-    TPDFDither _tpdf;
-    double[] _ditherBuf;
-    bool enableDither;
-    
     qoa_desc* desc;
 
     short* buffer; // buffer[0..count] is the staging area before encoding
     int count;
     uint framesEncoded;
 
-    void initialize(IOCallbacks* io, void* userData, int sampleRate, int numChannels, bool enableDither, bool* err)
+    void initialize(IOCallbacks* io, void* userData, int sampleRate, int numChannels, bool* err)
     {        
         this.io = io;
         this.userData = userData;
         this.sampleRate = sampleRate;
         this.numChannels = numChannels;
-        this.enableDither = enableDither;
 
         desc = cast(qoa_desc*) QOA_MALLOC(qoa_desc.sizeof);
         desc.channels = numChannels;
@@ -620,16 +612,10 @@ nothrow @nogc:
 
         QOA_FREE(desc);
         desc = null;
-
-        _ditherBuf.reallocBuffer(0);
     }
 
     int writeSamples(T)(const(T)* inSamples, int frames, bool* err)
     {
-        // Optional dither here.
-        // TODO: number here should probably be higher for QOA, because no dithering sounds better. Dithering disabled for now.
-        ditherInput(inSamples, frames * numChannels, 32767.0f); 
-
         int enqueued = 0; // frames put in buffer
 
         while (enqueued < frames)
@@ -643,7 +629,7 @@ nothrow @nogc:
                 for (int ch = 0; ch < numChannels; ++ch)
                 {
                     int index = n*numChannels+ch;
-                    double x = _ditherBuf[index];
+                    double x = inSamples[index];
                     int s = cast(int)(32768.5 + x * 32767.0);
                     s -= 32768;
                     assert(s >= -32767 && s <= 32767);
@@ -711,23 +697,6 @@ nothrow @nogc:
 
         return true;
     }
-
-    void ditherInput(T)(T* inSamples, int frames, double scaleFactor)
-    {
-        if (_ditherBuf.length < frames)
-            _ditherBuf.reallocBuffer(frames);
-
-        for (int n = 0; n < frames; ++n)
-        {
-            _ditherBuf[n] = inSamples[n];
-        }
-
-        //TODO: for now, no-dithering sounds better. Tune dithering.
-        //if (enableDither)
-        //    _tpdf.process(_ditherBuf.ptr, frames, scaleFactor);
-    }
-
-
 }
 
 // Streaming decoder for QOA.

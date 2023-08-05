@@ -1743,7 +1743,7 @@ private:
                 version(encodeQOA)
                 {
                     bool err;
-                    _qoaEncoder.initialize(_io, userData, isampleRate, numChannels, options.enableDither, &err);
+                    _qoaEncoder.initialize(_io, userData, isampleRate, numChannels, &err);
                     if (err)
                         throw mallocNew!AudioFormatsException("Can't create QOA encoder");
                     break;
