@@ -2013,8 +2013,40 @@ unittest
     assert(R.array == correct);
 }
 
-
-// TODO __m256i _mm256_unpackhi_epi16 (__m256i a, __m256i b) pure @safe
+/// Unpack and interleave 16-bit integers from the high half of each 128-bit lane in `a` and `b`.
+__m256i _mm256_unpackhi_epi16 (__m256i a, __m256i b) pure @safe
+{
+    static if (GDC_with_AVX2)
+    {
+        return cast(long4) __builtin_ia32_punpckhwd256(cast(short16)a, cast(short16)b);
+    }
+    else static if (LDC_with_optimizations)
+    {
+        enum ir = `%r = shufflevector <16 x i16> %0, <16 x i16> %1, <16 x i32> <i32 4, i32 20, i32 5, i32 21, i32 6, i32 22, i32 7, i32 23, i32 12,i32 28, i32 13,i32 29, i32 14,i32 30, i32 15,i32 31>
+            ret <16 x i16> %r`;
+        return cast(__m256i)LDCInlineIR!(ir, short16, short16, short16)(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        // Better for arm64, GDC without AVX2
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_unpackhi_epi16(a_lo, b_lo);
+        __m128i r_hi = _mm_unpackhi_epi16(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi16( 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15);
+    __m256i B = _mm256_setr_epi16(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
+    short16 C = cast(short16) _mm256_unpackhi_epi16(A, B);
+    short[16] correct = [4,  20, 5,  21, 6, 22, 7, 23, 
+                         12, 28, 13, 29, 14, 30, 15, 31];
+    assert(C.array == correct);
+}
 
 /// Unpack and interleave 32-bit integers from the high half of each 128-bit lane in `a` and `b`.
 __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b) pure @trusted
