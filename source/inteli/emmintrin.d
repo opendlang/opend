@@ -638,7 +638,11 @@ unittest
 /// in `a` and `b` for equality.
 __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(double2)(cast(double2)a == cast(double2)b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpeqpd(a, b);
     }
@@ -647,13 +651,29 @@ __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
         return cast(__m128d) cmppd!(FPComparison.oeq)(a, b);
     }
 }
+unittest
+{
+    double2 A = _mm_setr_pd(1.0, 2.0);
+    double2 B = _mm_setr_pd(0.0, 2.0);
+    double2 N = _mm_setr_pd(double.nan, double.nan);
+    long2 C = cast(long2) _mm_cmpeq_pd(A, B);
+    long[2] correctC = [0, -1];
+    assert(C.array == correctC);
+    long2 D = cast(long2) _mm_cmpeq_pd(N, N);
+    long[2] correctD = [0, 0];
+    assert(D.array == correctD);
+}
 
 /// Compare the lower double-precision (64-bit) floating-point elements
 /// in `a` and `b` for equality, store the result in the lower element,
 /// and copy the upper element from `a`.
 __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128d) __simd(XMM.CMPSD, a, b, 0);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpeqsd(a, b);
     }
@@ -661,6 +681,19 @@ __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
     {
         return cast(__m128d) cmpsd!(FPComparison.oeq)(a, b);
     }
+}
+unittest
+{
+    double2 A = _mm_setr_pd(0.0, 2.0);
+    double2 B = _mm_setr_pd(1.0, 2.0);
+    double2 C = _mm_setr_pd(1.0, 3.0);
+    double2 D = cast(double2) _mm_cmpeq_sd(A, B);
+    long2 E = cast(long2) _mm_cmpeq_sd(B, C);
+    double[2] correctD = [0.0, 2.0];
+    double two = 2.0;
+    long[2] correctE = [-1, *cast(long*)&two];
+    assert(D.array == correctD);
+    assert(E.array == correctE);
 }
 
 /// Compare packed 16-bit integers elements in `a` and `b` for greater-than-or-equal.
