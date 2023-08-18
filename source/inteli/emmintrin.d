@@ -852,7 +852,11 @@ unittest
 /// in `a` and `b` for greater-than.
 __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128d)(a > b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpgtpd(a, b); 
     }
@@ -867,16 +871,35 @@ __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 /// and copy the upper element from `a`.
 __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
-    // Note: There is no __builtin_ia32_cmpgtsd builtin.
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
     {
-        return __builtin_ia32_cmpnlesd(b, a);
+        return cast(__m128d) __simd(XMM.CMPSD, b, a, 1);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cmpltsd(b, a);
     }
     else
     {
         return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
     }
 }
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 0.0);
+    __m128d B = _mm_setr_pd(double.nan, 0.0);
+    __m128d C = _mm_setr_pd(2.0, 0.0);
+    assert( (cast(long2)_mm_cmpgt_sd(A, A)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(A, B)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(A, C)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(B, A)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(B, B)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(B, C)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(C, A)).array[0] == -1);
+    assert( (cast(long2)_mm_cmpgt_sd(C, B)).array[0] ==  0);
+    assert( (cast(long2)_mm_cmpgt_sd(C, C)).array[0] ==  0);
+}
+
 
 /// Compare packed 16-bit integers elements in `a` and `b` for greater-than-or-equal.
 /// #BONUS
