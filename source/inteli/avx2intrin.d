@@ -1435,7 +1435,52 @@ unittest
 // TODO __m256i _mm256_max_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_max_epu32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_max_epu8 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_min_epi16 (__m256i a, __m256i b) pure @safe
+
+// Compare packed signed 16-bit integers in `a` and `b`, and return packed minimum values.
+__m256i _mm256_min_epi16 (__m256i a, __m256i b) pure @safe
+{
+    // PERF D_SIMD
+    version(GNU)
+        enum bool split = true;
+    else static if (SIMD_COMPARISON_MASKS_32B)
+        enum bool split = false;
+    else
+        enum bool split = true;
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pminsw256(cast(short16)a, cast(short16)b);
+    }
+    else static if (split)
+    {
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_min_epi16(a_lo, b_lo);
+        __m128i r_hi = _mm_min_epi16(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // same as _mm256_min_epi16, this is catastrophic with GDC -mavx
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        short16 greater = sa > sb;
+        return cast(__m256i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+        static assert(0);
+}
+unittest
+{
+    short16 R = cast(short16) _mm256_min_epi16(_mm256_setr_epi16(32767, 1, -4, -8, 9,     7, 0,-57, 1, 0, 0, 0, 1, 0, 0,  0),
+                                               _mm256_setr_epi16(   -4,-8,  9,  7, 0,-32768, 0,  0, 0, 2, 0, 4, 2, 1, 2, -4));
+    short[16] correct =                                         [   -4,-8, -4, -8, 0,-32768, 0,-57, 0, 0, 0, 0, 1, 0, 0, -4];
+    assert(R.array == correct);
+}
+
 // TODO __m256i _mm256_min_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_min_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_min_epu16 (__m256i a, __m256i b) pure @safe
