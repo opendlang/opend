@@ -932,7 +932,11 @@ unittest
 /// in `a` and `b` for less-than-or-equal.
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128d)(a <= b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmplepd(a, b); 
     }
@@ -947,7 +951,11 @@ __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 /// lower element, and copy the upper element from `a`.
 __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128d) __simd(XMM.CMPSD, a, b, 2);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmplesd(a, b); 
     }
@@ -979,7 +987,11 @@ __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
 /// in `a` and `b` for less-than.
 __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (SIMD_COMPARISON_MASKS_16B)
+    {
+        return cast(__m128d)(a < b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpltpd(a, b); 
     }
@@ -994,7 +1006,11 @@ __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 /// element, and copy the upper element from `a`.
 __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128d) __simd(XMM.CMPSD, a, b, 1);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpltsd(a, b); 
     }
