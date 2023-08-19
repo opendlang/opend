@@ -5,7 +5,6 @@
 ![x86_64](https://github.com/AuburnSounds/intel-intrinsics/workflows/x86_64/badge.svg)
 ![x86](https://github.com/AuburnSounds/intel-intrinsics/workflows/x86/badge.svg)
 ![gdc 12+](https://github.com/AuburnSounds/intel-intrinsics/workflows/gdc/badge.svg)
-![gdc 10](https://github.com/AuburnSounds/intel-intrinsics/workflows/gdc-old/badge.svg)
 
 `intel-intrinsics` is the SIMD library for D.
 
