@@ -1429,9 +1429,54 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compare packed signed 32-bit integers in `a` and `b`, and return packed maximum values.
+__m256i _mm256_max_epi32 (__m256i a, __m256i b) pure @safe
+{
+    // PERF D_SIMD
+    version(GNU)
+        enum bool split = true;
+    else static if (SIMD_COMPARISON_MASKS_32B)
+        enum bool split = false;
+    else
+        enum bool split = true;
 
-// TODO __m256i _mm256_max_epi32 (__m256i a, __m256i b) pure @safe
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmaxsd256(cast(int8)a, cast(int8)b);
+    }
+    else static if (split)
+    {
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_max_epi32(a_lo, b_lo);
+        __m128i r_hi = _mm_max_epi32(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else static if (SIMD_COMPARISON_MASKS_32B) 
+    {
+        // catastrophic with GDC x86 for some reason, like for 16-bit numbers.
+        int8 sa = cast(int8)a;
+        int8 sb = cast(int8)b;
+        int8 greater = sa > sb;
+        return cast(__m256i)( (greater & sa) | (~greater & sb) );
+    }
+    else
+        static assert(0);    
+}
+unittest
+{
+    int8 R = cast(int8) _mm256_max_epi32(_mm256_setr_epi32(0x7fffffff, 1, -4,  7, 0x7fffffff, 2, -4,  7),
+                                         _mm256_setr_epi32(        -4,-8,  9, -8,-0x80000000,-8,  9, -8));
+    int[8] correct =                                      [0x7fffffff, 1,  9,  7, 0x7fffffff, 2,  9,  7];
+    assert(R.array == correct);
+}
+
 // TODO __m256i _mm256_max_epi8 (__m256i a, __m256i b) pure @safe
+
+
 // TODO __m256i _mm256_max_epu16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_max_epu32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_max_epu8 (__m256i a, __m256i b) pure @safe

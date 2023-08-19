@@ -1190,7 +1190,7 @@ unittest
 
 
 /// Compare packed signed 32-bit integers in `a` and `b`, returns packed maximum values.
-__m128i _mm_max_epi32 (__m128i a, __m128i b) @trusted
+__m128i _mm_max_epi32 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE41)
     {
