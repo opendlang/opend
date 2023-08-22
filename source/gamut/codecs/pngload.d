@@ -1342,7 +1342,7 @@ int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int num)
     return 1;
 }
 
-enum bool useMiniZ = true;
+enum bool useMiniZ = false;
 
 static if (useMiniZ)
 {

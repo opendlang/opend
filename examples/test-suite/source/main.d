@@ -6,6 +6,7 @@ import gamut;
 
 void main(string[] args)
 { 
+    testDecodingVSTLogo();
     testIssue35();
     testIssue46();
     testReallocSpeed();
@@ -32,6 +33,13 @@ void testIssue46()
 
     image.loadFromFile("test-images/issue46.jpg");
     assert(image.isError);
+}
+
+void testDecodingVSTLogo()
+{
+    Image image;
+    image.loadFromFile("test-images/vst3-compatible.png");
+    assert(!image.isError);
 }
 
 void testCGBI()
