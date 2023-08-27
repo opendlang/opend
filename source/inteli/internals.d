@@ -249,6 +249,23 @@ version(LDC)
         enum LDC_with_SHA = false;
         enum LDC_with_BMI2 = false;
     }
+
+    // Should we use inline x86 assembly with DMD syntax, in LDC?
+    version(D_InlineAsm_X86)
+    {
+        enum LDC_with_32b_x86_asm = LDC_with_SSE2; // if no SSE support, disable the x86 asm code path
+        enum LDC_with_64b_x86_asm = false;
+    }
+    else version(D_InlineAsm_X86_64)
+    {
+        enum LDC_with_32b_x86_asm = false;
+        enum LDC_with_64b_x86_asm = LDC_with_SSE2;
+    }
+    else
+    {
+        enum LDC_with_32b_x86_asm = false;
+        enum LDC_with_64b_x86_asm = false;
+    }
 }
 else
 {
@@ -268,7 +285,11 @@ else
     enum LDC_with_BMI2 = false;
     enum LDC_with_InlineIREx = false;
     enum bool LDC_with_optimizations = false;
+    enum bool LDC_with_32b_x86_asm = false;
+    enum bool LDC_with_64b_x86_asm = false;
 }
+enum LDC_with_x86_asm = LDC_with_32b_x86_asm || LDC_with_64b_x86_asm;
+
 
 enum LDC_with_ARM = LDC_with_ARM32 | LDC_with_ARM64;
 

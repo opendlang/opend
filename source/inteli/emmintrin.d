@@ -5278,7 +5278,13 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_punpckhbw128(cast(ubyte16)a, cast(ubyte16)b);
     }
-    else static if (DMD_with_32bit_asm)
+    else static if (LDC_with_optimizations)
+    {
+        enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 8, i32 24, i32 9, i32 25, i32 10, i32 26, i32 11, i32 27, i32 12, i32 28, i32 13, i32 29, i32 14, i32 30, i32 15, i32 31>
+                   ret <16 x i8> %r`;
+        return cast(__m128i)LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+    }
+    else static if (DMD_with_32bit_asm || LDC_with_x86_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -5288,12 +5294,6 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
             movdqu a, XMM0;
         }
         return a;
-    }
-    else static if (LDC_with_optimizations)
-    {
-        enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 8, i32 24, i32 9, i32 25, i32 10, i32 26, i32 11, i32 27, i32 12, i32 28, i32 13, i32 29, i32 14, i32 30, i32 15, i32 31>
-                   ret <16 x i8> %r`;
-        return cast(__m128i)LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
     }
     else
     {
@@ -5476,7 +5476,13 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_punpcklbw128(cast(ubyte16) a, cast(ubyte16) b);
     }
-    else static if (DMD_with_32bit_asm)
+    else static if (LDC_with_optimizations)
+    {
+        enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 0, i32 16, i32 1, i32 17, i32 2, i32 18, i32 3, i32 19, i32 4, i32 20, i32 5, i32 21, i32 6, i32 22, i32 7, i32 23>
+            ret <16 x i8> %r`;
+        return cast(__m128i)LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+    }
+    else static if (DMD_with_32bit_asm || LDC_with_x86_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -5486,12 +5492,6 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @trusted
             movdqu a, XMM0;
         }
         return a;
-    }
-    else static if (LDC_with_optimizations)
-    {
-        enum ir = `%r = shufflevector <16 x i8> %0, <16 x i8> %1, <16 x i32> <i32 0, i32 16, i32 1, i32 17, i32 2, i32 18, i32 3, i32 19, i32 4, i32 20, i32 5, i32 21, i32 6, i32 22, i32 7, i32 23>
-            ret <16 x i8> %r`;
-        return cast(__m128i)LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
     }
     else
     {
