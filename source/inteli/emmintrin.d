@@ -5167,8 +5167,11 @@ __m128i _mm_undefined_si128() pure @safe
 /// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    // PERF DMD D_SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKHWD, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpckhwd128(cast(short8) a, cast(short8) b);
     }
@@ -5178,7 +5181,7 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @trusted
                    ret <8 x i16> %r`;
         return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
-    else static if (DMD_with_32bit_asm)
+    else static if (DMD_with_32bit_asm || LDC_with_x86_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -5217,7 +5220,11 @@ unittest
 /// Unpack and interleave 32-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKHDQ, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhdq128(a, b);
     }
@@ -5273,8 +5280,11 @@ unittest // Issue #36
 /// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
 __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @trusted
 {
-    // PERF DMD D_SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKHBW, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpckhbw128(cast(ubyte16)a, cast(ubyte16)b);
     }
@@ -5362,8 +5372,11 @@ unittest
 /// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    // PERF DMD SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKLWD, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpcklwd128(cast(short8) a, cast(short8) b);
     }
@@ -5373,7 +5386,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @trusted
             ret <8 x i16> %r`;
         return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
-    else static if (DMD_with_32bit_asm)
+    else static if (DMD_with_32bit_asm || LDC_with_x86_asm)
     {
         asm pure nothrow @nogc @trusted
         {
@@ -5412,8 +5425,11 @@ unittest
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @trusted
 {
-    // PERF DMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKLDQ, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckldq128(a, b);
     }
@@ -5471,8 +5487,11 @@ unittest // Issue #36
 /// Unpack and interleave 8-bit integers from the low half of `a` and `b`.
 __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @trusted
 {
-    // PERF DMD D_SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PUNPCKLBW, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_punpcklbw128(cast(ubyte16) a, cast(ubyte16) b);
     }
