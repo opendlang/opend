@@ -3062,7 +3062,11 @@ __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 /// Convert packed signed 32-bit integers from `a` and `b` to packed 16-bit integers using signed saturation.
 __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PACKSSDW, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packssdw128(a, b);
     }    
@@ -3102,7 +3106,11 @@ unittest
 /// Convert packed signed 16-bit integers from `a` and `b` to packed 8-bit integers using signed saturation.
 __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PACKSSWB, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packsswb128(cast(short8)a, cast(short8)b);
     }
@@ -3143,7 +3151,11 @@ unittest
 __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD catastrophic
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PACKUSWB, a, b);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_packuswb128(cast(short8)a, cast(short8)b);
     }
@@ -3691,8 +3703,11 @@ unittest
 /// See also: `_MM_SHUFFLE`.
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @trusted
 {
-    // PERF DMD D_SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PSHUFHW, a, a, cast(ubyte)imm8);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pshufhw(cast(short8)a, imm8);
     }
@@ -3729,8 +3744,11 @@ unittest
 /// See_also: `_MM_SHUFFLE`.
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @trusted
 {
-    // PERF DMD D_SIMD
-    static if (GDC_with_SSE2)
+    static if (DMD_with_DSIMD)
+    {
+        return cast(__m128i) __simd(XMM.PSHUFLW, a, a, cast(ubyte)imm8);
+    }
+    else static if (GDC_with_SSE2)
     {
         return cast(__m128i) __builtin_ia32_pshuflw(cast(short8)a, imm8);
     }
