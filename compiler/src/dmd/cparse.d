@@ -3206,7 +3206,7 @@ final class CParser(AST) : Parser!AST
             if (specifier.mod & MOD.xconst)
                 t = toConst(t);
             auto param = new AST.Parameter(paramLoc, specifiersToSTC(LVL.parameter, specifier),
-                                           t, id, null, null);
+                                           t, id, null, null, null);
             parameters.push(param);
             if (token.value == TOK.rightParenthesis || token.value == TOK.endOfFile)
                 break;
@@ -6152,7 +6152,7 @@ final class CParser(AST) : Parser!AST
 
                                 if (token.value != TOK.identifier)
                                     break Lswitch;
-                                auto param = new AST.Parameter(token.loc, 0, null, token.ident, null, null);
+                                auto param = new AST.Parameter(token.loc, 0, null, token.ident, null, null, null);
                                 parameters.push(param);
                                 nextToken();
                                 if (token.value == TOK.comma)

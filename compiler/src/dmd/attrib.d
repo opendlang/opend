@@ -1319,7 +1319,7 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
         bool needctfe = (storage_class & (STC.manifest | STC.static_)) != 0;
         if (needctfe)
         {
-            sc.condition = true;
+            sc.flags |= SCOPE.condition;
             sc = sc.startCTFE();
         }
         // _init = _init.inferType(sc); // TODO?
