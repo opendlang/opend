@@ -1352,11 +1352,12 @@ static if (useMiniZ)
     ///  buffer Input buffer
     ///  len Length of input buffer
     ///  initial_size Size hint for output buffer (which is realloc on growth)
-    ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(const(char)*buffer, 
-                                                        int len, 
-                                                        int initial_size, // note: stb_image gives the right initial_size, and the right outout buffer length
-                                                        int *outlen, 
-                                                        int parse_header)
+    public ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(
+        const(char)*buffer, 
+        int len, 
+        int initial_size, // note: stb_image gives the right initial_size, and the right outout buffer length
+        int *outlen, 
+        int parse_header)
     {
         ubyte* outBuf = cast(ubyte*) malloc(initial_size);
         c_ulong destLen = *outlen;
@@ -1751,7 +1752,7 @@ ubyte *stbi_zlib_decode_malloc(const(char)*buffer, int len, int *outlen)
     return stbi_zlib_decode_malloc_guesssize(buffer, len, 16384, outlen);
 }
 
-ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(const char *buffer, int len, int initial_size, int *outlen, int parse_header)
+public ubyte *stbi_zlib_decode_malloc_guesssize_headerflag(const char *buffer, int len, int initial_size, int *outlen, int parse_header)
 {
     stbi__zbuf a;
     ubyte *p = cast(ubyte *) stbi__malloc(initial_size);

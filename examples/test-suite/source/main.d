@@ -1,8 +1,10 @@
 module main;
 
+import core.stdc.stdlib;
 import std.stdio;
 import std.file;
 import gamut;
+import gamut.codecs.pngload;
 
 void main(string[] args)
 { 
@@ -40,6 +42,15 @@ void testDecodingVSTLogo()
     Image image;
     image.loadFromFile("test-images/vst3-compatible.png");
     assert(!image.isError);
+
+    // Test decoding of first problem chunk in the image
+    char[] bytes = cast(char[]) std.file.read("test-images/buggy-miniz-chunk.bin");
+    assert(bytes.length == 25568);
+    int initial_size = 594825;
+    int outlen;
+    ubyte* buf = stbi_zlib_decode_malloc_guesssize_headerflag(bytes.ptr, 25568, initial_size, &outlen, 1);
+    assert(buf !is null);
+    free(buf);
 }
 
 void testCGBI()
