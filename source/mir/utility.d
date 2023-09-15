@@ -424,7 +424,7 @@ version(D_InlineAsm_X86_64)
     {
         private ulong[2] extMul_X86_64_impl()(ulong a, ulong b)
         {
-            asm @safe pure nothrow @nogc
+            asm @trusted pure nothrow @nogc
             {
                 naked;
                 mov RAX, RCX;
@@ -442,7 +442,7 @@ version(D_InlineAsm_X86_64)
     else
     private ExtMulResult!ulong extMul_X86_64()(ulong a, ulong b)   
     {  
-        asm @safe pure nothrow @nogc
+        asm @trusted pure nothrow @nogc
         {
             naked;
             mov RAX, RDI;
@@ -455,7 +455,7 @@ version(D_InlineAsm_X86_64)
     {
         private ulong[2] extDiv_X86_64_impl()(ulong high, ulong low, ulong d)
         {
-            asm @safe pure nothrow @nogc
+            asm @trusted pure nothrow @nogc
             {
                 naked;
                 mov RAX, RCX;
@@ -473,7 +473,7 @@ version(D_InlineAsm_X86_64)
     else
     private ExtDivResult!ulong extDiv_X86_64()(ExtMulResult!ulong pair, ulong d)   
     {  
-        asm @safe pure nothrow @nogc
+        asm @trusted pure nothrow @nogc
         {
             naked;
             mov RAX, RDI;
