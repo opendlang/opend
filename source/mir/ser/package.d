@@ -524,13 +524,13 @@ private void serializeValueImpl(S, V)(scope ref S serializer, scope ref const V 
                     continue;
             }
 
-            static if(__traits(hasMember, typeof(__traits(getMember, value, member)), "serdeIgnoreOut"))
+            static if(__traits(hasMember, __traits(getMember, value, member), "serdeIgnoreOut"))
             {
                 if (__traits(getMember, __traits(getMember, value, member), "serdeIgnoreOut"))
                     continue;
             }
 
-            static if(__traits(hasMember, typeof(__traits(getMember, value, member)), "_void"))
+            static if(__traits(hasMember, __traits(getMember, value, member), "_void"))
             {
                 if (__traits(getMember, value, member)._is!void)
                     continue;
