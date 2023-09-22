@@ -177,8 +177,10 @@ mixin TestUtils;
 @("default.struct.shared")
 @system unittest {
     {
-        auto ptr = RefCounted!(shared SharedStruct)(5);
+        auto ptr0 = RefCounted!(shared SharedStruct)(5);
         SharedStruct.numStructs.shouldEqual(1);
+        auto ptr2 = ptr0; // copying the pointer ups the ref count but not # of structs
+        SharedStruct.numStructs.should == 1;
     }
     SharedStruct.numStructs.shouldEqual(0);
 }
