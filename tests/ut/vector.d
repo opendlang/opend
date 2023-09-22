@@ -366,6 +366,22 @@ import test_allocator;
     vec.capacity.shouldBeGreaterThan(6);
 }
 
+@("TestAllocator shrink with length range invalidation")
+@safe unittest {
+    static TestAllocator allocator;
+
+    scope vec = vector(&allocator, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    vec.capacity.should == 10;
+    scope rng = vec.range;
+
+    foreach(i; 0 .. 5)
+        rng.popFront;
+    rng.empty.should == false;
+
+    () @trusted { vec.shrink(5); }();
+    rng.empty.should == true;
+}
+
 @("TestAllocator copy")
 @safe unittest {
     static TestAllocator allocator;
