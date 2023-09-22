@@ -420,7 +420,9 @@ private void consumeVec(T)(auto ref T vec) {
 
 @("foreach")
 @safe unittest {
-    foreach(e; vector(7, 7, 7).range) {
+    // can't be inline in the foreach otherwise disappears before anything happens
+    scope v = vector(7, 7, 7);
+    foreach(e; v.range) {
         e.should == 7;
     }
 }
@@ -482,7 +484,9 @@ private void consumeVec(T)(auto ref T vec) {
 
 @("String")
 @safe unittest {
-    foreach(c; String("oooooo").range)
+    // can't be inline in the foreach otherwise disappears
+    auto s = String("oooooo");
+    foreach(c; s.range)
         c.should == 'o';
 }
 
