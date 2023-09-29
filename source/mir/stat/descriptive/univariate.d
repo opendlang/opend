@@ -6,8 +6,8 @@ $(DIVC quickindex,
 $(BOOKTABLE,
 $(TR $(TH Category) $(TH Symbols))
     $(TR $(TD Location) $(TD
-        $(MATHREF_ALT stat, gmean)
-        $(MATHREF_ALT stat, hmean)
+        $(LREF gmean)
+        $(LREF hmean)
         $(LREF mean)
         $(MATHREF_ALT stat, median)
     ))
@@ -33,7 +33,7 @@ $(TR $(TH Category) $(TH Symbols))
     ))
     $(TR $(TD Accumulators) $(TD
         $(LREF EntropyAccumulator)
-        $(MATHREF_ALT stat, GMeanAccumulator)
+        $(LREF GMeanAccumulator)
         $(LREF KurtosisAccumulator)
         $(LREF MeanAccumulator)
         $(LREF MomentAccumulator)
@@ -50,7 +50,8 @@ $(TR $(TH Category) $(TH Symbols))
     ))
     $(TR $(TD Types) $(TD
         $(LREF entropyType)
-        $(MATHREF_ALT stat, gmeanType)
+        $(LREF gmeanType)
+        $(LREF hmeanType)
         $(LREF meanType)
         $(LREF quantileType)
         $(LREF statType)
@@ -79,9 +80,6 @@ module mir.stat.descriptive.univariate;
 
 ///
 public import mir.math.stat:
-    gmean,
-    GMeanAccumulator,
-    hmean,
     median,
     standardDeviation,
     stdevType,
@@ -95,7 +93,7 @@ import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
 import mir.math.sum: Summator, ResolveSummationType;
 import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
-import std.traits: isMutable;
+import std.traits: isIterable, isMutable;
 
 ///
 package(mir)
@@ -689,6 +687,717 @@ unittest
 
     assert(x.sliced.mean == 29.25 / 12);
     assert(x.sliced.mean!float == 29.25 / 12);
+}
+
+///
+package(mir)
+template hmeanType(T)
+{
+    import mir.math.sum: sumType;
+    
+    alias U = sumType!T;
+
+    static if (__traits(compiles, {
+        U t = U.init + cast(U) 1; //added for when U.init = 0
+        auto temp = cast(U) 1 / t + cast(U) 1 / t;
+    })) {
+        alias V = typeof(cast(U) 1 / ((cast(U) 1 / U.init + cast(U) 1 / U.init) / cast(U) 2));
+        alias hmeanType = statType!V;
+    } else {
+        static assert(0, "hmeanType: Can't calculate hmean of elements of type " ~ U.stringof);
+    }
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.complex;
+    static assert(is(hmeanType!(int[]) == double));
+    static assert(is(hmeanType!(double[]) == double));
+    static assert(is(hmeanType!(float[]) == float)); 
+    static assert(is(hmeanType!(Complex!float[]) == Complex!float));    
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.complex;
+    static struct Foo {
+        float x;
+        alias x this;
+    }
+    
+    static struct Bar {
+        Complex!float x;
+        alias x this;
+    }
+
+    static assert(is(hmeanType!(Foo[]) == float));
+    static assert(is(hmeanType!(Bar[]) == Complex!float));
+}
+
+/++
+Computes the harmonic mean of the input.
+
+By default, if `F` is not floating point type or complex type, then the result
+will have a `double` type if `F` is implicitly convertible to a floating point 
+type or a type for which `isComplex!F` is true.
+
+Params:
+    F = controls type of output
+    summation = algorithm for calculating sums (default: Summation.appropriate)
+Returns:
+    harmonic mean of all the elements of the input, must be floating point or complex type
+
+See_also: 
+    $(SUBREF sum, Summation)
++/
+template hmean(F, Summation summation = Summation.appropriate)
+{
+    import core.lifetime: move;
+    import std.traits: isIterable;
+
+    /++
+    Params:
+        r = range
+    +/
+    @fmamath hmeanType!F hmean(Range)(Range r)
+        if (isIterable!Range)
+    {
+        import mir.ndslice.topology: map;
+
+        alias G = typeof(return);
+        auto numerator = cast(G) 1;
+
+        static if (summation == Summation.fast && __traits(compiles, r.move.map!"numerator / a"))
+        {
+            return numerator / r.move.map!"numerator / a".mean!(G, summation);
+        }
+        else
+        {
+            MeanAccumulator!(G, ResolveSummationType!(summation, Range, G)) imean;
+            foreach (e; r)
+                imean.put(numerator / e);
+            return numerator / imean.mean;
+        }
+    }
+   
+    /++
+    Params:
+        ar = values
+    +/
+    @fmamath hmeanType!F hmean(scope const F[] ar...)
+    {
+        alias G = typeof(return);
+
+        auto numerator = cast(G) 1;
+
+        static if (summation == Summation.fast && __traits(compiles, ar.map!"numerator / a"))
+        {
+            return numerator / ar.map!"numerator / a".mean!(G, summation);
+        }
+        else
+        {
+            MeanAccumulator!(G, ResolveSummationType!(summation, const(G)[], G)) imean;
+            foreach (e; ar)
+                imean.put(numerator / e);
+            return numerator / imean.mean;
+        }
+    }
+}
+
+/// ditto
+template hmean(Summation summation = Summation.appropriate)
+{
+    import core.lifetime: move;
+    import std.traits: isIterable;
+
+    /++
+    Params:
+        r = range
+    +/
+    @fmamath hmeanType!Range hmean(Range)(Range r)
+        if (isIterable!Range)
+    {
+        alias F = typeof(return);
+        return .hmean!(F, summation)(r.move);
+    }
+    
+    /++
+    Params:
+        ar = values
+    +/
+    @fmamath hmeanType!T hmean(T)(scope const T[] ar...)
+    {
+        alias F = typeof(return);
+        return .hmean!(F, summation)(ar);
+    }
+}
+
+/// ditto
+template hmean(F, string summation)
+{
+    mixin("alias hmean = .hmean!(F, Summation." ~ summation ~ ");");
+}
+
+/// ditto
+template hmean(string summation)
+{
+    mixin("alias hmean = .hmean!(Summation." ~ summation ~ ");");
+}
+
+/// Harmonic mean of vector
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [20.0, 100.0, 2000.0, 10.0, 5.0, 2.0].sliced;
+
+    assert(x.hmean.approxEqual(6.97269));
+}
+
+/// Harmonic mean of matrix
+version(mir_stat_test_univariate)
+pure @safe
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+
+    auto x = [
+        [20.0, 100.0, 2000.0], 
+        [10.0, 5.0, 2.0]
+    ].fuse;
+
+    assert(x.hmean.approxEqual(6.97269));
+}
+
+/// Column harmonic mean of matrix
+version(mir_stat_test_univariate)
+pure @safe
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice: fuse;
+    import mir.ndslice.topology: alongDim, byDim, map;
+
+    auto x = [
+        [20.0, 100.0, 2000.0],
+        [ 10.0, 5.0, 2.0]
+    ].fuse;
+
+    auto y = [13.33333, 9.52381, 3.996004];
+
+    // Use byDim or alongDim with map to compute mean of row/column.
+    assert(x.byDim!1.map!hmean.all!approxEqual(y));
+    assert(x.alongDim!0.map!hmean.all!approxEqual(y));
+}
+
+/// Can also pass arguments to hmean
+version(mir_stat_test_univariate)
+pure @safe nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.topology: repeat;
+    import mir.ndslice.slice: sliced;
+
+    //Set sum algorithm or output type
+    auto x = [1, 1e-100, 1, -1e-100].sliced;
+
+    assert(x.hmean!"kb2".approxEqual(2));
+    assert(x.hmean!"precise".approxEqual(2));
+    assert(x.hmean!(double, "precise").approxEqual(2));
+
+    //Provide the summation type
+    assert(float.max.repeat(3).hmean!double.approxEqual(float.max));
+}
+
+/++
+For integral slices, pass output type as template parameter to ensure output
+type is correct. 
++/
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [20, 100, 2000, 10, 5, 2].sliced;
+
+    auto y = x.hmean;
+
+    assert(y.approxEqual(6.97269));
+    static assert(is(typeof(y) == double));
+
+    assert(x.hmean!float.approxEqual(6.97269));
+}
+
+/++
+hmean works for complex numbers and other user-defined types (provided they
+can be converted to a floating point or complex type)
++/
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.complex.math: approxEqual;
+    import mir.ndslice.slice: sliced;
+    import mir.complex;
+    alias C = Complex!double;
+
+    auto x = [C(1, 2), C(2, 3), C(3, 4), C(4, 5)].sliced;
+    assert(x.hmean.approxEqual(C(1.97110904, 3.14849332)));
+}
+
+/// Arbitrary harmonic mean
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = hmean(20.0, 100, 2000, 10, 5, 2);
+    assert(x.approxEqual(6.97269));
+    
+    auto y = hmean!float(20, 100, 2000, 10, 5, 2);
+    assert(y.approxEqual(6.97269));
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [20.0, 100.0, 2000.0, 10.0, 5.0, 2.0];
+
+    assert(x.sliced.hmean.approxEqual(6.97269));
+    assert(x.sliced.hmean!float.approxEqual(6.97269));
+}
+
+private
+F nthroot(F)(in F x, in size_t n)
+    if (isFloatingPoint!F)
+{
+    import mir.math.common: sqrt, pow;
+
+    if (n > 2) {
+        return pow(x, cast(F) 1 / cast(F) n);
+    } else if (n == 2) {
+        return sqrt(x);
+    } else if (n == 1) {
+        return x;
+    } else {
+        return cast(F) 1;
+    }
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert(nthroot(9.0, 0).approxEqual(1));
+    assert(nthroot(9.0, 1).approxEqual(9));
+    assert(nthroot(9.0, 2).approxEqual(3));
+    assert(nthroot(9.5, 2).approxEqual(3.08220700));
+    assert(nthroot(9.0, 3).approxEqual(2.08008382));
+}
+
+/++
+Output range for gmean.
++/
+struct GMeanAccumulator(T) 
+    if (isMutable!T && isFloatingPoint!T)
+{
+    import mir.math.numeric: ProdAccumulator;
+    import mir.primitives: elementCount, hasShape;
+
+    ///
+    size_t count;
+    ///
+    ProdAccumulator!T prodAccumulator;
+
+    ///
+    F gmean(F = T)() const @property
+        if (isFloatingPoint!F)
+    {
+        import mir.math.common: exp2;
+
+        return nthroot(cast(F) prodAccumulator.mantissa, count) * exp2(cast(F) prodAccumulator.exp / count);
+    }
+
+    ///
+    void put(Range)(Range r)
+        if (isIterable!Range)
+    {
+        static if (hasShape!Range)
+        {
+            count += r.elementCount;
+            prodAccumulator.put(r);
+        }
+        else
+        {
+            foreach(x; r)
+            {
+                count++;
+                prodAccumulator.put(x);
+            }
+        }
+    }
+
+    ///
+    void put()(T x)
+    {
+        count++;
+        prodAccumulator.put(x);
+    }
+}
+
+///
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    GMeanAccumulator!double x;
+    x.put([1.0, 2, 3, 4].sliced);
+    assert(x.gmean.approxEqual(2.21336384));
+    x.put(5);
+    assert(x.gmean.approxEqual(2.60517108));
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    GMeanAccumulator!float x;
+    x.put([1, 2, 3, 4].sliced);
+    assert(x.gmean.approxEqual(2.21336384));
+    x.put(5);
+    assert(x.gmean.approxEqual(2.60517108));
+}
+
+///
+package(mir)
+template gmeanType(T)
+{
+    // TODO: including copy because visibility in mir.math.numeric is set to package
+    private template prodType(T)
+    {
+        import mir.math.sum: elementType;
+
+        alias U = elementType!T;
+        
+        static if (__traits(compiles, {
+            auto temp = U.init * U.init;
+            temp *= U.init;
+        })) {
+            alias V = typeof(U.init * U.init);
+            alias prodType = statType!(V, false);
+        } else {
+            static assert(0, "prodType: Can't prod elements of type " ~ U.stringof);
+        }
+    }
+
+    alias U = prodType!T;
+
+    static if (__traits(compiles, {
+        auto temp = U.init * U.init;
+        auto a = nthroot(temp, 2);
+        temp *= U.init;
+    })) {
+        alias V = typeof(nthroot(U.init * U.init, 2));
+        alias gmeanType = statType!(V, false);
+    } else {
+        static assert(0, "gmeanType: Can't calculate gmean of elements of type " ~ U.stringof);
+    }
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    static assert(is(gmeanType!int == double));
+    static assert(is(gmeanType!double == double));
+    static assert(is(gmeanType!float == float));
+    static assert(is(gmeanType!(int[]) == double));
+    static assert(is(gmeanType!(double[]) == double));
+    static assert(is(gmeanType!(float[]) == float));    
+}
+
+/++
+Computes the geometric average of the input.
+
+By default, if `F` is not floating point type, then the result will have a 
+`double` type if `F` is implicitly convertible to a floating point type.
+
+Params:
+    r = range, must be finite iterable
+Returns:
+    The geometric average of all the elements in the input, must be floating point type
+
+See_also: 
+    $(SUBREF numeric, prod)
++/
+@fmamath gmeanType!F gmean(F, Range)(Range r)
+    if (isFloatingPoint!F && isIterable!Range)
+{
+    import core.lifetime: move;
+
+    alias G = typeof(return);
+    GMeanAccumulator!G gmean;
+    gmean.put(r.move);
+    return gmean.gmean;
+}
+    
+/// ditto
+@fmamath gmeanType!Range gmean(Range)(Range r)
+    if (isIterable!Range)
+{
+    import core.lifetime: move;
+
+    alias G = typeof(return);
+    return .gmean!(G, Range)(r.move);
+}
+
+/++
+Params:
+    ar = values
++/
+@fmamath gmeanType!F gmean(F)(scope const F[] ar...)
+    if (isFloatingPoint!F)
+{
+    alias G = typeof(return);
+    GMeanAccumulator!G gmean;
+    gmean.put(ar);
+    return gmean.gmean;
+}
+
+///
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    assert(gmean([1.0, 2, 3]).approxEqual(1.81712059));
+    
+    assert(gmean!float([1, 2, 3, 4, 5, 6].sliced(3, 2)).approxEqual(2.99379516));
+    
+    static assert(is(typeof(gmean!float([1, 2, 3])) == float));
+}
+
+/// Geometric mean of vector
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 2.0].sliced;
+
+    assert(x.gmean.approxEqual(2.36178395));
+}
+
+/// Geometric mean of matrix
+version(mir_stat_test_univariate)
+@safe pure
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+
+    auto x = [
+        [3.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+        [2.0, 7.5, 5.0, 1.0, 1.5, 2.0]
+    ].fuse;
+
+    assert(x.gmean.approxEqual(2.36178395));
+}
+
+/// Column gmean of matrix
+version(mir_stat_test_univariate)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.topology: alongDim, byDim, map;
+
+    auto x = [
+        [3.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+        [2.0, 7.5, 5.0, 1.0, 1.5, 2.0]
+    ].fuse;
+    auto result = [2.44948974, 2.73861278, 2.73861278, 1.41421356, 2.29128784, 2.91547594];
+
+    // Use byDim or alongDim with map to compute mean of row/column.
+    assert(x.byDim!1.map!gmean.all!approxEqual(result));
+    assert(x.alongDim!0.map!gmean.all!approxEqual(result));
+
+    // FIXME
+    // Without using map, computes the mean of the whole slice
+    // assert(x.byDim!1.gmean.all!approxEqual(result));
+    // assert(x.alongDim!0.gmean.all!approxEqual(result));
+}
+
+/// Can also set output type
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+    import mir.ndslice.topology: repeat;
+
+    auto x = [5120.0, 7340032, 32, 3758096384].sliced;
+
+    assert(x.gmean!float.approxEqual(259281.45295212));
+
+    auto y = uint.max.repeat(2);
+    assert(y.gmean!float.approxEqual(cast(float) uint.max));
+}
+
+/++
+For integral slices, pass output type as template parameter to ensure output
+type is correct.
++/
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [5, 1, 1, 2, 4, 4,
+              2, 7, 5, 1, 2, 10].sliced;
+
+    auto y = x.gmean;
+    static assert(is(typeof(y) == double));
+    
+    assert(x.gmean!float.approxEqual(2.79160522));
+}
+
+/// gean works for user-defined types, provided the nth root can be taken for them
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    static struct Foo {
+        float x;
+        alias x this;
+    }
+
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [Foo(1.0), Foo(2.0), Foo(3.0)].sliced;
+    assert(x.gmean.approxEqual(1.81712059));
+}
+
+/// Compute gmean tensors along specified dimention of tensors
+version(mir_stat_test_univariate)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.topology: alongDim, iota, map;
+    
+    auto x = [
+        [1.0, 2, 3],
+        [4.0, 5, 6]
+    ].fuse;
+
+    assert(x.gmean.approxEqual(2.99379516));
+
+    auto result0 = [2.0, 3.16227766, 4.24264069];
+    assert(x.alongDim!0.map!gmean.all!approxEqual(result0));
+    assert(x.alongDim!(-2).map!gmean.all!approxEqual(result0));
+
+    auto result1 = [1.81712059, 4.93242414];
+    assert(x.alongDim!1.map!gmean.all!approxEqual(result1));
+    assert(x.alongDim!(-1).map!gmean.all!approxEqual(result1));
+
+    auto y = [
+        [
+            [1.0, 2, 3],
+            [4.0, 5, 6]
+        ], [
+            [7.0, 8, 9],
+            [10.0, 9, 10]
+        ]
+    ].fuse;
+    
+    auto result3 = [
+        [2.64575131, 4.0,        5.19615242],
+        [6.32455532, 6.70820393, 7.74596669]
+    ];
+    assert(y.alongDim!0.map!gmean.all!approxEqual(result3));
+}
+
+/// Arbitrary gmean
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert(gmean(1.0, 2, 3).approxEqual(1.81712059));
+    assert(gmean!float(1, 2, 3).approxEqual(1.81712059));
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert([1.0, 2, 3, 4].gmean.approxEqual(2.21336384));
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert(gmean([1, 2, 3]).approxEqual(1.81712059));
+}
+
+version(mir_stat_test_univariate)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [3.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 2.0];
+
+    assert(x.sliced.gmean.approxEqual(2.36178395));
+    assert(x.sliced.gmean!float.approxEqual(2.36178395));
 }
 
 /++
