@@ -203,6 +203,7 @@ pure @safe nothrow
 unittest
 {
     import mir.ndslice.slice: sliced;
+    import mir.stat.descriptive.univariate: mean;
 
     //Set sum algorithm or output type
     auto a = [1, 1e100, 1, -1e100];
@@ -230,7 +231,7 @@ unittest
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
     import mir.ndslice.slice: sliced;
-    import mir.stat.descriptive.univariate: variance;
+    import mir.stat.descriptive.univariate: standardDeviation, variance;
 
     auto x = [1.0, 2, 3, 4, 5, 6].sliced;
     assert(x.center.variance!"assumeZeroMean".approxEqual(x.variance));
