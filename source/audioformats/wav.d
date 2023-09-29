@@ -399,7 +399,7 @@ version(encodeWAV)
             // Avoids a number of edge cases.
             if (_channels < 0 || _channels > 1024)
             {
-                // Can't save a WAV with this numnber of channels.
+                // Can't save a WAV with this number of channels.
                 *err = true;
                 return;
             }
@@ -407,26 +407,66 @@ version(encodeWAV)
             // RIFF header
             // its size will be overwritten at finalizing
             _riffLengthOffset = _io.tell(_userData) + 4;
-            _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"RIFF", 0);
-            _io.write_uint_BE(_userData, RIFFChunkId!"WAVE");
+            if (! _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"RIFF", 0))
+            {
+                *err = true;
+                return;
+            }
+            if (! _io.write_uint_BE(_userData, RIFFChunkId!"WAVE"))
+            {
+                *err = true;
+                return;
+            }
 
             // 'fmt ' sub-chunk
-            _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"fmt ", 0x10);
-            _io.write_ushort_LE(_userData, isFormatLinearPCM(format) ? LinearPCM : FloatingPointIEEE);
-            _io.write_ushort_LE(_userData, cast(ushort)(_channels));
-            _io.write_uint_LE(_userData, sampleRate);
+            if (! _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"fmt ", 0x10))
+            {
+                *err = true;
+                return;
+            }
+            if (! _io.write_ushort_LE(_userData, isFormatLinearPCM(format) ? LinearPCM : FloatingPointIEEE))
+            {
+                *err = true;
+                return;
+            }
+            if (! _io.write_ushort_LE(_userData, cast(ushort)(_channels)))
+            {
+                *err = true;
+                return;
+            }
+            if (! _io.write_uint_LE(_userData, sampleRate))
+            {
+                *err = true;
+                return;
+            }
 
             size_t bytesPerSec = sampleRate * cast(size_t) frameSize();
-            _io.write_uint_LE(_userData,  cast(uint)(bytesPerSec));
+            if (!_io.write_uint_LE(_userData,  cast(uint)(bytesPerSec)))
+            {
+                *err = true;
+                return;
+            }
 
             int bytesPerFrame = frameSize();
-            _io.write_ushort_LE(_userData, cast(ushort)bytesPerFrame);
+            if (!_io.write_ushort_LE(_userData, cast(ushort)bytesPerFrame))
+            {
+                *err = true;
+                return;
+            }
 
-            _io.write_ushort_LE(_userData, cast(ushort)(sampleSize() * 8));
+            if (!_io.write_ushort_LE(_userData, cast(ushort)(sampleSize() * 8)))
+            {
+                *err = true;
+                return;
+            }
 
             // data sub-chunk
             _dataLengthOffset = _io.tell(_userData) + 4;
-            _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"data", 0); // write 0 but temporarily, this will be overwritten at finalizing
+            if(! _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"data", 0)) // write 0 but temporarily, this will be overwritten at finalizing
+            {
+                *err = true;
+                return;
+            }
             _writtenFrames = 0;
         }
 
