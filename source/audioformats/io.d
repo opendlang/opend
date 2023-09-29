@@ -43,7 +43,7 @@ nothrow @nogc:
         return fileLength - cursor;
     }
   
-    /// Read one ubyte from stream and advance the stream cursor.
+    /// Read one ubyte from stream and do not advance the stream cursor.
     /// On error, return an error, the stream then is considered invalid.
     ubyte peek_ubyte(void* userData, bool* err)
     {
@@ -51,7 +51,7 @@ nothrow @nogc:
         if (*err)
             return 0;
 
-        *err = seek(tell(userData) - 1, false, userData);
+        *err = !seek(tell(userData) - 1, false, userData);
         return b;
     }
 
