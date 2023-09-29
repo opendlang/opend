@@ -257,7 +257,7 @@ public: // This is also part of the public API
     /// FUTURE: will replace Exception.
     /// A Stream that is `isError` cannot be used except for initialization again.
     /// Work in progress, only WAV for now.
-    bool isError()
+    bool isError() @nogc
     {
         return _isError;
     }
@@ -507,7 +507,7 @@ public: // This is also part of the public API
                     int readFrames = _wavDecoder.readSamples!float(outData, frames, &err); 
                     if (err)
                     {
-                        _isError = true;
+                        setError();
                         return 0;
                     }
                     else
@@ -525,7 +525,7 @@ public: // This is also part of the public API
                     int readFrames = _qoaDecoder.readSamples!float(outData, frames, &err); 
                     if (err)
                     {
-                        _isError = true;
+                        setError();
                         return 0;
                     }
                     else
@@ -611,7 +611,7 @@ public: // This is also part of the public API
                     int readFrames = _wavDecoder.readSamples!double(outData, frames, &err); 
                     if (err)
                     {
-                        _isError = true;
+                        setError();
                         return 0;
                     }
                     return readFrames;
@@ -628,7 +628,7 @@ public: // This is also part of the public API
                     int readFrames = _qoaDecoder.readSamples!double(outData, frames, &err); 
                     if (err)
                     {
-                        _isError = true;
+                        setError();
                         return 0;
                     }
                     else
@@ -737,7 +737,11 @@ public: // This is also part of the public API
             {
                 version(encodeWAV)
                 {
-                    return _wavEncoder.writeSamples(inData, frames);
+                    bool err;
+                    int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
+                    if (err)
+                        return 0;
+                    return writtenFrames;
                 }
                 else
                 {
@@ -797,7 +801,11 @@ public: // This is also part of the public API
                 {
                     version(encodeWAV)
                     {
-                        return _wavEncoder.writeSamples(inData, frames);
+                        bool err;
+                        int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
+                        if (err)
+                            return 0;
+                        return writtenFrames;
                     }
                     else
                     {
@@ -1192,7 +1200,9 @@ public: // This is also part of the public API
     
     /// Finalize encoding. After finalization, further writes are not possible anymore
     /// however the stream is considered complete and valid for storage.
-    void finalizeEncoding() @nogc 
+    /// Returns: `true` in case of success. `false` in case of I/O error.
+    ///          This also sets the `isError` flag in this case.
+    bool finalizeEncoding() @nogc 
     {
         // If you crash here, it's because `finalizeEncoding` has been called twice.
         assert(isOpenForWriting());
@@ -1211,10 +1221,15 @@ public: // This is also part of the public API
                 { 
                     version(encodeQOA)
                     {
-                        _qoaEncoder.finalizeEncoding();
+                        bool success = _qoaEncoder.finalizeEncoding();
+                        if (!success)
+                        {
+                            setError();
+                            return false;
+                        }
                         break;
                     }
-                    else 
+                    else
                         assert(false);
                 }
 
@@ -1223,7 +1238,13 @@ public: // This is also part of the public API
                     version(encodeWAV)
                     {
                         assert(_wavEncoder !is null);
-                        _wavEncoder.finalizeEncoding();
+                        bool err;
+                        _wavEncoder.finalizeEncoding(&err);
+                        if (err)
+                        {
+                            setError();
+                            return false;
+                        }
                         break;
                     }
                     else
@@ -1233,22 +1254,27 @@ public: // This is also part of the public API
                 assert(false);
         }
         _io.write = null; // prevents further encodings
+        return true;
     }
 
-    // Finalize encoding and get internal buffer.
-    // This can be called multiple times, in which cases the stream is finalized only the first time.
+    /// Finalize encoding and get internal buffer.
+    /// This can be called multiple times, in which cases the stream is finalized only the first time.
+    /// Returns: `null` in case of error (also isError flag), else an array of bytes.
     const(ubyte)[] finalizeAndGetEncodedResult() @nogc
     {
         // only callable while appending, else it's a programming error
         assert( (memoryContext !is null) && ( memoryContext.bufferCanGrow ) );
 
-        finalizeEncodingIfNeeded(); 
+        if (!finalizeEncodingIfNeeded())
+            return null;
+
         return memoryContext.buffer[0..memoryContext.size];
     }
 
-    // Finalize encoding and get internal buffer, which is disowned by the `AudioStream`.
-    // The caller has to call `freeEncodedAudio` manually.
-    // This can be called exactly one time, if a growable owned buffer was used.
+    /// Finalize encoding and get internal buffer, which is disowned by the `AudioStream`.
+    /// The caller has to call `freeEncodedAudio` manually.
+    /// This can be called exactly one time, if a growable owned buffer was used.
+    /// Returns: `null` in case of error (also isError flag), else an array of bytes.
     const(ubyte)[] finalizeAndGetEncodedResultDisown() @nogc
     {
         const(ubyte)[] buf = finalizeAndGetEncodedResult();
@@ -1422,6 +1448,17 @@ private:
                 _wavEncoder = null;
             }
         }
+    }
+
+    void setError() @nogc
+    {
+        _isError = true;
+
+        // FUTURE: remove all API possibility for an errored stream, it can only be re-initialized with opening. Like in Gamut.
+
+        // This is API-breaking
+        //_io.write = null;
+        //_io.read = null;
     }
 
     // clean-up the whole Stream object so that it can be reused for anything else.
@@ -1598,7 +1635,7 @@ private:
 
                 if ( mp3dec_detect_cb(_mp3io, scratchBuffer, MINIMP3_BUF_SIZE*2) == 0 )
                 {
-                    // This is a MP3. Try to open a stream.
+                    // This is a MP3. Attempt to open a stream.
 
                     // Allocate a mp3dec_ex_t object
                     _mp3DecoderNew = cast(mp3dec_ex_t*) malloc(mp3dec_ex_t.sizeof);
@@ -1778,12 +1815,19 @@ private:
         }
     }
 
-    void finalizeEncodingIfNeeded() @nogc
+    // Finalize, but only if needed.
+    // Returns: true on success, also use the isError flag to report failure.
+    bool finalizeEncodingIfNeeded() @nogc
     {
         if (_io && (_io.write !is null)) // if we have been encoding something
         {
-            finalizeEncoding();
+            return finalizeEncoding();
         }
+
+        if (isError()) // there was an error already, fail.
+            return false;
+        else
+            return true;
     }
 }
 

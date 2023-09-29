@@ -432,72 +432,83 @@ version(encodeWAV)
 
         // write interleaved samples
         // `inSamples` should have enough room for frames * _channels
-        int writeSamples(T)(T* inSamples, int frames) nothrow
+        int writeSamples(T)(T* inSamples, int frames, bool* err) nothrow
         {
             int n = 0;
-            try
-            {
-                int samples = frames * _channels;
+            int samples = frames * _channels;
                 
-                final switch(_format)
-                {
-                    case Format.s8:
-                        ditherInput(inSamples, samples, 127.0f);
-                        for ( ; n < samples; ++n)
-                        {
-                            double x = _ditherBuf[n];
-                            int b = cast(int)(128.5 + x * 127.0); 
-                            _io.write_byte(_userData, cast(byte)b);
-                        }
-                        break;
-
-                    case Format.s16le:
-                        ditherInput(inSamples, samples, 32767.0f);
-                        for ( ; n < samples; ++n)
-                        {
-                            double x = _ditherBuf[n];
-                            int s = cast(int)(32768.5 + x * 32767.0);
-                            s -= 32768;
-                            assert(s >= -32767 && s <= 32767);
-                            _io.write_short_LE(_userData, cast(short)s);
-                        }
-                        break;
-
-                    case Format.s24le:
-                        ditherInput(inSamples, samples, 8388607.0f);
-                        for ( ; n < samples; ++n)
-                        {
-                            double x = _ditherBuf[n];
-                            int s = cast(int)(8388608.5 + x * 8388607.0);
-                            s -= 8388608;
-                            assert(s >= -8388607 && s <= 8388607);
-                            _io.write_24bits_LE(_userData, s);
-                        }
-                        break;
-
-                    case Format.fp32le:
-                        for ( ; n < samples; ++n)
-                        {
-                            _io.write_float_LE(_userData, inSamples[n]);
-                        }
-                        break;
-                    case Format.fp64le:
-                        for ( ; n < samples; ++n)
-                        {
-                            _io.write_double_LE(_userData, inSamples[n]);
-                        }
-                        break;
-                }
-                _writtenFrames += frames;
-            }
-            catch(AudioFormatsException e)
+            final switch(_format)
             {
-                destroyFree(e);
+                case Format.s8:
+                    ditherInput(inSamples, samples, 127.0f);
+                    for ( ; n < samples; ++n)
+                    {
+                        double x = _ditherBuf[n];
+                        int b = cast(int)(128.5 + x * 127.0); 
+                        if (!_io.write_byte(_userData, cast(byte)b))
+                        {
+                            *err = true;
+                            return 0;
+                        }
+                    }
+                    break;
+
+                case Format.s16le:
+                    ditherInput(inSamples, samples, 32767.0f);
+                    for ( ; n < samples; ++n)
+                    {
+                        double x = _ditherBuf[n];
+                        int s = cast(int)(32768.5 + x * 32767.0);
+                        s -= 32768;
+                        assert(s >= -32767 && s <= 32767);
+                        if (!_io.write_short_LE(_userData, cast(short)s))
+                        {
+                            *err = true;
+                            return 0;
+                        }
+                    }
+                    break;
+
+                case Format.s24le:
+                    ditherInput(inSamples, samples, 8388607.0f);
+                    for ( ; n < samples; ++n)
+                    {
+                        double x = _ditherBuf[n];
+                        int s = cast(int)(8388608.5 + x * 8388607.0);
+                        s -= 8388608;
+                        assert(s >= -8388607 && s <= 8388607);
+                        if (!_io.write_24bits_LE(_userData, s))
+                        {
+                            *err = true;
+                            return 0;
+                        }
+                    }
+                    break;
+
+                case Format.fp32le:
+                    for ( ; n < samples; ++n)
+                    {
+                        if (!_io.write_float_LE(_userData, inSamples[n]))
+                        {
+                            *err = true;
+                            return 0;
+                        }
+                    }
+                    break;
+                case Format.fp64le:
+                    for ( ; n < samples; ++n)
+                    {
+                        if (!_io.write_double_LE(_userData, inSamples[n]))
+                        {
+                            *err = true;
+                            return 0;
+                        }
+                    }
+                    break;
             }
-            catch(Exception e)
-            {
-                assert(false); // disallow
-            }
+            _writtenFrames += frames;
+            *err = false;
+
             return n;
         }
 
@@ -518,22 +529,39 @@ version(encodeWAV)
             return sampleSize() * _channels;
         }
 
-        void finalizeEncoding() 
+        void finalizeEncoding(bool* err) 
         {
             size_t bytesOfData = frameSize() * _writtenFrames;
 
             // write final number of samples for the 'RIFF' chunk
             {
                 uint riffLength = cast(uint)( 4 + (4 + 4 + 16) + (4 + 4 + bytesOfData) );
-                _io.seek(_riffLengthOffset, false, _userData);
-                _io.write_uint_LE(_userData, riffLength);
+                if (!_io.seek(_riffLengthOffset, false, _userData))
+                {
+                    *err = true;
+                    return;
+                }
+                if (!_io.write_uint_LE(_userData, riffLength))
+                {
+                    *err = true;
+                    return;
+                }
             }
 
             // write final number of samples for the 'data' chunk
             {
-                _io.seek(_dataLengthOffset, false, _userData);
-                _io.write_uint_LE(_userData, cast(uint)bytesOfData );
+                if (!_io.seek(_dataLengthOffset, false, _userData))
+                {
+                    *err = true;
+                    return;
+                }
+                if (!_io.write_uint_LE(_userData, cast(uint)bytesOfData ))
+                {
+                    *err = true;
+                    return;
+                }
             }
+            *err = true;
         }
 
         ~this()
