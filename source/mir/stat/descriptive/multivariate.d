@@ -609,8 +609,8 @@ version(mir_stat_test)
 unittest
 {
     import mir.math.sum: sum, Summation;
-    import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
+    import mir.stat.transform: center;
     import mir.test: shouldApprox;
 
     auto a1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
@@ -667,10 +667,10 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     if (isMutable!T && covarianceAlgo == CovarianceAlgo.twoPass)
 {
     import mir.functional: naryFun;
-    import mir.math.stat: MeanAccumulator;
     import mir.math.sum: elementType, Summator;
     import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
     import mir.primitives: isInputRange, front, empty, popFront;
+    import mir.stat.descriptive.univariate: MeanAccumulator;
 
     ///
     private size_t _count;
@@ -1065,7 +1065,7 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.stat: center;
+    import mir.stat.transform: center;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
     import mir.test: shouldApprox;
@@ -1093,9 +1093,10 @@ version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
-    import mir.math.stat: center, mean;
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
+    import mir.stat.descriptive.univariate: mean;
+    import mir.stat.transform: center;
     import mir.test: should, shouldApprox;
 
     auto a = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25,
@@ -1130,9 +1131,9 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
-    import mir.math.stat: center;
     import mir.math.sum: Summation;
     import mir.ndslice.allocation: mininitRcslice;
+    import mir.stat.transform: center;
     import mir.test: shouldApprox;
 
     static immutable a = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25,
@@ -1536,8 +1537,8 @@ version(mir_stat_test)
 unittest
 {
     import mir.math.sum: sum, Summation;
-    import mir.math.stat: center;
     import mir.ndslice.slice: sliced;
+    import mir.stat.transform: center;
     import mir.test: shouldApprox;
 
     auto a1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
@@ -1645,7 +1646,7 @@ template cov(
 {
     import mir.math.common: fmamath;
     import mir.primitives: isInputRange;
-    import mir.math.stat: meanType;
+    import mir.stat.descriptive.univariate: meanType;
     import std.traits: CommonType;
     /++
     Params:

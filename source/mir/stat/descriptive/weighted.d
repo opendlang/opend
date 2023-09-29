@@ -9,6 +9,7 @@ Copyright: 2022 Mir Stat Authors.
 
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
+SUB2REF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, descriptive, $1)$(NBSP)
 MATHREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, math, $1)$(NBSP)
 NDSLICEREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
@@ -580,8 +581,8 @@ Returns:
 
 See_also: 
     $(MATHREF sum, Summation),
-    $(MATHREF stat, mean),
-    $(MATHREF stat, meanType)
+    $(SUB2REF univariate, mean),
+    $(SUB2REF univariate, meanType)
 +/
 template wmean(F, Summation summation = Summation.appropriate,
                AssumeWeights assumeWeights = AssumeWeights.primary, 
@@ -589,8 +590,8 @@ template wmean(F, Summation summation = Summation.appropriate,
     if (!is(F : AssumeWeights))
 {
     import mir.math.common: fmamath;
-    import mir.math.stat: meanType;
     import mir.ndslice.slice: isConvertibleToSlice;
+    import mir.stat.descriptive.univariate: meanType;
     import std.traits: isIterable;
 
     /++
@@ -632,8 +633,8 @@ template wmean(Summation summation = Summation.appropriate,
                Summation weightsSummation = Summation.appropriate)
 {
     import mir.math.common: fmamath;
-    import mir.math.stat: meanType;
     import mir.ndslice.slice: isConvertibleToSlice;
+    import mir.stat.descriptive.univariate: meanType;
     import std.traits: isIterable;
 
     /++
@@ -671,8 +672,8 @@ template wmean(F, AssumeWeights assumeWeights, Summation summation = Summation.a
     if (!is(F : AssumeWeights))
 {
     import mir.math.common: fmamath;
-    import mir.math.stat: meanType;
     import mir.ndslice.slice: isConvertibleToSlice;
+    import mir.stat.descriptive.univariate: meanType;
     import std.traits: isIterable;
 
     /++
@@ -974,7 +975,7 @@ version(mir_stat_test)
 unittest
 {
     import mir.algorithm.iteration: all;
-    import mir.math.stat: meanType;
+    import mir.stat.descriptive.univariate: meanType;
     import mir.ndslice.topology: iota, alongDim, map;
 
     auto x = iota([2, 2], 1);

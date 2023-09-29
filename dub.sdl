@@ -11,8 +11,7 @@ toolchainRequirements frontend=">=2.097"
 
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
-    //versions "mir_stat_test"
-    versions "mir_stat_test_univariate"
+    versions "mir_stat_test"
     //versions "mir_stat_test_fp"
     //versions "mir_stat_test_binom_multi"
     dflags "-lowmem"
