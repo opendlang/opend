@@ -1923,7 +1923,7 @@ enum VarianceAlgo
     Calculates variance using E(x^^2) - E(x)^2 (alowing for adjustments for 
     population/sample variance). This algorithm can be numerically unstable. As
     in: 
-    (E(x ^^ 2) - E(x) ^^ 2
+    E(x ^^ 2) - E(x) ^^ 2
     +/
     naive,
 
