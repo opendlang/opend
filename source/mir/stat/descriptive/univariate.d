@@ -3323,14 +3323,14 @@ By default, if `F` is not floating point type, then the result will have a
 
 Params:
     F = controls type of output
-    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
+    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.hybrid)
     summation = algorithm for calculating sums (default: Summation.appropriate)
 Returns:
     The standard deviation of the input, must be floating point type type
 +/
 template standardDeviation(
     F, 
-    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    VarianceAlgo varianceAlgo = VarianceAlgo.hybrid, 
     Summation summation = Summation.appropriate)
 {
     import mir.math.common: sqrt;
@@ -3361,7 +3361,7 @@ template standardDeviation(
 
 /// ditto
 template standardDeviation(
-    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    VarianceAlgo varianceAlgo = VarianceAlgo.hybrid, 
     Summation summation = Summation.appropriate)
 {
     /++
@@ -9885,7 +9885,7 @@ By default, if `F` is not floating point type, then the result will have a
 
 Params:
     F = controls type of output
-    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
+    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.hybrid)
     summation = algorithm for calculating sums (default: Summation.appropriate)
 
 Returns:
@@ -9896,7 +9896,7 @@ See_also:
 +/
 template coefficientOfVariation(
     F, 
-    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    VarianceAlgo varianceAlgo = VarianceAlgo.hybrid, 
     Summation summation = Summation.appropriate)
 {
     import mir.math.common: sqrt;
@@ -9934,7 +9934,7 @@ template coefficientOfVariation(
 
 /// ditto
 template coefficientOfVariation(
-    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    VarianceAlgo varianceAlgo = VarianceAlgo.hybrid, 
     Summation summation = Summation.appropriate)
 {
     import std.traits: isIterable;
