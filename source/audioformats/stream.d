@@ -102,6 +102,7 @@ public: // This is also part of the public API
     ///     path An UTF-8 path to the sound file.
     ///
     /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
+    // TODO: break API, make that nothrow, and use isError flag instead
     void openFromFile(const(char)[] path) @nogc
     {
         cleanUp();
@@ -127,6 +128,7 @@ public: // This is also part of the public API
     /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     ///
     /// Params: inputData The whole file to decode.
+    // TODO: break API, make that nothrow, and use isError flag instead
     void openFromMemory(const(ubyte)[] inputData) @nogc
     {
         cleanUp();
@@ -157,6 +159,7 @@ public: // This is also part of the public API
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
+    // TODO: break API, make that nothrow, and use isError flag instead
     void openToFile(const(char)[] path, 
                     AudioFileFormat format, 
                     float sampleRate, 
@@ -190,6 +193,7 @@ public: // This is also part of the public API
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
+    // TODO: break API, make that nothrow, and use isError flag instead
     void openToBuffer(AudioFileFormat format, 
                       float sampleRate, 
                       int numChannels,
@@ -224,6 +228,7 @@ public: // This is also part of the public API
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
+    // TODO: break API, make that nothrow, and use isError flag instead
     void openToMemory(ubyte* data, 
                       size_t maxLength,
                       AudioFileFormat format,
@@ -257,7 +262,7 @@ public: // This is also part of the public API
     /// FUTURE: will replace Exception.
     /// A Stream that is `isError` cannot be used except for initialization again.
     /// Work in progress, only WAV for now.
-    bool isError() @nogc
+    bool isError() nothrow @nogc
     {
         return _isError;
     }
@@ -269,14 +274,14 @@ public: // This is also part of the public API
     }
 
     /// Returns: `true` if using this stream's operations is acceptable in an audio thread (eg: no file I/O).
-    bool realtimeSafe() @nogc
+    bool realtimeSafe() nothrow @nogc
     {
         return fileContext is null;
     }
 
     /// Returns: `true` if this stream is concerning a tracker module format.
     /// This is useful because the seek/tell functions are different.
-    bool isModule() @nogc
+    bool isModule() nothrow @nogc
     {
         final switch(_format) with (AudioFileFormat)
         {
@@ -299,7 +304,7 @@ public: // This is also part of the public API
     /// Returns: `true` if this stream allows seeking.
     /// Note: the particular function to call for seeking depends on whether the stream is a tracker module.
     /// See_also: `seekPosition`.
-    bool canSeek() @nogc
+    bool canSeek() nothrow @nogc
     {
         final switch(_format) with (AudioFileFormat)
         {
@@ -372,7 +377,7 @@ public: // This is also part of the public API
     ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
     ///
     /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
-    int readSamplesFloat(float* outData, int frames) @nogc
+    int readSamplesFloat(float* outData, int frames) nothrow @nogc
     {
         assert(isOpenForReading());
 
@@ -573,7 +578,7 @@ public: // This is also part of the public API
         }
     }
     ///ditto
-    int readSamplesFloat(float[] outData) @nogc
+    int readSamplesFloat(float[] outData) nothrow @nogc
     {
         assert( (outData.length % _numChannels) == 0);
         return readSamplesFloat(outData.ptr, cast(int)(outData.length / _numChannels) );
@@ -595,7 +600,7 @@ public: // This is also part of the public API
     ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
     ///
     /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
-    int readSamplesDouble(double* outData, int frames) @nogc
+    int readSamplesDouble(double* outData, int frames) nothrow @nogc
     {
         assert(isOpenForReading());
 
@@ -682,7 +687,7 @@ public: // This is also part of the public API
         }
     }
     ///ditto
-    int readSamplesDouble(double[] outData) @nogc
+    int readSamplesDouble(double[] outData) nothrow @nogc
     {
         assert( (outData.length % _numChannels) == 0);
         return readSamplesDouble(outData.ptr, cast(int)(outData.length / _numChannels) );
@@ -851,7 +856,7 @@ public: // This is also part of the public API
 
     /// Length. Returns the amount of patterns in the module
     /// Formats that support this: MOD, XM.
-    int countModulePatterns() 
+    int countModulePatterns() nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -873,7 +878,7 @@ public: // This is also part of the public API
 
     /// Length. Returns the amount of PLAYED patterns in the module
     /// Formats that support this: MOD, XM.
-    int getModuleLength() 
+    int getModuleLength() nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -896,7 +901,7 @@ public: // This is also part of the public API
     /// Tell. Returns amount of rows in a pattern.
     /// Formats that support this: MOD, XM.
     /// Returns: -1 on error. Else, number of patterns.
-    int rowsInPattern(int pattern) 
+    int rowsInPattern(int pattern) nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -929,7 +934,7 @@ public: // This is also part of the public API
 
     /// Tell. Returns the current playing pattern id
     /// Formats that support this: MOD, XM
-    int tellModulePattern() 
+    int tellModulePattern() nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -951,7 +956,7 @@ public: // This is also part of the public API
 
     /// Tell. Returns the current playing row id
     /// Formats that support this: MOD, XM
-    int tellModuleRow() 
+    int tellModuleRow() nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -973,7 +978,7 @@ public: // This is also part of the public API
 
     /// Playback info. Returns the amount of multi-channel frames remaining in the current playing pattern.
     /// Formats that support this: MOD
-    int framesRemainingInPattern() 
+    int framesRemainingInPattern() nothrow
     {
         assert(isOpenForReading() && isModule());
         final switch(_format) with (AudioFileFormat)
@@ -998,7 +1003,7 @@ public: // This is also part of the public API
     /// Only available for input streams.
     /// Formats that support seeking per pattern/row: MOD, XM
     /// Returns: `true` in case of success.
-    bool seekPosition(int pattern, int row) 
+    bool seekPosition(int pattern, int row) nothrow
     {
         assert(isOpenForReading() && isModule() && canSeek());
         final switch(_format) with (AudioFileFormat)
@@ -1219,7 +1224,7 @@ public: // This is also part of the public API
     /// however the stream is considered complete and valid for storage.
     /// Returns: `true` in case of success. `false` in case of I/O error.
     ///          This also sets the `isError` flag in this case.
-    bool finalizeEncoding() @nogc 
+    bool finalizeEncoding() nothrow @nogc 
     {
         // If you crash here, it's because `finalizeEncoding` has been called twice.
         assert(isOpenForWriting());
@@ -1373,7 +1378,7 @@ private:
 
     // Clean-up encoder/decoder-related data, but not I/O related things. Useful to restart the decoder.
     // After callign that, you can call `startDecoder` again.
-    void cleanUpCodecs() @nogc
+    void cleanUpCodecs() nothrow @nogc
     {
         // Write the last needed bytes if needed
         finalizeEncodingIfNeeded();
@@ -1479,7 +1484,7 @@ private:
     }
 
     // clean-up the whole Stream object so that it can be reused for anything else.
-    void cleanUp() @nogc
+    void cleanUp() nothrow @nogc
     {
         cleanUpCodecs();
 
@@ -1494,8 +1499,12 @@ private:
             if (fileContext.file !is null)
             {
                 int result = fclose(fileContext.file);
-                if (result)
-                    throw mallocNew!AudioFormatsException("Closing of audio file errored");
+
+                // Note: perennial error of "what to do if fclose failed".
+                // In C++ a destructor that throw is a crash.
+                // C++ fstream sets the fail bit, but doesn't crash neither throw.
+                // I guess noone checks iostream's failbit after close.
+                // Let's do nothing then.
             }
             destroyFree(fileContext);
             fileContext = null;
@@ -1769,7 +1778,10 @@ private:
         throw mallocNew!AudioFormatsException("Cannot decode stream: unrecognized encoding.");
     }
 
-    void startEncoding(AudioFileFormat format, float sampleRate, int numChannels, EncodingOptions options) @nogc
+    void startEncoding(AudioFileFormat format,
+                       float sampleRate, 
+                       int numChannels, 
+                       EncodingOptions options) @nogc
     { 
         _format = format;
         _sampleRate = sampleRate;
@@ -1834,7 +1846,7 @@ private:
 
     // Finalize, but only if needed.
     // Returns: true on success, also use the isError flag to report failure.
-    bool finalizeEncodingIfNeeded() @nogc
+    bool finalizeEncodingIfNeeded() nothrow @nogc
     {
         if (_io && (_io.write !is null)) // if we have been encoding something
         {

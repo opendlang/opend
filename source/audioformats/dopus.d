@@ -28,7 +28,6 @@ import core.stdc.string: memmove, memcpy, memcmp, memset;
 import core.stdc.math : sqrtf, exp2f, exp2, sqrtf, lrintf;
 import std.math : cos, sin, PI, floor;
 
-
 import audioformats.io;
 import audioformats.internals;
 
@@ -6358,7 +6357,6 @@ fail:
 }
 
 static int opus_decode_frame (OpusStreamContext* s, const(uint8_t)* data, int size) {
-  import core.stdc.string : memcpy;
   int samples = s.packet.frame_duration;
   int redundancy = 0;
   int redundancy_size, redundancy_pos;
@@ -6507,7 +6505,6 @@ static int opus_decode_frame (OpusStreamContext* s, const(uint8_t)* data, int si
 }
 
 static int opus_decode_subpacket (OpusStreamContext* s, const(uint8_t)* buf, int buf_size, float** out_, int out_size, int nb_samples) {
-  import core.stdc.string : memset;
   int output_samples = 0;
   int flush_needed   = 0;
   int i, j, ret;
@@ -6716,7 +6713,6 @@ int opus_decode_packet (/*AVCtx* avctx,*/ OpusContext* c, AVFrame* frame, int* g
 
 
 void opus_decode_flush (OpusContext* c) {
-  import core.stdc.string : memset;
   for (int i = 0; i < c.nb_streams; i++) {
     OpusStreamContext *s = &c.streams[i];
 
@@ -7034,7 +7030,6 @@ private:
 
   bool ensureBytes (uint len) nothrow 
   {
-    import core.stdc.string : memmove;
     if (len > buf.length) 
         assert(0, "internal OggStream error");
     if (bufused-bufpos >= len) return true;
@@ -7255,14 +7250,20 @@ public:
     moveBuf();
     assert(buf.length-bufused >= ChunkSize);
     auto lastfpos = _io.tell(_userData);
-    scope(success) _io.seek(lastfpos, false, _userData);
+    scope(success) 
+    {
+        _io.seek(lastfpos, false, _userData);
+
+        // Note: seek error ignored above
+    }
     auto flsize = _io.getFileLength(_userData);
     if (flsize < 0) return false;
     // linear scan backward
     auto flpos = flsize-firstpagepos-ChunkSize;
     if (flpos < firstpagepos) flpos = firstpagepos;
     for (;;) {
-      _io.seek(flpos, false, _userData);
+      if (!_io.seek(flpos, false, _userData))
+          return false;
       uint bulen = (flpos+ChunkSize <= flsize ? ChunkSize : cast(uint)(flsize-flpos));
       if (bulen < 27) break;
       {
@@ -7289,7 +7290,8 @@ public:
               // load page
               pos = pend = bufused;
               rereadbuf = true;
-              _io.seek(flpos+opos-bufused, false, _userData);
+              if (!_io.seek(flpos+opos-bufused, false, _userData))
+                  return false;
               for (uint bp = 0; bp < MaxPageSize; ) {
                 auto rd = rawRead(buf.ptr[pos+bp..pos+MaxPageSize]);
                 if (rd.length == 0) {
@@ -7305,7 +7307,8 @@ public:
               // load page
               pos = bufused;
               rereadbuf = true;
-              _io.seek(flpos+opos-bufused, false, _userData);
+              if (!_io.seek(flpos+opos-bufused, false, _userData))
+                  return false;
               for (uint bp = 0; bp < MaxPageSize; ) {
                 auto rd = rawRead(buf.ptr[pos+bp..pos+MaxPageSize]);
                 if (rd.length == 0) {
@@ -7329,7 +7332,8 @@ public:
             return true;
            badpage:
             if (rereadbuf) {
-              _io.seek(flpos, false, _userData);
+              if (!_io.seek(flpos, false, _userData))
+                  return false;
               auto sliceOut = rawRead(buf[bufused..bufused+ChunkSize]);
               if (sliceOut.length != ChunkSize)
                   return false; // bad Parsing
@@ -7461,7 +7465,11 @@ public:
       bufused = bufpos = 0;
       pglength = 0;
       curseg = 0;
-      _io.seek(firstpagepos, false, _userData);
+      if (!_io.seek(firstpagepos, false, _userData))
+      {
+        *didThrow = true;
+        return -1;
+      }
       eofhit = false;
       if (!nextPage!true())
       {
@@ -7520,7 +7528,11 @@ public:
       bufused = bufpos = 0;
       pglength = 0;
       curseg = 0;
-      _io.seek(begin, false, _userData);
+      if (!_io.seek(begin, false, _userData))
+      {
+        *didThrow = true;
+        return -1;
+      }
       eofhit = false;
       if (!nextPage!false()) return false;
       if (!loadPacket(didThrow)) return false;
@@ -7544,7 +7556,11 @@ public:
       bufused = bufpos = 0;
       pglength = 0;
       curseg = 0;
-      _io.seek(bisect, false, _userData);
+      if (!_io.seek(bisect, false, _userData))
+      {
+          *didThrow = true;
+          return -1;
+      }
       eofhit = false;
 
       // read loop within the bisection loop
@@ -7571,7 +7587,11 @@ public:
             bufused = bufpos = 0;
             pglength = 0;
             curseg = 0;
-            _io.seek(bisect, false, _userData);
+            if (! _io.seek(bisect, false, _userData))
+            {
+                *didThrow = true;
+                return -1;
+            }
           }
         } else {
           //conwriteln("page #", pgseqno, " (", pggranule, ") at ", getfpos);
@@ -7612,7 +7632,11 @@ public:
                 bufused = bufpos = 0;
                 pglength = 0;
                 curseg = 0;
-                _io.seek(bisect, false, _userData);
+                if (! _io.seek(bisect, false, _userData))
+                {
+                    *didThrow = true;
+                    return -1;
+                }
                 eofhit = false;
               } else {
                 // normal bisection
@@ -7631,7 +7655,11 @@ public:
       bufused = bufpos = 0;
       pglength = 0;
       curseg = 0;
-      _io.seek(firstpagepos, false, _userData);
+      if (!_io.seek(firstpagepos, false, _userData))
+      {
+        *didThrow = true;
+        return -1;
+      }
       eofhit = false;
       if (!nextPage!true())
       {
@@ -7669,7 +7697,11 @@ public:
     bufused = bufpos = 0;
     pglength = 0;
     curseg = 0;
-    _io.seek(best, false, _userData);
+    if (!_io.seek(best, false, _userData))
+    {
+        *didThrow = true;
+        return -1;
+    }
     if (!nextPage!(false, true)())
     {
         *didThrow = true;
