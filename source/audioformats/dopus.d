@@ -24,8 +24,9 @@ module audioformats.dopus;
 version(decodeOPUS):
 
 import core.stdc.stdlib : malloc, free, realloc, calloc;
-import core.stdc.string: memmove, memcpy, memcmp;
-import std.math : exp2;
+import core.stdc.string: memmove, memcpy, memcmp, memset;
+import core.stdc.math : sqrtf, exp2f, exp2, sqrtf, lrintf;
+import std.math : cos, sin, PI, floor;
 
 
 import audioformats.io;
@@ -317,13 +318,11 @@ struct AVAudioFifo {
 }
 
 int av_audio_fifo_size (AVAudioFifo* af) {
-  //{ import core.stdc.stdio : printf; printf("fifosize=%u\n", (af.used-af.rdpos)/af.chans); }
   return (af !is null ? (af.used-af.rdpos)/af.chans : -1);
 }
 
 int av_audio_fifo_read (AVAudioFifo* af, void** data, int nb_samples) {
   if (af is null) return -1;
-  //{ import core.stdc.stdio : printf; printf("fiforead=%u\n", nb_samples); }
   auto dp = cast(float**)data;
   int total;
   while (nb_samples > 0) {
@@ -337,7 +336,6 @@ int av_audio_fifo_read (AVAudioFifo* af, void** data, int nb_samples) {
 
 int av_audio_fifo_drain (AVAudioFifo* af, int nb_samples) {
   if (af is null) return -1;
-  //{ import core.stdc.stdio : printf; printf("fifodrain=%u\n", nb_samples); }
   while (nb_samples > 0) {
     if (af.used-af.rdpos < af.chans) break;
     af.rdpos += af.chans;
@@ -346,10 +344,10 @@ int av_audio_fifo_drain (AVAudioFifo* af, int nb_samples) {
   return 0;
 }
 
-int av_audio_fifo_write (AVAudioFifo* af, void** data, int nb_samples) {
-  import core.stdc.string : memmove;
-  { import core.stdc.stdio : printf; printf("fifowrite=%u\n", nb_samples); }
-  assert(0);
+int av_audio_fifo_write (AVAudioFifo* af, void** data, int nb_samples) 
+{  
+    // wtf. Probably never called then
+    assert(0);
 }
 
 AVAudioFifo* av_audio_fifo_alloc (int samplefmt, int channels, int nb_samples) {
@@ -1082,7 +1080,6 @@ int xiph_lacing_full (const(uint8_t)** ptr, const(uint8_t)* end) {
  * Parse Opus packet info from raw packet data
  */
 int ff_opus_parse_packet (OpusPacket* pkt, const(uint8_t)* buf, int buf_size, bool self_delimiting) {
-  import core.stdc.string : memset;
 
   const(uint8_t)* ptr = buf;
   const(uint8_t)* end = buf+buf_size;
@@ -1467,7 +1464,7 @@ enum CMUL2(string c, string d, string a, string b) =
 //static void imdct15_half (IMDCT15Context* s, float* dst, const(float)* src, ptrdiff_t stride, float scale);
 
 /*av_cold*/ int ff_imdct15_init (IMDCT15Context** ps, int N) {
-  import std.math : cos, sin, PI;
+
 
   IMDCT15Context* s;
   int len2 = 15*(1<<N);
@@ -2636,7 +2633,6 @@ private void celt_exp_rotation1(float *X, uint len, uint stride, float c, float 
 
 /*static inline*/ void celt_exp_rotation(float *X, uint len, uint stride, uint K, CeltSpread spread)
 {
-    import std.math : PI, cos, sin;
     uint stride2 = 0;
     float c, s;
     float gain, theta;
@@ -2690,7 +2686,7 @@ private void celt_exp_rotation1(float *X, uint len, uint stride, float c, float 
 
 /*static inline*/ void celt_renormalize_vector(float *X, int N, float gain)
 {
-    import core.stdc.math : sqrtf;
+
     int i;
     float g = 1e-15f;
     for (i = 0; i < N; i++)
@@ -2703,7 +2699,6 @@ private void celt_exp_rotation1(float *X, uint len, uint stride, float c, float 
 
 /*static inline*/ void celt_stereo_merge(float *X, float *Y, float mid, int N)
 {
-    import core.stdc.math : sqrtf;
     int i;
     float xp = 0, side = 0;
     float[2] E;
@@ -2910,9 +2905,8 @@ private void celt_haar1(float *X, int N0, int stride)
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-/*static inline*/ uint celt_alg_unquant(OpusRangeCoder *rc, float *X, uint N, uint K, CeltSpread spread, uint blocks, float gain)
+uint celt_alg_unquant(OpusRangeCoder *rc, float *X, uint N, uint K, CeltSpread spread, uint blocks, float gain)
 {
-    import core.stdc.math : sqrtf;
     int[176] y = void;
 
     gain /= sqrtf(celt_decode_pulses(rc, y.ptr, N, K));
@@ -2921,13 +2915,12 @@ private void celt_haar1(float *X, int N0, int stride)
     return celt_extract_collapse_mask(y.ptr, N, blocks);
 }
 
-/*static unsigned*/ int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
-                                     const int band, float *X, float *Y,
-                                     int N, int b, uint blocks,
-                                     float *lowband, int duration,
-                                     float *lowband_out, int level, float gain, float *lowband_scratch, int fill)
+int celt_decode_band(CeltContext *s, OpusRangeCoder *rc,
+                     const int band, float *X, float *Y,
+                     int N, int b, uint blocks,
+                     float *lowband, int duration,
+                     float *lowband_out, int level, float gain, float *lowband_scratch, int fill)
 {
-    import core.stdc.math : sqrtf;
     const(uint8_t)* cache;
     int dualstereo, split;
     int imid = 0, iside = 0;
@@ -3275,7 +3268,6 @@ private void celt_haar1(float *X, int N0, int stride)
 
 private void celt_denormalize(CeltContext *s, CeltFrame *frame, float *data)
 {
-    import std.math : exp2;
     int i, j;
 
     for (i = s.startband; i < s.endband; i++) {
@@ -3365,7 +3357,6 @@ private void celt_postfilter_apply(CeltFrame *frame, float *data, int len)
 
 private void celt_postfilter(CeltContext *s, CeltFrame *frame)
 {
-    import core.stdc.string : memcpy, memmove;
     int len = s.blocksize * s.blocks;
 
     celt_postfilter_apply_transition(frame, frame.buf.ptr + 1024);
@@ -3389,7 +3380,6 @@ private void celt_postfilter(CeltContext *s, CeltFrame *frame)
 
 private int parse_postfilter(CeltContext *s, OpusRangeCoder *rc, int consumed)
 {
-    import core.stdc.string : memset;
     static immutable float[3][3] postfilter_taps = [
         [ 0.3066406250f, 0.2170410156f, 0.1296386719f ],
         [ 0.4638671875f, 0.2680664062f, 0.0           ],
@@ -3430,7 +3420,6 @@ private int parse_postfilter(CeltContext *s, OpusRangeCoder *rc, int consumed)
 
 private void process_anticollapse(CeltContext *s, CeltFrame *frame, float *X)
 {
-    import core.stdc.math : exp2f, exp2, sqrtf;
     int i, j, k;
 
     for (i = s.startband; i < s.endband; i++) {
@@ -3483,7 +3472,6 @@ private void process_anticollapse(CeltContext *s, CeltFrame *frame, float *X)
 
 private void celt_decode_bands(CeltContext *s, OpusRangeCoder *rc)
 {
-    import core.stdc.string : memset;
     float[8 * 22] lowband_scratch = void;
     float[2 * 8 * 100] norm = void;
 
@@ -3582,7 +3570,6 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
                          float **output, int coded_channels, int frame_size,
                          int startband,  int endband)
 {
-    import core.stdc.string : memcpy, memset;
     int i, j;
 
     int consumed;           // bits of entropy consumed thus far for this frame
@@ -3746,7 +3733,6 @@ int ff_celt_decode_frame(CeltContext *s, OpusRangeCoder *rc,
 
 void ff_celt_flush(CeltContext *s)
 {
-    import core.stdc.string : memset;
     int i, j;
 
     if (s.flushed)
@@ -4822,7 +4808,6 @@ static void silk_lsf2lpc(const(int16_t)* nlsf/*[16]*/, float* lpcf/*[16]*/, int 
                                    float* lpc_leadin/*[16]*/, float* lpc/*[16]*/,
                                    int *lpc_order, int *has_lpc_leadin, int voiced)
 {
-    import core.stdc.string : memcpy;
     int i;
     int order;                   // order of the LP polynomial; 10 for NB/MB and 16 for WB
     int8_t lsf_i1;
@@ -4928,7 +4913,6 @@ static void silk_lsf2lpc(const(int16_t)* nlsf/*[16]*/, float* lpcf/*[16]*/, int 
                                           float* excitationf,
                                           int qoffset_high, int active, int voiced)
 {
-    import core.stdc.string : memset;
     int i;
     uint32_t seed;
     int shellblocks;
@@ -5021,7 +5005,6 @@ enum LTP_ORDER = 5;
 static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
                               int frame_num, int channel, int coded_channels, int active, int active1)
 {
-    import core.stdc.string : memmove;
     /* per frame */
     int voiced;       // combines with active to indicate inactive, active, or active+voiced
     int qoffset_high;
@@ -5247,7 +5230,6 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
 
 static void silk_unmix_ms(SilkContext *s, float *l, float *r)
 {
-    import core.stdc.string : memcpy;
     float *mid    = s.frame[0].output.ptr + SILK_HISTORY - s.flength;
     float *side   = s.frame[1].output.ptr + SILK_HISTORY - s.flength;
     float w0_prev = s.prev_stereo_weights[0];
@@ -5278,7 +5260,6 @@ static void silk_unmix_ms(SilkContext *s, float *l, float *r)
 
 static void silk_flush_frame(SilkFrame *frame)
 {
-    import core.stdc.string : memset;
     if (!frame.coded)
         return;
 
@@ -5301,7 +5282,6 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               int coded_channels,
                               int duration_ms)
 {
-    import core.stdc.string : memcpy;
     int[6][2] active;
     int[2] redundancy;
     int nb_frames, i, j;
@@ -5365,7 +5345,6 @@ void ff_silk_free(SilkContext **ps)
 
 void ff_silk_flush(SilkContext *s)
 {
-    import core.stdc.string : memset;
     silk_flush_frame(&s.frame[0]);
     silk_flush_frame(&s.frame[1]);
 
@@ -5397,9 +5376,6 @@ int ff_silk_init(/*AVCodecContext *avctx,*/ SilkContext **ps, int output_channel
 
 
 version = sincresample_use_full_table;
-version(X86) {
-  version(D_PIC) {} else version = sincresample_use_sse;
-}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -5479,7 +5455,6 @@ public:
   bool inited () const pure { return (resampler !is null); }
 
   void deinit () {
-    import core.stdc.stdlib : free;
     if (mem !is null) { free(mem); mem = null; }
     if (sincTable !is null) { free(sincTable); sincTable = null; }
     /*
@@ -5571,9 +5546,7 @@ public:
    *  0 or error code
    */
   Error setRate (uint ainRate, uint aoutRate/*, size_t line=__LINE__*/) {
-    //{ import core.stdc.stdio; printf("changing rate: %u -> %u at %u\n", ainRate, aoutRate, cast(uint)line); }
     if (inRate == ainRate && outRate == aoutRate) return Error.OK;
-    //{ import core.stdc.stdio; printf("changing rate: %u -> %u at %u\n", ratioNum, ratioDen, cast(uint)line); }
 
     uint oldDen = denRate;
     inRate = ainRate;
@@ -5907,7 +5880,6 @@ private:
     // adding bufferSize to filterLen won't overflow here because filterLen could be multiplied by float.sizeof above
     minAllocSize = filterLen-1+bufferSize;
     if (minAllocSize > memAllocSize) {
-      import core.stdc.stdlib : realloc;
       if (int.max/float.sizeof/chanCount < minAllocSize) goto fail;
       auto nslen = cast(uint)(chanCount*minAllocSize*mem[0].sizeof);
       if (nslen > realMemLen) {
@@ -6064,8 +6036,6 @@ static immutable QualityMapping[11] qualityMap = [
 nothrow @trusted @nogc:
 /*8, 24, 40, 56, 80, 104, 128, 160, 200, 256, 320*/
 double computeFunc (float x, immutable FuncDef* func) {
-  import core.stdc.math : lrintf;
-  import std.math : floor;
   //double[4] interp;
   float y = x*func.oversample;
   int ind = cast(int)lrintf(floor(y));
@@ -6090,7 +6060,6 @@ float sinc (float cutoff, float x, int N, immutable FuncDef *windowFunc) {
   } else {
     static T fabs(T) (T n) pure { return (n < 0 ? -n : n); }
   }
-  import std.math : sin, PI;
   version(LittleEndian) {
     temp_float txx = void;
     txx.f = x;
@@ -6145,66 +6114,22 @@ if (is(T == float) || is(T == double))
     const(float)* iptr = &indata[lastSample];
     static if (is(T == float)) {
       // at least 2x speedup with SSE here (but for unrolled loop)
-      if (N%4 == 0) {
-        version(sincresample_use_sse) {
-          //align(64) __gshared float[4] zero = 0;
-          align(64) __gshared float[4+128] zeroesBuf = 0; // dmd cannot into such aligns, alas
-          __gshared uint zeroesptr = 0;
-          if (zeroesptr == 0) {
-            zeroesptr = cast(uint)zeroesBuf.ptr;
-            if (zeroesptr&0x3f) zeroesptr = (zeroesptr|0x3f)+1;
-          }
-          //assert((zeroesptr&0x3f) == 0, "wtf?!");
-          asm nothrow @safe @nogc {
-            mov       ECX,[N];
-            shr       ECX,2;
-            mov       EAX,[zeroesptr];
-            movaps    XMM0,[EAX];
-            mov       EAX,[sinct];
-            mov       EBX,[iptr];
-            mov       EDX,16;
-            align 8;
-           rbdseeloop:
-            movups    XMM1,[EAX];
-            movups    XMM2,[EBX];
-            mulps     XMM1,XMM2;
-            addps     XMM0,XMM1;
-            add       EAX,EDX;
-            add       EBX,EDX;
-            dec       ECX;
-            jnz       rbdseeloop;
-            // store result in sum
-            movhlps   XMM1,XMM0; // now low part of XMM1 contains high part of XMM0
-            addps     XMM0,XMM1; // low part of XMM0 is ok
-            movaps    XMM1,XMM0;
-            shufps    XMM1,XMM0,0b_01_01_01_01; // 2nd float of XMM0 goes to the 1st float of XMM1
-            addss     XMM0,XMM1;
-            movss     [sum],XMM0;
-          }
-          /*
-          float sum1 = 0;
-          foreach (immutable j; 0..N) sum1 += sinct[j]*iptr[j];
-          import std.math;
-          if (fabs(sum-sum1) > 0.000001f) {
-            import core.stdc.stdio;
-            printf("sum=%f; sum1=%f\n", sum, sum1);
-            assert(0);
-          }
-          */
-        } else {
-          // no SSE; for my i3 unrolled loop is almost of the speed of SSE code
-          T[4] accum = 0;
-          foreach (immutable j; 0..N/4) {
+      if (N%4 == 0) 
+      {
+            // no SSE; for my i3 unrolled loop is almost of the speed of SSE code
+            T[4] accum = 0;
+            foreach (immutable j; 0..N/4) {
             accum.ptr[0] += *sinct++ * *iptr++;
             accum.ptr[1] += *sinct++ * *iptr++;
             accum.ptr[2] += *sinct++ * *iptr++;
             accum.ptr[3] += *sinct++ * *iptr++;
-          }
-          sum = accum.ptr[0]+accum.ptr[1]+accum.ptr[2]+accum.ptr[3];
-        }
-      } else {
-        sum = 0;
-        foreach (immutable j; 0..N) sum += *sinct++ * *iptr++;
+            }
+            sum = accum.ptr[0]+accum.ptr[1]+accum.ptr[2]+accum.ptr[3];
+      } 
+      else 
+      {
+            sum = 0;
+            foreach (immutable j; 0..N) sum += *sinct++ * *iptr++;
       }
       outdata[outStride*outSample++] = sum;
     } else {
@@ -6450,17 +6375,14 @@ static int opus_decode_frame (OpusStreamContext* s, const(uint8_t)* data, int si
       ret = opus_init_resample(s);
       if (ret < 0) return ret;
     }
-    //conwriteln("silk sr: ", s.silk_samplerate);
 
     samples = ff_silk_decode_superframe(s.silk, &s.rc, s.silk_output.ptr,
                                         FFMIN(s.packet.bandwidth, OPUS_BANDWIDTH_WIDEBAND),
                                         s.packet.stereo + 1,
                                         silk_frame_duration_ms[s.packet.config]);
     if (samples < 0) {
-      //av_log(s.avctx, AV_LOG_ERROR, "Error decoding a SILK frame.\n");
       return samples;
     }
-    //samples = swr_convert(s.swr, cast(uint8_t**)s.out_.ptr, s.packet.frame_duration, cast(const(uint8_t)**)s.silk_output.ptr, samples);
     immutable insamples = samples;
     samples = s.flr.swrconvert(cast(float**)s.out_.ptr, s.packet.frame_duration, cast(const(float)**)s.silk_output.ptr, samples);
     if (samples < 0) {
@@ -6665,10 +6587,7 @@ finish:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-int opus_decode_packet (/*AVCtx* avctx,*/ OpusContext* c, AVFrame* frame, int* got_frame_ptr, AVPacket* avpkt) {
-  import core.stdc.string : memcpy, memset;
-  //AVFrame *frame      = data;
-  const(uint8_t)*buf  = avpkt.data;
+int opus_decode_packet (/*AVCtx* avctx,*/ OpusContext* c, AVFrame* frame, int* got_frame_ptr, AVPacket* avpkt) {  const(uint8_t)*buf  = avpkt.data;
   int buf_size        = avpkt.size;
   int coded_samples   = 0;
   int decoded_samples = int.max;
