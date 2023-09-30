@@ -4,7 +4,6 @@ import std.stdio;
 import std.file;
 
 import audioformats;
-import core.stdc.stdlib;
 
 // Currently it can take a MOD and dump patterns in the wrong order...
 // Is or seek function conceptually correct?
@@ -23,6 +22,8 @@ void main(string[] args)
         AudioStream input, output;
 
         input.openFromFile(args[1]);
+        if (input.isError)
+            throw new Exception(input.errorMessage);
         float sampleRate = input.getSamplerate();
         int channels = input.getNumChannels();
         long lengthFrames = input.getLengthInFrames();
@@ -34,6 +35,8 @@ void main(string[] args)
 
         float[] buf;
         output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
+        if (output.isError)
+            throw new Exception(output.errorMessage);
 
 
         int patternCount = input.getModuleLength();
@@ -46,19 +49,18 @@ void main(string[] args)
             int remain = cast(int) input.framesRemainingInPattern();
             buf.length = remain * channels;
             int framesRead = input.readSamplesFloat(buf); // this should read the whole pattern
+            if (input.isError)
+                throw new Exception(input.errorMessage);
             assert( (framesRead == remain) );
 
             output.writeSamplesFloat(buf[0..framesRead*channels]);
+            if (output.isError)
+                throw new Exception(output.errorMessage);
         }
 
         output.destroy();
         
         writefln("=> %s patterns decoded and encoded to %s", patternCount, outputPath);
-    }
-    catch(AudioFormatsException e)
-    {
-        writeln(e.msg);
-        destroyAudioFormatException(e);
     }
     catch(Exception e)
     {
