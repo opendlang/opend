@@ -1116,7 +1116,12 @@ public: // This is also part of the public API
                 {
                     if (frame < 0 || frame > _lengthInFrames)
                         return false;
-                    long where = _opusDecoder.ogg.seekPCM(frame);
+
+                    bool err;
+                    long where = _opusDecoder.ogg.seekPCM(frame, &err);
+                    if (err)
+                        return false;
+
                     _opusPositionFrame = where;
                     int toSkip = cast(int)(frame - where);
 

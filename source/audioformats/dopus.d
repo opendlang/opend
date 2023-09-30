@@ -23,7 +23,10 @@ module audioformats.dopus;
 
 version(decodeOPUS):
 
+import core.stdc.stdlib : free;
 import core.stdc.string;
+import std.math : exp2;
+
 
 import audioformats.io;
 import audioformats.internals;
@@ -61,7 +64,6 @@ T FFMIN3(T) (in T a, in T b, in T c) { return (a < b ? (a < c ? a : c) : (b < c 
 
 
 double ff_exp10 (double x) {
-  import std.math : exp2;
   enum M_LOG2_10 = 3.32192809488736234787; /* log_2 10 */
   return exp2(M_LOG2_10 * x);
 }
@@ -263,7 +265,6 @@ enum AVERROR_BUG = -EINVAL;
 
 void av_free(T) (T* p) {
   if (p !is null) {
-    import core.stdc.stdlib : free;
     free(p);
   }
 }
@@ -272,7 +273,6 @@ void av_free(T) (T* p) {
 void av_freep(T) (T** p) {
   if (p !is null) {
     if (*p !is null) {
-      import core.stdc.stdlib : free;
       free(*p);
       *p = null;
     }
@@ -7151,10 +7151,10 @@ private:
     return buf[0..bytesRead];
   }
 
-  void moveBuf () {
+  void moveBuf () nothrow
+  {
     if (bufpos >= bufused) { bufpos = bufused = 0; return; }
     if (bufpos > 0) {
-      import core.stdc.string : memmove;
       memmove(buf.ptr, buf.ptr+bufpos, bufused-bufpos);
       bufused -= bufpos;
       bufpos = 0;
@@ -7230,8 +7230,9 @@ private:
     return true;
   }
 
-  long getfpos () {
-    return _io.tell(_userData) -bufused+bufpos;
+  long getfpos () nothrow
+  {
+      return _io.tell(_userData) - bufused + bufpos;
   }
 
   // scan for page
@@ -7379,13 +7380,13 @@ public:
     long pgfpos = -1;
   }
 
-  bool findLastPage (out PageInfo pi) {
+  bool findLastPage (out PageInfo pi) nothrow
+  {
     if (lastpage.pgfpos >= 0) {
       pi = lastpage;
       return true;
     }
     enum ChunkSize = 65535;
-    //if (buf.length-bufused < ChunkSize) buf.length = bufused+ChunkSize;
     moveBuf();
     assert(buf.length-bufused >= ChunkSize);
     auto lastfpos = _io.tell(_userData);
@@ -7399,11 +7400,10 @@ public:
       _io.seek(flpos, false, _userData);
       uint bulen = (flpos+ChunkSize <= flsize ? ChunkSize : cast(uint)(flsize-flpos));
       if (bulen < 27) break;
-      //{ import core.stdc.stdio; printf("bulen=%u\n", bulen); }
       {
           auto read = rawRead(buf[bufused..bufused+bulen]);
           if (read.length != bulen) 
-              throw mallocNew!AudioFormatsException("read error");
+              return false;
       }
       uint pos = bufused+bulen-27;
       uint pend = bufused+bulen;
@@ -7420,7 +7420,6 @@ public:
             ubyte[4] zeroes = 0;
             ubyte* p;
             uint newcrc;
-            //conwritefln!"0x%08x (left: %s; pgsize0=%s)"(flpos+opos-bufused, pend-pos, pgsize);
             if (pend-pos < pgsize) {
               // load page
               pos = pend = bufused;
@@ -7437,7 +7436,6 @@ public:
               }
             }
             foreach (ubyte ss; buf.ptr[pos+Offsets.Lacing..pos+Offsets.Lacing+segs]) pgsize += ss;
-            //conwritefln!"0x%08x (left: %s; pgsize1=%s)"(flpos+opos-bufused, pend-pos, pgsize);
             if (pend-pos < pgsize) {
               // load page
               pos = bufused;
@@ -7469,7 +7467,7 @@ public:
               _io.seek(flpos, false, _userData);
               auto sliceOut = rawRead(buf[bufused..bufused+ChunkSize]);
               if (sliceOut.length != ChunkSize)
-                throw mallocNew!AudioFormatsException("Bad parsing");
+                  return false; // bad Parsing
               pos = opos;
               pend = bufused+ChunkSize;
             }
@@ -7557,6 +7555,30 @@ public:
     }
   }
 
+  // rescales the number x from the range of [0,from] to [0,to] x is in the range [0,from] from, to are in the range [1, 1<<62-1]
+  static long rescale64 (long x, long from, long to) nothrow pure
+  {
+    if (x >= from) return to;
+    if (x <= 0) return 0;
+
+    long frac = 0;
+    long ret = 0;
+
+    foreach (immutable _; 0..64) {
+        if (x >= from) { frac |= 1; x -= from; }
+        x <<= 1;
+        frac <<= 1;
+    }
+
+    foreach (immutable _; 0..64) {
+        if (frac&1) ret += to;
+        frac >>= 1;
+        ret >>= 1;
+    }
+
+    return ret;
+  }
+
   /* Page granularity seek (faster than sample granularity because we
      don't do the last bit of decode to find a specific sample).
 
@@ -7564,32 +7586,10 @@ public:
      location, such that decoding past the returned point will quickly
      arrive at the requested position. */
   // return PCM (granule) position for loaded packet
-  public long seekPCM (long pos) {
+  public long seekPCM (long pos, bool* didThrow) nothrow {
     enum ChunkSize = 65535;
+    *didThrow = false;
     eofhit = false;
-
-    // rescales the number x from the range of [0,from] to [0,to] x is in the range [0,from] from, to are in the range [1, 1<<62-1]
-    static long rescale64 (long x, long from, long to) {
-      if (x >= from) return to;
-      if (x <= 0) return 0;
-
-      long frac = 0;
-      long ret = 0;
-
-      foreach (immutable _; 0..64) {
-        if (x >= from) { frac |= 1; x -= from; }
-        x <<= 1;
-        frac <<= 1;
-      }
-
-      foreach (immutable _; 0..64) {
-        if (frac&1) ret += to;
-        frac >>= 1;
-        ret >>= 1;
-      }
-
-      return ret;
-    }
 
     if (pos < 0) return -1;
     if (pos <= firstgranule) {
@@ -7598,25 +7598,40 @@ public:
       curseg = 0;
       _io.seek(firstpagepos, false, _userData);
       eofhit = false;
-      if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
-      if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
+      if (!nextPage!true())
+      {
+          *didThrow = true;
+          return -1;
+      }
+      if (pgcont || !pgbos)
+      {
+          *didThrow = true;
+          return -1;
+      }
       for (;;) {
         if (pggranule && pggranule != -1) {
           curseg = 0;
           //for (int p = 0; p < segments; ++p) if (seglen[p] < 255) curseg = p+1;
           //auto rtg = pggranule;
-          bool didThrow; 
-          if (!loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("can't load Ogg packet");
-          if (didThrow) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          if (!loadPacket(didThrow))
+          if (*didThrow) return -1;
           return 0;
         }
-        if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
+        if (!nextPage!false())
+        {
+            *didThrow = true;
+            return -1;
+        }
       }
     }
 
     if (lastpage.pgfpos < 0) {
       PageInfo pi;
-      if (!findLastPage(pi)) throw mallocNew!AudioFormatsException("can't find last Ogg page");
+      if (!findLastPage(pi))
+      {
+        *didThrow = true;
+        return -1;
+      }
     }
 
     if (firstdatapgofs < 0) assert(0, "internal error");
@@ -7643,10 +7658,9 @@ public:
       _io.seek(begin, false, _userData);
       eofhit = false;
       if (!nextPage!false()) return false;
-      bool didThrow;
-      if (!loadPacket(&didThrow)) return false;
-      if (didThrow)
-          throw mallocNew!AudioFormatsException("can't load Ogg packet");
+      if (!loadPacket(didThrow)) return false;
+      if (*didThrow)
+          return -1;
       return true;
     }
 
@@ -7660,7 +7674,6 @@ public:
         // take a (pretty decent) guess
         bisect = begin+rescale64(target-begintime, endtime-begintime, end-begin)-ChunkSize;
         if (bisect < begin+ChunkSize) bisect = begin;
-        //conwriteln("begin=", begin, "; end=", end, "; bisect=", bisect, "; rsc=", rescale64(target-begintime, endtime-begintime, end-begin));
       }
 
       bufused = bufpos = 0;
@@ -7672,14 +7685,18 @@ public:
       // read loop within the bisection loop
       while (begin < end) {
         // hack for nextpage
-        if (!nextPage!(false, true)(end-getfpos)) {
+        if (!nextPage!(false, true)(end - getfpos)) {
           // there is no next page!
           if (bisect <= begin+1) {
             // no bisection left to perform: we've either found the best candidate already or failed; exit loop
             end = begin;
           } else {
             // we tried to load a fraction of the last page; back up a bit and try to get the whole last page
-            if (bisect == 0) throw mallocNew!AudioFormatsException("seek error");
+            if (bisect == 0) 
+            {
+                *didThrow = true;
+                return -1;
+            }
             bisect -= ChunkSize;
 
             // don't repeat/loop on a read we've already performed
@@ -7752,18 +7769,34 @@ public:
       //{ import core.stdc.stdio; printf("fpp=%lld\n", firstpagepos); }
       _io.seek(firstpagepos, false, _userData);
       eofhit = false;
-      if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
-      if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
+      if (!nextPage!true())
+      {
+        *didThrow = true;
+        return -1;
+      }
+      if (pgcont || !pgbos)
+      {
+        *didThrow = true;
+        return -1;
+      }
       for (;;) {
         if (pggranule && pggranule != -1) 
         {
           curseg = 0;
-          bool didThrow;
-          if (!loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("can't load Ogg packet");
-          if (didThrow) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          if (!loadPacket(didThrow))
+          {
+              *didThrow = true;
+              return -1;
+          }
+          if (*didThrow) 
+              return -1;
           return 0;
         }
-        if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
+        if (!nextPage!false())
+        {
+            *didThrow = true;
+            return -1;
+        }
       }
       //return 0;
     }
@@ -7772,8 +7805,12 @@ public:
     bufused = bufpos = 0;
     pglength = 0;
     curseg = 0;
-    _io.seek(best, false, _userData);    
-    if (!nextPage!(false, true)()) throw mallocNew!AudioFormatsException("wtf?!");
+    _io.seek(best, false, _userData);
+    if (!nextPage!(false, true)())
+    {
+        *didThrow = true;
+        return -1;
+    }
     auto rtg = pggranule;
     seqno = pgseqno;
     // pull out all but last packet; the one right after granulepos
@@ -7781,11 +7818,13 @@ public:
         if (seglen[p] < 255) 
             curseg = p+1;
 
-    bool didThrow;
-    if (!loadPacket(&didThrow)) 
-        throw mallocNew!AudioFormatsException("wtf?!");
-    if (didThrow)
-        throw mallocNew!AudioFormatsException("wtf?!");
+    if (!loadPacket(didThrow)) 
+    {
+        *didThrow = true;
+        return -1;
+    }
+    if (*didThrow)
+        return -1;
     return rtg;
   }
 
@@ -8121,39 +8160,6 @@ public:
       --count;
     }
     return 0;
-  }
-
-  void seek (long newtime) {
-    if (newtime < 0) newtime = 0;
-    if (newtime >= duration) newtime = duration;
-    if (newtime >= duration) {
-      ogg.bufused = ogg.bufpos = 0;
-      ogg.pglength = 0;
-      ogg.curseg = 0;
-      ogg._io.seek(ogg.lastpage.pgfpos, false, ogg._userData);
-      //{ import core.stdc.stdio; printf("lpofs=0x%08llx\n", ogg.lastpage.pgfpos); }
-      ogg.eofhit = false;
-      if (!ogg.nextPage!(false, true)()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
-      ogg.seqno = ogg.pgseqno;
-      ogg.curseg = 0;
-      for (int p = 0; p < ogg.segments; ++p) if (ogg.seglen[p] < 255) ogg.curseg = p+1;
-      curpcm = ogg.pggranule;
-      wantNewPacket = true;
-      return;
-    }
-    long np = ogg.seekPCM(newtime*48 < ctx.preskip ? 0 : newtime*48-ctx.preskip);
-    wantNewPacket = false;
-    if (np < ctx.preskip) {
-      curpcm = 0;
-    } else {
-      curpcm = np-ctx.preskip;
-      // skip 80 msecs, as per specs (buggy, but...)
-      auto oldpcm = curpcm;
-      while (curpcm-oldpcm < 3840) {
-        if (readFrame().length == 0) break;
-        //{ import core.stdc.stdio; printf("frdiff=%lld\n", curpcm-oldpcm); }
-      }
-    }
   }
 
   // read and decode one sound frame; return samples or null
