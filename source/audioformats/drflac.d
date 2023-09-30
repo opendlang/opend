@@ -1855,37 +1855,31 @@ private struct ReadStruct {
   drflac_seek_proc onSeekCB;
   void* pUserData;
 
-  size_t read (void* pBufferOut, size_t bytesToRead) nothrow {
+  size_t read (void* pBufferOut, size_t bytesToRead) nothrow 
+  {
     auto b = cast(ubyte*)pBufferOut;
     auto res = 0;
-    try {
-      while (bytesToRead > 0) {
+    while (bytesToRead > 0) 
+    {
         size_t rd = 0;
-        if (onReadCB !is null) {
-          rd = onReadCB(pUserData, b, bytesToRead);
-        } else {
-         }
-        if (rd == 0) break;
+        if (onReadCB !is null) 
+        {
+            rd = onReadCB(pUserData, b, bytesToRead);
+        }
+        if (rd == 0) 
+            break;
         b += rd;
         res += rd;
         bytesToRead -= rd;
-      }
-      return res;
-    } catch (AudioFormatsException e) {
-      return 0;
     }
+    return res;
   }
 
   bool seek (int offset, drflac_seek_origin origin) nothrow {
-    try {
       if (onSeekCB !is null) {
         return onSeekCB(pUserData, offset, origin);
-      } else {
       }
       return false;
-    } catch (AudioFormatsException e) {
-      return 0;
-    }
   }
 }
 
@@ -1936,7 +1930,8 @@ bool drflac__read_streaminfo (ref ReadStruct rs, drflac_streaminfo* pStreamInfo)
   return true;
 }
 
-bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onMeta, void* pUserDataMD) {
+bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onMeta, void* pUserDataMD) nothrow
+{
   import core.stdc.stdlib : malloc, free;
   assert(pFlac !is null);
 
@@ -1972,7 +1967,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
             metadata.data.application.id       = drflac__be2host_32(*cast(uint*)pRawData);
             metadata.data.application.pData    = cast(const(void)*)(cast(ubyte*)pRawData+uint.sizeof);
             metadata.data.application.dataSize = blockSize-cast(uint)uint.sizeof;
-            try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+            onMeta(pUserDataMD, &metadata);
         }
         break;
 
@@ -2000,7 +1995,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
             pSeekpoint.sampleCount = drflac__be2host_16(pSeekpoint.sampleCount);
           }
 
-          try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+          onMeta(pUserDataMD, &metadata);
         }
         break;
 
@@ -2020,7 +2015,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
           metadata.data.vorbis_comment.vendor       = pRunningData;                                 pRunningData += metadata.data.vorbis_comment.vendorLength;
           metadata.data.vorbis_comment.commentCount = drflac__le2host_32(*cast(uint*)pRunningData); pRunningData += 4;
           metadata.data.vorbis_comment.comments     = pRunningData;
-          try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+          onMeta(pUserDataMD, &metadata);
         }
         break;
 
@@ -2042,7 +2037,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
           metadata.data.cuesheet.isCD              = ((pRunningData[0]&0x80)>>7) != 0;         pRunningData += 259;
           metadata.data.cuesheet.trackCount        = pRunningData[0];                              pRunningData += 1;
           metadata.data.cuesheet.pTrackData        = cast(const(ubyte)*)pRunningData;
-          try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+          onMeta(pUserDataMD, &metadata);
         }
         break;
 
@@ -2069,7 +2064,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
           metadata.data.picture.indexColorCount   = drflac__be2host_32(*cast(uint*)pRunningData); pRunningData += 4;
           metadata.data.picture.pictureDataSize   = drflac__be2host_32(*cast(uint*)pRunningData); pRunningData += 4;
           metadata.data.picture.pPictureData      = cast(const(ubyte)*)pRunningData;
-          try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+          onMeta(pUserDataMD, &metadata);
         }
         break;
 
@@ -2101,7 +2096,7 @@ bool drflac__read_and_decode_metadata (drflac* pFlac, scope drflac_meta_proc onM
 
           metadata.pRawData = pRawData;
           metadata.rawDataSize = blockSize;
-          try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+          onMeta(pUserDataMD, &metadata);
         }
         break;
     }
@@ -2150,7 +2145,7 @@ bool drflac__init_private__native (drflac_init_info* pInit, ref ReadStruct rs, s
     metadata.pRawData = null;
     metadata.rawDataSize = 0;
     metadata.data.streaminfo = streaminfo;
-    try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+    onMeta(pUserDataMD, &metadata);
   }
 
   pInit.hasMetadataBlocks = !isLastBlock;
@@ -2503,7 +2498,7 @@ bool drflac__init_private__ogg (drflac_init_info* pInit, ref ReadStruct rs, scop
                 metadata.pRawData = null;
                 metadata.rawDataSize = 0;
                 metadata.data.streaminfo = streaminfo;
-                try { onMeta(pUserDataMD, &metadata); } catch (AudioFormatsException e) { return false; }
+                onMeta(pUserDataMD, &metadata);
               }
 
               pInit.runningFilePos  += pageBodySize;
