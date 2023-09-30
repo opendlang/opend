@@ -7349,7 +7349,6 @@ public:
 
   void setup (IOCallbacks* io, void* userData, bool* err) {
     close();
-    //if (buf.length < MaxPageSize) buf.length = MaxPageSize;
     _io = io;
     _userData = userData;
     eofhit = false;
