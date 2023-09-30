@@ -65,6 +65,9 @@ $(TR $(TH Category) $(TH Symbols))
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
+Several functions are borrowed from $(MATHREF_ALT2 stat). An additional
+$(LREF VarianceAlgo) is provided in this code, which is the new default.
+
 Authors: John Michael Hall, Ilya Yaroshenko
 
 Copyright: 2022-3 Mir Stat Authors.
@@ -73,6 +76,7 @@ Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
 MATHREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, math, $1)$(NBSP)
 MATHREF_ALT = $(GREF_ALTTEXT mir-algorithm, $(B $(TT $2)), $2, mir, math, $1)$(NBSP)
+MATHREF_ALT2 = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, math, $1)
 NDSLICEREF = $(GREF_ALTTEXT mir-algorithm, $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T3=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3))
@@ -413,8 +417,8 @@ Params:
 Returns:
     The mean of all the elements in the input, must be floating point or complex type
 
-See_also: 
-    $(SUBREF sum, Summation)
+See_also:
+    $(MATHREF_ALT2 sum, Summation)
 +/
 template mean(F, Summation summation = Summation.appropriate)
 {
@@ -747,8 +751,8 @@ Params:
 Returns:
     harmonic mean of all the elements of the input, must be floating point or complex type
 
-See_also: 
-    $(SUBREF sum, Summation)
+See_also:
+    $(MATHREF_ALT2 sum, Summation)
 +/
 template hmean(F, Summation summation = Summation.appropriate)
 {
@@ -1149,8 +1153,8 @@ Params:
 Returns:
     The geometric average of all the elements in the input, must be floating point type
 
-See_also: 
-    $(SUBREF numeric, prod)
+See_also:
+    $(MATHREF_ALT2 numeric, prod)
 +/
 @fmamath gmeanType!F gmean(F, Range)(Range r)
     if (isFloatingPoint!F && isIterable!Range)
@@ -1412,7 +1416,7 @@ Params:
 Returns:
     the median of the slice
 
-See_also: 
+See_also:
     $(LREF mean)
 +/
 template median(F, bool allowModify = false)
@@ -3689,7 +3693,7 @@ $(BOOKTABLE ,
 References:
     Hyndman, R. J. and Fan, Y. (1996) Sample quantiles in statistical packages, American Statistician 50, 361--365. 10.2307/2684934.
 
-See_also: 
+See_also:
     $(LINK2 https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/quantile, quantile)
 +/
 enum QuantileAlgo {
@@ -4002,7 +4006,7 @@ Params:
 Returns:
     The quantile of all the elements in the input at probability `p`.
 
-See_also: 
+See_also:
     $(LREF median),
     $(MATHREF sum, partitionAt),
     $(MATHREF sum, elementType)
@@ -4650,7 +4654,7 @@ Params:
 Returns:
     The interquartile range of the input. 
 
-See_also: 
+See_also:
     $(LREF quantile)
 +/
 template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
