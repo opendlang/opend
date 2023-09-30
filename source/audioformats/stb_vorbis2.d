@@ -958,9 +958,10 @@ static int getn(vorb *z, uint8 *data, int n)
     }
 }
 
-static void skip(vorb *z, int n)
+void skip(vorb *z, int n, bool* err)
 {
-    z._io.skip(n, z._userData);
+    bool success = z._io.skip(n, z._userData);
+    *err = !success;
 }
 
 static int set_file_offset(stb_vorbis *f, uint loc)
@@ -2767,15 +2768,20 @@ static int start_decoder(vorb *f)
 
    // framing_flag
    x = cast(ubyte) get8_packet(f);
-   if (!(x & 1))                                    return error(f, VORBIS_invalid_setup);
+   if (!(x & 1))
+       return error(f, VORBIS_invalid_setup);
 
-
-   skip(f, f.bytes_in_seg);
+   bool err;
+   skip(f, f.bytes_in_seg, &err);
+   if (err)
+       return error(f, VORBIS_invalid_setup);
    f.bytes_in_seg = 0;
 
    do {
       len = next_segment(f);
-      skip(f, len);
+      skip(f, len, &err);
+      if (err) 
+          return error(f, VORBIS_invalid_setup);
       f.bytes_in_seg = 0;
    } while (len);
 
@@ -2784,7 +2790,8 @@ static int start_decoder(vorb *f)
 
    crc32_init(f);
 
-   if (get8_packet(f) != VORBIS_packet_setup)       return error(f, VORBIS_invalid_setup);
+   if (get8_packet(f) != VORBIS_packet_setup)
+       return error(f, VORBIS_invalid_setup);
    for (i=0; i < 6; ++i) header[i] = cast(ubyte) get8_packet(f);
    if (!vorbis_validate(header.ptr))                    return error(f, VORBIS_invalid_setup);
 
@@ -3667,7 +3674,12 @@ static int seek_to_sample_coarse(stb_vorbis *f, uint32 sample_number)
    f.next_seg = start_seg_with_known_loc;
 
    for (i = 0; i < start_seg_with_known_loc; i++)
-      skip(f, f.segments[i]);
+   {
+        bool err;
+        skip(f, f.segments[i], &err);
+        if (err)
+            return error(f, VORBIS_seek_failed);
+   }
 
    // start decoding (optimizable - this frame is generally discarded)
    if (!vorbis_pump_first_frame(f))
@@ -3698,7 +3710,11 @@ static int peek_decode_initial(vorb *f, int *p_left_start, int *p_left_end, int 
 
    f.bytes_in_seg += bytes_read;
    f.packet_bytes -= bytes_read;
-   skip(f, -bytes_read);
+   bool err;
+   skip(f, -bytes_read, &err);
+   if (err)
+       return 0;
+
    if (f.next_seg == -1)
       f.next_seg = f.segment_count - 1;
    else
