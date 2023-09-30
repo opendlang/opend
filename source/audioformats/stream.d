@@ -1872,7 +1872,10 @@ private:
                     break;
                 }
                 else
+                {
                     setError(kErrorUnsupportedEncodingFormat.ptr); 
+                    break;
+                }
             }
             case wav:
             {
@@ -1894,7 +1897,10 @@ private:
                     break;
                 }
                 else
+                {
                     setError(kErrorUnsupportedEncodingFormat.ptr); 
+                    break;
+                }
             }
             case unknown:
                 setError("Can't encode using 'unknown' coding");
