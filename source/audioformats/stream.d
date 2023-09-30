@@ -702,6 +702,7 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
     ///          When that number is less than `frames`, it means the stream had a write error.
+    ///          In that case, the `isError()` flag is also set.
     int writeSamplesFloat(const(float)* inData, int frames) nothrow @nogc
     {
         assert(_io && _io.write !is null);
@@ -725,7 +726,10 @@ public: // This is also part of the public API
                     bool err;
                     int writtenFrames = _qoaEncoder.writeSamples!float(inData, frames, &err);
                     if (err)
+                    {
+                        setError();
                         return 0;
+                    }
                     return writtenFrames;
                 }
                 else
@@ -740,7 +744,10 @@ public: // This is also part of the public API
                     bool err;
                     int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
                     if (err)
+                    {
+                        setError();
                         return 0;
+                    }
                     return writtenFrames;
                 }
                 else
@@ -771,6 +778,7 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually written frames. Multiply by `getNumChannels()` to get the number of written samples.
     ///          When that number is less than `frames`, it means the stream had a write error.
+    ///          In that case, the `isError()` flag is also set.
     int writeSamplesDouble(const(double)* inData, int frames) nothrow @nogc
     {
         assert (_io && _io.write !is null);
@@ -788,7 +796,10 @@ public: // This is also part of the public API
                         bool err;
                         int writtenFrames = _qoaEncoder.writeSamples!double(inData, frames, &err);
                         if (err)
+                        {
+                            setError();
                             return 0;
+                        }
                         return writtenFrames;
                     }
                     else
@@ -804,7 +815,10 @@ public: // This is also part of the public API
                         bool err;
                         int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
                         if (err)
+                        {
+                            setError();
                             return 0;
+                        }
                         return writtenFrames;
                     }
                     else
@@ -1450,7 +1464,7 @@ private:
         }
     }
 
-    void setError() @nogc
+    void setError() nothrow @nogc
     {
         _isError = true;
 
