@@ -101,6 +101,8 @@ int main(string[] args)
         AudioFileFormat outFormat = AudioFileFormat.wav;
         int channels = 2;
         stream.openToFile(outputPath, outFormat, samplerate, channels);
+        if (stream.isError)
+            throw new Exception(stream.errorMessage);
 
         ulong totalFrames = 0;
         while(true)
@@ -117,16 +119,12 @@ int main(string[] args)
                 fbuf[n] = buf[n] / 32767.0f;
             }
             stream.writeSamplesFloat(fbuf[0..frames*channels]);
+            if (stream.isError)
+                throw new Exception(stream.errorMessage);
         }
 
         writefln("%s frames transcoded from %s to %s", totalFrames, inputPath, outputPath);
         return 0;
-    }
-    catch(AudioFormatsException e)
-    {
-        writeln(e.msg);
-        destroyAudioFormatException(e);
-        return 1;
     }
     catch(Exception e)
     {

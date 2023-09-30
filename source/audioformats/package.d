@@ -77,13 +77,13 @@ const(ubyte)[] toWAVImpl(T)(const(T)[] data, int numChannels, float sampleRate, 
     AudioStream encoder;
     encoder.openToBuffer(AudioFileFormat.wav, sampleRate, numChannels, options);
     if (encoder.isError)
-        return false;
+        return null;
     static if (is(T == float))
         encoder.writeSamplesFloat(data);
     else
         encoder.writeSamplesDouble(data);
     if (encoder.isError)
-        return false;
+        return null;
     const(ubyte)[] r = encoder.finalizeAndGetEncodedResultDisown();
     return r;
 }
