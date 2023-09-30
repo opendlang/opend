@@ -90,10 +90,19 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
 enum audiostreamUnknownLength = -1;
 
 /// An AudioStream is a pointer to a dynamically allocated `Stream`.
+/// It can encode and decode to audio files or in memory.
+///
+/// AudioStream are subtyped like this:
+///
+///               AudioStream         AudioStream can be: isError() or isValid().
+///                /     \            Image start their life as AudioStream.init in error state.
+///        isError()  or  isValid()   Image that are `isError` can only call the open functions to reboot them.
+///
+/// TODO: specify how usable is an isError() stream, what is still available (if any)
 public struct AudioStream
 {
-public: // This is also part of the public API
- 
+public: // This is also part of the public API 
+nothrow @nogc:
 
     /// Opens an audio stream that decodes from a file.
     /// This stream will be opened for reading only.
@@ -103,12 +112,21 @@ public: // This is also part of the public API
     ///
     /// Note: throws a manually allocated exception in case of error. Free it with `destroyAudioFormatsException`.
     // TODO: break API, make that nothrow, and use isError flag instead
-    void openFromFile(const(char)[] path) @nogc
+    void openFromFile(const(char)[] path)
     {
         cleanUp();
+        clearErrorStatus();
 
         fileContext = mallocNew!FileContext();
-        fileContext.initialize(path, false);
+        bool err;
+        fileContext.initialize(path, false, &err);
+        if (err)
+        {
+            cleanUp();
+            setError(kErrorFileOpenFailed.ptr);
+            return;
+        }
+
         userData = fileContext;
 
         _io = mallocNew!IOCallbacks();
@@ -132,6 +150,7 @@ public: // This is also part of the public API
     void openFromMemory(const(ubyte)[] inputData) @nogc
     {
         cleanUp();
+        clearErrorStatus();
 
         memoryContext = mallocNew!MemoryContext();
         memoryContext.initializeWithConstantInput(inputData.ptr, inputData.length);
@@ -167,9 +186,19 @@ public: // This is also part of the public API
                     EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
+        clearErrorStatus();
         
         fileContext = mallocNew!FileContext();
-        fileContext.initialize(path, true);
+        bool err;
+        fileContext.initialize(path, true, &err);
+
+        if (err)
+        {
+            cleanUp();
+            setError(kErrorFileOpenFailed.ptr);
+            return;
+        }
+
         userData = fileContext;
 
         _io = mallocNew!IOCallbacks();
@@ -200,6 +229,7 @@ public: // This is also part of the public API
                       EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
+        clearErrorStatus();
 
         memoryContext = mallocNew!MemoryContext();
         memoryContext.initializeWithInternalGrowableBuffer();
@@ -237,6 +267,7 @@ public: // This is also part of the public API
                       EncodingOptions options = EncodingOptions.init) @nogc
     {
         cleanUp();
+        clearErrorStatus();
 
         memoryContext = mallocNew!MemoryContext();
         memoryContext.initializeWithExternalOutputBuffer(data, maxLength);
@@ -260,11 +291,28 @@ public: // This is also part of the public API
     }
 
     /// FUTURE: will replace Exception.
-    /// A Stream that is `isError` cannot be used except for initialization again.
-    /// Work in progress, only WAV for now.
-    bool isError() nothrow @nogc
+    /// An AudioStream that is `isError` cannot be used except for initialization again.
+    bool isError() pure const
     {
-        return _isError;
+        return _error !is null;
+    }
+
+    /// AudioStream is valid, meaning it is not in error state.
+    /// Always return `!isError()`.
+    bool isValid() pure const
+    {
+        return _error is null;
+    }
+
+    /// The error message (null if no error currently held).
+    /// This slice is followed by a '\0' zero terminal character, so
+    /// it can be safely given to a print function.
+    /// Tags: none.
+    immutable(char)[] errorMessage() pure const @trusted
+    {
+        if (_error is null)
+            return null;
+        return _error[0..strlen(_error)];
     }
 
     /// Returns: File format of this stream.
@@ -375,6 +423,7 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually read frames. Multiply by `getNumChannels()` to get the number of read samples.
     ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
+    ///          If there was an error, `isError()` is set. Do not call decoding again in that case.
     ///
     /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
     int readSamplesFloat(float* outData, int frames) nothrow @nogc
@@ -403,8 +452,8 @@ public: // This is also part of the public API
                             bool err;
                             _opusBuffer = _opusDecoder.readFrame(&err);
                             if (err)
-                            {
-                                setError;
+                            {   
+                                setError(kErrorDecoderInitializationFailed.ptr);
                                 return 0;
                             }
                             if (_opusBuffer is null)
@@ -494,7 +543,10 @@ public: // This is also part of the public API
                     int samplesNeeded = frames * _numChannels;
                     int result = cast(int) mp3dec_ex_read(_mp3DecoderNew, outData, samplesNeeded);
                     if (result < 0) // error
+                    {
+                        setError(kErrorDecodingError.ptr);
                         return 0;
+                    }
                     return result / _numChannels;
                 }
                 else
@@ -510,7 +562,7 @@ public: // This is also part of the public API
                     int readFrames = _wavDecoder.readSamples!float(outData, frames, &err); 
                     if (err)
                     {
-                        setError();
+                        setError(kErrorDecodingError.ptr);
                         return 0;
                     }
                     else
@@ -528,7 +580,7 @@ public: // This is also part of the public API
                     int readFrames = _qoaDecoder.readSamples!float(outData, frames, &err); 
                     if (err)
                     {
-                        setError();
+                        setError(kErrorDecodingError.ptr);
                         return 0;
                     }
                     else
@@ -598,6 +650,7 @@ public: // This is also part of the public API
     ///
     /// Returns: Number of actually read frames. Multiply by `getNumChannels()` to get the number of read samples.
     ///          When that number is less than `frames`, it means the stream is done decoding, or that there was a decoding error.
+    ///          If there was an error, `isError()` is set. Do not call decoding again in that case.
     ///
     /// TODO: once this returned less than `frames`, are we guaranteed we can keep calling that and it returns 0?
     int readSamplesDouble(double* outData, int frames) nothrow @nogc
@@ -614,7 +667,7 @@ public: // This is also part of the public API
                     int readFrames = _wavDecoder.readSamples!double(outData, frames, &err); 
                     if (err)
                     {
-                        setError();
+                        setError(kErrorDecodingError.ptr);
                         return 0;
                     }
                     return readFrames;
@@ -631,7 +684,7 @@ public: // This is also part of the public API
                     int readFrames = _qoaDecoder.readSamples!double(outData, frames, &err); 
                     if (err)
                     {
-                        setError();
+                        setError(kErrorDecodingError.ptr);
                         return 0;
                     }
                     else
@@ -730,7 +783,7 @@ public: // This is also part of the public API
                     int writtenFrames = _qoaEncoder.writeSamples!float(inData, frames, &err);
                     if (err)
                     {
-                        setError();
+                        setError(kErrorEncodingError.ptr);
                         return 0;
                     }
                     return writtenFrames;
@@ -748,7 +801,7 @@ public: // This is also part of the public API
                     int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
                     if (err)
                     {
-                        setError();
+                        setError(kErrorEncodingError.ptr);
                         return 0;
                     }
                     return writtenFrames;
@@ -800,7 +853,7 @@ public: // This is also part of the public API
                         int writtenFrames = _qoaEncoder.writeSamples!double(inData, frames, &err);
                         if (err)
                         {
-                            setError();
+                            setError(kErrorEncodingError.ptr);
                             return 0;
                         }
                         return writtenFrames;
@@ -819,7 +872,7 @@ public: // This is also part of the public API
                         int writtenFrames = _wavEncoder.writeSamples(inData, frames, &err);
                         if (err)
                         {
-                            setError();
+                            setError(kErrorEncodingError.ptr);
                             return 0;
                         }
                         return writtenFrames;
@@ -1217,7 +1270,9 @@ public: // This is also part of the public API
     void flush() nothrow @nogc
     {
         assert( _io && (_io.write !is null) );
-        _io.flush(userData);
+        bool success = _io.flush(userData);
+        if (!success)
+            setError(kErrorFlushFailed.ptr);
     }
     
     /// Finalize encoding. After finalization, further writes are not possible anymore
@@ -1246,7 +1301,7 @@ public: // This is also part of the public API
                         bool success = _qoaEncoder.finalizeEncoding();
                         if (!success)
                         {
-                            setError();
+                            setError(kErrorEncodingError.ptr);
                             return false;
                         }
                         break;
@@ -1264,7 +1319,7 @@ public: // This is also part of the public API
                         _wavEncoder.finalizeEncoding(&err);
                         if (err)
                         {
-                            setError();
+                            setError(kErrorEncodingError.ptr);
                             return false;
                         }
                         break;
@@ -1319,7 +1374,9 @@ private:
     float _sampleRate; 
     int _numChannels;
     long _lengthInFrames;
-    bool _isError;
+
+    // Start life as errored.
+    immutable(char)* _error = "Stream not initialized".ptr; // Using a constant would crash LDC
 
     float[] _floatDecodeBuf;
 
@@ -1472,15 +1529,17 @@ private:
         }
     }
 
-    void setError() nothrow @nogc
+    // Set a zero-terminated error string. Object is now in isError state, refusing to do things 
+    // until re-initialized.
+    void setError(immutable(char)* messageZ) nothrow @nogc
     {
-        _isError = true;
+        _error = messageZ;
+    }
 
-        // FUTURE: remove all API possibility for an errored stream, it can only be re-initialized with opening. Like in Gamut.
-
-        // This is API-breaking
-        //_io.write = null;
-        //_io.read = null;
+    // Sets the stream as error-free. Called by initialization.
+    void clearErrorStatus()
+    {
+        _error = null;
     }
 
     // clean-up the whole Stream object so that it can be reused for anything else.
@@ -1775,9 +1834,11 @@ private:
         _numChannels = 0;
         _lengthInFrames = -1;
 
-        throw mallocNew!AudioFormatsException("Cannot decode stream: unrecognized encoding.");
+        setError(kErrorUnknownFormat.ptr);
     }
 
+    /// Start encoding in a given format, on I/O error set the error flag.
+    /// After calling this, check `isError`.
     void startEncoding(AudioFileFormat format,
                        float sampleRate, 
                        int numChannels, 
@@ -1792,18 +1853,14 @@ private:
 
         final switch(format) with (AudioFileFormat)
         {
-            case mp3:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: MP3");
+            case mp3:  
             case flac:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: FLAC");
             case ogg:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: OGG");
             case opus:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: Opus");
             case mod:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: MOD");
-            case xm:
-                throw mallocNew!AudioFormatsException("Unsupported encoding format: XM");
+            case xm:   
+                setError(kErrorUnsupportedEncodingFormat.ptr); 
+                break;
             case qoa:
             {
                 version(encodeQOA)
@@ -1811,11 +1868,11 @@ private:
                     bool err;
                     _qoaEncoder.initialize(_io, userData, isampleRate, numChannels, &err);
                     if (err)
-                        throw mallocNew!AudioFormatsException("Can't create QOA encoder");
+                        setError(kErrorEncodingError.ptr); 
                     break;
                 }
                 else
-                    throw mallocNew!AudioFormatsException("Unsupported encoding format: QOA");
+                    setError(kErrorUnsupportedEncodingFormat.ptr); 
             }
             case wav:
             {
@@ -1833,14 +1890,15 @@ private:
                     bool err;
                     _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels, wavfmt, options.enableDither, &err);
                     if (err)
-                        throw mallocNew!AudioFormatsException("Can't create WAV encoder");
+                        setError(kErrorEncodingError.ptr); 
                     break;
                 }
                 else
-                    throw mallocNew!AudioFormatsException("Unsupported encoding format: WAV");
+                    setError(kErrorUnsupportedEncodingFormat.ptr); 
             }
             case unknown:
-                throw mallocNew!AudioFormatsException("Can't encode using 'unknown' coding");
+                setError("Can't encode using 'unknown' coding");
+                break;
         }
     }
 
@@ -1876,6 +1934,7 @@ private: // not meant to be imported at all
 
 struct FileContext // this is what is passed to I/O when used in file mode
 {
+nothrow @nogc:
     // Used when streaming of writing a file
     FILE* file = null;
 
@@ -1883,16 +1942,19 @@ struct FileContext // this is what is passed to I/O when used in file mode
     long fileSize;
 
     // Initialize this context
-    void initialize(const(char)[] path, bool forWrite) @nogc
+    void initialize(const(char)[] path, bool forWrite, bool* err) @nogc
     {
+        *err = false;
         CString strZ = CString(path);
         file = fopen(strZ.storage, forWrite ? "wb".ptr : "rb".ptr);
         if (file is null)
-            throw mallocNew!AudioFormatsException("File not found");
+            *err = true;
+
         // finds the size of the file
-        fseek(file, 0, SEEK_END);
+        fseek(file, 0, SEEK_END); // TODO check error here
         fileSize = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        fseek(file, 0, SEEK_SET); // TODO check error here
+        *err = false;
     }
 }
 

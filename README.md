@@ -18,6 +18,11 @@
 
 ## Changelog
 
+### 🔔 `audio-formats` v3
+- Complete removal of exceptions. The API is now 100% `nothrow @nogc`.
+  `AudioFormatsException` doesn't exist anymore.
+- **BREAKING** Instead, use `.isError` and `.isValid` to check for errors.
+
 ### 🔔 `audio-formats` v2
 
 - Doesn't depend upon `dplug:core` anymore.

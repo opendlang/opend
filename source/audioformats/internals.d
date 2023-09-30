@@ -13,25 +13,14 @@ import core.exception: onOutOfMemoryErrorNoGC;
 import std.conv: emplace;
 import std.traits;
 
-/// The only kind of exception thrown by audio-formats.
-/// Those must be catch and destroyed with `destroyAudioFormatException`.
-class AudioFormatsException : Exception
-{
-    public nothrow @nogc
-    {
-        @safe pure this(string message,
-                        string file =__FILE__,
-                        size_t line = __LINE__,
-                        Throwable next = null)
-        {
-            super(message, file, line, next);
-        }
-
-        ~this()
-        {}
-    }
-}
-
+static immutable string
+    kErrorUnsupportedEncodingFormat   = "Unsupported encoding format, maybe check your audio-formats configuration",
+    kErrorDecoderInitializationFailed = "Decoder initialization failed",
+    kErrorFileOpenFailed              = "Couldn't open file",
+    kErrorFlushFailed                 = "Flushing stream failed",
+    kErrorDecodingError               = "Decoder encountered an error",
+    kErrorEncodingError               = "Encoder encountered an error",
+    kErrorUnknownFormat               = "Cannot decode stream: unrecognized encoding.";
 
 //
 // Constructing and destroying without the GC.

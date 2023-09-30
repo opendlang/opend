@@ -12,16 +12,9 @@ module audioformats;
 public import audioformats.stream;
 
 
-public import audioformats.internals: AudioFormatsException;
 import core.stdc.stdlib: free;
 
-/// Frees an exception thrown by audio-formats.
-void destroyAudioFormatException(AudioFormatsException e) nothrow @nogc
-{
-    import audioformats.internals;
-    destroyFree!AudioFormatsException(e);
-}
-
+nothrow @nogc:
 
 /// Encode a slice to a WAV file.
 ///
@@ -30,7 +23,7 @@ bool saveAsWAV(const(float)[] data,
                const(char)[] filePath,
                int numChannels = 1,
                float sampleRate = 44100.0f,
-               EncodingOptions options = EncodingOptions.init) nothrow @nogc
+               EncodingOptions options = EncodingOptions.init)
 {
     return saveAsWAVImpl!float(data, filePath, numChannels, sampleRate, options);
 }
@@ -39,7 +32,7 @@ bool saveAsWAV(const(double)[] data,
                const(char)[] filePath,
                int numChannels = 1,
                float sampleRate = 44100.0f,
-               EncodingOptions options = EncodingOptions.init) nothrow @nogc
+               EncodingOptions options = EncodingOptions.init)
 {
     return saveAsWAVImpl!double(data, filePath, numChannels, sampleRate, options);
 }
@@ -52,7 +45,7 @@ bool saveAsWAV(const(double)[] data,
 const(ubyte)[] toWAV(const(float)[] data, 
                      int numChannels = 1,
                      float sampleRate = 44100.0f,
-                     EncodingOptions options = EncodingOptions.init) nothrow @nogc
+                     EncodingOptions options = EncodingOptions.init)
 {
     return toWAVImpl!float(data, numChannels, sampleRate, options);
 }
@@ -60,7 +53,7 @@ const(ubyte)[] toWAV(const(float)[] data,
 const(ubyte)[] toWAV(const(double)[] data, 
                      int numChannels = 1,
                      float sampleRate = 44100.0f,
-                     EncodingOptions options = EncodingOptions.init) nothrow @nogc
+                     EncodingOptions options = EncodingOptions.init)
 {
     return toWAVImpl!double(data, numChannels, sampleRate, options);
 }
@@ -76,38 +69,30 @@ void freeEncodedAudio(const(ubyte)[] encoded)
 private:
 
 
-const(ubyte)[] toWAVImpl(T)(const(T)[] data, int numChannels, float sampleRate, EncodingOptions options) nothrow @nogc
+const(ubyte)[] toWAVImpl(T)(const(T)[] data, int numChannels, float sampleRate, EncodingOptions options)
 {
     assert(data !is null);
     import core.stdc.string: strlen;
 
-    try
-    {
-        AudioStream encoder;
-        encoder.openToBuffer(AudioFileFormat.wav, sampleRate, numChannels, options);
-        static if (is(T == float))
-            encoder.writeSamplesFloat(data);
-        else
-            encoder.writeSamplesDouble(data);
-        const(ubyte)[] r = encoder.finalizeAndGetEncodedResultDisown();
-        return r;
-    }
-    catch (AudioFormatsException e)
-    {
-        destroyAudioFormatException(e);
-        return null;
-    }
-    catch(Exception e)
-    {
-        return null;
-    }
+    AudioStream encoder;
+    encoder.openToBuffer(AudioFileFormat.wav, sampleRate, numChannels, options);
+    if (encoder.isError)
+        return false;
+    static if (is(T == float))
+        encoder.writeSamplesFloat(data);
+    else
+        encoder.writeSamplesDouble(data);
+    if (encoder.isError)
+        return false;
+    const(ubyte)[] r = encoder.finalizeAndGetEncodedResultDisown();
+    return r;
 }
 
 bool saveAsWAVImpl(T)(const(T)[] data, 
                       const(char)[] filePath,
                       int numChannels, 
                       float sampleRate,
-                      EncodingOptions options) nothrow @nogc
+                      EncodingOptions options)
 {
     if (data is null)
         return false;
@@ -116,25 +101,24 @@ bool saveAsWAVImpl(T)(const(T)[] data,
 
     import core.stdc.string: strlen;
 
-    try
-    {
-        AudioStream encoder;
-        encoder.openToFile(filePath, AudioFileFormat.wav, sampleRate, numChannels, options);
-        static if (is(T == float))
-            encoder.writeSamplesFloat(data);
-        else
-            encoder.writeSamplesDouble(data);
-        encoder.flush();
-        encoder.finalizeEncoding();
-    }
-    catch (AudioFormatsException e)
-    {
-        destroyAudioFormatException(e);
-        return false;
-    }
-    catch(Exception e)
-    {
-        return false;
-    }
+    AudioStream encoder;
+    encoder.openToFile(filePath, AudioFileFormat.wav, sampleRate, numChannels, options);
+    if (encoder.isError)
+        return false; // opening failed
+
+    static if (is(T == float))
+        encoder.writeSamplesFloat(data);
+    else
+        encoder.writeSamplesDouble(data);
+    if (encoder.isError)
+        return false;  // writing samples failed
+
+    encoder.flush();
+    if (encoder.isError)
+        return false; // flushing failed
+
+    encoder.finalizeEncoding();
+    if (encoder.isError)
+        return false; // finalizing encoding failed
     return true;
 }

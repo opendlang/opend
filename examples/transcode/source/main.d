@@ -19,10 +19,16 @@ void main(string[] args)
 
     try
     {
+        void check(ref AudioStream stream)
+        {
+            if (stream.isError)
+                throw new Exception(stream.errorMessage);
+        }
 
         AudioStream input, output;
 
         input.openFromFile(args[1]);
+        check(input);
         float sampleRate = input.getSamplerate();
         int channels = input.getNumChannels();
         long lengthFrames = input.getLengthInFrames();
@@ -57,6 +63,7 @@ void main(string[] args)
         }
 
         output.openToFile(outputPath, outFormat, sampleRate, channels, options);
+        check(output);
 
         // Chunked encode/decode
         int totalFrames = 0;
@@ -64,18 +71,15 @@ void main(string[] args)
         do
         {
             framesRead = input.readSamplesFloat(buf);
+            check(input);
             output.writeSamplesFloat(buf[0..framesRead*channels]);
+            check(output);
             totalFrames += framesRead;
         } while(framesRead > 0);
 
         output.destroy();
         
         writefln("=> %s frames decoded and encoded to %s", totalFrames, outputPath);
-    }
-    catch(AudioFormatsException e)
-    {
-        writeln(e.msg);
-        destroyAudioFormatException(e);
     }
     catch(Exception e)
     {
