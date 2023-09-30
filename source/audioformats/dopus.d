@@ -7145,7 +7145,7 @@ public:
 private:
 
   // Extends I/O callbakcs
-  void[] rawRead (void[] buf)
+  void[] rawRead (void[] buf) nothrow
   {
     int bytesRead = _io.read(buf.ptr, cast(int)buf.length, _userData);
     return buf[0..bytesRead];
@@ -7161,9 +7161,11 @@ private:
     }
   }
 
-  bool ensureBytes (uint len) {
+  bool ensureBytes (uint len) nothrow 
+  {
     import core.stdc.string : memmove;
-    if (len > buf.length) assert(0, "internal OggStream error");
+    if (len > buf.length) 
+        assert(0, "internal OggStream error");
     if (bufused-bufpos >= len) return true;
     if (eofhit) return false;
     // shift bytes
@@ -7185,7 +7187,8 @@ private:
     return true;
   }
 
-  bool parsePageHeader () {
+  bool parsePageHeader () nothrow
+  {
     if (!ensureBytes(Offsets.Lacing)) return false;
     if (!ensureBytes(Offsets.Lacing+buf.ptr[bufpos+Offsets.Segments])) return false;
     if (bufpos >= bufused) return false;
@@ -7232,7 +7235,8 @@ private:
   }
 
   // scan for page
-  bool nextPage(bool first, bool ignoreseqno=false) (long maxbytes=long.max) {
+  bool nextPage(bool first, bool ignoreseqno=false) (long maxbytes=long.max) nothrow
+  {
     if (eofhit) return false;
     scope(failure) eofhit = true;
     curseg = 0;
@@ -7316,7 +7320,8 @@ private:
     return false;
   }
 
-  void clearPage () {
+  void clearPage () nothrow
+  {
     pgbos = pgeos = pgcont = false;
     pggranule = 0;
     segments = 0;
@@ -7352,9 +7357,11 @@ public:
     _io = io;
     _userData = userData;
     eofhit = false;
+    bool didThrow;
     if (!nextPage!true()) goto errored; // can't find valid OGG pages
     if (pgcont || !pgbos) goto errored; // invalid starting Ogg page
-    if (!loadPacket()) goto errored; // can't load Ogg packet
+    if (!loadPacket(&didThrow)) goto errored;    // can't load Ogg packet
+    if (didThrow) goto errored;
 
     *err = false;
     return;
@@ -7484,8 +7491,13 @@ public:
   // logical beginning of stream?
   bool bos () const pure nothrow @safe @nogc { return pgbos; }
 
-  bool loadPacket () {
-    //conwritefln!"serno=0x%08x; seqno=%s"(serno, seqno);
+
+  // Not sure what this does, originally the code would throw exception or return a bool, that makes it three-stated, and it
+  // seemingly didn't serve a purpose to do so. But for maximum safety we maintained that, perhaps it throw if it looses stream
+  // sync somehow. The devil you know.
+  bool loadPacket (bool* didThrow) nothrow
+  {
+    *didThrow = false;
     packetLength = 0;
     packetBos = pgbos;
     packetEos = pgeos;
@@ -7493,7 +7505,12 @@ public:
     packetBop = (curseg == 0);
     if (curseg >= segments) {
       if (!nextPage!false()) return false;
-      if (pgcont || pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
+      if (pgcont || pgbos) 
+      {
+        // invalid starting Ogg page
+        *didThrow = true;
+        return false;
+      }
       packetBos = pgbos;
       packetBop = true;
       packetGranule = pggranule;
@@ -7509,7 +7526,12 @@ public:
       }
       //conwriteln("copyofs=", copyofs, "; copylen=", copylen, "; eop=", eop, "; packetLength=", packetLength, "; segments=", segments, "; curseg=", curseg);
       if (copylen > 0) {
-        if (packetLength+copylen > 1024*1024*32) throw mallocNew!AudioFormatsException("Ogg packet too big");
+        if (packetLength+copylen > 1024*1024*32)
+        {
+            // Ogg packet too big
+            *didThrow = true;
+            return false;
+        }
         if (packetLength+copylen > packetData.length) 
         {
             packetData.resize(packetLength+copylen);
@@ -7526,7 +7548,12 @@ public:
       assert(curseg >= segments);
       // get next page
       if (!nextPage!false()) return false;
-      if (!pgcont || pgbos) throw mallocNew!AudioFormatsException("invalid cont Ogg page");
+      if (!pgcont || pgbos)
+      {
+        // invalid cont Ogg page
+        *didThrow = true;
+        return false;
+      }
     }
   }
 
@@ -7578,7 +7605,9 @@ public:
           curseg = 0;
           //for (int p = 0; p < segments; ++p) if (seglen[p] < 255) curseg = p+1;
           //auto rtg = pggranule;
-          if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          bool didThrow; 
+          if (!loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          if (didThrow) throw mallocNew!AudioFormatsException("can't load Ogg packet");
           return 0;
         }
         if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
@@ -7614,7 +7643,10 @@ public:
       _io.seek(begin, false, _userData);
       eofhit = false;
       if (!nextPage!false()) return false;
-      if (!loadPacket()) return false;
+      bool didThrow;
+      if (!loadPacket(&didThrow)) return false;
+      if (didThrow)
+          throw mallocNew!AudioFormatsException("can't load Ogg packet");
       return true;
     }
 
@@ -7723,9 +7755,12 @@ public:
       if (!nextPage!true()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
       if (pgcont || !pgbos) throw mallocNew!AudioFormatsException("invalid starting Ogg page");
       for (;;) {
-        if (pggranule && pggranule != -1) {
+        if (pggranule && pggranule != -1) 
+        {
           curseg = 0;
-          if (!loadPacket()) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          bool didThrow;
+          if (!loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("can't load Ogg packet");
+          if (didThrow) throw mallocNew!AudioFormatsException("can't load Ogg packet");
           return 0;
         }
         if (!nextPage!false()) throw mallocNew!AudioFormatsException("can't find valid Ogg page");
@@ -7742,8 +7777,15 @@ public:
     auto rtg = pggranule;
     seqno = pgseqno;
     // pull out all but last packet; the one right after granulepos
-    for (int p = 0; p < segments; ++p) if (seglen[p] < 255) curseg = p+1;
-    if (!loadPacket()) throw mallocNew!AudioFormatsException("wtf?!");
+    for (int p = 0; p < segments; ++p) 
+        if (seglen[p] < 255) 
+            curseg = p+1;
+
+    bool didThrow;
+    if (!loadPacket(&didThrow)) 
+        throw mallocNew!AudioFormatsException("wtf?!");
+    if (didThrow)
+        throw mallocNew!AudioFormatsException("wtf?!");
     return rtg;
   }
 
@@ -8121,8 +8163,12 @@ public:
     ubyte*[2] eptr;
     float*[2] fptr;
     for (;;) {
-      if (wantNewPacket) {
-        if (!ogg.loadPacket()) return null;
+      if (wantNewPacket) 
+      {
+        bool didThrow;
+        if (!ogg.loadPacket(&didThrow)) return null;
+        if (didThrow)
+            throw mallocNew!AudioFormatsException("");
       }
       //if (ogg.pggranule > 0 && ogg.pggranule != -1 && ogg.pggranule >= ctx.preskip) curpcm = ogg.pggranule-ctx.preskip;
       wantNewPacket = true;
@@ -8186,7 +8232,9 @@ public OpusFile opusOpen (IOCallbacks* io, void* userData)
         of.cblen = of.ogg.packetLength-8;
       }
     }
-    if (!of.ogg.loadPacket()) throw mallocNew!AudioFormatsException("invalid opus file");
+    bool didThrow;
+    if (!of.ogg.loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("invalid opus file");
+    if (didThrow) throw mallocNew!AudioFormatsException("invalid opus file");
     if (r == 1) break;
   }
 
