@@ -23,8 +23,8 @@ module audioformats.dopus;
 
 version(decodeOPUS):
 
-import core.stdc.stdlib : free;
-import core.stdc.string;
+import core.stdc.stdlib : malloc, free, realloc, calloc;
+import core.stdc.string: memmove, memcpy, memcmp;
 import std.math : exp2;
 
 
@@ -34,7 +34,7 @@ import audioformats.internals;
 
 private:
 
-nothrow @nogc {
+nothrow @nogc:
 
 
 alias FFTSample = float;
@@ -282,7 +282,6 @@ void av_freep(T) (T** p) {
 
 T* av_mallocz(T) (size_t cnt=1) {
   if (cnt == 0) return null;
-  import core.stdc.stdlib : calloc;
   return cast(T*)calloc(cnt, T.sizeof);
 }
 
@@ -290,21 +289,6 @@ alias av_malloc_array = av_mallocz;
 alias av_mallocz_array = av_mallocz;
 alias av_malloc = av_mallocz;
 
-/*
-int av_reallocp_array(T) (T** ptr, size_t cnt) {
-  import core.stdc.stdlib : free, realloc;
-  if (ptr is null) return -1;
-  if (cnt == 0) {
-    if (*ptr) free(*ptr);
-    *ptr = null;
-  } else {
-    auto np = realloc(*ptr, T.sizeof*cnt);
-    if (np is null) return -1;
-    *ptr = cast(T*)np;
-  }
-  return 0;
-}
-*/
 
 
 /*
@@ -366,32 +350,6 @@ int av_audio_fifo_write (AVAudioFifo* af, void** data, int nb_samples) {
   import core.stdc.string : memmove;
   { import core.stdc.stdio : printf; printf("fifowrite=%u\n", nb_samples); }
   assert(0);
-  /+
-  if (af is null || nb_samples < 0) return -1;
-  if (nb_samples == 0) return 0;
-  if (af.rdpos >= af.used) af.rdpos = af.used = 0;
-  if (af.rdpos > 0) {
-    memmove(af.buf, af.buf+af.rdpos, (af.used-af.rdpos)*float.sizeof);
-    af.used -= af.rdpos;
-    af.rdpos = 0;
-  }
-  if (af.used+nb_samples*af.chans > af.alloced) {
-    import core.stdc.stdlib : realloc;
-    uint newsz = af.used+nb_samples*af.chans;
-    auto nb = cast(float*)realloc(af.buf, newsz*float.sizeof);
-    if (nb is null) return -1;
-    af.buf = nb;
-    af.alloced = newsz;
-  }
-  auto dp = cast(float**)data;
-  int total;
-  while (nb_samples > 0) {
-    if (af.alloced-af.used < af.chans) assert(0);
-    foreach (immutable chn; 0..af.chans) af.buf[af.used++] = *dp[chn]++;
-    ++total;
-    --nb_samples;
-  }
-  return total;+/
 }
 
 AVAudioFifo* av_audio_fifo_alloc (int samplefmt, int channels, int nb_samples) {
@@ -5564,8 +5522,6 @@ public:
    *  0 or error code
    */
   Error setup (uint chans, uint ainRate, uint aoutRate, Quality aquality/*, size_t line=__LINE__*/) {
-    //{ import core.stdc.stdio; printf("init: %u -> %u at %u\n", ainRate, aoutRate, cast(uint)line); }
-    import core.stdc.stdlib : malloc, free;
 
     deinit();
     if (aquality < 0) aquality = 0;
@@ -5911,7 +5867,6 @@ private:
     }
 
     if (sincTableLen < minSincTableLen) {
-      import core.stdc.stdlib : realloc;
       auto nslen = cast(uint)(minSincTableLen*float.sizeof);
       if (nslen > realSincTableLen) {
         if (nslen < 512*1024) nslen = 512*1024; // inc to 3 mb?
@@ -7080,15 +7035,12 @@ int opus_decode_init_ll (OpusContext* c) {
 
   return 0;
 }
-} // nothrow @nogc
-
-@nogc:
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct OggStream {
 private:
 
-@nogc:
+@nogc nothrow:
   enum MaxPageSize = 65025+Offsets.Lacing+255;
   //pragma(msg, MaxPageSize); // 65307 bytes
   //enum MaxPageSize = 65536;
@@ -7239,17 +7191,15 @@ private:
   bool nextPage(bool first, bool ignoreseqno=false) (long maxbytes=long.max) nothrow
   {
     if (eofhit) return false;
-    scope(failure) eofhit = true;
+    //Exceptions removed, so this shouldn't happen anymore
+    //scope(failure) eofhit = true;
     curseg = 0;
     static if (!first) bufpos += pglength; // skip page data
     clearPage();
     while (maxbytes >= Offsets.Lacing) {
-      //conwriteln("0: bufpos=", bufpos, "; bufused=", bufused);
-      //{ import core.stdc.stdio; printf("0: bufpos=%u; bufused=%u\n", bufpos, bufused); }
       while (bufpos >= bufused || bufused-bufpos < 4) {
         if (eofhit) break;
         if (bufpos < bufused) {
-          import core.stdc.string : memmove;
           memmove(buf.ptr, buf.ptr+bufpos, bufused-bufpos);
           bufused -= bufpos;
           bufpos = 0;
@@ -7264,8 +7214,6 @@ private:
         bufused += cast(uint)rd.length;
         maxbytes -= cast(uint)rd.length;
       }
-      //conwriteln("1: bufpos=", bufpos, "; bufused=", bufused, "; bleft=", bufused-bufpos);
-      //{ import core.stdc.stdio; printf("1: bufpos=%u; bufused=%u\n", bufpos, bufused); }
       if (bufpos >= bufused || bufused-bufpos < 4) { eofhit = true; return false; }
       uint bleft = bufused-bufpos;
       auto b = (cast(const(ubyte)*)buf.ptr)+bufpos;
@@ -7284,7 +7232,6 @@ private:
               return true;
             } else {
               if (serno == pgserno) {
-                //conwriteln("2: bufpos=", bufpos, "; bufused=", bufused, "; segs: ", seglen[0..segments], "; pgseqno=", pgseqno, "; seqno=", seqno, "; pgserno=", pgserno, "; serno=", serno);
                 static if (!ignoreseqno) {
                   bool ok = (seqno+1 == pgseqno);
                   if (ok) ++seqno;
@@ -7296,7 +7243,6 @@ private:
                     firstdatapgofs = _io.tell(_userData)-bufused+bufpos;
                     firstgranule = pggranule;
                   }
-                  //conwriteln("3: bufpos=", bufpos, "; bufused=", bufused, "; segs: ", seglen[0..segments], "; pgseqno=", pgseqno, "; seqno=", seqno, "; pgserno=", pgserno, "; serno=", serno);
                   return true;
                 }
                 // alas
@@ -7331,7 +7277,7 @@ private:
     seglen[] = 0;
   }
 
-  void clearPacket () {
+  void clearPacket () nothrow {
     packetBos = packetBop = packetEop = packetEos = false;
     packetGranule = 0;
     packetData.fill(0);
@@ -7339,7 +7285,7 @@ private:
   }
 
 public:
-  void close () {
+  void close () nothrow {
     _io = null;
     lastpage = lastpage.init;
     bufpos = bufused = 0;
@@ -7353,7 +7299,7 @@ public:
     clearPacket();
   }
 
-  void setup (IOCallbacks* io, void* userData, bool* err) {
+  void setup (IOCallbacks* io, void* userData, bool* err) nothrow {
     close();
     _io = io;
     _userData = userData;
@@ -7766,7 +7712,6 @@ public:
       bufused = bufpos = 0;
       pglength = 0;
       curseg = 0;
-      //{ import core.stdc.stdio; printf("fpp=%lld\n", firstpagepos); }
       _io.seek(firstpagepos, false, _userData);
       eofhit = false;
       if (!nextPage!true())
@@ -7923,7 +7868,6 @@ static int opus_header (AVCtx* avf, ref OggStream ogg) {
   }
 
   if (avf.need_comments) {
-    import core.stdc.string : memcmp;
     if (ogg.packetLength < 8 || memcmp(ogg.packetData.ptr, "OpusTags".ptr, 8) != 0) return AVERROR_INVALIDDATA;
     //ff_vorbis_stream_comment(avf, st, ogg.packetData.ptr + 8, ogg.packetLength - 8);
     --avf.need_comments;
@@ -8036,6 +7980,7 @@ enum Float2IntScaled(string x, string d) =
 struct OpusFileCtx {
 private:
 @nogc:
+nothrow:
   AVCtx ctx;
   ubyte* commbuf;
   uint cblen;
@@ -8163,7 +8108,9 @@ public:
   }
 
   // read and decode one sound frame; return samples or null
-  short[] readFrame () return {
+  short[] readFrame(bool *didThrow) return 
+  {
+    *didThrow = false;
     AVFrame frame;
     AVPacket pkt;
     ubyte*[2] eptr;
@@ -8171,10 +8118,9 @@ public:
     for (;;) {
       if (wantNewPacket) 
       {
-        bool didThrow;
-        if (!ogg.loadPacket(&didThrow)) return null;
-        if (didThrow)
-            throw mallocNew!AudioFormatsException("");
+        if (!ogg.loadPacket(didThrow)) return null;
+        if (*didThrow)
+            return null;
       }
       //if (ogg.pggranule > 0 && ogg.pggranule != -1 && ogg.pggranule >= ctx.preskip) curpcm = ogg.pggranule-ctx.preskip;
       wantNewPacket = true;
@@ -8188,7 +8134,12 @@ public:
       frame.extended_data = eptr.ptr;
       int gotfrptr = 0;
       auto r = opus_decode_packet(&c, &frame, &gotfrptr, &pkt);
-      if (r < 0) throw mallocNew!AudioFormatsException("error processing opus frame");
+      if (r < 0) 
+      {
+        // error processing opus frame
+        *didThrow = true;
+        return null;
+      }
       if (!gotfrptr) continue;
       curpcm += r;
       //if (ogg.packetGranule && ogg.packetGranule != -1) lastgran = ogg.packetGranule-ctx.preskip;
@@ -8210,52 +8161,78 @@ public:
 public alias OpusFile = OpusFileCtx*;
 
 
-public OpusFile opusOpen (IOCallbacks* io, void* userData) 
+public OpusFile opusOpen (IOCallbacks* io, void* userData, bool* didThrow) nothrow
 {
-  OpusFile of = av_mallocz!OpusFileCtx(1);
-  if (of is null) throw mallocNew!AudioFormatsException("out of memory");
-  *of = OpusFileCtx.init; // just in case
-  scope(failure) { av_freep(&of.commbuf); av_freep(&of.ctx.extradata); av_free(of); }
+    bool err;
+
+    *didThrow = false;
+    OpusFile of = av_mallocz!OpusFileCtx(1);
+    if (of is null) 
+        goto failure0;
+
+    *of = OpusFileCtx.init; // just in case
+    
 
   io.seek(false, false, userData);
-  bool err;
+  
   of.ogg.setup(io, userData, &err);
-  if (err) throw mallocNew!AudioFormatsException("setup failed");
+  if (err) 
+      goto failure1;  
 
-  scope(failure) of.ogg.close();
-
-  if (!of.ogg.findLastPage(of.lastpage)) throw mallocNew!AudioFormatsException("can't find last page");
+  if (!of.ogg.findLastPage(of.lastpage)) 
+      goto failure2;
 
   for (;;) {
     auto r = opus_header(&of.ctx, of.ogg);
-    if (r < 0) throw mallocNew!AudioFormatsException("can't find opus header");
+    if (r < 0)
+        goto failure2;
     // current packet is tags?
     if (of.ogg.packetLength >= 12 && of.commbuf is null && cast(const(char)[])(of.ogg.packetData[0..8]) == "OpusTags") {
       of.commbuf = av_mallocz!ubyte(of.ogg.packetLength-8);
       if (of.commbuf !is null) {
-        import core.stdc.string : memcpy;
         memcpy(of.commbuf, of.ogg.packetData.ptr+8, of.ogg.packetLength-8);
         of.cblen = of.ogg.packetLength-8;
       }
     }
-    bool didThrow;
-    if (!of.ogg.loadPacket(&didThrow)) throw mallocNew!AudioFormatsException("invalid opus file");
-    if (didThrow) throw mallocNew!AudioFormatsException("invalid opus file");
+    if (!of.ogg.loadPacket(didThrow))
+        goto failure2;
+    if (*didThrow) 
+        goto failure2;
     if (r == 1) break;
   }
 
-  if (of.ogg.pggranule < of.ctx.preskip) throw mallocNew!AudioFormatsException("invalid starting granule");
-  if (of.lastpage.granule < of.ctx.preskip) throw mallocNew!AudioFormatsException("invalid ending granule");
+  if (of.ogg.pggranule < of.ctx.preskip) 
+      goto failure2;
+  if (of.lastpage.granule < of.ctx.preskip) 
+      goto failure2;
   of.lastpage.granule -= of.ctx.preskip;
 
-  if (opus_decode_init(&of.ctx, &of.c, of.getGain) < 0) throw mallocNew!AudioFormatsException("can't init opus decoder");
-  scope(failure) opus_decode_close(&of.c);
+  if (opus_decode_init(&of.ctx, &of.c, of.getGain) < 0)
+      goto failure2;
 
-  if (of.c.nb_streams != 1) throw mallocNew!AudioFormatsException("only mono and stereo opus streams are supported");
+  if (of.c.nb_streams != 1) 
+      goto failure3;
+
   // just in case, check the impossible
-  if (of.c.streams[0].output_channels < 1 || of.c.streams[0].output_channels > 2) throw mallocNew!AudioFormatsException("only mono and stereo opus streams are supported");
+  if (of.c.streams[0].output_channels < 1 || of.c.streams[0].output_channels > 2) 
+      goto failure3; // only mono and stereo opus streams are supported"
 
   return of;
+
+  failure3:
+      opus_decode_close(&of.c);
+
+  failure2:
+      of.ogg.close();
+
+  failure1:
+      av_freep(&of.commbuf); 
+      av_freep(&of.ctx.extradata); 
+      av_free(of);
+
+  failure0:
+      *didThrow = true;
+      return null;
 }
 
 

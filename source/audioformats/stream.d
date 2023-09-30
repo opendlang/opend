@@ -382,58 +382,56 @@ public: // This is also part of the public API
             {
                 version(decodeOPUS)
                 {
-                    try
+                    // Can't decoder further than end of the stream.
+                    if (_opusPositionFrame + frames > _lengthInFrames)
                     {
-                        // Can't decoder further than end of the stream.
-                        if (_opusPositionFrame + frames > _lengthInFrames)
-                        {
-                            frames = cast(int)(_lengthInFrames - _opusPositionFrame);
-                        }
+                        frames = cast(int)(_lengthInFrames - _opusPositionFrame);
+                    }
 
-                        int decoded = 0;
-                        while (decoded < frames)
+                    int decoded = 0;
+                    while (decoded < frames)
+                    {
+                        // Is there any sample left in _opusBuffer?
+                        // If not decode some frames.
+                        if (_opusBuffer is null || _opusBuffer.length == 0)
                         {
-                            // Is there any sample left in _opusBuffer?
-                            // If not decode some frames.
-                            if (_opusBuffer is null || _opusBuffer.length == 0)
+                            bool err;
+                            _opusBuffer = _opusDecoder.readFrame(&err);
+                            if (err)
                             {
-                                _opusBuffer = _opusDecoder.readFrame();
-                                if (_opusBuffer is null)
-                                    break;
+                                setError;
+                                return 0;
                             }
-
-                            int samplesInBuffer = cast(int) _opusBuffer.length;
-                            int framesInBuffer  = samplesInBuffer / _numChannels;
-                            if (framesInBuffer == 0)
+                            if (_opusBuffer is null)
                                 break;
-
-                            // Frames to pull are min( frames left to decode, frames available)
-                            int framesToDecode = frames - decoded;
-                            int framesToUse = framesToDecode < framesInBuffer ? framesToDecode : framesInBuffer;
-                            assert(framesToUse != 0);
-
-                            int samplesToUse = framesToUse * _numChannels;
-                            int outOffset = decoded*_numChannels;
-
-                            if (outData !is null) // for seeking, we have the ability in OPUS to call readSamplesFloat with no outData
-                            {
-                                for (int n = 0; n < samplesToUse; ++n)
-                                {
-                                    outData[outOffset + n] = _opusBuffer[n] / 32767.0f;
-                                }
-                            }
-                            _opusBuffer = _opusBuffer[samplesToUse..$]; // reduce size of intermediate buffer
-                            decoded += framesToUse;
                         }
-                        _opusPositionFrame += decoded;
-                        assert(_opusPositionFrame <= _lengthInFrames);
-                        return decoded;
+
+                        int samplesInBuffer = cast(int) _opusBuffer.length;
+                        int framesInBuffer  = samplesInBuffer / _numChannels;
+                        if (framesInBuffer == 0)
+                            break;
+
+                        // Frames to pull are min( frames left to decode, frames available)
+                        int framesToDecode = frames - decoded;
+                        int framesToUse = framesToDecode < framesInBuffer ? framesToDecode : framesInBuffer;
+                        assert(framesToUse != 0);
+
+                        int samplesToUse = framesToUse * _numChannels;
+                        int outOffset = decoded*_numChannels;
+
+                        if (outData !is null) // for seeking, we have the ability in OPUS to call readSamplesFloat with no outData
+                        {
+                            for (int n = 0; n < samplesToUse; ++n)
+                            {
+                                outData[outOffset + n] = _opusBuffer[n] / 32767.0f;
+                            }
+                        }
+                        _opusBuffer = _opusBuffer[samplesToUse..$]; // reduce size of intermediate buffer
+                        decoded += framesToUse;
                     }
-                    catch(AudioFormatsException e)
-                    {
-                        destroyFree(e);
-                        return 0; // decoding might fail, in which case return zero samples
-                    }
+                    _opusPositionFrame += decoded;
+                    assert(_opusPositionFrame <= _lengthInFrames);
+                    return decoded;
                 }
             }
 
@@ -1529,9 +1527,14 @@ private:
 
         version(decodeOPUS)
         {
-            try
+            bool err;
+            _opusDecoder = opusOpen(_io, userData, &err);
+            if (err)
             {
-                _opusDecoder = opusOpen(_io, userData);
+                _opusDecoder = null;
+            }
+            else
+            {
                 assert(_opusDecoder !is null);
                 _format = AudioFileFormat.opus;
                 _sampleRate = _opusDecoder.rate; // Note: Opus file are always 48Khz
@@ -1540,11 +1543,6 @@ private:
                 _opusPositionFrame = 0;
                 return;
             }
-            catch(AudioFormatsException e)
-            {
-                destroyFree(e);
-            }
-            _opusDecoder = null;
         }
 
         version(decodeFLAC)
