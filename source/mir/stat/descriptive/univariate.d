@@ -417,7 +417,7 @@ Returns:
     The mean of all the elements in the input, must be floating point or complex type
 
 See_also:
-    $(MATHREF_ALT2 sum, Summation)
+    $(MATHREF_ALT sum, Summation)
 +/
 template mean(F, Summation summation = Summation.appropriate)
 {
@@ -751,7 +751,7 @@ Returns:
     harmonic mean of all the elements of the input, must be floating point or complex type
 
 See_also:
-    $(MATHREF_ALT2 sum, Summation)
+    $(MATHREF_ALT sum, Summation)
 +/
 template hmean(F, Summation summation = Summation.appropriate)
 {
@@ -1153,7 +1153,7 @@ Returns:
     The geometric average of all the elements in the input, must be floating point type
 
 See_also:
-    $(MATHREF_ALT2 numeric, prod)
+    $(MATHREF_ALT numeric, prod)
 +/
 @fmamath gmeanType!F gmean(F, Range)(Range r)
     if (isFloatingPoint!F && isIterable!Range)
