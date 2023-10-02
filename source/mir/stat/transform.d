@@ -61,6 +61,9 @@ provided using `centralTendency`.
 
 Returns:
     The elements in the slice with the average subtracted from them.
+
+See_also:
+    $(SUB2REF univariate, mean)
 +/
 template center(alias centralTendency = mean!(Summation.appropriate))
 {
