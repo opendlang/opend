@@ -31,7 +31,7 @@ $(TR $(TH Function Name) $(TH Description)
 
 License: $(HTTP www.apache.org/licenses/LICENSE-2.0, Apache-2.0)
 
-The $(LREF center) function is borrowed from $(MATHREF stat, center).
+The $(LREF center) function is borrowed from $(HTTP mir-algorithm.$(MIR_SITE)/mir_math_stat.html, mir.math.stat).
 
 Authors: John Michael Hall, Ilya Yaroshenko
 
