@@ -50,7 +50,7 @@ module mir.stat.transform;
 
 import mir.math.common: fmamath;
 import mir.math.sum: Summation;
-import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind, hasAsSlice;
+import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 import mir.stat.descriptive.univariate: mean, QuantileAlgo, standardDeviation, VarianceAlgo;
 
 /++

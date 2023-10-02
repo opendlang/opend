@@ -91,7 +91,7 @@ public import mir.math.sum: Summation;
 import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
 import mir.math.sum: Summator, ResolveSummationType;
-import mir.ndslice.slice: hasAsSlice, isConvertibleToSlice, isSlice, Slice, SliceKind;
+import mir.ndslice.slice: isConvertibleToSlice, isSlice, Slice, SliceKind;
 import std.traits: isIterable, isMutable;
 
 ///
@@ -1503,12 +1503,13 @@ meanType!(T[]) median(T)(scope const T[] ar...)
 
 /++
 Params:
-    withAsSlice = input that satisfies hasAsSlice
+    sliceLike = type that satisfies `isConvertibleToSlice!T && !isSlice!T`
 +/
-auto median(T)(T withAsSlice)
-    if (hasAsSlice!T)
+auto median(T)(T sliceLike)
+    if (isConvertibleToSlice!T && !isSlice!T)
 {
-    return median(withAsSlice.asSlice);
+    import mir.ndslice.slice: toSlice;
+    return median(sliceLike.toSlice);
 }
 
 /// Median of vector
@@ -2477,7 +2478,7 @@ struct VarianceAccumulator(T, VarianceAlgo varianceAlgo, Summation summation)
     if (isMutable!T && varianceAlgo == VarianceAlgo.assumeZeroMean)
 {
     import mir.math.sum: Summator;
-    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+    import mir.ndslice.slice: Slice, SliceKind;
 
     private size_t _count;
     ///
@@ -4998,8 +4999,6 @@ Returns:
 +/
 template medianAbsoluteDeviation(F)
 {
-    import mir.ndslice.slice: hasAsSlice;
-
     /++
     Params:
         slice = slice
