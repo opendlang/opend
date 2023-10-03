@@ -1302,7 +1302,7 @@ unittest
 }
 
 /// Compare packed unsigned 32-bit integers in `a` and `b`, returns packed maximum values.
-__m128i _mm_max_epu32 (__m128i a, __m128i b) @trusted
+__m128i _mm_max_epu32 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
@@ -1323,6 +1323,17 @@ __m128i _mm_max_epu32 (__m128i a, __m128i b) @trusted
     }
     else
     {
+        // PERF: LLVM suggests to replace the _mm_add_epi32 by _mm_xor_si128, and the last xor by an "_mm_or_si128"
+        /+
+        movdqa  xmm2, xmmword ptr [-0x80000000, -0x80000000, -0x80000000, -0x80000000]
+        movdqa  xmm3, xmm1
+        pxor    xmm3, xmm2
+        pxor    xmm2, xmm0
+        pcmpgtd xmm2, xmm3
+        pand    xmm0, xmm2
+        pandn   xmm2, xmm1
+        por     xmm0, xmm2
+        +/
         __m128i valueShift = _mm_set1_epi32(-0x80000000);
         __m128i higher = _mm_cmpgt_epi32(_mm_add_epi32(a, valueShift), _mm_add_epi32(b, valueShift));
         __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
@@ -1448,7 +1459,7 @@ unittest
 }
 
 /// Compare packed unsigned 32-bit integers in a and b, and store packed minimum values in dst.
-__m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
+__m128i _mm_min_epu32 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
@@ -1463,7 +1474,7 @@ __m128i _mm_min_epu32 (__m128i a, __m128i b) @trusted
         uint4 sb = cast(uint4)b;
         static if (SIMD_COMPARISON_MASKS_16B)
             uint4 greater = sa > sb;
-        else        
+        else
             uint4 greater = cast(uint4) greaterMask!uint4(sa, sb);
         return cast(__m128i)( (~greater & sa) | (greater & sb) );
     }
