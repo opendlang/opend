@@ -1480,6 +1480,7 @@ __m128i _mm_min_epu32 (__m128i a, __m128i b) pure @trusted
     }
     else
     {
+        // PERF: same remark as in _mm_max_epu32
         __m128i valueShift = _mm_set1_epi32(-0x80000000);
         __m128i higher = _mm_cmpgt_epi32(_mm_add_epi32(b, valueShift), _mm_add_epi32(a, valueShift));
         __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
