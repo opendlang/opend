@@ -1271,7 +1271,7 @@ uint _mm_getcsr() @trusted
     else version (InlineX86Asm)
     {
         uint controlWord;
-        asm nothrow @nogc pure @safe
+        asm nothrow @nogc pure @trusted
         {
             stmxcsr controlWord;
         }
@@ -2448,7 +2448,7 @@ void _mm_setcsr(uint controlWord) @trusted
     }
     else version (InlineX86Asm)
     {
-        asm nothrow @nogc @safe
+        asm nothrow @nogc @trusted
         {
             ldmxcsr controlWord;
         }
