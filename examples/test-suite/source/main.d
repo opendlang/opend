@@ -48,7 +48,7 @@ void testDecodingVSTLogo()
     assert(bytes.length == 25568);
 
     // initial_size is 594825, but more is returned by inflate, 594825 + 272 with both miniz and stbz
-    // with stb_image, buffer is extended. But Miniz doesn't seem to support that.
+    // with stb_image, buffer is extended. But Miniz doesn't seem to support that, so we extend it externally.
 
     int initial_size = 594825;
     int outlen;
