@@ -1360,23 +1360,51 @@ static if (useMiniZ)
         int parse_header)
     {
         ubyte* outBuf = cast(ubyte*) malloc(initial_size);
-        c_ulong destLen = *outlen;
-        c_ulong inputLen = len;
-        bool trusted_input = true; // this allows to not check adler32, but I'm not sure how safe that is. #SECURITY
-        int res = mz_uncompress3(outBuf, 
-                                 &destLen, 
-                                 cast(const(ubyte)*) buffer, 
-                                 &inputLen,
-                                 parse_header ? MZ_DEFAULT_WINDOW_BITS : -MZ_DEFAULT_WINDOW_BITS,
-                                 trusted_input);
-        *outlen = cast(int)(destLen);
-
-        const(char)* error = mz_error(res);
-        if (res != MZ_OK)
-        {
-            free(outBuf);
+        if (outBuf == null)
             return null;
+
+
+        c_ulong destLen = initial_size;
+        while(true)
+        {
+
+            c_ulong inputLen = len;
+            bool trusted_input = true; // this allows to not check adler32, but I'm not sure how safe that is. #SECURITY
+
+            int res = mz_uncompress3(outBuf, 
+                                     &destLen, 
+                                     cast(const(ubyte)*) buffer, 
+                                     &inputLen,
+                                     parse_header ? MZ_DEFAULT_WINDOW_BITS : -MZ_DEFAULT_WINDOW_BITS,
+                                     trusted_input);
+
+            if (res == MZ_OK)
+                break;
+
+            if (res == MZ_BUF_ERROR)
+            {
+                if (initial_size > 536_870_912) // That much bytes is suspicious in just a zlib chunk
+                {
+                    free(outBuf);
+                    return null;
+                }
+
+                initial_size = initial_size*2;
+                if (initial_size < 32*1024)
+                    initial_size = 32*1024;
+
+                outBuf = cast(ubyte*) realloc(outBuf, initial_size);
+                if (outBuf == null)
+                    return null;
+                destLen = initial_size;
+            }
+            else
+            {
+                free(outBuf);
+                return null;
+            }
         }
+        *outlen = cast(int)(destLen);
         return outBuf;
     }
 }
