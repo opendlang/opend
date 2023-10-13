@@ -402,7 +402,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
 
     ///
     void put(U, CovarianceAlgo covAlgo, Summation sumAlgo)(CovarianceAccumulator!(U, covAlgo, sumAlgo) v)
-        if (!is(covAlgo == CovarianceAlgo.assumeZeroMean))
+        if (covAlgo != CovarianceAlgo.assumeZeroMean)
     {
         size_t oldCount = count;
         T deltaLeft = v.meanLeft;
@@ -601,34 +601,6 @@ unittest
 
     v1.covariance(true).shouldApprox == -5.5 / 12;
     v1.covariance(false).shouldApprox == -5.5 / 11;
-}
-
-// Check adding CovarianceAccumultors (assumeZeroMean)
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.sum: sum, Summation;
-    import mir.ndslice.slice: sliced;
-    import mir.stat.transform: center;
-    import mir.test: shouldApprox;
-
-    auto a1 = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25].sliced;
-    auto b1 = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5].sliced;
-    auto a2 = [  2.0,   7.5,   5.0,  1.0,  1.5,  0.0].sliced;
-    auto b2 = [ 9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
-    auto x1 = a1.center;
-    auto y1 = b1.center;
-    auto x2 = a2.center;
-    auto y2 = b2.center;
-
-    CovarianceAccumulator!(double, CovarianceAlgo.online, Summation.naive) v1;
-    v1.put(x1, y1);
-    auto v2 = CovarianceAccumulator!(double, CovarianceAlgo.assumeZeroMean, Summation.naive)(x2, y2);
-    v1.put(v2);
-
-    v1.covariance(true).shouldApprox == -1.9375 / 12; //note: different from above due to inconsistent centering
-    v1.covariance(false).shouldApprox == -1.9375 / 11; //note: different from above due to inconsistent centering
 }
 
 // Initializing with one point

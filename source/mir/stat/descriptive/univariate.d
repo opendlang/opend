@@ -1817,7 +1817,7 @@ unittest
 Output range that applies function `fun` to each input before summing
 +/
 struct MapSummator(alias fun, T, Summation summation) 
-    if(isMutable!T)
+    if (isMutable!T)
 {
     ///
     Summator!(T, summation) summator;
@@ -2144,7 +2144,7 @@ struct VarianceAccumulator(T, VarianceAlgo varianceAlgo, Summation summation)
 
     ///
     void put(U, VarianceAlgo varAlgo, Summation sumAlgo)(VarianceAccumulator!(U, varAlgo, sumAlgo) v)
-        if(!is(varAlgo == VarianceAlgo.assumeZeroMean))
+        if (varAlgo != VarianceAlgo.assumeZeroMean)
     {
         size_t oldCount = count;
         T delta = v.mean!T;
@@ -2722,7 +2722,7 @@ struct VarianceAccumulator(T, VarianceAlgo varianceAlgo, Summation summation)
 
     ///
     void put(U, VarianceAlgo varAlgo, Summation sumAlgo)(VarianceAccumulator!(U, varAlgo, sumAlgo) v)
-        if(!is(varAlgo == VarianceAlgo.assumeZeroMean))
+        if (varAlgo != VarianceAlgo.assumeZeroMean)
     {
         size_t oldCount = count;
         T delta = v.mean!T;
@@ -2991,7 +2991,7 @@ template variance(
         isPopulation = true if population variance, false if sample variance (default)
     +/
     @fmamath meanType!Range variance(Range)(Range r, bool isPopulation = false)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -3374,7 +3374,7 @@ template standardDeviation(
         isPopulation = true if population standard deviation, false if sample standard deviation (default)
     +/
     @fmamath stdevType!Range standardDeviation(Range)(Range r, bool isPopulation = false)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -5789,7 +5789,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     void put(U, SkewnessAlgo skewAlgo, Summation sumAlgo)(SkewnessAccumulator!(U, skewAlgo, sumAlgo) v)
-        if(!is(skewAlgo == SkewnessAlgo.assumeZeroMean))
+        if (skewAlgo != SkewnessAlgo.assumeZeroMean)
     {
         size_t oldCount = count;
         T delta = v.mean;
@@ -5994,28 +5994,6 @@ unittest
     v.put(w);
     assert(v.centeredSumOfCubes.approxEqual(117.005859));
     assert(v.centeredSumOfSquares.approxEqual(54.765625));
-}
-
-// Can put SkewnessAccumulator (assumeZeroMean)
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual, pow;
-    import mir.ndslice.slice: sliced;
-    import mir.stat.transform: center;
-
-    auto a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25].sliced;
-    auto b = [2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-    auto x = a.center;
-    auto y = b.center;
-
-    SkewnessAccumulator!(double, SkewnessAlgo.online, Summation.naive) v;
-    v.put(x);
-    auto w = SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive)(y);
-    v.put(w);
-    assert(v.centeredSumOfCubes.approxEqual(84.015625)); //note: different from above due to inconsistent centering
-    assert(v.centeredSumOfSquares.approxEqual(52.885417)); //note: different from above due to inconsistent centering
 }
 
 // check variance/scaledSumOfCubes
@@ -6726,7 +6704,7 @@ struct SkewnessAccumulator(T, SkewnessAlgo skewnessAlgo, Summation summation)
 
     ///
     void put(U, SkewnessAlgo skewAlgo, Summation sumAlgo)(SkewnessAccumulator!(U, skewAlgo, sumAlgo) v)
-        if(!is(skewAlgo == SkewnessAlgo.assumeZeroMean))
+        if (skewAlgo != SkewnessAlgo.assumeZeroMean)
     {
         size_t oldCount = count;
         T delta = v.mean;
@@ -7004,27 +6982,6 @@ unittest
     assert(v.centeredSumOfSquares.approxEqual(54.765625));
 }
 
-// Can put SkewnessAccumulator (assumeZeroMean)
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual, pow;
-    import mir.ndslice.slice: sliced;
-    import mir.stat.transform: center;
-
-    auto a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25].sliced;
-    auto b = [2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-    auto x = a.center;
-    auto y = b.center;
-
-    auto v = SkewnessAccumulator!(double, SkewnessAlgo.hybrid, Summation.naive)(x);
-    auto w = SkewnessAccumulator!(double, SkewnessAlgo.assumeZeroMean, Summation.naive)(y);
-    v.put(w);
-    assert(v.centeredSumOfCubes.approxEqual(84.015625)); //note: different from above due to inconsistent centering
-    assert(v.centeredSumOfSquares.approxEqual(52.885417)); //note: different from above due to inconsistent centering
-}
-
 // check variance/scaledSumOfCubes
 version(mir_stat_test)
 @safe pure nothrow
@@ -7108,7 +7065,7 @@ template skewness(SkewnessAlgo skewnessAlgo = SkewnessAlgo.hybrid,
         isPopulation = true if population skewness, false if sample skewness (default)
     +/
     @fmamath stdevType!Range skewness(Range)(Range r, bool isPopulation = false)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
         alias F = typeof(return);
@@ -9448,7 +9405,7 @@ template kurtosis(
         isRaw = true if raw kurtosis, false if excess kurtosis (default)
     +/
     @fmamath stdevType!Range kurtosis(Range)(Range r, bool isPopulation = false, bool isRaw = false)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
         alias F = typeof(return);
@@ -10313,7 +10270,7 @@ template coefficientOfVariation(
         isPopulation = true if population variance, false if sample variance (default)
     +/
     @fmamath stdevType!Range coefficientOfVariation(Range)(Range r, bool isPopulation = false)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -11045,7 +11002,7 @@ template rawMoment(size_t N, Summation summation = Summation.appropriate)
         r = range, must be finite iterable
     +/
     @fmamath meanType!Range rawMoment(Range)(Range r)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -11298,7 +11255,7 @@ template centralMoment(size_t N, Summation summation = Summation.appropriate)
         r = range, must be finite iterable
     +/
     @fmamath meanType!Range centralMoment(Range)(Range r)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -11595,7 +11552,7 @@ template standardizedMoment(size_t N,
         r = range, must be finite iterable
     +/
     @fmamath stdevType!Range standardizedMoment(Range)(Range r)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
@@ -11908,7 +11865,7 @@ template moment(size_t N,
         r = range, must be finite iterable
     +/
     @fmamath stdevType!Range moment(Range)(Range r)
-        if(isIterable!Range)
+        if (isIterable!Range)
     {
         import core.lifetime: move;
 
