@@ -46,10 +46,15 @@ void testDecodingVSTLogo()
     // Test decoding of first problem chunk in the image
     char[] bytes = cast(char[]) std.file.read("test-images/buggy-miniz-chunk.bin");
     assert(bytes.length == 25568);
+
+    // initial_size is 594825, but more is returned by inflate, 594825 + 272 with both miniz and stbz
+    // with stb_image, buffer is extended. But Miniz doesn't seem to support that.
+
     int initial_size = 594825;
     int outlen;
     ubyte* buf = stbi_zlib_decode_malloc_guesssize_headerflag(bytes.ptr, 25568, initial_size, &outlen, 1);
     assert(buf !is null);
+    assert(outlen == 594825 + 272);
     free(buf);
 }
 
