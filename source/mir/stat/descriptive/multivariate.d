@@ -748,6 +748,7 @@ struct CovarianceAccumulator(T, CovarianceAlgo covarianceAlgo, Summation summati
     ///
     this()(T x, T y)
     {
+        _count++;
         summatorLeft.put(x);
         summatorRight.put(y);
         centeredSummatorOfProducts.put(0);
