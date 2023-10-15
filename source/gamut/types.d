@@ -64,6 +64,10 @@ enum int GAMUT_MAX_IMAGE_WIDTH = 16777216;
 /// No Gamut `Image` can exceed this height.
 enum int GAMUT_MAX_IMAGE_HEIGHT = 16777216;
 
+/// No Gamut `Image` can have this many layers.
+enum int GAMUT_MAX_IMAGE_LAYERS = 4194303; // A bit arbitrary, but can be pretty long even as 120fps video.
+
+
 /// No Gamut `Image` can have a size that exceeds this value.
 /// Technically, the true maximum is `MAX(size_t.max, GAMUT_MAX_IMAGE_BYTES)`.
 /// So this is worth 32gb. Cannot really exceed that size with just malloc/realloc.

@@ -434,3 +434,33 @@ Gamut provides a few geometric transforms.
 Image image;
 image.flipHorizontally(); // Flip image pixels horizontally.
 image.flipVertically();   // Flip image vertically (pixels or logically)
+```
+
+
+&nbsp;
+
+
+----
+
+
+&nbsp;
+
+
+6. Multi-layered images **(WIP)**
+
+```d
+Image image;
+
+// Create a black 5-layers, 640x480 image with default pixel format.
+image.createLayered(5, 640, 480); 
+assert(image.layers == 5);
+assert(image.width == 640);
+assert(image.height == 480);
+assert(image.isLayered); // true if layerCount > 1
+
+// Create an uninitialized 5-layers, 640x480 image with default pixel 
+image.createLayeredNoInit(5, 640, 480);
+assert(image.layerCount == 5);
+assert(image.width == 640);
+assert(image.height == 480);
+```

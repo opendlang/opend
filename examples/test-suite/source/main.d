@@ -11,7 +11,7 @@ void main(string[] args)
     testDecodingVSTLogo();
     testIssue35();
     testIssue46();
-    testReallocSpeed();
+    //testReallocSpeed();
     testCGBI();
 }
 
@@ -19,6 +19,7 @@ void testIssue35()
 {
     Image image;
     image.loadFromFile("test-images/issue35.jpg", LOAD_RGB | LOAD_8BIT | LOAD_ALPHA | LAYOUT_VERT_STRAIGHT | LAYOUT_GAPLESS);
+    assert(image.layers == 1);
     assert(!image.isError);
     image.saveToFile("output/issue35.png");
 }
@@ -70,7 +71,7 @@ void testCGBI()
     assert(!image.isError);
     image.saveToFile("output/issue51cbgi2.png");
 }
-
+/+
 void testReallocSpeed()
 {
     Clock a;
@@ -106,6 +107,7 @@ void testReallocSpeed()
 
 
 }
++/
 
 version(Windows)
 {

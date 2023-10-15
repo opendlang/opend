@@ -117,7 +117,7 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }    
 
-    if (!imageIsValidSize(desc.width, desc.height))
+    if (!imageIsValidSize(1, desc.width, desc.height))
     {
         image.error(kStrImageTooLarge);
         free(decoded);
@@ -136,6 +136,8 @@ void loadQOIX(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._pitch = desc.pitchBytes;
     image._pixelAspectRatio = desc.pixelAspectRatio;
     image._resolutionY = desc.resolutionY;
+    image._layerCount = 1;
+    image._layerOffset = 0;
 
     // Convert to target type and constraints.
     image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);

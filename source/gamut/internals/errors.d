@@ -30,4 +30,6 @@ static immutable string kStrOutOfMemory                = "Out of memory";
 static immutable string kStrUnsupportedTypeConversion  = "Unsupported image pixel type conversion";
 static immutable string kStrUnsupportedVFlip           = "Can't flip image vertically";
 static immutable string kStrOverlappingScanlines       = "Scanlines are overlapping";
+static immutable string kStrOverlappingLayers          = "Layers are overlapping";
+static immutable string kStrInvalidNegLayerOffset      = "Invalid negative layer offset";
 

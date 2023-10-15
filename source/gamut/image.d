@@ -61,7 +61,17 @@ void freeEncodedImage(ubyte[] encodedImage) @system
 ///           /         |          \                   "plain pixels" for now.
 ///   isPlanar or isPlainPixels  or isCompressed
 ///                                                    Also: hasNonZeroSize(). 
-///                                                    Images with a type have a width and height (and that size can be zero!).
+///                                                    Images with a type have a width and height and a layer count
+///                                                    (and any of this can be zero!).
+///
+///                 isValid()
+///            ___/     |   \______                    Images can have several "layers", each of them is a consecutive 2D image.
+///           /         |          \                   This is for animated image support.
+/// hasZerolayer or hasOneLayer  or hasMultipleLayers  Similar to OpenGL 2D array textures.
+///                     |
+///                     V
+///         (most typical case is 1 layer)
+///
 ///
 /// IMPORTANT: there is no constness in Image. All Image are considered read/write, with no const concept.
 ///
@@ -103,7 +113,13 @@ public:
     {
         assert(isValid());
         return _height;
-    }  
+    }
+
+    /// Returns: Number of layers.
+    int layers() pure const
+    {
+        return _layerCount;
+    }
 
     /// Get the image pitch (byte distance between rows), in bytes.
     ///
@@ -127,6 +143,22 @@ public:
             assert(_pitch >= 0);
 
         return _pitch;
+    }
+
+    /// Get the layer offset (byte distance between successive layers), in bytes.
+    ///
+    /// Warning: This pitch cannot be a negative integer.
+    /// If the image has 0 or 1 layers, then return 0.
+    ///
+    /// See_also: `pitchInBytes`, `layers`.
+    /// Tags: #valid #data
+    int layerOffsetInBytes() pure const
+    {
+        assert(_layerCount >= 0);
+        if (_layerCount == 0 || _layerCount == 1)
+            assert(_layerOffset == 0);
+
+        return _layerOffset;
     }
 
     /// Length of the managed scanline pixels, in bytes.
@@ -455,7 +487,32 @@ public:
     /// Tags: none.
     bool hasNonZeroSize() pure const
     {
-        return width() != 0 && height() != 0;
+        return width() != 0 && height() != 0 && layers() != 0;
+    }
+
+    /// An image is allowed to have zero layers, in which case it is considered much like 
+    /// having zero width or zero height.
+    /// Tags: #valid.
+    bool hasZeroLayer() pure const
+    {
+        assert(isValid);
+        return _layerCount == 0;
+    }
+
+    /// Typical images have one layer.
+    /// Tags: #valid.
+    bool hasSingleLayer() pure const
+    {
+        assert(isValid);
+        return _layerCount == 1;
+    }
+
+    /// Animated images have more.
+    /// Tags: #valid.
+    bool hasMultipleLayers() pure const
+    {
+        assert(isValid);
+        return _layerCount > 1;
     }
 
     //
@@ -481,10 +538,17 @@ public:
                 PixelType type = PixelType.rgba8,
                 LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        if (!forgetPreviousUsage(width, height))
+        createLayered(1, width, height, type, layoutConstraints);
+    }
+    ///ditto
+    void createLayered(int layers, int width, int height, 
+                       PixelType type = PixelType.rgba8,
+                       LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    {
+        if (!forgetPreviousUsage(layers, width, height))
             return;
 
-        if (!setStorage(width, height, type, layoutConstraints, true))
+        if (!setStorage(layers, width, height, type, layoutConstraints, true))
         {
             // precise error set by setStorage
             return;
@@ -498,17 +562,25 @@ public:
                       PixelType type = PixelType.rgba8,
                       LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        if (!forgetPreviousUsage(width, height))
+        createLayeredNoInit(1, width, height, type, layoutConstraints);
+    }
+    ///ditto
+    void createLayeredNoInit(int layers, int width, int height, 
+                             PixelType type = PixelType.rgba8,
+                             LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    {
+        if (!forgetPreviousUsage(layers, width, height))
             return;
 
-        if (!setStorage(width, height, type, layoutConstraints, false))
+        if (!setStorage(layers, width, height, type, layoutConstraints, false))
         {
             // precise error set by setStorage
             return;
         }
     }
     ///ditto
-    alias setSize = createNoInit;
+    alias setSize = createNoInit; // TODO: deprecated that bad name, 
+                                  // it sounds like there will be a "resize" with resampling
 
     // TODO createView from another Image + a rect
 
@@ -517,13 +589,16 @@ public:
     /// No layout constraints are assumed.
     /// The input scanlines must NOT overlap.
     /// Params:
-    ///    data         Pointer to first scanline pixels.
-    ///    width        Width of input data in pixels.
-    ///    height       Height of input data in pixels.
-    ///    type         Type of pixels for the created view.
-    ///    pitchInBytes Byte offset between two consecutive rows of pixels.
-    ///                 Can not be too small as the scanline would overlap, in this case the 
-    ///                 image will be left in an errored state.
+    ///    data             Pointer to first scanline pixels.
+    ///    layers           Number of layers.
+    ///    width            Width of input data in pixels.
+    ///    height           Height of input data in pixels.
+    ///    type             Type of pixels for the created view.
+    ///    pitchInBytes     Byte offset between two consecutive rows of pixels.
+    ///                     Can not be too small as the scanline would overlap, in this case the 
+    ///                     image will be left in an errored state.
+    ///    layerOffsetBytes Byte offset between two consecutive layers. Can not be negative.
+    ///                     for layers == 0 or layers == 1, this is ignored and 0 is set instead.  
     /// Tags: none.
     void createViewFromData(void* data, 
                             int width, 
@@ -531,7 +606,18 @@ public:
                             PixelType type,
                             int pitchInBytes) @system
     {
-        if (!forgetPreviousUsage(width, height))
+        createLayeredViewFromData(data, 1, width, height, type, pitchInBytes, 0);        
+    }
+    ///ditto
+    void createLayeredViewFromData(void* data, 
+                                   int layers,
+                                   int width, 
+                                   int height, 
+                                   PixelType type,
+                                   int pitchInBytes,
+                                   int layerOffsetBytes) @system
+    {
+        if (!forgetPreviousUsage(layers, width, height))
             return;
 
         // If scanlines overlap, there is a problem.
@@ -543,6 +629,23 @@ public:
             return;
         }
 
+        bool hasMultipleLayers = (layers > 1);
+
+        if (hasMultipleLayers)
+        {
+            if (layerOffsetBytes < 0)
+            {
+                error(kStrInvalidNegLayerOffset);
+                return;
+            }
+            long minLayerOffset = cast(long)absPitch * height;
+            if (layerOffsetBytes < minLayerOffset)
+            {
+                error(kStrOverlappingLayers);
+                return;
+            }
+        }
+
         _data = cast(ubyte*) data;
         _allocArea = null; // not owned
         _type = type;
@@ -550,6 +653,8 @@ public:
         _height = height;
         _pitch = pitchInBytes;
         _layoutConstraints = LAYOUT_DEFAULT; // No constraint whatsoever, we lack that information
+        _layerCount = layers;
+        _layerOffset = (layers == 0 || layers == 1) ? 0 : layerOffsetBytes;
     }
 
     deprecated("Use createWithNoData instead") alias initWithNoData = createWithNoData;
@@ -560,7 +665,14 @@ public:
                           PixelType type = PixelType.rgba8,
                           LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        if (!forgetPreviousUsage(width, height))
+        createLayeredWithNoData(1, width, height, type, layoutConstraints);
+    }
+    ///ditto
+    void createLayeredWithNoData(int layers, int width, int height, 
+                                 PixelType type = PixelType.rgba8,
+                                 LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
+    {
+        if (!forgetPreviousUsage(layers, width, height))
             return;
 
         if (!layoutConstraintsValid(layoutConstraints))
@@ -576,6 +688,8 @@ public:
         _height = height;
         _pitch = 0;
         _layoutConstraints = layoutConstraints;
+        _layerCount = layers;
+        _layerOffset = 0;
     }
 
     /// Clone an existing image. 
@@ -1003,13 +1117,17 @@ public:
         int interBufSize = width * pixelTypeSize(interType);
         int bonusBytes = needConversionWithIntermediateType ? interBufSize : 0;
 
+        int layerCount = _layerCount; // keep same number of layers
+
         ubyte* dest; // first scanline
         ubyte* newAllocArea;  // the result of realloc-ed
         int destPitch;
+        int destLayerOffset;
         bool err;
         bool clearWithZeroes = false; // no need, since all pixels will be rewritten
         allocatePixelStorage(null, // so that the former allocation keep existing for the copy
                              targetType,
+                             layerCount,
                              width,
                              height,
                              layoutConstraints,
@@ -1018,6 +1136,7 @@ public:
                              dest,
                              newAllocArea,
                              destPitch,
+                             destLayerOffset,
                              err);
         
         if (err)
@@ -1030,6 +1149,7 @@ public:
         bool ok = false;
         if (targetType == _type)
         {
+            // TODO: iterate for each layer
             ok = copyScanlines(targetType, 
                                source, sourcePitch,
                                dest, destPitch,
@@ -1037,6 +1157,7 @@ public:
         }
         else
         {
+            // TODO: iterate for each layer
             // Need an intermediate buffer. We allocated one in the new image buffer.
             // After that conversion, noone will ever talk about it, and the bonus bytes will stay unused.
             ubyte* interBuf = newAllocArea;
@@ -1062,6 +1183,8 @@ public:
         _allocArea = newAllocArea; // now own the new one.
         _type = targetType;
         _pitch = destPitch;
+        _layerCount = layerCount;
+        _layerOffset = destLayerOffset;
         _error = null;
         return true;
     }
@@ -1363,10 +1486,17 @@ package:
     /// By default, this height is 0 (but as the image has no pixel data, this doesn't matter).
     int _height = 0;
 
+    /// Number of layers of the image. A normal image has typically 1 layer, animated image have more.
+    int _layerCount = 0;
+
     /// Pitch in bytes between lines, when a pitch makes sense. This pitch can be, or not be, a negative integer.
     /// When the image has layout constraint LAYOUT_VERT_FLIPPED, it is always kept <= 0.
     /// When the image has layout constraint LAYOUT_VERT_STRAIGHT, it is always kept >= 0.
     int _pitch = 0; 
+
+    /// Pitch in bytes between successive layers. All layers have same dimension and constraints and type.
+    /// Always >= 0, unlike _pitch.
+    int _layerOffset = 0;
 
     /// Pointer to last known error. `null` means "no errors".
     /// Once an error has occured, continuing to use the image is Undefined Behaviour.
@@ -1391,20 +1521,20 @@ private:
     }
 
     // Used by creation functions, this makes some checks too.
-    bool forgetPreviousUsage(int newWidth, int newHeight) @safe
+    bool forgetPreviousUsage(int newLayers, int newWidth, int newHeight) @safe
     {
         // FUTURE: Note that this invalidates any borrow we could have here...
         cleanupBitmapAndTypeIfAny();
 
         clearError();
 
-        if (newWidth < 0 || newHeight < 0)
+        if (newLayers < 0 || newWidth < 0 || newHeight < 0)
         {
             error(kStrIllegalNegativeDimension);
             return false;
         }
 
-        if (!imageIsValidSize(newWidth, newHeight))
+        if (!imageIsValidSize(newLayers, newWidth, newHeight))
         {
             error(kStrImageTooLarge);
             return false;
@@ -1444,7 +1574,9 @@ private:
     /// Discard ancient data, and reallocate stuff.
     /// Returns true on success, false on OOM.
     /// When failing, sets the errored state.
-    public bool setStorage(int width,  // TEMP public
+    private bool setStorage(
+                    int numLayers,
+                    int width,
                     int height,
                     PixelType type, 
                     LayoutConstraints constraints,
@@ -1459,10 +1591,12 @@ private:
         ubyte* dataPointer;
         ubyte* mallocArea;
         int pitchBytes;
+        int layerOffset;
         bool err;
 
         allocatePixelStorage(_allocArea,
                              type, 
+                             numLayers,
                              width,
                              height,
                              constraints,
@@ -1471,6 +1605,7 @@ private:
                              dataPointer,
                              mallocArea,
                              pitchBytes,
+                             layerOffset,
                              err);
         if (err)
         {
@@ -1485,6 +1620,9 @@ private:
         _height = height;
         _pitch = pitchBytes;
         _layoutConstraints = constraints;
+        _layerCount = numLayers;
+        _layerOffset = layerOffset;
+
         return true;
     }
 
@@ -1646,6 +1784,10 @@ private:
         // gapless
         if (pitch == absPitch)
             c |= LAYOUT_GAPLESS;
+
+        // TODO: do not infer LAYOUT_GAPLESS if there are multiple layers, 
+        // that have no adequate layer offsets.
+        // Semantic of LAYOUT_GAPLESS and allPixelsAtOnce need to be adapted
 
         // Border constraint: can only trust the _constraint. Cannot infer more.
         c |= (_layoutConstraints & LAYOUT_BORDER_MASK);
@@ -1917,6 +2059,8 @@ unittest
     {
         assert(image.isValid());
         assert(image.isOwned());
+        assert(image.layers == 1);
+        assert(image.layerOffsetInBytes() == 0);
         assert(image.width == 0);
         assert(image.height == 0);
         assert(!image.isError());
@@ -1983,7 +2127,7 @@ unittest
         image.loadFromMemory(encoded);
         image.convertTo(PixelType.rgb8);
         assert(!image.isError);
-
+        assert(image.layers == 1);
         assert(image.width == 3);
         assert(image.height == 1);
 
@@ -2022,7 +2166,7 @@ unittest
     version(encodeQOIX)
     {
         ubyte[] qoix = image.saveToMemory(ImageFormat.QOIX);
-        version(decodeQOIX) checkEncode(qoi, true);
+        version(decodeQOIX) checkEncode(qoix, true);
         freeEncodedImage(qoix);
     }
 
@@ -2032,4 +2176,55 @@ unittest
         version(decodeTGA) checkEncode(tga, true);
         freeEncodedImage(tga);
     }
+}
+
+// Layered images, semantics test.
+unittest
+{
+    Image image;
+
+    // Uninitialized image has 0 layers.
+    assert(image.layers == 0);
+    assert(image.layerOffsetInBytes() == 0);
+
+    // Create a black 5-layers, 640x480 image with default pixel format.
+    image.createLayered(5, 640, 480); 
+    assert(image.layers == 5);
+    assert(image.width == 640);
+    assert(image.height == 480);
+    import std.stdio;
+    debug writeln("a");
+    assert(image.hasMultipleLayers);
+    debug writeln("b");
+    assert(image.hasNonZeroSize);
+    debug writeln("c");
+    assert(image.layerOffsetInBytes() > 0);
+    debug writeln("d");
+
+    // Possible to create a zero-layer image.
+    image.createLayered(0, 1, 1); 
+    assert(image.layers == 0);
+    assert(!image.hasMultipleLayers);
+    assert(!image.hasMultipleLayers);
+    assert(image.hasZeroLayer);
+    assert(!image.hasSingleLayer);
+    assert(!image.hasNonZeroSize);
+    assert(image.layerOffsetInBytes() == 0);
+
+    // Create an uninitialized 5-layers, 640x480 image with default pixel 
+    image.createLayeredNoInit(5, 640, 480);
+    assert(image.layers == 5);
+    assert(image.width == 640);
+    assert(image.height == 480);
+    assert(image.layerOffsetInBytes() > 0);
+
+    // Create a no-data 5-layers, 640x480 image with default pixel 
+    image.createLayeredWithNoData(5, 640, 480);
+    assert(image.layers == 5);
+    assert(image.width == 640);
+    assert(image.height == 480);
+    assert(image.hasMultipleLayers);
+    assert(!image.hasZeroLayer);
+    assert(!image.hasSingleLayer);
+    assert(image.layerOffsetInBytes() == 0);
 }

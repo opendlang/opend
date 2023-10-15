@@ -72,7 +72,7 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
         return;
     }
 
-    if (!imageIsValidSize(width, height))
+    if (!imageIsValidSize(1, width, height))
     {
         image.error(kStrImageTooLarge);
         free(decoded.ptr);
@@ -96,6 +96,8 @@ void loadJPEG(ref Image image, IOStream *io, IOHandle handle, int page, int flag
     image._pixelAspectRatio = pixelAspectRatio == -1 ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelAspectRatio;
     image._resolutionY = dotsPerInchY == -1 ? GAMUT_UNKNOWN_RESOLUTION : dotsPerInchY;
     image._layoutConstraints = LAYOUT_DEFAULT; // JPEG decoder follow no particular constraints (TODO?)   
+    image._layerCount = 1;
+    image._layerOffset = 0;
 
     // Convert to target type and constraints
     image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);

@@ -103,7 +103,7 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }    
 
-    if (!imageIsValidSize(width, height))
+    if (!imageIsValidSize(1, width, height))
     {
         image.error(kStrImageTooLarge);
         free(decoded);
@@ -119,6 +119,8 @@ void loadPNG(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._pixelAspectRatio = (pixelRatio == -1) ? GAMUT_UNKNOWN_ASPECT_RATIO : pixelRatio;
     image._resolutionY = (ppmY == -1) ? GAMUT_UNKNOWN_RESOLUTION : convertInchesToMeters(ppmY);
     image._layoutConstraints = LAYOUT_DEFAULT; // STB decoder follows no particular constraints (TODO?)
+    image._layerCount = 1;
+    image._layerOffset = 0;
 
     if (!decodeTo16bit)
     {

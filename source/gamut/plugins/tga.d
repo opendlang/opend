@@ -54,7 +54,7 @@ void loadTGA(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }
 
-    if (!imageIsValidSize(decoder._width, decoder._height))
+    if (!imageIsValidSize(1, decoder._width, decoder._height))
     {
         image.error(kStrImageTooLarge);
         return;
@@ -87,6 +87,8 @@ void loadTGA(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
     image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
     image._layoutConstraints = LAYOUT_DEFAULT;
+    image._layerCount = 1;
+    image._layerOffset = 0;
 
     // Convert to target type and constraints
     image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);

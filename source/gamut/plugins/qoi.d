@@ -102,7 +102,7 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
         return;
     }    
 
-    if (!imageIsValidSize(desc.width, desc.height))
+    if (!imageIsValidSize(1, desc.width, desc.height))
     {
         image.error(kStrImageTooLarge);
         free(decoded);
@@ -132,6 +132,8 @@ void loadQOI(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     image._pixelAspectRatio = GAMUT_UNKNOWN_ASPECT_RATIO;
     image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
     image._layoutConstraints = 0; // no particular constraint followed in QOI decoder.
+    image._layerCount = 1;
+    image._layerOffset = 0;
 
     // Convert to target type and constraints
     image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);

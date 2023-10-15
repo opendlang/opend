@@ -136,9 +136,12 @@ bool pixelTypeExpressibleInRGBA8(PixelType type) pure
 }
 
 /// Check if these image dimensions are valid in Gamut.
-bool imageIsValidSize(int width, int height) pure
+bool imageIsValidSize(int layers, int width, int height) pure
 {
-    if (width < 0 || height < 0)
+    if (layers < 0 || width < 0 || height < 0)
+        return false;
+
+    if (layers > GAMUT_MAX_IMAGE_LAYERS)
         return false;
 
     if (width > GAMUT_MAX_IMAGE_WIDTH || height > GAMUT_MAX_IMAGE_HEIGHT)
@@ -322,6 +325,7 @@ void applyVFlipConstraintsToScanlinePointers(int width,
 /// Params:
 ///     existingData The existing `mallocArea` from a former call to `allocatePixelStorage`.
 ///     type         Pixel data type.
+///     layers       How many such of image are allocated. Must be 1 or greater.
 ///     width        Image width.
 ///     height       Image height.
 ///     constraints  The layout constraints to follow for the scanlines and allocation. MUST be valid.
@@ -333,12 +337,14 @@ void applyVFlipConstraintsToScanlinePointers(int width,
 ///     mallocArea   The pointer to the allocation beginning. Will be different from dataPointer and
 ///                  must be kept somewhere.
 ///     pitchBytes   Byte offset between two adjacent scanlines. Scanlines cannot ever overlap.
+///     layerOffset  Byte offset between two adjacent layers. Return 0 if only one layer.
 ///     err          True if successful. Only err indicates success, not mallocArea.
 ///
 /// Note: even if you can request zero bytes, `realloc` can give you a non-null pointer, 
 /// that you would have to keep. This is a success case given by `err` only.
 void allocatePixelStorage(ubyte* existingData, 
                           PixelType type, 
+                          int layers,
                           int width, 
                           int height, 
                           LayoutConstraints constraints,
@@ -347,14 +353,16 @@ void allocatePixelStorage(ubyte* existingData,
                           out ubyte* dataPointer, // first scanline
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
+                          out int layerOffset,
                           out bool err) @trusted
 {
+    assert(layers >= 0); // layers == 0 must be supported!
     assert(width >= 0); // width == 0 and height == 0 must be supported!
     assert(height >= 0);
     assert(layoutConstraintsValid(constraints));
 
     // Width and height must be within limits.
-    if (!imageIsValidSize(width, height))
+    if (!imageIsValidSize(layers, width, height))
     {
         err = true;
         return;
@@ -398,7 +406,9 @@ void allocatePixelStorage(ubyte* existingData,
         borderRight = trailingPixels;
 
     int actualWidthInPixels  = border + width  + borderRight;
-    int actualHeightInPixels = border + height + border;
+
+    // Support layers: border exists for each layer.
+    long actualHeightInPixels = cast(long)(border + height + border) * layers;
 
     // Compute byte pitch and align it on `rowAlignment`
     int pixelSize = pixelTypeSize(type);
@@ -479,6 +489,22 @@ void allocatePixelStorage(ubyte* existingData,
 
     dataPointer = firstScanlinePtr;
     pitchBytes = finalPitchInBytes;
+    if (layers == 0 || layers == 1)
+    {
+        layerOffset = 0;
+    }
+    else
+    {
+        long offsetBetweenLayers = bytePitch * actualHeightInPixels;
+        if (offsetBetweenLayers > layerOffset.max)
+        {
+            // TODO: what should be the maximum possible layerOffset? Should
+            // probably be size_t?
+            err = true;
+            return;
+        }
+        layerOffset = cast(int)offsetBetweenLayers;
+    }
     mallocArea = allocation;
     err = false;
 
