@@ -242,6 +242,7 @@ enum LayoutConstraints
      // No space between scanlines. 
      // This is logically incompatible with scanline alignment, border, trailing pixels, and multiplicity.
      // Subimage: LAYOUT_GAPLESS is immediately lost.
+     // Note: In presence of multiple layers, LAYOUT_GAPLESS also forces those layers to be immediately contiguous.
      LAYOUT_GAPLESS               = 2048; /// There must be no single trailing bytes between scanlines.
 
 

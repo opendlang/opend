@@ -408,7 +408,8 @@ void allocatePixelStorage(ubyte* existingData,
     int actualWidthInPixels  = border + width  + borderRight;
 
     // Support layers: border exists for each layer.
-    long actualHeightInPixels = cast(long)(border + height + border) * layers;
+    long actualHeightOfOneLayer = cast(long)(border + height + border);
+    long actualHeightInPixels = actualHeightOfOneLayer * layers;
 
     // Compute byte pitch and align it on `rowAlignment`
     int pixelSize = pixelTypeSize(type);
@@ -495,7 +496,7 @@ void allocatePixelStorage(ubyte* existingData,
     }
     else
     {
-        long offsetBetweenLayers = bytePitch * actualHeightInPixels;
+        long offsetBetweenLayers = bytePitch * actualHeightOfOneLayer;
         if (offsetBetweenLayers > layerOffset.max)
         {
             // TODO: what should be the maximum possible layerOffset? Should

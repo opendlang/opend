@@ -248,10 +248,10 @@ public:
         return layerptr(layer, y)[0..scanlineInBytes()];
     }
 
-    /// Returns a slice of all pixels at once in O(1). 
+    /// Returns a slice of all pixels OF ALL LAYERS at once in O(1). 
     /// This is only possible if the image is stored non-flipped, and without space
-    /// between scanline.
-    /// To avoid accidental correctness, the image need the layout constraints:
+    /// between scanlines and layers.
+    /// To avoid accidental correctness, the image NEEDS to have the layout constraints:
     /// `LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT`.
     /// Tags: #valid #data #plain
     inout(ubyte)[] allPixelsAtOnce() inout pure @trusted
@@ -273,7 +273,7 @@ public:
 
         // Note: it should fit into size_t. 
         // If the image size was larger than that, it couldn't have been created.
-        long numBytes = (cast(long)_width) * _height * psize;
+        long numBytes = (cast(long)_width) * _height * _layerCount * psize;
         assert(numBytes <= cast(ulong)(size_t.max));
 
         return _data[0..cast(size_t)numBytes];
@@ -1848,13 +1848,22 @@ private:
         if (pitch <= 0)
             c |= LAYOUT_VERT_FLIPPED;
 
-        // gapless
-        if (pitch == absPitch)
-            c |= LAYOUT_GAPLESS;
-
-        // TODO: do not infer LAYOUT_GAPLESS if there are multiple layers, 
-        // that have no adequate layer offsets.
-        // Semantic of LAYOUT_GAPLESS and allPixelsAtOnce need to be adapted
+        // LAYOUT_GAPLESS inference
+        {
+            bool gaplessScanlines = (pitch == absPitch);
+            bool gaplessLayers;
+            if (_layerCount == 0 || _layerCount == 1)
+            {
+                gaplessLayers = true;
+            }
+            else
+            {
+                gaplessLayers = _layerOffset == absPitch * _height;
+            }
+            
+            if (gaplessScanlines && gaplessLayers)
+                c |= LAYOUT_GAPLESS;
+        }
 
         // Border constraint: can only trust the _constraint. Cannot infer more.
         c |= (_layoutConstraints & LAYOUT_BORDER_MASK);
@@ -2256,13 +2265,15 @@ unittest
     assert(image.layerOffsetInBytes() == 0);
 
     // Create a black 5-layers, 640x480 image with default pixel format.
-    image.createLayered(5, 640, 480); 
+    image.createLayered(5, 640, 480, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT); 
     assert(image.layers == 5);
     assert(image.width == 640);
     assert(image.height == 480);
     assert(image.hasMultipleLayers);
     assert(image.hasNonZeroSize);
-    assert(image.layerOffsetInBytes() > 0);
+    assert(image.pitchInBytes() == 640*4);
+    assert(image.layerOffsetInBytes() == 640*480*4);
+    ubyte[] all = image.allPixelsAtOnce(); // gapless access works for layered images too
 
     // Possible to create a zero-layer image.
     image.createLayered(0, 1, 1);
