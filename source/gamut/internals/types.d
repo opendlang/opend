@@ -7,7 +7,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module gamut.internals.types;
 
-import core.stdc.stdlib: malloc, realloc, free;
+//import core.stdc.stdlib: malloc, realloc, free;
 import core.stdc.string: memset;
 
 import gamut.types;
@@ -354,7 +354,7 @@ void allocatePixelStorage(ubyte* existingData,
                           out ubyte* mallocArea,  // the result of realloc-ed
                           out int pitchBytes,
                           out int layerOffset,
-                          out bool err) @trusted
+                          out bool err) pure @trusted
 {
     assert(layers >= 0); // layers == 0 must be supported!
     assert(width >= 0); // width == 0 and height == 0 must be supported!
@@ -456,13 +456,15 @@ void allocatePixelStorage(ubyte* existingData,
     {
         // We don't need to preserve former data, nor to align the allocation.
         // Note: allocationSize can legally be zero.
-        allocation = cast(ubyte*) realloc(existingData, allocationSize);
+
+        // TODO: manages C23 allocationSize == 0 here
+        allocation = cast(ubyte*) fakePureRealloc(existingData, allocationSize);
     }
     else
     {
         free(existingData);
         existingData = null;
-        allocation = cast(ubyte*) malloc(allocationSize);
+        allocation = cast(ubyte*) fakePureMalloc(allocationSize);
     }
 
     // realloc is allowed to return null if zero bytes required.
@@ -529,15 +531,23 @@ void allocatePixelStorage(ubyte* existingData,
 
 // Deallocate pixel data. Everything allocated with `allocatePixelStorage` eventually needs
 // to be through that function.
-void deallocatePixelStorage(void* mallocArea) @system
+void deallocatePixelStorage(void* mallocArea) pure @system
 {
-    free(mallocArea);
+    fakePureFree(mallocArea);
 }
 
 // Deallocate encoded image.
-void deallocateEncodedImage(ubyte[] encodedImage) @system
+void deallocateEncodedImage(ubyte[] encodedImage) pure @system
 {
-    free(encodedImage.ptr);
+    fakePureFree(encodedImage.ptr);
+}
+
+// Pretend to be pure.
+extern (C) private pure @system @nogc nothrow
+{
+    pragma(mangle, "malloc")  void* fakePureMalloc(size_t);
+    pragma(mangle, "realloc") void* fakePureRealloc(void* ptr, size_t size);
+    pragma(mangle, "free")    void  fakePureFree(void* ptr);
 }
 
 bool validLoadFlags(LoadFlags loadFlags) pure

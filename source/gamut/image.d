@@ -603,12 +603,12 @@ public:
     /// TODO: preserve some layout constraints.
     /// In case of errors, the returned `Image` is invalid.
     /// Tags: #valid #data
-    Image layer(int layerIndex)
+    Image layer(int layerIndex) pure
     {
         return layerRange(layerIndex, layerIndex+1);
     }
     ///ditto
-    Image layerRange(int layerStart, int layerEnd) @trusted
+    Image layerRange(int layerStart, int layerEnd) pure @trusted
     {
         assert(isValid() && hasData());
         assert(layerStart <= layerEnd && layerStart >= 0 && layerEnd <= _layerCount);
@@ -1476,16 +1476,22 @@ public:
         int Ydiv2 = H / 2;
         int scanBytes = scanlineInBytes();
 
-        // Stupid byte per byte swap
-        for (int y = 0; y < Ydiv2; ++y)
+        // for each layer
+        for (int layerIndex = 0; layerIndex < _layerCount; ++layerIndex)
         {
-            ubyte* scanA = cast(ubyte*) scanline(y);
-            ubyte* scanB = cast(ubyte*) scanline(H - 1 - y);
-            for (int b = 0; b < scanBytes; ++b)
+            Image subImage = layer(layerIndex);
+
+            // PERF: Stupid byte per byte swap, could be faster...
+            for (int y = 0; y < Ydiv2; ++y)
             {
-                ubyte ch = scanA[b];
-                scanA[b] = scanB[b]; 
-                scanB[b] = ch;
+                ubyte* scanA = cast(ubyte*) subImage.scanline(y);
+                ubyte* scanB = cast(ubyte*) subImage.scanline(H - 1 - y);
+                for (int b = 0; b < scanBytes; ++b)
+                {
+                    ubyte ch = scanA[b];
+                    scanA[b] = scanB[b]; 
+                    scanB[b] = ch;
+                }
             }
         }
         return true;
@@ -1499,7 +1505,7 @@ public:
 
 
     /// Destructor. Everything is reclaimed.
-    ~this()
+    ~this() pure
     {
         cleanupBitmapAndTypeIfAny();
     }
@@ -1609,26 +1615,26 @@ private:
         return true;
     }
 
-    void cleanupBitmapAndTypeIfAny() @safe
+    void cleanupBitmapAndTypeIfAny() pure @safe
     {
         cleanupBitmapIfAny();
         cleanupTypeIfAny();
     }
 
-    void cleanupBitmapIfAny() @trusted
+    void cleanupBitmapIfAny() pure @trusted
     {
         cleanupBitmapIfOwned();
         _data = null;
     }
 
-    void cleanupTypeIfAny()
+    void cleanupTypeIfAny() pure 
     {
         _type = PixelType.unknown;
         _error = assumeZeroTerminated(kStrImageHasNoType);
     }
 
     // If owning an allocation, free it, else keep it.
-    void cleanupBitmapIfOwned() @trusted
+    void cleanupBitmapIfOwned() pure @trusted
     {        
         if (_allocArea !is null)
         {
