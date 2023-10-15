@@ -184,7 +184,8 @@ public:
         return _pitch < 0;
     }
 
-    /// Returns a scanline pointer to the `y` nth line of pixels.
+    /// Returns a scanline pointer to the `y` nth line of pixels, in the given layer.
+    /// `scanptr` is a shortcut to index the first layer (layer index 0).
     /// Only possible if the image has plain pixels.
     /// What pixel format it points to, depends on the image `type()`.
     ///
@@ -207,7 +208,8 @@ public:
     ///          Next scanline (if any) is returned pointer + pitchInBytes() bytes
     ///          If the layout has a border, you can adress pixels with a X coordinate in:
     ///          -borderWidth to width - 1 + borderWidth.
-    /// Note: It is also valid to call scanline() and scanptr() for images that have zero width and/or zero height.
+    /// Note: It is also valid to call scanline() and scanptr() for images that have zero width, 
+    ///       zero height, and/or zero layer.
     /// Tags: #valid #data #plain
     inout(void)* scanptr(int y) inout pure @trusted
     {
@@ -216,8 +218,14 @@ public:
         assert( (y >= -borderWidth) && (y < _height + borderWidth) );
         return _data + _pitch * y;
     }
+    inout(void)* layerptr(int layer, int y) inout pure @trusted
+    {
+        assert(layer < _layerCount);
+        return scanptr(y) + layer * _layerOffset;
+    }
 
-    /// Returns a slice to the `y` nth line of pixels.
+    /// Returns a slice to the `y` nth line of pixels, in the given layer.
+    /// `scanline` is a shortcut to index the first layer (layer index 0).
     /// Only possible if the image has plain pixels.
     /// What pixel format it points to, depends on the image `type()`.
     ///
@@ -225,13 +233,19 @@ public:
     /// only the nominal image extent.
     ///
     /// However, vertically it is valid to adress scanlines on top and bottom of an image that has a border.
-    /// It is also valid to call scanline() and scanptr() for images that have zero width and/or zero height.
+    /// It is also valid to call scanline() and scanptr() for images that have zero width, zero 
+    /// height, and/or zero layer.
     ///
     /// Returns: The whole `y`th row of pixels.
     /// Tags: #valid #data #plain
     inout(void)[] scanline(int y) inout pure @trusted
     {
         return scanptr(y)[0..scanlineInBytes()];
+    }
+    ///ditto
+    inout(void)[] layerline(int layer, int y) inout pure @trusted
+    {
+        return layerptr(layer, y)[0..scanlineInBytes()];
     }
 
     /// Returns a slice of all pixels at once in O(1). 
@@ -1104,12 +1118,14 @@ public:
 
         ubyte* source = _data;
         int sourcePitch = _pitch;
+        int sourceLayerOffset = _layerOffset;
 
         // Do not realloc the same block to avoid invalidating previous data.
         // We'll manage this manually.
         assert(_data !is null);
 
         // PERF: do some conversions in place? if target type is smaller then input, always possible
+        // tricky with the layers and stuff
 
         // Do we need to convert scanline by scanline, using a scratch buffer?
         bool needConversionWithIntermediateType = targetType != _type;
@@ -1149,23 +1165,42 @@ public:
         bool ok = false;
         if (targetType == _type)
         {
-            // TODO: iterate for each layer
-            ok = copyScanlines(targetType, 
-                               source, sourcePitch,
-                               dest, destPitch,
-                               width, height);
+            // Iterate on each layer.
+            ubyte* sourceLayer = source;
+            ubyte* destLayer = dest;
+            for (int layer = 0; layer < layerCount; ++layer)
+            {
+                ok = copyScanlines(targetType, 
+                                   sourceLayer, sourcePitch,
+                                   destLayer, destPitch,
+                                   width, height);
+                if (!ok)
+                    break;
+
+                sourceLayer += sourceLayerOffset;
+                destLayer   += destLayerOffset;
+            }
         }
         else
         {
-            // TODO: iterate for each layer
             // Need an intermediate buffer. We allocated one in the new image buffer.
             // After that conversion, noone will ever talk about it, and the bonus bytes will stay unused.
             ubyte* interBuf = newAllocArea;
 
-            ok = convertScanlines(_type, source, sourcePitch, 
-                                  targetType, dest, destPitch,
-                                  width, height,
-                                  interType, interBuf);
+            // Iterate on each layer.
+            ubyte* sourceLayer = source;
+            ubyte* destLayer = dest;
+            for (int layer = 0; layer < layerCount; ++layer)
+            {
+                ok = convertScanlines(_type, sourceLayer, sourcePitch, 
+                                      targetType, destLayer, destPitch,
+                                      width, height,
+                                      interType, interBuf);
+                if (!ok)
+                    break;
+                sourceLayer += sourceLayerOffset;
+                destLayer   += destLayerOffset;
+            }
         }
 
         if (!ok)
@@ -2179,7 +2214,7 @@ unittest
 }
 
 // Layered images, semantics test.
-unittest
+@trusted unittest
 {
     Image image;
 
@@ -2197,7 +2232,7 @@ unittest
     assert(image.layerOffsetInBytes() > 0);
 
     // Possible to create a zero-layer image.
-    image.createLayered(0, 1, 1); 
+    image.createLayered(0, 1, 1);
     assert(image.layers == 0);
     assert(!image.hasMultipleLayers);
     assert(!image.hasMultipleLayers);
@@ -2212,6 +2247,16 @@ unittest
     assert(image.width == 640);
     assert(image.height == 480);
     assert(image.layerOffsetInBytes() > 0);
+
+    // .layerptr gives a scanline pointer within given layer
+    // .scanptr(y) is layerptr(0, y) by default.
+    // Same for .scanline(y) and .layerline(0, y)
+    assert(image.layerptr(0, 136) == image.scanptr(136));
+    assert(image.layerline(0, 136) == image.scanline(136));
+
+    // Layers are equally spaced
+    assert(image.layerptr(1, 100) == image.scanptr(100) + image.layerOffsetInBytes);
+    assert(image.layerptr(2, 100) == image.layerptr(1, 100) + image.layerOffsetInBytes);
 
     // Create a no-data 5-layers, 640x480 image with default pixel 
     image.createLayeredWithNoData(5, 640, 480);
