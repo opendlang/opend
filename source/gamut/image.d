@@ -598,6 +598,37 @@ public:
 
     // TODO createView from another Image + a rect
 
+    /// Return a view into an existing image layer.
+    /// The image data is considered read/write, and NOT OWNED.
+    /// TODO: preserve some layout constraints.
+    /// In case of errors, the returned `Image` is invalid.
+    /// Tags: #valid #data
+    Image layer(int layerIndex)
+    {
+        return layerRange(layerIndex, layerIndex+1);
+    }
+    ///ditto
+    Image layerRange(int layerStart, int layerEnd) @trusted
+    {
+        assert(isValid() && hasData());
+        assert(layerStart <= layerEnd && layerStart >= 0 && layerEnd <= _layerCount);
+
+        // Note: it must be supported to return a 0-layer view.
+
+        Image res;
+        res.clearError();
+        res._data = _data + _layerOffset * layerStart;
+        res._allocArea = null; // not owned
+        res._type = type;
+        res._width = width;
+        res._height = height;
+        res._pitch = pitchInBytes;
+        res._layoutConstraints = LAYOUT_DEFAULT; // No constraint whatsoever, we lack that information
+        res._layerCount = layerEnd - layerStart;
+        res._layerOffset = _layerOffset;
+        return res;
+    }
+
     /// Create a view into existing data.
     /// The image data is considered read/write, and not owned.
     /// No layout constraints are assumed.
@@ -1556,6 +1587,7 @@ private:
     }
 
     // Used by creation functions, this makes some checks too.
+    // TODO: it should set the error flag!
     bool forgetPreviousUsage(int newLayers, int newWidth, int newHeight) @safe
     {
         // FUTURE: Note that this invalidates any borrow we could have here...
@@ -2123,6 +2155,7 @@ unittest
     int height = 3;
     int pitch = width * cast(int)ushort.sizeof; 
     image.createViewFromData(&pixels[0][0], width, height, PixelType.l16, pitch);
+    assert(image.isValid);
     assert(!image.isError);
     ushort* l0 = cast(ushort*) image.scanline(0);
     ushort* l1 = cast(ushort*) image.scanline(1);
@@ -2257,6 +2290,12 @@ unittest
     // Layers are equally spaced
     assert(image.layerptr(1, 100) == image.scanptr(100) + image.layerOffsetInBytes);
     assert(image.layerptr(2, 100) == image.layerptr(1, 100) + image.layerOffsetInBytes);
+
+    // Return single layer borrow.
+    for (int L = 0; L < image.layers; ++L)
+    {
+        assert(image.layer(2).scanptr(102) == image.layerptr(2, 102));
+    }
 
     // Create a no-data 5-layers, 640x480 image with default pixel 
     image.createLayeredWithNoData(5, 640, 480);
