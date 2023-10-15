@@ -1094,7 +1094,7 @@ public:
             return true; // success, same type already, and compatible constraints
         }
 
-        if ((width() == 0 || height()) == 0 && compatibleLayout)
+        if ((width() == 0 || height() == 0 || layers() == 0) && compatibleLayout)
         {
             // Image dimension is zero, and compatible constraints, everything fine
             // No need for reallocation or copy.
@@ -2192,14 +2192,9 @@ unittest
     assert(image.layers == 5);
     assert(image.width == 640);
     assert(image.height == 480);
-    import std.stdio;
-    debug writeln("a");
     assert(image.hasMultipleLayers);
-    debug writeln("b");
     assert(image.hasNonZeroSize);
-    debug writeln("c");
     assert(image.layerOffsetInBytes() > 0);
-    debug writeln("d");
 
     // Possible to create a zero-layer image.
     image.createLayered(0, 1, 1); 
