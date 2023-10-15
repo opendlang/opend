@@ -623,7 +623,7 @@ public:
         res._width = width;
         res._height = height;
         res._pitch = pitchInBytes;
-        res._layoutConstraints = LAYOUT_DEFAULT; // No constraint whatsoever, we lack that information
+        res._layoutConstraints = LAYOUT_DEFAULT; // No constraint whatsoever, we lack that information (TODO what?)
         res._layerCount = layerEnd - layerStart;
         res._layerOffset = _layerOffset;
         return res;
@@ -740,12 +740,12 @@ public:
     /// Clone an existing image. 
     /// This image should have plain pixels.
     /// Tags: #valid #data #plain.
-    Image clone() const
+    Image clone()
     {
         assert(isPlainPixels());
 
         Image r;
-        r.setSize(_width, _height, _type, _layoutConstraints);
+        r.createLayeredNoInit(_layerCount, _width, _height, _type, _layoutConstraints);
         if (r.isError)
             return r;
 
@@ -755,26 +755,34 @@ public:
 
     /// Copy pixels to an image with same size and type. Both images should have plain pixels.
     /// Tags: #valid #data #plain.
-    void copyPixelsTo(ref Image img) const @trusted
+    // TODO: deprecate and replace by a more readable `copyPixelsFrom`, using this isn't super readable.
+    void copyPixelsTo(ref Image img) @trusted
     {
         assert(isPlainPixels());
 
+        assert(img._layerCount == _layerCount);
         assert(img._width  == _width);
         assert(img._height == _height);
         assert(img._type   == _type);
 
         // PERF: if both are gapless, can do a single memcpy
 
-        int scanlineLen = _width * pixelTypeSize(type);
+        int scanlineLen = _width * pixelTypeSize(type); // TODO: need an accesor for this value
 
-        const(ubyte)* dataSrc = _data;
-        ubyte* dataDst = img._data;
-
-        for (int y = 0; y < _height; ++y)
+        for (int layerIndex = 0; layerIndex < _layerCount; ++layerIndex)
         {
-            dataDst[0..scanlineLen] = dataSrc[0..scanlineLen];
-            dataSrc += _pitch;
-            dataDst += img._pitch;
+            Image subSrc = layer(layerIndex);
+            Image subDst = img.layer(layerIndex);
+
+            const(ubyte)* dataSrc = subSrc._data;
+            ubyte* dataDst = subDst._data;
+
+            for (int y = 0; y < _height; ++y)
+            {
+                dataDst[0..scanlineLen] = dataSrc[0..scanlineLen];
+                dataSrc += _pitch;
+                dataDst += img._pitch;
+            }
         }
     }
 
@@ -1411,17 +1419,23 @@ public:
         int scanBytes = scanlineInBytes();
         int psize = pixelTypeSize(type);
 
-        // Stupid pixel per pixel swap
-        for (int y = 0; y < H; ++y)
+        // for each layer
+        for (int layerIndex = 0; layerIndex < _layerCount; ++layerIndex)
         {
-            ubyte* scan = cast(ubyte*) scanline(y);
-            for (int x = 0; x < Xdiv2; ++x)
+            Image subImage = layer(layerIndex);
+
+            // Stupid pixel per pixel swap
+            for (int y = 0; y < H; ++y)
             {
-                ubyte* pixelA = &scan[x * psize];
-                ubyte* pixelB = &scan[(W - 1 - x) * psize];
-                temp[0..psize] = pixelA[0..psize];
-                pixelA[0..psize] = pixelB[0..psize];
-                pixelB[0..psize] = temp[0..psize];
+                ubyte* scan = cast(ubyte*) subImage.scanline(y);
+                for (int x = 0; x < Xdiv2; ++x)
+                {
+                    ubyte* pixelA = &scan[x * psize];
+                    ubyte* pixelB = &scan[(W - 1 - x) * psize];
+                    temp[0..psize] = pixelA[0..psize];
+                    pixelA[0..psize] = pixelB[0..psize];
+                    pixelB[0..psize] = temp[0..psize];
+                }
             }
         }
         return true;
@@ -2323,4 +2337,73 @@ unittest
     assert(!image.hasZeroLayer);
     assert(!image.hasSingleLayer);
     assert(image.layerOffsetInBytes() == 0);
+}
+
+// Flip vertical and horizontal
+@trusted unittest
+{
+    ubyte[3 * 4 * 2] pixels = 
+    [
+        1, 2, 3,
+        3, 4, 7,
+        8, 9, 0,
+        7, 2, 5,
+
+        2, 3, 4,
+        4, 5, 8,
+        9, 0, 1,
+        8, 3, 6,
+    ];
+
+    Image image;
+    image.createLayeredViewFromData(pixels.ptr, 
+                                    2,
+                                    3, 
+                                    4,
+                                    PixelType.l8,
+                                    3,
+                                    12);
+    image.setLayout(LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
+
+    assert(image.isValid);
+    assert(image.allPixelsAtOnce() == pixels[]);
+
+    // Clone image
+    Image image2 = image.clone();
+    assert(image2.allPixelsAtOnce() == pixels[]);
+
+    // Flip vertical check
+    ubyte[3 * 4 * 2] pixelsFlippedVert = 
+    [
+        7, 2, 5,
+        8, 9, 0,
+        3, 4, 7,
+        1, 2, 3,
+
+        8, 3, 6,
+        9, 0, 1,
+        4, 5, 8,
+        2, 3, 4,
+    ];
+    image2.flipVertically();
+    assert(image2.allPixelsAtOnce() == pixelsFlippedVert[]);
+
+    // Flip horizontal check
+    image.copyPixelsTo(image2);
+
+    ubyte[3 * 4 * 2] pixelsFlippedHorz = 
+    [
+        3, 2, 1,
+        7, 4, 3,
+        0, 9, 8,
+        5, 2, 7,
+
+        4, 3, 2,
+        8, 5, 4,
+        1, 0, 9,
+        6, 3, 8,
+    ];
+    image2.flipHorizontally();
+    assert(image2.allPixelsAtOnce() == pixelsFlippedHorz[]);
+
 }
