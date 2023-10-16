@@ -2,15 +2,15 @@
 This package publicly imports `mir.stat.*` modules.
 
 $(BOOKTABLE ,
-    $(TR
-        $(TH Modules)
-        $(TH Description)
-    )
-    $(TR $(TDNW $(MREF mir,stat,constant)) $(TD Constants used in other statistical modules ))
-    $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive Statistics ))
-    $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
-    $(TR $(TDNW $(MREF mir,stat,inference)) $(TD Probability Density/Mass Functions ))
-    $(TR $(TDNW $(MREF mir,stat,transform)) $(TD Algorithms for statistical inference ))
+    $(TR
+        $(TH Modules)
+        $(TH Description)
+    )
+    $(TR $(TDNW $(MREF mir,stat,constant)) $(TD Constants used in other statistical modules ))
+    $(TR $(TDNW $(MREF mir,stat,descriptive)) $(TD Descriptive Statistics ))
+    $(TR $(TDNW $(MREF mir,stat,distribution)) $(TD Statistical Distributions ))
+    $(TR $(TDNW $(MREF mir,stat,inference)) $(TD Probability Density/Mass Functions ))
+    $(TR $(TDNW $(MREF mir,stat,transform)) $(TD Algorithms for statistical inference ))
 )
 
 ## Example
