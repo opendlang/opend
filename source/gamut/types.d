@@ -171,7 +171,9 @@ enum int ENCODE_CHALLENGER = 4;
 alias LayoutConstraints = ushort;
 
 enum LayoutConstraints
-     LAYOUT_DEFAULT               = 0,  /// Default / do-not-care layout options.
+     LAYOUT_DEFAULT               = 0,  /// Default / do-not-care layout options. This is what will give
+                                        /// the fastest loading time when loading images (though most decoders
+                                        /// tend to return gapless non-flipped images.
 
      // Multiplicity: 
      // -------------
@@ -242,7 +244,7 @@ enum LayoutConstraints
      // No space between scanlines. 
      // This is logically incompatible with scanline alignment, border, trailing pixels, and multiplicity.
      // Subimage: LAYOUT_GAPLESS is immediately lost.
-     // Note: In presence of multiple layers, LAYOUT_GAPLESS also forces those layers to be immediately contiguous.
+     // Note: In presence of multiple layers, LAYOUT_GAPLESS also forces those layers to be immediately contiguous, not just the scanlines.
      LAYOUT_GAPLESS               = 2048; /// There must be no single trailing bytes between scanlines.
 
 
