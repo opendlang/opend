@@ -213,6 +213,7 @@ const:
     }
     ///
     F covariance(F = T)(bool isPopulation) @property
+        in (count + isPopulation > 1, "More data points required")
     {
         return sumOfProducts!F / (count + isPopulation - 1) -
             (sumLeft!F * sumRight!F) * (F(1) / (count * (count + isPopulation - 1)));
@@ -471,6 +472,7 @@ const:
     }
     ///
     F covariance(F = T)(bool isPopulation) @property
+        in (count + isPopulation > 1, "More data points required")
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -780,6 +782,7 @@ const:
     }
     ///
     F covariance(F = T)(bool isPopulation) @property
+        in (count + isPopulation > 1, "More data points required")
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1048,6 +1051,7 @@ const:
     }
     ///
     F covariance(F = T)(bool isPopulation) @property
+        in (count + isPopulation > 1, "More data points required")
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1089,7 +1093,6 @@ unittest
     import mir.math.sum: Summation;
     import mir.ndslice.slice: sliced;
     import mir.stat.descriptive.univariate: mean;
-    import mir.stat.transform: center;
     import mir.test: should, shouldApprox;
 
     auto a = [  0.0,   1.0,   1.5,  2.0,  3.5, 4.25,
@@ -1372,6 +1375,7 @@ const:
     }
     ///
     F covariance(F = T)(bool isPopulation) @property
+        in (count + isPopulation > 1, "More data points required")
     {
         return centeredSumOfProducts!F / (count + isPopulation - 1);
     }
@@ -1608,9 +1612,9 @@ Params:
 Returns:
     The covariance of the inputs
 +/
-template cov(F,
-             CovarianceAlgo covarianceAlgo = CovarianceAlgo.hybrid,
-             Summation summation = Summation.appropriate)
+template covariance(F,
+                    CovarianceAlgo covarianceAlgo = CovarianceAlgo.hybrid,
+                    Summation summation = Summation.appropriate)
     if (isFloatingPoint!F)
 {
     import mir.math.common: fmamath;
@@ -1622,7 +1626,7 @@ template cov(F,
         y = range, must be finite iterable
         isPopulation = true if population covariance, false if sample covariance (default)
     +/
-    @fmamath F cov(RangeX, RangeY)(RangeX x, RangeY y, bool isPopulation = false)
+    @fmamath F covariance(RangeX, RangeY)(RangeX x, RangeY y, bool isPopulation = false)
         if (isInputRange!RangeX && isInputRange!RangeY)
     {
         import core.lifetime: move;
@@ -1633,7 +1637,7 @@ template cov(F,
 }
 
 /// ditto
-template cov(
+template covariance(
     CovarianceAlgo covarianceAlgo = CovarianceAlgo.hybrid,
     Summation summation = Summation.appropriate)
 {
@@ -1647,26 +1651,26 @@ template cov(
         y = range, must be finite iterable
         isPopulation = true if population covariance, false if sample covariance (default)
     +/
-    @fmamath CommonType!(meanType!RangeX, meanType!RangeY) cov(RangeX, RangeY)(RangeX x, RangeY y, bool isPopulation = false)
+    @fmamath CommonType!(meanType!RangeX, meanType!RangeY) covariance(RangeX, RangeY)(RangeX x, RangeY y, bool isPopulation = false)
         if (isInputRange!RangeX && isInputRange!RangeY)
     {
         import core.lifetime: move;
 
         alias F = typeof(return);
-        return .cov!(F, covarianceAlgo, summation)(x.move, y.move, isPopulation);
+        return .covariance!(F, covarianceAlgo, summation)(x.move, y.move, isPopulation);
     }
 }
 
 /// ditto
-template cov(F, string covarianceAlgo, string summation = "appropriate")
+template covariance(F, string covarianceAlgo, string summation = "appropriate")
 {
-    mixin("alias cov = .cov!(F, CovarianceAlgo." ~ covarianceAlgo ~ ", Summation." ~ summation ~ ");");
+    mixin("alias covariance = .covariance!(F, CovarianceAlgo." ~ covarianceAlgo ~ ", Summation." ~ summation ~ ");");
 }
 
 /// ditto
-template cov(string covarianceAlgo, string summation = "appropriate")
+template covariance(string covarianceAlgo, string summation = "appropriate")
 {
-    mixin("alias cov = .cov!(CovarianceAlgo." ~ covarianceAlgo ~ ", Summation." ~ summation ~ ");");
+    mixin("alias covariance = .covariance!(CovarianceAlgo." ~ covarianceAlgo ~ ", Summation." ~ summation ~ ");");
 }
 
 /// Covariance of vectors
@@ -1682,8 +1686,8 @@ unittest
     auto y = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5,
                9.25, -0.75,   2.5, 1.25,   -1, 2.25].sliced;
 
-    x.cov(y, true).shouldApprox == -5.5 / 12;
-    x.cov(y).shouldApprox == -5.5 / 11;
+    x.covariance(y, true).shouldApprox == -5.5 / 12;
+    x.covariance(y).shouldApprox == -5.5 / 11;
 }
 
 /// Can also set algorithm type
@@ -1703,16 +1707,16 @@ unittest
     auto x = a + 10.0 ^^ 9;
     auto y = b + 10.0 ^^ 9;
 
-    x.cov(y).shouldApprox == -5.5 / 11;
+    x.covariance(y).shouldApprox == -5.5 / 11;
 
     // The naive algorithm is numerically unstable in this case
-    assert(!x.cov!"naive"(y).approxEqual(-5.5 / 11));
+    assert(!x.covariance!"naive"(y).approxEqual(-5.5 / 11));
 
     // The two-pass algorithm provides the same answer as hybrid
-    x.cov!"twoPass"(y).shouldApprox == -5.5 / 11;
+    x.covariance!"twoPass"(y).shouldApprox == -5.5 / 11;
 
     // And the assumeZeroMean algorithm is way off
-    assert(!x.cov!"assumeZeroMean"(y).approxEqual(-5.5 / 11));
+    assert(!x.covariance!"assumeZeroMean"(y).approxEqual(-5.5 / 11));
 }
 
 /// Can also set algorithm or output type
@@ -1738,18 +1742,18 @@ unittest
     `y`, the third numbers in the slice has precision too low to be included in
     the centered sum of the products.
     +/
-    x.cov(y).shouldApprox == 1.0e208 / 3;
-    x.cov(y, true).shouldApprox == 1.0e208 / 4;
+    x.covariance(y).shouldApprox == 1.0e208 / 3;
+    x.covariance(y, true).shouldApprox == 1.0e208 / 4;
 
-    x.cov!("online")(y).shouldApprox == 1.0e208 / 3;
-    x.cov!("online", "kbn")(y).shouldApprox == 1.0e208 / 3;
-    x.cov!("online", "kb2")(y).shouldApprox == 1.0e208 / 3;
-    x.cov!("online", "precise")(y).shouldApprox == 1.0e208 / 3;
-    x.cov!(double, "online", "precise")(y).shouldApprox == 1.0e208 / 3;
+    x.covariance!("online")(y).shouldApprox == 1.0e208 / 3;
+    x.covariance!("online", "kbn")(y).shouldApprox == 1.0e208 / 3;
+    x.covariance!("online", "kb2")(y).shouldApprox == 1.0e208 / 3;
+    x.covariance!("online", "precise")(y).shouldApprox == 1.0e208 / 3;
+    x.covariance!(double, "online", "precise")(y).shouldApprox == 1.0e208 / 3;
 
     auto z = uint.max.repeat(3);
-    z.cov!float(z).shouldApprox == 0.0;
-    static assert(is(typeof(z.cov!float(z)) == float));
+    z.covariance!float(z).shouldApprox == 0.0;
+    static assert(is(typeof(z.covariance!float(z)) == float));
 }
 
 /++
@@ -1768,11 +1772,11 @@ unittest
     auto y = [6, 3, 7, 1, 1, 1,
               9, 5, 3, 1, 3, 7].sliced;
 
-    x.cov(y).shouldApprox == -18.583333 / 11;
-    static assert(is(typeof(x.cov(y)) == double));
+    x.covariance(y).shouldApprox == -18.583333 / 11;
+    static assert(is(typeof(x.covariance(y)) == double));
 
-    x.cov!float(y).shouldApprox == -18.583333 / 11;
-    static assert(is(typeof(x.cov!float(y)) == float));
+    x.covariance!float(y).shouldApprox == -18.583333 / 11;
+    static assert(is(typeof(x.covariance!float(y)) == float));
 }
 
 // make sure works with dynamic array
@@ -1786,7 +1790,7 @@ unittest
                     2.0,   7.5,   5.0,  1.0,  1.5,  0.0];
     double[] y = [-0.75,   6.0, -0.25, 8.25, 5.75,  3.5,
                    9.25, -0.75,   2.5, 1.25,   -1, 2.25];
-    x.cov(y).shouldApprox == -5.5 / 11;
+    x.covariance(y).shouldApprox == -5.5 / 11;
 }
 
 /// Works with @nogc
@@ -1806,8 +1810,8 @@ unittest
     x[] = a;
     y[] = b;
 
-    x.cov(y, true).shouldApprox == -5.5 / 12;
-    x.cov(y).shouldApprox == -5.5 / 11;
+    x.covariance(y, true).shouldApprox == -5.5 / 12;
+    x.covariance(y).shouldApprox == -5.5 / 11;
 }
 
 // compile with dub test --build=unittest-perf --config=unittest-perf --compiler=ldc2
@@ -1832,7 +1836,7 @@ unittest
 
     alias S = Summation.fast;
     alias E = EnumMembers!CovarianceAlgo;
-    alias fs = staticMap!(cov, S, E);
+    alias fs = staticMap!(covariance, S, E);
     double[fs.length] output;
 
     auto e = [E];
