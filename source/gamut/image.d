@@ -552,19 +552,19 @@ public:
                 PixelType type = PixelType.rgba8,
                 LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        createLayered(1, width, height, type, layoutConstraints);
+        createLayered(width, height, 1, type, layoutConstraints);
     }
     ///ditto
-    void createLayered(int layers, int width, int height, 
+    void createLayered(int width, int height, int layers, 
                        PixelType type = PixelType.rgba8,
                        LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         if (!forgetPreviousUsage(layers, width, height))
             return;
 
-        if (!setStorage(layers, width, height, type, layoutConstraints, true))
+        if (!setStorage(width, height, layers, type, layoutConstraints, true))
         {
-            // precise error set by setStorage
+            // error message was set by setStorage already
             return;
         }
     }
@@ -576,19 +576,19 @@ public:
                       PixelType type = PixelType.rgba8,
                       LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        createLayeredNoInit(1, width, height, type, layoutConstraints);
+        createLayeredNoInit(width, height, 1, type, layoutConstraints);
     }
     ///ditto
-    void createLayeredNoInit(int layers, int width, int height, 
+    void createLayeredNoInit(int width, int height, int layers, 
                              PixelType type = PixelType.rgba8,
                              LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
         if (!forgetPreviousUsage(layers, width, height))
             return;
 
-        if (!setStorage(layers, width, height, type, layoutConstraints, false))
+        if (!setStorage(width, height, layers, type, layoutConstraints, false))
         {
-            // precise error set by setStorage
+            // error message was set by setStorage already
             return;
         }
     }
@@ -651,13 +651,13 @@ public:
                             PixelType type,
                             int pitchInBytes) @system
     {
-        createLayeredViewFromData(data, 1, width, height, type, pitchInBytes, 0);        
+        createLayeredViewFromData(data, width, height, 1, type, pitchInBytes, 0);        
     }
     ///ditto
-    void createLayeredViewFromData(void* data, 
-                                   int layers,
+    void createLayeredViewFromData(void* data,
                                    int width, 
-                                   int height, 
+                                   int height,
+                                   int layers,
                                    PixelType type,
                                    int pitchInBytes,
                                    int layerOffsetBytes) @system
@@ -710,10 +710,10 @@ public:
                           PixelType type = PixelType.rgba8,
                           LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
-        createLayeredWithNoData(1, width, height, type, layoutConstraints);
+        createLayeredWithNoData(width, height, 1, type, layoutConstraints);
     }
     ///ditto
-    void createLayeredWithNoData(int layers, int width, int height, 
+    void createLayeredWithNoData(int width, int height, int layers,
                                  PixelType type = PixelType.rgba8,
                                  LayoutConstraints layoutConstraints = LAYOUT_DEFAULT)
     {
@@ -745,7 +745,7 @@ public:
         assert(isPlainPixels());
 
         Image r;
-        r.createLayeredNoInit(_layerCount, _width, _height, _type, _layoutConstraints);
+        r.createLayeredNoInit(_width, _height, _layerCount, _type, _layoutConstraints);
         if (r.isError)
             return r;
 
@@ -1404,7 +1404,7 @@ public:
     /// Flip the image data horizontally.
     /// If the image has no data, the operation is successful.
     /// Tags: #valid.
-    bool flipHorizontally() pure @trusted
+    bool flipHorizontal() pure @trusted
     {
         assert(isValid());
 
@@ -1440,76 +1440,30 @@ public:
         }
         return true;
     }
+    deprecated("Use flipHorizontally instead") alias flipHorizontally = flipHorizontal;
 
     /// Flip the image vertically.
     /// If the image has no data, the operation is successful.
     ///
-    /// - If the layout allows it, `flipVerticallyLogical` is called. The scanline pointers are 
+    /// - If the layout allows it, `flipVerticalLogical` is called. The scanline pointers are 
     ///   inverted, and pitch is negated. This just flips the "view" of the image.
     ///
     /// - If there is a constraint to keep the image strictly upside-down, or strictly not 
-    ///   upside-down, then `flipVerticallyPhysical` is called instead.
+    ///   upside-down, then `flipVerticalPhysical` is called instead.
     ///
     /// Returns: `true` on success, sets an error else and return `false`.
     /// Tags: #valid.
-    bool flipVertically() pure
+    bool flipVertical() pure
     {
         assert(isValid());
 
         if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
-            return flipVerticallyPhysical();
+            return flipVerticalPhysical();
         else
-            return flipVerticallyLogical();
+            return flipVerticalLogical();
     }
-    ///ditto
-    bool flipVerticallyLogical() pure @trusted
-    {
-        if (!hasData())
-            return true; // Nothing to do
+    deprecated("Use flipVertical instead") alias flipVertically = flipVertical;
 
-        if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
-        {
-            error(kStrUnsupportedVFlip);
-            return false;
-        }
-
-        // Note: flipping the image preserve all layout properties! 
-        // What a nice design here.
-        // Border, trailing pixels, scanline alignment... they all survive vertical flip.
-        flipScanlinePointers(_width, _height, _data, _pitch);
-
-        return true;
-    }
-    ///ditto
-    bool flipVerticallyPhysical() pure @trusted
-    {
-        if (!hasData())
-            return true; // Nothing to do
-
-        int H = height();
-        int Ydiv2 = H / 2;
-        int scanBytes = scanlineInBytes();
-
-        // for each layer
-        for (int layerIndex = 0; layerIndex < _layerCount; ++layerIndex)
-        {
-            Image subImage = layer(layerIndex);
-
-            // PERF: Stupid byte per byte swap, could be faster...
-            for (int y = 0; y < Ydiv2; ++y)
-            {
-                ubyte* scanA = cast(ubyte*) subImage.scanline(y);
-                ubyte* scanB = cast(ubyte*) subImage.scanline(H - 1 - y);
-                for (int b = 0; b < scanBytes; ++b)
-                {
-                    ubyte ch = scanA[b];
-                    scanA[b] = scanB[b]; 
-                    scanB[b] = ch;
-                }
-            }
-        }
-        return true;
-    }
 
     //
     // </TRANSFORM>
@@ -1662,9 +1616,9 @@ private:
     /// Returns true on success, false on OOM.
     /// When failing, sets the errored state.
     private bool setStorage(
-                    int numLayers,
                     int width,
                     int height,
+                    int numLayers,
                     PixelType type, 
                     LayoutConstraints constraints,
                     bool clearWithZeroes) @trusted
@@ -1889,6 +1843,55 @@ private:
         c |= (_layoutConstraints & LAYOUT_BORDER_MASK);
 
         return c;
+    }
+
+    bool flipVerticalLogical() pure @trusted
+    {
+        if (!hasData())
+            return true; // Nothing to do
+
+        if (mustBeStoredUpsideDown() || mustNotBeStoredUpsideDown())
+        {
+            error(kStrUnsupportedVFlip);
+            return false;
+        }
+
+        // Note: flipping the image preserve all layout properties! 
+        // What a nice design here.
+        // Border, trailing pixels, scanline alignment... they all survive vertical flip.
+        flipScanlinePointers(_width, _height, _data, _pitch);
+
+        return true;
+    }
+
+    bool flipVerticalPhysical() pure @trusted
+    {
+        if (!hasData())
+            return true; // Nothing to do
+
+        int H = height();
+        int Ydiv2 = H / 2;
+        int scanBytes = scanlineInBytes();
+
+        // for each layer
+        for (int layerIndex = 0; layerIndex < _layerCount; ++layerIndex)
+        {
+            Image subImage = layer(layerIndex);
+
+            // PERF: Stupid byte per byte swap, could be faster...
+            for (int y = 0; y < Ydiv2; ++y)
+            {
+                ubyte* scanA = cast(ubyte*) subImage.scanline(y);
+                ubyte* scanB = cast(ubyte*) subImage.scanline(H - 1 - y);
+                for (int b = 0; b < scanBytes; ++b)
+                {
+                    ubyte ch = scanA[b];
+                    scanA[b] = scanB[b]; 
+                    scanB[b] = ch;
+                }
+            }
+        }
+        return true;
     }
 }
 
@@ -2285,7 +2288,7 @@ unittest
     assert(image.layerOffsetInBytes() == 0);
 
     // Create a black 5-layers, 640x480 image with default pixel format.
-    image.createLayered(5, 640, 480, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT); 
+    image.createLayered(640, 480, 5, PixelType.rgba8, LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT); 
     assert(image.layers == 5);
     assert(image.width == 640);
     assert(image.height == 480);
@@ -2296,7 +2299,7 @@ unittest
     ubyte[] all = image.allPixelsAtOnce(); // gapless access works for layered images too
 
     // Possible to create a zero-layer image.
-    image.createLayered(0, 1, 1);
+    image.createLayered(1, 1, 0);
     assert(image.layers == 0);
     assert(!image.hasMultipleLayers);
     assert(!image.hasMultipleLayers);
@@ -2304,9 +2307,11 @@ unittest
     assert(!image.hasSingleLayer);
     assert(!image.hasNonZeroSize);
     assert(image.layerOffsetInBytes() == 0);
+    assert(image.flipVertically);
+    assert(image.flipHorizontally);
 
     // Create an uninitialized 5-layers, 640x480 image with default pixel 
-    image.createLayeredNoInit(5, 640, 480);
+    image.createLayeredNoInit(640, 480, 5);
     assert(image.layers == 5);
     assert(image.width == 640);
     assert(image.height == 480);
@@ -2317,6 +2322,7 @@ unittest
     // Same for .scanline(y) and .layerline(0, y)
     assert(image.layerptr(0, 136) == image.scanptr(136));
     assert(image.layerline(0, 136) == image.scanline(136));
+    assert(image.layerptr(0, 136) == image.layer(0).scanptr(136));
 
     // Layers are equally spaced
     assert(image.layerptr(1, 100) == image.scanptr(100) + image.layerOffsetInBytes);
@@ -2329,7 +2335,7 @@ unittest
     }
 
     // Create a no-data 5-layers, 640x480 image with default pixel 
-    image.createLayeredWithNoData(5, 640, 480);
+    image.createLayeredWithNoData(640, 480, 5);
     assert(image.layers == 5);
     assert(image.width == 640);
     assert(image.height == 480);
@@ -2357,13 +2363,16 @@ unittest
 
     Image image;
     image.createLayeredViewFromData(pixels.ptr, 
-                                    2,
                                     3, 
                                     4,
+                                    2,
                                     PixelType.l8,
                                     3,
                                     12);
     image.setLayout(LAYOUT_GAPLESS | LAYOUT_VERT_STRAIGHT);
+    assert(image.width == 3);
+    assert(image.height == 4);
+    assert(image.layers == 2);
 
     assert(image.isValid);
     assert(image.allPixelsAtOnce() == pixels[]);

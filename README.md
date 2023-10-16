@@ -14,7 +14,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - JPEG: 8-bit, L/RGB/RGBA, baseline and progressive
 - TGA: 8-bit, indexed, L/LA/RGB/RGBA
 - QOI: 8-bit, RGB/RGBA
-- QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA. _This is still an evolving format, specific to Gamut, that embeds some developments in the QOI family of formats._
+- QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA. _Improvement upon QOI. This format may change between major Gamut tags, so is not a storage format._
 
 ## Encoding
 
@@ -321,9 +321,10 @@ Example:
   image.loadFromMemory(pngBytes, constraints); 
 
   // Now the image has a 1 pixel border (at least).
-  image.changeLayout(LAYOUT_BORDER_1);
+  // Changing the layout only reallocates if needed.
+  image.setLayout(LAYOUT_BORDER_1);
   
-  // Those layout constraints are preserved 
+  // Those layout constraints are preserved.
   // (but: not the excess bytes content, if reallocated)
   image.convertToGreyscale();
   assert(image.layoutConstraints() == LAYOUT_BORDER_1);   
@@ -432,8 +433,8 @@ Gamut provides a few geometric transforms.
 
 ```d
 Image image;
-image.flipHorizontally(); // Flip image pixels horizontally.
-image.flipVertically();   // Flip image vertically (pixels or logically)
+image.flipHorizontal(); // Flip image pixels horizontally.
+image.flipVertical();   // Flip image vertically (pixels or logically, depending on layout)
 ```
 
 
