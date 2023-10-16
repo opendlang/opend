@@ -2,10 +2,11 @@
 This package publicly imports `mir.stat.descriptive.*` modules.
 
 $(BOOKTABLE ,
-    $(TR
-        $(TH Modules)
-        $(TH Description)
-    )
+    $(TR
+        $(TH Modules)
+        $(TH Description)
+    )
+    $(TR $(TDNW $(MREF mir,stat,descriptive,aliases)) $(TD Aliases for common functions ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,multivariate)) $(TD Multivariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,univariate)) $(TD Univariate Descriptive statistics ))
     $(TR $(TDNW $(MREF mir,stat,descriptive,weighted)) $(TD Descriptive statistics with weights ))
@@ -34,3 +35,5 @@ public import mir.stat.descriptive.multivariate;
 public import mir.stat.descriptive.univariate;
 ///
 public import mir.stat.descriptive.weighted;
+///
+public import mir.stat.descriptive.aliases;

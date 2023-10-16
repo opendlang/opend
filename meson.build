@@ -15,6 +15,7 @@ sources_list = [
     'mir/stat/descriptive/multivariate',
     'mir/stat/descriptive/univariate',
     'mir/stat/descriptive/weighted',
+    'mir/stat/descriptive/aliases',
     'mir/stat/descriptive/package',
     'mir/stat/constant',
     'mir/stat/inference',
