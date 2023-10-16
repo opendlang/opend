@@ -447,21 +447,110 @@ image.flipVertical();   // Flip image vertically (pixels or logically, depending
 &nbsp;
 
 
-6. Multi-layered images **(WIP)**
+## 6. Multi-layer images
+
+### 6.1 Create multi-layer images
+
+All `Image` have a number of layers.
+```d
+Image image;
+image.create(640 ,480);
+assert(image.layers == 1); // typical image has one layer
+assert(image.hasOneLayer);
+```
+
+- Create a multi-layer image, cleared with zeroes:
+```d
+// This single image has 24 black layers.
+image.createLayered(800, 600, 24); 
+assert(image.layers == 24);
+```
+- Create a multi-layer uninitialized image:
+```d
+// Make space for 24 800x600 rgba8 different images.
+image.createLayeredNoInit(800, 600, 24);
+assert(image.layers == 24);
+```
+
+- Create a multi-layer as a view into existing data:
+```d
+// Create view into existing data.
+// layerOffsetBytes is byte offset between first scanlines 
+// of two consecutive layers.
+image.createViewFromData(data.ptr, 
+                         w, h, numLaters, 
+                         PixelType.rgb8, 
+                         pitchbytes,
+                         layerOffsetBytes);
+```
+
+> Gamut **Image** is secretly similar to 2D Array Texture in OpenGL. Each layer is store consecutively in memory.
+
+
+### 6.2 Get individual layer
+
+`image.layer(int index)` return non-owning view of a single-layer.
 
 ```d
 Image image;
-
-// Create a black 5-layers, 640x480 image with default pixel format.
-image.createLayered(5, 640, 480); 
-assert(image.layers == 5);
-assert(image.width == 640);
-assert(image.height == 480);
-assert(image.isLayered); // true if layerCount > 1
-
-// Create an uninitialized 5-layers, 640x480 image with default pixel 
-image.createLayeredNoInit(5, 640, 480);
-assert(image.layerCount == 5);
-assert(image.width == 640);
-assert(image.height == 480);
+image.create(640, 480, 5);
+assert(image.layer(4).width  == 640);
+assert(image.layer(4).height == 480);
+assert(image.layer(4).layers ==   1);
 ```
+
+> **Key concept:** All image operations work on all layers by default. 
+
+
+> **Regarding layout:** Each layer has its own border, trailing bytes... and follow the same layout constraints. Moreover, `LAYOUT_GAPLESS` also constrain the layers to be immediately next in memory, without any byte (like it constrain the scanlines). The layers **cannot** be stored in reverse order.
+
+
+### 6.2 Get sub-range of layers
+
+`image.layerRange(int start, int stop)` return non-owning view of a several layers.
+
+
+
+
+### 6.3 Access layer pixels
+
+- Get a pointer to a scanline: 
+
+```d
+// Get the 160th scanline of layer 2.
+void* scan = image.layerptr(2, 160);
+```
+
+- Get a slice of a whole scanline: 
+
+```d
+// Get the 160th scanline of layer 2.
+void[] line = image.layerline(2, 160);
+```
+
+Actually, `scanptr(y)` and `scanline(y)` only access the layer index 0.
+```d
+// Get the 160th scanline of layer 0.
+void* scan = image.scanptr(160);
+void[] line = image.scanline(160);
+```
+
+>  **Key concept:** First layer has index 0.
+
+Consequently, there are two ways to access pixel data in `Image`:
+
+```d
+// Two different ways to access layer pixels.
+assert(image.layer(2).scanline(160) == image.layerline(2, 160)
+```
+> **The calls*:* 
+>  - `image.layerptr(layer, y)`
+>  - `image.layerline(layer, y)`
+>
+> _are like:_
+>
+> - `image.scanptr(y)`
+> - `image.scanline(y)`
+>
+> _but take a **layer index**._
+ 
