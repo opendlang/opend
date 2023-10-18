@@ -27,7 +27,7 @@ import mir.stat.descriptive.multivariate: covariance, correlation;
 
 // From univariate
 ///
-alias std = standardDeviation;
+alias sd = standardDeviation;
 ///
 alias var = variance;
 ///

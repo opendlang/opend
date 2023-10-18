@@ -3751,9 +3751,6 @@ template correlation(string correlationAlgo, string summation = "appropriate")
     mixin("alias correlation = .correlation!(CorrelationAlgo." ~ correlationAlgo ~ ", Summation." ~ summation ~ ");");
 }
 
-///
-alias cor = correlation;
-
 /// Correlation of vectors
 version(mir_stat_test)
 @safe pure nothrow
