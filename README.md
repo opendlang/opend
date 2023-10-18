@@ -6,7 +6,6 @@
 [![Dub downloads](https://img.shields.io/dub/dm/mir-stat.svg)](http://code.dlang.org/packages/mir-stat)
 [![License](https://img.shields.io/dub/l/mir-stat.svg)](http://code.dlang.org/packages/mir-stat)
 [![Latest version](https://img.shields.io/dub/v/mir-stat.svg)](http://code.dlang.org/packages/mir-stat)
-[![Bountysource](https://www.bountysource.com/badge/team?team_id=145399&style=bounties_received)](https://www.bountysource.com/teams/libmir)
 
 # Mir Stat
 
