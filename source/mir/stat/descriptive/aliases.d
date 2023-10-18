@@ -47,3 +47,73 @@ alias mad = medianAbsoluteDeviation;
 alias cov = covariance;
 ///
 alias cor = correlation;
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = sd;
+    alias b = sd!double;
+    alias c = sd!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = var;
+    alias b = var!double;
+    alias c = var!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = skew;
+    alias b = skew!double;
+    alias c = skew!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = kurt;
+    alias b = kurt!double;
+    alias c = kurt!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = cv;
+    alias b = cv!double;
+    alias c = cv!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = iqr;
+    alias b = iqr!double;
+    alias c = iqr!"type7";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = mad;
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = cov;
+    alias b = cov!double;
+    alias c = cov!"naive";
+}
+
+@safe pure @nogc nothrow
+unittest
+{
+    alias a = cor;
+    alias b = cor!double;
+    alias c = cor!"naive";
+}
