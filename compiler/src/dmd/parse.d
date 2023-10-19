@@ -2015,6 +2015,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         case TOK.wcharLiteral:
         case TOK.dcharLiteral:
         case TOK.string_:
+        case TOK.interpolated:
         case TOK.hexadecimalString:
         case TOK.file:
         case TOK.fileFullPath:
@@ -5820,6 +5821,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         case TOK.true_:
         case TOK.false_:
         case TOK.string_:
+        case TOK.interpolated:
         case TOK.hexadecimalString:
         case TOK.leftParenthesis:
         case TOK.cast_:
@@ -7340,6 +7342,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     case TOK.wcharLiteral:
                     case TOK.dcharLiteral:
                     case TOK.string_:
+                    case TOK.interpolated:
                     case TOK.hexadecimalString:
                     case TOK.file:
                     case TOK.fileFullPath:
@@ -8214,6 +8217,11 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             nextToken();
             break;
 
+        case TOK.interpolated:
+            e = new AST.InterpExp(loc, token.interpolatedSet, token.postfix);
+            nextToken();
+            break;
+
         case TOK.string_:
         case TOK.hexadecimalString:
             const bool hexString = token.value == TOK.hexadecimalString;
@@ -8847,6 +8855,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                         case TOK.wcharLiteral:
                         case TOK.dcharLiteral:
                         case TOK.string_:
+                        case TOK.interpolated:
                         case TOK.function_:
                         case TOK.delegate_:
                         case TOK.typeof_:
