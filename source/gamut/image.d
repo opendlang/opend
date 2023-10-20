@@ -608,6 +608,11 @@ public:
         return layerRange(layerIndex, layerIndex+1);
     }
     ///ditto
+    const(Image) layer(int layerIndex) pure const
+    {
+        return layerRange(layerIndex, layerIndex+1);
+    }
+    ///ditto
     Image layerRange(int layerStart, int layerEnd) pure @trusted
     {
         assert(isValid() && hasData());
@@ -617,7 +622,7 @@ public:
 
         Image res;
         res.clearError();
-        res._data = _data + _layerOffset * layerStart;
+        res._data = (cast(ubyte*)_data) + _layerOffset * layerStart;
         res._allocArea = null; // not owned
         res._type = type;
         res._width = width;
@@ -627,6 +632,11 @@ public:
         res._layerCount = layerEnd - layerStart;
         res._layerOffset = _layerOffset;
         return res;
+    }
+    ///ditto
+    const(Image) layerRange(int layerStart, int layerEnd) pure const @trusted
+    {
+        return (cast(Image*)&this).layerRange(layerStart, layerEnd);
     }
 
     /// Create a view into existing data.

@@ -21,6 +21,7 @@ enum ImageFormat
     QOIX    =  3, /// Quite OK Image format, eXtended as in Gamut (*.QOIX)
     DDS     =  4, /// Compressed texture formats.
     TGA     =  5, /// Truevision TGA
+    GIF     =  6, /// Graphics Interchange Format
 }
 
 /// Pixel component type.
