@@ -115,6 +115,12 @@ struct MsfGifState
     int width, height;
     void * customAllocatorContext;
     int framesSubmitted; //needed for transparency to work correctly (because we reach into the previous frame)
+
+    //The gif format only supports 1-bit transparency, meaning a pixel will either be fully transparent or fully opaque.
+    //Pixels with an alpha value less than the alpha threshold will be treated as transparent.
+    //To enable exporting transparent gifs, set it to a value between 1 and 255 (inclusive) before calling msf_gif_frame().
+    //Setting it to 0 causes the alpha channel to be ignored. Its initial value is 0.
+    int msf_gif_alpha_threshold = 10; // GP: tuned grossly
 }
 
 
@@ -129,11 +135,7 @@ MsfGifResult msf_gif_end(MsfGifState * handle);
  */
 void msf_gif_free(MsfGifResult result);
 
-//The gif format only supports 1-bit transparency, meaning a pixel will either be fully transparent or fully opaque.
-//Pixels with an alpha value less than the alpha threshold will be treated as transparent.
-//To enable exporting transparent gifs, set it to a value between 1 and 255 (inclusive) before calling msf_gif_frame().
-//Setting it to 0 causes the alpha channel to be ignored. Its initial value is 0.
-enum int msf_gif_alpha_threshold = 128; // GP: Seems to me it should be 128 instead of 0?
+
 
 void* MSF_GIF_MALLOC(void* contextPointer, size_t newSize) 
 {
@@ -176,8 +178,8 @@ int msf_imax(int a, int b) { return b < a? a : b; }
 
 enum int msf_gif_bgra_flag = 0;
 
-static void msf_cook_frame(MsfCookedFrame * frame, const(uint8_t)* raw, uint8_t * used,
-                           int width, int height, int pitch, int depth)
+void msf_cook_frame(MsfCookedFrame * frame, const(uint8_t)* raw, uint8_t * used,
+                    int width, int height, int pitch, int depth, int msf_gif_alpha_threshold)
 {
     //bit depth for each channel
     static immutable int[17] rdepthsArray = [ 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5 ];
@@ -567,7 +569,8 @@ int msf_gif_frame(MsfGifState * handle, const(uint8_t)* pixelData, int centiSeco
     //GP: again argh
     uint8_t[(1 << 16) + 1] used; 
     msf_cook_frame(&handle.currentFrame, pixelData, used.ptr, handle.width, handle.height, pitchInBytes,
-        msf_imin(maxBitDepth, handle.previousFrame.depth + 160 / msf_imax(1, handle.previousFrame.count)));
+        msf_imin(maxBitDepth, handle.previousFrame.depth + 160 / msf_imax(1, handle.previousFrame.count)),
+                   handle.msf_gif_alpha_threshold);
 
     MsfGifBuffer * buffer = msf_compress_frame(handle.customAllocatorContext, handle.width, handle.height,
         centiSecondsPerFame, handle.currentFrame, handle, used.ptr, handle.lzwMem);
