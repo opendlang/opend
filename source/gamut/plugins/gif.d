@@ -23,7 +23,7 @@ ImageFormatPlugin makeGIFPlugin()
     ImageFormatPlugin p;
     p.format = "GIF";
     p.extensionList = "gif";
-    p.mimeTypes = "image/tga";
+    p.mimeTypes = "image/gif";
     version(decodeGIF)
         p.loadProc = &loadGIF;
     else
@@ -59,9 +59,16 @@ bool saveGIF(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     if (!msf_gif_begin(&gifState, image.width, image.height))
         return false;
 
-    // 0-frames .gif not supported (do they even exist?)
+    // 0-frames .gif not supported (not sure if possible)
     if (image.layers == 0)
         return false;
+
+    // Only pixelType rgba8 is supported!
+    PixelType type = image.type();
+    if (type != PixelType.rgba8)
+        return false;
+
+    // MAYDO: could support more types by converting scanlines on-the-fly?
  
     for (int layerIndex = 0; layerIndex < image.layers; ++layerIndex)
     {
