@@ -1,6 +1,6 @@
 {
     "name": "gamut",
-    "description": "image library",
+    "description": "Image library. Decoders/encoders for PNG, TGA, JPEG, DDS, GIF, QOI, QOIX. 16-bit support.",
     "license": "BSL-1.0+MIT",
 
     "dependencies":
@@ -11,17 +11,17 @@
     "configurations": [
         {
             "name": "boost+mit",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA",
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA", "decodeGIF",
                           "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS", "encodeTGA", "encodeGIF" ]
         },
         {
             "name": "boost",
-            "versions": [ "decodeJPEG", "decodePNG",                                         "decodeTGA",
-                          "encodeJPEG", "encodePNG", "encodeDDS",                            "encodeTGA",  ]
+            "versions": [ "decodeJPEG", "decodePNG",                                         "decodeTGA", "decodeGIF",
+                          "encodeJPEG", "encodePNG", "encodeDDS",                            "encodeTGA", "encodeGIF" ]
         },              
         {
             "name": "just-decode",
-            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA" ]
+            "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA", "decodeGIF" ]
         },
         {
             "name": "audio-plugin",

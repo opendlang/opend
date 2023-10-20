@@ -97,6 +97,7 @@ alias convertDPIToPPM = convertMetersToInches;
 
 
 /// Load flags (range: bits 16 to 23).
+/// Load flags occupy high-order word so that casting to ushort only keeps `LayoutConstraints` part.
 alias LoadFlags = int;
 
 /// No loading options. This will keep the original input pixel format, so as to make the least

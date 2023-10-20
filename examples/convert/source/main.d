@@ -75,6 +75,7 @@ int main(string[] args)
         writefln("Opened %s", input);
         writefln(" - width      = %s", image.width);
         writefln(" - height     = %s", image.height);
+        writefln(" - layers     = %s", image.layers);
         writefln(" - type       = %s", image.type);
 
         if (bitness == 8)
