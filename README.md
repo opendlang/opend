@@ -228,7 +228,8 @@ Another way to create an `Image` is to load an encoded image.
       QOI,
       QOIX,
       DDS,
-      TGA
+      TGA,
+      GIF
   }
   ```
 
@@ -480,11 +481,11 @@ assert(image.layers == 24);
 // Create view into existing data.
 // layerOffsetBytes is byte offset between first scanlines 
 // of two consecutive layers.
-image.createViewFromData(data.ptr, 
-                         w, h, numLaters, 
-                         PixelType.rgb8, 
-                         pitchbytes,
-                         layerOffsetBytes);
+image.createLayeredViewFromData(data.ptr, 
+                                w, h, numLaters, 
+                                PixelType.rgb8, 
+                                pitchbytes,
+                                layerOffsetBytes);
 ```
 
 > Gamut **Image** is secretly similar to 2D Array Texture in OpenGL. Each layer is store consecutively in memory.

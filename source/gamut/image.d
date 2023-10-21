@@ -1563,13 +1563,6 @@ package:
 
 private:
 
-    /// Compute a suitable pitch when making an image.
-    /// FUTURE some flags that change alignment constraints?
-    deprecated int computePitch(PixelType type, int width)
-    {
-        return width * pixelTypeSize(type);
-    }
-
     // Used by creation functions, this makes some checks too.
     // TODO: it should set the error flag!
     bool forgetPreviousUsage(int newLayers, int newWidth, int newHeight) @safe

@@ -196,7 +196,7 @@ bool saveGIF(ref const(Image) image, IOStream *io, IOHandle handle, int page, in
     {
         const(Image) layer = image.layer(layerIndex);
 
-        const(ubyte)* pixelData = cast(const(ubyte)*)image.scanptr(0);
+        const(ubyte)* pixelData = cast(const(ubyte)*)layer.scanptr(0);
         int centiSecondsPerFame = 7;
         int maxBitDepth = 16;
         int pitchInBytes = image.pitchInBytes();
