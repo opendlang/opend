@@ -13,6 +13,7 @@ void main(string[] args)
     testIssue46();
     //testReallocSpeed();
     testCGBI();
+    testDecodingGIF();
 }
 
 void testIssue35()
@@ -71,6 +72,18 @@ void testCGBI()
     assert(!image.isError);
     image.saveToFile("output/issue51cbgi2.png");
 }
+
+void testDecodingGIF()
+{
+    Image image;
+    image.loadFromFile("test-images/animated_loop.gif");
+    assert(image.layers == 4);
+    image.layer(0).saveToFile("output/animated_loop_frame0.png");
+    image.layer(1).saveToFile("output/animated_loop_frame1.png");
+    image.layer(2).saveToFile("output/animated_loop_frame2.png");
+    image.layer(3).saveToFile("output/animated_loop_frame3.png");
+}
+
 /+
 void testReallocSpeed()
 {
