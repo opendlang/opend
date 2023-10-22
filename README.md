@@ -13,7 +13,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - PNG: 8-bit and 16-bit, L/LA/RGB/RGBA
 - JPEG: 8-bit, L/RGB/RGBA, baseline and progressive
 - TGA: 8-bit, indexed, L/LA/RGB/RGBA
-- GIF: 8-bit, RGBA **WIP**
+- GIF: indexed
 - QOI: 8-bit, RGB/RGBA
 - QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA. _Improvement upon QOI. This format may change between major Gamut tags, so is not a storage format._
 
