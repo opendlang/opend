@@ -117,6 +117,8 @@ nothrow @nogc:
 
         layers = 0;
         int frameDurationMs = 100;
+        double sumDurationsMs = 0.0;
+        firstFrame = true;
         while(true)
         {
             bool gotOneFrame;
@@ -125,10 +127,21 @@ nothrow @nogc:
             if (!gotOneFrame)
                 break;
             layers++;
+            sumDurationsMs += frameDurationMs;
+
+            // note: by breaking here, we can limit number of decoded frames.
+            //break;
         } 
         // Note: last GCE encountered gives the "FPS", we assume GIF frame have same delay,
         // which is incorrect.
-        imageFPS = 1000.0f / gce.frameDurationMs();
+        if (sumDurationsMs == 0)
+        {
+            imageFPS = 10;
+        }
+        else
+        {
+            imageFPS = layers * 1000.0f / sumDurationsMs;
+        }
 
         restoreFileOffset(offset, err); if (*err) return;
 
@@ -180,8 +193,8 @@ nothrow @nogc:
                 int scanlineBytes = 4 * outFrame.width;
                 for (int y = 0; y < outFrame.height; ++y)
                 {
-                    int pixelIndex = y * logicalScreenHeight;
-                    memcpy( outFrame.scanptr(y), &out_[pixelIndex*4], 4*scanlineBytes );
+                    int pixelIndex = y * logicalScreenWidth;
+                    memcpy( outFrame.scanptr(y), &out_[pixelIndex*4], scanlineBytes );
                 }
             }
 
@@ -479,7 +492,8 @@ private:
             transparent = -1;
         }
 
-        debug(gifLoading) printf("  * delayTime = %d ms\n", gce.frameDurationMs());
+        debug(gifLoading) printf(" * delayTime = %d ms\n", gce.frameDurationMs());
+        debug(gifLoading) printf(" * disposal method = %d\n", gce.disposalMethod);
 
         ubyte zero = read_ubyte(err); if (*err) return;
         if (zero != 0)
@@ -548,6 +562,13 @@ private:
             currentPalette = gct;
             currentPaletteSize = gctSize;
         }
+
+        debug(gifLoading) printf(" * frameX = %d\n", frameX); 
+        debug(gifLoading) printf(" * frameY = %d\n", frameY);
+        debug(gifLoading) printf(" * frameW = %d\n", frameW);
+        debug(gifLoading) printf(" * frameH = %d\n", frameH);
+        debug(gifLoading) printf(" * interlaced = %d\n", frameInterlaced);
+        debug(gifLoading) printf(" * local table = %d\n", (frameFlags & 0x80) );
 
         interlacedPass = 0;
         currentX = frameX;
@@ -763,10 +784,13 @@ private:
                 }
             }
             else
+            {
                 currentY += 1;
+            }
         }
     }
 
+    // PERF: no need to decode properly if just scanning
     void parseColortable(ubyte* palette, int num_entries, int transp, bool* err)
     {
         *err = false;

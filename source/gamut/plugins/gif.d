@@ -9,7 +9,7 @@ module gamut.plugins.gif;
 nothrow @nogc @safe:
 
 
-//version = useNewDecoder;
+version = useNewDecoder;
 
 import core.stdc.stdlib: malloc, free, realloc;
 import core.stdc.string: memcpy;
