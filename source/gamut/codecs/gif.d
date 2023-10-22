@@ -7,7 +7,7 @@ version(decodeGIF):
 
 import gamut.io;
 import gamut.image;
-import core.stdc.string: memcmp;
+import core.stdc.string: memcmp, memset, memcpy;
 import core.stdc.stdlib: malloc, free;
 
 nothrow @nogc:
@@ -132,6 +132,7 @@ nothrow @nogc:
 
         restoreFileOffset(offset, err); if (*err) return;
 
+        firstFrame = true;
         *err = false;
         return;
     }
@@ -142,6 +143,12 @@ nothrow @nogc:
         gct = null;
         free(lct);
         lct = null;
+        free(background);
+        background = null;
+        free(history);
+        history = null;
+        free(out_);
+        out_ = null;
     }
 
     /// Decode next GIF frame in a rgba8 buffer.
@@ -152,7 +159,8 @@ nothrow @nogc:
     {
         *gotOneFrame = false;
         *err = false;
-        int res = parseFrame(err, outFrame);
+        bool needDecode = outFrame !is null;
+        int res = parseFrame(err, needDecode);
         if (*err) return;
 
         if (res == 0)
@@ -162,6 +170,21 @@ nothrow @nogc:
         }
         else if (res == 1)
         {
+            // TODO: copy in outFrame if needed
+
+            if (outFrame)
+            {
+                assert(outFrame.width == logicalScreenWidth);
+                assert(outFrame.height == logicalScreenHeight);
+
+                int scanlineBytes = 4 * outFrame.width;
+                for (int y = 0; y < outFrame.height; ++y)
+                {
+                    int pixelIndex = y * logicalScreenHeight;
+                    memcpy( outFrame.scanptr(y), &out_[pixelIndex*4], 4*scanlineBytes );
+                }
+            }
+
             *gotOneFrame = true;
             *frameDurationMs = gce.frameDurationMs;
         }
@@ -198,6 +221,11 @@ private:
 
     // Current transparent color index. This is used to modify global color palette in place.
     int transparent;
+
+    ubyte* background;
+    ubyte* history;
+    ubyte* out_;
+    bool firstFrame;
 
     static struct GCE
     {
@@ -271,14 +299,83 @@ private:
     // Return 1 for one frame.
     // *err is true if input error, in which case abandon decoding. Return -1 in that case.
     // outImage can be null if no pixel decoding needed.
-    int parseFrame(bool* err, Image* outImage)
+    int parseFrame(bool* err, bool needDecode)
     {
+        if (firstFrame)
+        {
+            int pcount = logicalScreenWidth * logicalScreenHeight;
+
+            // PERF: merge those allocations
+            if (out_       is null) out_       = cast(ubyte*) malloc(4 * pcount);
+            if (background is null) background = cast(ubyte*) malloc(4 * pcount);
+            if (history    is null) history    = cast(ubyte*) malloc(    pcount);
+
+            // image is treated as "transparent" at the start - ie, nothing overwrites the current 
+            // background;
+            // background colour is only used for pixels that are not rendered first frame, after 
+            // that "background" color refers to the color that was there the previous frame.
+            memset(out_,       0, 4 * pcount);
+            memset(background, 0, 4 * pcount); // state of the background (starts transparent)
+            memset(history,    0, pcount);        // pixels that were affected previous frame
+
+            firstFrame = false;
+        }
+        else if (needDecode)
+        {
+            // Dispose previous frame
+            // second frame - how do we dispose of the previous one?
+
+            int dispose = gce.disposalMethod;
+            int pcount = logicalScreenWidth * logicalScreenHeight;
+
+            ubyte* two_back = null;
+
+            if ((dispose == 3) && (two_back == null)) 
+            {
+                dispose = 2; // if I don't have an image to revert back to, default to the old background
+            }
+
+            if (dispose == 3) // use previous graphic
+            { 
+                for (int pi = 0; pi < pcount; ++pi) 
+                {
+                    if (history[pi]) 
+                    {
+                        memcpy(&out_[pi * 4], &two_back[pi * 4], 4 );
+                    }
+                }
+            } 
+            else if (dispose == 2) 
+            {                
+                // restore what was changed last frame to background before that frame;
+                for (int pi = 0; pi < pcount; ++pi) 
+                {
+                    if (history[pi]) 
+                    {
+                        memcpy(&out_[pi * 4], &background[pi * 4], 4 );
+                    }
+                }
+            } 
+            else 
+            {
+                // This is a non-disposal case either way, so just
+                // leave the pixels as is, and they will become the new background
+                // 1: do not dispose
+                // 0:  not specified.
+            }
+
+            // background is what out is after the undoing of the previou frame;
+            assert(background !is null);
+            assert(out_ !is null);
+            memcpy(background, out_, 4 * pcount);
+        }
+
         while(true)
         {
             ubyte sep = read_ubyte(err); if (*err) return -1;
             if (sep == PART_LWZ_IMAGE)
             {
-                parseLWZImage(err, outImage); if (*err) return -1;
+                parseLWZImage(err, needDecode); if (*err) return -1;
                 return 1;
             }
             else if (sep == PART_END_OF_STREAM)
@@ -413,7 +510,7 @@ private:
          skipSubblocks(err);
     }
 
-    void parseLWZImage(bool* err, Image* outImage)
+    void parseLWZImage(bool* err, bool needDecode)
     {
         debug(gifLoading) printf("IMAGE\n");
 
@@ -456,7 +553,7 @@ private:
         currentX = frameX;
         currentY = frameY;
 
-        parseImageData(err, outImage);
+        parseImageData(err, needDecode);
     }
 
     void parseApplicationInfoExt(bool* err)
@@ -473,7 +570,7 @@ private:
         skipSubblocks(err);
     }
 
-    void parseImageData(bool* err, Image* outImage)
+    void parseImageData(bool* err, bool needDecode)
     {
         *err = false;
 
@@ -590,8 +687,8 @@ private:
                     }
 
                     //printf("code %d\n", cast(short)code);
-                    if (outImage)
-                        stbi__out_gif_code(cast(ushort) code, outImage);
+                    if (needDecode)
+                        stbi__out_gif_code(cast(ushort) code);
 
                     if ((avail & codemask) == 0 && avail <= 0x0FFF) 
                     {
@@ -620,20 +717,21 @@ private:
     static immutable interlacedPassYStep  = [8, 8, 4, 2];
     static immutable interlacedPassYStart = [0, 4, 2, 1];
 
-    void stbi__out_gif_code(ushort code, Image* outImage)
+    void stbi__out_gif_code(ushort code)
     {
         // Recurse to decode the prefixes, since the linked-list is backwards,
         // and working backwards through an interleaved image would be nasty
         if (codes[code].prefix >= 0)
-            stbi__out_gif_code(codes[code].prefix, outImage);
+            stbi__out_gif_code(codes[code].prefix);
 
         if (currentY >= logicalScreenHeight) 
             return;
 
-        ubyte* pixelptr = cast(ubyte*) outImage.scanptr(currentY) + 4 * currentX;
+        int pIndex = (currentY * logicalScreenWidth + currentX);
 
-        // MAYDO: enable history, pixel that were affected previous frame
-        //history[idx / 4] = 1;
+        ubyte* pixelptr = &out_[pIndex * 4 ];
+
+        history[pIndex] = 1;
 
         ubyte* c = &currentPalette[codes[code].suffix * 4];
 
