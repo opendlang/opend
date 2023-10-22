@@ -5,6 +5,8 @@ module gamut.codecs.gif;
 
 version(decodeGIF):
 
+// TODO: support two_back dispose method properly
+
 import gamut.io;
 import gamut.image;
 import core.stdc.string: memcmp, memset, memcpy;
@@ -80,16 +82,36 @@ nothrow @nogc:
 
         transparent = -1;
 
+
+        // Allocate all memory needed for decoder
+        int pcount = logicalScreenWidth * logicalScreenHeight;
+
+        if (globalAlloc is null)
+        {
+            // Always need 34kb of memory.
+            size_t gctSizeMax = 256*4;
+            size_t lctSizeMax = 256*4;
+            size_t outSize = pcount*4;
+            size_t bgSize  = pcount*4;
+            size_t historySize = pcount;
+            size_t codesSize = 8192 * LZWCode.sizeof;
+            globalAlloc = cast(ubyte*) malloc(gctSizeMax + lctSizeMax + outSize 
+                                               + bgSize + historySize + codesSize);
+            ubyte* mem = globalAlloc;
+            gct        = mem; mem += gctSizeMax;
+            lct        = mem; mem += lctSizeMax;
+            out_       = mem; mem += outSize;
+            background = mem; mem += bgSize;
+            history    = mem; mem += historySize;
+            codes      = cast(LZWCode*)mem; mem += codesSize;
+        }
+
         if (imageFlags & 0x80)
         {
             // "Size of Global Color Table - If the Global Color Table Flag is
             // set to 1, the value in this field is used to calculate the number
             // of bytes contained in the Global Color Table."
             gctSize = 1 << ((imageFlags & 0x07) + 1);
-            if (gct is null)
-            {
-                gct = cast(ubyte*) malloc(4 * gctSize);
-            }
 
             // Parse GCT
             parseColortable(gct, gctSize, -1, err); if (*err) return;
@@ -152,16 +174,8 @@ nothrow @nogc:
 
     ~this()
     {
-        free(gct);
-        gct = null;
-        free(lct);
-        lct = null;
-        free(background);
-        background = null;
-        free(history);
-        history = null;
-        free(out_);
-        out_ = null;
+        free(globalAlloc);
+        globalAlloc = null;
     }
 
     /// Decode next GIF frame in a rgba8 buffer.
@@ -183,8 +197,6 @@ nothrow @nogc:
         }
         else if (res == 1)
         {
-            // TODO: copy in outFrame if needed
-
             if (outFrame)
             {
                 assert(outFrame.width == logicalScreenWidth);
@@ -235,6 +247,7 @@ private:
     // Current transparent color index. This is used to modify global color palette in place.
     int transparent;
 
+    ubyte* globalAlloc;
     ubyte* background;
     ubyte* history;
     ubyte* out_;
@@ -261,13 +274,15 @@ private:
 
     int colorResolution;
 
-    static struct stbi__gif_lzw
+    align(1) static struct LZWCode
     {
+        align(1):
         short prefix;
         ubyte first;
         ubyte suffix;
     }
-    stbi__gif_lzw[8192] codes; // TODO: allocate that table
+    static assert(LZWCode.sizeof == 4);
+    LZWCode* codes;
 
 
     ushort read_ushort(bool* err)
@@ -317,11 +332,6 @@ private:
         if (firstFrame)
         {
             int pcount = logicalScreenWidth * logicalScreenHeight;
-
-            // PERF: merge those allocations
-            if (out_       is null) out_       = cast(ubyte*) malloc(4 * pcount);
-            if (background is null) background = cast(ubyte*) malloc(4 * pcount);
-            if (history    is null) history    = cast(ubyte*) malloc(    pcount);
 
             // image is treated as "transparent" at the start - ie, nothing overwrites the current 
             // background;
@@ -547,12 +557,20 @@ private:
             // has local table
             lctSize = 1 << ((frameFlags & 0x07) + 1);
 
-            // alloc maximum possible table size, for future lct (if any)
-            if (lct is null) lct = cast(ubyte*) malloc(4 * 256);
-
             // Parse LCT
             int transpIndex = gce.transparencyFlag ? transparent : -1;
-            parseColortable(lct, lctSize, transpIndex, err); if (*err) return;
+            if (needDecode)
+            {
+                parseColortable(lct, lctSize, transpIndex, err); if (*err) return;
+            }
+            else
+            {
+                if (!io.skipBytes(handle, lctSize*3))
+                {
+                    *err = true;
+                    return;
+                }
+            }
 
             currentPalette = lct;
             currentPaletteSize = lctSize;
@@ -595,7 +613,7 @@ private:
     {
         *err = false;
 
-        stbi__gif_lzw *p;
+        LZWCode *p;
         ubyte lzw_cs = read_ubyte(err); if (*err) return;
 
         if (lzw_cs > 12) 
@@ -790,7 +808,6 @@ private:
         }
     }
 
-    // PERF: no need to decode properly if just scanning
     void parseColortable(ubyte* palette, int num_entries, int transp, bool* err)
     {
         *err = false;
