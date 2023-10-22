@@ -8,6 +8,9 @@ module gamut.plugins.gif;
 
 nothrow @nogc @safe:
 
+
+//version = useNewDecoder;
+
 import core.stdc.stdlib: malloc, free, realloc;
 import core.stdc.string: memcpy;
 import gamut.types;
@@ -17,7 +20,6 @@ import gamut.image;
 import gamut.internals.errors;
 import gamut.internals.types;
 
-//version(decodeGIF) import gamut.codecs.gifdec;
 version(encodeGIF) import gamut.codecs.msf_gif;
 
 
@@ -52,7 +54,6 @@ bool detectGIF(IOStream *io, IOHandle handle) @trusted
     return false;
 }
 
-//version = useNewDecoder;
 
 version(decodeGIF)
 void loadGIF(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
@@ -60,25 +61,46 @@ void loadGIF(ref Image image, IOStream *io, IOHandle handle, int page, int flags
     version(useNewDecoder)
     {
         import gamut.codecs.gif;
-        GIFDecoder decoder;
-        bool err;
-        decoder.open(io, handle, &err);
-        if (err)
+
         {
-            image.error(kStrImageDecodingFailed);
-            return;
-        }
+            GIFDecoder decoder;
+            bool err;
+            decoder.open(io, handle, &err);
+            if (err)
+            {
+                image.error(kStrImageDecodingFailed);
+                return;
+            }
 
-        // Create destination image.
-        image.createLayeredNoInit(decoder.width,
-                                  decoder.height,
-                                  decoder.numLayers,
-                                  PixelType.rgba8,
-                                  cast(LayoutConstraints) flags);
-        int layers = decoder.numLayers;
+            // TODO: store decoder.FPS somewhere
 
+            // Create destination image.
+            image.createLayeredNoInit(decoder.width,
+                                      decoder.height,
+                                      decoder.numLayers,
+                                      PixelType.rgba8,
+                                      cast(LayoutConstraints) flags);
 
-        //TODO
+            for (int layerIndex = 0; layerIndex < decoder.numLayers; ++layerIndex)
+            {
+                bool gotOneFrame;
+                int dummy;
+                Image layerN = image.layer(layerIndex);
+                decoder.decodeNextFrame(&gotOneFrame, 
+                                        &layerN,
+                                        &dummy,
+                                        &err);
+                if (err || !gotOneFrame)
+                {
+                    image.error(kStrImageDecodingFailed);
+                    return;
+                }
+            }
+
+        } // clear decoder
+
+        // Convert to target type and constraints.
+        image.convertTo(applyLoadFlags(image._type, flags), cast(LayoutConstraints) flags);
     }
     else
     {

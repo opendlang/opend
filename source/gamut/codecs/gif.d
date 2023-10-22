@@ -12,7 +12,7 @@ import core.stdc.stdlib: malloc, free;
 
 nothrow @nogc:
 
-debug = gifLoading;
+//debug = gifLoading;
 
 debug(gifLoading) import core.stdc.stdio;
 
@@ -41,6 +41,10 @@ nothrow @nogc:
     int numLayers()
     {
         return layers;
+    }
+    float FPS()
+    {
+        return imageFPS;
     }
     // </available after open>
 
@@ -74,25 +78,21 @@ nothrow @nogc:
         backgroundColorIndex    = read_ubyte(err); if (*err) return;
         pixelAspectRatio        = read_ubyte(err); if (*err) return;
 
+        transparent = -1;
+
         if (imageFlags & 0x80)
         {
-            // has Global Color Table
-            
             // "Size of Global Color Table - If the Global Color Table Flag is
             // set to 1, the value in this field is used to calculate the number
             // of bytes contained in the Global Color Table."
             gctSize = 1 << ((imageFlags & 0x07) + 1);
             if (gct is null)
             {
-                gct = cast(ubyte*) malloc(3 * gctSize);
+                gct = cast(ubyte*) malloc(4 * gctSize);
             }
 
             // Parse GCT
-            if (1 != io.read(gct, gctSize*3, 1, handle))
-            {
-                *err = true;
-                return;
-            }
+            parseColortable(gct, gctSize, -1, err); if (*err) return;
         }
         else
         {
@@ -114,22 +114,23 @@ nothrow @nogc:
         // Count frames in image.
 
         auto offset = saveFileOffset(err); if (*err) return;
-        
-        int numImages = 0;
+
+        layers = 0;
+        int frameDurationMs = 100;
         while(true)
         {
-            int elem = parseSyntax(err);
+            bool gotOneFrame;
+            decodeNextFrame(&gotOneFrame, null, &frameDurationMs, err);
             if (*err) return;
-            if (elem == 1)
-                numImages++;
-            else if (elem == 0)
+            if (!gotOneFrame)
                 break;
-        }
+            layers++;
+        } 
+        // Note: last GCE encountered gives the "FPS", we assume GIF frame have same delay,
+        // which is incorrect.
+        imageFPS = 1000.0f / gce.frameDurationMs();
 
         restoreFileOffset(offset, err); if (*err) return;
-
-        // TODO: not correct, a single GIF frame can have several "frames" inside
-        this.layers = numImages; 
 
         *err = false;
         return;
@@ -144,9 +145,28 @@ nothrow @nogc:
     }
 
     /// Decode next GIF frame in a rgba8 buffer.
-    void decodeNextFrame(ref Image outFrame)
+    void decodeNextFrame(bool* gotOneFrame,    // Filled with true if got one frame.
+                         Image* outFrame,      // can be null if no pixel decoding needed, pixels if got one frame
+                         int* frameDurationMs, // written with that frame duration.
+                         bool* err)
     {
-        // TODO
+        *gotOneFrame = false;
+        *err = false;
+        int res = parseFrame(err, outFrame);
+        if (*err) return;
+
+        if (res == 0)
+        {
+            // end of stream
+            return;
+        }
+        else if (res == 1)
+        {
+            *gotOneFrame = true;
+            *frameDurationMs = gce.frameDurationMs;
+        }
+        else
+            assert(false);
     }
 
 private:
@@ -156,22 +176,44 @@ private:
     int logicalScreenWidth;
     int logicalScreenHeight;
     int layers;
+    float imageFPS;
     ubyte backgroundColorIndex; 
     ubyte pixelAspectRatio; // Aspect Ratio = (Pixel Aspect Ratio + 15) / 64
 
+    // like in stb_image, palette are a RGBA quadruplet
     ubyte* gct, lct, currentPalette;
     int gctSize, lctSize, currentPaletteSize;
 
     // Latest frame information
     int frameX, frameY, frameW, frameH;
+
+    // Next pixel to write to.
+    int currentX, currentY;
+
+    // Pass of interlaced scan (0 to 3).
+    int interlacedPass;
+
+    // If the frame is interlaced in first place.
     bool frameInterlaced;
+
+    // Current transparent color index. This is used to modify global color palette in place.
+    int transparent;
 
     static struct GCE
     {
+    nothrow @nogc:
         ubyte disposalMethod;
         bool transparencyFlag;
-        int delayTime;
+        ushort delayTime = 0;
         ubyte transparentColorIndex;
+
+        int frameDurationMs()
+        {
+            if (delayTime == 0 || delayTime == 1)
+                return 100; // 100 ms duration
+            else
+                return delayTime * 10;
+        }
     }
 
     GCE gce;
@@ -224,62 +266,62 @@ private:
     enum ubyte LABEL_COMMENT               = 0xFE;
     enum ubyte LABEL_APPLICATION_INFO      = 0xFF;
 
-    // Parse one syntax element (GIF "part"), return:
-    // Returns: 0 => the element is an end of stream, stop parsing now
-    //          1 => an LWZ image was parsed
-    //          2 => a graphics control entry was parsed
-    //          3 => a comment entry was parsed
-    //          4 => a text entry definition was parsed
-    //          5 => an application info definition was parsed
+    // Parse until can return one frame.
+    // Return 0 for end of stream.
+    // Return 1 for one frame.
     // *err is true if input error, in which case abandon decoding. Return -1 in that case.
-    int parseSyntax(bool* err)
+    // outImage can be null if no pixel decoding needed.
+    int parseFrame(bool* err, Image* outImage)
     {
-        ubyte sep = read_ubyte(err); if (*err) return -1;
-        if (sep == PART_LWZ_IMAGE)
+        while(true)
         {
-            parseLWZImage(err); if (*err) return -1;
-            return 1;
-        }
-        else if (sep == PART_END_OF_STREAM)
-        {
-            return 0; // EOF
-        }
-        else if (sep == PART_EXTENSION)
-        {
-            ubyte label = read_ubyte(err); if (*err) return -1;
-
-            switch (label) 
+            ubyte sep = read_ubyte(err); if (*err) return -1;
+            if (sep == PART_LWZ_IMAGE)
             {
-                case LABEL_TEXT_ENTRY_DEFINITION:
-                    parseTextEntryExt(err);
-                    if (*err) return -1;
-                    return 4;
-
-                case LABEL_GRAPHICS_CONTROL:
-                    parseGraphicsControlExt(err);
-                    if (*err) return -1;
-                    return 2;
-
-                case LABEL_COMMENT:
-                    parseCommentExt(err);
-                    if (*err) return -1;
-                    return 3;
-
-                case LABEL_APPLICATION_INFO:
-                    parseApplicationInfoExt(err);
-                    if (*err) return -1;
-                    return 5;
-
-                default:
-                    *err = true;
-                    return  -1;
-                    // unknown extension, error
+                parseLWZImage(err, outImage); if (*err) return -1;
+                return 1;
             }
-        }
-        else
-        {
-            *err = true;
-            return -1; // unknown syntax
+            else if (sep == PART_END_OF_STREAM)
+            {
+                return 0; // EOF
+            }
+            else if (sep == PART_EXTENSION)
+            {
+                ubyte label = read_ubyte(err); if (*err) return -1;
+
+                switch (label) 
+                {
+                    case LABEL_TEXT_ENTRY_DEFINITION:
+                        parseTextEntryExt(err);
+                        if (*err) return -1;
+                        break;
+
+                    case LABEL_GRAPHICS_CONTROL:
+                        parseGraphicsControlExt(err);
+                        if (*err) return -1;
+                        break;
+
+                    case LABEL_COMMENT:
+                        parseCommentExt(err);
+                        if (*err) return -1;
+                        break;
+
+                    case LABEL_APPLICATION_INFO:
+                        parseApplicationInfoExt(err);
+                        if (*err) return -1;
+                        break;
+
+                    default:
+                        *err = true;
+                        return  -1;
+                        // unknown extension, error
+                }
+            }
+            else
+            {
+                *err = true;
+                return -1; // unknown syntax
+            }
         }
     }
 
@@ -321,6 +363,27 @@ private:
         gce.delayTime             = read_ushort(err); if (*err) return;
         gce.transparentColorIndex = read_ubyte(err); if (*err) return;
 
+        // unset old transparent
+        if (transparent >= 0 && gct) 
+        {
+            gct[4 * transparent + 3] = 255;
+        }
+
+        if (gce.transparencyFlag) 
+        {
+            transparent = gce.transparentColorIndex;
+            if (transparent >= 0 && gct) 
+            {
+                gct[4 * transparent + 3] = 0;
+            }
+        } 
+        else 
+        {
+            transparent = -1;
+        }
+
+        debug(gifLoading) printf("  * delayTime = %d ms\n", gce.frameDurationMs());
+
         ubyte zero = read_ubyte(err); if (*err) return;
         if (zero != 0)
         {
@@ -350,7 +413,7 @@ private:
          skipSubblocks(err);
     }
 
-    void parseLWZImage(bool* err)
+    void parseLWZImage(bool* err, Image* outImage)
     {
         debug(gifLoading) printf("IMAGE\n");
 
@@ -359,7 +422,6 @@ private:
         frameW = read_ushort(err); if (*err) return;
         frameH = read_ushort(err); if (*err) return;
         ubyte frameFlags = read_ubyte(err); if (*err) return;
-
 
         // Reference: https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art011
         // "If the interlace flag is set, then the lines of the image will be included out of 
@@ -375,14 +437,11 @@ private:
             lctSize = 1 << ((frameFlags & 0x07) + 1);
 
             // alloc maximum possible table size, for future lct (if any)
-            if (lct is null) lct = cast(ubyte*) malloc(3 * 256);
+            if (lct is null) lct = cast(ubyte*) malloc(4 * 256);
 
             // Parse LCT
-            if (1 != io.read(gct, lctSize*3, 1, handle))
-            {
-                *err = true;
-                return;
-            }
+            int transpIndex = gce.transparencyFlag ? transparent : -1;
+            parseColortable(lct, lctSize, transpIndex, err); if (*err) return;
 
             currentPalette = lct;
             currentPaletteSize = lctSize;
@@ -393,8 +452,11 @@ private:
             currentPaletteSize = gctSize;
         }
 
-        // TODO: do something with decoded buffer
-        parseImageData(err);
+        interlacedPass = 0;
+        currentX = frameX;
+        currentY = frameY;
+
+        parseImageData(err, outImage);
     }
 
     void parseApplicationInfoExt(bool* err)
@@ -411,15 +473,10 @@ private:
         skipSubblocks(err);
     }
 
-    void parseImageData(bool* err)
+    void parseImageData(bool* err, Image* outImage)
     {
         *err = false;
 
-        //stbi_uc lzw_cs;
-        //stbi__int32 len, init_code;
-        //stbi__uint32 first;
-        //stbi__int32 codesize, codemask, avail, oldcode, bits, valid_bits, clear;
-        
         stbi__gif_lzw *p;
         ubyte lzw_cs = read_ubyte(err); if (*err) return;
 
@@ -532,8 +589,9 @@ private:
                         return;
                     }
 
-                    printf("code %d\n", cast(short)code);
-                    //stbi__out_gif_code(g, (stbi__uint16) code);
+                    //printf("code %d\n", cast(short)code);
+                    if (outImage)
+                        stbi__out_gif_code(cast(ushort) code, outImage);
 
                     if ((avail & codemask) == 0 && avail <= 0x0FFF) 
                     {
@@ -553,63 +611,75 @@ private:
         }
     }
 
-/+
-    static void stbi__out_gif_code(stbi__gif *g, stbi__uint16 code)
-    {
-        stbi_uc *p, *c;
-        int idx;
+    // "The rows of an Interlaced images are arranged in the following order:
+    //
+    //   Group 1 : Every 8th. row, starting with row 0.              (Pass 1)
+    //   Group 2 : Every 8th. row, starting with row 4.              (Pass 2)
+    //   Group 3 : Every 4th. row, starting with row 2.              (Pass 3)
+    //   Group 4 : Every 2nd. row, starting with row 1.              (Pass 4)"
+    static immutable interlacedPassYStep  = [8, 8, 4, 2];
+    static immutable interlacedPassYStart = [0, 4, 2, 1];
 
-        // recurse to decode the prefixes, since the linked-list is backwards,
+    void stbi__out_gif_code(ushort code, Image* outImage)
+    {
+        // Recurse to decode the prefixes, since the linked-list is backwards,
         // and working backwards through an interleaved image would be nasty
-        if (g->codes[code].prefix >= 0)
-            stbi__out_gif_code(g, g->codes[code].prefix);
+        if (codes[code].prefix >= 0)
+            stbi__out_gif_code(codes[code].prefix, outImage);
 
-        if (g->cur_y >= g->max_y) return;
+        if (currentY >= logicalScreenHeight) 
+            return;
 
-        idx = g->cur_x + g->cur_y;
-        p = &g->out[idx];
-        g->history[idx / 4] = 1;
+        ubyte* pixelptr = cast(ubyte*) outImage.scanptr(currentY) + 4 * currentX;
 
-        c = &g->color_table[g->codes[code].suffix * 4];
-        if (c[3] > 128) { // don't render transparent pixels;
-            p[0] = c[2];
-            p[1] = c[1];
-            p[2] = c[0];
-            p[3] = c[3];
+        // MAYDO: enable history, pixel that were affected previous frame
+        //history[idx / 4] = 1;
+
+        ubyte* c = &currentPalette[codes[code].suffix * 4];
+
+        if (c[3] > 128) 
+        { 
+            pixelptr[0] = c[0];
+            pixelptr[1] = c[1];
+            pixelptr[2] = c[2];
+            pixelptr[3] = 255;
         }
-        g->cur_x += 4;
 
-        if (g->cur_x >= g->max_x) {
-            g->cur_x = g->start_x;
-            g->cur_y += g->step;
+        // Manages location of next pixel
 
-            while (g->cur_y >= g->max_y && g->parse > 0) {
-                g->step = (1 << g->parse) * g->line_size;
-                g->cur_y = g->start_y + (g->step >> 1);
-                --g->parse;
+        currentX += 1;
+        if (currentX >= frameX + frameW)
+        {
+            currentX = frameX;
+            if (frameInterlaced)
+            {
+                currentY += interlacedPassYStep[interlacedPass];
+
+                if (currentY >= frameY + frameH)
+                {
+                    if (interlacedPass < 3)
+                    {
+                        interlacedPass += 1;
+                        currentY = frameY + interlacedPassYStart[interlacedPass];
+                    }
+                }
             }
+            else
+                currentY += 1;
         }
     }
-+/
-}
 
-/+
-Table * new_table(int key_size)
-{
-    int key;
-    int init_bulk = (1 << (key_size + 1));
-    if (init_bulk < 256)
-        init_bulk = 256;
-
-    Table* table = cast(Table*) malloc(Table.sizeof + Entry.sizeof * init_bulk);
-    if (table) 
+    void parseColortable(ubyte* palette, int num_entries, int transp, bool* err)
     {
-        table.bulk = init_bulk;
-        table.nentries = (1 << key_size) + 2;
-        table.entries = cast(Entry *) &table[1];
-        for (key = 0; key < (1 << key_size); key++)
-            table.entries[key] = Entry(1, 0xFFF, cast(ubyte)key);
+        *err = false;
+        for (int i = 0; i < num_entries; ++i) 
+        {
+            if (1 != io.read(&palette[4*i], 3, 1, handle))
+            {
+                *err = true;
+                return;
+            }
+            palette[4*i+3] = (transp == i ? 0 : 255);
+        }
     }
-    return table;
 }
-+/
