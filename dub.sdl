@@ -9,6 +9,10 @@ dependency "mir-algorithm" version=">=3.20.1"
 
 toolchainRequirements frontend=">=2.097"
 
+configuration "library" {
+    targetType "library"
+    # default or user specified mir-lapack sub-configuration is used
+}
 buildType "unittest" {
     buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_stat_test"
@@ -50,4 +54,115 @@ buildType "unittest-release" {
 }
 configuration "dips" {
     dflags "-preview=dip1000" "-preview=dip1008"
+}
+
+// lubeck-related configurations
+buildType "unittest-blas" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_stat_test_blas"
+    dflags "-lowmem"
+}
+buildType "unittest-cov-blas" {
+    buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+    versions "mir_stat_test_blas"
+    dflags "-lowmem"
+}
+configuration "openblas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "threelib" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "cblas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "blas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "blas"
+}
+
+configuration "lapack" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "mkl-sequential" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-sequential"
+}
+
+configuration "mkl-sequential-ilp" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-sequential-ilp"
+}
+
+configuration "mkl-tbb-thread" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-tbb-thread"
+}
+
+configuration "mkl-tbb-thread-ilp" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-tbb-thread-ilp"
+}
+
+configuration "mkl-sequential-dll" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-sequential-dll"
+}
+
+configuration "mkl-sequential-ilp-dll" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-sequential-ilp-dll"
+}
+
+configuration "mkl-tbb-thread-dll" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-tbb-thread-dll"
+}
+
+configuration "mkl-tbb-thread-ilp-dll" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-tbb-thread-ilp-dll"
+}
+
+configuration "zerolib" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "zerolib"
+}
+
+configuration "unittest-openblas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "unittest-threelib" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "unittest-cblas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "unittest-blas" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "blas"
+}
+
+configuration "unittest-lapack" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "unittest-mkl-sequential" {
+    dependency "mir-lapack" version=">=1.2.9"
+    subConfiguration "mir-lapack" "mkl-sequential"
 }

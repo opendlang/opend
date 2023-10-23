@@ -1,8 +1,20 @@
-project('mir-stat', 'd', version : '0.1.6', license: 'BSL-1.0')
+project('mir-stat', 'd', version : '0.3.1', license: 'Apache-2.0')
 
 description = 'Dlang Statistical Package'
 
-subprojects = ['mir-core', 'mir-algorithm']
+subprojects = [
+    'cblas-d',
+    'lapack-d',
+    'mir-algorithm',
+    'mir-blas',
+    'mir-core',
+    'mir-lapack',
+    'mir-random',
+]
+
+if target_machine.system() == 'linux'
+    subprojects += 'mir-linux-kernel'
+endif
 
 has_cpp_headers = false
 
