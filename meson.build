@@ -5,8 +5,8 @@ description = 'LAPACK header'
 subprojects = ['mir-core']
 
 sources_list = [
-    'lapack/lapack'
-    'lapack/package'
+    'lapack/lapack',
+    'lapack/package',
 ]
 
 sources = []
