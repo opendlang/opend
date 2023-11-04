@@ -78,6 +78,14 @@ void testDecodingGIF()
     Image image;
     image.loadFromFile("test-images/animated_loop.gif");
     assert(image.layers == 4);
+
+    // This particular GIF has no pixel ratio information
+    assert(image.pixelAspectRatio() == GAMUT_UNKNOWN_ASPECT_RATIO);
+
+    // GIF doesn't have resolution information.
+    assert(image.dotsPerInchX() == GAMUT_UNKNOWN_RESOLUTION);
+    assert(image.dotsPerInchY() == GAMUT_UNKNOWN_RESOLUTION);
+
     image.layer(0).saveToFile("output/animated_loop_frame0.png");
     image.layer(1).saveToFile("output/animated_loop_frame1.png");
     image.layer(2).saveToFile("output/animated_loop_frame2.png");

@@ -57,6 +57,7 @@ version(decodeGIF)
 void loadGIF(ref Image image, IOStream *io, IOHandle handle, int page, int flags, void *data) @trusted
 { 
     {
+        // Note: in that first opening, the whole file is scanned to get the number of frames.
         GIFDecoder decoder;
         bool err;
         decoder.open(io, handle, &err);
@@ -66,10 +67,13 @@ void loadGIF(ref Image image, IOStream *io, IOHandle handle, int page, int flags
             return;
         }
 
+        image._resolutionY = GAMUT_UNKNOWN_RESOLUTION;
+        image._pixelAspectRatio = decoder.getPixelAspectRatio();
+
         // TODO: store decoder.FPS() somewhere, need metadata
 
         // Create destination image.
-        // PERF: could use scanline conversion to create directly in l8/la8/rgb8
+        // MAYDO: could use scanline conversion to create directly in l8/la8/rgb8, but limited value.
         image.createLayeredNoInit(decoder.width,
                                   decoder.height,
                                   decoder.numLayers,

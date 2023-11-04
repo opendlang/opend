@@ -5,12 +5,11 @@ module gamut.codecs.gif;
 
 version(decodeGIF):
 
-// MAYDO: it's not sure if disposal 3 method should be better supported. 
-// it seems that different open source GIF decoders do it differently, 
-// and it's quite uncommon too.
+
 
 import gamut.io;
 import gamut.image;
+import gamut.types;
 import core.stdc.string: memcmp, memset, memcpy;
 import core.stdc.stdlib: malloc, free;
 
@@ -24,6 +23,10 @@ debug(gifLoading) import core.stdc.stdio;
 struct GIFDecoder
 {
 nothrow @nogc:
+
+    // MAYDO: it's not sure if disposal 3 method should be better supported. 
+    // it seems that different open source GIF decoders do it differently, 
+    // and it's quite uncommon too. So, we have no support (it will decode incorrectly).
 
     // Parse the GIF minimally to have the layers count.
     void open(IOStream *io, IOHandle handle, bool* err)
@@ -49,6 +52,17 @@ nothrow @nogc:
     float FPS()
     {
         return imageFPS;
+    }
+    float getPixelAspectRatio()
+    {
+        if (pixelAspectRatio == 0)
+        {
+            return GAMUT_UNKNOWN_ASPECT_RATIO;
+        }
+        else
+        {
+            return (pixelAspectRatio + 15.0f) / 64;
+        }
     }
     // </available after open>
 
@@ -228,7 +242,7 @@ private:
     int layers;
     float imageFPS;
     ubyte backgroundColorIndex; 
-    ubyte pixelAspectRatio; // Aspect Ratio = (Pixel Aspect Ratio + 15) / 64
+    ubyte pixelAspectRatio;
 
     // like in stb_image, palette are a RGBA quadruplet
     ubyte* gct, lct, currentPalette;
