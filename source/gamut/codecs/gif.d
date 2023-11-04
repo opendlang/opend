@@ -5,7 +5,9 @@ module gamut.codecs.gif;
 
 version(decodeGIF):
 
-// TODO: support two_back dispose method properly
+// MAYDO: it's not sure if disposal 3 method should be better supported. 
+// it seems that different open source GIF decoders do it differently, 
+// and it's quite uncommon too.
 
 import gamut.io;
 import gamut.image;
