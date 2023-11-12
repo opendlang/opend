@@ -35,13 +35,13 @@ package template hasScoped(T)
         enum hasScoped = false;
 }
 
-IonException deserializeValue_(T)(scope IonDescribedValue data, scope ref T value)
+IonException deserializeValue_(T)(scope IonDescribedValue data, return scope ref T value)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValueImpl(data, value).ionException;
 }
 
-IonException deserializeValue_(T, P...)(scope IonDescribedValue data, scope ref T value, scope const P p)
+IonException deserializeValue_(T, P...)(scope IonDescribedValue data, return scope ref T value, scope const P p)
     if (isFirstOrderSerdeType!T)
 {
     return deserializeValue_!T(data, value);
@@ -166,7 +166,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
 
     private IonException deserializeValueMember(string member, T)(
         scope IonDescribedValue data,
-        scope ref T value,
+        return scope ref T value,
         scope ref SerdeFlags!T requiredFlags,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
@@ -377,7 +377,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
     +/
     IonException deserializeValue(T, Annotations...)(
         scope IonDescribedValue data,
-        scope ref T value,
+        return scope ref T value,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
         scope Annotations annotations_,
@@ -1234,7 +1234,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
 
     IonException deserializeValue(T, Annotations...)(
         scope IonDescribedValue data,
-        scope ref T value,
+        return scope ref T value,
         scope RuntimeSymbolTable table,
         scope const(uint)[] tableIndex,
         scope Annotations annotations_,
@@ -1512,7 +1512,7 @@ template deserializeValue(string[] symbolTable, TableKind tableKind)
             static if (anySatisfy!(templateOr!(isStringMap, isAssociativeArray, hasLikeStruct, hasFallbackStruct, hasDiscriminatedField), Types))
             {
                 case IonTypeCode.struct_:
-                {                        
+                {
                     static if (anySatisfy!(isStringMap, Types))
                     {
                         alias isMapType = isStringMap;

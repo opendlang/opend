@@ -30,7 +30,7 @@ template deserializeJson(T)
         import mir.deser.ion: deserializeIon;
         import mir.ion.exception: ionException, ionErrorMsg, IonParserMirException;
 
-        mir_json2ion(text, (error, data)
+        auto callback(IonErrorInfo error, scope const ubyte[] data)
         {
             enum nogc = __traits(compiles, (scope ref T value, const(ubyte)[] data)@nogc { deserializeIon!T(value, data); });
             if (error.code)
@@ -45,7 +45,9 @@ template deserializeJson(T)
                 }
             }
             deserializeIon!T(value, data);
-        });
+        }
+
+        mir_json2ion(text, &callback);
     }
 }
 

@@ -68,7 +68,7 @@ template deserializeIon(T, bool annotated = false)
             tableMapBuffer.put(id);
         }
         if (auto exception = deserializeValue!(keys, TableKind.scopeRuntime)(ionValue, value, symbolTable, tableMapBuffer.data, optionalAnnotations))
-            throw exception;
+            throw (() @trusted => cast() exception)();
     }}
 
     /// ditto

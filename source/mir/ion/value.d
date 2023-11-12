@@ -2706,7 +2706,7 @@ const:
 
     ///
     @safe pure nothrow @nogc
-    IonStructWithSymbols withSymbols(return scope const(char[])[] symbolTable) return
+    IonStructWithSymbols withSymbols(return scope const(char[])[] symbolTable) return scope
     {
         return IonStructWithSymbols(this, symbolTable);
     }
