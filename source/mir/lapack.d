@@ -2266,3 +2266,61 @@ unittest
     alias s = sytrf_wk!float;
     alias d = sytrf_wk!double;
 }
+
+///
+template posv(T)
+    if (is(T == double) || is(T == float))
+{
+    @trusted
+    size_t posv(
+        char uplo,
+        Slice!(T*, 2, Canonical) a,
+        Slice!(T*, 2, Canonical) b,
+        Slice!(T*, 2, Canonical) x
+    )
+    in {
+        assert(uplo == 'U' || uplo == 'L');
+        auto n = a.length!0;
+        auto nrhs = x.length;
+        assert(a.length!1 == n);
+        assert(x.length!1 == n);
+        assert(b.length!1 == n);
+        assert(b.length!0 == nrhs);
+    }
+    do {
+        lapackint n = cast(lapackint) a.length!0;
+        lapackint nrhs = cast(lapackint) x.length;
+        lapackint lda = cast(lapackint) a._stride.max(1);
+        lapackint ldb = cast(lapackint) b._stride.max(1);
+        lapackint info;
+        lapack.posv_(uplo, n, nrhs, a._iterator, lda, b._iterator, ldb, info);
+        assert(info >= 0);
+        return info;
+    }
+
+    @trusted
+    size_t posv(
+        char uplo,
+        Slice!(T*, 2, Canonical) a,
+        Slice!(T*) b,
+        Slice!(T*) x
+    )
+    in {
+        assert(uplo == 'U' || uplo == 'L');
+        auto n = a.length!0;
+        assert(a.length!1 == n);
+        assert(x.length == n);
+        assert(b.length == n);
+    }
+    do {
+        import mir.ndslice.topology: canonical;
+        return posv(uplo, a, b.sliced(1, b.length).canonical, x.sliced(1, x.length).canonical);
+    }
+}
+
+version(none)
+unittest
+{
+    alias s = posv!float;
+    alias d = posv!double;
+}
