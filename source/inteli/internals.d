@@ -146,14 +146,22 @@ version(LDC)
         enum bool LDC_with_InlineIREx = false;
     }
 
-    // This is used to disable LDC feature that are expensive at compile time: everything that relies on inline LLVM IR.
+    // This is used to disable LDC feature that are expensive at compile time: 
+    // everything that relies on inline LLVM IR.
     version(D_Optimized)
     {
         enum bool LDC_with_optimizations = true;
     }
     else
     {
-        enum bool LDC_with_optimizations = false;
+        static if (__VERSION__ < 2101)
+        {
+            // See Issue #136, D_Optimized only appeared in DMDFE 2.101.
+            // Relying on this had terrible consequences.
+            enum bool LDC_with_optimizations = true;
+        }
+        else
+            enum bool LDC_with_optimizations = false;
     }
 
     version(ARM)
