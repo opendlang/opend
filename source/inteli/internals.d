@@ -383,9 +383,9 @@ enum GDC_or_LDC_with_BMI2 = GDC_with_BMI2 || LDC_with_BMI2;
 
 static if (__VERSION__ >= 2102)
 {
-    enum SIMD_COMPARISON_MASKS_8B  = !MMXSizedVectorsAreEmulated; // can do < <= => > with builtin 8 bytes __vectors.
-    enum SIMD_COMPARISON_MASKS_16B = !SSESizedVectorsAreEmulated; // can do < <= => > with builtin 16 bytes __vectors.
-    enum SIMD_COMPARISON_MASKS_32B = !AVXSizedVectorsAreEmulated; // can do < <= => > with builtin 32 bytes __vectors.
+    enum SIMD_COMPARISON_MASKS_8B  = !MMXSizedVectorsAreEmulated; // can do < <= => > == with builtin 8 bytes __vectors.
+    enum SIMD_COMPARISON_MASKS_16B = !SSESizedVectorsAreEmulated; // can do < <= => > == with builtin 16 bytes __vectors.
+    enum SIMD_COMPARISON_MASKS_32B = !AVXSizedVectorsAreEmulated; // can do < <= => > == with builtin 32 bytes __vectors.
 }
 else
 {

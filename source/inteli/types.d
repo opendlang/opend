@@ -200,6 +200,8 @@ version(LDC)
 {} 
 else
 {
+    // TODO: deprecated and write plain versions instead
+
     private template BaseType(V)
     {
         alias typeof( ( { V v; return v; }()).array[0]) BaseType;

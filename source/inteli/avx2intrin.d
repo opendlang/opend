@@ -809,9 +809,83 @@ unittest
 // TODO __m256i _mm256_bslli_epi128 (__m256i a, const int imm8) pure @safe
 // TODO __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8) pure @safe
 
+/// Compare packed 16-bit integers in `a` and `b` for equality.
+__m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @trusted
+{
+    static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // PERF: catastrophic in GDC without AVX2
+        return cast(__m256i)(cast(short16)a == cast(short16)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpeqw256(cast(short16)a, cast(short16)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) equalMask!short16(cast(short16)a, cast(short16)b);
+    }
+    else
+    {
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        short16 sr;
+        for (int n = 0; n < 16; ++n)
+        {
+            bool cond = sa.array[n] == sb.array[n];
+            sr.ptr[n] = cond ? -1 : 0;
+        }
+        return cast(__m256i) sr;
+    }
+}
+unittest
+{
+    short16   A = [-3, -2, -1,  0,  0,  1,  2,  3, -3, -2, -1,  0,  0,  1,  2,  3];
+    short16   B = [ 4,  3,  2,  1,  0, -1, -2, -3, -3,  3,  2,  1,  0, -1, -2, -3];
+    short[16] E = [ 0,  0,  0,  0, -1,  0,  0,  0, -1,  0,  0,  0, -1,  0,  0,  0];
+    short16   R = cast(short16)(_mm256_cmpeq_epi16(cast(__m256i)A, cast(__m256i)B));
+    assert(R.array == E);
+}
 
-// TODO __m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b) pure @safe
+/// Compare packed 32-bit integers in `a` and `b` for equality.
+__m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b) pure @trusted
+{
+    static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // Quite bad in GDC -mavx (with no AVX2)
+        return cast(__m256i)(cast(int8)a == cast(int8)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpeqd256(cast(int8)a, cast(int8)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) equalMask!int8(cast(int8)a, cast(int8)b);
+    }
+    else
+    {
+        int8 ia = cast(int8)a;
+        int8 ib = cast(int8)b;
+        int8 ir;
+        for (int n = 0; n < 8; ++n)
+        {
+            bool cond = ia.array[n] == ib.array[n];
+            ir.ptr[n] = cond ? -1 : 0;
+        }
+        return cast(__m256i) ir;
+    }
+}
+unittest
+{
+    int8   A = [-3, -2, -1,  0, -3, -2, -1,  0];
+    int8   B = [ 4, -2,  2,  0,  4, -2,  2,  0];
+    int[8] E = [ 0, -1,  0, -1,  0, -1,  0, -1];
+    int8   R = cast(int8)(_mm256_cmpeq_epi32(cast(__m256i)A, cast(__m256i)B));
+    assert(R.array == E);
+}
+
+
 // TODO __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi16 (__m256i a, __m256i b) pure @safe
