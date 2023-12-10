@@ -812,6 +812,8 @@ unittest
 /// Compare packed 16-bit integers in `a` and `b` for equality.
 __m256i _mm256_cmpeq_epi16 (__m256i a, __m256i b) pure @trusted
 {
+    // PERF: GDC without AVX
+    // PERF: DMD
     static if (SIMD_COMPARISON_MASKS_32B)
     {
         // PERF: catastrophic in GDC without AVX2
@@ -850,6 +852,8 @@ unittest
 /// Compare packed 32-bit integers in `a` and `b` for equality.
 __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b) pure @trusted
 {
+    // PERF: GDC without AVX
+    // PERF: DMD
     static if (SIMD_COMPARISON_MASKS_32B)
     {
         // Quite bad in GDC -mavx (with no AVX2)
@@ -885,8 +889,49 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 64-bit integers in `a` and `b` for equality.
+__m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF: GDC without AVX
+    // PERF: DMD
+    static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // Note: enabling this with DMD will probably lead to same bug as _mm_cmpeq_epi64
+        return cast(__m256i)(cast(long4)a == cast(long4)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i)__builtin_ia32_pcmpeqq256(cast(long4)a, cast(long4)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) equalMask!long4(cast(long4)a, cast(long4)b);
+    }
+    else
+    {
+        long4 la = cast(long4)a;
+        long4 lb = cast(long4)b;
+        long4 res;
+        res.ptr[0] = (la.array[0] == lb.array[0]) ? -1 : 0;
+        res.ptr[1] = (la.array[1] == lb.array[1]) ? -1 : 0;
+        res.ptr[2] = (la.array[2] == lb.array[2]) ? -1 : 0;
+        res.ptr[3] = (la.array[3] == lb.array[3]) ? -1 : 0;
+        return cast(__m256i)res;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(-1, -2, -1, -2);
+    __m256i B = _mm256_setr_epi64(-3, -2, -3, -3);
+    __m256i C = _mm256_setr_epi64(-1, -4, -1, -2);
+    long4 AB = cast(long4) _mm256_cmpeq_epi64(A, B);
+    long4 AC = cast(long4) _mm256_cmpeq_epi64(A, C);
+    long[4] correct1 = [ 0, -1,  0,  0];
+    long[4] correct2 = [-1,  0, -1, -1];
+    assert(AB.array == correct1);
+    assert(AC.array == correct2);
+}
 
-// TODO __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b) pure @safe
