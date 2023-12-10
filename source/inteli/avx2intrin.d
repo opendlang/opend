@@ -932,7 +932,49 @@ unittest
     assert(AC.array == correct2);
 }
 
-// TODO __m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b) pure @safe
+/// Compare packed 8-bit integers in `a` and `b` for equality.
+__m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF: GDC without AVX2, need split
+    // PERF: DMD
+    static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        return cast(__m256i)(cast(byte32)a == cast(byte32)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpeqb256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else version(LDC)
+    {
+        return cast(__m256i) equalMask!byte32(cast(byte32)a, cast(byte32)b);
+    }
+    else
+    {
+        byte32 ba = cast(byte32)a;
+        byte32 bb = cast(byte32)b;
+        byte32 br;
+        for (int n = 0; n < 32; ++n)
+        {
+            bool cond = ba.array[n] == bb.array[n];
+            br.ptr[n] = cond ? -1 : 0;
+        }
+        return cast(__m256i) br;
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi8(1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1,
+                                 1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 42);
+    __m256i B = _mm256_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1,
+                                 2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
+    byte32 C = cast(byte32) _mm256_cmpeq_epi8(A, B);
+    byte[32] correct =       [0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0, -1,
+                              0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0,  0];
+    assert(C.array == correct);
+}
+
+
 // TODO __m256i _mm256_cmpgt_epi16 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
