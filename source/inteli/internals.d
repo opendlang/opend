@@ -368,7 +368,7 @@ else
 
 
 // Sometimes, can be helpful to merge builtin code, however keep in mind that
-// LDC and GDC builtins often subtly diverse, wrt. unsigned vs signed vectors, 
+// LDC and GDC builtins often subtly diverge, wrt. unsigned vs signed vectors, 
 // return types, purity... test it in Godbolt! this is safer with float and double intrinsics.
 enum GDC_or_LDC_with_SSE  = GDC_with_SSE  || LDC_with_SSE;
 enum GDC_or_LDC_with_SSE2 = GDC_with_SSE2 || LDC_with_SSE2;
