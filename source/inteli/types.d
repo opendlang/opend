@@ -81,6 +81,9 @@ else version(DigitalMars)
         // Note: with DMD, AVX-sized vectors can't be enabled yet.
         // On linux + x86_64, this will fail since a few operands seem to be missing. 
         // FUTURE: enable AVX-sized vectors in DMD. :)
+        //
+        // Blockers: https://issues.dlang.org/show_bug.cgi?id=24283 and 24284
+        //           Probably other, unreported issues.
         version(D_AVX)
             enum AVXSizedVectorsAreEmulated = true;
         else

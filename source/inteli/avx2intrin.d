@@ -414,6 +414,9 @@ unittest
 /// Compute the bitwise NOT of 256 bits (representing integer data) in `a` and then AND with `b`.
 __m256i _mm256_andnot_si256 (__m256i a, __m256i b) pure @safe
 {
+    // See: https://issues.dlang.org/show_bug.cgi?id=24283, 
+    // need workaround if we ever use DMD AVX codegen
+
     pragma(inline, true);
     return (~a) & b;
 }
