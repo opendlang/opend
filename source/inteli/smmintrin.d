@@ -1427,7 +1427,7 @@ unittest
 }
 
 /// Compare packed unsigned 16-bit integers in a and b, and store packed minimum values in dst.
-__m128i _mm_min_epu16 (__m128i a, __m128i b) @trusted
+__m128i _mm_min_epu16 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
