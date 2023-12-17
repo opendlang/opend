@@ -533,7 +533,7 @@ void _mm_clflush (const(void)* p) @trusted
     }
     else version(D_InlineAsm_X86)
     {
-        asm pure nothrow @nogc @safe
+        asm pure nothrow @nogc @trusted
         {
             mov EAX, p;
             clflush [EAX];
@@ -541,7 +541,7 @@ void _mm_clflush (const(void)* p) @trusted
     }
     else version(D_InlineAsm_X86_64)
     {
-        asm pure nothrow @nogc @safe
+        asm pure nothrow @nogc @trusted
         {
             mov RAX, p;
             clflush [RAX];
@@ -1945,7 +1945,7 @@ void _mm_lfence() @trusted
     }
     else static if (DMD_with_asm)
     {
-        asm nothrow @nogc pure @safe
+        asm nothrow @nogc pure @trusted
         {
             lfence;
         }
@@ -2509,7 +2509,7 @@ void _mm_mfence() @trusted // not pure!
     }
     else static if (DMD_with_asm)
     {
-        asm nothrow @nogc pure @safe
+        asm nothrow @nogc pure @trusted
         {
             mfence;
         }
@@ -3226,7 +3226,7 @@ void _mm_pause() @trusted
     }
     else static if (DMD_with_asm)
     {
-        asm nothrow @nogc pure @safe
+        asm nothrow @nogc pure @trusted
         {
             rep; nop; // F3 90 =  pause
         }
@@ -3857,7 +3857,7 @@ deprecated("Use _mm_slli_epi16 instead.") __m128i _mm_sll_epi16 (__m128i a, __m1
     }
     else static if (DMD_with_32bit_asm)
     {
-        asm pure nothrow @nogc
+        asm pure nothrow @nogc @trusted
         {
             movdqu XMM0, a;
             movdqu XMM1, count;

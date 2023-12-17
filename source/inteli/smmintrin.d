@@ -1263,7 +1263,7 @@ unittest
 }
 
 /// Compare packed unsigned 16-bit integers in `a` and `b`, returns packed maximum values.
-__m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
+__m128i _mm_max_epu16 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
@@ -1281,7 +1281,10 @@ __m128i _mm_max_epu16 (__m128i a, __m128i b) @trusted
         ushort8 sa = cast(ushort8)a;
         ushort8 sb = cast(ushort8)b;
         static if (SIMD_COMPARISON_MASKS_16B)
+        {
+            // Note: doesn't work well with GDC, which prefers the builtin.
             ushort8 greater = sa > sb;
+        }
         else
             ushort8 greater = cast(ushort8) greaterMask!ushort8(sa, sb);
         return cast(__m128i)( (greater & sa) | (~greater & sb) );

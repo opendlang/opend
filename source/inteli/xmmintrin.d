@@ -2526,7 +2526,7 @@ void _mm_sfence() @trusted
     else static if (DMD_with_asm)
     {
         // PERF: can't be inlined in DMD, probably because of that assembly.
-        asm nothrow @nogc pure @safe
+        asm nothrow @nogc pure @trusted
         {
             sfence;
         }
