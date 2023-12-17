@@ -1226,7 +1226,7 @@ unittest
 
 /// Compare packed signed 8-bit integers in `a` and `b`, 
 /// and return packed maximum values.
-__m128i _mm_max_epi8 (__m128i a, __m128i b) @trusted
+__m128i _mm_max_epi8 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
@@ -1390,7 +1390,7 @@ unittest
 
 /// Compare packed signed 8-bit integers in `a` and `b`, 
 /// and return packed minimum values.
-__m128i _mm_min_epi8 (__m128i a, __m128i b) @trusted
+__m128i _mm_min_epi8 (__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD
     static if (GDC_with_SSE41)
