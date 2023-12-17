@@ -1636,7 +1636,63 @@ unittest
 }
 
 // TODO __m256i _mm256_max_epi8 (__m256i a, __m256i b) pure @safe
-// TODO __m256i _mm256_max_epu16 (__m256i a, __m256i b) pure @safe
+
+/// Compare packed unsigned 16-bit integers in `a` and `b`, and return packed maximum values.
+__m256i _mm256_max_epu16 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF D_SIMD
+    version(GNU)
+        enum bool split = true;
+    else static if (SIMD_COMPARISON_MASKS_32B)
+        enum bool split = false;
+    else
+        enum bool split = true;
+
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pmaxuw256(cast(short16)a, cast(short16)b);
+    }
+    else static if (split)
+    {
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_max_epu16(a_lo, b_lo);
+        __m128i r_hi = _mm_max_epu16(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // catastrophic with GDC x86_64, good with LDC
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        short16 greater = cast(short16)(cast(ushort16)sa > cast(ushort16)sb);
+        return cast(__m256i)( (greater & sa) | (~greater & sb) );
+    }
+    else
+    {
+        // good with GDC, but not LDC
+        short16 sa = cast(short16)a;
+        short16 sb = cast(short16)b;
+        short16 r;
+        for (int n = 0; n < 16; ++n)
+        {
+            ushort ua = sa.array[n];
+            ushort ub = sb.array[n];
+            r.ptr[n] = ua > ub ? ua : ub;
+        }
+        return cast(__m256i)r;
+    }
+}
+unittest
+{
+    short16 R = cast(short16) _mm256_max_epu16(_mm256_setr_epi16(32767, 1, -4, -8, 9,     7, 0,-57, 1, 0, 0, 0, 1, 0, 0, -6),
+                                                _mm256_setr_epi16(  -4,-8,  9,  7, 0,-32768, 0,  0, 0, 2, 0, 4, 2, 1, 2, -4));
+    short[16] correct =                                            [-4,-8, -4, -8, 9,-32768, 0,-57, 1, 2, 0, 4, 2, 1, 2, -4];
+    assert(R.array == correct);
+}
 
 /// Compare packed unsigned 32-bit integers in `a` and `b`, and return packed maximum values.
 __m256i _mm256_max_epu32 (__m256i a, __m256i b) pure @safe
