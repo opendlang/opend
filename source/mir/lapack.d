@@ -2305,7 +2305,7 @@ template posv(T)
     in {
         assert(uplo == 'U' || uplo == 'L');
         assert(a.length!0 == a.length!1);
-        assert(b.length == n);
+        assert(b.length == a.length!0);
     }
     do {
         import mir.ndslice.topology: canonical;
