@@ -334,7 +334,16 @@ MsfGifBuffer * msf_compress_frame(void * allocContext, int width, int height, in
 {
     //NOTE: we reserve enough memory for theoretical the worst case upfront because it's a reasonable amount,
     //      and prevents us from ever having to check size or realloc during compression
-    int maxBufSize = cast(int)(MsfGifBuffer.data.offsetof) + 32 + 256 * 3 + width * height * 3 / 2; //headers + color table + data
+    int maxGIFSize = 0;
+    {
+        maxGIFSize += 32; // headers
+        maxGIFSize += 256*3;
+        int maxData = width * height * 3 / 2;
+        int maxFramingOverhead = 256;
+        maxGIFSize += maxData;
+        maxGIFSize += maxFramingOverhead; // issue #63, else small GIF might exceed buffer.
+    }
+    int maxBufSize = cast(int)(MsfGifBuffer.data.offsetof) + maxGIFSize;
     MsfGifBuffer * buffer = cast(MsfGifBuffer *) MSF_GIF_MALLOC(allocContext, maxBufSize);
     if (!buffer) { return null; }
     uint8_t * writeHead = buffer.data.ptr;
