@@ -14,6 +14,7 @@ void main(string[] args)
     //testReallocSpeed();
     testCGBI();
     testDecodingGIF();
+    testIssue63();
 }
 
 void testIssue35()
@@ -90,6 +91,36 @@ void testDecodingGIF()
     image.layer(1).saveToFile("output/animated_loop_frame1.png");
     image.layer(2).saveToFile("output/animated_loop_frame2.png");
     image.layer(3).saveToFile("output/animated_loop_frame3.png");
+}
+
+void testIssue63()
+{
+    const int w = 16;
+    const int h = 16;
+    enum scale = 16;
+    const int frames = 1;
+    ubyte[4][] img = new ubyte[4][w * h];
+    foreach (ubyte x; 0 .. w)
+    {
+        foreach (ubyte y; 0 .. h)
+        {
+            img[y * w + x] = [cast(ubyte)(scale * x), 
+                              cast(ubyte)(scale * y), 
+                              0, 
+                              255];
+        }
+    }
+    ubyte[4][] gif;
+    foreach (i; 0 .. frames)
+        gif ~= img.dup;
+
+    Image image;
+    int pitchInBytes     = w * 4;
+    int layerOffsetBytes = w * h * 4;
+
+    image.createLayeredViewFromData(cast(void*) gif.ptr, w, h, frames, PixelType.rgba8,
+                                    pitchInBytes, layerOffsetBytes);
+    image.saveToFile("output/issue63.gif");
 }
 
 /+
