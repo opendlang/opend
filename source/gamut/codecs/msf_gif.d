@@ -571,8 +571,6 @@ int msf_gif_frame(MsfGifState * handle, const(uint8_t)* pixelData, int centiSeco
     if (!handle.listHead) { return 0; }
 
     maxBitDepth = msf_imax(1, msf_imin(16, maxBitDepth));
-    if (pitchInBytes == 0) pitchInBytes = handle.width * 4;
-    if (pitchInBytes < 0) pixelData -= pitchInBytes * (handle.height - 1);
 
     //only 64k, so stack allocating is fine
     //GP: again argh
