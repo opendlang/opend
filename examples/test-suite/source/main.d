@@ -15,6 +15,7 @@ void main(string[] args)
     testCGBI();
     testDecodingGIF();
     testIssue63();
+    testIssue65();
 }
 
 void testIssue35()
@@ -121,6 +122,31 @@ void testIssue63()
     image.createLayeredViewFromData(cast(void*) gif.ptr, w, h, frames, PixelType.rgba8,
                                     pitchInBytes, layerOffsetBytes);
     image.saveToFile("output/issue63.gif");
+}
+
+// See: https://github.com/AuburnSounds/gamut/issues/65
+void testIssue65()
+{
+    Image img;
+    if (!img.loadFromFile("test-images/issue65.png", LOAD_FP32 | LOAD_GREYSCALE))
+        throw new Exception(img.errorMessage().idup);
+    assert(img.hasData);
+    assert(img.isValid);
+    if (!img.isValid)
+        throw new Exception(img.errorMessage().idup);
+    assert(img.hasData);
+    assert(img.isValid);
+    if (!img.setLayout(LAYOUT_TRAILING_1))
+        throw new Exception(img.errorMessage().idup);
+
+    if (!img.setLayout(LAYOUT_TRAILING_0)) // <-- assert fails here
+        throw new Exception(img.errorMessage().idup);
+    assert(img.hasData);
+    if (!img.convertTo8Bit()) // <-- or here if the above setLayout isn't there
+        throw new Exception(img.errorMessage().idup);
+    assert(img.hasData);
+    if (!img.saveToFile("output/decoded.png")) // <-- this wouldn't assert fail, but it just emits an empty file with error set
+        throw new Exception(img.errorMessage().idup);
 }
 
 /+

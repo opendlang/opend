@@ -1762,7 +1762,7 @@ private:
         int scanLen = scanlineInBytes();
         int pixelSize = pixelTypeSize(type);
         int width = _width;
-        int excessBytes = scanLen - absPitch;
+        int excessBytes = absPitch - scanLen;
         int excessPixels = excessBytes / pixelSize;
         assert(excessBytes >= 0 && excessPixels >= 0);
         
