@@ -7,7 +7,7 @@ import printed.canvas;
 import printed.flow;
 import commonmarkd;
 import arsd.dom;
-import colorize;
+import consolecolors;
 
 void usage()
 {
@@ -82,7 +82,7 @@ int main(string[] args)
         if (htmlPath)
         {
             std.file.write(htmlPath, fullHTML);
-            cwritefln(" => Written HTML %s (%s)".green, htmlPath, prettyByteSize(fullHTML.length));
+            cwritefln(" =&gt; Written HTML %s (%s)".green, htmlPath, prettyByteSize(fullHTML.length));
         }
 
         // Parse DOM
@@ -180,45 +180,24 @@ int main(string[] args)
         const(ubyte)[] bytes = pdf.bytes();
 
         std.file.write(outputPath, bytes);
-        cwritefln(" => Written PDF %s (%s)".green, outputPath, prettyByteSize(bytes.length));
+        cwritefln(" =&gt; Written PDF %s (%s)".green, outputPath, prettyByteSize(bytes.length));
         return 0;
     }
-    catch(Exception e)
+    catch(CCLException e)
     {
         error(e.msg);
         return 2;
     }
+    catch(Exception e)
+    {
+        error(escapeCCL(e.message));
+        return 2;
+    }
 }
 
-bool enableColoredOutput = true;
-
-string white(string s) @property
+void error(const(char)[] msg)
 {
-    if (enableColoredOutput) return s.color(fg.light_white);
-    return s;
-}
-
-string cyan(string s) @property
-{
-    if (enableColoredOutput) return s.color(fg.light_cyan);
-    return s;
-}
-
-string green(string s) @property
-{
-    if (enableColoredOutput) return s.color(fg.light_green);
-    return s;
-}
-
-string red(string s) @property
-{
-    if (enableColoredOutput) return s.color(fg.light_red);
-    return s;
-}
-
-void error(string msg)
-{
-    cwritefln("error: %s".red, msg);
+    cwritefln("error: %s".lred, msg);
 }
 
 string prettyByteSize(size_t size)
