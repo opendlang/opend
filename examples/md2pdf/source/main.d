@@ -6,7 +6,7 @@ import std.format;
 import printed.canvas;
 import printed.flow;
 import commonmarkd;
-import arsd.dom;
+import yxml;
 import consolecolors;
 
 void usage()
@@ -72,6 +72,12 @@ int main(string[] args)
 
         string html = concatMD.convertMarkdownToHTML;
 
+        foreach(size_t n, char ch; html)
+        {
+            if (ch == 0)
+                throw new Exception("Null byte found in file, is this really Markdown?");
+        }
+
         string fullHTML = 
             "<html>\n" ~
             "<body>\n" ~
@@ -86,9 +92,10 @@ int main(string[] args)
         }
 
         // Parse DOM
-        auto dom = new Document();
-        bool caseSensitive = true, strict = true;
-        dom.parseUtf8(fullHTML, caseSensitive, strict);
+        XmlDocument dom;
+        dom.parse(fullHTML);
+        if (dom.isError)
+            throw new Exception(dom.errorMessage.idup);
 
         int widthMm = 210;
         int heightMm = 297;
@@ -101,78 +108,80 @@ int main(string[] args)
 
         // Traverse HTML and generate corresponding IFlowDocument commands
 
-        Element bodyNode = dom.root;
+        XmlElement bodyNode = dom.root;
         assert(bodyNode !is null);
 
-        void renderNode(Element elem)
+        void renderNode(XmlNode elem)
         {
-            debug(domTraversal) writeln(">", elem.tagName);
-            // Enter the node
-            switch(elem.tagName)
-            {
-                case "p": doc.enterParagraph(); break;
-                case "b": doc.enterB(); break;
-                case "strong": doc.enterStrong(); break;
-                case "i": doc.enterI(); break;
-                case "em": doc.enterEm(); break;
-                case "code": doc.enterCode(); break;
-                case "pre": doc.enterPre(); break;
-                case "h1": doc.enterH1(); break;
-                case "h2": doc.enterH2(); break;
-                case "h3": doc.enterH3(); break;
-                case "h4": doc.enterH4(); break;
-                case "h5": doc.enterH5(); break;
-                case "h6": doc.enterH6(); break;
-                case "ol": doc.enterOrderedList(); break;
-                case "ul": doc.enterUnorderedList(); break;
-                case "li": doc.enterListItem(); break;
-                case "img": 
-                {
-                    string src = elem.getAttribute("src");
-                    doc.enterImage(src); 
-                    break;
-                }
-                default:
-                    break;
-            }
-
             // If it's a text node, display text
-            if (auto textNode = cast(TextNode)elem)
+            if (auto textNode = cast(XmlText)elem)
             {
-                string s = textNode.nodeValue();
+                const(char)[] s = textNode.textContent();
                 doc.text(s);
             }
-
-            // Render children
-            foreach(c; elem.children)
-                renderNode(c);
-
-            // Exit the node
-            switch(elem.tagName)
+            else if (auto e = cast(XmlElement)elem)
             {
-                case "html": doc.finalize(); break;
-                case "p": doc.exitParagraph(); break;
-                case "b": doc.exitB(); break;
-                case "strong": doc.exitStrong(); break;
-                case "i": doc.exitI(); break;
-                case "em": doc.exitEm(); break;
-                case "code": doc.exitCode(); break;
-                case "pre": doc.exitPre(); break;
-                case "h1": doc.exitH1(); break;
-                case "h2": doc.exitH2(); break;
-                case "h3": doc.exitH3(); break;
-                case "h4": doc.exitH4(); break;
-                case "h5": doc.exitH5(); break;
-                case "h6": doc.exitH6(); break;
-                case "br": doc.br(); break; // MAYDO: not sure where a HTML br tag with text inside would put the line break
-                case "ol": doc.exitOrderedList(); break;
-                case "ul": doc.exitUnorderedList(); break;
-                case "li": doc.exitListItem(); break;
-                case "img": doc.exitImage(); break;
-                default:
-                    break;
+                debug(domTraversal) writeln(">", e.tagName);
+                // Enter the node
+                switch(e.tagName)
+                {
+                    case "p": doc.enterParagraph(); break;
+                    case "b": doc.enterB(); break;
+                    case "strong": doc.enterStrong(); break;
+                    case "i": doc.enterI(); break;
+                    case "em": doc.enterEm(); break;
+                    case "code": doc.enterCode(); break;
+                    case "pre": doc.enterPre(); break;
+                    case "h1": doc.enterH1(); break;
+                    case "h2": doc.enterH2(); break;
+                    case "h3": doc.enterH3(); break;
+                    case "h4": doc.enterH4(); break;
+                    case "h5": doc.enterH5(); break;
+                    case "h6": doc.enterH6(); break;
+                    case "ol": doc.enterOrderedList(); break;
+                    case "ul": doc.enterUnorderedList(); break;
+                    case "li": doc.enterListItem(); break;
+                    case "img": 
+                    {
+                        const(char)[] src = e.getAttribute("src");
+                        doc.enterImage(src); 
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                // Render children
+                foreach(c; e.childNodes)
+                    renderNode(c);
+
+                // Exit the node
+                switch(e.tagName)
+                {
+                    case "html": doc.finalize(); break;
+                    case "p": doc.exitParagraph(); break;
+                    case "b": doc.exitB(); break;
+                    case "strong": doc.exitStrong(); break;
+                    case "i": doc.exitI(); break;
+                    case "em": doc.exitEm(); break;
+                    case "code": doc.exitCode(); break;
+                    case "pre": doc.exitPre(); break;
+                    case "h1": doc.exitH1(); break;
+                    case "h2": doc.exitH2(); break;
+                    case "h3": doc.exitH3(); break;
+                    case "h4": doc.exitH4(); break;
+                    case "h5": doc.exitH5(); break;
+                    case "h6": doc.exitH6(); break;
+                    case "br": doc.br(); break; // MAYDO: not sure where a HTML br tag with text inside would put the line break
+                    case "ol": doc.exitOrderedList(); break;
+                    case "ul": doc.exitUnorderedList(); break;
+                    case "li": doc.exitListItem(); break;
+                    case "img": doc.exitImage(); break;
+                    default:
+                        break;
+                }
+                debug(domTraversal) writeln("<", elem.tagName);
             }
-            debug(domTraversal) writeln("<", elem.tagName);
         }
 
         renderNode(bodyNode);
