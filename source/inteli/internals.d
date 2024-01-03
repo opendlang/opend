@@ -1418,8 +1418,14 @@ version(LDC)
             T inteli_llvm_addus(T)(T a, T b) pure @safe;
         pragma(LDC_intrinsic, "llvm.usub.sat.i#")
             T inteli_llvm_subus(T)(T a, T b) pure @safe;
+
+        enum LDC_with_saturated_intrinsics = true;
     }
+    else
+        enum LDC_with_saturated_intrinsics = false;
 }
+else
+    enum LDC_with_saturated_intrinsics = false;
 
 // ADDITIONAL x86 INTRINSICS
 // Absent from ldc.gccbuiltins_x86 for some reason, but needed.

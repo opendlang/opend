@@ -234,7 +234,7 @@ __m256i _mm256_adds_epi16 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_paddsw256(cast(short16)a, cast(short16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_adds!short16(cast(short16)a, cast(short16)b);
     }
@@ -264,7 +264,7 @@ __m256i _mm256_adds_epi8 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_paddsb256(cast(ubyte32)a, cast(ubyte32)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_adds!byte32(cast(byte32)a, cast(byte32)b);
     }
@@ -294,7 +294,7 @@ __m256i _mm256_adds_epu16 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_paddusw256(cast(short16)a, cast(short16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_addus!short16(cast(short16)a, cast(short16)b);
     }
@@ -324,7 +324,7 @@ __m256i _mm256_adds_epu8 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_paddusb256(cast(ubyte32)a, cast(ubyte32)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_addus!byte32(cast(byte32)a, cast(byte32)b);
     }
@@ -432,7 +432,11 @@ unittest
 /// Average packed unsigned 16-bit integers in `a` and `b`.
 __m256i _mm256_avg_epu16 (__m256i a, __m256i b) pure @trusted
 {
-    static if (GDC_or_LDC_with_AVX2)
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pavgw256(cast(short16)a, cast(short16)b);
+    }
+    else static if (LDC_with_AVX2 && __VERSION__ >= 2094)
     {
         return cast(__m256i) __builtin_ia32_pavgw256(cast(short16)a, cast(short16)b);
     }
@@ -464,7 +468,7 @@ __m256i _mm256_avg_epu8 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_pavgb256(cast(ubyte32)a, cast(ubyte32)b);
     }
-    else static if (LDC_with_AVX2)
+    else static if (LDC_with_AVX2 && __VERSION__ >= 2094)
     {
         return cast(__m256i) __builtin_ia32_pavgb256(cast(byte32)a, cast(byte32)b);
     }
@@ -2455,7 +2459,7 @@ __m256i _mm256_subs_epi16 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_psubsw256(cast(short16)a, cast(short16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_subs!short16(cast(short16)a, cast(short16)b);
     }
@@ -2487,7 +2491,7 @@ __m256i _mm256_subs_epi8 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_psubsb256(cast(ubyte32)a, cast(ubyte32)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_subs!byte32(cast(byte32)a, cast(byte32)b);
     }
@@ -2518,7 +2522,7 @@ __m256i _mm256_subs_epu16 (__m256i a, __m256i b) pure @trusted
     {
         return cast(__m256i) __builtin_ia32_psubusw256(cast(short16)a, cast(short16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_subus!short16(cast(short16)a, cast(short16)b);
     }
@@ -2543,14 +2547,14 @@ unittest
 /// Subtract packed unsigned 8-bit integers in `b` from packed unsigned 8-bit integers in `a` using
 /// saturation.
 __m256i _mm256_subs_epu8 (__m256i a, __m256i b) pure @trusted
-{    
+{
     // PERF DMD
     // PERF GDC without AVX2
     static if (GDC_with_AVX2)
     {
         return cast(__m256i) __builtin_ia32_psubusb256(cast(ubyte32)a, cast(ubyte32)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m256i) inteli_llvm_subus!byte32(cast(byte32)a, cast(byte32)b);
     }

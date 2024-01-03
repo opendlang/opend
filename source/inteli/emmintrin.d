@@ -140,7 +140,7 @@ __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_paddsw128(cast(short8)a, cast(short8)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_adds!short8(cast(short8)a, cast(short8)b);
     }
@@ -173,7 +173,7 @@ __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_paddsb128(cast(ubyte16)a, cast(ubyte16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_adds!byte16(cast(byte16)a, cast(byte16)b);
     }
@@ -207,7 +207,7 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_paddusb128(cast(ubyte16)a, cast(ubyte16)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_addus!byte16(cast(byte16)a, cast(byte16)b);
     }
@@ -243,7 +243,7 @@ __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_paddusw128(cast(short8)a, cast(short8)b);
     }
-    else version(LDC)
+    else static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_addus!short8(cast(short8)a, cast(short8)b);
     }
@@ -362,7 +362,7 @@ __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) vrhadd_u16(cast(short8)a, cast(short8)b);
     }
-    else static if (LDC_with_SSE2)
+    else static if (LDC_with_SSE2 && __VERSION__ >= 2094)
     {
         // Exists since LDC 1.18
         return cast(__m128i) __builtin_ia32_pavgw128(cast(short8)a, cast(short8)b);
@@ -413,7 +413,7 @@ __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
     {
         return cast(__m128i) __builtin_ia32_pavgb128(cast(ubyte16)a, cast(ubyte16)b);
     }
-    else static if (LDC_with_SSE2)
+    else static if (LDC_with_SSE2 && __VERSION__ >= 2094)
     {
         // Exists since LDC 1.18
         return cast(__m128i) __builtin_ia32_pavgb128(cast(byte16)a, cast(byte16)b);
@@ -5038,7 +5038,7 @@ unittest
 __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
 {
     // PERF DMD psubsw
-    version(LDC)
+    static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_subs!short8(cast(short8)a, cast(short8)b);
     }
@@ -5068,7 +5068,7 @@ unittest
 /// saturation.
 __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
 {
-    version(LDC)
+    static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_subs!byte16(cast(byte16)a, cast(byte16)b);
     }
@@ -5097,7 +5097,7 @@ unittest
 /// Subtract packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
 {
-    version(LDC)
+    static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_subus!short8(cast(short8)a, cast(short8)b);
     }
@@ -5129,7 +5129,7 @@ unittest
 /// Subtract packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
 {
-    version(LDC)
+    static if(LDC_with_saturated_intrinsics)
     {
         return cast(__m128i) inteli_llvm_subus!byte16(cast(byte16)a, cast(byte16)b);
     }
