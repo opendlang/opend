@@ -5456,6 +5456,8 @@ public:
     void accept(Visitor* v) override;
 };
 
+extern Covariant covariant(Type* src, Type* t, uint64_t* pstc = nullptr, bool cppCovariant = false);
+
 extern Expression* defaultInit(Type* mt, const Loc& loc, const bool isCfile = false);
 
 extern Type* merge(Type* type);
