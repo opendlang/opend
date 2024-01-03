@@ -1946,7 +1946,7 @@ void _mm_prefetch(int locality)(const(void)* p) pure @trusted
     }
     else version(LDC)
     {
-        static if (__VERSION__ >= 2091)
+        static if ((__VERSION__ >= 2091) && (__VERSION__ < 2106))
         {
             // const_cast here. `llvm_prefetch` wants a mutable pointer
             llvm_prefetch_fixed( cast(void*)p, 0, locality, 1);
