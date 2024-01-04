@@ -2224,6 +2224,7 @@ class Lexer
         bool anyBinaryDigitsNoSingleUS = false;
         bool anyHexDigitsNoSingleUS = false;
         char errorDigit = 0;
+	bool wasDOctalLiteral = false;
         dchar c = *p;
         if (c == '0')
         {
@@ -2247,6 +2248,11 @@ class Lexer
                 errorDigit = cast(char) c;
                 base = 8;
                 break;
+	    case 'o':
+	    	++p;
+		wasDOctalLiteral = true;
+		base = 8;
+		break;
             case 'x':
             case 'X':
                 ++p;
@@ -2444,7 +2450,7 @@ class Lexer
             }
             break;
         }
-        if (base == 8 && n >= 8)
+        if (base == 8 && n >= 8 && !wasDOctalLiteral)
         {
             if (err)
                 // can't translate invalid octal value, just show a generic message
@@ -3444,6 +3450,7 @@ private static immutable cmtable = ()
         {
             case 'x': case 'X':
             case 'b': case 'B':
+            case 'o':
                 table[c] |= CMzerosecond;
                 break;
 
