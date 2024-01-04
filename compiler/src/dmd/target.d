@@ -108,6 +108,7 @@ void addDefaultVersionIdentifiers(const ref Param params, const ref Target tgt)
     VersionCondition.addPredefinedGlobalIdent("LittleEndian");
     VersionCondition.addPredefinedGlobalIdent("D_Version2");
     VersionCondition.addPredefinedGlobalIdent("all");
+    VersionCondition.addPredefinedGlobalIdent("D_OpenD");
 
     addPredefinedGlobalIdentifiers(tgt);
 
