@@ -8,4 +8,4 @@ fail_compilation/imports/ice11513y.d(1): Error: package name 'ice11513b' conflic
 
 module ice11513b;
 
-import imports.ice11513y;
+import ice11513b.imports.ice11513y;

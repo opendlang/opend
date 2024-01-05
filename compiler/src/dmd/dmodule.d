@@ -526,7 +526,49 @@ extern (C++) final class Module : Package
             buf.printf("%s\t(%s)", ident.toChars(), m.srcfile.toChars());
             message("import    %s", buf.peekChars());
         }
+
+	auto originalModule = m;
+
         if((m = m.parse()) is null) return null;
+
+        // verify the module name matches the imported module name
+        if (m is originalModule)
+        {
+            if (m.md is null)
+            {
+                // in this case there was no module declaration, this means the import
+                // should have no package prefix, but for now we support this with a
+                // deprecation message for backwards compatibility
+                if (packages && packages.length > 0)
+                    deprecation(loc, "from file %s should be imported with 'import %s;'",
+                        m.srcfile.name, m.toPrettyChars());
+            }
+            else if (packages != m.md.packages || ident != m.md.id)
+            {
+                // deprecate the case when the ends of the names match
+                bool deprecate = false;
+                if (ident == m.md.id)
+                {
+                    deprecate = true;
+                    auto mdPackageCount = (m.md.packages is null) ? 0 : m.md.packages.length;
+                    auto packageCount   = (packages      is null) ? 0 : packages.length;
+                    for (size_t i = 1; i <= mdPackageCount && i <= packageCount; i++)
+                    {
+                        if (m.md.packages[mdPackageCount - i] != packages[packageCount - i])
+                        {
+                            deprecate = false;
+                            break;
+                        }
+                    }
+                }
+                if (deprecate)
+                    deprecation(loc, "from file %s should be imported with 'import %s;'",
+                        m.srcfile.name, m.toPrettyChars());
+                else
+                    error(loc, "from file %s must be imported with 'import %s;'",
+                        m.srcfile.name, m.toPrettyChars());
+            }
+        }
 
         return m;
     }
