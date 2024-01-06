@@ -180,7 +180,7 @@ int main(string[] args)
                     default:
                         break;
                 }
-                debug(domTraversal) writeln("<", elem.tagName);
+                debug(domTraversal) writeln("<", e.tagName);
             }
         }
 
