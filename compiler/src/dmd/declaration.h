@@ -890,6 +890,7 @@ class UnitTestDeclaration final : public FuncDeclaration
 {
 public:
     char *codedoc; /** For documented unittest. */
+    char *name; /** For naming unittest. */
 
     // toObjFile() these nested functions after this one
     FuncDeclarations deferredNested;

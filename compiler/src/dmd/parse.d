@@ -528,7 +528,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     }
                     // Workaround 14894. Add an empty unittest declaration to keep
                     // the number of symbols in this scope independent of -unittest.
-                    s = new AST.UnitTestDeclaration(loc, token.loc, STC.undefined_, null);
+                    s = new AST.UnitTestDeclaration(loc, token.loc, STC.undefined_, null, null);
                 }
                 break;
 
@@ -2732,8 +2732,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     {
         const loc = token.loc;
         StorageClass stc = getStorageClass!AST(pAttrs);
-
+        const(char)* unittestName;
         nextToken();
+        if (token.value == TOK.string_) {
+            unittestName = token.toChars;
+            nextToken();
+        }
 
         const(char)* begPtr = token.ptr + 1; // skip left curly brace
         const(char)* endPtr = null;
@@ -2760,7 +2764,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             }
         }
 
-        auto f = new AST.UnitTestDeclaration(loc, token.loc, stc, docline);
+        auto f = new AST.UnitTestDeclaration(loc, token.loc, stc, docline, cast(char*)unittestName);
         f.fbody = sbody;
         return f;
     }

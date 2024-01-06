@@ -4053,6 +4053,7 @@ class UnitTestDeclaration final : public FuncDeclaration
 {
 public:
     char* codedoc;
+    char* name;
     Array<FuncDeclaration* > deferredNested;
     UnitTestDeclaration* syntaxCopy(Dsymbol* s) override;
     AggregateDeclaration* isThis() override;

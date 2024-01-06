@@ -4430,20 +4430,22 @@ extern (C++) final class InvariantDeclaration : FuncDeclaration
 extern (C++) final class UnitTestDeclaration : FuncDeclaration
 {
     char* codedoc;      // for documented unittest
+    char* name;      // name of unittest
 
     // toObjFile() these nested functions after this one
     FuncDeclarations deferredNested;
 
-    extern (D) this(const ref Loc loc, const ref Loc endloc, StorageClass stc, char* codedoc)
+    extern (D) this(const ref Loc loc, const ref Loc endloc, StorageClass stc, char* codedoc, char* name)
     {
         super(loc, endloc, Identifier.generateIdWithLoc("__unittest", loc), stc, null);
         this.codedoc = codedoc;
+        this.name = name;
     }
 
     override UnitTestDeclaration syntaxCopy(Dsymbol s)
     {
         assert(!s);
-        auto utd = new UnitTestDeclaration(loc, endloc, storage_class, codedoc);
+        auto utd = new UnitTestDeclaration(loc, endloc, storage_class, codedoc, name);
         FuncDeclaration.syntaxCopy(utd);
         return utd;
     }
