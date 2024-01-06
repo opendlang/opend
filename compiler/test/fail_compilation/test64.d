@@ -9,7 +9,7 @@ fail_compilation/imports/test64a.d(1): Error: module `imports` from file fail_co
 
 //import std.stdio;
 
-import imports.test64a;
+import imports;
 
 int main(string[] args)
 {

@@ -1,8 +1,9 @@
 // REQUIRED_ARGS: -de
 // EXTRA_FILES: imports/f313.d
-import imports.f313;
+// EXTRA_SOURCES: imports/f313.d
+import foo.bar;
 
 void test()
 {
-    imports.f313.bug();
+    foo.bar.bug();
 }
