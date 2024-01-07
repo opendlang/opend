@@ -108,7 +108,10 @@ extern (D) void semanticTypeInfo(Scope* sc, Type t)
             scx.eSink = global.errorSink;
             scx._module = sd.getModule();
             getTypeInfoType(sd.loc, t, &scx);
+version (IN_LLVM) {} else
+{
             sd.requestTypeInfo = true;
+}
         }
         else if (!sc.minst)
         {
@@ -118,7 +121,10 @@ extern (D) void semanticTypeInfo(Scope* sc, Type t)
         else
         {
             getTypeInfoType(sd.loc, t, sc);
+version (IN_LLVM) {} else
+{
             sd.requestTypeInfo = true;
+}
 
             // https://issues.dlang.org/show_bug.cgi?id=15149
             // if the typeid operand type comes from a
@@ -225,10 +231,13 @@ extern (C++) class StructDeclaration : AggregateDeclaration
         bool hasSystemFields;      // @system members
         bool hasFieldWithInvariant; // invariants
         bool computedTypeProperties;// the above 3 fields are computed
+version (IN_LLVM) {} else
+{
         // Even if struct is defined as non-root symbol, some built-in operations
         // (e.g. TypeidExp, NewExp, ArrayLiteralExp, etc) request its TypeInfo.
         // For those, today TypeInfo_Struct is generated in COMDAT.
         bool requestTypeInfo;
+}
     }
 
     import dmd.common.bitfields : generateBitFields;

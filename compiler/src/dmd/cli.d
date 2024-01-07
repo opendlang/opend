@@ -14,6 +14,8 @@
  */
 module dmd.cli;
 
+version (IN_LLVM) {} else
+{
 /* The enum TargetOS is an exact copy of the one in dmd.globals.
  * Duplicated here because this file is stand-alone.
  */
@@ -85,6 +87,8 @@ bool isCurrentTargetOS(TargetOS os) @safe
     return (os & targetOS) > 0;
 }
 
+} // !IN_LLVM
+
 /**
 Capitalize a the first character of a ASCII string.
 Params:
@@ -114,6 +118,8 @@ Contains all available CLI $(LREF Usage.Option)s.
 See_Also: $(LREF Usage.Option)
 */
 struct Usage
+{
+version (IN_LLVM) {} else
 {
     /**
     * Representation of a CLI `Option`
@@ -866,6 +872,7 @@ dmd -cov -unittest myprog.d
             cast(TargetOS) (TargetOS.all & ~cast(uint)TargetOS.Windows)
         ),
     ];
+} // !IN_LLVM
 
     /// Representation of a CLI feature
     struct Feature
@@ -938,6 +945,8 @@ Formats the `Options` for CLI printing.
 */
 struct CLIUsage
 {
+version (IN_LLVM) {} else
+{
     /**
     Returns a string of all available CLI options for the current targetOS.
     Options are separated by newlines.
@@ -986,6 +995,7 @@ struct CLIUsage
   =avx2          use AVX 2 instructions
   =native        use CPU architecture that this compiler is running on
 ";
+} // !IN_LLVM
 
     static string generateFeatureUsage(const Usage.Feature[] features, string flagName, string description)
     {
@@ -1021,6 +1031,8 @@ struct CLIUsage
     /// Language previews listed by -preview
     enum previewUsage = generateFeatureUsage(Usage.previews, "preview", "upcoming language changes");
 
+version (IN_LLVM) {} else
+{
     /// Options supported by -checkaction=
     enum checkActionUsage = "Behavior on assert/boundscheck/finalswitch failure:
   =[h|help|?]    List information on all available choices
@@ -1069,4 +1081,5 @@ struct CLIUsage
   =5                    Emit DWARF version 5 debug information
 ";
 
+} // !IN_LLVM
 }

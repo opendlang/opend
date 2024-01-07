@@ -176,6 +176,10 @@ public:
 
     TupleDeclaration *isTupleDeclaration() override { return this; }
     void accept(Visitor *v) override { v->visit(this); }
+
+#if IN_LLVM
+    void foreachVar(Visitor *v);
+#endif
 };
 
 /**************************************************************/
@@ -258,6 +262,10 @@ public:
     bool setInCtorOnly(bool v);
     bool onstack() const; // it is a class that was allocated on the stack
     bool onstack(bool v);
+#if IN_LLVM
+    bool onstackWithMatchingDynType() const; // and dynamic type is equivalent to static type
+    bool onstackWithMatchingDynType(bool v);
+#endif
     bool overlapped() const; // if it is a field and has overlapping
     bool overlapped(bool v);
     bool overlapUnsafe() const; // if it is an overlapping field and the overlaps are unsafe
@@ -528,6 +536,8 @@ enum class BUILTIN : unsigned char
     toPrecFloat,
     toPrecDouble,
     toPrecReal
+
+    // IN_LLVM: more for LDC...
 };
 
 Expression *eval_builtin(const Loc &loc, FuncDeclaration *fd, Expressions *arguments);
@@ -547,6 +557,21 @@ private:
 
 public:
     const char *mangleString;           // mangled symbol created from mangleExact()
+
+#if IN_LLVM
+    const char *intrinsicName;
+    uint32_t priority;
+
+    // true if overridden with the pragma(LDC_allow_inline); statement
+    bool allowInlining;
+
+    // true if set with the pragma(LDC_never_inline); statement
+    bool neverInline;
+
+    // Whether to emit instrumentation code if -fprofile-instr-generate is specified,
+    // the value is set with pragma(LDC_profile_instr, true|false)
+    bool emitInstrumentation;
+#endif
 
     VarDeclaration *vresult;            // result variable for out contracts
     LabelDsymbol *returnLabel;          // where the return goes
@@ -589,10 +614,13 @@ public:
     // 4 if there's an assert(0)
     // 8 if there's inline asm
     // 16 if there are multiple return statements
+    // IN_LLVM: 32 if there's DMD-style inline asm
     int hasReturnExp;
 
     VarDeclaration *nrvo_var;           // variable to replace with shidden
+#if !IN_LLVM
     Symbol *shidden;                    // hidden pointer passed to function
+#endif
 
     ReturnStatements *returns;
 

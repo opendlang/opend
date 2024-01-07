@@ -575,6 +575,11 @@ extern (C++) final class TemplateDeclaration : ScopeDsymbol
     // threaded list of previous instantiation attempts on stack
     TemplatePrevious* previous;
 
+version (IN_LLVM)
+{
+    const(char)* intrinsicName;
+}
+
     private Expression lastConstraint; /// the constraint after the last failed evaluation
     private Array!Expression lastConstraintNegs; /// its negative parts
     private Objects* lastConstraintTiargs; /// template instance arguments for `lastConstraint`
@@ -667,7 +672,18 @@ extern (C++) final class TemplateDeclaration : ScopeDsymbol
             foreach (i, ref param; *p)
                 param = (*parameters)[i].syntaxCopy();
         }
+version (IN_LLVM)
+{
+        auto td = new TemplateDeclaration(loc, ident, p,
+                                          constraint ? constraint.syntaxCopy() : null,
+                                          Dsymbol.arraySyntaxCopy(members), ismixin, literal);
+        td.intrinsicName = intrinsicName ? strdup(intrinsicName) : null;
+        return td;
+}
+else
+{
         return new TemplateDeclaration(loc, ident, p, constraint ? constraint.syntaxCopy() : null, Dsymbol.arraySyntaxCopy(members), ismixin, literal);
+}
     }
 
     /**********************************
@@ -6305,6 +6321,11 @@ extern (C++) class TemplateInstance : ScopeDsymbol
      */
     final bool needsCodegen()
     {
+version (IN_LLVM)
+{
+        assert(global.params.linkonceTemplates != LinkonceTemplates.aggressive);
+}
+
         //printf("needsCodegen() %s\n", toChars());
 
         // minst is finalized after the 1st invocation.
@@ -7469,6 +7490,25 @@ extern (C++) class TemplateInstance : ScopeDsymbol
     extern (D) final Dsymbols* appendToModuleMember()
     {
         Module mi = minst; // instantiated . inserted module
+
+version (IN_LLVM)
+{
+        if (global.params.linkonceTemplates == LinkonceTemplates.aggressive)
+        {
+            // Skip if it's not a root module.
+            if (!mi || !mi.isRoot())
+                return null;
+
+            // Skip if the primary instance has already been assigned to a root
+            // module.
+            if (inst.memberOf)
+                return null;
+
+            // Okay, this is the primary instance to be assigned to a root
+            // module and getting semantic3.
+            assert(this is inst);
+        }
+}
 
         //printf("%s.appendToModuleMember() enclosing = %s mi = %s\n",
         //    toPrettyChars(),

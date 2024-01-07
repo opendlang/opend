@@ -437,7 +437,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             }
         }
 
-        if (cs.statements.length == 1)
+        if (cs.statements.length == 1 && (!IN_LLVM || !cs.isCompoundAsmStatement()))
         {
             result = (*cs.statements)[0];
             return;
@@ -911,7 +911,8 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 }
             }
 
-            FuncExp flde = foreachBodyToFunction(sc2, fs, tfld);
+            FuncExp flde = foreachBodyToFunction(sc2, fs, tfld,
+                /*IN_LLVM: enforceSizeTIndex=*/ tab.ty == Tarray || tab.ty == Tsarray);
             if (!flde)
                 return null;
 
@@ -1788,6 +1789,42 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 }
             }
         }
+        // IN_LLVM. FIXME Move to pragma.cpp
+        else if (ps.ident == Id.LDC_allow_inline)
+        {
+            version (IN_LLVM)
+            sc.func.allowInlining = true;
+        }
+        // IN_LLVM. FIXME Move to pragma.cpp
+        else if (ps.ident == Id.LDC_never_inline)
+        {
+            version (IN_LLVM)
+            sc.func.neverInline = true;
+        }
+        // IN_LLVM. FIXME Move to pragma.cpp
+        else if (ps.ident == Id.LDC_profile_instr)
+        {
+            version (IN_LLVM) {
+            import gen.dpragma : DtoCheckProfileInstrPragma;
+
+            bool emitInstr = true;
+            if (!ps.args || ps.args.length != 1 || !DtoCheckProfileInstrPragma((*ps.args)[0], emitInstr))
+            {
+                error(ps.loc, "pragma(LDC_profile_instr, true or false) expected");
+                return setError();
+            }
+            else
+            {
+                FuncDeclaration fd = sc.func;
+                if (fd is null)
+                {
+                    error(ps.loc, "pragma(LDC_profile_instr, ...) is not inside a function");
+                    return setError();
+                }
+                fd.emitInstrumentation = emitInstr;
+            }
+            }
+        }
         else if (ps.ident == Id.linkerDirective)
         {
             /* Should this be allowed?
@@ -1991,6 +2028,10 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     if (cs.exp.equals(gcs.exp))
                     {
                         gcs.cs = cs;
+version (IN_LLVM)
+{
+                        cs.gototarget = true;
+}
                         continue Lgotocase;
                     }
                 }
@@ -2114,6 +2155,18 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             return setError();
         }
 
+version (IN_LLVM)
+{
+        /+ hasGotoDefault is set by GotoDefaultStatement.semantic
+         + at which point sdefault may still be null, therefore
+         + set sdefault.gototarget here.
+         +/
+        if (ss.hasGotoDefault)
+        {
+            assert(ss.sdefault);
+            ss.sdefault.gototarget = true;
+        }
+}
 
         if (!(ss.condition.type.isString() && sc.needsCodegen()))
         {
@@ -2487,6 +2540,12 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             error(gds.loc, "`goto default` not allowed in `final switch` statement");
             return setError();
         }
+
+version (IN_LLVM)
+{
+        gds.sw.hasGotoDefault = true;
+}
+
         result = gds;
     }
 
@@ -2500,6 +2559,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             error(gcs.loc, "`goto case` not in `switch` statement");
             return setError();
         }
+
+version (IN_LLVM)
+{
+        gcs.sw = sc.sw;
+}
 
         if (gcs.exp)
         {
@@ -2963,6 +3027,10 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                         error(bs.loc, "cannot break out of `finally` block");
                     else
                     {
+version (IN_LLVM)
+{
+                        bs.target = ls;
+}
                         ls.breaks = true;
                         result = bs;
                         return;
@@ -3051,6 +3119,10 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                         error(cs.loc, "cannot continue out of `finally` block");
                     else
                     {
+version (IN_LLVM)
+{
+                        cs.target = ls;
+}
                         result = cs;
                         return;
                     }
@@ -4041,7 +4113,8 @@ private extern(D) Statement loopReturn(Expression e, Statements* cases, const re
  *  Function literal created, as an expression
  *  null if error.
  */
-private FuncExp foreachBodyToFunction(Scope* sc, ForeachStatement fs, TypeFunction tfld)
+private FuncExp foreachBodyToFunction(Scope* sc, ForeachStatement fs, TypeFunction tfld,
+                                      /*IN_LLVM*/ bool enforceSizeTIndex)
 {
     auto params = new Parameters();
     foreach (i, p; *fs.parameters)
@@ -4051,6 +4124,11 @@ private FuncExp foreachBodyToFunction(Scope* sc, ForeachStatement fs, TypeFuncti
 
         p.type = p.type.typeSemantic(fs.loc, sc);
         p.type = p.type.addStorageClass(p.storageClass);
+version (IN_LLVM)
+{
+        // Type of parameter may be different; see below
+        auto para_type = p.type;
+}
         if (tfld)
         {
             Parameter prm = tfld.parameterList[i];
@@ -4080,13 +4158,40 @@ private FuncExp foreachBodyToFunction(Scope* sc, ForeachStatement fs, TypeFuncti
         LcopyArg:
             id = Identifier.generateId("__applyArg", cast(int)i);
 
+version (IN_LLVM)
+{
+            // In case of a foreach loop on an array the index passed
+            // to the delegate is always of type size_t. The type of
+            // the parameter must be changed to size_t and a cast to
+            // the type used must be inserted. Otherwise the index is
+            // always 0 on a big endian architecture. This fixes
+            // issue #326.
+            Initializer ie;
+            if (fs.parameters.length == 2 && i == 0 && enforceSizeTIndex)
+            {
+                para_type = Type.tsize_t;
+                ie = new ExpInitializer(fs.loc,
+                                        new CastExp(fs.loc,
+                                                    new IdentifierExp(fs.loc, id), p.type));
+            }
+            else
+            {
+                ie = new ExpInitializer(fs.loc, new IdentifierExp(fs.loc, id));
+            }
+}
+else
+{
             Initializer ie = new ExpInitializer(fs.loc, new IdentifierExp(fs.loc, id));
+}
             auto v = new VarDeclaration(fs.loc, p.type, p.ident, ie);
             v.storage_class |= STC.temp | (stc & STC.scope_);
             Statement s = new ExpStatement(fs.loc, v);
             fs._body = new CompoundStatement(fs.loc, s, fs._body);
         }
-        params.push(new Parameter(fs.loc, stc, p.type, id, null, null));
+        version (IN_LLVM)
+            params.push(new Parameter(fs.loc, stc, IN_LLVM ? para_type : p.type, id, null, null));
+        else
+            params.push(new Parameter(fs.loc, stc, p.type, id, null, null));
     }
     // https://issues.dlang.org/show_bug.cgi?id=13840
     // Throwable nested function inside nothrow function is acceptable.

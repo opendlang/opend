@@ -80,8 +80,18 @@ enum LOG = false;
  */
 extern(C++) void semantic3(Dsymbol dsym, Scope* sc)
 {
+version (IN_LLVM)
+{
+    import driver.timetrace_sema;
+    scope v = new Semantic3Visitor(sc);
+    scope vtimetrace = new SemanticTimeTraceVisitor!Semantic3Visitor(v);
+    dsym.accept(vtimetrace);
+}
+else
+{
     scope v = new Semantic3Visitor(sc);
     dsym.accept(v);
+}
 }
 
 private extern(C++) final class Semantic3Visitor : Visitor
@@ -1098,6 +1108,9 @@ private extern(C++) final class Semantic3Visitor : Visitor
                     }
                 }
 
+// we'll handle variadics ourselves
+static if (!IN_LLVM)
+{
                 if (_arguments)
                 {
                     /* Advance to elements[] member of TypeInfo_Tuple with:
@@ -1112,6 +1125,7 @@ private extern(C++) final class Semantic3Visitor : Visitor
                     auto de = new DeclarationExp(Loc.initial, _arguments);
                     a.push(new ExpStatement(Loc.initial, de));
                 }
+}
 
                 // Merge contracts together with body into one compound statement
 
@@ -1141,8 +1155,26 @@ private extern(C++) final class Semantic3Visitor : Visitor
 
                     if (f.next.ty != Tvoid && funcdecl.vresult)
                     {
+version (IN_LLVM)
+{
+                        Expression e = null;
+                        if (funcdecl.isCtorDeclaration())
+                        {
+                            ThisExp te = new ThisExp(Loc.initial);
+                            te.type = funcdecl.vthis.type;
+                            te.var = funcdecl.vthis;
+                            e = te;
+                        }
+                        else
+                        {
+                            e = new VarExp(Loc.initial, funcdecl.vresult);
+                        }
+}
+else
+{
                         // Create: return vresult;
                         Expression e = new VarExp(Loc.initial, funcdecl.vresult);
+}
                         if (funcdecl.tintro)
                         {
                             e = e.implicitCastTo(sc, funcdecl.tintro.nextOf());

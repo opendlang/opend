@@ -689,6 +689,12 @@ extern (C++) final class TupleDeclaration : Declaration
         }
     }
 
+    version (IN_LLVM)
+    final void foreachVar(Visitor v)
+    {
+        foreachVar(sym => sym.accept(v));
+    }
+
     /***********************************************************
      * Calls dg(Dsymbol) for each Dsymbol, which should be a VarDeclaration
      * inside VarExp (isexp == true).
@@ -1149,6 +1155,10 @@ extern (C++) class VarDeclaration : Declaration
         /// This means the var is not rebindable once assigned,
         /// and the destructor gets run when it goes out of scope
         bool onstack;
+version (IN_LLVM)
+{
+        bool onstackWithMatchingDynType; /// and dynamic type is equivalent to static type
+}
 
         bool overlapped;        /// if it is a field and has overlapping
         bool overlapUnsafe;     /// if it is an overlapping field and the overlaps are unsafe

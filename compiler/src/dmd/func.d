@@ -110,7 +110,33 @@ enum BUILTIN : ubyte
     yl2xp1,
     toPrecFloat,
     toPrecDouble,
-    toPrecReal
+    toPrecReal,
+
+    // IN_LLVM:
+    llvm_sin,
+    llvm_cos,
+    llvm_sqrt,
+    llvm_exp,
+    llvm_exp2,
+    llvm_log,
+    llvm_log2,
+    llvm_log10,
+    llvm_fabs,
+    llvm_minnum,
+    llvm_maxnum,
+    llvm_floor,
+    llvm_ceil,
+    llvm_trunc,
+    llvm_rint,
+    llvm_nearbyint,
+    llvm_round,
+    llvm_fma,
+    llvm_copysign,
+    llvm_bswap,
+    llvm_cttz,
+    llvm_ctlz,
+    llvm_ctpop,
+    llvm_expect,
 }
 
 /* Tweak all return statements and dtor call for nrvo_var, for correct NRVO.
@@ -291,6 +317,22 @@ extern (C++) class FuncDeclaration : Declaration
 
     const(char)* mangleString;          /// mangled symbol created from mangleExact()
 
+version (IN_LLVM)
+{
+    const(char)* intrinsicName;
+    uint priority;
+
+    // true if overridden with the pragma(LDC_allow_inline); statement
+    bool allowInlining = false;
+
+    // true if set with the pragma(LDC_never_inline); statement
+    bool neverInline = false;
+
+    // Whether to emit instrumentation code if -fprofile-instr-generate is specified,
+    // the value is set with pragma(LDC_profile_instr, true|false)
+    bool emitInstrumentation = true;
+}
+
     VarDeclaration vresult;             /// result variable for out contracts
     LabelDsymbol returnLabel;           /// where the return goes
 
@@ -336,7 +378,10 @@ extern (C++) class FuncDeclaration : Declaration
     int hasReturnExp;
 
     VarDeclaration nrvo_var;            /// variable to replace with shidden
+version (IN_LLVM) {} else
+{
     Symbol* shidden;                    /// hidden pointer passed to function
+}
 
     ReturnStatements* returns;
 
@@ -463,6 +508,10 @@ extern (C++) class FuncDeclaration : Declaration
         f.frequires = frequires ? Statement.arraySyntaxCopy(frequires) : null;
         f.fensures = fensures ? Ensure.arraySyntaxCopy(fensures) : null;
         f.fbody = fbody ? fbody.syntaxCopy() : null;
+version (IN_LLVM)
+{
+        f.intrinsicName = intrinsicName ? strdup(intrinsicName) : null;
+}
         return f;
     }
 
@@ -540,7 +589,7 @@ extern (C++) class FuncDeclaration : Declaration
             TemplateInstance spec = isSpeculative();
             uint olderrs = global.errors;
             uint oldgag = global.gag;
-            if (global.gag && !spec)
+            if (global.gag && !spec && (!IN_LLVM || !global.gaggedForInlining))
                 global.gag = 0;
             semantic3(this, _scope);
             global.gag = oldgag;

@@ -24,9 +24,9 @@ import dmd.astenums;
 import dmd.cond;
 import dmd.console;
 import dmd.compiler;
-import dmd.cpreprocess;
-import dmd.dmdparams;
-import dmd.dinifile;
+version (IN_LLVM) {} else import dmd.cpreprocess;
+version (IN_LLVM) {} else import dmd.dmdparams;
+version (IN_LLVM) {} else import dmd.dinifile;
 import dmd.dinterpret;
 import dmd.dmodule;
 import dmd.doc;
@@ -50,7 +50,7 @@ import dmd.root.file;
 import dmd.root.filename;
 import dmd.root.man;
 import dmd.common.outbuffer;
-import dmd.root.response;
+version (IN_LLVM) {} else import dmd.root.response;
 import dmd.root.rmem;
 import dmd.root.string;
 import dmd.root.stringtable;
@@ -58,6 +58,15 @@ import dmd.semantic2;
 import dmd.semantic3;
 import dmd.target;
 import dmd.utils;
+
+version (IN_LLVM)
+{
+    // DMD defines a `driverParams` global (of type DMDParams);
+    // LDC uses `global.params` with 5 extra fields.
+    ref driverParams() { return global.params; }
+}
+else
+{
 
 /**
  * Print DMD's logo on stdout
@@ -117,6 +126,8 @@ Where:
 %.*s", cast(int)inifileCanon.length, inifileCanon.ptr, cast(int)help.length, &help[0]);
 }
 
+} // !IN_LLVM
+
 extern (C++) void generateJson(ref Modules modules)
 {
     OutBuffer buf;
@@ -157,6 +168,10 @@ extern (C++) void generateJson(ref Modules modules)
             fatal();
     }
 }
+
+
+version (IN_LLVM) {} else
+{
 
 version (DigitalMars)
 {
@@ -379,6 +394,8 @@ void setDefaultLibrary(ref Param params, const ref Target target)
         driverParams.debuglibname = null;
 }
 
+} // !IN_LLVM
+
 void printPredefinedVersions(FILE* stream)
 {
     if (global.versionids)
@@ -393,6 +410,7 @@ void printPredefinedVersions(FILE* stream)
     }
 }
 
+version (IN_LLVM) {} else
 extern(C) void printGlobalConfigs(FILE* stream)
 {
     stream.fprintf("binary    %.*s\n", cast(int)global.params.argv0.length, global.params.argv0.ptr);
@@ -447,6 +465,99 @@ extern(C) void flushMixins()
     global.params.mixinOut.buffer.destroy();
     global.params.mixinOut.buffer = null;
 }
+
+version (IN_LLVM)
+{
+    import dmd.cli : Usage;
+
+    private bool parseCLIOption(string groupName, Usage.Feature[] features)(ref Param params, const(char)* name)
+    {
+        string generateCases()
+        {
+            string buf = `case "all":`;
+            foreach (t; features)
+            {
+                if (t.deprecated_)
+                    continue;
+
+                buf ~= `setFlagFor(groupName, params.`~t.paramName~`);`;
+            }
+            buf ~= "return true;\n";
+
+            foreach (t; features)
+            {
+                buf ~= `case "`~t.name~`":`;
+                if (t.deprecated_)
+                    buf ~= "deprecation(Loc.initial, \"`-"~groupName~"="~t.name~"` no longer has any effect.\"); ";
+                buf ~= `setFlagFor(groupName, params.`~t.paramName~`); return true;`;
+            }
+            return buf;
+        }
+
+        switch (name[0 .. strlen(name)])
+        {
+            mixin(generateCases());
+            case "?":
+            case "h":
+            case "help":
+                mixin(`params.help.`~groupName~` = true;`);
+                return true;
+            default:
+                break;
+        }
+
+        return false;
+    }
+
+    extern(C++) void parseTransitionOption(ref Param params, const(char)* name)
+    {
+        if (parseCLIOption!("transition", Usage.transitions)(params, name))
+            return;
+
+        // undocumented legacy -transition flags (before 2.085)
+        const dname = name[0 .. strlen(name)];
+        switch (dname)
+        {
+            case "3449":
+                params.v.field = true;
+                break;
+            case "14246":
+            case "dtorfields":
+                params.dtorFields = FeatureState.enabled;
+                break;
+            case "14488":
+                break;
+            case "16997":
+            case "intpromote":
+                deprecation(Loc.initial, "`-transition=%s` is now the default behavior", name);
+                break;
+            default:
+                error(Loc.initial, "transition `%s` is invalid", name);
+                params.help.transition = true;
+                break;
+        }
+    }
+
+    extern(C++) void parsePreviewOption(ref Param params, const(char)* name)
+    {
+        if (!parseCLIOption!("preview", Usage.previews)(params, name))
+        {
+            error(Loc.initial, "Preview `%s` is invalid", name);
+            params.help.preview = true;
+        }
+    }
+
+    extern(C++) void parseRevertOption(ref Param params, const(char)* name)
+    {
+        if (!parseCLIOption!("revert", Usage.reverts)(params, name))
+        {
+            error(Loc.initial, "Revert `%s` is invalid", name);
+            params.help.revert = true;
+        }
+    }
+}
+else // !IN_LLVM
+{
 
 /****************************************************
  * Parse command line arguments.
@@ -1686,6 +1797,8 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
     return errors;
 }
 
+} // !IN_LLVM
+
 /// Sets the boolean for a flag with the given name
 private static void setFlagFor(string name, ref bool b) @safe
 {
@@ -1719,10 +1832,13 @@ private
 Module createModule(const(char)* file, ref Strings libmodules, const ref Target target)
 {
     const(char)[] name;
+version (IN_LLVM) {} else
+{
     version (Windows)
     {
         file = toWinPath(file);
     }
+}
     const(char)[] p = file.toDString();
     p = FileName.name(p); // strip path
     const(char)[] ext = FileName.ext(p);
@@ -1745,13 +1861,21 @@ Module createModule(const(char)* file, ref Strings libmodules, const ref Target 
         libmodules.push(file);
         return null;
     }
+    // Detect LLVM bitcode files on commandline
+    version (IN_LLVM)
+    if (IN_LLVM && FileName.equals(ext, bc_ext))
+    {
+        global.params.bitcodeFiles.push(file);
+        return null;
+    }
     if (FileName.equals(ext, target.lib_ext))
     {
         global.params.libfiles.push(file);
         libmodules.push(file);
         return null;
     }
-    if (target.os & (Target.OS.linux | Target.OS.OSX| Target.OS.FreeBSD | Target.OS.OpenBSD | Target.OS.Solaris | Target.OS.DragonFlyBSD))
+    // IN_LLVM replaced: if (target.os & (Target.OS.linux | Target.OS.OSX| Target.OS.FreeBSD | Target.OS.OpenBSD | Target.OS.Solaris | Target.OS.DragonFlyBSD))
+    if (target.os != Target.OS.Windows)
     {
         if (FileName.equals(ext, target.dll_ext))
         {
@@ -1844,7 +1968,14 @@ Modules createModules(ref Strings files, ref Strings libmodules, const ref Targe
 {
     Modules modules;
     modules.reserve(files.length);
+version (IN_LLVM)
+{
+    size_t firstModuleObjectFileIndex = size_t.max;
+}
+else
+{
     bool firstmodule = true;
+}
     foreach(file; files)
     {
         auto m = createModule(file, libmodules, target);
@@ -1853,12 +1984,35 @@ Modules createModules(ref Strings files, ref Strings libmodules, const ref Targe
             continue;
 
         modules.push(m);
+version (IN_LLVM)
+{
+        if (!driverParams.oneobj || firstModuleObjectFileIndex == size_t.max)
+        {
+            global.params.objfiles.push(cast(const(char)*)m); // defer to a later stage after parsing
+            if (firstModuleObjectFileIndex == size_t.max)
+                firstModuleObjectFileIndex = global.params.objfiles.length - 1;
+        }
+}
+else
+{
         if (firstmodule)
         {
             global.params.objfiles.push(m.objfile.toChars());
             firstmodule = false;
         }
+}
     }
+version (IN_LLVM)
+{
+    // When compiling to a single object file, move that object file to the
+    // beginning of the object files list.
+    if (driverParams.oneobj && modules.length > 0 && firstModuleObjectFileIndex != 0)
+    {
+        auto fn = global.params.objfiles[firstModuleObjectFileIndex];
+        global.params.objfiles.remove(firstModuleObjectFileIndex);
+        global.params.objfiles.insert(0, fn);
+    }
+}
     return modules;
 }
 

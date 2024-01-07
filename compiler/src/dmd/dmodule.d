@@ -55,6 +55,12 @@ import dmd.target;
 import dmd.utils;
 import dmd.visitor;
 
+version (IN_LLVM)
+{
+    // in driver/main.cpp
+    extern (C++) const(char)* createTempObjectsDir();
+}
+
 version (IN_GCC) {}
 else version (IN_LLVM) {}
 else version = MARS;
@@ -339,8 +345,9 @@ extern (C++) final class Module : Package
     const(char)[] arg;           // original argument name
     ModuleDeclaration* md;      // if !=null, the contents of the ModuleDeclaration declaration
     const FileName srcfile;     // input source file
-    const FileName objfile;     // output .obj file
-    const FileName hdrfile;     // 'header' file
+    // IN_LLVM: keep both following file names mutable (for -oq)
+    /*const*/ FileName objfile; // output .obj file
+    /*const*/ FileName hdrfile; // 'header' file
     FileName docfile;           // output documentation file
     const(ubyte)[] src;         /// Raw content of the file
     uint errors;                // if any errors in file
@@ -462,7 +469,27 @@ extern (C++) final class Module : Package
         }
 
         srcfile = FileName(srcfilename);
+version (IN_LLVM)
+{
+        const(char)[] objExt;
+        if (global.params.output_o)
+            objExt = target.obj_ext;
+        else if (global.params.output_bc)
+            objExt = bc_ext;
+        else if (global.params.output_ll)
+            objExt = ll_ext;
+        else if (global.params.output_s)
+            objExt = s_ext;
+        else if (global.params.output_mlir)
+            objExt = mlir_ext;
+
+        if (objExt)
+            objfile = setOutfilename(global.params.objname, global.params.objdir, filename, objExt);
+}
+else
+{
         objfile = setOutfilename(global.params.objname, global.params.objdir, filename, target.obj_ext);
+}
         if (doDocComment)
             setDocfile();
         if (doHdrGen)
@@ -612,9 +639,35 @@ extern (C++) final class Module : Package
                 argdoc = arg;
             else
                 argdoc = FileName.name(arg);
+	    version (IN_LLVM)
+            if (IN_LLVM && global.params.fullyQualifiedObjectFiles)
+            {
+                const fqn = md ? md.toString() : toString();
+                argdoc = FileName.replaceName(argdoc, fqn);
+
+                // add ext, otherwise forceExt will make nested.module into nested.<ext>
+                const bufferLength = argdoc.length + 1 + ext.length + /* null terminator */ 1;
+                char[] s = new char[bufferLength];
+                s[0 .. argdoc.length] = argdoc[];
+                s[argdoc.length] = '.';
+                s[$-1-ext.length .. $-1] = ext[];
+                s[$-1] = 0;
+                argdoc = s;
+            }
             // If argdoc doesn't have an absolute path, make it relative to dir
             if (!FileName.absolute(argdoc))
             {
+version (IN_LLVM)
+{
+                if (!dir.length && global.params.cleanupObjectFiles)
+                {
+                    __gshared const(char)[] tempObjectsDir;
+                    if (!tempObjectsDir.length)
+                        tempObjectsDir = createTempObjectsDir().toDString;
+
+                    dir = tempObjectsDir;
+                }
+}
                 //FileName::ensurePathExists(dir);
                 argdoc = FileName.combine(dir, argdoc);
             }
@@ -726,7 +779,14 @@ extern (C++) final class Module : Package
         scope (exit)
         {
             if (ifile)
+            {
                 File.remove(filename.toChars());        // remove generated file
+version (IN_LLVM)
+{
+                // and the parent directory for LDC (each .i gets its own temp dir)
+                File.removeDirectory(FileName.path(filename.toChars()));
+}
+            }
         }
 
         if (global.preprocess &&
@@ -982,7 +1042,7 @@ extern (C++) final class Module : Package
     int needModuleInfo()
     {
         //printf("needModuleInfo() %s, %d, %d\n", toChars(), needmoduleinfo, global.params.cov);
-        return needmoduleinfo || global.params.cov;
+        return needmoduleinfo || (!IN_LLVM && global.params.cov);
     }
 
     /*******************************************
@@ -1189,6 +1249,29 @@ extern (C++) final class Module : Package
     }
 
     // Back end
+version (IN_LLVM)
+{
+    //llvm::Module* genLLVMModule(llvm::LLVMContext& context);
+    void checkAndAddOutputFile(const ref FileName file);
+
+    bool llvmForceLogging;
+    bool noModuleInfo; /// Do not emit any module metadata.
+
+    // Coverage analysis
+    void* d_cover_valid;  // llvm::GlobalVariable* --> private immutable size_t[] _d_cover_valid;
+    void* d_cover_data;   // llvm::GlobalVariable* --> private uint[] _d_cover_data;
+    Array!size_t d_cover_valid_init; // initializer for _d_cover_valid
+
+    void initCoverageDataWithCtfeCoverage(uint* data) const
+    {
+        assert(ctfe_cov, "Don't call if there's no CTFE data");
+        foreach (line, count; ctfe_cov)
+            if (line) // 1-based
+                data[line - 1] = count;
+    }
+}
+else
+{
     int doppelganger; // sub-module
     Symbol* cov; // private uint[] __coverage;
     uint[] covb; // bit array of valid code line numbers
@@ -1199,6 +1282,7 @@ extern (C++) final class Module : Package
     Symbol* sshareddtor; // module shared destructor
     Symbol* stest; // module unit test
     Symbol* sfilename; // symbol for filename
+}
 
     uint[uint] ctfe_cov; /// coverage information from ctfe execution_count[line]
 

@@ -20,7 +20,22 @@ import dmd.mtype;
 import dmd.statement;
 import dmd.root.file;
 
-version (NoBackend)
+version (IN_LLVM)
+{
+    extern (C++)
+    {
+        struct AsmCode;
+
+        // < 2.072: no `extern (C++, class)` support
+        /*extern (C++, class)*/ struct IrType;
+
+        Statement asmSemantic(AsmStatement s, Scope* sc);
+    }
+
+    alias code = AsmCode;
+    alias type = IrType;
+}
+else version (NoBackend)
 {
     struct Symbol;
     struct code;

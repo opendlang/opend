@@ -76,6 +76,8 @@ class StaticIfDeclaration;
 struct AA;
 #ifdef IN_GCC
 typedef union tree_node Symbol;
+#elif IN_LLVM
+struct IrDsymbol;
 #else
 struct Symbol;
 #endif
@@ -183,7 +185,12 @@ class Dsymbol : public ASTNode
 public:
     Identifier *ident;
     Dsymbol *parent;
+#if IN_LLVM
+    IrDsymbol *ir;
+    unsigned llvmInternal;
+#else
     Symbol *csym;               // symbol for code generator
+#endif
     Loc loc;                    // where defined
     Scope *_scope;               // !=NULL means context to use for semantic()
     const utf8_t *prettystring;

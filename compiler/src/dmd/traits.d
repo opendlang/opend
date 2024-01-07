@@ -1909,6 +1909,14 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         d.storage_class |= STC.rvalue;
         return new VarExp(e.loc, d);
     }
+version (IN_LLVM)
+{
+    import dmd.hooks : semanticTraitsHook;
+    if (Expression ret = semanticTraitsHook(e, sc))
+    {
+        return ret;
+    }
+}
     if (e.ident == Id.isZeroInit)
     {
         if (dim != 1)

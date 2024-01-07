@@ -267,6 +267,12 @@ extern (C++) abstract class Statement : ASTNode
     pure nothrow @nogc
     inout(ReturnStatement) endsWithReturnStatement() inout { return null; }
 
+version (IN_LLVM)
+{
+    pure nothrow @nogc
+    inout(CompoundAsmStatement) endsWithAsm() inout { return null; }
+}
+
     final pure inout nothrow @nogc @safe:
 
     /********************
@@ -547,6 +553,21 @@ extern (C++) class CompoundStatement : Statement
     {
         v.visit(this);
     }
+
+version (IN_LLVM)
+{
+    override inout(CompoundAsmStatement) endsWithAsm() inout pure nothrow @nogc
+    {
+        // make the last inner statement decide
+        if (statements && statements.length)
+        {
+            size_t last = statements.length - 1;
+            if (auto s = (*statements)[last])
+                return s.endsWithAsm();
+        }
+        return null;
+    }
+}
 }
 
 /***********************************************************
@@ -1110,6 +1131,10 @@ extern (C++) final class SwitchStatement : Statement
     GotoCaseStatements gotoCases;   /// array of unresolved GotoCaseStatement's
     CaseStatements* cases;          /// array of CaseStatement's
     VarDeclaration lastVar;         /// last observed variable declaration in this statement
+version (IN_LLVM)
+{
+    bool hasGotoDefault;            // true iff there is a `goto default` statement for this switch
+}
 
     extern (D) this(const ref Loc loc, Parameter param, Expression condition, Statement _body, bool isFinal, Loc endloc)
     {
@@ -1153,6 +1178,11 @@ extern (C++) final class CaseStatement : Statement
     int index;              // which case it is (since we sort this)
     VarDeclaration lastVar;
     void* extra;            // for use by Statement_toIR()
+
+version (IN_LLVM)
+{
+    bool gototarget; // true iff this is the target of a 'goto case'
+}
 
     extern (D) this(const ref Loc loc, Expression exp, Statement statement) @safe
     {
@@ -1209,6 +1239,11 @@ extern (C++) final class DefaultStatement : Statement
 
     VarDeclaration lastVar;
 
+version (IN_LLVM)
+{
+    bool gototarget; // true iff this is the target of a 'goto default'
+}
+
     extern (D) this(const ref Loc loc, Statement statement) @safe
     {
         super(loc, STMT.Default);
@@ -1257,6 +1292,11 @@ extern (C++) final class GotoCaseStatement : Statement
     Expression exp;     // null, or which case to goto
 
     CaseStatement cs;   // case statement it resolves to
+
+version (IN_LLVM)
+{
+    SwitchStatement sw;
+}
 
     extern (D) this(const ref Loc loc, Expression exp) @safe
     {
@@ -1335,6 +1375,12 @@ extern (C++) final class BreakStatement : Statement
 {
     Identifier ident;
 
+version (IN_LLVM)
+{
+    // LDC: only set if ident is set: label statement to jump to
+    LabelStatement target;
+}
+
     extern (D) this(const ref Loc loc, Identifier ident) @safe
     {
         super(loc, STMT.Break);
@@ -1358,6 +1404,12 @@ extern (C++) final class BreakStatement : Statement
 extern (C++) final class ContinueStatement : Statement
 {
     Identifier ident;
+
+version (IN_LLVM)
+{
+    // LDC: only set if ident is set: label statement to jump to
+    LabelStatement target;
+}
 
     extern (D) this(const ref Loc loc, Identifier ident) @safe
     {
@@ -1777,6 +1829,12 @@ extern (C++) final class InlineAsmStatement : AsmStatement
     bool refparam;  // true if function parameter is referenced
     bool naked;     // true if function is to be naked
 
+version (IN_LLVM)
+{
+    // non-zero if this is a branch, contains the target label
+    LabelDsymbol isBranchToLabel;
+}
+
     extern (D) this(const ref Loc loc, Token* tokens) @safe
     {
         super(loc, tokens, STMT.InlineAsm);
@@ -1784,7 +1842,17 @@ extern (C++) final class InlineAsmStatement : AsmStatement
 
     override InlineAsmStatement syntaxCopy()
     {
+version (IN_LLVM)
+{
+        auto a_s = new InlineAsmStatement(loc, tokens);
+        a_s.refparam = refparam;
+        a_s.naked = naked;
+        return a_s;
+}
+else
+{
         return new InlineAsmStatement(loc, tokens);
+}
     }
 
     override void accept(Visitor v)
@@ -1832,6 +1900,11 @@ extern (C++) final class CompoundAsmStatement : CompoundStatement
 {
     StorageClass stc; // postfix attributes like nothrow/pure/@trusted
 
+version (IN_LLVM)
+{
+    void* abiret; // llvm::Value*
+}
+
     extern (D) this(const ref Loc loc, Statements* statements, StorageClass stc) @safe
     {
         super(loc, statements, STMT.CompoundAsm);
@@ -1847,6 +1920,15 @@ extern (C++) final class CompoundAsmStatement : CompoundStatement
     {
         v.visit(this);
     }
+
+version (IN_LLVM)
+{
+    override final inout(CompoundAsmStatement) endsWithAsm() inout pure nothrow @nogc
+    {
+        // yes this is inline asm
+        return this;
+    }
+}
 }
 
 /***********************************************************

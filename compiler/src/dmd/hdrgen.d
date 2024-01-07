@@ -83,6 +83,12 @@ enum TEST_EMIT_ALL = 0;
  */
 extern (C++) void genhdrfile(Module m, bool doFuncBodies, ref OutBuffer buf)
 {
+version (IN_LLVM)
+{
+    // FIXME: DMD overwrites header files. This should be done only in a DMD mode.
+    // m.checkAndAddOutputFile(m.hdrfile);
+}
+
     buf.doindent = 1;
     buf.printf("// D import file generated from '%s'", m.srcfile.toChars());
     buf.writenl();

@@ -42,8 +42,19 @@ class InterpExp;
 class LoweredAssignExp;
 #ifdef IN_GCC
 typedef union tree_node Symbol;
-#else
+#elif !IN_LLVM
 struct Symbol;          // back end symbol
+#endif
+
+#if IN_LLVM
+namespace llvm {
+    class Value;
+}
+
+// in expressionsem.d
+Expression *expressionSemantic(Expression *e, Scope *sc);
+// in typesem.d
+Expression *defaultInit(Type *mt, const Loc &loc, const bool isCfile = false);
 #endif
 
 // Entry point for CTFE.
@@ -63,6 +74,11 @@ enum
     OWNEDctfe,      // value expression for CTFE
     OWNEDcache      // constant value cached for CTFE
 };
+
+#if IN_LLVM
+#define WANTvalue  0    // default
+#define WANTexpand 1    // expand const/immutable variables if possible
+#endif
 
 #define WANTvalue  0 // default
 #define WANTexpand 1 // expand const/immutable variables if possible
@@ -368,6 +384,19 @@ public:
     Optional<bool> toBool() override;
     bool isLvalue() override;
     void accept(Visitor *v) override { v->visit(this); }
+#if IN_LLVM
+    // The D version returns a slice.
+    DString peekString() const
+    {
+        assert(sz == 1);
+        return {len, static_cast<const char *>(string)};
+    }
+    // ditto
+    DArray<const unsigned char> peekData() const
+    {
+        return {len * sz, static_cast<const unsigned char *>(string)};
+    }
+#endif
     size_t numberOfCodeUnits(int tynto = 0) const;
     void writeTo(void* dest, bool zero, int tyto = 0) const;
 };
@@ -982,6 +1011,26 @@ public:
     bool isLvalue() override;
     Optional<bool> toBool() override;
     void accept(Visitor *v) override { v->visit(this); }
+
+#if IN_LLVM
+    // Returns the head of this CommaExp, descending recursively.
+    //    `(a, b), c` => a
+    Expression *getHead() {
+      auto l = e1;
+      while (auto ce = l->isCommaExp())
+        l = ce->e1;
+      return l;
+    }
+
+    // Returns the tail of this CommaExp, descending recursively.
+    //    `a, (b, c)` => c
+    Expression *getTail() {
+      auto r = e2;
+      while (auto ce = r->isCommaExp())
+        r = ce->e2;
+      return r;
+    }
+#endif
 };
 
 class IndexExp final : public BinExp

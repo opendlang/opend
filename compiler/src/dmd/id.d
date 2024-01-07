@@ -566,6 +566,66 @@ immutable Msgtable[] msgtable =
     { "define" },
     { "undef" },
     { "ident" },
+
+    // IN_LLVM: LDC-specific pragmas
+    { "LDC_intrinsic" },
+    { "LDC_no_typeinfo" },
+    { "LDC_no_moduleinfo" },
+    { "LDC_alloca" },
+    { "LDC_va_start" },
+    { "LDC_va_copy" },
+    { "LDC_va_end" },
+    { "LDC_va_arg" },
+    { "LDC_verbose" },
+    { "LDC_allow_inline" },
+    { "LDC_never_inline" },
+    { "LDC_inline_asm" },
+    { "LDC_inline_ir" },
+    { "LDC_fence" },
+    { "LDC_atomic_load" },
+    { "LDC_atomic_store" },
+    { "LDC_atomic_cmp_xchg" },
+    { "LDC_atomic_rmw" },
+    { "LDC_global_crt_ctor" },
+    { "LDC_global_crt_dtor" },
+    { "LDC_extern_weak" },
+    { "LDC_profile_instr" },
+
+    // IN_LLVM: LDC-specific traits
+    { "targetCPU" },
+    { "targetHasFeature" },
+
+    // IN_LLVM: LDC-specific attributes
+    { "ldc" },
+    { "attributes" },
+    { "udaAllocSize", "allocSize" },
+    // fastmath is an AliasSeq of llvmAttr and llvmFastMathFlag
+    { "udaOptStrategy", "optStrategy" },
+    { "udaLLVMAttr", "llvmAttr" },
+    { "udaLLVMFastMathFlag", "llvmFastMathFlag" },
+    { "udaSection", "section" },
+    { "udaTarget", "target" },
+    { "udaAssumeUsed", "_assumeUsed" },
+    { "udaCallingConvention", "callingConvention" },
+    { "udaWeak", "_weak" },
+    { "udaCompute", "compute" },
+    { "udaKernel", "_kernel" },
+    { "udaDynamicCompile", "_dynamicCompile" },
+    { "udaDynamicCompileConst", "_dynamicCompileConst" },
+    { "udaDynamicCompileEmit", "_dynamicCompileEmit" },
+    { "udaHidden", "_hidden" },
+    { "udaNoSanitize", "noSanitize" },
+    { "udaNoSplitStack", "_noSplitStack" },
+
+    // IN_LLVM: DCompute specific types and functionss
+    { "dcompute" },
+    { "dcPointer", "Pointer" },
+    { "dcReflect", "__dcompute_reflect" },
+    { "RTInfoImpl" },
+    { "opencl" },
+
+    // IN_LLVM
+    { "io" },
 ];
 
 

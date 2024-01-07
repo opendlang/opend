@@ -54,6 +54,13 @@ import dmd.visitor;
 
 import dmd.common.outbuffer;
 
+version (IN_LLVM)
+{
+    // Functions to construct/destruct Dsymbol.ir
+    extern (C++) void* newIrDsymbol() nothrow @safe;
+    extern (C++) void deleteIrDsymbol(void*) nothrow;
+}
+
 /***************************************
  * Calls dg(Dsymbol *sym) for each Dsymbol.
  * If dg returns !=0, stops and returns that value else returns 0.
@@ -264,7 +271,15 @@ extern (C++) class Dsymbol : ASTNode
 {
     Identifier ident;
     Dsymbol parent;
+version (IN_LLVM)
+{
+    void* ir; // IrDsymbol*
+    uint llvmInternal;
+}
+else
+{
     Symbol* csym;           // symbol for code generator
+}
     const Loc loc;          // where defined
     Scope* _scope;          // !=null means context to use for semantic()
     const(char)* prettystring;  // cached value of toPrettyChars()
@@ -277,6 +292,10 @@ extern (C++) class Dsymbol : ASTNode
     {
         //printf("Dsymbol::Dsymbol(%p)\n", this);
         loc = Loc(null, 0, 0);
+version (IN_LLVM)
+{
+        this.ir = newIrDsymbol();
+}
     }
 
     final extern (D) this(Identifier ident) nothrow @safe
@@ -284,6 +303,10 @@ extern (C++) class Dsymbol : ASTNode
         //printf("Dsymbol::Dsymbol(%p, ident)\n", this);
         this.loc = Loc(null, 0, 0);
         this.ident = ident;
+version (IN_LLVM)
+{
+        this.ir = newIrDsymbol();
+}
     }
 
     final extern (D) this(const ref Loc loc, Identifier ident) nothrow @safe
@@ -291,7 +314,20 @@ extern (C++) class Dsymbol : ASTNode
         //printf("Dsymbol::Dsymbol(%p, ident)\n", this);
         this.loc = loc;
         this.ident = ident;
+version (IN_LLVM)
+{
+        this.ir = newIrDsymbol();
+}
     }
+
+version (IN_LLVM)
+{
+    final extern (D) ~this() nothrow
+    {
+        deleteIrDsymbol(this.ir);
+        this.ir = null;
+    }
+}
 
     static Dsymbol create(Identifier ident) nothrow @safe
     {

@@ -29,16 +29,16 @@ import dmd.common.outbuffer;
 import dmd.compiler;
 import dmd.cond;
 import dmd.console;
-import dmd.cpreprocess;
-import dmd.dinifile;
+version (IN_LLVM) {} else import dmd.cpreprocess;
+version (IN_LLVM) {} else import dmd.dinifile;
 import dmd.dinterpret;
-import dmd.dmdparams;
+version (IN_LLVM) {} else import dmd.dmdparams;
 import dmd.dsymbolsem;
 import dmd.dtemplate;
 import dmd.dtoh;
-import dmd.glue : generateCodeAndWrite;
+version (IN_LLVM) {} else import dmd.glue : generateCodeAndWrite;
 import dmd.dmodule;
-import dmd.dmsc : backend_init, backend_term;
+version (IN_LLVM) {} else import dmd.dmsc : backend_init, backend_term;
 import dmd.doc;
 import dmd.dsymbol;
 import dmd.errors;
@@ -50,7 +50,7 @@ import dmd.hdrgen;
 import dmd.id;
 import dmd.identifier;
 import dmd.inline;
-import dmd.link;
+version (IN_LLVM) {} else import dmd.link;
 import dmd.location;
 import dmd.mars;
 import dmd.mtype;
@@ -58,7 +58,7 @@ import dmd.objc;
 import dmd.root.file;
 import dmd.root.filename;
 import dmd.root.man;
-import dmd.root.response;
+version (IN_LLVM) {} else import dmd.root.response;
 import dmd.root.rmem;
 import dmd.root.string;
 import dmd.root.stringtable;
@@ -67,6 +67,26 @@ import dmd.semantic3;
 import dmd.target;
 import dmd.utils;
 import dmd.vsoptions;
+
+version (IN_LLVM)
+{
+    import gen.semantic : extraLDCSpecificSemanticAnalysis;
+    extern (C++):
+
+    // in driver/main.cpp
+    void registerPredefinedVersions();
+    void codegenModules(ref Modules modules);
+    // in driver/archiver.cpp
+    int createStaticLibrary();
+    const(char)* getPathToProducedStaticLibrary();
+    // in driver/linker.cpp
+    int linkObjToBinary();
+    const(char)* getPathToProducedBinary();
+    void deleteExeFile();
+    int runProgram();
+}
+
+version (IN_LLVM) {} else {
 
 /**
  * DMD's entry point, C main.
@@ -133,6 +153,8 @@ import dmd.vsoptions;
     return tryMain(args.argc, cast(const(char)**)args.argv, global.params);
 }
 
+} // !IN_LLVM
+
 /************************************************************************************/
 
 private:
@@ -150,6 +172,7 @@ private:
  * Returns:
  *   Application return code
  */
+version (IN_LLVM) {} else
 private int tryMain(size_t argc, const(char)** argv, ref Param params)
 {
     Strings files;
@@ -174,6 +197,11 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
         return EXIT_SUCCESS;
     }
 
+    return mars_mainBody(params, files, libmodules);
+}
+
+extern (C++) int mars_mainBody(ref Param params, ref Strings files, ref Strings libmodules)
+{
     /*
     Prints a supplied usage text to the console and
     returns the exit code for the help usage page.
@@ -221,9 +249,18 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
         return s;
     }
     import dmd.cli : CLIUsage;
+version (IN_LLVM)
+{
+    mixin(generateUsageChecks(["transition", "preview", "revert"]));
+}
+else
+{
     mixin(generateUsageChecks(["mcpu", "transition", "check", "checkAction",
         "preview", "revert", "externStd", "hc"]));
+}
 
+version (IN_LLVM) {} else
+{
     if (params.help.manual)
     {
         version (Windows)
@@ -255,11 +292,15 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
         */
         return EXIT_SUCCESS;
     }
+} // !IN_LLVM
 
     if (params.v.color)
         global.console = cast(void*) createConsole(core.stdc.stdio.stderr);
 
+version (IN_LLVM) {} else
+{
     target.setCPU();
+}
     Loc.set(params.v.showColumns, params.v.messageStyle);
 
     if (global.errors)
@@ -274,12 +315,27 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
             generateJson(modules);
             return EXIT_SUCCESS;
         }
+version (IN_LLVM)
+{
+        error(Loc.initial, "No source files");
+}
+else
+{
         usage();
+}
         return EXIT_FAILURE;
     }
 
     reconcileCommands(params, target);
+
+version (IN_LLVM)
+{
+    registerPredefinedVersions();
+}
+else
+{
     setDefaultLibrary(params, target);
+}
 
     // Initialization
     target._init(params);
@@ -298,13 +354,23 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     import dmd.root.ctfloat : CTFloat;
     CTFloat.initialize();
 
+version (IN_LLVM) {} else
+{
     // Predefined version identifiers
     addDefaultVersionIdentifiers(params, target);
+}
 
     if (params.v.verbose)
     {
         stdout.printPredefinedVersions();
+version (IN_LLVM)
+{
+        // LDC prints binary/version/config before entering this function.
+}
+else
+{
         stdout.printGlobalConfigs();
+}
     }
     //printf("%d source files\n", cast(int) files.length);
 
@@ -377,10 +443,42 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
         if (!Module.rootModule)
             Module.rootModule = m;
         m.importedFrom = m; // m.isRoot() == true
+version (IN_LLVM) {} else
+{
 //        if (!driverParams.oneobj || modi == 0 || m.isDocFile)
 //            m.deleteObjFile();
+}
 
         m.parse();
+
+version (IN_LLVM)
+{
+        // Finalize output filenames. Update if `-oq` was specified (only feasible after parsing).
+        if (params.fullyQualifiedObjectFiles && m.md)
+        {
+            m.objfile = m.setOutfilename(params.objname, params.objdir, m.arg, FileName.ext(m.objfile.toString()));
+            if (m.docfile)
+                m.setDocfile();
+            if (m.hdrfile)
+                m.hdrfile = m.setOutfilename(params.dihdr.name, params.dihdr.dir, m.arg, hdr_ext);
+        }
+
+        // Set object filename in params.objfiles.
+        for (size_t j = 0; j < params.objfiles.length; j++)
+        {
+            if (params.objfiles[j] == cast(const(char)*)m)
+            {
+                params.objfiles[j] = m.objfile.toChars();
+                if (m.filetype != FileType.dhdr && m.filetype != FileType.ddoc && params.obj)
+                    m.checkAndAddOutputFile(m.objfile);
+                break;
+            }
+        }
+
+        if (!driverParams.oneobj || modi == 0 || m.filetype == FileType.ddoc)
+            m.deleteObjFile();
+} // IN_LLVM
+
         if (m.filetype == FileType.dhdr)
         {
             // Remove m's object file from list of object files
@@ -466,7 +564,10 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     if (global.errors)
         removeHdrFilesAndFail(params, modules);
 
+version (IN_LLVM) {} else
+{
     backend_init();
+}
 
     // Do semantic analysis
     foreach (m; modules)
@@ -524,6 +625,12 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     if (global.errors)
         removeHdrFilesAndFail(params, modules);
 
+version (IN_LLVM)
+{
+    extraLDCSpecificSemanticAnalysis(modules);
+}
+else
+{
     // Scan for functions to inline
     foreach (m; modules)
     {
@@ -534,6 +641,7 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
             inlineScanModule(m);
         }
     }
+}
 
     if (global.warnings)
         errorOnWarning();
@@ -555,6 +663,11 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
         {
             if (!writeFile(Loc.initial, params.moduleDeps.name, data))
                 fatal();
+version (IN_LLVM)
+{
+            // fix LDC issue #1625
+            params.moduleDeps = Output();
+}
         }
         else
             printf("%.*s", cast(int)data.length, data.ptr);
@@ -603,7 +716,7 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     if (global.errors)
         fatal();
 
-    if (driverParams.lib && params.objfiles.length == 0)
+    if (!IN_LLVM && driverParams.lib && params.objfiles.length == 0)
     {
         error(Loc.initial, "no input files");
         return EXIT_FAILURE;
@@ -613,15 +726,40 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     {
         auto mainModule = moduleWithEmptyMain();
         modules.push(mainModule);
-        if (!driverParams.oneobj || modules.length == 1)
+        if (IN_LLVM && driverParams.oneobj && modules.length == 1)
+            params.objfiles.insert(0, mainModule.objfile.toChars()); // must be *first* objfile for LDC's oneobj
+        else if (!driverParams.oneobj || modules.length == 1)
             params.objfiles.push(mainModule.objfile.toChars());
     }
 
+version (IN_LLVM)
+{
+    import core.memory : GC;
+
+    static if (__traits(compiles, GC.stats))
+    {
+        if (params.v.verbose)
+        {
+            static int toMB(ulong size) { return cast(int) (size / 1048576.0 + 0.5); }
+
+            const stats = GC.stats;
+            const used = toMB(stats.usedSize);
+            const free = toMB(stats.freeSize);
+            const total = toMB(stats.usedSize + stats.freeSize);
+            message("GC stats  %dM used, %dM free, %dM total", used, free, total);
+        }
+    }
+
+    codegenModules(modules);
+}
+else
+{
     generateCodeAndWrite(modules[], libmodules[], params.libname, params.objdir,
                          driverParams.lib, params.obj, driverParams.oneobj, params.multiobj,
                          params.v.verbose);
 
     backend_term();
+} // !IN_LLVM
 
     if (global.errors)
         fatal();
@@ -630,11 +768,33 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
     {
         if (driverParams.link)
             error(Loc.initial, "no object files to link");
+        if (IN_LLVM && !driverParams.link && driverParams.lib)
+            error(Loc.initial, "no object files");
     }
     else
     {
+version (IN_LLVM)
+{
+        if (driverParams.link)
+            status = linkObjToBinary();
+        else if (driverParams.lib)
+            status = createStaticLibrary();
+
+        if (status == EXIT_SUCCESS && params.cleanupObjectFiles)
+        {
+            foreach (m; modules)
+            {
+                m.deleteObjFile();
+                if (driverParams.oneobj)
+                    break;
+            }
+        }
+}
+else // !IN_LLVM
+{
         if (driverParams.link)
             status = runLINK();
+}
         if (params.run)
         {
             if (!status)
@@ -642,6 +802,13 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
                 status = runProgram();
                 /* Delete .obj files and .exe file
                  */
+version (IN_LLVM)
+{
+                // object files already deleted above
+                deleteExeFile();
+}
+else
+{
                 foreach (m; modules)
                 {
                     m.deleteObjFile();
@@ -649,6 +816,7 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
                         break;
                 }
                 params.exefile.toCStringThen!(ef => File.remove(ef.ptr));
+}
             }
         }
     }
@@ -676,6 +844,7 @@ private int tryMain(size_t argc, const(char)** argv, ref Param params)
  *   files = files from argv
  * Returns: true on faiure
  */
+version (IN_LLVM) {} else
 bool parseCommandlineAndConfig(size_t argc, const(char)** argv, ref Param params, ref Strings files)
 {
     // Detect malformed input
@@ -789,7 +958,18 @@ void emitMakeDeps(ref Param params)
     OutBuffer buf;
 
     // start by resolving and writing the target (which is sometimes resolved during link phase)
-    if (driverParams.link && params.exefile)
+    if (IN_LLVM && driverParams.link)
+    {
+	version (IN_LLVM)
+        buf.writeEscapedMakePath(getPathToProducedBinary());
+    }
+    else if (IN_LLVM && driverParams.lib)
+    {
+	version (IN_LLVM)
+        buf.writeEscapedMakePath(getPathToProducedStaticLibrary());
+    }
+    /* IN_LLVM: handled above
+    else if (driverParams.link && params.exefile)
     {
         buf.writeEscapedMakePath(&params.exefile[0]);
     }
@@ -800,6 +980,7 @@ void emitMakeDeps(ref Param params)
 
         buf.writeEscapedMakePath(&libname[0]);
     }
+    */
     else if (params.objname)
     {
         buf.writeEscapedMakePath(&params.objname[0]);
@@ -871,6 +1052,13 @@ extern extern(C) __gshared string[] rt_options;
  */
 void reconcileCommands(ref Param params, ref Target target)
 {
+version (IN_LLVM)
+{
+    if (driverParams.lib && driverParams.dll)
+        error(Loc.initial, "cannot mix -lib and -shared");
+}
+else
+{
     if (target.os == Target.OS.OSX)
     {
         driverParams.pic = PIC.pic;
@@ -912,6 +1100,7 @@ void reconcileCommands(ref Param params, ref Target target)
         if (driverParams.mscrtlib)
             error(Loc.initial, "`-mscrtlib` can only be used when targetting windows");
     }
+} // !IN_LLVM
 
     if (params.boundscheck != CHECKENABLE._default)
     {
@@ -988,9 +1177,16 @@ void reconcileCommands(ref Param params, ref Target target)
  */
 void reconcileLinkRunLib(ref Param params, size_t numSrcFiles, const char[] obj_ext)
 {
-    if (!params.obj || driverParams.lib)
-        driverParams.link = false;
+    version (IN_LLVM) {
+        if (!params.obj || driverParams.lib || (IN_LLVM && params.output_o == OUTPUTFLAGno))
+            driverParams.link = false;
+    } else {
+        if (!params.obj || driverParams.lib)
+            driverParams.link = false;
+    }
 
+version (IN_LLVM) {} else
+{
     if (target.os == Target.OS.Windows)
     {
         if (!driverParams.mscrtlib)
@@ -1008,6 +1204,7 @@ void reconcileLinkRunLib(ref Param params, size_t numSrcFiles, const char[] obj_
             }
         }
     }
+}
 
     if (driverParams.link)
     {
@@ -1039,7 +1236,7 @@ void reconcileLinkRunLib(ref Param params, size_t numSrcFiles, const char[] obj_
         params.libname = params.objname;
         params.objname = null;
         // Haven't investigated handling these options with multiobj
-        if (!params.cov && !params.trace)
+        if (!IN_LLVM && !params.cov && !params.trace)
             params.multiobj = true;
     }
     else

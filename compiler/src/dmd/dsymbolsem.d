@@ -132,8 +132,18 @@ private void setPragmaPrintf(Dsymbol s, bool printf)
  */
 extern(C++) void dsymbolSemantic(Dsymbol dsym, Scope* sc)
 {
+version (IN_LLVM)
+{
+    import driver.timetrace_sema;
+    scope v = new DsymbolSemanticVisitor(sc);
+    scope vtimetrace = new SemanticTimeTraceVisitor!DsymbolSemanticVisitor(v);
+    dsym.accept(vtimetrace);
+}
+else
+{
     scope v = new DsymbolSemanticVisitor(sc);
     dsym.accept(v);
+}
 }
 
 /***************************************************
@@ -1300,6 +1310,20 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                                 }
                                 ne.onstack = 1;
                                 dsym.onstack = true;
+version (IN_LLVM)
+{
+                                auto tcStatic = dsym.type.toBasetype().isTypeClass();
+                                auto tcDynamic = ne.newtype.toBasetype().isTypeClass();
+                                if (!tcDynamic)
+                                {
+                                    //printf(".: resolving %s\n", ne.newtype.toPrettyChars());
+                                    ne.newtype = ne.newtype.typeSemantic(dsym.loc, sc);
+                                    tcDynamic = ne.newtype.toBasetype().isTypeClass();
+                                    assert(tcDynamic);
+                                }
+
+                                dsym.onstackWithMatchingDynType = tcStatic.sym is tcDynamic.sym;
+}
                             }
                         }
                         else if (auto fe = ex.isFuncExp())
@@ -1797,6 +1821,14 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
 
     override void visit(PragmaDeclaration pd)
     {
+version (IN_LLVM)
+{
+        import gen.dpragma : LDCPragma, DtoCheckPragma, DtoGetPragma;
+
+        LDCPragma llvm_internal = LDCPragma.LLVMnone;
+        const(char)* arg1str = null;
+}
+
         StringExp verifyMangleString(ref Expression e)
         {
             auto se = semanticString(sc, e, "mangled name");
@@ -1826,6 +1858,15 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                     dchar c = slice[i];
                     if (c < 0x80)
                     {
+                        version (IN_LLVM)
+                        {
+                            // LDC: allow leading "\1" to prevent target-specific prefix
+                            if (i == 0 && c == '\1')
+                            {
+                                ++i;
+                                continue;
+                            }
+                        }
                         if (c.isValidMangling)
                         {
                             ++i;
@@ -1872,7 +1913,13 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
 
                 s.dsymbolSemantic(sc2);
                 if (pd.ident != Id.mangle)
+                {
+version (IN_LLVM)
+{
+                    DtoCheckPragma(pd, s, llvm_internal, arg1str);
+}
                     continue;
+                }
                 assert(pd.args);
                 if (auto ad = s.isAggregateDeclaration())
                 {
@@ -1942,6 +1989,25 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         {
             if (pd.ident == Id.linkerDirective)
             {
+version (IN_LLVM) // not restricted to a single string arg
+{
+                if (!pd.args || pd.args.length == 0)
+                    error(pd.loc, "one or more string arguments expected for pragma(linkerDirective)");
+                else
+                {
+                    for (size_t i = 0; i < pd.args.length; ++i)
+                    {
+                        auto se = semanticString(sc, (*pd.args)[i], "linker directive");
+                        if (!se)
+                            break;
+                        (*pd.args)[i] = se;
+                        if (global.params.v.verbose)
+                            message("linkopt   %.*s", cast(int)se.len, se.peekString().ptr);
+                    }
+                }
+}
+else // !IN_LLVM
+{
                 if (!pd.args || pd.args.length != 1)
                     .error(pd.loc, "%s `%s` one string argument expected for pragma(linkerDirective)", pd.kind, pd.toPrettyChars);
                 else
@@ -1953,6 +2019,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                     if (global.params.v.verbose)
                         message("linkopt   %.*s", cast(int)se.len, se.peekString().ptr);
                 }
+}
                 return noDeclarations();
             }
         }
@@ -2064,6 +2131,14 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         {
             if (pd.args && pd.args.length != 0)
                 .error(pd.loc, "%s `%s` takes no argument", pd.kind, pd.toPrettyChars);
+            return declarations();
+        }
+        else if(IN_LLVM)
+        {
+            version (IN_LLVM) {
+                if ((llvm_internal = DtoGetPragma(sc, pd, arg1str)) != LDCPragma.LLVMnone)
+                    return declarations();
+            }
             return declarations();
         }
         else if (!global.params.ignoreUnsupportedPragmas)
@@ -2864,6 +2939,9 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         {
             if (tempdecl.ident == Id.RTInfo)
                 Type.rtinfo = tempdecl;
+            version (IN_LLVM)
+            if (IN_LLVM && tempdecl.ident == Id.RTInfoImpl)
+                Type.rtinfoImpl = tempdecl;
         }
 
         /* Remember Scope for later instantiations, but make
@@ -3411,6 +3489,11 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         funcdecl.userAttribDecl = sc.userAttribDecl;
         UserAttributeDeclaration.checkGNUABITag(funcdecl, funcdecl._linkage);
         checkMustUseReserved(funcdecl);
+
+version (IN_LLVM)
+{
+        funcdecl.emitInstrumentation = sc.emitInstrumentation;
+}
 
         if (!funcdecl.originalType)
             funcdecl.originalType = funcdecl.type.syntaxCopy();
@@ -4226,7 +4309,9 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         if (funcdecl.canInferAttributes(sc))
             funcdecl.initInferAttributes();
 
-        funcdecl.semanticRun = PASS.semanticdone;
+        // LDC relies on semanticRun variable not being reset here
+        if (!IN_LLVM || funcdecl.semanticRun < PASS.semanticdone)
+           funcdecl.semanticRun = PASS.semanticdone;
 
         /* Save scope for possible later use (if we need the
          * function internals)
@@ -6625,8 +6710,18 @@ void templateInstanceSemantic(TemplateInstance tempinst, Scope* sc, ArgumentList
             tempinst.inst.gagged = tempinst.gagged;
         }
 
-        tempinst.tnext = tempinst.inst.tnext;
-        tempinst.inst.tnext = tempinst;
+        // LDC: the tnext linked list is only used by TemplateInstance.needsCodegen(),
+        //      which is skipped with -linkonce-templates-aggressive
+        bool condition = true;
+        version (IN_LLVM)
+            condition = !(IN_LLVM && global.params.linkonceTemplates == LinkonceTemplates.aggressive);
+        else
+            condition = true;
+        if (condition)
+        {
+            tempinst.tnext = tempinst.inst.tnext;
+            tempinst.inst.tnext = tempinst;
+        }
 
         /* A module can have explicit template instance and its alias
          * in module scope (e,g, `alias Base64 = Base64Impl!('+', '/');`).
@@ -6710,7 +6805,21 @@ void templateInstanceSemantic(TemplateInstance tempinst, Scope* sc, ArgumentList
             scope v = new InstMemberWalker(tempinst.inst);
             tempinst.inst.accept(v);
 
-            if (!global.params.allInst &&
+            bool checkLinkonceTemplates() {
+                version (IN_LLVM)
+                    return global.params.linkonceTemplates == LinkonceTemplates.aggressive;
+                else
+                    return false;
+            }
+
+            if (IN_LLVM && checkLinkonceTemplates())
+            {
+                // with -linkonce-templates-aggressive, an earlier speculative or non-root instance
+                // hasn't been appended to any module yet
+                assert(tempinst.inst.memberOf is null);
+                tempinst.inst.appendToModuleMember();
+            }
+            else if (!global.params.allInst &&
                 tempinst.minst) // if inst was not speculative...
             {
                 assert(!tempinst.minst.isRoot()); // ... it was previously appended to a non-root module
@@ -6836,6 +6945,16 @@ void templateInstanceSemantic(TemplateInstance tempinst, Scope* sc, ArgumentList
             //printf("tempdecl.ident = %s, s = `%s %s`\n", tempdecl.ident.toChars(), s.kind(), s.toPrettyChars());
             //printf("setting aliasdecl\n");
             tempinst.aliasdecl = s;
+version (IN_LLVM)
+{
+            import gen.llvmhelpers : DtoSetFuncDeclIntrinsicName;
+            if (tempdecl.llvmInternal != 0)
+            {
+                s.llvmInternal = tempdecl.llvmInternal;
+                if (FuncDeclaration fd = s.isFuncDeclaration())
+                    DtoSetFuncDeclIntrinsicName(tempinst, tempdecl, fd);
+            }
+}
         }
     }
 

@@ -341,7 +341,8 @@ enum WANTexpand = 1;    // expand const/immutable variables if possible
 /***********************************************************
  * https://dlang.org/spec/expression.html#expression
  */
-extern (C++) abstract class Expression : ASTNode
+// IN_LLVM: instantiated in gen/asm-x86.h (`Handled = createExpression(...)`)
+extern (C++) /* IN_LLVM abstract */ class Expression : ASTNode
 {
     Type type;      // !=null means that semantic() has been run
     Loc loc;        // file location
@@ -712,6 +713,19 @@ extern (C++) abstract class Expression : ASTNode
         case EXP.null_:
             return 0;
         case EXP.symbolOffset:
+version (IN_LLVM)
+{
+            import gen.dpragma : LDCPragma;
+
+            // We don't statically know anything about the address of a weak symbol
+            // if there is no offset. With an offset, we can at least say that it is
+            // non-zero.
+            SymOffExp soe = cast(SymOffExp) this;
+            if (soe.var.llvmInternal == LDCPragma.LLVMextern_weak && !soe.offset)
+            {
+                return 0;
+            }
+}
             return 2;
         default:
             return 0;
@@ -2703,6 +2717,15 @@ extern (C++) final class SymOffExp : SymbolExp
 
     override Optional!bool toBool()
     {
+version (IN_LLVM)
+{
+        import gen.dpragma : LDCPragma;
+
+        // For a weak symbol, we only statically know that it is non-null if the
+        // offset is non-zero.
+        if (var.llvmInternal == LDCPragma.LLVMextern_weak && offset == 0)
+            return typeof(return)();
+}
         return typeof(return)(true);
     }
 

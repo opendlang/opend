@@ -16,6 +16,14 @@ struct ModuleDeclaration;
 struct Escape;
 struct FileBuffer;
 
+#if IN_LLVM
+namespace llvm {
+    class GlobalVariable;
+    class LLVMContext;
+    class Module;
+}
+#endif
+
 struct MacroTable
 {
     void* internal;  // PIMPL
@@ -136,6 +144,21 @@ public:
 
     // Back end
 
+#if IN_LLVM
+    llvm::Module *genLLVMModule(llvm::LLVMContext &context);
+    void checkAndAddOutputFile(const FileName &file);
+
+    bool llvmForceLogging;
+    bool noModuleInfo; /// Do not emit any module metadata.
+
+    // Coverage analysis
+    llvm::GlobalVariable
+        *d_cover_valid; // private immutable size_t[] _d_cover_valid;
+    llvm::GlobalVariable *d_cover_data; // private uint[] _d_cover_data;
+    Array<size_t> d_cover_valid_init;   // initializer for _d_cover_valid
+
+    void initCoverageDataWithCtfeCoverage(unsigned *data) const;
+#else
     int doppelganger;           // sub-module
     Symbol *cov;                // private uint[] __coverage;
     DArray<unsigned> covb;      // bit array of valid code line numbers
@@ -148,6 +171,7 @@ public:
     Symbol *stest;              // module unit test
 
     Symbol *sfilename;          // symbol for filename
+#endif
 
     void *ctfe_cov;             // stores coverage information from ctfe
 
