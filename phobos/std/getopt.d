@@ -1062,38 +1062,64 @@ private bool handleOption(R)(string option, R receiver, ref string[] args,
     assert(values == ["foo":0, "bar":1, "baz":2], to!string(values));
 }
 
-/**
-   The option character (default '-').
+version (LDC) version (Windows) version = LDC_Windows;
 
-   Defaults to '-' but it can be assigned to prior to calling `getopt`.
- */
-dchar optionChar = '-';
+version (LDC_Windows)
+{
+    // cannot access TLS globals directly across DLL boundaries
 
-/**
-   The string that conventionally marks the end of all options (default '--').
+    private
+    {
+        dchar _optionChar = '-';
+        string _endOfOptions = "--";
+        dchar _assignChar = '=';
+        string _arraySep = "";
+    }
 
-   Defaults to "--" but can be assigned to prior to calling `getopt`. Assigning an
-   empty string to `endOfOptions` effectively disables it.
- */
-string endOfOptions = "--";
+    @property @safe @nogc nothrow
+    pragma(inline, false) // could be safely inlined in the binary containing Phobos only
+    {
+        ref dchar optionChar() { return _optionChar; }
+        ref string endOfOptions() { return _endOfOptions; }
+        ref dchar assignChar() { return _assignChar; }
+        ref string arraySep() { return _arraySep; }
+    }
+}
+else
+{
+    /**
+       The option character (default '-').
 
-/**
-   The assignment character used in options with parameters (default '=').
+       Defaults to '-' but it can be assigned to prior to calling `getopt`.
+     */
+    dchar optionChar = '-';
 
-   Defaults to '=' but can be assigned to prior to calling `getopt`.
- */
-dchar assignChar = '=';
+    /**
+       The string that conventionally marks the end of all options (default '--').
 
-/**
-   When set to "", parameters to array and associative array receivers are
-   treated as an individual argument. That is, only one argument is appended or
-   inserted per appearance of the option switch. If `arraySep` is set to
-   something else, then each parameter is first split by the separator, and the
-   individual pieces are treated as arguments to the same option.
+       Defaults to "--" but can be assigned to prior to calling `getopt`. Assigning an
+       empty string to `endOfOptions` effectively disables it.
+     */
+    string endOfOptions = "--";
 
-   Defaults to "" but can be assigned to prior to calling `getopt`.
- */
-string arraySep = "";
+    /**
+       The assignment character used in options with parameters (default '=').
+
+       Defaults to '=' but can be assigned to prior to calling `getopt`.
+     */
+    dchar assignChar = '=';
+
+    /**
+       When set to "", parameters to array and associative array receivers are
+       treated as an individual argument. That is, only one argument is appended or
+       inserted per appearance of the option switch. If `arraySep` is set to
+       something else, then each parameter is first split by the separator, and the
+       individual pieces are treated as arguments to the same option.
+
+       Defaults to "" but can be assigned to prior to calling `getopt`.
+     */
+    string arraySep = "";
+} // !LDC_Windows
 
 private enum autoIncrementChar = '+';
 

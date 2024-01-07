@@ -45,7 +45,11 @@ static import core.math;
 version (D_InlineAsm_X86)    version = InlineAsm_X86_Any;
 version (D_InlineAsm_X86_64) version = InlineAsm_X86_Any;
 
-version (InlineAsm_X86_Any) version = InlineAsm_X87;
+version (LDC) version (CRuntime_Microsoft) version = LDC_MSVCRT;
+
+version (LDC_MSVCRT)   {}
+else version (Android) {}
+else version (InlineAsm_X86_Any) version = InlineAsm_X87;
 version (InlineAsm_X87)
 {
     static assert(real.mant_dig == 64);
@@ -206,20 +210,25 @@ float tan(float x) @safe pure nothrow @nogc { return __ctfe ? cast(float) tan(ca
     assert(tan(PI / 3).isClose(sqrt(3.0)));
 }
 
+// LDC: pass `real.nan` as extra param
 version (InlineAsm_X87)
-private real tanAsm(real x) @trusted pure nothrow @nogc
+private real tanAsm(real x, real nan = real.nan) @trusted pure nothrow @nogc
 {
-    // Separating `return real.nan` from the asm block on LDC produces unintended
-    // behaviour as additional instructions are generated, invalidating the asm
-    // logic inside the previous block. To circumvent this, we can push rnan
-    // manually by creating an immutable variable in the stack.
-    immutable rnan = real.nan;
+    version (LDC) {} else
+    {
+        // Separating `return real.nan` from the asm block on LDC produces unintended
+        // behaviour as additional instructions are generated, invalidating the asm
+        // logic inside the previous block. To circumvent this, we can push rnan
+        // manually by creating an immutable variable in the stack.
+        immutable rnan = real.nan;
+    }
 
     version (X86)
     {
     asm pure nothrow @nogc
     {
-        fld     x[EBP]                  ; // load theta
+        naked                           ;
+        fld     real ptr [ESP+4]        ; // load theta
         fxam                            ; // test for oddball values
         fstsw   AX                      ;
         sahf                            ;
@@ -243,12 +252,12 @@ SC17:   fprem1                          ;
 trigerr:
         jnp     Lret                    ; // if theta is NAN, return theta
         fstp    ST(0)                   ; // dump theta
-        fld     rnan                    ; // return rnan
+        fld     real ptr [ESP+16]       ; // load nan param
         jmp     Lret                    ;
 Clear1:
         fstp    ST(0)                   ; // dump X, which is always 1
 Lret:
-        ;
+        ret 2 * x.sizeof                ;
     }
     }
     else version (X86_64)
@@ -257,6 +266,7 @@ Lret:
         {
             asm pure nothrow @nogc
             {
+                naked                   ;
                 fld     real ptr [RCX]  ; // load theta
             }
         }
@@ -264,7 +274,8 @@ Lret:
         {
             asm pure nothrow @nogc
             {
-                fld     x[RBP]          ; // load theta
+                naked                   ;
+                fld     real ptr [RSP+8]; // load theta
             }
         }
     asm pure nothrow @nogc
@@ -293,12 +304,19 @@ trigerr:
         test    AH,4                    ;
         jz      Lret                    ; // if theta is NAN, return theta
         fstp    ST(0)                   ; // dump theta
-        fld     rnan                    ; // return rnan
+    }
+        // load nan param
+        version (Win64)
+            asm pure nothrow @nogc { fld real ptr [RDX]; }
+        else
+            asm pure nothrow @nogc { fld real ptr [RSP+24]; }
+    asm pure nothrow @nogc
+    {
         jmp     Lret                    ;
 Clear1:
         fstp    ST(0)                   ; // dump X, which is always 1
 Lret:
-        ;
+        ret                             ;
     }
     }
     else
@@ -954,8 +972,8 @@ private real atan2Asm(real y, real x) @trusted pure nothrow @nogc
     {
         asm pure nothrow @nogc {
             naked;
-            fld real ptr [RDX]; // y
-            fld real ptr [RCX]; // x
+            fld real ptr [RCX]; // y
+            fld real ptr [RDX]; // x
             fpatan;
             ret;
         }

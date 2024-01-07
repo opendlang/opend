@@ -1059,7 +1059,7 @@ Complex!T asin(T)(Complex!T z)  @safe pure nothrow @nogc
     import std.math.operations : isClose;
     import std.math.constants : PI;
     assert(asin(complex(0.0)) == 0.0);
-    assert(isClose(asin(complex(0.5L)), PI / 6));
+    assert(isClose(asin(complex(0.5L)), PI / 6, 0, 1e-15));
 }
 
 @safe pure nothrow unittest
@@ -1085,7 +1085,7 @@ Complex!T acos(T)(Complex!T z)  @safe pure nothrow @nogc
     import std.math.constants : PI;
     import std.math.trigonometry : std_math_acos = acos;
     assert(acos(complex(0.0)) == std_math_acos(0.0));
-    assert(isClose(acos(complex(0.5L)), PI / 3));
+    assert(isClose(acos(complex(0.5L)), PI / 3, 0, 1e-15));
 }
 
 @safe pure nothrow unittest
@@ -1253,6 +1253,21 @@ Complex!T atanh(T)(Complex!T z) @safe pure nothrow @nogc
 Complex!real expi(real y)  @trusted pure nothrow @nogc
 {
     import core.math : cos, sin;
+    version (none) // LDC: this is the old asm version from std.math.expi - re-enable?
+    {
+        static if (real.mant_dig == 64) // x87
+        {
+            if (!__ctfe)
+            {
+                Complex!real r = void;
+                asm @trusted pure nothrow @nogc
+                {
+                    "fsincos" : "=st" (r.re), "=st(1)" (r.im) : "st" (y) : "flags";
+                }
+                return r;
+            }
+        }
+    }
     return Complex!real(cos(y), sin(y));
 }
 

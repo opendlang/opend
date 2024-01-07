@@ -612,9 +612,14 @@ else version (OpenBSD)      version = GenericPosixVersion;
 else version (Solaris)      version = GenericPosixVersion;
 else version (DragonFlyBSD) version = GenericPosixVersion;
 
+pragma(inline, true) // LDC
 private real polyImpl(real x, in real[] A) @trusted pure nothrow @nogc
 {
-    version (D_InlineAsm_X86)
+    version (LDC)
+    {
+        return polyImplBase(x, A);
+    }
+    else version (D_InlineAsm_X86)
     {
         if (__ctfe)
         {
@@ -883,7 +888,15 @@ if (isFloatingPoint!T)
     assert(truncPow2(ulong.min) == 0);
 
     assert(truncPow2(int.max) == (int.max / 2) + 1);
+  version (LDC)
+  {
+    // this test relies on undefined behaviour, i.e. (1 << 63) == int.min
+    // that fails for LDC with optimizations enabled
+  }
+  else
+  {
     assert(truncPow2(int.min) == int.min);
+  }
     assert(truncPow2(long.max) == (long.max / 2) + 1);
     assert(truncPow2(long.min) == long.min);
 }

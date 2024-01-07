@@ -126,6 +126,10 @@ version (CRuntime_Microsoft)
 else version (CRuntime_DigitalMars)
 {
 }
+else version (MinGW) // LDC
+{
+    version = MINGW_IO;
+}
 else version (CRuntime_Glibc)
 {
 }
@@ -333,6 +337,94 @@ else version (CRuntime_Glibc)
     deprecated("internal alias FUNLOCK was unintentionally available from "
                ~ "std.stdio and will be removed afer 2.107")
     alias FUNLOCK = core.sys.posix.stdio.funlockfile;
+}
+else version (MINGW_IO)
+{
+    extern (C)
+    {
+        int setmode(int, int);
+    }
+
+    import core.sync.mutex;
+
+    __gshared Mutex lockMutex;
+    __gshared Mutex[uint] fileLocks;
+
+    void flockfile(FILE* fp)
+    {
+        Mutex mutex;
+
+        if (lockMutex is null)
+             lockMutex = new Mutex;
+
+        lockMutex.lock();
+
+        if (fp._file in fileLocks)
+        {
+            mutex = fileLocks[fp._file];
+        }
+        else
+        {
+            mutex = new Mutex();
+            fileLocks[fp._file] = mutex;
+        }
+        mutex.lock();
+
+        lockMutex.unlock();
+    }
+
+    void funlockfile(FILE* fp)
+    {
+        Mutex mutex;
+
+        if (lockMutex is null)
+             lockMutex = new Mutex;
+        lockMutex.lock();
+
+        if (fp._file in fileLocks)
+        {
+            mutex = fileLocks[fp._file];
+            mutex.unlock();
+        } else
+        { /* Should this be an error */ }
+        lockMutex.unlock();
+    }
+
+
+    int fputc_unlocked(int c, _iobuf* fp) { return fputc(c, cast(shared) fp); }
+    int fputwc_unlocked(int c, _iobuf* fp)
+    {
+        return fputwc(cast(wchar_t)c, cast(shared) fp);
+    }
+    int fgetc_unlocked(_iobuf* fp) { return fgetc(cast(shared) fp); }
+    int fgetwc_unlocked(_iobuf* fp) { return fgetwc(cast(shared) fp); }
+
+    extern (C)
+    {
+      nothrow:
+      @nogc:
+        FILE* _fdopen(int, const (char)*);
+    }
+
+    alias fputc_unlocked FPUTC;
+    alias fputwc_unlocked FPUTWC;
+    alias fgetc_unlocked FGETC;
+    alias fgetwc_unlocked FGETWC;
+
+    alias flockfile FLOCK;
+    alias funlockfile FUNLOCK;
+
+    alias setmode _setmode;
+    int _fileno(FILE* f) { return f._file; }
+    alias _fileno fileno;
+
+    enum
+    {
+        _O_RDONLY = 0x0000,
+        _O_APPEND = 0x0008,
+        _O_TEXT   = 0x4000,
+        _O_BINARY = 0x8000,
+    }
 }
 else version (GENERIC_IO)
 {
