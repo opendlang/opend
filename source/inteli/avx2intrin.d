@@ -16,6 +16,10 @@ module inteli.avx2intrin;
 // With GDC, use "dflags-gdc": ["-mavx2"] or equivalent to actively
 // generate AVX2 instructions.
 
+
+// Note: many special cases for GDC, because when suporting SIMD_COMPARISON_MASKS_32B but not having AVX2, 
+// the replaced operators have terrible performance. Mostly a problem for -mavx on x86
+
 public import inteli.types;
 import inteli.internals;
 
@@ -985,7 +989,7 @@ unittest
 __m256i _mm256_cmpgt_epi16 (__m256i a, __m256i b) pure @safe
 {
     version(GNU)
-        enum bool mayUseComparisonOperator = false; // too slow in GDC
+        enum bool mayUseComparisonOperator = GDC_with_AVX2; // too slow in GDC without AVX2
     else
         enum bool mayUseComparisonOperator = true;
 
@@ -1017,7 +1021,42 @@ unittest
     assert(R.array == E);
 }
 
-// TODO __m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b) pure @safe
+/// Compare packed signed 32-bit integers in `a` and `b` for greater-than.
+__m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b) pure @safe
+{
+    version(GNU)
+        enum bool mayUseComparisonOperator = GDC_with_AVX2; // too slow in GDC else
+    else
+        enum bool mayUseComparisonOperator = true;
+
+    static if (SIMD_COMPARISON_MASKS_32B && mayUseComparisonOperator)
+    {
+        return cast(__m256i)(cast(int8)a > cast(int8)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpgtd256(cast(int8)a, cast(int8)b);
+    }
+    else // split
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_cmpgt_epi32(a_lo, b_lo);
+        __m128i r_hi = _mm_cmpgt_epi32(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    int8   A = [-3,  2, -1,  0, -3,  2, -1,  0];
+    int8   B = [ 4, -2,  2,  0,  4, -2,  2,  0];
+    int[8] E = [ 0, -1,  0,  0,  0, -1,  0,  0];
+    int8   R = cast(int8) _mm256_cmpgt_epi32(cast(__m256i)A, cast(__m256i)B);
+    assert(R.array == E);
+}
+
 // TODO __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
 // TODO __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
 
