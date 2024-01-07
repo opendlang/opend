@@ -1871,7 +1871,51 @@ unittest
 }
 
 
-// TODO __m256i _mm256_min_epi8 (__m256i a, __m256i b) pure @safe
+/// Compare packed signed 8-bit integers in `a` and `b`, and return packed minimum values.
+__m256i _mm256_min_epi8 (__m256i a, __m256i b) pure @trusted
+{
+    // PERF D_SIMD
+    version(GNU)
+        enum bool split = true;
+    else static if (SIMD_COMPARISON_MASKS_32B)
+        enum bool split = false;
+    else
+        enum bool split = true;
+    static if (GDC_with_AVX2)
+    {
+        // Strangely, GDC asks for unsigned ubyte32
+        return cast(__m256i) __builtin_ia32_pminsb256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else static if (split)
+    {
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_min_epi8(a_lo, b_lo);
+        __m128i r_hi = _mm_min_epi8(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        // This is real bad with GDC, again
+        byte32 sa = cast(byte32)a;
+        byte32 sb = cast(byte32)b;
+        byte32 greater = cast(byte32)(sa > sb);
+        return cast(__m256i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+        static assert(false);
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi8(127,  1, -4, -8, 9,    7, 0, -57, 0, 0, 0, 0, 0, 0, 0, 0,   127,  1, -4, -8, 9,    7, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0);
+    __m256i B = _mm256_setr_epi8(  4, -8,  9, -7, 0, -128, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0,     4, -8,  9, -7, 0, -128, 0,  0, 0, 0, 0, 0, 0, -4, 0, 0);
+    byte32 R = cast(byte32) _mm256_min_epi8(A, B);
+    byte[32] correct =          [  4, -8, -4, -8, 0, -128, 0, -57, 0, 0, 0, 0, 0, 0, 0, 0,     4, -8, -4, -8, 0, -128, 0,  0, 0, 0, 0, 0, 0, -4, 0, 0];
+    assert(R.array == correct);
+}
 
 /// Compare packed unsigned 16-bit integers in `a` and `b`, and return packed minimum values.
 __m256i _mm256_min_epu16 (__m256i a, __m256i b) pure @trusted
