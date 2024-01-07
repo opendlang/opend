@@ -515,12 +515,12 @@ __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) pure @trusted
 {
     long2 la = cast(long2)a;
     long2 lb = cast(long2)b;
-    // Fails with DMD 1.102, TODO report
+    // PERF: with DMD, enabling this requires SSE4.2, hence D_AVX
     /*static if (SIMD_COMPARISON_MASKS_16B)
     {
         return cast(__m128i)(la > lb);
     }
-    else*/ 
+    else*/
     static if (GDC_with_SSE42)
     {
         return cast(__m128i) __builtin_ia32_pcmpgtq(la, lb);
