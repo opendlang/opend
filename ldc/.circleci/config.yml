@@ -1,0 +1,120 @@
+commonSteps: &commonSteps
+  steps:
+    # Each step starts in the checked-out source directory.
+    - run:
+        name: Install prerequisites
+        command: |
+          set -x
+          cd ..
+          if [ "$CI_OS" = "linux" ]; then
+            export DEBIAN_FRONTEND=noninteractive
+            if [[ "$EXTRA_CMAKE_FLAGS" = *-DMULTILIB?ON* ]]; then
+              dpkg --add-architecture i386
+              gcc_pkg="g++-multilib"
+              libcurl_pkg="libcurl4 libcurl4:i386"
+            else
+              gcc_pkg="g++"
+              libcurl_pkg="libcurl4"
+            fi
+            apt-get -q update
+            apt-get -yq install \
+              git-core $gcc_pkg \
+              zlib1g-dev $libcurl_pkg curl gdb python3 python3-pip tzdata unzip zip \
+              $EXTRA_APT_PACKAGES
+            # Download & extract CMake
+            curl -fL --retry 3 --max-time 300 -o cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.27.1/cmake-3.27.1-linux-x86_64.tar.gz
+            mkdir cmake
+            tar -xf cmake.tar.gz --strip 1 -C cmake
+            rm cmake.tar.gz
+            # Download & extract Ninja
+            curl -fL --retry 3 --max-time 60 -O https://github.com/symmetryinvestments/ninja/releases/download/v1.11.1-sym1/ninja-linux.zip
+            mkdir ninja
+            unzip ninja-linux.zip -d ninja
+            rm ninja-linux.zip
+            # Add CMake and Ninja to PATH for future steps
+            echo "export PATH=$PWD/cmake/bin:$PWD/ninja:$PATH" >> $BASH_ENV
+          fi
+          # Install lit
+          python3 --version
+          python3 -m pip install --user setuptools wheel
+          python3 -m pip install --user lit
+          python3 -c "import lit.main; lit.main.main();" --version . | head -n 1
+          # Download & extract host LDC
+          curl -fL --retry 3 --max-time 300 -o ldc2.tar.xz https://github.com/ldc-developers/ldc/releases/download/v$HOST_LDC_VERSION/ldc2-$HOST_LDC_VERSION-$CI_OS-x86_64.tar.xz
+          mkdir host-ldc
+          tar -xf ldc2.tar.xz --strip 1 -C host-ldc
+          rm ldc2.tar.xz
+    - checkout
+    - run:
+        name: Checkout git submodules
+        command: git submodule update --init
+    - run:
+        name: Build LDC & LDC D unittests & defaultlib unittest runners
+        command: |
+          set -x
+          cd ..
+          cmake --version
+          ninja --version
+          mkdir build
+          cd build
+          cmake -G Ninja $CIRCLE_WORKING_DIRECTORY \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DD_COMPILER=$PWD/../host-ldc/bin/ldmd2 \
+            -DLDC_LINK_MANUALLY=OFF \
+            $EXTRA_CMAKE_FLAGS
+          ninja -j$PARALLELISM obj/ldc2.o all ldc2-unittest all-test-runners
+          bin/ldc2 -version
+    - run:
+        name: Run LDC D unittests
+        when: always
+        command: cd ../build && ctest --output-on-failure -R ldc2-unittest
+    - run:
+        name: Run LIT testsuite
+        when: always
+        command: cd ../build/tests && python3 runlit.py -v -j $PARALLELISM .
+    - run:
+        name: Run DMD testsuite
+        when: always
+        command: |
+          cd ../build
+          if [ "$CI_OS" = "linux" ]; then
+            # Circle's RAM disk FS apparently doesn't allow long paths.
+            rm ../project/tests/dmd/compilable/issue17167.sh
+          fi
+          DMD_TESTSUITE_MAKE_ARGS=-j$PARALLELISM ctest -V -R dmd-testsuite
+    - run:
+        name: Run defaultlib unittests & druntime integration tests
+        when: always
+        command: cd ../build && ctest -j$PARALLELISM --output-on-failure -E "dmd-testsuite|ldc2-unittest|lit-tests"
+
+version: 2
+jobs:
+  Ubuntu-20.04-multilib-rtSanitizers:
+    <<: *commonSteps
+    docker:
+      - image: ubuntu:20.04
+    resource_class: large
+    environment:
+      - PARALLELISM: 4
+      - CI_OS: linux
+      - EXTRA_APT_PACKAGES: llvm-11-dev libclang-common-11-dev
+      - HOST_LDC_VERSION: 1.24.0
+      - EXTRA_CMAKE_FLAGS: "-DMULTILIB=ON -DRT_SUPPORT_SANITIZERS=ON -DBUILD_LTO_LIBS=ON"
+  Ubuntu-20.04-sharedLibsOnly-gdmd:
+    <<: *commonSteps
+    docker:
+      - image: ubuntu:20.04
+    resource_class: large
+    environment:
+      - PARALLELISM: 4
+      - CI_OS: linux
+      - EXTRA_APT_PACKAGES: gdmd llvm-11-dev libclang-common-11-dev
+      - HOST_LDC_VERSION: 1.24.0
+      - EXTRA_CMAKE_FLAGS: "-DBUILD_SHARED_LIBS=ON -DBUILD_LTO_LIBS=ON -DD_COMPILER=gdmd -DLDC_LINK_MANUALLY=ON"
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - Ubuntu-20.04-multilib-rtSanitizers
+      - Ubuntu-20.04-sharedLibsOnly-gdmd

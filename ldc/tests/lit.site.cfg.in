@@ -1,0 +1,229 @@
+import lit.formats
+import lit.util
+import os
+import sys
+import platform
+import string
+import re
+import subprocess
+import glob
+from distutils.version import LooseVersion
+
+# Cmake Boolean options
+ON = True
+OFF = False
+
+## Auto-initialized variables by cmake:
+config.ldc2_bin            = "@LDC2_BIN@"
+config.ldcprofdata_bin     = "@LDCPROFDATA_BIN@"
+config.ldcprofgen_bin      = "@LDCPROFGEN_BIN@"
+config.ldcprunecache_bin   = "@LDCPRUNECACHE_BIN@"
+config.ldcbuildplugin_bin  = "@LDCBUILDPLUGIN_BIN@"
+config.timetrace2txt_bin   = "@TIMETRACE2TXT_BIN@"
+config.ldc2_bin_dir        = "@LDC2_BIN_DIR@"
+config.ldc2_lib_dir        = "@LDC2_LIB_DIR@"
+config.ldc2_runtime_dir    = "@RUNTIME_DIR@"
+config.ldc2_source_dir     = "@PROJECT_SOURCE_DIR@"
+config.test_source_root    = "@TESTS_IR_DIR@"
+config.llvm_tools_dir      = "@LLVM_TOOLS_DIR@"
+config.llvm_version        = @LDC_LLVM_VER@
+config.llvm_targetsstr     = "@LLVM_TARGETS_TO_BUILD@"
+config.default_target_bits = @DEFAULT_TARGET_BITS@
+config.with_PGO            = True
+config.dynamic_compile     = @LDC_DYNAMIC_COMPILE@
+config.plugins_supported   = @LDC_ENABLE_PLUGINS@
+config.gnu_make_bin        = "@GNU_MAKE_BIN@"
+config.ldc_host_arch       = "@LLVM_NATIVE_ARCH@"
+config.ldc_with_lld        = @LDC_WITH_LLD@
+config.spirv_enabled       = @LLVM_SPIRV_FOUND@
+config.rt_supports_sanitizers = @RT_SUPPORT_SANITIZERS@
+config.shared_rt_libs_only = "@BUILD_SHARED_LIBS@" == "ON"
+
+config.name = 'LDC'
+
+# testFormat: The test format to use to interpret tests.
+config.test_format = lit.formats.ShTest(execute_external=False)
+
+# suffixes: A list of file extensions to treat as test files. This is overriden
+# by individual lit.local.cfg files in the test subdirectories.
+config.suffixes = ['.d', '.i']
+
+# excludes: A list of directories to exclude from the testsuite. The 'inputs'
+# subdirectories contain auxiliary inputs for various tests in their parent
+# directories.
+config.excludes = [
+    'inputs',
+    'dmd',
+    'CMakeLists.txt',
+    'runlit.py',
+]
+
+# Exclude profile test dir when PGO is disabled
+if not config.with_PGO:
+    config.excludes.append('PGO')
+
+# Exclude dynamic compilation tests when it's disabled
+if not config.dynamic_compile:
+    config.excludes.append('dynamiccompile')
+
+# Explicit forwarding of environment variables
+env_cc = os.environ.get('CC', '')
+if env_cc:
+    config.environment['CC'] = env_cc
+
+env_cxx = os.environ.get('CXX', '')
+if env_cxx:
+    config.environment['CXX'] = env_cxx
+
+if (platform.system() == 'Windows'):
+    config.environment['VSINSTALLDIR'] = os.environ['VSINSTALLDIR']
+    config.environment['PATH'] = os.environ['PATH']
+    config.environment['LIB'] = os.environ['LIB']
+
+# Define available features so that we can disable tests depending on LLVM version
+config.available_features.add("llvm%d" % config.llvm_version)
+# LLVM version history: 3.9, 4.0, 5.0, ...
+# config.llvm_version: 309, 400, 500, ...
+# plusoneable_llvmversion: 39, 40, 50, ...
+plusoneable_llvmversion = config.llvm_version // 10  + config.llvm_version%10
+for version in range(60, plusoneable_llvmversion+1):
+    config.available_features.add("atleast_llvm%d0%d" % (version//10, version%10))
+for version in range(plusoneable_llvmversion, 201):
+    config.available_features.add("atmost_llvm%d0%d" % (version//10, version%10))
+
+# Define OS as available feature (Windows, Darwin, Linux, FreeBSD...)
+config.available_features.add(platform.system())
+
+# Define available features based on what LLVM can target
+# Examples: 'target_X86', 'target_ARM', 'target_PowerPC', 'target_AArch64'
+for t in config.llvm_targetsstr.split(';'):
+    config.available_features.add('target_' + t)
+
+if config.spirv_enabled:
+    config.available_features.add('target_SPIRV')
+
+if config.rt_supports_sanitizers:
+    config.available_features.add('RTSupportsSanitizers')
+
+# Add specific features for Windows x86/x64 testing
+if (platform.system() == 'Windows') and (config.default_target_bits == 32):
+    config.available_features.add('Windows_x86')
+if (platform.system() == 'Windows') and (config.default_target_bits == 64):
+    config.available_features.add('Windows_x64')
+
+# Define available features based on host arch
+# Examples: 'host_X86', 'host_ARM', 'host_PowerPC', 'host_AArch64'
+if (config.ldc_host_arch != ''):
+    config.available_features.add('host_' + config.ldc_host_arch)
+
+# Add "LTO" feature if linker support and LTO plugin are available
+if (platform.system() == 'Windows'):
+    canDoLTO = config.ldc_with_lld
+elif (platform.system() == 'Darwin'):
+    canDoLTO = os.path.exists('@LLVM_LIBRARY_DIRS@/libLTO.dylib')
+else:
+    canDoLTO = os.path.exists('@LLVM_LIBRARY_DIRS@/LLVMgold.so')
+if canDoLTO:
+    config.available_features.add('LTO')
+
+if config.ldc_with_lld:
+    config.available_features.add('internal_lld')
+
+# Add "link_WebAssembly" feature if we can link wasm (-link-internally or wasm-ld in PATH).
+if config.ldc_with_lld:
+    config.available_features.add('link_WebAssembly')
+else:
+    try:
+        if (subprocess.call(["wasm-ld", "--version"]) == 0):
+            config.available_features.add('link_WebAssembly')
+    except OSError:
+        pass
+
+config.target_triple = '(unused)'
+
+# test_exec_root: The root path where tests should be run.
+config.test_exec_root = os.path.dirname(__file__)
+
+# add test root dir to the path (FileCheck might sit there)
+path = os.path.pathsep.join( (config.test_source_root, config.environment['PATH']) )
+config.environment['PATH'] = path
+
+# Add LDC and LLVM bin dir to the path
+# Give priority to LDC's version of LLVM tools (we need FileCheck with certain bug fixes)
+path = os.path.pathsep.join( (config.ldc2_bin_dir, config.llvm_tools_dir, config.environment['PATH']) )
+config.environment['PATH'] = path
+
+# Add substitutions
+config.substitutions.append( ('%ldc', config.ldc2_bin) )
+config.substitutions.append( ('%gnu_make', config.gnu_make_bin) )
+config.substitutions.append( ('%profdata', config.ldcprofdata_bin) )
+config.substitutions.append( ('%profgen', config.ldcprofgen_bin) )
+config.substitutions.append( ('%prunecache', config.ldcprunecache_bin) )
+config.substitutions.append( ('%buildplugin', config.ldcbuildplugin_bin + " --ldcSrcDir=" + config.ldc2_source_dir ) )
+config.substitutions.append( ('%timetrace2txt', config.timetrace2txt_bin) )
+config.substitutions.append( ('%llvm-spirv', os.path.join(config.llvm_tools_dir, 'llvm-spirv')) )
+config.substitutions.append( ('%llc', os.path.join(config.llvm_tools_dir, 'llc')) )
+config.substitutions.append( ('%runtimedir', config.ldc2_runtime_dir ) )
+
+# Add platform-dependent file extension substitutions
+if (platform.system() == 'Windows'):
+    # add LDC lib dir to the path so app will be able to find jit.dll
+    # TODO: Something more robust
+    path = os.path.pathsep.join( (config.ldc2_lib_dir, config.environment['PATH']) )
+    config.environment['PATH'] = path
+
+    config.substitutions.append( ('%obj', '.obj') )
+    config.substitutions.append( ('%exe', '.exe') )
+    config.substitutions.append( ('%lib', '.lib') )
+    config.substitutions.append( ('%so', '.dll') )
+    config.substitutions.append( ('%diff_binary ', 'fc /b ') )
+else:
+    config.substitutions.append( ('%obj', '.o') )
+    config.substitutions.append( ('%exe', '') )
+    config.substitutions.append( ('%lib', '.a') )
+    if (platform.system() == 'Darwin'):
+        config.substitutions.append( ('%so', '.dylib') )
+    else:
+        config.substitutions.append( ('%so', '.so') )
+    config.substitutions.append( ('%diff_binary ', 'cmp -s ') )
+
+# Add cdb substitution
+if (platform.system() == 'Windows') and (config.default_target_bits == 32):
+    cdb = os.environ['WindowsSDKDir'] + 'Debuggers\\x86\\cdb.exe'
+    config.substitutions.append( ('%arch', 'x86') )
+if (platform.system() == 'Windows') and (config.default_target_bits == 64):
+    cdb = os.environ['WindowsSDKDir'] + 'Debuggers\\x64\\cdb.exe'
+    config.substitutions.append( ('%arch', 'x64') )
+
+if (platform.system() == 'Windows') and os.path.isfile( cdb ):
+    config.available_features.add('cdb')
+    config.substitutions.append( ('%cdb', '"' + cdb.replace('\\', '\\\\') + '"') )
+
+# Check whether GDB is present
+if (platform.system() != 'Windows') and lit.util.which('gdb', config.environment['PATH']):
+    config.available_features.add('gdb')
+    gdb_dflags = ''
+    command = ['gdb', '--version']
+    p = subprocess.Popen(command, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, universal_newlines=True)
+    text = p.stdout.readline()
+    m = re.compile('[^0-9]*([0-9]+[0-9.]*).*').match(text)
+    if m is not None:
+        gdb_version = m.group(1)
+        if LooseVersion(gdb_version) < LooseVersion('7.8'):
+            gdb_dflags = '-dwarf-version=2'
+        elif LooseVersion(gdb_version) >= LooseVersion('8.0'):
+            config.available_features.add('atleast_gdb80')
+
+    config.substitutions.append( ('%_gdb_dflags', gdb_dflags) )
+
+if 'LD_LIBRARY_PATH' in os.environ:
+    libs = []
+    for lib_path in [s for s in os.environ['LD_LIBRARY_PATH'].split(':') if s]:
+        for pattern in ['*ldc-jit*','*druntime-ldc*','*phobos2-ldc*']:
+            libs += glob.glob(os.path.join(lib_path, pattern))
+
+    if libs:
+        print('Warning: LDC runtime libs found in LD_LIBRARY_PATH:')
+        for l in libs:
+            print(l)

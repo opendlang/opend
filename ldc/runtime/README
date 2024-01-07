@@ -1,0 +1,24 @@
+Building druntime/Phobos for D2
+---
+
+LDC currently needs custom forks of druntime and Phobos. They are integrated
+with the main repository using Git submodules. To build them, make sure you
+have up-to-date copies of the submodules in your local repository:
+
+$ git submodule update -i
+
+The libraries should then be built and installed automatically along with the
+compiler itself. If, for some reason, you want to build them separately, the
+targets are:
+
+$ make runtime
+$ make phobos2
+
+
+Building Tango for D1
+---
+
+This directory used to contain scripts for building Tango for LDC/D1, which
+became obsolete after LDC support was added to its build system, and were
+consequently removed. Please use the official Tango build system (bob) from
+now on.
