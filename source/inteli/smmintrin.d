@@ -2022,8 +2022,13 @@ __m128i _mm_stream_load_si128 (__m128i * mem_addr) pure @trusted
         return *mem_addr; // regular move instead
     }
 }
-// TODO unittest
-
+unittest
+{
+    align(16) static immutable int[4] correct = [1, 2, 3, 4];
+    __m128i A = _mm_stream_load_si128(cast(__m128i*)(correct.ptr));
+    _mm_mfence();
+    assert(A.array == correct);
+}
 
 /// Return 1 if all bits in `a` are all 1's. Else return 0.
 int _mm_test_all_ones (__m128i a) @safe
