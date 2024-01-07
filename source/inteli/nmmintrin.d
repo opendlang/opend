@@ -511,7 +511,7 @@ unittest
 }
 
 /// Compare packed signed 64-bit integers in a and b for greater-than.
-__m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) @trusted
+__m128i _mm_cmpgt_epi64 (__m128i a, __m128i b) pure @trusted
 {
     long2 la = cast(long2)a;
     long2 lb = cast(long2)b;

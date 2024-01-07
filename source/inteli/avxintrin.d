@@ -83,6 +83,7 @@ import inteli.internals;
 // Pull in all previous instruction set intrinsics.
 public import inteli.smmintrin;
 public import inteli.tmmintrin;
+public import inteli.nmmintrin;
 
 
 

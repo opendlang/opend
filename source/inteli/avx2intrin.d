@@ -1057,7 +1057,41 @@ unittest
     assert(R.array == E);
 }
 
-// TODO __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
+__m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b) pure @safe
+{
+    version(GNU)
+        enum bool mayUseComparisonOperator = GDC_with_AVX2; // too slow in GDC else
+    else
+        enum bool mayUseComparisonOperator = true;
+
+    static if (SIMD_COMPARISON_MASKS_32B && mayUseComparisonOperator)
+    {
+        return cast(__m256i)(cast(long4)a > cast(long4)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpgtq256(cast(long4)a, cast(long4)b);
+    }
+    else // split
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_cmpgt_epi64(a_lo, b_lo);
+        __m128i r_hi = _mm_cmpgt_epi64(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi64(-3,  2, 70,  2);
+    __m256i B = _mm256_setr_epi64 (4, -2,  4, -2);
+    long[4] correct = [ 0, -1, -1, -1 ];
+    long4 R = cast(long4)(_mm256_cmpgt_epi64(A, B));
+    assert(R.array == correct);
+}
+
 // TODO __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
 
 
