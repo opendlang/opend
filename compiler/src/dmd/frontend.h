@@ -7328,6 +7328,7 @@ struct Scope final
     Dsymbol* inunion;
     bool nofree;
     bool inLoop;
+    bool inDefaultArg;
     int32_t intypeof;
     VarDeclaration* lastVar;
     ErrorSink* eSink;
@@ -7370,6 +7371,7 @@ struct Scope final
         inunion(),
         nofree(),
         inLoop(),
+        inDefaultArg(),
         intypeof(),
         lastVar(),
         eSink(),
@@ -7411,6 +7413,7 @@ struct Scope final
         inunion(inunion),
         nofree(nofree),
         inLoop(inLoop),
+        inDefaultArg(inDefaultArg),
         intypeof(intypeof),
         lastVar(lastVar),
         eSink(eSink),
