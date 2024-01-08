@@ -8821,6 +8821,7 @@ struct Id final
     static Identifier* getFunctionVariadicStyle;
     static Identifier* getParameterStorageClasses;
     static Identifier* getLinkage;
+    static Identifier* getUnitTestName;
     static Identifier* getUnitTests;
     static Identifier* getVirtualIndex;
     static Identifier* getPointerBitmap;
