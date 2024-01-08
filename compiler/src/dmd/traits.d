@@ -1806,14 +1806,13 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         if (auto ud = s.isUnitTestDeclaration())
         {
             auto unitTest = cast(UnitTestDeclaration)s;
-            if (unitTest.len == 0) {
+            if (unitTest.name.length == 0) {
                 // Nameless unittest
                 auto se = new StringExp(e.loc, "");
                 return se.expressionSemantic(sc);
             }
             // Extract the name
-            char[] nameWithoutQuotes = unitTest.name[1..unitTest.len + 1];
-            auto se = new StringExp(e.loc, nameWithoutQuotes);
+            auto se = new StringExp(e.loc, unitTest.name);
             return se.expressionSemantic(sc);
         }
         error(e.loc, "argument `%s` to __traits(getUnitTestName) must be a UnitTest", o.toChars);

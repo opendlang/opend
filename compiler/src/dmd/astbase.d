@@ -750,15 +750,13 @@ struct ASTBase
     extern (C++) final class UnitTestDeclaration : FuncDeclaration
     {
         char* codedoc;
-        char* name;
-        uint len;
+        const(char)[] name;
 
-        extern (D) this(const ref Loc loc, Loc endloc, StorageClass stc, char* codedoc, char* name, uint len)
+        extern (D) this(const ref Loc loc, Loc endloc, StorageClass stc, char* codedoc, const(char)[] name)
         {
             super(loc, endloc, Identifier.generateIdWithLoc("__unittest", loc), stc, null);
             this.codedoc = codedoc;
             this.name = name;
-            this.len = len
         }
 
         override void accept(Visitor v)
