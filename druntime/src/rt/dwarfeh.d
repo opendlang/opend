@@ -372,10 +372,7 @@ extern(C) void _d_throw_exception(Throwable o)
             As _d_print_throwable() itself may throw multiple times when calling core.demangle,
             and with the uncaught exception still on the EH stack, this doesn't bode well with core.demangle's error recovery.
             */
-            version (LDC)
-                _d_eh_enter_catch(&eh.exception_object);
-            else
-                __dmd_begin_catch(&eh.exception_object);
+            _d_eh_enter_catch(&eh.exception_object);
             _d_print_throwable(o);
             abort();
             assert(0);
@@ -543,6 +540,9 @@ extern (C) _Unwind_Reason_Code _d_eh_personality_common(_Unwind_Action actions,
                _Unwind_Exception_Class exceptionClass, _Unwind_Exception* exceptionObject,
                _Unwind_Context* context)
 {
+
+    int ver = 1;
+
     version (LDC) {} else
     {
         if (ver != 1)

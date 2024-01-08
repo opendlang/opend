@@ -122,6 +122,7 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
     bool checkMutableFieldReference()
     {
     return true; // disabled for now
+    /+
         if (!isField)
             return true;
 
@@ -155,6 +156,7 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
         errorSupplemental(init.loc, "- or mark the field with `@core.attribute.mutableRefInit` to silence this error");
 
         return false;
+        +/
     }
 
     static Initializer err()
