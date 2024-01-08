@@ -418,7 +418,7 @@ Bugs:  Changes to `ref` and `out` arguments are not propagated to the
 */
 struct Task(alias fun, Args...)
 {
-    private AbstractTask base = {runTask : &impl};
+    @(imported!"core.attribute".mutableRefInit) private AbstractTask base = {runTask : &impl};
     private alias base this;
 
     private @property AbstractTask* basePtr()

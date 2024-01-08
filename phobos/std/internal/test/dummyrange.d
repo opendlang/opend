@@ -46,7 +46,7 @@ if (isArray!T)
 
     static if (is(T == uint[]))
     {
-        T arr = uinttestData;
+        @(imported!"core.attribute".mutableRefInit) T arr = uinttestData;
     }
     else
     {

@@ -2403,7 +2403,7 @@ public:
             }
         private:
             uint cur;
-            typeof(This.init.byInterval) r;
+            @(imported!"core.attribute".mutableRefInit) typeof(This.init.byInterval) r;
         }
 
         return CodepointRange(this);
