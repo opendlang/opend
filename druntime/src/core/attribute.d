@@ -302,3 +302,8 @@ enum mustuse;
  * This is only allowed on `shared` static constructors, not thread-local module constructors.
  */
 enum standalone;
+
+/** 
+ * Use this attribute to indicate that you wish to initialize a field with a mutable reference type.
+ */
+enum mutableRefInit;
