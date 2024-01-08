@@ -140,8 +140,8 @@ message(STATUS "--  - Building shared libraries (BUILD_SHARED_LIBS): ${BUILD_SHA
 message(STATUS "--  - Building LTO libraries (BUILD_LTO_LIBS): ${BUILD_LTO_LIBS}")
 
 get_directory_property(PROJECT_PARENT_DIR DIRECTORY ${PROJECT_SOURCE_DIR} PARENT_DIRECTORY)
-set(RUNTIME_DIR ${PROJECT_SOURCE_DIR}/druntime CACHE PATH "druntime root directory")
-set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/phobos CACHE PATH "Phobos root directory")
+set(RUNTIME_DIR ${PROJECT_SOURCE_DIR}/../../druntime CACHE PATH "druntime root directory")
+set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/../../phobos CACHE PATH "Phobos root directory")
 set(JITRT_DIR ${PROJECT_SOURCE_DIR}/jit-rt CACHE PATH "jit runtime root directory")
 
 #

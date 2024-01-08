@@ -414,6 +414,7 @@ set(FE_SRC_D
     ../compiler/src/dmd/root/complex.d
     ../compiler/src/dmd/root/hash.d
     ../compiler/src/dmd/root/string.d
+    ../compiler/src/dmd/common/smallbuffer.d
     ../compiler/src/dmd/root/stringtable.d
     ../compiler/src/dmd/root/optional.d
     ../compiler/src/dmd/root/speller.d
@@ -617,11 +618,11 @@ set(LDC_D_SOURCE_FILES
 )
 
 # source_group(TREE ...) requires CMake v3.8+
-IF("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 3.7)
-    source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Source Files" FILES ${FE_SRC_D} ${GEN_SRC} ${GEN_SRC_D} ${IR_SRC} ${IR_SRC_D} ${DRV_SRC} ${DRV_SRC_D})
-    source_group("Source Files\\driver"                             FILES ${DRV_SRC_EXTRA})
-    source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Header Files" FILES ${FE_HDR} ${GEN_HDR} ${IR_HDR} ${DRV_HDR})
-endif()
+# IF("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 3.7)
+    # source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Source Files" FILES ${FE_SRC_D} ${GEN_SRC} ${GEN_SRC_D} ${IR_SRC} ${IR_SRC_D} ${DRV_SRC} ${DRV_SRC_D})
+    # source_group("Source Files\\driver"                             FILES ${DRV_SRC_EXTRA})
+    # source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Header Files" FILES ${FE_HDR} ${GEN_HDR} ${IR_HDR} ${DRV_HDR})
+# endif()
 
 
 #
@@ -738,7 +739,7 @@ if(MSVC_IDE) # Visual Studio generator
     set_property(SOURCE ${LDC_LIB_EXTRA_SOURCES} PROPERTY VS_TOOL_OVERRIDE "DCompile")
     # 'Clear' the original list for the custom commands below, producing ldc2.exe and ldc2-unittest.exe -
     # we still need a dummy .d file.
-    set(LDC_D_SOURCE_FILES "${PROJECT_SOURCE_DIR}/dmd/root/man.d")
+    set(LDC_D_SOURCE_FILES "${PROJECT_SOURCE_DIR}/../compiler/src/dmd/root/man.d")
     # Mark this main library target as (bold) startup project for the generated Visual Studio solution.
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${LDC_LIB})
 endif()

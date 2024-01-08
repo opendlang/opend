@@ -274,6 +274,51 @@ extern (C++) struct Param
     Array!(const(char)*) cppswitches;   // C preprocessor switches
     const(char)* cpp;                   // if not null, then this specifies the C preprocessor
 
+version (IN_LLVM)
+{
+    // stuff which was extracted upstream into `driverParams` global:
+    bool dll;               // generate shared dynamic library
+    bool lib;               // write library file instead of object file(s)
+    bool link = true;       // perform link
+    bool oneobj;            // write one object file instead of multiple ones
+    ubyte symdebug;         // insert debug symbolic information
+
+    Array!(const(char)*) bitcodeFiles; // LLVM bitcode files passed on cmdline
+
+    // LDC stuff
+    OUTPUTFLAG output_ll;
+    OUTPUTFLAG output_mlir;
+    OUTPUTFLAG output_bc;
+    OUTPUTFLAG output_s;
+    OUTPUTFLAG output_o;
+    bool useInlineAsm;
+    bool verbose_cg;
+    bool fullyQualifiedObjectFiles;
+    bool cleanupObjectFiles;
+
+    // Profile-guided optimization:
+    const(char)* datafileInstrProf; // Either the input or output file for PGO data
+
+    // target stuff
+    const(void)* targetTriple; // const llvm::Triple*
+    bool isUClibcEnvironment;
+    bool isNewlibEnvironment;
+
+    // Codegen cl options
+    bool disableRedZone;
+    uint dwarfVersion;
+
+    uint hashThreshold; // MD5 hash symbols larger than this threshold (0 = no hashing)
+
+    bool outputSourceLocations; // if true, output line tables.
+
+    LinkonceTemplates linkonceTemplates; // -linkonce-templates
+
+    // Windows-specific:
+    bool dllexport;      // dllexport ~all defined symbols?
+    DLLImport dllimport; // dllimport data symbols not defined in any root module?
+} // IN_LLVM
+
     // Linker stuff
     Array!(const(char)*) objfiles;
     Array!(const(char)*) linkswitches;
@@ -291,6 +336,7 @@ extern (C++) struct Param
         return useUnitTests || ddoc.doOutput || dihdr.doOutput;
     }
 
+    version(IN_LLVM) {} else
     int hashThreshold()
     {
 	return int.max;
@@ -356,10 +402,28 @@ extern (C++) struct Global
     /// Cache files read from disk
     FileManager fileManager;
 
-    enum recursionLimit = 500; /// number of recursive template expansions before abort
-
     ErrorSink errorSink;       /// where the error messages go
     ErrorSink errorSinkNull;   /// where the error messages are ignored
+ 
+version (IN_LLVM)
+{
+    const(char)[] ldc_version;
+    const(char)[] llvm_version;
+
+    bool gaggedForInlining; /// Set for functionSemantic3 for external inlining candidates
+
+    uint recursionLimit = 500; /// number of recursive template expansions before abort
+}
+else
+{
+    enum recursionLimit = 500; /// number of recursive template expansions before abort
+
+    bool gaggedForInlining() {
+	return false;
+    }
+}
+
+
 
     extern (C++) FileName function(FileName, const(char)*, ref const Loc, out bool, ref OutBuffer) preprocess;
 
@@ -559,10 +623,6 @@ else
 {
         return _version.ptr;
 }
-    }
-
-    bool gaggedForInlining() {
-	return false;
     }
 }
 

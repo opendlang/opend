@@ -2273,7 +2273,18 @@ extern (C++) final class StructLiteralExp : Expression
     // while `sym` is only used in `e2ir/s2ir/tocsym` which comes after
     union
     {
-        void* sym;            /// back end symbol to initialize with literal (used as a Symbol*)
+version (IN_LLVM)
+{
+        // With the introduction of pointers returned from CTFE, struct literals can
+        // now contain pointers to themselves. While in toElem, contains a pointer
+        // to the memory used to build the literal for resolving such references.
+        void* inProgressMemory; // llvm::Value*
+}
+else
+{
+         void* sym;            /// back end symbol to initialize with literal
+}
+
 
         /// those fields need to prevent a infinite recursion when one field of struct initialized with 'this' pointer.
         StructLiteralExp inlinecopy;

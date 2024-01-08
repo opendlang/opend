@@ -390,6 +390,18 @@ struct Global
     FileManager* fileManager;
     ErrorSink* errorSink;       // where the error messages go
     ErrorSink* errorSinkNull;   // where the error messages disappear
+ 
+#if IN_LLVM
+    DString ldc_version;
+    DString llvm_version;
+
+    bool gaggedForInlining; // Set for functionSemantic3 for external inlining
+                            // candidates
+
+    unsigned recursionLimit; // number of recursive template expansions before abort
+#endif
+
+
 
     FileName (*preprocess)(FileName, const char*, const Loc&, bool&, OutBuffer&);
 

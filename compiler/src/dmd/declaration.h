@@ -118,6 +118,9 @@ public:
     LINK _linkage;              // may be `LINK::system`; use `resolvedLinkage()` to resolve it
     short inuse;                // used to detect cycles
     uint8_t adFlags;
+#if !IN_LLVM
+     Symbol* isym;               // import version of csym
+#endif
     DString mangleOverride;     // overridden symbol with pragma(mangle, "...")
 
     const char *kind() const override;

@@ -2139,7 +2139,6 @@ else // !IN_LLVM
                 if ((llvm_internal = DtoGetPragma(sc, pd, arg1str)) != LDCPragma.LLVMnone)
                     return declarations();
             }
-            return declarations();
         }
         else if (!global.params.ignoreUnsupportedPragmas)
         {

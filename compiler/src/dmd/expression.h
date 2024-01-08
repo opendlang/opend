@@ -475,7 +475,15 @@ public:
 
     union
     {
-        Symbol *sym;                // back end symbol to initialize with literal (used as a Symbol*)
+#if IN_LLVM
+        // With the introduction of pointers returned from CTFE, struct literals can
+        // now contain pointers to themselves. While in toElem, contains a pointer
+        // to the memory used to build the literal for resolving such references.
+        llvm::Value *inProgressMemory;
+#else
+         Symbol *sym;                // back end symbol to initialize with literal
+#endif
+ 
 
         // those fields need to prevent a infinite recursion when one field of struct initialized with 'this' pointer.
         StructLiteralExp *inlinecopy;

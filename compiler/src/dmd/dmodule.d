@@ -21,7 +21,7 @@ import dmd.arraytypes;
 import dmd.astcodegen;
 import dmd.astenums;
 import dmd.compiler;
-import dmd.cpreprocess;
+version (IN_LLVM) {} else import dmd.cpreprocess;
 import dmd.gluelayer;
 import dmd.dimport;
 import dmd.dmacro;
@@ -793,17 +793,6 @@ version (IN_LLVM)
             FileName.equalsExt(srcfile.toString(), c_ext) &&
             FileName.exists(srcfile.toString()))
         {
-            if (!global.importc_h)
-            {
-                global.importc_h = findImportcH(global.path ? (*global.path)[] : null);
-                if (!global.importc_h)
-                {
-                    error(loc, "cannot find \"importc.h\" along import path");
-                    fatal();
-                }
-            }
-            if (global.params.v.verbose)
-                message("include   %s", global.importc_h);
             filename = global.preprocess(srcfile, global.importc_h, loc, ifile, defines);  // run C preprocessor
         }
 

@@ -245,7 +245,12 @@ extern (C++) abstract class Declaration : Dsymbol
       enum ignoreRead = 2; // ignore any reads of AliasDeclaration
       enum nounderscore = 4; // don't prepend _ to mangled name
       enum hidden       = 8; // don't print this in .di files
-
+ 
+version (IN_LLVM) {} else
+{
+     Symbol* isym;           // import version of csym
+}
+ 
     // overridden symbol with pragma(mangle, "...")
     const(char)[] mangleOverride;
 
