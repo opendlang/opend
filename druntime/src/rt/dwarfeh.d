@@ -259,6 +259,10 @@ struct ExceptionHeader
  *      object that was caught
  */
 // LDC: renamed from __dmd_begin_catch
+extern(C) Throwable __dmd_begin_catch(_Unwind_Exception* exceptionObject)
+{
+	return _d_eh_enter_catch(exceptionObject);
+}
 extern(C) Throwable _d_eh_enter_catch(_Unwind_Exception* exceptionObject)
 {
     version (ARM_EABI_UNWINDER)
@@ -307,6 +311,10 @@ extern(C) void* _d_eh_swapContextDwarf(void* newContext) nothrow @nogc
  *      doesn't return
  */
 // LDC: renamed from _d_throwdwarf
+extern(C) void _d_throwdwarf(Throwable o)
+{
+	_d_throw_exception(o);
+}
 extern(C) void _d_throw_exception(Throwable o)
 {
     ExceptionHeader *eh = ExceptionHeader.create(o);
@@ -536,6 +544,14 @@ else
 }
 
 // LDC: generalized from __dmd_personality_v0
+extern (C) _Unwind_Reason_Code __dmd_personality_v0(int ver, _Unwind_Action actions,
+               _Unwind_Exception_Class exceptionClass, _Unwind_Exception* exceptionObject,
+               _Unwind_Context* context)
+{
+	return _d_eh_personality_common(actions, exceptionClass, exceptionObject, context);
+}
+
+
 extern (C) _Unwind_Reason_Code _d_eh_personality_common(_Unwind_Action actions,
                _Unwind_Exception_Class exceptionClass, _Unwind_Exception* exceptionObject,
                _Unwind_Context* context)

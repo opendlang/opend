@@ -174,6 +174,13 @@ extern (C) Object _d_allocclass(const ClassInfo ci) @weak
 }
 
 }
+else
+{
+    extern (C) Object _d_newclass(const ClassInfo ci) @weak
+    {
+        return _d_newclass!true(ci);
+    }
+}
 
 
 /**
