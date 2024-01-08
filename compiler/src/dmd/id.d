@@ -499,6 +499,7 @@ immutable Msgtable[] msgtable =
     { "getFunctionVariadicStyle" },
     { "getParameterStorageClasses" },
     { "getLinkage" },
+    { "getUnitTestName" },
     { "getUnitTests" },
     { "getVirtualIndex" },
     { "getPointerBitmap" },
@@ -528,6 +529,7 @@ immutable Msgtable[] msgtable =
     { "udaOptional", "optional"},
     { "udaMustUse", "mustuse" },
     { "udaStandalone", "standalone" },
+    { "udaMutableRefInit", "mutableRefInit" },
 
     // C names, for undefined identifier error messages
     { "NULL" },

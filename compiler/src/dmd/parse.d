@@ -2732,10 +2732,10 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     {
         const loc = token.loc;
         StorageClass stc = getStorageClass!AST(pAttrs);
-        const(char)* unittestName;
+        const(char)[] unittestName;
         nextToken();
         if (token.value == TOK.string_) {
-            unittestName = token.toChars;
+            unittestName = token.ustring[0 .. token.len];
             nextToken();
         }
 
@@ -2764,7 +2764,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             }
         }
 
-        auto f = new AST.UnitTestDeclaration(loc, token.loc, stc, docline, cast(char*)unittestName);
+        auto f = new AST.UnitTestDeclaration(loc, token.loc, stc, docline, unittestName);
         f.fbody = sbody;
         return f;
     }

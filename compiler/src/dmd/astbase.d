@@ -750,9 +750,9 @@ struct ASTBase
     extern (C++) final class UnitTestDeclaration : FuncDeclaration
     {
         char* codedoc;
-        char* name;
+        const(char)[] name;
 
-        extern (D) this(const ref Loc loc, Loc endloc, StorageClass stc, char* codedoc, char* name)
+        extern (D) this(const ref Loc loc, Loc endloc, StorageClass stc, char* codedoc, const(char)[] name)
         {
             super(loc, endloc, Identifier.generateIdWithLoc("__unittest", loc), stc, null);
             this.codedoc = codedoc;

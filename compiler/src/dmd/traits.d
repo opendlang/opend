@@ -1799,6 +1799,24 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
                 return False();
         return True();
     }
+    if (e.ident == Id.getUnitTestName) 
+    {
+        auto o = (*e.args)[0];
+        auto s = getDsymbolWithoutExpCtx(o);
+        if (auto ud = s.isUnitTestDeclaration())
+        {
+            auto unitTest = cast(UnitTestDeclaration)s;
+            if (unitTest.name.length == 0) {
+                // Nameless unittest
+                auto se = new StringExp(e.loc, "");
+                return se.expressionSemantic(sc);
+            }
+            // Extract the name
+            auto se = new StringExp(e.loc, unitTest.name);
+            return se.expressionSemantic(sc);
+        }
+        error(e.loc, "argument `%s` to __traits(getUnitTestName) must be a UnitTest", o.toChars);
+    }
     if (e.ident == Id.getUnitTests)
     {
         if (dim != 1)
@@ -2260,7 +2278,7 @@ private void traitNotFound(TraitsExp e)
         initialized = true;     // lazy initialization
 
         // All possible traits
-        __gshared Identifier*[59] idents =
+        __gshared Identifier*[60] idents =
         [
             &Id.allMembers,
             &Id.child,
@@ -2281,6 +2299,7 @@ private void traitNotFound(TraitsExp e)
             &Id.getPointerBitmap,
             &Id.getProtection,
             &Id.getTargetInfo,
+            &Id.getUnitTestName,
             &Id.getUnitTests,
             &Id.getVirtualFunctions,
             &Id.getVirtualIndex,

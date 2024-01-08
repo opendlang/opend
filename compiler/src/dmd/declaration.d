@@ -1526,7 +1526,10 @@ version (IN_LLVM)
         if (_scope)
         {
             inuse++;
+            auto oldvarDecl = _scope.varDecl;
+            _scope.varDecl = this;
             _init = _init.initializerSemantic(_scope, type, INITinterpret);
+            _scope.varDecl = oldvarDecl;
             import dmd.semantic2 : lowerStaticAAs;
             lowerStaticAAs(this, _scope);
             _scope = null;
