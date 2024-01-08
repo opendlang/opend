@@ -3,7 +3,7 @@ REQUIRED_ARGS: -conf=compilable/extra-files/empty.conf --help
 PERMUTE_ARGS:
 TEST_OUTPUT:
 ----
-$r:DMD(32|64) D Compiler .*$
+$r:DMD(32|64) OpenD Compiler .*$
 Copyright (C) 1999-$n$ by The D Language Foundation, All Rights Reserved written by Walter Bright
 
 Documentation: https://dlang.org/
