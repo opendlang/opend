@@ -353,8 +353,198 @@ configure_file(driver/ldc_version.d.in driver/ldc_version.d)
 
 # Also add the header files to the build so that they are available in IDE
 # project files generated via CMake.
-file(GLOB_RECURSE FE_SRC_D   dmd/*.d)
-file(GLOB_RECURSE FE_HDR     dmd/*.h)
+set(FE_SRC_D
+    ../compiler/src/dmd/ldcbindings.d
+    ../compiler/src/dmd/optimize.d
+    ../compiler/src/dmd/cond.d
+    ../compiler/src/dmd/dstruct.d
+    ../compiler/src/dmd/cli.d
+    ../compiler/src/dmd/clone.d
+    ../compiler/src/dmd/statementsem.d
+    ../compiler/src/dmd/imphint.d
+    ../compiler/src/dmd/sideeffect.d
+    ../compiler/src/dmd/strictvisitor.d
+    ../compiler/src/dmd/file_manager.d
+    ../compiler/src/dmd/initsem.d
+    ../compiler/src/dmd/constfold.d
+    ../compiler/src/dmd/dtoh.d
+    ../compiler/src/dmd/dmacro.d
+    ../compiler/src/dmd/astenums.d
+    ../compiler/src/dmd/attrib.d
+    ../compiler/src/dmd/objc.d
+    ../compiler/src/dmd/nogc.d
+    ../compiler/src/dmd/chkformat.d
+    ../compiler/src/dmd/declaration.d
+    ../compiler/src/dmd/arraytypes.d
+    ../compiler/src/dmd/ast_node.d
+    ../compiler/src/dmd/dversion.d
+    ../compiler/src/dmd/permissivevisitor.d
+    ../compiler/src/dmd/importc.d
+    ../compiler/src/dmd/ob.d
+    ../compiler/src/dmd/json.d
+    ../compiler/src/dmd/errors.d
+    ../compiler/src/dmd/escape.d
+    ../compiler/src/dmd/denum.d
+    ../compiler/src/dmd/cppmanglewin.d
+    ../compiler/src/dmd/hdrgen.d
+    ../compiler/src/dmd/foreachvar.d
+    ../compiler/src/dmd/errorsink.d
+    ../compiler/src/dmd/statement_rewrite_walker.d
+    ../compiler/src/dmd/lexer.d
+    ../compiler/src/dmd/builtin.d
+    ../compiler/src/dmd/dscope.d
+    ../compiler/src/dmd/func.d
+    ../compiler/src/dmd/aggregate.d
+    ../compiler/src/dmd/entity.d
+    ../compiler/src/dmd/semantic2.d
+    ../compiler/src/dmd/lambdacomp.d
+    ../compiler/src/dmd/dsymbol.d
+    ../compiler/src/dmd/dcast.d
+    ../compiler/src/dmd/parsetimevisitor.d
+    ../compiler/src/dmd/root/aav.d
+    ../compiler/src/dmd/root/bitarray.d
+    ../compiler/src/dmd/root/filename.d
+    ../compiler/src/dmd/root/utf.d
+    ../compiler/src/dmd/root/port.d
+    ../compiler/src/dmd/root/rmem.d
+    ../compiler/src/dmd/root/file.d
+    ../compiler/src/dmd/root/region.d
+    ../compiler/src/dmd/root/ctfloat.d
+    ../compiler/src/dmd/root/man.d
+    ../compiler/src/dmd/root/complex.d
+    ../compiler/src/dmd/root/hash.d
+    ../compiler/src/dmd/root/string.d
+    ../compiler/src/dmd/root/stringtable.d
+    ../compiler/src/dmd/root/optional.d
+    ../compiler/src/dmd/root/speller.d
+    ../compiler/src/dmd/root/longdouble.d
+    ../compiler/src/dmd/root/array.d
+    ../compiler/src/dmd/aliasthis.d
+    ../compiler/src/dmd/transitivevisitor.d
+    ../compiler/src/dmd/tokens.d
+    ../compiler/src/dmd/stmtstate.d
+    ../compiler/src/dmd/visitor.d
+    ../compiler/src/dmd/mustuse.d
+    ../compiler/src/dmd/blockexit.d
+    ../compiler/src/dmd/common/outbuffer.d
+    ../compiler/src/dmd/common/file.d
+    ../compiler/src/dmd/common/string.d
+    ../compiler/src/dmd/common/bitfields.d
+    ../compiler/src/dmd/common/int128.d
+    ../compiler/src/dmd/vsoptions.d
+    ../compiler/src/dmd/iasmgcc.d
+    ../compiler/src/dmd/ctorflow.d
+    ../compiler/src/dmd/impcnvtab.d
+    ../compiler/src/dmd/mars.d
+    ../compiler/src/dmd/intrange.d
+    ../compiler/src/dmd/inlinecost.d
+    ../compiler/src/dmd/rootobject.d
+    ../compiler/src/dmd/ctfeexpr.d
+    ../compiler/src/dmd/argtypes_x86.d
+    ../compiler/src/dmd/dtemplate.d
+    ../compiler/src/dmd/statement.d
+    ../compiler/src/dmd/semantic3.d
+    ../compiler/src/dmd/mtype.d
+    ../compiler/src/dmd/gluelayer.d
+    ../compiler/src/dmd/safe.d
+    ../compiler/src/dmd/typinf.d
+    ../compiler/src/dmd/dmodule.d
+    ../compiler/src/dmd/expression.d
+    ../compiler/src/dmd/location.d
+    ../compiler/src/dmd/doc.d
+    ../compiler/src/dmd/expressionsem.d
+    ../compiler/src/dmd/globals.d
+    ../compiler/src/dmd/inline.d
+    ../compiler/src/dmd/argtypes_sysv_x64.d
+    ../compiler/src/dmd/staticcond.d
+    ../compiler/src/dmd/arrayop.d
+    ../compiler/src/dmd/dsymbolsem.d
+    ../compiler/src/dmd/sapply.d
+    ../compiler/src/dmd/opover.d
+    ../compiler/src/dmd/canthrow.d
+    ../compiler/src/dmd/staticassert.d
+    ../compiler/src/dmd/dclass.d
+    ../compiler/src/dmd/compiler.d
+    ../compiler/src/dmd/utils.d
+    ../compiler/src/dmd/hooks.d
+    ../compiler/src/dmd/parse.d
+    ../compiler/src/dmd/id.d
+    ../compiler/src/dmd/delegatize.d
+    ../compiler/src/dmd/init.d
+    ../compiler/src/dmd/argtypes_aarch64.d
+    ../compiler/src/dmd/dinterpret.d
+    ../compiler/src/dmd/cppmangle.d
+    ../compiler/src/dmd/templateparamsem.d
+    ../compiler/src/dmd/dimport.d
+    ../compiler/src/dmd/traits.d
+    ../compiler/src/dmd/postordervisitor.d
+    ../compiler/src/dmd/nspace.d
+    ../compiler/src/dmd/target.d
+    ../compiler/src/dmd/main.d
+    ../compiler/src/dmd/astcodegen.d
+    ../compiler/src/dmd/printast.d
+    ../compiler/src/dmd/typesem.d
+    ../compiler/src/dmd/asttypename.d
+    ../compiler/src/dmd/access.d
+    ../compiler/src/dmd/identifier.d
+    ../compiler/src/dmd/dmangle.d
+    ../compiler/src/dmd/cparse.d
+    ../compiler/src/dmd/console.d
+)
+set(FE_HDR
+    ../compiler/src/dmd/errors.h
+    ../compiler/src/dmd/hdrgen.h
+    ../compiler/src/dmd/ast_node.h
+    ../compiler/src/dmd/json.h
+    ../compiler/src/dmd/enum.h
+    ../compiler/src/dmd/frontend.h
+    ../compiler/src/dmd/tokens.h
+    ../compiler/src/dmd/init.h
+    ../compiler/src/dmd/id.h
+    ../compiler/src/dmd/ldcbindings.h
+    ../compiler/src/dmd/identifier.h
+    ../compiler/src/dmd/expression.h
+    ../compiler/src/dmd/cond.h
+    ../compiler/src/dmd/globals.h
+    ../compiler/src/dmd/objc.h
+    ../compiler/src/dmd/mars.h
+    ../compiler/src/dmd/nspace.h
+    ../compiler/src/dmd/import.h
+    ../compiler/src/dmd/version.h
+    ../compiler/src/dmd/arraytypes.h
+    ../compiler/src/dmd/mangle.h
+    ../compiler/src/dmd/dsymbol.h
+    ../compiler/src/dmd/root/bitarray.h
+    ../compiler/src/dmd/root/dsystem.h
+    ../compiler/src/dmd/root/object.h
+    ../compiler/src/dmd/root/longdouble.h
+    ../compiler/src/dmd/root/complex_t.h
+    ../compiler/src/dmd/root/filename.h
+    ../compiler/src/dmd/root/port.h
+    ../compiler/src/dmd/root/rmem.h
+    ../compiler/src/dmd/root/ctfloat.h
+    ../compiler/src/dmd/root/optional.h
+    ../compiler/src/dmd/root/dcompat.h
+    ../compiler/src/dmd/root/array.h
+    ../compiler/src/dmd/aggregate.h
+    ../compiler/src/dmd/common/outbuffer.h
+    ../compiler/src/dmd/mtype.h
+    ../compiler/src/dmd/scope.h
+    ../compiler/src/dmd/module.h
+    ../compiler/src/dmd/statement.h
+    ../compiler/src/dmd/vsoptions.h
+    ../compiler/src/dmd/doc.h
+    ../compiler/src/dmd/ctfe.h
+    ../compiler/src/dmd/target.h
+    ../compiler/src/dmd/aliasthis.h
+    ../compiler/src/dmd/visitor.h
+    ../compiler/src/dmd/typinf.h
+    ../compiler/src/dmd/compiler.h
+    ../compiler/src/dmd/staticassert.h
+    ../compiler/src/dmd/declaration.h
+    ../compiler/src/dmd/attrib.h
+    ../compiler/src/dmd/template.h
+)
 file(GLOB_RECURSE FE_RES     dmd/res/*.*)
 file(GLOB_RECURSE GEN_SRC    gen/*.cpp gen/abi/*.cpp)
 file(GLOB_RECURSE GEN_HDR    gen/*.h gen/abi/*.h)
@@ -408,10 +598,6 @@ set(DRV_HDR
     driver/timetrace.h
     driver/toobj.h
     driver/tool.h
-)
-# exclude man.d from ldc (only required by ldmd)
-list(REMOVE_ITEM FE_SRC_D
-    ${PROJECT_SOURCE_DIR}/dmd/root/man.d
 )
 set(LDC_CXX_SOURCE_FILES
     ${FE_HDR}
@@ -909,10 +1095,10 @@ add_test(NAME build-ldc2-unittest COMMAND "${CMAKE_COMMAND}" --build ${CMAKE_BIN
 add_test(NAME ldc2-unittest COMMAND ${LDC_UNITTEST_EXE_FULL} --version)
 set_tests_properties(ldc2-unittest PROPERTIES DEPENDS build-ldc2-unittest)
 
-if(EXISTS "${PROJECT_SOURCE_DIR}/runtime/druntime/src/object.d")
+if(EXISTS "${PROJECT_SOURCE_DIR}/../druntime/src/object.d")
     add_subdirectory(runtime)
 else()
-    message(STATUS "Runtime file runtime/druntime/src/object.d not found, will build ldc binaries but not the standard library.")
+    message(STATUS "Runtime file ../druntime/src/object.d not found, will build ldc binaries but not the standard library.")
 endif()
 if(D_VERSION EQUAL 2)
     add_subdirectory(tests/dmd)
