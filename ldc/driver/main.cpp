@@ -1119,10 +1119,6 @@ int main(int argc, const char **originalArgv)
 int cppmain() {
   exe_path::initialize(allArguments[0]);
 
-  printf("%d\n", global.recursionLimit);
-  printf("%d\n", global.params.help.revert);
-  printf("%d\n", global.params.betterC);
-
   global.params.help.revert = false;
 
   global._init();

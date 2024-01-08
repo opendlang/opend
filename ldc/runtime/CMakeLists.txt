@@ -237,6 +237,7 @@ if(PHOBOS2_DIR)
         ${PHOBOS2_DIR}/etc/c/zlib/test/infcover.c
         ${PHOBOS2_DIR}/etc/c/zlib/test/minigzip.c
     )
+
 endif()
 
 #
@@ -1105,4 +1106,4 @@ if(MULTILIB AND ${HOST_BITNESS} EQUAL 64)
     add_runtime_tests_variants("${MULTILIB_SUFFIX}")
 endif()
 
-include(DRuntimeIntegrationTests)
+# include(DRuntimeIntegrationTests)

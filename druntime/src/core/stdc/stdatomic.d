@@ -18,6 +18,8 @@ import core.internal.atomic;
 import core.stdc.config;
 import core.stdc.stdint;
 
+version(LDC) {} else:
+
 @safe nothrow @nogc:
 
 ///
