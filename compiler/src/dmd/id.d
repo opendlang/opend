@@ -528,6 +528,7 @@ immutable Msgtable[] msgtable =
     { "udaOptional", "optional"},
     { "udaMustUse", "mustuse" },
     { "udaStandalone", "standalone" },
+    { "udaMutableRefInit", "mutableRefInit" },
 
     // C names, for undefined identifier error messages
     { "NULL" },

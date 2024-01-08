@@ -110,6 +110,49 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
     //printf("initializerSemantic() tx: %p %s\n", tx, tx.toChars());
     Type t = tx;
 
+    bool isField = sc.parent.isAggregateDeclaration && sc.varDecl
+        && !(sc.varDecl.storage_class & (
+            STC.manifest
+            | STC.const_ | STC.immutable_
+            | STC.static_ | STC.shared_ | STC.gshared
+        ));
+
+    Type fieldType = t;
+
+    bool checkMutableFieldReference()
+    {
+        if (!isField)
+            return true;
+
+        import dmd.attrib : foreachUda;
+
+        bool typeHasNoRefs = !fieldType.hasPointers();
+        if (fieldType.ty == Tarray || fieldType.ty == Tpointer)
+            if (fieldType.nextOf().isImmutable || fieldType.nextOf().isConst)
+                typeHasNoRefs = true;
+
+        foreachUda(sc.varDecl, sc, (Expression e) {
+            import dmd.attrib : isEnumAttribute;
+            if (isEnumAttribute(e, Id.udaMutableRefInit))
+            {
+                typeHasNoRefs = true;
+                return 1;
+            }
+
+            return 0;
+        });
+
+        if (typeHasNoRefs)
+            return true;
+
+        error(init.loc, "mutable reference type assigned in initializer");
+        errorSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
+        errorSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
+        errorSupplemental(init.loc, "- or mark the field with `@core.attribute.mutableRefInit` to silence this error");
+
+        return false;
+    }
+
     static Initializer err()
     {
         return new ErrorInitializer();
@@ -134,6 +177,8 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
     Initializer visitStruct(StructInitializer i)
     {
+        if (!checkMutableFieldReference())
+            return err();
         //printf("StructInitializer::semantic(t = %s) %s\n", t.toChars(), i.toChars());
         /* This works by replacing the StructInitializer with an ExpInitializer.
           */
@@ -196,6 +241,8 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
     Initializer visitArray(ArrayInitializer i)
     {
+        if (!checkMutableFieldReference())
+            return err();
         uint length;
         const(uint) amax = 0x80000000;
         bool errors = false;
@@ -413,6 +460,8 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
             error(i.exp.loc, "initializer must be an expression, not `%s`", i.exp.toChars());
             return err();
         }
+        if (!i.exp.isNullExp && !checkMutableFieldReference())
+            return err();
         // Make sure all pointers are constants
         if (needInterpret && hasNonConstPointers(i.exp))
         {
