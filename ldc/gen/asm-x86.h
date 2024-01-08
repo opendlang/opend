@@ -3755,7 +3755,7 @@ struct AsmProcessor {
       }
 
       e = expressionSemantic(e, sc);
-      e = e->optimize(WANTvalue);
+      e = e->optimize_cpp(WANTvalue);
 
       // Special case for floating point constant declarations.
       if (e->op == EXP::float64) {

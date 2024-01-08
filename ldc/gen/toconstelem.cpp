@@ -709,7 +709,7 @@ public:
       const auto elementCount = llvm::ElementCount(elemCount, false);
 #endif
       result = llvm::ConstantVector::getSplat(
-          elementCount, toConstElem(e->e1->optimize(WANTvalue), p));
+          elementCount, toConstElem(e->e1->optimize_cpp(WANTvalue), p));
     }
   }
 

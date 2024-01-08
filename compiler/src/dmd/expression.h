@@ -124,7 +124,7 @@ public:
     Expression *addressOf();
     Expression *deref();
 
-    Expression *optimize(int result, bool keepLvalue = false);
+    Expression *optimize_cpp(int result, bool keepLvalue = false);
 
     int isConst();
     virtual bool isIdentical(const Expression *e) const;

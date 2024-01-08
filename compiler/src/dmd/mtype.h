@@ -783,6 +783,7 @@ public:
     bool needsDestruction() override;
     bool needsCopyOrPostblit() override;
     bool needsNested() override;
+    bool hasPointers();
     bool hasVoidInitPointers() override;
     bool hasSystemFields() override;
     bool hasInvariant() override;

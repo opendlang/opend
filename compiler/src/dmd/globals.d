@@ -274,6 +274,17 @@ extern (C++) struct Param
     Array!(const(char)*) cppswitches;   // C preprocessor switches
     const(char)* cpp;                   // if not null, then this specifies the C preprocessor
 
+    // Linker stuff
+    Array!(const(char)*) objfiles;
+    Array!(const(char)*) linkswitches;
+    Array!bool linkswitchIsForCC;
+    Array!(const(char)*) libfiles;
+    Array!(const(char)*) dllfiles;
+    const(char)[] deffile;
+    const(char)[] resfile;
+    const(char)[] exefile;
+    const(char)[] mapfile;
+
 version (IN_LLVM)
 {
     // stuff which was extracted upstream into `driverParams` global:
@@ -318,17 +329,6 @@ version (IN_LLVM)
     bool dllexport;      // dllexport ~all defined symbols?
     DLLImport dllimport; // dllimport data symbols not defined in any root module?
 } // IN_LLVM
-
-    // Linker stuff
-    Array!(const(char)*) objfiles;
-    Array!(const(char)*) linkswitches;
-    Array!bool linkswitchIsForCC;
-    Array!(const(char)*) libfiles;
-    Array!(const(char)*) dllfiles;
-    const(char)[] deffile;
-    const(char)[] resfile;
-    const(char)[] exefile;
-    const(char)[] mapfile;
 
     ///
     bool parsingUnittestsRequired()
@@ -418,6 +418,7 @@ else
 {
     enum recursionLimit = 500; /// number of recursive template expansions before abort
 
+    extern(D)
     bool gaggedForInlining() {
 	return false;
     }

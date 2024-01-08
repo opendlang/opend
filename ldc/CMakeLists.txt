@@ -228,6 +228,9 @@ endif()
 # as enabling warnings on the DMD frontend only leads to a lot of clutter in
 # the output (LLVM_CXXFLAGS sometimes already includes -Wall).
 set(LDC_CXXFLAGS)
+
+append("-I${PROJECT_SOURCE_DIR}/../compiler/src" LDC_CXXFLAGS)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"))
     if(NOT MSVC) # not for Windows-clang
         append("-Wall -Wextra" LDC_CXXFLAGS)
@@ -918,7 +921,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_NAME ldmd
     LIBRARY_OUTPUT_NAME ldmd
 )
-set(LDMD_D_SOURCE_FILES ${PROJECT_SOURCE_DIR}/dmd/root/man.d ${PROJECT_SOURCE_DIR}/driver/main.d)
+set(LDMD_D_SOURCE_FILES ${PROJECT_SOURCE_DIR}/../compiler/src/dmd/root/man.d ${PROJECT_SOURCE_DIR}/driver/main.d)
 build_d_executable(
     "${LDMD_EXE}"
     "${LDMD_EXE_FULL}"

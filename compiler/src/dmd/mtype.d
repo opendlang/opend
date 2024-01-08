@@ -5074,6 +5074,12 @@ extern (C++) final class TypeStruct : Type
         return false;
     }
 
+    extern(C++)
+    final bool hasPointers()
+    {
+        return super.hasPointers();
+    }
+
     override bool hasVoidInitPointers()
     {
         sym.size(Loc.initial); // give error for forward references

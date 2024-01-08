@@ -121,6 +121,7 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
     bool checkMutableFieldReference()
     {
+    return true; // disabled for now
         if (!isField)
             return true;
 
@@ -141,6 +142,9 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
             return 0;
         });
+
+        if (fieldType.ty == Tfunction)
+                typeHasNoRefs = true; // this is ok, functions are immutable in the code segment
 
         if (typeHasNoRefs)
             return true;

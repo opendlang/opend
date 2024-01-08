@@ -701,6 +701,12 @@ extern (C++) /* IN_LLVM abstract */ class Expression : ASTNode
         return this;
     }
 
+    final Expression optimize_cpp(int result, bool keepLvalue = false)
+    {
+        static import dmd.optimize;
+        return dmd.optimize.optimize(this, result, keepLvalue);
+    }
+
     final int isConst()
     {
         //printf("Expression::isConst(): %s\n", e.toChars());

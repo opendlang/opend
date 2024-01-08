@@ -167,7 +167,7 @@ struct Verbose
     unsigned errorSupplementCount();
 };
 
-// Put command line switches in here
+// Put command line switches in here 
 struct Param
 {
     d_bool obj;           // write object file
@@ -356,6 +356,7 @@ struct CompileEnv
     DString timestamp;
     d_bool previewIn;
     d_bool ddocOutput;
+    d_bool masm;               /// use MASM inline asm syntax
 };
 
 struct Global

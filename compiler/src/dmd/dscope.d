@@ -42,6 +42,11 @@ import dmd.statement;
 import dmd.target;
 import dmd.tokens;
 
+version(D_OpenD)
+import core.attribute;
+else
+enum mutableRefInit;
+
 //version=LOGSEARCH;
 
 
@@ -132,7 +137,7 @@ version (IN_LLVM)
     PragmaDeclaration inlining;
 
     /// visibility for class members
-    Visibility visibility = Visibility(Visibility.Kind.public_);
+    @(mutableRefInit) Visibility visibility = Visibility(Visibility.Kind.public_);
     int explicitVisibility;         /// set if in an explicit visibility attribute
 
     StorageClass stc;               /// storage class
@@ -340,6 +345,11 @@ version (IN_LLVM)
                 }
             }
         }
+    }
+
+    extern (C++) final Dsymbol search(const ref Loc loc, Identifier ident, Dsymbol* pscopesym, uint flags = SearchOpt.all)
+    {
+	return search(loc, ident, *pscopesym, flags);
     }
 
     /************************************

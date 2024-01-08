@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2024 by The D Language Foundation, All Rights Reserved
+/* Copyright (C) 2011-2023 by The D Language Foundation, All Rights Reserved
  * written by Walter Bright
  * https://www.digitalmars.com
  * Distributed under the Boost Software License, Version 1.0.
@@ -12,6 +12,11 @@
 #include "object.h"
 #include "rmem.h"
 
+#if IN_LLVM
+#include "llvm/Support/Compiler.h"
+#include <iterator>
+#endif
+
 template <typename TYPE>
 struct Array
 {
@@ -22,7 +27,9 @@ struct Array
     #define SMALLARRAYCAP       1
     TYPE smallarray[SMALLARRAYCAP];    // inline storage for small arrays
 
+#if !IN_LLVM
     Array(const Array&);
+#endif
 
   public:
     Array()
@@ -204,4 +211,123 @@ struct Array
     {
         return data.ptr[--length];
     }
+
+#if IN_LLVM
+    // Define members and types like std::vector
+    typedef size_t size_type;
+
+    Array(const Array &a) : length(0), data()
+    {
+        setDim(a.length);
+        memcpy(data.ptr, a.data.ptr, length * sizeof(TYPE));
+    }
+
+    Array &operator=(Array &a)
+    {
+        setDim(a.length);
+        memcpy(data.ptr, a.data.ptr, length * sizeof(TYPE));
+        return *this;
+    }
+
+    Array(Array &&a)
+    {
+        if (data.ptr != &smallarray[0])
+            mem.xfree(data.ptr);
+        length = a.length;
+        if (a.data.ptr == &a.smallarray[0])
+        {
+            data.ptr = &smallarray[0];
+            data.length = a.data.length;
+            memcpy(data.ptr, a.data.ptr, length * sizeof(TYPE));
+        }
+        else
+        {
+            data = a.data;
+            a.data.ptr = nullptr;
+        }
+        a.length = 0;
+        a.data.length = 0;
+    }
+
+    Array &operator=(Array<TYPE> &&a)
+    {
+        if (data.ptr != &smallarray[0])
+            mem.xfree(data.ptr);
+        length = a.length;
+        if (a.data.ptr == &a.smallarray[0])
+        {
+            data.ptr = &smallarray[0];
+            data.length = a.data.length;
+            memcpy(data.ptr, a.data.ptr, length * sizeof(TYPE));
+        }
+        else
+        {
+            data = a.data;
+            a.data.ptr = nullptr;
+        }
+        a.length = 0;
+        a.data.length = 0;
+        return *this;
+    }
+
+    const TYPE &operator[](d_size_t index) const
+    {
+#ifdef DEBUG
+        assert(index < length);
+#endif
+        return data.ptr[index];
+    }
+
+    size_type size() const
+    {
+        return static_cast<size_type>(length);
+    }
+
+    bool empty() const
+    {
+        return length == 0;
+    }
+
+    TYPE front() const
+    {
+        return data.ptr[0];
+    }
+
+    TYPE back() const
+    {
+        return data.ptr[length-1];
+    }
+
+    void push_back(TYPE a)
+    {
+        push(a);
+    }
+
+    void pop_back()
+    {
+        pop();
+    }
+
+    typedef TYPE *iterator;
+    typedef const TYPE *const_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    iterator begin() { return static_cast<iterator>(data.ptr); }
+    iterator end() { return static_cast<iterator>(&data.ptr[length]); }
+    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    reverse_iterator rend() { return reverse_iterator(begin()); }
+
+    const_iterator begin() const { return static_cast<const_iterator>(data.ptr); }
+    const_iterator end() const { return static_cast<const_iterator>(&data.ptr[length]); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+    iterator erase(iterator pos)
+    {
+        size_t index = pos - data.ptr;
+        remove(index);
+        return static_cast<iterator>(&data.ptr[index]);
+    }
+#endif // IN_LLVM
 };

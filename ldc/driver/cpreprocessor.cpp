@@ -67,7 +67,7 @@ FileName getOutputPath(const Loc &loc, const char *csrcfile) {
 }
 } // anonymous namespace
 
-FileName runCPreprocessor(FileName csrcfile, const Loc &loc, bool &ifile,
+FileName runCPreprocessor(FileName csrcfile, const char*, const Loc &loc, bool &ifile,
                           OutBuffer &defines) {
   TimeTraceScope timeScope("Preprocess C file", csrcfile.toChars());
 
