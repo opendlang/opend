@@ -16,6 +16,21 @@
 #include "root/filename.h"
 #include "compiler.h"
 
+#if IN_LLVM
+#if LDC_LLVM_VER < 1700
+#include "llvm/ADT/Triple.h"
+#else
+#include "llvm/TargetParser/Triple.h"
+#endif
+
+enum OUTPUTFLAG
+{
+    OUTPUTFLAGno,
+    OUTPUTFLAGdefault, // for the .o default
+    OUTPUTFLAGset      // for -output
+};
+#endif
+
 // Can't include arraytypes.h here, need to declare these directly.
 template <typename TYPE> struct Array;
 
@@ -82,6 +97,22 @@ enum class FeatureState : unsigned char
     enabled  = 2,  /// Specified as `-preview=`
 };
 
+#if IN_LLVM
+enum class LinkonceTemplates : char
+{
+    no,        // non-discardable weak_odr linkage
+    yes,       // discardable linkonce_odr linkage + lazily and recursively define all referenced instantiated symbols in each object file (define-on-declare)
+    aggressive // be more aggressive wrt. speculative instantiations - don't append to module members and skip needsCodegen() culling; rely on define-on-declare.
+};
+
+enum class DLLImport : char
+{
+    none,
+    defaultLibsOnly, // only symbols from druntime/Phobos
+    all
+};
+#endif
+
 struct Output
 {
     /// Configuration for the compiler generator
@@ -136,7 +167,7 @@ struct Verbose
     unsigned errorSupplementCount();
 };
 
-// Put command line switches in here
+// Put command line switches in here 
 struct Param
 {
     d_bool obj;           // write object file
@@ -236,6 +267,49 @@ struct Param
     DString resfile;
     DString exefile;
     DString mapfile;
+
+#if IN_LLVM
+    // stuff which was extracted upstream into `driverParams` global:
+    bool dll;               // generate shared dynamic library
+    bool lib;               // write library file instead of object file(s)
+    bool link = true;       // perform link
+    bool oneobj;            // write one object file instead of multiple ones
+    unsigned char symdebug; // insert debug symbolic information
+
+    Array<const char *> bitcodeFiles; // LLVM bitcode files passed on cmdline
+
+    // LDC stuff
+    OUTPUTFLAG output_ll;
+    OUTPUTFLAG output_mlir;
+    OUTPUTFLAG output_bc;
+    OUTPUTFLAG output_s;
+    OUTPUTFLAG output_o;
+    bool useInlineAsm;
+    bool verbose_cg;
+    bool fullyQualifiedObjectFiles;
+    bool cleanupObjectFiles;
+
+    // Profile-guided optimization:
+    const char *datafileInstrProf; // Either the input or output file for PGO data
+
+    const llvm::Triple *targetTriple;
+    bool isUClibcEnvironment; // not directly supported by LLVM
+    bool isNewlibEnvironment; // not directly supported by LLVM
+
+    // Codegen cl options
+    bool disableRedZone;
+    unsigned dwarfVersion;
+
+    unsigned hashThreshold; // MD5 hash symbols larger than this threshold (0 = no hashing)
+
+    bool outputSourceLocations; // if true, output line tables.
+
+    LinkonceTemplates linkonceTemplates; // -linkonce-templates
+
+    // Windows-specific:
+    bool dllexport;      // dllexport ~all defined symbols?
+    DLLImport dllimport; // dllimport data symbols not defined in any root module?
+#endif
 };
 
 struct structalign_t
@@ -264,6 +338,14 @@ const DString dd_ext   = "dd";       // for Ddoc source files
 const DString hdr_ext  = "di";       // for D 'header' import files
 const DString json_ext = "json";     // for JSON files
 const DString map_ext  = "map";      // for .map files
+const DString c_ext    = "c";        // for C source files
+const DString i_ext    = "i";        // for preprocessed C source file
+#if IN_LLVM
+const DString ll_ext = "ll";
+const DString mlir_ext = "mlir";
+const DString bc_ext = "bc";
+const DString s_ext = "s";
+#endif
 
 struct CompileEnv
 {
@@ -274,6 +356,7 @@ struct CompileEnv
     DString timestamp;
     d_bool previewIn;
     d_bool ddocOutput;
+    d_bool masm;               /// use MASM inline asm syntax
 };
 
 struct Global
@@ -308,6 +391,18 @@ struct Global
     FileManager* fileManager;
     ErrorSink* errorSink;       // where the error messages go
     ErrorSink* errorSinkNull;   // where the error messages disappear
+ 
+#if IN_LLVM
+    DString ldc_version;
+    DString llvm_version;
+
+    bool gaggedForInlining; // Set for functionSemantic3 for external inlining
+                            // candidates
+
+    unsigned recursionLimit; // number of recursive template expansions before abort
+#endif
+
+
 
     FileName (*preprocess)(FileName, const char*, const Loc&, bool&, OutBuffer&);
 
@@ -345,13 +440,8 @@ extern Global global;
 // we have to explicitly ask for the correct integer type to get the correct
 // mangling with dmd. The #if logic here should match the mangling of
 // Tint64 and Tuns64 in cppmangle.d.
-#if MARS && DMD_VERSION >= 2079 && DMD_VERSION <= 2081 && \
-    __APPLE__ && __SIZEOF_LONG__ == 8
-// DMD versions between 2.079 and 2.081 mapped D long to int64_t on OS X.
-typedef uint64_t dinteger_t;
-typedef int64_t sinteger_t;
-typedef uint64_t uinteger_t;
-#elif __SIZEOF_LONG__ == 8
+#if __LP64__ && !(__APPLE__ && LDC_HOST_DigitalMars &&                         \
+                  LDC_HOST_FE_VER >= 2079 && LDC_HOST_FE_VER <= 2081)
 // Be careful not to care about sign when using dinteger_t
 // use this instead of integer_t to
 // avoid conflicts with system #include's

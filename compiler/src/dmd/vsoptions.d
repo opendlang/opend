@@ -20,14 +20,15 @@ import core.sys.windows.winbase;
 import core.sys.windows.windef;
 import core.sys.windows.winreg;
 
-import dmd.root.env;
+version (IN_LLVM) {} else import dmd.root.env;
 import dmd.root.file;
 import dmd.root.filename;
 import dmd.common.outbuffer;
 import dmd.root.rmem;
 import dmd.root.string : toDString;
 
-private immutable supportedPre2017Versions = ["14.0", "12.0", "11.0", "10.0", "9.0"];
+version (IN_LLVM) private immutable supportedPre2017Versions = ["14.0"];
+else              private immutable supportedPre2017Versions = ["14.0", "12.0", "11.0", "10.0", "9.0"];
 
 extern(C++) struct VSOptions
 {
@@ -53,6 +54,8 @@ extern(C++) struct VSOptions
         detectVCToolsInstallDir();
     }
 
+version (IN_LLVM) { /* not needed */ } else
+{
     /**
      * set all members to null. Used if we detect a VS installation but end up
      * falling back on lld-link.exe
@@ -185,6 +188,7 @@ extern(C++) struct VSOptions
             return p.ptr;
         return "link.exe";
     }
+} // !IN_LLVM
 
     /**
     * retrieve path to the Microsoft compiler executable
@@ -278,6 +282,17 @@ private:
     {
         if (VSInstallDir is null)
             VSInstallDir = getenv("VSINSTALLDIR"w);
+
+version (IN_LLVM)
+{
+        if (VSInstallDir is null)
+        {
+            VSInstallDir = getenv("LDC_VSDIR"w);
+            // only use it if it's an existing directory
+            if (VSInstallDir && FileName.exists(VSInstallDir) != 2)
+                VSInstallDir = null;
+        }
+}
 
         if (VSInstallDir is null)
             VSInstallDir = detectVSInstallDirViaCOM();
@@ -483,6 +498,21 @@ public:
         return FileName.exists(proposed) ? proposed : null;
     }
 
+version (IN_LLVM)
+{
+    const(char)* getVCIncludeDir() const
+    {
+        const(char)* proposed;
+
+        if (VCToolsInstallDir !is null)
+            proposed = FileName.combine(VCToolsInstallDir, "include");
+        else if (VCInstallDir !is null)
+            proposed = FileName.combine(VCInstallDir, "include");
+
+        return FileName.exists(proposed) ? proposed : null;
+    }
+}
+
     /**
      * get the path to the universal CRT libraries
      * Params:
@@ -533,12 +563,42 @@ public:
             }
         }
 
+version (IN_LLVM) {} else
+{
         // try mingw fallback relative to phobos library folder that's part of LIB
         if (auto p = FileName.searchPath(getenv("LIB"w), r"mingw\kernel32.lib"[], false))
             return FileName.path(p).ptr;
+}
 
         return null;
     }
+
+version (IN_LLVM)
+{
+    const(char)* getSDKIncludePath() const
+    {
+        if (WindowsSdkDir)
+        {
+            alias umExists = returnDirIfContainsFile!"um"; // subdir in this case
+
+            const sdk = FileName.combine(WindowsSdkDir.toDString, "include");
+            if (WindowsSdkVersion)
+            {
+                if (auto p = umExists(sdk, WindowsSdkVersion.toDString)) // SDK 10.0
+                    return p;
+            }
+            // purely speculative
+            if (auto p = umExists(sdk, "win8")) // SDK 8.0
+                return p;
+            if (auto p = umExists(sdk, "winv6.3")) // SDK 8.1
+                return p;
+            if (auto p = umExists(sdk)) // SDK 7.1 or earlier
+                return p;
+        }
+
+        return null;
+    }
+}
 
     const(char)* getSDKIncludePath() const
     {

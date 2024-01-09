@@ -25,6 +25,10 @@ class Type;
 class TypeTuple;
 class TypeFunction;
 
+#if IN_LLVM
+namespace llvm { class Type; }
+#endif
+
 enum class CPU : unsigned char
 {
     x87,
@@ -77,7 +81,9 @@ struct TargetC
     uint8_t long_longsize;       // size of a C 'long long' or 'unsigned long long' type
     uint8_t long_doublesize;     // size of a C 'long double'
     uint8_t wchar_tsize;         // size of a C 'wchar_t' type
+#if !IN_LLVM
     Runtime runtime;
+#endif
     BitFieldStyle bitFieldStyle; // different C compilers do it differently
 };
 
@@ -97,7 +103,9 @@ struct TargetCPP
     d_bool twoDtorInVtable;     // target C++ ABI puts deleting and non-deleting destructor into vtable
     d_bool splitVBasetable;     // set if C++ ABI uses separate tables for virtual functions and virtual bases
     d_bool wrapDtorInExternD;   // set if C++ dtors require a D wrapper to be callable from runtime
+#if !IN_LLVM
     Runtime runtime;
+#endif
 
     const char *toMangle(Dsymbol *s);
     const char *typeInfoMangle(ClassDeclaration *cd);
@@ -139,6 +147,9 @@ struct Target
     uint8_t osMajor;
     // D ABI
     uint8_t ptrsize;
+#if IN_LLVM
+    llvm::Type *realType;
+#endif
     uint8_t realsize;           // size a real consumes in memory
     uint8_t realpad;            // 'padding' added to the CPU real size to bring it up to realsize
     uint8_t realalignsize;      // alignment for reals
@@ -155,8 +166,10 @@ struct Target
     TargetObjC objc;
 
     DString architectureName;    // name of the platform architecture (e.g. X86_64)
+#if !IN_LLVM
     CPU cpu;                // CPU instruction set to target
     d_bool isX86_64;          // generate 64 bit code for x86_64; true by default for 64 bit dmd
+#endif
     d_bool isLP64;            // pointers are 64 bits
 
     // Environmental
@@ -190,6 +203,10 @@ struct Target
 private:
     Type *tvalist;
     const Param *params;
+
+#if IN_LLVM
+    void initFPTypeProperties();
+#endif
 
 public:
     void _init(const Param& params);

@@ -26,6 +26,23 @@ import dmd.location;
 import dmd.lexer : CompileEnv;
 import dmd.utils;
 
+version (IN_LLVM)
+{
+    enum IN_LLVM = true;
+
+    enum OUTPUTFLAG : int
+    {
+        OUTPUTFLAGno,
+        OUTPUTFLAGdefault, // for the .o default
+        OUTPUTFLAGset      // for -output
+    }
+    alias OUTPUTFLAGno      = OUTPUTFLAG.OUTPUTFLAGno;
+    alias OUTPUTFLAGdefault = OUTPUTFLAG.OUTPUTFLAGdefault;
+    alias OUTPUTFLAGset     = OUTPUTFLAG.OUTPUTFLAGset;
+}
+else
+    enum IN_LLVM = false;
+
 version (IN_GCC) {}
 else version (IN_LLVM) {}
 else version = MARS;
@@ -87,6 +104,23 @@ enum FeatureState : ubyte
     disabled = 1,  /// Specified as `-revert=`
     enabled  = 2,  /// Specified as `-preview=`
 }
+
+version (IN_LLVM)
+{
+enum LinkonceTemplates : byte
+{
+    no,        // non-discardable weak_odr linkage
+    yes,       // discardable linkonce_odr linkage + lazily and recursively define all referenced instantiated symbols in each object file (define-on-declare)
+    aggressive // be more aggressive wrt. speculative instantiations - don't append to module members and skip needsCodegen() culling; rely on define-on-declare.
+}
+
+enum DLLImport : byte
+{
+    none,
+    defaultLibsOnly, // only symbols from druntime/Phobos
+    all
+}
+} // IN_LLVM
 
 extern(C++) struct Output
 {
@@ -251,10 +285,61 @@ extern (C++) struct Param
     const(char)[] exefile;
     const(char)[] mapfile;
 
+version (IN_LLVM)
+{
+    // stuff which was extracted upstream into `driverParams` global:
+    bool dll;               // generate shared dynamic library
+    bool lib;               // write library file instead of object file(s)
+    bool link = true;       // perform link
+    bool oneobj;            // write one object file instead of multiple ones
+    ubyte symdebug;         // insert debug symbolic information
+
+    Array!(const(char)*) bitcodeFiles; // LLVM bitcode files passed on cmdline
+
+    // LDC stuff
+    OUTPUTFLAG output_ll;
+    OUTPUTFLAG output_mlir;
+    OUTPUTFLAG output_bc;
+    OUTPUTFLAG output_s;
+    OUTPUTFLAG output_o;
+    bool useInlineAsm;
+    bool verbose_cg;
+    bool fullyQualifiedObjectFiles;
+    bool cleanupObjectFiles;
+
+    // Profile-guided optimization:
+    const(char)* datafileInstrProf; // Either the input or output file for PGO data
+
+    // target stuff
+    const(void)* targetTriple; // const llvm::Triple*
+    bool isUClibcEnvironment;
+    bool isNewlibEnvironment;
+
+    // Codegen cl options
+    bool disableRedZone;
+    uint dwarfVersion;
+
+    uint hashThreshold; // MD5 hash symbols larger than this threshold (0 = no hashing)
+
+    bool outputSourceLocations; // if true, output line tables.
+
+    LinkonceTemplates linkonceTemplates; // -linkonce-templates
+
+    // Windows-specific:
+    bool dllexport;      // dllexport ~all defined symbols?
+    DLLImport dllimport; // dllimport data symbols not defined in any root module?
+} // IN_LLVM
+
     ///
     bool parsingUnittestsRequired()
     {
         return useUnitTests || ddoc.doOutput || dihdr.doOutput;
+    }
+
+    version(IN_LLVM) {} else
+    int hashThreshold()
+    {
+	return int.max;
     }
 }
 
@@ -267,6 +352,18 @@ enum json_ext = "json";     // for JSON files
 enum map_ext  = "map";      // for .map files
 enum c_ext    = "c";        // for C source files
 enum i_ext    = "i";        // for preprocessed C source file
+version (IN_LLVM)
+{
+    enum ll_ext = "ll";
+    enum mlir_ext = "mlir";
+    enum bc_ext = "bc";
+    enum s_ext = "s";
+}
+
+version (IN_LLVM)
+{
+    extern (C++, ldc) extern const char* dmd_version;
+}
 
 /**
  * Collection of global compiler settings and global state used by the frontend
@@ -283,7 +380,7 @@ extern (C++) struct Global
 
     const(char)* importc_h;             /// full path of the file importc.h
 
-    private enum string _version = import("VERSION");
+    version (IN_LLVM) {} else private enum string _version = import("VERSION");
     char[26] datetime;      /// string returned by ctime()
     CompileEnv compileEnv;
 
@@ -305,10 +402,29 @@ extern (C++) struct Global
     /// Cache files read from disk
     FileManager fileManager;
 
-    enum recursionLimit = 500; /// number of recursive template expansions before abort
-
     ErrorSink errorSink;       /// where the error messages go
     ErrorSink errorSinkNull;   /// where the error messages are ignored
+ 
+version (IN_LLVM)
+{
+    const(char)[] ldc_version;
+    const(char)[] llvm_version;
+
+    bool gaggedForInlining; /// Set for functionSemantic3 for external inlining candidates
+
+    uint recursionLimit = 500; /// number of recursive template expansions before abort
+}
+else
+{
+    enum recursionLimit = 500; /// number of recursive template expansions before abort
+
+    extern(D)
+    bool gaggedForInlining() {
+	return false;
+    }
+}
+
+
 
     extern (C++) FileName function(FileName, const(char)*, ref const Loc, out bool, ref OutBuffer) preprocess;
 
@@ -380,7 +496,22 @@ extern (C++) struct Global
         {
             compileEnv.vendor = "GNU D";
         }
+        else version (IN_LLVM)
+        {
+            compileEnv.vendor = "LDC";
+
+            import dmd.console : detectTerminal;
+            params.v.color = detectTerminal();
+        }
+
+version (IN_LLVM)
+{
+        compileEnv.versionNumber = parseVersionNumber(versionString());
+}
+else
+{
         compileEnv.versionNumber = parseVersionNumber(_version);
+}
 
         /* Initialize date, time, and timestamp
          */
@@ -467,9 +598,17 @@ extern (C++) struct Global
     /**
     Returns: compiler version string.
     */
-    extern(D) string versionString() @safe
+    extern(D) string versionString() // IN_LLVM: not @safe
     {
+version (IN_LLVM)
+{
+        import dmd.root.string : toDString;
+        return toDString(cast(immutable char*) dmd_version);
+}
+else
+{
         return _version;
+}
     }
 
     /**
@@ -477,7 +616,14 @@ extern (C++) struct Global
     */
     extern(C++) const(char*) versionChars()
     {
+version (IN_LLVM)
+{
+        return dmd_version;
+}
+else
+{
         return _version.ptr;
+}
     }
 }
 

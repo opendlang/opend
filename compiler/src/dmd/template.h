@@ -88,6 +88,10 @@ public:
 
     TemplatePrevious *previous;         // threaded list of previous instantiation attempts on stack
 
+#if IN_LLVM
+    const char *intrinsicName;
+#endif
+
     TemplateDeclaration *syntaxCopy(Dsymbol *) override;
     bool overloadInsert(Dsymbol *s) override;
     bool hasStaticCtorOrDtor() override;

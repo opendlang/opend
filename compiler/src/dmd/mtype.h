@@ -35,6 +35,8 @@ class Parameter;
 // Back end
 #ifdef IN_GCC
 typedef union tree_node type;
+#elif IN_LLVM
+using type = class IrType;
 #else
 typedef struct TYPE type;
 #endif
@@ -215,6 +217,9 @@ public:
     static ClassDeclaration *typeinfowild;
 
     static TemplateDeclaration *rtinfo;
+#if IN_LLVM
+    static TemplateDeclaration *rtinfoImpl;
+#endif
 
     static Type *basic[(int)TY::TMAX];
 
@@ -778,6 +783,7 @@ public:
     bool needsDestruction() override;
     bool needsCopyOrPostblit() override;
     bool needsNested() override;
+    bool hasPointers();
     bool hasVoidInitPointers() override;
     bool hasSystemFields() override;
     bool hasInvariant() override;

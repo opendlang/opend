@@ -128,8 +128,10 @@ public:
 
     bool hasInvariant();
 
+#if !IN_LLVM
     // Back end
     void *sinit;
+#endif
 
     AggregateDeclaration *isAggregateDeclaration() override final { return this; }
     void accept(Visitor *v) override { v->visit(this); }
@@ -181,11 +183,13 @@ public:
     bool hasNoFields(bool v);
     bool hasCopyCtor() const;       // copy constructor
     bool hasCopyCtor(bool v);
+#if !IN_LLVM
     // Even if struct is defined as non-root symbol, some built-in operations
     // (e.g. TypeidExp, NewExp, ArrayLiteralExp, etc) request its TypeInfo.
     // For those, today TypeInfo_Struct is generated in COMDAT.
     bool requestTypeInfo() const;
     bool requestTypeInfo(bool v);
+#endif
 
     StructDeclaration *isStructDeclaration() override final { return this; }
     void accept(Visitor *v) override { v->visit(this); }
@@ -271,7 +275,9 @@ public:
     ThreeState isabstract;              // if abstract class
     Baseok baseok;                      // set the progress of base classes resolving
     ObjcClassDeclaration objc;          // Data for a class declaration that is needed for the Objective-C integration
+#if !IN_LLVM
     Symbol *cpp_type_info_ptr_sym;      // cached instance of class Id.cpp_type_info_ptr
+#endif
 
     static ClassDeclaration *create(const Loc &loc, Identifier *id, BaseClasses *baseclasses, Dsymbols *members, bool inObject);
     const char *toPrettyChars(bool QualifyTypes = false) override;

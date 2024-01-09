@@ -1,0 +1,28 @@
+/etc/c/zlib/*.obj
+*.lib
+/phobos.json
+
+generated
+GNUmakefile
+.DS_Store
+.*.sw*
+*.lst
+
+temp/
+tmp/
+
+# Rules for Xamarin Studio project data/build output
+*.dproj
+bin/
+obj/
+
+# Rule for VS Code config folder
+.vscode
+
+*.html
+
+.dub/
+libphobos_*
+source/
+
+tools/ucd*

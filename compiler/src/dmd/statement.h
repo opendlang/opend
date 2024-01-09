@@ -41,7 +41,12 @@ class LabelStatement;
 class StaticForeach;
 
 // Back end
+#if IN_LLVM
+namespace llvm { class Value; }
+using code = struct AsmCode;
+#else
 struct code;
+#endif
 
 /* How a statement exits; this is returned by blockExit()
  */
@@ -121,10 +126,18 @@ public:
 
     virtual ReturnStatement *endsWithReturnStatement() { return NULL; }
 
+#if IN_LLVM
+    virtual CompoundAsmStatement *endsWithAsm();
+#endif
+
     ErrorStatement       *isErrorStatement()       { return stmt == STMTerror       ? (ErrorStatement*)this       : NULL; }
     ScopeStatement       *isScopeStatement()       { return stmt == STMTscope       ? (ScopeStatement*)this       : NULL; }
     ExpStatement         *isExpStatement()         { return stmt == STMTexp         ? (ExpStatement*)this         : NULL; }
     CompoundStatement    *isCompoundStatement()    { return stmt == STMTcompound    ? (CompoundStatement*)this    : NULL; }
+#if IN_LLVM
+    CompoundAsmStatement *isCompoundAsmStatement() { return stmt == STMTcompoundAsm ? (CompoundAsmStatement*)this : NULL; }
+    GccAsmStatement      *isGccAsmStatement()      { return stmt == STMTgccAsm      ? (GccAsmStatement *)this     : NULL; }
+#endif
     ReturnStatement      *isReturnStatement()      { return stmt == STMTreturn      ? (ReturnStatement*)this      : NULL; }
     IfStatement          *isIfStatement()          { return stmt == STMTif          ? (IfStatement*)this          : NULL; }
     ConditionalStatement *isConditionalStatement() { return stmt == STMTconditional ? (ConditionalStatement*)this : NULL; }
@@ -219,6 +232,10 @@ public:
     Statement *last() override final;
 
     void accept(Visitor *v) override { v->visit(this); }
+
+#if IN_LLVM
+    CompoundAsmStatement *endsWithAsm() override;
+#endif
 };
 
 class CompoundDeclarationStatement final : public CompoundStatement
@@ -439,6 +456,10 @@ public:
     CaseStatements *cases;         // array of CaseStatement's
     VarDeclaration *lastVar;
 
+#if IN_LLVM
+    bool hasGotoDefault;        // true iff there is a `goto default` statement for this switch
+#endif
+
     SwitchStatement *syntaxCopy() override;
     bool hasBreak() const override;
 
@@ -454,6 +475,10 @@ public:
     int index;          // which case it is (since we sort this)
     VarDeclaration *lastVar;
     void* extra;            // for use by Statement_toIR()
+
+#if IN_LLVM
+    bool gototarget; // true iff this is the target of a 'goto case'
+#endif
 
     CaseStatement *syntaxCopy() override;
 
@@ -479,6 +504,10 @@ public:
     Statement *statement;
     VarDeclaration *lastVar;
 
+#if IN_LLVM
+    bool gototarget; // true iff this is the target of a 'goto default'
+#endif
+
     DefaultStatement *syntaxCopy() override;
 
     void accept(Visitor *v) override { v->visit(this); }
@@ -499,6 +528,10 @@ class GotoCaseStatement final : public Statement
 public:
     Expression *exp;            // NULL, or which case to goto
     CaseStatement *cs;          // case statement it resolves to
+
+#if IN_LLVM
+    SwitchStatement *sw;
+#endif
 
     GotoCaseStatement *syntaxCopy() override;
 
@@ -530,6 +563,11 @@ class BreakStatement final : public Statement
 public:
     Identifier *ident;
 
+#if IN_LLVM
+    // LDC: only set if ident is set: label statement to jump to
+    LabelStatement *target;
+#endif
+
     BreakStatement *syntaxCopy() override;
 
     void accept(Visitor *v) override { v->visit(this); }
@@ -539,6 +577,11 @@ class ContinueStatement final : public Statement
 {
 public:
     Identifier *ident;
+
+#if IN_LLVM
+    // LDC: only set if ident is set: label statement to jump to
+    LabelStatement *target;
+#endif
 
     ContinueStatement *syntaxCopy() override;
 
@@ -722,6 +765,11 @@ public:
     d_bool refparam;              // true if function parameter is referenced
     d_bool naked;                 // true if function is to be naked
 
+#if IN_LLVM
+    // non-zero if this is a branch, contains the target label
+    LabelDsymbol *isBranchToLabel;
+#endif
+
     InlineAsmStatement *syntaxCopy() override;
     void accept(Visitor *v) override { v->visit(this); }
 };
@@ -750,9 +798,17 @@ class CompoundAsmStatement final : public CompoundStatement
 public:
     StorageClass stc; // postfix attributes like nothrow/pure/@trusted
 
+#if IN_LLVM
+    llvm::Value *abiret;
+#endif
+
     CompoundAsmStatement *syntaxCopy() override;
 
     void accept(Visitor *v) override { v->visit(this); }
+
+#if IN_LLVM
+    CompoundAsmStatement *endsWithAsm() override;
+#endif
 };
 
 class ImportStatement final : public Statement

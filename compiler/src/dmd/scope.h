@@ -110,6 +110,9 @@ struct Scope
 
     LINK linkage;               // linkage for external functions
     CPPMANGLE cppmangle;        // C++ mangle type
+#if IN_LLVM
+    bool emitInstrumentation;   // whether to emit instrumentation with -fprofile-instr-generate
+#endif
     PragmaDeclaration *inlining; // inlining strategy for functions
 
     Visibility visibility;            // visibility for class members

@@ -142,13 +142,19 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
             return 0;
         });
 
+        if (fieldType.ty == Tpointer)
+        if (auto tn = fieldType.nextOf())
+        if (tn.ty == Tfunction)
+                typeHasNoRefs = true; // this is ok, functions are immutable in the code segment
+
         if (typeHasNoRefs)
             return true;
 
         error(init.loc, "mutable reference type assigned in initializer");
         errorSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
         errorSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
-        errorSupplemental(init.loc, "- or mark the field with `@core.attribute.mutableRefInit` to silence this error");
+        errorSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
+        errorSupplemental(init.loc, "%d", fieldType.ty);
 
         return false;
     }

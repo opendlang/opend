@@ -81,11 +81,18 @@ extern (C++) bool genTypeInfo(Expression e, const ref Loc loc, Type torig, Scope
             t.vtinfo = getTypeInfoDeclaration(t);
         assert(t.vtinfo);
 
+version (IN_LLVM)
+{
+        // LDC handles emission in the codegen layer
+}
+else
+{
         // ClassInfos are generated as part of ClassDeclaration codegen
         const isUnqualifiedClassInfo = (t.ty == Tclass && !t.mod);
 
         if (!isUnqualifiedClassInfo && !builtinTypeInfo(t))
             needsCodegen = true;
+} // !IN_LLVM
     }
     if (!torig.vtinfo)
         torig.vtinfo = t.vtinfo; // Types aren't merged, but we can share the vtinfo's
@@ -150,6 +157,14 @@ private TypeInfoDeclaration getTypeInfoDeclaration(Type t)
         return TypeInfoDeclaration.create(t);
     }
 }
+
+version (IN_LLVM)
+{
+    // LDC handles TypeInfo emission in the codegen layer
+    // => no need to take care of speculative types.
+}
+else
+{
 
 /**************************************************
  * Returns:
@@ -247,6 +262,8 @@ extern (C++) bool isSpeculativeType(Type t)
          */
     }
 }
+
+} // !IN_LLVM
 
 /* ========================================================================= */
 

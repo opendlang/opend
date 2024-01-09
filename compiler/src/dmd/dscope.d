@@ -42,6 +42,11 @@ import dmd.statement;
 import dmd.target;
 import dmd.tokens;
 
+version(D_OpenD)
+import core.attribute;
+else
+enum mutableRefInit;
+
 //version=LOGSEARCH;
 
 
@@ -123,11 +128,16 @@ extern (C++) struct Scope
     /// mangle type
     CPPMANGLE cppmangle = CPPMANGLE.def;
 
+version (IN_LLVM)
+{
+    bool emitInstrumentation = true;   // whether to emit instrumentation with -fprofile-instr-generate
+}
+
     /// inlining strategy for functions
     PragmaDeclaration inlining;
 
     /// visibility for class members
-    Visibility visibility = Visibility(Visibility.Kind.public_);
+    @(mutableRefInit) Visibility visibility = Visibility(Visibility.Kind.public_);
     int explicitVisibility;         /// set if in an explicit visibility attribute
 
     StorageClass stc;               /// storage class
@@ -335,6 +345,11 @@ extern (C++) struct Scope
                 }
             }
         }
+    }
+
+    extern (C++) final Dsymbol search(const ref Loc loc, Identifier ident, Dsymbol* pscopesym, uint flags = SearchOpt.all)
+    {
+	return search(loc, ident, *pscopesym, flags);
     }
 
     /************************************

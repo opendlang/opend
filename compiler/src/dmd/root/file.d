@@ -1,7 +1,7 @@
 /**
  * Read a file from disk and store it in memory.
  *
- * Copyright: Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
+ * Copyright: Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
  * Authors:   Walter Bright, https://www.digitalmars.com
  * License:   $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:    $(LINK2 https://github.com/dlang/dmd/blob/master/src/dmd/root/file.d, root/_file.d)
@@ -24,7 +24,7 @@ import dmd.root.rmem;
 import dmd.root.string;
 
 import dmd.common.file;
-import dmd.common.smallbuffer;
+import dmd.common.string;
 
 nothrow:
 
@@ -200,6 +200,25 @@ nothrow:
             static assert(0);
         }
     }
+
+version (IN_LLVM)
+{
+    extern (C++) static void removeDirectory(const(char)* name)
+    {
+        version (Posix)
+        {
+            .remove(name);
+        }
+        else version (Windows)
+        {
+            name.toDString.extendedPathThen!(p => RemoveDirectoryW(p.ptr));
+        }
+        else
+        {
+            static assert(0);
+        }
+    }
+}
 
     /***************************************************
      * Update file

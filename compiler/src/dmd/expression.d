@@ -341,7 +341,8 @@ enum WANTexpand = 1;    // expand const/immutable variables if possible
 /***********************************************************
  * https://dlang.org/spec/expression.html#expression
  */
-extern (C++) abstract class Expression : ASTNode
+// IN_LLVM: instantiated in gen/asm-x86.h (`Handled = createExpression(...)`)
+extern (C++) /* IN_LLVM abstract */ class Expression : ASTNode
 {
     Type type;      // !=null means that semantic() has been run
     Loc loc;        // file location
@@ -700,6 +701,12 @@ extern (C++) abstract class Expression : ASTNode
         return this;
     }
 
+    final Expression optimize_cpp(int result, bool keepLvalue = false)
+    {
+        static import dmd.optimize;
+        return dmd.optimize.optimize(this, result, keepLvalue);
+    }
+
     final int isConst()
     {
         //printf("Expression::isConst(): %s\n", e.toChars());
@@ -712,6 +719,19 @@ extern (C++) abstract class Expression : ASTNode
         case EXP.null_:
             return 0;
         case EXP.symbolOffset:
+version (IN_LLVM)
+{
+            import gen.dpragma : LDCPragma;
+
+            // We don't statically know anything about the address of a weak symbol
+            // if there is no offset. With an offset, we can at least say that it is
+            // non-zero.
+            SymOffExp soe = cast(SymOffExp) this;
+            if (soe.var.llvmInternal == LDCPragma.LLVMextern_weak && !soe.offset)
+            {
+                return 0;
+            }
+}
             return 2;
         default:
             return 0;
@@ -2259,7 +2279,18 @@ extern (C++) final class StructLiteralExp : Expression
     // while `sym` is only used in `e2ir/s2ir/tocsym` which comes after
     union
     {
-        void* sym;            /// back end symbol to initialize with literal (used as a Symbol*)
+version (IN_LLVM)
+{
+        // With the introduction of pointers returned from CTFE, struct literals can
+        // now contain pointers to themselves. While in toElem, contains a pointer
+        // to the memory used to build the literal for resolving such references.
+        void* inProgressMemory; // llvm::Value*
+}
+else
+{
+         void* sym;            /// back end symbol to initialize with literal
+}
+
 
         /// those fields need to prevent a infinite recursion when one field of struct initialized with 'this' pointer.
         StructLiteralExp inlinecopy;
@@ -2703,6 +2734,15 @@ extern (C++) final class SymOffExp : SymbolExp
 
     override Optional!bool toBool()
     {
+version (IN_LLVM)
+{
+        import gen.dpragma : LDCPragma;
+
+        // For a weak symbol, we only statically know that it is non-null if the
+        // offset is non-zero.
+        if (var.llvmInternal == LDCPragma.LLVMextern_weak && offset == 0)
+            return typeof(return)();
+}
         return typeof(return)(true);
     }
 

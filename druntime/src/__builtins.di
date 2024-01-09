@@ -21,7 +21,38 @@ module __builtins;
 
 alias va_list = imported!"core.stdc.stdarg".va_list;
 
-version (Posix)
+version (LDC)
+{
+    // For some targets, __builtin_va_list resolves to __va_list.
+    // Define it like we do in object.d.
+
+    version (ARM)     version = ARM_Any;
+    version (AArch64) version = ARM_Any;
+
+    // Define a __va_list[_tag] alias if the platform uses an elaborate type, as it
+    // is referenced from implicitly generated code for D-style variadics, etc.
+    // LDC does not require people to manually import core.vararg like DMD does.
+    version (X86_64)
+    {
+        version (Win64) {} else
+        alias __va_list_tag = imported!"core.internal.vararg.sysv_x64".__va_list_tag;
+    }
+    else version (ARM_Any)
+    {
+        // Darwin does not use __va_list
+        version (OSX) {}
+        else version (iOS) {}
+        else version (TVOS) {}
+        else version (WatchOS) {}
+        else:
+
+        version (ARM)
+            public import core.stdc.stdarg : __va_list;
+        else version (AArch64)
+            public import core.internal.vararg.aarch64 : __va_list;
+    }
+}
+else version (Posix)
 {
     version (X86_64)
         alias __va_list_tag = imported!"core.stdc.stdarg".__va_list_tag;
@@ -104,4 +135,50 @@ version (DigitalMars)
     {
         ulong a, b;
     }
+}
+else version (LDC)
+{
+    double __builtin_inf()()  { return double.infinity; }
+    float  __builtin_inff()() { return float.infinity; }
+    real   __builtin_infl()() { return real.infinity; }
+
+    alias __builtin_huge_val  = __builtin_inf;
+    alias __builtin_huge_valf = __builtin_inff;
+    alias __builtin_huge_vall = __builtin_infl;
+
+    alias __builtin_fabs  = imported!"ldc.intrinsics".llvm_fabs!double;
+    alias __builtin_fabsf = imported!"ldc.intrinsics".llvm_fabs!float;
+    alias __builtin_fabsl = imported!"ldc.intrinsics".llvm_fabs!real;
+
+    alias __builtin_bswap16 = imported!"ldc.intrinsics".llvm_bswap!ushort;
+    alias __builtin_bswap32 = imported!"ldc.intrinsics".llvm_bswap!uint;
+    alias __builtin_bswap64 = imported!"ldc.intrinsics".llvm_bswap!ulong;
+
+    int   __builtin_constant_p(T)(T exp) { return 0; }
+    alias __builtin_expect = imported!"ldc.intrinsics".llvm_expect!long;
+    void* __builtin_assume_aligned()(const void* p, size_t align_, ...) { return cast(void*)p; }
+    void __builtin_assume(T)(lazy T arg) { }
+
+    alias __uint128_t = imported!"core.int128".Cent;
+
+    alias __builtin_alloca = imported!"core.stdc.stdlib".alloca;
+
+    // gcc builtins:
+
+    version (ARM)     public import ldc.gccbuiltins_arm;
+    version (AArch64) public import ldc.gccbuiltins_aarch64;
+
+    version (MIPS32) public import ldc.gccbuiltins_mips;
+    version (MIPS64) public import ldc.gccbuiltins_mips;
+
+    version (PPC)   public import ldc.gccbuiltins_ppc;
+    version (PPC64) public import ldc.gccbuiltins_ppc;
+
+    version (RISCV32) public import ldc.gccbuiltins_riscv;
+    version (RISCV64) public import ldc.gccbuiltins_riscv;
+
+    version (SystemZ) public import ldc.gccbuiltins_s390;
+
+    version (X86)    public import ldc.gccbuiltins_x86;
+    version (X86_64) public import ldc.gccbuiltins_x86;
 }

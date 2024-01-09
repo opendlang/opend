@@ -69,6 +69,21 @@ extern (C) void* _d_allocmemory(size_t sz) @weak
     return GC.malloc(sz);
 }
 
+
+version (LDC)
+{
+
+/**
+ * for allocating a single POD value
+ */
+extern (C) void* _d_allocmemoryT(TypeInfo ti) @weak
+{
+    return GC.malloc(ti.tsize(), !(ti.flags() & 1) ? BlkAttr.NO_SCAN : 0);
+}
+
+} // version (LDC)
+
+
 /**
 Create a new class instance.
 
@@ -82,7 +97,9 @@ Params:
 
 Returns: newly created object
 */
-extern (C) Object _d_newclass(const ClassInfo ci) @weak
+// adapted for LDC
+pragma(inline, true)
+private extern (D) Object _d_newclass(bool initialize)(const ClassInfo ci)
 {
     import core.stdc.stdlib;
     import core.exception : onOutOfMemoryError;
@@ -128,11 +145,41 @@ extern (C) Object _d_newclass(const ClassInfo ci) @weak
         printf("init[4] = %x\n", (cast(uint*) init)[4]);
     }
 
+  static if (initialize) // LDC
+  {
     // initialize it
     p[0 .. init.length] = init[];
+  }
 
     debug(PRINTF) printf("initialization done\n");
     return cast(Object) p;
+}
+
+version (LDC)
+{
+
+/**
+ *
+ */
+extern (C) Object _d_newclass(const ClassInfo ci) @weak
+{
+    return _d_newclass!true(ci);
+}
+
+// Initialization is performed in DtoNewClass(), so only allocate
+// the class in druntime (LDC issue #966).
+extern (C) Object _d_allocclass(const ClassInfo ci) @weak
+{
+    return _d_newclass!false(ci);
+}
+
+}
+else
+{
+    extern (C) Object _d_newclass(const ClassInfo ci) @weak
+    {
+        return _d_newclass!true(ci);
+    }
 }
 
 
@@ -1038,6 +1085,98 @@ extern (C) void[] _d_newarrayiT(const TypeInfo ti, size_t length) pure nothrow @
             memcpy(result.ptr + u, init.ptr, sz);
         return result;
     }
+    }
+}
+
+
+/*
+ * Helper for creating multi-dimensional arrays
+ */
+private void[] _d_newarrayOpT(alias op)(const TypeInfo ti, size_t[] dims)
+{
+    debug(PRINTF) printf("_d_newarrayOpT(ndims = %d)\n", dims.length);
+    if (dims.length == 0)
+        return null;
+
+    void[] foo(const TypeInfo ti, size_t[] dims)
+    {
+        auto tinext = unqualify(ti.next);
+        auto dim = dims[0];
+
+        debug(PRINTF) printf("foo(ti = %p, ti.next = %p, dim = %d, ndims = %d\n", ti, ti.next, dim, dims.length);
+        if (dims.length == 1)
+        {
+            auto r = op(ti, dim);
+            return *cast(void[]*)(&r);
+        }
+
+        auto allocsize = (void[]).sizeof * dim;
+        auto info = __arrayAlloc(allocsize, ti, tinext);
+        auto isshared = typeid(ti) is typeid(TypeInfo_Shared);
+        __setArrayAllocLength(info, allocsize, isshared, tinext);
+        auto p = __arrayStart(info)[0 .. dim];
+
+        foreach (i; 0..dim)
+        {
+            (cast(void[]*)p.ptr)[i] = foo(tinext, dims[1..$]);
+        }
+        return p;
+    }
+
+    auto result = foo(ti, dims);
+    debug(PRINTF) printf("result = %llx\n", result.ptr);
+
+    return result;
+}
+
+
+/**
+Create a new multi-dimensional array
+
+Has two variants:
+- `_d_newarraymTX` which initializes to 0
+- `_d_newarraymiTX` which initializes elements based on `TypeInfo`
+
+---
+void main()
+{
+    new int[][](10, 20);
+    // _d_newarraymTX(typeid(float), [10, 20]);
+
+    new float[][][](10, 20, 30);
+    // _d_newarraymiTX(typeid(float), [10, 20, 30]);
+}
+---
+
+Params:
+    ti = `TypeInfo` of the array type
+    dims = array length values for each dimension
+
+Returns:
+    newly allocated array
+*/
+extern (C) void[] _d_newarraymTX(const TypeInfo ti, size_t[] dims) @weak
+{
+    debug(PRINTF) printf("_d_newarraymT(dims.length = %d)\n", dims.length);
+
+    if (dims.length == 0)
+        return null;
+    else
+    {
+        return _d_newarrayOpT!(_d_newarrayT)(ti, dims);
+    }
+}
+
+/// ditto
+extern (C) void[] _d_newarraymiTX(const TypeInfo ti, size_t[] dims) @weak
+{
+    debug(PRINTF) printf("_d_newarraymiT(dims.length = %d)\n", dims.length);
+
+    if (dims.length == 0)
+        return null;
+    else
+    {
+        return _d_newarrayOpT!(_d_newarrayiT)(ti, dims);
     }
 }
 

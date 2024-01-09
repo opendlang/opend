@@ -704,6 +704,28 @@ extern (C++) final class PragmaDeclaration : AttribDeclaration
             // then it's evaluated on demand in function semantic
             return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, sc.aligndecl, this);
         }
+        version (IN_LLVM)
+        if (IN_LLVM && ident == Id.LDC_profile_instr)
+        {
+            import gen.dpragma : DtoCheckProfileInstrPragma;
+
+            bool emitInstr = true;
+            if (!args || args.length != 1 || !DtoCheckProfileInstrPragma((*args)[0], emitInstr))
+            {
+                error(loc, "pragma(LDC_profile_instr, true or false) expected");
+                (*args)[0] = ErrorExp.get();
+            }
+            else
+            {
+                // Only create a new scope if the emitInstrumentation flag is changed
+                if (sc.emitInstrumentation != emitInstr)
+                {
+                    auto newscope = sc.copy();
+                    newscope.emitInstrumentation = emitInstr;
+                    return newscope;
+                }
+            }
+        }
         return sc;
     }
 

@@ -704,8 +704,11 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         return invs.length != 0;
     }
 
+version (IN_LLVM) {} else
+{
     // Back end
     void* sinit;  /// initializer symbol
+}
 
     override final inout(AggregateDeclaration) isAggregateDeclaration() inout
     {

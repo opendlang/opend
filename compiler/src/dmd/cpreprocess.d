@@ -57,6 +57,10 @@ FileName preprocess(FileName csrcfile, const(char)* importc_h, ref const Loc loc
            To get the dmc C headers, dmc will need to be installed:
            http://ftp.digitalmars.com/Digital_Mars_C++/Patch/dm857c.zip
          */
+
+        if(importc_h is null)
+            importc_h = findImportcH(global.path ? (*global.path)[] : null);
+
         const(char)* tmpname = tmpnam(null);        // generate unique temporary file name for preprocessed output
         assert(tmpname);
         const(char)[] ifilename = tmpname[0 .. strlen(tmpname) + 1];

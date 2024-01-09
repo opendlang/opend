@@ -57,7 +57,9 @@ public:
 
     EnumDeclaration *isEnumDeclaration() override { return this; }
 
+#if !IN_LLVM
     Symbol *sinit;
+#endif
     void accept(Visitor *v) override { v->visit(this); }
 };
 

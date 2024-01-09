@@ -1,0 +1,5 @@
+*     text=auto
+*.sh  eol=lf
+
+.gitattributes export-ignore
+CHANGELOG.md text merge=union

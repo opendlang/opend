@@ -365,7 +365,7 @@ TemplateDeclaration getEponymousParent(Dsymbol s) @safe
     return (td && getEponymousMember(td)) ? td : null;
 }
 
-immutable ddoc_default = import("default_ddoc_theme." ~ ddoc_ext);
+immutable ddoc_default = "";//import("default_ddoc_theme." ~ ddoc_ext);
 immutable ddoc_decl_s = "$(DDOC_DECL ";
 immutable ddoc_decl_e = ")\n";
 immutable ddoc_decl_dd_s = "$(DDOC_DECL_DD ";
@@ -399,6 +399,11 @@ extern(C++) void gendocfile(Module m, const char* ddoctext_ptr, size_t ddoctext_
 public
 void gendocfile(Module m, const char[] ddoctext, const char* datetime, ErrorSink eSink, ref OutBuffer outbuf)
 {
+version (IN_LLVM)
+{
+    m.checkAndAddOutputFile(m.docfile);
+}
+
     // Load internal default macros first
     DocComment.parseMacros(m.escapetable, m.macrotable, ddoc_default[]);
 

@@ -27,6 +27,15 @@ module dmd.target;
 
 import dmd.globals : Param, CHECKENABLE;
 
+import dmd.globals : IN_LLVM;
+
+version (IN_LLVM)
+{
+    import gen.llvmhelpers : isTargetWindowsMSVC;
+}
+else
+    bool isTargetWindowsMSVC() { return false; }
+
 enum CPU : ubyte
 {
     x87,
@@ -84,6 +93,9 @@ ubyte defaultTargetOSMajor() @safe
     else
         return 0;
 }
+
+version (IN_LLVM) {} else
+{
 
 /**
  * Add default `version` identifier for dmd, and set the
@@ -273,6 +285,8 @@ void addCppRuntimePredefinedGlobalIdent(const ref TargetCPP cpp)
     }
 }
 
+} // !IN_LLVM
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * Describes a back-end target. At present it is incomplete, but in the future
@@ -328,6 +342,10 @@ extern (C++) struct Target
 
     // D ABI
     ubyte ptrsize;            /// size of a pointer in bytes
+version (IN_LLVM)
+{
+    void* realType;           /// llvm::Type* for `real`
+}
     ubyte realsize;           /// size a real consumes in memory
     ubyte realpad;            /// padding added to the CPU real size to bring it up to realsize
     ubyte realalignsize;      /// alignment for reals
@@ -345,8 +363,11 @@ extern (C++) struct Target
 
     /// Architecture name
     const(char)[] architectureName;
+version (IN_LLVM) {} else
+{
     CPU cpu = CPU.baseline; // CPU instruction set to target
     bool isX86_64 = (size_t.sizeof == 8);  // generate 64 bit code for x86_64; true by default for 64 bit dmd
+}
     bool isLP64;            // pointers are 64 bits
 
     // Environmental
@@ -397,6 +418,27 @@ extern (C++) struct Target
 
     private const(Param)* params;  // cached reference to global.params
 
+version (IN_LLVM)
+{
+    extern (C++):
+
+    private void initFPTypeProperties()
+    {
+        FloatProperties.initialize();
+        DoubleProperties.initialize();
+        RealProperties.initialize();
+    }
+
+    // implemented in gen/target.cpp:
+    void _init(ref const Param params);
+    // unused: void deinitialize();
+    uint alignsize(Type type);
+    uint fieldalign(Type type);
+
+    Type va_listType(const ref Loc loc, Scope* sc);
+}
+else // !IN_LLVM
+{
     /**
      * Initialize the Target
      */
@@ -642,6 +684,7 @@ extern (C++) struct Target
 
         return tvalist;
     }
+} // !IN_LLVM
 
     /**
      * Checks whether the target supports a vector type.
@@ -656,8 +699,12 @@ extern (C++) struct Target
      */
     extern (C++) int isVectorTypeSupported(int sz, Type type) @safe
     {
+        // LDC_FIXME: Is it possible to query the LLVM target about supported vectors?
+static if (!IN_LLVM)
+{
         if (!isXmmSupported())
             return 1; // not supported
+}
 
         switch (type.ty)
         {
@@ -677,6 +724,8 @@ extern (C++) struct Target
             return 2; // wrong base type
         }
 
+static if (!IN_LLVM)
+{
         // Whether a vector is really supported depends on the CPU being targeted.
         if (sz == 16)
         {
@@ -712,6 +761,7 @@ extern (C++) struct Target
         }
         else
             return 3; // wrong size
+} // !IN_LLVM
 
         return 0;
     }
@@ -736,9 +786,14 @@ extern (C++) struct Target
         const elemty = cast(int)tvec.elementType().ty;
 
         // Only operations on these sizes are supported (see isVectorTypeSupported)
-        if (vecsize != 16 && vecsize != 32)
+        if (!IN_LLVM && vecsize != 16 && vecsize != 32)
             return false;
 
+        // LDC_FIXME:
+        // Most of the binops only work with `t2` being the same IR type as `tvec`
+        // (LLVM restriction). We'd need to be more strict here and/or convert
+        // the rhs to a matching type during codegen (e.g., promote scalars to
+        // vectors).
         bool supported = false;
         switch (op)
         {
@@ -748,6 +803,12 @@ extern (C++) struct Target
             break;
 
         case EXP.negate:
+version (IN_LLVM)
+{
+            supported = tvec.isscalar();
+}
+else
+{
             if (vecsize == 16)
             {
                 // float[4] negate needs SSE support ({V}SUBPS)
@@ -769,15 +830,22 @@ extern (C++) struct Target
                 else if (tvec.isintegral() && cpu >= CPU.avx2)
                     supported = true;
             }
+} // !IN_LLVM
             break;
 
         case EXP.identity, EXP.notIdentity:
-            supported = false;
+            supported = IN_LLVM;
             break;
 
         case EXP.lessThan, EXP.greaterThan, EXP.lessOrEqual, EXP.greaterOrEqual:
         case EXP.equal:
         case EXP.notEqual:
+version (IN_LLVM)
+{
+            supported = tvec.isscalar();
+}
+else
+{
             if (vecsize == 16)
             {
                 // float[4] comparison needs SSE support (CMP{EQ,NEQ,LT,LE}PS)
@@ -811,13 +879,20 @@ extern (C++) struct Target
                 else if (tvec.isintegral() && cpu >= CPU.avx2)
                     supported = true;
             }
+} // !IN_LLVM
             break;
 
         case EXP.leftShift, EXP.leftShiftAssign, EXP.rightShift, EXP.rightShiftAssign, EXP.unsignedRightShift, EXP.unsignedRightShiftAssign:
-            supported = false;
+            supported = IN_LLVM && tvec.isintegral();
             break;
 
         case EXP.add, EXP.addAssign, EXP.min, EXP.minAssign:
+version (IN_LLVM)
+{
+            supported = tvec.isscalar();
+}
+else
+{
             if (vecsize == 16)
             {
                 // float[4] add/sub needs SSE support ({V}ADDPS, {V}SUBPS)
@@ -839,9 +914,16 @@ extern (C++) struct Target
                 else if (tvec.isintegral() && cpu >= CPU.avx2)
                     supported = true;
             }
+} // !IN_LLVM
             break;
 
         case EXP.mul, EXP.mulAssign:
+version (IN_LLVM)
+{
+            supported = tvec.isscalar();
+}
+else
+{
             if (vecsize == 16)
             {
                 // float[4] multiply needs SSE support ({V}MULPS)
@@ -869,9 +951,16 @@ extern (C++) struct Target
                 else if ((elemty == TY.Tint32 || elemty == TY.Tuns32) && cpu >= CPU.avx2)
                     supported = true;
             }
+} // !IN_LLVM
             break;
 
         case EXP.div, EXP.divAssign:
+version (IN_LLVM)
+{
+            supported = tvec.isscalar();
+}
+else
+{
             if (vecsize == 16)
             {
                 // float[4] divide needs SSE support ({V}DIVPS)
@@ -887,19 +976,27 @@ extern (C++) struct Target
                 if (tvec.isfloating() && cpu >= CPU.avx)
                     supported = true;
             }
+} // !IN_LLVM
             break;
 
         case EXP.mod, EXP.modAssign:
-            supported = false;
+            supported = IN_LLVM && tvec.isscalar();
             break;
 
         case EXP.and, EXP.andAssign, EXP.or, EXP.orAssign, EXP.xor, EXP.xorAssign:
+version (IN_LLVM)
+{
+            supported = tvec.isintegral();
+}
+else
+{
             // (u)byte[16]/short[8]/int[4]/long[2] bitwise ops needs SSE2 support ({V}PAND, {V}POR, {V}PXOR)
             if (vecsize == 16 && tvec.isintegral() && cpu >= CPU.sse2)
                 supported = true;
             // (u)byte[32]/short[16]/int[8]/long[4] bitwise ops needs AVX2 support (VPAND, VPOR, VPXOR)
             else if (vecsize == 32 && tvec.isintegral() && cpu >= CPU.avx2)
                 supported = true;
+} // !IN_LLVM
             break;
 
         case EXP.not:
@@ -907,12 +1004,19 @@ extern (C++) struct Target
             break;
 
         case EXP.tilde:
+version (IN_LLVM)
+{
+            supported = tvec.isintegral();
+}
+else
+{
             // (u)byte[16]/short[8]/int[4]/long[2] logical exclusive needs SSE2 support ({V}PXOR)
             if (vecsize == 16 && tvec.isintegral() && cpu >= CPU.sse2)
                 supported = true;
             // (u)byte[32]/short[16]/int[8]/long[4] logical exclusive needs AVX2 support (VPXOR)
             else if (vecsize == 32 && tvec.isintegral() && cpu >= CPU.avx2)
                 supported = true;
+} // !IN_LLVM
             break;
 
         case EXP.pow, EXP.powAssign:
@@ -937,6 +1041,20 @@ extern (C++) struct Target
         return os == Target.OS.Windows ? LINK.windows : LINK.c;
     }
 
+version (IN_LLVM)
+{
+    extern (C++):
+
+    TypeTuple toArgTypes(Type t);
+    bool isReturnOnStack(TypeFunction tf, bool needsThis);
+    bool preferPassByRef(Type t);
+    Expression getTargetInfo(const(char)* name, const ref Loc loc);
+    bool isCalleeDestroyingArgs(TypeFunction tf);
+    bool libraryObjectMonitors(FuncDeclaration fd, Statement fbody) { return true; }
+    bool supportsLinkerDirective() const;
+}
+else // !IN_LLVM
+{
     /**
      * Describes how an argument type is passed to a function on target.
      * Params:
@@ -1336,6 +1454,7 @@ extern (C++) struct Target
     {
         return isXmmSupported() ? 16 : (isX86_64 ? 8 : 4);
     }
+} // !IN_LLVM
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1374,9 +1493,13 @@ struct TargetC
     ubyte long_longsize;      /// size of a C `long long` or `unsigned long long` type
     ubyte long_doublesize;    /// size of a C `long double`
     ubyte wchar_tsize;        /// size of a C `wchar_t` type
+version (IN_LLVM) {} else
+{
     Runtime runtime;          /// vendor of the C runtime to link against
+}
     BitFieldStyle bitFieldStyle; /// different C compilers do it differently
 
+    version (IN_LLVM) { /* initialized in Target::_init() */ } else
     extern (D) void initialize(ref const Param params, ref const Target target) @safe
     {
         const os = target.os;
@@ -1462,8 +1585,12 @@ struct TargetCPP
     bool twoDtorInVtable;     /// target C++ ABI puts deleting and non-deleting destructor into vtable
     bool splitVBasetable;     /// set if C++ ABI uses separate tables for virtual functions and virtual bases
     bool wrapDtorInExternD;   /// set if C++ dtors require a D wrapper to be callable from runtime
+version (IN_LLVM) {} else
+{
     Runtime runtime;          /// vendor of the C++ runtime to link against
+}
 
+    version (IN_LLVM) { /* initialized in Target::_init() */ } else
     extern (D) void initialize(ref const Param params, ref const Target target) @safe
     {
         const os = target.os;
@@ -1505,6 +1632,15 @@ struct TargetCPP
         import dmd.cppmangle : toCppMangleItanium;
         import dmd.cppmanglewin : toCppMangleDMC, toCppMangleMSVC;
 
+version (IN_LLVM)
+{
+        if (isTargetWindowsMSVC())
+            return toCppMangleMSVC(s);
+        else
+            return toCppMangleItanium(s);
+}
+else
+{
         if (target.os & (Target.OS.linux | Target.OS.OSX | Target.OS.FreeBSD | Target.OS.OpenBSD | Target.OS.Solaris | Target.OS.DragonFlyBSD))
             return toCppMangleItanium(s);
         if (target.os == Target.OS.Windows)
@@ -1516,6 +1652,7 @@ struct TargetCPP
         }
         else
             assert(0, "fix this");
+}
     }
 
     /**
@@ -1530,6 +1667,15 @@ struct TargetCPP
         import dmd.cppmangle : cppTypeInfoMangleItanium;
         import dmd.cppmanglewin : cppTypeInfoMangleDMC, cppTypeInfoMangleMSVC;
 
+version (IN_LLVM)
+{
+        if (isTargetWindowsMSVC())
+            return cppTypeInfoMangleMSVC(cd);
+        else
+            return cppTypeInfoMangleItanium(cd);
+}
+else
+{
         if (target.os & (Target.OS.linux | Target.OS.OSX | Target.OS.FreeBSD | Target.OS.OpenBSD | Target.OS.Solaris | Target.OS.DragonFlyBSD))
             return cppTypeInfoMangleItanium(cd);
         if (target.os == Target.OS.Windows)
@@ -1541,6 +1687,7 @@ struct TargetCPP
         }
         else
             assert(0, "fix this");
+}
     }
 
     /**
@@ -1565,10 +1712,17 @@ struct TargetCPP
      *      string if type is mangled specially on target
      *      null if unhandled
      */
+version (IN_LLVM)
+{
+    extern (C++) const(char)* typeMangle(Type t);
+}
+else
+{
     extern (C++) const(char)* typeMangle(Type t)
     {
         return null;
     }
+}
 
     /**
      * Get the type that will really be used for passing the given argument
@@ -1607,7 +1761,8 @@ struct TargetCPP
     extern (C++) uint derivedClassOffset(ClassDeclaration baseClass)
     {
         // MSVC adds padding between base and derived fields if required.
-        if (target.os == Target.OS.Windows)
+        // IN_LLVM: changed from `if (target.os == Target.OS.Windows)`
+        if (isTargetWindowsMSVC())
             return (baseClass.structsize + baseClass.alignsize - 1) & ~(baseClass.alignsize - 1);
         else
             return baseClass.structsize;
@@ -1622,6 +1777,7 @@ struct TargetObjC
 {
     bool supported;     /// set if compiler can interface with Objective-C
 
+    version (IN_LLVM) { /* initialized in Target::_init() */ } else
     extern (D) void initialize(ref const Param params, ref const Target target) @safe
     {
         if (target.os == Target.OS.OSX && target.isX86_64)

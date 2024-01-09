@@ -1,5 +1,5 @@
 
-/* Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
+/* Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
  * written by Walter Bright
  * https://www.digitalmars.com
  * Distributed under the Boost Software License, Version 1.0.
@@ -14,6 +14,10 @@
 
 // Type used by the front-end for compile-time reals
 typedef longdouble real_t;
+
+#if IN_LLVM
+namespace llvm { class APFloat; }
+#endif
 
 // Compile-time floating-point helper
 struct CTFloat
@@ -46,9 +50,23 @@ struct CTFloat
 
     static real_t fma(real_t x, real_t y, real_t z);
 
+#if IN_LLVM
+    static real_t rint(real_t x);
+    static real_t nearbyint(real_t x);
+
+    // implemented in gen/ctfloat.cpp
+    static void toAPFloat(real_t src, llvm::APFloat &dst);
+    static real_t fromAPFloat(const llvm::APFloat &src);
+
+    static bool isFloat32LiteralOutOfRange(const char *literal);
+    static bool isFloat64LiteralOutOfRange(const char *literal);
+#endif
+
     static bool isIdentical(real_t a, real_t b);
     static bool isNaN(real_t r);
+#if !IN_LLVM
     static bool isSNaN(real_t r);
+#endif
     static bool isInfinity(real_t r);
 
     static real_t parse(const char *literal, bool& isOutOfRange);
@@ -61,6 +79,10 @@ struct CTFloat
     static real_t one;
     static real_t minusone;
     static real_t half;
+#if IN_LLVM
+    static real_t nan;
+    static real_t infinity;
+#endif
 
     static void initialize();
 };

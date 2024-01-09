@@ -3267,6 +3267,14 @@ private bool functionParameters(const ref Loc loc, Scope* sc,
             // If not D linkage, do promotions
             if (tf.linkage != LINK.d)
             {
+              // IN_LLVM: don't do promotions on intrinsics
+              bool condition = true;
+              version (IN_LLVM) {
+                  import gen.dpragma : DtoIsIntrinsic;
+                  condition = !(IN_LLVM && fd && DtoIsIntrinsic(fd));
+              }
+              if (condition)
+              {
                 // Promote bytes, words, etc., to ints
                 arg = integralPromotions(arg, sc);
 
@@ -3299,6 +3307,7 @@ private bool functionParameters(const ref Loc loc, Scope* sc,
                         err = true;
                     }
                 }
+              }
             }
 
             // Do not allow types that need destructors or copy constructors.
@@ -3542,7 +3551,7 @@ private bool functionParameters(const ref Loc loc, Scope* sc,
         err |= checkMutableArguments(sc, fd, tf, ethis, arguments, false);
 
     // If D linkage and variadic, add _arguments[] as first argument
-    if (tf.isDstyleVariadic())
+    if (!IN_LLVM && tf.isDstyleVariadic())
     {
         assert(arguments.length >= nparams);
 
@@ -5029,7 +5038,8 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 result = id.expressionSemantic(sc);
                 return;
             }
-            else if (sc.needsCodegen() && // interpreter doesn't need this lowered
+            else if (!IN_LLVM && // LDC: not using the `_d_newclassT` lowering yet
+                     sc.needsCodegen() && // interpreter doesn't need this lowered
                      !exp.onstack && !exp.type.isscope()) // these won't use the GC
             {
                 /* replace `new T(arguments)` with `core.lifetime._d_newclassT!T(arguments)`
@@ -8597,6 +8607,16 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             FuncDeclaration f = ve.var.isFuncDeclaration();
             if (f)
             {
+version (IN_LLVM)
+{
+                import gen.dpragma : DtoIsIntrinsic;
+                if (DtoIsIntrinsic(f.toAliasFunc()))
+                {
+                    error(exp.loc, "cannot take the address of intrinsic function `%s`", f.toAliasFunc().toChars());
+                    result = ErrorExp.get();
+                    return;
+                }
+}
                 /* Because nested functions cannot be overloaded,
                  * mark here that we took its address because castTo()
                  * may not be called with an exact match.
@@ -16050,6 +16070,12 @@ Expression getThisSkipNestedFuncs(const ref Loc loc, Scope* sc, Dsymbol s, Aggre
         if (f.vthis)
         {
             n++;
+            // LDC seems dmd misses it sometimes here :/
+            if (IN_LLVM && !flag && f.isMember2())
+            {
+                f.vthis.nestedrefs.push(sc.parent.isFuncDeclaration());
+                f.closureVars.push(f.vthis);
+            }
             e1 = new VarExp(loc, f.vthis);
             if (f.hasDualContext())
             {
