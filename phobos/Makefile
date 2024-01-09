@@ -79,7 +79,7 @@ else
 endif
 
 # Configurable stuff that's rarely edited
-INSTALL_DIR = ../install
+INSTALL_DIR = ../../install
 DRUNTIME_PATH = $(DMD_DIR)/druntime
 DLANG_ORG_DIR = ../dlang.org
 ZIPFILE = phobos.zip
