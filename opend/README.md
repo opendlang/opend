@@ -7,7 +7,7 @@ This is the main page for the OpenD language build system.
 
 The main idea is, calling `opend` should "Just Work"™. Therefore, calling `opend` in your app's folder will look for a folder named "src" or "source" and build every .d file from there.
 Optionally, you can specify the source file directory right after: `opend mysourcedir`. `opend` will guess the output file name by how the current working folder is called.
-By default, calling `opend` will exevute something like this:
+By default, calling `opend` will execute something like this:
 ```
 dmd src/main.d -od=build/ -of=build/cwd.exe
 ```

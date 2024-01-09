@@ -112,7 +112,7 @@ int main(string[] args)
 
     if(availBuildTypes.all!(x => x != buildType))
     {
-        writeln(i"Unsupported build type `$(buildType)`. Onlt `debug` and `release` are supported");
+        writeln(i"Unsupported build type `$(buildType)`. Only `debug` and `release` are supported");
         return -1;
     }
 
