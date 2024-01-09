@@ -289,8 +289,8 @@ alias dmdConf = makeRule!((builder, rule) {
     {
         enum confFile = "sc.ini";
         enum conf = `[Environment]
-DFLAGS="-I%@P%\..\..\..\..\druntime\import" "-I%@P%\..\..\..\..\..\phobos"
-LIB="%@P%\..\..\..\..\..\phobos"
+DFLAGS="-I%@P%\..\..\..\..\druntime\import" "-I%@P%\..\..\..\..\phobos"
+LIB="%@P%\..\..\..\..\phobos"
 
 [Environment32]
 DFLAGS=%DFLAGS% -L/OPT:NOICF
@@ -306,10 +306,10 @@ DFLAGS=%DFLAGS% -L/OPT:NOICF
     {
         enum confFile = "dmd.conf";
         enum conf = `[Environment32]
-DFLAGS=-I%@P%/../../../../druntime/import -I%@P%/../../../../../phobos -L-L%@P%/../../../../../phobos/generated/{OS}/{BUILD}/32{exportDynamic} -fPIC
+DFLAGS=-I%@P%/../../../../druntime/import -I%@P%/../../../../phobos -L-L%@P%/../../../../phobos/generated/{OS}/{BUILD}/32{exportDynamic} -fPIC
 
 [Environment64]
-DFLAGS=-I%@P%/../../../../druntime/import -I%@P%/../../../../../phobos -L-L%@P%/../../../../../phobos/generated/{OS}/{BUILD}/64{exportDynamic} -fPIC
+DFLAGS=-I%@P%/../../../../druntime/import -I%@P%/../../../../phobos -L-L%@P%/../../../../phobos/generated/{OS}/{BUILD}/64{exportDynamic} -fPIC
 `;
     }
 
@@ -1576,7 +1576,7 @@ auto sourceFiles()
             stringtable.d utf.d
         "),
         common: fileArray(env["COMMON"], "
-            bitfields.d file.d int128.d outbuffer.d smallbuffer.d
+            bitfields.d file.d int128.d outbuffer.d smallbuffer.d string.d
         "),
         commonHeaders: fileArray(env["COMMON"], "
             outbuffer.h

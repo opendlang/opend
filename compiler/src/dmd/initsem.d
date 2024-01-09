@@ -144,7 +144,7 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
         if (fieldType.ty == Tpointer)
         if (auto tn = fieldType.nextOf())
-        if (tn.ty == Tfunction)
+        if (tn.ty == Tfunction || tn.ty == Tvoid)
                 typeHasNoRefs = true; // this is ok, functions are immutable in the code segment
 
         if (typeHasNoRefs)

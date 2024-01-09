@@ -37,7 +37,7 @@ QUIET:=@
 
 DEBUGGER=gdb
 GIT_HOME=https://github.com/dlang
-DMD_DIR=../
+DMD_DIR=..
 
 include $(DMD_DIR)/compiler/src/osmodel.mak
 
