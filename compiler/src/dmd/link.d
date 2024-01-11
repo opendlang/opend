@@ -744,13 +744,7 @@ public int runLINK()
             if (libname.length > 3 + 2 && libname[0 .. 3] == "lib")
             {
                 if (libname[$-2 .. $] == ".a")
-                {
-                    argv.push("-Xlinker");
-                    argv.push("-Bstatic");
                     argv.push(getbuf(libname[3 .. $-2]));
-                    argv.push("-Xlinker");
-                    argv.push("-Bdynamic");
-                }
                 else if (libname[$-3 .. $] == ".so")
                     argv.push(getbuf(libname[3 .. $-3]));
                 else

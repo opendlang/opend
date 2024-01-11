@@ -49,12 +49,12 @@ BUILD_EXE:=$(GENERATED)/build$(EXE)
 RUN_EXE:=$(GENERATED)/run$(EXE)
 
 .PHONY: all clean test html install \
-        dmd dmd-test druntime druntime-test \
+        dmd dmd-test druntime druntime-test phobos \
         ldc \
         auto-tester-build auto-tester-test buildkite-test \
         toolchain-info check-clean-git style
 
-all: dmd druntime ldc
+all: dmd druntime phobos ldc
 
 $(BUILD_EXE): compiler/src/build.d
 	$(HOST_DMD) -of$@ -g $<
@@ -96,6 +96,9 @@ test: dmd-test druntime-test
 
 html: $(BUILD_EXE)
 	$(BUILD_EXE) $@
+
+phobos:
+	cd phobos && make
 
 ldc:
 	mkdir -p ldc-build
