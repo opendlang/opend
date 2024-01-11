@@ -50,10 +50,11 @@ RUN_EXE:=$(GENERATED)/run$(EXE)
 
 .PHONY: all clean test html install \
         dmd dmd-test druntime druntime-test \
+        ldc \
         auto-tester-build auto-tester-test buildkite-test \
         toolchain-info check-clean-git style
 
-all: dmd druntime
+all: dmd druntime ldc
 
 $(BUILD_EXE): compiler/src/build.d
 	$(HOST_DMD) -of$@ -g $<
@@ -95,6 +96,10 @@ test: dmd-test druntime-test
 
 html: $(BUILD_EXE)
 	$(BUILD_EXE) $@
+
+ldc:
+	mkdir -p ldc-build
+	cd ldc-build && cmake ../ldc && make
 
 # Creates Exuberant Ctags tags file
 tags: Makefile $(ECTAGS_FILES)
