@@ -240,7 +240,6 @@ execute_process(
     ${RUNTIME_CFG_DIR}
     ECHO_OUTPUT_VARIABLE
     ECHO_ERROR_VARIABLE
-    COMMAND_ECHO STDOUT
     COMMAND_ERROR_IS_FATAL ANY
 )
 
@@ -261,6 +260,7 @@ foreach(incl_file ${TAGGED_COPY})
         COMMAND "echo" ${dst_file}
         COMMAND "cut" -d / -f3-
         OUTPUT_VARIABLE pretty_dst_path
+        ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
 
