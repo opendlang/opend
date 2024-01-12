@@ -1,6 +1,6 @@
 project(runtime C)
 
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.18)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -141,6 +141,7 @@ message(STATUS "--  - Building LTO libraries (BUILD_LTO_LIBS): ${BUILD_LTO_LIBS}
 
 get_directory_property(PROJECT_PARENT_DIR DIRECTORY ${PROJECT_SOURCE_DIR} PARENT_DIRECTORY)
 set(RUNTIME_DIR ${PROJECT_SOURCE_DIR}/../../druntime CACHE PATH "druntime root directory")
+set(RUNTIME_CFG_DIR ${RUNTIME_DIR}/config CACHE PATH "druntime internals config directory")
 set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/../../phobos CACHE PATH "Phobos root directory")
 set(JITRT_DIR ${PROJECT_SOURCE_DIR}/jit-rt CACHE PATH "jit runtime root directory")
 
@@ -165,6 +166,8 @@ list(REMOVE_ITEM DRUNTIME_D
     ${RUNTIME_DIR}/src/rt/sections_solaris.d
     ${RUNTIME_DIR}/src/rt/sections_win32.d
 )
+# create set of tags
+set(TAGS "")
 # only include core/sys/ modules matching the platform
 file(GLOB_RECURSE DRUNTIME_D_BIONIC  ${RUNTIME_DIR}/src/core/sys/bionic/*.d)
 file(GLOB_RECURSE DRUNTIME_D_DARWIN  ${RUNTIME_DIR}/src/core/sys/darwin/*.d)
@@ -183,8 +186,10 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_WINDOWS}
 )
 if("${TARGET_SYSTEM}" MATCHES "Windows")
+    list(APPEND TAGS "windows")
     list(APPEND DRUNTIME_D ${DRUNTIME_D_WINDOWS})
 elseif("${TARGET_SYSTEM}" MATCHES "UNIX")
+    list(APPEND TAGS "posix_threads")
     list(APPEND DRUNTIME_D ${DRUNTIME_D_POSIX})
     if("${TARGET_SYSTEM}" MATCHES "APPLE")
         list(APPEND DRUNTIME_D ${DRUNTIME_D_DARWIN})
@@ -217,6 +222,37 @@ set(DRUNTIME_ASM)
 if("${TARGET_SYSTEM}" MATCHES "UNIX")
     list(APPEND DRUNTIME_ASM ${RUNTIME_DIR}/src/core/threadasm.S ${RUNTIME_DIR}/src/ldc/eh_asm.S)
 endif()
+
+# Directory filled with auto-generated import files
+set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
+
+# generate additional tags-based lists of files
+set(TAGGED_COPY_LIST_FILE "${RUNTIME_DIR}/mak/TAGGED_COPY" CACHE PATH "additional list of files for copying into imports")
+
+list(JOIN TAGS "," TAGS_STR)
+execute_process(
+    COMMAND "${PROJECT_SOURCE_DIR}/copy_tagged.sh"
+    "${RUNTIME_DIR}/parse_tagged_hier.sh"
+    ${RUNTIME_CFG_DIR}
+    ${TAGGED_COPY_LIST_FILE}
+    ${TAGS_STR}
+    ${LDC_BUILD_IMPORT_DIR}
+    ${PROJECT_BINARY_DIR}
+    ECHO_OUTPUT_VARIABLE
+    ECHO_ERROR_VARIABLE
+    COMMAND_ECHO STDOUT
+    COMMAND_ERROR_IS_FATAL ANY
+)
+
+file(STRINGS ${PROJECT_BINARY_DIR}/GEN_SRCS TAGGED_SRCS)
+file(STRINGS ${PROJECT_BINARY_DIR}/GEN_COPY TAGGED_COPY)
+
+#~ cmake_path(RELATIVE_PATH TAGGED_SRCS)
+
+#~ list(APPEND DRUNTIME_D "/home/denizzz/Dev/opend/ldc/runtime/../../druntime/config/posix_threads/core/sync/event.d")
+list(APPEND DRUNTIME_D ${TAGGED_SRCS})
+message(${DRUNTIME_D})
+#~ message(FATAL_ERROR ${TAGGED_SRCS})
 
 if(PHOBOS2_DIR)
     # Phobos D parts
@@ -273,9 +309,6 @@ if(LDC_WITH_LLD)
 endif()
 # LLD 8+ requires (new) `--export-dynamic` for WebAssembly (https://github.com/ldc-developers/ldc/issues/3023).
 set(WASM_DEFAULT_LDC_SWITCHES "${WASM_DEFAULT_LDC_SWITCHES}\n        \"-L--export-dynamic\",")
-
-# Directory filled with auto-generated import files
-set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
 
 # Only generate the config files if this CMake project is embedded in the LDC CMake project.
 if(LDC_EXE)
@@ -521,7 +554,7 @@ macro(compile_druntime d_flags lib_suffix path_suffix emit_bc all_at_once single
         set(single_obj_name "")
     endif()
     dc("${DRUNTIME_D}"
-       "${RUNTIME_DIR}/src"
+       "${RUNTIME_DIR}"
        "-conf=;${d_flags};${DRUNTIME_EXTRA_FLAGS};-I${RUNTIME_DIR}/src"
        "${PROJECT_BINARY_DIR}/objects${target_suffix}"
        "${emit_bc}"

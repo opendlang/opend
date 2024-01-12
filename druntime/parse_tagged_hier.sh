@@ -59,14 +59,15 @@ echo -ne > ${DST_COPY_FILE}
 
 for i in "${!SRC_FILES_LIST[@]}"
 do
-    fl=$(echo ${SRC_FILES_LIST[$i]} | tr '/' '\\')
-    echo ${fl} >> ${DST_FILE}
+    #~ fl=$(echo ${SRC_FILES_LIST[$i]} | tr '/' '\\')
+    echo ${SRC_FILES_LIST[$i]} >> ${DST_FILE}
 
     maybe_copy=$(echo ${MAYBE_COPY_LIST[$i]} | tr '/' '\\')
 
     # Adds copy entry if file mentioned in the list
     grep -F "$maybe_copy" ${SRC_COPY_FILE} > /dev/null && {
-        echo ${IMPDIR}'\'${fl} >> ${DST_COPY_FILE}
+        #~ echo ${IMPDIR}'\'${fl} >> ${DST_COPY_FILE}
+        echo ${IMPDIR}'/'${SRC_FILES_LIST[$i]} >> ${DST_COPY_FILE}
         COPIED=$((COPIED+1))
     }
 done
