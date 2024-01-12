@@ -1,6 +1,6 @@
 project(runtime C)
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.4.3)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -142,6 +142,7 @@ message(STATUS "--  - Building LTO libraries (BUILD_LTO_LIBS): ${BUILD_LTO_LIBS}
 get_directory_property(PROJECT_PARENT_DIR DIRECTORY ${PROJECT_SOURCE_DIR} PARENT_DIRECTORY)
 set(RUNTIME_DIR ${PROJECT_SOURCE_DIR}/../../druntime CACHE PATH "druntime root directory")
 set(RUNTIME_CFG_DIR ${RUNTIME_DIR}/config CACHE PATH "druntime internals config directory")
+cmake_path(NORMAL_PATH RUNTIME_CFG_DIR)
 set(PHOBOS2_DIR ${PROJECT_SOURCE_DIR}/../../phobos CACHE PATH "Phobos root directory")
 set(JITRT_DIR ${PROJECT_SOURCE_DIR}/jit-rt CACHE PATH "jit runtime root directory")
 
@@ -223,9 +224,6 @@ if("${TARGET_SYSTEM}" MATCHES "UNIX")
     list(APPEND DRUNTIME_ASM ${RUNTIME_DIR}/src/core/threadasm.S ${RUNTIME_DIR}/src/ldc/eh_asm.S)
 endif()
 
-# Directory filled with auto-generated import files
-set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
-
 # generate additional tags-based lists of files
 set(TAGGED_COPY_LIST_FILE "${RUNTIME_DIR}/mak/TAGGED_COPY" CACHE PATH "additional list of files for copying into imports")
 
@@ -236,7 +234,7 @@ execute_process(
     ${RUNTIME_CFG_DIR}
     ${TAGGED_COPY_LIST_FILE}
     ${TAGS_STR}
-    ${LDC_BUILD_IMPORT_DIR}
+    "/"
     ${PROJECT_BINARY_DIR}
     ECHO_OUTPUT_VARIABLE
     ECHO_ERROR_VARIABLE
@@ -247,12 +245,26 @@ execute_process(
 file(STRINGS ${PROJECT_BINARY_DIR}/GEN_SRCS TAGGED_SRCS)
 file(STRINGS ${PROJECT_BINARY_DIR}/GEN_COPY TAGGED_COPY)
 
-#~ cmake_path(RELATIVE_PATH TAGGED_SRCS)
-
-#~ list(APPEND DRUNTIME_D "/home/denizzz/Dev/opend/ldc/runtime/../../druntime/config/posix_threads/core/sync/event.d")
 list(APPEND DRUNTIME_D ${TAGGED_SRCS})
-message(${DRUNTIME_D})
-#~ message(FATAL_ERROR ${TAGGED_SRCS})
+
+# Directory filled with auto-generated import files
+set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
+
+foreach(incl_file ${TAGGED_COPY})
+    cmake_path(NORMAL_PATH incl_file)
+    string(REPLACE ${RUNTIME_CFG_DIR} "" dst_file ${incl_file})
+
+    # strip first unused dirs from file path
+    execute_process(
+        COMMAND "echo" ${dst_file}
+        COMMAND "cut" -d / -f3-
+        OUTPUT_VARIABLE pretty_dst_path
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+
+    get_filename_component(path ${pretty_dst_path} PATH)
+    file(INSTALL ${incl_file} DESTINATION ${LDC_BUILD_IMPORT_DIR}/${path})
+endforeach()
 
 if(PHOBOS2_DIR)
     # Phobos D parts
