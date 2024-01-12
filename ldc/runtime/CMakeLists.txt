@@ -225,17 +225,19 @@ if("${TARGET_SYSTEM}" MATCHES "UNIX")
 endif()
 
 # generate additional tags-based lists of files
-set(TAGGED_COPY_LIST_FILE "${RUNTIME_DIR}/mak/TAGGED_COPY" CACHE PATH "additional list of files for copying into imports")
+set(TAGGED_COPY_LIST_FILE "${RUNTIME_DIR}/mak/TAGGED_COPY" CACHE FILEPATH "additional list of files for copying into imports")
+set(TAGGED_SRCS_FILE "${PROJECT_BINARY_DIR}/GEN_SRCS" CACHE FILEPATH "generated list of sources choised by tags")
+set(TAGGED_COPY_FILE "${PROJECT_BINARY_DIR}/GEN_COPY" CACHE FILEPATH "generated list of imports choised by tags")
 
 list(JOIN TAGS "," TAGS_STR)
 execute_process(
-    COMMAND "${PROJECT_SOURCE_DIR}/copy_tagged.sh"
-    "${RUNTIME_DIR}/parse_tagged_hier.sh"
+    COMMAND "${RUNTIME_DIR}/parse_tagged_hier.sh"
     ${RUNTIME_CFG_DIR}
+    ${TAGGED_SRCS_FILE}
     ${TAGGED_COPY_LIST_FILE}
+    ${TAGGED_COPY_FILE}
     ${TAGS_STR}
     "/"
-    ${PROJECT_BINARY_DIR}
     ECHO_OUTPUT_VARIABLE
     ECHO_ERROR_VARIABLE
     COMMAND_ECHO STDOUT
