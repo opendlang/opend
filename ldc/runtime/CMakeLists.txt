@@ -766,7 +766,7 @@ macro(build_runtime_variant d_flags c_flags ld_flags lib_suffix path_suffix emit
                          "${lib_suffix}${SHARED_LIB_SUFFIX}" "${path_suffix}"
                          "OFF" "${all_d_files_at_once}" "OFF" druntime_o druntime_bc)
 
-        set(rt_dso_o "${PROJECT_BINARY_DIR}/objects${target_suffix}/rt/dso${CMAKE_C_OUTPUT_EXTENSION}")
+        set(rt_dso_o "${PROJECT_BINARY_DIR}/objects${target_suffix}/src/rt/dso${CMAKE_C_OUTPUT_EXTENSION}")
 
         # compile Phobos with public visibility (and preferably to a single object file)
         if(phobos2_common STREQUAL "")
@@ -967,7 +967,7 @@ macro(compile_testrunner d_flags is_shared target_suffix extra_dir_suffix)
 
     if("${is_shared}" STREQUAL "ON")
         # also link-in special rt.dso druntime module
-        list(APPEND test_runner_o ${PROJECT_BINARY_DIR}/objects-unittest${target_suffix}/rt/dso${CMAKE_C_OUTPUT_EXTENSION})
+        list(APPEND test_runner_o ${PROJECT_BINARY_DIR}/objects-unittest${target_suffix}/src/rt/dso${CMAKE_C_OUTPUT_EXTENSION})
     endif()
 endmacro()
 
@@ -1086,7 +1086,7 @@ add_custom_target(all-test-runners DEPENDS ${_GLOBAL_TESTRUNNERS})
 
 macro(file_to_module_name file_name out_module_name)
     string(REPLACE ${PROJECT_SOURCE_DIR}/ "" stripped ${file_name})
-    string(REPLACE "druntime/src/" "" stripped ${stripped})
+    string(REPLACE "druntime/" "" stripped ${stripped})
     string(REPLACE "phobos/" "" stripped ${stripped})
     string(REPLACE ".d" "" stripped ${stripped})
     string(REPLACE "/" "." module ${stripped})
