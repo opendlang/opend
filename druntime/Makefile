@@ -135,14 +135,53 @@ DRUNTIMESOLIB=$(DRUNTIMESO)$(DOTLIB)
 
 STDDOC=
 
+###############
+
+TAGGED_COPY_LIST_FILE:=mak/TAGGED_COPY
+TAGGED_SRCS_FILE:=$(ROOT)/GEN_SRCS
+TAGGED_COPY_FILE:=$(ROOT)/GEN_COPY
+
+ifeq (64,$(MODEL))
+	ARCH_TAG:=x86_64
+else
+	ARCH_TAG:=x86
+endif
+
+ifeq (windows,$(OS))
+	# Tags order doesn't matter
+	TAGS:=$(ARCH_TAG),windows
+else
+	TAGS:=$(ARCH_TAG),$(OS),posix_threads
+endif
+
+TGEN_CMD:=./parse_tagged_hier.sh config $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(TAGS) $(IMPDIR) > /dev/null
+
+TAGGED_SRCS:=$(shell $(TGEN_CMD) && cat $(TAGGED_SRCS_FILE))
+
+# MacOS doesn't support .SHELLSTATUS
+ifneq ($(.SHELLSTATUS),)
+	ifneq ($(.SHELLSTATUS),0)
+	  $(error Tagged sources list generation failed)
+	endif
+endif
+
+TAGGED_COPY:=$(shell $(TGEN_CMD) && cat $(TAGGED_COPY_FILE))
+ifneq ($(.SHELLSTATUS),)
+	ifneq ($(.SHELLSTATUS),0)
+	  $(error Tagged copy list generation failed)
+	endif
+endif
+
+###############
+
 include mak/COPY
-COPY:=$(subst \,/,$(COPY))
+COPY:=$(subst \,/,$(COPY)) $(subst \,/,$(TAGGED_COPY))
 
 include mak/DOCS
 DOCS:=$(subst \,/,$(DOCS))
 
 include mak/SRCS
-SRCS:=$(subst \,/,$(SRCS))
+SRCS:=$(subst \,/,$(SRCS)) $(subst \,/,$(TAGGED_SRCS))
 
 # NOTE: trace.d and cover.d are not necessary for a successful build
 #       as both are used for debugging features (profiling and coverage)
@@ -353,6 +392,13 @@ import: copy
 
 copy: $(COPY)
 
+strip_first_dirs:=cut -d '/' -f4-
+IMP_PATH=$(IMPDIR)/$(shell echo $@ | $(strip_first_dirs))
+
+$(IMPDIR)/config/%.d : config/%.d
+	@mkdir -p $(dir $(IMP_PATH))
+	@cp $< $(IMP_PATH)
+
 $(IMPDIR)/%.di : src/%.di
 	@mkdir -p $(dir $@)
 	@cp $< $@
@@ -402,6 +448,11 @@ $(ROOT)/threadasm$(DOTOBJ) : src/core/threadasm.S
 $(ROOT)/valgrind$(DOTOBJ) : src/etc/valgrind/valgrind.c src/etc/valgrind/valgrind.h src/etc/valgrind/memcheck.h
 	@mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o$@
+
+################################################
+
+gen_tagged_srcs_clean:
+	rm -f $(TAGGED_SRCS_FILE) $(TAGGED_SRCS_FILE).disabled $(TAGGED_COPY_FILE)
 
 ######################## Create a shared library ##############################
 
@@ -562,7 +613,7 @@ install: target
 	cp -r import/* '$(INSTALL_DIR)'/src/druntime/import/
 endif
 
-clean: $(addsuffix /.clean,$(ADDITIONAL_TESTS))
+clean: $(addsuffix /.clean,$(ADDITIONAL_TESTS)) gen_tagged_srcs_clean
 	rm -rf $(ROOT_OF_THEM_ALL) $(IMPDIR) $(DOC_OUTPUT_DIR) druntime.zip
 
 test/%/.clean: test/%/Makefile
