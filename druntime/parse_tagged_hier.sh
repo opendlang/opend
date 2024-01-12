@@ -2,12 +2,12 @@
 
 set -euo pipefail
 
-SRC_DIR=$1
-DST_FILE=$2
-SRC_COPY_FILE=$3
-DST_COPY_FILE=$4
+DST_FILE=$1
+SRC_COPY_FILE=$2
+DST_COPY_FILE=$3
+IMPDIR=$4
 TAGS=$5
-IMPDIR=$6
+SRC_DIR=$6
 
 if [[ ! -d ${SRC_DIR} ]]; then
     echo "Tags dir '${SRC_DIR}' not found" >&2

@@ -154,7 +154,7 @@ else
 	TAGS:=$(ARCH_TAG),$(OS),posix_threads
 endif
 
-TGEN_CMD:=./parse_tagged_hier.sh config $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(TAGS) $(IMPDIR) > /dev/null
+TGEN_CMD:=./parse_tagged_hier.sh $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(IMPDIR) $(TAGS) config > /dev/null
 
 TAGGED_SRCS:=$(shell $(TGEN_CMD) && cat $(TAGGED_SRCS_FILE))
 
