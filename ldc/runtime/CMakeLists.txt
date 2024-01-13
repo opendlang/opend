@@ -265,7 +265,7 @@ foreach(incl_file ${TAGGED_COPY})
     )
 
     get_filename_component(path ${pretty_dst_path} PATH)
-    file(INSTALL ${incl_file} DESTINATION ${LDC_BUILD_IMPORT_DIR}/${path})
+    file(INSTALL ${incl_file} DESTINATION ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${path})
 endforeach()
 
 if(PHOBOS2_DIR)
@@ -917,6 +917,7 @@ if(PHOBOS2_DIR)
     install(DIRECTORY ${PHOBOS2_DIR}/etc DESTINATION ${INCLUDE_INSTALL_DIR} FILES_MATCHING PATTERN "*.d")
 endif()
 install(FILES ${GCCBUILTINS} DESTINATION ${INCLUDE_INSTALL_DIR}/ldc)
+install(DIRECTORY ${LDC_BUILD_IMPORT_DIR}/tagged_imports/ DESTINATION ${INCLUDE_INSTALL_DIR})
 
 
 #
