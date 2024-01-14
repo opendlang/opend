@@ -2347,7 +2347,39 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_packs_epi32 (__m256i a, __m256i b) pure @safe
+/// Convert packed signed 32-bit integers from `a` and `b `to packed 16-bit integers using signed saturation.
+/// Warning: `a` and `b` are interleaved per-lane.
+///           Result has: `a` lane 0, `b` lane 0, `a` lane 1, `b` lane 1.
+__m256i _mm256_packs_epi32 (__m256i a, __m256i b) pure @safe
+{
+    // PERF D_SIMD
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_packssdw256(cast(int8)a, cast(int8)b);
+    }
+    else static if (LDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_packssdw256(cast(int8)a, cast(int8)b);
+    }
+    else
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_packs_epi32(a_lo, b_lo);
+        __m128i r_hi = _mm_packs_epi32(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi32(100000, -100000, 1000, 0, 4, 5, -100000, 7);
+    short16 R = cast(short16) _mm256_packs_epi32(A, A);
+    short[16] correct = [32767, -32768, 1000, 0, 32767, -32768, 1000, 0, 4, 5, -32768, 7, 4, 5, -32768, 7];
+    assert(R.array == correct);
+}
+
 
 /// Convert packed signed 16-bit integers from `a` and `b `to packed 8-bit integers using unsigned saturation.
 /// Warning: `a` and `b` are interleaved per-lane. 
