@@ -2156,7 +2156,50 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_min_epu8 (__m256i a, __m256i b) pure @safe
+/// Compare packed unsigned 8-bit integers in `a` and `b`, and return packed minimum values.
+__m256i _mm256_min_epu8 (__m256i a, __m256i b) pure @safe
+{
+    // PERF D_SIMD
+    version(GNU)
+        enum bool split = true;
+    else static if (SIMD_COMPARISON_MASKS_32B)
+        enum bool split = false;
+    else
+        enum bool split = true;
+    static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pminub256(cast(ubyte32)a, cast(ubyte32)b);
+    }
+    else static if (split)
+    {
+        // split
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_min_epu8(a_lo, b_lo);
+        __m128i r_hi = _mm_min_epu8(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+    else static if (SIMD_COMPARISON_MASKS_32B)
+    {
+        ubyte32 sa = cast(ubyte32)a;
+        ubyte32 sb = cast(ubyte32)b;
+        ubyte32 greater = cast(ubyte32)(sa > sb);
+        return cast(__m256i)( (~greater & sa) | (greater & sb) );
+    }
+    else
+        static assert(false);
+}
+unittest
+{
+    byte32 R = cast(byte32) _mm256_min_epu8(_mm256_setr_epi8(45, 1, -4, -8, 9,  7, 0,-57, -4,-8,  9,  7, 0,-57, 0,  0,   45, 1, -4, -8, 9,  7, 0,-57, -4,-8,  9,  7, 0,-57, 0,  0),
+                                            _mm256_setr_epi8(-4,-8,  9,  7, 0,-57, 0,  0, 45, 1, -4, -8, 9,  7, 0,-57,   -4,-8,  9,  7, 0,-57, 0,  0, 45, 1, -4, -8, 9,  7, 0,-57));
+    byte[32] correct =                                      [45, 1,  9,  7, 0,  7, 0,  0, 45, 1,  9,  7, 0,  7, 0,  0,   45, 1,  9,  7, 0,  7, 0,  0, 45, 1,  9,  7, 0,  7, 0,  0];
+    assert(R.array == correct);
+}
+
+
 // TODO int _mm256_movemask_epi8 (__m256i a) pure @safe
 // TODO __m256i _mm256_mpsadbw_epu8 (__m256i a, __m256i b, const int imm8) pure @safe
 
