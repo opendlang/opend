@@ -1725,7 +1725,6 @@ __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
 {
     static if (GDC_with_SSE41)
     {
-        // PERF For some reason doesn't generates the builtin???
         return cast(__m128i) __builtin_ia32_packusdw128(cast(short8)a, cast(short8)b);
     }
     else static if (LDC_with_SSE41)
@@ -1741,23 +1740,12 @@ __m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
     }
     else
     {
-        // PERF: not great without SSE4.1
-        int4 sa = cast(int4)a;
-        int4 sb = cast(int4)b;
-        align(16) ushort[8] result;
-        for (int i = 0; i < 4; ++i)
-        {
-            int s = sa.array[i];
-            if (s < 0) s = 0;
-            if (s > 65535) s = 65535;
-            result.ptr[i] = cast(ushort)s;
-
-            s = sb.array[i];
-            if (s < 0) s = 0;
-            if (s > 65535) s = 65535;
-            result.ptr[i+4] = cast(ushort)s;
-        }
-        return *cast(__m128i*)(result.ptr);
+        __m128i i32768 = _mm_set1_epi32(32768);
+        __m128i s32768 = _mm_set1_epi16(-32768);
+        a = _mm_sub_epi32(a, i32768);
+        b = _mm_sub_epi32(b, i32768);
+        __m128i clampedSigned = _mm_packs_epi32(a, b);
+        return _mm_add_epi16(clampedSigned, s32768);
     }
 }
 unittest
