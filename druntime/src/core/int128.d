@@ -32,7 +32,11 @@ version (DigitalMars)
 }
 else
 {
+    version (LDC) version (X86) version = LDC_X86;
+
     version (X86_64) private enum Cent_alignment = 16;
+    // 32-bit x86: need default alignment due to https://github.com/ldc-developers/ldc/issues/1356
+    else version (LDC_X86) private enum Cent_alignment = U.alignof;
     else             private enum Cent_alignment = (size_t.sizeof * 2);
 }
 

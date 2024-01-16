@@ -54,6 +54,215 @@ extern(C++) struct VSOptions
         detectVCToolsInstallDir();
     }
 
+public:
+    /**
+     * get Visual C bin folder
+     * Params:
+     *   x64 = target architecture (x86 if false)
+     *   addpath = [out] path that needs to be added to the PATH environment variable
+     * Returns:
+     *   folder containing the VC executables
+     *
+     * Selects the binary path according to the host and target OS, but verifies
+     * that link.exe exists in that folder and falls back to 32-bit host/target if
+     * missing
+     * Note: differences for the linker binaries are small, they all
+     * allow cross compilation
+     */
+    const(char)* getVCBinDir(bool x64, out const(char)* addpath) const
+    {
+        alias linkExists = returnDirIfContainsFile!"link.exe";
+
+        const bool isHost64 = isWin64Host();
+        if (VCToolsInstallDir !is null)
+        {
+            const vcToolsInstallDir = VCToolsInstallDir.toDString;
+            if (isHost64)
+            {
+                if (x64)
+                {
+                    if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX64\x64"))
+                        return p;
+                    // in case of missing linker, prefer other host binaries over other target architecture
+                }
+                else
+                {
+                    if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX64\x86"))
+                    {
+                        addpath = FileName.combine(vcToolsInstallDir, r"bin\HostX64\x64").ptr;
+                        return p;
+                    }
+                }
+            }
+            if (x64)
+            {
+                if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX86\x64"))
+                {
+                    addpath = FileName.combine(vcToolsInstallDir, r"bin\HostX86\x86").ptr;
+                    return p;
+                }
+            }
+            if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX86\x86"))
+                return p;
+        }
+        if (VCInstallDir !is null)
+        {
+            const vcInstallDir = VCInstallDir.toDString;
+            if (isHost64)
+            {
+                if (x64)
+                {
+                    if (auto p = linkExists(vcInstallDir, r"bin\amd64"))
+                        return p;
+                    // in case of missing linker, prefer other host binaries over other target architecture
+                }
+                else
+                {
+                    if (auto p = linkExists(vcInstallDir, r"bin\amd64_x86"))
+                    {
+                        addpath = FileName.combine(vcInstallDir, r"bin\amd64").ptr;
+                        return p;
+                    }
+                }
+            }
+
+            if (VSInstallDir)
+                addpath = FileName.combine(VSInstallDir.toDString, r"Common7\IDE").ptr;
+            else
+                addpath = FileName.combine(vcInstallDir, r"bin").ptr;
+
+            if (x64)
+                if (auto p = linkExists(vcInstallDir, r"x86_amd64"))
+                    return p;
+
+            if (auto p = linkExists(vcInstallDir, r"bin\HostX86\x86"))
+                return p;
+        }
+        return null;
+    }
+
+    /**
+    * get Visual C Library folder
+    * Params:
+    *   x64 = target architecture (x86 if false)
+    * Returns:
+    *   folder containing the VC runtime libraries
+    */
+    const(char)* getVCLibDir(bool x64) const
+    {
+        const(char)* proposed;
+
+        if (VCToolsInstallDir !is null)
+            proposed = FileName.combine(VCToolsInstallDir, x64 ? r"lib\x64" : r"lib\x86");
+        else if (VCInstallDir !is null)
+            proposed = FileName.combine(VCInstallDir, x64 ? r"lib\amd64" : "lib");
+
+        // Due to the possibility of VS being installed with VC directory without the libraries
+        // we must check that the expected directory does exist.
+        // It is possible that this isn't the only location a file check is required.
+        return FileName.exists(proposed) ? proposed : null;
+    }
+
+    const(char)* getVCIncludeDir() const
+    {
+        const(char)* proposed;
+
+        if (VCToolsInstallDir !is null)
+            proposed = FileName.combine(VCToolsInstallDir, "include");
+        else if (VCInstallDir !is null)
+            proposed = FileName.combine(VCInstallDir, "include");
+
+        return FileName.exists(proposed) ? proposed : null;
+    }
+
+    /**
+     * get the path to the universal CRT libraries
+     * Params:
+     *   x64 = target architecture (x86 if false)
+     * Returns:
+     *   folder containing the universal CRT libraries
+     */
+    const(char)* getUCRTLibPath(bool x64) const
+    {
+        if (UCRTSdkDir && UCRTVersion)
+           return FileName.buildPath(UCRTSdkDir.toDString, "Lib", UCRTVersion.toDString, x64 ? r"ucrt\x64" : r"ucrt\x86").ptr;
+        return null;
+    }
+
+    /**
+     * get the path to the Windows SDK CRT libraries
+     * Params:
+     *   x64 = target architecture (x86 if false)
+     * Returns:
+     *   folder containing the Windows SDK libraries
+     */
+    const(char)* getSDKLibPath(bool x64) const
+    {
+        if (WindowsSdkDir)
+        {
+            alias kernel32Exists = returnDirIfContainsFile!"kernel32.lib";
+
+            const arch = x64 ? "x64" : "x86";
+            const sdk = FileName.combine(WindowsSdkDir.toDString, "lib");
+            if (WindowsSdkVersion)
+            {
+                if (auto p = kernel32Exists(sdk, WindowsSdkVersion.toDString, "um", arch)) // SDK 10.0
+                    return p;
+            }
+            if (auto p = kernel32Exists(sdk, r"win8\um", arch)) // SDK 8.0
+                return p;
+            if (auto p = kernel32Exists(sdk, r"winv6.3\um", arch)) // SDK 8.1
+                return p;
+            if (x64)
+            {
+                if (auto p = kernel32Exists(sdk, arch)) // SDK 7.1 or earlier
+                    return p;
+            }
+            else
+            {
+                if (auto p = kernel32Exists(sdk)) // SDK 7.1 or earlier
+                    return p;
+            }
+        }
+
+version (IN_LLVM) {} else
+{
+        // try mingw fallback relative to phobos library folder that's part of LIB
+        if (auto p = FileName.searchPath(getenv("LIB"w), r"mingw\kernel32.lib"[], false))
+            return FileName.path(p).ptr;
+}
+
+        return null;
+    }
+
+    const(char)* getSDKIncludePath() const
+    {
+        if (WindowsSdkDir)
+        {
+            alias umExists = returnDirIfContainsFile!"um"; // subdir in this case
+
+            const sdk = FileName.combine(WindowsSdkDir.toDString, "include");
+            if (WindowsSdkVersion)
+            {
+                if (auto p = umExists(sdk, WindowsSdkVersion.toDString)) // SDK 10.0
+                    return p;
+            }
+            // purely speculative
+            if (auto p = umExists(sdk, "win8")) // SDK 8.0
+                return p;
+            if (auto p = umExists(sdk, "winv6.3")) // SDK 8.1
+                return p;
+            if (auto p = umExists(sdk)) // SDK 7.1 or earlier
+                return p;
+        }
+
+        return null;
+    }
+
+
+
+
+
 version (IN_LLVM) { /* not needed */ } else
 {
     /**
@@ -375,253 +584,6 @@ version (IN_LLVM)
                 }
             }
         }
-    }
-
-public:
-    /**
-     * get Visual C bin folder
-     * Params:
-     *   x64 = target architecture (x86 if false)
-     *   addpath = [out] path that needs to be added to the PATH environment variable
-     * Returns:
-     *   folder containing the VC executables
-     *
-     * Selects the binary path according to the host and target OS, but verifies
-     * that link.exe exists in that folder and falls back to 32-bit host/target if
-     * missing
-     * Note: differences for the linker binaries are small, they all
-     * allow cross compilation
-     */
-    const(char)* getVCBinDir(bool x64, out const(char)* addpath) const
-    {
-        alias linkExists = returnDirIfContainsFile!"link.exe";
-
-        const bool isHost64 = isWin64Host();
-        if (VCToolsInstallDir !is null)
-        {
-            const vcToolsInstallDir = VCToolsInstallDir.toDString;
-            if (isHost64)
-            {
-                if (x64)
-                {
-                    if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX64\x64"))
-                        return p;
-                    // in case of missing linker, prefer other host binaries over other target architecture
-                }
-                else
-                {
-                    if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX64\x86"))
-                    {
-                        addpath = FileName.combine(vcToolsInstallDir, r"bin\HostX64\x64").ptr;
-                        return p;
-                    }
-                }
-            }
-            if (x64)
-            {
-                if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX86\x64"))
-                {
-                    addpath = FileName.combine(vcToolsInstallDir, r"bin\HostX86\x86").ptr;
-                    return p;
-                }
-            }
-            if (auto p = linkExists(vcToolsInstallDir, r"bin\HostX86\x86"))
-                return p;
-        }
-        if (VCInstallDir !is null)
-        {
-            const vcInstallDir = VCInstallDir.toDString;
-            if (isHost64)
-            {
-                if (x64)
-                {
-                    if (auto p = linkExists(vcInstallDir, r"bin\amd64"))
-                        return p;
-                    // in case of missing linker, prefer other host binaries over other target architecture
-                }
-                else
-                {
-                    if (auto p = linkExists(vcInstallDir, r"bin\amd64_x86"))
-                    {
-                        addpath = FileName.combine(vcInstallDir, r"bin\amd64").ptr;
-                        return p;
-                    }
-                }
-            }
-
-            if (VSInstallDir)
-                addpath = FileName.combine(VSInstallDir.toDString, r"Common7\IDE").ptr;
-            else
-                addpath = FileName.combine(vcInstallDir, r"bin").ptr;
-
-            if (x64)
-                if (auto p = linkExists(vcInstallDir, r"x86_amd64"))
-                    return p;
-
-            if (auto p = linkExists(vcInstallDir, r"bin\HostX86\x86"))
-                return p;
-        }
-        return null;
-    }
-
-    /**
-    * get Visual C Library folder
-    * Params:
-    *   x64 = target architecture (x86 if false)
-    * Returns:
-    *   folder containing the VC runtime libraries
-    */
-    const(char)* getVCLibDir(bool x64) const
-    {
-        const(char)* proposed;
-
-        if (VCToolsInstallDir !is null)
-            proposed = FileName.combine(VCToolsInstallDir, x64 ? r"lib\x64" : r"lib\x86");
-        else if (VCInstallDir !is null)
-            proposed = FileName.combine(VCInstallDir, x64 ? r"lib\amd64" : "lib");
-
-        // Due to the possibility of VS being installed with VC directory without the libraries
-        // we must check that the expected directory does exist.
-        // It is possible that this isn't the only location a file check is required.
-        return FileName.exists(proposed) ? proposed : null;
-    }
-
-    const(char)* getVCIncludeDir() const
-    {
-        const(char)* proposed;
-
-        if (VCToolsInstallDir !is null)
-            proposed = FileName.combine(VCToolsInstallDir, "include");
-        else if (VCInstallDir !is null)
-            proposed = FileName.combine(VCInstallDir, "include");
-
-        return FileName.exists(proposed) ? proposed : null;
-    }
-
-version (IN_LLVM)
-{
-    const(char)* getVCIncludeDir() const
-    {
-        const(char)* proposed;
-
-        if (VCToolsInstallDir !is null)
-            proposed = FileName.combine(VCToolsInstallDir, "include");
-        else if (VCInstallDir !is null)
-            proposed = FileName.combine(VCInstallDir, "include");
-
-        return FileName.exists(proposed) ? proposed : null;
-    }
-}
-
-    /**
-     * get the path to the universal CRT libraries
-     * Params:
-     *   x64 = target architecture (x86 if false)
-     * Returns:
-     *   folder containing the universal CRT libraries
-     */
-    const(char)* getUCRTLibPath(bool x64) const
-    {
-        if (UCRTSdkDir && UCRTVersion)
-           return FileName.buildPath(UCRTSdkDir.toDString, "Lib", UCRTVersion.toDString, x64 ? r"ucrt\x64" : r"ucrt\x86").ptr;
-        return null;
-    }
-
-    /**
-     * get the path to the Windows SDK CRT libraries
-     * Params:
-     *   x64 = target architecture (x86 if false)
-     * Returns:
-     *   folder containing the Windows SDK libraries
-     */
-    const(char)* getSDKLibPath(bool x64) const
-    {
-        if (WindowsSdkDir)
-        {
-            alias kernel32Exists = returnDirIfContainsFile!"kernel32.lib";
-
-            const arch = x64 ? "x64" : "x86";
-            const sdk = FileName.combine(WindowsSdkDir.toDString, "lib");
-            if (WindowsSdkVersion)
-            {
-                if (auto p = kernel32Exists(sdk, WindowsSdkVersion.toDString, "um", arch)) // SDK 10.0
-                    return p;
-            }
-            if (auto p = kernel32Exists(sdk, r"win8\um", arch)) // SDK 8.0
-                return p;
-            if (auto p = kernel32Exists(sdk, r"winv6.3\um", arch)) // SDK 8.1
-                return p;
-            if (x64)
-            {
-                if (auto p = kernel32Exists(sdk, arch)) // SDK 7.1 or earlier
-                    return p;
-            }
-            else
-            {
-                if (auto p = kernel32Exists(sdk)) // SDK 7.1 or earlier
-                    return p;
-            }
-        }
-
-version (IN_LLVM) {} else
-{
-        // try mingw fallback relative to phobos library folder that's part of LIB
-        if (auto p = FileName.searchPath(getenv("LIB"w), r"mingw\kernel32.lib"[], false))
-            return FileName.path(p).ptr;
-}
-
-        return null;
-    }
-
-version (IN_LLVM)
-{
-    const(char)* getSDKIncludePath() const
-    {
-        if (WindowsSdkDir)
-        {
-            alias umExists = returnDirIfContainsFile!"um"; // subdir in this case
-
-            const sdk = FileName.combine(WindowsSdkDir.toDString, "include");
-            if (WindowsSdkVersion)
-            {
-                if (auto p = umExists(sdk, WindowsSdkVersion.toDString)) // SDK 10.0
-                    return p;
-            }
-            // purely speculative
-            if (auto p = umExists(sdk, "win8")) // SDK 8.0
-                return p;
-            if (auto p = umExists(sdk, "winv6.3")) // SDK 8.1
-                return p;
-            if (auto p = umExists(sdk)) // SDK 7.1 or earlier
-                return p;
-        }
-
-        return null;
-    }
-}
-
-    const(char)* getSDKIncludePath() const
-    {
-        if (WindowsSdkDir)
-        {
-            alias umExists = returnDirIfContainsFile!"um"; // subdir in this case
-
-            const sdk = FileName.combine(WindowsSdkDir.toDString, "include");
-            if (WindowsSdkVersion)
-            {
-                if (auto p = umExists(sdk, WindowsSdkVersion.toDString)) // SDK 10.0
-                    return p;
-            }
-            // purely speculative
-            if (auto p = umExists(sdk, "win8")) // SDK 8.0
-                return p;
-            if (auto p = umExists(sdk, "winv6.3")) // SDK 8.1
-                return p;
-            if (auto p = umExists(sdk)) // SDK 7.1 or earlier
-                return p;
-        }
-
-        return null;
     }
 
 private:
