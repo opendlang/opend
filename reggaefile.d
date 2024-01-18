@@ -1,9 +1,9 @@
 import reggae;
 import std.typecons;
 
-alias lib = dubTarget!();
-alias ut = dubTestTarget!(CompilationMode.options, Yes.coverage);
-alias asan = dubConfigurationTarget!(
+alias lib = dubBuild!();
+alias ut = dubTest!(CompilationMode.options, Yes.coverage);
+alias asan = dubBuild!(
     Configuration("asan"),
     CompilerFlags("-unittest -cov -fsanitize=address"),
     LinkerFlags("-fsanitize=address"),
