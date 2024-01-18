@@ -1,19 +1,13 @@
 import reggae;
 import std.typecons;
 
-enum debugFlags = "-w -g -debug";
-
-alias lib = dubDefaultTarget!(CompilerFlags(debugFlags));
-alias ut = dubTestTarget!(CompilerFlags(debugFlags ~ " -cov"));
-alias utl = dubConfigurationTarget!(
-    Configuration("utl"),
-    CompilerFlags(debugFlags ~ " -unittest -version=unitThreadedLight -cov")
-);
-alias asan = dubConfigurationTarget!(
+alias lib = dubBuild!();
+alias ut = dubTest!(CompilationMode.options, Yes.coverage);
+alias asan = dubBuild!(
     Configuration("asan"),
-    CompilerFlags(debugFlags ~ " -unittest -cov -fsanitize=address"),
+    CompilerFlags("-unittest -cov -fsanitize=address"),
     LinkerFlags("-fsanitize=address"),
 );
 
 
-mixin build!(lib, optional!ut, optional!utl, optional!asan);
+mixin build!(lib, optional!ut, optional!asan);

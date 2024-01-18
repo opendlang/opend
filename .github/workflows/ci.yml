@@ -11,9 +11,9 @@ jobs:
           - windows-2019
           - macos-11
         dc:
-          - dmd-2.105.2
+          - dmd-2.106.1
           - dmd-2.100.0
-          - ldc-1.34.0
+          - ldc-1.36.0
           - ldc-1.28.0
 
     runs-on: ${{ matrix.os }}
