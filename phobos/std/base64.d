@@ -2039,7 +2039,7 @@ class Base64Exception : Exception
 {
     struct InputRange
     {
-        ubyte[] impl = [0x1a, 0x2b, 0x3c, 0x4d, 0x5d, 0x6e];
+        @(imported!"core.attribute".mutableRefInit) ubyte[] impl = [0x1a, 0x2b, 0x3c, 0x4d, 0x5d, 0x6e];
         @property bool empty() { return impl.length == 0; }
         @property ubyte front() { return impl[0]; }
         void popFront() { impl = impl[1 .. $]; }
