@@ -43,7 +43,7 @@ import dmd.target;
 import dmd.tokens;
 
 version(D_OpenD)
-import core.attribute;
+import core.attribute : mutableRefInit;
 else
 enum mutableRefInit;
 

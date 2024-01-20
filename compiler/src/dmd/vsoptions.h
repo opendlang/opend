@@ -23,6 +23,7 @@ struct VSOptions
     const char *VCToolsInstallDir = nullptr; // used by VS 2017+
 
     void initialize();
+
     const char *getVCBinDir(bool x64, const char *&addpath) const;
     const char *getVCLibDir(bool x64) const;
     const char *getVCIncludeDir() const;
