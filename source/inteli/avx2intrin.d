@@ -1687,7 +1687,49 @@ unittest
 }
 
 // TODO __m256i _mm256_maddubs_epi16 (__m256i a, __m256i b) pure @safe
-// TODO __m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask) pure @safe
+
+version(DigitalMars)
+{
+    // this avoids a bug with DMD < 2.099 -a x86 -O
+    private enum bool maskLoadWorkaroundDMD = (__VERSION__ < 2099);
+}
+else
+{
+    private enum bool maskLoadWorkaroundDMD = false;
+}
+
+/// Load packed 32-bit integers from memory using `mask` (elements are zeroed out when the highest
+/// bit is not set in the corresponding element).
+/// Warning: See "Note about mask load/store" to know why you must address valid memory only.
+__m128i _mm_maskload_epi32 (const(int)* mem_addr, __m128i mask) /* pure */ @system
+{
+    // PERF DMD
+    static if (LDC_with_AVX2)
+    {
+        // MAYDO report that the builtin is impure
+        return __builtin_ia32_maskloadd(mem_addr, mask);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return __builtin_ia32_maskloadd(cast(__m128i*)mem_addr, mask);
+    }
+    else
+    {
+        return cast(__m128i) _mm_maskload_ps(cast(const(float)*)mem_addr, mask);
+    }
+}
+unittest
+{
+    static if (!maskLoadWorkaroundDMD)
+    {
+        int[4] A = [7, 1, 2, 3];
+        int4 B = _mm_maskload_epi32(A.ptr, _mm_setr_epi32(1, -1, -1, 1));  // can address invalid memory with mask load and writes!
+        int[4] correct = [0, 1, 2, 0];
+        assert(B.array == correct);
+    }
+}
+
+
 // TODO __m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask) pure @safe
 // TODO __m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask) pure @safe
 // TODO __m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask) pure @safe

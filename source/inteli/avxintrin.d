@@ -1892,15 +1892,13 @@ unittest
 
 /// Load packed single-precision (32-bit) floating-point elements from memory using mask (elements
 /// are zeroed out when the high bit of the corresponding element is not set).
-/// Note: emulating that instruction isn't efficient, since it needs to perform memory access
-/// only when needed.
-/// See: "Note about mask load/store" to know why you must address valid memory only.
+/// Warning: See "Note about mask load/store" to know why you must address valid memory only.
 __m128 _mm_maskload_ps (const(float)* mem_addr, __m128i mask) /* pure */ @system
 {
     // PERF DMD
     static if (LDC_with_AVX)
     {
-        // MAYDO that the builtin is impure
+        // MAYDO report that the builtin is impure
         return __builtin_ia32_maskloadps(mem_addr, mask);
     }
     else static if (GDC_with_AVX)
