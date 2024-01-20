@@ -17,6 +17,7 @@ Upcoming language changes listed by -preview=name:
   =in               `in` on parameters means `scope const [ref]` and accepts rvalues
   =inclusiveincontracts 'in' contracts of overridden methods must be a superset of parent contract
   =fixImmutableConv disallow unsound immutable conversions that were formerly incorrectly permitted
+  =privateThis      add `private(this)` visibility attribute, private to the class/struct/union instead of module
   =systemVariables  disable access to variables marked '@system' from @safe code
 ----
 */
