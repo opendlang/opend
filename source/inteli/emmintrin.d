@@ -835,6 +835,7 @@ __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
     else
     {
         // Note: __builtin_ia32_pcmpgtb128 is buggy, do not use with GDC
+        // TODO: re-check that
         return cast(__m128i) greaterMask!byte16(cast(byte16)a, cast(byte16)b);
     }
 }

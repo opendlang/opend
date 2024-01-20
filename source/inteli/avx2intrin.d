@@ -585,7 +585,6 @@ unittest
     assert(C.array == correct);
 }
 
-// Note: do that one after _mm256_cmpgt_epi8
 // TODO __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask) pure @safe
 
 /// Broadcast the low packed 8-bit integer from `a` to all elements of result.
@@ -1092,7 +1091,41 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
+/// Compare packed signed 8-bit integers in `a` and `b` for greater-than.
+__m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b) pure @safe
+{
+    version(GNU)
+        enum bool mayUseComparisonOperator = GDC_with_AVX2; // too slow in GDC without AVX2
+    else
+        enum bool mayUseComparisonOperator = true;
+
+    static if (SIMD_COMPARISON_MASKS_32B && mayUseComparisonOperator)
+    {
+        return cast(__m256i)(cast(byte32)a > cast(byte32)b);
+    }
+    else static if (GDC_with_AVX2)
+    {
+        return cast(__m256i) __builtin_ia32_pcmpgtb256(cast(short16)a, cast(short16)b);
+    }
+    else // split
+    {
+        __m128i a_lo = _mm256_extractf128_si256!0(a);
+        __m128i a_hi = _mm256_extractf128_si256!1(a);
+        __m128i b_lo = _mm256_extractf128_si256!0(b);
+        __m128i b_hi = _mm256_extractf128_si256!1(b);
+        __m128i r_lo = _mm_cmpgt_epi8(a_lo, b_lo);
+        __m128i r_hi = _mm_cmpgt_epi8(a_hi, b_hi);
+        return _mm256_set_m128i(r_hi, r_lo);
+    }
+}
+unittest
+{
+    __m256i A = _mm256_setr_epi8(1, 2, 3, 1,  127, -80, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1,   1, 2, 3, 1,  127, -80, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
+    __m256i B = _mm256_setr_epi8(2, 2, 1, 2, -128, -42, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1,   2, 2, 1, 2, -128, -42, 2, 3, 2, 1, 0, 0, 1, 2, 1, 0);
+    byte32 C = cast(byte32) _mm256_cmpgt_epi8(A, B);
+    byte[32] correct =          [0, 0,-1, 0,   -1,   0, 0, 0,-1,-1,-1, 0, 0, 0,-1, 0,   0, 0,-1, 0,   -1,   0, 0, 0,-1,-1,-1, 0, 0, 0,-1,-1];
+    assert(C.array == correct);
+}
 
 
 /// Sign extend packed 16-bit integers in `a` to packed 32-bit integers.
