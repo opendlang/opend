@@ -1721,7 +1721,7 @@ unittest
 
 /// Convert packed signed 32-bit integers from `a` and `b` 
 /// to packed 16-bit integers using unsigned saturation.
-__m128i _mm_packus_epi32 (__m128i a, __m128i b) @trusted
+__m128i _mm_packus_epi32 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE41)
     {

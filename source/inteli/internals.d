@@ -1725,7 +1725,7 @@ static if (LDC_with_ARM64)
     pragma(LDC_intrinsic, "llvm.aarch64.neon.smax.v8i16")
         short8 vmaxq_s16(short8 a, short8 b) pure @safe;
 
-    int4 vmaxq_s32(int4 a, int4 b)
+    int4 vmaxq_s32(int4 a, int4 b) pure @safe
     {
         int4 r;
         r[0] = a[0] >= b[0] ? a[0] : b[0];
