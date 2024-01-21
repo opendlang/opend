@@ -32,6 +32,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 
 ## Changelog
 
+- **v2.4.y** Added BMP output.
 - **v2.3.y** Added GIF input and GIF output. Added multilayer images.
 - **v2.2.y** Added 16-bit PNG output.
 - **v2.1.y** Added TGA format support.

@@ -1,6 +1,6 @@
 {
     "name": "gamut",
-    "description": "Image library. Decoders/encoders for PNG, TGA, JPEG, DDS, GIF, QOI, QOIX. 16-bit support.",
+    "description": "Image library. Decoders/encoders for PNG, TGA, BMP, JPEG, DDS, GIF, QOI, QOIX. 16-bit support.",
     "license": "BSL-1.0+MIT",
 
     "dependencies":
