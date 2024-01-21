@@ -176,7 +176,7 @@ alias LayoutConstraints = ushort;
 enum LayoutConstraints
      LAYOUT_DEFAULT               = 0,  /// Default / do-not-care layout options. This is what will give
                                         /// the fastest loading time when loading images (though most decoders
-                                        /// tend to return gapless non-flipped images.
+                                        /// tend to return gapless non-flipped images).
 
      // Multiplicity: 
      // -------------
