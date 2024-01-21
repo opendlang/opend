@@ -4,7 +4,7 @@ import core.stdc.stdlib;
 import std.stdio;
 import std.file;
 import gamut;
-import gamut.codecs.pngload;
+import gamut.codecs.stbdec;
 
 void main(string[] args)
 { 

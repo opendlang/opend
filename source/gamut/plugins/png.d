@@ -16,7 +16,7 @@ import gamut.image;
 import gamut.internals.errors;
 import gamut.internals.types;
 
-version(decodePNG) import gamut.codecs.pngload;
+version(decodePNG) import gamut.codecs.stbdec;
 version(encodePNG) import gamut.codecs.stb_image_write;
 
 ImageFormatPlugin makePNGPlugin()

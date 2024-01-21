@@ -23,6 +23,7 @@ It is `nothrow @nogc @safe` for usage in -betterC and in disabled-runtime D.
 - JPEG: 8-bit, greyscale/RGB, baseline
 - TGA: 8-bit, RGB/RGBA
 - GIF: 8-bit, RGBA, animation support
+- BMP: 8-bit, RGB/RGBA
 - QOI: 8-bit, RGB/RGBA
 - QOIX: 8-bit, 10-bit, L/LA/RGB/RGBA
 - DDS: BC7 encoded, 8-bit, RGB/RGBA

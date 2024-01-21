@@ -1,12 +1,12 @@
 /**
-BMP codec.
+BMP encoder.
 Encoder based upon imageformats dub package.
 
 Copyright: Copyright Tero Hänninen 2016-2022 (encoder)
            Copyright Guillaume Piolat 2024
 License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
-module gamut.codecs.bmp;
+module gamut.codecs.bmpenc;
 
 import core.stdc.stdlib: malloc, free;
 import gamut.io;

@@ -2310,8 +2310,8 @@ unittest
     assert(!image.hasSingleLayer);
     assert(!image.hasNonZeroSize);
     assert(image.layerOffsetInBytes() == 0);
-    assert(image.flipVertically);
-    assert(image.flipHorizontally);
+    assert(image.flipVertical);
+    assert(image.flipHorizontal);
 
     // Create an uninitialized 5-layers, 640x480 image with default pixel 
     image.createLayeredNoInit(640, 480, 5);
@@ -2397,7 +2397,7 @@ unittest
         4, 5, 8,
         2, 3, 4,
     ];
-    image2.flipVertically();
+    image2.flipVertical();
     assert(image2.allPixelsAtOnce() == pixelsFlippedVert[]);
 
     // Flip horizontal check
@@ -2415,7 +2415,7 @@ unittest
         1, 0, 9,
         6, 3, 8,
     ];
-    image2.flipHorizontally();
+    image2.flipHorizontal();
     assert(image2.allPixelsAtOnce() == pixelsFlippedHorz[]);
 
 }

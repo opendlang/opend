@@ -47,7 +47,7 @@ int main(string[] args)
 
         Image image;  
         image.loadFromFile(input);
-        if (image.errored)
+        if (image.isError)
             throw new Exception(image.errorMessage().idup);
 
         writefln("Width  = %s px", image.width());
