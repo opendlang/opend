@@ -10,7 +10,7 @@ module dmd.hooks;
 import dmd.dscope;
 import dmd.expression;
 
-version (LDC)
+version (IN_LLVM)
 {
     import gen.ldctraits;
 
