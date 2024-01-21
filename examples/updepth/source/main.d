@@ -53,7 +53,7 @@ int main(string[] args)
 
         Image image = loadOwnedImageDepth(input);
 
-        if (image.errored)
+        if (image.isError)
         {
             throw new Exception("Couldn't convert file " ~ input);
         }
@@ -88,7 +88,7 @@ Image loadOwnedImageDepth(string inputFile)
 {
     Image image;
     image.loadFromFile(inputFile, LOAD_NO_ALPHA);
-    if (image.errored)
+    if (image.isError)
     {
         assert(false, "Decoding failed");
     }
