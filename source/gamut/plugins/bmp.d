@@ -46,24 +46,39 @@ bool detectBMP(IOStream *io, IOHandle handle) @trusted
 {
     // save I/O cursor
     c_long offset = io.tell(handle);
+    if (offset == -1) // IO error
+        return false;
 
-    bool err;
+    uint ds;
+    bool err;    
     ubyte b = io.read_ubyte(handle, &err); if (err) return false; // IO error
-    if (b != 'B')
-        return false;
+    if (b != 'B') goto no_match;
+
     b = io.read_ubyte(handle, &err); if (err) return false; // IO error
-    if (b != 'M')
-        return false;
+    if (b != 'M') goto no_match;
+    
     if (!io.skipBytes(handle, 12))
         return false; // IO error
-    uint ds = io.read_uint_LE(handle, &err); if (err) return false; // IO error
-    bool match = (ds == 12 || ds == 40 || ds == 52 || ds == 56 || ds == 108 || ds == 124);
 
+    ds = io.read_uint_LE(handle, &err); if (err) return false; // IO error
+
+    if (ds == 12 || ds == 40 || ds == 52 || ds == 56 || ds == 108 || ds == 124)
+        goto match;
+    else
+        goto no_match;
+
+match:
+    // restore I/O cursor
+    if (!io.seekAbsolute(handle, offset))
+        return false; // IO error
+    return true;
+
+no_match:
     // restore I/O cursor
     if (!io.seekAbsolute(handle, offset))
         return false; // IO error
 
-    return match;
+    return false;
 }
 
 version(encodeBMP)
