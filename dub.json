@@ -12,12 +12,12 @@
         {
             "name": "boost+mit",
             "versions": [ "decodeJPEG", "decodePNG", "decodeQOI", "decodeQOIX",              "decodeTGA", "decodeGIF",
-                          "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS", "encodeTGA", "encodeGIF" ]
+                          "encodeJPEG", "encodePNG", "encodeQOI", "encodeQOIX", "encodeDDS", "encodeTGA", "encodeGIF", "encodeBMP" ]
         },
         {
             "name": "boost",
             "versions": [ "decodeJPEG", "decodePNG",                                         "decodeTGA", "decodeGIF",
-                          "encodeJPEG", "encodePNG", "encodeDDS",                            "encodeTGA", "encodeGIF" ]
+                          "encodeJPEG", "encodePNG", "encodeDDS",                            "encodeTGA", "encodeGIF", "encodeBMP" ]
         },              
         {
             "name": "just-decode",

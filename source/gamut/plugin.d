@@ -18,6 +18,7 @@ import gamut.plugins.qoix;
 import gamut.plugins.dds;
 import gamut.plugins.tga;
 import gamut.plugins.gif;
+import gamut.plugins.bmp;
 
 nothrow @nogc @safe:
 
@@ -114,4 +115,5 @@ static immutable __gshared ImageFormatPlugin[ImageFormat.max+1] g_plugins =
     makeDDSPlugin(),
     makeTGAPlugin(),
     makeGIFPlugin(),
+    makeBMPPlugin(),
 ];

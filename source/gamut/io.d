@@ -146,8 +146,25 @@ nothrow @nogc @safe:
     /// On error, sets `err` to `true` and return 0.
     ushort read_ushort_LE(IOHandle handle, bool* err) nothrow @nogc @trusted
     {
-        ushort v;
+        ushort v; // Note: no support for BigEndian here
         if (2 == read(&v, 1, 2, handle))
+        {
+            *err = false;
+            return v;
+        }
+        else
+        {
+            *err = true;
+            return 0;
+        }
+    }
+
+    /// Helper to read one little-endian uint in stream.
+    /// On error, sets `err` to `true` and return 0.
+    uint read_uint_LE(IOHandle handle, bool* err) nothrow @nogc @trusted
+    {
+        uint v; // Note: no support for BigEndian here
+        if (4 == read(&v, 1, 4, handle))
         {
             *err = false;
             return v;

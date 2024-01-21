@@ -18,10 +18,11 @@ enum ImageFormat
     JPEG    =  0, /// Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)
     PNG     =  1, /// Portable Network Graphics (*.PNG)
     QOI     =  2, /// Quite OK Image format (*.QOI)
-    QOIX    =  3, /// Quite OK Image format, eXtended as in Gamut (*.QOIX)
+    QOIX    =  3, /// Quite OK Image format, eXtended as in Gamut library (*.QOIX)
     DDS     =  4, /// Compressed texture formats.
     TGA     =  5, /// Truevision TGA
     GIF     =  6, /// Graphics Interchange Format
+    BMP     =  7, /// Windows or OS/2 Bitmap File (*.BMP)
 }
 
 /// Pixel component type.

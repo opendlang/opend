@@ -91,7 +91,7 @@ void scanline_convert_rgb8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int wi
 // FROM rgba8 TO xxxx
 //
 
-/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to L 8-bit (0 to 255).
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) to L 8-bit (0 to 255).
 void scanline_convert_rgba8_to_l8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
 {
     for (int x = 0; x < width; ++x)
@@ -100,7 +100,7 @@ void scanline_convert_rgba8_to_l8(const(ubyte)* inScan, ubyte* outScan, int widt
     }
 }
 
-/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to LA 8-bit (0 to 255).
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) to LA 8-bit (0 to 255).
 void scanline_convert_rgba8_to_la8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
 {
     for (int x = 0; x < width; ++x)
@@ -110,7 +110,7 @@ void scanline_convert_rgba8_to_la8(const(ubyte)* inScan, ubyte* outScan, int wid
     }
 }
 
-/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to RGB 8-bit (0 to 255).
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) to RGB 8-bit (0 to 255).
 void scanline_convert_rgba8_to_rgb8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
 {
     for (int x = 0; x < width; ++x)
@@ -121,7 +121,7 @@ void scanline_convert_rgba8_to_rgb8(const(ubyte)* inScan, ubyte* outScan, int wi
     }
 }
 
-/// Convert a row of pixel from RGBA 8-bit (0 to 255) float to RGBA 8-bit (0 to 255).
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) to RGBA 8-bit (0 to 255).
 void scanline_convert_rgba8_to_rgba8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
 {
     memcpy(outScan, inScan, width * 4 * ubyte.sizeof);
@@ -473,3 +473,35 @@ void scanline_convert_rgbaf32_to_rgbaf32(const(ubyte)* inScan, ubyte* outScan, i
 {
     memcpy(outScan, inScan, width * 4 * float.sizeof);
 }
+
+
+//
+// BMP ordering functions
+//
+
+/// Convert a row of pixel from RGBA 8-bit (0 to 255) to BGRA 8-bit (0 to 255).
+void scanline_convert_rgba8_to_bgra8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    for (int x = 0; x < width; ++x)
+    {
+        outScan[4*x+0] = inScan[4*x+2];
+        outScan[4*x+1] = inScan[4*x+1];
+        outScan[4*x+2] = inScan[4*x+0];
+        outScan[4*x+3] = inScan[4*x+3];
+    }
+}
+///ditto
+alias scanline_convert_bgra8_to_rgba8 = scanline_convert_rgba8_to_bgra8;
+
+/// Convert a row of pixel from RGB 8-bit (0 to 255) to BGR 8-bit (0 to 255).
+void scanline_convert_rgb8_to_bgr8(const(ubyte)* inScan, ubyte* outScan, int width, void* userData = null)
+{
+    for (int x = 0; x < width; ++x)
+    {
+        outScan[3*x+0] = inScan[3*x+2];
+        outScan[3*x+1] = inScan[3*x+1];
+        outScan[3*x+2] = inScan[3*x+0];
+    }
+}
+///ditto
+alias scanline_convert_bgr8_to_rgb8 = scanline_convert_rgb8_to_bgr8;
