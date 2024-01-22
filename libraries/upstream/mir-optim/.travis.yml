@@ -1,0 +1,29 @@
+sudo: false
+
+os:
+ - linux
+
+language: d
+
+d:
+ - dmd
+ - ldc
+ - ldc-beta
+
+matrix:
+  allow_failures:
+    - {d: ldc-beta}
+
+branches:
+  only:
+    - master
+
+script:
+ - dub test -c unittest-blas
+#  - if [ "$DC" = "ldc2" ]; then rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out; fi
+
+addons:
+  apt:
+    update: true
+    packages:
+     - liblapack-dev

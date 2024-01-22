@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch:
+    # allow this workflow to be triggered manually
+
+jobs:
+  setup:
+    name: 'Load job configuration'
+    runs-on: ubuntu-20.04
+    outputs:
+      compilers: ${{ steps.load-config.outputs.compilers }}
+    steps:
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+    # This step checks if we want to only run tests on a specific platform or
+    # if we want to skip CI entirely, then outputs the compilers to be used for
+    # each job.
+    - id: load-config
+      uses: actions/github-script@9ac08808f993958e9de277fe43a64532a609130e
+      with:
+        script: |
+          const base_compiler_config = require("./.github/workflows/compilers.json");
+          const compilers = {"windows": [], "macos": [], "ubuntu": []};
+          const {owner, repo} = context.repo;
+          let commit_sha = context.sha;
+          if (context.eventName == "pull_request") 
+          {
+            commit_sha = context.payload.pull_request.head.sha;
+          }
+
+          const commit = await github.rest.git.getCommit({
+            owner,
+            repo,
+            commit_sha
+          });
+          const head_commit_message = commit.data.message;
+
+          if (head_commit_message.startsWith("[windows-only]"))
+          {
+            compilers.windows = base_compiler_config;
+          }
+          else if (head_commit_message.startsWith("[macos-only]"))
+          {
+            compilers.macos = base_compiler_config;
+          }
+          else if (head_commit_message.startsWith("[ubuntu-only]"))
+          {
+            compilers.ubuntu = base_compiler_config;
+          }
+          else if (!head_commit_message.startsWith("[skip-ci]"))
+          {
+            compilers.windows = base_compiler_config;
+            compilers.macos = base_compiler_config;
+            compilers.ubuntu = base_compiler_config;
+          }
+          core.setOutput("compilers", JSON.stringify(compilers));
+
+  macos:
+    name: '[macos] x86_64/${{ matrix.dc }}'
+    runs-on: macos-latest
+    needs: setup
+    # Only run if the setup phase explicitly defined compilers to be used
+    if: ${{ fromJSON(needs.setup.outputs.compilers).macos != '' && fromJSON(needs.setup.outputs.compilers).macos != '[]' }}
+    continue-on-error: ${{ contains(matrix.dc, 'beta') || contains(matrix.dc, 'master') }}
+    env:
+      ARCH: x86_64
+    strategy:
+      fail-fast: false
+      matrix:
+        dc: ${{ fromJSON(needs.setup.outputs.compilers).macos }}
+    steps:
+      - name: Checkout repo 
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          fetch-depth: 0
+      - name: Setup D compiler 
+        uses: dlang-community/setup-dlang@763d869b4d67e50c3ccd142108c8bca2da9df166
+        with:
+          compiler: ${{ matrix.dc }}
+      - name: Install dependencies
+        run: |
+          brew install openblas
+          brew link openblas
+      - name: Cache dub dependencies
+        uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed
+        with:
+          path: ~/.dub/packages
+          key: macos-latest-build-${{ hashFiles('**/dub.sdl', '**/dub.json') }}
+          restore-keys: |
+            macos-latest-build-
+      - name: Build / test
+        run: |
+          dub test --arch=$ARCH --build=unittest-cov -c unittest-openblas
+          dub test --arch=$ARCH --build=unittest-cov -c unittest-blas
+        shell: bash
+      - name: Upload coverage data
+        uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b
+
+  ubuntu:
+    name: '[ubuntu] x86_64/${{ matrix.dc }}'
+    runs-on: ubuntu-latest
+    needs: setup
+    # Only run if the setup phase explicitly defined compilers to be used
+    if: ${{ fromJSON(needs.setup.outputs.compilers).ubuntu != '' && fromJSON(needs.setup.outputs.compilers).ubuntu != '[]' }}
+    continue-on-error: ${{ contains(matrix.dc, 'beta') || contains(matrix.dc, 'master') }}
+    env:
+      # Ubuntu no longer has a 32-bit version of LAPACK available, so
+      # we have to drop support. :(
+      ARCH: x86_64 
+    strategy:
+      fail-fast: false
+      matrix:
+        dc: ${{ fromJSON(needs.setup.outputs.compilers).ubuntu }}
+    steps:
+      - name: Checkout repo 
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          fetch-depth: 0
+      - name: Setup D compiler 
+        uses: dlang-community/setup-dlang@763d869b4d67e50c3ccd142108c8bca2da9df166
+        with:
+          compiler: ${{ matrix.dc }}
+      - name: Download dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack-dev
+      - name: Cache dub dependencies
+        uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed
+        with:
+          path: ~/.dub/packages
+          key: ubuntu-latest-build-${{ hashFiles('**/dub.sdl', '**/dub.json') }}
+          restore-keys: |
+            ubuntu-latest-build-
+      - name: Build / test 
+        run: |
+          dub test --arch=$ARCH --build=unittest-cov -c unittest-blas
+        shell: bash
+      - name: Upload coverage data
+        uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b
+  
+  windows:
+    name: '[windows] x86_64/${{ matrix.dc }}'
+    runs-on: windows-latest
+    needs: setup
+    # Only run if the setup phase explicitly defined compilers to be used
+    if: ${{ fromJSON(needs.setup.outputs.compilers).windows != '' && fromJSON(needs.setup.outputs.compilers).windows != '[]' }}
+    continue-on-error: ${{ contains(matrix.dc, 'beta') || contains(matrix.dc, 'master') }}
+    env:
+      ARCH: x86_64
+    strategy:
+      fail-fast: false
+      matrix:
+        dc: ${{ fromJSON(needs.setup.outputs.compilers).windows }}
+    steps:
+      - name: Checkout repo 
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          fetch-depth: 0
+      - name: Setup D compiler 
+        uses: dlang-community/setup-dlang@763d869b4d67e50c3ccd142108c8bca2da9df166
+        with:
+          compiler: ${{ matrix.dc }}
+      - uses: actions/setup-python@9c644ca2ab8e57ea0a487b5ec2f8290740378bfd
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+      # Why oh god does Windows not have a good package manager
+      - name: Install dependencies
+        run: |
+          $CONDA/condabin/conda.bat install -y -c intel -c conda-forge mkl-static lapack
+        shell: bash
+      - name: Cache dub dependencies
+        uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed
+        with:
+          path: ~\AppData\Local\dub
+          key: windows-latest-build-${{ hashFiles('**/dub.sdl', '**/dub.json') }}
+          restore-keys: |
+            windows-latest-build-
+      - name: Build / test
+        run: |
+          echo 'lflags "/LIBPATH:$CONDA/Library/lib"' >> dub.sdl
+          dub test --arch=$ARCH --build=unittest-cov -c unittest-mkl-sequential
+        shell: bash
+      - name: Upload coverage data
+        uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b
+    
+        
