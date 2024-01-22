@@ -1,0 +1,35 @@
+language: d
+
+dist: bionic
+
+# Note:
+# There is an error "version `GLIBC_2.27' not found" when trying to use a newer LDC than 1.26
+# Unresolved and blocks us on 1.26 on travis
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -y ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then sudo apt-get install -y gcc-multilib ; fi
+
+arch:
+  - arm64
+
+os:
+  - linux
+
+d:
+ - ldc-1.26.0
+ - ldc-1.24.0
+
+
+# Note: run 64-bit tests if (arch == amd64) || (compiler is LDC)
+# Note: run 32-bit tests on Linux x86 only
+# Note: need '' escaping because of fricking YAML
+script:
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} ; fi'
+  - 'if [[ "${DC: -4}" == "ldc2" || "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} ; fi'
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-inst --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_CPU_ARCH" == "amd64" ]]; then dub test -b unittest-release-inst --compiler=${DC} -a x86 ; fi

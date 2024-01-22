@@ -1,0 +1,10 @@
+{
+    "name": "sha256",
+
+    "dflags-ldc": ["-mattr=+sha,+sse4.2,+popcnt"],
+
+    "dependencies":
+    {
+        "intel-intrinsics": { "path": "../.." }
+    }
+}
