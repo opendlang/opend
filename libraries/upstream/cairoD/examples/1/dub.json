@@ -1,0 +1,41 @@
+{
+    "description": "cairoD example",
+    "targetName": "example",
+    "authors": [
+        "Johannes Pfau"
+    ],
+    "version": "~master",
+    "homepage": "https://github.com/cairoD/cairoD",
+    "name": "cairod-example",
+    "copyright": "Copyright © 2011-2015, Johannes Pfau",
+    "license": "BSL-1.0",
+    "sourcePaths": [".", "../common"],
+    "importPaths": ["../common"],
+    "targetPath": "bin",
+    "dependencies": {
+        "cairod": {"version": ">=0.0.1", "path": "../../"}
+    },
+    "configurations": [
+        {
+            "name": "minimal",
+            "targetType": "executable",
+            "versions": ["CairoPNG"],
+            "libs-windows-x86-dmd": ["../../lib/32/mars/cairo"],
+            "libs-windows-x86-gdc": ["../../lib/32/msvc_mingw/cairo"],
+            "libs-windows-x86-ldc": ["../../lib/32/msvc_mingw/cairo"],            
+            "libs-windows-x86_64": ["../../lib/64/cairo"]
+        },
+        {
+            "name": "gtk3",
+            "targetType": "executable",
+            "libs": ["cairo", "gobject-2.0", "gdk-3", "gtk-3"],
+            "versions": ["GTK", "GTK3", "CairoPNG"]
+        },
+        {
+            "name": "gtk2",
+            "targetType": "executable",
+            "libs": ["cairo", "gobject-2.0", "gdk-x11-2.0", "gtk-x11-2.0"],
+            "versions": ["GTK", "CairoPNG"]
+        }
+    ]
+}
