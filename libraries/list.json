@@ -1,0 +1,134 @@
+{
+	"packages": [
+		{
+			"repository": "https://github.com/adamdruppe/arsd",
+			"sourceDirectory": "."
+		},
+		{
+			"repository": "https://github.com/libmir/mir-core",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-algorithm",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-stat",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-ion",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-optim",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-glas",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-random",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-integral",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-lapack",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/mir-cpuid",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/libmir/lapack",
+			"sourceDirectory": "source"
+		},
+
+		{
+			"repository": "https://github.com/ParticlePeter/ErupteD",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/ikod/ikod-containers",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/ikod/dlang-requests",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/p0nce/binrange",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/FreeSlave/standardpaths",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/intel-intrinsics",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/gamut",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/audio-formats",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/audio-formats",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/commonmark-d",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/AuburnSounds/printed",
+			"sourceDirectory": ".",
+			"excludedDirectories": ["examples"]
+		},
+		{
+			"repository": "https://github.com/atilaneves/automem",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/TurkeyMan/color",
+			"sourceDirectory": "."
+		},
+		{
+			"repository": "https://github.com/BlackEdder/ggplotd",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/dlang-community/containers",
+			"sourceDirectory": "src"
+		},
+		{
+			"repository": "https://github.com/DlangScience/dstats",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/msoucy/painlesstraits",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/cairoD/cairoD",
+			"sourceDirectory": "src"
+		},
+		{
+			"repository": "https://github.com/DerelictOrg/DerelictUtil",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/DerelictOrg/DerelictFt",
+			"sourceDirectory": "source"
+		}
+	]
+}
