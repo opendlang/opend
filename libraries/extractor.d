@@ -18,11 +18,12 @@ void getProject(string url, string sourceDir, string[] excludedDirectories) {
 			writeln("clone ", url, " ", getcwd, "/", folder);
 			wait(spawnShell("git remote add -f " ~ folder ~ " " ~ url ~ ".git"));
 			wait(spawnShell("git merge -s ours --no-commit --allow-unrelated-histories " ~ folder ~ "/master"));
-			auto thing = executeShell("git read-tree --prefix=" ~ folder ~ "/ -u " ~ folder ~ "/master");
+			auto thing = executeShell("git read-tree --prefix=libraries/upstream/" ~ folder ~ "/ -u " ~ folder ~ "/master");
 			// auto thing = executeShell("git pull -s subtree "~folder~" " ~ url ~ ".git");
 			if(thing.status != 0)
 				throw new Exception("clone " ~ url ~ " failed");
-			chdir(folder);
+			wait(spawnShell("git commit -a -m \"add " ~ folder ~ "\""));
+			// chdir(folder);
 		} else {
 		/+
 			chdir(folder);
@@ -41,6 +42,7 @@ void getProject(string url, string sourceDir, string[] excludedDirectories) {
 		throw new Exception("not implemented repo");
 	}
 
+	/+
 	scope(exit)
 		chdir("..");
 
@@ -51,6 +53,7 @@ void getProject(string url, string sourceDir, string[] excludedDirectories) {
 		copyInFile("../../importable/", filename);
 		writeln(filename);
 	}
+	+/
 }
 
 string extractModuleName(string code) {
