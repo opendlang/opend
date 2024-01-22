@@ -1,0 +1,3 @@
+name "midi2wav"
+license "GPL-v2"
+dependency "audio-formats" path="../.."

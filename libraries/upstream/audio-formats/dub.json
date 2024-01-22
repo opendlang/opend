@@ -1,0 +1,23 @@
+{
+    "name": "audio-formats",
+    "description": "Streaming decoding support for popular audio formats.",
+    "license": "BSL-1.0",
+
+    "configurations": [
+        {
+            "name": "boost",
+            "versions": ["decodeWAV",                           "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
+                         "encodeWAV"]
+        },
+        {
+            "name": "mit",
+            "versions": ["decodeWAV", "decodeQOA", "encodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG",               "decodeMOD", "decodeXM",
+                         "encodeWAV" ]
+        },
+        {
+            "name": "lgpl",
+            "versions": ["decodeWAV", "decodeQOA", "encodeQOA", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS", "decodeMOD", "decodeXM",
+                         "encodeWAV"]
+        }
+    ]
+}
