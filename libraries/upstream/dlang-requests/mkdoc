@@ -1,0 +1,12 @@
+rm -f docs.json
+rm -f docs/requests/*html
+rm -f docs/requests/request/*html
+#dmd -o- -w -Xfdocs.json -Df__dummy.html -Isource source/requests/request.d -vcolumns
+#dub run ddox -- filter docs.json --only-documented=false --min-protection=Public
+#dub run ddox -- generate-html docs.json docs
+
+dmd -o- -w -Xfdocs.json -Df__dummy.html -Isource -I../cachetools/source source/requests/request.d source/requests/base.d source/requests/package.d -I~/.dub/packages/automem-0.6.2/automem/source/
+./alter.py docs.json > docs.json.1 && mv docs.json.1 docs.json
+rm -f docs/file_hashes.json
+dub run ddox -- filter docs.json --only-documented=false --min-protection=Public
+dub run ddox -- generate-html docs.json --file-name-style=unaltered docs

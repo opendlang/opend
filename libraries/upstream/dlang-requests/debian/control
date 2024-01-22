@@ -1,0 +1,27 @@
+Source: dlang-requests
+Section: devel
+Priority: optional
+Maintainer: vagrant <igor.khasilev@gmail.com>
+Build-Depends: debhelper (>= 11),
+               dh-dlang,
+               meson
+Standards-Version: 4.1.4
+Homepage: https://github.com/ikod/dlang-requests
+
+Package: libdlang-requests0
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Description: dlang http requests library
+ https://github.com/ikod/dlang-requests
+
+Package: libdlang-requests-dev
+Section: libdevel
+Architecture: any
+Depends: libdlang-requests0 (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: dlang http requests library -- development files
+ https://github.com/ikod/dlang-requests
+ .
+ This package contains D development files for a dlang-requests

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module requests.base</title>
+		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
+		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../scripts/jquery.js">/**/</script><script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module selected">
+						<a href="../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module requests.base</h1><p></p>
+			<section></section>
+			<section>
+				<h2>Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="formData" class="public" href="../requests/base/formData.html">formData</a><span class="decoration">(name, f, parameters)</span>
+							</code>
+						</td>
+						<td>Helper to create form elements from File.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="formData" class="public" href="../requests/base/formData.html">formData</a><span class="decoration">(name, b, parameters)</span>
+							</code>
+						</td>
+						<td>Helper to create form elements from ubyte[].
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="formData" class="public" href="../requests/base/formData.html">formData</a><span class="decoration">(name, b, parameters)</span>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Interfaces</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="Auth" class="public" href="../requests/base/Auth.html">Auth</a>
+							</code>
+						</td>
+						<td>Interface to provide user info and http headers requred for server auth.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="FiniteReadable" class="public" href="../requests/base/FiniteReadable.html">FiniteReadable</a>
+							</code>
+						</td>
+						<td>This is File-like interface for sending data to multipart forms
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Classes</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="BasicAuthentication" class="public" href="../requests/base/BasicAuthentication.html">BasicAuthentication</a>
+							</code>
+						</td>
+						<td>Basic authentication.
+ Adds <b>Authorization: Basic</b> header to request
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="FormDataBytes" class="public" href="../requests/base/FormDataBytes.html">FormDataBytes</a>
+							</code>
+						</td>
+						<td>Class to provide FiniteReadable from user-provided ubyte[]
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="FormDataFile" class="public" href="../requests/base/FormDataFile.html">FormDataFile</a>
+							</code>
+						</td>
+						<td>Class to provide FiniteReadable from File
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="RequestException" class="public" href="../requests/base/RequestException.html">RequestException</a>
+							</code>
+						</td>
+						<td>General type exception from Request
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="Response" class="public" href="../requests/base/Response.html">Response</a>
+							</code>
+						</td>
+						<td>Response
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Structs</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="_UH" class="public" href="../requests/base/_UH.html">_UH</a>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="MultipartForm" class="public" href="../requests/base/MultipartForm.html">MultipartForm</a>
+							</code>
+						</td>
+						<td>This struct used to bulld POST's to forms.
+Each part have name and data. data is something that can be read-ed and have size.
+For example this can be string-like object (wrapped for reading) or opened File.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="PostFile" class="public" href="../requests/base/PostFile.html">PostFile</a>
+							</code>
+						</td>
+						<td>Struct to send multiple files in POST request.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="ReceiveAsRange" class="public" href="../requests/base/ReceiveAsRange.html">ReceiveAsRange</a>
+							</code>
+						</td>
+						<td>ReceiveAsRange is InputRange used to supply client with data from response.
+    Each popFront fetch next data portion.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Global variables</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a id="defaultBufferSize" class="private" href="../requests/base/defaultBufferSize.html">
+								<code>defaultBufferSize</code>
+							</a>
+						</td>
+						<td>
+							<code class="prettyprint lang-d"><span class="kwd">immutable</span><span class="pun">(</span><span class="typ">uint</span><span class="pun">)</span></code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

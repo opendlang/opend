@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module requests.request</title>
+		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
+		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../scripts/jquery.js">/**/</script><script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module requests.request</h1><p>This module provides API using Request structure.
+</p><section><p>Structure Request provides configuration, connection pooling, cookie
+ persistance. You can consider it as 'Session' and reuse it - all caches and settings will effective
+ for next requests.
+</p>
+
+<p> Some most usefull settings:
+</p>
+
+<p><table> <tr>  <th>name</th>
+  <th>type</th>
+  <th>meaning</th>
+  <th>default</th>
+ </tr>
+ <tr>  <td>keepAlive</td>
+  <td><code class="lang-d"><span class="typ">bool</span></code></td>
+  <td>use keepalive connection</td>
+  <td><code class="lang-d"><span class="kwd">true</span></code></td>
+ </tr>
+ <tr>  <td>verbosity</td>
+  <td><code class="lang-d"><span class="typ">uint</span></code></td>
+  <td>verbosity level (0, 1, 2 or 3)</td>
+  <td><code class="lang-d"><span class="lit">16</span><span class="pln">KB</span></code></td>
+ </tr>
+ <tr>  <td>maxRedirects</td>
+  <td><code class="lang-d"><span class="typ">uint</span></code></td>
+  <td>maximum redirects allowed (0 to disable redirects)</td>
+  <td><code class="lang-d"><span class="kwd">true</span></code></td>
+ </tr>
+ <tr>  <td>maxHeadersLength</td>
+  <td><code class="lang-d"><span class="pln">size_t</span></code></td>
+  <td>max. acceptable response headers length</td>
+  <td><code class="lang-d"><span class="lit">32</span><span class="pln">KB</span></code></td>
+ </tr>
+ <tr>  <td>maxContentLength</td>
+  <td><code class="lang-d"><span class="pln">size_t</span></code></td>
+  <td>max. acceptable content length</td>
+  <td><code class="lang-d"><span class="lit">0</span></code> - unlimited</td>
+ </tr>
+ <tr>  <td>bufferSize</td>
+  <td><code class="lang-d"><span class="pln">size_t</span></code></td>
+  <td>socket io buffer size</td>
+  <td><code class="lang-d"><span class="lit">16</span><span class="pln">KB</span></code></td>
+ </tr>
+ <tr>  <td>timeout</td>
+  <td><code class="lang-d"><span class="typ">Duration</span></code></td>
+  <td>timeout on connect or data transfer</td>
+  <td><code class="lang-d"><span class="lit">30<wbr/></span><span class="pun">.</span><span class="pln">seconds</span></code></td>
+ </tr>
+ <tr>  <td>proxy</td>
+  <td><code class="lang-d"><span class="typ">string</span></code></td>
+  <td>url of the HTTP/HTTPS/FTP proxy</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+ <tr>  <td>bind</td>
+  <td><code class="lang-d"><span class="typ">string</span></code></td>
+  <td>use local address for outgoing connections</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+ <tr>  <td>useStreaming</td>
+  <td><code class="lang-d"><span class="typ">bool</span></code></td>
+  <td>receive response data as <code class="lang-d"><span class="typ">InputRange</span></code> in case it can't fit memory</td>
+  <td><code class="lang-d"><span class="kwd">false</span></code></td>
+ </tr>
+ <tr>  <td>addHeaders</td>
+  <td><code class="lang-d"><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span></code></td>
+  <td>custom headers</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+ <tr>  <td>cookie</td>
+  <td><code class="lang-d"><span class="typ">Cookie</span><span class="pun">[]</span></code></td>
+  <td>cookies you will send to server</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+ <tr>  <td>authenticator</td>
+  <td><code class="lang-d"><span class="typ">Auth</span></code></td>
+  <td>authenticator</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+ <tr>  <td>socketFactory</td>
+  <td>see doc for socketFactory</td>
+  <td>user-provided connection factory</td>
+  <td><code class="lang-d"><span class="kwd">null</span></code></td>
+ </tr>
+</table>
+</p>
+</section>
+
+			<section><section><h2>Example</h2>
+<pre class="code"><code class="lang-d"><span class="kwd">import <a href="../requests.html"></span><span class="pln">requests</span></a><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">datetime</span><span class="pun">;
+
+</span><span class="typ">void </span><span class="pln">main</span><span class="pun">()
+{
+    <a href="../requests/request/Request.html"></span><span class="typ">Request</span></a><span class="pln"> rq </span><span class="pun">= <a href="../requests/request/Request.html"></span><span class="typ">Request</span></a><span class="pun">();
+    </span><span class="typ">Response </span><span class="pln">rs</span><span class="pun">;
+    </span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">timeout </span><span class="pun">= </span><span class="lit">10<wbr/></span><span class="pun">.</span><span class="pln">seconds</span><span class="pun">;
+    </span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">addHeaders</span><span class="pun">([</span><span class="str">"User-Agent"</span><span class="pun">: </span><span class="str">"unknown"</span><span class="pun">]);
+    </span><span class="pln">rs </span><span class="pun">= </span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">get</span><span class="pun">(</span><span class="str">"https://httpbin.org/get"</span><span class="pun">);
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">rs<wbr/></span><span class="pun">.</span><span class="pln">code</span><span class="pun">==</span><span class="lit">200</span><span class="pun">);
+    </span><span class="pln">rs </span><span class="pun">= </span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">post</span><span class="pun">(</span><span class="str">"http://httpbin.org/post"</span><span class="pun">, </span><span class="str">"abc"</span><span class="pun">);
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">rs<wbr/></span><span class="pun">.</span><span class="pln">code</span><span class="pun">==</span><span class="lit">200</span><span class="pun">);
+}</span></code></pre>
+</section>
+</section>
+			<section>
+				<h2>Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="__unittest_L637_C1" class="public" href="../requests/request/__unittest_L637_C1.html">__unittest_L637_C1</a><span class="decoration">()</span>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="addInterceptor" class="public" href="../requests/request/addInterceptor.html">addInterceptor</a><span class="decoration">(i)</span>
+							</code>
+						</td>
+						<td>Add module-level interceptor. Each Request will include it in the processing.
+ it is handy as you can change behaviour of your requests without any changes
+ in your code, just install interceptor before any call to Request().
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Interfaces</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="Interceptor" class="public" href="../requests/request/Interceptor.html">Interceptor</a>
+							</code>
+						</td>
+						<td>'Intercepror' intercepts Request. It can modify request, or log it, or cache it
+  or do whatever you need. When done it can return response or
+  pass it to next request handler.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Classes</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="RequestHandler" class="public" href="../requests/request/RequestHandler.html">RequestHandler</a>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Structs</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="_LineReader" class="public" href="../requests/request/_LineReader.html">_LineReader</a>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="Request" class="public" href="../requests/request/Request.html">Request</a>
+							</code>
+						</td>
+						<td>Structure Request provides configuration, connection pooling, cookie
+ persistance. You can consider it as 'Session'.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Global variables</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a id="_static_interceptors" class="private" href="../requests/request/_static_interceptors.html">
+								<code>_static_interceptors</code>
+							</a>
+						</td>
+						<td>
+							<code class="prettyprint lang-d"><a href="../requests/request/Interceptor.html"><span class="typ">Interceptor</span></a><span class="pun">[]</span></code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Aliases</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a id="NetStreamFactory" class="public" href="../requests/request/NetStreamFactory.html">
+								<code>NetStreamFactory</code>
+							</a>
+						</td>
+						<td>
+							<code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">NetworkStream</span> <span class="kwd">delegate</span><span class="pun">(</span><span class="typ">string</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="typ">ushort</span><span class="pun">)</span></code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

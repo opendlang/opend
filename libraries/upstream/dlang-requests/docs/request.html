@@ -1,0 +1,1210 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>requests.request</title>
+    <style type="text/css" media="screen">
+      html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p,
+      blockquote, pre, a, abbr, address, cite, code, del, dfn, em, figure,
+      img, ins, kbd, q, s, samp, small, strong, sub, sup, var, b, u, i, dl,
+      dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption,
+      tbody, tfoot, thead, tr, th, td {
+        background: transparent none repeat scroll 0 0;
+        border: 0 none;
+        font-size: 100%;
+        margin: 0;
+        outline: 0 none;
+        padding: 0;
+        vertical-align: baseline;
+      }
+
+      h1 { font-size: 200%; }
+      h2 { font-size: 160%; }
+      h3 { font-size: 120%; }
+      h4 { font-size: 100%; }
+      h5 { font-size: 80%; }
+      h6 { font-size: 80%; font-weight: normal; }
+
+      ul, ol {
+        margin: 1.4em 0;
+      }
+      ul ul, ol ol, ul ol, ol ul {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      ul, ol {
+        margin-left: 2.8em;
+      }
+
+      ol {
+        list-style: decimal;
+      }
+      ol ol {
+        list-style: lower-alpha;
+      }
+      ol ol ol {
+        list-style: lower-roman;
+      }
+      ol ol ol ol {
+        list-style: decimal;
+      }
+
+      blockquote {
+        margin: 0.1em;
+        margin-left: 1em;
+        border-left: 2px solid #cccccc;
+        padding-left: 0.7em;
+      }
+
+      .color_red { color: #dc322f; }
+      .color_blue { color: #268bd2; }
+      .color_green { color: #859901; }
+      .color_yellow { color: #b58901; }
+      .color_black { color: black; }
+      .color_white { color: white; }
+
+      .font_big {
+        font-size: 1.2em;
+      }
+
+      .ddoc_section_h {
+        font-weight: bold;
+        font-size: 13px;
+        line-height: 19.5px;
+        margin-top: 11px;
+        display: block;
+      }
+
+      body.dlang .dlang {
+        display: inline-block;
+      }
+
+      body.dlang .declaration .dlang {
+          display: block;
+      }
+
+      body.dlang .ddoc_header_anchor a.dlang {
+        display: block;
+        color: rgba(0, 136, 204, 1);
+        text-decoration: none;
+      }
+
+      body.dlang .ddoc_header_anchor .code {
+        color: rgba(0, 136, 204, 1);
+      }
+
+      #ddoc_main .module {
+          border-color: currentColor rgba(233, 233, 233, 1) rgba(233, 233, 233, 1);
+          border-style: none solid solid;
+          border-width: 0 1px 1px;
+          overflow-x: hidden;
+          padding: 15px;
+      }
+
+      #ddoc_main .section .section {
+        margin-top: 0;
+      }
+
+      #ddoc_main .ddoc_module_members_section {
+          padding: 1px 0 0;
+          transition: transform 0.3s ease 0s;
+      }
+
+      #ddoc_main .ddoc_member, #ddoc_main .ddoc_module_members section.intro {
+          background: #fff none repeat scroll 0 0;
+          list-style-type: none;
+          width: 100%;
+      }
+
+      #ddoc_main .ddoc_header_anchor {
+          font-size: 1.4em;
+          transition: transform 0.3s ease 0s;
+      }
+
+      #ddoc_main .ddoc_header_anchor > .code {
+          display: inline-block;
+
+      }
+
+      #ddoc_main .ddoc_decl {
+        background-color: transparent;
+        height: 100%;
+        left: 0;
+        top: 0;
+        padding: 0;
+        padding-left: 15px;
+      }
+
+      #ddoc_main .ddoc_decl .section, #ddoc_main .section.ddoc_sections {
+        background: white none repeat scroll 0 0;
+        margin: 0;
+        padding: 5px;
+        position: relative;
+        border-radius: 5px;
+      }
+
+      #ddoc_main .ddoc_decl .section h4:first-of-type, #ddoc_main .section.ddoc_sections h4:first-of-type {
+        font-size: 13px;
+        line-height: 1.5;
+        margin-top: 21px;
+      }
+
+      #ddoc_main .section .declaration {
+          margin-top: 21px;
+      }
+
+      #ddoc_main .section .declaration .code {
+          color: rgba(0, 0, 0, 1);
+          margin-bottom: 15px;
+          padding-bottom: 6px;
+      }
+
+      #ddoc_main .declaration div .para {
+          margin-bottom: 0;
+      }
+
+      #ddoc_main .ddoc_params .graybox tr td:first-of-type {
+        padding: 7px;
+        text-align: right;
+        vertical-align: top;
+        word-break: normal;
+        white-space: nowrap;
+      }
+
+      #ddoc_main .ddoc_params .graybox {
+        border: 0 none;
+      }
+
+      #ddoc_main .ddoc_params .graybox td {
+        border-color: rgba(214, 214, 214, 1);
+      }
+
+      #ddoc_main .ddoc_params .graybox tr:first-child > td {
+        border-top: 0 none;
+      }
+
+      #ddoc_main .ddoc_params .graybox tr:last-child > td {
+        border-bottom: 0 none;
+      }
+
+      #ddoc_main .ddoc_params .graybox tr > td:first-child {
+        border-left: 0 none;
+      }
+
+      #ddoc_main .ddoc_params .graybox tr > td:last-child {
+        border-right: 0 none;
+        width: 100%;
+      }
+
+      #ddoc_main em.term, #ddoc_main em.term .code {
+        color: rgba(65, 65, 65, 1);
+        font-size: 12px;
+        font-style: italic;
+        line-height: 1.5;
+      }
+
+      #ddoc_main .see-also {
+        cursor: pointer;
+        font-family: Menlo,monospace;
+      }
+
+      #ddoc_main .ddoc_decl .section > div:last-of-type {
+        margin-bottom: 15px;
+      }
+
+      #ddoc_main .ddoc_member, #ddoc_main .ddoc_module_members {
+          transition: transform 0.3s ease 0s;
+      }
+
+      #ddoc_main .code_sample {
+        background: inherit;
+      }
+
+      #ddoc_main .declaration .code-line {
+          display: block;
+          font: 1em Menlo,monospace;
+      }
+
+      #ddoc_main a[name] {
+        margin: -112px 0 0;
+        padding-top: 112px;
+      }
+
+      #ddoc_main .ddoc_decl td {
+        max-width: inherit;
+      }
+
+      #ddoc_main .declaration a {
+        color: inherit;
+      }
+
+      #ddoc_main .declaration a:hover {
+          color: rgba(0, 136, 204, 1);
+          text-decoration: underline;
+      }
+
+      body.ddoc {
+        background-color: transparent;
+        color: rgba(0, 0, 0, 1);
+        font-family: Helvetica,Arial,sans-serif;
+        font-size: 62.5%;
+        margin: 0;
+        border: 0;
+        left: 0;
+        top: 0;
+        padding: 0;
+      }
+
+      .ddoc a[name] {
+        display: block;
+        height: 0;
+        margin: -85px 0 0;
+        padding-top: 85px;
+        width: 0;
+      }
+
+      .ddoc .module {
+          border-color: transparent;
+          background-color: rgba(255, 255, 255, 1);
+          border-color: currentColor rgba(233, 233, 233, 1) rgba(233, 233, 233, 1);
+          border-image: none;
+          border-style: none solid solid;
+          border-width: 0 1px 1px;
+          box-shadow: 0 0 1px rgba(0, 0, 0, 0.07);
+          display: block;
+          margin-left: 0;
+          min-height: calc(100% - 173px);
+          overflow: auto;
+          padding-bottom: 100px;
+      }
+
+      .ddoc .content_wrapper {
+          background-color: rgba(242, 242, 242, 1);
+          margin: 0 auto;
+          max-width: 980px;
+      }
+
+      .ddoc .section {
+        padding: 15px 25px 30px;
+      }
+
+      .ddoc .section .section {
+        margin: 30px 0 0;
+        padding: 0;
+      }
+
+      .ddoc .para {
+        color: rgba(65, 65, 65, 1);
+        font-size: 1.4em;
+        line-height: 145%;
+        margin-bottom: 15px;
+      }
+
+      .ddoc .ddoc_examples .para {
+        margin-bottom: 0;
+      }
+
+      .ddoc .module_name {
+          color: rgba(0, 0, 0, 1);
+          display: block;
+          font-family: Helvetica;
+          font-size: 2.8em;
+          font-weight: 100;
+          margin-bottom: 0;
+          padding: 15px 0;
+      }
+
+      .ddoc .module a {
+          color: rgba(0, 136, 204, 1);
+          text-decoration: none;
+      }
+
+      .ddoc .code {
+        color: rgba(128, 128, 128, 1);
+        font-family: Menlo,monospace;
+        font-size: 0.85em;
+        word-wrap: break-word;
+      }
+
+      .ddoc .code i {
+        font-style: normal;
+      }
+
+      .ddoc .code .code {
+        font-size: 1em;
+      }
+
+      .ddoc .code_sample {
+        background-clip: padding-box;
+        margin: 1px 0;
+        text-align: left;
+      }
+
+      .ddoc .code_sample {
+        display: block;
+        font-size: 1.4em;
+        margin-left: 21px;
+      }
+
+      .ddoc ol .code_sample {
+        font-size: 1em;
+      }
+
+      .ddoc .code_lines {
+        counter-reset: li;
+        line-height: 1.6em;
+        list-style: outside none none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .ddoc .code_listing .code_sample div {
+        margin-left: 13px;
+        width: 93%;
+      }
+
+      .ddoc .code_listing .code_sample div .code_lines li {
+        list-style-type: none;
+        margin: 0;
+        padding-right: 10px;
+      }
+
+      .ddoc .code_sample div .code_lines li::before {
+        margin-left: -33px;
+        margin-right: 25px;
+      }
+
+      .ddoc .code_sample div .code_lines li:nth-child(n+10)::before {
+        margin-left: -39px;
+        margin-right: 25px;
+      }
+
+      .ddoc .code_sample div .code_lines li:nth-child(n+100)::before {
+        margin-left: -46px;
+        margin-right: 25px;
+      }
+
+      .ddoc .code_sample .code_lines .code {
+        color: #000;
+      }
+
+      .ddoc div.dlang {
+        margin: 10px 0 21px;
+        padding: 4px 0 2px 10px;
+      }
+
+      .ddoc div.dlang {
+          margin: 10px 0 21px;
+          padding: 4px 0 2px 10px;
+      }
+
+      .ddoc div.dlang {
+        border-left: 5px solid rgba(0, 155, 51, 0.2);
+      }
+
+      .ddoc .code_lines li::before {
+        color: rgba(128, 128, 128, 1);
+        content: counter(li, decimal);
+        counter-increment: li;
+        font-family: Menlo,monospace;
+        font-size: 0.9em;
+        margin-right: 16px;
+      }
+
+      .ddoc .code_lines li {
+        padding-left: 0;
+        white-space: pre-wrap;
+      }
+
+      .ddoc .code_lines li:only-of-type::before {
+        color: rgba(255, 255, 255, 1);
+        content: " ";
+      }
+
+      .ddoc .code_lines li:only-of-type {
+        color: rgba(255, 255, 255, 1);
+        content: " ";
+      }
+
+      .ddoc .code_lines li:nth-child(n+10) {
+        text-indent: -17px;
+      }
+
+      .ddoc .code_lines li:nth-child(n+10)::before {
+        margin-right: 12px;
+      }
+
+      .ddoc .graybox {
+        border: 1px solid rgba(233, 233, 233, 1);
+        border-collapse: collapse;
+        border-spacing: 0;
+        empty-cells: hide;
+        margin: 20px 0 36px;
+        text-align: left;
+      }
+
+      .ddoc .graybox p {
+        margin: 0;
+        min-width: 50px;
+      }
+
+      .ddoc th {
+        margin: 0;
+        max-width: 260px;
+        padding: 5px 10px 5px 10px;
+        vertical-align: bottom;
+      }
+
+      .ddoc td {
+        border: 1px solid rgba(233, 233, 233, 1);
+        margin: 0;
+        max-width: 260px;
+        padding: 5px 10px 5px 10px;
+        vertical-align: middle;
+      }
+
+      .punctuation {
+        color: rgba(0, 0, 0, 1);
+      }
+
+      .comment {
+        color: rgba(0, 131, 18, 1);
+      }
+
+      .operator {
+        color: #000;
+      }
+
+      .keyword {
+        color: rgba(170, 13, 145, 1);
+      }
+
+      .keyword_type {
+        color: rgba(170, 51, 145, 1);
+      }
+
+      .string_literal {
+        color: rgba(196, 26, 22, 1);
+      }
+
+      .ddoc_psuper_symbol {
+        color: rgba(92, 38, 153, 1);
+      }
+
+      .param {
+        color: rgba(0, 0, 0, 1);
+      }
+
+      .psymbol {
+        color: rgba(0, 0, 0, 1);
+      }
+
+      .ddoc_member_header .ddoc_header_anchor .code {
+        font-size: 1em;
+      }
+    </style>
+  </head>
+  <body id="ddoc_main" class="ddoc dlang">
+    <div class="content_wrapper">
+      <article class="module">
+        <h1 class="module_name">requests.request</h1>
+        <section id="module_content"><section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    This module provides API using Request structure.
+
+  </p>
+</div>
+<div class="ddoc_description">
+  <h4>Discussion</h4>
+  <p class="para">
+    Structure Request provides configuration, connection pooling, cookie
+ persistance. You can consider it as 'Session' and reuse it - all caches and settings will effective
+ for next requests.
+<br><br>
+ Some most usefull settings:
+<br><br>
+<table> <tr>  <th>name</th>
+  <th>type</th>
+  <th>meaning</th>
+  <th>default</th>
+ </tr>
+ <tr>  <td>keepAlive</td>
+  <td><code class="code">bool</code></td>
+  <td>use keepalive connection</td>
+  <td><code class="code">true</code></td>
+ </tr>
+ <tr>  <td>verbosity</td>
+  <td><code class="code">uint</code></td>
+  <td>verbosity level (0, 1, 2 or 3)</td>
+  <td><code class="code">16KB</code></td>
+ </tr>
+ <tr>  <td>maxRedirects</td>
+  <td><code class="code">uint</code></td>
+  <td>maximum redirects allowed (0 to disable redirects)</td>
+  <td><code class="code">true</code></td>
+ </tr>
+ <tr>  <td>maxHeadersLength</td>
+  <td><code class="code">size_t</code></td>
+  <td>max. acceptable response headers length</td>
+  <td><code class="code">32KB</code></td>
+ </tr>
+ <tr>  <td>maxContentLength</td>
+  <td><code class="code">size_t</code></td>
+  <td>max. acceptable content length</td>
+  <td><code class="code">0</code> - unlimited</td>
+ </tr>
+ <tr>  <td>bufferSize</td>
+  <td><code class="code">size_t</code></td>
+  <td>socket io buffer size</td>
+  <td><code class="code">16KB</code></td>
+ </tr>
+ <tr>  <td>timeout</td>
+  <td><code class="code">Duration</code></td>
+  <td>timeout on connect or data transfer</td>
+  <td><code class="code">30.seconds</code></td>
+ </tr>
+ <tr>  <td>proxy</td>
+  <td><code class="code">string</code></td>
+  <td>url of the HTTP/HTTPS/FTP proxy</td>
+  <td><code class="code">null</code></td>
+ </tr>
+ <tr>  <td>bind</td>
+  <td><code class="code">string</code></td>
+  <td>use local address for outgoing connections</td>
+  <td><code class="code">null</code></td>
+ </tr>
+ <tr>  <td>useStreaming</td>
+  <td><code class="code">bool</code></td>
+  <td>receive response data as <code class="code">InputRange</code> in case it can't fit memory</td>
+  <td><code class="code">false</code></td>
+ </tr>
+ <tr>  <td>addHeaders</td>
+  <td><code class="code">string[string]</code></td>
+  <td>custom headers</td>
+  <td><code class="code">null</code></td>
+ </tr>
+ <tr>  <td>cookie</td>
+  <td><code class="code">Cookie[]</code></td>
+  <td>cookies you will send to server</td>
+  <td><code class="code">null</code></td>
+ </tr>
+ <tr>  <td>authenticator</td>
+  <td><code class="code">Auth</code></td>
+  <td>authenticator</td>
+  <td><code class="code">null</code></td>
+ </tr>
+ <tr>  <td>socketFactory</td>
+  <td>see doc for socketFactory</td>
+  <td>user-provided connection factory</td>
+  <td><code class="code">null</code></td>
+ </tr>
+</table>
+
+
+  </p>
+</div>
+<div class="ddoc_section">
+  <p class="para">
+    <span class="ddoc_section_h">Example:</span>
+
+<section class="code_listing">
+  <div class="code_sample">
+    <div class="dlang">
+      <ol class="code_lines">
+        <li><code class="code"><span class="keyword">import</span> requests;
+<span class="keyword">import</span> std.datetime;
+
+<span class="keyword">void</span> main()
+{
+    Request rq = Request();
+    Response rs;
+    rq.timeout = 10.seconds;
+    rq.addHeaders([<span class="string_literal">"User-Agent"</span>: <span class="string_literal">"unknown"</span>]);
+    rs = rq.get(<span class="string_literal">"https://httpbin.org/get"</span>);
+    <span class="keyword">assert</span>(rs.code==200);
+    rs = rq.post(<span class="string_literal">"http://httpbin.org/post"</span>, <span class="string_literal">"abc"</span>);
+    <span class="keyword">assert</span>(rs.code==200);
+}
+</code></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+  </p>
+</div>
+
+</section>
+<section class="section ddoc_module_members_section">
+  <div class="ddoc_module_members">
+    <ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Interceptor" id="Interceptor"><code class="code">Interceptor</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Interceptor"></span>interface <code class="code">Interceptor</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    'Intercepror' intercepts Request. It can modify request, or log it, or cache it
+  or do whatever you need. When done it can return response or
+  pass it to next request handler.
+
+  </p>
+</div>
+<div class="ddoc_section">
+  <p class="para">
+    <span class="ddoc_section_h">Example:</span>
+
+<section class="code_listing">
+  <div class="code_sample">
+    <div class="dlang">
+      <ol class="code_lines">
+        <li><code class="code"><span class="keyword">class</span> ChangePath : <span class="psymbol">Interceptor</span>
+{
+   Response opCall(Request r, RequestHandler next)
+      {
+          r.path = r.path ~ <span class="string_literal">"get"</span>;
+          <span class="keyword">auto</span> rs = next.handle(r);
+          <span class="keyword">return</span> rs;
+      }
+}
+</code></li>
+      </ol>
+    </div>
+  </div>
+</section>
+   Later in the code you can use this class:
+
+  </p>
+</div>
+<div class="ddoc_section">
+  <p class="para">
+    <span class="ddoc_section_h">Example:</span>
+
+<section class="code_listing">
+  <div class="code_sample">
+    <div class="dlang">
+      <ol class="code_lines">
+        <li><code class="code">Request rq;
+rq.addInterceptor(<span class="keyword">new</span> ChangePath());
+rq.get(<span class="string_literal">"http://example.com"</span>);
+</code></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#addInterceptor" id="addInterceptor"><code class="code">addInterceptor</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="addInterceptor"></span>void <code class="code">addInterceptor</code>(Interceptor <code class="code">i</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Add module-level interceptor. Each Request will include it in the processing.
+ it is handy as you can change behaviour of your requests without any changes
+ in your code, just install interceptor before any call to Request().
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request" id="Request"><code class="code">Request</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request"></span>struct <code class="code">Request</code>;
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Structure <code class="code">Request</code> provides configuration, connection pooling, cookie
+ persistance. You can consider it as 'Session'.
+  </p>
+</div>
+
+</section>
+<ul class="ddoc_members">
+  <li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.uri" id="Request.uri"><code class="code">uri</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.uri"></span>pure @property @safe void <code class="code">uri</code>(string <code class="code">u</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Set and Get <code class="code">uri</code> for next request.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.path" id="Request.path"><code class="code">path</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.path"></span>pure @nogc @property void <code class="code">path</code>(string <code class="code">p</code>);
+<br>
+const pure @nogc @property @safe string <code class="code">path</code>();
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Set/Get <code class="code">path</code> for next request.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.sslSetVerifyPeer" id="Request.sslSetVerifyPeer"><code class="code">sslSetVerifyPeer</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.sslSetVerifyPeer"></span>pure nothrow @nogc @property @safe void <code class="code">sslSetVerifyPeer</code>(bool <code class="code">v</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Enable/disable ssl peer verification..
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.sslSetKeyFile" id="Request.sslSetKeyFile"><code class="code">sslSetKeyFile</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.sslSetKeyFile"></span>pure nothrow @nogc @property @safe void <code class="code">sslSetKeyFile</code>(string <code class="code">p</code>, SSLOptions.filetype <code class="code">t</code> = SSLOptions.filetype.pem);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Set path and format for ssl key file.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.sslSetCertFile" id="Request.sslSetCertFile"><code class="code">sslSetCertFile</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.sslSetCertFile"></span>pure nothrow @nogc @property @safe void <code class="code">sslSetCertFile</code>(string <code class="code">p</code>, SSLOptions.filetype <code class="code">t</code> = SSLOptions.filetype.pem);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Set path and format for ssl certificate file.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.sslSetCaCert" id="Request.sslSetCaCert"><code class="code">sslSetCaCert</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.sslSetCaCert"></span>pure nothrow @nogc @property @safe void <code class="code">sslSetCaCert</code>(string <code class="code">path</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Set <code class="code">path</code> to certificate authority file.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.addHeaders" id="Request.addHeaders"><code class="code">addHeaders</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.addHeaders"></span>void <code class="code">addHeaders</code>(in string[string] <code class="code">headers</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Add <code class="code">headers</code> to request
+
+  </p>
+</div>
+<div class="ddoc_params">
+  <h4>Parameters</h4>
+  <table cellspacing="0" cellpadding="5" border="0" class="graybox">
+    <tbody>
+      <tr class="ddoc_param_row">
+  <td scope="ddoc_param_id">
+  <code class="code">
+    <em class="term">string[string] <code class="code">headers</code></em>
+  </code>
+</td>
+<td>
+  <div class="ddoc_param_desc">
+    <p class="para">
+      <code class="code">headers</code> to send.
+    </p>
+  </div>
+</td>
+</tr>
+
+    </tbody>
+  </table>
+</div>
+<div class="ddoc_section">
+  <p class="para">
+    <span class="ddoc_section_h">Example:</span>
+
+<section class="code_listing">
+  <div class="code_sample">
+    <div class="dlang">
+      <ol class="code_lines">
+        <li><code class="code">   rq = Request();
+   rq.keepAlive = <span class="keyword">true</span>;
+   rq.<span class="psymbol">addHeaders</span>([<span class="string_literal">"X-Header"</span>: <span class="string_literal">"test"</span>]);
+</code></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.clearHeaders" id="Request.clearHeaders"><code class="code">clearHeaders</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.clearHeaders"></span>void <code class="code">clearHeaders</code>();
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Remove any previously added headers.
+
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.exec" id="Request.exec"><code class="code">exec</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.exec"></span>Response <code class="code">exec</code>(string method = "GET", A...)(string <code class="code">url</code>, A <code class="code">args</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Execute GET for http and retrieve file for FTP.
+You have to provide at least <b>uri</b>. All other arguments should conform to HTTPRequest.get or FTPRequest.get depending on the URI scheme.
+When arguments do not conform scheme (for example you try to call get("ftp://somehost.net/pub/README", {"a":"b"}) which doesn't make sense)
+you will receive Exception("Operation not supported for ftp")
+
+  </p>
+</div>
+<div class="ddoc_description">
+  <h4>Discussion</h4>
+  <p class="para">
+    Execute POST for http and STOR file for FTP.
+You have to provide  <b>uri</b> and data. Data should conform to HTTPRequest.post or FTPRequest.post depending on the URI scheme.
+When arguments do not conform scheme you will receive Exception("Operation not supported for ftp")
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.hasMultipartForm" id="Request.hasMultipartForm"><code class="code">hasMultipartForm</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.hasMultipartForm"></span>const @property bool <code class="code">hasMultipartForm</code>();
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    helper
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li><li class="ddoc_member">
+  <div class="ddoc_member_header">
+  <div class="ddoc_header_anchor">
+  <a href="#Request.addInterceptor" id="Request.addInterceptor"><code class="code">addInterceptor</code></a>
+</div>
+</div><div class="ddoc_decl">
+  <section class="section">
+    <div class="declaration">
+      <h4>Declaration</h4>
+      <div class="dlang">
+        <p class="para">
+          <code class="code">
+            <span class="ddoc_anchor" id="Request.addInterceptor"></span>void <code class="code">addInterceptor</code>(Interceptor <code class="code">i</code>);
+
+          </code>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="ddoc_decl">
+  <section class="section ddoc_sections">
+  <div class="ddoc_summary">
+  <p class="para">
+    Add interceptor to request.
+  </p>
+</div>
+
+</section>
+
+</div>
+
+</li>
+</ul>
+
+</div>
+
+</li>
+</ul>
+  </div>
+</section>
+</section>
+      </article>
+    </div>
+  </body>
+</html>

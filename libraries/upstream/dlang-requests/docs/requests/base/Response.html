@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Class Response</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module selected">
+						<a href="../../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Class Response</h1><p>Response
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">class</span> <span class="typ">Response</span>
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			
+			<section><h2>Fields</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._code.html" class="package"><code>_code</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ushort</span></code></td><td>Server status code
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._connectedAt.html" class="package"><code>_connectedAt</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">datetime<wbr/></span><span class="pun">.</span><span class="pln">systime<wbr/></span><span class="pun">.</span><span class="typ">SysTime</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._contentLength.html" class="package"><code>_contentLength</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">long</span></code></td><td>Server-supplied content length (can be -1 when unknown)
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._contentReceived.html" class="package"><code>_contentReceived</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">long</span></code></td><td>Length of received content
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._finalURI.html" class="package"><code>_finalURI</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span></code></td><td>Final URI. Can differ from uri() if request go through redirections.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._finishedAt.html" class="package"><code>_finishedAt</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">datetime<wbr/></span><span class="pun">.</span><span class="pln">systime<wbr/></span><span class="pun">.</span><span class="typ">SysTime</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._receiveAsRange.html" class="package"><code>_receiveAsRange</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/ReceiveAsRange.html"><span class="typ">ReceiveAsRange</span></a></code></td><td>stream range stored here
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._requestSentAt.html" class="package"><code>_requestSentAt</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">datetime<wbr/></span><span class="pun">.</span><span class="pln">systime<wbr/></span><span class="pun">.</span><span class="typ">SysTime</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._responseBody.html" class="package"><code>_responseBody</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">Buffer</span>!(ubyte)</code></td><td>Response body
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._responseHeaders.html" class="package"><code>_responseHeaders</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span></code></td><td>Response headers
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._startedAt.html" class="package"><code>_startedAt</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">datetime<wbr/></span><span class="pun">.</span><span class="pln">systime<wbr/></span><span class="pun">.</span><span class="typ">SysTime</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response._uri.html" class="package"><code>_uri</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span></code></td><td>Initial URI
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Properties</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.code.html" class="public property"><code>code</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">ushort</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.contentLength.html" class="public property"><code>contentLength</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">long</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.contentReceived.html" class="public property"><code>contentReceived</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">long</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.finalURI.html" class="public property"><code>finalURI</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.getStats.html" class="public property"><code>getStats</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">Tuple</span>!(core.time.Duration,"connectTime",core.time.Duration,"sendTime",core.time.Duration,"recvTime")</code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.receiveAsRange.html" class="public property"><code>receiveAsRange</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/ReceiveAsRange.html"><span class="typ">ReceiveAsRange</span></a></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.responseBody.html" class="public property"><code>responseBody</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">Buffer</span>!(ubyte)</code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.responseHeaders.html" class="public property"><code>responseHeaders</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.uri.html" class="public property"><code>uri</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.code.html" class="package property"><code>code</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ushort</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.finalURI.html" class="package property"><code>finalURI</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.uri.html" class="package property"><code>uri</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span></code></td><td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.format.html" class="public">
+								<code>format</code>
+							</a>
+						</td>
+						<td>format response to string (hpPqsBTUS).
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.toString.html" class="public">
+								<code>toString</code>
+							</a>
+						</td>
+						<td>string representation of response
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Aliases</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/Response.__xdtor.html" class="public">
+								<code>__xdtor</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

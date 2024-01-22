@@ -1,0 +1,183 @@
+DDOC=<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>$(TITLE)</title>
+    <style type="text/css">
+      body {
+        background-color: $(BCKGND_BGCOLOR);
+        color: $(BCKGND_FGCOLOR);
+      }
+      h1 {
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+      h2 {
+        text-align: center;
+        font-size: 1.4em;
+        font-weight: bold;
+      }
+      p {
+        text-align: justify;
+      }
+      .main {
+        margin-left: auto;
+        margin-right: auto;
+        padding: .5ex 1ex .5ex 1ex;
+        background-color: $(MAIN_BGCOLOR);
+        color: $(MAIN_FGCOLOR);
+        display: table;
+      }
+      .sections {
+        margin-top: 0;
+        padding-left: 2em;
+      }
+      .main > .sections {
+        /* This is the header section for the whole module */
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 0;
+        padding: 1ex 1em 1ex 1em;
+        background-color: $(INTRO_BGCOLOR);
+	color: $(INTRO_FGCOLOR);
+      }
+      .decl, .desc {
+        padding: .5ex 1ex .5ex 1ex;
+        margin: 1ex 0 1ex 0;
+      }
+      .sections, dt.decl > p {
+	/* We wrap dt.decl in a <p> so that the <dt> is allowed to expand to
+	the width of the <dd>, otherwise the background will be truncated. Yes
+	this is ugly but CSS is a bit crippled. */
+        max-width: 45em;
+      }
+      dt.decl, dt.decl > p {
+        margin-top: 0;
+        margin-bottom: 0;
+        text-align: left;
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+      dd.decl {
+        margin-top: 0;
+      }
+      .sections p:first-child, h4.sec + p {
+        margin-top: 0;
+      }
+      .decl {
+        background-color: $(NEST1_BGCOLOR);
+        color: $(NEST1_FGCOLOR);
+      }
+      .decl .decl {
+        background-color: $(NEST2_BGCOLOR);
+	color: $(NEST2_FGCOLOR);
+      }
+      .decl .decl .decl {
+        background-color: $(NEST3_BGCOLOR);
+        color: $(NEST3_FGCOLOR);
+      }
+      dd dl {
+        margin-left: 2em;
+      }
+      h3.memb {
+        text-align: left;
+        padding-left: 2em;
+        font-size: 1em;
+        font-weight: bold;
+      }
+      pre.d_code {
+        padding: .5ex 1ex .5ex 1ex;
+        border: 1px dotted black;
+        background-color: $(CODEBLK_BGCOLOR);
+	color: $(CODEBLK_FGCOLOR);
+      }
+      h4.sec {
+        margin-top: 0;
+        margin-bottom: 0;
+        text-align: left;
+        font-size: 1em;
+        font-weight: bold;
+      }
+      dl.params {
+        margin-top: 0;
+      }
+      .paramname {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-right: 1em;
+        vertical-align: top;
+        font-size: 1.1em;
+        white-space: nowrap;
+      }
+    </style>
+    $(USER_HEAD_ELEMS)
+  </head>
+  <body>
+  $(HEADER)
+  <div class="main">
+    $(INNER_HEADER)
+    <h1>$(MODULE_LABEL) $(TITLE)</h1>
+    $(BODY)
+  </div>
+  $(FOOTER)
+  </body>
+</html>
+
+BCKGND_BGCOLOR=#6080a0
+BCKGND_FGCOLOR=#ffffff
+MAIN_BGCOLOR=#e0e0e0
+MAIN_FGCOLOR=#000000
+INTRO_BGCOLOR=$(NEST1_BGCOLOR)
+INTRO_FGCOLOR=$(NEST1_FGCOLOR)
+NEST1_BGCOLOR=#f0f0f0
+NEST1_FGCOLOR=$(MAIN_FGCOLOR)
+NEST2_BGCOLOR=#f8f8f8
+NEST2_FGCOLOR=$(MAIN_FGCOLOR)
+NEST3_BGCOLOR=#ffffff
+NEST3_FGCOLOR=$(MAIN_FGCOLOR)
+CODEBLK_BGCOLOR=#ffffc0
+CODEBLK_FGCOLOR=#000000
+
+MODULE_LABEL=Module:
+MODMEMB_HEADER=<h2>Details</h2>
+
+RED=<span style="color:red">$0</span>
+BLUE=<span style="color:blue">$0</span>
+GREEN=<span style="color:green">$0</span>
+YELLOW=<span style="color:yellow">$0</span>
+BLACK=<span style="color:black">$0</span>
+WHITE=<span style="color:white">$0</span>
+
+DDOC_SECTIONS=<div class="sections">$0</div>
+DDOC_MODULE_MEMBERS=<div class="modmemb">
+    $(MODMEMB_HEADER)
+    <dl>$0</dl>
+  </div>
+DDOC_CLASS_MEMBERS=<h3 class="memb">Members:</h3>
+  <dl>$0</dl>
+DDOC_STRUCT_MEMBERS=$(DDOC_CLASS_MEMBERS $0)
+
+DDOC_DECL=<dt class="decl"><p>$(CODE $0)</p></dt>
+DDOC_DECL_DD=<dd class="decl desc">$0</dd>
+
+DDOC_SUMMARY=<p>$0</p>
+DDOC_DESCRIPTION=<p>$0</p>
+DDOC_BLANKLINE=</p><p>
+
+CODE=<code>$0</code>
+DDOC_PARAMS=<h4 class="sec">Parameters:</h4>
+  <table class="params">$0</table>
+DDOC_PARAM_ROW=<tr>$0</tr>
+DDOC_PARAM_ID=<td class="paramname">$(CODE $0)</td>
+DDOC_PARAM_DESC=<td class="paramdesc"><p>$0</p></td>
+DDOC_PARAM=$(CODE $(I $0))
+
+DDOC_SECTION_H=<h4 class="sec">$0</h4>
+DDOC_SECTION=<p>$0</p>
+SECTION=$(DDOC_SECTION_H $1) $(DDOC_SECTION $2)
+
+DDOC_RETURNS=$(SECTION Returns:, $0)
+DDOC_EXAMPLES=$(SECTION Examples:, $0)
+DDOC_BUGS=$(SECTION $(RED BUGS:), $0)
+
