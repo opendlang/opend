@@ -1,0 +1,14 @@
+.dub
+dub.selections.json
+docs.json
+__*
+*.o
+*.a
+*.obj
+.*.swp
+*.png
+*.pdf
+*.svg
+cairoD
+docs/
+*-test-*
