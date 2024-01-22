@@ -1,0 +1,348 @@
+/++
++/
+module mir.ion.stream;
+
+import mir.ion.exception;
+import mir.ion.type_code;
+import mir.ion.value;
+import mir.utility: _expect;
+
+/++
+Ion Value Stream
+
+Note: this implementation of value stream doesn't support shared symbol tables.
++/
+struct IonValueStream
+{
+    /// data view.
+    const(ubyte)[] data;
+
+    private alias DG = int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure nothrow @nogc;
+    private alias EDG = int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc;
+
+const:
+
+    //
+    void toString(W)(scope ref W w) scope
+    {
+        import mir.ser.json: serializeJson;
+        return serializeJson(w, this);
+    }
+
+    version (D_Exceptions)
+    {
+        /++
+        +/
+        @safe pure @nogc
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure @nogc dg)
+        {
+            return opApply((IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value) {
+                if (_expect(error, false))
+                    throw error.ionException;
+                return dg(symbolTable, value);
+            });
+        }
+
+        /// ditto
+        @trusted @nogc
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @safe @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @trusted pure
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @safe pure dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @trusted
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @safe dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system pure @nogc
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @system pure @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system @nogc
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @system @nogc dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system pure
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @system pure dg) { return opApply(cast(EDG) dg); }
+
+        /// ditto
+        @system
+        scope int opApply(scope int delegate(scope const(char[])[] symbolTable, scope IonDescribedValue value)
+        @system dg) { return opApply(cast(EDG) dg); }
+    }
+
+    /++
+    +/
+    @trusted pure nothrow @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value) @safe pure nothrow @nogc dg)
+    {
+        import mir.appender: ScopedBuffer;
+        import mir.ion.symbol_table;
+
+        ScopedBuffer!(const(char)[]) symbolTableBuffer = void;
+        symbolTableBuffer.initialize;
+
+        const(ubyte)[] d = data;
+
+        void resetSymbolTable()
+        {
+            symbolTableBuffer.reset;
+            symbolTableBuffer.put(IonSystemSymbolTable_v1);
+        }
+
+        while (d.length)
+        {
+            IonErrorCode error;
+            IonVersionMarker versionMarker;
+            IonDescribedValue describedValue;
+            error = d.parseVersion(versionMarker);
+            if (!error)
+            {
+                if (versionMarker != IonVersionMarker(1, 0))
+                {
+                    error = IonErrorCode.unexpectedVersionMarker;
+                    goto C;
+                }
+                resetSymbolTable();
+                continue;
+            }
+            describedValue = d.parseValue(error);
+            if (error == IonErrorCode.nop)
+                continue;
+            // check if describedValue is symbol table
+            if (describedValue.descriptor.type == IonTypeCode.annotations)
+            {
+                auto annotationWrapper = describedValue.get!IonAnnotationWrapper(error);
+                IonAnnotations annotations = annotationWrapper.annotations;
+                IonDescribedValue symbolTableValue = annotationWrapper.value;
+                if (!error && !annotations.empty)
+                {
+                    // check first annotation is $ion_symbol_table
+                    {
+                        bool nextAnnotation;
+                        foreach (IonErrorCode annotationError, size_t annotationId; annotations)
+                        {
+                            error = annotationError;
+                            if (error)
+                                goto C;
+                            if (nextAnnotation)
+                                continue;
+                            nextAnnotation = true;
+                            if (annotationId != IonSystemSymbol.ion_symbol_table)
+                                goto C;
+                        }
+                    }
+                    IonStruct symbolTableStruct;
+                    if (symbolTableValue.descriptor.type != IonTypeCode.struct_)
+                    {
+                        error = IonErrorCode.expectedStructValue;
+                        goto C;
+                    }
+                    if (symbolTableValue != null)
+                    {
+                        symbolTableStruct = symbolTableValue.trustedGet!IonStruct;
+                    }
+
+                    {
+                        bool preserveCurrentSymbols;
+                        IonList symbols;
+
+                        foreach (IonErrorCode symbolTableError, size_t symbolTableKeyId, scope IonDescribedValue elementValue; symbolTableStruct)
+                        {
+                            error = symbolTableError;
+                            if (error)
+                                goto C;
+                            switch (symbolTableKeyId)
+                            {
+                                case IonSystemSymbol.imports:
+                                {
+                                    if (preserveCurrentSymbols || (elementValue.descriptor.type != IonTypeCode.symbol && elementValue.descriptor.type != IonTypeCode.list))
+                                    {
+                                        error = IonErrorCode.invalidLocalSymbolTable;
+                                        goto C;
+                                    }
+                                    if (elementValue.descriptor.type == IonTypeCode.list)
+                                    {
+                                        error = IonErrorCode.sharedSymbolTablesAreUnsupported;
+                                        goto C;
+                                    }
+                                    size_t id;
+                                    error = elementValue.trustedGet!IonSymbolID.get(id);
+                                    if (error)
+                                        goto C;
+                                    if (id != IonSystemSymbol.ion_symbol_table)
+                                    {
+                                        error = IonErrorCode.invalidLocalSymbolTable;
+                                        goto C;
+                                    }
+                                    preserveCurrentSymbols = true;
+                                    break;
+                                }
+                                case IonSystemSymbol.symbols:
+                                {
+                                    if (symbols != symbols.init || elementValue.descriptor.type != IonTypeCode.list)
+                                    {
+                                        error = IonErrorCode.invalidLocalSymbolTable;
+                                        goto C;
+                                    }
+                                    if (elementValue != null)
+                                    {
+                                        symbols = elementValue.trustedGet!IonList;
+                                    }
+                                    if (error)
+                                        goto C;
+                                    break;
+                                }
+                                default:
+                                {
+                                    //CHECK: should other symbols be ignored?
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if (!preserveCurrentSymbols)
+                        {
+                            resetSymbolTable();
+                        }
+
+                        foreach (IonErrorCode symbolsError, scope IonDescribedValue symbolValue; symbols)
+                        {
+                            error = symbolsError;
+                            if (error)
+                                goto C;
+                            auto symbol = symbolValue.get!(const(char)[])(error);
+                            if (error)
+                                goto C;
+                            symbolTableBuffer.put(symbol);
+                        }
+                        continue;
+                    }
+                }
+                // TODO: continue work
+            }
+        C:
+            if (auto ret = dg(error, symbolTableBuffer.data, describedValue))
+                return ret;
+        }
+        return 0;
+    }
+
+    /// ditto
+    @trusted nothrow @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe pure @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure nothrow
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe pure nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted pure
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe pure dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted nothrow
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @trusted
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @safe dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure nothrow @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system pure nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system nothrow @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system nothrow @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system pure @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure nothrow
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system pure nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system @nogc
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system @nogc dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system pure
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system pure dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system nothrow
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system nothrow dg) { return opApply(cast(DG) dg); }
+
+    /// ditto
+    @system
+    scope int opApply(scope int delegate(IonErrorCode error, scope const(char[])[] symbolTable, scope IonDescribedValue value)
+    @system dg) { return opApply(cast(DG) dg); }
+
+    /++
+    Params:
+        serializer = serializer
+    +/
+    void serialize(S)(scope ref S serializer) scope const @safe
+    {
+        bool following;
+        foreach (scope symbolTable, scope value; this)
+        {
+            if (following)
+                serializer.nextTopLevelValue;
+            following = true;
+            // static if (__traits(hasMember, serializer, "putKeyId"))
+            // {
+            //     alias unwrappedSerializer = serializer;
+            // }
+            // else
+            // {
+                import mir.ser.unwrap_ids;
+                auto unwrappedSerializer = unwrapSymbolIds((()@trusted => &serializer)(), symbolTable);
+            // }
+            value.serialize(unwrappedSerializer);
+        }
+    }
+
+    ///
+    @safe pure
+    unittest
+    {
+        import mir.ser.json;
+        const ubyte[] data = [0xe0, 0x01, 0x00, 0xea, 0xe9, 0x81, 0x83, 0xd6, 0x87, 0xb4, 0x81, 0x61, 0x81, 0x62, 0xd6, 0x8a, 0x21, 0x01, 0x8b, 0x21, 0x02];
+        auto json = data.IonValueStream.serializeJson;
+        assert(json == `{"a":1,"b":2}`);
+    }
+}
