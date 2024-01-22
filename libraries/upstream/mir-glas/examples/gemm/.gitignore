@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+gemm.so
+gemm.dylib
+gemm.dll
+gemm.a
+gemm.lib
+gemm-test-*
+*.exe
+*.o
+*.obj
+*.lst

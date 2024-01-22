@@ -1,0 +1,53 @@
+# Compiled Object files
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+
+# Executables
+*.exe
+
+# DUB
+.dub
+docs.json
+__dummy.html
+docs/
+
+# Code coverage
+*.lst
+
+dub.selections.json
+
+*.sublime-project
+
+__test__library__
+.generated
+*.s
+
+*.SYMDEF
+mir-cpuid
+help
+web
+*.zip
+BLAS*
+CBLAS
+lapack*
+*.tgz
+
+
+__.SYMDEF SORTED
+
+examples/gemm_example
+
+examples/symm_example
+
+out.txt
+
+bench/gemm_report

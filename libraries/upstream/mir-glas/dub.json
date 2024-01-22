@@ -1,0 +1,62 @@
+{
+    "name": "mir-glas",
+    "description": "Generic Linear Algebra Subprograms",
+    "authors": ["Ilya Yaroshenko"],
+    "license": "BSL-1.0",
+    "copyright": "Copyright © 2016-, Ilya Yaroshenko",
+    "buildTypes": {
+        "target-native": {
+            "buildOptions": ["noBoundsCheck", "releaseMode", "optimize", "inline"],
+            "dflags-ldc": ["-betterC", "-linkonce-templates",  "-enable-cross-module-inlining", "-mcpu=native"]
+        },
+        "target-default": {
+            "buildOptions": ["noBoundsCheck", "releaseMode", "optimize", "inline"],
+            "dflags-ldc": ["-betterC", "-linkonce-templates", "-enable-cross-module-inlining"]
+        },
+    },
+    "dependencies": {
+        "mir-algorithm" : ">=0.9.0 <2.0.0",
+        "mir-cpuid": ">=0.5.3"
+    },
+    "configurations": [
+        {
+            "name": "auto-native",
+            "targetType": "sourceLibrary",
+            "sourceFiles": ["source/glas/ndslice.d", "source/glas/fortran.d"],
+            "excludedSourceFiles": ["source/*"],
+            "preBuildCommands": [
+                "dub build --root='$MIR_GLAS_PACKAGE_DIR' --config=static --build=target-native --compiler=ldmd2 --build-mode=singleFile --parallel --force",
+                "dub build --root='$MIR_CPUID_PACKAGE_DIR' --build=release-nobounds --compiler=ldmd2 --build-mode=singleFile --parallel --force"
+            ],
+            "libs": ["mir-glas", "mir-cpuid"]
+        },
+        {
+            "name": "auto-default",
+            "targetType": "sourceLibrary",
+            "sourceFiles": ["source/glas/ndslice.d", "source/glas/fortran.d"],
+            "excludedSourceFiles": ["source/*"],
+            "preBuildCommands": [
+                "dub build --root='$MIR_GLAS_PACKAGE_DIR' --config=static --build=target-native --compiler=ldmd2 --build-mode=singleFile --parallel --force",
+                "dub build --root='$MIR_CPUID_PACKAGE_DIR' --build=release-nobounds --compiler=ldmd2 --build-mode=singleFile --parallel --force"
+            ],
+            "libs": ["mir-glas", "mir-cpuid"]
+        },
+        {
+            "name": "header",
+            "targetType": "sourceLibrary",
+            "sourceFiles": ["source/glas/ndslice.d", "source/glas/fortran.d"],
+            "excludedSourceFiles": ["source/*"],
+            "libs": ["mir-glas", "mir-cpuid"]
+        },
+        {
+            "name": "static",
+            "targetType": "staticLibrary",
+            "excludedSourceFiles": ["source/glas/internal/*", "source/glas/ndslice.d", "source/glas/fortran.d"]
+        },
+        {
+            "name": "dynamic",
+            "targetType": "dynamicLibrary",
+            "excludedSourceFiles": ["source/glas/internal/*", "source/glas/ndslice.d", "source/glas/fortran.d"]
+        }
+    ],
+}
