@@ -1,0 +1,39 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Dub Test
+    strategy:
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-2019
+          - macos-11
+        dc:
+          - dmd-2.106.1
+          - dmd-2.100.0
+          - ldc-1.36.0
+          - ldc-1.28.0
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install D compiler
+        uses: dlang-community/setup-dlang@v1.3.0
+        with:
+          compiler: ${{ matrix.dc }}
+
+      - name: Run tests on Posix
+        if: runner.os != 'Windows'
+        run: dub test -q --build=unittest-cov # -c asan
+
+      - name: Run tests on Windows
+        if: runner.os == 'Windows'
+        run: dub test -q --build=unittest-cov
+
+      - name: Build binary
+        run: dub build -q
+
+      - uses: codecov/codecov-action@v3

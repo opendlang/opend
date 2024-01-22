@@ -1,0 +1,20 @@
+language: d
+sudo: false
+
+install:
+  - ./travis_install.sh
+
+packages:
+  - gcc-multilib
+
+matrix:
+  include:
+    - d: dmd-2.092.1
+    - d: ldc-1.20.1
+
+script:
+  - dub test --build=unittest-cov --compiler=${DC} -c asan
+  - dub build --compiler=${DC}
+
+after_success:
+ - bash <(curl -s https://codecov.io/bash)

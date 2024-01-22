@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+*.o
+*.obj
+__test__*__
+bin*
+*.a
+*.ninja
+compile_commands.json
+.reggae
+.ninja_deps
+.ninja_log
+*.lst
