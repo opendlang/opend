@@ -75,6 +75,7 @@
 		},
 		{
 			"repository": "https://github.com/AuburnSounds/gamut",
+			"branch": "main",
 			"sourceDirectory": "source"
 		},
 		{

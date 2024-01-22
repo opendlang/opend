@@ -1,0 +1,10 @@
+{
+    "name": "metadata",
+    "description": "Decode image metadata, but not the pixels themselves.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    }
+}

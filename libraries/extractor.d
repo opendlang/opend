@@ -7,7 +7,7 @@ import std.string;
 import std.stdio;
 import std.path;
 
-void getProject(string url, string sourceDir, string[] excludedDirectories) {
+void getProject(string url, string sourceDir, string[] excludedDirectories, string branch) {
 	if(url.indexOf("github.com/") != -1) {
 		auto folderIdx = url.lastIndexOf("/");
 		if(folderIdx == -1 || folderIdx + 1 == url.length)
@@ -17,8 +17,8 @@ void getProject(string url, string sourceDir, string[] excludedDirectories) {
 		if(!std.file.exists(folder)) {
 			writeln("clone ", url, " ", getcwd, "/", folder);
 			wait(spawnShell("git remote add -f " ~ folder ~ " " ~ url ~ ".git"));
-			wait(spawnShell("git merge -s ours --no-commit --allow-unrelated-histories " ~ folder ~ "/master"));
-			auto thing = executeShell("git read-tree --prefix=libraries/upstream/" ~ folder ~ "/ -u " ~ folder ~ "/master");
+			wait(spawnShell("git merge -s ours --no-commit --allow-unrelated-histories " ~ folder ~ "/" ~ branch));
+			auto thing = executeShell("git read-tree --prefix=libraries/upstream/" ~ folder ~ "/ -u " ~ folder ~ "/" ~ branch);
 			// auto thing = executeShell("git pull -s subtree "~folder~" " ~ url ~ ".git");
 			if(thing.status != 0)
 				throw new Exception("clone " ~ url ~ " failed");
@@ -114,6 +114,7 @@ void main() {
 			pkg.repository.get!string,
 			pkg.sourceDirectory.get!string,
 			pkg.excludedDirectories.get!(string[]),
+			pkg.branch == null ? "master" : pkg.branch.get!string
 		);
 	}
 	chdir("..");
