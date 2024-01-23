@@ -29,7 +29,7 @@ runs:
       run: |
         set -eux
         cd libraries
-        ldmd2 -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
+        DFLAGS= LFLAGS= ldmd2 -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
         ./extractor build ../../installed/import
 
     - name: Build & copy upstream dlang tools
