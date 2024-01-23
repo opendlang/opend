@@ -25,6 +25,7 @@ runs:
           DMD_NATIVE="$PWD/bootstrap-ldc/bin/ldmd2"
         fi
         echo "DMD=$DMD" >> $GITHUB_ENV
+        echo "DMD_NATIVE=$DMD_NATIVE" >> $GITHUB_ENV
 
     - name: Build & copy OpenD tools and libraries
       shell: bash
