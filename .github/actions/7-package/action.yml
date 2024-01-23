@@ -19,8 +19,10 @@ runs:
         cd ..
         if [[ '${{ inputs.cross_target_triple }}' != '' ]]; then
           DMD="$PWD/bootstrap-ldc/bin/ldmd2"
+          DMD_NATIVE="$PWD/bootstrap-ldc/bin/ldmd2"
         else
           DMD="$PWD/installed/bin/ldmd2"
+          DMD_NATIVE="$PWD/bootstrap-ldc/bin/ldmd2"
         fi
         echo "DMD=$DMD" >> $GITHUB_ENV
 
@@ -29,7 +31,7 @@ runs:
       run: |
         set -eux
         cd libraries
-        $PWD/bootstrap-ldc/bin/ldmd2 -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
+        $DMD_NATIVE -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
         ./extractor build ../../installed/import
 
     - name: Build & copy upstream dlang tools
