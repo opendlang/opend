@@ -1,6 +1,0 @@
-[submodule "doc/dlang.org"]
-	path = doc/dlang.org
-	url = git://github.com/dlang/dlang.org
-[submodule "doc/artwork"]
-	path = doc/artwork
-	url = git://github.com/libmir/mir-artwork
