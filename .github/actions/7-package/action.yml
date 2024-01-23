@@ -29,7 +29,7 @@ runs:
       run: |
         set -eux
         cd libraries
-        $DMD -Iupstream -i extractor.d
+        $PWD/bootstrap-ldc/bin/ldmd2 -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
         ./extractor build ../../installed/import
 
     - name: Build & copy upstream dlang tools
