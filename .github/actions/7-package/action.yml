@@ -24,7 +24,15 @@ runs:
         fi
         echo "DMD=$DMD" >> $GITHUB_ENV
 
-    - name: Build & copy dlang tools
+    - name: Build & copy OpenD tools and libraries
+      shell: bash
+      run: |
+        set -eux
+        cd libraries
+        $DMD -Iupstream -i extractor.d
+        ./extractor build ../../installed/import
+
+    - name: Build & copy upstream dlang tools
       shell: bash
       run: |
         set -eux
@@ -34,10 +42,9 @@ runs:
         git checkout "$(cat ../opend/ldc/packaging/dlang-tools_version)"
 
         mkdir bin
-        $DMD -w -de -dip1000 rdmd.d -of=bin/rdmd
         $DMD -w -de -dip1000 ddemangle.d -of=bin/ddemangle
         $DMD -w -de -dip1000 DustMite/dustmite.d DustMite/splitter.d DustMite/polyhash.d -of=bin/dustmite
-        cp bin/{rdmd,ddemangle,dustmite} ../installed/bin/
+        cp bin/{ddemangle,dustmite} ../installed/bin/
 
     - name: Pack installation dir
       shell: bash
