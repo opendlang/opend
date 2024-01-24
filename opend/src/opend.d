@@ -8,30 +8,17 @@ import std.path;
 import std.process : execute;
 import std.stdio : writeln;
 
+import util;
+import platform;
+import commands;
+
 string compiler = `dmd`;
 string type = "executable";
 string buildType = "debug";
 
-/// Retrieves all files as full path
-string[] getFiles(string dir)
-{
-    string[] ret;
-    foreach(ref DirEntry d; dirEntries(dir, SpanMode.breadth))
-    {
-        // Only care about files with ".d" extensions
-        if(d.isDir || extension(d.name) != ".d")
-            continue;
-
-        // Auto-escape pathes!
-        // Actually, I checked (on Windows) and paths having spaces in them work fine too.
-        ret ~= /*"\"" ~ */absolutePath(d.name) /*~ "\""*/;
-    }
-    return ret;
-}
-
 string getExeFileName()
 {
-    immutable dname = baseName(getcwd());
+    immutable dname = getPackageNameFromPath(getcwd());
     writeln(dname);
     version(Windows)
     {
@@ -47,7 +34,7 @@ string getExeFileName()
 
 string getLibFileName()
 {
-    immutable dname = baseName(getcwd());
+    immutable dname = getPackageNameFromPath(getcwd());
     version(Windows)
     {
         immutable extension = ".lib";
@@ -103,6 +90,17 @@ int main(string[] args)
 
     static immutable availOutputs = ["executable", "library"];
     static immutable availBuildTypes = ["debug", "release"];
+
+    Platform p = Platform.create();
+    p.compilerPath = compiler;
+
+    // Must be trying to run a single file
+    if(args[1].endsWith(".d"))
+    {
+        RunFileCommand cmd = new RunFileCommand(p);
+        cmd.run(args[1 .. $]);
+        return 0;
+    }
 
     if(availOutputs.all!(x => x != type))
     {
