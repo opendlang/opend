@@ -1987,6 +1987,65 @@ void test14625()
 }
 
 /**************************************/
+// Test opUnaryRight
+
+void Test21()
+{
+    struct S
+    {
+        int val;
+
+        int opUnary(string op)()
+        {
+            if (op == "++")
+            {
+                return ++val;
+            }
+            else if(op == "--")
+            {
+                return --val;
+            }
+
+            assert(false);
+        }
+
+        int opUnaryRight(string op)()
+        {
+            if (op == "++")
+            {
+                int tmp = val;
+                val += 10;
+                return tmp;
+            }
+            else if(op == "--")
+            {
+                int tmp = val;
+                val -= 10;
+                return tmp;
+            }
+
+            assert(false);
+        }
+    }
+
+    S s;
+    int j;
+    j = ++s;
+    assert(s.val == 1);
+    assert(j == 1);
+    j = --s;
+    assert(s.val == 0);
+    assert(j == 0);
+    j = s++;
+    assert(s.val == 10);
+    assert(j == 0);
+    j = s--;
+    assert(s.val == 0);
+    assert(j == 10);
+}
+
+
+/**************************************/
 
 int main()
 {
@@ -2033,6 +2092,7 @@ int main()
     test20d();
     test14624();
     test14625();
+    Test21();
 
     printf("Success\n");
     return 0;
