@@ -1,6 +1,7 @@
 module opend;
 
 import std.algorithm;
+import std.array : array;
 import std.getopt;
 import std.file;
 import std.string : endsWith;
@@ -10,6 +11,7 @@ import std.stdio : writeln;
 
 import util;
 import platform;
+import project;
 import commands;
 
 string compiler = `dmd`;
@@ -95,11 +97,21 @@ int main(string[] args)
     p.compilerPath = compiler;
 
     // Must be trying to run a single file
-    if(args[1].endsWith(".d"))
+    if(args.length > 1 && args[1].endsWith(".d"))
     {
         RunFileCommand cmd = new RunFileCommand(p);
         cmd.run(args[1 .. $]);
         return 0;
+    }
+
+    if(args.length > 1 && args[1] == "please")
+    { 
+        if(args[2] == "add-local-package")
+        {
+            AddLocalCommand cmd = new AddLocalCommand(p);
+            cmd.run(args[3 .. $]);
+            return 0;
+        }
     }
 
     if(availOutputs.all!(x => x != type))
@@ -144,6 +156,11 @@ int main(string[] args)
     {
         cmd ~= ["-release"];
     }
+
+    OpenDProject prj = new OpenDProject(getcwd(), p);
+    auto flg = prj.getIs.map!(x => "-I=" ~ x).array;
+    cmd ~= flg;
+
     writeln("Running " ~ flattenCmd(cmd));
 
     auto result = execute(cmd);

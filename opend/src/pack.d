@@ -6,6 +6,7 @@ import std.conv;
 import std.datetime;
 import std.file;
 
+import exceptions;
 import util;
 
 class Package
@@ -19,6 +20,16 @@ class Package
     {
         checkBuildTime();
         return needsRebuild;
+    }
+
+    string getImportPath()
+    {
+        string[] sourceDirs = sourceDirectories.map!(x => path ~ "/" ~ x)
+                                .filter!(x => exists(x) && isDir(x))
+                                .array;
+        if(sourceDirs.length == 0)
+            throw new NotAnOpenDPackageException(path);
+        return sourceDirs[0];
     }
 
 private:
@@ -63,4 +74,6 @@ private:
     string path;
 
     bool buildTimeChecked = false;
+
+    immutable static string[] sourceDirectories = ["src", "source"];
 }

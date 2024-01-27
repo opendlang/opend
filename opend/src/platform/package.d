@@ -34,10 +34,17 @@ abstract class Platform
 
     void compilerPath(string path) { _compilerPath = path; }
     string compilerPath() { return _compilerPath; }
+    string currentDir() const { return cwd; }
 protected:
+    this()
+    {
+        import std.file : getcwd;
+        cwd = getcwd();
+    }
+
     abstract string getExeFileNameForFile(string file);
 
 private:
-
+    string cwd;
     string _compilerPath;
 }

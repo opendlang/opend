@@ -3,6 +3,7 @@ module commands;
 import platform;
 
 public import commands.runfile;
+public import commands.addlocal;
 
 abstract class Command
 {

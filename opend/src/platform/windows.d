@@ -14,6 +14,11 @@ class WindowsPlatform : Platform
         return environment["APPDATA"] ~ "\\opend";
     }
 
+    package this()
+    {
+        super();
+    }
+
 protected:
     override string getExeFileNameForFile(string file)
     {
