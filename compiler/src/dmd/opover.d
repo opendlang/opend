@@ -633,6 +633,21 @@ Expression op_overload(Expression e, Scope* sc, EXP* pop = null)
             Objects* tiargs = null;
             if (e.op == EXP.plusPlus || e.op == EXP.minusMinus)
             {
+                // if opUnaryRight is defined it will be used for e++ and e-- expressions. If opUnaryRight
+                // is not defined it is lowered to (auto t = e, e.opUnary!"++", t) and similar.
+                if (ad1)
+                {
+                    s = search_function(ad1, Id.opUnaryRight);
+                    if (s)
+                    {
+                        tiargs = opToArg(sc, e.op);
+                        Expression result = new DotTemplateInstanceExp(e.loc, e.e1, s.ident, tiargs);
+                        result = new CallExp(e.loc, result);
+                        result = result.expressionSemantic(sc);
+                        return result;
+                    }
+                }
+
                 // Bug4099 fix
                 if (ad1 && search_function(ad1, Id.opUnary))
                     return null;

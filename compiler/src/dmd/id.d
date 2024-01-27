@@ -278,6 +278,7 @@ immutable Msgtable[] msgtable =
     { "opDispatch" },
     { "opDollar" },
     { "opUnary" },
+    { "opUnaryRight" },
     { "opIndexUnary" },
     { "opSliceUnary" },
     { "opBinary" },
