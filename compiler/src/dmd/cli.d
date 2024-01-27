@@ -937,6 +937,8 @@ dmd -cov -unittest myprog.d
             "disallow unsound immutable conversions that were formerly incorrectly permitted"),
         Feature("systemVariables", "systemVariables",
             "disable access to variables marked '@system' from @safe code"),
+        Feature("privateThis", "privateThis",
+            "add `private(this)` visibility attribute, private to the class/struct/union instead of module"),
     ];
 }
 

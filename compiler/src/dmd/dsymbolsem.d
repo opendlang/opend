@@ -2203,6 +2203,7 @@ else // !IN_LLVM
         auto loc = adjustLocForMixin(str, cd.loc, global.params.mixinOut);
         scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
         p.transitionIn = global.params.v.vin;
+        p.allowPrivateThis = global.params.privateThis;
         p.nextToken();
 
         auto d = p.parseDeclDefs(0);
@@ -6287,6 +6288,10 @@ private extern(C++) class AddMemberVisitor : Visitor
             Package.resolve(visd.pkg_identifiers, &tmp, null);
             visd.visibility.pkg = tmp ? tmp.isPackage() : null;
             visd.pkg_identifiers = null;
+        }
+        if (visd.visibility.kind == Visibility.Kind.privateThis && sds.isModule())
+        {
+            .error(visd.loc, "%s cannot be used in global scope", visd.toPrettyChars(false));
         }
         if (visd.visibility.kind == Visibility.Kind.package_ && visd.visibility.pkg && sc._module)
         {
