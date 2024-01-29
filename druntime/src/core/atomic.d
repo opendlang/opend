@@ -1466,7 +1466,7 @@ version (CoreUnittest)
 
 
 /**
- * This is a D version of apartial implementation of the std::atomic template found in C++ STL.
+ * This is a D version of a partial implementation of the std::atomic template found in C++ STL.
  * https://en.cppreference.com/w/cpp/atomic/atomic
  *
  */
