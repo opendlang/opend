@@ -43,6 +43,24 @@ version (LDC)
         return llvm_atomic_rmw_sub!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
+    T atomicFetchAnd(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    {
+        alias A = _AtomicType!T;
+        return llvm_atomic_rmw_and!A(cast(shared A*) dest, value, _ordering!(order));
+    }
+
+    T atomicFetchOr(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    {
+        alias A = _AtomicType!T;
+        return llvm_atomic_rmw_or!A(cast(shared A*) dest, value, _ordering!(order));
+    }
+
+    T atomicFetchXor(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    {
+        alias A = _AtomicType!T;
+        return llvm_atomic_rmw_xor!A(cast(shared A*) dest, value, _ordering!(order));
+    }
+
     T atomicExchange(MemoryOrder order = MemoryOrder.seq, bool result = true, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
@@ -455,6 +473,45 @@ version (DigitalMars)
         if (is(T : ulong))
     {
         return atomicFetchAdd(dest, cast(T)-cast(IntOrLong!T)value);
+    }
+
+    T atomicFetchAnd(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    if (is(T : ulong))
+    {
+        T set, get = atomicLoad!(order)(dest);
+
+        do
+        {
+            set = get & value;
+        } while (!atomicCompareExchangeWeak!(MemoryOrder.seq, MemoryOrder.seq)(dest, &get, set));
+
+        return get;
+    }
+
+    T atomicFetchOr(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    if (is(T : ulong))
+    {
+        T set, get = atomicLoad!(order)(dest);
+
+        do
+        {
+            set = get | value;
+        } while (!atomicCompareExchangeWeak!(MemoryOrder.seq, MemoryOrder.seq)(dest, &get, set));
+
+        return get;
+    }
+
+    T atomicFetchXor(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
+    if (is(T : ulong))
+    {
+        T set, get = atomicLoad!(order)(dest);
+
+        do
+        {
+            set = get ^ value;
+        } while (!atomicCompareExchangeWeak!(MemoryOrder.seq, MemoryOrder.seq)(dest, &get, set));
+
+        return get;
     }
 
     T atomicExchange(MemoryOrder order = MemoryOrder.seq, bool result = true, T)(T* dest, T value) pure nothrow @nogc @trusted
