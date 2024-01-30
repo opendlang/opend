@@ -435,11 +435,12 @@ struct Visibility final
     {
         undefined = 0u,
         none = 1u,
-        private_ = 2u,
-        package_ = 3u,
-        protected_ = 4u,
-        public_ = 5u,
-        export_ = 6u,
+        privateThis = 2u,
+        private_ = 3u,
+        package_ = 4u,
+        protected_ = 5u,
+        public_ = 6u,
+        export_ = 7u,
     };
 
     Kind kind;
@@ -740,6 +741,30 @@ enum class BUILTIN : uint8_t
     toPrecFloat = 33u,
     toPrecDouble = 34u,
     toPrecReal = 35u,
+    llvm_sin = 36u,
+    llvm_cos = 37u,
+    llvm_sqrt = 38u,
+    llvm_exp = 39u,
+    llvm_exp2 = 40u,
+    llvm_log = 41u,
+    llvm_log2 = 42u,
+    llvm_log10 = 43u,
+    llvm_fabs = 44u,
+    llvm_minnum = 45u,
+    llvm_maxnum = 46u,
+    llvm_floor = 47u,
+    llvm_ceil = 48u,
+    llvm_trunc = 49u,
+    llvm_rint = 50u,
+    llvm_nearbyint = 51u,
+    llvm_round = 52u,
+    llvm_fma = 53u,
+    llvm_copysign = 54u,
+    llvm_bswap = 55u,
+    llvm_cttz = 56u,
+    llvm_ctlz = 57u,
+    llvm_ctpop = 58u,
+    llvm_expect = 59u,
 };
 
 enum class Include : uint8_t
@@ -2147,6 +2172,7 @@ public:
     virtual bool checkValue();
     Expression* addressOf();
     Expression* deref();
+    Expression* optimize_cpp(int32_t result, bool keepLvalue = false);
     int32_t isConst();
     virtual bool isIdentical(const Expression* const e) const;
     virtual Optional<bool > toBool();
@@ -4053,7 +4079,7 @@ class UnitTestDeclaration final : public FuncDeclaration
 {
 public:
     char* codedoc;
-    char* name;
+    _d_dynamicArray< const char > name;
     Array<FuncDeclaration* > deferredNested;
     UnitTestDeclaration* syntaxCopy(Dsymbol* s) override;
     AggregateDeclaration* isThis() override;
@@ -4727,6 +4753,7 @@ public:
     bool needsDestruction() override;
     bool needsCopyOrPostblit() override;
     bool needsNested() override;
+    bool hasPointers();
     bool hasVoidInitPointers() override;
     bool hasSystemFields() override;
     bool hasInvariant() override;
@@ -6751,6 +6778,7 @@ public:
 
     enum : int32_t { hidden = 8 };
 
+    Symbol* isym;
     _d_dynamicArray< const char > mangleOverride;
     const char* kind() const override;
     uinteger_t size(const Loc& loc) final override;
@@ -7172,8 +7200,8 @@ public:
     _d_dynamicArray< const char > arg;
     ModuleDeclaration* md;
     const FileName srcfile;
-    const FileName objfile;
-    const FileName hdrfile;
+    FileName objfile;
+    FileName hdrfile;
     FileName docfile;
     _d_dynamicArray< const uint8_t > src;
     uint32_t errors;
@@ -7308,6 +7336,7 @@ struct Scope final
     void* anchorCounts;
     Identifier* prevAnchor;
     AliasDeclaration* aliasAsg;
+    Dsymbol* search(const Loc& loc, Identifier* ident, Dsymbol** pscopesym, uint32_t flags = 0u);
     Dsymbol* search(const Loc& loc, Identifier* ident, Dsymbol*& pscopesym, uint32_t flags = 0u);
     Scope() :
         enclosing(),
@@ -7339,7 +7368,7 @@ struct Scope final
         linkage((LINK)1u),
         cppmangle((CPPMANGLE)0u),
         inlining(),
-        visibility(Visibility((Visibility::Kind)5u, nullptr)),
+        visibility(Visibility((Visibility::Kind)6u, nullptr)),
         explicitVisibility(),
         stc(),
         depdecl(),
@@ -7350,7 +7379,7 @@ struct Scope final
         aliasAsg()
     {
     }
-    Scope(Scope* enclosing, Module* _module = nullptr, ScopeDsymbol* scopesym = nullptr, FuncDeclaration* func = nullptr, VarDeclaration* varDecl = nullptr, Dsymbol* parent = nullptr, LabelStatement* slabel = nullptr, SwitchStatement* sw = nullptr, Statement* tryBody = nullptr, TryFinallyStatement* tf = nullptr, ScopeGuardStatement* os = nullptr, Statement* sbreak = nullptr, Statement* scontinue = nullptr, ForeachStatement* fes = nullptr, Scope* callsc = nullptr, Dsymbol* inunion = nullptr, bool nofree = false, bool inLoop = false, int32_t intypeof = 0, VarDeclaration* lastVar = nullptr, ErrorSink* eSink = nullptr, Module* minst = nullptr, TemplateInstance* tinst = nullptr, CtorFlow ctorflow = CtorFlow(), AlignDeclaration* aligndecl = nullptr, CPPNamespaceDeclaration* namespace_ = nullptr, LINK linkage = (LINK)1u, CPPMANGLE cppmangle = (CPPMANGLE)0u, PragmaDeclaration* inlining = nullptr, Visibility visibility = Visibility((Visibility::Kind)5u, nullptr), int32_t explicitVisibility = 0, uint64_t stc = 0LLU, DeprecatedDeclaration* depdecl = nullptr, uint32_t flags = 0u, UserAttributeDeclaration* userAttribDecl = nullptr, DocComment* lastdc = nullptr, void* anchorCounts = nullptr, Identifier* prevAnchor = nullptr, AliasDeclaration* aliasAsg = nullptr) :
+    Scope(Scope* enclosing, Module* _module = nullptr, ScopeDsymbol* scopesym = nullptr, FuncDeclaration* func = nullptr, VarDeclaration* varDecl = nullptr, Dsymbol* parent = nullptr, LabelStatement* slabel = nullptr, SwitchStatement* sw = nullptr, Statement* tryBody = nullptr, TryFinallyStatement* tf = nullptr, ScopeGuardStatement* os = nullptr, Statement* sbreak = nullptr, Statement* scontinue = nullptr, ForeachStatement* fes = nullptr, Scope* callsc = nullptr, Dsymbol* inunion = nullptr, bool nofree = false, bool inLoop = false, int32_t intypeof = 0, VarDeclaration* lastVar = nullptr, ErrorSink* eSink = nullptr, Module* minst = nullptr, TemplateInstance* tinst = nullptr, CtorFlow ctorflow = CtorFlow(), AlignDeclaration* aligndecl = nullptr, CPPNamespaceDeclaration* namespace_ = nullptr, LINK linkage = (LINK)1u, CPPMANGLE cppmangle = (CPPMANGLE)0u, PragmaDeclaration* inlining = nullptr, Visibility visibility = Visibility((Visibility::Kind)6u, nullptr), int32_t explicitVisibility = 0, uint64_t stc = 0LLU, DeprecatedDeclaration* depdecl = nullptr, uint32_t flags = 0u, UserAttributeDeclaration* userAttribDecl = nullptr, DocComment* lastdc = nullptr, void* anchorCounts = nullptr, Identifier* prevAnchor = nullptr, AliasDeclaration* aliasAsg = nullptr) :
         enclosing(enclosing),
         _module(_module),
         scopesym(scopesym),
@@ -8166,6 +8195,7 @@ struct Param final
     bool fix16997;
     FeatureState dtorFields;
     FeatureState systemVariables;
+    bool privateThis;
     CHECKENABLE useInvariants;
     CHECKENABLE useIn;
     CHECKENABLE useOut;
@@ -8205,6 +8235,7 @@ struct Param final
     _d_dynamicArray< const char > exefile;
     _d_dynamicArray< const char > mapfile;
     bool parsingUnittestsRequired();
+    int32_t hashThreshold();
     Param() :
         obj(true),
         multiobj(),
@@ -8241,6 +8272,7 @@ struct Param final
         shortenedMethods(true),
         fixImmutableConv(),
         fix16997(true),
+        privateThis(),
         useInvariants((CHECKENABLE)0u),
         useIn((CHECKENABLE)0u),
         useOut((CHECKENABLE)0u),
@@ -8280,7 +8312,7 @@ struct Param final
         mapfile()
     {
     }
-    Param(bool obj, bool multiobj = false, bool trace = false, bool tracegc = false, bool vcg_ast = false, DiagnosticReporting useDeprecated = (DiagnosticReporting)1u, bool useUnitTests = false, bool useInline = false, bool release = false, bool preservePaths = false, DiagnosticReporting warnings = (DiagnosticReporting)2u, bool cov = false, uint8_t covPercent = 0u, bool ctfe_cov = false, bool ignoreUnsupportedPragmas = true, bool useModuleInfo = true, bool useTypeInfo = true, bool useExceptions = true, bool useGC = true, bool betterC = false, bool addMain = false, bool allInst = false, bool bitfields = false, CppStdRevision cplusplus = (CppStdRevision)201103u, Help help = Help(), Verbose v = Verbose(), FeatureState useDIP25 = (FeatureState)2u, FeatureState useDIP1000 = (FeatureState)0u, bool ehnogc = false, bool useDIP1021 = false, FeatureState fieldwise = (FeatureState)0u, bool fixAliasThis = false, FeatureState rvalueRefParam = (FeatureState)0u, FeatureState noSharedAccess = (FeatureState)0u, bool previewIn = false, bool inclusiveInContracts = false, bool shortenedMethods = true, bool fixImmutableConv = false, bool fix16997 = true, FeatureState dtorFields = (FeatureState)0u, FeatureState systemVariables = (FeatureState)0u, CHECKENABLE useInvariants = (CHECKENABLE)0u, CHECKENABLE useIn = (CHECKENABLE)0u, CHECKENABLE useOut = (CHECKENABLE)0u, CHECKENABLE useArrayBounds = (CHECKENABLE)0u, CHECKENABLE useAssert = (CHECKENABLE)0u, CHECKENABLE useSwitchError = (CHECKENABLE)0u, CHECKENABLE boundscheck = (CHECKENABLE)0u, CHECKACTION checkAction = (CHECKACTION)0u, _d_dynamicArray< const char > argv0 = {}, Array<const char* > modFileAliasStrings = Array<const char* >(), Array<const char* >* imppath = nullptr, Array<const char* >* fileImppath = nullptr, _d_dynamicArray< const char > objdir = {}, _d_dynamicArray< const char > objname = {}, _d_dynamicArray< const char > libname = {}, Output ddoc = Output(), Output dihdr = Output(), Output cxxhdr = Output(), Output json = Output(), JsonFieldFlags jsonFieldFlags = (JsonFieldFlags)0u, Output makeDeps = Output(), Output mixinOut = Output(), Output moduleDeps = Output(), uint32_t debuglevel = 0u, uint32_t versionlevel = 0u, bool run = false, Array<const char* > runargs = Array<const char* >(), Array<const char* > cppswitches = Array<const char* >(), const char* cpp = nullptr, Array<const char* > objfiles = Array<const char* >(), Array<const char* > linkswitches = Array<const char* >(), Array<bool > linkswitchIsForCC = Array<bool >(), Array<const char* > libfiles = Array<const char* >(), Array<const char* > dllfiles = Array<const char* >(), _d_dynamicArray< const char > deffile = {}, _d_dynamicArray< const char > resfile = {}, _d_dynamicArray< const char > exefile = {}, _d_dynamicArray< const char > mapfile = {}) :
+    Param(bool obj, bool multiobj = false, bool trace = false, bool tracegc = false, bool vcg_ast = false, DiagnosticReporting useDeprecated = (DiagnosticReporting)1u, bool useUnitTests = false, bool useInline = false, bool release = false, bool preservePaths = false, DiagnosticReporting warnings = (DiagnosticReporting)2u, bool cov = false, uint8_t covPercent = 0u, bool ctfe_cov = false, bool ignoreUnsupportedPragmas = true, bool useModuleInfo = true, bool useTypeInfo = true, bool useExceptions = true, bool useGC = true, bool betterC = false, bool addMain = false, bool allInst = false, bool bitfields = false, CppStdRevision cplusplus = (CppStdRevision)201103u, Help help = Help(), Verbose v = Verbose(), FeatureState useDIP25 = (FeatureState)2u, FeatureState useDIP1000 = (FeatureState)0u, bool ehnogc = false, bool useDIP1021 = false, FeatureState fieldwise = (FeatureState)0u, bool fixAliasThis = false, FeatureState rvalueRefParam = (FeatureState)0u, FeatureState noSharedAccess = (FeatureState)0u, bool previewIn = false, bool inclusiveInContracts = false, bool shortenedMethods = true, bool fixImmutableConv = false, bool fix16997 = true, FeatureState dtorFields = (FeatureState)0u, FeatureState systemVariables = (FeatureState)0u, bool privateThis = false, CHECKENABLE useInvariants = (CHECKENABLE)0u, CHECKENABLE useIn = (CHECKENABLE)0u, CHECKENABLE useOut = (CHECKENABLE)0u, CHECKENABLE useArrayBounds = (CHECKENABLE)0u, CHECKENABLE useAssert = (CHECKENABLE)0u, CHECKENABLE useSwitchError = (CHECKENABLE)0u, CHECKENABLE boundscheck = (CHECKENABLE)0u, CHECKACTION checkAction = (CHECKACTION)0u, _d_dynamicArray< const char > argv0 = {}, Array<const char* > modFileAliasStrings = Array<const char* >(), Array<const char* >* imppath = nullptr, Array<const char* >* fileImppath = nullptr, _d_dynamicArray< const char > objdir = {}, _d_dynamicArray< const char > objname = {}, _d_dynamicArray< const char > libname = {}, Output ddoc = Output(), Output dihdr = Output(), Output cxxhdr = Output(), Output json = Output(), JsonFieldFlags jsonFieldFlags = (JsonFieldFlags)0u, Output makeDeps = Output(), Output mixinOut = Output(), Output moduleDeps = Output(), uint32_t debuglevel = 0u, uint32_t versionlevel = 0u, bool run = false, Array<const char* > runargs = Array<const char* >(), Array<const char* > cppswitches = Array<const char* >(), const char* cpp = nullptr, Array<const char* > objfiles = Array<const char* >(), Array<const char* > linkswitches = Array<const char* >(), Array<bool > linkswitchIsForCC = Array<bool >(), Array<const char* > libfiles = Array<const char* >(), Array<const char* > dllfiles = Array<const char* >(), _d_dynamicArray< const char > deffile = {}, _d_dynamicArray< const char > resfile = {}, _d_dynamicArray< const char > exefile = {}, _d_dynamicArray< const char > mapfile = {}) :
         obj(obj),
         multiobj(multiobj),
         trace(trace),
@@ -8322,6 +8354,7 @@ struct Param final
         fix16997(fix16997),
         dtorFields(dtorFields),
         systemVariables(systemVariables),
+        privateThis(privateThis),
         useInvariants(useInvariants),
         useIn(useIn),
         useOut(useOut),
@@ -8385,10 +8418,10 @@ struct Global final
     bool hasMainFunction;
     uint32_t varSequenceNumber;
     FileManager* fileManager;
-    enum : int32_t { recursionLimit = 500 };
-
     ErrorSink* errorSink;
     ErrorSink* errorSinkNull;
+    enum : int32_t { recursionLimit = 500 };
+
     FileName(*preprocess)(FileName , const char* , const Loc& , bool& , OutBuffer& );
     uint32_t startGagging();
     bool endGagging(uint32_t oldGagged);
@@ -8633,6 +8666,7 @@ struct Id final
     static Identifier* opDispatch;
     static Identifier* opDollar;
     static Identifier* opUnary;
+    static Identifier* opUnaryRight;
     static Identifier* opIndexUnary;
     static Identifier* opSliceUnary;
     static Identifier* opBinary;
@@ -8847,6 +8881,7 @@ struct Id final
     static Identifier* udaOptional;
     static Identifier* udaMustUse;
     static Identifier* udaStandalone;
+    static Identifier* udaMutableRefInit;
     static Identifier* TRUE;
     static Identifier* FALSE;
     static Identifier* ImportC;
@@ -8875,6 +8910,55 @@ struct Id final
     static Identifier* define;
     static Identifier* undef;
     static Identifier* ident;
+    static Identifier* LDC_intrinsic;
+    static Identifier* LDC_no_typeinfo;
+    static Identifier* LDC_no_moduleinfo;
+    static Identifier* LDC_alloca;
+    static Identifier* LDC_va_start;
+    static Identifier* LDC_va_copy;
+    static Identifier* LDC_va_end;
+    static Identifier* LDC_va_arg;
+    static Identifier* LDC_verbose;
+    static Identifier* LDC_allow_inline;
+    static Identifier* LDC_never_inline;
+    static Identifier* LDC_inline_asm;
+    static Identifier* LDC_inline_ir;
+    static Identifier* LDC_fence;
+    static Identifier* LDC_atomic_load;
+    static Identifier* LDC_atomic_store;
+    static Identifier* LDC_atomic_cmp_xchg;
+    static Identifier* LDC_atomic_rmw;
+    static Identifier* LDC_global_crt_ctor;
+    static Identifier* LDC_global_crt_dtor;
+    static Identifier* LDC_extern_weak;
+    static Identifier* LDC_profile_instr;
+    static Identifier* targetCPU;
+    static Identifier* targetHasFeature;
+    static Identifier* ldc;
+    static Identifier* attributes;
+    static Identifier* udaAllocSize;
+    static Identifier* udaOptStrategy;
+    static Identifier* udaLLVMAttr;
+    static Identifier* udaLLVMFastMathFlag;
+    static Identifier* udaSection;
+    static Identifier* udaTarget;
+    static Identifier* udaAssumeUsed;
+    static Identifier* udaCallingConvention;
+    static Identifier* udaWeak;
+    static Identifier* udaCompute;
+    static Identifier* udaKernel;
+    static Identifier* udaDynamicCompile;
+    static Identifier* udaDynamicCompileConst;
+    static Identifier* udaDynamicCompileEmit;
+    static Identifier* udaHidden;
+    static Identifier* udaNoSanitize;
+    static Identifier* udaNoSplitStack;
+    static Identifier* dcompute;
+    static Identifier* dcPointer;
+    static Identifier* dcReflect;
+    static Identifier* RTInfoImpl;
+    static Identifier* opencl;
+    static Identifier* io;
     static void initialize();
     Id()
     {

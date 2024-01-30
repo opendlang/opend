@@ -262,8 +262,9 @@ extern (C)
         return instance;
     }
 
-    export
-    {
+    // LDC: Don't export these functions by default for each binary linked statically against druntime.
+    //export
+    //{
         void gc_setProxy( GC proxy )
         {
             foreach (root; instance.rootIter)
@@ -295,5 +296,11 @@ extern (C)
             _instance = proxiedGC;
             proxiedGC = null;
         }
+    //}
+
+    version (LDC)
+    bool gc_isProxied() nothrow @nogc
+    {
+        return proxiedGC !is null;
     }
 }

@@ -670,6 +670,57 @@ extern (C) UnitTestResult runModuleUnitTests()
     return results;
 }
 
+version (LDC) version (Darwin)
+{
+    nothrow:
+
+    extern (C)
+    {
+        enum _URC_NO_REASON = 0;
+        enum _URC_END_OF_STACK = 5;
+
+        alias _Unwind_Context_Ptr = void*;
+        alias _Unwind_Trace_Fn = int function(_Unwind_Context_Ptr, void*);
+        int _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
+        ptrdiff_t _Unwind_GetIP(_Unwind_Context_Ptr context);
+    }
+
+    // Use our own backtrce() based on _Unwind_Backtrace(), as the former (from
+    // execinfo) doesn't seem to handle missing frame pointers too well.
+    private int backtrace(void** buffer, int maxSize)
+    {
+        if (maxSize < 0) return 0;
+
+        struct State
+        {
+            void** buffer;
+            int maxSize;
+            int entriesWritten = 0;
+        }
+
+        static extern(C) int handler(_Unwind_Context_Ptr context, void* statePtr)
+        {
+            auto state = cast(State*)statePtr;
+            if (state.entriesWritten >= state.maxSize) return _URC_END_OF_STACK;
+
+            auto instructionPtr = _Unwind_GetIP(context);
+            if (!instructionPtr) return _URC_END_OF_STACK;
+
+            state.buffer[state.entriesWritten] = cast(void*)instructionPtr;
+            ++state.entriesWritten;
+
+            return _URC_NO_REASON;
+        }
+
+        State state;
+        state.buffer = buffer;
+        state.maxSize = maxSize;
+        _Unwind_Backtrace(&handler, &state);
+
+        return state.entriesWritten;
+    }
+}
+
 /**
  * Get the default `Throwable.TraceInfo` implementation for the platform
  *
@@ -712,7 +763,9 @@ Throwable.TraceInfo defaultTraceHandler( void* ptr = null ) // @nogc
         static if (__traits(compiles, allocate!StackTrace(0, null)))
         {
             import core.sys.windows.winnt : CONTEXT;
-            version (Win64)
+            version (LDC)
+                enum FIRSTFRAME = 0;
+            else version (Win64)
                 enum FIRSTFRAME = 4;
             else version (Win32)
                 enum FIRSTFRAME = 0;
@@ -793,6 +846,13 @@ else static if (hasExecinfo) private class DefaultTraceInfo : Throwable.TraceInf
                 elem -= CALL_INSTRUCTION_SIZE;
         else // backtrace() failed, do it ourselves
         {
+          version (LDC)
+          {
+            import ldc.intrinsics;
+            auto stackTop = cast(void**) llvm_frameaddress(0);
+          }
+          else
+          {
             static void** getBasePtr() @nogc
             {
                 version (D_InlineAsm_X86)
@@ -805,6 +865,7 @@ else static if (hasExecinfo) private class DefaultTraceInfo : Throwable.TraceInf
             }
 
             auto  stackTop    = getBasePtr();
+          }
             auto  stackBottom = cast(void**) thread_stackBottom();
             void* dummy;
 
