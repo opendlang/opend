@@ -515,6 +515,7 @@ immutable Msgtable[] msgtable =
     { "isCopyable" },
     { "toType" },
     { "parameters" },
+    { "docComment" },
 
     // For C++ mangling
     { "allocator" },
