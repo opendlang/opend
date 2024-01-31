@@ -4999,7 +4999,7 @@ private Statements* flatten(Statement statement, Scope* sc)
             auto loc = adjustLocForMixin(str, cs.loc, global.params.mixinOut);
             scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
             p.transitionIn = global.params.v.vin;
-            p.allowPrivateThis = global.params.privateThis;
+            p.allowPrivateThis = true;
             p.nextToken();
 
             auto a = new Statements();

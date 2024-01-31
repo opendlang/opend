@@ -2203,7 +2203,7 @@ else // !IN_LLVM
         auto loc = adjustLocForMixin(str, cd.loc, global.params.mixinOut);
         scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
         p.transitionIn = global.params.v.vin;
-        p.allowPrivateThis = global.params.privateThis;
+        p.allowPrivateThis = true;
         p.nextToken();
 
         auto d = p.parseDeclDefs(0);

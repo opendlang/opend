@@ -4,7 +4,7 @@ The `private` visibility attribute only limits access to the current module.
 While `class` encapsulation [can be ensured using package modules](https://dlang.org/blog/2018/11/06/lost-in-translation-encapsulation),
 some users dislike having to put classes into individual files to accomplish this.
 
-With the `-preview=privateThis` switch, member variables can now be marked invisible outside of the
+Member variables can now be marked invisible outside of the
 `class`, `struct` or `union` it's declared in.
 Note that this feature has not been accepted into the D language yet.
 
