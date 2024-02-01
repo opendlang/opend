@@ -248,6 +248,93 @@ in (atomicValueIsProperlyAligned(val))
 }
 
 /**
+* Atomically performs and AND operation between `mod` and the value referenced by `val` and returns the value `val` held previously.
+* This operation is both lock-free and atomic.
+*
+* Params:
+*  val = Reference to the value to modify.
+*  mod = The value to perform and operation.
+*
+* Returns:
+*  The value held previously by `val`.
+*/
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
+in (atomicValueIsProperlyAligned(val))
+{
+    static if (is(T == U*, U))
+        return cast(T)core.internal.atomic.atomicFetchAnd!ms(cast(size_t*)&val, mod * U.sizeof);
+    else
+        return core.internal.atomic.atomicFetchAnd!ms(&val, cast(T)mod);
+}
+
+/// Ditto
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+if (__traits(isIntegral, T) || is(T == U*, U))
+in (atomicValueIsProperlyAligned(val))
+{
+    return atomicFetchAnd!ms(*cast(T*)&val, mod);
+}
+
+/**
+* Atomically performs and OR operation between `mod` and the value referenced by `val` and returns the value `val` held previously.
+* This operation is both lock-free and atomic.
+*
+* Params:
+*  val = Reference to the value to modify.
+*  mod = The value to perform and operation.
+*
+* Returns:
+*  The value held previously by `val`.
+*/
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
+in (atomicValueIsProperlyAligned(val))
+{
+    static if (is(T == U*, U))
+        return cast(T)core.internal.atomic.atomicFetchOr!ms(cast(size_t*)&val, mod * U.sizeof);
+    else
+        return core.internal.atomic.atomicFetchOr!ms(&val, cast(T)mod);
+}
+
+/// Ditto
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+if (__traits(isIntegral, T) || is(T == U*, U))
+in (atomicValueIsProperlyAligned(val))
+{
+    return atomicFetchOr!ms(*cast(T*)&val, mod);
+}
+
+/**
+* Atomically performs and XOR operation between `mod` and the value referenced by `val` and returns the value `val` held previously.
+* This operation is both lock-free and atomic.
+*
+* Params:
+*  val = Reference to the value to modify.
+*  mod = The value to perform and operation.
+*
+* Returns:
+*  The value held previously by `val`.
+*/
+T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
+in (atomicValueIsProperlyAligned(val))
+{
+    static if (is(T == U*, U))
+        return cast(T)core.internal.atomic.atomicFetchXor!ms(cast(size_t*)&val, mod * U.sizeof);
+    else
+        return core.internal.atomic.atomicFetchXor!ms(&val, cast(T)mod);
+}
+
+/// Ditto
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+if (__traits(isIntegral, T) || is(T == U*, U))
+in (atomicValueIsProperlyAligned(val))
+{
+    return atomicFetchXor!ms(*cast(T*)&val, mod);
+}
+
+/**
  * Exchange `exchangeWith` with the memory referenced by `here`.
  * This operation is both lock-free and atomic.
  *
@@ -1365,4 +1452,434 @@ version (CoreUnittest)
 
         assert((&psi).cas(cast(const) psi, &si2));
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * This is a D version of a partial implementation of the std::atomic template found in C++ STL.
+ * https://en.cppreference.com/w/cpp/atomic/atomic
+ *
+ */
+struct Atomic(T)
+{
+    private T m_val;
+
+    /**
+     * Initializes the underlying object with desired value. The initialization is not atomic.
+     *
+     * Params:
+     *   val = desired value
+     */
+    this(T val) pure nothrow @nogc
+    {
+        m_val = val;
+    }
+
+    /** Copy constructor is disabled because an atomic cannot be passed to functions as a copy
+     * and copy it around will break the whole point of an atomic.
+     */
+    @disable this(ref return scope Atomic rhs);
+
+    /**
+     * Atomically replaces the current value with a desired value. Memory is affected according to the value of order.
+     */
+    void store(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        m_val.atomicStore!(order)(val);
+    }
+
+    /**
+     * Atomically replaces the current value with a desired value.
+     *
+     * Params:
+     *  val = desired value
+     */
+    void opAssign(T val) pure nothrow @nogc
+    {
+        store(val);
+    }
+
+    /**
+     * Atomically replaces the current value with the result of computation involving the previous value and val.
+     * The operation is read-modify-write operation.
+     *
+     * operator += performs atomic addition. Equivalent to return fetchAdd(arg) + arg;.
+     * operator -= performs atomic subtraction. Equivalent to return fetchSub(arg) - arg;.
+     * operator &= performs atomic bitwise and. Equivalent to return fetchAnd(arg) & arg;.
+     * operator |= performs atomic bitwise or. Equivalent to return fetchOr(arg) | arg;.
+     * operator ^= performs atomic bitwise exclusive or. Equivalent to return fetchXor(arg) ^ arg;.
+     *
+     * Params:
+     *  val = value to perform the operation with
+     *
+     * Returns:
+     *  The atomic value AFTER the operation
+     */
+    T opOpAssign(string op)(T val) pure nothrow @nogc
+    {
+        static if (op == "+")
+        {
+            return fetchAdd(val) + val;
+        }
+        else static if (op == "-")
+        {
+            return fetchSub(val) - val;
+        }
+        else static if (op == "&")
+        {
+            return fetchAnd(val) & val;
+        }
+        else static if (op == "|")
+        {
+            return fetchOr(val) | val;
+        }
+        else static if (op == "^")
+        {
+            return fetchXor(val) ^ val;
+        }
+        else static assert(false);
+    }
+
+    /**
+    * Loads the atomic value from memory and returns it.  The memory barrier specified
+    * by 'order' is applied to the operation, which is fully sequenced by
+    * default.  Valid memory orders are MemoryOrder.raw, MemoryOrder.acq,
+    * and MemoryOrder.seq.
+    *
+    * Returns:
+    *  The atomic value.
+    */
+    T load(MemoryOrder order = MemoryOrder.seq)() pure nothrow @nogc
+    {
+        return m_val.atomicLoad!(order)();
+    }
+
+    /**
+     * Atomically replaces the current value with the result of arithmetic addition of the atomic variable and val.
+     * That is, it performs atomic post-increment. The operation is a read-modify-write operation.
+     * Memory is affected according to the value of order.
+     *
+     * Params:
+     *  val = The other argument of arithmetic addition
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T fetchAdd(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        return m_val.atomicFetchAdd!(order)(val);
+    }
+
+    /**
+     * Atomically replaces the current value with the result of arithmetic subtraction of the atomic variable and val.
+     * That is, it performs atomic post-decrment. The operation is a read-modify-write operation.
+     * Memory is affected according to the value of order.
+     *
+     * Params:
+     *  val = The other argument of arithmetic subtraction
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T fetchSub(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        return m_val.atomicFetchSub!(order)(val);
+    }
+
+    /**
+     * Atomically replaces the current value with the result of bitwise AND of the the atomic value and val.
+     * The operation is read-modify-write operation. Memory is affected according to the value of order.
+     *
+     * Params:
+     *  val = The other argument of bitwise AND
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T fetchAnd(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        return m_val.atomicFetchAnd!(order)(val);
+    }
+
+    /**
+     * Atomically replaces the current value with the result of bitwise OR of the the atomic value and val.
+     * The operation is read-modify-write operation. Memory is affected according to the value of order.
+     *
+     * Params:
+     *  val = The other argument of bitwise OR
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T fetchOr(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        return m_val.atomicFetchOr!(order)(val);
+    }
+
+    /**
+     * Atomically replaces the current value with the result of bitwise XOR of the the atomic value and val.
+     * The operation is read-modify-write operation. Memory is affected according to the value of order.
+     *
+     * Params:
+     *  val = The other argument of bitwise XOR
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T fetchXor(MemoryOrder order = MemoryOrder.seq)(T val) pure nothrow @nogc
+    {
+        return m_val.atomicFetchXor!(order)(val);
+    }
+
+    /**
+     * Atomically increments or decrements the current value. The operation is read-modify-write operation.
+     *
+     * operator ++ performs atomic pre-increment. Equivalent to return fetchAdd(1) + 1;.
+     * operator ++ performs atomic pre-decrement. Equivalent to return fetchSub(1) - 1;.
+     *
+     * Returns:
+     *  The atomic value AFTER the operation
+     */
+    T opUnary(string op)() pure nothrow @nogc
+    {
+        static if (op == "++")
+        {
+            return fetchAdd(1) + 1;
+        }
+        else static if (op == "--")
+        {
+            return fetchSub(1) - 1;
+        }
+        else static assert(false);
+    }
+
+    /**
+     * Atomically increments or decrements the current value. The operation is read-modify-write operation.
+     *
+     * operator ++ performs atomic post-increment. Equivalent to return fetchAdd(1);.
+     * operator -- performs atomic post-decrement. Equivalent to return fetchSub(1);.
+     *
+     * Returns:
+     *  The atomic value BEFORE the operation
+     */
+    T opUnaryRight(string op)() pure nothrow @nogc
+    {
+        static if (op == "++")
+        {
+            return fetchAdd(1);
+        }
+        else static if (op == "--")
+        {
+            return fetchSub(1);
+        }
+        else static assert(false);
+    }
+
+    /**
+     * Atomically replaces the underlying value with a desired value (a read-modify-write operation).
+     * Memory is affected according to the value of order.
+     *
+     * Params:
+     *  newVal = The new desired value
+     *
+     * Returns:
+     *  The atomic value BEFORE the exchange
+     */
+    T exchange(MemoryOrder order = MemoryOrder.seq)(T newVal) pure nothrow @nogc
+    {
+        return atomicExchange!(order)(&m_val, newVal);
+    }
+
+    /**
+     * Atomically compares the atomic value with that of expected. If those are bitwise-equal, replaces the former with desired
+     * (performs read-modify-write operation). Otherwise, loads the actual atomic value stored into expected (performs load operation).
+     *
+     * compare_exchange_weak is allowed to fail spuriously, that is, acts as if atomic value != expected even if they are equal.
+     * When a compare-and-exchange is in a loop, compare_exchange_weak will yield better performance on some platforms.
+     *
+     * Params:
+     *  expected = The expected value
+     *  desired = The new desired value
+     *
+     * Returns:
+     *  true if the underlying atomic value was successfully changed, false otherwise.
+     */
+    bool compareExchangeWeak(MemoryOrder succ = MemoryOrder.seq, MemoryOrder fail = MemoryOrder.seq)(ref T expected, T desired) pure nothrow @nogc
+    {
+        return casWeak!(succ, fail)(&m_val, &expected, desired);
+    }
+
+    /**
+     * Atomically compares the atomic value with that of expected. If those are bitwise-equal, replaces the former with desired
+     * (performs read-modify-write operation). Otherwise, loads the actual atomic value stored into expected (performs load operation).
+     *
+     * Params:
+     *  expected = The expected value
+     *  desired = The new desired value
+     *
+     * Returns:
+     *  true if the underlying atomic value was successfully changed, false otherwise.
+     */
+    bool compareExchangeStrong(MemoryOrder succ = MemoryOrder.seq, MemoryOrder fail = MemoryOrder.seq)(ref T expected, T desired) pure nothrow @nogc
+    {
+        return cas!(succ, fail)(&m_val, &expected, desired);
+    }
+}
+
+
+
+unittest // For the entire Atomic generic struct implementation
+{
+    auto a = Atomic!int(0);
+
+    // These test only test the operation and inteface, not if the operation is truly atomic
+
+    // Test store
+    a.store(2);
+
+    // Test regular load
+    int j = a.load();
+    assert(j == 2);
+
+    // Test load/store with custom memory order
+    a.store!(MemoryOrder.raw)(4);
+    j = a.load!(MemoryOrder.raw)();
+    assert(j == 4);
+
+    // Test fetchAdd
+    j = a.fetchAdd(4);
+    assert(j == 4 && a.load() == 8);
+
+    // Test fetchSub
+    j = a.fetchSub(4);
+    assert(j == 8 && a.load() == 4);
+
+    // Test fetchAnd
+    a = 0xffff;
+    j = a.fetchAnd(0x00ff);
+    assert(j == 0xffff && a.load() == 0x00ff);
+
+    // Test fetchOr
+    a = 0xff;
+    j = a.fetchOr(0xff00);
+    assert(j == 0xff && a.load() == 0xffff);
+
+    // Test fetchAnd
+    a = 0xf0f0f0f0;
+    j = a.fetchXor(0x0f0f0f0f);
+    assert(j == 0xf0f0f0f0 && a.load() == 0xffffffff);
+
+    // Test fetchAdd custom memory order
+    a = 4;
+    j = a.fetchAdd!(MemoryOrder.raw)(4);
+    assert(j == 4 && a.load() == 8);
+
+    // Test fetchSub custom memory order
+    j = a.fetchSub!(MemoryOrder.raw)(4);
+    assert(j == 8 && a.load() == 4);
+
+    // Test fetchAnd custom memory order
+    a = 0xffff;
+    j = a.fetchAnd!(MemoryOrder.raw)(0x00ff);
+    assert(j == 0xffff && a.load() == 0x00ff);
+
+    // Test fetchOr custom memory order
+    a = 0xff;
+    j = a.fetchOr!(MemoryOrder.raw)(0xff00);
+    assert(j == 0xff && a.load() == 0xffff);
+
+    // Test fetchAnd custom memory order
+    a = 0xf0f0f0f0;
+    j = a.fetchXor!(MemoryOrder.raw)(0x0f0f0f0f);
+    assert(j == 0xf0f0f0f0 && a.load() == 0xffffffff);
+
+    // Test opAssign
+    a = 3;
+    j = a.load();
+    assert(j == 3);
+
+    // Test pre increment addition
+    j = ++a;
+    assert(j == 4 && a.load() == 4);
+
+    // Test post increment addition
+    j = a++;
+    assert(j == 4 && a.load() == 5);
+
+    // Test pre decrement subtraction
+    j = --a;
+    assert(j == 4 && a.load() == 4);
+
+    j = a--;
+    assert(j == 4 && a.load() == 3);
+
+    // Test operator assign add
+    j = (a += 4);
+    assert(j == 7 && a.load() == 7);
+
+    // Test operator assign sub
+    j = (a -= 4);
+    assert(j == 3 && a.load() == 3);
+
+    // Test operator assign and
+    a = 0xffff;
+    j = (a &= 0x00ff);
+    assert(j == 0x00ff && a.load() == 0x00ff);
+
+    // Test operator assign and
+    a = 0xffff;
+    j = (a &= 0x00ff);
+    assert(j == 0x00ff && a.load() == 0x00ff);
+
+    // Test operator assign or
+    a = 0xff;
+    j = (a |= 0xff00);
+    assert(j == 0xffff && a.load() == 0xffff);
+
+    // Test operator assign xor
+    a = 0xf0f0f0f0;
+    j = (a ^= 0x0f0f0f0f);
+    assert(j == 0xffffffff && a.load() == 0xffffffff);
+
+    // Test exchange
+    a = 3;
+    j = a.exchange(10);
+    assert(j == 3 && a.load() == 10);
+
+    // Test exchange with custom memory order
+    j = a.exchange!(MemoryOrder.raw)(3);
+    assert(j == 10 && a.load() == 3);
+
+    // Reset back to 10
+    a = 10;
+
+    // test compareExchangeWeak with successful assignment
+    int expected = 10;
+    bool res = a.compareExchangeWeak(expected, 3);
+    assert(res == true && a.load() == 3);
+
+    // test compareExchangeWeak with failed assignment result as well as custom memory order
+    expected = 11;
+    res = a.compareExchangeWeak!(MemoryOrder.raw, MemoryOrder.raw)(expected, 10);
+    assert(res == false && a.load() == 3);
+
+    // test compareExchangeStrong with successful assignment
+    expected = 3;
+    res = a.compareExchangeStrong(expected, 10);
+    assert(res == true && a.load() == 10);
+
+    // test compareExchangeStrong with false result as well as custom memory order
+    expected = 3;
+    res = a.compareExchangeStrong!(MemoryOrder.raw, MemoryOrder.raw)(expected, 10);
+    assert(res == false && a.load() == 10);
 }
