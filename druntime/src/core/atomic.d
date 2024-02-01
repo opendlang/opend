@@ -682,16 +682,6 @@ TailShared!T atomicOp(string op, T, V1)(ref shared T val, V1 mod) pure nothrow @
     if (__traits(compiles, mixin("*cast(T*)&val" ~ op ~ "mod")))
 in (atomicValueIsProperlyAligned(val))
 {
-    version (LDC)
-    {
-        import ldc.intrinsics;
-
-        enum suitedForLLVMAtomicRmw = (__traits(isIntegral, T) && __traits(isIntegral, V1) &&
-                                       T.sizeof <= AtomicRmwSizeLimit && V1.sizeof <= AtomicRmwSizeLimit);
-    }
-    else
-        enum suitedForLLVMAtomicRmw = false;
-
     // binary operators
     //
     // +    -   *   /   %   ^^  &
@@ -712,42 +702,28 @@ in (atomicValueIsProperlyAligned(val))
     //
     // +=   -=  *=  /=  %=  ^^= &=
     // |=   ^=  <<= >>= >>>=    ~=
-    static if (op == "+=" && suitedForLLVMAtomicRmw)
-    {
-        T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_add(&val, m) + m);
-    }
-    else static if (op == "-=" && suitedForLLVMAtomicRmw)
-    {
-        T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_sub(&val, m) - m);
-    }
-    else static if (op == "&=" && suitedForLLVMAtomicRmw)
-    {
-        T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_and(&val, m) & m);
-    }
-    else static if (op == "|=" && suitedForLLVMAtomicRmw)
-    {
-        T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_or(&val, m) | m);
-    }
-    else static if (op == "^=" && suitedForLLVMAtomicRmw)
-    {
-        T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_xor(&val, m) ^ m);
-    }
-    else static if (op == "+=" && __traits(isIntegral, T) && __traits(isIntegral, V1) && T.sizeof <= size_t.sizeof && V1.sizeof <= size_t.sizeof)
+    static if (op == "+=")
     {
         return cast(T)(atomicFetchAdd(val, mod) + mod);
     }
-    else static if (op == "-=" && __traits(isIntegral, T) && __traits(isIntegral, V1) && T.sizeof <= size_t.sizeof && V1.sizeof <= size_t.sizeof)
+    else static if (op == "-=")
     {
         return cast(T)(atomicFetchSub(val, mod) - mod);
     }
-    else static if (op == "+=" || op == "-="  || op == "*="  || op == "/=" ||
-                op == "%=" || op == "^^=" || op == "&="  || op == "|=" ||
-                op == "^=" || op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
+    else static if (op == "&=")
+    {
+        return cast(T)(atomicFetchAnd(val, mod) & mod);
+    }
+    else static if (op == "|=")
+    {
+        return cast(T)(atomicFetchOr(val, mod) | mod);
+    }
+    else static if (op == "^=")
+    {
+        return cast(T)(atomicFetchXor(val, mod) ^ mod);
+    }
+    else static if (op == "*="  || op == "/=" || op == "%=" || op == "^^=" || 
+                    op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
     {
         T set, get = atomicLoad!(MemoryOrder.raw, T)(val);
         do
