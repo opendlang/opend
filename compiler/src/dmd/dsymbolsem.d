@@ -1519,10 +1519,7 @@ version (IN_LLVM)
 
         if (!(global.params.bitfields || sc.flags & SCOPE.Cfile))
         {
-            version (IN_GCC)
-                .error(dsym.loc, "%s `%s` use `-fpreview=bitfields` for bitfield support", dsym.kind, dsym.toPrettyChars);
-            else
-                .error(dsym.loc, "%s `%s` use -preview=bitfields for bitfield support", dsym.kind, dsym.toPrettyChars);
+            .error(dsym.loc, "%s `%s` use C-style bitfields not supported in D code", dsym.kind, dsym.toPrettyChars);
         }
 
         if (!dsym.parent.isStructDeclaration() && !dsym.parent.isClassDeclaration())
