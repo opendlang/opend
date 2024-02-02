@@ -1,0 +1,7 @@
+"^wasm(32|64)-":
+{
+    switches = [
+        "-defaultlib=",@WASM_DEFAULT_LDC_SWITCHES@
+    ];
+    lib-dirs = [];
+};

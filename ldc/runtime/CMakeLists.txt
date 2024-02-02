@@ -331,6 +331,12 @@ if(LDC_EXE)
     else()
         set(CONFIG_NAME ${LDC_EXE})
     endif()
+
+    # Adding a duplicating part of config file
+    set(common_path ${PROJECT_BINARY_DIR}/common.conf)
+    configure_file(${PROJECT_PARENT_DIR}/common.conf.in ${common_path} @ONLY)
+    file(READ ${common_path} COMMON_CONF_LINES)
+
     set(conf_path         ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}.conf)
     set(install_conf_path ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}_install.conf)
     configure_file(${PROJECT_PARENT_DIR}/${CONFIG_NAME}.conf.in ${conf_path} @ONLY)
