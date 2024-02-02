@@ -5,3 +5,10 @@
     ];
     lib-dirs = [];
 };
+
+".+-linux-.+":
+{
+    post-switches = [
+        @CONF_IMPORTS@
+    ];
+};

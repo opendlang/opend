@@ -336,11 +336,23 @@ set(WASM_DEFAULT_LDC_SWITCHES "${WASM_DEFAULT_LDC_SWITCHES}\n        \"-L--expor
 
 # Only generate the config files if this CMake project is embedded in the LDC CMake project.
 if(LDC_EXE)
+    # imports for building druntime itself
+    set(CONF_IMPORTS
+        -I${RUNTIME_DIR}/src
+        -I${LDC_BUILD_IMPORT_DIR}
+        -I${JITRT_DIR}/d
+    )
+
     if(PHOBOS2_DIR)
         set(CONFIG_NAME ${LDC_EXE}_phobos)
+        list(APPEND CONF_IMPORTS "-I${PHOBOS2_DIR}")
     else()
         set(CONFIG_NAME ${LDC_EXE})
     endif()
+
+    list(TRANSFORM CONF_IMPORTS PREPEND "\"")
+    list(TRANSFORM CONF_IMPORTS APPEND "\"")
+    list(JOIN CONF_IMPORTS ", " CONF_IMPORTS)
 
     # Adding a duplicating part of config file
     set(common_path ${PROJECT_BINARY_DIR}/common.conf)
@@ -350,6 +362,11 @@ if(LDC_EXE)
     set(conf_path         ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}.conf)
     set(install_conf_path ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}_install.conf)
     configure_file(${PROJECT_PARENT_DIR}/${CONFIG_NAME}.conf.in ${conf_path} @ONLY)
+
+    # import for typical compiler usage
+    set(CONF_IMPORTS "\"-I${INCLUDE_INSTALL_DIR}\"")
+    configure_file(${PROJECT_PARENT_DIR}/common.conf.in ${common_path} @ONLY)
+    file(READ ${common_path} COMMON_INSTALL_CONF_LINES)
     configure_file(${PROJECT_PARENT_DIR}/${LDC_EXE}_install.conf.in ${install_conf_path} @ONLY)
 
     # macOS has fat libraries; otherwise, append a separate config file section for the
