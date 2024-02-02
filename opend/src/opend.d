@@ -76,7 +76,7 @@ string flattenCmd(string[] cmd)
 
 string getOfFlag()
 {
-    // With -lib enabled, dmd puts .lib file wherever the -od is specified. Doesn't happen with executables
+    // dmd with -lib puts the static library in the directory specified by -od. Doesn't happen with executables
     if(type == "library")
         return "-of=" ~ getLibFileName();
     else
@@ -116,13 +116,13 @@ int main(string[] args)
 
     if(availOutputs.all!(x => x != type))
     {
-        writeln(i"Unsupported output type `$(type)`. Only `executable` and `library` are supported");
+        writeln(i"Invalid output `$(type)` (provide `executable` or `library`)");
         return -1;
     }
 
     if(availBuildTypes.all!(x => x != buildType))
     {
-        writeln(i"Unsupported build type `$(buildType)`. Only `debug` and `release` are supported");
+        writeln(i"Invalid build type `$(buildType)` (provide `debug` or `release`)");
         return -1;
     }
 
@@ -141,7 +141,7 @@ int main(string[] args)
 
     if(srcFiles.length == 0)
     {
-        writeln("No source directory found (either `src`, either `source`)");
+        writeln("Could not find source code directory (tried `src` and `source`)");
         return -1;
     }
 
@@ -170,6 +170,6 @@ int main(string[] args)
         writeln("Error!");
         return -1;
     }
-    writeln(i"Build successful. Files written to ./build/");
+    writeln(i"Build completed, output files written to ./build/");
     return 0;
 }
