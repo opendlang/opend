@@ -6,9 +6,11 @@
     lib-dirs = [];
 };
 
-".+-linux-.+":
-{
-    post-switches = [
-        "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/linux"
-    ];
-};
+".+-windows-.+":    { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/windows" ]; };
+".+-osx-.+":        { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/osx" ]; };
+".+-dragonfly-.+":  { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/dragonfly" ]; };
+".+-freebsd-.+":    { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/freebsd" ]; };
+".+-linux-.+":      { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/linux" ]; };
+".+-netbsd-.+":     { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/netbsd" ]; };
+".+-openbsd-.+":    { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/openbsd" ]; };
+".+-sunos-.+":      { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/sunos" ]; };
