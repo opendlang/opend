@@ -22,7 +22,7 @@ default:
     ];
     // default switches appended after all explicit command-line switches
     post-switches = [
-        @CONF_IMPORTS@
+        "@CONF_IMPORTS@"
     ];
     // default directories to be searched for libraries when linking
     lib-dirs = [

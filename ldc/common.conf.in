@@ -9,6 +9,6 @@
 ".+-linux-.+":
 {
     post-switches = [
-        @CONF_IMPORTS@
+        "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/linux"
     ];
 };
