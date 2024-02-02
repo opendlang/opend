@@ -186,6 +186,8 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_OPENBSD} ${DRUNTIME_D_POSIX}   ${DRUNTIME_D_SOLARIS}
     ${DRUNTIME_D_WINDOWS}
 )
+
+# DRUNTIME_TARGET_NAME contains official target name which cross-linking ability is provided by default
 if("${TARGET_SYSTEM}" MATCHES "Windows")
     set(DRUNTIME_TARGET_NAME "windows")
     list(APPEND TAGS "windows")
