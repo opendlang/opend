@@ -296,8 +296,9 @@ foreach(platform ${OfficialPlatforms})
 endforeach()
 
 # Produce tagged sources and import/ for current target. Overwrites previously generated
-# Called only because we need obtain TAGGED_SRCS list for current platform
-cmake_language(CALL produce_tagged_hier ${TAGS_${DRUNTIME_TARGET_NAME}} ${LDC_BUILD_IMPORT_DIR}/tagged_imports)
+# Called again only because we need obtain TAGGED_SRCS list for the current platform
+set(curr_tagged_import_dir ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${DRUNTIME_TARGET_NAME})
+cmake_language(CALL produce_tagged_hier ${TAGS_${DRUNTIME_TARGET_NAME}} ${curr_tagged_import_dir})
 
 list(APPEND DRUNTIME_D ${TAGGED_SRCS})
 
@@ -623,7 +624,7 @@ macro(compile_druntime d_flags lib_suffix path_suffix emit_bc all_at_once single
     endif()
     dc("${DRUNTIME_D}"
        "${RUNTIME_DIR}"
-       "-conf=;${d_flags};${DRUNTIME_EXTRA_FLAGS};-I${RUNTIME_DIR}/src;-I${LDC_BUILD_IMPORT_DIR}/tagged_imports"
+       "-conf=;${d_flags};${DRUNTIME_EXTRA_FLAGS};-I${RUNTIME_DIR}/src;-I${curr_tagged_import_dir}"
        "${PROJECT_BINARY_DIR}/objects${target_suffix}"
        "${emit_bc}"
        "${all_at_once}"
@@ -972,9 +973,10 @@ if(PHOBOS2_DIR)
 endif()
 install(FILES ${GCCBUILTINS} DESTINATION ${INCLUDE_INSTALL_DIR}/ldc)
 if(DRUNTIME_TARGET_NAME)
-    install(DIRECTORY ${LDC_BUILD_IMPORT_DIR}/tagged_imports/ DESTINATION ${INCLUDE_INSTALL_DIR}/platforms/${DRUNTIME_TARGET_NAME})
+    # Assumed build for an official platform - copying all imports
+    install(DIRECTORY ${LDC_BUILD_IMPORT_DIR}/tagged_imports/ DESTINATION ${INCLUDE_INSTALL_DIR}/platforms/)
 else()
-    install(DIRECTORY ${LDC_BUILD_IMPORT_DIR}/tagged_imports/ DESTINATION ${INCLUDE_INSTALL_DIR})
+    install(DIRECTORY ${curr_tagged_import_dir} DESTINATION ${INCLUDE_INSTALL_DIR})
 endif()
 
 #
