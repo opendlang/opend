@@ -1,10 +1,4 @@
-"^wasm(32|64)-":
-{
-    switches = [
-        "-defaultlib=",@WASM_DEFAULT_LDC_SWITCHES@
-    ];
-    lib-dirs = [];
-};
+// Imports for officially supplied druntime binaries:
 
 ".+-windows-.+":    { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/windows" ]; };
 ".+-osx-.+":        { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/osx" ]; };
@@ -14,3 +8,11 @@
 ".+-netbsd-.+":     { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/netbsd" ]; };
 ".+-openbsd-.+":    { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/openbsd" ]; };
 ".+-sunos-.+":      { post-switches = [ "@CONF_IMPORTS@", "@CONF_IMPORTS@/platforms/sunos" ]; };
+
+"^wasm(32|64)-":
+{
+    switches = [
+        "-defaultlib=",@WASM_DEFAULT_LDC_SWITCHES@
+    ];
+    lib-dirs = [];
+};
