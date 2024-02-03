@@ -304,7 +304,7 @@ foreach(platform ${OfficialPlatforms})
 endforeach()
 
 # Produce tagged sources and import/ for current target. Overwrites previously generated
-# Called again only because we need obtain TAGGED_SRCS list for the current platform
+# Called again only because we need to obtain TAGGED_SRCS list for the current platform
 set(curr_tagged_import_dir ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${DRUNTIME_TARGET_NAME})
 cmake_language(CALL produce_tagged_hier ${TAGS_${DRUNTIME_TARGET_NAME}} ${curr_tagged_import_dir})
 
