@@ -167,8 +167,6 @@ list(REMOVE_ITEM DRUNTIME_D
     ${RUNTIME_DIR}/src/rt/sections_solaris.d
     ${RUNTIME_DIR}/src/rt/sections_win32.d
 )
-# create set of tags
-set(TAGS "")
 # only include core/sys/ modules matching the platform
 file(GLOB_RECURSE DRUNTIME_D_BIONIC  ${RUNTIME_DIR}/src/core/sys/bionic/*.d)
 file(GLOB_RECURSE DRUNTIME_D_DARWIN  ${RUNTIME_DIR}/src/core/sys/darwin/*.d)
@@ -186,6 +184,9 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_OPENBSD} ${DRUNTIME_D_POSIX}   ${DRUNTIME_D_SOLARIS}
     ${DRUNTIME_D_WINDOWS}
 )
+
+# create set of tags
+set(TAGS "")
 
 # DRUNTIME_TARGET_NAME contains official target name which cross-linking ability is provided by default
 if("${TARGET_SYSTEM}" MATCHES "Windows")
