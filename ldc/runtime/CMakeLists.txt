@@ -185,7 +185,7 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_WINDOWS}
 )
 
-# DRUNTIME_TARGET_NAME contains official target name which cross-linking ability is provided by default
+# DRUNTIME_TARGET_NAME contains official target name which binary is currently produced
 if("${TARGET_SYSTEM}" MATCHES "Windows")
     set(DRUNTIME_TARGET_NAME "windows")
     list(APPEND DRUNTIME_D ${DRUNTIME_D_WINDOWS})
@@ -280,12 +280,20 @@ function(produce_tagged_hier TAGS import_dst_dir)
 endfunction()
 
 # Official targets
-set(OfficialPlatforms "windows" "osx" "linux")
+set(OfficialPlatforms
+    "windows" "osx" "dragonfly" "freebsd"
+    "linux" "netbsd" "openbsd" "sunos"
+)
 
 # Tags matrix for them
-set(TAGS_windows "windows")
-set(TAGS_osx "posix_threads")
-set(TAGS_linux "posix_threads")
+set(TAGS_windows    "windows")
+set(TAGS_osx        "posix_threads")
+set(TAGS_dragonfly  "posix_threads")
+set(TAGS_freebsd    "posix_threads")
+set(TAGS_linux      "posix_threads")
+set(TAGS_netbsd     "posix_threads")
+set(TAGS_openbsd    "posix_threads")
+set(TAGS_sunos      "posix_threads")
 
 # Directory filled with auto-generated import files
 set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
