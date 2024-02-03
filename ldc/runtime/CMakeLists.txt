@@ -185,7 +185,7 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_WINDOWS}
 )
 
-# create set of tags
+# create set of tags for current target
 set(TAGS "")
 
 # DRUNTIME_TARGET_NAME contains official target name which cross-linking ability is provided by default
@@ -240,44 +240,56 @@ set(TAGGED_COPY_LIST_FILE "${RUNTIME_DIR}/mak/TAGGED_COPY" CACHE FILEPATH "addit
 set(TAGGED_SRCS_FILE "${PROJECT_BINARY_DIR}/GEN_SRCS" CACHE FILEPATH "generated list of sources choised by tags")
 set(TAGGED_COPY_FILE "${PROJECT_BINARY_DIR}/GEN_COPY" CACHE FILEPATH "generated list of imports choised by tags")
 
-list(JOIN TAGS "," TAGS_STR)
-execute_process(
-    COMMAND "${RUNTIME_DIR}/parse_tagged_hier.sh"
-    ${TAGGED_SRCS_FILE}
-    ${TAGGED_COPY_LIST_FILE}
-    ${TAGGED_COPY_FILE}
-    "/"
-    ${TAGS_STR}
-    ${RUNTIME_CFG_DIR}
-    ECHO_OUTPUT_VARIABLE
-    ECHO_ERROR_VARIABLE
-    COMMAND_ERROR_IS_FATAL ANY
-)
+function(produce_tagged_hier TAGS import_dst_dir)
+    file(REMOVE ${TAGGED_SRCS_FILE})
+    file(REMOVE ${TAGGED_COPY_FILE})
 
-file(STRINGS ${TAGGED_SRCS_FILE} TAGGED_SRCS)
-file(STRINGS ${TAGGED_COPY_FILE} TAGGED_COPY)
+    list(JOIN TAGS "," TAGS_STR)
 
-list(APPEND DRUNTIME_D ${TAGGED_SRCS})
-
-# Directory filled with auto-generated import files
-set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
-
-foreach(incl_file ${TAGGED_COPY})
-    cmake_path(NORMAL_PATH incl_file)
-    string(REPLACE ${RUNTIME_CFG_DIR} "" dst_file ${incl_file})
-
-    # strip first unused dirs from file path
     execute_process(
-        COMMAND "echo" ${dst_file}
-        COMMAND "cut" -d / -f3-
-        OUTPUT_VARIABLE pretty_dst_path
+        COMMAND "${RUNTIME_DIR}/parse_tagged_hier.sh"
+        ${TAGGED_SRCS_FILE}
+        ${TAGGED_COPY_LIST_FILE}
+        ${TAGGED_COPY_FILE}
+        "/"
+        ${TAGS_STR}
+        ${RUNTIME_CFG_DIR}
+        ECHO_OUTPUT_VARIABLE
         ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
 
-    get_filename_component(path ${pretty_dst_path} PATH)
-    file(INSTALL ${incl_file} DESTINATION ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${path})
-endforeach()
+    file(STRINGS ${TAGGED_SRCS_FILE} TAGGED_SRCS)
+    file(STRINGS ${TAGGED_COPY_FILE} TAGGED_COPY)
+
+    # returning for further use
+    set(TAGGED_SRCS ${TAGGED_SRCS} PARENT_SCOPE)
+
+    # copy imports to dedicated tagged imports dir
+    foreach(incl_file ${TAGGED_COPY})
+        cmake_path(NORMAL_PATH incl_file)
+        string(REPLACE ${RUNTIME_CFG_DIR} "" dst_file ${incl_file})
+
+        # strip first unused dirs from file path
+        execute_process(
+            COMMAND "echo" ${dst_file}
+            COMMAND "cut" -d / -f3-
+            OUTPUT_VARIABLE pretty_dst_path
+            ECHO_ERROR_VARIABLE
+            COMMAND_ERROR_IS_FATAL ANY
+        )
+
+        get_filename_component(path ${pretty_dst_path} PATH)
+        file(INSTALL ${incl_file} DESTINATION ${import_dst_dir}/${path})
+    endforeach()
+endfunction()
+
+# Directory filled with auto-generated import files
+set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
+
+cmake_language(CALL produce_tagged_hier ${TAGS} ${LDC_BUILD_IMPORT_DIR}/tagged_imports)
+
+list(APPEND DRUNTIME_D ${TAGGED_SRCS})
 
 if(PHOBOS2_DIR)
     # Phobos D parts
