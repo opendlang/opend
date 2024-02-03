@@ -185,16 +185,11 @@ list(REMOVE_ITEM DRUNTIME_D
     ${DRUNTIME_D_WINDOWS}
 )
 
-# create set of tags for current target
-set(TAGS "")
-
 # DRUNTIME_TARGET_NAME contains official target name which cross-linking ability is provided by default
 if("${TARGET_SYSTEM}" MATCHES "Windows")
     set(DRUNTIME_TARGET_NAME "windows")
-    list(APPEND TAGS "windows")
     list(APPEND DRUNTIME_D ${DRUNTIME_D_WINDOWS})
 elseif("${TARGET_SYSTEM}" MATCHES "UNIX")
-    list(APPEND TAGS "posix_threads")
     list(APPEND DRUNTIME_D ${DRUNTIME_D_POSIX})
     if("${TARGET_SYSTEM}" MATCHES "APPLE")
         set(DRUNTIME_TARGET_NAME "osx")
@@ -284,10 +279,25 @@ function(produce_tagged_hier TAGS import_dst_dir)
     endforeach()
 endfunction()
 
+# Official targets
+set(OfficialPlatforms "windows" "osx" "linux")
+
+# Tags matrix for them
+set(TAGS_windows "windows")
+set(TAGS_osx "posix_threads")
+set(TAGS_linux "posix_threads")
+
 # Directory filled with auto-generated import files
 set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
 
-cmake_language(CALL produce_tagged_hier ${TAGS} ${LDC_BUILD_IMPORT_DIR}/tagged_imports)
+# Produce imports for all official platforms (including current)
+foreach(platform ${OfficialPlatforms})
+    cmake_language(CALL produce_tagged_hier ${TAGS_${platform}} ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${platform})
+endforeach()
+
+# Produce tagged sources and import/ for current target. Overwrites previously generated
+# Called only because we need obtain TAGGED_SRCS list for current platform
+cmake_language(CALL produce_tagged_hier ${TAGS_${DRUNTIME_TARGET_NAME}} ${LDC_BUILD_IMPORT_DIR}/tagged_imports)
 
 list(APPEND DRUNTIME_D ${TAGGED_SRCS})
 
