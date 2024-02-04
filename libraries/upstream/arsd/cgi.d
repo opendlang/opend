@@ -134,7 +134,7 @@ void main() {
 		* `embedded_httpd` for the embedded httpd version (built-in web server). This is the default for dub builds. You can run the program then connect directly to it from your browser. Note: prior to version 11, this would be embedded_httpd_processes on Linux and embedded_httpd_threads everywhere else. It now means embedded_httpd_hybrid everywhere supported and embedded_httpd_threads everywhere else.
 		* `cgi` for traditional cgi binaries. These are run by an outside web server as-needed to handle requests.
 		* `fastcgi` for FastCGI builds. FastCGI is managed from an outside helper, there's one built into Microsoft IIS, Apache httpd, and Lighttpd, and a generic program you can use with nginx called `spawn-fcgi`. If you don't already know how to use it, I suggest you use one of the other modes.
-		* `scgi` for SCGI builds. SCGI is a simplified form of FastCGI, where you run the server as an application service which is proxied by your outside webserver.
+		* `scgi` for SCGI builds. SCGI is a simplified form of FastCGI, where you run the server as an application service which is proxied by your outside webserver. Please note: on nginx make sure you add `scgi_param  PATH_INFO          $document_uri;` to the config!
 		* `stdio_http` for speaking raw http over stdin and stdout. This is made for systemd services. See [RequestServer.serveSingleHttpConnectionOnStdio] for more information.
 	)
 
@@ -1151,6 +1151,7 @@ class Cgi {
 		this.pathInfo = pathInfo;
 		this.queryString = queryString;
 		this.postBody = null;
+		this.requestContentType = null;
 	}
 
 	private {
@@ -1374,6 +1375,7 @@ class Cgi {
 				files = keepLastOf(filesArray);
 				post = keepLastOf(postArray);
 				this.postBody = pps.postBody;
+				this.requestContentType = contentType;
 				cleanUpPostDataState();
 			}
 
@@ -2201,6 +2203,8 @@ class Cgi {
 			files = keepLastOf(filesArray);
 			post = keepLastOf(postArray);
 			postBody = pps.postBody;
+			this.requestContentType = contentType;
+
 			cleanUpPostDataState();
 		}
 
@@ -2873,6 +2877,14 @@ class Cgi {
 	+/
 	public immutable string postBody;
 	alias postJson = postBody; // old name
+
+	/++
+		The content type header of the request. The [postBody] member may hold the actual data (see [postBody] for details).
+
+		History:
+			Added January 26, 2024 (dub v11.4)
+	+/
+	public immutable string requestContentType;
 
 	/* Internal state flags */
 	private bool outputtedResponseData;
@@ -3686,6 +3698,11 @@ mixin template CustomCgiDispatcherMain(CustomCgi, size_t maxContentLength, Prese
 		auto presenter = new Presenter;
 		activePresenter = presenter;
 		scope(exit) activePresenter = null;
+
+		if(cgi.pathInfo.length == 0) {
+			cgi.setResponseLocation(cgi.scriptName ~ "/");
+			return;
+		}
 
 		if(cgi.dispatcher!DispatcherArgs(presenter))
 			return;
@@ -7063,8 +7080,10 @@ version(cgi_with_websocket) {
 				return false;
 			if(!isDataPending())
 				return true;
-			while(isDataPending())
-				lowLevelReceive();
+			while(isDataPending()) {
+				if(lowLevelReceive() == false)
+					throw new ConnectionClosedException("Connection closed in middle of message");
+			}
 			goto checkAgain;
 		}
 
