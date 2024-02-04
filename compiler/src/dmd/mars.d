@@ -1839,6 +1839,29 @@ version (IN_LLVM) {} else
         file = toWinPath(file);
     }
 }
+
+    Identifier nameToId(const(char)[] p) {
+        const(char)[] replaced;
+        size_t lastCopy;
+
+        if(p.length && p[0] >= '0' && p[0] <= '9')
+            replaced ~= "_";
+
+        foreach(idx, ch; p) {
+            if(ch == '-') {
+                replaced ~= p[lastCopy .. idx];
+                replaced ~= "_";
+                lastCopy = idx + 1;
+            }
+        }
+        if(replaced.length)
+            replaced ~= p[lastCopy .. $];
+        else
+            replaced = p;
+
+        return Identifier.idPool(replaced);
+    }
+
     const(char)[] p = file.toDString();
     p = FileName.name(p); // strip path
     const(char)[] ext = FileName.ext(p);
@@ -1849,8 +1872,7 @@ version (IN_LLVM) {} else
             error(Loc.initial, "invalid file name '%s'", file);
             fatal();
         }
-        auto id = Identifier.idPool(p);
-        return new Module(file.toDString, id, global.params.ddoc.doOutput, global.params.dihdr.doOutput);
+        return new Module(file.toDString, nameToId(p), global.params.ddoc.doOutput, global.params.dihdr.doOutput);
     }
 
     /* Deduce what to do with a file based on its extension
@@ -1942,9 +1964,7 @@ version (IN_LLVM) {} else
     /* At this point, name is the D source file name stripped of
      * its path and extension.
      */
-    auto id = Identifier.idPool(name);
-
-    return new Module(file.toDString, id, global.params.ddoc.doOutput, global.params.dihdr.doOutput);
+    return new Module(file.toDString, nameToId(name), global.params.ddoc.doOutput, global.params.dihdr.doOutput);
 }
 
 /**
