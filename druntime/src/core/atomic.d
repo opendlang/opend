@@ -704,23 +704,28 @@ in (atomicValueIsProperlyAligned(val))
     // |=   ^=  <<= >>= >>>=    ~=
     static if (op == "+=")
     {
-        return cast(T)(atomicFetchAdd(val, mod) + mod);
+        T m = cast(T) mod;
+        return cast(T)(atomicFetchAdd(val, m) + m);
     }
     else static if (op == "-=")
     {
-        return cast(T)(atomicFetchSub(val, mod) - mod);
+        T m = cast(T) mod;
+        return cast(T)(atomicFetchSub(val, m) - m);
     }
     else static if (op == "&=")
     {
-        return cast(T)(atomicFetchAnd(val, mod) & mod);
+        T m = cast(T) mod;
+        return cast(T)(atomicFetchAnd(val, m) & m);
     }
     else static if (op == "|=")
     {
-        return cast(T)(atomicFetchOr(val, mod) | mod);
+        T m = cast(T) mod;
+        return cast(T)(atomicFetchOr(val, m) | m);
     }
     else static if (op == "^=")
     {
-        return cast(T)(atomicFetchXor(val, mod) ^ mod);
+        T m = cast(T) mod;
+        return cast(T)(atomicFetchXor(val, m) ^ m);
     }
     else static if (op == "*="  || op == "/=" || op == "%=" || op == "^^=" || 
                     op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
