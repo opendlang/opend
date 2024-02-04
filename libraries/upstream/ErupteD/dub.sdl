@@ -1,0 +1,39 @@
+name            "erupted"
+description     "Auto-generated D bindings for Vulkan"
+copyright       "Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016 Alex Parrill; Copyright 2018 Peter Particle"
+authors         "Alex Parrill" "Peter Particle"
+targetType      "sourceLibrary"
+license         "BSD 2-clause"
+
+// example how to initialize a logical device
+subPackage {
+    name                "devices"
+    description         "Simple Vulkan example"
+    targetType          "executable"
+    sourceFiles         "examples/devices.d"
+    dependency          "erupted"   path = "."
+}
+
+// example how query and enable layers
+subPackage {
+    name                "layers"
+    description         "Simple Vulkan example"
+    targetType          "executable"
+    sourceFiles         "examples/layers.d"
+    dependency          "erupted"   path = "."
+}
+
+subPackage {
+    name                "compute"
+    description         "Simple Vulkan example"
+    targetType          "executable"
+    sourceFiles         "examples/compute/compute.d"
+    dependency          "erupted"   path = "."
+    buildOptions        "betterC"
+    libs                "libcmt"
+//  libs                "msvcrt"
+//  lflags "/LTCG" "/NODEFAULTLIB:LIBCMT" "/NODEFAULTLIB:LIBVCRUNTIME"
+//  libs                "D:/Code/DLang/dmd2/windows/lib64/mingw/msvcrt"
+//  libs                "D:/Code/DLang/ldc2-1.28.0-windows-x64/lib/mingw/msvcrt"
+//  libs                "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64/libucrt"
+}

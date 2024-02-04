@@ -61,3 +61,5 @@ untracked_files/
 # Just in case
 /dmd
 /ldc-build
+
+libraries/extractor

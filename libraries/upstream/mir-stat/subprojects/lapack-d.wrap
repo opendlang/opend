@@ -1,0 +1,4 @@
+[wrap-git]
+directory=lapack-d
+url=https://github.com/libmir/lapack.git
+revision=head

@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+hemm.so
+hemm.dylib
+hemm.dll
+hemm.a
+hemm.lib
+hemm-test-*
+*.exe
+*.o
+*.obj
+*.lst

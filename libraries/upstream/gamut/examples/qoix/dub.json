@@ -1,0 +1,10 @@
+{
+    "name": "qoix",
+    "description": "QOIX encoder/decoder test suite.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    }
+}

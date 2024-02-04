@@ -1,0 +1,9 @@
+ {
+    "name": "bench",
+    "stringImportPaths": ["resources"],
+    "dependencies": {
+        "dmarkdown":  "~>0.2",
+        "hunt-markdown": "~>1.0",
+        "commonmark-d": "~>1.0",
+    }
+}

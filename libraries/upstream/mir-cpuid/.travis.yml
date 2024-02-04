@@ -1,0 +1,40 @@
+sudo: false
+
+os:
+ - linux
+ - osx
+
+language: d
+
+d:
+ - dmd
+ - ldc
+
+env:
+ - ARCH="x86_64"
+
+matrix:
+  include:
+    # - {os: linux, d: dmd-2.071.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: gdc, env: ARCH="x86_64"}
+  allow_failures:
+    - {d: dmd-nightly}
+    - {d: ldc-beta}
+    - {d: gdc}
+
+branches:
+  only:
+    - master
+    - stable
+
+packages:
+  - pkg-config
+
+script:
+ - echo "$ARCH"
+ - dub build --arch "$ARCH"
+ - dub --arch "$ARCH" --single report.d
+
+after_success:
+ - bash <(curl -s https://codecov.io/bash)

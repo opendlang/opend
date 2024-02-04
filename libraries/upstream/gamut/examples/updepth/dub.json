@@ -1,0 +1,15 @@
+{
+    "name": "updepth",
+    "description": "Convert RGB8 depth image from Dplug into L16 QOIX image, which will load faster.",
+    "license": "BSL-1.0",
+
+    "dependencies": 
+    {
+        "gamut": { "path": "../.." }
+    },
+
+    "subConfigurations":
+    {
+        "gamut": "boost+mit"
+    }
+}

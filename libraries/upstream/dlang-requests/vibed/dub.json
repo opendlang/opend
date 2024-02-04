@@ -1,0 +1,21 @@
+{
+	"authors": [
+		"ikod"
+	],
+	"copyright": "Copyright © 2020, igor",
+	"description": "requests using vibe-d sockets",
+	"license": "BSL-1.0",
+	"targetType": "library",
+	"name": "vibed",
+        "versions": ["vibeD"],
+        "dependencies": {
+		"cachetools": "~>0",
+		"vibe-d": "~>0.8"
+        },
+        "sourcePaths": [
+            "../source"
+        ],
+        "importPaths": [
+            "../source"
+	]
+}

@@ -1,0 +1,34 @@
+{
+	"authors": [
+		"Igor Khasilev"
+	],
+	"copyright": "Copyright © 2019, Igor Khasilev",
+	"dependencies": {
+		"automem": "~>0.6"
+	},
+	"description": "containers library",
+	"license": "BSL-1",
+	"name": "ikod-containers",
+	"targetType": "library",
+	"configurations": [
+		{
+			"name": "std"
+		},
+		{
+			"name": "unittest",
+			"targetType": "executable",
+			"versions": ["TestingContainers"],
+			"debugVersions": ["cachetools"],
+			"preBuildCommands": [
+			  "dub run --compiler=$$DC unit-threaded -c gen_ut_main -- -f bin/ut.d"
+			],
+			"dependencies": {
+			  "unit-threaded": "*"
+			},
+			"excludedSourceFiles": [
+			  "source/app.d"
+			],
+			"mainSourceFile": "bin/ut.d"
+		}
+	]
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module requests</title>
+		<link rel="stylesheet" type="text/css" href="./styles/ddox.css"/>
+		<link rel="stylesheet" href="./prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="./scripts/jquery.js">/**/</script><script type="text/javascript" src="./scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="./symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "./";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package selected">
+						<a href="./requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="./requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module requests</h1><p>HTTP client library, inspired by python-requests with goals:
+</p><section><p><ul>   <li>small memory footprint</li>
+   <li>performance</li>
+   <li>simple, high level API</li>
+   <li>native D implementation</li>
+ </ul>
+</p>
+</section>
+
+			<section></section>
+			<section>
+				<h2>Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="__unittest_L613_C1" class="public" href="./requests/__unittest_L613_C1.html">__unittest_L613_C1</a><span class="decoration">()</span>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContent" class="public" href="./requests/getContent.html">getContent</a><span class="decoration">(url)</span>
+							</code>
+						</td>
+						<td>Call GET, and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContent" class="public" href="./requests/getContent.html">getContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET, with parameters, and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContent" class="public" href="./requests/getContent.html">getContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET, with parameters, and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContent" class="public" href="./requests/getContent.html">getContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET, and return response content.
+ args = variadic args to supply parameter names and values.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContentByLine" class="public" href="./requests/getContentByLine.html">getContentByLine</a><span class="decoration">(url)</span>
+							</code>
+						</td>
+						<td>Call GET and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContentByLine" class="public" href="./requests/getContentByLine.html">getContentByLine</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContentByLine" class="public" href="./requests/getContentByLine.html">getContentByLine</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="getContentByLine" class="public" href="./requests/getContentByLine.html">getContentByLine</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call GET and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="patchContent" class="public" href="./requests/patchContent.html">patchContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call patch and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="postContent" class="public" href="./requests/postContent.html">postContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call post and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="postContentByLine" class="public" href="./requests/postContentByLine.html">postContentByLine</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call POST and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="putContent" class="public" href="./requests/putContent.html">putContent</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call put and return response content.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="putContentByLine" class="public" href="./requests/putContentByLine.html">putContentByLine</a><span class="decoration">(url, args)</span>
+							</code>
+						</td>
+						<td>Call PUT and lazily convert server response into InputRange of ubyte[], splitted by '\n'.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="__unittest_L29_C9" class="package" href="./requests/__unittest_L29_C9.html">__unittest_L29_C9</a><span class="decoration">()</span>
+							</code>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

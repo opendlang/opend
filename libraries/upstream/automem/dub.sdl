@@ -1,0 +1,62 @@
+name "automem"
+authors "Atila Neves"
+description "Automatic memory management"
+license "BSD 3-clause"
+targetType "library"
+targetPath "bin"
+
+
+configuration "library" {
+}
+
+
+configuration "unittest" {
+    targetType "executable"
+    targetName "ut"
+
+    importPaths "tests"
+    sourcePaths "tests"
+    mainSourceFile "tests/ut_main.d"
+
+    dflags "-preview=dip25" "-preview=dip1000" "-preview=dip1008"
+    versions "AutomemTesting"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="*"
+}
+
+
+configuration "asan" {
+    targetType "executable"
+    targetName "asan"
+
+    importPaths "tests"
+    sourcePaths "tests"
+    mainSourceFile "tests/ut_main.d"
+
+    # -preview=dip1008 causes asan issues with malloc
+    dflags "-preview=dip25" "-preview=dip1000"
+    dflags "-fsanitize=address" platform="ldc"
+
+    // unit threaded light is necessary for the tests to actually run
+    versions "AutomemTesting" "AutomemAsan" "unitUnthreaded" "unitThreadedLight"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="*"
+}
+
+
+configuration "utl" {
+    targetType "executable"
+    targetName "utl"
+
+    importPaths "tests"
+    sourcePaths "tests"
+
+    dflags "-preview=dip25" "-preview=dip1000" "-preview=dip1008"
+
+    versions "AutomemTesting" "unitThreadedLight"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="*"
+}

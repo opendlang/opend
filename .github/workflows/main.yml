@@ -79,7 +79,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: false
           fetch-depth: 50
       - name: Install prerequisites
         uses: ./.github/actions/1-setup
@@ -163,7 +163,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: false
           fetch-depth: 50
       - name: Install prerequisites
         uses: ./.github/actions/1-setup

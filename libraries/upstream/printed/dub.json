@@ -1,0 +1,70 @@
+{
+    "name": "printed",
+    "description": "Low-level API to generate self-contained PDF/SVG/HTML documents suitable for print",
+    "license": "BSL-1.0",
+    "importPaths": [],
+    "sourcePaths": [],
+
+    "dependencies":
+    {
+        "printed:canvas": "*",
+        "printed:font": "*",
+        "printed:htmlcolors": "*"
+    },
+
+   "subPackages": [
+        {
+            "name": "font",
+            "sourcePaths":
+            [
+                "font/printed/font"
+            ],
+
+            "importPaths": [ "font" ],
+
+            "dependencies":
+            {
+                "standardpaths": "~>0.0",
+                "binrange": "~>1.0"
+            }
+        },
+        {
+            "name": "canvas",
+            "sourcePaths":
+            [
+                "canvas/printed/canvas"
+            ],
+
+            "importPaths": [ "canvas" ],
+            "dependencies":
+            {
+                "printed:font": "*",
+                "binrange": "~>1.0",
+                "printed:htmlcolors": "*",
+                "gamut": "~>2.0"
+            }
+        },
+        {
+            "name": "htmlcolors",
+            "sourcePaths":
+            [
+                "htmlcolors/printed/htmlcolors"
+            ],
+
+            "importPaths": [ "htmlcolors" ]
+        },
+        {
+            "name": "flow",
+            "sourcePaths":
+            [
+                "flow/printed/flow"
+            ],
+
+            "importPaths": [ "flow" ],
+            "dependencies":
+            {
+                "printed:canvas": "*",
+            }
+        }
+    ]
+}

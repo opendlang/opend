@@ -1,0 +1,28 @@
+{
+    "name": "ggplotd",
+    "description": "Plotting library for the D programming library. The design is inspired by ggplot2 for R.",
+    "copyright": "Copyright © 2015, Edwin van Leeuwen",
+    "authors": ["Edwin van Leeuwen"],
+    "libs": ["cairo"],
+    "license": "BSL-1.0",
+    "dependencies": {
+        "cairod": "~>0.0.1-alpha.3+1.10.2",
+        "dunit": "~>1.0.15",
+        "dstats": "~>1.0.5",
+        "painlesstraits": "~>0.3.0",
+        "color": "~>0.0.8"
+    },
+    "versions": ["CairoPNG","CairoPDFSurface","CairoSVGSurface"],
+    "configurations": [
+        {
+            "name": "default"
+        },
+        {
+            "name": "ggplotd-gtk",
+            "dependencies": {
+                "gtk-d:gtkd": "~>3.3.0"
+            },
+            "versions": ["ggplotdGTK"]
+        }
+    ]
+}
