@@ -16,7 +16,8 @@ abstract class Platform
         }
         version(linux)
         {
-            // Stub
+            import platform.linux : LinuxPlatform;
+            return new LinuxPlatform();
         }
     }
 
