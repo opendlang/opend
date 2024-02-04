@@ -200,18 +200,18 @@ void atomicStore(MemoryOrder ms = MemoryOrder.seq, T, V)(ref shared T val, auto 
  * Returns:
  *  The value held previously by `val`.
  */
-T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
     if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
     static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchAdd!ms(cast(size_t*)&val, mod * U.sizeof);
+        return cast(T)core.internal.atomic.atomicFetchAdd!ms(cast(T*)&val, mod * U.sizeof);
     else
-        return core.internal.atomic.atomicFetchAdd!ms(&val, cast(T)mod);
+        return core.internal.atomic.atomicFetchAdd!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
     if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -229,18 +229,18 @@ in (atomicValueIsProperlyAligned(val))
  * Returns:
  *  The value held previously by `val`.
  */
-T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
     if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
     static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchSub!ms(cast(size_t*)&val, mod * U.sizeof);
+        return cast(T)core.internal.atomic.atomicFetchSub!ms(cast(T*)&val, mod * U.sizeof);
     else
-        return core.internal.atomic.atomicFetchSub!ms(&val, cast(T)mod);
+        return core.internal.atomic.atomicFetchSub!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
     if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -258,18 +258,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchAnd!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchAnd!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchAnd!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -287,18 +284,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchOr!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchOr!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchOr!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -316,18 +310,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchXor!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchXor!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchXor!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -727,7 +718,7 @@ in (atomicValueIsProperlyAligned(val))
         T m = cast(T) mod;
         return cast(T)(atomicFetchXor(val, m) ^ m);
     }
-    else static if (op == "*="  || op == "/=" || op == "%=" || op == "^^=" || 
+    else static if (op == "*="  || op == "/=" || op == "%=" || op == "^^=" ||
                     op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
     {
         T set, get = atomicLoad!(MemoryOrder.raw, T)(val);

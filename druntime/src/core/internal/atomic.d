@@ -34,35 +34,30 @@ version (LDC)
     T atomicFetchAdd(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
-        static assert(__traits(isIntegral, T) && T.sizeof <= AtomicRmwSizeLimit);
         return llvm_atomic_rmw_add!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
     T atomicFetchSub(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
-        static assert(__traits(isIntegral, T) && T.sizeof <= AtomicRmwSizeLimit);
         return llvm_atomic_rmw_sub!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
     T atomicFetchAnd(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
-        static assert(__traits(isIntegral, T) && T.sizeof <= AtomicRmwSizeLimit);
         return llvm_atomic_rmw_and!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
     T atomicFetchOr(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
-        static assert(__traits(isIntegral, T) && T.sizeof <= AtomicRmwSizeLimit);
         return llvm_atomic_rmw_or!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
     T atomicFetchXor(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     {
         alias A = _AtomicType!T;
-        static assert(__traits(isIntegral, T) && T.sizeof <= AtomicRmwSizeLimit);
         return llvm_atomic_rmw_xor!A(cast(shared A*) dest, value, _ordering!(order));
     }
 
