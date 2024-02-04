@@ -298,13 +298,14 @@ set(TAGS_sunos      "posix_threads")
 # Directory filled with auto-generated import files
 set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
 
-# Produce imports for all official platforms (including current)
+# Produce imports for all official platforms except current
 foreach(platform ${OfficialPlatforms})
-    cmake_language(CALL produce_tagged_hier ${TAGS_${platform}} ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${platform})
+    if(NOT ${platform} EQUAL ${DRUNTIME_TARGET_NAME})
+        cmake_language(CALL produce_tagged_hier ${TAGS_${platform}} ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${platform})
+    endif()
 endforeach()
 
-# Produce tagged sources and import/ for current target. Overwrites previously generated
-# Called again only because we need to obtain TAGGED_SRCS list for the current platform
+# Produce tagged sources and import/ for current target
 set(curr_tagged_import_dir ${LDC_BUILD_IMPORT_DIR}/tagged_imports/${DRUNTIME_TARGET_NAME})
 cmake_language(CALL produce_tagged_hier ${TAGS_${DRUNTIME_TARGET_NAME}} ${curr_tagged_import_dir})
 
