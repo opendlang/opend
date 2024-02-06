@@ -147,14 +147,21 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
         if (tn.ty == Tfunction || tn.ty == Tvoid)
                 typeHasNoRefs = true; // this is ok, functions are immutable in the code segment
 
+        if (fieldType.ty == Tarray)
+        if (auto tn = fieldType.nextOf())
+        if (tn.isImmutable)
+            typeHasNoRefs = true; // array of immutables also ok - the array itself is an outer-layer value
+
+        // FIXME: if it is a struct and all members pass this same check, we're also ok
+
         if (typeHasNoRefs)
             return true;
 
-        error(init.loc, "mutable reference type assigned in initializer");
+        error(init.loc, "reference to mutable data assigned in initializer");
         errorSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
         errorSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
         errorSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
-        errorSupplemental(init.loc, "%d", fieldType.ty);
+        // errorSupplemental(init.loc, "%d %s", fieldType.ty, fieldType.nextOf().toChars);
 
         return false;
     }
