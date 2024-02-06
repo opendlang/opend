@@ -32,6 +32,11 @@ runs:
         DFLAGS= LFLAGS= ldmd2 -Iupstream -i extractor.d # need to run natively so dont use the cross compiler
         ./extractor build ../../installed/import
 
+        cd ../opend
+        cd src
+        ldmd2 -ofopend -i opend.d
+        cp opend ../../installed/bin/
+
     - name: Build & copy upstream dlang tools
       shell: bash
       run: |
