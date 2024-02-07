@@ -8,7 +8,7 @@ class LocalPackageAlreadyAddedException : Exception
 {
     this(string path)
     {
-        super(i"Package at `$(path)` already added".text);
+        super(text("Package at `", path, "` already added"));
         _path = path;
     }
 
@@ -25,7 +25,7 @@ class SettingsFileInvalidException : Exception
 {
     this(string fieldName, string message)
     {
-        super(i"OpenD Settings file is broken at filed $(fieldName). $(message)".text);
+        super(text("OpenD Settings file is broken at filed ", fieldName," . ", message));
         _fieldName = fieldName;
     }
 
@@ -39,7 +39,7 @@ class NotAnOpenDPackageException : Exception
 {
     this(string path)
     {
-        super(i"No OpenD package is found at `$(path)`.".text);
+        super(text("No OpenD package is found at `", path, "`."));
         _path = path;
     }
 

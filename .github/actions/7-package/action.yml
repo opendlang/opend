@@ -34,7 +34,7 @@ runs:
 
         cd ../opend
         cd src
-        ldmd2 -ofopend -i opend.d
+        $DMD -ofopend -i opend.d
         cp opend ../../installed/bin/
 
     - name: Build & copy upstream dlang tools

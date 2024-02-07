@@ -116,13 +116,13 @@ int main(string[] args)
 
     if(availOutputs.all!(x => x != type))
     {
-        writeln(i"Invalid output `$(type)` (provide `executable` or `library`)");
+        writeln("Invalid output `", type, "` (provide `executable` or `library`)");
         return -1;
     }
 
     if(availBuildTypes.all!(x => x != buildType))
     {
-        writeln(i"Invalid build type `$(buildType)` (provide `debug` or `release`)");
+        writeln("Invalid build type `", buildType, "` (provide `debug` or `release`)");
         return -1;
     }
 
@@ -170,6 +170,6 @@ int main(string[] args)
         writeln("Error!");
         return -1;
     }
-    writeln(i"Build completed, output files written to ./build/");
+    writeln("Build completed, output files written to ./build/");
     return 0;
 }

@@ -65,7 +65,7 @@ private:
     {
         auto name = getPackageNameFromPath(path);
         // return path ~ "/build/" ~ name ~ ".lib";
-        return text(i"$(path)/build/$(name).lib");
+        return text(path, "/build/", name, ".lib");
     }
 
     SysTime buildTime;
