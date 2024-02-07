@@ -35,7 +35,7 @@ runs:
         cd ../opend
         cd src
         $DMD -ofopend -i opend.d
-        cp opend ../../installed/bin/
+        cp opend ../../../installed/bin/
 
     - name: Build & copy upstream dlang tools
       shell: bash
