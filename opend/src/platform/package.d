@@ -14,7 +14,7 @@ abstract class Platform
             import platform.windows : WindowsPlatform;
             return new WindowsPlatform();
         }
-        version(linux)
+        version(Posix)
         {
             import platform.linux : LinuxPlatform;
             return new LinuxPlatform();
