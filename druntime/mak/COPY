@@ -163,6 +163,8 @@ COPY=\
 	\
 	$(IMPDIR)\core\sys\darwin\netinet\in_.d \
 	\
+	$(IMPDIR)\core\sys\darwin\sync\osmutex.d \
+	\
 	$(IMPDIR)\core\sys\darwin\sys\cdefs.d \
 	$(IMPDIR)\core\sys\darwin\sys\event.d \
 	$(IMPDIR)\core\sys\darwin\sys\mman.d \
@@ -182,6 +184,8 @@ COPY=\
 	$(IMPDIR)\core\sys\freebsd\net\if_dl.d \
 	\
 	$(IMPDIR)\core\sys\freebsd\netinet\in_.d \
+	\
+	$(IMPDIR)\core\sys\freebsd\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\sys\freebsd\sys\_bitset.d \
 	$(IMPDIR)\core\sys\freebsd\sys\_cpuset.d \
@@ -208,6 +212,8 @@ COPY=\
 	$(IMPDIR)\core\sys\dragonflybsd\stdlib.d \
 	$(IMPDIR)\core\sys\dragonflybsd\string.d \
 	$(IMPDIR)\core\sys\dragonflybsd\time.d \
+	\
+	$(IMPDIR)\core\sys\dragonflybsd\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\sys\dragonflybsd\sys\_bitset.d \
 	$(IMPDIR)\core\sys\dragonflybsd\sys\_cpuset.d \
@@ -252,6 +258,8 @@ COPY=\
 	$(IMPDIR)\core\sys\linux\netinet\in_.d \
 	$(IMPDIR)\core\sys\linux\netinet\tcp.d \
 	\
+	$(IMPDIR)\core\sys\linux\sync\osmutex.d \
+	\
 	$(IMPDIR)\core\sys\linux\sys\auxv.d \
 	$(IMPDIR)\core\sys\linux\sys\eventfd.d \
 	$(IMPDIR)\core\sys\linux\sys\file.d \
@@ -270,6 +278,8 @@ COPY=\
 	$(IMPDIR)\core\sys\netbsd\stdlib.d \
 	$(IMPDIR)\core\sys\netbsd\string.d \
 	$(IMPDIR)\core\sys\netbsd\time.d \
+	\
+	$(IMPDIR)\core\sys\netbsd\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\sys\netbsd\sys\elf.d \
 	$(IMPDIR)\core\sys\netbsd\sys\elf32.d \
@@ -290,6 +300,8 @@ COPY=\
 	$(IMPDIR)\core\sys\openbsd\string.d \
 	$(IMPDIR)\core\sys\openbsd\time.d \
 	$(IMPDIR)\core\sys\openbsd\unistd.d \
+	\
+	$(IMPDIR)\core\sys\openbsd\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\sys\openbsd\sys\cdefs.d \
 	$(IMPDIR)\core\sys\openbsd\sys\elf.d \
@@ -339,6 +351,8 @@ COPY=\
 	\
 	$(IMPDIR)\core\sys\posix\stdc\time.d \
 	\
+	$(IMPDIR)\core\sys\posix\sync\osmutex.d \
+	\
 	$(IMPDIR)\core\sys\posix\sys\filio.d \
 	$(IMPDIR)\core\sys\posix\sys\ioccom.d \
 	$(IMPDIR)\core\sys\posix\sys\ioctl.d \
@@ -367,6 +381,8 @@ COPY=\
 	$(IMPDIR)\core\sys\solaris\link.d \
 	$(IMPDIR)\core\sys\solaris\stdlib.d \
 	$(IMPDIR)\core\sys\solaris\time.d \
+	\
+	$(IMPDIR)\core\sys\solaris\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\sys\solaris\sys\elf.d \
 	$(IMPDIR)\core\sys\solaris\sys\elf_386.d \
@@ -547,6 +563,8 @@ COPY=\
 	$(IMPDIR)\core\sys\windows\winver.d \
 	$(IMPDIR)\core\sys\windows\wtsapi32.d \
 	$(IMPDIR)\core\sys\windows\wtypes.d \
+	\
+	$(IMPDIR)\core\sys\windows\sync\osmutex.d \
 	\
 	$(IMPDIR)\core\thread\context.d \
 	$(IMPDIR)\core\thread\fiber.d \
