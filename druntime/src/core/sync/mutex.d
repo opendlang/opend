@@ -21,37 +21,48 @@ public import core.sync.exception;
 
 // This ugly version switch case will eventually be replace with
 // mixin("import core.sys." ~ config.osSysDir ~ ".sync.osmutex");
+
+version (OSX)
+    version = Darwin;
+else version (iOS)
+    version = Darwin;
+else version (TVOS)
+    version = Darwin;
+else version (WatchOS)
+    version = Darwin;
+
+
 version (Windows)
 {
-    import core.sys.windows.sync.osmutex;
+    import rt.sys.windows.osmutex;
 }
 else version (linux)
 {
-    import core.sys.linux.sync.osmutex;
+    import rt.sys.linux.osmutex;
 }
 else version (Darwin)
 {
-    import core.sys.darwin.sync.osmutex;
+    import rt.sys.darwin.osmutex;
 }
 else version (DragonFlyBSD)
 {
-    import core.sys.dragonflybsd.sync.osmutex;
+    import rt.sys.dragonflybsd.osmutex;
 }
 else version (FreeBSD)
 {
-    import core.sys.freebsd.sync.osmutex;
+    import rt.sys.freebsd.osmutex;
 }
 else version (NetBSD)
 {
-    import core.sys.netbsd.sync.osmutex;
+    import crtore.sys.netbsd.osmutex;
 }
 else version (OpenBSD)
 {
-    import core.sys.openbsd.sync.osmutex;
+    import rt.sys.openbsd.osmutex;
 }
 else version (Solaris)
 {
-    import core.sys.solaris.sync.osmutex;
+    import rt.sys.solaris.osmutex;
 }
 else
 {

@@ -1,4 +1,4 @@
-module core.sys.posix.sync.osmutex;
+module rt.sys.posix.osmutex;
 
 version (Posix):
 

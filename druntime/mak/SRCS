@@ -161,8 +161,6 @@ SRCS=\
 	\
 	src\core\sys\darwin\netinet\in_.d \
 	\
-	src\core\sys\darwin\sync\osmutex.d \
-	\
 	src\core\sys\darwin\sys\cdefs.d \
 	src\core\sys\darwin\sys\event.d \
 	src\core\sys\darwin\sys\mman.d \
@@ -181,8 +179,6 @@ SRCS=\
 	src\core\sys\freebsd\net\if_dl.d \
 	\
 	src\core\sys\freebsd\netinet\in_.d \
-	\
-	src\core\sys\freebsd\sync\osmutex.d \
 	\
 	src\core\sys\freebsd\sys\_bitset.d \
 	src\core\sys\freebsd\sys\_cpuset.d \
@@ -207,8 +203,6 @@ SRCS=\
 	src\core\sys\dragonflybsd\stdlib.d \
 	src\core\sys\dragonflybsd\string.d \
 	src\core\sys\dragonflybsd\time.d \
-	\
-	src\core\sys\dragonflybsd\sync\osmutex.d \
 	\
 	src\core\sys\dragonflybsd\sys\_bitset.d \
 	src\core\sys\dragonflybsd\sys\_cpuset.d \
@@ -253,8 +247,6 @@ SRCS=\
 	src\core\sys\linux\netinet\in_.d \
 	src\core\sys\linux\netinet\tcp.d \
 	\
-	src\core\sys\linux\sync\osmutex.d \
-	\
 	src\core\sys\linux\sys\auxv.d \
 	src\core\sys\linux\sys\eventfd.d \
 	src\core\sys\linux\sys\file.d \
@@ -273,8 +265,6 @@ SRCS=\
 	src\core\sys\netbsd\stdlib.d \
 	src\core\sys\netbsd\string.d \
 	src\core\sys\netbsd\time.d \
-	\
-	src\core\sys\netbsd\sync\osmutex.d \
 	\
 	src\core\sys\netbsd\sys\elf.d \
 	src\core\sys\netbsd\sys\elf32.d \
@@ -295,8 +285,6 @@ SRCS=\
 	src\core\sys\openbsd\string.d \
 	src\core\sys\openbsd\time.d \
 	src\core\sys\openbsd\unistd.d \
-	\
-	src\core\sys\openbsd\sync\osmutex.d \
 	\
 	src\core\sys\openbsd\sys\cdefs.d \
 	src\core\sys\openbsd\sys\elf.d \
@@ -346,8 +334,6 @@ SRCS=\
 	\
 	src\core\sys\posix\stdc\time.d \
 	\
-	src\core\sys\posix\sync\osmutex.d \
-	\
 	src\core\sys\posix\sys\filio.d \
 	src\core\sys\posix\sys\ioccom.d \
 	src\core\sys\posix\sys\ioctl.d \
@@ -376,8 +362,6 @@ SRCS=\
 	src\core\sys\solaris\link.d \
 	src\core\sys\solaris\stdlib.d \
 	src\core\sys\solaris\time.d \
-	\
-	src\core\sys\solaris\sync\osmutex.d \
 	\
 	src\core\sys\solaris\sys\elf.d \
 	src\core\sys\solaris\sys\elf_386.d \
@@ -559,8 +543,6 @@ SRCS=\
 	src\core\sys\windows\wtsapi32.d \
 	src\core\sys\windows\wtypes.d \
 	\
-	src\core\sys\windows\sync\osmutex.d \
-	\
 	src\core\thread\fiber.d \
 	src\core\thread\types.d \
 	src\core\thread\threadgroup.d \
@@ -608,6 +590,24 @@ SRCS=\
 	src\rt\tlsgc.d \
 	src\rt\trace.d \
 	src\rt\tracegc.d \
+	\
+	src\rt\sys\darwin\osmutex.d \
+	\
+	src\rt\sys\freebsd\osmutex.d \
+	\
+	src\rt\sys\dragonflybsd\osmutex.d \
+	\
+	src\rt\sys\linux\osmutex.d \
+	\
+	src\rt\sys\netbsd\osmutex.d \
+	\
+	src\rt\sys\openbsd\osmutex.d \
+	\
+	src\rt\sys\posix\osmutex.d \
+	\
+	src\rt\sys\solaris\osmutex.d \
+	\
+	src\rt\sys\windows\osmutex.d \
 	\
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \

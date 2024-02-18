@@ -1,4 +1,4 @@
-module core.sys.windows.sync.osmutex;
+module rt.sys.windows.osmutex;
 
 version (Windows):
 
