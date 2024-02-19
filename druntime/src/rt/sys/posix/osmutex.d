@@ -58,9 +58,4 @@ struct OsMutex
     {
         return pthread_mutex_trylock(&m_hndl) == 0;
     }
-
-    pthread_mutex_t* handleAddr() @nogc
-    {
-        return &m_hndl;
-    }
 }

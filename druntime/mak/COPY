@@ -560,20 +560,29 @@ COPY=\
 	$(IMPDIR)\etc\linux\memoryerror.d \
 	\
 	$(IMPDIR)\rt\sys\darwin\osmutex.d \
+	$(IMPDIR)\rt\sys\darwin\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\freebsd\osmutex.d \
+	$(IMPDIR)\rt\sys\freebsd\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\dragonflybsd\osmutex.d \
+	$(IMPDIR)\rt\sys\dragonflybsd\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\linux\osmutex.d \
+	$(IMPDIR)\rt\sys\linux\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\netbsd\osmutex.d \
+	$(IMPDIR)\rt\sys\netbsd\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\openbsd\osmutex.d \
+	$(IMPDIR)\rt\sys\openbsd\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\posix\osmutex.d \
+	$(IMPDIR)\rt\sys\posix\oscondition.d \
 	\
 	$(IMPDIR)\rt\sys\solaris\osmutex.d \
+	$(IMPDIR)\rt\sys\solaris\oscondition.d \
 	\
-	$(IMPDIR)\rt\sys\windows\osmutex.d
+	$(IMPDIR)\rt\sys\windows\osmutex.d \
+	$(IMPDIR)\rt\sys\windows\oscondition.d 
 
