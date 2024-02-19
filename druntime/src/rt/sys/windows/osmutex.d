@@ -10,7 +10,7 @@ struct OsMutex
 {
     CRITICAL_SECTION    m_hndl;
 
-    void initialize() nothrow @trusted @nogc
+    void create() nothrow @trusted @nogc
     {
         InitializeCriticalSection(cast(CRITICAL_SECTION*) &m_hndl);
     }

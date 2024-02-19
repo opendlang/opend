@@ -81,7 +81,8 @@ else
 /**
  * This class represents a general purpose, recursive mutex.
  *
- * Implemented using `pthread_mutex` on Posix and `CRITICAL_SECTION`
+ * Implemented using `pthread_mutex` on Posix and `CRITICAL_SECTION`    
+ 
  * on Windows.
  */
 class Mutex :
@@ -111,7 +112,7 @@ class Mutex :
     private this(this Q)(bool _unused_) @trusted nothrow @nogc
         if (is(Q == Mutex) || is(Q == shared Mutex))
     {
-        (cast(OsMutex)osMutex).initialize();
+        (cast(OsMutex)osMutex).create();
 
         m_proxy.link = this;
         this.__monitor = cast(void*) &m_proxy;

@@ -9,7 +9,7 @@ struct OsMutex
 {
     pthread_mutex_t     m_hndl;
 
-    void initialize() nothrow @trusted @nogc
+    void create() nothrow @trusted @nogc
     {
         import core.internal.abort : abort;
         pthread_mutexattr_t attr = void;
