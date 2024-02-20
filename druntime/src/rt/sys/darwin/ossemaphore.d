@@ -11,8 +11,8 @@ else version (WatchOS)
 
 version (Darwin):
 
-public import core.sync.exception;
-public import core.time;
+import core.sync.exception;
+import core.time;
 
 import core.sync.config;
 import core.stdc.errno;

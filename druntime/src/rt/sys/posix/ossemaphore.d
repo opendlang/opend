@@ -1,9 +1,21 @@
 module rt.sys.posix.ossemaphore;
 
-version (Posix):
+// If this is Darwin, the this file should be skipped because it has an
+// own implementation of the OsSemaphore.
+version (OSX)
+    version = Darwin;
+else version (iOS)
+    version = Darwin;
+else version (TVOS)
+    version = Darwin;
+else version (WatchOS)
+    version = Darwin;
 
-public import core.sync.exception;
-public import core.time;
+version (Darwin) {}
+else version (Posix):
+
+import core.sync.exception;
+import core.time;
 
 import core.sync.config;
 import core.stdc.errno;

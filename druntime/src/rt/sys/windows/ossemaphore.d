@@ -2,8 +2,8 @@ module rt.sys.windows.ossemaphore;
 
 version (Windows):
 
-public import core.sync.exception;
-public import core.time;
+import core.sync.exception;
+import core.time;
 
 import core.sys.windows.basetsd /+: HANDLE+/;
 import core.sys.windows.winbase /+: CloseHandle, CreateSemaphoreA, INFINITE,
