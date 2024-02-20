@@ -622,6 +622,60 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
             if (!arg)
                 continue; // default argument
             m = argumentMatchParameter(tf, p, arg, wildmatch, flag, sc, pMessage);
+
+            if (m == MATCH.nomatch) {
+                // Try implicit opCast
+                AggregateDeclaration ad = isAggregate(arg.type);
+
+                if (ad) {
+                    Dsymbol fd = null;
+                    fd = search_function(ad, Id._cast_impl);
+
+                    if (fd) {
+
+                        auto tiargs = new Objects();
+                        tiargs.push(p.type);
+
+                        Expression opCastExp = new DotTemplateInstanceExp(arg.loc, arg, fd.ident, tiargs);
+                        opCastExp = new CallExp(arg.loc, opCastExp);
+
+                        // NOTE: trySemantic but explicit
+                        {
+                            uint errors = global.startGagging();
+                            Expression e = opCastExp.expressionSemantic(sc);
+                            if (global.endGagging(errors))
+                            {
+                                opCastExp = null;
+                            }
+                            else {
+                                opCastExp = e;
+                            }
+
+                        }
+
+                        // printf("1\n");
+                        // if (opCastExp.trySemantic(sc)) {
+                        //     opCastExp = opCastExp.expressionSemantic(sc);
+                        // }
+
+                        //printf("2\n");
+
+                        if (opCastExp) {
+                            auto cast_m = argumentMatchParameter(tf, p, opCastExp, wildmatch, flag, sc, pMessage);
+                            //printf("3\n");
+
+                            if (cast_m == MATCH.exact) {
+                                //printf("MOJO: Exact match on implicit cast.\n");
+                                //printf("MOJO: %s\n", opCastExp.toChars());
+                                // args[u] = opCastExp;
+                                m = MATCH.convert;
+                            }
+                        }
+
+                    }
+                }
+
+            }
         }
         else if (p.defaultArg)
             continue;

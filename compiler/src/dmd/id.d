@@ -271,6 +271,7 @@ immutable Msgtable[] msgtable =
     { "sliceass", "opSliceAssign" },
     { "call",    "opCall" },
     { "_cast",    "opCast" },
+    { "_cast_impl",    "opImplicitCast" }, // NOTE: Maybe just opImplicitCast?
     { "opIn" },
     { "opIn_r" },
     { "opStar" },
