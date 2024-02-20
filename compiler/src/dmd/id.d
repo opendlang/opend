@@ -531,6 +531,7 @@ immutable Msgtable[] msgtable =
     { "udaSelector", "selector" },
     { "udaOptional", "optional"},
     { "udaMustUse", "mustuse" },
+    { "udaImplicit", "implicit" },
     { "udaStandalone", "standalone" },
     { "udaMutableRefInit", "mutableRefInit" },
 

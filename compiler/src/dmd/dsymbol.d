@@ -2009,3 +2009,21 @@ Dsymbol handleSymbolRedeclarations(ref Scope sc, Dsymbol s, Dsymbol s2, ScopeDsy
 
     return collision();
 }
+
+bool hasImplicitAttr(Dsymbol sym)
+{
+    import dmd.attrib : foreachUdaNoSemantic;
+    import dmd.errors : error;
+    import dmd.id : Id;
+
+    bool result = false;
+    foreachUdaNoSemantic(sym, (exp) {
+        if (isEnumAttribute(exp, Id.udaImplicit)) // FIXME
+            result = true;
+        return 0;
+    });
+
+    return result;
+}
+
+

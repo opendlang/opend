@@ -624,15 +624,44 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
             m = argumentMatchParameter(tf, p, arg, wildmatch, flag, sc, pMessage);
 
             if (m == MATCH.nomatch) {
-                // Try implicit opCast
-                AggregateDeclaration ad = isAggregate(arg.type);
+                // Try implicit construction
+                //Dsymbol fd = null;
+                //fd = search_function(ad, Id.ctor);
+
+                AggregateDeclaration ad = isAggregate(p.type);
 
                 if (ad) {
+                    auto tmp = new VarDeclaration(arg.loc, p.type, Identifier.generateId("__ictorcmp"), null);
+                    tmp.storage_class = STC.rvalue | STC.temp | STC.ctfe;
+                    tmp.dsymbolSemantic(sc);
+
+                    Expression ve = new VarExp(arg.loc, tmp);
+                    Expression e = new DotIdExp(arg.loc, ve, Id.ctor);
+                    auto ce = new CallExp(arg.loc, e, arg);
+                    e = ce;
+
+                    //printf("%s to %s @ %s in %llx   dddddddd\n", e.toChars(), p.type.toChars(), arg.loc.toChars(), cast(ulong)sc);
+                    if (sc && .trySemantic(e, sc)) {
+                        if (hasImplicitAttr(ce.f)) {
+                        auto cast_m = argumentMatchParameter(tf, p, e, wildmatch, flag, sc, pMessage);
+                        if (cast_m == MATCH.exact) {
+                            //printf("ctor complete %s(%s) @ %s\n", p.type.toChars(), arg.toChars(), arg.loc.toChars());
+                            m = MATCH.convert;
+                        }
+                        }
+                    }
+                }
+            }
+
+            if (m == MATCH.nomatch) {
+                AggregateDeclaration ad = isAggregate(arg.type);
+                // still no match...
+                if (ad) {
+                    // Try opImplicitCast
                     Dsymbol fd = null;
                     fd = search_function(ad, Id._cast_impl);
 
                     if (fd) {
-
                         auto tiargs = new Objects();
                         tiargs.push(p.type);
 
@@ -650,7 +679,6 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
                             else {
                                 opCastExp = e;
                             }
-
                         }
 
                         // printf("1\n");
@@ -671,10 +699,8 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
                                 m = MATCH.convert;
                             }
                         }
-
                     }
                 }
-
             }
         }
         else if (p.defaultArg)

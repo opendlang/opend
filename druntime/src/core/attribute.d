@@ -307,3 +307,8 @@ enum standalone;
  * Use this attribute to indicate that you wish to initialize a field with a mutable reference type.
  */
 enum mutableRefInit;
+
+/++
+    Use this to mark a constructor as usable for implicit calls.
++/
+enum implicit;
