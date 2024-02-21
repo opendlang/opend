@@ -626,11 +626,9 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
             if (m == MATCH.nomatch) {
                 // Try implicit construction
                 //Dsymbol fd = null;
-                //fd = search_function(ad, Id.ctor);
 
-                AggregateDeclaration ad = isAggregate(p.type);
-
-                if (ad) {
+                if (auto ad = isAggregate(p.type))
+                if (ad.hasImplicitConstructor()) {
                     auto tmp = new VarDeclaration(arg.loc, p.type, Identifier.generateId("__ictorcmp"), null);
                     tmp.storage_class = STC.rvalue | STC.temp | STC.ctfe;
                     tmp.dsymbolSemantic(sc);
@@ -643,11 +641,11 @@ extern (D) MATCH callMatch(TypeFunction tf, Type tthis, ArgumentList argumentLis
                     //printf("%s to %s @ %s in %llx   dddddddd\n", e.toChars(), p.type.toChars(), arg.loc.toChars(), cast(ulong)sc);
                     if (sc && .trySemantic(e, sc)) {
                         if (hasImplicitAttr(ce.f)) {
-                        auto cast_m = argumentMatchParameter(tf, p, e, wildmatch, flag, sc, pMessage);
-                        if (cast_m == MATCH.exact) {
-                            //printf("ctor complete %s(%s) @ %s\n", p.type.toChars(), arg.toChars(), arg.loc.toChars());
-                            m = MATCH.convert;
-                        }
+                            auto cast_m = argumentMatchParameter(tf, p, e, wildmatch, flag, sc, pMessage);
+                            if (cast_m == MATCH.exact) {
+                                // printf("ctor complete %s(%s) @ %s\n", p.type.toChars(), arg.toChars(), arg.loc.toChars());
+                                m = MATCH.convert;
+                            }
                         }
                     }
                 }

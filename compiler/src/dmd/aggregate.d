@@ -255,6 +255,43 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         return ok ? structsize : SIZE_INVALID;
     }
 
+    extern (D) final bool hasImplicitConstructor()
+    {
+        auto ctor = searchCtor();
+        if (ctor is null)
+            return false;
+
+        int overloadcount = 0;
+        Dsymbol funcRootEncountered;
+        Dsymbol getNextOverload(Dsymbol what) {
+            overloadcount++;
+            if(overloadcount > 200) {
+                import core.stdc.stdlib;
+                abort();
+            }
+            if (auto fd = what.isTemplateDeclaration()) {
+                if (fd.overnext)
+                    return fd.overnext;
+                if (fd.funcroot && fd.funcroot !is funcRootEncountered) {
+                    return funcRootEncountered = fd.funcroot;
+                }
+                return null;
+            }
+            if (auto fd = what.isFuncDeclaration())
+                return fd.overnext;
+            return null;
+        }
+
+        auto next = ctor;
+        while (next) {
+            if (hasImplicitAttr(next))
+                return true;
+            next = getNextOverload(next);
+        }
+
+        return false;
+    }
+
     /***************************************
      * Calculate field[i].overlapped and overlapUnsafe, and check that all of explicit
      * field initializers have unique memory space on instance.
