@@ -42,7 +42,14 @@ extern (C) void _d_criticalenter(D_CRITICAL_SECTION* cs)
 
 extern (C) void _d_criticalenter2(D_CRITICAL_SECTION** pcs)
 {
-    if (atomicLoad!(MemoryOrder.acq)(*cast(shared) pcs) is null)
+    version (LDC) {
+    import ldc.intrinsics : llvm_expect;
+    auto condition = (llvm_expect(atomicLoad!(MemoryOrder.acq)(*cast(shared) pcs) is null, false));
+    } else {
+    auto condition = atomicLoad!(MemoryOrder.acq)(*cast(shared) pcs) is null;
+    }
+    if (condition)
+
     {
         lockMutex(cast(Mutex*)&gcs.mtx);
         if (atomicLoad!(MemoryOrder.raw)(*cast(shared) pcs) is null)

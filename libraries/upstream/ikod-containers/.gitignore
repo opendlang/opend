@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/containers
+containers.so
+containers.dylib
+containers.dll
+containers.a
+containers.lib
+containers-test-*
+*.exe
+*.o
+*.obj
+*.lst

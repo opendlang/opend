@@ -885,6 +885,7 @@ version (IN_LLVM)
             const bool doUnittests = global.params.parsingUnittestsRequired();
             scope p = new Parser!AST(this, buf, cast(bool) docfile, global.errorSink, &global.compileEnv, doUnittests);
             p.transitionIn = global.params.v.vin;
+            p.allowPrivateThis = true;
             p.nextToken();
             p.parseModuleDeclaration();
             md = p.md;

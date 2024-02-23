@@ -1519,10 +1519,7 @@ version (IN_LLVM)
 
         if (!(global.params.bitfields || sc.flags & SCOPE.Cfile))
         {
-            version (IN_GCC)
-                .error(dsym.loc, "%s `%s` use `-fpreview=bitfields` for bitfield support", dsym.kind, dsym.toPrettyChars);
-            else
-                .error(dsym.loc, "%s `%s` use -preview=bitfields for bitfield support", dsym.kind, dsym.toPrettyChars);
+            .error(dsym.loc, "%s `%s` use C-style bitfields not supported in D code", dsym.kind, dsym.toPrettyChars);
         }
 
         if (!dsym.parent.isStructDeclaration() && !dsym.parent.isClassDeclaration())
@@ -2203,6 +2200,7 @@ else // !IN_LLVM
         auto loc = adjustLocForMixin(str, cd.loc, global.params.mixinOut);
         scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
         p.transitionIn = global.params.v.vin;
+        p.allowPrivateThis = true;
         p.nextToken();
 
         auto d = p.parseDeclDefs(0);
@@ -6299,6 +6297,10 @@ private extern(C++) class AddMemberVisitor : Visitor
             Package.resolve(visd.pkg_identifiers, &tmp, null);
             visd.visibility.pkg = tmp ? tmp.isPackage() : null;
             visd.pkg_identifiers = null;
+        }
+        if (visd.visibility.kind == Visibility.Kind.privateThis && sds.isModule())
+        {
+            .error(visd.loc, "%s cannot be used in global scope", visd.toPrettyChars(false));
         }
         if (visd.visibility.kind == Visibility.Kind.package_ && visd.visibility.pkg && sc._module)
         {

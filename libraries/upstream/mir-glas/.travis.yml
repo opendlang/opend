@@ -1,0 +1,36 @@
+sudo: false
+os:
+ - linux
+ - osx
+language: d
+d:
+ - ldc
+ - ldc-beta
+addons:
+  apt:
+    packages:
+      - libblas-dev
+      - gcc
+      - gfortran
+branches:
+  only:
+    - master
+install:
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
+script:
+ - dub --build=release --root examples/gemm
+ - dub --build=release --root examples/hemm
+#  - cd bench/ && dub --single --build=release gemm_report.d && cd ../
+#  - bash -e test.sh
+
+notifications:
+  email:
+    - ilyayaroshenko@gmail.com
+
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/d2d7cb29fc776c5eaeef
+    on_success: change
+    on_failure: always
+    on_start: never

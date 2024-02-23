@@ -1,0 +1,7 @@
+{
+    "name": "commonmark-d",
+    "license": "MIT",
+    "description": "Fastest CommonMark and Github Flavoured Markdown parser in D",
+    "importPaths": ["source"],
+    "sourcePaths": ["source"]
+}

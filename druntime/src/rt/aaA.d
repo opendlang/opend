@@ -35,15 +35,29 @@ private enum HASH_EMPTY = 0;
 private enum HASH_DELETED = 0x1;
 private enum HASH_FILLED_MARK = size_t(1) << 8 * size_t.sizeof - 1;
 
-/// Opaque AA wrapper
-struct AA
+version (LDC)
 {
-    Impl* impl;
-    alias impl this;
+    // The compiler uses `void*` for its prototypes.
+    // Don't wrap in a struct to maintain ABI compatibility.
+    alias AA = Impl*;
 
-    private @property bool empty() const pure nothrow @nogc @safe
+    private bool empty(scope const AA impl) pure nothrow @nogc
     {
         return impl is null || !impl.length;
+    }
+}
+else
+{
+    /// Opaque AA wrapper
+    struct AA
+    {
+        Impl* impl;
+        alias impl this;
+
+        private @property bool empty() const pure nothrow @nogc
+        {
+            return impl is null || !impl.length;
+        }
     }
 }
 
@@ -90,7 +104,7 @@ private:
         hasPointers = 0x2,
     }
 
-    @property size_t length() const pure nothrow @nogc @safe
+    @property size_t length() const pure nothrow @nogc
     {
         assert(used >= deleted);
         return used - deleted;
@@ -161,7 +175,7 @@ private:
         GC.free(obuckets.ptr); // safe to free b/c impossible to reference
     }
 
-    void clear() pure nothrow @trusted
+    void clear() pure nothrow
     {
         import core.stdc.string : memset;
         // clear all data, but don't change bucket array length
@@ -653,7 +667,7 @@ extern (C) bool _aaDelX(AA aa, scope const TypeInfo keyti, scope const void* pke
 }
 
 /// Remove all elements from AA.
-extern (C) void _aaClear(AA aa) pure nothrow @safe
+extern (C) void _aaClear(AA aa) pure nothrow
 {
     if (!aa.empty)
     {
@@ -929,6 +943,11 @@ extern (C) pure nothrow @nogc @safe
 }
 
 // Most tests are now in test_aa.d
+
+// LDC_FIXME: Cannot compile these tests in this module (and this module only)
+// because the public signatures of the various functions are different from
+// the ones used here (AA vs. void*).
+version (LDC) {} else:
 
 // test postblit for AA literals
 unittest

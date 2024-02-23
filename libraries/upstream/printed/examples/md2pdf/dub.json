@@ -1,0 +1,10 @@
+{
+	"name": "mdpdf",
+    "description": "Convert Markdown to PDF (WIP)",
+	"dependencies": {
+		"printed:flow": { "path": "../.."},
+		"console-colors": "~>1.0",
+		"commonmark-d": "~>1.0",
+		"yxml": "~>0.0"
+	}
+}

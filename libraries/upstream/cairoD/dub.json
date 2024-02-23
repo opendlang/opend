@@ -1,0 +1,45 @@
+{
+        "description": "cairo bindings and wrappers for the D programming language.",
+        "targetName": "cairoD",
+        "authors": [
+            "Johannes Pfau",
+            "Andrej Mitrovic"
+        ],
+        "homepage": "https://github.com/cairoD/cairoD",
+        "name": "cairod",
+        "copyright": "Copyright © 2011-2015, Johannes Pfau",
+        "license": "BSL-1.0",
+        "-ddoxFilterArgs": ["--unittest-examples"],
+        "dependencies": {
+            "derelict-ft": "~>1.0.2",
+        },
+        "configurations": [
+        {
+            "name": "static-custom-windows",
+            "targetType": "staticLibrary",
+            "platforms": ["windows"],
+            "dependencies": {"windows-headers": "~>1.0.1"}
+        },
+        {
+            "name": "static-custom-posix",
+            "targetType": "staticLibrary",
+            "platforms": ["posix"],
+            "dependencies": {"x11": "~>1.0.9"},
+            "libs": ["cairo"]
+        },
+        {
+            "name": "unittest",
+            "targetType": "executable",
+            "mainSourceFile": "unittest.d",
+            "versions": ["CairoPNG"],
+            "targetPath": "bin",
+            "libs-posix": ["cairo"],
+            "libs-windows-x86-dmd": ["lib/32/mars/cairo"],
+            "libs-windows-x86-gdc": ["lib/32/msvc_mingw/cairo"],
+            "libs-windows-x86-ldc": ["lib/32/msvc_mingw/cairo"],            
+            "libs-windows-x86_64": ["lib/64/cairo"],
+            "copyFiles-windows-x86": ["lib/32/*.dll"],
+            "copyFiles-windows-x86_64": ["lib/64/*.dll"]
+        }
+        ]
+}

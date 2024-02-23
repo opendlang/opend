@@ -1,0 +1,44 @@
+{
+    "name": "intel-intrinsics",
+    "description": "Use SIMD intrinsics with Intel syntax, with any D compiler, targetting x86 or arm. Like simde but for D.",
+    "copyright": "Guillaume Piolat 2016-2021",
+    "license": "BSL-1.0",
+    "importPaths": ["source"],
+    "sourcePaths": ["source"],
+
+    "buildTypes": {
+        "unittest-inst": {
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
+            "dflags-ldc": ["-mcpu=native"],
+            "dflags-dmd": ["-mcpu=native"],
+            "dflags-gdc": ["-march=native"]
+        },
+        "unittest-release": {
+            "buildOptions": ["unittests", "optimize", "inline"]
+        },
+        "unittest-below-avx": {
+            "buildOptions": ["unittests", "optimize", "inline"],
+            "dflags-ldc": ["-mattr=+sse4.2"],
+            "dflags-gdc": ["-msse4.2"]
+        },
+        "unittest-release-inst": {
+            "buildOptions": ["unittests", "optimize", "inline"],
+            "dflags-ldc": ["-mcpu=native", "--lowmem"],
+            "dflags-dmd": ["-mcpu=native", "-lowmem"],
+            "dflags-gdc": ["-march=native"]
+        },
+        "unittest-release-below-avx": {
+            "buildOptions": ["unittests", "optimize", "inline"],
+            "dflags-ldc": ["-mattr=+sse4.2"],
+            "dflags-gdc": ["-msse4.2"]
+        },
+        "unittest-arm32": {
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm-linux-gnueabihf"]
+        },
+        "unittest-arm64": {
+            "buildOptions": ["unittests", "debugMode", "debugInfo"],
+            "dflags-ldc": ["-mtriple=arm64-apple-macos"]
+        }
+    }
+}

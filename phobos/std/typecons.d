@@ -3246,7 +3246,7 @@ struct Nullable(T)
             T payload = void;
     }
 
-    private DontCallDestructorT _value = DontCallDestructorT.init;
+    @(imported!"core.attribute".mutableRefInit) private DontCallDestructorT _value = DontCallDestructorT.init;
 
     private bool _isNull = true;
 

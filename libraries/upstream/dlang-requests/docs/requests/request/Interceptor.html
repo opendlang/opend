@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Interface Interceptor</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Interface Interceptor</h1><p>'Intercepror' intercepts Request. It can modify request, or log it, or cache it
+  or do whatever you need. When done it can return response or
+  pass it to next request handler.
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">interface</span> <span class="typ">Interceptor</span>
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			<section></section>
+
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Interceptor.opCall.html" class="public">
+								<code>opCall</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Example</h2>
+<pre class="code"><code class="lang-d"><span class="kwd">class </span><span class="typ">ChangePath </span><span class="pun">: </span><span class="typ">Interceptor
+</span><span class="pun">{
+   </span><span class="typ">Response </span><span class="pln">opCall</span><span class="pun">(<a href="../../requests/request/Request.html"></span><span class="typ">Request</span></a><span class="pln"> r</span><span class="pun">, <a href="../../requests/request/RequestHandler.html"></span><span class="typ">RequestHandler</span></a><span class="pln"> next</span><span class="pun">)
+      {
+          </span><span class="pln">r<wbr/></span><span class="pun">.</span><span class="pln">path </span><span class="pun">= </span><span class="pln">r<wbr/></span><span class="pun">.</span><span class="pln">path </span><span class="pun">~ </span><span class="str">"get"</span><span class="pun">;
+          </span><span class="kwd">auto </span><span class="pln">rs </span><span class="pun">= </span><span class="pln">next<wbr/></span><span class="pun">.</span><span class="pln">handle</span><span class="pun">(</span><span class="pln">r</span><span class="pun">);
+          </span><span class="kwd">return </span><span class="pln">rs</span><span class="pun">;
+      }
+}</span></code></pre>
+<p>   Later in the code you can use this class:
+</p>
+</section>
+<section><h2>Example</h2>
+<pre class="code"><code class="lang-d"><a href="../../requests/request/Request.html"><span class="typ">Request</span></a><span class="pln"> rq</span><span class="pun">;
+</span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">addInterceptor</span><span class="pun">(</span><span class="kwd">new </span><span class="typ">ChangePath</span><span class="pun">());
+</span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">get</span><span class="pun">(</span><span class="str">"http://example.com"</span><span class="pun">);</span></code></pre>
+</section>
+
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

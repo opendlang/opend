@@ -1,0 +1,20 @@
+{
+	"name": "color",
+	"description": "Color library for the D programming language",
+	"homepage": "https://github.com/TurkeyMan/color",
+	"authors": ["Manu Evans"],
+	"copyright": "Copyright (c) 2015 Manu Evans",
+	"license": "Boost",
+	"importPaths": ["."],
+	"targetType": "library",
+	"sourcePaths": ["."],
+	"configurations": [
+		{
+			"name": "default"
+		},
+		{
+			"name": "sourceLibrary",
+			"targetType": "sourceLibrary"
+		}
+	]
+}

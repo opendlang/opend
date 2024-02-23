@@ -271,6 +271,7 @@ immutable Msgtable[] msgtable =
     { "sliceass", "opSliceAssign" },
     { "call",    "opCall" },
     { "_cast",    "opCast" },
+    { "_cast_impl",    "opImplicitCast" }, // NOTE: Maybe just opImplicitCast?
     { "opIn" },
     { "opIn_r" },
     { "opStar" },
@@ -278,6 +279,7 @@ immutable Msgtable[] msgtable =
     { "opDispatch" },
     { "opDollar" },
     { "opUnary" },
+    { "opUnaryRight" },
     { "opIndexUnary" },
     { "opSliceUnary" },
     { "opBinary" },
@@ -514,6 +516,7 @@ immutable Msgtable[] msgtable =
     { "isCopyable" },
     { "toType" },
     { "parameters" },
+    { "docComment" },
 
     // For C++ mangling
     { "allocator" },
@@ -528,6 +531,7 @@ immutable Msgtable[] msgtable =
     { "udaSelector", "selector" },
     { "udaOptional", "optional"},
     { "udaMustUse", "mustuse" },
+    { "udaImplicit", "implicit" },
     { "udaStandalone", "standalone" },
     { "udaMutableRefInit", "mutableRefInit" },
 

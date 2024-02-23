@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+testhash.so
+testhash.dylib
+testhash.dll
+testhash.a
+testhash.lib
+testhash-test-*
+*.exe
+*.o
+*.obj
+*.lst

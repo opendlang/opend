@@ -1,0 +1,29 @@
+name "mir-core"
+description "Base software building blocks: Algebraic types (aka sumtype/tagged union/variant), universal reflection API, basic math, and more"
+
+authors "Ilia Ki" "Phobos authors (see information per file)"
+copyright "Ilia Ki, Kaleidic Associates Advisory Limited, Symmetry Investments"
+license "Apache-2.0"
+
+buildType "unittest" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
+}
+
+buildType "unittest-verbose" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
+    dflags "-checkaction=context" "-allinst"
+}
+
+buildType "unittest-dip1008" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
+    dflags "-lowmem" "-preview=dip1008"
+}
+
+buildType "unittest-dip1000" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_core_test"
+    dflags "-lowmem" "-preview=dip1000"
+}

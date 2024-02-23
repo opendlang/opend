@@ -1,0 +1,68 @@
+name "mir-lapack"
+description "ndslice wrapper for LAPACK"
+authors "Ilya Yaroshenko"
+copyright "Copyright © 2017-2018, Symmetry Investments & Kaleidic Associates"
+license "BSL-1.0"
+
+dependency "lapack" version=">=0.6.5"
+dependency "mir-blas" version=">=1.1.3 <2.0.0"
+
+configuration "library" {
+	subConfiguration "mir-blas" "library"
+}
+
+configuration "openblas" {
+	subConfiguration "mir-blas" "openblas"
+}
+
+configuration "blas" {
+	subConfiguration "mir-blas" "blas"
+	libs "lapack"
+}
+
+configuration "cblas" {
+	subConfiguration "mir-blas" "cblas"
+	libs "lapack"
+}
+
+configuration "threelib" {
+	subConfiguration "mir-blas" "twolib"
+	libs "lapack"
+}
+
+configuration "zerolib" {
+	subConfiguration "mir-blas" "zerolib"
+	systemDependencies "mir-lapack configuration zerolib requires user to add specify libraries to link."
+}
+
+configuration "mkl-sequential" {
+	subConfiguration "mir-blas" "mkl-sequential"
+}
+
+configuration "mkl-sequential-ilp" {
+	subConfiguration "mir-blas" "mkl-sequential-ilp"
+}
+
+configuration "mkl-tbb-thread" {
+	subConfiguration "mir-blas" "mkl-tbb-thread"
+}
+
+configuration "mkl-tbb-thread-ilp" {
+	subConfiguration "mir-blas" "mkl-tbb-thread-ilp"
+}
+
+configuration "mkl-sequential-dll" {
+	subConfiguration "mir-blas" "mkl-sequential-dll"
+}
+
+configuration "mkl-sequential-ilp-dll" {
+	subConfiguration "mir-blas" "mkl-sequential-ilp-dll"
+}
+
+configuration "mkl-tbb-thread-dll" {
+	subConfiguration "mir-blas" "mkl-tbb-thread-dll"
+}
+
+configuration "mkl-tbb-thread-ilp-dll" {
+	subConfiguration "mir-blas" "mkl-tbb-thread-ilp-dll"
+}

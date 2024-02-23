@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/vibed
+vibed.so
+vibed.dylib
+vibed.dll
+vibed.a
+vibed.lib
+vibed-test-*
+*.exe
+*.o
+*.obj
+*.lst

@@ -1,0 +1,66 @@
+name "mir-ion"
+description "Fast, Expressive, and Easy to use Ion, JSON, YAML, CSV, and Msgpack Serialization Library with SIMD optimization."
+authors "Ilia Ki (Asdf & Mir Ion) " "Yannick Koechlin (Asdf)"
+copyright "Tamedia Digital, 2016, Symmetry Investments and Kaleidic Associates, 2020, Symmetry Investments and Ilia Ki 2021-"
+license "Apache-2.0"
+dependency "mir-algorithm" version=">=3.21.0"
+dependency "mir-cpuid" version="~>1.2.6"
+
+configuration "library" {
+}
+
+configuration "boson" {
+    versions "MirDecimalJson"
+}
+
+configuration "silly" {
+    dependency "silly" version="~>1.1.1"
+}
+
+buildType "unittest" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    dflags "-lowmem"
+    versions "mir_ion_tape_test" 
+    versions "mir_ion_ser_test"
+    versions "mir_ion_test" 
+    versions "mir_ion_value_test" 
+    versions "mir_ion_example_test" 
+    versions "mir_ion_parser_test"
+}
+buildType "unittest-release" {
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "debugInfo" //"noBoundsCheck"
+    versions "mir_ion_test" "mir_ion_parser_test" "mir_ion_test_table"
+}
+
+buildType "asan-unittest" {
+    dflags "--fsanitize=address" platform="ldc"
+    versions "mir_ion_test" "mir_ion_parser_test"
+}
+
+buildType "parser-test" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    dflags "-lowmem"
+    versions "mir_ion_parser_test"
+}
+
+buildType "unittest-dip1000" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_ion_tape_test" 
+    versions "mir_ion_ser_test"
+    versions "mir_ion_test" 
+    versions "mir_ion_value_test" 
+    versions "mir_ion_example_test" 
+    versions "mir_ion_parser_test"
+    dflags "-lowmem" "-preview=dip1000"
+}
+
+buildType "unittest-dip1008" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_ion_tape_test" 
+    versions "mir_ion_ser_test"
+    versions "mir_ion_test" 
+    versions "mir_ion_value_test" 
+    versions "mir_ion_example_test" 
+    versions "mir_ion_parser_test"
+    dflags "-lowmem" "-preview=dip1008"
+}

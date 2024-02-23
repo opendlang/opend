@@ -1,0 +1,16 @@
+{
+    "name": "bench",
+    "authors": [
+        "Igor Khasilev"
+    ],
+    "dependencies": {
+        "ikod-containers": "*",
+        "emsi_containers": "*"
+    },
+    "targetType": "executable",
+    "mainSourceFile": "source/app.d",
+    "excludedSourceFiles": ["source/bapp.d"],
+    "description": "Performance tests for containers",
+    "copyright": "Copyright © 2018, Igor Khasilev",
+    "license": "MIT"
+}

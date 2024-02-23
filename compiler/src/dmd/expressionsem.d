@@ -7538,6 +7538,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         auto loc = adjustLocForMixin(str, exp.loc, global.params.mixinOut);
         scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
         p.transitionIn = global.params.v.vin;
+        p.allowPrivateThis = true;
         p.nextToken();
         //printf("p.loc.linnum = %d\n", p.loc.linnum);
 

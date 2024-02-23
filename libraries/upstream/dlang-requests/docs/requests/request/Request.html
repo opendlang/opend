@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Struct Request</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Struct Request</h1><p>Structure Request provides configuration, connection pooling, cookie
+ persistance. You can consider it as 'Session'.
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">struct</span> <span class="typ">Request</span>
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			
+			<section><h2>Fields</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._authenticator.html" class="private"><code>_authenticator</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/Auth.html"><span class="typ">Auth</span></a></code></td><td>Auth provider
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._bind.html" class="private"><code>_bind</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>bind outgoing connections to this addr (name or ip)
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._bufferSize.html" class="private"><code>_bufferSize</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td>io buffer size
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._cm.html" class="private"><code>_cm</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">RefCounted</span>!(requests.connmanager.ConnManager,1)</code></td><td>connection cache
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._contentType.html" class="private"><code>_contentType</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>content type for POST/PUT requests
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._cookie.html" class="private"><code>_cookie</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">RefCounted</span>!(requests.utils.Cookies,1)</code></td><td>cookie storage
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._headers.html" class="private"><code>_headers</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span></code></td><td>user-provided headers(use addHeader to add)
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._interceptors.html" class="private"><code>_interceptors</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/request/Interceptor.html"><span class="typ">Interceptor</span></a><span class="pun">[]</span></code></td><td>user-provided interceptors
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._keepAlive.html" class="private"><code>_keepAlive</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>use keepalive requests
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._maxContentLength.html" class="private"><code>_maxContentLength</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td>maximum content length
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._maxHeadersLength.html" class="private"><code>_maxHeadersLength</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td>maximum headers length
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._maxRedirects.html" class="private"><code>_maxRedirects</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">uint</span></code></td><td>limit redirect number
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._method.html" class="private"><code>_method</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>method (GET, POST, ...)
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._multipartForm.html" class="private"><code>_multipartForm</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/MultipartForm.html"><span class="typ">MultipartForm</span></a></code></td><td>multipart form (for multipart POST requests)
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._params.html" class="private"><code>_params</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">Tuple</span>!(string,"key",string,"value")<span class="pun">[]</span></code></td><td>request parameters
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._permanent_redirects.html" class="private"><code>_permanent_redirects</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span><span class="pun">]</span></code></td><td>permanent redirect cache
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._postData.html" class="private"><code>_postData</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">rangeadapter<wbr/></span><span class="pun">.</span><span class="typ">InputRangeAdapter</span></code></td><td>unified interface for post data
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._proxy.html" class="private"><code>_proxy</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>http/https proxy
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._socketFactory.html" class="private"><code>_socketFactory</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">NetworkStream</span> <span class="kwd">delegate</span><span class="pun">(</span><span class="typ">string</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="typ">ushort</span><span class="pun">)</span></code></td><td>user-provided socket factory
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._sslOptions.html" class="private"><code>_sslOptions</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">SSLOptions</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._sslSetVerifyPeer.html" class="private"><code>_sslSetVerifyPeer</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>verify peer when using ssl
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._timeout.html" class="private"><code>_timeout</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">core<wbr/></span><span class="pun">.</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="typ">Duration</span></code></td><td>timeout for connect/send/receive
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._uri.html" class="private"><code>_uri</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span></code></td><td>uri for the request
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._userHeaders.html" class="private"><code>_userHeaders</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/_UH.html"><span class="pln">_UH</span></a></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._useStreaming.html" class="private"><code>_useStreaming</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>use streaming when receive response
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request._verbosity.html" class="private"><code>_verbosity</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">uint</span></code></td><td>logging verbosity
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Properties</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.authenticator.html" class="public property"><code>authenticator</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><a href="../../requests/base/Auth.html"><span class="typ">Auth</span></a><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.authenticator.html" class="public property"><code>authenticator</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/Auth.html"><span class="typ">Auth</span></a></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.bind.html" class="public property"><code>bind</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.bind.html" class="public property"><code>bind</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.bufferSize.html" class="public property"><code>bufferSize</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">ulong</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.bufferSize.html" class="public property"><code>bufferSize</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.cm.html" class="public property"><code>cm</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">RefCounted</span>!(requests.connmanager.ConnManager,1)</code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.contentType.html" class="public property"><code>contentType</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.cookie.html" class="public property"><code>cookie</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">RefCounted</span>!(requests.utils.Cookies,1)<span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.cookie.html" class="public property"><code>cookie</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">RefCounted</span>!(requests.utils.Cookies,1)</code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.hasMultipartForm.html" class="public property"><code>hasMultipartForm</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>helper
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.headers.html" class="public property"><code>headers</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.headers.html" class="public property"><code>headers</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[</span><span class="typ">string</span><span class="pun">]</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.keepAlive.html" class="public property"><code>keepAlive</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">bool</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.keepAlive.html" class="public property"><code>keepAlive</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxContentLength.html" class="public property"><code>maxContentLength</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">ulong</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxContentLength.html" class="public property"><code>maxContentLength</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxHeadersLength.html" class="public property"><code>maxHeadersLength</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">ulong</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxHeadersLength.html" class="public property"><code>maxHeadersLength</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ulong</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxRedirects.html" class="public property"><code>maxRedirects</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">uint</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.maxRedirects.html" class="public property"><code>maxRedirects</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">uint</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.method.html" class="public property"><code>method</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.method.html" class="public property"><code>method</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.multipartForm.html" class="public property"><code>multipartForm</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><a href="../../requests/base/MultipartForm.html"><span class="typ">MultipartForm</span></a><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.params.html" class="public property"><code>params</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">typecons<wbr/></span><span class="pun">.</span><span class="typ">Tuple</span>!(string,"key",string,"value")<span class="pun">[]</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.path.html" class="public property"><code>path</code></a><span class="tableEntryAnnotation">[get, set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>Set/Get path for next request.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.permanent_redirects.html" class="public property"><code>permanent_redirects</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">[</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span><span class="pun">]</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.postData.html" class="public property"><code>postData</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">rangeadapter<wbr/></span><span class="pun">.</span><span class="typ">InputRangeAdapter</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.proxy.html" class="public property"><code>proxy</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">string</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.proxy.html" class="public property"><code>proxy</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.socketFactory.html" class="public property"><code>socketFactory</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">NetworkStream</span> <span class="kwd">delegate</span><span class="pun">(</span><span class="typ">string</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="typ">ushort</span><span class="pun">)</span> inout</code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.socketFactory.html" class="public property"><code>socketFactory</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">NetworkStream</span> <span class="kwd">delegate</span><span class="pun">(</span><span class="typ">string</span><span class="pun">, </span><span class="typ">string</span><span class="pun">, </span><span class="typ">ushort</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.sslOptions.html" class="public property"><code>sslOptions</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">streams<wbr/></span><span class="pun">.</span><span class="typ">SSLOptions</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.sslSetCaCert.html" class="public property"><code>sslSetCaCert</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>Set path to certificate authority file.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.sslSetCertFile.html" class="public property"><code>sslSetCertFile</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>Set path and format for ssl certificate file.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.sslSetKeyFile.html" class="public property"><code>sslSetKeyFile</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>Set path and format for ssl key file.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.sslSetVerifyPeer.html" class="public property"><code>sslSetVerifyPeer</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>Enable/disable ssl peer verification..
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.timeout.html" class="public property"><code>timeout</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">core<wbr/></span><span class="pun">.</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="typ">Duration</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.timeout.html" class="public property"><code>timeout</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="pln">core<wbr/></span><span class="pun">.</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="typ">Duration</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.uri.html" class="public property"><code>uri</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="pln">requests<wbr/></span><span class="pun">.</span><span class="pln">uri<wbr/></span><span class="pun">.</span><span class="pln">URI</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.uri.html" class="public property"><code>uri</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td>Set and Get uri for next request.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.useStreaming.html" class="public property"><code>useStreaming</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">bool</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.useStreaming.html" class="public property"><code>useStreaming</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.verbosity.html" class="public property"><code>verbosity</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="kwd">inout</span><span class="pun">(</span><span class="typ">uint</span><span class="pun">)</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.verbosity.html" class="public property"><code>verbosity</code></a><span class="tableEntryAnnotation">[set]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">uint</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.userHeaders.html" class="package property"><code>userHeaders</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../requests/base/_UH.html"><span class="pln">_UH</span></a></code></td><td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.addHeaders.html" class="public">
+								<code>addHeaders</code>
+							</a>
+						</td>
+						<td>Add headers to request
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.addInterceptor.html" class="public">
+								<code>addInterceptor</code>
+							</a>
+						</td>
+						<td>Add interceptor to request.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.clearHeaders.html" class="public">
+								<code>clearHeaders</code>
+							</a>
+						</td>
+						<td>Remove any previously added headers.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.deleteRequest.html" class="public">
+								<code>deleteRequest</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.deleteRequest.html" class="public">
+								<code>deleteRequest</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.exec.html" class="public">
+								<code>exec</code>
+							</a>
+						</td>
+						<td>Execute GET for http and retrieve file for FTP.
+You have to provide at least <b>uri</b>. All other arguments should conform to HTTPRequest.get or FTPRequest.get depending on the URI scheme.
+When arguments do not conform scheme (for example you try to call get("ftp://somehost.net/pub/README", {"a":"b"}) which doesn't make sense)
+you will receive Exception("Operation not supported for ftp")
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.exec.html" class="public">
+								<code>exec</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.execute.html" class="public">
+								<code>execute</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.execute.html" class="public">
+								<code>execute</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.execute.html" class="public">
+								<code>execute</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.format.html" class="public">
+								<code>format</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.get.html" class="public">
+								<code>get</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.get.html" class="public">
+								<code>get</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.patch.html" class="public">
+								<code>patch</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.patch.html" class="public">
+								<code>patch</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.patch.html" class="public">
+								<code>patch</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.post.html" class="public">
+								<code>post</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.post.html" class="public">
+								<code>post</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.post.html" class="public">
+								<code>post</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.post.html" class="public">
+								<code>post</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.put.html" class="public">
+								<code>put</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.put.html" class="public">
+								<code>put</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.put.html" class="public">
+								<code>put</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.toString.html" class="public">
+								<code>toString</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Inner classes</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.LastInterceptor.html" class="package">
+								<code>LastInterceptor</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Aliases</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.__xdtor.html" class="public">
+								<code>__xdtor</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/request/Request.__xpostblit.html" class="public">
+								<code>__xpostblit</code>
+							</a>
+						</td>
+						<td></td>
+					</tr>
+				</table>
+			</section>
+			
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

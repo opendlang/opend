@@ -1,0 +1,18 @@
+language: d
+d:
+  - dmd
+  - dmd-2.069.2
+  - dmd-2.068.2
+  - dmd-2.067.1
+  - dmd-2.066.1
+  - gdc
+  - ldc
+
+script: ./travis.sh
+
+sudo: false
+addons:
+  apt:
+    packages:
+    - libcairo2
+    - libcairo2-dev

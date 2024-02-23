@@ -1,0 +1,12 @@
+{
+    "name": "text-baseline",
+
+    "license": "BSL-1.0",
+    "importPaths": [ "source" ],
+    "sourcePaths": [ "source" ],
+
+    "dependencies":
+    {
+        "printed:canvas": { "path": "../.." }
+    }
+}
