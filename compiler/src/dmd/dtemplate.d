@@ -580,6 +580,7 @@ version (IN_LLVM)
     const(char)* intrinsicName;
 }
 
+    bool constraintFailed; // tries to tell if there ever was a constraint that failed, even if it got gagged...
     private Expression lastConstraint; /// the constraint after the last failed evaluation
     private Array!Expression lastConstraintNegs; /// its negative parts
     private Objects* lastConstraintTiargs; /// template instance arguments for `lastConstraint`
@@ -907,6 +908,7 @@ else
             fd.declareThis(scx);
         }
 
+        constraintFailed = true;
         lastConstraint = constraint.syntaxCopy();
         lastConstraintTiargs = ti.tiargs;
         lastConstraintNegs.setDim(0);
@@ -919,6 +921,7 @@ else
         const bool result = evalStaticCondition(scx, constraint, lastConstraint, errors, &lastConstraintNegs);
         if (result || errors)
         {
+            constraintFailed = false;
             lastConstraint = null;
             lastConstraintTiargs = null;
             lastConstraintNegs.setDim(0);

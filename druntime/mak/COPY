@@ -559,30 +559,45 @@ COPY=\
 	$(IMPDIR)\etc\valgrind\valgrind.d \
 	$(IMPDIR)\etc\linux\memoryerror.d \
 	\
+	$(IMPDIR)\rt\sys\darwin\osevent.d \
 	$(IMPDIR)\rt\sys\darwin\osmutex.d \
 	$(IMPDIR)\rt\sys\darwin\ossemaphore.d \
+	$(IMPDIR)\rt\sys\darwin\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\freebsd\osevent.d \
 	$(IMPDIR)\rt\sys\freebsd\osmutex.d \
 	$(IMPDIR)\rt\sys\freebsd\ossemaphore.d \
+	$(IMPDIR)\rt\sys\freebsd\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\dragonflybsd\osevent.d \
 	$(IMPDIR)\rt\sys\dragonflybsd\osmutex.d \
 	$(IMPDIR)\rt\sys\dragonflybsd\ossemaphore.d \
+	$(IMPDIR)\rt\sys\dragonflybsd\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\linux\osevent.d \
 	$(IMPDIR)\rt\sys\linux\osmutex.d \
 	$(IMPDIR)\rt\sys\linux\ossemaphore.d \
+	$(IMPDIR)\rt\sys\linux\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\netbsd\osevent.d \
 	$(IMPDIR)\rt\sys\netbsd\osmutex.d \
 	$(IMPDIR)\rt\sys\netbsd\ossemaphore.d \
+	$(IMPDIR)\rt\sys\netbsd\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\openbsd\osevent.d \
 	$(IMPDIR)\rt\sys\openbsd\osmutex.d \
 	$(IMPDIR)\rt\sys\openbsd\ossemaphore.d \
+	$(IMPDIR)\rt\sys\openbsd\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\posix\osevent.d \
 	$(IMPDIR)\rt\sys\posix\osmutex.d \
 	$(IMPDIR)\rt\sys\posix\ossemaphore.d \
+	$(IMPDIR)\rt\sys\posix\oscondition.d \
 	\
+	$(IMPDIR)\rt\sys\solaris\osevent.d \
 	$(IMPDIR)\rt\sys\solaris\osmutex.d \
 	$(IMPDIR)\rt\sys\solaris\ossemaphore.d \
 	\
-	$(IMPDIR)\rt\sys\windows\osmutex.d \
-	$(IMPDIR)\rt\sys\windows\ossemaphore.d
-
+	$(IMPDIR)\rt\sys\windows\oscondition.d \
+	$(IMPDIR)\rt\sys\windows\osevent.d \
+	$(IMPDIR)\rt\sys\windows\osmutex.d
