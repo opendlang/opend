@@ -591,30 +591,39 @@ SRCS=\
 	src\rt\trace.d \
 	src\rt\tracegc.d \
 	\
+	src\rt\sys\darwin\osevent.d \
 	src\rt\sys\darwin\osmutex.d \
 	src\rt\sys\darwin\oscondition.d \
 	\
+	src\rt\sys\freebsd\osevent.d \
 	src\rt\sys\freebsd\osmutex.d \
 	src\rt\sys\freebsd\oscondition.d \
 	\
+	src\rt\sys\dragonflybsd\osevent.d \
 	src\rt\sys\dragonflybsd\osmutex.d \
 	src\rt\sys\dragonflybsd\oscondition.d \
 	\
+	src\rt\sys\linux\osevent.d \
 	src\rt\sys\linux\osmutex.d \
 	src\rt\sys\linux\oscondition.d \
 	\
+	src\rt\sys\netbsd\osevent.d \
 	src\rt\sys\netbsd\osmutex.d \
 	src\rt\sys\netbsd\oscondition.d \
 	\
+	src\rt\sys\openbsd\osevent.d \
 	src\rt\sys\openbsd\osmutex.d \
 	src\rt\sys\openbsd\oscondition.d \
 	\
+	src\rt\sys\posix\osevent.d \
 	src\rt\sys\posix\osmutex.d \
 	src\rt\sys\posix\oscondition.d \
 	\
+	src\rt\sys\solaris\osevent.d \
 	src\rt\sys\solaris\osmutex.d \
 	src\rt\sys\solaris\oscondition.d \
 	\
+	src\rt\sys\windows\osevent.d \
 	src\rt\sys\windows\osmutex.d \
 	src\rt\sys\windows\oscondition.d \
 	\

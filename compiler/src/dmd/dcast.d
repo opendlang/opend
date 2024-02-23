@@ -136,6 +136,69 @@ Expression implicitCastTo(Expression e, Scope* sc, Type t)
 
         if (t.ty != Terror && e.type.ty != Terror)
         {
+
+            AggregateDeclaration ad = isAggregate(t);
+
+            if (ad) {
+                import dmd.identifier;
+                import dmd.id;
+                auto tmp = new VarDeclaration(e.loc, t, Identifier.generateId("__ictorcmp"), null);
+                tmp.dsymbolSemantic(sc);
+
+                Expression ve = new VarExp(e.loc, tmp);
+                Expression e2 = new DotIdExp(e.loc, ve, Id.ctor);
+                auto ce = new CallExp(e.loc, e2, e);
+                e2 = ce;
+                if (sc && .trySemantic(e2, sc)) {
+                        if (hasImplicitAttr(ce.f)) {
+                            result = e2.expressionSemantic(sc);
+                            // printf("implicit construction of %s @ %s\n", t.toChars(), e.loc.toChars());
+                            return result;
+                        }
+                    }
+            }
+        }
+
+        if (t.ty != Terror && e.type.ty != Terror)
+        {
+            // printf("------\n");
+            // printf("MOJO %s %s \n", e.type.toPrettyChars(true), t.toPrettyChars(true));
+
+            import dmd.id : Id;
+            AggregateDeclaration ad = isAggregate(e.type);
+
+            if (ad) {
+                // try opImplicitCast
+                Dsymbol fd = null;
+                fd = search_function(ad, Id._cast_impl);
+
+                if (fd) {
+                    auto tiargs = new Objects();
+                    tiargs.push(t);
+                    auto dti = new DotTemplateInstanceExp(e.loc, e, fd.ident, tiargs);
+                    auto ce = new CallExp(e.loc, dti);
+                    if (sc && .trySemantic(ce, sc)) {
+                        result = ce.expressionSemantic(sc);
+                        return result;
+                    } else {
+                        if (auto td = dti.ti.tempdecl.isTemplateDeclaration) {
+                            const(char)* extra;
+                            if(td.constraintFailed) {
+                                // the constraint didn't match, the error can stay silent
+
+                                // printf("constraint no match\n");
+                            } else {
+                                // constraint matched, forward the error
+                                error(e.loc, "`%s.opImplicitCast!(%s)` attempted and matched constraint but suffered instantiation failure, try explicitly doing it yourself in your program for details", e.toChars(), t.toChars());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (t.ty != Terror && e.type.ty != Terror)
+        {
             if (!t.deco)
             {
                 error(e.loc, "forward reference to type `%s`", t.toChars());
