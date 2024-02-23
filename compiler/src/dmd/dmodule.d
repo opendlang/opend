@@ -343,6 +343,7 @@ extern (C++) final class Module : Package
     extern (C++) __gshared AggregateDeclaration moduleinfo;
 
     const(char)[] arg;           // original argument name
+    bool specifiedOnCmdLine = true;    // Was the module explicitly mentioned on the compiler invocation.
     ModuleDeclaration* md;      // if !=null, the contents of the ModuleDeclaration declaration
     const FileName srcfile;     // input source file
     // IN_LLVM: keep both following file names mutable (for -oq)
@@ -1230,6 +1231,13 @@ version (IN_LLVM)
     bool isRoot() nothrow
     {
         return this.importedFrom == this;
+    }
+
+    ///
+    bool isSpecifiedOnCommandLine() const nothrow
+    {
+        // Hiding details in anticipation of the future.
+        return this.specifiedOnCmdLine;
     }
 
     /// Returns: Whether this module is in the `core` package and has name `ident`
