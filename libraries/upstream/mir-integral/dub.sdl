@@ -1,0 +1,13 @@
+name "mir-integral"
+description "Integration routines"
+authors "Ilya Yaroshenko"
+copyright "Copyright © 2020 Symmetry Investments and Kaleidic Associates"
+license "BSL-1.0"
+dependency "mir-lapack" version=">=1.2.2"
+
+configuration "library" {
+}
+
+configuration "test_travis" {
+	subConfiguration "mir-lapack" "blas"
+}

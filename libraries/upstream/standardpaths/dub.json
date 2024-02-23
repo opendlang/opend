@@ -1,0 +1,24 @@
+{
+    "name" : "standardpaths", 
+    "description" : "Getting standard system locations", 
+    "copyright": "Copyright © 2015-2016, Roman Chistokhodov",
+    "license" : "BSL-1.0", 
+    "authors" : ["Roman Chistokhodov"], 
+    "targetName" : "standardpaths", 
+    "targetPath" : "lib", 
+    "targetType" : "library",
+
+    "dependencies" : {
+        "xdgpaths" : "~>0.2.5"
+    },
+    "configurations" : [
+        {
+            "name" : "default"
+        },
+        {
+            "name" : "cocoa",
+            "versions-osx" : ["StandardPathsCocoa"],
+            "lflags-osx" : ["-framework", "Foundation"],
+        }
+    ]
+}

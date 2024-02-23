@@ -1,0 +1,42 @@
+name: gdc
+on: [push, pull_request]
+
+jobs:
+    test:
+        name: Dub Tests
+        strategy:
+            matrix:
+                os: [ubuntu-22.04]
+                dc: 
+                    - ldc-latest 
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install D compiler
+              uses: dlang-community/setup-dlang@v1
+              with:
+                  compiler: ${{ matrix.dc }}
+          
+            - name: Install DUB
+              run: |
+                  wget https://github.com/dlang/dub/releases/download/v1.29.0/dub-v1.29.0-linux-x86_64.tar.gz
+                  tar xvf dub-v1.29.0-linux-x86_64.tar.gz
+
+            - name: Install GDC
+              run: |
+                  sudo apt update
+                  sudo apt -y install gdc-12
+
+            - name: Vanilla unittest
+              run: ./dub test -a x86_64 --compiler gdc-12
+
+            - name: Optimized unittest
+              run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-release
+
+            - name: Unittest with unittest-inst configuration
+              run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-inst
+
+            - name: Unittest with unittest-release-inst configuration
+              run: ./dub test -a x86_64 --compiler gdc-12 -b unittest-release-inst              

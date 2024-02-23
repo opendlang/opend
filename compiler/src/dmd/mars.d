@@ -1578,8 +1578,31 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
         {
             params.useExceptions = false;
         }
-        else if (arg == "-unittest")
+        else if (startsWith(p, "-unittest"))
+        {
+            const ugh = "-unittest".length;
             params.useUnitTests = true;
+            if (arg.length == ugh)
+                continue;
+            if (arg[ugh] != '=')
+                continue;
+            const suffix = arg[ugh+1..$];
+
+            with(UnittestFilter) switch(suffix) {
+                case "all":
+                    params.unittestFilter = all;
+                    continue;
+                case "explicit":
+                    message("`-unittest=explicit` is experimental.");
+                    params.unittestFilter = explicitOnly;
+                    continue;
+                case "?":
+                    goto default;
+                default:
+                    // TODO print help string.
+                    break;
+            }
+        }
         else if (p[1] == 'I')              // https://dlang.org/dmd.html#switch-I
         {
             if (!params.imppath)
@@ -1839,6 +1862,29 @@ version (IN_LLVM) {} else
         file = toWinPath(file);
     }
 }
+
+    Identifier nameToId(const(char)[] p) {
+        const(char)[] replaced;
+        size_t lastCopy;
+
+        if(p.length && p[0] >= '0' && p[0] <= '9')
+            replaced ~= "_";
+
+        foreach(idx, ch; p) {
+            if(ch == '-') {
+                replaced ~= p[lastCopy .. idx];
+                replaced ~= "_";
+                lastCopy = idx + 1;
+            }
+        }
+        if(replaced.length)
+            replaced ~= p[lastCopy .. $];
+        else
+            replaced = p;
+
+        return Identifier.idPool(replaced);
+    }
+
     const(char)[] p = file.toDString();
     p = FileName.name(p); // strip path
     const(char)[] ext = FileName.ext(p);
@@ -1849,8 +1895,7 @@ version (IN_LLVM) {} else
             error(Loc.initial, "invalid file name '%s'", file);
             fatal();
         }
-        auto id = Identifier.idPool(p);
-        return new Module(file.toDString, id, global.params.ddoc.doOutput, global.params.dihdr.doOutput);
+        return new Module(file.toDString, nameToId(p), global.params.ddoc.doOutput, global.params.dihdr.doOutput);
     }
 
     /* Deduce what to do with a file based on its extension
@@ -1942,9 +1987,7 @@ version (IN_LLVM) {} else
     /* At this point, name is the D source file name stripped of
      * its path and extension.
      */
-    auto id = Identifier.idPool(name);
-
-    return new Module(file.toDString, id, global.params.ddoc.doOutput, global.params.dihdr.doOutput);
+    return new Module(file.toDString, nameToId(name), global.params.ddoc.doOutput, global.params.dihdr.doOutput);
 }
 
 /**

@@ -1,0 +1,15 @@
+{
+    "name": "binrange",
+    "description": "Utility functions to parse/emit ranges of bytes.",
+    "homepage": "http://github.com/p0nce/binrange/",
+    "license": "public domain",
+
+    "targetType": "library",
+
+    "authors": [
+        "ponce"
+    ],
+
+    "sourcePaths": [ "source" ],
+    "importPaths": [ "source" ]
+}

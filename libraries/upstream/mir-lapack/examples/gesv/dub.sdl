@@ -1,0 +1,15 @@
+name "gesv"
+authors "Ilya Yaroshenko"
+description "GESV example"
+copyright "Copyright © 2018, Ilya Yaroshenko"
+license "BSL-1.0"
+dependency "mir-lapack" path="../../"
+
+configuration "application" {
+    targetType "executable"
+}
+
+configuration "travis" {
+    targetType "executable"
+    subConfiguration "mir-lapack" "blas" # for Travis, because it has deprecated openblas
+}

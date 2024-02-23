@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <title>CompressedList (ikod.containers.compressedlist.CompressedList)</title>
+	<meta charset="utf-8" />
+	<meta content="width=device-width, initial-scale=1" name="viewport" />
+        <link href="style.css" rel="stylesheet" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link href="search-results.html" rel="prefetch" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form action="search-docs.html" id="search">
+			<input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>CompressedList</h1><div class="breadcrumbs"><a class="breadcrumb" href="ikod.html">ikod</a> <a class="breadcrumb" href="ikod.containers.html">containers</a> <a class="breadcrumb" href="ikod.containers.compressedlist.html">compressedlist</a> </div><div><div class="documentation-comment synopsis"><div><p>unrolled list with support only for: 1. insert/delete front     O(1) 2. insert/delete back      O(1) 3. access/remove by index  O(n/m), m - nodes per page</p></div></div></div><div class="annotated-prototype"><div class="aggregate-prototype"><div class="attributes"><div class="versions-container">version(!unittest)</div>deprecated(&quot;use unrolled list&quot;)
+ </div><span class="builtin-type">struct</span> CompressedList (<div class="parameters-list toplevel"><div class="template-parameter-item parameter-item">	<span><span class="name" data-ident="T">T</span></span></div><div class="template-parameter-item parameter-item">	<span><span class="name" data-ident="Allocator">Allocator</span> = <span class="name" data-ident="Mallocator">Mallocator</span></span></div><div class="template-parameter-item parameter-item">	<span><span class="builtin-type">bool</span> <span class="name" data-ident="GCRangesAllowed">GCRangesAllowed</span> = true</span></div></div>) {<div class="aggregate-member"><div class="attributes"></div><span class="builtin-type">enum</span> <span class="name">PageSize</span>;</div><div class="aggregate-member"><div class="attributes"></div><span class="builtin-type">enum</span> <span class="name">NodesPerPage</span>;</div><div class="aggregate-member"><div class="attributes"></div><span class="builtin-type">enum</span> <span class="name">BitMapLength</span>;</div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.Page.html"><span class="builtin-type">struct</span> <span class="name">Page</span>;</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.range.html"><tt class="highlighted"><span class="hid">Range</span></tt> <span class="name">range</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.clear.html"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">clear</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.empty.html"><tt class="highlighted"><span class="type">bool</span></tt> <span class="name">empty</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.length.html"><tt class="highlighted"><span class="type">ulong</span></tt> <span class="name">length</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.front.html"><tt class="highlighted"><span class="hid">T</span></tt> <span class="name">front</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.popFront.html"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">popFront</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.insertFront.html"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">insertFront</span>(T v);</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.back.html"><tt class="highlighted"><span class="hid">T</span></tt> <span class="name">back</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.popBack.html"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">popBack</span>();</a></div><div class="aggregate-member"><a href="ikod.containers.compressedlist.CompressedList.insertBack.html"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">insertBack</span>(T v);</a></div>}</div></div><h2 id="destructor"><a class="header-anchor" href="#destructor">Destructor</a></h2><dl class="member-list"></dl><p>A destructor is present on this object, but not explicitly documented in the source.</p><h2 id="postblit"><a class="header-anchor" href="#postblit">Postblit</a></h2><dl class="member-list"></dl><p>A postblit is present on this object, but not explicitly documented in the source.</p><h2 id="members"><a class="header-anchor" href="#members">Members</a></h2><h3 class="member-list-header hide-from-toc" id="function"><a class="header-anchor" href="#function">Functions</a></h3><dl class="member-list native"><dt><a href="ikod.containers.compressedlist.CompressedList.back.html">back</a><div class="simplified-prototype" style="max-width: 8ch;"><tt class="highlighted"><span class="hid">T</span></tt> <span class="name">back</span>()</div></dt><dd><div><p>List back item.</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.clear.html">clear</a><div class="simplified-prototype" style="max-width: 13ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">clear</span>()</div></dt><dd><div><p>remove anything from list</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.empty.html">empty</a><div class="simplified-prototype" style="max-width: 13ch;"><tt class="highlighted"><span class="type">bool</span></tt> <span class="name">empty</span>()</div></dt><dd><div><p>Is list empty?</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.front.html">front</a><div class="simplified-prototype" style="max-width: 9ch;"><tt class="highlighted"><span class="hid">T</span></tt> <span class="name">front</span>()</div></dt><dd><div><p>List front item</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.insertBack.html">insertBack</a><div class="simplified-prototype" style="max-width: 22ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">insertBack</span>(T v)</div></dt><dd><div><p>Insert item back.</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.insertFront.html">insertFront</a><div class="simplified-prototype" style="max-width: 23ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">insertFront</span>(T v)</div></dt><dd><div><p>Insert item at front.</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.length.html">length</a><div class="simplified-prototype" style="max-width: 15ch;"><tt class="highlighted"><span class="type">ulong</span></tt> <span class="name">length</span>()</div></dt><dd><div><p>Items in the list.</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.popBack.html">popBack</a><div class="simplified-prototype" style="max-width: 15ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">popBack</span>()</div></dt><dd><div><p>Pop back item from list.</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.popFront.html">popFront</a><div class="simplified-prototype" style="max-width: 16ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">popFront</span>()</div></dt><dd><div><p>Pop front item</p></div></dd><dt><a href="ikod.containers.compressedlist.CompressedList.range.html">range</a><div class="simplified-prototype" style="max-width: 14ch;"><tt class="highlighted"><span class="hid">Range</span></tt> <span class="name">range</span>()</div></dt><dd><div><p>Iterator over items.</p></div></dd></dl><h3 class="member-list-header hide-from-toc" id="struct"><a class="header-anchor" href="#struct">Structs</a></h3><dl class="member-list native"><dt><a href="ikod.containers.compressedlist.CompressedList.Page.html">Page</a><div class="simplified-prototype" style="max-width: 12ch;"><span class="builtin-type">struct</span> <span class="name">Page</span></div></dt><dd><div></div></dd></dl><div><h2 id="examples"><a class="header-anchor" href="#examples">Examples</a></h2><div class="documentation-comment"><div></div></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">std</span>.<span class="hid">experimental</span>.<span class="hid">logger</span>;
+<span class="br">2 </span><span class="kwrd">import</span> <span class="hid">std</span>.<span class="hid">algorithm</span>;
+<span class="br">3 </span><span class="kwrd">import</span> <span class="hid">std</span>.<span class="hid">range</span>;
+<span class="br">4 </span>
+<span class="br">5 </span><span class="hid">globalLogLevel</span> = <span class="hid">LogLevel</span>.<span class="hid">info</span>;
+<span class="br">6 </span><span class="hid">CompressedList</span>!<span class="type">int</span> <span class="hid">list</span>;
+<span class="br">7 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">0</span>..<span class="num">66</span>)
+<span class="br">8 </span>{
+<span class="br">9 </span>    <span class="hid">list</span>.<span class="hid">insertFront</span>(<span class="hid">i</span>);
+<span class="br">10 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="hid">i</span>);
+<span class="br">11 </span>}
+<span class="br">12 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">length</span> == <span class="num">66</span>);
+<span class="br">13 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">back</span> == <span class="num">0</span>);
+<span class="br">14 </span><span class="hid">list</span>.<span class="hid">popFront</span>();
+<span class="br">15 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">length</span> == <span class="num">65</span>);
+<span class="br">16 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="num">64</span>);
+<span class="br">17 </span><span class="hid">list</span>.<span class="hid">popFront</span>();
+<span class="br">18 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">length</span> == <span class="num">64</span>);
+<span class="br">19 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="num">63</span>);
+<span class="br">20 </span><span class="kwrd">while</span>( !<span class="hid">list</span>.<span class="hid">empty</span> )
+<span class="br">21 </span>{
+<span class="br">22 </span>    <span class="hid">list</span>.<span class="hid">popFront</span>();
+<span class="br">23 </span>}
+<span class="br">24 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">1</span>..<span class="num">19</span>)
+<span class="br">25 </span>{
+<span class="br">26 </span>    <span class="hid">list</span>.<span class="hid">insertFront</span>(<span class="hid">i</span>);
+<span class="br">27 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="hid">i</span>);
+<span class="br">28 </span>}
+<span class="br">29 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">1</span>..<span class="num">19</span>)
+<span class="br">30 </span>{
+<span class="br">31 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">back</span> == <span class="hid">i</span>);
+<span class="br">32 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">length</span> == <span class="num">19</span>-<span class="hid">i</span>);
+<span class="br">33 </span>    <span class="hid">list</span>.<span class="hid">popBack</span>();
+<span class="br">34 </span>}
+<span class="br">35 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">empty</span>);
+<span class="br">36 </span><span class="hid">list</span>.<span class="hid">insertBack</span>(<span class="num">99</span>);
+<span class="br">37 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="num">99</span>);
+<span class="br">38 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">back</span> == <span class="num">99</span>);
+<span class="br">39 </span><span class="hid">list</span>.<span class="hid">insertBack</span>(<span class="num">100</span>);
+<span class="br">40 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">front</span> == <span class="num">99</span>);
+<span class="br">41 </span><span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">back</span> == <span class="num">100</span>);
+<span class="br">42 </span><span class="hid">list</span>.<span class="hid">insertFront</span>(<span class="num">98</span>);
+<span class="br">43 </span><span class="hid">list</span>.<span class="hid">insertBack</span>(<span class="num">101</span>);
+<span class="br">44 </span>() @<span class="hid">trusted</span> <span class="com">// * and remove for poiners is unsafe</span>
+<span class="br">45 </span>{
+<span class="br">46 </span>    <span class="hid">list</span>.<span class="hid">clear</span>();
+<span class="br">47 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">empty</span>);
+<span class="br">48 </span>
+<span class="br">49 </span>    <span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">0</span>..<span class="num">1000</span>)
+<span class="br">50 </span>    {
+<span class="br">51 </span>        <span class="hid">list</span>.<span class="hid">insertBack</span>(<span class="hid">i</span>);
+<span class="br">52 </span>    }
+<span class="br">53 </span>    <span class="kwrd">assert</span>(<span class="hid">equal</span>(<span class="hid">list</span>.<span class="hid">range</span>(), <span class="hid">iota</span>(<span class="num">0</span>,<span class="num">1000</span>)));
+<span class="br">54 </span>    <span class="hid">list</span>.<span class="hid">clear</span>();
+<span class="br">55 </span>
+<span class="br">56 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">empty</span>);
+<span class="br">57 </span>    <span class="hid">iota</span>(<span class="num">0</span>, <span class="num">1000</span>).<span class="hid">each</span>!(<span class="hid">i</span> =&gt; <span class="hid">list</span>.<span class="hid">insertBack</span>(<span class="hid">i</span>));
+<span class="br">58 </span>    <span class="kwrd">auto</span> <span class="hid">r</span> = <span class="hid">list</span>.<span class="hid">range</span>();
+<span class="br">59 </span>    <span class="kwrd">while</span>(!<span class="hid">r</span>.<span class="hid">empty</span>)
+<span class="br">60 </span>    {
+<span class="br">61 </span>        <span class="type">int</span> <span class="hid">v</span> = <span class="hid">r</span>.<span class="hid">front</span>;
+<span class="br">62 </span>        <span class="hid">r</span>.<span class="hid">popFront</span>();
+<span class="br">63 </span>    }
+<span class="br">64 </span>    <span class="kwrd">assert</span>(<span class="hid">list</span>.<span class="hid">length</span> == <span class="num">1000</span>, <span class="str">&quot;expected empty list, got length %d&quot;</span>.<span class="hid">format</span>(<span class="hid">list</span>.<span class="hid">length</span>));
+<span class="br">65 </span>}();
+<span class="br">66 </span>
+<span class="br">67 </span>() @<span class="hid">nogc</span>
+<span class="br">68 </span>{
+<span class="br">69 </span>    <span class="kwrd">struct</span> <span class="hid">S</span> {}
+<span class="br">70 </span>    <span class="hid">CompressedList</span>!(<span class="kwrd">immutable</span> <span class="hid">S</span>) <span class="hid">islist</span>;
+<span class="br">71 </span>    <span class="kwrd">immutable</span> <span class="hid">S</span> <span class="hid">s</span> = <span class="hid">S</span>();
+<span class="br">72 </span>    <span class="hid">islist</span>.<span class="hid">insertFront</span>(<span class="hid">s</span>);
+<span class="br">73 </span>}();
+<span class="br">74 </span><span class="kwrd">class</span> <span class="hid">C</span>
+<span class="br">75 </span>{
+<span class="br">76 </span>    <span class="type">int</span> <span class="hid">c</span>;
+<span class="br">77 </span>    <span class="kwrd">this</span>(<span class="type">int</span> <span class="hid">v</span>) {
+<span class="br">78 </span>        <span class="hid">c</span> = <span class="hid">v</span>;
+<span class="br">79 </span>    }
+<span class="br">80 </span>}
+<span class="br">81 </span><span class="hid">CompressedList</span>!<span class="hid">C</span> <span class="hid">clist</span>;
+<span class="br">82 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">0</span>..<span class="num">5000</span>)
+<span class="br">83 </span>{
+<span class="br">84 </span>    <span class="hid">clist</span>.<span class="hid">insertBack</span>(<span class="kwrd">new</span> <span class="hid">C</span>(<span class="hid">i</span>));
+<span class="br">85 </span>}
+<span class="br">86 </span><span class="kwrd">foreach</span>(<span class="hid">i</span>;<span class="num">0</span>..<span class="num">4500</span>)
+<span class="br">87 </span>{
+<span class="br">88 </span>    <span class="hid">clist</span>.<span class="hid">popBack</span>();
+<span class="br">89 </span>}
+<span class="br">90 </span><span class="kwrd">assert</span>(<span class="hid">clist</span>.<span class="hid">length</span> == <span class="num">500</span>);
+<span class="br">91 </span><span class="hid">clist</span>.<span class="hid">clear</span>();</pre></div></div></div>
+		<div id="page-nav"><a class="parent" href="ikod.html">ikod</a> <a class="parent" href="ikod.containers.html">containers</a> <a class="parent" href="ikod.containers.compressedlist.html">compressedlist</a> 
+		<span class="type-separator">structs</span><ul><li><a class="struct current" href="ikod.containers.compressedlist.CompressedList.html">CompressedList</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>

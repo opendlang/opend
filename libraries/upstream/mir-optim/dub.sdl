@@ -1,0 +1,116 @@
+name "mir-optim"
+authors "Ilya Yaroshenko"
+description "Optimisation Framework"
+copyright "Copyright © 2018, Kaleidic Associates and Symmetry Investments"
+targetType "library"
+license "BSL-1.0"
+dependency "mir-lapack" version=">=1.2.3"
+dependency "mir-algorithm" version=">=3.7.19"
+
+buildType "better-c-release" {
+	buildOptions "releaseMode" "inline" "noBoundsCheck"
+	dflags "-betterC" "-Os" "-nogc" "-linkonce-templates" "-enable-cross-module-inlining" platform="ldc"
+	dflags "-betterC" "-O" platform="dmd" # no proper betterC support in DMD
+	dflags "-betterC" "-O"  platform="gdc" # no proper betterC support in GDC
+}
+
+configuration "library" {
+	targetType "library"
+	# default or user specified mir-lapack sub-configuration is used
+}
+
+configuration "unittest" {
+	dependency "mir-random" version=">=1.0.0-beta"
+}
+
+configuration "openblas" {
+	subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "threelib" {
+	subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "cblas" {
+	subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "blas" {
+	subConfiguration "mir-lapack" "blas"
+}
+
+configuration "lapack" {
+	subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "mkl-sequential" {
+	subConfiguration "mir-lapack" "mkl-sequential"
+}
+
+configuration "mkl-sequential-ilp" {
+	subConfiguration "mir-lapack" "mkl-sequential-ilp"
+}
+
+configuration "mkl-tbb-thread" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread"
+}
+
+configuration "mkl-tbb-thread-ilp" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-ilp"
+}
+
+configuration "mkl-sequential-dll" {
+	subConfiguration "mir-lapack" "mkl-sequential-dll"
+}
+
+configuration "mkl-sequential-ilp-dll" {
+	subConfiguration "mir-lapack" "mkl-sequential-ilp-dll"
+}
+
+configuration "mkl-tbb-thread-dll" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-dll"
+}
+
+configuration "mkl-tbb-thread-ilp-dll" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-ilp-dll"
+}
+
+configuration "zerolib" {
+	subConfiguration "mir-lapack" "zerolib"
+}
+
+configuration "unittest-openblas" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "unittest-threelib" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "unittest-cblas" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "unittest-blas" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "blas"
+}
+
+configuration "unittest-lapack" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "unittest-mkl-sequential" {
+    versions "mir_optim_test"
+	dependency "mir-random" version=">=1.0.0-beta"
+	subConfiguration "mir-lapack" "mkl-sequential"
+}

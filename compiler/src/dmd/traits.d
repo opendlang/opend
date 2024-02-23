@@ -717,6 +717,39 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         auto se = new StringExp(e.loc, id.toString());
         return se.expressionSemantic(sc);
     }
+    if (e.ident == Id.docComment)
+    {
+        /* Specify 0 for bit 0 of the flags argument to semanticTiargs() so that
+         * a symbol should not be folded to a constant.
+         * Bit 1 means don't convert Parameter to Type if Parameter has an identifier
+         */
+        if (!TemplateInstance.semanticTiargs(e.loc, sc, e.args, 2))
+            return ErrorExp.get();
+        if (dim != 1)
+            return dimError(1);
+
+        auto o = (*e.args)[0];
+        const(char)* c;
+        if (auto po = isParameter(o))
+        {
+            error(e.loc, "argument `%s` has no doc comment", po.type.toChars());
+            return ErrorExp.get();
+        }
+        else
+        {
+            Dsymbol s = getDsymbolWithoutExpCtx(o);
+            if (!s)
+            {
+                error(e.loc, "argument `%s` has no symbol", o.toChars());
+                return ErrorExp.get();
+            }
+            c = s.comment;
+        }
+
+	import core.stdc.string;
+        auto se = new StringExp(e.loc, c is null ? null : c[0 .. strlen(c)]);
+        return se.expressionSemantic(sc);
+    }
     if (e.ident == Id.fullyQualifiedName) // https://dlang.org/spec/traits.html#fullyQualifiedName
     {
         if (dim != 1)
@@ -1858,6 +1891,15 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
                 }
                 else if (auto ud = s.isUnitTestDeclaration())
                 {
+                    /+
+                        Skip UTs here rather than have semantic
+                        fail later.
+
+                        This works but is a little ugly i.e. use
+                        existing TypeFunction stuff?
+                    +/
+                    if (ud.skipCodegen)
+                        return;
                     if (cast(void*)ud in uniqueUnitTests)
                         return;
 

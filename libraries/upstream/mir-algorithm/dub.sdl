@@ -1,0 +1,85 @@
+name "mir-algorithm"
+description "Dlang Core Library"
+
+authors "Ilia Ki" "John Michael Hall" "Shigeki Karita" "Sebastian Wilzbach" "And others" "mir.date and a bit of other code is based on Phobos"
+copyright "2020 Ilia Ki, Kaleidic Associates Advisory Limited, Symmetry Investments"
+license "Apache-2.0"
+
+dependency "mir-core" version=">=1.6.0"
+
+// dflags "-version=MirNoSIMD"
+// dflags "-mtriple=aarch64-linux-gnu"
+
+// versions "TeslAlgoM"
+
+buildType "unittest" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_bignum_test" "mir_bignum_test_llv"
+    versions "mir_ndslice_test"
+    versions "mir_test"
+    dflags "-lowmem"
+}
+
+buildType "unittest-verbose" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_bignum_test" "mir_bignum_test_llv"
+    // versions "mir_ndslice_test"
+    versions "mir_test"
+    dflags "-lowmem" "-checkaction=context" "-allinst"
+}
+buildType "unittest-dip1008" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_bignum_test" "mir_ndslice_test" "mir_test" "mir_bignum_test_llv"
+    dflags "-lowmem" "-preview=dip1008"
+}
+buildType "unittest-dip1000" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_bignum_test" "mir_ndslice_test" "mir_test"
+    dflags "-lowmem" "-preview=dip1000"
+}
+buildType "unittest-cov" {
+    buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+    versions "mir_bignum_test" "mir_bignum_test_llv" "mir_ndslice_test" "mir_test"
+    dflags "-lowmem"
+}
+buildType "unittest-ci" {
+    buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+    dflags "-lowmem"
+}
+buildType "unittest-release" {
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+    versions "mir_bignum_test" "mir_ndslice_test" "mir_test"
+    dflags "-lowmem"
+}
+
+configuration "default" {
+}
+
+configuration "silly" {
+    dependency "silly" version="~>1.1.1"
+}
+
+configuration "dip1008" {
+    dflags "-preview=dip1008"
+}
+
+configuration "dips" {
+    dflags "-preview=dip1000" "-preview=dip1008"
+}
+
+configuration "ci-bignum-test" {
+    versions "mir_bignum_test" "mir_bignum_test_llv"
+    dflags "-lowmem" "-preview=dip1000"
+}
+
+configuration "ci-core-test" {
+    versions "mir_core_test"
+}
+
+configuration "ci-ndslice-test" {
+    versions "mir_ndslice_test"
+}
+
+configuration "ci-test" {
+    versions "mir_test"
+}

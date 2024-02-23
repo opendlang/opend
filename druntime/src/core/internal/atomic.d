@@ -478,7 +478,7 @@ version (DigitalMars)
     T atomicFetchAnd(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     if (is(T : ulong))
     {
-        T set, get = atomicLoad!(order)(dest);
+        T set, get = atomicLoad!(MemoryOrder.raw)(dest);
 
         do
         {
@@ -491,7 +491,7 @@ version (DigitalMars)
     T atomicFetchOr(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     if (is(T : ulong))
     {
-        T set, get = atomicLoad!(order)(dest);
+        T set, get = atomicLoad!(MemoryOrder.raw)(dest);
 
         do
         {
@@ -504,7 +504,7 @@ version (DigitalMars)
     T atomicFetchXor(MemoryOrder order = MemoryOrder.seq, T)(T* dest, T value) pure nothrow @nogc @trusted
     if (is(T : ulong))
     {
-        T set, get = atomicLoad!(order)(dest);
+        T set, get = atomicLoad!(MemoryOrder.raw)(dest);
 
         do
         {

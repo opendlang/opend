@@ -194,7 +194,7 @@ struct DList(T)
         BaseNode _base;
         alias _base this;
 
-        T _payload = T.init;
+        T _payload;
 
         this (BaseNode _base, T _payload)
         {

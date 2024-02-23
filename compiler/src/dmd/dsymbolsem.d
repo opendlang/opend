@@ -1519,10 +1519,7 @@ version (IN_LLVM)
 
         if (!(global.params.bitfields || sc.flags & SCOPE.Cfile))
         {
-            version (IN_GCC)
-                .error(dsym.loc, "%s `%s` use `-fpreview=bitfields` for bitfield support", dsym.kind, dsym.toPrettyChars);
-            else
-                .error(dsym.loc, "%s `%s` use -preview=bitfields for bitfield support", dsym.kind, dsym.toPrettyChars);
+            .error(dsym.loc, "%s `%s` use C-style bitfields not supported in D code", dsym.kind, dsym.toPrettyChars);
         }
 
         if (!dsym.parent.isStructDeclaration() && !dsym.parent.isClassDeclaration())
@@ -2203,7 +2200,7 @@ else // !IN_LLVM
         auto loc = adjustLocForMixin(str, cd.loc, global.params.mixinOut);
         scope p = new Parser!ASTCodegen(loc, sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
         p.transitionIn = global.params.v.vin;
-        p.allowPrivateThis = global.params.privateThis;
+        p.allowPrivateThis = true;
         p.nextToken();
 
         auto d = p.parseDeclDefs(0);
@@ -4859,15 +4856,27 @@ version (IN_LLVM)
             return;
         }
 
-        if (global.params.useUnitTests)
-        {
-            if (!utd.type)
-                utd.type = new TypeFunction(ParameterList(), Type.tvoid, LINK.d, utd.storage_class);
-            Scope* sc2 = sc.push();
-            sc2.linkage = LINK.d;
-            funcDeclarationSemantic(utd);
-            sc2.pop();
+        if (!global.params.useUnitTests)
+            return;
+
+        final switch(global.params.unittestFilter) with (UnittestFilter) {
+            case all:
+                break;
+            case explicitOnly:
+                auto mod = utd.getModule();
+                if (mod.isSpecifiedOnCommandLine())
+                    break;
+                utd.skipCodegen = true;
+                return;
         }
+
+        auto mod = utd.getModule();
+        if (!utd.type)
+            utd.type = new TypeFunction(ParameterList(), Type.tvoid, LINK.d, utd.storage_class);
+        Scope* sc2 = sc.push();
+        sc2.linkage = LINK.d;
+        funcDeclarationSemantic(utd);
+        sc2.pop();
 
         version (none)
         {

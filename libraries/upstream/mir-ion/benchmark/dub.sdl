@@ -1,0 +1,3 @@
+name "ion_benchmark"
+dflags "-mcpu=native" "-linkonce-templates" "-enable-cross-module-inlining" platform="ldc"
+dependency "mir-ion" path="../"

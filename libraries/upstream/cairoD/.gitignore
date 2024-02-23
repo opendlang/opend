@@ -1,0 +1,26 @@
+#Ignore built library
+libcairoD.a
+libcairoD.lib
+cairoD.lib
+
+#Ignore object files
+*.o
+*.obj
+
+#Ignore core files
+core
+
+#Ignore unittest binary
+bin/
+
+#Ignore example output
+examples/*/*.svg
+examples/*/*.png
+
+#Ignore ddox files
+docs.json
+docs/*
+__dummy.html
+
+#Ignore dub files
+.dub

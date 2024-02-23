@@ -1,0 +1,2 @@
+del *.png
+del *.jpg

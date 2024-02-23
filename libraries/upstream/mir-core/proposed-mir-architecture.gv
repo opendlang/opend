@@ -1,0 +1,35 @@
+digraph G {
+  rankdir=BT;
+  node [style=filled];
+  "mir-core" [color=lightblue]
+  "mir" [color=lightblue]
+  "mir-algorithm" [color=lightblue]
+  "mir-image" [color=lightblue]
+  "mir-color" [color=lightblue]
+  "mir-core" [color=lightblue]
+  "mir-core" -> "mir-color"
+  "mir-core" -> "mir"
+  "mir-image" -> "mir-cv"
+  "mir-cpuid" -> "mir-cv"
+  "mir-compute" -> "mir-cv" 
+  "mir" -> "mir-algorithm"
+  "mir-algorithm" -> "mir-image"
+  "mir-algorithm" -> "mir-model"
+  "mir-core" -> "mir-algorithm"
+  "mir-core" -> "mir-optim"
+  "mir-core" -> "mir-cpuid"
+  "mir-core" -> "mir-random"
+  "cblas" -> "mir-blas"
+  "lapack" -> "mir-lapack"
+  "mir" -> "mir-blas"
+  "mir-blas" -> "mir-lapack"
+  "dcompute" -> "mir-compute"
+  "mir-color" -> "mir-image"
+  "mir" -> "mir-compute"
+  "mir-lapack" -> "mir-optim"
+  "mir-algorithm" -> "mir-json"
+  "mir-optim" -> "mir-model"
+  "mir" -> "mir-sparse"
+  "mir-algorithm" -> "mir-sparse"
+  "mir-sparse" -> "mir-model"
+}

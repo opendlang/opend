@@ -129,7 +129,7 @@ class Lexer
         this.end = base + endoffset;
         p = base + begoffset;
         line = p;
-        this.doDocComment = doDocComment;
+        this.doDocComment = true; // could be the doDocComment if we want to keep upstream behavior, but this is useful so traits(docComment) works without generating the ddoc html stuff
         this.commentToken = commentToken;
         this.tokenizeNewlines = false;
         this.inTokenStringConstant = 0;

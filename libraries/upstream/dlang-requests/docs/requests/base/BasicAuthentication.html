@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Class BasicAuthentication</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../requests.html">requests</a>
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module selected">
+						<a href="../../requests/base.html">base</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../requests/request.html">request</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Class BasicAuthentication</h1><p>Basic authentication.
+ Adds <b>Authorization: Basic</b> header to request
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">class</span> <span class="typ">BasicAuthentication</span>
+			<br>&nbsp;&nbsp;: <a href="../../requests/base/Auth.html"><span class="typ">Auth</span></a>
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			
+			<section><h2>Constructors</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication.this.html" class="public">
+								<code>this</code>
+							</a>
+						</td>
+						<td>Constructor.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Fields</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication._domains.html" class="private"><code>_domains</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span><span class="pun">[]</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication._password.html" class="private"><code>_password</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td></td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication._username.html" class="private"><code>_username</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">string</span></code></td><td></td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication.authHeaders.html" class="public">
+								<code>authHeaders</code>
+							</a>
+						</td>
+						<td>create Basic Auth header
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication.password.html" class="public">
+								<code>password</code>
+							</a>
+						</td>
+						<td>return user password
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../requests/base/BasicAuthentication.userName.html" class="public">
+								<code>userName</code>
+							</a>
+						</td>
+						<td>returns username
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Example</h2>
+<pre class="code"><code class="lang-d"><span class="kwd">import <a href="../../requests.html"></span><span class="pln">requests</span></a><span class="pun">;
+</span><span class="typ">void </span><span class="pln">main</span><span class="pun">() {
+</span><span class="pln">rq </span><span class="pun">= </span><span class="typ">Request</span><span class="pun">();
+</span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">authenticator </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">BasicAuthentication</span><span class="pun">(</span><span class="str">"user"</span><span class="pun">, </span><span class="str">"passwd"</span><span class="pun">);
+</span><span class="pln">rs </span><span class="pun">= </span><span class="pln">rq<wbr/></span><span class="pun">.</span><span class="pln">get</span><span class="pun">(</span><span class="str">"http://httpbin.org/basic-auth/user/passwd"</span><span class="pun">);
+}</span></code></pre>
+</section>
+
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

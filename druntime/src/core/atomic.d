@@ -200,18 +200,18 @@ void atomicStore(MemoryOrder ms = MemoryOrder.seq, T, V)(ref shared T val, auto 
  * Returns:
  *  The value held previously by `val`.
  */
-T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
     if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
     static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchAdd!ms(cast(size_t*)&val, mod * U.sizeof);
+        return cast(T)core.internal.atomic.atomicFetchAdd!ms(cast(T*)&val, mod * U.sizeof);
     else
-        return core.internal.atomic.atomicFetchAdd!ms(&val, cast(T)mod);
+        return core.internal.atomic.atomicFetchAdd!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAdd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
     if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -229,18 +229,18 @@ in (atomicValueIsProperlyAligned(val))
  * Returns:
  *  The value held previously by `val`.
  */
-T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
     if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
     static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchSub!ms(cast(size_t*)&val, mod * U.sizeof);
+        return cast(T)core.internal.atomic.atomicFetchSub!ms(cast(T*)&val, mod * U.sizeof);
     else
-        return core.internal.atomic.atomicFetchSub!ms(&val, cast(T)mod);
+        return core.internal.atomic.atomicFetchSub!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchSub(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
     if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -258,18 +258,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchAnd!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchAnd!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchAnd!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchAnd(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -287,18 +284,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchOr!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchOr!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchOr!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -316,18 +310,15 @@ in (atomicValueIsProperlyAligned(val))
 * Returns:
 *  The value held previously by `val`.
 */
-T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope T val, T mod) pure nothrow @nogc @trusted
 if ((__traits(isIntegral, T) || is(T == U*, U)) && !is(T == shared))
 in (atomicValueIsProperlyAligned(val))
 {
-    static if (is(T == U*, U))
-        return cast(T)core.internal.atomic.atomicFetchXor!ms(cast(size_t*)&val, mod * U.sizeof);
-    else
-        return core.internal.atomic.atomicFetchXor!ms(&val, cast(T)mod);
+    return core.internal.atomic.atomicFetchXor!ms(&val, mod);
 }
 
 /// Ditto
-T atomicFetchOr(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, size_t mod) pure nothrow @nogc @trusted
+T atomicFetchXor(MemoryOrder ms = MemoryOrder.seq, T)(ref return scope shared T val, T mod) pure nothrow @nogc @trusted
 if (__traits(isIntegral, T) || is(T == U*, U))
 in (atomicValueIsProperlyAligned(val))
 {
@@ -682,16 +673,6 @@ TailShared!T atomicOp(string op, T, V1)(ref shared T val, V1 mod) pure nothrow @
     if (__traits(compiles, mixin("*cast(T*)&val" ~ op ~ "mod")))
 in (atomicValueIsProperlyAligned(val))
 {
-    version (LDC)
-    {
-        import ldc.intrinsics;
-
-        enum suitedForLLVMAtomicRmw = (__traits(isIntegral, T) && __traits(isIntegral, V1) &&
-                                       T.sizeof <= AtomicRmwSizeLimit && V1.sizeof <= AtomicRmwSizeLimit);
-    }
-    else
-        enum suitedForLLVMAtomicRmw = false;
-
     // binary operators
     //
     // +    -   *   /   %   ^^  &
@@ -712,42 +693,33 @@ in (atomicValueIsProperlyAligned(val))
     //
     // +=   -=  *=  /=  %=  ^^= &=
     // |=   ^=  <<= >>= >>>=    ~=
-    static if (op == "+=" && suitedForLLVMAtomicRmw)
+    static if (op == "+=")
     {
         T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_add(&val, m) + m);
+        return cast(T)(atomicFetchAdd(val, m) + m);
     }
-    else static if (op == "-=" && suitedForLLVMAtomicRmw)
+    else static if (op == "-=")
     {
         T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_sub(&val, m) - m);
+        return cast(T)(atomicFetchSub(val, m) - m);
     }
-    else static if (op == "&=" && suitedForLLVMAtomicRmw)
+    else static if (op == "&=")
     {
         T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_and(&val, m) & m);
+        return cast(T)(atomicFetchAnd(val, m) & m);
     }
-    else static if (op == "|=" && suitedForLLVMAtomicRmw)
+    else static if (op == "|=")
     {
         T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_or(&val, m) | m);
+        return cast(T)(atomicFetchOr(val, m) | m);
     }
-    else static if (op == "^=" && suitedForLLVMAtomicRmw)
+    else static if (op == "^=")
     {
         T m = cast(T) mod;
-        return cast(T) (llvm_atomic_rmw_xor(&val, m) ^ m);
+        return cast(T)(atomicFetchXor(val, m) ^ m);
     }
-    else static if (op == "+=" && __traits(isIntegral, T) && __traits(isIntegral, V1) && T.sizeof <= size_t.sizeof && V1.sizeof <= size_t.sizeof)
-    {
-        return cast(T)(atomicFetchAdd(val, mod) + mod);
-    }
-    else static if (op == "-=" && __traits(isIntegral, T) && __traits(isIntegral, V1) && T.sizeof <= size_t.sizeof && V1.sizeof <= size_t.sizeof)
-    {
-        return cast(T)(atomicFetchSub(val, mod) - mod);
-    }
-    else static if (op == "+=" || op == "-="  || op == "*="  || op == "/=" ||
-                op == "%=" || op == "^^=" || op == "&="  || op == "|=" ||
-                op == "^=" || op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
+    else static if (op == "*="  || op == "/=" || op == "%=" || op == "^^=" ||
+                    op == "<<=" || op == ">>=" || op == ">>>=") // skip "~="
     {
         T set, get = atomicLoad!(MemoryOrder.raw, T)(val);
         do

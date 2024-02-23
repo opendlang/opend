@@ -1,0 +1,41 @@
+name: Run all D Tests and Codecov
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Dub Tests
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        dc: [ldc-latest, ldc-beta, dmd-latest, dmd-beta]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3.3.0
+
+    - name: D Compiler Installation
+      uses: dlang-community/setup-dlang@v1.3.0
+      with:
+        compiler: ${{ matrix.dc }}
+
+    - name: Run tests with coverage
+      run: dub -q test --build=unittest-cov
+
+    - name: Install Lapack
+      if: contains( matrix.os, 'ubuntu')
+      run: |
+        sudo apt-get update
+        sudo apt-get install libopenblas-dev
+      shell: bash
+
+    - name: Run Blas Tests with coverage
+      if: contains( matrix.os, 'ubuntu')
+      run: dub -q test --build=unittest-cov-blas --config=openblas
+
+    - name: Codecov
+      uses: codecov/codecov-action@v3.1.1

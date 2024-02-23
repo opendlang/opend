@@ -1,0 +1,13 @@
+{
+	"name": "gemm",
+	"targetType": "executable",
+	"lflags": [
+		"-L$MIR_GLAS_PACKAGE_DIR",
+		"-L$MIR_CPUID_PACKAGE_DIR"],
+	"dependencies": {
+		"mir-glas": {
+			"path": "../../"
+		},
+		"mir-algorithm": ">=1.0.1"
+	}
+}

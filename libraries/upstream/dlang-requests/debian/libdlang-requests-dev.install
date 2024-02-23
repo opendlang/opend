@@ -1,0 +1,3 @@
+usr/include/d/requests/*
+usr/lib/*/libdlang-requests.so
+usr/lib/*/pkgconfig/*
