@@ -249,8 +249,9 @@ class Mutex :
     }
 
 
-private:
     OsMutex osMutex;
+
+private:
 
     struct MonitorProxy
     {
@@ -258,17 +259,6 @@ private:
     }
 
     MonitorProxy            m_proxy;
-
-
-package:
-    version (Posix)
-    {
-        import core.sys.posix.pthread;
-        pthread_mutex_t* handleAddr() @nogc
-        {
-            return osMutex.handleAddr();
-        }
-    }
 }
 
 ///
