@@ -167,6 +167,12 @@ struct Verbose
     unsigned errorSupplementCount();
 };
 
+enum class UnittestFilter : uint8_t
+{
+    all = 0u,
+    explicitOnly = 1u,
+};
+
 // Put command line switches in here 
 struct Param
 {
@@ -177,6 +183,7 @@ struct Param
     d_bool vcg_ast;       // write-out codegen-ast
     Diagnostic useDeprecated;
     d_bool useUnitTests;  // generate unittest code
+    UnittestFilter unittestFilter;
     d_bool useInline;     // inline expand functions
     d_bool release;       // build release version
     d_bool preservePaths; // true means don't strip path from source file

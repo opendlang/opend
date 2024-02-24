@@ -72,6 +72,7 @@ public:
 
 
     DString arg;        // original argument name
+    bool specifiedOnCmdLine;
     ModuleDeclaration *md; // if !NULL, the contents of the ModuleDeclaration declaration
     FileName srcfile;   // input source file
     FileName objfile;   // output .obj file
