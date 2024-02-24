@@ -18,56 +18,9 @@ module core.sync.semaphore;
 public import core.sync.exception;
 public import core.time;
 
-// This ugly version switch case will eventually be replace with
-// mixin("import core.sys." ~ config.osSysDir ~ ".sync.osmutex");
+import rt.sys.config;
 
-version (OSX)
-    version = Darwin;
-else version (iOS)
-    version = Darwin;
-else version (TVOS)
-    version = Darwin;
-else version (WatchOS)
-    version = Darwin;
-
-
-version (Windows)
-{
-    import rt.sys.windows.ossemaphore;
-}
-else version (linux)
-{
-    import rt.sys.linux.ossemaphore;
-}
-else version (Darwin)
-{
-    import rt.sys.darwin.ossemaphore;
-}
-else version (DragonFlyBSD)
-{
-    import rt.sys.dragonflybsd.ossemaphore;
-}
-else version (FreeBSD)
-{
-    import rt.sys.freebsd.ossemaphore;
-}
-else version (NetBSD)
-{
-    import crtore.sys.netbsd.ossemaphore;
-}
-else version (OpenBSD)
-{
-    import rt.sys.openbsd.ossemaphore;
-}
-else version (Solaris)
-{
-    import rt.sys.solaris.ossemaphore;
-}
-else
-{
-    static assert(false, "Platform not supported");
-}
-
+mixin("import " ~ osSemaphoreImport ~ ";");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Semaphore
