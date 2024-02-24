@@ -38,7 +38,7 @@ runs:
         done
 
         # ldc2.conf: replace the default section and add extra sections
-        # note: arm64-apple-ios section already exists
+        # note: x86_64-apple-ios section already exists
         sections="
         default:
         {
@@ -93,12 +93,9 @@ runs:
       run: |
         set -eux
         echo 'void main() { import std.stdio; writefln("Hello world, %d bits", size_t.sizeof * 8); }' > hello.d
-        for os in macos ios; do
-          for arch in x86_64 arm64; do
-            triple="$arch-apple-$os"
-            ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d
-            ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d -link-defaultlib-shared
-          done
+        for triple in x86_64-apple-macos11.0 arm64-apple-macos11.0 x86_64-apple-ios12.0-simulator arm64-apple-ios12.0; do
+          ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d
+          ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d -link-defaultlib-shared
         done
 
     - name: Pack universal package
