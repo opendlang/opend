@@ -1537,6 +1537,18 @@ struct Atomic(T)
     }
 
     /**
+    * Atomically loads and returns the current value of the atomic variable.
+    * Equivalent to load().
+    *
+    * Returns:
+    *  The atomic value.
+    */
+    T opImplicitCast(R : T)() pure nothrow @nogc
+    {
+        return load();
+    }
+
+    /**
      * Atomically replaces the current value with the result of arithmetic addition of the atomic variable and val.
      * That is, it performs atomic post-increment. The operation is a read-modify-write operation.
      * Memory is affected according to the value of order.
@@ -1714,6 +1726,10 @@ unittest // For the entire Atomic generic struct implementation
 {
     auto a = Atomic!int(0);
 
+    // Test assignment construction
+    Atomic!int b = 5;
+    assert(b.load() == 5);
+
     // These test only test the operation and inteface, not if the operation is truly atomic
 
     // Test store
@@ -1721,6 +1737,10 @@ unittest // For the entire Atomic generic struct implementation
 
     // Test regular load
     int j = a.load();
+    assert(j == 2);
+
+    // Test implicit cast load
+    j = a;
     assert(j == 2);
 
     // Test load/store with custom memory order
