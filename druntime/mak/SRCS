@@ -594,6 +594,7 @@ SRCS=\
 	src\rt\sys\config.d \
 	\
 	src\rt\sys\darwin\config.d \
+	src\rt\sys\darwin\osmemory.d \
 	src\rt\sys\darwin\ossemaphore.d \
 	\
 	src\rt\sys\freebsd\config.d \
@@ -607,6 +608,7 @@ SRCS=\
 	src\rt\sys\openbsd\config.d \
 	\
 	src\rt\sys\posix\osevent.d \
+	src\rt\sys\posix\osmemory.d \
 	src\rt\sys\posix\osmutex.d \
 	src\rt\sys\posix\ossemaphore.d \
 	src\rt\sys\posix\oscondition.d \
@@ -615,6 +617,7 @@ SRCS=\
 	\
 	src\rt\sys\windows\config.d \
 	src\rt\sys\windows\osevent.d \
+	src\rt\sys\windows\osmemory.d \
 	src\rt\sys\windows\osmutex.d \
 	src\rt\sys\windows\ossemaphore.d \
 	src\rt\sys\windows\oscondition.d \
