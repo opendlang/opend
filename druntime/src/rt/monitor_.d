@@ -10,6 +10,10 @@ module rt.monitor_;
 
 import core.atomic, core.stdc.stdlib, core.stdc.string;
 
+import rt.sys.config;
+
+mixin("import " ~ osMutexImport ~ ";");
+
 // NOTE: The dtor callback feature is only supported for monitors that are not
 //       supplied by the user.  The assumption is that any object with a user-
 //       supplied monitor may have special storage or lifetime requirements and
@@ -83,7 +87,7 @@ do
     auto m = cast(Monitor*) ensureMonitor(h);
     auto i = m.impl;
     if (i is null)
-        lockMutex(&m.mtx);
+        m.mtx.lockNoThrow();
     else
         i.lock();
 }
@@ -93,7 +97,7 @@ extern (C) void _d_monitorexit(Object h)
     auto m = cast(Monitor*) getMonitor(h);
     auto i = m.impl;
     if (i is null)
-        unlockMutex(&m.mtx);
+        m.mtx.unlockNoThrow();
     else
         i.unlock();
 }
@@ -150,19 +154,12 @@ nothrow:
 
 extern (C) void _d_monitor_staticctor() @nogc nothrow
 {
-    version (Posix)
-    {
-        pthread_mutexattr_init(&gattr);
-        pthread_mutexattr_settype(&gattr, PTHREAD_MUTEX_RECURSIVE);
-    }
-    initMutex(&gmtx);
+    gmtx.create();
 }
 
 extern (C) void _d_monitor_staticdtor() @nogc nothrow
 {
-    destroyMutex(&gmtx);
-    version (Posix)
-        pthread_mutexattr_destroy(&gattr);
+    gmtx.destroy();
 }
 
 package:
@@ -171,61 +168,12 @@ package:
 alias IMonitor = Object.Monitor;
 alias DEvent = void delegate(Object);
 
-version (Windows)
-{
-    version (CRuntime_DigitalMars)
-    {
-        pragma(lib, "snn.lib");
-    }
-    import core.sys.windows.winbase /+: CRITICAL_SECTION, DeleteCriticalSection,
-        EnterCriticalSection, InitializeCriticalSection, LeaveCriticalSection+/;
-
-    alias Mutex = CRITICAL_SECTION;
-
-    alias initMutex = InitializeCriticalSection;
-    alias destroyMutex = DeleteCriticalSection;
-    alias lockMutex = EnterCriticalSection;
-    alias unlockMutex = LeaveCriticalSection;
-}
-else version (Posix)
-{
-    import core.sys.posix.pthread;
-
-@nogc:
-    alias Mutex = pthread_mutex_t;
-    __gshared pthread_mutexattr_t gattr;
-
-    void initMutex(pthread_mutex_t* mtx)
-    {
-        pthread_mutex_init(mtx, &gattr) && assert(0);
-    }
-
-    void destroyMutex(pthread_mutex_t* mtx)
-    {
-        pthread_mutex_destroy(mtx) && assert(0);
-    }
-
-    void lockMutex(pthread_mutex_t* mtx)
-    {
-        pthread_mutex_lock(mtx) && assert(0);
-    }
-
-    void unlockMutex(pthread_mutex_t* mtx)
-    {
-        pthread_mutex_unlock(mtx) && assert(0);
-    }
-}
-else
-{
-    static assert(0, "Unsupported platform");
-}
-
 struct Monitor
 {
     IMonitor impl; // for user-level monitors
     DEvent[] devt; // for internal monitors
     size_t refs; // reference count
-    Mutex mtx;
+    OsMutex mtx;
 }
 
 private:
@@ -245,7 +193,7 @@ void setMonitor(Object h, shared(Monitor)* m) pure @nogc
     atomicStore!(MemoryOrder.rel)(h.monitor, m);
 }
 
-__gshared Mutex gmtx;
+__gshared OsMutex gmtx;
 
 shared(Monitor)* ensureMonitor(Object h)
 {
@@ -254,17 +202,17 @@ shared(Monitor)* ensureMonitor(Object h)
 
     auto m = cast(Monitor*) calloc(Monitor.sizeof, 1);
     assert(m);
-    initMutex(&m.mtx);
+    m.mtx.create();
 
     bool success;
-    lockMutex(&gmtx);
+    gmtx.lockNoThrow();
     if (getMonitor(h) is null)
     {
         m.refs = 1;
         setMonitor(h, cast(shared) m);
         success = true;
     }
-    unlockMutex(&gmtx);
+    gmtx.unlockNoThrow();
 
     if (success)
     {
@@ -284,7 +232,7 @@ shared(Monitor)* ensureMonitor(Object h)
 
 void deleteMonitor(Monitor* m) @nogc
 {
-    destroyMutex(&m.mtx);
+    m.mtx.destroy();
     free(m);
 }
 
