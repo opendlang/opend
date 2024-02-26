@@ -1480,6 +1480,14 @@ struct Atomic(T)
     {
         store(val);
     }
+    
+    /**
+     * Atomically load the current value.
+     *
+     * Params:
+     *  val = desired value
+     */
+    alias load this;
 
     /**
      * Atomically replaces the current value with the result of computation involving the previous value and val.
@@ -1779,6 +1787,9 @@ unittest // For the entire Atomic generic struct implementation
     a = 3;
     j = a.load();
     assert(j == 3);
+
+    // Test load
+    assert(a == 3);
 
     // Test pre increment addition
     j = ++a;
