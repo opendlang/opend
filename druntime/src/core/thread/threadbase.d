@@ -86,7 +86,6 @@ private
     alias getStackTop = externDFunc!("core.thread.osthread.getStackTop", void* function() nothrow @nogc);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Thread
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,22 +114,33 @@ class ThreadBase
     /**
      * Cleans up any remaining resources used by this object.
      */
+    ~this() nothrow @nogc
+    {
+        if (destructBeforeDtor())
+            return;
+
+        m_osThread.destroy(isMainThread());
+    }
+
+    /**
+     * Cleans up any remaining resources used by this object.
+     */
     package bool destructBeforeDtor() nothrow @nogc
     {
         destroyDataStorageIfAvail();
 
-        bool no_context = m_addr == m_addr.init;
+        bool no_context = !m_osThread.isValid();
         bool not_registered = !next && !prev && (sm_tbeg !is this);
 
         return (no_context || not_registered);
     }
 
-    package void tlsGCdataInit() nothrow @nogc
+    void tlsGCdataInit() nothrow @nogc
     {
         m_tlsgcdata = rt_tlsgc_init();
     }
 
-    package void initDataStorage() nothrow
+    public void initDataStorage() nothrow
     {
         assert(m_curr is &m_main);
 
@@ -139,7 +149,7 @@ class ThreadBase
         tlsGCdataInit();
     }
 
-    package void destroyDataStorage() nothrow @nogc
+    public void destroyDataStorage() nothrow @nogc
     {
         rt_tlsgc_destroy(m_tlsgcdata);
         m_tlsgcdata = null;
@@ -195,7 +205,7 @@ class ThreadBase
     {
         synchronized(this)
         {
-            return m_addr;
+            return m_osThread.id();
         }
     }
 
@@ -287,10 +297,7 @@ class ThreadBase
      */
     @property bool isRunning() nothrow @nogc
     {
-        if (m_addr == m_addr.init)
-            return false;
-
-        return true;
+        return m_osThread.isRunning();
     }
 
 
@@ -422,10 +429,25 @@ class ThreadBase
     // Thread entry point.  Invokes the function or delegate passed on
     // construction (if any).
     //
-    package final void run()
+    package void run()
     {
         m_call();
     }
+
+    //
+    // Standard thread data
+    //
+    import rt.sys.config;
+    mixin("public import " ~ osThreadImport ~ " : OsThread;");
+
+    OsThread     m_osThread;
+    bool         m_isDaemon;
+    Throwable    m_unhandled;
+
+    //
+    // Main process thread
+    //
+    __gshared ThreadBase    sm_main;
 
 package:
 
@@ -434,23 +456,13 @@ package:
     //
     static ThreadBase       sm_this;
 
-
-    //
-    // Main process thread
-    //
-    __gshared ThreadBase    sm_main;
-
-
     //
     // Standard thread data
     //
-    ThreadID            m_addr;
     Callable            m_call;
     string              m_name;
     size_t              m_sz;
-    bool                m_isDaemon;
     bool                m_isInCriticalRegion;
-    Throwable           m_unhandled;
 
     ///////////////////////////////////////////////////////////////////////////
     // Storage of Active Thread
@@ -460,16 +472,16 @@ package:
     //
     // Sets a thread-local reference to the current thread object.
     //
-    package static void setThis(ThreadBase t) nothrow @nogc
+    public static void setThis(ThreadBase t) nothrow @nogc
     {
         sm_this = t;
     }
 
 package(core.thread):
 
-    StackContext        m_main;
-    StackContext*       m_curr;
-    bool                m_lock;
+    public StackContext        m_main;
+    public StackContext*       m_curr;
+    public bool                m_lock;
     private void*       m_tlsgcdata;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -602,7 +614,7 @@ package(core.thread):
     //
     // Add a context to the global context list.
     //
-    static void add(StackContext* c) nothrow @nogc
+    public static void add(StackContext* c) nothrow @nogc
     in
     {
         assert(c);
@@ -702,7 +714,7 @@ package(core.thread):
     //
     // Remove a thread from the global thread list.
     //
-    static void remove(ThreadBase t) nothrow @nogc
+    public static void remove(ThreadBase t) nothrow @nogc
     in
     {
         assert(t);
@@ -870,11 +882,11 @@ static ThreadBase thread_findByAddr(ThreadID addr)
     // also return just spawned thread so that
     // DLL_THREAD_ATTACH knows it's a D thread
     foreach (t; ThreadBase.pAboutToStart[0 .. ThreadBase.nAboutToStart])
-        if (t.m_addr == addr)
+        if (t.m_osThread.id() == addr)
             return t;
 
     foreach (t; ThreadBase)
-        if (t.m_addr == addr)
+        if (t.m_osThread.id() == addr)
             return t;
 
     return null;
@@ -958,7 +970,7 @@ shared static ~this()
 }
 
 // Used for needLock below.
-package __gshared bool multiThreadedFlag = false;
+__gshared bool multiThreadedFlag = false;
 
 // Used for suspendAll/resumeAll below.
 package __gshared uint suspendDepth = 0;
@@ -1037,7 +1049,6 @@ do
     callWithStackShell(sp => scanAllTypeImpl(scan, sp));
 }
 
-package alias callWithStackShellDg = void delegate(void* sp) nothrow;
 private alias callWithStackShell = externDFunc!("core.thread.osthread.callWithStackShell", void function(scope callWithStackShellDg) nothrow);
 
 private void scanAllTypeImpl(scope ScanAllThreadsTypeFn scan, void* curStackTop) nothrow @system
@@ -1096,6 +1107,8 @@ private void scanAllTypeImpl(scope ScanAllThreadsTypeFn scan, void* curStackTop)
     {
         version (Windows)
         {
+            import rt.sys.config;
+            mixin("import " ~ osThreadImport ~ " : scanWindowsOnly;");
             // Ideally, we'd pass ScanType.regs or something like that, but this
             // would make portability annoying because it only makes sense on Windows.
             scanWindowsOnly(scan, t);
@@ -1210,7 +1223,7 @@ do
 * Throws:
 *  ThreadError.
 */
-package void onThreadError(string msg) nothrow @nogc @system
+void onThreadError(string msg) nothrow @nogc @system
 {
     __gshared ThreadError error = new ThreadError(null);
     error.msg = msg;
@@ -1318,12 +1331,12 @@ in (ThreadBase.getThis())
 ///////////////////////////////////////////////////////////////////////////////
 package
 {
-    __gshared size_t ll_nThreads;
-    __gshared ll_ThreadData* ll_pThreads;
+    public __gshared size_t ll_nThreads;
+    public __gshared ll_ThreadData* ll_pThreads;
 
     __gshared align(mutexAlign) void[mutexClassInstanceSize] ll_lock;
 
-    @property Mutex lowlevelLock() nothrow @nogc
+    public @property Mutex lowlevelLock() nothrow @nogc
     {
         return cast(Mutex)ll_lock.ptr;
     }
@@ -1339,7 +1352,7 @@ package
         lowlevelLock.__dtor();
     }
 
-    void ll_removeThread(ThreadID tid) nothrow @nogc @system
+    public void ll_removeThread(ThreadID tid) nothrow @nogc @system
     {
         lowlevelLock.lock_nothrow();
         scope(exit) lowlevelLock.unlock_nothrow();
