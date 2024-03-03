@@ -8,6 +8,7 @@ enum string osSemaphoreImport = "rt.sys.posix.ossemaphore";
 enum string osConditionImport = "rt.sys.posix.oscondition";
 enum string osEventImport = "rt.sys.posix.osevent";
 enum string osMemoryImport = "rt.sys.posix.osmemory";
+enum string osTimeImport = "rt.sys.openbsd.ostime";
 
 // These turns on/off the generic implementations in the POSIX osthread module.
 enum bool usePosix_osmemory_isLowOnMem = true;

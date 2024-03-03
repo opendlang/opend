@@ -596,24 +596,32 @@ SRCS=\
 	src\rt\sys\darwin\config.d \
 	src\rt\sys\darwin\osmemory.d \
 	src\rt\sys\darwin\ossemaphore.d \
+	src\rt\sys\darwin\ostime.d \
 	\
 	src\rt\sys\freebsd\config.d \
+	src\rt\sys\freebsd\ostime.d \
 	\
 	src\rt\sys\dragonflybsd\config.d \
+	src\rt\sys\dragonflybsd\ostime.d \
 	\
 	src\rt\sys\linux\config.d \
+	src\rt\sys\linux\ostime.d \
 	\
 	src\rt\sys\netbsd\config.d \
+	src\rt\sys\netbsd\ostime.d \
 	\
 	src\rt\sys\openbsd\config.d \
+	src\rt\sys\openbsd\ostime.d \
 	\
 	src\rt\sys\posix\osevent.d \
 	src\rt\sys\posix\osmemory.d \
 	src\rt\sys\posix\osmutex.d \
 	src\rt\sys\posix\ossemaphore.d \
 	src\rt\sys\posix\oscondition.d \
+	src\rt\sys\posix\ostime.d \
 	\
 	src\rt\sys\solaris\config.d \
+	src\rt\sys\solaris\ostime.d \
 	\
 	src\rt\sys\windows\config.d \
 	src\rt\sys\windows\osevent.d \
@@ -621,6 +629,7 @@ SRCS=\
 	src\rt\sys\windows\osmutex.d \
 	src\rt\sys\windows\ossemaphore.d \
 	src\rt\sys\windows\oscondition.d \
+	src\rt\sys\windows\ostime.d \
 	\
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \
