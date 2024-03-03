@@ -8,6 +8,7 @@ enum string osSemaphoreImport = "rt.sys.windows.ossemaphore";
 enum string osConditionImport = "rt.sys.windows.oscondition";
 enum string osEventImport = "rt.sys.windows.osevent";
 enum string osMemoryImport = "rt.sys.windows.osmemory";
+enum string osTimeImport = "rt.sys.windows.ostime";
 
 
 /**

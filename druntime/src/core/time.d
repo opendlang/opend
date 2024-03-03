@@ -70,50 +70,10 @@ import core.stdc.time;
 import core.stdc.stdio;
 import core.internal.string;
 
-version (Windows)
-{
-import core.sys.windows.winbase /+: QueryPerformanceCounter, QueryPerformanceFrequency+/;
-}
-else version (Posix)
-{
-import core.sys.posix.time;
-import core.sys.posix.sys.time;
-}
+import rt.sys.config;
+mixin("import " ~ osTimeImport ~ ";");
+mixin("public import " ~ osTimeImport ~ " : ClockType;");
 
-version (OSX)
-    version = Darwin;
-else version (iOS)
-    version = Darwin;
-else version (TVOS)
-    version = Darwin;
-else version (WatchOS)
-    version = Darwin;
-
-//This probably should be moved somewhere else in druntime which
-//is Darwin-specific.
-version (Darwin)
-{
-
-public import core.sys.darwin.mach.kern_return;
-
-extern(C) nothrow @nogc
-{
-
-struct mach_timebase_info_data_t
-{
-    uint numer;
-    uint denom;
-}
-
-alias mach_timebase_info_data_t* mach_timebase_info_t;
-
-kern_return_t mach_timebase_info(mach_timebase_info_t);
-
-ulong mach_absolute_time();
-
-}
-
-}
 
 /++
     What type of clock to use with $(LREF MonoTime) / $(LREF MonoTimeImpl) or
@@ -258,186 +218,7 @@ version (CoreDdoc) enum ClockType
       +/
     uptimePrecise = 10,
 }
-else version (Windows) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    second = 6,
-}
-else version (Darwin) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    second = 6,
-}
-else version (linux) enum ClockType
-{
-    normal = 0,
-    bootTime = 1,
-    coarse = 2,
-    precise = 3,
-    processCPUTime = 4,
-    raw = 5,
-    second = 6,
-    threadCPUTime = 7,
-}
-else version (FreeBSD) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    second = 6,
-    uptime = 8,
-    uptimeCoarse = 9,
-    uptimePrecise = 10,
-}
-else version (NetBSD) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    second = 6,
-}
-else version (OpenBSD) enum ClockType
-{
-    normal = 0,
-    bootTime = 1,
-    coarse = 2,
-    precise = 3,
-    processCPUTime = 4,
-    second = 6,
-    threadCPUTime = 7,
-    uptime = 8,
-}
-else version (DragonFlyBSD) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    second = 6,
-    uptime = 8,
-    uptimeCoarse = 9,
-    uptimePrecise = 10,
-}
-else version (Solaris) enum ClockType
-{
-    normal = 0,
-    coarse = 2,
-    precise = 3,
-    processCPUTime = 4,
-    second = 6,
-    threadCPUTime = 7,
-}
-else
-{
-    // It needs to be decided (and implemented in an appropriate version branch
-    // here) which clock types new platforms are going to support. At minimum,
-    // the ones _not_ marked with $(D Blue Foo-Only) should be supported.
-    static assert(0, "What are the clock types supported by this system?");
-}
 
-// private, used to translate clock type to proper argument to clock_xxx
-// functions on posix systems
-version (CoreDdoc)
-    private int _posixClock(ClockType clockType) { return 0; }
-else
-version (Posix)
-{
-    private auto _posixClock(ClockType clockType)
-    {
-        version (linux)
-        {
-            import core.sys.linux.time;
-            with(ClockType) final switch (clockType)
-            {
-            case bootTime: return CLOCK_BOOTTIME;
-            case coarse: return CLOCK_MONOTONIC_COARSE;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC;
-            case processCPUTime: return CLOCK_PROCESS_CPUTIME_ID;
-            case raw: return CLOCK_MONOTONIC_RAW;
-            case threadCPUTime: return CLOCK_THREAD_CPUTIME_ID;
-            case second: assert(0);
-            }
-        }
-        else version (FreeBSD)
-        {
-            import core.sys.freebsd.time;
-            with(ClockType) final switch (clockType)
-            {
-            case coarse: return CLOCK_MONOTONIC_FAST;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC_PRECISE;
-            case uptime: return CLOCK_UPTIME;
-            case uptimeCoarse: return CLOCK_UPTIME_FAST;
-            case uptimePrecise: return CLOCK_UPTIME_PRECISE;
-            case second: assert(0);
-            }
-        }
-        else version (NetBSD)
-        {
-            import core.sys.netbsd.time;
-            with(ClockType) final switch (clockType)
-            {
-            case coarse: return CLOCK_MONOTONIC;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC;
-            case second: assert(0);
-            }
-        }
-        else version (OpenBSD)
-        {
-            import core.sys.openbsd.time;
-            with(ClockType) final switch (clockType)
-            {
-            case bootTime: return CLOCK_BOOTTIME;
-            case coarse: return CLOCK_MONOTONIC;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC;
-            case processCPUTime: return CLOCK_PROCESS_CPUTIME_ID;
-            case threadCPUTime: return CLOCK_THREAD_CPUTIME_ID;
-            case uptime: return CLOCK_UPTIME;
-            case second: assert(0);
-            }
-        }
-        else version (DragonFlyBSD)
-        {
-            import core.sys.dragonflybsd.time;
-            with(ClockType) final switch (clockType)
-            {
-            case coarse: return CLOCK_MONOTONIC_FAST;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC_PRECISE;
-            case uptime: return CLOCK_UPTIME;
-            case uptimeCoarse: return CLOCK_UPTIME_FAST;
-            case uptimePrecise: return CLOCK_UPTIME_PRECISE;
-            case second: assert(0);
-            }
-        }
-        else version (Solaris)
-        {
-            import core.sys.solaris.time;
-            with(ClockType) final switch (clockType)
-            {
-            case coarse: return CLOCK_MONOTONIC;
-            case normal: return CLOCK_MONOTONIC;
-            case precise: return CLOCK_MONOTONIC;
-            case processCPUTime: return CLOCK_PROCESS_CPUTIME_ID;
-            case threadCPUTime: return CLOCK_THREAD_CPUTIME_ID;
-            case second: assert(0);
-            }
-        }
-        else
-            // It needs to be decided (and implemented in an appropriate
-            // version branch here) which clock types new platforms are going
-            // to support. Also, ClockType's documentation should be updated to
-            // mention it if a new platform uses anything that's not supported
-            // on all platforms..
-            assert(0, "What are the monotonic clock types supported by this system?");
-    }
-}
 
 unittest
 {
@@ -2023,8 +1804,7 @@ private string _clockTypeName(ClockType clockType)
     assert(0);
 }
 
-// used in MonoTimeImpl
-private size_t _clockTypeIdx(ClockType clockType)
+private size_t _clockTypeIdx(ClockType clockType) pure nothrow @nogc
 {
     final switch (clockType)
     {
@@ -2100,33 +1880,6 @@ struct MonoTimeImpl(ClockType clockType)
 
 @safe:
 
-    version (Windows)
-    {
-        static if (clockType != ClockType.coarse &&
-                  clockType != ClockType.normal &&
-                  clockType != ClockType.precise)
-        {
-            static assert(0, "ClockType." ~ _clockName ~
-                             " is not supported by MonoTimeImpl on this system.");
-        }
-    }
-    else version (Darwin)
-    {
-        static if (clockType != ClockType.coarse &&
-                  clockType != ClockType.normal &&
-                  clockType != ClockType.precise)
-        {
-            static assert(0, "ClockType." ~ _clockName ~
-                             " is not supported by MonoTimeImpl on this system.");
-        }
-    }
-    else version (Posix)
-    {
-        enum clockArg = _posixClock(clockType);
-    }
-    else
-        static assert(0, "Unsupported platform");
-
     // POD value, test mutable/const/immutable conversion
     version (CoreUnittest) unittest
     {
@@ -2163,32 +1916,7 @@ struct MonoTimeImpl(ClockType clockType)
                       ") failed to get the frequency of the system's monotonic clock.");
         }
 
-        version (Windows)
-        {
-            long ticks = void;
-            QueryPerformanceCounter(&ticks);
-            return MonoTimeImpl(ticks);
-        }
-        else version (Darwin)
-            return MonoTimeImpl(mach_absolute_time());
-        else version (Posix)
-        {
-            timespec ts = void;
-            immutable error = clock_gettime(clockArg, &ts);
-            // clockArg is supported and if tv_sec is long or larger
-            // overflow won't happen before 292 billion years A.D.
-            static if (ts.tv_sec.max < long.max)
-            {
-                if (error)
-                {
-                    import core.internal.abort : abort;
-                    abort("Call to clock_gettime failed.");
-                }
-            }
-            return MonoTimeImpl(convClockFreq(ts.tv_sec * 1_000_000_000L + ts.tv_nsec,
-                                              1_000_000_000L,
-                                              ticksPerSecond));
-        }
+        return MonoTimeImpl(osCurrTime(clockType));
     }
 
 
@@ -2484,10 +2212,10 @@ private:
 
     // static immutable long _ticksPerSecond;
 
-    version (CoreUnittest) unittest
+    /*version (CoreUnittest) unittest
     {
         assert(_ticksPerSecond[_clockIdx]);
-    }
+    }*/
 
 
     long _ticks;
@@ -2527,62 +2255,10 @@ extern(C) void _d_initMonoTime() @nogc nothrow @system
     // documentation build defines all of the possible ClockTypes, which won't
     // work when they're used in the static ifs, because no system supports them
     // all.
-    version (CoreDdoc)
-    {}
-    else version (Windows)
-    {
-        long ticksPerSecond;
-        if (QueryPerformanceFrequency(&ticksPerSecond) != 0)
-        {
-            foreach (i, typeStr; __traits(allMembers, ClockType))
-            {
-                // ensure we are only writing immutable data once
-                if (tps[i] != 0)
-                    // should only be called once
-                    assert(0);
-                tps[i] = ticksPerSecond;
-            }
-        }
-    }
-    else version (Darwin)
-    {
-        immutable long ticksPerSecond = machTicksPerSecond();
-        foreach (i, typeStr; __traits(allMembers, ClockType))
-        {
-            // ensure we are only writing immutable data once
-            if (tps[i] != 0)
-                // should only be called once
-                assert(0);
-            tps[i] = ticksPerSecond;
-        }
-    }
-    else version (Posix)
-    {
-        timespec ts;
-        foreach (i, typeStr; __traits(allMembers, ClockType))
-        {
-            static if (typeStr != "second")
-            {
-                enum clockArg = _posixClock(__traits(getMember, ClockType, typeStr));
-                if (clock_getres(clockArg, &ts) == 0)
-                {
-                    // ensure we are only writing immutable data once
-                    if (tps[i] != 0)
-                        // should only be called once
-                        assert(0);
 
-                    // For some reason, on some systems, clock_getres returns
-                    // a resolution which is clearly wrong:
-                    //  - it's a millisecond or worse, but the time is updated
-                    //    much more frequently than that.
-                    //  - it's negative
-                    //  - it's zero
-                    // In such cases, we'll just use nanosecond resolution.
-                    tps[i] = ts.tv_sec != 0 || ts.tv_nsec <= 0 || ts.tv_nsec >= 1000
-                        ? 1_000_000_000L : 1_000_000_000L / ts.tv_nsec;
-                }
-            }
-        }
+    foreach (i, typeStr; __traits(allMembers, ClockType))
+    {
+        tps[i] = osTicksPerSecond(__traits(getMember, ClockType, typeStr));
     }
 }
 
@@ -2852,37 +2528,7 @@ deprecated:
 
     static pragma(crt_constructor) void time_initializer() @system
     {
-        version (Windows)
-        {
-            if (QueryPerformanceFrequency(cast(long*)&ticksPerSec) == 0)
-                ticksPerSec = 0;
-        }
-        else version (Darwin)
-        {
-            ticksPerSec = machTicksPerSecond();
-        }
-        else version (Posix)
-        {
-            static if (is(typeof(clock_gettime)))
-            {
-                timespec ts;
-
-                if (clock_getres(CLOCK_MONOTONIC, &ts) != 0)
-                    ticksPerSec = 0;
-                else
-                {
-                    //For some reason, on some systems, clock_getres returns
-                    //a resolution which is clearly wrong (it's a millisecond
-                    //or worse, but the time is updated much more frequently
-                    //than that). In such cases, we'll just use nanosecond
-                    //resolution.
-                    ticksPerSec = ts.tv_nsec >= 1000 ? 1_000_000_000
-                                                     : 1_000_000_000 / ts.tv_nsec;
-                }
-            }
-            else
-                ticksPerSec = 1_000_000;
-        }
+        ticksPerSec = osTicksPerSecond(ClockType.normal);
 
         if (ticksPerSec != 0)
             appOrigin = TickDuration.currSystemTick;
@@ -3404,52 +3050,7 @@ deprecated:
       +/
     static @property TickDuration currSystemTick() @trusted nothrow @nogc
     {
-        import core.internal.abort : abort;
-        version (Windows)
-        {
-            ulong ticks = void;
-            QueryPerformanceCounter(cast(long*)&ticks);
-            return TickDuration(ticks);
-        }
-        else version (Darwin)
-        {
-            static if (is(typeof(mach_absolute_time)))
-                return TickDuration(cast(long)mach_absolute_time());
-            else
-            {
-                timeval tv = void;
-                gettimeofday(&tv, null);
-                return TickDuration(tv.tv_sec * TickDuration.ticksPerSec +
-                                    tv.tv_usec * TickDuration.ticksPerSec / 1000 / 1000);
-            }
-        }
-        else version (Posix)
-        {
-            static if (is(typeof(clock_gettime)))
-            {
-                timespec ts = void;
-                immutable error = clock_gettime(CLOCK_MONOTONIC, &ts);
-                // CLOCK_MONOTONIC is supported and if tv_sec is long or larger
-                // overflow won't happen before 292 billion years A.D.
-                static if (ts.tv_sec.max < long.max)
-                {
-                    if (error)
-                    {
-                        import core.internal.abort : abort;
-                        abort("Call to clock_gettime failed.");
-                    }
-                }
-                return TickDuration(ts.tv_sec * TickDuration.ticksPerSec +
-                                    ts.tv_nsec * TickDuration.ticksPerSec / 1000 / 1000 / 1000);
-            }
-            else
-            {
-                timeval tv = void;
-                gettimeofday(&tv, null);
-                return TickDuration(tv.tv_sec * TickDuration.ticksPerSec +
-                                    tv.tv_usec * TickDuration.ticksPerSec / 1000 / 1000);
-            }
-        }
+        return TickDuration(osCurrTime(ClockType.normal));
     }
 
     version (CoreUnittest) @safe nothrow unittest
@@ -3851,22 +3452,6 @@ unittest
     assert(unitsAreInDescendingOrder(["hnsecs"]));
     assert(!unitsAreInDescendingOrder(["days", "hours", "hours"]));
     assert(!unitsAreInDescendingOrder(["days", "hours", "days"]));
-}
-
-version (Darwin)
-long machTicksPerSecond() @nogc nothrow
-{
-    // Be optimistic that ticksPerSecond (1e9*denom/numer) is integral. So far
-    // so good on Darwin based platforms OS X, iOS.
-    import core.internal.abort : abort;
-    mach_timebase_info_data_t info;
-    if (mach_timebase_info(&info) != 0)
-        abort("Failed in mach_timebase_info().");
-
-    long scaledDenom = 1_000_000_000L * info.denom;
-    if (scaledDenom % info.numer != 0)
-        abort("Non integral ticksPerSecond from mach_timebase_info.");
-    return scaledDenom / info.numer;
 }
 
 /+
