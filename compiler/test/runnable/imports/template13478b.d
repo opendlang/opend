@@ -1,4 +1,4 @@
-import imports.template13478b;
+module imports.template13478b;
 
 import imports.template13478a;
 
