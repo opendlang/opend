@@ -1488,7 +1488,7 @@ version (IN_LLVM)
                 return true;
         }
 
-        return false;
+        return true;//false;
     }
 
     /*****************************************
@@ -1637,6 +1637,15 @@ version (IN_LLVM)
             if (fes)
                 fes.func.setUnsafe();
         }
+	/+
+	else if (isTrusted())
+	{
+            if (!gag && fmt)
+                .deprecation(loc, fmt, arg0 ? arg0.toChars() : "", arg1 ? arg1.toChars() : "", arg2 ? arg2.toChars() : "");
+
+            return false;
+	}
+	+/
         else if (isSafe())
         {
             if (!gag && fmt)
