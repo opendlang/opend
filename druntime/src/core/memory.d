@@ -205,22 +205,10 @@ pragma(crt_constructor)
 pragma(mangle, initialize.mangleof)
 private extern (C) void _initialize() @system
 {
-    version (Posix)
-    {
-        import core.sys.posix.unistd : sysconf, _SC_PAGESIZE;
+    import rt.sys.config;
+    mixin("import " ~ osMemoryImport ~ " : getPageSize;");
 
-        (cast() pageSize) = cast(size_t) sysconf(_SC_PAGESIZE);
-    }
-    else version (Windows)
-    {
-        import core.sys.windows.winbase : GetSystemInfo, SYSTEM_INFO;
-
-        SYSTEM_INFO si;
-        GetSystemInfo(&si);
-        (cast() pageSize) = cast(size_t) si.dwPageSize;
-    }
-    else
-        static assert(false, __FUNCTION__ ~ " is not implemented on this platform");
+    (cast() pageSize) = getPageSize();
 }
 
 /**

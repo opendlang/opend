@@ -562,6 +562,7 @@ COPY=\
 	$(IMPDIR)\rt\sys\config.d \
 	\
 	$(IMPDIR)\rt\sys\darwin\config.d \
+	$(IMPDIR)\rt\sys\darwin\osmemory.d \
 	$(IMPDIR)\rt\sys\darwin\ossemaphore.d \
 	\
 	$(IMPDIR)\rt\sys\freebsd\config.d \
@@ -575,6 +576,7 @@ COPY=\
 	$(IMPDIR)\rt\sys\openbsd\config.d \
 	\
 	$(IMPDIR)\rt\sys\posix\osevent.d \
+	$(IMPDIR)\rt\sys\posix\osmemory.d \
 	$(IMPDIR)\rt\sys\posix\osmutex.d \
 	$(IMPDIR)\rt\sys\posix\ossemaphore.d \
 	$(IMPDIR)\rt\sys\posix\oscondition.d \
@@ -584,5 +586,6 @@ COPY=\
 	$(IMPDIR)\rt\sys\windows\config.d \
 	$(IMPDIR)\rt\sys\windows\oscondition.d \
 	$(IMPDIR)\rt\sys\windows\osevent.d \
+	$(IMPDIR)\rt\sys\windows\osmemory.d \
 	$(IMPDIR)\rt\sys\windows\osmutex.d \
 	$(IMPDIR)\rt\sys\windows\ossemaphore.d
