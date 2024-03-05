@@ -18,56 +18,9 @@ module core.sync.mutex;
 
 public import core.sync.exception;
 
+import rt.sys.config;
 
-// This ugly version switch case will eventually be replace with
-// mixin("import core.sys." ~ config.osSysDir ~ ".sync.osmutex");
-
-version (OSX)
-    version = Darwin;
-else version (iOS)
-    version = Darwin;
-else version (TVOS)
-    version = Darwin;
-else version (WatchOS)
-    version = Darwin;
-
-
-version (Windows)
-{
-    import rt.sys.windows.osmutex;
-}
-else version (linux)
-{
-    import rt.sys.linux.osmutex;
-}
-else version (Darwin)
-{
-    import rt.sys.darwin.osmutex;
-}
-else version (DragonFlyBSD)
-{
-    import rt.sys.dragonflybsd.osmutex;
-}
-else version (FreeBSD)
-{
-    import rt.sys.freebsd.osmutex;
-}
-else version (NetBSD)
-{
-    import crtore.sys.netbsd.osmutex;
-}
-else version (OpenBSD)
-{
-    import rt.sys.openbsd.osmutex;
-}
-else version (Solaris)
-{
-    import rt.sys.solaris.osmutex;
-}
-else
-{
-    static assert(false, "Platform not supported");
-}
+mixin("import " ~ osMutexImport ~ ";");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mutex
@@ -247,7 +200,6 @@ class Mutex :
     {
         return (cast(OsMutex)osMutex).tryLockNoThrow();
     }
-
 
     OsMutex osMutex;
 

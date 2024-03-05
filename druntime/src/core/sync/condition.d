@@ -22,56 +22,9 @@ public import core.time;
 
 import core.exception : AssertError, staticError;
 
+import rt.sys.config;
 
-// This ugly version switch case will eventually be replace with
-// mixin("import core.sys." ~ config.osSysDir ~ ".sync.osmutex");
-
-version (OSX)
-    version = Darwin;
-else version (iOS)
-    version = Darwin;
-else version (TVOS)
-    version = Darwin;
-else version (WatchOS)
-    version = Darwin;
-
-
-version (Windows)
-{
-    import rt.sys.windows.oscondition;
-}
-else version (linux)
-{
-    import rt.sys.linux.oscondition;
-}
-else version (Darwin)
-{
-    import rt.sys.darwin.oscondition;
-}
-else version (DragonFlyBSD)
-{
-    import rt.sys.dragonflybsd.oscondition;
-}
-else version (FreeBSD)
-{
-    import rt.sys.freebsd.oscondition;
-}
-else version (NetBSD)
-{
-    import crtore.sys.netbsd.oscondition;
-}
-else version (OpenBSD)
-{
-    import rt.sys.openbsd.oscondition;
-}
-else version (Solaris)
-{
-    import rt.sys.solaris.oscondition;
-}
-else
-{
-    static assert(false, "Platform not supported");
-}
+mixin("import " ~ osConditionImport ~ ";");
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -11,57 +11,9 @@
  */
 module core.sync.event;
 
-// This ugly version switch case will eventually be replace with
-// mixin("import core.sys." ~ config.osSysDir ~ ".sync.osmutex");
-
-version (OSX)
-    version = Darwin;
-else version (iOS)
-    version = Darwin;
-else version (TVOS)
-    version = Darwin;
-else version (WatchOS)
-    version = Darwin;
-
-
-version (Windows)
-{
-    import rt.sys.windows.osevent;
-}
-else version (linux)
-{
-    import rt.sys.linux.osevent;
-}
-else version (Darwin)
-{
-    import rt.sys.darwin.osevent;
-}
-else version (DragonFlyBSD)
-{
-    import rt.sys.dragonflybsd.osevent;
-}
-else version (FreeBSD)
-{
-    import rt.sys.freebsd.osevent;
-}
-else version (NetBSD)
-{
-    import crtore.sys.netbsd.osevent;
-}
-else version (OpenBSD)
-{
-    import rt.sys.openbsd.osevent;
-}
-else version (Solaris)
-{
-    import rt.sys.solaris.osevent;
-}
-else
-{
-    static assert(false, "Platform not supported");
-}
-
 import core.time;
+
+import rt.sys.config;
 
 /**
  * represents an event. Clients of an event are suspended while waiting
@@ -187,7 +139,7 @@ nothrow @nogc:
     }
 
 private:
-
+    mixin("import " ~ osEventImport ~ ";");
     OsEvent osEvent;
 }
 
