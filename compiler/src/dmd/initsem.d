@@ -126,10 +126,47 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
 
         import dmd.attrib : foreachUda;
 
-        bool typeHasNoRefs = !fieldType.hasPointers();
-        if (fieldType.ty == Tarray || fieldType.ty == Tpointer)
-            if (fieldType.nextOf().isImmutable || fieldType.nextOf().isConst)
-                typeHasNoRefs = true;
+        static bool typeHasNoRefsHelper(Type fieldType) {
+            if(!fieldType.hasPointers())
+                return true; // no pointers, no refs, so ok
+
+            if (fieldType.ty == Tarray || fieldType.ty == Tpointer)
+                if (fieldType.nextOf().isImmutable || fieldType.nextOf().isConst)
+                    return true; // is immutable or const, not mutable, so ok
+
+            if (fieldType.ty == Tpointer)
+            if (auto tn = fieldType.nextOf())
+            if (tn.ty == Tfunction || tn.ty == Tvoid)
+                    return true; // this is ok, functions are immutable in the code segment
+
+            if (fieldType.ty == Tarray)
+            if (auto tn = fieldType.nextOf())
+            if (tn.isImmutable)
+                return true; // array of immutables also ok - the array itself is an outer-layer value
+
+            // static arrays are like pasting in the type too so the result is really the same as what the type is
+            if (fieldType.ty == Tsarray)
+            if (auto tn = fieldType.nextOf())
+                return typeHasNoRefsHelper(tn);
+
+            // structs are basically pasting the members of that struct in here for the needs of this check
+            if (auto ts = fieldType.isTypeStruct())
+            {
+                StructDeclaration sd = ts.sym;
+                foreach(field; sd.fields) {
+                    if(!typeHasNoRefsHelper(field.type)) {
+                        return false; // the field failed the test, so since it is embedded here, we failed it too
+                    }
+                }
+
+                return true; // other structs are OK
+            }
+
+            // conservatively say it is inappropriate and force the programmer to respond
+            return false;
+        }
+
+        bool typeHasNoRefs = typeHasNoRefsHelper(fieldType);
 
         foreachUda(sc.varDecl, sc, (Expression e) {
             import dmd.attrib : isEnumAttribute;
@@ -142,19 +179,14 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
             return 0;
         });
 
-        if (fieldType.ty == Tpointer)
-        if (auto tn = fieldType.nextOf())
-        if (tn.ty == Tfunction || tn.ty == Tvoid)
-                typeHasNoRefs = true; // this is ok, functions are immutable in the code segment
-
         if (typeHasNoRefs)
             return true;
 
-        error(init.loc, "mutable reference type assigned in initializer");
+        error(init.loc, "reference to mutable data assigned in initializer");
         errorSupplemental(init.loc, "- initialize the field in a constructor if you want a unique value per instance,");
         errorSupplemental(init.loc, "- mark the field as `immutable` or `const` if you want a shared, unchanging reference,");
         errorSupplemental(init.loc, "- or mark the field with `@(imported!\"core.attribute\".mutableRefInit)` to silence this error");
-        errorSupplemental(init.loc, "%d", fieldType.ty);
+        // errorSupplemental(init.loc, "%d %s", fieldType.ty, fieldType.nextOf().toChars);
 
         return false;
     }
