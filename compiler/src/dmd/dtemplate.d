@@ -1107,7 +1107,7 @@ else
             return MATCH.nomatch;
 
         size_t parameters_dim = parameters.length;
-        int variadic = isVariadic() !is null;
+        const bool variadic = isVariadic() !is null;
 
         // If more arguments than parameters, no match
         if (ti.tiargs.length > parameters_dim && !variadic)
@@ -1195,13 +1195,6 @@ else
             if (fd)
             {
                 TypeFunction tf = fd.type.isTypeFunction().syntaxCopy();
-                if (argumentList.hasNames)
-                    return nomatch();
-                Expressions* fargs = argumentList.arguments;
-                // TODO: Expressions* fargs = tf.resolveNamedArgs(argumentList, null);
-                // if (!fargs)
-                //     return nomatch();
-
                 fd = new FuncDeclaration(fd.loc, fd.endloc, fd.ident, fd.storage_class, tf);
                 fd.parent = ti;
                 fd.inferRetType = true;
@@ -1214,7 +1207,7 @@ else
                 tf.incomplete = true;
 
                 // Resolve parameter types and 'auto ref's.
-                tf.fargs = fargs;
+                tf.inferenceArguments = argumentList;
                 uint olderrors = global.startGagging();
                 fd.type = tf.typeSemantic(loc, paramscope);
                 global.endGagging(olderrors);
@@ -1408,7 +1401,7 @@ else
         }
 
         size_t ntargs = 0; // array size of tiargs
-        size_t inferStart = 0; // index of first parameter to infer
+        size_t inferStart = 0; // index of first template parameter to infer from function argument
         const Loc instLoc = ti.loc;
         MATCH matchTiargs = MATCH.exact;
 
@@ -1478,11 +1471,8 @@ else
             }
         }
 
-        ParameterList fparameters = fd.getParameterList(); // function parameter list
+        ParameterList fparameters = fd.getParameterList();
         const nfparams = fparameters.length; // number of function parameters
-        if (argumentList.hasNames)
-            return matcherror(); // TODO: resolve named args
-        Expression[] fargs = argumentList.arguments ? (*argumentList.arguments)[] : null;
 
         /* Check for match of function arguments with variadic template
          * parameter, such as:
@@ -1596,9 +1586,17 @@ else
         {
             //printf("%s\n\tnfargs = %d, nfparams = %d, tuple_dim = %d\n", toChars(), nfargs, nfparams, declaredTuple ? declaredTuple.objects.length : 0);
             //printf("\ttp = %p, fptupindex = %d, found = %d, declaredTuple = %s\n", tp, fptupindex, fptupindex != IDX_NOTFOUND, declaredTuple ? declaredTuple.toChars() : NULL);
-            size_t argi = 0;
-            size_t nfargs2 = fargs.length; // nfargs + supplied defaultArgs
+            enum DEFAULT_ARGI = size_t.max - 10; // pseudo index signifying the parameter is expected to be assigned its default argument
+            size_t argi = 0; // current argument index
+            size_t argsConsumed = 0; // to ensure no excess arguments
+            size_t nfargs2 = argumentList.length; // total number of arguments including applied defaultArgs
             uint inoutMatch = 0; // for debugging only
+
+            // assert(fd.type.isTypeFunction());
+            // printf("fd.type = %s\n", fd.type.toChars());
+            Expression[] fargs = argumentList.arguments ? (*argumentList.arguments)[] : null;
+            Identifier[] fnames = argumentList.names ? (*argumentList.names)[] : null;
+
             for (size_t parami = 0; parami < nfparams; parami++)
             {
                 Parameter fparam = fparameters[parami];
@@ -1607,11 +1605,28 @@ else
                 Type prmtype = fparam.type.addStorageClass(fparam.storageClass);
 
                 Expression farg;
+                Identifier fname = argi < fnames.length ? fnames[argi] : null;
+                bool foundName = false;
+                if (fparam.ident)
+                {
+                    foreach (i; 0 .. fnames.length)
+                    {
+                        if (fparam.ident == fnames[i])
+                        {
+                            argi = i;
+                            foundName = true;
+                        }
+                    }
+                }
+                if (fname && !foundName)
+                {
+                    argi = DEFAULT_ARGI;
+                }
 
                 /* See function parameters which wound up
                  * as part of a template tuple parameter.
                  */
-                if (fptupindex != IDX_NOTFOUND && parami == fptupindex)
+                if (fptupindex != IDX_NOTFOUND && parami == fptupindex && argi != DEFAULT_ARGI)
                 {
                     TypeIdentifier tid = prmtype.isTypeIdentifier();
                     assert(tid);
@@ -1633,6 +1648,11 @@ else
                             if (p.defaultArg)
                             {
                                break;
+                            }
+                            foreach(name; fnames)
+                            {
+                                if (p.ident == name)
+                                    break;
                             }
                             if (!reliesOnTemplateParameters(p.type, (*parameters)[inferStart .. parameters.length]))
                             {
@@ -1701,6 +1721,7 @@ else
                     }
                     assert(declaredTuple);
                     argi += declaredTuple.objects.length;
+                    argsConsumed += declaredTuple.objects.length;
                     continue;
                 }
 
@@ -1714,7 +1735,7 @@ else
                     if (TypeTuple tt = prmtype.isTypeTuple())
                     {
                         const tt_dim = tt.arguments.length;
-                        for (size_t j = 0; j < tt_dim; j++, ++argi)
+                        for (size_t j = 0; j < tt_dim; j++, ++argi, ++argsConsumed)
                         {
                             Parameter p = (*tt.arguments)[j];
                             if (j == tt_dim - 1 && fparameters.varargs == VarArg.typesafe &&
@@ -1816,7 +1837,9 @@ else
                             }
                         }
                     }
-                    nfargs2 = argi + 1;
+
+                    if (argi != DEFAULT_ARGI)
+                        nfargs2 = argi + 1;
 
                     /* If prmtype does not depend on any template parameters:
                      *
@@ -1834,7 +1857,11 @@ else
                      */
                     if (prmtype.deco || prmtype.syntaxCopy().trySemantic(loc, paramscope))
                     {
-                        ++argi;
+                        if (argi != DEFAULT_ARGI)
+                        {
+                            ++argi;
+                            ++argsConsumed;
+                        }
                         continue;
                     }
 
@@ -1848,6 +1875,7 @@ else
                     farg = fargs[argi];
                 }
                 {
+                    assert(farg);
                     // Check invalid arguments to detect errors early.
                     if (farg.op == EXP.error || farg.type.ty == Terror)
                         return nomatch();
@@ -1992,7 +2020,11 @@ else
                     {
                         if (m < match)
                             match = m; // pick worst match
-                        argi++;
+                        if (argi != DEFAULT_ARGI)
+                        {
+                            argi++;
+                            argsConsumed++;
+                        }
                         continue;
                     }
                 }
@@ -2132,8 +2164,8 @@ else
                 }
                 assert(0);
             }
-            //printf(". argi = %d, nfargs = %d, nfargs2 = %d\n", argi, nfargs, nfargs2);
-            if (argi != nfargs2 && fparameters.varargs == VarArg.none)
+            // printf(". argi = %d, nfargs = %d, nfargs2 = %d, argsConsumed = %d\n", cast(int) argi, cast(int) nfargs, cast(int) nfargs2, cast(int) argsConsumed);
+            if (argsConsumed != nfargs2 && fparameters.varargs == VarArg.none)
                 return nomatch();
         }
 
@@ -2260,7 +2292,7 @@ else
             sc2.minst = sc.minst;
             sc2.stc |= fd.storage_class & STC.deprecated_;
 
-            fd = doHeaderInstantiation(ti, sc2, fd, tthis, argumentList.arguments);
+            fd = doHeaderInstantiation(ti, sc2, fd, tthis, argumentList);
 
             sc2 = sc2.pop();
             sc2 = sc2.pop();
@@ -2392,7 +2424,7 @@ else
     /*************************************************
      * Limited function template instantiation for using fd.leastAsSpecialized()
      */
-    extern (D) FuncDeclaration doHeaderInstantiation(TemplateInstance ti, Scope* sc2, FuncDeclaration fd, Type tthis, Expressions* fargs)
+    extern (D) FuncDeclaration doHeaderInstantiation(TemplateInstance ti, Scope* sc2, FuncDeclaration fd, Type tthis, ArgumentList argumentList)
     {
         assert(fd);
         version (none)
@@ -2409,7 +2441,7 @@ else
 
         assert(fd.type.ty == Tfunction);
         auto tf = fd.type.isTypeFunction();
-        tf.fargs = fargs;
+        tf.inferenceArguments = argumentList;
 
         if (tthis)
         {
@@ -2489,16 +2521,24 @@ else
     }
 
     /****************************************************
-     * Given a new instance tithis of this TemplateDeclaration,
+     * Given a new instance `tithis` of this TemplateDeclaration,
      * see if there already exists an instance.
-     * If so, return that existing instance.
+     *
+     * Params:
+     *   tithis = template instance to check
+     *   argumentList = For function templates, needed because different
+     *                  `auto ref` resolutions create different instances,
+     *                  even when template parameters are identical
+     *
+     * Returns: that existing instance, or `null` when it doesn't exist
      */
-    extern (D) TemplateInstance findExistingInstance(TemplateInstance tithis, Expressions* fargs)
+    extern (D) TemplateInstance findExistingInstance(TemplateInstance tithis, ArgumentList argumentList)
     {
         //printf("findExistingInstance() %s\n", tithis.toChars());
-        tithis.fargs = fargs;
+        tithis.fargs = argumentList.arguments;
+        tithis.fnames = argumentList.names;
         auto tibox = TemplateInstanceBox(tithis);
-        auto p = tibox in instances;
+        auto p = tibox in this.instances;
         debug (FindExistingInstance) ++(p ? nFound : nNotFound);
         //if (p) printf("\tfound %p\n", *p); else printf("\tnot found\n");
         return p ? *p : null;
@@ -2864,11 +2904,6 @@ void functionResolve(ref MatchAccumulator m, Dsymbol dstart, Loc loc, Scope* sc,
         }
         //printf("td = %s\n", td.toChars());
 
-        if (argumentList.hasNames)
-        {
-            .error(loc, "named arguments with Implicit Function Template Instantiation are not supported yet");
-            goto Lerror;
-        }
         auto f = td.onemember ? td.onemember.isFuncDeclaration() : null;
         if (!f)
         {
@@ -5912,7 +5947,12 @@ extern (C++) class TemplateInstance : ScopeDsymbol
     TemplateInstance inst;      // refer to existing instance
     ScopeDsymbol argsym;        // argument symbol table
     size_t hash;                // cached result of toHash()
-    Expressions* fargs;         // for function template, these are the function arguments
+
+    /// For function template, these are the function names and arguments
+    /// Relevant because different resolutions of `auto ref` parameters
+    /// create different template instances even with the same template arguments
+    Expressions* fargs;
+    Identifiers* fnames;
 
     TemplateInstances* deferred;
 
@@ -6212,6 +6252,19 @@ extern (C++) class TemplateInstance : ScopeDsymbol
         {
             if (!fd.errors)
             {
+                auto resolvedArgs = fd.type.isTypeFunction().resolveNamedArgs(
+                    ArgumentList(this.fargs, this.fnames), null);
+
+                // resolvedArgs can be null when there's an error: fail_compilation/fail14669.d
+                // In that case, equalsx returns true to prevent endless template instantiations
+                // However, it can also mean the function was explicitly instantiated
+                // without function arguments: fail_compilation/fail14669
+                // Hence the following check:
+                if (this.fargs && !resolvedArgs)
+                    return true;
+
+                Expression[] args = resolvedArgs ? (*resolvedArgs)[] : [];
+
                 auto fparameters = fd.getParameterList();
                 size_t nfparams = fparameters.length;   // Num function parameters
                 for (size_t j = 0; j < nfparams; j++)
@@ -6219,7 +6272,12 @@ extern (C++) class TemplateInstance : ScopeDsymbol
                     Parameter fparam = fparameters[j];
                     if (fparam.storageClass & STC.autoref)       // if "auto ref"
                     {
-                        Expression farg = fargs && j < fargs.length ? (*fargs)[j] : fparam.defaultArg;
+                        Expression farg = (j < args.length) ? args[j] : fparam.defaultArg;
+                        // resolveNamedArgs strips trailing nulls / default params
+                        // when it doesn't anymore, the ternary can be replaced with:
+                        // assert(j < resolvedArgs.length);
+                        if (!farg)
+                            farg = fparam.defaultArg;
                         if (!farg)
                             goto Lnotequals;
                         if (farg.isLvalue())
@@ -7974,8 +8032,7 @@ extern (C++) final class TemplateMixin : TemplateInstance
 
 /************************************
  * This struct is needed for TemplateInstance to be the key in an associative array.
- * Fixing https://issues.dlang.org/show_bug.cgi?id=15812 and
- * https://issues.dlang.org/show_bug.cgi?id=15813 would make it unnecessary.
+ * Fixing https://issues.dlang.org/show_bug.cgi?id=15813 would make it unnecessary.
  */
 struct TemplateInstanceBox
 {

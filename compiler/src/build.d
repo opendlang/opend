@@ -1200,7 +1200,15 @@ void parseEnvironment()
 
     // detect Model
     auto model = env.setDefault("MODEL", detectModel);
-    env["MODEL_FLAG"] = "-m" ~ env["MODEL"];
+    if (env.getDefault("DFLAGS", "").canFind("-mtriple", "-march"))
+    {
+        // Don't pass `-m32|64` flag when explicitly passing triple or arch.
+        env["MODEL_FLAG"] = "";
+    }
+    else
+    {
+        env["MODEL_FLAG"] = "-m" ~ env["MODEL"];
+    }
 
     // detect PIC
     version(Posix)
@@ -1690,7 +1698,7 @@ string detectModel()
     else
         uname = ["uname", "-m"].execute.output;
 
-    if (uname.canFind("x86_64", "amd64", "64-bit", "64-Bit", "64 bit"))
+    if (uname.canFind("x86_64", "amd64", "arm64", "64-bit", "64-Bit", "64 bit"))
         return "64";
     if (uname.canFind("i386", "i586", "i686", "32-bit", "32-Bit", "32 bit"))
         return "32";
@@ -2348,31 +2356,5 @@ void copyAndTouch(const string from, const string to)
     to.setTimes(now, now);
 }
 
-version (OSX)
-{
-    // FIXME: Parallel executions hangs reliably on Mac  (esp. the 'macair'
-    // host used by the autotester) for unknown reasons outside of this script.
-    pragma(msg, "Warning: Syncing file access because of OSX!");
-
-    // Wrap standard library functions to ensure mutually exclusive file access
-    alias readText = fileAccess!(std.file.readText, string);
-    alias writeText = fileAccess!(std.file.write, string, string);
-    alias timeLastModified = fileAccess!(std.file.timeLastModified, string);
-
-    import core.sync.mutex;
-    __gshared Mutex fileAccessMutex;
-    shared static this() {
-        fileAccessMutex = new Mutex();
-    }
-
-    auto fileAccess(alias dg, T...)(T args)
-    {
-        fileAccessMutex.lock_nothrow();
-        scope (exit) fileAccessMutex.unlock_nothrow();
-        return dg(args);
-    }
-}
-else
-{
-    alias writeText = std.file.write;
-}
+// Wrap standard library functions
+alias writeText = std.file.write;

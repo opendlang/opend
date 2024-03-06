@@ -6687,12 +6687,11 @@ void templateInstanceSemantic(TemplateInstance tempinst, Scope* sc, ArgumentList
         return aliasInstanceSemantic(tempinst, sc, tempdecl);
     }
 
-    Expressions* fargs = argumentList.arguments; // TODO: resolve named args
 
     /* See if there is an existing TemplateInstantiation that already
      * implements the typeargs. If so, just refer to that one instead.
      */
-    tempinst.inst = tempdecl.findExistingInstance(tempinst, fargs);
+    tempinst.inst = tempdecl.findExistingInstance(tempinst, argumentList);
     TemplateInstance errinst = null;
     if (!tempinst.inst)
     {
@@ -6973,7 +6972,7 @@ version (IN_LLVM)
 
     /* If function template declaration
      */
-    if (fargs && tempinst.aliasdecl)
+    if (argumentList.length > 0 && tempinst.aliasdecl)
     {
         if (auto fd = tempinst.aliasdecl.isFuncDeclaration())
         {
@@ -6982,7 +6981,7 @@ version (IN_LLVM)
              */
             if (fd.type)
                 if (auto tf = fd.type.isTypeFunction())
-                    tf.fargs = fargs;
+                    tf.inferenceArguments = argumentList;
         }
     }
 
