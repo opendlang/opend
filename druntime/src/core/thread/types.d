@@ -11,19 +11,9 @@
 
 module core.thread.types;
 
-/**
- * Represents the ID of a thread, as returned by $(D Thread.)$(LREF id).
- * The exact type varies from platform to platform.
- */
-version (Windows)
-    alias ThreadID = uint;
-else
-version (Posix)
-{
-    import core.sys.posix.pthread;
+import rt.sys.config;
 
-    alias ThreadID = pthread_t;
-}
+mixin("public import " ~ osThreadImport ~ " : ThreadID;");
 
 struct ll_ThreadData
 {
@@ -54,17 +44,4 @@ else
     else static assert(0, "It is undefined how the stack grows on this architecture.");
 }
 
-package
-{
-    version (Posix) static immutable size_t PTHREAD_STACK_MIN;
-}
-
-shared static this()
-{
-    version (Posix)
-    {
-        import core.sys.posix.unistd;
-
-        PTHREAD_STACK_MIN = cast(size_t)sysconf(_SC_THREAD_STACK_MIN);
-    }
-}
+alias callWithStackShellDg = void delegate(void* sp) nothrow;

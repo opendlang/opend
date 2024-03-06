@@ -19,6 +19,8 @@ import core.runtime;
 
 public import core.sys.windows.threadaux;
 
+import rt.sys.windows.osthread : thread_attachByAddr, thread_DLLProcessDetaching;
+
 ///////////////////////////////////////////////////////////////////
 // support fixing implicit TLS for dynamically loaded DLLs on Windows XP
 

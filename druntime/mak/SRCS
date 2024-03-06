@@ -591,29 +591,38 @@ SRCS=\
 	src\rt\trace.d \
 	src\rt\tracegc.d \
 	\
+	src\rt\sys\configtypes.d \
 	src\rt\sys\config.d \
 	\
 	src\rt\sys\darwin\config.d \
 	src\rt\sys\darwin\osmemory.d \
 	src\rt\sys\darwin\ossemaphore.d \
+	src\rt\sys\darwin\osthread.d \
 	\
 	src\rt\sys\freebsd\config.d \
+	src\rt\sys\freebsd\osthread.d \
 	\
 	src\rt\sys\dragonflybsd\config.d \
+	src\rt\sys\dragonflybsd\osthread.d \
 	\
 	src\rt\sys\linux\config.d \
 	\
 	src\rt\sys\netbsd\config.d \
+	src\rt\sys\netbsd\osthread.d \
 	\
 	src\rt\sys\openbsd\config.d \
+	src\rt\sys\openbsd\osthread.d \
 	\
 	src\rt\sys\posix\osevent.d \
 	src\rt\sys\posix\osmemory.d \
 	src\rt\sys\posix\osmutex.d \
 	src\rt\sys\posix\ossemaphore.d \
 	src\rt\sys\posix\oscondition.d \
+	src\rt\sys\posix\osthread.d \
+	src\rt\sys\posix\osthreadstatic.d \
 	\
 	src\rt\sys\solaris\config.d \
+	src\rt\sys\solaris\osthread.d \
 	\
 	src\rt\sys\windows\config.d \
 	src\rt\sys\windows\osevent.d \
@@ -621,6 +630,7 @@ SRCS=\
 	src\rt\sys\windows\osmutex.d \
 	src\rt\sys\windows\ossemaphore.d \
 	src\rt\sys\windows\oscondition.d \
+	src\rt\sys\windows\osthread.d \
 	\
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \

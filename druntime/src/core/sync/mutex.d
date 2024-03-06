@@ -18,9 +18,6 @@ module core.sync.mutex;
 
 public import core.sync.exception;
 
-import rt.sys.config;
-
-mixin("import " ~ osMutexImport ~ ";");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mutex
@@ -200,6 +197,9 @@ class Mutex :
     {
         return (cast(OsMutex)osMutex).tryLockNoThrow();
     }
+
+    import rt.sys.config;
+    mixin("import " ~ osMutexImport ~ ";");
 
     OsMutex osMutex;
 

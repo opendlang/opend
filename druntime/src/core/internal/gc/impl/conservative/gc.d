@@ -3432,7 +3432,10 @@ Lmark:
                 startedThreads++;
 
         version (Windows)
+        {
+            import rt.sys.windows.osthread : thread_DLLProcessDetaching;
             alias allThreadsDead = thread_DLLProcessDetaching;
+        }
         else
             enum allThreadsDead = false;
         stopGC = true;
