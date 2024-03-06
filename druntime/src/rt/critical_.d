@@ -18,9 +18,14 @@ nothrow:
 
 import rt.monitor_, core.atomic;
 
+import rt.sys.config;
+
+mixin("import " ~ osMutexImport ~ ";");
+
+
 extern (C) void _d_critical_init() @nogc nothrow
 {
-    initMutex(cast(Mutex*)&gcs.mtx);
+    (cast(OsMutex)gcs.mtx).create();
     head = &gcs;
 }
 
@@ -30,14 +35,14 @@ extern (C) void _d_critical_term() @nogc nothrow
     // and therefore is single threaded so the following cast is fine.
     auto h = cast()head;
     for (auto p = h; p; p = p.next)
-        destroyMutex(cast(Mutex*)&p.mtx);
+        (cast(OsMutex)p.mtx).destroy();
 }
 
 extern (C) void _d_criticalenter(D_CRITICAL_SECTION* cs)
 {
     assert(cs !is null);
     ensureMutex(cast(shared(D_CRITICAL_SECTION*)) cs);
-    lockMutex(&cs.mtx);
+    (cast(OsMutex)cs.mtx).lockNoThrow();
 }
 
 extern (C) void _d_criticalenter2(D_CRITICAL_SECTION** pcs)
@@ -51,22 +56,22 @@ extern (C) void _d_criticalenter2(D_CRITICAL_SECTION** pcs)
     if (condition)
 
     {
-        lockMutex(cast(Mutex*)&gcs.mtx);
+        (cast(OsMutex)gcs.mtx).lockNoThrow();
         if (atomicLoad!(MemoryOrder.raw)(*cast(shared) pcs) is null)
         {
             auto cs = new shared D_CRITICAL_SECTION;
-            initMutex(cast(Mutex*)&cs.mtx);
+            (cast(OsMutex)cs.mtx).create();
             atomicStore!(MemoryOrder.rel)(*cast(shared) pcs, cs);
         }
-        unlockMutex(cast(Mutex*)&gcs.mtx);
+        (cast(OsMutex)gcs.mtx).unlockNoThrow();
     }
-    lockMutex(&(*pcs).mtx);
+    (*pcs).mtx.lockNoThrow();
 }
 
 extern (C) void _d_criticalexit(D_CRITICAL_SECTION* cs)
 {
     assert(cs !is null);
-    unlockMutex(&cs.mtx);
+    cs.mtx.unlockNoThrow();
 }
 
 private:
@@ -77,21 +82,21 @@ shared D_CRITICAL_SECTION gcs;
 struct D_CRITICAL_SECTION
 {
     D_CRITICAL_SECTION* next;
-    Mutex mtx;
+    OsMutex mtx;
 }
 
 void ensureMutex(shared(D_CRITICAL_SECTION)* cs)
 {
     if (atomicLoad!(MemoryOrder.acq)(cs.next) is null)
     {
-        lockMutex(cast(Mutex*)&gcs.mtx);
+        (cast(OsMutex)gcs.mtx).lockNoThrow();
         if (atomicLoad!(MemoryOrder.raw)(cs.next) is null)
         {
-            initMutex(cast(Mutex*)&cs.mtx);
+            (cast(OsMutex)cs.mtx).create();
             auto ohead = head;
             head = cs;
             atomicStore!(MemoryOrder.rel)(cs.next, ohead);
         }
-        unlockMutex(cast(Mutex*)&gcs.mtx);
+        (cast(OsMutex)gcs.mtx).unlockNoThrow();
     }
 }
