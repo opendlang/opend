@@ -44,7 +44,7 @@ __gshared float r = 0.0;
 
 void main()
 {
-    import std.datetime: benchmark, Duration, TickDuration;
+    import std.datetime: benchmark, Duration;
     import std.stdio : writefln;
     import std.conv : to;
 

@@ -17,18 +17,6 @@ $(TR $(TD Flags) $(TD
     $(LREF AutoStart)
 ))
 ))
-
-    $(RED Unlike the other modules in std.datetime, this module is not currently
-          publicly imported in std.datetime.package, because the old
-          versions of this functionality which use
-          $(REF TickDuration,core,time) are in std.datetime.package and would
-          conflict with the symbols in this module. After the old symbols have
-          gone through the deprecation cycle and have been fully removed, then
-          this module will be publicly imported in std.datetime.package. The
-          old, deprecated symbols has been removed from the documentation in
-          December 2019 and currently scheduled to be fully removed from Phobos
-          after 2.094.)
-
     So, for now, when using std.datetime.stopwatch, if other modules from
     std.datetime are needed, then either import them individually rather than
     importing std.datetime, or use selective or static imports to import
