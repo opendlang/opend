@@ -915,15 +915,15 @@ version (timings)
 {
     static import std.internal.math.biguintnoasm;
     import core.stdc.stdio : printf;
-    import core.time : TickDuration;
     import std.datetime : StopWatch;
     import std.random;
 
-    void report(string name, TickDuration time1, TickDuration time2)
+    void report(string name, Duration time1, Duration time2)
     {
-        printf("Result for %.*s: Speedup = %.4f\n", name.length, name.ptr, cast(float)time2.hnsecs / cast(float)time1.hnsecs);
-        printf("Opt:  %lld usec %lld nsec\n", cast(ulong)time1.usecs, cast(ulong)time1.hnsecs);
-        printf("Base: %lld usec %lld nsec\n", cast(ulong)time2.usecs, cast(ulong)time2.hnsecs);
+        printf("Result for %.*s: Speedup = %.4f\n", cast(int)name.length, name.ptr,
+               cast(double)(time2.total!"nsecs") / cast(double)(time1.total!"nsecs"));
+        printf("Opt:  %lld nsec\n", cast(ulong)time1.total!"nsecs");
+        printf("Base: %lld nsec\n", cast(ulong)time2.total!"nsecs");
     }
 
     void main()
