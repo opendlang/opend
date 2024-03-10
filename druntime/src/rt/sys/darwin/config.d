@@ -17,6 +17,7 @@ enum string osSemaphoreImport = "rt.sys.darwin.ossemaphore";
 enum string osConditionImport = "rt.sys.posix.oscondition";
 enum string osEventImport = "rt.sys.posix.osevent";
 enum string osMemoryImport = "rt.sys.darwin.osmemory";
+enum string osTimerImport = "rt.sys.darwin.ostimer";
 
 // These turns on/off the generic implementations in the POSIX osthread module.
 enum bool usePosix_osmemory_isLowOnMem = false;

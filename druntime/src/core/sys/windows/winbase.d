@@ -2137,6 +2137,7 @@ WINBASEAPI BOOL WINAPI SetEvent(HANDLE);
     LPVOID CreateFiber(SIZE_T, LPFIBER_START_ROUTINE, LPVOID);
     HANDLE CreateWaitableTimerA(LPSECURITY_ATTRIBUTES, BOOL, LPCSTR);
     HANDLE CreateWaitableTimerW(LPSECURITY_ATTRIBUTES, BOOL, LPCWSTR);
+    HANDLE CreateWaitableTimerExW(LPSECURITY_ATTRIBUTES, LPCWSTR, DWORD, DWORD);
     void DeleteFiber(PVOID);
     BOOL GetFileAttributesExA(LPCSTR, GET_FILEEX_INFO_LEVELS, PVOID);
     BOOL GetFileAttributesExW(LPCWSTR, GET_FILEEX_INFO_LEVELS, PVOID);
@@ -2598,6 +2599,7 @@ version (Unicode) {
     alias WriteProfileSectionW WriteProfileSection;
     alias WriteProfileStringW WriteProfileString;
     alias CreateWaitableTimerW CreateWaitableTimer;
+    alias CreateWaitableTimerExW CreateWaitableTimerEx;
     alias GetFileAttributesExW GetFileAttributesEx;
     alias GetLongPathNameW GetLongPathName;
     alias QueryDosDeviceW QueryDosDevice;

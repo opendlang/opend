@@ -18,6 +18,7 @@ SRCS=\
 	src\core\runtime.d \
 	src\core\simd.d \
 	src\core\time.d \
+	src\core\timer.d \
 	src\core\vararg.d \
 	src\core\volatile.d \
 	\
@@ -590,6 +591,7 @@ SRCS=\
 	src\rt\tlsgc.d \
 	src\rt\trace.d \
 	src\rt\tracegc.d \
+	src\rt\timerqueue.d \
 	\
 	src\rt\sys\config.d \
 	\
@@ -612,6 +614,7 @@ SRCS=\
 	src\rt\sys\posix\osmutex.d \
 	src\rt\sys\posix\ossemaphore.d \
 	src\rt\sys\posix\oscondition.d \
+	src\rt\sys\posix\ostimer.d \
 	\
 	src\rt\sys\solaris\config.d \
 	\
@@ -621,9 +624,11 @@ SRCS=\
 	src\rt\sys\windows\osmutex.d \
 	src\rt\sys\windows\ossemaphore.d \
 	src\rt\sys\windows\oscondition.d \
+	src\rt\sys\windows\ostimer.d \
 	\
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \
+	src\rt\util\intrusivedlist.d \
 	\
 	src\etc\valgrind\valgrind.d \
 	src\etc\linux\memoryerror.d
