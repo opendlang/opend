@@ -279,15 +279,16 @@ set(LDC_BUILD_IMPORT_DIR "${PROJECT_BINARY_DIR}/import")
 
 # Only generate the config files if this CMake project is embedded in the LDC CMake project.
 if(LDC_EXE)
+    set(LDC_EXE_BASE ldc2)
     if(PHOBOS2_DIR)
-        set(CONFIG_NAME ${LDC_EXE}_phobos)
+        set(CONFIG_NAME ${LDC_EXE_BASE}_phobos)
     else()
-        set(CONFIG_NAME ${LDC_EXE})
+        set(CONFIG_NAME ${LDC_EXE_BASE})
     endif()
-    set(conf_path         ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}.conf)
-    set(install_conf_path ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE}_install.conf)
+    set(conf_path         ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE_BASE}.conf)
+    set(install_conf_path ${PROJECT_BINARY_DIR}/../bin/${LDC_EXE_BASE}_install.conf)
     configure_file(${PROJECT_PARENT_DIR}/${CONFIG_NAME}.conf.in ${conf_path} @ONLY)
-    configure_file(${PROJECT_PARENT_DIR}/${LDC_EXE}_install.conf.in ${install_conf_path} @ONLY)
+    configure_file(${PROJECT_PARENT_DIR}/${LDC_EXE_BASE}_install.conf.in ${install_conf_path} @ONLY)
 
     # macOS has fat libraries; otherwise, append a separate config file section for the
     # multilib target and override the lib directory.
