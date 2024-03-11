@@ -4305,6 +4305,38 @@ version (IN_LLVM)
          */
         if (funcdecl.canInferAttributes(sc))
             funcdecl.initInferAttributes();
+        else if (!(sc.stc & (STC.system | STC.trusted)))
+        {
+            // enable safe-by-default
+            TypeFunction tf = funcdecl.type.toTypeFunction();
+
+            auto pkg = funcdecl.getModule.parent;
+            bool isSpecial;
+            if(pkg) {
+                while(pkg.parent)
+                    pkg = pkg.parent;
+
+                if(strcmp(pkg.toChars(), "core") == 0)
+                    isSpecial = true;
+                else if(strcmp(pkg.toChars(), "rt") == 0)
+                    isSpecial = true;
+                /+
+                else if(strcmp(pkg.toChars(), "arsd") == 0)
+                    isSpecial = true;
+                +/
+            } else {
+                // top-level thing
+                if(
+                    strcmp(funcdecl.getModule.toChars(), "object") == 0
+                    ||
+                    strcmp(funcdecl.getModule.toChars(), "invariant") == 0
+                )
+                    isSpecial = true;
+            }
+            if(!isSpecial && tf.trust == TRUST.default_)
+                tf.trust = TRUST.safe;
+        }
+
 
         // LDC relies on semanticRun variable not being reset here
         if (!IN_LLVM || funcdecl.semanticRun < PASS.semanticdone)
