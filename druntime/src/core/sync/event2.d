@@ -29,9 +29,11 @@ nothrow @nogc:
     // copying not allowed, can produce resource leaks
     @disable this(this);
 
-    void opAssign(return scope Event2 s) @live
+    ref Event2 opAssign(return scope Event2 s) @live
     {
         this.osEvent = s.osEvent;
+
+        return this;
     }
 
     /// Set the event to "signaled", so that waiting clients are resumed
