@@ -51,6 +51,7 @@ struct ProcessFile
 }
 ---
  */
+deprecated("Please use core.sync.event2.Event2 instead")
 struct Event
 {
 nothrow @nogc:
