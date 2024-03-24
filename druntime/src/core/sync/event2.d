@@ -91,7 +91,7 @@ private:
     assert(!ev1.wait(1.dur!"msecs"));
 
     // manual-reset, initial state true
-    Event ev2 = Event(true, true);
+    Event2 ev2 = Event2(true, true);
     assert(ev2.wait());
     assert(ev2.wait());
     ev2.reset();
