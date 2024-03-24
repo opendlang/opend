@@ -13,7 +13,7 @@ module core.sync.event;
 
 import core.time;
 
-import rt.sys.config;
+import core.sync.event2;
 
 /**
  * represents an event. Clients of an event are suspended while waiting
@@ -73,9 +73,9 @@ nothrow @nogc:
      *  manualReset  = the state of the event is not reset automatically after resuming waiting clients
      *  initialState = initial state of the signal
      */
-    void initialize(bool manualReset, bool initialState)
+    void initialize(bool manualReset, bool initialState) @live
     {
-        osEvent = OsEvent(manualReset, initialState);
+        osEvent = Event2(manualReset, initialState);
         m_initalized = true;
     }
 
@@ -149,8 +149,7 @@ nothrow @nogc:
     }
 
 private:
-    mixin("import " ~ osEventImport ~ ";");
-    OsEvent osEvent;
+    Event2 osEvent;
     bool m_initalized;
 }
 
