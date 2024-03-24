@@ -11,10 +11,8 @@ import core.internal.abort : abort;
 
 struct OsEvent
 {
-    void create(bool manualReset, bool initialState) nothrow @trusted @nogc
+    this(bool manualReset, bool initialState) nothrow @trusted @nogc
     {
-        if (m_initalized)
-            return;
         pthread_mutex_init(cast(pthread_mutex_t*) &m_mutex, null) == 0 ||
             abort("Error: pthread_mutex_init failed.");
         static if ( is( typeof( pthread_condattr_setclock ) ) )
@@ -37,40 +35,29 @@ struct OsEvent
 
         m_state = initialState;
         m_manualReset = manualReset;
-        m_initalized = true;
     }
 
-    void destroy() nothrow @trusted @nogc
+    ~this() nothrow @trusted @nogc
     {
-        if (m_initalized)
-        {
-            pthread_mutex_destroy(&m_mutex) == 0 ||
-                abort("Error: pthread_mutex_destroy failed.");
-            pthread_cond_destroy(&m_cond) == 0 ||
-                abort("Error: pthread_cond_destroy failed.");
-            m_initalized = false;
-        }
+        pthread_mutex_destroy(&m_mutex) == 0 ||
+            abort("Error: pthread_mutex_destroy failed.");
+        pthread_cond_destroy(&m_cond) == 0 ||
+            abort("Error: pthread_cond_destroy failed.");
     }
 
-    void setIfInitialized() nothrow @trusted @nogc
+    void set() nothrow @trusted @nogc
     {
-        if (m_initalized)
-        {
-            pthread_mutex_lock(&m_mutex);
-            m_state = true;
-            pthread_cond_broadcast(&m_cond);
-            pthread_mutex_unlock(&m_mutex);
-        }
+        pthread_mutex_lock(&m_mutex);
+        m_state = true;
+        pthread_cond_broadcast(&m_cond);
+        pthread_mutex_unlock(&m_mutex);
     }
 
     void reset() nothrow @trusted @nogc
     {
-        if (m_initalized)
-        {
-            pthread_mutex_lock(&m_mutex);
-            m_state = false;
-            pthread_mutex_unlock(&m_mutex);
-        }
+        pthread_mutex_lock(&m_mutex);
+        m_state = false;
+        pthread_mutex_unlock(&m_mutex);
     }
 
     bool wait() nothrow @trusted @nogc
@@ -80,9 +67,6 @@ struct OsEvent
 
     bool wait(Duration tmout) nothrow @trusted @nogc
     {
-        if (!m_initalized)
-            return false;
-
         pthread_mutex_lock(&m_mutex);
 
         int result = 0;
@@ -114,7 +98,6 @@ private:
 
     pthread_mutex_t m_mutex;
     pthread_cond_t m_cond;
-    bool m_initalized;
     bool m_state;
     bool m_manualReset;
 }

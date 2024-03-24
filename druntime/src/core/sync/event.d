@@ -75,7 +75,8 @@ nothrow @nogc:
      */
     void initialize(bool manualReset, bool initialState)
     {
-        osEvent.create(manualReset, initialState);
+        osEvent = OsEvent(manualReset, initialState);
+        m_initalized = true;
     }
 
     // copying not allowed, can produce resource leaks
@@ -85,6 +86,7 @@ nothrow @nogc:
     ~this()
     {
         terminate();
+        m_initalized = false;
     }
 
     /**
@@ -104,13 +106,15 @@ nothrow @nogc:
     /// Set the event to "signaled", so that waiting clients are resumed
     void setIfInitialized()
     {
-        osEvent.setIfInitialized();
+        if(m_initalized)
+            osEvent.set();
     }
 
     /// Reset the event manually
     void reset()
     {
-        osEvent.reset();
+        if(m_initalized)
+            osEvent.reset();
     }
 
     /**
@@ -121,6 +125,9 @@ nothrow @nogc:
      */
     bool wait()
     {
+        if (!m_initalized)
+            return false;
+
         return osEvent.wait();
     }
 
@@ -135,12 +142,16 @@ nothrow @nogc:
      */
     bool wait(Duration tmout)
     {
+        if (!m_initalized)
+            return false;
+
         return osEvent.wait(tmout);
     }
 
 private:
     mixin("import " ~ osEventImport ~ ";");
     OsEvent osEvent;
+    bool m_initalized;
 }
 
 // Test single-thread (non-shared) use.
