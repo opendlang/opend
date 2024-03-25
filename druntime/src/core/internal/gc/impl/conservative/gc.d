@@ -3281,7 +3281,7 @@ Lmark:
 
     import core.atomic;
     import core.cpuid;
-    import core.sync.event2 : Event2;
+    import core.sync.event : EventAwaiter;
 
     private: // disable invariants for background threads
 
@@ -3294,8 +3294,8 @@ Lmark:
 
     static struct EvStartDone
     {
-        Event2 start;
-        Event2 done;
+        EventAwaiter start;
+        EventAwaiter done;
     }
     EvStartDone ev;
 
@@ -3399,8 +3399,8 @@ Lmark:
         if (!scanThreadData)
             onOutOfMemoryError();
 
-        ev.start = Event2(false, false);
-        ev.done = Event2(false, false);
+        ev.start = EventAwaiter(false, false);
+        ev.done = EventAwaiter(false, false);
 
         version (Posix)
         {
