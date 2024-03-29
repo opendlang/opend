@@ -26,6 +26,23 @@
 +/
 module arsd.core;
 
+
+static if(__traits(compiles, () { import core.interpolation; })) {
+	import core.interpolation;
+
+	alias InterpolationHeader    = core.interpolation.InterpolationHeader;
+	alias InterpolationFooter    = core.interpolation.InterpolationFooter;
+	alias InterpolatedLiteral    = core.interpolation.InterpolatedLiteral;
+	alias InterpolatedExpression = core.interpolation.InterpolatedExpression;
+} else {
+	// polyfill for old versions
+	struct InterpolationHeader {}
+	struct InterpolationFooter {}
+	struct InterpolatedLiteral(string literal) {}
+	struct InterpolatedExpression(string code) {}
+}
+
+
 // FIXME: add callbacks on file open for tracing dependencies dynamically
 
 // see for useful info: https://devblogs.microsoft.com/dotnet/how-async-await-really-works/
@@ -184,7 +201,7 @@ struct stringz {
 	/++
 		Borrows a slice of the pointer up to (but not including) the zero terminator.
 	+/
-	const(char)[] borrow() const {
+	const(char)[] borrow() const @system {
 		if(raw is null)
 			return null;
 
@@ -1693,7 +1710,7 @@ struct SystemErrorCode {
 	/++
 		A text explanation of the code. See [codeAsString] for a string representation of the numeric representation.
 	+/
-	string errorString() const {
+	string errorString() const @trusted {
 		final switch(type) {
 			case Type.errno:
 				import core.stdc.string;
