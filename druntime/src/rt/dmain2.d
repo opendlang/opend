@@ -260,7 +260,7 @@ private alias extern(C) int function(char[][] args) MainFunc;
  * runs embedded unittests and then runs the given D main() function,
  * optionally catching and printing any unhandled exceptions.
  */
-extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
+extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc) @system
 {
     // Set up _cArgs and array of D char[] slices, then forward to _d_run_main2
 
@@ -333,7 +333,7 @@ extern (C) int _d_run_main(int argc, char** argv, MainFunc mainFunc)
  * _d_run_main which uses the actual (wide) process arguments instead.
  */
 version (Windows)
-extern (C) int _d_wrun_main(int argc, wchar** wargv, MainFunc mainFunc)
+extern (C) int _d_wrun_main(int argc, wchar** wargv, MainFunc mainFunc) @system
 {
      // Allocate args[] on the stack
     char[][] args = (cast(char[]*) alloca(argc * (char[]).sizeof))[0 .. argc];
@@ -375,7 +375,7 @@ extern (C) int _d_wrun_main(int argc, wchar** wargv, MainFunc mainFunc)
     return _d_run_main2(args, totalArgsLength, mainFunc);
 }
 
-private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainFunc mainFunc)
+private extern (C) int _d_run_main2(char[][] args, size_t totalArgsLength, MainFunc mainFunc) @system
 {
     int result;
 
@@ -579,7 +579,7 @@ extern (C) void _d_print_throwable(Throwable t)
         {
             WCHAR* ptr; size_t len;
 
-            void sink(in char[] s) scope nothrow
+            void sink(in char[] s) scope nothrow @system
             {
                 if (!s.length) return;
                 int swlen = MultiByteToWideChar(
@@ -595,7 +595,7 @@ extern (C) void _d_print_throwable(Throwable t)
                 len += written;
             }
 
-            typeof(ptr) get() { if (ptr) ptr[len] = 0; return ptr; }
+            typeof(ptr) get() @system { if (ptr) ptr[len] = 0; return ptr; }
 
             void free() { .free(ptr); }
         }

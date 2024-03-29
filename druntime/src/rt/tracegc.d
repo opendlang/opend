@@ -152,7 +152,7 @@ private string generateWrapper(alias Declaration, ParamPos pos = ParamPos.front)
     else static if (pos == ParamPos.back)
         auto new_declaration = type_string[0 .. param_idx] ~ " " ~ name
             ~ "Trace(" ~ type_string[param_idx+1 .. $-1]
-            ~ `, string file = "", int line = 0, string funcname = "")`;
+            ~ `, string file = "", int line = 0, string funcname = "") @system`;
     else
         static assert(0);
     auto call_original = "return "

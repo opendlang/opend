@@ -45,7 +45,7 @@ private mixin template AscendingPageAllocatorImpl(bool isShared)
         return true;
     }
 
-    Ternary owns(void[] buf) nothrow @nogc
+    Ternary owns(void[] buf) nothrow @nogc @system
     {
         if (!data)
             return Ternary.no;
@@ -122,7 +122,7 @@ private mixin template AscendingPageAllocatorImpl(bool isShared)
         readWriteLimit = data;
     }
 
-    size_t getAvailableSize() nothrow @nogc
+    size_t getAvailableSize() nothrow @nogc @system
     {
         static if (isShared)
         {
@@ -267,7 +267,7 @@ public:
     Returns:
     `null` on failure or if the requested size exceeds the remaining capacity.
     */
-    void[] allocate(size_t n) nothrow @nogc
+    void[] allocate(size_t n) nothrow @nogc @system
     {
         import std.algorithm.comparison : min;
 
@@ -340,7 +340,7 @@ public:
     Otherwise, we can expand the last allocation until the end of the virtual
     address range.
     */
-    bool expand(ref void[] b, size_t delta) nothrow @nogc
+    bool expand(ref void[] b, size_t delta) nothrow @nogc @system
     {
         import std.algorithm.comparison : min;
 
@@ -547,7 +547,7 @@ public:
         return allocateImpl(n, a);
     }
 
-    private void[] allocateImpl(size_t n, uint a) nothrow @nogc
+    private void[] allocateImpl(size_t n, uint a) nothrow @nogc @system
     {
         import std.algorithm.comparison : min;
 
@@ -590,7 +590,7 @@ public:
     Otherwise, we can expand the last allocation until the end of the virtual
     address range.
     */
-    bool expand(ref void[] b, size_t delta) nothrow @nogc
+    bool expand(ref void[] b, size_t delta) nothrow @nogc @system
     {
         import std.algorithm.comparison : min;
 

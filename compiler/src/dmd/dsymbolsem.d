@@ -4305,6 +4305,7 @@ version (IN_LLVM)
          */
         if (funcdecl.canInferAttributes(sc))
             funcdecl.initInferAttributes();
+        /+
         else if (!(sc.stc & (STC.system | STC.trusted)))
         {
             // enable safe-by-default
@@ -4336,6 +4337,7 @@ version (IN_LLVM)
             if(!isSpecial && tf.trust == TRUST.default_)
                 tf.trust = TRUST.safe;
         }
+        +/
 
 
         // LDC relies on semanticRun variable not being reset here

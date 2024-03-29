@@ -1270,7 +1270,7 @@ public:
       Sets all the values in the `BitArray` to the
       value specified by `val`.
      */
-    void opSliceAssign(bool val) @nogc pure nothrow
+    void opSliceAssign(bool val) @nogc pure nothrow @system
     {
         _ptr[0 .. fullWords] = val ? ~size_t(0) : 0;
         if (endBits)
@@ -1303,7 +1303,7 @@ public:
       at index `start` and ends at index ($D end - 1)
       with the values specified by `val`.
      */
-    void opSliceAssign(bool val, size_t start, size_t end) @nogc pure nothrow
+    void opSliceAssign(bool val, size_t start, size_t end) @nogc pure nothrow @system
     in
     {
         assert(start <= end, "start must be less or equal to end");
@@ -1381,7 +1381,7 @@ public:
     /**
       Flips all the bits in the `BitArray`
      */
-    void flip() @nogc pure nothrow
+    void flip() @nogc pure nothrow @system
     {
         foreach (i; 0 .. fullWords)
             _ptr[i] = ~_ptr[i];
@@ -1692,7 +1692,7 @@ public:
     /***************************************
      * Support for operators == and != for `BitArray`.
      */
-    bool opEquals(const ref BitArray a2) const @nogc pure nothrow
+    bool opEquals(const ref BitArray a2) const @nogc pure nothrow @system
     {
         if (this.length != a2.length)
             return false;
@@ -1738,7 +1738,7 @@ public:
     /***************************************
      * Supports comparison operators for `BitArray`.
      */
-    int opCmp(BitArray a2) const @nogc pure nothrow
+    int opCmp(BitArray a2) const @nogc pure nothrow @system
     {
         const lesser = this.length < a2.length ? &this : &a2;
         immutable fullWords = lesser.fullWords;
@@ -1841,7 +1841,7 @@ public:
     /***************************************
      * Support for hashing for `BitArray`.
      */
-    size_t toHash() const @nogc pure nothrow
+    size_t toHash() const @nogc pure nothrow @system
     {
         size_t hash = 3557;
         auto fullBytes = _len / 8;

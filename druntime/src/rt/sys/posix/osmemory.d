@@ -94,7 +94,7 @@ enum ChildStatus
     * the process is still running. Otherwise it will return always ChildStatus.done
     * (unless there is an error, in which case ChildStatus.error is returned).
     */
-ChildStatus wait_pid(pid_t pid, bool block = true) nothrow @nogc
+ChildStatus wait_pid(pid_t pid, bool block = true) nothrow @nogc @system
 {
     import core.exception : onForkError;
 

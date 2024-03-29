@@ -16,6 +16,8 @@ import core.exception : onOutOfMemoryError;
 
 import rt.sys.config;
 
+@system:
+
 // use version gcbitsSingleBitOperation to disable optimizations that use
 //  word operands on bulk operation copyRange, setRange, clrRange, etc.
 // version = gcbitsSingleBitOperation;

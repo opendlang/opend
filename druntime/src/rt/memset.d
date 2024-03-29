@@ -26,7 +26,7 @@ extern (C)
 
 extern (C):
 
-short *_memset16(short *p, short value, size_t count)
+short *_memset16(short *p, short value, size_t count) @system
 {
     short *pstart = p;
     short *ptop;
@@ -36,7 +36,7 @@ short *_memset16(short *p, short value, size_t count)
     return pstart;
 }
 
-int *_memset32(int *p, int value, size_t count)
+int *_memset32(int *p, int value, size_t count) @system
 {
 version (D_InlineAsm_X86)
 {
@@ -62,7 +62,7 @@ else
 }
 }
 
-long *_memset64(long *p, long value, size_t count)
+long *_memset64(long *p, long value, size_t count) @system
 {
     long *pstart = p;
     long *ptop;
@@ -72,7 +72,7 @@ long *_memset64(long *p, long value, size_t count)
     return pstart;
 }
 
-d_cdouble *_memset128(d_cdouble *p, d_cdouble value, size_t count)
+d_cdouble *_memset128(d_cdouble *p, d_cdouble value, size_t count) @system
 {
     d_cdouble *pstart = p;
     d_cdouble *ptop;
@@ -82,7 +82,7 @@ d_cdouble *_memset128(d_cdouble *p, d_cdouble value, size_t count)
     return pstart;
 }
 
-void[] *_memset128ii(void[] *p, void[] value, size_t count)
+void[] *_memset128ii(void[] *p, void[] value, size_t count) @system
 {
     void[] *pstart = p;
     void[] *ptop;
@@ -92,7 +92,7 @@ void[] *_memset128ii(void[] *p, void[] value, size_t count)
     return pstart;
 }
 
-real *_memset80(real *p, real value, size_t count)
+real *_memset80(real *p, real value, size_t count) @system
 {
     real *pstart = p;
     real *ptop;
@@ -102,7 +102,7 @@ real *_memset80(real *p, real value, size_t count)
     return pstart;
 }
 
-d_creal *_memset160(d_creal *p, d_creal value, size_t count)
+d_creal *_memset160(d_creal *p, d_creal value, size_t count) @system
 {
     d_creal *pstart = p;
     d_creal *ptop;
@@ -112,7 +112,7 @@ d_creal *_memset160(d_creal *p, d_creal value, size_t count)
     return pstart;
 }
 
-void *_memsetn(void *p, void *value, int count, size_t sizelem)
+void *_memsetn(void *p, void *value, int count, size_t sizelem) @system
 {   void *pstart = p;
     int i;
 
@@ -124,7 +124,7 @@ void *_memsetn(void *p, void *value, int count, size_t sizelem)
     return pstart;
 }
 
-float *_memsetFloat(float *p, float value, size_t count)
+float *_memsetFloat(float *p, float value, size_t count) @system
 {
     float *pstart = p;
     float *ptop;
@@ -134,7 +134,7 @@ float *_memsetFloat(float *p, float value, size_t count)
     return pstart;
 }
 
-double *_memsetDouble(double *p, double value, size_t count)
+double *_memsetDouble(double *p, double value, size_t count) @system
 {
     double *pstart = p;
     double *ptop;
@@ -148,7 +148,7 @@ version (D_SIMD)
 {
     import core.simd;
 
-    void16* _memsetSIMD(void16 *p, void16 value, size_t count)
+    void16* _memsetSIMD(void16 *p, void16 value, size_t count) @system
     {
         foreach (i; 0..count)
             p[i] = value;

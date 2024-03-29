@@ -61,7 +61,7 @@ void[] getTLSRange(const void* tlsSymbol) nothrow @nogc
  *
  * Returns: `true` if the correct TLS range was found
  */
-bool foundTLSRange(const ref dyld_tlv_info info, const void* tlsSymbol) pure nothrow @nogc
+bool foundTLSRange(const ref dyld_tlv_info info, const void* tlsSymbol) pure nothrow @nogc @system
 {
     return info.tlv_addr <= tlsSymbol &&
         tlsSymbol < (info.tlv_addr + info.tlv_size);
@@ -116,7 +116,7 @@ dyld_tlv_info tlvInfo(const mach_header_64* header) nothrow @nogc
  * Returns: the first TLV key for the given image or `pthread_key_t.max` if no
  *  key was found.
  */
-pthread_key_t firstTLVKey(const mach_header_64* header) pure nothrow @nogc
+pthread_key_t firstTLVKey(const mach_header_64* header) pure nothrow @nogc @system
 {
     intptr_t slide = 0;
     bool slideComputed = false;
@@ -172,7 +172,7 @@ const(tlv_descriptor)* firstTLVDescriptor(const ref section_64 section, intptr_t
  *
  * Returns: the sections.
  */
-const(section_64)[] sections(const segment_command_64* segment) pure nothrow @nogc
+const(section_64)[] sections(const segment_command_64* segment) pure nothrow @nogc @system
 {
     const size = segment_command_64.sizeof;
     const firstSection = cast(const(section_64)*)(cast(ubyte*) segment + size);
@@ -193,7 +193,7 @@ void foreachDataSection(in mach_header* header, intptr_t slide,
 
 /// Returns a section's memory range, or null if not found or empty.
 void[] getSection(in mach_header* header, intptr_t slide,
-                  in char* segmentName, in char* sectionName)
+                  in char* segmentName, in char* sectionName) @system
 {
     safeAssert(header.magic == MH_MAGIC_64, "Unsupported header.");
     auto sect = getsectbynamefromheader_64(cast(mach_header_64*) header,

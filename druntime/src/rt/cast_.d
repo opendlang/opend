@@ -36,7 +36,7 @@ extern (D) private bool areClassInfosEqual(scope const ClassInfo a, scope const 
  *      If it is null, return null.
  *      Else, undefined crash
  */
-Object _d_toObject(return scope void* p)
+Object _d_toObject(return scope void* p) @system
 {
     if (!p)
         return null;
@@ -61,7 +61,7 @@ Object _d_toObject(return scope void* p)
  * Attempts to cast Object o to class c.
  * Returns o if successful, null if not.
  */
-void* _d_interface_cast(void* p, ClassInfo c)
+void* _d_interface_cast(void* p, ClassInfo c) @system
 {
     debug(cast_) printf("_d_interface_cast(p = %p, c = '%.*s')\n", p, c.name);
     if (!p)
@@ -73,7 +73,7 @@ void* _d_interface_cast(void* p, ClassInfo c)
     return _d_dynamic_cast(cast(Object)(p - pi.offset), c);
 }
 
-void* _d_dynamic_cast(Object o, ClassInfo c)
+void* _d_dynamic_cast(Object o, ClassInfo c) @system
 {
     debug(cast_) printf("_d_dynamic_cast(o = %p, c = '%.*s')\n", o, c.name);
 

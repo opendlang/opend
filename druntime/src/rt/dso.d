@@ -122,7 +122,7 @@ else version (Windows)
     }
 
     // Returns the TLS range for the executing thread and this DSO.
-    void[] getTLSRange() nothrow @nogc
+    void[] getTLSRange() nothrow @nogc @system
     {
         void** _tls_array;
         version (Win32)

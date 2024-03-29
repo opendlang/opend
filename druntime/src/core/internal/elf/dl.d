@@ -57,7 +57,7 @@ struct SharedObjects
     alias Callback = int delegate(SharedObject);
 
     ///
-    static int opApply(scope Callback dg)
+    static int opApply(scope Callback dg) @system
     {
         extern(C) int nativeCallback(dl_phdr_info* info, size_t, void* data)
         {

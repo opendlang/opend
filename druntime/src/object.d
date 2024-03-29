@@ -691,7 +691,7 @@ class TypeInfo
     @property size_t tsize() nothrow pure const @safe @nogc { return 0; }
 
     /// Swaps two instances of the type.
-    void swap(void* p1, void* p2) const
+    void swap(void* p1, void* p2) const @system
     {
         size_t remaining = tsize;
         // If the type might contain pointers perform the swap in pointer-sized
@@ -1117,7 +1117,7 @@ class TypeInfo_Array : TypeInfo
         return getArrayHash(value, a.ptr, a.length);
     }
 
-    override bool equals(in void* p1, in void* p2) const
+    override bool equals(in void* p1, in void* p2) @system const
     {
         void[] a1 = *cast(void[]*)p1;
         void[] a2 = *cast(void[]*)p2;
@@ -1132,7 +1132,7 @@ class TypeInfo_Array : TypeInfo
         return true;
     }
 
-    override int compare(in void* p1, in void* p2) const
+    override int compare(in void* p1, in void* p2) @system const
     {
         void[] a1 = *cast(void[]*)p1;
         void[] a2 = *cast(void[]*)p2;
@@ -1217,7 +1217,7 @@ class TypeInfo_StaticArray : TypeInfo
         return getArrayHash(value, p, len);
     }
 
-    override bool equals(in void* p1, in void* p2) const
+    override bool equals(in void* p1, in void* p2) @system const
     {
         size_t sz = value.tsize;
 
@@ -1229,7 +1229,7 @@ class TypeInfo_StaticArray : TypeInfo
         return true;
     }
 
-    override int compare(in void* p1, in void* p2) const
+    override int compare(in void* p1, in void* p2) @system const
     {
         size_t sz = value.tsize;
 
@@ -1247,7 +1247,7 @@ class TypeInfo_StaticArray : TypeInfo
         return len * value.tsize;
     }
 
-    override void swap(void* p1, void* p2) const
+    override void swap(void* p1, void* p2) @system const
     {
         import core.stdc.string : memcpy;
 
@@ -1275,7 +1275,7 @@ class TypeInfo_StaticArray : TypeInfo
     override @property inout(TypeInfo) next() nothrow pure inout { return value; }
     override @property uint flags() nothrow pure const { return value.flags; }
 
-    override void destroy(void* p) const
+    override void destroy(void* p) @system const
     {
         immutable sz = value.tsize;
         p += sz * len;
@@ -1286,7 +1286,7 @@ class TypeInfo_StaticArray : TypeInfo
         }
     }
 
-    override void postblit(void* p) const
+    override void postblit(void* p) @system const
     {
         immutable sz = value.tsize;
         foreach (i; 0 .. len)
@@ -1829,7 +1829,7 @@ class TypeInfo_Interface : TypeInfo
         return o.toHash();
     }
 
-    override bool equals(in void* p1, in void* p2) const
+    override bool equals(in void* p1, in void* p2) @system const
     {
         Interface* pi = **cast(Interface ***)*cast(void**)p1;
         Object o1 = cast(Object)(*cast(void**)p1 - pi.offset);
@@ -1839,7 +1839,7 @@ class TypeInfo_Interface : TypeInfo
         return o1 == o2 || (o1 && o1.opCmp(o2) == 0);
     }
 
-    override int compare(in void* p1, in void* p2) const
+    override int compare(in void* p1, in void* p2) @system const
     {
         Interface* pi = **cast(Interface ***)*cast(void**)p1;
         Object o1 = cast(Object)(*cast(void**)p1 - pi.offset);
@@ -2321,7 +2321,7 @@ struct ModuleInfo
     }
 
 const:
-    private void* addrOf(int flag) return nothrow pure @nogc
+    private void* addrOf(int flag) @system return nothrow pure @nogc
     in
     {
         assert(flag >= MItlsctor && flag <= MIname);
@@ -2457,7 +2457,7 @@ const:
      * Returns:
      *  array of pointers to the ModuleInfo's of modules imported by this one
      */
-    @property immutable(ModuleInfo*)[] importedModules() return nothrow pure @nogc
+    @property immutable(ModuleInfo*)[] importedModules() @system return nothrow pure @nogc
     {
         if (flags & MIimportedModules)
         {
@@ -2471,7 +2471,7 @@ const:
      * Returns:
      *  array of TypeInfo_Class references for classes defined in this module
      */
-    @property TypeInfo_Class[] localClasses() return nothrow pure @nogc
+    @property TypeInfo_Class[] localClasses() @system return nothrow pure @nogc
     {
         if (flags & MIlocalClasses)
         {
@@ -2706,7 +2706,7 @@ class Throwable : Object
      * performed in certain error situations.  Override this $(D
      * toString) method to customize the error message.
      */
-    void toString(scope void delegate(in char[]) sink) const
+    void toString(scope void delegate(in char[]) sink) @system const
     {
         import core.internal.string : unsignedToTempString;
 

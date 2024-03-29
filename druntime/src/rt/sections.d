@@ -98,7 +98,7 @@ version (Shared)
     static assert(is(typeof(&cleanupLoadedLibraries) == void function() nothrow @nogc));
 }
 
-bool scanDataSegPrecisely() nothrow @nogc
+bool scanDataSegPrecisely() nothrow @nogc @system
 {
     import rt.config;
     string opt = rt_configOption("scanDataSeg");

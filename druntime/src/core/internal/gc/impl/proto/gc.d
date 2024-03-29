@@ -199,7 +199,7 @@ class ProtoGC : GC
         return 0;
     }
 
-    void addRange(void* p, size_t sz, const TypeInfo ti = null) nothrow @nogc
+    void addRange(void* p, size_t sz, const TypeInfo ti = null) nothrow @nogc @system
     {
         ranges.insertBack(Range(p, p + sz, cast() ti));
     }

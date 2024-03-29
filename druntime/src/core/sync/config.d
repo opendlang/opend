@@ -24,7 +24,7 @@ version (Posix)
     import core.time;
 
 
-    void mktspec( ref timespec t ) nothrow @nogc
+    void mktspec( ref timespec t ) nothrow @nogc @system
     {
         static if ( is (typeof ( pthread_condattr_setclock ) ) )
         {
@@ -49,7 +49,7 @@ version (Posix)
     }
 
 
-    void mvtspec( ref timespec t, Duration delta ) nothrow @nogc
+    void mvtspec( ref timespec t, Duration delta ) nothrow @nogc @system
     {
         auto val  = delta;
              val += dur!"seconds"( t.tv_sec );

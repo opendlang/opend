@@ -1385,7 +1385,7 @@ private Pid spawnProcessWin(scope const(char)[] commandLine,
 // returns environ directly.
 version (Posix)
 private const(char*)* createEnv(const string[string] childEnv,
-                                bool mergeWithParentEnv)
+                                bool mergeWithParentEnv) @system
 {
     // Determine the number of strings in the parent's environment.
     int parentEnvLength = 0;
@@ -4174,7 +4174,7 @@ version (Posix)
     import core.sys.posix.stdlib;
 }
 
-private void toAStringz(in string[] a, const(char)**az)
+private void toAStringz(in string[] a, const(char)**az) @system
 {
     import std.string : toStringz;
     foreach (string s; a)

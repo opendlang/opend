@@ -162,7 +162,7 @@ struct ModuleGroup
      * Throws:
      *  Exception if it fails.
      */
-    void sortCtors(string cycleHandling) nothrow
+    void sortCtors(string cycleHandling) nothrow @system
     {
         import core.bitop : bts, btr, bt, BitRange;
         import core.internal.container.hashtab;

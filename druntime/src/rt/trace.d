@@ -203,7 +203,7 @@ extern(C) int sympair_cmp(scope const void* e1, scope const void* e2) nothrow @n
 // Place symbol s, and then place any fan ins or fan outs with
 // counts greater than count.
 
-private void trace_place(FILE* fpdef, Symbol* s, ulong count)
+private void trace_place(FILE* fpdef, Symbol* s, ulong count) @system
 {
     if (!(s.Sflags & SFvisited))
     {
@@ -370,7 +370,7 @@ private void trace_times(FILE* fplog, Symbol*[] psymbols)
 ///////////////////////////////////
 // Initialize.
 
-private void trace_init()
+private void trace_init() @system
 {
     synchronized        // protects gtrace_inited
     {
@@ -631,7 +631,7 @@ private void trace_sympair_add(SymPair** psp, Symbol* s, ulong count)
 //////////////////////////////////////////////
 // This one is called by DMD
 
-private extern(C) void trace_pro(char[] id)
+private extern(C) void trace_pro(char[] id) @system
 {
     //printf("trace_pro(ptr = %p, length = %lld)\n", id.ptr, id.length);
     //printf("trace_pro(id = '%.*s')\n", id.length, id.ptr);
@@ -676,7 +676,7 @@ extern(C) void _c_trace_pro(size_t idlen, char* idptr)
 /////////////////////////////////////////
 // Called by DMD generated code
 
-extern(C) void _c_trace_epi()
+extern(C) void _c_trace_epi() @system
 {
     //printf("_c_trace_epi()\n");
     auto tos = trace_tos;
@@ -762,7 +762,7 @@ char[] trace_readline(FILE* fp)
 //////////////////////////////////////
 // Skip space
 
-private char *skipspace(char *p)
+private char *skipspace(char *p) @system
 {
     while (isspace(*p))
         p++;
@@ -772,7 +772,7 @@ private char *skipspace(char *p)
 ////////////////////////////////////////////////////////
 // Merge in profiling data from existing file.
 
-private void trace_merge(Symbol** proot)
+private void trace_merge(Symbol** proot) @system
 {
     // We're outputting to stdout
     if (!trace_logfilename.length)

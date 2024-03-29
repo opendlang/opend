@@ -186,7 +186,7 @@ else
 /**
  *
  */
-extern (C) void _d_delinterface(void** p)
+extern (C) void _d_delinterface(void** p) @system
 {
     if (*p)
     {
@@ -309,7 +309,7 @@ private class ArrayAllocLengthLock
 
   where elem0 starts 16 bytes after the first byte.
   */
-bool __setArrayAllocLength(ref BlkInfo info, size_t newlength, bool isshared, const TypeInfo tinext, size_t oldlength = ~0) pure nothrow
+bool __setArrayAllocLength(ref BlkInfo info, size_t newlength, bool isshared, const TypeInfo tinext, size_t oldlength = ~0) pure nothrow @system
 {
     import core.atomic;
 
@@ -422,7 +422,7 @@ bool __setArrayAllocLength(ref BlkInfo info, size_t newlength, bool isshared, co
 /**
   get the allocation size of the array for the given block (without padding or type info)
   */
-private size_t __arrayAllocLength(ref BlkInfo info, const TypeInfo tinext) pure nothrow
+private size_t __arrayAllocLength(ref BlkInfo info, const TypeInfo tinext) pure nothrow @system
 {
     if (info.size <= 256)
         return *cast(ubyte *)(info.base + info.size - structTypeInfoSize(tinext) - SMALLPAD);
@@ -544,7 +544,7 @@ static ~this()
 
 
 // we expect this to be called with the lock in place
-void processGCMarks(BlkInfo* cache, scope rt.tlsgc.IsMarkedDg isMarked) nothrow
+void processGCMarks(BlkInfo* cache, scope rt.tlsgc.IsMarkedDg isMarked) nothrow @system
 {
     // called after the mark routine to eliminate block cache data when it
     // might be ready to sweep
@@ -589,7 +589,7 @@ unittest
         the base ptr as an indication of whether the struct is valid, or set
         the BlkInfo as a side-effect and return a bool to indicate success.
   */
-BlkInfo *__getBlkInfo(void *interior) nothrow
+BlkInfo *__getBlkInfo(void *interior) nothrow @system
 {
     BlkInfo *ptr = __blkcache;
     version (single_cache)
@@ -626,7 +626,7 @@ BlkInfo *__getBlkInfo(void *interior) nothrow
     return null; // not in cache.
 }
 
-void __insertBlkInfoCache(BlkInfo bi, BlkInfo *curpos) nothrow
+void __insertBlkInfoCache(BlkInfo bi, BlkInfo *curpos) nothrow @system
 {
     version (single_cache)
     {
@@ -699,7 +699,7 @@ Params:
     ti = `TypeInfo` of array type
     arr = array to shrink. Its `.length` is element length, not byte length, despite `void` type
 */
-extern(C) void _d_arrayshrinkfit(const TypeInfo ti, void[] arr) nothrow
+extern(C) void _d_arrayshrinkfit(const TypeInfo ti, void[] arr) nothrow @system
 {
     // note, we do not care about shared.  We are setting the length no matter
     // what, so no lock is required.
@@ -751,12 +751,12 @@ extern(C) void _d_arrayshrinkfit(const TypeInfo ti, void[] arr) nothrow
     }
 }
 
-package bool hasPostblit(in TypeInfo ti) nothrow pure
+package bool hasPostblit(in TypeInfo ti) nothrow pure @system
 {
     return (&ti.postblit).funcptr !is &TypeInfo.postblit;
 }
 
-void __doPostblit(void *ptr, size_t len, const TypeInfo ti)
+void __doPostblit(void *ptr, size_t len, const TypeInfo ti) @system
 {
     if (!hasPostblit(ti))
         return;
@@ -802,7 +802,7 @@ Params:
 
 Returns: the number of elements that can actually be stored once the resizing is done
 */
-extern(C) size_t _d_arraysetcapacity(const TypeInfo ti, size_t newcapacity, void[]* p) @weak
+extern(C) size_t _d_arraysetcapacity(const TypeInfo ti, size_t newcapacity, void[]* p) @weak @system
 in
 {
     assert(ti);
@@ -984,7 +984,7 @@ Params:
     length = `.length` of resulting array
 Returns: newly allocated array
 */
-extern (C) void[] _d_newarrayU(const scope TypeInfo ti, size_t length) pure nothrow @weak
+extern (C) void[] _d_newarrayU(const scope TypeInfo ti, size_t length) pure nothrow @weak @system
 {
     import core.exception : onOutOfMemoryError;
 
@@ -1041,7 +1041,7 @@ Lcontinue:
 }
 
 /// ditto
-extern (C) void[] _d_newarrayT(const TypeInfo ti, size_t length) pure nothrow @weak
+extern (C) void[] _d_newarrayT(const TypeInfo ti, size_t length) pure nothrow @weak @system
 {
     import core.stdc.string;
 
@@ -1054,7 +1054,7 @@ extern (C) void[] _d_newarrayT(const TypeInfo ti, size_t length) pure nothrow @w
 }
 
 /// ditto
-extern (C) void[] _d_newarrayiT(const TypeInfo ti, size_t length) pure nothrow @weak
+extern (C) void[] _d_newarrayiT(const TypeInfo ti, size_t length) pure nothrow @weak @system
 {
     import core.internal.traits : AliasSeq;
 
@@ -1155,7 +1155,7 @@ Params:
 Returns:
     newly allocated array
 */
-extern (C) void[] _d_newarraymTX(const TypeInfo ti, size_t[] dims) @weak
+extern (C) void[] _d_newarraymTX(const TypeInfo ti, size_t[] dims) @weak @system
 {
     debug(PRINTF) printf("_d_newarraymT(dims.length = %d)\n", dims.length);
 
@@ -1168,7 +1168,7 @@ extern (C) void[] _d_newarraymTX(const TypeInfo ti, size_t[] dims) @weak
 }
 
 /// ditto
-extern (C) void[] _d_newarraymiTX(const TypeInfo ti, size_t[] dims) @weak
+extern (C) void[] _d_newarraymiTX(const TypeInfo ti, size_t[] dims) @weak @system
 {
     debug(PRINTF) printf("_d_newarraymiT(dims.length = %d)\n", dims.length);
 
@@ -1189,7 +1189,7 @@ Params:
 Returns:
     newly allocated item
 */
-extern (C) void* _d_newitemU(scope const TypeInfo _ti) pure nothrow @weak
+extern (C) void* _d_newitemU(scope const TypeInfo _ti) pure nothrow @weak @system
 {
     auto ti = unqualify(_ti);
     auto flags = !(ti.flags & 1) ? BlkAttr.NO_SCAN : 0;
@@ -1228,7 +1228,7 @@ debug(PRINTF)
 /**
  *
  */
-extern (C) void _d_delmemory(void* *p) @weak
+extern (C) void _d_delmemory(void* *p) @weak @system
 {
     if (*p)
     {
@@ -1241,7 +1241,7 @@ extern (C) void _d_delmemory(void* *p) @weak
 /**
  *
  */
-extern (C) void _d_callinterfacefinalizer(void *p) @weak
+extern (C) void _d_callinterfacefinalizer(void *p) @weak @system
 {
     if (p)
     {
@@ -1282,7 +1282,7 @@ extern (C) CollectHandler rt_getCollectHandler()
 /**
  *
  */
-extern (C) int rt_hasFinalizerInSegment(void* p, size_t size, uint attr, scope const(void)[] segment) nothrow
+extern (C) int rt_hasFinalizerInSegment(void* p, size_t size, uint attr, scope const(void)[] segment) nothrow @system
 {
     if (attr & BlkAttr.STRUCTFINAL)
     {
@@ -1307,7 +1307,7 @@ extern (C) int rt_hasFinalizerInSegment(void* p, size_t size, uint attr, scope c
     return false;
 }
 
-int hasStructFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow
+int hasStructFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow @system
 {
     if (!p)
         return false;
@@ -1316,7 +1316,7 @@ int hasStructFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow
     return cast(size_t)(cast(void*)ti.xdtor - segment.ptr) < segment.length;
 }
 
-int hasArrayFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow
+int hasArrayFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow @system
 {
     if (!p)
         return false;
@@ -1333,7 +1333,7 @@ int hasArrayFinalizerInSegment(void* p, size_t size, in void[] segment) nothrow
 debug (VALGRIND) import etc.valgrind.valgrind;
 
 // called by the GC
-void finalize_array2(void* p, size_t size) nothrow
+void finalize_array2(void* p, size_t size) nothrow @system
 {
     debug(PRINTF) printf("rt_finalize_array2(p = %p)\n", p);
 
@@ -1372,7 +1372,7 @@ void finalize_array2(void* p, size_t size) nothrow
     }
 }
 
-void finalize_array(void* p, size_t size, const TypeInfo_Struct si)
+void finalize_array(void* p, size_t size, const TypeInfo_Struct si) @system
 {
     // Due to the fact that the delete operator calls destructors
     // for arrays from the last element to the first, we maintain
@@ -1386,7 +1386,7 @@ void finalize_array(void* p, size_t size, const TypeInfo_Struct si)
 }
 
 // called by the GC
-void finalize_struct(void* p, size_t size) nothrow
+void finalize_struct(void* p, size_t size) nothrow @system
 {
     debug(PRINTF) printf("finalize_struct(p = %p)\n", p);
 
@@ -1405,7 +1405,7 @@ void finalize_struct(void* p, size_t size) nothrow
 /**
  *
  */
-extern (C) void rt_finalize2(void* p, bool det = true, bool resetMemory = true) nothrow
+extern (C) void rt_finalize2(void* p, bool det = true, bool resetMemory = true) nothrow @system
 {
     debug(PRINTF) printf("rt_finalize2(p = %p)\n", p);
 
@@ -1489,7 +1489,7 @@ Params:
         While it's cast to `void[]`, its `.length` is still treated as element length.
 Returns: `*p` after being updated
 */
-extern (C) void[] _d_arraysetlengthT(const TypeInfo ti, size_t newlength, void[]* p) @weak
+extern (C) void[] _d_arraysetlengthT(const TypeInfo ti, size_t newlength, void[]* p) @weak @system
 in
 {
     assert(ti);
@@ -1683,7 +1683,7 @@ do
 }
 
 /// ditto
-extern (C) void[] _d_arraysetlengthiT(const TypeInfo ti, size_t newlength, void[]* p) @weak
+extern (C) void[] _d_arraysetlengthiT(const TypeInfo ti, size_t newlength, void[]* p) @weak @system
 in
 {
     assert(!(*p).length || (*p).ptr);
@@ -1992,7 +1992,7 @@ Params:
 Returns: `px` after being appended to
 */
 extern (C)
-byte[] _d_arrayappendcTX(const TypeInfo ti, return scope ref byte[] px, size_t n) @weak
+byte[] _d_arrayappendcTX(const TypeInfo ti, return scope ref byte[] px, size_t n) @weak @system
 {
     import core.stdc.string;
     // This is a cut&paste job from _d_arrayappendT(). Should be refactored.
@@ -2109,7 +2109,7 @@ Params:
     c = `dchar` to append
 Returns: updated `x` cast to `void[]`
 */
-extern (C) void[] _d_arrayappendcd(ref byte[] x, dchar c) @weak
+extern (C) void[] _d_arrayappendcd(ref byte[] x, dchar c) @weak @system
 {
     // c could encode into from 1 to 4 characters
     char[4] buf = void;
@@ -2206,7 +2206,7 @@ Params:
 
 Returns: updated `x` cast to `void[]`
 */
-extern (C) void[] _d_arrayappendwd(ref byte[] x, dchar c) @weak
+extern (C) void[] _d_arrayappendwd(ref byte[] x, dchar c) @weak @system
 {
     // c could encode into from 1 to 2 w characters
     wchar[2] buf = void;

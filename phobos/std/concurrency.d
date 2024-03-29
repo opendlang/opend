@@ -1096,7 +1096,7 @@ private
     __gshared string[][Tid] namesByTid;
 }
 
-private @property Mutex registryLock()
+private @property Mutex registryLock() @system
 {
     __gshared Mutex impl;
     initOnce!impl(new Mutex);

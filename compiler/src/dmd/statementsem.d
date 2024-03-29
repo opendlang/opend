@@ -3759,7 +3759,7 @@ version (IN_LLVM)
             deprecation(cas.loc, "`asm` statement cannot be marked `@safe`, use `@system` or `@trusted` instead");
         if (!(cas.stc & (STC.trusted | STC.safe)))
         {
-            sc.setUnsafe(false, cas.loc, "`asm` statement is assumed to be `@system` - mark it with `@trusted` if it is not");
+            sc.setUnsafe(false, cas.loc, "`asm` statement is assumed to be `@system` - mark it with `@trusted` if it is not", false);
         }
 
         sc.pop();
@@ -4282,13 +4282,13 @@ void catchSemantic(Catch c, Scope* sc)
     }
     else if (cd != ClassDeclaration.throwable && !ClassDeclaration.throwable.isBaseOf(cd, null))
     {
-        error(c.loc, "can only catch class objects derived from `Throwable`, not `%s`", c.type.toChars());
+        error(c.loc, "can only catch class objects derived from `Throwable`, not `%s`", c.type.toChars(), null, null, false);
         c.errors = true;
     }
     else if (!c.internalCatch && ClassDeclaration.exception &&
             cd != ClassDeclaration.exception && !ClassDeclaration.exception.isBaseOf(cd, null) &&
             sc.setUnsafe(false, c.loc,
-                "can only catch class objects derived from `Exception` in `@safe` code, not `%s`", c.type))
+                "can only catch class objects derived from `Exception` in `@safe` code, not `%s`", c.type, null, null, false))
     {
         c.errors = true;
     }

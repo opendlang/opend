@@ -343,7 +343,7 @@ private class TypeInfoArrayGeneric(T, Base = T) : Select!(is(T == Base), TypeInf
         }
 
     static if (is(T == Base) || (__traits(isIntegral, T) && T.max != Base.max))
-        override int compare(in void* p1, in void* p2) const
+        override int compare(in void* p1, in void* p2) const @system
         {
             // Can't reuse __cmp in object.d because that handles NaN differently.
             // (Q: would it make sense to unify behaviors?)

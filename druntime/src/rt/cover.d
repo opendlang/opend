@@ -35,7 +35,7 @@ private
         size_t  len;
         size_t* ptr;
 
-        bool opIndex( size_t i )
+        bool opIndex( size_t i ) @system
         in
         {
             assert( i < len );

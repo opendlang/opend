@@ -83,7 +83,7 @@ const(char)* toMBSz(scope const(char)[] s, uint codePage = 0)
     return std.string.toStringz(s);
 }
 
-string fromMBSz(return scope immutable(char)* s, int codePage = 0)
+string fromMBSz(return scope immutable(char)* s, int codePage = 0) @system
 {
     const(char)* c;
 

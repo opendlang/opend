@@ -415,7 +415,7 @@ bool compareSectionName(ref IMAGE_SECTION_HEADER section, string name) nothrow @
     return name.length == 8 || section.Name[name.length] == 0;
 }
 
-package void[] findImageSection(IMAGE_DOS_HEADER* doshdr, string name) nothrow @nogc
+package void[] findImageSection(IMAGE_DOS_HEADER* doshdr, string name) nothrow @nogc @system
 {
     if (name.length > 8) // section name from string table not supported
         return null;

@@ -132,7 +132,7 @@ private:
     }
 
     // lookup a key
-    inout(Bucket)* findSlotLookup(size_t hash, scope const void* pkey, scope const TypeInfo keyti) inout
+    inout(Bucket)* findSlotLookup(size_t hash, scope const void* pkey, scope const TypeInfo keyti) inout @system
     {
         for (size_t i = hash & mask, j = 1;; ++j)
         {
@@ -222,7 +222,7 @@ Bucket[] allocBuckets(size_t dim) @trusted pure nothrow
 // Entry
 //------------------------------------------------------------------------------
 
-private void* allocEntry(scope const Impl* aa, scope const void* pkey)
+private void* allocEntry(scope const Impl* aa, scope const void* pkey) @system
 {
     import rt.lifetime : _d_newitemU;
     import core.stdc.string : memcpy, memset;
@@ -243,7 +243,7 @@ private void* allocEntry(scope const Impl* aa, scope const void* pkey)
     return res;
 }
 
-package void entryDtor(void* p, const TypeInfo_Struct sti)
+package void entryDtor(void* p, const TypeInfo_Struct sti) @system
 {
     // key and value type info stored after the TypeInfo_Struct by tiEntry()
     auto sizeti = __traits(classInstanceSize, TypeInfo_Struct);
@@ -273,7 +273,7 @@ private immutable(void)* getRTInfo(const TypeInfo ti) pure nothrow
 }
 
 // build type info for Entry with additional key and value fields
-TypeInfo_Struct fakeEntryTI(ref Impl aa, const TypeInfo keyti, const TypeInfo valti) nothrow
+TypeInfo_Struct fakeEntryTI(ref Impl aa, const TypeInfo keyti, const TypeInfo valti) nothrow @system
 {
     import rt.lifetime : unqualify;
 
@@ -558,7 +558,7 @@ extern (C) void* _aaGetY(scope AA* paa, const TypeInfo_AssociativeArray ti,
  *      is set to all zeros
  */
 extern (C) void* _aaGetX(scope AA* paa, const TypeInfo_AssociativeArray ti,
-    const size_t valsz, scope const void* pkey, out bool found)
+    const size_t valsz, scope const void* pkey, out bool found) @system
 {
     // lazily alloc implementation
     AA aa = *paa;
@@ -631,7 +631,7 @@ extern (C) inout(void)* _aaGetRvalueX(inout AA aa, scope const TypeInfo keyti, c
  * Returns:
  *      pointer to value if present, null otherwise
  */
-extern (C) inout(void)* _aaInX(inout AA aa, scope const TypeInfo keyti, scope const void* pkey)
+extern (C) inout(void)* _aaInX(inout AA aa, scope const TypeInfo keyti, scope const void* pkey) @system
 {
     if (aa.empty)
         return null;
@@ -686,7 +686,7 @@ extern (C) void* _aaRehash(AA* paa, scope const TypeInfo keyti) pure nothrow
 
 /// Return a GC allocated array of all values
 extern (C) inout(void[]) _aaValues(inout AA aa, const size_t keysz, const size_t valsz,
-    const TypeInfo tiValueArray) pure nothrow
+    const TypeInfo tiValueArray) pure nothrow @system
 {
     if (aa.empty)
         return null;
@@ -709,7 +709,7 @@ extern (C) inout(void[]) _aaValues(inout AA aa, const size_t keysz, const size_t
 }
 
 /// Return a GC allocated array of all keys
-extern (C) inout(void[]) _aaKeys(inout AA aa, const size_t keysz, const TypeInfo tiKeyArray) pure nothrow
+extern (C) inout(void[]) _aaKeys(inout AA aa, const size_t keysz, const TypeInfo tiKeyArray) pure nothrow @system
 {
     if (aa.empty)
         return null;
@@ -735,7 +735,7 @@ extern (D) alias dg_t = int delegate(void*);
 extern (D) alias dg2_t = int delegate(void*, void*);
 
 /// foreach opApply over all values
-extern (C) int _aaApply(AA aa, const size_t keysz, dg_t dg)
+extern (C) int _aaApply(AA aa, const size_t keysz, dg_t dg) @system
 {
     if (aa.empty)
         return 0;
@@ -752,7 +752,7 @@ extern (C) int _aaApply(AA aa, const size_t keysz, dg_t dg)
 }
 
 /// foreach opApply over all key/value pairs
-extern (C) int _aaApply2(AA aa, const size_t keysz, dg2_t dg)
+extern (C) int _aaApply2(AA aa, const size_t keysz, dg2_t dg) @system
 {
     if (aa.empty)
         return 0;
@@ -778,7 +778,7 @@ extern (C) int _aaApply2(AA aa, const size_t keysz, dg2_t dg)
  *      A new associative array opaque pointer, or null if `keys` is empty.
  */
 extern (C) Impl* _d_assocarrayliteralTX(const TypeInfo_AssociativeArray ti, void[] keys,
-    void[] vals)
+    void[] vals) @system
 {
     assert(keys.length == vals.length);
 
@@ -825,7 +825,7 @@ extern (C) Impl* _d_assocarrayliteralTX(const TypeInfo_AssociativeArray ti, void
 }
 
 /// compares 2 AAs for equality
-extern (C) int _aaEqual(scope const TypeInfo tiRaw, scope const AA aa1, scope const AA aa2)
+extern (C) int _aaEqual(scope const TypeInfo tiRaw, scope const AA aa1, scope const AA aa2) @system
 {
     if (aa1 is aa2)
         return true;
@@ -855,7 +855,7 @@ extern (C) int _aaEqual(scope const TypeInfo tiRaw, scope const AA aa1, scope co
 }
 
 /// compute a hash
-extern (C) hash_t _aaGetHash(scope const AA* paa, scope const TypeInfo tiRaw) nothrow
+extern (C) hash_t _aaGetHash(scope const AA* paa, scope const TypeInfo tiRaw) nothrow @system
 {
     const AA aa = *paa;
 
