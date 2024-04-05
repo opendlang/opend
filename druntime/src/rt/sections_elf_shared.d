@@ -1039,7 +1039,7 @@ else
             }
         }
     }
-    else static if (SharedDarwin) void scanSegments(mach_header* info, DSO* pdso)
+    else static if (SharedDarwin) void scanSegments(mach_header* info, DSO* pdso) @system
     {
         // immutable slide = _dyld_get_image_slide(info);
 
