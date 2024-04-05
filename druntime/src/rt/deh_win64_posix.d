@@ -156,7 +156,7 @@ immutable(FuncTable)* __eh_finddata(void *address)
     return null;
 }
 
-immutable(FuncTable)* __eh_finddata(void *address, immutable(FuncTable)* pstart, immutable(FuncTable)* pend)
+immutable(FuncTable)* __eh_finddata(void *address, immutable(FuncTable)* pstart, immutable(FuncTable)* pend) @system
 {
     debug(PRINTF) printf("FuncTable.sizeof = %p\n", FuncTable.sizeof);
     debug(PRINTF) printf("__eh_finddata(address = %p)\n", address);
@@ -242,7 +242,7 @@ size_t __eh_find_caller(size_t regbp, size_t *pretaddr)
  * Throw a D object.
  */
 
-extern (C) void _d_throwc(Throwable h)
+extern (C) void _d_throwc(Throwable h) @system
 {
     size_t regebp;
 

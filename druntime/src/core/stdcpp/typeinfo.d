@@ -117,7 +117,7 @@ else version (CppRuntime_Gcc)
     {
     @nogc:
         @weak ~this() {}
-        @weak final const(char)* name() const nothrow
+        @weak final const(char)* name() const nothrow @system
         {
             return _name[0] == '*' ? _name + 1 : _name;
         }

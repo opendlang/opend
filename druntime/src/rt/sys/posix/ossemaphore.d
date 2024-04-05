@@ -27,20 +27,20 @@ struct OsSemaphore
 {
     sem_t m_hndl;
 
-    void create(uint initialValue)
+    void create(uint initialValue) @system
     {
         int rc = sem_init( &m_hndl, 0, initialValue );
         if ( rc )
             throw new SyncError( "Unable to create semaphore" );
     }
 
-    void destroy()
+    void destroy() @system
     {
         int rc = sem_destroy( &m_hndl );
         assert( !rc, "Unable to destroy semaphore" );
     }
 
-    void wait()
+    void wait() @system
     {
         while ( true )
         {
@@ -51,7 +51,7 @@ struct OsSemaphore
         }
     }
 
-    bool wait( Duration period )
+    bool wait( Duration period ) @system
     {
         import core.sys.posix.time : clock_gettime, CLOCK_REALTIME;
 
@@ -70,14 +70,14 @@ struct OsSemaphore
         }
     }
 
-    void notify()
+    void notify() @system
     {
         int rc = sem_post( &m_hndl );
         if ( rc )
             throw new SyncError( "Unable to notify semaphore" );
     }
 
-    bool tryWait()
+    bool tryWait() @system
     {
         while ( true )
         {

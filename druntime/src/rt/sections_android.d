@@ -124,7 +124,7 @@ void finiTLSRanges(void[]* rng) nothrow @nogc
     free(rng);
 }
 
-void scanTLSRanges(void[]* rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow
+void scanTLSRanges(void[]* rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow @system
 {
     dg(rng.ptr, rng.ptr + rng.length);
 }
@@ -139,7 +139,7 @@ void scanTLSRanges(void[]* rng, scope void delegate(void* pbeg, void* pend) noth
  *       expected to translate an address in the TLS static data to the
  *       corresponding address in the TLS dynamic per-thread data.
  */
-extern(C) void* __tls_get_addr(void* p) nothrow @nogc
+extern(C) void* __tls_get_addr(void* p) nothrow @nogc @system
 {
     debug(PRINTF) printf("  __tls_get_addr input - %p\n", p);
     const offset = cast(size_t) (p - _staticTLSRange.ptr);
@@ -180,7 +180,7 @@ align(minAlignment)
 // aligned_alloc is only available since API level 28
 extern(C) int posix_memalign(void** memptr, size_t alignment, size_t size) nothrow @nogc;
 
-ref void[] getTLSBlock() nothrow @nogc
+ref void[] getTLSBlock() nothrow @nogc @system
 {
     auto pary = cast(void[]*) pthread_getspecific(_tlsKey);
 
@@ -221,7 +221,7 @@ ref void[] getTLSBlock() nothrow @nogc
 // Returns the static TLS data range (.tdata and .tbss sections).
 // `alignment` is set to the max overall TLS alignment, to be used to align each
 // thread's TLS block.
-void[] getStaticTLSRange(const ref SharedObject object, out uint alignment) nothrow @nogc
+void[] getStaticTLSRange(const ref SharedObject object, out uint alignment) nothrow @nogc @system
 {
     import core.internal.elf.io;
 

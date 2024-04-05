@@ -2037,7 +2037,7 @@ private bool checkPurity(VarDeclaration v, const ref Loc loc, Scope* sc)
     if (v.storage_class & STC.gshared)
     {
         if (sc.setUnsafe(false, loc,
-            "`@safe` function `%s` cannot access `__gshared` data `%s`", sc.func, v))
+            "`@safe` function `%s` cannot access `__gshared` data `%s`", sc.func, v, null, false))
         {
             err = true;
         }
@@ -9179,7 +9179,7 @@ version (IN_LLVM)
         // Check for unsafe casts
         if (!isSafeCast(ex, t1b, tob))
         {
-            if (sc.setUnsafe(false, exp.loc, "cast from `%s` to `%s` not allowed in safe code", exp.e1.type, exp.to))
+            if (sc.setUnsafe(false, exp.loc, "cast from `%s` to `%s` not allowed in safe code", exp.e1.type, exp.to, null, false))
             {
                 return setError();
             }
@@ -9440,7 +9440,7 @@ version (IN_LLVM)
 
                 return setError();
             }
-            if (sc.setUnsafe(false, exp.loc, "pointer slicing not allowed in safe functions"))
+            if (sc.setUnsafe(false, exp.loc, "pointer slicing not allowed in safe functions", false))
                 return setError();
         }
         else if (t1b.ty == Tarray)
@@ -11341,7 +11341,7 @@ version (IN_LLVM)
             }
             if (t1n.toBasetype.ty == Tvoid && t2n.toBasetype.ty == Tvoid)
             {
-                if (sc.setUnsafe(false, exp.loc, "cannot copy `void[]` to `void[]` in `@safe` code"))
+                if (sc.setUnsafe(false, exp.loc, "cannot copy `void[]` to `void[]` in `@safe` code", false))
                     return setError();
             }
         }
@@ -15955,7 +15955,7 @@ bool checkAddressVar(Scope* sc, Expression exp, VarDeclaration v)
     {
         if (sc.useDIP1000 != FeatureState.enabled &&
             !(v.storage_class & STC.temp) &&
-            sc.setUnsafe(false, exp.loc, "cannot take address of local `%s` in `@safe` function `%s`", v, sc.func))
+            sc.setUnsafe(false, exp.loc, "cannot take address of local `%s` in `@safe` function `%s`", v, sc.func, null, false))
         {
             return false;
         }

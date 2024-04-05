@@ -251,7 +251,7 @@ private:
         return buffer[0 .. nframes];
     }
 
-    static char[][] resolveNoSync(const(ulong)[] addresses)
+    static char[][] resolveNoSync(const(ulong)[] addresses) @system
     {
         auto dbghelp  = DbgHelp.get();
         if (dbghelp is null)
@@ -362,7 +362,7 @@ private:
 
 // Workaround OPTLINK bug (Bugzilla 8263)
 extern(Windows) BOOL FixupDebugHeader(HANDLE hProcess, ULONG ActionCode,
-                                      ulong CallbackContext, ulong UserContext)
+                                      ulong CallbackContext, ulong UserContext) @system
 {
     if (ActionCode == CBA_READ_MEMORY)
     {
@@ -388,7 +388,7 @@ extern(Windows) BOOL FixupDebugHeader(HANDLE hProcess, ULONG ActionCode,
     return FALSE;
 }
 
-private string generateSearchPath()
+private string generateSearchPath() @system
 {
     __gshared string[3] defaultPathList = ["_NT_SYMBOL_PATH",
                                            "_NT_ALTERNATE_SYMBOL_PATH",

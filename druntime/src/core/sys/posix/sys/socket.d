@@ -185,7 +185,7 @@ version (linux)
         SCM_RIGHTS = 0x01
     }
 
-    extern (D) inout(ubyte)*   CMSG_DATA( return scope inout(cmsghdr)* cmsg ) pure nothrow @nogc { return cast(ubyte*)( cmsg + 1 ); }
+    extern (D) inout(ubyte)*   CMSG_DATA( return scope inout(cmsghdr)* cmsg ) pure nothrow @nogc @system { return cast(ubyte*)( cmsg + 1 ); }
 
     version (CRuntime_Musl)
     {
@@ -664,9 +664,9 @@ else version (Darwin)
         socklen_t CMSG_SPACE(socklen_t len) pure nothrow @nogc { return CMSG_ALIGN(len) + CMSG_ALIGN(cmsghdr.sizeof); }
         socklen_t CMSG_LEN(socklen_t len) pure nothrow @nogc { return CMSG_ALIGN(cmsghdr.sizeof) + len; }
 
-        inout(ubyte)*   CMSG_DATA( return scope inout(cmsghdr)* cmsg ) pure nothrow @nogc { return cast(ubyte*)( cmsg + 1 ); }
+        inout(ubyte)*   CMSG_DATA( return scope inout(cmsghdr)* cmsg ) pure nothrow @nogc @system { return cast(ubyte*)( cmsg + 1 ); }
 
-        inout(cmsghdr)* CMSG_FIRSTHDR( inout(msghdr)* mhdr ) pure nothrow @nogc
+        inout(cmsghdr)* CMSG_FIRSTHDR( inout(msghdr)* mhdr ) pure nothrow @nogc @system
         {
             return ( cast(socklen_t)mhdr.msg_controllen >= cmsghdr.sizeof ? cast(inout(cmsghdr)*) mhdr.msg_control : cast(inout(cmsghdr)*) null );
         }
@@ -810,12 +810,12 @@ else version (FreeBSD)
         extern (D) size_t _ALIGN( size_t p ) { return (p + _ALIGNBYTES) & ~_ALIGNBYTES; }
     }
 
-    extern (D) ubyte* CMSG_DATA( cmsghdr* cmsg )
+    extern (D) ubyte* CMSG_DATA( cmsghdr* cmsg ) @system
     {
         return cast(ubyte*) cmsg + _ALIGN( cmsghdr.sizeof );
     }
 
-    extern (D) cmsghdr* CMSG_NXTHDR( msghdr* mhdr, cmsghdr* cmsg )
+    extern (D) cmsghdr* CMSG_NXTHDR( msghdr* mhdr, cmsghdr* cmsg ) @system
     {
         if ( cmsg == null )
         {
@@ -831,7 +831,7 @@ else version (FreeBSD)
         }
     }
 
-    extern (D) cmsghdr* CMSG_FIRSTHDR( msghdr* mhdr )
+    extern (D) cmsghdr* CMSG_FIRSTHDR( msghdr* mhdr ) @system
     {
         return mhdr.msg_controllen >= cmsghdr.sizeof ? cast(cmsghdr*) mhdr.msg_control : null;
     }

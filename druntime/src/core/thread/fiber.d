@@ -623,7 +623,7 @@ class Fiber
     /**
      * Cleans up any remaining resources used by this object.
      */
-    ~this() nothrow @nogc
+    ~this() nothrow @nogc @system
     {
         // NOTE: A live reference to this object will exist on its associated
         //       stack from the first time its call() method has been called
@@ -915,7 +915,7 @@ private:
     //
     // Allocate a new stack for this fiber.
     //
-    final void allocStack( size_t sz, size_t guardPageSize ) nothrow
+    final void allocStack( size_t sz, size_t guardPageSize ) nothrow @system
     in
     {
         assert( !m_pmem && !m_ctxt );
@@ -1064,7 +1064,7 @@ private:
     //
     // Free this fiber's stack.
     //
-    final void freeStack() nothrow @nogc
+    final void freeStack() nothrow @nogc @system
     in
     {
         assert( m_pmem && m_ctxt );
@@ -1107,7 +1107,7 @@ private:
     // Initialize the allocated stack.
     // Look above the definition of 'class Fiber' for some information about the implementation of this routine
     //
-    final void initStack() nothrow @nogc
+    final void initStack() nothrow @nogc @system
     in
     {
         assert( m_ctxt.tstack && m_ctxt.tstack == m_ctxt.bstack );
@@ -1530,7 +1530,7 @@ private:
     //
     // Switches into the stack held by this fiber.
     //
-    final void switchIn() nothrow @nogc
+    final void switchIn() nothrow @nogc @system
     {
         Thread  tobj = Thread.getThis();
         void**  oldp = &tobj.m_curr.tstack;
@@ -1564,7 +1564,7 @@ private:
     //
     // Switches out of the current stack and into the enclosing stack.
     //
-    final void switchOut() nothrow @nogc
+    final void switchOut() nothrow @nogc @system
     {
         Thread  tobj = Thread.getThis();
         void**  oldp = &m_ctxt.tstack;

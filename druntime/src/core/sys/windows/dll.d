@@ -76,7 +76,7 @@ version (Win32)
     void* function(void* HeapHandle, uint Flags, size_t Size) nothrow;
 
     // find a code sequence and return the address after the sequence
-    static void* findCodeSequence( void* adr, int len, ref ubyte[] pattern ) nothrow
+    static void* findCodeSequence( void* adr, int len, ref ubyte[] pattern ) nothrow @system
     {
         if ( !adr )
             return null;
@@ -94,7 +94,7 @@ version (Win32)
     }
 
     // find a code sequence and return the (relative) address that follows
-    static void* findCodeReference( void* adr, int len, ref ubyte[] pattern, bool relative ) nothrow
+    static void* findCodeReference( void* adr, int len, ref ubyte[] pattern, bool relative ) nothrow @system
     {
         if ( !adr )
             return null;
@@ -134,7 +134,7 @@ version (Win32)
     static __gshared ubyte[] mov_NtdllBaseTag_srv03 = [ 0x50, 0xA1 ]; // push eax; mov eax, _NtdllBaseTag
     static __gshared ubyte[] mov_LdrpTlsList = [ 0x8B, 0x3D ]; // mov edi, _LdrpTlsList
 
-    static LdrpTlsListEntry* addTlsListEntry( void** peb, void* tlsstart, void* tlsend, void* tls_callbacks_a, int* tlsindex ) nothrow
+    static LdrpTlsListEntry* addTlsListEntry( void** peb, void* tlsstart, void* tlsend, void* tls_callbacks_a, int* tlsindex ) nothrow @system
     {
         HANDLE hnd = GetModuleHandleA( "NTDLL" );
         assert( hnd, "cannot get module handle for ntdll" );
@@ -192,7 +192,7 @@ version (Win32)
     }
 
     // reallocate TLS array and create a copy of the TLS data section
-    static bool addTlsData( void** teb, void* tlsstart, void* tlsend, int tlsindex ) nothrow
+    static bool addTlsData( void** teb, void* tlsstart, void* tlsend, int tlsindex ) nothrow @system
     {
         HANDLE hnd = GetModuleHandleA( "NTDLL" );
         assert( hnd, "cannot get module handle for ntdll" );
@@ -284,7 +284,7 @@ version (Win32)
         LIST_ENTRY      InInitializationOrderModuleList;
     }
 
-    static LDR_MODULE* findLdrModule( HINSTANCE hInstance, void** peb ) nothrow @nogc
+    static LDR_MODULE* findLdrModule( HINSTANCE hInstance, void** peb ) nothrow @nogc @system
     {
         PEB_LDR_DATA* ldrData = cast(PEB_LDR_DATA*) peb[3];
         LIST_ENTRY* root = &ldrData.InLoadOrderModuleList;

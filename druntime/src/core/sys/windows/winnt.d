@@ -1197,7 +1197,7 @@ enum size_t
     IMAGE_SIZEOF_ARCHIVE_MEMBER_HDR  =  60,
     SIZEOF_RFPO_DATA                 =  16;
 
-PIMAGE_SECTION_HEADER IMAGE_FIRST_SECTION(PIMAGE_NT_HEADERS h) {
+PIMAGE_SECTION_HEADER IMAGE_FIRST_SECTION(PIMAGE_NT_HEADERS h) @system {
     return cast(PIMAGE_SECTION_HEADER)
         (cast(ubyte*) &h.OptionalHeader + h.FileHeader.SizeOfOptionalHeader);
 }

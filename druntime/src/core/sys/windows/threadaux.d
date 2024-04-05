@@ -203,14 +203,14 @@ struct thread_aux
   }
 
     // get the stack bottom (the top address) of the thread with the given handle
-    static void* getThreadStackBottom( HANDLE hnd ) nothrow @nogc
+    static void* getThreadStackBottom( HANDLE hnd ) nothrow @nogc @system
     {
         void** teb = getTEB( hnd );
         return teb[1];
     }
 
     // get the stack bottom (the top address) of the thread with the given identifier
-    static void* getThreadStackBottom( uint id ) nothrow @nogc
+    static void* getThreadStackBottom( uint id ) nothrow @nogc @system
     {
         void** teb = getTEB( id );
         return teb[1];
@@ -225,7 +225,7 @@ struct thread_aux
     ///////////////////////////////////////////////////////////////////
     // enumerate threads of the given process calling the passed function on each thread
     // using function instead of delegate here to avoid allocating closure
-    static bool enumProcessThreads( uint procid, bool function( uint id, void* context ) dg, void* context )
+    static bool enumProcessThreads( uint procid, bool function( uint id, void* context ) dg, void* context ) @system
     {
         HANDLE hnd = GetModuleHandleA( "NTDLL" );
         fnNtQuerySystemInformation fn = cast(fnNtQuerySystemInformation) GetProcAddress( hnd, "NtQuerySystemInformation" );
@@ -283,7 +283,7 @@ struct thread_aux
         impersonate_thread(id, () => fn());
     }
 
-    static void impersonate_thread( uint id, scope void delegate() dg)
+    static void impersonate_thread( uint id, scope void delegate() dg) @system
     {
         if ( id == GetCurrentThreadId() )
         {
@@ -347,7 +347,7 @@ alias thread_aux.enumProcessThreads enumProcessThreads;
 alias thread_aux.impersonate_thread impersonate_thread;
 
 // get the start of the TLS memory of the thread with the given handle
-void* GetTlsDataAddress( HANDLE hnd ) nothrow
+void* GetTlsDataAddress( HANDLE hnd ) nothrow @system
 {
     if ( void** teb = getTEB( hnd ) )
         if ( void** tlsarray = cast(void**) teb[11] )
@@ -368,7 +368,7 @@ void* GetTlsDataAddress( uint id ) nothrow
 
 // get the address of the entry in the TLS array for the current thread
 // use C mangling to access it from msvc.c
-extern(C) void** GetTlsEntryAdr()
+extern(C) void** GetTlsEntryAdr() @system
 {
     if( void** teb = getTEB() )
         if( void** tlsarray = cast(void**) teb[11] )

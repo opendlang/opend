@@ -14,6 +14,8 @@ import core.gc.registry : createGCInstance;
 
 static import core.memory;
 
+@system:
+
 private
 {
     static import core.memory;

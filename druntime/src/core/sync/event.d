@@ -96,7 +96,7 @@ nothrow @nogc:
         osEvent.destroy();
     }
 
-    deprecated ("Use setIfInitialized() instead") void set()
+    void set()
     {
         setIfInitialized();
     }

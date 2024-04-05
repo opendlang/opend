@@ -179,7 +179,7 @@ else version (linux)
         int __libc_current_sigrtmax();
     }
 
-    @property int SIGRTMIN() nothrow @nogc {
+    @property int SIGRTMIN() nothrow @nogc @system {
         __gshared static int sig = -1;
         if (sig == -1) {
             sig = __libc_current_sigrtmin();
@@ -187,7 +187,7 @@ else version (linux)
         return sig;
     }
 
-    @property int SIGRTMAX() nothrow @nogc {
+    @property int SIGRTMAX() nothrow @nogc @system {
         __gshared static int sig = -1;
         if (sig == -1) {
             sig = __libc_current_sigrtmax();
@@ -1564,7 +1564,7 @@ else version (CRuntime_Bionic)
     int sigaction(int, const scope sigaction_t*, sigaction_t*);
 
     // These functions are defined inline in bionic.
-    int sigaddset(sigset_t* set, int signum)
+    int sigaddset(sigset_t* set, int signum) @system
     {
         c_ulong* local_set = cast(c_ulong*) set;
         signum--;
@@ -1572,7 +1572,7 @@ else version (CRuntime_Bionic)
         return 0;
     }
 
-    int sigdelset(sigset_t* set, int signum)
+    int sigdelset(sigset_t* set, int signum) @system
     {
         c_ulong* local_set = cast(c_ulong*) set;
         signum--;
@@ -1584,7 +1584,7 @@ else version (CRuntime_Bionic)
 
     int sigfillset(sigset_t* set) { memset(set, ~0, (*set).sizeof); return 0; }
 
-    int sigismember(sigset_t* set, int signum)
+    int sigismember(sigset_t* set, int signum) @system
     {
         c_ulong* local_set = cast(c_ulong*) set;
         signum--;

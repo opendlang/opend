@@ -557,7 +557,7 @@ extern (C) void profilegc_setlogfilename(string name);
  * Returns:
  *   A `UnitTestResult` struct indicating the result of running unit tests.
  */
-extern (C) UnitTestResult runModuleUnitTests()
+extern (C) UnitTestResult runModuleUnitTests() @system
 {
     version (Windows)
         import core.sys.windows.stacktrace;
@@ -832,7 +832,7 @@ else static if (hasExecinfo) private class DefaultTraceInfo : Throwable.TraceInf
     import core.stdc.stdlib : free;
     import core.stdc.string : strlen, memchr, memmove;
 
-    this() @nogc
+    this() @nogc @system
     {
         // it may not be 1 but it is good enough to get
         // in CALL instruction address range for backtrace
@@ -942,7 +942,7 @@ private:
     void*[MAXFRAMES]  callstack = void;
 
 private:
-    const(char)[] fixline( const(char)[] buf, return ref char[4096] fixbuf ) const
+    const(char)[] fixline( const(char)[] buf, return ref char[4096] fixbuf ) const @system
     {
         size_t symBeg, symEnd;
 

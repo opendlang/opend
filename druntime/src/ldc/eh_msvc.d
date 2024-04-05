@@ -99,7 +99,7 @@ struct CxxExceptionInfo
 extern(C) int _d_isbaseof(ClassInfo oc, ClassInfo c);
 
 // error and exit
-extern(C) void fatalerror(const(char)* format, ...)
+extern(C) void fatalerror(const(char)* format, ...) @system
 {
     import core.stdc.stdarg;
     import core.stdc.stdio;
@@ -160,7 +160,7 @@ __gshared HashTab!(TypeInfo_Class, ImgPtr!CatchableType) catchableHashtab;
 __gshared Mutex throwInfoMutex;
 
 // create and cache throwinfo for ti
-ImgPtr!_ThrowInfo getThrowInfo(TypeInfo_Class ti)
+ImgPtr!_ThrowInfo getThrowInfo(TypeInfo_Class ti) @system
 {
     throwInfoMutex.lock();
     if (auto p = ti in throwInfoHashtab)
@@ -188,7 +188,7 @@ ImgPtr!_ThrowInfo getThrowInfo(TypeInfo_Class ti)
     return tinf;
 }
 
-ImgPtr!CatchableType getCatchableType(TypeInfo_Class ti)
+ImgPtr!CatchableType getCatchableType(TypeInfo_Class ti) @system
 {
     if (auto p = ti in catchableHashtab)
         return *p;
@@ -269,25 +269,25 @@ nothrow:
             free(_p);
     }
 
-    void push(Throwable e)
+    void push(Throwable e) @system
     {
         if (_length == _cap)
             grow();
         _p[_length++] = e;
     }
 
-    Throwable pop()
+    Throwable pop() @system
     {
         return _p[--_length];
     }
 
-    void shrink(size_t sz)
+    void shrink(size_t sz) @system
     {
         while (_length > sz)
             _p[--_length] = null;
     }
 
-    ref inout(Throwable) opIndex(size_t idx) inout
+    ref inout(Throwable) opIndex(size_t idx) inout @system
     {
         return _p[idx];
     }

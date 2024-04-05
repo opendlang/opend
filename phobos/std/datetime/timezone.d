@@ -2753,7 +2753,7 @@ private:
 
         // Extracts the name of each time zone and the offset where its data is
         // located in the tzdata file from the index and caches it for later.
-        static const(uint[string]) tzdataIndex(string tzDir)
+        static const(uint[string]) tzdataIndex(string tzDir) @system
         {
             import std.concurrency : initOnce;
 

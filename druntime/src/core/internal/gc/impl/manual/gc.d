@@ -111,7 +111,7 @@ class ManualGC : GC
         return p;
     }
 
-    BlkInfo qalloc(size_t size, uint bits, const scope TypeInfo ti) nothrow
+    BlkInfo qalloc(size_t size, uint bits, const scope TypeInfo ti) nothrow @system
     {
         BlkInfo retval;
         retval.base = malloc(size, bits, ti);
@@ -129,7 +129,7 @@ class ManualGC : GC
         return p;
     }
 
-    void* realloc(void* p, size_t size, uint bits, const TypeInfo ti) nothrow
+    void* realloc(void* p, size_t size, uint bits, const TypeInfo ti) nothrow @system
     {
         p = cstdlib.realloc(p, size);
 
@@ -195,7 +195,7 @@ class ManualGC : GC
         roots.insertBack(Root(p));
     }
 
-    void removeRoot(void* p) nothrow @nogc
+    void removeRoot(void* p) nothrow @nogc @system
     {
         foreach (ref r; roots)
         {
@@ -224,7 +224,7 @@ class ManualGC : GC
         return 0;
     }
 
-    void addRange(void* p, size_t sz, const TypeInfo ti = null) nothrow @nogc
+    void addRange(void* p, size_t sz, const TypeInfo ti = null) nothrow @nogc @system
     {
         ranges.insertBack(Range(p, p + sz, cast() ti));
     }

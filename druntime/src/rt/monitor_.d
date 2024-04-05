@@ -17,7 +17,7 @@ import core.atomic, core.stdc.stdlib, core.stdc.string;
 //       may not be safe or desirable.  Thus, devt is only valid if impl is
 //       null.
 
-extern (C) void _d_setSameMutex(shared Object ownee, shared Object owner) nothrow
+extern (C) void _d_setSameMutex(shared Object ownee, shared Object owner) nothrow @system
 in
 {
     assert(ownee.__monitor is null);
@@ -230,7 +230,7 @@ struct Monitor
 
 private:
 
-@property ref shared(Monitor*) monitor(return scope Object h) pure nothrow @nogc
+@property ref shared(Monitor*) monitor(return scope Object h) pure nothrow @nogc @system
 {
     return *cast(shared Monitor**)&h.__monitor;
 }

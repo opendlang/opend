@@ -380,7 +380,7 @@ private extern(C) const(char)* getprogname();
 /// Returns the path to the process' executable as newly allocated C string
 /// (free() when done), or null on error.
 version (LinuxOrBSD)
-char* thisExePath()
+char* thisExePath() @system
 {
     version (linux)
     {
@@ -448,7 +448,7 @@ char* thisExePath()
 
 // Tries to read the target of the specified link as newly allocated C string.
 // Returns null on error; free() result otherwise when done.
-private char* readLink(const(char)* link)
+private char* readLink(const(char)* link) @system
 {
     for (size_t bufferSize = 128; bufferSize < 131_072; bufferSize *= 2)
     {

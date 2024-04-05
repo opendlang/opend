@@ -46,20 +46,20 @@ struct OsCondition
         m_assocMutex = m;
     }
 
-    void destroy() @nogc
+    void destroy() @nogc @system
     {
         int rc = pthread_cond_destroy( &m_hndl );
         assert( !rc, "Unable to destroy condition" );
     }
 
-    void wait()
+    void wait() @system
     {
         int rc = pthread_cond_wait( cast(pthread_cond_t*) &m_hndl, &m_assocMutex.osMutex.m_hndl);
         if ( rc )
             throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
     }
 
-    bool wait( Duration val)
+    bool wait( Duration val) @system
     {
         timespec t = void;
         mktspec( t, val );
@@ -74,7 +74,7 @@ struct OsCondition
         throw staticError!AssertError("Unable to wait for condition", __FILE__, __LINE__);
     }
 
-    void notify()
+    void notify() @system
     {
         // Since OS X 10.7 (Lion), pthread_cond_signal returns EAGAIN after retrying 8192 times,
         // so need to retrying while it returns EAGAIN.
@@ -96,7 +96,7 @@ struct OsCondition
             throw staticError!AssertError("Unable to notify condition", __FILE__, __LINE__);
     }
 
-    void notifyAll()
+    void notifyAll() @system
     {
         // Since OS X 10.7 (Lion), pthread_cond_broadcast returns EAGAIN after retrying 8192 times,
         // so need to retrying while it returns EAGAIN.
