@@ -196,12 +196,12 @@ version (linux)
                 return (cmsg.cmsg_len + size_t.sizeof -1) & cast(size_t)(~(size_t.sizeof - 1));
             }
 
-            private inout(cmsghdr)* __CMSG_NEXT(inout(cmsghdr)* cmsg) pure nothrow @nogc
+            private inout(cmsghdr)* __CMSG_NEXT(inout(cmsghdr)* cmsg) pure nothrow @system @nogc
             {
                 return cmsg + __CMSG_LEN(cmsg);
             }
 
-            private inout(msghdr)* __MHDR_END(inout(msghdr)* mhdr) pure nothrow @nogc
+            private inout(msghdr)* __MHDR_END(inout(msghdr)* mhdr) pure nothrow @system @nogc
             {
                 return cast(inout(msghdr)*)(mhdr.msg_control + mhdr.msg_controllen);
             }
