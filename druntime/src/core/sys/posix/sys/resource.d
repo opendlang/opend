@@ -77,19 +77,27 @@ version (linux)
     enum
     {
         PRIO_PROCESS = 0,
-        PRIO_PGRP    = 1,
-        PRIO_USER    = 2,
+        PRIO_PGRP = 1,
+        PRIO_USER = 2,
     }
 
-    static if (__USE_FILE_OFFSET64)
-         alias ulong rlim_t;
-    else
-         alias c_ulong rlim_t;
-
-    static if (__USE_FILE_OFFSET64)
-        enum RLIM_INFINITY = 0xffffffffffffffffUL;
-    else
+    version (CRuntime_Musl)
+    {
+        alias c_ulong rlim_t;
         enum RLIM_INFINITY = cast(c_ulong)(~0UL);
+    }
+    else
+    {
+        static if (__USE_FILE_OFFSET64)
+            alias ulong rlim_t;
+        else
+            alias c_ulong rlim_t;
+
+        static if (__USE_FILE_OFFSET64)
+            enum RLIM_INFINITY = 0xffffffffffffffffUL;
+        else
+            enum RLIM_INFINITY = cast(c_ulong)(~0UL);
+    }
 
     enum RLIM_SAVED_MAX = RLIM_INFINITY;
     enum RLIM_SAVED_CUR = RLIM_INFINITY;

@@ -604,15 +604,8 @@ else version (CRuntime_Musl)
     void   srandom(uint);
     int    unlockpt(int);
 
-  static if ( __USE_LARGEFILE64 )
-  {
-    int    mkstemp64(char*);
-    alias  mkstemp64 mkstemp;
-  }
-  else
-  {
     int    mkstemp(char*);
-  }
+    alias  mkstemp64 = mkstemp;
 
 }
 else version (Solaris)
