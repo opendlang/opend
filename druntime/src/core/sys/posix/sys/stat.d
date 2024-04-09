@@ -71,14 +71,6 @@ version (linux)
         {
             dev_t       st_dev;
             ushort      __pad1;
-            static if (!__USE_FILE_OFFSET64)
-            {
-                ino_t       st_ino;
-            }
-            else
-            {
-                uint        __st_ino;
-            }
             mode_t      st_mode;
             nlink_t     st_nlink;
             uid_t       st_uid;
@@ -109,14 +101,25 @@ version (linux)
                 time_t      st_ctime;
                 ulong_t     st_ctimensec;
             }
-            static if (__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 ino_t       st_ino;
+                c_ulong     __unused4;
+                c_ulong     __unused5;
             }
             else
             {
-                c_ulong     __unused4;
-                c_ulong     __unused5;
+                static if (__USE_FILE_OFFSET64)
+                {
+                    uint        __st_ino;
+                    ino_t       st_ino;
+                }
+                else
+                {
+                    ino_t       st_ino;
+                    c_ulong     __unused4;
+                    c_ulong     __unused5;
+                }
             }
         }
     }
@@ -183,14 +186,6 @@ version (linux)
             __dev_t st_dev;
             ushort __pad1;
 
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __ino_t st_ino;
-            }
-            else
-            {
-                __ino_t __st_ino;
-            }
             __mode_t st_mode;
             __nlink_t st_nlink;
             __uid_t st_uid;
@@ -198,24 +193,33 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
+                __ino_t st_ino;
                 __off_t st_size;
+                __blkcnt_t st_blocks;
+                c_ulong __unused4;
+                c_ulong __unused5;
             }
             else
             {
-                __off64_t st_size;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    __ino_t st_ino;
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                    c_ulong __unused4;
+                    c_ulong __unused5;
+                }
+                else
+                {
+                    __ino_t __st_ino;
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                    __ino64_t st_ino;
+                }
             }
             __blksize_t st_blksize;
-
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __blkcnt_t st_blocks;
-            }
-            else
-            {
-                __blkcnt64_t st_blocks;
-            }
 
             static if ( _DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -238,21 +242,18 @@ version (linux)
                 __time_t st_ctime;
                 c_ulong st_ctimensec;
             }
-
-            static if (!__USE_FILE_OFFSET64)
-            {
-                c_ulong __unused4;
-                c_ulong __unused5;
-            }
-            else
-            {
-                __ino64_t st_ino;
-            }
         }
-        static if (__USE_FILE_OFFSET64)
-            static assert(stat_t.sizeof == 104);
-        else
+        version (CRuntime_Musl)
+        {
             static assert(stat_t.sizeof == 88);
+        }
+        else
+        {
+            static if (__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 104);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
     }
     else version (MIPS_O32)
     {
@@ -266,16 +267,29 @@ version (linux)
             uid_t       st_uid;
             gid_t       st_gid;
             c_ulong     st_rdev;
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 c_long[2]   st_pad2;
                 off_t       st_size;
                 c_long      st_pad3;
+                blkcnt_t    st_blocks;
             }
             else
             {
-                c_long[3]   st_pad2;
-                off_t       st_size;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    c_long[2]   st_pad2;
+                    off_t       st_size;
+                    c_long      st_pad3;
+                    blkcnt_t    st_blocks;
+                }
+                else
+                {
+                    c_long[3]   st_pad2;
+                    off_t       st_size;
+                    c_long      st_pad4;
+                    blkcnt_t    st_blocks;
+                }
             }
             static if (_DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -299,21 +313,19 @@ version (linux)
                 c_ulong     st_ctimensec;
             }
             blksize_t   st_blksize;
-            static if (!__USE_FILE_OFFSET64)
-            {
-                blkcnt_t    st_blocks;
-            }
-            else
-            {
-                c_long      st_pad4;
-                blkcnt_t    st_blocks;
-            }
             c_long[14]  st_pad5;
         }
-        static if (!__USE_FILE_OFFSET64)
+        version (CRuntime_Musl)
+        {
             static assert(stat_t.sizeof == 144);
+        }
         else
-            static assert(stat_t.sizeof == 160);
+        {
+            static if (!__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 144);
+            else
+                static assert(stat_t.sizeof == 160);
+        }
     }
     else version (MIPS64)
     {
@@ -327,7 +339,7 @@ version (linux)
             uid_t       st_uid;
             gid_t       st_gid;
             dev_t       st_rdev;
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 uint[2]     st_pad2;
                 off_t       st_size;
@@ -335,8 +347,17 @@ version (linux)
             }
             else
             {
-                uint[3]     st_pad2;
-                off_t       st_size;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    uint[2]     st_pad2;
+                    off_t       st_size;
+                    int         st_pad3;
+                }
+                else
+                {
+                    uint[3]     st_pad2;
+                    off_t       st_size;
+                }
             }
             static if (_DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -366,17 +387,31 @@ version (linux)
         }
         version (MIPS_N32)
         {
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
+            {
                 static assert(stat_t.sizeof == 160);
+            }
             else
-                static assert(stat_t.sizeof == 176);
+            {
+                static if (!__USE_FILE_OFFSET64)
+                    static assert(stat_t.sizeof == 160);
+                else
+                    static assert(stat_t.sizeof == 176);
+            }
         }
         else version (MIPS_O64)
         {
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
+            {
                 static assert(stat_t.sizeof == 160);
+            }
             else
-                static assert(stat_t.sizeof == 176);
+            {
+                static if (!__USE_FILE_OFFSET64)
+                    static assert(stat_t.sizeof == 160);
+                else
+                    static assert(stat_t.sizeof == 176);
+            }
         }
         else
         {
@@ -388,13 +423,20 @@ version (linux)
         struct stat_t
         {
             dev_t       st_dev;
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
-                ushort  __pad1;
                 ino_t   st_ino;
             }
             else
-                ino_t   st_ino;
+            {
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    ushort  __pad1;
+                    ino_t   st_ino;
+                }
+                else
+                    ino_t   st_ino;
+            }
             mode_t      st_mode;
             nlink_t     st_nlink;
             uid_t       st_uid;
@@ -428,10 +470,17 @@ version (linux)
             c_ulong     __unused4;
             c_ulong     __unused5;
         }
-        static if (__USE_FILE_OFFSET64)
-            static assert(stat_t.sizeof == 104);
-        else
+        version (CRuntime_Musl)
+        {
             static assert(stat_t.sizeof == 88);
+        }
+        else
+        {
+            static if (__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 104);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
     }
     else version (PPC64)
     {
@@ -498,13 +547,26 @@ version (linux)
         {
             __dev_t st_dev;
 
-            static if (__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
-                __ino64_t st_ino;
+                __ino_t st_ino;
+                __off_t st_size;
+                __blkcnt_t st_blocks;
             }
             else
             {
-                __ino_t st_ino;
+                static if (__USE_FILE_OFFSET64)
+                {
+                    __ino64_t st_ino;
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                }
+                else
+                {
+                    __ino_t st_ino;
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                }
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -513,25 +575,8 @@ version (linux)
             __dev_t st_rdev;
             __dev_t __pad1;
 
-            static if (__USE_FILE_OFFSET64)
-            {
-                __off64_t st_size;
-            }
-            else
-            {
-                __off_t st_size;
-            }
             __blksize_t st_blksize;
             int __pad2;
-
-            static if (__USE_FILE_OFFSET64)
-            {
-                __blkcnt64_t st_blocks;
-            }
-            else
-            {
-                __blkcnt_t st_blocks;
-            }
 
             static if (_DEFAULT_SOURCE)
             {
@@ -581,13 +626,31 @@ version (linux)
             __dev_t st_dev;
             ushort __pad1;
 
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 __ino_t st_ino;
+                __off_t st_size;
+                __blkcnt_t st_blocks;
+                c_ulong __unused4;
+                c_ulong __unused5;
             }
             else
             {
-                __ino_t __st_ino;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    __ino_t st_ino;
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                    c_ulong __unused4;
+                    c_ulong __unused5;
+                }
+                else
+                {
+                    __ino_t __st_ino;
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                    __ino64_t st_ino;
+                }
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -596,24 +659,7 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __off_t st_size;
-            }
-            else
-            {
-                __off64_t st_size;
-            }
             __blksize_t st_blksize;
-
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __blkcnt_t st_blocks;
-            }
-            else
-            {
-                __blkcnt64_t st_blocks;
-            }
 
             static if ( _DEFAULT_SOURCE || _XOPEN_SOURCE >= 700)
             {
@@ -636,21 +682,18 @@ version (linux)
                 __time_t st_ctime;
                 c_ulong st_ctimensec;
             }
-
-            static if (!__USE_FILE_OFFSET64)
-            {
-                c_ulong __unused4;
-                c_ulong __unused5;
-            }
-            else
-            {
-                __ino64_t st_ino;
-            }
         }
-        static if (__USE_FILE_OFFSET64)
-            static assert(stat_t.sizeof == 104);
-        else
+        version (CRuntime_Musl)
+        {
             static assert(stat_t.sizeof == 88);
+        }
+        else
+        {
+            static if (__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 104);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
     }
     else version (AArch64)
     {
@@ -675,13 +718,26 @@ version (linux)
         {
             __dev_t st_dev;
 
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 __ino_t st_ino;
+                __off_t st_size;
+                __blkcnt_t st_blocks;
             }
             else
             {
-                __ino64_t st_ino;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    __ino_t st_ino;
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                }
+                else
+                {
+                    __ino64_t st_ino;
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                }
             }
             __mode_t st_mode;
             __nlink_t st_nlink;
@@ -690,25 +746,8 @@ version (linux)
             __dev_t st_rdev;
             __dev_t __pad1;
 
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __off_t st_size;
-            }
-            else
-            {
-                __off64_t st_size;
-            }
             __blksize_t st_blksize;
             int __pad2;
-
-            static if (!__USE_FILE_OFFSET64)
-            {
-                __blkcnt_t st_blocks;
-            }
-            else
-            {
-                __blkcnt64_t st_blocks;
-            }
 
             static if (_DEFAULT_SOURCE)
             {
@@ -776,24 +815,25 @@ version (linux)
             __dev_t st_rdev;
             ushort __pad2;
 
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
             {
                 __off_t st_size;
-            }
-            else
-            {
-                __off64_t st_size;
-            }
-            __blksize_t st_blksize;
-
-            static if (!__USE_FILE_OFFSET64)
-            {
                 __blkcnt_t st_blocks;
             }
             else
             {
-                __blkcnt64_t st_blocks;
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                }
+                else
+                {
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                }
             }
+            __blksize_t st_blksize;
 
             static if (_XOPEN_SOURCE >= 700)
             {
@@ -820,14 +860,24 @@ version (linux)
             c_ulong __unused4;
             c_ulong __unused5;
         }
-        static if (__USE_LARGEFILE64) alias stat_t stat64_t;
-
-        static if (__WORDSIZE == 64)
-            static assert(stat_t.sizeof == 144);
-        else static if (__USE_FILE_OFFSET64)
-            static assert(stat_t.sizeof == 104);
+        version (CRuntime_Musl)
+        {
+            static if (__WORDSIZE == 64)
+                static assert(stat_t.sizeof == 144);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
         else
-            static assert(stat_t.sizeof == 88);
+        {
+            static if (__USE_LARGEFILE64) alias stat_t stat64_t;
+
+            static if (__WORDSIZE == 64)
+                static assert(stat_t.sizeof == 144);
+            else static if (__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 104);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
 
     }
     else version (S390)
@@ -863,15 +913,25 @@ version (linux)
             __gid_t st_gid;
             __dev_t st_rdev;
             uint __pad2;
-            static if (!__USE_FILE_OFFSET64)
+            version (CRuntime_Musl)
+            {
                 __off_t st_size;
-            else
-                __off64_t st_size;
-            __blksize_t st_blksize;
-            static if (!__USE_FILE_OFFSET64)
                 __blkcnt_t st_blocks;
+            }
             else
-                __blkcnt64_t st_blocks;
+            {
+                static if (!__USE_FILE_OFFSET64)
+                {
+                    __off_t st_size;
+                    __blkcnt_t st_blocks;
+                }
+                else
+                {
+                    __off64_t st_size;
+                    __blkcnt64_t st_blocks;
+                }
+            }
+            __blksize_t st_blksize;
             static if (_XOPEN_SOURCE >= 700)
             {
                 __timespec st_atim;
@@ -901,10 +961,17 @@ version (linux)
             else
                 __ino64_t st_ino;
         }
-        static if (__USE_FILE_OFFSET64)
-            static assert(stat_t.sizeof == 104);
-        else
+        version (CRuntime_Musl)
+        {
             static assert(stat_t.sizeof == 88);
+        }
+        else
+        {
+            static if (__USE_FILE_OFFSET64)
+                static assert(stat_t.sizeof == 104);
+            else
+                static assert(stat_t.sizeof == 88);
+        }
     }
     else version (SystemZ)
     {
