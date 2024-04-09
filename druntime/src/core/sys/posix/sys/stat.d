@@ -103,7 +103,7 @@ version (linux)
             }
             version (CRuntime_Musl)
             {
-                uint        __st_ino;
+                ino_t       st_ino;
                 c_ulong     __unused4;
                 c_ulong     __unused5;
             }
@@ -111,11 +111,11 @@ version (linux)
             {
                 static if (__USE_FILE_OFFSET64)
                 {
-                    ino_t       st_ino;
+                    uint        __st_ino;
                 }
                 else
                 {
-                    uint        __st_ino;
+                    ino_t       st_ino;
                     c_ulong     __unused4;
                     c_ulong     __unused5;
                 }
