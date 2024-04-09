@@ -112,6 +112,7 @@ version (linux)
                 static if (__USE_FILE_OFFSET64)
                 {
                     uint        __st_ino;
+                    ino_t       st_ino;
                 }
                 else
                 {
