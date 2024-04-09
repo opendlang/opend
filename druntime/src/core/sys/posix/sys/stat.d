@@ -719,10 +719,11 @@ version (linux)
 
             version (CRuntime_Musl)
             {
-                __ino64_t st_ino;
-                __off64_t st_size;
-                __blkcnt64_t st_blocks;
-            } else
+                __ino_t st_ino;
+                __off_t st_size;
+                __blkcnt_t st_blocks;
+            }
+            else
             {
                 static if (!__USE_FILE_OFFSET64)
                 {
