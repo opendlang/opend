@@ -951,11 +951,12 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
                          * by the initializer syntax. if a CInitializer has a Designator, it is probably
                          * a nested anonymous struct
                          */
-                        if (cix.initializerList.length)
+                        int found;
+                        foreach (dix; cix.initializerList)
                         {
-                            DesigInit dix = cix.initializerList[0];
                             Designators* dlistx = dix.designatorList;
-                            if (dlistx && (*dlistx).length == 1 && (*dlistx)[0].ident)
+                            if (!dlistx) continue;
+                            if ((*dlistx).length == 1 && (*dlistx)[0].ident)
                             {
                                 auto id = (*dlistx)[0].ident;
                                 foreach (k, f; sd.fields[])         // linear search for now
@@ -966,11 +967,18 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
                                         si.addInit(id, dix.initializer);
                                         ++fieldi;
                                         ++index;
-                                        continue Loop1;
+                                        ++found;
+                                        break;
                                     }
                                 }
                             }
+                            else {
+                                error(ci.loc, "only 1 designator currently allowed for C struct field initializer `%s`", toChars(ci));
+                            }
                         }
+
+                        if (found == cix.initializerList.length)
+                            continue Loop1;
                     }
 
                     VarDeclaration field;
