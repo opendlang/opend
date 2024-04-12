@@ -71,18 +71,28 @@ version (CRuntime_Glibc) {
         }
     }
 
-    static if ( __USE_FILE_OFFSET64 )
-    {
-        int statvfs64 (const char * file, statvfs_t* buf);
-        alias statvfs64 statvfs;
-
-        int fstatvfs64 (int fildes, statvfs_t *buf) @trusted;
-        alias fstatvfs64 fstatvfs;
-    }
-    else
+    version (CRuntime_Musl)
     {
         int statvfs (const char * file, statvfs_t* buf);
         int fstatvfs (int fildes, statvfs_t *buf);
+        alias statvfs64 = statvfs;
+        alias fstatvfs64 = fstatvfs;
+    }
+    else
+    {
+        static if ( __USE_FILE_OFFSET64 )
+        {
+            int statvfs64 (const char * file, statvfs_t* buf);
+            alias statvfs64 statvfs;
+
+            int fstatvfs64 (int fildes, statvfs_t *buf) @trusted;
+            alias fstatvfs64 fstatvfs;
+        }
+        else
+        {
+            int statvfs (const char * file, statvfs_t* buf);
+            int fstatvfs (int fildes, statvfs_t *buf);
+        }
     }
 
 }

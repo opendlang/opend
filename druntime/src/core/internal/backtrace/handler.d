@@ -48,7 +48,7 @@ class LibunwindHandler : Throwable.TraceInfo
      *                    Defaults to 1. Note that the opApply will not
      *                    show any frames that appear before _d_throwdwarf.
      */
-    public this (size_t frames_to_skip = 1) nothrow @nogc
+    public this (size_t frames_to_skip = 1) nothrow @system @nogc
     {
         import core.stdc.string : strlen;
 
