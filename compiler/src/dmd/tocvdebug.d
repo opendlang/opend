@@ -83,7 +83,7 @@ uint visibilityToCVAttr(Visibility.Kind vis) pure nothrow @safe @nogc
     return attribute;
 }
 
-uint cv4_memfunctypidx(FuncDeclaration fd)
+uint cv4_memfunctypidx(FuncDeclaration fd) @system
 {
     //printf("cv4_memfunctypidx(fd = '%s')\n", fd.toChars());
 
@@ -144,7 +144,7 @@ uint cv4_memfunctypidx(FuncDeclaration fd)
 enum CV4_NAMELENMAX = 0x3b9f;                   // found by trial and error
 enum CV8_NAMELENMAX = 0xffff;                   // length record is 16-bit only
 
-uint cv4_Denum(EnumDeclaration e)
+uint cv4_Denum(EnumDeclaration e) @system
 {
     //dbg_printf("cv4_Denum(%s)\n", e.toChars());
     const uint property = (!e.members || !e.memtype || !e.memtype.isintegral())
@@ -252,7 +252,7 @@ uint cv4_Denum(EnumDeclaration e)
  * Returns:
  *      aligned count
  */
-uint cv_align(ubyte *p, uint n)
+uint cv_align(ubyte *p, uint n) @system
 {
     if (config.fulltypes == CV8)
     {
@@ -277,7 +277,7 @@ uint cv_align(ubyte *p, uint n)
  *      id = name of user defined type
  *      typidx = type index
  */
-void cv_udt(const char* id, uint typidx)
+void cv_udt(const char* id, uint typidx) @system
 {
     if (config.fulltypes == CV8)
         return cv8_udt(id, typidx);
@@ -394,7 +394,7 @@ struct CvFieldList
         }
     }
 
-    ubyte* writePtr()
+    ubyte* writePtr() @system
     {
         assert(writeIndex < fieldLists.length);
         auto fld = &fieldLists[writeIndex];
@@ -416,7 +416,7 @@ struct CvFieldList
         fieldLists[writeIndex].writepos += n;
     }
 
-    idx_t debtyp()
+    idx_t debtyp() @system
     {
         idx_t typidx;
         auto numCreate = canSplitList ? fieldLists.length : 1;
@@ -464,7 +464,7 @@ int cv_mem_p(Dsymbol s, void* ctx)
 }
 
 
-void toDebug(StructDeclaration sd)
+void toDebug(StructDeclaration sd) @system
 {
     if (target.os != Target.OS.Windows)
         return;
@@ -600,7 +600,7 @@ void toDebug(StructDeclaration sd)
 }
 
 
-void toDebug(ClassDeclaration cd)
+void toDebug(ClassDeclaration cd) @system
 {
     if (target.os != Target.OS.Windows)
         return;
@@ -800,7 +800,7 @@ void toDebug(ClassDeclaration cd)
 //    return typidx;
 }
 
-private uint writeField(ubyte* p, const char* id, uint attr, uint typidx, uint offset)
+private uint writeField(ubyte* p, const char* id, uint attr, uint typidx, uint offset) @system
 {
     if (config.fulltypes == CV8)
     {
@@ -823,7 +823,7 @@ private uint writeField(ubyte* p, const char* id, uint attr, uint typidx, uint o
     }
 }
 
-void toDebugClosure(Symbol* closstru)
+void toDebugClosure(Symbol* closstru) @system
 {
     if (target.os != Target.OS.Windows)
         return;
@@ -944,7 +944,7 @@ private extern (C++) class CVMember : Visitor
     {
     }
 
-    void cvMemberCommon(Dsymbol s, const(char)* id, idx_t typidx)
+    void cvMemberCommon(Dsymbol s, const(char)* id, idx_t typidx) @system
     {
         if (!p)
             result = cv_stringbytes(id);
@@ -1002,7 +1002,7 @@ private extern (C++) class CVMember : Visitor
         cvMemberCommon(ed, ed.toChars(), cv4_Denum(ed));
     }
 
-    override void visit(FuncDeclaration fd)
+    override void visit(FuncDeclaration fd) @system
     {
         //printf("FuncDeclaration.cvMember() '%s'\n", fd.toChars());
 
@@ -1117,7 +1117,7 @@ private extern (C++) class CVMember : Visitor
         }
     }
 
-    override void visit(VarDeclaration vd)
+    override void visit(VarDeclaration vd) @system
     {
         //printf("VarDeclaration.cvMember(p = %p) '%s'\n", p, vd.toChars());
 

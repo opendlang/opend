@@ -151,7 +151,7 @@ extern (C++) final class StaticForeach : RootObject
      * to
      *     static foreach (x; AliasSeq!(1, 2, 3, 4)) { ... }
      */
-    private extern(D) void lowerArrayAggregate(Scope* sc)
+    private extern(D) void lowerArrayAggregate(Scope* sc) @system
     {
         auto aggr = aggrfe.aggr;
         Expression el = new ArrayLengthExp(aggr.loc, aggr);
@@ -312,7 +312,7 @@ extern (C++) final class StaticForeach : RootObject
      *     sc = The current scope.
      */
 
-    private void lowerNonArrayAggregate(Scope* sc)
+    private void lowerNonArrayAggregate(Scope* sc) @system
     {
         auto nvars = aggrfe ? aggrfe.parameters.length : 1;
         auto aloc = aggrfe ? aggrfe.aggr.loc : rangefe.lwr.loc;

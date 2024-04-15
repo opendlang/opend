@@ -1856,7 +1856,7 @@ private void cv4_func(Funcsym *s, ref symtab_t symtab)
         }
 
 
-        static void endArgs()
+        static void endArgs() @system
         {
             __gshared ushort[2] endargs = [ 2, S_ENDARG ];
             objmod.write_bytes(SegData[DEBSYM],endargs[]);
@@ -1873,7 +1873,7 @@ private void cv4_func(Funcsym *s, ref symtab_t symtab)
             size_t offOffset = cast(char*)&block32.offset - cast(char*)&block32;
             objmod.reftoident(DEBSYM, soffset + offOffset, sfunc, offset + sfunc.Soffset, CFseg | CFoff);
         }
-        static void endBlock()
+        static void endBlock() @system
         {
             if (cntOpenBlocks-- >= 255)
                 return; // optlink does not like more than 255 scope blocks

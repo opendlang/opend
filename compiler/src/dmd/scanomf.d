@@ -36,7 +36,7 @@ private enum LOG = false;
  *      eSink =       where the error messages go
  */
 void scanOmfObjModule(void delegate(const(char)[] name, int pickAny) nothrow pAddSymbol,
-        scope const ubyte[] base, scope const char* module_name, Loc loc, ErrorSink eSink)
+        scope const ubyte[] base, scope const char* module_name, Loc loc, ErrorSink eSink) @system
 {
     static if (LOG)
     {
@@ -184,7 +184,7 @@ void scanOmfObjModule(void delegate(const(char)[] name, int pickAny) nothrow pAd
  * Returns:
  *      true for corrupt OMF data
  */
-bool scanOmfLib(void delegate(char* name, void* base, size_t length) nothrow pAddObjModule, scope void* buf, size_t buflen, uint pagesize)
+bool scanOmfLib(void delegate(char* name, void* base, size_t length) nothrow pAddObjModule, scope void* buf, size_t buflen, uint pagesize) @system
 {
     /* Split up the buffer buf[0..buflen] into multiple object modules,
      * each aligned on a pagesize boundary.
@@ -250,7 +250,7 @@ uint OMFObjSize(scope const void* base, size_t length, scope const char* name)
     return cast(uint)length;
 }
 
-void writeOMFObj(ref OutBuffer buf, scope const void* base, size_t length, scope const char* name)
+void writeOMFObj(ref OutBuffer buf, scope const void* base, size_t length, scope const char* name) @system
 {
     ubyte c = *cast(const(ubyte)*)base;
     if (c != THEADR && c != LHEADR)
@@ -329,7 +329,7 @@ enum LLNAMES = 0xCA;
 enum LIBIDMAX = (512 - 0x25 - 3 - 4);
 
 // max size that will fit in dictionary
-void parseName(ref scope const(ubyte)* pp, char* name)
+void parseName(ref scope const(ubyte)* pp, char* name) @system
 {
     auto p = pp;
     uint len = *p++;
@@ -345,7 +345,7 @@ void parseName(ref scope const(ubyte)* pp, char* name)
     pp = p + len;
 }
 
-ushort parseIdx(ref scope const(ubyte)* pp)
+ushort parseIdx(ref scope const(ubyte)* pp) @system
 {
     auto p = pp;
     const c = *p++;
@@ -355,7 +355,7 @@ ushort parseIdx(ref scope const(ubyte)* pp)
 }
 
 // skip numeric field of a data type of a COMDEF record
-void skipNumericField(ref scope const(ubyte)* pp)
+void skipNumericField(ref scope const(ubyte)* pp) @system
 {
     const(ubyte)* p = pp;
     const c = *p++;
@@ -371,7 +371,7 @@ void skipNumericField(ref scope const(ubyte)* pp)
 }
 
 // skip data type of a COMDEF record
-void skipDataType(ref scope const(ubyte)* pp)
+void skipDataType(ref scope const(ubyte)* pp) @system
 {
     auto p = pp;
     const c = *p++;

@@ -51,7 +51,7 @@ import dmd.visitor;
 
 // helper to check if an identifier is a C++ operator
 enum CppOperator { Cast, Assign, Eq, Index, Call, Unary, Binary, OpAssign, Unknown }
-package CppOperator isCppOperator(Identifier id)
+package CppOperator isCppOperator(Identifier id) @system
 {
     __gshared const(Identifier)[] operators = null;
     if (!operators)

@@ -2860,7 +2860,7 @@ version (IN_LLVM)
         return genCfunc(fparams, treturn, Identifier.idPool(name[0 .. strlen(name)]), stc);
     }
 
-    static FuncDeclaration genCfunc(Parameters* fparams, Type treturn, Identifier id, StorageClass stc = 0)
+    static FuncDeclaration genCfunc(Parameters* fparams, Type treturn, Identifier id, StorageClass stc = 0) @system
     {
         FuncDeclaration fd;
         TypeFunction tf;

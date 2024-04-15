@@ -52,7 +52,7 @@ nothrow:
          length = the length of `name`, excluding the terminating `'\0'`
          value = Identifier value (e.g. `Id.unitTest`) or `TOK.identifier`
      */
-    extern (D) this(const(char)* name, size_t length, int value)
+    extern (D) this(const(char)* name, size_t length, int value) @system
     in
     {
         assert(name[length] == '\0');
@@ -188,7 +188,7 @@ nothrow:
     }
 
     // Generates a new, unique, suffix for an identifier.
-    extern (D) private static size_t newSuffix()
+    extern (D) private static size_t newSuffix() @system
     {
         __gshared size_t i;
         return ++i;
@@ -215,7 +215,7 @@ nothrow:
      *      Identifier (inside Identifier.idPool) with deterministic name based
      *      on the source location.
      */
-    extern (D) static Identifier generateIdWithLoc(string prefix, const ref Loc loc)
+    extern (D) static Identifier generateIdWithLoc(string prefix, const ref Loc loc) @system
     {
         // generate `<prefix>_L<line>_C<col>`
         OutBuffer idBuf;

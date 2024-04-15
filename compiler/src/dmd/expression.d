@@ -1101,7 +1101,7 @@ extern (C++) final class IntegerExp : Expression
      * Returns:
      *      A static instance of the expression, typed as `Type.tbool`.
      */
-    static IntegerExp createBool(bool b)
+    static IntegerExp createBool(bool b) @system
     {
         __gshared IntegerExp trueExp, falseExp;
         if (!trueExp)
@@ -1620,7 +1620,7 @@ extern (C++) final class StringExp : Expression
      * Returns:
      *      number of code units
      */
-    size_t numberOfCodeUnits(int tynto = 0) const
+    size_t numberOfCodeUnits(int tynto = 0) const @system
     {
         int encSize;
         switch (tynto)
@@ -1685,7 +1685,7 @@ extern (C++) final class StringExp : Expression
      *  tyto = encoding type of the result
      *  zero = add terminating 0
      */
-    void writeTo(void* dest, bool zero, int tyto = 0) const
+    void writeTo(void* dest, bool zero, int tyto = 0) const @system
     {
         int encSize;
         switch (tyto)
@@ -1714,7 +1714,7 @@ extern (C++) final class StringExp : Expression
      * Returns:
      *  code unit at index i
      */
-    dchar getCodeUnit(size_t i) const pure
+    dchar getCodeUnit(size_t i) const pure @system
     {
         assert(i < len);
         final switch (sz)
@@ -1734,7 +1734,7 @@ extern (C++) final class StringExp : Expression
      *  i = index
      *  c = code unit to set it to
      */
-    extern (D) void setCodeUnit(size_t i, dchar c)
+    extern (D) void setCodeUnit(size_t i, dchar c) @system
     {
         assert(i < len);
         final switch (sz)
@@ -1778,7 +1778,7 @@ extern (C++) final class StringExp : Expression
      *   `this` should be considered greater than `se2`,
      *   and a value less than `0` if `this` is lesser than `se2`.
      */
-    int compare(const StringExp se2) const nothrow pure @nogc
+    int compare(const StringExp se2) const nothrow pure @nogc @system
     {
         //printf("StringExp::compare()\n");
         const len1 = len;

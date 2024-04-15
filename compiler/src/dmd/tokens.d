@@ -927,7 +927,7 @@ nothrow:
     extern(D) void appendInterpolatedPart(const(char)[] str) {
         appendInterpolatedPart(str.ptr, str.length);
     }
-    extern(D) void appendInterpolatedPart(const(char)* ptr, size_t length) {
+    extern(D) void appendInterpolatedPart(const(char)* ptr, size_t length) @system {
         assert(value == TOK.interpolated);
         if (interpolatedSet is null)
             interpolatedSet = new InterpolatedSet;
@@ -945,7 +945,7 @@ nothrow:
      *  ptr = pointer to string
      *  length = length of string
      */
-    void setString(const(char)* ptr, size_t length)
+    void setString(const(char)* ptr, size_t length) @system
     {
         value = TOK.string_;
         auto s = cast(char*)mem.xmalloc_noscan(length + 1);
@@ -987,7 +987,7 @@ nothrow:
      *  a zero-terminated string representation of the token,
      *  sometimes reusing a static buffer, sometimes leaking memory
      */
-    extern (D) const(char)[] toString() const
+    extern (D) const(char)[] toString() const @system
     {
         const bufflen = 3 + 3 * floatvalue.sizeof + 1;
         __gshared char[bufflen + 2] buffer;     // extra 2 for suffixes

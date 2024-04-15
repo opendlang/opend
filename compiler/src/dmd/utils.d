@@ -30,7 +30,7 @@ nothrow:
  * Returns:
  *   A newly-allocated string with '/' turned into backslashes
  */
-const(char)* toWinPath(const(char)* src)
+const(char)* toWinPath(const(char)* src) @system
 {
     if (src is null)
         return null;
@@ -122,7 +122,7 @@ bool ensurePathToNameExists(Loc loc, const(char)[] name)
  *   buf = Buffer to write the escaped path to
  *   fname = Path to escape
  */
-void escapePath(OutBuffer* buf, const(char)* fname)
+void escapePath(OutBuffer* buf, const(char)* fname) @system
 {
     while (1)
     {
@@ -155,7 +155,7 @@ void escapePath(OutBuffer* buf, const(char)* fname)
  *   buf = Buffer to write the escaped path to
  *   fname = Path to escape
  */
-void writeEscapedMakePath(ref OutBuffer buf, const(char)* fname)
+void writeEscapedMakePath(ref OutBuffer buf, const(char)* fname) @system
 {
     uint slashes;
 

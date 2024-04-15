@@ -851,7 +851,7 @@ public:
      + - virtual functions to ensure proper vtable layout
      + - destructors that would break RAII
      +/
-    private void checkFunctionNeedsPlaceholder(AST.FuncDeclaration fd)
+    private void checkFunctionNeedsPlaceholder(AST.FuncDeclaration fd) @system
     {
         // Omit redundant declarations - the slot was already
         // reserved in the base class
@@ -2784,7 +2784,7 @@ public:
         /// Writes a formatted message into `buf` if `printIgnored` is true
         /// and increments `ignoredCounter`
         pragma(printf)
-        private void ignored(const char* format, ...) nothrow
+        private void ignored(const char* format, ...) nothrow @system
         {
             this.ignoredCounter++;
 
@@ -3088,7 +3088,7 @@ struct DMDType
 }
 
 /// Initializes all data structures used by the header generator
-void initialize()
+void initialize() @system
 {
     __gshared bool initialized;
 

@@ -238,7 +238,7 @@ public void obj_append(Dsymbol s)
  *      symbols_towrite = array of Dsymbols
  */
 extern (D)
-private void obj_write_deferred(ref OutBuffer objbuf, Library library, ref Dsymbols symbols_towrite)
+private void obj_write_deferred(ref OutBuffer objbuf, Library library, ref Dsymbols symbols_towrite) @system
 {
     // this array can grow during the loop; do not replace with foreach
     for (size_t i = 0; i < symbols_towrite.length; ++i)
@@ -325,7 +325,7 @@ private void obj_write_deferred(ref OutBuffer objbuf, Library library, ref Dsymb
 
 extern (D)
 private Symbol *callFuncsAndGates(Module m, Symbol*[] sctors, StaticDtorDeclaration[] ectorgates,
-        const(char)* id)
+        const(char)* id) @system
 {
     if (!sctors.length && !ectorgates.length)
         return null;
@@ -709,7 +709,7 @@ private UnitTestDeclaration needsDeferredNested(FuncDeclaration fd)
     return null;
 }
 
-public void FuncDeclaration_toObjFile(FuncDeclaration fd, bool multiobj)
+public void FuncDeclaration_toObjFile(FuncDeclaration fd, bool multiobj) @system
 {
     ClassDeclaration cd = fd.parent.isClassDeclaration();
     //printf("FuncDeclaration_toObjFile(%p, %s.%s)\n", fd, fd.parent.toChars(), fd.toChars());
@@ -1472,7 +1472,7 @@ private bool entryPointFunctions(Obj objmod, FuncDeclaration fd)
  * Returns:
  *      true if haven't seen "main" before
  */
-private bool onlyOneMain(FuncDeclaration fd)
+private bool onlyOneMain(FuncDeclaration fd) @system
 {
     __gshared FuncDeclaration lastMain;
     if (lastMain)

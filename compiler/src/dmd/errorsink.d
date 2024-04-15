@@ -45,19 +45,19 @@ class ErrorSinkNull : ErrorSink
   extern (C++):
   override:
 
-    void error(const ref Loc loc, const(char)* format, ...) { }
+    void error(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void errorSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void errorSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void warning(const ref Loc loc, const(char)* format, ...) { }
+    void warning(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void warningSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void warningSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void message(const ref Loc loc, const(char)* format, ...) { }
+    void message(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void deprecation(const ref Loc loc, const(char)* format, ...) { }
+    void deprecation(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 }
 
 /*****************************************
@@ -71,7 +71,7 @@ class ErrorSinkLatch : ErrorSinkNull
 
     bool sawErrors;
 
-    void error(const ref Loc loc, const(char)* format, ...) { sawErrors = true; }
+    void error(const ref Loc loc, const(char)* format, ...) @system { sawErrors = true; }
 }
 
 /*****************************************
@@ -87,7 +87,7 @@ class ErrorSinkStderr : ErrorSink
   extern (C++):
   override:
 
-    void error(const ref Loc loc, const(char)* format, ...)
+    void error(const ref Loc loc, const(char)* format, ...) @system
     {
         fputs("Error: ", stderr);
         const p = loc.toChars();
@@ -104,9 +104,9 @@ class ErrorSinkStderr : ErrorSink
         va_end(ap);
     }
 
-    void errorSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void errorSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void warning(const ref Loc loc, const(char)* format, ...)
+    void warning(const ref Loc loc, const(char)* format, ...) @system
     {
         fputs("Warning: ", stderr);
         const p = loc.toChars();
@@ -123,9 +123,9 @@ class ErrorSinkStderr : ErrorSink
         va_end(ap);
     }
 
-    void warningSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void warningSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 
-    void deprecation(const ref Loc loc, const(char)* format, ...)
+    void deprecation(const ref Loc loc, const(char)* format, ...) @system
     {
         fputs("Deprecation: ", stderr);
         const p = loc.toChars();
@@ -142,7 +142,7 @@ class ErrorSinkStderr : ErrorSink
         va_end(ap);
     }
 
-    void message(const ref Loc loc, const(char)* format, ...)
+    void message(const ref Loc loc, const(char)* format, ...) @system
     {
         const p = loc.toChars();
         if (*p)
@@ -158,5 +158,5 @@ class ErrorSinkStderr : ErrorSink
         va_end(ap);
     }
 
-    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) { }
+    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) @system { }
 }

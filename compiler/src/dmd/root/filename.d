@@ -249,7 +249,7 @@ nothrow:
     }
 
     /// Ditto
-    extern (D) static const(char)[] removeExt(const(char)[] str)
+    extern (D) static const(char)[] removeExt(const(char)[] str) @system
     {
         auto e = ext(str);
         if (e.length)
@@ -333,7 +333,7 @@ nothrow:
     }
 
     /// Ditto
-    extern (D) static const(char)[] path(const(char)[] str)
+    extern (D) static const(char)[] path(const(char)[] str) @system
     {
         const n = name(str);
         bool hasTrailingSlash;
@@ -401,7 +401,7 @@ nothrow:
         assert(combine("foo/"[], "bar"[]) == "foo/bar");
     }
 
-    static const(char)[] buildPath(const(char)[][] fragments...)
+    static const(char)[] buildPath(const(char)[][] fragments...) @system
     {
         size_t size;
         foreach (f; fragments)
@@ -473,7 +473,7 @@ nothrow:
      *  sink = send the path pieces here, end when sink() returns !=0
      *  path = the path to split up.
      */
-    static void splitPath(int delegate(const(char)*) nothrow sink, const(char)* path)
+    static void splitPath(int delegate(const(char)*) nothrow sink, const(char)* path) @system
     {
         if (!path)
             return;
@@ -563,7 +563,7 @@ nothrow:
      * Returns:
      *   A newly allocated string (free with `FileName.free`)
      */
-    extern(D) static char[] addExt(const(char)[] name, const(char)[] ext) pure
+    extern(D) static char[] addExt(const(char)[] name, const(char)[] ext) pure @system
     {
         const len = name.length + ext.length + 2;
         auto s = cast(char*)mem.xmalloc(len);

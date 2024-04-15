@@ -491,7 +491,7 @@ else
         ++errors;
     }
 
-    extern (C++) void _init()
+    extern (C++) void _init() @system
     {
         errorSink = new ErrorSinkCompiler;
         errorSinkNull = new ErrorSinkNull;

@@ -544,7 +544,7 @@ version (IN_LLVM)
         return buf.extractChars();
     }
 
-    static void _init()
+    static void _init() @system
     {
         stringtable._init(14_000);
 

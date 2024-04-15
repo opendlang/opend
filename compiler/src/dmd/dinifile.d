@@ -133,7 +133,7 @@ const(char)* readFromEnv(const ref StringTable!(char*) environment, const(char)*
 /*********************************
  * Write to our copy of the environment, not the real environment
  */
-private bool writeToEnv(ref StringTable!(char*) environment, char* nameEqValue)
+private bool writeToEnv(ref StringTable!(char*) environment, char* nameEqValue) @system
 {
     auto p = strchr(nameEqValue, '=');
     if (!p)
@@ -173,7 +173,7 @@ void updateRealEnvironment(ref StringTable!(char*) environment)
  *      buffer = contents of configuration file
  *      sections = section names
  */
-void parseConfFile(ref StringTable!(char*) environment, const(char)[] filename, const(char)[] path, const(ubyte)[] buffer, const(Strings)* sections)
+void parseConfFile(ref StringTable!(char*) environment, const(char)[] filename, const(char)[] path, const(ubyte)[] buffer, const(Strings)* sections) @system
 {
     /********************
      * Skip spaces.

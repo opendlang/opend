@@ -362,7 +362,7 @@ Lnomatch:
 /************************************
  * Match an array of them.
  */
-private bool arrayObjectMatch(Objects* oa1, Objects* oa2)
+private bool arrayObjectMatch(Objects* oa1, Objects* oa2) @system
 {
     if (oa1 == oa2)
         return true;
@@ -418,7 +418,7 @@ private size_t arrayObjectHash(Objects* oa1)
  * Handles all Expression classes and MUST match their equals method,
  * i.e. e1.equals(e2) implies expressionHash(e1) == expressionHash(e2).
  */
-private size_t expressionHash(Expression e)
+private size_t expressionHash(Expression e) @system
 {
     import dmd.root.ctfloat : CTFloat;
     import dmd.root.hash : calcHash, mixHash;
@@ -7730,7 +7730,7 @@ version (IN_LLVM)
         members.foreachDsymbol(&symbolDg);
     }
 
-    extern (D) final void tryExpandMembers(Scope* sc2)
+    extern (D) final void tryExpandMembers(Scope* sc2) @system
     {
         __gshared int nest;
         // extracted to a function to allow windows SEH to work without destructors in the same function
@@ -7747,7 +7747,7 @@ version (IN_LLVM)
         nest--;
     }
 
-    extern (D) final void trySemantic3(Scope* sc2)
+    extern (D) final void trySemantic3(Scope* sc2) @system
     {
         // extracted to a function to allow windows SEH to work without destructors in the same function
         __gshared int nest;

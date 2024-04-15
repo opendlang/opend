@@ -54,7 +54,7 @@ Params:
 Returns:
     a newly allocated variable that can be added to the global environment
 */
-string allocNameValue(const(char)[] name, const(char)[] value) nothrow
+string allocNameValue(const(char)[] name, const(char)[] value) nothrow @system
 {
     const length = name.length + 1 + value.length;
     auto str = (cast(char*)mem.xmalloc(length + 1))[0 .. length];

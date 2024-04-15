@@ -217,7 +217,7 @@ version (Windows)
 /*****************************
  * Run the linker.  Return status of execution.
  */
-public int runLINK()
+public int runLINK() @system
 {
     const phobosLibname = finalDefaultlibname();
 

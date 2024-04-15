@@ -655,7 +655,7 @@ void asm_chktok(TOK toknum, const(char)* msg)
 /*******************************
  */
 
-PTRNTAB asm_classify(OP *pop, OPND[] opnds, out int outNumops)
+PTRNTAB asm_classify(OP *pop, OPND[] opnds, out int outNumops) @system
 {
     opflag_t[4] opflags;
     bool    bInvalid64bit = false;
@@ -1326,7 +1326,7 @@ opflag_t asm_determine_operand_flags(ref OPND popnd)
 
 code *asm_emit(Loc loc,
     uint usNumops, PTRNTAB ptb,
-    OP *pop, OPND[] opnds)
+    OP *pop, OPND[] opnds) @system
 {
     ubyte[16] instruction = void;
     size_t insIdx = 0;
@@ -2094,7 +2094,7 @@ L3:
 /*******************************
  */
 
-void asmerr(const(char)* format, ...)
+void asmerr(const(char)* format, ...) @system
 {
     if (asmstate.errors)
         return;

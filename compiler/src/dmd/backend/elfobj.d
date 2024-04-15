@@ -160,7 +160,7 @@ private __gshared OutBuffer *symtab_strings;
 // Section Headers
 __gshared Barray!(Elf32_Shdr) SecHdrTab;        // section header table
 
-const(char)* GET_SECTION_NAME(int secidx)
+const(char)* GET_SECTION_NAME(int secidx) @system
 {
     return cast(const(char)*)section_names.buf + SecHdrTab[secidx].sh_name;
 }
@@ -305,7 +305,7 @@ IDXSTR ElfObj_addstr(OutBuffer *strtab, const(char)* str)
  * Returns index into the table.
  */
 
-private IDXSTR elf_addmangled(Symbol *s)
+private IDXSTR elf_addmangled(Symbol *s) @system
 {
     //printf("elf_addmangled(%s)\n", s.Sident.ptr);
     char[DEST_LEN] dest = void;
@@ -866,7 +866,7 @@ static if (0)
  *      sorted symbol table, caller must free with util_free()
  */
 
-void *elf_renumbersyms()
+void *elf_renumbersyms() @system
 {   void *symtab;
     int nextlocal = 0;
     int nextglobal = local_cnt;
@@ -1017,7 +1017,7 @@ void ElfObj_termfile()
  *    objfilename = file name for object module (not used)
  */
 
-void ElfObj_term(const(char)* objfilename)
+void ElfObj_term(const(char)* objfilename) @system
 {
     //printf("ElfObj_term()\n");
     outfixlist();           // backpatches
@@ -1792,7 +1792,7 @@ int ElfObj_jmpTableSegment(Symbol *s)
  *      comdatseg = comdat that started the group
  */
 
-private void addSectionToComdat(IDXSEC secidx, segidx_t comdatseg)
+private void addSectionToComdat(IDXSEC secidx, segidx_t comdatseg) @system
 {
     seg_data *pseg = SegData[comdatseg];
     segidx_t groupseg = pseg.SDassocseg;
@@ -2091,7 +2091,7 @@ static if (0)
 }
 }
 
-private extern (D) char* unsstr(uint value)
+private extern (D) char* unsstr(uint value) @system
 {
     __gshared char[64] buffer = void;
 
@@ -2106,7 +2106,7 @@ private extern (D) char* unsstr(uint value)
  */
 
 private extern (D)
-char *obj_mangle2(Symbol *s,char *dest, size_t *destlen)
+char *obj_mangle2(Symbol *s,char *dest, size_t *destlen) @system
 {
     char *name;
 

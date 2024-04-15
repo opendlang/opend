@@ -44,7 +44,7 @@ class ErrorSinkCompiler : ErrorSink
   extern (C++):
   override:
 
-    void error(const ref Loc loc, const(char)* format, ...)
+    void error(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -52,7 +52,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void errorSupplemental(const ref Loc loc, const(char)* format, ...)
+    void errorSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -60,7 +60,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void warning(const ref Loc loc, const(char)* format, ...)
+    void warning(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -68,7 +68,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void warningSupplemental(const ref Loc loc, const(char)* format, ...)
+    void warningSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -76,7 +76,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void deprecation(const ref Loc loc, const(char)* format, ...)
+    void deprecation(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -84,7 +84,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...)
+    void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -92,7 +92,7 @@ class ErrorSinkCompiler : ErrorSink
         va_end(ap);
     }
 
-    void message(const ref Loc loc, const(char)* format, ...)
+    void message(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -118,7 +118,7 @@ enum Classification : Color
 static if (__VERSION__ < 2092)
     private extern (C++) void noop(const ref Loc loc, const(char)* format, ...) {}
 else
-    pragma(printf) private extern (C++) void noop(const ref Loc loc, const(char)* format, ...) {}
+    pragma(printf) private extern (C++) void noop(const ref Loc loc, const(char)* format, ...)  @system {}
 
 
 package auto previewErrorFunc(bool isDeprecated, FeatureState featureState) @safe @nogc pure nothrow
@@ -168,7 +168,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void error(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void error(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -195,7 +195,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void error(const(char)* filename, uint linnum, uint charnum, const(char)* format, ...)
+    pragma(printf) extern (C++) void error(const(char)* filename, uint linnum, uint charnum, const(char)* format, ...) @system
     {
         const loc = Loc(filename, linnum, charnum);
         va_list ap;
@@ -221,7 +221,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void errorSupplemental(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void errorSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -245,7 +245,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void warning(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void warning(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -270,7 +270,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void warningSupplemental(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void warningSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -295,7 +295,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void deprecation(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void deprecation(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -320,7 +320,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void deprecationSupplemental(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void deprecationSupplemental(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -345,7 +345,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void message(const ref Loc loc, const(char)* format, ...)
+    pragma(printf) extern (C++) void message(const ref Loc loc, const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -368,7 +368,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void message(const(char)* format, ...)
+    pragma(printf) extern (C++) void message(const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -405,7 +405,7 @@ static if (__VERSION__ < 2092)
         va_end(ap);
     }
 else
-    pragma(printf) extern (C++) void tip(const(char)* format, ...)
+    pragma(printf) extern (C++) void tip(const(char)* format, ...) @system
     {
         va_list ap;
         va_start(ap, format);
@@ -589,7 +589,7 @@ extern (C++) void verrorReportSupplemental(const ref Loc loc, const(char)* forma
  *      ap      = printf-style variadic arguments
  *      info    = context of error
  */
-private void verrorPrint(const(char)* format, va_list ap, ref ErrorInfo info)
+private void verrorPrint(const(char)* format, va_list ap, ref ErrorInfo info) @system
 {
     const(char)* header;    // title of error message
     if (info.supplemental)
@@ -795,7 +795,7 @@ enum HIGHLIGHT : ubyte
  * Analogous to doc.highlightCode2()
  */
 
-private void colorHighlightCode(ref OutBuffer buf)
+private void colorHighlightCode(ref OutBuffer buf) @system
 {
     import dmd.lexer;
     import dmd.tokens;

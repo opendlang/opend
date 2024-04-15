@@ -78,7 +78,7 @@ final class LibMach : Library
      * If the buffer is NULL, use module_name as the file name
      * and load the file.
      */
-    override void addObject(const(char)[] module_name, const ubyte[] buffer)
+    override void addObject(const(char)[] module_name, const ubyte[] buffer) @system
     {
         static if (LOG)
         {
@@ -331,7 +331,7 @@ private:
      *      dictionary
      *      object modules...
      */
-    protected override void writeLibToBuffer(ref OutBuffer libbuf)
+    protected override void writeLibToBuffer(ref OutBuffer libbuf) @system
     {
         static if (LOG)
         {
@@ -511,7 +511,7 @@ struct MachLibHeader
     char[MACH_TRAILER_SIZE] trailer;
 }
 
-extern (C++) void MachOmToHeader(MachLibHeader* h, MachObjModule* om)
+extern (C++) void MachOmToHeader(MachLibHeader* h, MachObjModule* om) @system
 {
     const slen = om.name.length;
     int nzeros = 8 - ((slen + 4) & 7);

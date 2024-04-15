@@ -48,7 +48,7 @@ public:
      * Returns:
      *  allocated data, null for nbytes==0
      */
-    void* malloc(size_t nbytes)
+    void* malloc(size_t nbytes) @system
     {
         if (!nbytes)
             return null;
@@ -115,7 +115,7 @@ public:
      * Returns:
      *  true if it points into the region
      */
-    bool contains(void* p) pure @nogc
+    bool contains(void* p) pure @nogc @system
     {
         foreach (h; array[0 .. used])
         {

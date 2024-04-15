@@ -136,7 +136,7 @@ private static extern(D) SYMIDX findParentScope(ref Barray!LifeTime lifetimes, S
     return SYMIDX.max;
 }
 
-private static int getHash(const(char)* s)
+private static int getHash(const(char)* s) @system
 {
     int hash = 0;
     for (; *s; s++)

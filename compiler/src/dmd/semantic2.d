@@ -758,7 +758,7 @@ private extern(C++) final class Semantic2Visitor : Visitor
  *            only one ABI tag object is allowed per symbol
  *            (but it can have multiple tags as it's an array exp).
  */
-private void doGNUABITagSemantic(ref Expression e, ref Expression* lastTag)
+private void doGNUABITagSemantic(ref Expression e, ref Expression* lastTag) @system
 {
     import dmd.dmangle;
 

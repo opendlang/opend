@@ -159,7 +159,7 @@ __gshared size_t heapleft = 0;
 __gshared void* heapp;
 version (IN_LLVM) __gshared size_t heaptotal = 0; // Total amount of memory allocated using malloc
 
-extern (D) void* allocmemoryNoFree(size_t m_size) nothrow @nogc
+extern (D) void* allocmemoryNoFree(size_t m_size) nothrow @nogc @system
 {
     // 16 byte alignment is better (and sometimes needed) for doubles
     m_size = (m_size + 15) & ~15;
@@ -329,7 +329,7 @@ Params:
 
 Returns: A null-terminated copy of the input array.
 */
-extern (D) char[] xarraydup(const(char)[] s) pure nothrow
+extern (D) char[] xarraydup(const(char)[] s) pure nothrow @system
 {
     if (!s)
         return null;

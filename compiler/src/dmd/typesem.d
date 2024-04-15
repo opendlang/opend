@@ -5377,7 +5377,7 @@ extern (C++) Expression defaultInit(Type mt, const ref Loc loc, const bool isCfi
  *      Complex!float, Complex!double, Complex!real or null for error
  */
 
-Type getComplexLibraryType(const ref Loc loc, Scope* sc, TY ty)
+Type getComplexLibraryType(const ref Loc loc, Scope* sc, TY ty) @system
 {
     // singleton
     __gshared Type complex_float;

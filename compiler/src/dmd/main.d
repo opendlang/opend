@@ -97,7 +97,7 @@ version (IN_LLVM) {} else {
  *
  * Returns:
  * Return code of the application
- */ extern (C) int main(int argc, char** argv) {
+ */ extern (C) int main(int argc, char** argv) @system {
     bool lowmem = false;
     foreach (i; 1 .. argc)
     {
@@ -845,7 +845,7 @@ else
  * Returns: true on faiure
  */
 version (IN_LLVM) {} else
-bool parseCommandlineAndConfig(size_t argc, const(char)** argv, ref Param params, ref Strings files)
+bool parseCommandlineAndConfig(size_t argc, const(char)** argv, ref Param params, ref Strings files) @system
 {
     // Detect malformed input
     static bool badArgs()

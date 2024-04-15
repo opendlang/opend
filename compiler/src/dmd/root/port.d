@@ -38,7 +38,7 @@ extern (C++) struct Port
 {
     nothrow @nogc:
 
-    static int memicmp(scope const char* s1, scope const char* s2, size_t n) pure
+    static int memicmp(scope const char* s1, scope const char* s2, size_t n) pure @system
     {
         int result = 0;
 
@@ -58,7 +58,7 @@ extern (C++) struct Port
         return result;
     }
 
-    static char* strupr(char* s) pure
+    static char* strupr(char* s) pure @system
     {
         char* t = s;
 
@@ -136,7 +136,7 @@ extern (C++) struct Port
     }
 
     // Little endian
-    static void writelongLE(uint value, scope void* buffer) pure
+    static void writelongLE(uint value, scope void* buffer) pure @system
     {
         auto p = cast(ubyte*)buffer;
         p[3] = cast(ubyte)(value >> 24);
@@ -146,14 +146,14 @@ extern (C++) struct Port
     }
 
     // Little endian
-    static uint readlongLE(scope const void* buffer) pure
+    static uint readlongLE(scope const void* buffer) pure @system
     {
         auto p = cast(const ubyte*)buffer;
         return (((((p[3] << 8) | p[2]) << 8) | p[1]) << 8) | p[0];
     }
 
     // Big endian
-    static void writelongBE(uint value, scope void* buffer) pure
+    static void writelongBE(uint value, scope void* buffer) pure @system
     {
         auto p = cast(ubyte*)buffer;
         p[0] = cast(ubyte)(value >> 24);
@@ -163,21 +163,21 @@ extern (C++) struct Port
     }
 
     // Big endian
-    static uint readlongBE(scope const void* buffer) pure
+    static uint readlongBE(scope const void* buffer) pure @system
     {
         auto p = cast(const ubyte*)buffer;
         return (((((p[0] << 8) | p[1]) << 8) | p[2]) << 8) | p[3];
     }
 
     // Little endian
-    static uint readwordLE(scope const void* buffer) pure
+    static uint readwordLE(scope const void* buffer) pure @system
     {
         auto p = cast(const ubyte*)buffer;
         return (p[1] << 8) | p[0];
     }
 
     // Big endian
-    static uint readwordBE(scope const void* buffer) pure
+    static uint readwordBE(scope const void* buffer) pure @system
     {
         auto p = cast(const ubyte*)buffer;
         return (p[0] << 8) | p[1];

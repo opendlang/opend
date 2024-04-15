@@ -34,7 +34,7 @@ private enum LOG = false;
  *      eSink =       where the error messages go
  */
 void scanMSCoffObjModule(void delegate(const(char)[] name, int pickAny) nothrow pAddSymbol,
-        scope const ubyte[] base, const char* module_name, Loc loc, ErrorSink eSink)
+        scope const ubyte[] base, const char* module_name, Loc loc, ErrorSink eSink) @system
 {
     static if (LOG)
     {

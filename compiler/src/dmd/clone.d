@@ -784,7 +784,7 @@ Lneed:
  * Build __xtoHash for non-bitwise hashing
  *      static hash_t xtoHash(ref const S p) nothrow @trusted;
  */
-FuncDeclaration buildXtoHash(StructDeclaration sd, Scope* sc)
+FuncDeclaration buildXtoHash(StructDeclaration sd, Scope* sc) @system
 {
     if (Dsymbol s = search_function(sd, Id.tohash))
     {

@@ -396,7 +396,7 @@ nothrow:
     }
 }
 
-private Buffer readFromStdin() nothrow
+private Buffer readFromStdin() nothrow @system
 {
     import core.stdc.stdio;
     import dmd.errors;

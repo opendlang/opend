@@ -374,7 +374,7 @@ unittest
  *  dst = the data structure to save the parsed module pattern to.
  *  depth = the depth of the module pattern previously retrieved from $(D parseModulePatternDepth).
  */
-private void parseModulePattern(const(char)* modulePattern, MatcherNode* dst, ushort depth)
+private void parseModulePattern(const(char)* modulePattern, MatcherNode* dst, ushort depth) @system
 {
     bool isExclude = false;
     if (modulePattern[0] == '-')

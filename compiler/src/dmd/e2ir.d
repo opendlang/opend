@@ -5363,7 +5363,7 @@ elem *callfunc(const ref Loc loc,
         elem *ehidden,          // if !=null, this is the 'hidden' argument
         Expressions *arguments,
         elem *esel = null,      // selector for Objective-C methods (when not provided by fd)
-        elem *ethis2 = null)    // multi-context array
+        elem *ethis2 = null) @system // multi-context array
 {
     elem *ethis = null;
     elem *eside = null;

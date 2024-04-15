@@ -2930,7 +2930,7 @@ private void expressionPrettyPrint(Expression e, ref OutBuffer buf, ref HdrGenSt
  *   allowHex = whether hex floating point literals may be used
  *              for greater accuracy
  */
-void floatToBuffer(Type type, const real_t value, ref OutBuffer buf, const bool allowHex)
+void floatToBuffer(Type type, const real_t value, ref OutBuffer buf, const bool allowHex) @system
 {
     /** sizeof(value)*3 is because each byte of mantissa is max
         of 256 (3 characters). The string will be "-M.MMMMe-4932".

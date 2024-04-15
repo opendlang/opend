@@ -64,7 +64,7 @@ private size_t dmd_aaLen(const AA* aa) pure nothrow @nogc @safe
  * Add entry for key if it is not already there, returning a pointer to a null Value.
  * Create the associative array if it does not already exist.
  */
-private Value* dmd_aaGet(AA** paa, Key key) pure nothrow
+private Value* dmd_aaGet(AA** paa, Key key) pure nothrow @system
 {
     //printf("paa = %p\n", paa);
     if (!*paa)
@@ -113,7 +113,7 @@ private Value* dmd_aaGet(AA** paa, Key key) pure nothrow
  * Get value in associative array indexed by key.
  * Returns NULL if it is not already there.
  */
-private Value dmd_aaGetRvalue(AA* aa, Key key) pure nothrow @nogc
+private Value dmd_aaGetRvalue(AA* aa, Key key) pure nothrow @nogc @system
 {
     //printf("_aaGetRvalue(key = %p)\n", key);
     if (aa)
@@ -225,7 +225,7 @@ unittest
 /********************************************
  * Rehash an array.
  */
-private void dmd_aaRehash(AA** paa) pure nothrow
+private void dmd_aaRehash(AA** paa) pure nothrow @system
 {
     //printf("Rehash\n");
     if (*paa)

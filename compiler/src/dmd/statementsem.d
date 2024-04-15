@@ -3997,7 +3997,7 @@ private extern(D) Expression applyArray(ForeachStatement fs, Expression flde,
     return ec;
 }
 
-private extern(D) Expression applyAssocArray(ForeachStatement fs, Expression flde, Type tab)
+private extern(D) Expression applyAssocArray(ForeachStatement fs, Expression flde, Type tab) @system
 {
     auto taa = tab.isTypeAArray();
     Expression ec;

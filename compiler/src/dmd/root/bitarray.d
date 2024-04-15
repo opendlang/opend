@@ -28,7 +28,7 @@ struct BitArray
         return len;
     }
 
-    void length(size_t nlen) nothrow pure
+    void length(size_t nlen) nothrow pure @system
     {
         immutable ochunks = chunks(len);
         immutable nchunks = chunks(nlen);
@@ -84,7 +84,7 @@ struct BitArray
      * Returns:
      *  true if no bits are set
      */
-    bool isZero() @nogc nothrow pure
+    bool isZero() @nogc nothrow pure @system
     {
         const nchunks = chunks(len);
         foreach (i; 0 .. nchunks)
@@ -95,7 +95,7 @@ struct BitArray
         return true;
     }
 
-    void or(const ref BitArray b) @nogc nothrow pure
+    void or(const ref BitArray b) @nogc nothrow pure @system
     {
         assert(len == b.len);
         const nchunks = chunks(len);
@@ -105,7 +105,7 @@ struct BitArray
 
     /* Swap contents of `this` with `b`
      */
-    void swap(ref BitArray b) @nogc nothrow pure
+    void swap(ref BitArray b) @nogc nothrow pure @system
     {
         assert(len == b.len);
         const nchunks = chunks(len);

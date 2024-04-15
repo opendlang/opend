@@ -1203,7 +1203,7 @@ void allocDeps(PtrVarState[] pvss)
 /**************************************
  * Allocate state variables foreach node.
  */
-void allocStates(ref ObState obstate)
+void allocStates(ref ObState obstate) @system
 {
     //printf("---------------allocStates()------------------\n");
     const vlen = obstate.vars.length;

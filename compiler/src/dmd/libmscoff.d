@@ -85,7 +85,7 @@ final class LibMSCoff : Library
      * If the buffer is NULL, use module_name as the file name
      * and load the file.
      */
-    override void addObject(const(char)[] module_name, const ubyte[] buffer)
+    override void addObject(const(char)[] module_name, const ubyte[] buffer) @system
     {
         static if (LOG)
         {
@@ -645,7 +645,7 @@ struct MSCoffLibHeader
     char[MSCOFF_TRAILER_SIZE] trailer;
 }
 
-extern (C++) void MSCoffOmToHeader(MSCoffLibHeader* h, MSCoffObjModule* om)
+extern (C++) void MSCoffOmToHeader(MSCoffLibHeader* h, MSCoffObjModule* om) @system
 {
     size_t len;
     if (om.name_offset == -1)

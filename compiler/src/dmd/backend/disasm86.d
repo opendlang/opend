@@ -510,7 +510,7 @@ char *getEA(ubyte rex, uint c)
  * Params:
  *      vlen = 128: XMM, 256: YMM
  */
-char *getEAimpl(ubyte rex, uint c, int do_xmm, uint vlen)
+char *getEAimpl(ubyte rex, uint c, int do_xmm, uint vlen) @system
 {
     ubyte modrgrm,mod,reg,rm;
     uint opcode;
@@ -817,7 +817,7 @@ char *getEAimpl(ubyte rex, uint c, int do_xmm, uint vlen)
  * Returns:
  *      number of prefix bytes
  */
-int prefixbyte(uint c)
+int prefixbyte(uint c) @system
 {
     void printHex(uint prefix)
     {
@@ -906,7 +906,7 @@ int prefixbyte(uint c)
  *      p0 = hex bytes dump
  */
 
-void getVEXstring(addr c, addr siz, char *p0)
+void getVEXstring(addr c, addr siz, char *p0) @system
 {
     /* Parse VEX prefix,
      * fill in the following variables,
@@ -1494,7 +1494,7 @@ Ldone:
  *      waitflag        if 1 then generate FWAIT form of instruction
  */
 
-void get87string(addr c,char *p0,int waitflag)
+void get87string(addr c,char *p0,int waitflag) @system
 {
     uint opcode,reg,modrgrm,mod;
     const(char)* p1, p2, p3;
@@ -1770,7 +1770,7 @@ L2:
     }
 }
 
-void puts(const(char)* s)
+void puts(const(char)* s) @system
 {
     while (*s)
     {
@@ -1806,7 +1806,7 @@ mixin template PatternFunctions()
  *      c = index into code[]
  */
 
-void disassemble(uint c)
+void disassemble(uint c) @system
 {
     //printf("disassemble(c = %d, siz = %d)\n", c, siz);
     puts("   ");

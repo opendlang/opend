@@ -114,7 +114,7 @@ bool checkNonAssignmentArrayOp(Expression e, bool suggestion = false)
  * https://github.com/dlang/dmd/blob/cdfadf8a18f474e6a1b8352af2541efe3e3467cc/druntime/src/object.d#L4694
  * https://github.com/dlang/dmd/blob/master/druntime/src/core/internal/array/operations.d
  */
-Expression arrayOp(BinExp e, Scope* sc)
+Expression arrayOp(BinExp e, Scope* sc) @system
 {
     //printf("BinExp.arrayOp() %s\n", e.toChars());
     Type tb = e.type.toBasetype();

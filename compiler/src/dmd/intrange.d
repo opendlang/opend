@@ -339,7 +339,7 @@ struct IntRange
         return IntRange(lower, upper);
     }
 
-    static IntRange fromNumbers2(SignExtendedNumber* numbers)
+    static IntRange fromNumbers2(SignExtendedNumber* numbers) @system
     {
         if (numbers[0] < numbers[1])
             return IntRange(numbers[0], numbers[1]);
@@ -347,7 +347,7 @@ struct IntRange
             return IntRange(numbers[1], numbers[0]);
     }
 
-    static IntRange fromNumbers4(SignExtendedNumber* numbers)
+    static IntRange fromNumbers4(SignExtendedNumber* numbers) @system
     {
         IntRange ab = fromNumbers2(numbers);
         IntRange cd = fromNumbers2(numbers + 2);

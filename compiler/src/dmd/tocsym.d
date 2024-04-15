@@ -334,7 +334,7 @@ Symbol *toSymbol(Dsymbol s)
             fad.funcalias.accept(this);
         }
 
-        override void visit(FuncDeclaration fd)
+        override void visit(FuncDeclaration fd) @system
         {
             const(char)* id = mangleExact(fd);
 
@@ -483,7 +483,7 @@ Symbol *toSymbol(Dsymbol s)
             result = s;
         }
 
-        static type* getClassInfoCType()
+        static type* getClassInfoCType() @system
         {
             __gshared Symbol* scc;
             if (!scc)
@@ -609,7 +609,7 @@ Symbol *toImport(Dsymbol ds)
  * Thunks adjust the incoming 'this' pointer by 'offset'.
  */
 
-Symbol *toThunkSymbol(FuncDeclaration fd, int offset)
+Symbol *toThunkSymbol(FuncDeclaration fd, int offset) @system
 {
     Symbol *s = toSymbol(fd);
     if (!offset)
@@ -813,7 +813,7 @@ Symbol* toSymbol(ClassReferenceExp cre)
  * Returns:
  *      symbol of instance of __cpp_type_info_ptr
  */
-Symbol* toSymbolCpp(ClassDeclaration cd)
+Symbol* toSymbolCpp(ClassDeclaration cd) @system
 {
     assert(cd.isCPPclass());
 

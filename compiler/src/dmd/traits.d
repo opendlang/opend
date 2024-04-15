@@ -2310,7 +2310,7 @@ Lnext:
  * Params:
  *      e = the offending trait
  */
-private void traitNotFound(TraitsExp e)
+private void traitNotFound(TraitsExp e) @system
 {
     __gshared const StringTable!bool traitsStringTable;
     __gshared bool initialized;

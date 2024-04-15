@@ -162,7 +162,7 @@ class Section
  */
 final class ParamSection : Section
 {
-    override void write(Loc loc, DocComment* dc, Scope* sc, Dsymbols* a, ref OutBuffer buf)
+    override void write(Loc loc, DocComment* dc, Scope* sc, Dsymbols* a, ref OutBuffer buf) @system
     {
         assert(a.length);
         Dsymbol s = (*a)[0]; // test
@@ -397,7 +397,7 @@ extern(C++) void gendocfile(Module m, const char* ddoctext_ptr, size_t ddoctext_
  *      outbuf = append the Ddoc text to this
  */
 public
-void gendocfile(Module m, const char[] ddoctext, const char* datetime, ErrorSink eSink, ref OutBuffer outbuf)
+void gendocfile(Module m, const char[] ddoctext, const char* datetime, ErrorSink eSink, ref OutBuffer outbuf) @system
 {
 version (IN_LLVM)
 {
@@ -832,7 +832,7 @@ void emitAnchor(ref OutBuffer buf, Dsymbol s, Scope* sc, bool forHeader = false)
 /******************************* emitComment **********************************/
 
 /** Get leading indentation from 'src' which represents lines of code. */
-size_t getCodeIndent(const(char)* src)
+size_t getCodeIndent(const(char)* src) @system
 {
     while (src && (*src == '\r' || *src == '\n'))
         ++src; // skip until we find the first non-empty line
@@ -1568,7 +1568,7 @@ struct DocComment
      *      name2 = value2
      */
     extern(D) static void parseMacros(
-        Escape* escapetable, ref MacroTable pmacrotable, const(char)[] m)
+        Escape* escapetable, ref MacroTable pmacrotable, const(char)[] m) @system
     {
         const(char)* p = m.ptr;
         size_t len = m.length;
@@ -1675,7 +1675,7 @@ struct DocComment
      * Multiple escapes can be separated
      * by whitespace and/or commas.
      */
-    static void parseEscapes(Escape* escapetable, const(char)[] text)
+    static void parseEscapes(Escape* escapetable, const(char)[] text) @system
     {
         if (!escapetable)
         {
@@ -1724,7 +1724,7 @@ struct DocComment
      * If paragraph ends in 'identifier:',
      * then (*pcomment)[0 .. idlen] is the identifier.
      */
-    void parseSections(const(char)* comment)
+    void parseSections(const(char)* comment) @system
     {
         const(char)* p;
         const(char)* pstart;
@@ -1859,7 +1859,7 @@ struct DocComment
         }
     }
 
-    void writeSections(Scope* sc, Dsymbols* a, ref OutBuffer buf)
+    void writeSections(Scope* sc, Dsymbols* a, ref OutBuffer buf) @system
     {
         assert(a.length);
         //printf("DocComment::writeSections()\n");
@@ -1935,7 +1935,7 @@ struct DocComment
 /*****************************************
  * Return true if comment consists entirely of "ditto".
  */
-bool isDitto(const(char)* comment)
+bool isDitto(const(char)* comment) @system
 {
     if (comment)
     {
@@ -4136,7 +4136,7 @@ size_t endRowAndTable(ref OutBuffer buf, size_t iStart, size_t iEnd, const ref L
  *  buf   = an OutBuffer containing the DDoc
  *  offset = the index within buf to start highlighting
  */
-void highlightText(Scope* sc, Dsymbols* a, Loc loc, ref OutBuffer buf, size_t offset)
+void highlightText(Scope* sc, Dsymbols* a, Loc loc, ref OutBuffer buf, size_t offset) @system
 {
     const incrementLoc = loc.linnum == 0 ? 1 : 0;
     loc.linnum = loc.linnum + incrementLoc;
@@ -5026,7 +5026,7 @@ void highlightCode(Scope* sc, Dsymbol s, ref OutBuffer buf, size_t offset)
 
 /****************************************************
  */
-void highlightCode(Scope* sc, Dsymbols* a, ref OutBuffer buf, size_t offset)
+void highlightCode(Scope* sc, Dsymbols* a, ref OutBuffer buf, size_t offset) @system
 {
     //printf("highlightCode(a = '%s')\n", a.toChars());
     bool resolvedTemplateParameters = false;
@@ -5152,7 +5152,7 @@ void highlightCode(Scope* sc, Dsymbols* a, ref OutBuffer buf, size_t offset)
 
 /****************************************
  */
-void highlightCode3(Scope* sc, ref OutBuffer buf, const(char)* p, const(char)* pend)
+void highlightCode3(Scope* sc, ref OutBuffer buf, const(char)* p, const(char)* pend) @system
 {
     for (; p < pend; p++)
     {
@@ -5308,7 +5308,7 @@ int utfStride(const(char)* p) @nogc nothrow pure
     return cast(int)i;
 }
 
-inout(char)* stripLeadingNewlines(inout(char)* s) @nogc nothrow pure
+inout(char)* stripLeadingNewlines(inout(char)* s) @nogc nothrow pure @system
 {
     while (s && *s == '\n' || *s == '\r')
         s++;

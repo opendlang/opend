@@ -30,7 +30,7 @@ s2 = string to compare
 Returns:
 `true` if `s1 == s2` regardless of case
 */
-extern(D) static bool iequals(const(char)[] s1, const(char)[] s2) pure nothrow @nogc
+extern(D) static bool iequals(const(char)[] s1, const(char)[] s2) pure nothrow @nogc @system
 {
     import core.stdc.ctype : toupper;
 

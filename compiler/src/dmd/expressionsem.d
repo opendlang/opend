@@ -5708,7 +5708,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         return exp.expressionSemantic(sc);
     }
 
-    override void visit(CallExp exp)
+    override void visit(CallExp exp) @system
     {
         static if (LOGSEMANTIC)
         {

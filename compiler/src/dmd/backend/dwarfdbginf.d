@@ -785,7 +785,7 @@ static if (1)
      *      dfseg = SegData[] index for .debug_frame
      *      sfunc = the function
      */
-    void writeDebugFrameFDE(IDXSEC dfseg, Symbol *sfunc)
+    void writeDebugFrameFDE(IDXSEC dfseg, Symbol *sfunc) @system
     {
         if (I64)
         {
@@ -879,7 +879,7 @@ static if (1)
      *      ehunwind = will have EH unwind table
      *      CIE_offset = offset of enclosing CIE
      */
-    void writeEhFrameFDE(IDXSEC dfseg, Symbol *sfunc, bool ehunwind, uint CIE_offset)
+    void writeEhFrameFDE(IDXSEC dfseg, Symbol *sfunc, bool ehunwind, uint CIE_offset) @system
     {
         OutBuffer *buf = SegData[dfseg].SDbuf;
         const uint startsize = cast(uint)buf.length();
@@ -1428,7 +1428,7 @@ static if (1)
     /*************************************
      * Finish writing Dwarf debug info to object file.
      */
-    void dwarf_termfile()
+    void dwarf_termfile() @system
     {
         //printf("dwarf_termfile()\n");
 
@@ -1720,7 +1720,7 @@ static if (1)
     /*****************************************
      * End of code gen for function.
      */
-    void dwarf_func_term(Symbol *sfunc)
+    void dwarf_func_term(Symbol *sfunc) @system
     {
         //printf("dwarf_func_term(sfunc = '%s')\n", sfunc.Sident.ptr);
 
@@ -2087,7 +2087,7 @@ static if (1)
      * Write out symbol table for current function.
      */
 
-    void dwarf_outsym(Symbol *s)
+    void dwarf_outsym(Symbol *s) @system
     {
         //printf("dwarf_outsym('%s')\n",s.Sident.ptr);
         //symbol_print(s);
@@ -2192,7 +2192,7 @@ static if (1)
 
     /* ======================= Type Index ============================== */
 
-    uint dwarf_typidx(type *t)
+    uint dwarf_typidx(type *t) @system
     {
         uint idx = 0;
         uint nextidx;

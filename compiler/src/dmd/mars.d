@@ -216,7 +216,7 @@ version (NoMain)
  *   envvalue = The content of an environment variable
  *   args     = Array to append the flags to, if any.
  */
-void getenv_setargv(const(char)* envvalue, Strings* args)
+void getenv_setargv(const(char)* envvalue, Strings* args) @system
 {
     if (!envvalue)
         return;
@@ -574,7 +574,7 @@ else // !IN_LLVM
  *      true if errors in command line
  */
 
-bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param params, ref Strings files, ref Target target)
+bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param params, ref Strings files, ref Target target) @system
 {
     bool errors;
 

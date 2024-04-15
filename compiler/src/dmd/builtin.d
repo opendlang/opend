@@ -78,7 +78,7 @@ private:
  *  An Expression containing the return value of the call.
  */
 
-BUILTIN determine_builtin(FuncDeclaration func)
+BUILTIN determine_builtin(FuncDeclaration func) @system
 {
     auto fd = func.toAliasFunc();
     if (fd.isDeprecated())

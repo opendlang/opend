@@ -72,7 +72,7 @@ final class LibOMF : Library
      * If the buffer is NULL, use module_name as the file name
      * and load the file.
      */
-    override void addObject(const(char)[] module_name, const ubyte[] buffer)
+    override void addObject(const(char)[] module_name, const ubyte[] buffer) @system
     {
         static if (LOG)
         {
@@ -229,7 +229,7 @@ private:
      * Returns:
      *      number of pages
      */
-    ushort numDictPages(uint padding)
+    ushort numDictPages(uint padding) @system
     {
         ushort ndicpages;
         ushort bucksForHash;
@@ -300,7 +300,7 @@ private:
      * Returns:
      *      false   failure
      */
-    bool FillDict(ubyte* bucketsP, ushort ndicpages)
+    bool FillDict(ubyte* bucketsP, ushort ndicpages) @system
     {
         // max size that will fit in dictionary
         enum LIBIDMAX = (512 - 0x25 - 3 - 4);
@@ -368,7 +368,7 @@ private:
      *      dictionary header
      *      dictionary pages...
      */
-    protected override void writeLibToBuffer(ref OutBuffer libbuf)
+    protected override void writeLibToBuffer(ref OutBuffer libbuf) @system
     {
         /* Scan each of the object modules for symbols
          * to go into the dictionary
@@ -508,7 +508,7 @@ enum BUCKETSIZE = (BUCKETPAGE - HASHMOD - 1);
  * Returns:
  *      false   failure
  */
-bool EnterDict(ubyte* bucketsP, ushort ndicpages, ubyte* entry, uint entrylen)
+bool EnterDict(ubyte* bucketsP, ushort ndicpages, ubyte* entry, uint entrylen) @system
 {
     ushort uStartIndex;
     ushort uStep;

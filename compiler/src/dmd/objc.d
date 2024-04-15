@@ -65,7 +65,7 @@ struct ObjcSelector
         paramCount = pcount;
     }
 
-    extern (D) static ObjcSelector* lookup(const(char)* s)
+    extern (D) static ObjcSelector* lookup(const(char)* s) @system
     {
         size_t len = 0;
         size_t pcount = 0;

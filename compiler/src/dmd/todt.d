@@ -715,7 +715,7 @@ extern (C++) void cpp_type_info_ptr_toDt(ClassDeclaration cd, ref DtBuilder dtb)
 private void membersToDt(AggregateDeclaration ad, ref DtBuilder dtb,
         Expressions* elements, size_t firstFieldIndex,
         ClassDeclaration concreteType,
-        BaseClass*** ppb)
+        BaseClass*** ppb) @system
 {
     ClassDeclaration cd = ad.isClassDeclaration();
     const bool isCtype = ad.isCsymbol();

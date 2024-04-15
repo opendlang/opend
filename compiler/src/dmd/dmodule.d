@@ -171,7 +171,7 @@ extern (C++) class Package : ScopeDsymbol
     uint tag;        // auto incremented tag, used to mask package tree in scopes
     Module mod;     // !=null if isPkgMod == PKG.module_
 
-    final extern (D) this(const ref Loc loc, Identifier ident) nothrow
+    final extern (D) this(const ref Loc loc, Identifier ident) nothrow @system
     {
         super(loc, ident);
         __gshared uint packageTag;
@@ -1115,7 +1115,7 @@ version (IN_LLVM)
     /******************************************
      * Run semantic() on deferred symbols.
      */
-    static void runDeferredSemantic()
+    static void runDeferredSemantic() @system
     {
         __gshared int nested;
         if (nested)
@@ -1325,7 +1325,7 @@ else
      * Returns:
      *  Module of core.stdc.config, null if couldn't find it
      */
-    extern (D) static Module loadCoreStdcConfig()
+    extern (D) static Module loadCoreStdcConfig() @system
     {
         __gshared Module core_stdc_config;
         auto pkgids = new Identifier[2];
@@ -1339,7 +1339,7 @@ else
      * Returns:
      *  Module of core.atomic, null if couldn't find it
      */
-    extern (D) static Module loadCoreAtomic()
+    extern (D) static Module loadCoreAtomic() @system
     {
         __gshared Module core_atomic;
         auto pkgids = new Identifier[1];
@@ -1352,7 +1352,7 @@ else
      * Returns:
      *  Module of std.math, null if couldn't find it
      */
-    extern (D) static Module loadStdMath()
+    extern (D) static Module loadStdMath() @system
     {
         __gshared Module std_math;
         auto pkgids = new Identifier[1];

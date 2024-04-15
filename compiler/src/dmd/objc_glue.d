@@ -283,7 +283,7 @@ extern(C++) final class Supported : ObjcGlue
     }
 
     override size_t addSelectorParameterSymbol(FuncDeclaration fd,
-        Symbol** params, size_t count) const
+        Symbol** params, size_t count) const @system
     in
     {
         assert(fd);

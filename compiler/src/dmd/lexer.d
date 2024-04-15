@@ -119,7 +119,7 @@ class Lexer
     this(const(char)* filename, const(char)* base, size_t begoffset,
         size_t endoffset, bool doDocComment, bool commentToken,
         ErrorSink errorSink,
-        const CompileEnv* compileEnv) scope
+        const CompileEnv* compileEnv) scope @system
     {
         scanloc = Loc(filename, 1, 1);
         // debug printf("Lexer::Lexer(%p)\n", base);
@@ -197,7 +197,7 @@ class Lexer
     /**************************************
      * Reset lexer to lex #define's
      */
-    final void resetDefineLines(const(char)[] slice)
+    final void resetDefineLines(const(char)[] slice) @system
     {
         base = slice.ptr;
         end = base + slice.length;
@@ -299,7 +299,7 @@ class Lexer
      * Params:
      *  t = the token to set the resulting Token to
      */
-    final void scan(Token* t)
+    final void scan(Token* t) @system
     {
         const lastLine = scanloc.linnum;
         Loc startLoc;
@@ -1281,7 +1281,7 @@ class Lexer
      * Returns:
      *  the escape sequence as a single character
      */
-    private dchar escapeSequence(const ref Loc loc, ref const(char)* sequence, bool Ccompile, out dchar c2)
+    private dchar escapeSequence(const ref Loc loc, ref const(char)* sequence, bool Ccompile, out dchar c2) @system
     {
         const(char)* p = sequence; // cache sequence reference on stack
         scope(exit) sequence = p;
@@ -1452,7 +1452,7 @@ class Lexer
     Params:
         result = pointer to the token that accepts the result
     */
-    private void wysiwygStringConstant(Token* result, bool supportInterpolation = false)
+    private void wysiwygStringConstant(Token* result, bool supportInterpolation = false) @system
     {
         if (supportInterpolation)
         {
@@ -1529,7 +1529,7 @@ class Lexer
      * Lex hex strings:
      *      x"0A ae 34FE BD"
      */
-    final TOK hexStringConstant(Token* t)
+    final TOK hexStringConstant(Token* t) @system
     {
         Loc start = loc();
         uint n = 0;
@@ -1618,7 +1618,7 @@ class Lexer
     Params:
         result = pointer to the token that accepts the result
     */
-    private void delimitedStringConstant(Token* result)
+    private void delimitedStringConstant(Token* result) @system
     {
         result.value = TOK.string_;
         Loc start = loc();
@@ -1780,7 +1780,7 @@ class Lexer
     Params:
         result = pointer to the token that accepts the result
     */
-    private void tokenStringConstant(Token* result, bool supportInterpolation = false)
+    private void tokenStringConstant(Token* result, bool supportInterpolation = false) @system
     {
         if (supportInterpolation)
         {
@@ -1844,7 +1844,7 @@ class Lexer
 
     // returns true if it got special treatment as an interpolated segment
     // otherwise returns false, indicating to treat it as just part of a normal string
-    private bool handleInterpolatedSegment(Token* token, Loc start)
+    private bool handleInterpolatedSegment(Token* token, Loc start) @system
     {
         switch(*p)
         {
@@ -1899,7 +1899,7 @@ class Lexer
     *   D https://dlang.org/spec/lex.html#double_quoted_strings
     *   ImportC C11 6.4.5
     */
-    private void escapeStringConstant(Token* t, bool supportInterpolation = false)
+    private void escapeStringConstant(Token* t, bool supportInterpolation = false) @system
     {
         if (supportInterpolation)
         {
@@ -2017,7 +2017,7 @@ class Lexer
      * Reference:
      *    https://dlang.org/spec/lex.html#characterliteral
      */
-    private TOK charConstant(Token* t)
+    private TOK charConstant(Token* t) @system
     {
         TOK tk = TOK.charLiteral;
         //printf("Lexer::charConstant\n");
@@ -2118,7 +2118,7 @@ class Lexer
      * Reference:
      *  C11 6.4.4.4
      */
-    private void clexerCharConstant(ref Token t, char prefix)
+    private void clexerCharConstant(ref Token t, char prefix) @system
     {
         escapeStringConstant(&t);
         const(char)[] str = t.ustring[0 .. t.len];
@@ -2187,7 +2187,7 @@ class Lexer
     /***************************************
      * Get postfix of string literal.
      */
-    private void stringPostfix(Token* t) pure @nogc
+    private void stringPostfix(Token* t) pure @nogc @system
     {
         switch (*p)
         {
@@ -2213,7 +2213,7 @@ class Lexer
      *      TKnum
      *      TKdouble,...
      */
-    private TOK number(Token* t)
+    private TOK number(Token* t) @system
     {
         int base = 10;
         const start = p;
@@ -2537,7 +2537,7 @@ class Lexer
      * Returns:
      *  token value
      */
-    private TOK cnumber(int base, ulong n)
+    private TOK cnumber(int base, ulong n) @system
     {
         /* C11 6.4.4.1
          * Parse trailing suffixes:
@@ -2787,7 +2787,7 @@ class Lexer
      *      Exponent overflow not detected.
      *      Too much requested precision is not detected.
      */
-    private TOK inreal(Token* t)
+    private TOK inreal(Token* t) @system
     {
         //printf("Lexer::inreal()\n");
         debug
@@ -2975,7 +2975,7 @@ version (IN_LLVM) { /* *always* map C `long double` literals to D `real` ones */
         return result;
     }
 
-    final Loc loc() @nogc
+    final Loc loc() @nogc @system
     {
         scanloc.charnum = cast(ushort)(1 + p - line);
         version (LocOffset)
@@ -3147,7 +3147,7 @@ version (IN_LLVM) { /* *always* map C `long double` literals to D `real` ones */
      * Params:
      *    defines = send characters to `defines`
      */
-    final void skipToNextLine(OutBuffer* defines = null)
+    final void skipToNextLine(OutBuffer* defines = null) @system
     {
         while (1)
         {
@@ -3207,7 +3207,7 @@ version (IN_LLVM) { /* *always* map C `long double` literals to D `real` ones */
      * Same as above, but the potential error message is stored to the
      * msg parameter instead of being issued.
      */
-    private pure uint decodeUTFpure(out string msg)
+    private pure uint decodeUTFpure(out string msg) @system
     {
         const s = p;
         assert(*s & 0x80);
@@ -3236,7 +3236,7 @@ version (IN_LLVM) { /* *always* map C `long double` literals to D `real` ones */
      * If newParagraph is true, an extra newline will be
      * added between adjoining doc comments.
      */
-    private void getDocComment(Token* t, uint lineComment, bool newParagraph) pure
+    private void getDocComment(Token* t, uint lineComment, bool newParagraph) pure @system
     {
         /* ct tells us which kind of comment it is: '/', '*', or '+'
          */
@@ -3374,7 +3374,7 @@ version (IN_LLVM) { /* *always* map C `long double` literals to D `real` ones */
      * Combine two document comments into one,
      * separated by an extra newline if newParagraph is true.
      */
-    static const(char)* combineComments(const(char)[] c1, const(char)[] c2, bool newParagraph) pure
+    static const(char)* combineComments(const(char)[] c1, const(char)[] c2, bool newParagraph) pure @system
     {
         //debug printf("Lexer::combineComments('%*.s', '%*.s', '%i')\n", cast(int) c1.length, c1.ptr, cast(int) c2.length, c2.ptr, newParagraph);
         const(int) newParagraphSize = newParagraph ? 1 : 0; // Size of the combining '\n'

@@ -1201,7 +1201,7 @@ UnionExp Index(Type type, Expression e1, Expression e2, bool indexIsInBounds)
 
 /* Also return EXP.cantExpression if this fails
  */
-UnionExp Slice(Type type, Expression e1, Expression lwr, Expression upr)
+UnionExp Slice(Type type, Expression e1, Expression lwr, Expression upr) @system
 {
     UnionExp ue = void;
     Loc loc = e1.loc;
@@ -1301,7 +1301,7 @@ void sliceAssignStringFromArrayLiteral(StringExp existingSE, ArrayLiteralExp new
 /* Set a slice of string 'existingSE' from a string 'newstr'.
  *   existingSE[firstIndex..firstIndex+newstr.length] = newstr.
  */
-void sliceAssignStringFromString(StringExp existingSE, const StringExp newstr, size_t firstIndex)
+void sliceAssignStringFromString(StringExp existingSE, const StringExp newstr, size_t firstIndex) @system
 {
     assert(existingSE.ownedByCtfe != OwnedBy.code);
     size_t sz = existingSE.sz;
@@ -1314,7 +1314,7 @@ void sliceAssignStringFromString(StringExp existingSE, const StringExp newstr, s
 /* Compare a string slice with another string slice.
  * Conceptually equivalent to memcmp( se1[lo1..lo1+len],  se2[lo2..lo2+len])
  */
-int sliceCmpStringWithString(const StringExp se1, const StringExp se2, size_t lo1, size_t lo2, size_t len)
+int sliceCmpStringWithString(const StringExp se1, const StringExp se2, size_t lo1, size_t lo2, size_t len) @system
 {
     size_t sz = se1.sz;
     assert(sz == se2.sz);
@@ -1384,7 +1384,7 @@ private Expressions* copyElements(Expression e1, Expression e2 = null)
 
 /* Also return EXP.cantExpression if this fails
  */
-UnionExp Cat(const ref Loc loc, Type type, Expression e1, Expression e2)
+UnionExp Cat(const ref Loc loc, Type type, Expression e1, Expression e2) @system
 {
     UnionExp ue = void;
     Expression e = CTFEExp.cantexp;

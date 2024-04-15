@@ -3061,7 +3061,7 @@ else // !IN_LLVM
         templateInstanceSemantic(ti, sc, ArgumentList());
     }
 
-    override void visit(TemplateMixin tm)
+    override void visit(TemplateMixin tm) @system
     {
         static if (LOG)
         {
@@ -3397,7 +3397,7 @@ else // !IN_LLVM
         ns.semanticRun = PASS.semanticdone;
     }
 
-    void funcDeclarationSemantic(FuncDeclaration funcdecl)
+    void funcDeclarationSemantic(FuncDeclaration funcdecl) @system
     {
         version (none)
         {
@@ -8229,7 +8229,7 @@ private extern(C++) class SearchVisitor : Visitor
         return setResult(null);
     }
 
-    override void visit(ScopeDsymbol sds)
+    override void visit(ScopeDsymbol sds) @system
     {
         //printf("%s.ScopeDsymbol::search(ident='%s', flags=x%x)\n", sds.toChars(), ident.toChars(), flags);
         //if (strcmp(ident.toChars(),"c") == 0) *(char*)0=0;

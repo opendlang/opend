@@ -2317,7 +2317,7 @@ private void doNotInferScope(VarDeclaration v, RootObject o)
  *       inference, then its inferred attributes are copied over to final type `f`
  */
 public
-void finishScopeParamInference(FuncDeclaration funcdecl, ref TypeFunction f)
+void finishScopeParamInference(FuncDeclaration funcdecl, ref TypeFunction f) @system
 {
 
     if (funcdecl.returnInprocess)

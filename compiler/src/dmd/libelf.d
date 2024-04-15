@@ -76,7 +76,7 @@ final class LibElf : Library
      * If the buffer is NULL, use module_name as the file name
      * and load the file.
      */
-    override void addObject(const(char)[] module_name, const ubyte[] buffer)
+    override void addObject(const(char)[] module_name, const ubyte[] buffer) @system
     {
         static if (LOG)
         {
@@ -532,7 +532,7 @@ struct ElfLibHeader
     char[ELF_TRAILER_SIZE] trailer;
 }
 
-extern (C++) void ElfOmToHeader(ElfLibHeader* h, ElfObjModule* om)
+extern (C++) void ElfOmToHeader(ElfLibHeader* h, ElfObjModule* om) @system
 {
     char* buffer = cast(char*)h;
     // user_id and group_id are padded on 6 characters in Header struct.
