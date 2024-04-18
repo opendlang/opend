@@ -58,13 +58,14 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 	private {
 		static if (isUnitType!(FieldTypes[0]) || __VERSION__ < 2072) {
 			void[Largest!FieldTypes.sizeof] m_data;
+			@property ref inout(void[Largest!FieldTypes.sizeof]) rawData() inout @safe return { return m_data; }
 		} else {
 			union Dummy {
 				FieldTypes[0] initField;
 				void[Largest!FieldTypes.sizeof] data;
-				alias data this;
 			}
 			Dummy m_data = { initField: FieldTypes[0].init };
+			@property ref inout(void[Largest!FieldTypes.sizeof]) rawData() inout @trusted return { return m_data.data; }
 		}
 		Kind m_kind;
 	}
@@ -319,7 +320,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 	{
 		if (m_kind != kind) {
 			destroy(this);
-			m_data.rawEmplace(value);
+			this.rawData.rawEmplace(value);
 		} else {
 			rawSwap(trustedGet!(FieldTypes[kind]), value);
 		}
@@ -373,7 +374,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		}
 	}
 
-	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
+	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)this.rawData.ptr; }
 }
 }
 
