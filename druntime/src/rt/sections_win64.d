@@ -70,7 +70,7 @@ shared(bool) conservative;
 /****
  * Gets called on program startup just before GC is initialized.
  */
-void initSections() nothrow @nogc
+void initSections() nothrow @nogc @system
 {
     auto doshdr = cast(IMAGE_DOS_HEADER*) &__ImageBase;
 
@@ -181,7 +181,7 @@ void finiTLSRanges(void[] rng) nothrow @nogc
 {
 }
 
-void scanTLSRanges(void[] rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow
+void scanTLSRanges(void[] rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow @system
 {
     version (LDC)
     {

@@ -104,7 +104,7 @@ else // !LDC
     }
 
     // VS2013- implements stdin/out/err using a macro, VS2015+ provides __acrt_iob_func
-    FILE* _msvc_acrt_iob_func(int hnd)
+    FILE* _msvc_acrt_iob_func(int hnd) @system
     {
         if (isAvailable!__iob_func)
             return cast(FILE*) (__iob_func() + hnd);
@@ -121,7 +121,7 @@ else // !LDC
         const char* format,
         void* locale,
         va_list arglist
-    )
+    ) @system
     {
         enum _CRT_INTERNAL_PRINTF_STANDARD_SNPRINTF_BEHAVIOR = 2;
         int r = _vsnprintf(buffer, buffer_count, format, arglist);
@@ -168,7 +168,7 @@ else // !LDC
     mixin declareAlternateName!("_filbuf", "_nullfunc");
     mixin declareAlternateName!("_flsbuf", "_nullfunc");
 
-    int _msvc_fputc_nolock(int c, _iobuf* fp)
+    int _msvc_fputc_nolock(int c, _iobuf* fp) @system
     {
         fp._cnt--;
         if (fp._cnt >= 0)
@@ -181,7 +181,7 @@ else // !LDC
             return _flsbuf(c, fp);
     }
 
-    int _msvc_fgetc_nolock(_iobuf* fp)
+    int _msvc_fgetc_nolock(_iobuf* fp) @system
     {
         fp._cnt--;
         if (fp._cnt >= 0)
