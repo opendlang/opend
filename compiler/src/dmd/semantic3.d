@@ -854,7 +854,10 @@ private extern(C++) final class Semantic3Visitor : Visitor
                         if (tret.ty == Terror)
                         {
                             // https://issues.dlang.org/show_bug.cgi?id=13702
+                            auto explicit_gc = sc2.explicit_gc;
+                            sc2.explicit_gc = rs.explicit_gc;
                             exp = checkGC(sc2, exp);
+                            sc2.explicit_gc = explicit_gc;
                             continue;
                         }
 
@@ -946,7 +949,10 @@ private extern(C++) final class Semantic3Visitor : Visitor
                                 checkReturnEscape(sc2, exp, false);
                         }
 
+                        auto explicit_gc = sc2.explicit_gc;
+                        sc2.explicit_gc = rs.explicit_gc;
                         exp = checkGC(sc2, exp);
+                        sc2.explicit_gc = explicit_gc;
 
                         if (funcdecl.vresult)
                         {

@@ -1651,15 +1651,15 @@ version (IN_LLVM)
             if (fes)
                 fes.func.setUnsafe();
         }
-	/+
-	else if (isTrusted())
-	{
+        /+
+        else if (isTrusted())
+        {
             if (!gag && fmt)
                 .deprecation(loc, fmt, arg0 ? arg0.toChars() : "", arg1 ? arg1.toChars() : "", arg2 ? arg2.toChars() : "");
 
             return false;
-	}
-	+/
+        }
+        +/
         else if (isSafe())
         {
             if (!gag && fmt)
@@ -2332,6 +2332,12 @@ version (IN_LLVM)
         else if (!global.params.useGC)
         {
             .error(loc, "%s `%s` is `-betterC` yet allocates closure for `%s()` with the GC", kind, toPrettyChars, toChars());
+            if (global.gag)     // need not report supplemental errors
+                return true;
+        }
+        else if (_scope.explicit_gc)
+        {
+            .error(loc, "%s `%s` allocates closure for `%s()` with the GC under `pragma(explicit_gc)`", kind, toPrettyChars, toChars());
             if (global.gag)     // need not report supplemental errors
                 return true;
         }

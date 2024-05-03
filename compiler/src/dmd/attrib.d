@@ -90,7 +90,7 @@ extern (C++) abstract class AttribDeclaration : Dsymbol
      */
     extern (D) static Scope* createNewScope(Scope* sc, StorageClass stc, LINK linkage,
         CPPMANGLE cppmangle, Visibility visibility, int explicitVisibility,
-        AlignDeclaration aligndecl, PragmaDeclaration inlining)
+        AlignDeclaration aligndecl, PragmaDeclaration inlining, bool explicit_gc)
     {
         Scope* sc2 = sc;
         if (stc != sc.stc ||
@@ -99,7 +99,8 @@ extern (C++) abstract class AttribDeclaration : Dsymbol
             explicitVisibility != sc.explicitVisibility ||
             visibility != sc.visibility ||
             aligndecl !is sc.aligndecl ||
-            inlining != sc.inlining)
+            inlining != sc.inlining ||
+            explicit_gc != sc.explicit_gc)
         {
             // create new one for changes
             sc2 = sc.copy();
@@ -110,6 +111,7 @@ extern (C++) abstract class AttribDeclaration : Dsymbol
             sc2.explicitVisibility = explicitVisibility;
             sc2.aligndecl = aligndecl;
             sc2.inlining = inlining;
+            sc2.explicit_gc = explicit_gc;
         }
         return sc2;
     }
@@ -222,7 +224,8 @@ extern (C++) class StorageClassDeclaration : AttribDeclaration
         scstc |= stc;
         //printf("scstc = x%llx\n", scstc);
         return createNewScope(sc, scstc, sc.linkage, sc.cppmangle,
-            sc.visibility, sc.explicitVisibility, sc.aligndecl, sc.inlining);
+            sc.visibility, sc.explicitVisibility, sc.aligndecl, sc.inlining,
+            sc.explicit_gc);
     }
 
     override final bool oneMember(out Dsymbol ps, Identifier ident)
@@ -344,7 +347,7 @@ extern (C++) final class LinkDeclaration : AttribDeclaration
     override Scope* newScope(Scope* sc)
     {
         return createNewScope(sc, sc.stc, this.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility,
-            sc.aligndecl, sc.inlining);
+            sc.aligndecl, sc.inlining, sc.explicit_gc);
     }
 
     override const(char)* toChars() const
@@ -391,7 +394,7 @@ extern (C++) final class CPPMangleDeclaration : AttribDeclaration
     override Scope* newScope(Scope* sc)
     {
         return createNewScope(sc, sc.stc, LINK.cpp, cppmangle, sc.visibility, sc.explicitVisibility,
-            sc.aligndecl, sc.inlining);
+            sc.aligndecl, sc.inlining, sc.explicit_gc);
     }
 
     override const(char)* toChars() const
@@ -551,7 +554,7 @@ extern (C++) final class VisibilityDeclaration : AttribDeclaration
     {
         if (pkg_identifiers)
             dsymbolSemantic(this, sc);
-        return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, this.visibility, 1, sc.aligndecl, sc.inlining);
+        return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, this.visibility, 1, sc.aligndecl, sc.inlining, sc.explicit_gc);
     }
 
     override const(char)* kind() const
@@ -625,7 +628,7 @@ extern (C++) final class AlignDeclaration : AttribDeclaration
 
     override Scope* newScope(Scope* sc)
     {
-        return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, this, sc.inlining);
+        return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, this, sc.inlining, sc.explicit_gc);
     }
 
     override void accept(Visitor v)
@@ -702,7 +705,11 @@ extern (C++) final class PragmaDeclaration : AttribDeclaration
         {
             // We keep track of this pragma inside scopes,
             // then it's evaluated on demand in function semantic
-            return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, sc.aligndecl, this);
+            return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, sc.aligndecl, this, sc.explicit_gc);
+        }
+        if (ident == Id.explicit_gc)
+        {
+            return createNewScope(sc, sc.stc, sc.linkage, sc.cppmangle, sc.visibility, sc.explicitVisibility, sc.aligndecl, sc.inlining, evalPragmaExplicitGc(loc, sc, args));
         }
         version (IN_LLVM)
         if (IN_LLVM && ident == Id.LDC_profile_instr)

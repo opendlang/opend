@@ -1881,7 +1881,17 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 error(ps.loc, "`pragma(%s)` is missing a terminating `;`", ps.ident.toChars());
                 return setError();
             }
-            ps._body = ps._body.statementSemantic(sc);
+            if (ps.ident == Id.explicit_gc)
+            {
+                sc = sc.push();
+                sc.explicit_gc = evalPragmaExplicitGc(ps.loc, sc, ps.args);
+                ps._body = ps._body.statementSemantic(sc);
+                sc = sc.pop();
+            }
+            else
+            {
+                ps._body = ps._body.statementSemantic(sc);
+            }
         }
         result = ps._body;
     }
@@ -2584,6 +2594,8 @@ version (IN_LLVM)
          */
 
         //printf("ReturnStatement.dsymbolSemantic() %p, %s\n", rs, rs.toChars());
+
+        rs.explicit_gc = sc.explicit_gc;
 
         FuncDeclaration fd = sc.parent.isFuncDeclaration();
         if (fd.fes)

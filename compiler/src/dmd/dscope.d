@@ -135,6 +135,8 @@ version (IN_LLVM)
 
     /// inlining strategy for functions
     PragmaDeclaration inlining;
+    /// whether implicit gc allocations are disallowed
+    bool explicit_gc;
 
     /// visibility for class members
     @(mutableRefInit) Visibility visibility = Visibility(Visibility.Kind.public_);
@@ -349,7 +351,7 @@ version (IN_LLVM)
 
     extern (C++) final Dsymbol search(const ref Loc loc, Identifier ident, Dsymbol* pscopesym, uint flags = SearchOpt.all)
     {
-	return search(loc, ident, *pscopesym, flags);
+        return search(loc, ident, *pscopesym, flags);
     }
 
     /************************************
