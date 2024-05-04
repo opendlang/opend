@@ -114,6 +114,7 @@ struct Scope
     bool emitInstrumentation;   // whether to emit instrumentation with -fprofile-instr-generate
 #endif
     PragmaDeclaration *inlining; // inlining strategy for functions
+    bool explicit_gc;           // whether implicit gc allocations are disallowed
 
     Visibility visibility;            // visibility for class members
     int explicitVisibility;     // set if in an explicit visibility attribute

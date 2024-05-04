@@ -39,6 +39,7 @@ extern (C++) final class NOGCVisitor : StoppableVisitor
 public:
     FuncDeclaration f;
     bool checkOnly;     // don't print errors
+	bool explicit_gc;   // do not allow implicit gc allocations
     bool err;
 
     extern (D) this(FuncDeclaration f) scope @safe
@@ -84,6 +85,12 @@ public:
             err = true;
             return true;
         }
+        if (explicit_gc)
+        {
+	        error(e.loc, format, f.kind(), f.toPrettyChars());
+	        err = true;
+	        return true;
+        }
         if (f.setGC(e.loc, format))
         {
             error(e.loc, format, f.kind(), f.toPrettyChars());
@@ -104,7 +111,8 @@ public:
         auto fd = stripHookTraceImpl(e.f);
         if (fd.ident == Id._d_arraysetlengthT)
         {
-            if (setGC(e, "setting `length` in `@nogc` %s `%s` may cause a GC allocation"))
+	        if (setGC(e, explicit_gc ? "setting `length` in `pragma(explicit_gc)` %s `%s` may cause a GC allocation"
+	                                 : "setting `length` in `@nogc` %s `%s` may cause a GC allocation"))
                 return;
             f.printGCUsage(e.loc, "setting `length` may cause a GC allocation");
         }
@@ -114,7 +122,8 @@ public:
     {
         if (e.type.ty != Tarray || !e.elements || !e.elements.length || e.onstack)
             return;
-        if (setGC(e, "array literal in `@nogc` %s `%s` may cause a GC allocation"))
+        if (setGC(e, explicit_gc ? "array literal in `pragma(explicit_gc)` %s `%s` may cause a GC allocation"
+                                 : "array literal in `@nogc` %s `%s` may cause a GC allocation"))
             return;
         f.printGCUsage(e.loc, "array literal may cause a GC allocation");
     }
@@ -123,7 +132,8 @@ public:
     {
         if (!e.keys.length)
             return;
-        if (setGC(e, "associative array literal in `@nogc` %s `%s` may cause a GC allocation"))
+        if (setGC(e, explicit_gc ? "associative array literal in `pragma(explicit_gc)` %s `%s` may cause a GC allocation"
+                                 : "associative array literal in `@nogc` %s `%s` may cause a GC allocation"))
             return;
         f.printGCUsage(e.loc, "associative array literal may cause a GC allocation");
     }
@@ -139,7 +149,8 @@ public:
             return;
         if (global.params.ehnogc && e.thrownew)
             return;                     // separate allocator is called for this, not the GC
-
+        if (explicit_gc)
+	        return;                     // `new` is an explicit allocation
         if (setGC(e, "cannot use `new` in `@nogc` %s `%s`"))
             return;
         f.printGCUsage(e.loc, "`new` causes a GC allocation");
@@ -153,7 +164,7 @@ public:
             if (v && v.onstack)
                 return; // delete for scope allocated class object
         }
-
+        if (explicit_gc) return;
         // Semantic should have already handled this case.
         assert(0);
     }
@@ -163,7 +174,8 @@ public:
         Type t1b = e.e1.type.toBasetype();
         if (e.modifiable && t1b.ty == Taarray)
         {
-            if (setGC(e, "assigning an associative array element in `@nogc` %s `%s` may cause a GC allocation"))
+            if (setGC(e, explicit_gc ? "assigning an associative array element in `pragma(explicit_gc)` %s `%s` may cause a GC allocation"
+                                     : "assigning an associative array element in `@nogc` %s `%s` may cause a GC allocation"))
                 return;
             f.printGCUsage(e.loc, "assigning an associative array element may cause a GC allocation");
         }
@@ -173,7 +185,8 @@ public:
     {
         if (e.e1.op == EXP.arrayLength)
         {
-            if (setGC(e, "setting `length` in `@nogc` %s `%s` may cause a GC allocation"))
+            if (setGC(e, explicit_gc ? "setting `length` in `pragma(explicit_gc)` %s `%s` may cause a GC allocation"
+                                     : "setting `length` in `@nogc` %s `%s` may cause a GC allocation"))
                 return;
             f.printGCUsage(e.loc, "setting `length` may cause a GC allocation");
         }
@@ -186,14 +199,16 @@ public:
             err = true;
             return;
         }
-        if (setGC(e, "cannot use operator `~=` in `@nogc` %s `%s`"))
+        if (setGC(e, explicit_gc ? "cannot use operator `~=` in `pragma(explicit_gc)` %s `%s`"
+                                 : "cannot use operator `~=` in `@nogc` %s `%s`"))
             return;
         f.printGCUsage(e.loc, "operator `~=` may cause a GC allocation");
     }
 
     override void visit(CatExp e)
     {
-        if (setGC(e, "cannot use operator `~` in `@nogc` %s `%s`"))
+        if (setGC(e, explicit_gc ? "cannot use operator `~` in `pragma(explicit_gc)` %s `%s`"
+                                 : "cannot use operator `~` in `@nogc` %s `%s`"))
             return;
         f.printGCUsage(e.loc, "operator `~` may cause a GC allocation");
     }
@@ -209,15 +224,17 @@ Expression checkGC(Scope* sc, Expression e)
      * Detect non-CTFE use of the GC in betterC code.
      */
     const betterC = !global.params.useGC;
+    const explicit_gc = sc.explicit_gc;
     FuncDeclaration f = sc.func;
     if (e && e.op != EXP.error && f && sc.intypeof != 1 &&
            (!(sc.flags & SCOPE.ctfe) || betterC) &&
-           (f.type.ty == Tfunction &&
-            (cast(TypeFunction)f.type).isnogc || f.nogcInprocess || global.params.v.gc) &&
+           (f.type.ty == Tfunction && (cast(TypeFunction)f.type).isnogc
+            || f.nogcInprocess || global.params.v.gc || sc.explicit_gc) &&
            !(sc.flags & SCOPE.debug_))
     {
         scope NOGCVisitor gcv = new NOGCVisitor(f);
         gcv.checkOnly = betterC;
+        gcv.explicit_gc = sc.explicit_gc;
         walkPostorder(e, gcv);
         if (gcv.err)
         {

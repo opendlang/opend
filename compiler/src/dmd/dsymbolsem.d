@@ -8013,6 +8013,34 @@ PINLINE evalPragmaInline(Loc loc, Scope* sc, Expressions* args)
         return PINLINE.never;
 }
 
+bool evalPragmaExplicitGc(Loc loc, Scope* sc, Expressions* args){
+    if (!args || args.length == 0)
+        return true;
+    if (args && args.length > 1)
+    {
+        .error(loc, "one boolean expression expected for `pragma(inline)`, not %llu", cast(ulong) args.length);
+        args.setDim(1);
+        (*args)[0] = ErrorExp.get();
+    }
+
+    Expression e = (*args)[0];
+    if (!e.type)
+    {
+        sc = sc.startCTFE();
+        e = e.expressionSemantic(sc);
+        e = resolveProperties(sc, e);
+        sc = sc.endCTFE();
+        e = e.ctfeInterpret();
+        e = e.toBoolean(sc);
+        if (e.isErrorExp())
+            .error(loc, "pragma(`inline`, `true` or `false`) expected, not `%s`", (*args)[0].toChars());
+        (*args)[0] = e;
+    }
+
+    const opt = e.toBool();
+    return opt.isEmpty() || opt.get();
+}
+
 /***************************************************
  * Set up loc for a parse of a mixin. Append the input text to the mixin.
  * Params:

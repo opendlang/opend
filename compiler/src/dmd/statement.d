@@ -1345,6 +1345,7 @@ extern (C++) final class ReturnStatement : Statement
 {
     Expression exp;
     size_t caseDim;
+    bool explicit_gc = false;
 
     extern (D) this(const ref Loc loc, Expression exp) @safe
     {
