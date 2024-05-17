@@ -24,3 +24,5 @@ echo "import std.stdio; void main() { writeln(\"Hello OpenD!\");}" > hello_opend
 odmd hello_open.d
 ./hello_opend
 ```
+
+And hope it works!
