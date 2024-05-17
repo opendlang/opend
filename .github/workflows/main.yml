@@ -196,11 +196,11 @@ jobs:
         uses: ./.github/actions/5-install
         with:
           cross_compiling: true
-      #- name: 'macOS: Cross-compile iOS libraries, copy to install dir & extend ldc2.conf'
-        #if: matrix.os == 'osx'
-        #uses: ./.github/actions/5a-ios
-        #with:
-          #arch: ${{ matrix.arch }}
+      - name: 'macOS: Cross-compile iOS libraries, copy to install dir & extend ldc2.conf'
+        if: matrix.os == 'osx'
+        uses: ./.github/actions/5a-ios
+        with:
+          arch: ${{ matrix.arch }}
       - name: 'Android: Cross-compile ${{ matrix.android_x86_arch }} libraries & copy to install dir'
         if: matrix.os == 'android'
         uses: ./.github/actions/5a-android-x86
