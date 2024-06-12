@@ -616,7 +616,7 @@ else
      *      global.params.preservePaths     get output path from arg
      *      srcfile Input file - output file name must not match input file
      */
-    extern(D) FileName setOutfilename(const(char)[] name, const(char)[] dir, const(char)[] arg, const(char)[] ext)
+    extern(D) FileName setOutfilename(const(char)[] name, const(char)[] dir, const(char)[] arg, const(char)[] ext) @system
     {
         const(char)[] docfilename;
         if (name)

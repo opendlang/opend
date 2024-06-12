@@ -554,7 +554,7 @@ version (IN_LLVM)
     /**
      * detect VCToolsInstallDir from environment or registry (only used by VC 2017)
      */
-    void detectVCToolsInstallDir()
+    void detectVCToolsInstallDir() @system
     {
         if (VCToolsInstallDir is null)
             VCToolsInstallDir = getenv("VCTOOLSINSTALLDIR"w);
@@ -643,7 +643,7 @@ extern(D):
      * Returns:
      *  the registry value if it exists and has string type
      */
-    const(char)* GetRegistryString(const(char)[] softwareKeyPath, wstring valueName) const
+    const(char)* GetRegistryString(const(char)[] softwareKeyPath, wstring valueName) const @system
     {
         enum x64hive = false; // VS registry entries always in 32-bit hive
 

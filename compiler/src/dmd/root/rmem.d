@@ -128,7 +128,7 @@ extern (C++) struct Mem
         return *_pIsGCEnabled;
     }
 
-    static void disableGC() nothrow @nogc
+    static void disableGC() nothrow @nogc @system
     {
         version (IN_LLVM)
         {

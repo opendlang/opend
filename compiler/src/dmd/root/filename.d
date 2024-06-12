@@ -1143,7 +1143,7 @@ version(Windows)
      *  Nulls are propagated, i.e., if `wide` is null, the returned slice is
      *  null too.
      */
-    char[] toNarrowStringz(const(wchar)[] wide, char[] buffer = null) nothrow
+    char[] toNarrowStringz(const(wchar)[] wide, char[] buffer = null) nothrow @system
     {
         import dmd.common.file : CodePage;
 
