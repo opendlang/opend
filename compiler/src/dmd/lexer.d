@@ -1882,6 +1882,27 @@ class Lexer
             // otherwise something like i"$(func("thing")) stuff" can still include it
 
             return true;
+
+        case '_':
+        case 'a': .. case 'z':
+        case 'A': .. case 'Z':
+
+            // always put the string part in first
+            token.appendInterpolatedPart(stringbuffer);
+            stringbuffer.setsize(0);
+
+            // identifier, scan it with the lexer to follow all rules
+            auto pstart = p;
+            Token tok;
+            scan(&tok);
+
+            // then put the interpolated string segment
+            token.appendInterpolatedPart(pstart[0 .. p - pstart]);
+
+            stringbuffer.setsize(0);
+
+            return true;
+
         default:
             // nothing special
             return false;
