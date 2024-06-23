@@ -586,25 +586,7 @@ class Lexer
             case '_':
             case_ident:
                 {
-                    while (1)
-                    {
-                        const c = *++p;
-                        if (isidchar(c))
-                            continue;
-                        else if (c & 0x80)
-                        {
-                            const s = p;
-                            const u = decodeUTF();
-                            if (isUniAlpha(u))
-                                continue;
-                            error(t.loc, "char 0x%04x not allowed in identifier", u);
-                            p = s;
-                        }
-                        break;
-                    }
-                    Identifier id = Identifier.idPool((cast(char*)t.ptr)[0 .. p - t.ptr], false);
-                    t.ident = id;
-                    t.value = cast(TOK)id.getValue();
+                    Identifier id = lexIdent(t);
 
                     anyToken = 1;
 
@@ -1214,6 +1196,31 @@ class Lexer
             ct.next = t;
         }
         return t;
+    }
+
+    private Identifier lexIdent(Token* t)
+    {
+        while (1)
+        {
+            const c = *++p;
+            if (isidchar(c))
+                continue;
+            else if (c & 0x80)
+            {
+                const s = p;
+                const u = decodeUTF();
+                if (isUniAlpha(u))
+                    continue;
+                error(t.loc, "char 0x%04x not allowed in identifier", u);
+                p = s;
+            }
+            break;
+        }
+        Identifier id = Identifier.idPool((cast(char*)t.ptr)[0 .. p - t.ptr], false);
+        t.ident = id;
+        t.value = cast(TOK)id.getValue();
+
+        return id;
     }
 
     /*********************************
@@ -1893,8 +1900,12 @@ class Lexer
 
             // identifier, scan it with the lexer to follow all rules
             auto pstart = p;
+
             Token tok;
-            scan(&tok);
+            tok.ptr = p;
+            tok.loc = loc();
+            lexIdent(&tok);
+            assert (tok.value == TOK.identifier);
 
             // then put the interpolated string segment
             token.appendInterpolatedPart(pstart[0 .. p - pstart]);
