@@ -37,7 +37,7 @@ jobs:
             with_pgo: false
 
           - job_name: macOS x86_64
-            os: macos-11
+            os: macos-12
             arch: x86_64
             bootstrap_cmake_flags: >-
               -DBUILD_LTO_LIBS=ON
@@ -131,7 +131,7 @@ jobs:
         include:
 
           - job_name: macOS arm64
-            host_os: macos-11
+            host_os: macos-12
             os: osx
             arch: arm64
             bootstrap_cmake_flags: -DD_COMPILER_FLAGS=-gcc=/usr/bin/c++
