@@ -3269,8 +3269,7 @@ Lmark:
                         Gcx.instance.scanThreadData = null;
                         Gcx.instance.busyThreads = 0;
 
-                        memset(&Gcx.instance.evStart, 0, Gcx.instance.evStart.sizeof);
-                        memset(&Gcx.instance.evDone, 0, Gcx.instance.evDone.sizeof);
+                        memset(&Gcx.instance.ev, 0, Gcx.instance.ev.sizeof);
                     }
                 }
             }
@@ -3282,7 +3281,7 @@ Lmark:
 
     import core.atomic;
     import core.cpuid;
-    import core.sync.event;
+    import core.sync.event : EventAwaiter;
 
     private: // disable invariants for background threads
 
@@ -3293,8 +3292,12 @@ Lmark:
     uint numScanThreads;
     ScanThreadData* scanThreadData;
 
-    Event evStart;
-    Event evDone;
+    static struct EvStartDone
+    {
+        EventAwaiter start;
+        EventAwaiter done;
+    }
+    EvStartDone ev;
 
     shared uint busyThreads;
     shared uint stoppedThreads;
@@ -3336,7 +3339,7 @@ Lmark:
 
         busyThreads.atomicOp!"+="(1); // main thread is busy
 
-        evStart.setIfInitialized();
+        ev.start.set();
 
         debug(PARALLEL_PRINTF) printf("mark %lld roots\n", cast(ulong)(ptop - pbot));
 
@@ -3396,8 +3399,8 @@ Lmark:
         if (!scanThreadData)
             onOutOfMemoryError();
 
-        evStart.initialize(false, false);
-        evDone.initialize(false, false);
+        ev.start = EventAwaiter(false, false);
+        ev.done = EventAwaiter(false, false);
 
         version (Posix)
         {
@@ -3438,8 +3441,8 @@ Lmark:
         stopGC = true;
         while (atomicLoad(stoppedThreads) < startedThreads && !allThreadsDead)
         {
-            evStart.setIfInitialized();
-            evDone.wait(dur!"msecs"(1));
+            ev.start.set();
+            ev.done.wait(dur!"msecs"(1));
         }
 
         for (int idx = 0; idx < numScanThreads; idx++)
@@ -3451,8 +3454,8 @@ Lmark:
             }
         }
 
-        evDone.terminate();
-        evStart.terminate();
+        destroy(ev.start);
+        destroy(ev.done);
 
         cstdlib.free(scanThreadData);
         // scanThreadData = null; // keep non-null to not start again after shutdown
@@ -3465,9 +3468,9 @@ Lmark:
     {
         while (!stopGC)
         {
-            evStart.wait();
+            ev.start.wait();
             pullFromScanStack();
-            evDone.setIfInitialized();
+            ev.done.set();
         }
         stoppedThreads.atomicOp!"+="(1);
     }
@@ -3496,7 +3499,7 @@ Lmark:
         {
             if (toscan.empty)
             {
-                evDone.wait(dur!"msecs"(1));
+                ev.done.wait(dur!"msecs"(1));
                 continue;
             }
 
