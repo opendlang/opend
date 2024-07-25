@@ -7022,7 +7022,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 genObjCode = false;
             }
 
-            e.type = getTypeInfoType(exp.loc, ta, sc, genObjCode);
+            e.type = getTypeInfoType(exp.loc, ta, sc, true /* genObjCode here creates upstream bug 24599 */);
             semanticTypeInfo(sc, ta);
 
             if (ea)

@@ -4631,7 +4631,7 @@ extern (C++) final class NewDeclaration : FuncDeclaration
  */
 bool isRootTraitsCompilesScope(Scope* sc)
 {
-    return (sc.flags & SCOPE.compile) && !(sc.func.flags & SCOPE.compile);
+    return (sc.flags & SCOPE.compile) && !(sc.func.skipCodegen);
 }
 
 /**************************************
