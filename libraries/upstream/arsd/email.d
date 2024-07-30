@@ -1,5 +1,15 @@
 /++
 	Create MIME emails with things like HTML, attachments, and send with convenience wrappers around std.net.curl's SMTP function, or read email from an mbox file.
+
+	For preparing and sending outgoing email, see [EmailMessage]. For processing incoming email or opening .eml files, mbox files, etc., see [IncomingEmailMessage].
+
+	History:
+		Originally released as open source on August 11, 2012. The last-modified date of its predecessor file was January 2011.
+
+		Many of the public string members were overhauled on May 13, 2024. Compatibility methods are provided so your code will hopefully still work, but this also results in some stricter adherence to email encoding rules, so you should retest if you update after then.
+
+	Future_Directions:
+		I might merge `IncomingEmailMessage` and `EmailMessage` some day, it seems silly to have them completely separate like this.
 +/
 module arsd.email;
 
@@ -8,6 +18,10 @@ pragma(lib, "curl");
 
 import std.base64;
 import std.string;
+import std.range;
+import std.utf;
+import std.array;
+import std.algorithm.iteration;
 
 import arsd.characterencodings;
 
@@ -16,16 +30,23 @@ import arsd.characterencodings;
 
 // SEE ALSO: std.net.curl.SMTP
 
-///
+/++
+	Credentials for a SMTP relay, as passed to [std.net.curl.SMTP].
++/
 struct RelayInfo {
-	string server; ///
+	/++
+		Should be as a url, such as `smtp://example.com` or `smtps://example.com`. You normally want smtp:// - even if you want TLS encryption, smtp uses STARTTLS so it gets that. smtps will only work if the server supports tls from the start, which is not always the case.
+	+/
+	string server;
 	string username; ///
 	string password; ///
 }
 
-///
+/++
+	Representation of an email attachment.
++/
 struct MimeAttachment {
-	string type; ///
+	string type; /// e.g. `text/plain`
 	string filename; ///
 	const(ubyte)[] content; ///
 	string id; ///
@@ -38,6 +59,201 @@ enum ToType {
 	bcc
 }
 
+/++
+	Structured representation of email users, including the name and email address as separate components.
+
+	`EmailRecipient` represents a single user, and `RecipientList` represents multiple users. A "recipient" may also be a from or reply to address.
+
+
+	`RecipientList` is a wrapper over `EmailRecipient[]` that provides overloads that take string arguments, for compatibility for users of previous versions of the `arsd.email` api. It should generally work as you expect if you just pretend it is a normal array though (and if it doesn't, you can get the internal array via the `recipients` member.)
+
+	History:
+		Added May 13, 2024 (dub v12.0) to replace the old plain, public strings and arrays of strings.
++/
+struct EmailRecipient {
+	/++
+		The email user's name. It should not have quotes or any other encoding.
+
+		For example, `Adam D. Ruppe`.
+	+/
+	string name;
+	/++
+		The email address. It should not have brackets or any other encoding.
+
+		For example, `destructionator@gmail.com`.
+	+/
+	string address;
+
+	/++
+		Returns a string representing this email address, in a format suitable for inclusion in a message about to be saved or transmitted.
+
+		In many cases, this is easy to read for people too, but not in all cases.
+	+/
+	string toProtocolString(string linesep = "\r\n") {
+		if(name.length)
+			return "\"" ~ encodeEmailHeaderContentForTransmit(name, linesep) ~ "\" <" ~ address ~ ">";
+		return address;
+	}
+
+	/++
+		Returns a string representing this email address, in a format suitable for being read by people. This is not necessarily reversible.
+	+/
+	string toReadableString() {
+		if(name.length)
+			return "\"" ~ name ~ "\" <" ~ address ~ ">";
+		return address;
+	}
+
+	/++
+		Construct an `EmailRecipient` either from a name and address (preferred!) or from an encoded string as found in an email header.
+
+		Examples:
+
+		`EmailRecipient("Adam D. Ruppe", "destructionator@gmail.com")` or `EmailRecipient(`"Adam D. Ruppe" <destructionator@gmail.com>`);
+	+/
+	this(string name, string address) {
+		this.name = name;
+		this.address = address;
+	}
+
+	/// ditto
+	this(string str) {
+		this = str;
+	}
+
+	/++
+		Provided for compatibility for users of old versions of `arsd.email` - does implicit conversion from `EmailRecipient` to a plain string (in protocol format), as was present in previous versions of the api.
+	+/
+	alias toProtocolString this;
+
+	/// ditto
+	void opAssign(string str) {
+		auto idx = str.indexOf("<");
+		if(idx == -1) {
+			name = null;
+			address = str;
+		} else {
+			name = decodeEncodedWord(unquote(str[0 .. idx].strip));
+			address = str[idx + 1 .. $ - 1];
+		}
+
+	}
+}
+
+/// ditto
+struct RecipientList {
+	EmailRecipient[] recipients;
+
+	void opAssign(string[] strings) {
+		recipients = null;
+		foreach(s; strings)
+			recipients ~= EmailRecipient(s);
+	}
+	void opAssign(EmailRecipient[] recpts) {
+		this.recipients = recpts;
+	}
+
+	void opOpAssign(string op : "~")(EmailRecipient r) {
+		recipients ~= r;
+	}
+	void opOpAssign(string op : "~")(string s) {
+		recipients ~= EmailRecipient(s);
+	}
+	int opApply(int delegate(size_t idx, EmailRecipient rcp) dg) {
+		foreach(idx, item; recipients)
+			if(auto result = dg(idx, item))
+				return result;
+		return 0;
+	}
+	int opApply(int delegate(EmailRecipient rcp) dg) {
+		foreach(item; recipients)
+			if(auto result = dg(item))
+				return result;
+		return 0;
+	}
+
+	size_t length() {
+		return recipients.length;
+	}
+
+	string toProtocolString(string linesep = "\r\n") {
+		string ret;
+		foreach(idx, item; recipients) {
+			if(idx)
+				ret ~= ", ";
+			ret ~= item.toProtocolString(linesep);
+		}
+		return ret;
+	}
+
+	EmailRecipient front() { return recipients[0]; }
+	void popFront() { recipients = recipients[1 .. $]; }
+	bool empty() { return recipients.length == 0; }
+	RecipientList save() { return this; }
+}
+
+private string unquote(string s) {
+	if(s.length == 0)
+		return s;
+	if(s[0] != '"')
+		return s;
+	s = s[1 .. $-1]; // strip the quotes
+	// FIXME: possible to have \" escapes in there too
+	return s;
+}
+
+private struct CaseInsensitiveString {
+	string actual;
+
+	size_t toHash() const {
+		string l = actual.toLower;
+		return typeid(string).getHash(&l);
+	}
+	bool opEquals(ref const typeof(this) s) const {
+		return icmp(s.actual, this.actual) == 0;
+	}
+	bool opEquals(string s) const {
+		return icmp(s, this.actual) == 0;
+	}
+
+	alias actual this;
+}
+
+/++
+	A type that acts similarly to a `string[string]` to hold email headers in a case-insensitive way.
++/
+struct HeadersHash {
+	string[CaseInsensitiveString] hash;
+
+	string opIndex(string key) const {
+		return hash[CaseInsensitiveString(key)];
+	}
+	string opIndexAssign(string value, string key) {
+		return hash[CaseInsensitiveString(key)] = value;
+	}
+	inout(string)* opBinaryRight(string op : "in")(string key) inout {
+		return CaseInsensitiveString(key) in hash;
+	}
+	alias hash this;
+}
+
+unittest {
+	HeadersHash h;
+	h["From"] = "test";
+	h["from"] = "other";
+	foreach(k, v; h) {
+		assert(k == "From");
+		assert(v == "other");
+	}
+
+	assert("from" in h);
+	assert("From" in h);
+	assert(h["from"] == "other");
+
+	const(HeadersHash) ch = HeadersHash([CaseInsensitiveString("From") : "test"]);
+	assert(ch["from"] == "test");
+	assert("From" in ch);
+}
 
 /++
 	For OUTGOING email
@@ -55,24 +271,139 @@ enum ToType {
 	message.send(); // send via some relay
 	// may also set replyTo, etc
 	---
+
+	History:
+		This class got an API overhaul on May 13, 2024. Some undocumented members were removed, and some public members got changed (albeit in a mostly compatible way).
 +/
 class EmailMessage {
-	///
-	void setHeader(string name, string value) {
-		headers ~= name ~ ": " ~ value;
+	/++
+		Adds a custom header to the message. The header name should not include a colon and must not duplicate a header set elsewhere in the class; for example, do not use this to set `To`, and instead use the [to] field.
+
+		Setting the same header multiple times will overwrite the old value. It will not set duplicate headers and does not retain the specific order of which you added headers.
+
+		History:
+			Prior to May 13, 2024, this assumed the value was previously encoded. This worked most the time but also left open the possibility of incorrectly encoded values, including the possibility of injecting inappropriate headers.
+
+			Since May 13, 2024, it now encodes the header content internally. You should NOT pass pre-encoded values to this function anymore.
+
+			It also would previously allow you to set repeated headers like `Subject` or `To`. These now throw exceptions.
+
+			It previously also allowed duplicate headers. Adding the same thing twice will now silently overwrite the old value instead.
+	+/
+	void setHeader(string name, string value, string file = __FILE__, size_t line = __LINE__) {
+		import arsd.core;
+		if(name.length == 0)
+			throw new InvalidArgumentsException("name", "name cannot be an empty string", LimitedVariant(name), "setHeader", file, line);
+		if(name.indexOf(":") != -1)
+			throw new InvalidArgumentsException("name", "do not put a colon in the header name", LimitedVariant(name), "setHeader", file, line);
+		if(!headerSettableThroughAA(name))
+			throw new InvalidArgumentsException("name", "use named methods/properties for this header instead of setHeader", LimitedVariant(name), "setHeader", file, line);
+
+		headers_[name] = value;
 	}
 
-	string[] to;  ///
-	string[] cc;  ///
-	string[] bcc;  ///
-	string from;  ///
-	string replyTo;  ///
-	string inReplyTo;  ///
-	string textBody;
-	string htmlBody;
-	string subject;  ///
+	protected bool headerSettableThroughAA(string name) {
+		switch(name.toLower) {
+			case "to", "cc", "bcc":
+			case "from", "reply-to", "in-reply-to":
+			case "subject":
+			case "content-type", "content-transfer-encoding", "mime-version":
+			case "received", "return-path": // set by the MTA
+				return false;
+			default:
+				return true;
+		}
+	}
 
-	string[] headers;
+	/++
+		Recipients of the message. You can use operator `~=` to add people to this list, or you can also use [addRecipient] to achieve the same result.
+
+		---
+		message.to ~= EmailRecipient("Adam D. Ruppe", "destructionator@gmail.com");
+		message.cc ~= EmailRecipient("John Doe", "john.doe@example.com");
+		// or, same result as the above two lines:
+		message.addRecipient("Adam D. Ruppe", "destructionator@gmail.com");
+		message.addRecipient("John Doe", "john.doe@example.com", ToType.cc);
+
+		// or, the old style code that still works, but is not recommended, since
+		// it is harder to encode properly for anything except pure ascii names:
+		message.to ~= `"Adam D. Ruppe" <destructionator@gmail.com>`
+		---
+
+		History:
+			On May 13, 2024, the types of these changed. Before, they were `public string[]`; plain string arrays. This put the burden of proper encoding on the user, increasing the probability of bugs. Now, they are [RecipientList]s - internally, an array of `EmailRecipient` objects, but with a wrapper to provide compatibility with the old string-based api.
+	+/
+	RecipientList to;
+	/// ditto
+	RecipientList cc;
+	/// ditto
+	RecipientList bcc;
+
+	/++
+		Represents the `From:` and `Reply-To:` header values in the email.
+
+
+		Note that the `from` member is the "From:" header, which is not necessarily the same as the "envelope from". The "envelope from" is set by the email server usually based on your login credentials. The email server may or may not require these to match.
+
+		History:
+			On May 13, 2024, the types of these changed from plain `string` to [EmailRecipient], to try to get the encoding easier to use correctly. `EmailRecipient` offers overloads for string parameters for compatibility, so your code should not need changing, however if you use non-ascii characters in your names, you should retest to ensure it still works correctly.
+	+/
+	EmailRecipient from;
+	/// ditto
+	EmailRecipient replyTo;
+	/// The `Subject:` header value in the email.
+	string subject;
+	/// The `In-Reply-to:` header value. This should be set to the same value as the `Message-ID` header from the message you're replying to.
+	string inReplyTo;
+
+	private string textBody_;
+	private string htmlBody_;
+
+	private HeadersHash headers_;
+
+	/++
+		Gets and sets the current text body.
+
+		History:
+			Prior to May 13, 2024, this was a simple `public string` member, but still had a [setTextBody] method too. It now is a public property that works through that method.
+	+/
+	string textBody() {
+		return textBody_;
+	}
+	/// ditto
+	void textBody(string text) {
+		setTextBody(text);
+	}
+	/++
+		Gets the current html body, if any.
+
+		There is no setter for this property, use [setHtmlBody] instead.
+
+		History:
+			Prior to May 13, 2024, this was a simple `public string` member. This let you easily get the `EmailMessage` object into an inconsistent state.
+	+/
+	string htmlBody() {
+		return htmlBody_;
+	}
+
+	/++
+		If you use the send method with an SMTP server, you don't want to change this.
+		While RFC 2045 mandates CRLF as a lineseperator, there are some edge-cases where this won't work.
+		When passing the E-Mail string to a unix program which handles communication with the SMTP server, some (i.e. qmail)
+		expect the system lineseperator (LF) instead.
+		Notably, the google mail REST API will choke on CRLF lineseps and produce strange emails (as of 2024).
+
+		Do not change this after calling other methods, since it might break presaved values.
+	+/
+	string linesep = "\r\n";
+
+	/++
+		History:
+			Added May 13, 2024
+	+/
+	this(string linesep = "\r\n") {
+		this.linesep = linesep;
+	}
 
 	private bool isMime = false;
 	private bool isHtml = false;
@@ -97,19 +428,30 @@ class EmailMessage {
 		}
 	}
 
-	///
+	/++
+		Sets the plain text body of the email. You can also separately call [setHtmlBody] to set a HTML body.
+	+/
 	void setTextBody(string text) {
-		textBody = text.strip;
+		textBody_ = text.strip;
 	}
-	/// automatically sets a text fallback if you haven't already
-	void setHtmlBody()(string html) {
+	/++
+		Sets the HTML body to the mail, which can support rich text, inline images (see [addInlineImage]), etc.
+
+		Automatically sets a text fallback if you haven't already, unless you pass `false` as the `addFallback` template value. Adding the fallback requires [arsd.htmltotext].
+
+		History:
+			The `addFallback` parameter was added on May 13, 2024.
+	+/
+	void setHtmlBody(bool addFallback = true)(string html) {
 		isMime = true;
 		isHtml = true;
-		htmlBody = html;
+		htmlBody_ = html;
 
-		import arsd.htmltotext;
-		if(textBody is null)
-			textBody = htmlToText(html);
+		static if(addFallback) {
+			import arsd.htmltotext;
+			if(textBody_ is null)
+				textBody_ = htmlToText(html);
+		}
 	}
 
 	const(MimeAttachment)[] attachments;
@@ -146,22 +488,28 @@ class EmailMessage {
 	override string toString() {
 		assert(!isHtml || (isHtml && isMime));
 
-		auto headers = this.headers;
+		string[] headers;
+		foreach(k, v; this.headers_) {
+			if(headerSettableThroughAA(k))
+				headers ~= k ~ ": " ~ encodeEmailHeaderContentForTransmit(v, this.linesep);
+		}
 
 		if(to.length)
-			headers ~= "To: " ~ join(to, ", ");
+			headers ~= "To: " ~ to.toProtocolString(this.linesep);
 		if(cc.length)
-			headers ~= "Cc: " ~ join(cc, ", ");
+			headers ~= "Cc: " ~ to.toProtocolString(this.linesep);
 
 		if(from.length)
-			headers ~= "From: " ~ from;
+			headers ~= "From: " ~ from.toProtocolString(this.linesep);
+
+			//assert(0, headers[$-1]);
 
 		if(subject !is null)
-			headers ~= "Subject: " ~ subject;
+			headers ~= "Subject: " ~ encodeEmailHeaderContentForTransmit(subject, this.linesep);
 		if(replyTo !is null)
-			headers ~= "Reply-To: " ~ replyTo;
+			headers ~= "Reply-To: " ~ replyTo.toProtocolString(this.linesep);
 		if(inReplyTo !is null)
-			headers ~= "In-Reply-To: " ~ inReplyTo;
+			headers ~= "In-Reply-To: " ~ encodeEmailHeaderContentForTransmit(inReplyTo, this.linesep);
 
 		if(isMime)
 			headers ~= "MIME-Version: 1.0";
@@ -188,13 +536,14 @@ class EmailMessage {
 
 			{
 				MimeContainer mimeMessage;
+				enum NO_TRANSFER_ENCODING = "Content-Transfer-Encoding: 8bit";
 				if(isHtml) {
 					auto alternative = new MimeContainer("multipart/alternative");
-					alternative.stuff ~= new MimeContainer("text/plain; charset=UTF-8", textBody);
-					alternative.stuff ~= new MimeContainer("text/html; charset=UTF-8", htmlBody);
+					alternative.stuff ~= new MimeContainer("text/plain; charset=UTF-8", textBody_).with_header(NO_TRANSFER_ENCODING);
+					alternative.stuff ~= new MimeContainer("text/html; charset=UTF-8", htmlBody_).with_header(NO_TRANSFER_ENCODING);
 					mimeMessage = alternative;
 				} else {
-					mimeMessage = new MimeContainer("text/plain; charset=UTF-8", textBody);
+					mimeMessage = new MimeContainer("text/plain; charset=UTF-8", textBody_).with_header(NO_TRANSFER_ENCODING);
 				}
 				top = mimeMessage;
 			}
@@ -211,7 +560,7 @@ class EmailMessage {
 						auto mimeAttachment = new MimeContainer(attachment.type ~ "; name=\""~attachment.filename~"\"");
 						mimeAttachment.headers ~= "Content-Transfer-Encoding: base64";
 						mimeAttachment.headers ~= "Content-ID: <" ~ attachment.id ~ ">";
-						mimeAttachment.content = Base64.encode(cast(const(ubyte)[]) attachment.content);
+						mimeAttachment.content = encodeBase64Mime(cast(const(ubyte)[]) attachment.content, this.linesep);
 
 						mimeRelated.stuff ~= mimeAttachment;
 					}
@@ -228,12 +577,12 @@ class EmailMessage {
 
 					foreach(attachment; attachments) {
 						auto mimeAttachment = new MimeContainer(attachment.type);
-						mimeAttachment.headers ~= "Content-Disposition: attachment; filename=\""~attachment.filename~"\"";
+						mimeAttachment.headers ~= "Content-Disposition: attachment; filename=\""~encodeEmailHeaderContentForTransmit(attachment.filename, this.linesep)~"\"";
 						mimeAttachment.headers ~= "Content-Transfer-Encoding: base64";
 						if(attachment.id.length)
 							mimeAttachment.headers ~= "Content-ID: <" ~ attachment.id ~ ">";
 
-						mimeAttachment.content = Base64.encode(cast(const(ubyte)[]) attachment.content);
+						mimeAttachment.content = encodeBase64Mime(cast(const(ubyte)[]) attachment.content, this.linesep);
 
 						mimeMixed.stuff ~= mimeAttachment;
 					}
@@ -241,20 +590,20 @@ class EmailMessage {
 			}
 
 			headers ~= top.contentType;
-			msgContent = top.toMimeString(true);
+			msgContent = top.toMimeString(true, this.linesep);
 		} else {
 			headers ~= "Content-Type: text/plain; charset=UTF-8";
-			msgContent = textBody;
+			msgContent = textBody_;
 		}
 
 
 		string msg;
-		msg.reserve(htmlBody.length + textBody.length + 1024);
+		msg.reserve(htmlBody_.length + textBody_.length + 1024);
 
 		foreach(header; headers)
-			msg ~= header ~ "\r\n";
+			msg ~= header ~ this.linesep;
 		if(msg.length) // has headers
-			msg ~= "\r\n";
+			msg ~= this.linesep;
 
 		msg ~= msgContent;
 
@@ -323,7 +672,7 @@ void email(string to, string subject, string message, string from, RelayInfo mai
 	msg.from = from;
 	msg.to = [to];
 	msg.subject = subject;
-	msg.textBody = message;
+	msg.textBody_ = message;
 	msg.send(mailServer);
 }
 
@@ -614,44 +963,52 @@ class MimeContainer {
 	}
 
 
-	string toMimeString(bool isRoot = false) {
+	string toMimeString(bool isRoot = false, string linesep="\r\n") {
 		string ret;
 
 		if(!isRoot) {
 			ret ~= contentType;
 			foreach(header; headers) {
-				ret ~= "\r\n";
-				ret ~= header;
+				ret ~= linesep;
+				ret ~= encodeEmailHeaderForTransmit(header, linesep);
 			}
-			ret ~= "\r\n\r\n";
+			ret ~= linesep ~ linesep;
 		}
 
 		ret ~= content;
 
 		foreach(idx, thing; stuff) {
 			assert(boundary.length);
-			ret ~= "\r\n--" ~ boundary ~ "\r\n";
-			ret ~= thing.toMimeString(false);
+			ret ~= linesep ~ "--" ~ boundary ~ linesep;
+			ret ~= thing.toMimeString(false, linesep);
 		}
 
 		if(boundary.length)
-			ret ~= "\r\n--" ~ boundary ~ "--";
+			ret ~= linesep ~ "--" ~ boundary ~ "--";
 
 		return ret;
 	}
 }
 
 import std.algorithm : startsWith;
-///
-class IncomingEmailMessage {
-	///
-	this(string[] lines) {
-		auto lns = cast(immutable(ubyte)[][])lines;
-		this(lns, false);
-	}
+/++
+	Represents a single email from an incoming or saved source consisting of the raw data. Such saved sources include mbox files (which are several concatenated together, see [MboxMessages] for a full reader of these files), .eml files, and Maildir entries.
++/
+class IncomingEmailMessage : EmailMessage {
+	/++
+		Various constructors for parsing an email message.
 
-	///
-	this(ref immutable(ubyte)[][] mboxLines, bool asmbox=true) {
+
+		The `ref immutable(ubyte)[][]` one is designed for reading a pre-loaded mbox file. It updates the ref variable to the point at the next message in the file as it processes. You probably should use [MboxMessages] in a `foreach` loop instead of calling this directly most the time.
+
+		The `string[]` one takes an ascii or utf-8 file of a single email pre-split into lines.
+
+		The `immutable(ubyte)[]` one is designed for reading an individual message in its own file in the easiest way. Try `new IncomingEmailMessage(cast(immutable(ubyte)[]) std.file.read("filename.eml"));` to use this. You can also use `IncomingEmailMessage.fromFile("filename.eml")` as well.
+
+		History:
+			The `immutable(ubyte)[]` overload for a single file was added on May 14, 2024.
+	+/
+	this(ref immutable(ubyte)[][] mboxLines, bool asmbox=true) @trusted {
 
 		enum ParseState {
 			lookingForFrom,
@@ -676,6 +1033,7 @@ class IncomingEmailMessage {
 			if(headerName is null)
 				return;
 
+			auto originalHeaderName = headerName;
 			headerName = headerName.toLower();
 			headerContent = headerContent.strip();
 
@@ -708,14 +1066,14 @@ class IncomingEmailMessage {
 			} else if(headerName == "from") {
 				this.from = headerContent;
 			} else if(headerName == "to") {
-				this.to = headerContent;
+				this.to ~= headerContent;
 			} else if(headerName == "subject") {
 				this.subject = headerContent;
 			} else if(headerName == "content-transfer-encoding") {
 				contentTransferEncoding = headerContent;
 			}
 
-			headers[headerName] = headerContent;
+			headers_[originalHeaderName] = headerContent;
 			headerName = null;
 			headerContent = null;
 		}
@@ -765,7 +1123,7 @@ class IncomingEmailMessage {
 						mimeLines ~= mboxLines[0];
 					} else if(isHtml) {
 						// html with no alternative and no attachments
-						htmlMessageBody ~= line ~ "\n";
+						this.htmlBody_ ~= line ~ "\n";
 					} else {
 						// plain text!
 						// we want trailing spaces for "format=flowed", for example, so...
@@ -777,7 +1135,7 @@ class IncomingEmailMessage {
 							--epos;
 						}
 						line = line.ptr[0..epos];
-						textMessageBody ~= line ~ "\n";
+						this.textBody_ ~= line ~ "\n";
 					}
 				break;
 			}
@@ -790,17 +1148,17 @@ class IncomingEmailMessage {
 			deeperInTheMimeTree:
 			switch(part.type) {
 				case "text/html":
-					htmlMessageBody = part.textContent;
+					this.htmlBody_ = part.textContent;
 				break;
 				case "text/plain":
-					textMessageBody = part.textContent;
+					this.textBody_ = part.textContent;
 				break;
 				case "multipart/alternative":
 					foreach(p; part.stuff) {
 						if(p.type == "text/html")
-							htmlMessageBody = p.textContent;
+							this.htmlBody_ = p.textContent;
 						else if(p.type == "text/plain")
-							textMessageBody = p.textContent;
+							this.textBody_ = p.textContent;
 					}
 				break;
 				case "multipart/related":
@@ -857,25 +1215,17 @@ class IncomingEmailMessage {
 		} else {
 			switch(contentTransferEncoding) {
 				case "quoted-printable":
-					if(textMessageBody.length)
-						textMessageBody = convertToUtf8Lossy(decodeQuotedPrintable(textMessageBody), charset);
-					if(htmlMessageBody.length)
-						htmlMessageBody = convertToUtf8Lossy(decodeQuotedPrintable(htmlMessageBody), charset);
+					if(this.textBody_.length)
+						this.textBody_ = convertToUtf8Lossy(decodeQuotedPrintable(this.textBody_), charset);
+					if(this.htmlBody_.length)
+						this.htmlBody_ = convertToUtf8Lossy(decodeQuotedPrintable(this.htmlBody_), charset);
 				break;
 				case "base64":
-					if(textMessageBody.length) {
-						// alas, phobos' base64 decoder cannot accept ranges, so we have to allocate here
-						char[] mmb;
-						mmb.reserve(textMessageBody.length);
-						foreach (char ch; textMessageBody) if (ch > ' ' && ch < 127) mmb ~= ch;
-						textMessageBody = convertToUtf8Lossy(Base64.decode(mmb), charset);
+					if(this.textBody_.length) {
+						this.textBody_ = this.textBody_.decodeBase64Mime.convertToUtf8Lossy(charset);
 					}
-					if(htmlMessageBody.length) {
-						// alas, phobos' base64 decoder cannot accept ranges, so we have to allocate here
-						char[] mmb;
-						mmb.reserve(htmlMessageBody.length);
-						foreach (char ch; htmlMessageBody) if (ch > ' ' && ch < 127) mmb ~= ch;
-						htmlMessageBody = convertToUtf8Lossy(Base64.decode(mmb), charset);
+					if(this.htmlBody_.length) {
+						this.htmlBody_ = this.htmlBody_.decodeBase64Mime.convertToUtf8Lossy(charset);
 					}
 
 				break;
@@ -884,11 +1234,37 @@ class IncomingEmailMessage {
 			}
 		}
 
-		if(htmlMessageBody.length > 0 && textMessageBody.length == 0) {
+		if(this.htmlBody_.length > 0 && this.textBody_.length == 0) {
 			import arsd.htmltotext;
-			textMessageBody = htmlToText(htmlMessageBody);
+			this.textBody_ = htmlToText(this.htmlBody_);
 			textAutoConverted = true;
 		}
+	}
+
+	/// ditto
+	this(string[] lines) {
+		auto lns = cast(immutable(ubyte)[][])lines;
+		this(lns, false);
+	}
+
+	/// ditto
+	this(immutable(ubyte)[] fileContent) {
+		auto lns = splitLinesWithoutDecoding(fileContent);
+		this(lns, false);
+	}
+
+	/++
+		Convenience method that takes a filename instead of the content.
+
+		Its implementation is simply `return new IncomingEmailMessage(cast(immutable(ubyte)[]) std.file.read(filename));`
+		(though i reserve the right to use a different file loading library later, still the same idea)
+
+		History:
+			Added May 14, 2024
+	+/
+	static IncomingEmailMessage fromFile(string filename) {
+		import std.file;
+		return new IncomingEmailMessage(cast(immutable(ubyte)[]) std.file.read(filename));
 	}
 
 	///
@@ -941,19 +1317,39 @@ class IncomingEmailMessage {
 		return gpgmime.stuff[1].content;
 	}
 
-	string[string] headers; ///
+	/++
+		Allows access to the headers in the email as a key/value hash.
 
-	string subject; ///
+		The hash allows access as if it was case-insensitive, but it also still keeps the original case when you loop through it.
 
-	string htmlMessageBody; ///
-	string textMessageBody; ///
+		Bugs:
+			Duplicate headers are lost in the current implementation; only the most recent copy of any given name is retained.
+	+/
+	const(HeadersHash) headers() {
+		return headers_;
+	}
 
-	string from; ///
-	string to; ///
+	/++
+		Returns the message body as either HTML or text. Gives the same results as through the parent interface, [EmailMessage.htmlBody] and [EmailMessage.textBody].
 
-	bool textAutoConverted; ///
+		If the message was multipart/alternative, both of these will be populated with content from the message. They are supposed to be both the same, but not all senders respect this so you might want to check both anyway.
 
-	MimeAttachment[] attachments; ///
+		If the message was just plain text, `htmlMessageBody` will be `null` and `textMessageBody` will have the original message.
+
+		If the message was just HTML, `htmlMessageBody` contains the original message and `textMessageBody` will contain an automatically converted version (using [arsd.htmltotext]). [textAutoConverted] will be set to `true`.
+
+		History:
+			Were public strings until May 14, 2024, when it was changed to property getters instead.
+	+/
+	string htmlMessageBody() {
+		return this.htmlBody_;
+	}
+	/// ditto
+	string textMessageBody() {
+		return this.textBody_;
+	}
+	/// ditto
+	bool textAutoConverted;
 
 	// gpg signature fields
 	string gpgalg; ///
@@ -962,24 +1358,20 @@ class IncomingEmailMessage {
 
 	///
 	string fromEmailAddress() {
-		auto i = from.indexOf("<");
-		if(i == -1)
-			return from;
-		auto e = from.indexOf(">");
-		return from[i + 1 .. e];
+		return from.address;
 	}
 
 	///
 	string toEmailAddress() {
-		auto i = to.indexOf("<");
-		if(i == -1)
-			return to;
-		auto e = to.indexOf(">");
-		return to[i + 1 .. e];
+		if(to.recipients.length)
+			return to.recipients[0].address;
+		return null;
 	}
 }
 
-///
+/++
+	An mbox file is a concatenated list of individual email messages. This is a range of messages given the content of one of those files.
++/
 struct MboxMessages {
 	immutable(ubyte)[][] linesRemaining;
 
@@ -1093,9 +1485,9 @@ string decodeEncodedWord(string data) {
 		immutable(ubyte)[] decodedText;
 		if(encoding == "Q" || encoding == "q")
 			decodedText = decodeQuotedPrintable(encodedText);
-		else if(encoding == "B" || encoding == "b")
+		else if(encoding == "B" || encoding == "b") {
 			decodedText = cast(typeof(decodedText)) Base64.decode(encodedText);
-		else
+		} else
 			return originalData; // wtf
 
 		ret ~= convertToUtf8Lossy(decodedText, charset);
@@ -1150,6 +1542,129 @@ immutable(ubyte)[] decodeQuotedPrintable(string text) {
 	}
 
 	return ret;
+}
+
+/// Add header UFCS helper
+auto with_header(MimeContainer container, string header){
+	container.headers ~= header;
+	return container;
+}
+
+/// Base64 range encoder UFCS helper.
+alias base64encode = Base64.encoder;
+
+/// Base64 encoded data with line length of 76 as mandated by RFC 2045 Section 6.8
+string encodeBase64Mime(const(ubyte[]) content, string LINESEP = "\r\n") {
+	enum LINE_LENGTH = 76;
+	/// Only 6 bit of every byte are used; log2(64) = 6
+	enum int SOURCE_CHUNK_LENGTH = LINE_LENGTH * 6/8;
+
+	return cast(immutable(char[]))content.chunks(SOURCE_CHUNK_LENGTH).base64encode.join(LINESEP);
+}
+
+
+/// Base64 range decoder UFCS helper.
+alias base64decode = Base64.decoder;
+
+/// Base64 decoder, ignoring linebreaks which are mandated by RFC2045
+immutable(ubyte[]) decodeBase64Mime(string encodedPart) {
+	return cast(immutable(ubyte[])) encodedPart
+		.byChar // prevent Autodecoding, which will break Base64 decoder. Since its base64, it's guarenteed to be 7bit ascii
+		.filter!((c) => (c != '\r') & (c != '\n'))
+		.base64decode
+		.array;
+}
+
+unittest {
+	// Mime base64 roundtrip
+	import std.algorithm.comparison;
+	string source = chain(
+		repeat('n', 1200), //long line
+		"\r\n",
+		"äöü\r\n",
+		"ඞ\rn",
+		).byChar.array;
+	assert( source.representation.encodeBase64Mime.decodeBase64Mime.equal(source));
+}
+
+unittest {
+	import std.algorithm;
+	import std.string;
+	// Mime message roundtrip
+	auto mail = new EmailMessage();
+	mail.to = ["recipient@example.org"];
+	mail.from = "sender@example.org";
+	mail.subject = "Subject";
+
+	auto text = cast(string) chain(
+			repeat('n', 1200),
+			"\r\n",
+			"äöü\r\n",
+			"ඞ\r\nlast",
+			).byChar.array;
+	mail.setTextBody(text);
+	mail.addAttachment("text/plain", "attachment.txt", text.representation);
+	// In case binary and plaintext get handled differently one day
+	mail.addAttachment("application/octet-stream", "attachment.bin", text.representation);
+
+	auto result = new IncomingEmailMessage(mail.toString().split("\r\n"));
+
+	assert(result.subject.equal(mail.subject));
+	assert(mail.to.canFind(result.to));
+	assert(result.from == mail.from.toString);
+
+	// This roundtrip works modulo trailing newline on the parsed message and LF vs CRLF
+	assert(result.textMessageBody.replace("\n", "\r\n").stripRight().equal(mail.textBody_));
+	assert(result.attachments.equal(mail.attachments));
+}
+
+private bool hasAllPrintableAscii(in char[] s) {
+	foreach(ch; s) {
+		if(ch < 32)
+			return false;
+		if(ch >= 127)
+			return false;
+	}
+	return true;
+}
+
+private string encodeEmailHeaderContentForTransmit(string value, string linesep, bool prechecked = false) {
+	if(!prechecked && value.length < 998 && hasAllPrintableAscii(value))
+		return value;
+
+	return "=?UTF-8?B?" ~
+		encodeBase64Mime(cast(const(ubyte)[]) value, "?=" ~ linesep ~ " =?UTF-8?B?") ~
+		"?=";
+}
+
+private string encodeEmailHeaderForTransmit(string completeHeader, string linesep) {
+	if(completeHeader.length < 998 && hasAllPrintableAscii(completeHeader))
+		return completeHeader;
+
+	// note that we are here if there's a newline embedded in the content as well
+	auto colon = completeHeader.indexOf(":");
+	if(colon == -1) // should never happen!
+		throw new Exception("invalid email header - no colon in " ~ completeHeader); // but exception instead of assert since this might happen as result of public data manip
+
+	auto name = completeHeader[0 .. colon + 1];
+	if(!hasAllPrintableAscii(name)) // should never happen!
+		throw new Exception("invalid email header - improper name: " ~ name); // ditto
+
+	auto value = completeHeader[colon + 1 .. $].strip;
+
+	return
+		name ~
+		" " ~ // i like that leading space after the colon but it was stripped out of value
+		encodeEmailHeaderContentForTransmit(value, linesep, true);
+}
+
+unittest {
+	auto linesep = "\r\n";
+	string test = "Subject: This is an ordinary subject line with no special characters and not exceeding the maximum line length limit.";
+	assert(test is encodeEmailHeaderForTransmit(test, linesep)); // returned by identity
+
+	test = "Subject: foo\nbar";
+	assert(test !is encodeEmailHeaderForTransmit(test, linesep)); // a newline forces encoding
 }
 
 /+

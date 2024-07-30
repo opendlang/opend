@@ -63,7 +63,7 @@ static import arsd.core;
 
 // FIXME: I think I want to disable sigpipe here too.
 
-import std.uri : encodeComponent;
+import arsd.core : encodeUriComponent, decodeUriComponent;
 
 debug(arsd_http2_verbose) debug=arsd_http2;
 
@@ -159,9 +159,9 @@ HttpRequest post(string url, string[string] req) {
 	foreach(k, v; req) {
 		if(bdata.length)
 			bdata ~= cast(ubyte[]) "&";
-		bdata ~= cast(ubyte[]) encodeComponent(k);
+		bdata ~= cast(ubyte[]) encodeUriComponent(k);
 		bdata ~= cast(ubyte[]) "=";
-		bdata ~= cast(ubyte[]) encodeComponent(v);
+		bdata ~= cast(ubyte[]) encodeUriComponent(v);
 	}
 	auto request = client.request(Uri(url), HttpVerb.POST, bdata, "application/x-www-form-urlencoded");
 	return request;
@@ -195,15 +195,13 @@ string get(string url, string[string] cookies = null) {
 
 }
 
-static import std.uri;
-
 string post(string url, string[string] args, string[string] cookies = null) {
 	string content;
 
 	foreach(name, arg; args) {
 		if(content.length)
 			content ~= "&";
-		content ~= std.uri.encode(name) ~ "=" ~ std.uri.encode(arg);
+		content ~= encodeUriComponent(name) ~ "=" ~ encodeUriComponent(arg);
 	}
 
 	auto hr = httpRequest("POST", url, cast(ubyte[]) content, cookies, ["Content-Type: application/x-www-form-urlencoded"]);
@@ -564,6 +562,21 @@ struct CookieHeader {
 	string name;
 	string value;
 	string[string] attributes;
+
+	// max-age
+	// expires
+	// httponly
+	// secure
+	// samesite
+	// path
+	// domain
+	// partitioned ?
+
+	// also want cookiejar features here with settings to save session cookies or not
+
+	// storing in file: http://kb.mozillazine.org/Cookies.txt (second arg in practice true if first arg starts with . it seems)
+	// or better yet sqlite: http://kb.mozillazine.org/Cookies.sqlite
+	// should be able to import/export from either upon request
 }
 
 import std.string;
@@ -1197,8 +1210,7 @@ class HttpRequest {
 			if(type.length == 0)
 				type = "text/plain";
 
-			import std.uri;
-			auto bdata = cast(ubyte[]) decodeComponent(data);
+			auto bdata = cast(ubyte[]) decodeUriComponent(data);
 
 			if(type.indexOf(";base64") != -1) {
 				import std.base64;
@@ -4094,6 +4106,7 @@ class HttpApiClient() {
 	string urlBase;
 	string oauth2Token;
 	string submittedContentType;
+	string authType = "Bearer";
 
 	/++
 		Params:
@@ -4161,7 +4174,7 @@ class HttpApiClient() {
 		auto req = httpClient.navigateTo(u, requestMethod);
 
 		if(oauth2Token.length)
-			req.requestParameters.headers ~= "Authorization: Bearer " ~ oauth2Token;
+			req.requestParameters.headers ~= "Authorization: "~ authType ~" " ~ oauth2Token;
 		req.requestParameters.contentType = submittedContentType;
 		req.requestParameters.bodyData = bodyBytes;
 
@@ -4237,20 +4250,19 @@ class HttpApiClient() {
 
 		///
 		string toUri() {
-			import std.uri;
 			string result;
 			foreach(idx, part; pathParts) {
 				if(idx)
 					result ~= "/";
-				result ~= encodeComponent(part);
+				result ~= encodeUriComponent(part);
 			}
 			result ~= "?";
 			foreach(idx, part; queryParts) {
 				if(idx)
 					result ~= "&";
-				result ~= encodeComponent(part[0]);
+				result ~= encodeUriComponent(part[0]);
 				result ~= "=";
-				result ~= encodeComponent(part[1]);
+				result ~= encodeUriComponent(part[1]);
 			}
 
 			return result;
@@ -4291,10 +4303,10 @@ class HttpApiClient() {
 					static if(idx % 2 == 0) {
 						if(answer.length)
 							answer ~= "&";
-						answer ~= encodeComponent(val); // it had better be a string! lol
+						answer ~= encodeUriComponent(val); // it had better be a string! lol
 						answer ~= "=";
 					} else {
-						answer ~= encodeComponent(to!string(val));
+						answer ~= encodeUriComponent(to!string(val));
 					}
 				}
 
@@ -4911,6 +4923,8 @@ class WebSocket {
 		while(d.length) {
 			auto r = socket.send(d);
 			if(r < 0 && wouldHaveBlocked()) {
+				// FIXME: i should register for a write wakeup
+				version(use_arsd_core) assert(0);
 				import core.thread;
 				Thread.sleep(1.msecs);
 				continue;
@@ -4954,7 +4968,7 @@ class WebSocket {
 			return true;
 		if(r <= 0) {
 			//import std.stdio; writeln(WSAGetLastError());
-			throw new Exception("Socket receive failed");
+			return false;
 		}
 		receiveBufferUsedLength += r;
 		return true;
@@ -5059,17 +5073,47 @@ class WebSocket {
 
 	/++
 		Closes the connection, sending a graceful teardown message to the other side.
+		If you provide no arguments, it sends code 1000, normal closure. If you provide
+		a code, you should also provide a short reason string.
 
-		Code 1000 is the normal closure code.
+		Params:
+			code = reason code.
+
+			0-999 are invalid.
+			1000-2999 are defined by the RFC. [https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1]
+				1000 - normal finish
+				1001 - endpoint going away
+				1002 - protocol error
+				1003 - unacceptable data received (e.g. binary message when you can't handle it)
+				1004 - reserved
+				1005 - missing status code (should not be set except by implementations)
+				1006 - abnormal connection closure (should only be set by implementations)
+				1007 - inconsistent data received (i.e. utf-8 decode error in text message)
+				1008 - policy violation
+				1009 - received message too big
+				1010 - client aborting due to required extension being unsupported by the server
+				1011 - server had unexpected failure
+				1015 - reserved for TLS handshake failure
+			3000-3999 are to be registered with IANA.
+			4000-4999 are private-use custom codes depending on the application. These are what you'd most commonly set here.
+
+			reason = <= 123 bytes of human-readable reason text, used for logs and debugging
 
 		History:
 			The default `code` was changed to 1000 on January 9, 2023. Previously it was 0,
 			but also ignored anyway.
+
+			On May 11, 2024, the optional arguments were changed to overloads since if you provide a code, you should also provide a reason.
 	+/
 	/// Group: foundational
-	void close(int code = 1000, string reason = null)
+	void close() {
+		close(1000, null);
+	}
+
+	/// ditto
+	void close(int code, string reason)
 		//in (reason.length < 123)
-		in { assert(reason.length < 123); } do
+		in { assert(reason.length <= 123); } do
 	{
 		if(readyState_ != OPEN)
 			return; // it cool, we done
@@ -5086,6 +5130,11 @@ class WebSocket {
 
 		llclose();
 	}
+
+	deprecated("If you provide a code, please also provide a reason string") void close(int code) {
+		close(code, null);
+	}
+
 
 	private bool closeCalled;
 
@@ -5169,7 +5218,8 @@ class WebSocket {
 		if(!isDataPending())
 			return true;
 		while(isDataPending())
-			lowLevelReceive();
+			if(lowLevelReceive() == false)
+				return false;
 		goto checkAgain;
 	}
 
@@ -5268,6 +5318,7 @@ class WebSocket {
 					readyState_ = CLOSED;
 
 					unregisterActiveSocket(this);
+					socket.close();
 				break;
 				case WebSocketOpcode.ping:
 					// import std.stdio; writeln("ping received ", m.data);
@@ -5365,6 +5416,60 @@ class WebSocket {
 
 	/* } end copy/paste */
 
+	// returns true if still active
+	private static bool readyToRead(WebSocket sock) {
+		sock.timeoutFromInactivity = MonoTime.currTime + sock.config.timeoutFromInactivity;
+		if(!sock.lowLevelReceive()) {
+			sock.readyState_ = CLOSED;
+
+			if(sock.onerror)
+				sock.onerror();
+
+			if(sock.onclose)
+				sock.onclose(CloseEvent(CloseEvent.StandardCloseCodes.abnormalClosure, "Connection lost", false, lastSocketError()));
+
+			unregisterActiveSocket(sock);
+			sock.socket.close();
+			return false;
+		}
+		while(sock.processOnce().populated) {}
+		return true;
+	}
+
+	// returns true if still active, false if not
+	private static bool timeoutAndPingCheck(WebSocket sock, MonoTime now, Duration* minimumTimeoutForSelect) {
+		auto diff = sock.timeoutFromInactivity - now;
+		if(diff <= 0.msecs) {
+			// it timed out
+			if(sock.onerror)
+				sock.onerror();
+
+			if(sock.onclose)
+				sock.onclose(CloseEvent(CloseEvent.StandardCloseCodes.abnormalClosure, "Connection timed out", false, null));
+
+			sock.readyState_ = CLOSED;
+			unregisterActiveSocket(sock);
+			sock.socket.close();
+			return false;
+		}
+
+		if(minimumTimeoutForSelect && diff < *minimumTimeoutForSelect)
+			*minimumTimeoutForSelect = diff;
+
+		diff = sock.nextPing - now;
+
+		if(diff <= 0.msecs) {
+			//sock.send(`{"action": "ping"}`);
+			sock.ping();
+			sock.nextPing = now + sock.config.pingFrequency.msecs;
+		} else {
+			if(minimumTimeoutForSelect && diff < *minimumTimeoutForSelect)
+				*minimumTimeoutForSelect = diff;
+		}
+
+		return true;
+	}
+
 	/*
 	const int bufferedAmount // amount pending
 	const string extensions
@@ -5394,87 +5499,56 @@ class WebSocket {
 					loopExited = false; // reset it so we can reenter
 			}
 
-			static SocketSet readSet;
+			version(use_arsd_core) {
+				loopExited = false;
 
-			if(readSet is null)
-				readSet = new SocketSet();
+				import arsd.core;
+				getThisThreadEventLoop().run(() => WebSocket.activeSockets.length == 0 || loopExited || (localLoopExited !is null && *localLoopExited == true));
+			} else {
+				static SocketSet readSet;
 
-			loopExited = false;
+				if(readSet is null)
+					readSet = new SocketSet();
 
-			outermost: while(!loopExited && (localLoopExited is null || (*localLoopExited == false))) {
-				readSet.reset();
+				loopExited = false;
 
-				Duration timeout = 3.seconds;
+				outermost: while(!loopExited && (localLoopExited is null || (*localLoopExited == false))) {
+					readSet.reset();
 
-				auto now = MonoTime.currTime;
-				bool hadAny;
-				foreach(sock; activeSockets) {
-					auto diff = sock.timeoutFromInactivity - now;
-					if(diff <= 0.msecs) {
-						// timeout
-						if(sock.onerror)
-							sock.onerror();
+					Duration timeout = 3.seconds;
 
-						if(sock.onclose)
-							sock.onclose(CloseEvent(CloseEvent.StandardCloseCodes.abnormalClosure, "Connection timed out", false, null));
-
-						sock.socket.close();
-						sock.readyState_ = CLOSED;
-						unregisterActiveSocket(sock);
-						continue outermost;
-					}
-
-					if(diff < timeout)
-						timeout = diff;
-
-					diff = sock.nextPing - now;
-
-					if(diff <= 0.msecs) {
-						//sock.send(`{"action": "ping"}`);
-						sock.ping();
-						sock.nextPing = now + sock.config.pingFrequency.msecs;
-					} else {
-						if(diff < timeout)
-							timeout = diff;
-					}
-
-					readSet.add(sock.socket);
-					hadAny = true;
-				}
-
-				if(!hadAny) {
-					// import std.stdio; writeln("had none");
-					return;
-				}
-
-				tryAgain:
-					// import std.stdio; writeln(timeout);
-				auto selectGot = Socket.select(readSet, null, null, timeout);
-				if(selectGot == 0) { /* timeout */
-					// timeout
-					continue; // it will be handled at the top of the loop
-				} else if(selectGot == -1) { /* interrupted */
-					goto tryAgain;
-				} else {
+					auto now = MonoTime.currTime;
+					bool hadAny;
 					foreach(sock; activeSockets) {
-						if(readSet.isSet(sock.socket)) {
-							sock.timeoutFromInactivity = MonoTime.currTime + sock.config.timeoutFromInactivity;
-							if(!sock.lowLevelReceive()) {
-								sock.readyState_ = CLOSED;
+						if(!timeoutAndPingCheck(sock, now, &timeout))
+							continue outermost;
 
-								if(sock.onerror)
-									sock.onerror();
+						readSet.add(sock.socket);
+						hadAny = true;
+					}
 
-								if(sock.onclose)
-									sock.onclose(CloseEvent(CloseEvent.StandardCloseCodes.abnormalClosure, "Connection lost", false, lastSocketError()));
+					if(!hadAny) {
+						// import std.stdio; writeln("had none");
+						return;
+					}
 
-								unregisterActiveSocket(sock);
-								continue outermost;
+					tryAgain:
+						// import std.stdio; writeln(timeout);
+					auto selectGot = Socket.select(readSet, null, null, timeout);
+					if(selectGot == 0) { /* timeout */
+						// timeout
+						continue; // it will be handled at the top of the loop
+					} else if(selectGot == -1) { /* interrupted */
+						goto tryAgain;
+					} else {
+						foreach(sock; activeSockets) {
+							if(readSet.isSet(sock.socket)) {
+								if(!readyToRead(sock))
+									continue outermost;
+								selectGot--;
+								if(selectGot <= 0)
+									break;
 							}
-							while(sock.processOnce().populated) {}
-							selectGot--;
-							if(selectGot <= 0)
-								break;
 						}
 					}
 				}
@@ -5501,19 +5575,36 @@ class WebSocket {
 		void registerActiveSocket(WebSocket s) {
 			// ensure it isn't already there...
 			assert(s !is null);
-			foreach(i, a; activeSockets)
-				if(a is s)
-					return;
+			if(s.registered)
+				return;
+			s.activeSocketArrayIndex = activeSockets.length;
 			activeSockets ~= s;
+			s.registered = true;
+			version(use_arsd_core) {
+				s.unregisterToken = arsd.core.getThisThreadEventLoop().addCallbackOnFdReadable(s.socket.handle, new arsd.core.CallbackHelper(() { s.readyToRead(s); }));
+			}
 		}
 		void unregisterActiveSocket(WebSocket s) {
-			foreach(i, a; activeSockets)
-				if(s is a) {
-					activeSockets[i] = activeSockets[$-1];
-					activeSockets = activeSockets[0 .. $-1];
-					break;
-				}
+			version(use_arsd_core) {
+				s.unregisterToken.unregister();
+			}
+
+			auto i = s.activeSocketArrayIndex;
+			assert(activeSockets[i] is s);
+
+			activeSockets[i] = activeSockets[$-1];
+			activeSockets[i].activeSocketArrayIndex = i;
+			activeSockets = activeSockets[0 .. $-1];
+			activeSockets.assumeSafeAppend();
+			s.registered = false;
 		}
+	}
+
+	private bool registered;
+	private size_t activeSocketArrayIndex;
+	version(use_arsd_core) {
+		static import arsd.core;
+		arsd.core.ICoreEventLoop.UnregisterToken unregisterToken;
 	}
 }
 
@@ -5527,6 +5618,8 @@ private template imported(string mod) {
 template addToSimpledisplayEventLoop() {
 	import arsd.simpledisplay;
 	void addToSimpledisplayEventLoop(WebSocket ws, imported!"arsd.simpledisplay".SimpleWindow window) {
+		version(use_arsd_core)
+			return; // already done implicitly
 
 		version(Windows)
 		auto event = WSACreateEvent();
@@ -5538,6 +5631,7 @@ template addToSimpledisplayEventLoop() {
 			if(!ws.lowLevelReceive()) {
 				ws.readyState_ = WebSocket.CLOSED;
 				WebSocket.unregisterActiveSocket(ws);
+				ws.socket.close();
 				return;
 			}
 			while(ws.processOnce().populated) {}

@@ -42,6 +42,23 @@ static if(__traits(compiles, () { import core.interpolation; })) {
 	struct InterpolatedExpression(string code) {}
 }
 
+version(use_arsd_core)
+	enum use_arsd_core = true;
+else
+	enum use_arsd_core = false;
+
+import core.attribute;
+static if(__traits(hasMember, core.attribute, "implicit"))
+	alias implicit = core.attribute.implicit;
+else
+	enum implicit;
+
+static if(__traits(hasMember, core.attribute, "standalone"))
+	alias standalone = core.attribute.standalone;
+else
+	enum standalone;
+
+
 
 // FIXME: add callbacks on file open for tracing dependencies dynamically
 
@@ -69,10 +86,21 @@ version(ArsdUseCustomRuntime)
 }
 else
 {
+	version(OSX) version(DigitalMars) {
+		version=OSXCocoa;
+	}
+
 	version = HasFile;
 	version = HasSocket;
 	version = HasThread;
 	version = HasErrno;
+
+	version(Windows)
+		version = HasTimer;
+	version(linux)
+		version = HasTimer;
+	version(OSXCocoa)
+		version = HasTimer;
 }
 
 version(HasThread)
@@ -129,6 +157,13 @@ version(Windows) {
 	version=Arsd_core_kqueue;
 
 	import core.sys.freebsd.sys.event;
+
+	// the version in druntime doesn't have the default arg making it a pain to use when the freebsd
+	// version adds a new field
+	extern(D) void EV_SET(kevent_t* kevp, typeof(kevent_t.tupleof) args = kevent_t.tupleof.init)
+	{
+	    *kevp = kevent_t(args);
+	}
 } else version(DragonFlyBSD) {
 	// NOT ACTUALLY TESTED
 	version=Arsd_core_kqueue;
@@ -148,10 +183,6 @@ version(Windows) {
 	version=Arsd_core_kqueue;
 
 	import core.sys.darwin.sys.event;
-
-	version(DigitalMars) {
-		version=OSXCocoa;
-	}
 }
 
 version(OSXCocoa)
@@ -175,6 +206,45 @@ version(Posix) {
 	GENERAL UTILITY FUNCTIONS
 	=========================
 +/
+
+/++
+	Casts value `v` to type `T`.
+
+	$(TIP
+		This is a helper function for readability purposes.
+		The idea is to make type-casting as accessible as `to()` from `std.conv`.
+	)
+
+	---
+	int i =  cast(int)(foo * bar);
+	int i = castTo!int(foo * bar);
+
+	int j = cast(int) round(floatValue);
+	int j = round(floatValue).castTo!int;
+
+	int k = cast(int) floatValue  + foobar;
+	int k = floatValue.castTo!int + foobar;
+
+	auto m = Point(
+		cast(int) calc(a.x, b.x),
+		cast(int) calc(a.y, b.y),
+	);
+	auto m = Point(
+		calc(a.x, b.x).castTo!int,
+		calc(a.y, b.y).castTo!int,
+	);
+	---
+
+	History:
+		Added on April 24, 2024.
+		Renamed from `typeCast` to `castTo` on May 24, 2024.
+ +/
+auto ref T castTo(T, S)(auto ref S v) {
+	return cast(T) v;
+}
+
+///
+alias typeCast = castTo;
 
 // enum stringz : const(char)* { init = null }
 
@@ -213,22 +283,243 @@ struct stringz {
 	}
 }
 
+/+
+	DateTime
+		year: 16 bits (-32k to +32k)
+		month: 4 bits
+		day: 5 bits
+
+		hour: 5 bits
+		minute: 6 bits
+		second: 6 bits
+
+		total: 25 bits + 17 bits = 42 bits
+
+		fractional seconds: 10 bits
+
+		accuracy flags: date_valid | time_valid = 2 bits
+
+		54 bits used, 8 bits remain. reserve 1 for signed.
+
+		would need 11 bits for minute-precise dt offset but meh.
++/
+
 /++
-	A limited variant to hold just a few types. It is made for the use of packing a small amount of extra data into error messages.
+	A packed date/time/datetime representation added for use with LimitedVariant.
+
+	You should probably not use this much directly, it is mostly an internal storage representation.
++/
+struct PackedDateTime {
+	private ulong packedData;
+
+	string toString() const {
+		char[64] buffer;
+		size_t pos;
+
+		if(hasDate) {
+			pos += intToString(year, buffer[pos .. $], IntToStringArgs().withPadding(4)).length;
+			buffer[pos++] = '-';
+			pos += intToString(month, buffer[pos .. $], IntToStringArgs().withPadding(2)).length;
+			buffer[pos++] = '-';
+			pos += intToString(day, buffer[pos .. $], IntToStringArgs().withPadding(2)).length;
+		}
+
+		if(hasTime) {
+			if(pos)
+				buffer[pos++] = 'T';
+
+			pos += intToString(hours, buffer[pos .. $], IntToStringArgs().withPadding(2)).length;
+			buffer[pos++] = ':';
+			pos += intToString(minutes, buffer[pos .. $], IntToStringArgs().withPadding(2)).length;
+			buffer[pos++] = ':';
+			pos += intToString(seconds, buffer[pos .. $], IntToStringArgs().withPadding(2)).length;
+			if(fractionalSeconds) {
+				buffer[pos++] = '.';
+				pos += intToString(fractionalSeconds, buffer[pos .. $], IntToStringArgs().withPadding(4)).length;
+			}
+		}
+
+		return buffer[0 .. pos].idup;
+	}
+
+	/++
+	+/
+	int fractionalSeconds() const { return getFromMask(00, 10); }
+	/// ditto
+	void fractionalSeconds(int a) {     setWithMask(a, 00, 10); }
+
+	/// ditto
+	int  seconds() const          { return getFromMask(10,  6); }
+	/// ditto
+	void seconds(int a)           {     setWithMask(a, 10,  6); }
+	/// ditto
+	int  minutes() const          { return getFromMask(16,  6); }
+	/// ditto
+	void minutes(int a)           {     setWithMask(a, 16,  6); }
+	/// ditto
+	int  hours() const            { return getFromMask(22,  5); }
+	/// ditto
+	void hours(int a)             {     setWithMask(a, 22,  5); }
+
+	/// ditto
+	int  day() const              { return getFromMask(27,  5); }
+	/// ditto
+	void day(int a)               {     setWithMask(a, 27,  5); }
+	/// ditto
+	int  month() const            { return getFromMask(32,  4); }
+	/// ditto
+	void month(int a)             {     setWithMask(a, 32,  4); }
+	/// ditto
+	int  year() const             { return getFromMask(36, 16); }
+	/// ditto
+	void year(int a)              {     setWithMask(a, 36, 16); }
+
+	/// ditto
+	bool hasTime() const          { return cast(bool) getFromMask(52,  1); }
+	/// ditto
+	void hasTime(bool a)          {     setWithMask(a, 52,  1); }
+	/// ditto
+	bool hasDate() const          { return cast(bool) getFromMask(53,  1); }
+	/// ditto
+	void hasDate(bool a)          {     setWithMask(a, 53,  1); }
+
+	private void setWithMask(int a, int bitOffset, int bitCount) {
+		auto mask = (1UL << bitCount) - 1;
+
+		packedData &= ~(mask << bitOffset);
+		packedData |= (a & mask) << bitOffset;
+	}
+
+	private int getFromMask(int bitOffset, int bitCount) const {
+		ulong packedData = this.packedData;
+		packedData >>= bitOffset;
+
+		ulong mask = (1UL << bitCount) - 1;
+
+		return cast(int) (packedData & mask);
+	}
+}
+
+unittest {
+	PackedDateTime dt;
+	dt.hours = 14;
+	dt.minutes = 30;
+	dt.seconds = 25;
+	dt.hasTime = true;
+
+	assert(dt.toString() == "14:30:25", dt.toString());
+
+	dt.hasTime = false;
+	dt.year = 2024;
+	dt.month = 5;
+	dt.day = 31;
+	dt.hasDate = true;
+
+	assert(dt.toString() == "2024-05-31", dt.toString());
+	dt.hasTime = true;
+	assert(dt.toString() == "2024-05-31T14:30:25", dt.toString());
+}
+
+/++
+	Basically a Phobos SysTime but standing alone as a simple 6 4 bit integer (but wrapped) for compatibility with LimitedVariant.
++/
+struct SimplifiedUtcTimestamp {
+	long timestamp;
+
+	string toString() const {
+		import core.stdc.time;
+		char[128] buffer;
+		auto ut = toUnixTime();
+		tm* t = gmtime(&ut);
+		if(t is null)
+			return "null time";
+
+		return buffer[0 .. strftime(buffer.ptr, buffer.length, "%FT%H:%M:%SZ", t)].idup;
+	}
+
+	version(Windows)
+		alias time_t = int;
+
+	static SimplifiedUtcTimestamp fromUnixTime(time_t t) {
+		return SimplifiedUtcTimestamp(621_355_968_000_000_000L + t * 1_000_000_000L / 100);
+	}
+
+	time_t toUnixTime() const {
+		return cast(time_t) ((timestamp - 621_355_968_000_000_000L) / 1_000_000_0); // hnsec = 7 digits
+	}
+}
+
+unittest {
+	SimplifiedUtcTimestamp sut = SimplifiedUtcTimestamp.fromUnixTime(86_400);
+	assert(sut.toString() == "1970-01-02T00:00:00Z");
+}
+
+/++
+	A limited variant to hold just a few types. It is made for the use of packing a small amount of extra data into error messages and some transit across virtual function boundaries.
 +/
 /+
+	ALL OF THESE ARE SUBJECT TO CHANGE
+
 	* if length and ptr are both 0, it is null
 	* if ptr == 1, length is an integer
 	* if ptr == 2, length is an unsigned integer (suggest printing in hex)
 	* if ptr == 3, length is a combination of flags (suggest printing in binary)
 	* if ptr == 4, length is a unix permission thing (suggest printing in octal)
 	* if ptr == 5, length is a double float
+	* if ptr == 6, length is an Object ref (reinterpret casted to void*)
+
+	* if ptr == 7, length is a ticks count (from MonoTime)
+	* if ptr == 8, length is a utc timestamp (hnsecs)
+	* if ptr == 9, length is a duration (signed hnsecs)
+	* if ptr == 10, length is a date or date time (bit packed, see flags in data to determine if it is a Date, Time, or DateTime)
+	* if ptr == 11, length is a dchar
+	* if ptr == 12, length is a bool (redundant to int?)
+
+	13, 14 reserved. prolly decimals. (4, 8 digits after decimal)
+
 	* if ptr == 15, length must be 0. this holds an empty, non-null, SSO string.
 	* if ptr >= 16 && < 24, length is reinterpret-casted a small string of length of (ptr & 0x7) + 1
+
 	* if length == size_t.max, ptr is interpreted as a stringz
 	* if ptr >= 1024, it is a non-null D string or byte array. It is a string if the length high bit is clear, a byte array if it is set. the length is what is left after you mask that out.
 
 	All other ptr values are reserved for future expansion.
+
+	It basically can store:
+		null
+			type details = must be 0
+		int (actually long)
+			type details = formatting hints
+		float (actually double)
+			type details = formatting hints
+		dchar (actually enum - upper half is the type tag, lower half is the member tag)
+			type details = ???
+		decimal
+			type details = precision specifier
+		object
+			type details = ???
+		timestamp
+			type details: ticks, utc timestamp, relative duration
+
+		sso
+		stringz
+
+		or it is bytes or a string; a normal D array (just bytes has a high bit set on length).
+
+	But there are subtypes of some of those; ints can just have formatting hints attached.
+		Could reserve 0-7 as low level type flag (null, int, float, pointer, object)
+		15-24 still can be the sso thing
+
+		We have 10 bits really.
+
+		00000 00000
+		????? OOLLL
+
+		The ????? are type details bits.
+
+	64 bits decmial to 4 points of precision needs... 14 bits for the small part (so max of 4 digits)? so 50 bits for the big part (max of about 1 quadrillion)
+		...actually it can just be a dollars * 10000 + cents * 100.
+
 +/
 struct LimitedVariant {
 
@@ -242,6 +533,19 @@ struct LimitedVariant {
 		intBinary,
 		intOctal,
 		double_,
+		object,
+
+		monoTime,
+		utcTimestamp,
+		duration,
+		dateTime,
+
+		// FIXME boolean? char? decimal?
+		// could do enums by way of a pointer but kinda iffy
+
+		// maybe some kind of prefixed string too for stuff like xml and json or enums etc.
+
+		// fyi can also use stringzs or length-prefixed string pointers
 		emptySso,
 		stringSso,
 		stringz,
@@ -252,7 +556,9 @@ struct LimitedVariant {
 	}
 
 	/++
+		Each datum stored in the LimitedVariant has a tag associated with it.
 
+		Each tag belongs to one or more data families.
 	+/
 	Contains contains() const {
 		auto tag = cast(size_t) ptr;
@@ -264,6 +570,13 @@ struct LimitedVariant {
 			case 3: return Contains.intBinary;
 			case 4: return Contains.intOctal;
 			case 5: return Contains.double_;
+			case 6: return Contains.object;
+
+			case 7: return Contains.monoTime;
+			case 8: return Contains.utcTimestamp;
+			case 9: return Contains.duration;
+			case 10: return Contains.dateTime;
+
 			case 15: return length is null ? Contains.emptySso : Contains.invalid;
 			default:
 				if(tag >= 16 && tag < 24) {
@@ -280,6 +593,11 @@ struct LimitedVariant {
 	}
 
 	/// ditto
+	bool containsNull() const {
+		return contains() == Contains.null_;
+	}
+
+	/// ditto
 	bool containsInt() const {
 		with(Contains)
 		switch(contains) {
@@ -290,12 +608,33 @@ struct LimitedVariant {
 		}
 	}
 
+	// all specializations of int...
+
+	/// ditto
+	bool containsMonoTime() const {
+		return contains() == Contains.monoTime;
+	}
+	/// ditto
+	bool containsUtcTimestamp() const {
+		return contains() == Contains.utcTimestamp;
+	}
+	/// ditto
+	bool containsDuration() const {
+		return contains() == Contains.duration;
+	}
+	/// ditto
+	bool containsDateTime() const {
+		return contains() == Contains.dateTime;
+	}
+
+	// done int specializations
+
 	/// ditto
 	bool containsString() const {
 		with(Contains)
 		switch(contains) {
 			case null_, emptySso, stringSso, string:
-			// case stringz:
+			case stringz:
 				return true;
 			default:
 				return false;
@@ -351,6 +690,8 @@ struct LimitedVariant {
 				return (cast(char*) &length)[0 .. len];
 			case string:
 				return (cast(const(char)*) ptr)[0 .. cast(size_t) length];
+			case stringz:
+				return arsd.core.stringz(cast(char*) ptr).borrow;
 			default:
 				Throw(); assert(0);
 		}
@@ -367,9 +708,11 @@ struct LimitedVariant {
 
 	/// ditto
 	double getDouble() const {
-		if(containsDouble)
-			return *cast(double*) &length;
-		else
+		if(containsDouble) {
+			floathack hack;
+			hack.e = cast(void*) length; // casting away const
+			return hack.d;
+		} else
 			Throw();
 		assert(0);
 	}
@@ -386,6 +729,55 @@ struct LimitedVariant {
 				Throw(); assert(0);
 		}
 	}
+
+	/// ditto
+	Object getObject() const {
+		with(Contains)
+		switch(contains()) {
+			case null_:
+				return null;
+			case object:
+				return cast(Object) length; // FIXME const correctness sigh
+			default:
+				Throw(); assert(0);
+		}
+	}
+
+	/// ditto
+	MonoTime getMonoTime() const {
+		if(containsMonoTime) {
+			MonoTime time;
+			__traits(getMember, time, "_ticks") = cast(long) length;
+			return time;
+		} else
+			Throw();
+		assert(0);
+	}
+	/// ditto
+	SimplifiedUtcTimestamp getUtcTimestamp() const {
+		if(containsUtcTimestamp)
+			return SimplifiedUtcTimestamp(cast(long) length);
+		else
+			Throw();
+		assert(0);
+	}
+	/// ditto
+	Duration getDuration() const {
+		if(containsDuration)
+			return hnsecs(cast(long) length);
+		else
+			Throw();
+		assert(0);
+	}
+	/// ditto
+	PackedDateTime getDateTime() const {
+		if(containsDateTime)
+			return PackedDateTime(cast(long) length);
+		else
+			Throw();
+		assert(0);
+	}
+
 
 	/++
 
@@ -414,28 +806,52 @@ struct LimitedVariant {
 				return intHelper("0b", 2);
 			case intOctal:
 				return intHelper("0o", 8);
-			case emptySso, stringSso, string:
+			case emptySso, stringSso, string, stringz:
 				return getString().idup;
 			case bytes:
 				auto b = getBytes();
 
 				return "<bytes>"; // FIXME
-
+			case object:
+				auto o = getObject();
+				return o is null ? "null" : o.toString();
+			case monoTime:
+				return getMonoTime.toString();
+			case utcTimestamp:
+				return getUtcTimestamp().toString();
+			case duration:
+				return getDuration().toString();
+			case dateTime:
+				return getDateTime().toString();
 			case double_:
-				assert(0); // FIXME
-			case stringz:
-				assert(0); // FIXME
+				auto d = getDouble();
+
+				import core.stdc.stdio;
+				char[128] buffer;
+				auto count = snprintf(buffer.ptr, buffer.length, "%.17lf", d);
+				return buffer[0 .. count].idup;
 			case invalid:
 				return "<invalid>";
 		}
 	}
 
 	/++
-
+		Note for integral types that are not `int` and `long` (for example, `short` or `ubyte`), you might want to explicitly convert them to `int`.
 	+/
 	this(string s) {
 		ptr = cast(const(ubyte)*) s.ptr;
 		length = cast(void*) s.length;
+	}
+
+	/// ditto
+	this(const(char)* stringz) {
+		if(stringz !is null) {
+			ptr = cast(const(ubyte)*) stringz;
+			length = cast(void*) size_t.max;
+		} else {
+			ptr = null;
+			length = null;
+		}
 	}
 
 	/// ditto
@@ -459,12 +875,55 @@ struct LimitedVariant {
 	}
 
 	/// ditto
-	version(none)
+	this(int i, int base = 10) {
+		this(cast(long) i, base);
+	}
+
+	/// ditto
+	this(bool i) {
+		// FIXME?
+		this(cast(long) i);
+	}
+
+	/// ditto
 	this(double d) {
-		// this crashes dmd! omg
-		assert(0);
-		// ptr = cast(ubyte*) 15;
-		// length = cast(void*) *cast(size_t*) &d;
+		// the reinterpret cast hack crashes dmd! omg
+		ptr = cast(ubyte*) 5;
+
+		floathack h;
+		h.d = d;
+
+		this.length = h.e;
+	}
+
+	/// ditto
+	this(Object o) {
+		this.ptr = cast(ubyte*) 6;
+		this.length = cast(void*) o;
+	}
+
+	/// ditto
+	this(MonoTime a) {
+		this.ptr = cast(ubyte*) 7;
+		this.length = cast(void*) a.ticks;
+	}
+
+	/// ditto
+	this(SimplifiedUtcTimestamp a) {
+		this.ptr = cast(ubyte*) 8;
+		this.length = cast(void*) a.timestamp;
+	}
+
+	/// ditto
+	this(Duration a) {
+		this.ptr = cast(ubyte*) 9;
+		this.length = cast(void*) a.total!"hnsecs";
+	}
+
+	/// ditto
+	this(PackedDateTime a) {
+		this.ptr = cast(ubyte*) 10;
+		this.length = cast(void*) a.packedData;
 	}
 }
 
@@ -483,6 +942,16 @@ unittest {
 	assert(v3.containsBytes());
 	assert(!v3.containsString());
 	assert(v3.getBytes() == [1, 2, 3]);
+}
+
+private union floathack {
+	// in 32 bit we'll use float instead since it at least fits in the void*
+	static if(double.sizeof == (void*).sizeof) {
+		double d;
+	} else {
+		float d;
+	}
+	void* e;
 }
 
 /++
@@ -1079,6 +1548,117 @@ unittest {
 	assert(flagsToString!MyFlags(2) == "b");
 }
 
+// technically s is octets but meh
+package string encodeUriComponent(string s) {
+	char[3] encodeChar(char c) {
+		char[3] buffer;
+		buffer[0] = '%';
+
+		enum hexchars = "0123456789ABCDEF";
+		buffer[1] = hexchars[c >> 4];
+		buffer[2] = hexchars[c & 0x0f];
+
+		return buffer;
+	}
+
+	string n;
+	size_t previous = 0;
+	foreach(idx, char ch; s) {
+		if(
+			(ch >= 'A' && ch <= 'Z')
+			||
+			(ch >= 'a' && ch <= 'z')
+			||
+			(ch >= '0' && ch <= '9')
+			|| ch == '-' || ch == '_' || ch == '.' || ch == '~' // unreserved set
+			|| ch == '!' || ch == '*' || ch == '\''|| ch == '(' || ch == ')' // subdelims but allowed in uri component (phobos also no encode them)
+		) {
+			// does not need encoding
+		} else {
+			n ~= s[previous .. idx];
+			n ~= encodeChar(ch);
+			previous = idx + 1;
+		}
+	}
+
+	if(n.length) {
+		n ~= s[previous .. $];
+		return n;
+	} else {
+		return s; // nothing needed encoding
+	}
+}
+unittest {
+	assert(encodeUriComponent("foo") == "foo");
+	assert(encodeUriComponent("f33Ao") == "f33Ao");
+	assert(encodeUriComponent("/") == "%2F");
+	assert(encodeUriComponent("/foo") == "%2Ffoo");
+	assert(encodeUriComponent("foo/") == "foo%2F");
+	assert(encodeUriComponent("foo/bar") == "foo%2Fbar");
+	assert(encodeUriComponent("foo/bar/") == "foo%2Fbar%2F");
+}
+
+// FIXME: I think if translatePlusToSpace we're supposed to do newline normalization too
+package string decodeUriComponent(string s, bool translatePlusToSpace = false) {
+	int skipping = 0;
+	size_t previous = 0;
+	string n = null;
+	foreach(idx, char ch; s) {
+		if(skipping) {
+			skipping--;
+			continue;
+		}
+
+		if(ch == '%') {
+			int hexDecode(char c) {
+				if(c >= 'A' && c <= 'F')
+					return c - 'A' + 10;
+				else if(c >= 'a' && c <= 'f')
+					return c - 'a' + 10;
+				else if(c >= '0' && c <= '9')
+					return c - '0' + 0;
+				else
+					throw ArsdException!"Invalid percent-encoding"("Invalid char encountered", idx, s);
+			}
+
+			skipping = 2;
+			n ~= s[previous .. idx];
+
+			if(idx + 2 >= s.length)
+				throw ArsdException!"Invalid percent-encoding"("End of string reached", idx, s);
+
+			n ~= (hexDecode(s[idx + 1]) << 4) | hexDecode(s[idx + 2]);
+
+			previous = idx + 3;
+		} else if(translatePlusToSpace && ch == '+') {
+			n ~= s[previous .. idx];
+			n ~= " ";
+			previous = idx + 1;
+		}
+	}
+
+	if(n.length) {
+		n ~= s[previous .. $];
+		return n;
+	} else {
+		return s; // nothing needed decoding
+	}
+}
+
+unittest {
+	assert(decodeUriComponent("foo") == "foo");
+	assert(decodeUriComponent("%2F") == "/");
+	assert(decodeUriComponent("%2f") == "/");
+	assert(decodeUriComponent("%2Ffoo") == "/foo");
+	assert(decodeUriComponent("foo%2F") == "foo/");
+	assert(decodeUriComponent("foo%2Fbar") == "foo/bar");
+	assert(decodeUriComponent("foo%2Fbar%2F") == "foo/bar/");
+	assert(decodeUriComponent("%2F%2F%2F") == "///");
+
+	assert(decodeUriComponent("+") == "+");
+	assert(decodeUriComponent("+", true) == " ");
+}
+
 private auto toDelegate(T)(T t) {
 	// static assert(is(T == function)); // lol idk how to do what i actually want here
 
@@ -1501,7 +2081,7 @@ class InvalidArgumentsException : ArsdExceptionBase {
 	override void getAdditionalPrintableInformation(scope void delegate(string name, in char[] value) sink) const {
 		// FIXME: print the details better
 		foreach(arg; invalidArguments)
-			sink("invalidArguments[]", arg.name ~ " " ~ arg.description);
+			sink(arg.name, arg.givenValue.toString ~ " - " ~ arg.description);
 	}
 }
 
@@ -3038,6 +3618,361 @@ enum OnOutOfSpace {
 }
 
 
+
+/+
+	The GC can be called from any thread, and a lot of cleanup must be done
+	on the gui thread. Since the GC can interrupt any locks - including being
+	triggered inside a critical section - it is vital to avoid deadlocks to get
+	these functions called from the right place.
+
+	If the buffer overflows, things are going to get leaked. I'm kinda ok with that
+	right now.
+
+	The cleanup function is run when the event loop gets around to it, which is just
+	whenever there's something there after it has been woken up for other work. It does
+	NOT wake up the loop itself - can't risk doing that from inside the GC in another thread.
+	(Well actually it might be ok but i don't wanna mess with it right now.)
++/
+package(arsd) struct CleanupQueue {
+	import core.stdc.stdlib;
+
+	void queue(alias func, T...)(T args) {
+		static struct Args {
+			T args;
+		}
+		static struct RealJob {
+			Job j;
+			Args a;
+		}
+		static void call(Job* data) {
+			auto rj = cast(RealJob*) data;
+			func(rj.a.args);
+		}
+
+		RealJob* thing = cast(RealJob*) malloc(RealJob.sizeof);
+		thing.j.call = &call;
+		thing.a.args = args;
+
+		buffer[tail++] = cast(Job*) thing;
+
+		// FIXME: set overflowed
+	}
+
+	void process() {
+		const tail = this.tail;
+
+		while(tail != head) {
+			Job* job = cast(Job*) buffer[head++];
+			job.call(job);
+			free(job);
+		}
+
+		if(overflowed)
+			throw new object.Exception("cleanup overflowed");
+	}
+
+	private:
+
+	ubyte tail; // must ONLY be written by queue
+	ubyte head; // must ONLY be written by process
+	bool overflowed;
+
+	static struct Job {
+		void function(Job*) call;
+	}
+
+	void*[256] buffer;
+}
+package(arsd) __gshared CleanupQueue cleanupQueue;
+
+
+
+
+/++
+	A timer that will trigger your function on a given interval.
+
+
+	You create a timer with an interval and a callback. It will continue
+	to fire on the interval until it is destroyed.
+
+	---
+	auto timer = new Timer(50, { it happened!; });
+	timer.destroy();
+	---
+
+	Timers can only be expected to fire when the event loop is running and only
+	once per iteration through the event loop.
+
+	History:
+		Prior to December 9, 2020, a timer pulse set too high with a handler too
+		slow could lock up the event loop. It now guarantees other things will
+		get a chance to run between timer calls, even if that means not keeping up
+		with the requested interval.
++/
+version(HasTimer)
+class Timer {
+	// FIXME: absolute time vs relative time
+	// FIXME: real time?
+
+	// FIXME: I might add overloads for ones that take a count of
+	// how many elapsed since last time (on Windows, it will divide
+	// the ticks thing given, on Linux it is just available) and
+	// maybe one that takes an instance of the Timer itself too
+
+
+	/++
+		Creates an initialized, but unarmed timer. You must call other methods later.
+	+/
+	this(bool actuallyInitialize = true) {
+		if(actuallyInitialize)
+			initialize();
+	}
+
+	private void initialize() {
+		version(Windows) {
+			handle = CreateWaitableTimer(null, false, null);
+			if(handle is null)
+				throw new WindowsApiException("CreateWaitableTimer", GetLastError());
+			cbh = new CallbackHelper(&trigger);
+		} else version(linux) {
+			import core.sys.linux.timerfd;
+
+			fd = timerfd_create(CLOCK_MONOTONIC, 0);
+			if(fd == -1)
+				throw new Exception("timer create failed");
+
+			auto el = getThisThreadEventLoop(EventLoopType.Ui);
+			unregisterToken = el.addCallbackOnFdReadable(fd, new CallbackHelper(&trigger));
+		} else throw new NotYetImplementedException();
+		// FIXME: freebsd 12 has timer_fd and netbsd 10 too
+	}
+
+	/++
+	+/
+	void setPulseCallback(void delegate() onPulse) {
+		assert(onPulse !is null);
+		this.onPulse = onPulse;
+	}
+
+	/++
+	+/
+	void changeTime(int intervalInMilliseconds, bool repeats) {
+		this.intervalInMilliseconds = intervalInMilliseconds;
+		this.repeats = repeats;
+		changeTimeInternal(intervalInMilliseconds, repeats);
+	}
+
+	private void changeTimeInternal(int intervalInMilliseconds, bool repeats) {
+		version(Windows)
+		{
+			LARGE_INTEGER initialTime;
+			initialTime.QuadPart = -intervalInMilliseconds * 10000000L / 1000; // Windows wants hnsecs, we have msecs
+			if(!SetWaitableTimer(handle, &initialTime, repeats ? intervalInMilliseconds : 0, &timerCallback, cast(void*) cbh, false))
+				throw new WindowsApiException("SetWaitableTimer", GetLastError());
+		} else version(linux) {
+			import core.sys.linux.timerfd;
+
+			itimerspec value = makeItimerspec(intervalInMilliseconds, repeats);
+			if(timerfd_settime(fd, 0, &value, null) == -1) {
+				throw new ErrnoApiException("couldn't change pulse timer", errno);
+			}
+		} else {
+			throw new NotYetImplementedException();
+		}
+		// FIXME: freebsd 12 has timer_fd and netbsd 10 too
+	}
+
+	/++
+	+/
+	void pause() {
+		// FIXME this kinda makes little sense tbh
+		// when it restarts, it won't be on the same rhythm as it was at first...
+		changeTimeInternal(0, false);
+	}
+
+	/++
+	+/
+	void unpause() {
+		changeTimeInternal(this.intervalInMilliseconds, this.repeats);
+	}
+
+	/++
+	+/
+	void cancel() {
+		version(Windows)
+			CancelWaitableTimer(handle);
+		else
+			changeTime(0, false);
+	}
+
+
+	/++
+		Create a timer with a callback when it triggers.
+	+/
+	this(int intervalInMilliseconds, void delegate() onPulse, bool repeats = true) @trusted {
+		assert(onPulse !is null);
+
+		initialize();
+		setPulseCallback(onPulse);
+		changeTime(intervalInMilliseconds, repeats);
+	}
+
+	/++
+		Sets a one-of timer that happens some time after the given timestamp, then destroys itself
+	+/
+	this(SimplifiedUtcTimestamp when, void delegate() onTimeArrived) {
+		import core.stdc.time;
+		auto ts = when.toUnixTime;
+		auto now = time(null);
+		if(ts <= now) {
+			this(false);
+			onTimeArrived();
+		} else {
+			// FIXME: should use the OS facilities to set the actual time on the real time clock
+			auto dis = this;
+			this(cast(int)(ts - now) * 1000, () {
+				onTimeArrived();
+				dis.cancel();
+				dis.dispose();
+			}, false);
+		}
+	}
+
+	version(Windows) {} else {
+		ICoreEventLoop.UnregisterToken unregisterToken;
+	}
+
+	// just cuz I sometimes call it this.
+	alias dispose = destroy;
+
+	/++
+		Stop and destroy the timer object.
+
+		You should not use it again after destroying it.
+	+/
+	void destroy() {
+		version(Windows) {
+			cbh.release();
+		} else {
+			unregisterToken.unregister();
+		}
+
+		version(Windows) {
+			staticDestroy(handle);
+			handle = null;
+		} else version(linux) {
+			staticDestroy(fd);
+			fd = -1;
+		} else throw new NotYetImplementedException();
+	}
+
+	~this() {
+		version(Windows) {} else
+			cleanupQueue.queue!unregister(unregisterToken);
+		version(Windows) { if(handle)
+			cleanupQueue.queue!staticDestroy(handle);
+		} else version(linux) { if(fd != -1)
+			cleanupQueue.queue!staticDestroy(fd);
+		}
+	}
+
+
+	private:
+
+	version(Windows)
+	static void staticDestroy(HANDLE handle) {
+		if(handle) {
+			// KillTimer(null, handle);
+			CancelWaitableTimer(cast(void*)handle);
+			CloseHandle(handle);
+		}
+	}
+	else version(linux)
+	static void staticDestroy(int fd) @system {
+		if(fd != -1) {
+			import unix = core.sys.posix.unistd;
+
+			unix.close(fd);
+		}
+	}
+
+	version(Windows) {} else
+	static void unregister(arsd.core.ICoreEventLoop.UnregisterToken urt) {
+		urt.unregister();
+	}
+
+
+	void delegate() onPulse;
+	int intervalInMilliseconds;
+	bool repeats;
+
+	int lastEventLoopRoundTriggered;
+
+	version(linux) {
+		static auto makeItimerspec(int intervalInMilliseconds, bool repeats) {
+			import core.sys.linux.timerfd;
+
+			itimerspec value;
+			value.it_value.tv_sec = cast(int) (intervalInMilliseconds / 1000);
+			value.it_value.tv_nsec = (intervalInMilliseconds % 1000) * 1000_000;
+
+			if(repeats) {
+				value.it_interval.tv_sec = cast(int) (intervalInMilliseconds / 1000);
+				value.it_interval.tv_nsec = (intervalInMilliseconds % 1000) * 1000_000;
+			}
+
+			return value;
+		}
+	}
+
+	void trigger() {
+		version(linux) {
+			import unix = core.sys.posix.unistd;
+			long val;
+			unix.read(fd, &val, val.sizeof); // gotta clear the pipe
+		} else version(Windows) {
+			if(this.lastEventLoopRoundTriggered == eventLoopRound)
+				return; // never try to actually run faster than the event loop
+			lastEventLoopRoundTriggered = eventLoopRound;
+		} else throw new NotYetImplementedException();
+
+		if(onPulse)
+			onPulse();
+	}
+
+	version(Windows)
+		extern(Windows)
+		//static void timerCallback(HWND, UINT, UINT_PTR timer, DWORD dwTime) nothrow {
+		static void timerCallback(void* timer, DWORD lowTime, DWORD hiTime) nothrow {
+			auto cbh = cast(CallbackHelper) timer;
+			try
+				cbh.call();
+			catch(Throwable e) { sdpy_abort(e); assert(0); }
+		}
+
+	version(Windows) {
+		HANDLE handle;
+		CallbackHelper cbh;
+	} else version(linux) {
+		int fd = -1;
+	} else version(OSXCocoa) {
+	} else static assert(0, "timer not supported");
+}
+
+version(Windows)
+	private void sdpy_abort(Throwable e) nothrow {
+		try
+			MessageBoxA(null, (e.toString() ~ "\0").ptr, "Exception caught in WndProc", 0);
+		catch(Exception e)
+			MessageBoxA(null, "Exception.toString threw too!", "Exception caught in WndProc", 0);
+		ExitProcess(1);
+	}
+
+
+private int eventLoopRound = -1; // so things that assume 0 still work eg lastEventLoopRoundTriggered
+
+
+
 /++
 	For functions that give you an unknown address, you can use this to hold it.
 
@@ -3938,6 +4873,10 @@ package(arsd) int indexOf(scope const(char)[] haystack, scope const(char)[] need
 	return -1;
 }
 
+package(arsd) int indexOf(scope const(ubyte)[] haystack, scope const(char)[] needle) {
+	return indexOf(cast(const(char)[]) haystack, needle);
+}
+
 unittest {
 	assert("foo".indexOf("f") == 0);
 	assert("foo".indexOf("o") == 1);
@@ -4541,13 +5480,13 @@ class AsyncReadResponse : AsyncOperationResponse {
 		runHelperFunction() - whomever it reports to is the parent
 +/
 
-version(HasThread) class ScheduableTask : Fiber {
+version(HasThread) class SchedulableTask : Fiber {
 	private void delegate() dg;
 
 	// linked list stuff
-	private static ScheduableTask taskRoot;
-	private ScheduableTask previous;
-	private ScheduableTask next;
+	private static SchedulableTask taskRoot;
+	private SchedulableTask previous;
+	private SchedulableTask next;
 
 	// need the controlling thread to know how to wake it up if it receives a message
 	private Thread controllingThread;
@@ -4636,7 +5575,7 @@ version(HasThread) SchedulableTaskController inSchedulableTask() {
 	import core.thread.fiber;
 
 	if(auto fiber = Fiber.getThis) {
-		return SchedulableTaskController(cast(ScheduableTask) fiber);
+		return SchedulableTaskController(cast(SchedulableTask) fiber);
 	}
 
 	return SchedulableTaskController(null);
@@ -4644,11 +5583,11 @@ version(HasThread) SchedulableTaskController inSchedulableTask() {
 
 /// ditto
 version(HasThread) struct SchedulableTaskController {
-	private this(ScheduableTask fiber) {
+	private this(SchedulableTask fiber) {
 		this.fiber = fiber;
 	}
 
-	private ScheduableTask fiber;
+	private SchedulableTask fiber;
 
 	/++
 
@@ -4879,6 +5818,7 @@ private class CoreEventLoopImplementation : ICoreEventLoop {
 		// the other queues go through one byte at a time pipes (barf). freebsd 13 and newest nbsd have eventfd too tho so maybe i can use them but the other kqueue systems don't.
 
 		RunOnceResult runOnce(Duration timeout = Duration.max) {
+			scope(exit) eventLoopRound++;
 			kevent_t[16] ev;
 			//timespec tout = timespec(1, 0);
 			auto nev = kevent(kqueuefd, null, 0, ev.ptr, ev.length, null/*&tout*/);
@@ -5047,6 +5987,7 @@ private class CoreEventLoopImplementation : ICoreEventLoop {
 		bool isWorker; // if it is a worker we wait on the iocp, if not we wait on msg
 
 		RunOnceResult runOnce(Duration timeout = Duration.max) {
+			scope(exit) eventLoopRound++;
 			if(isWorker) {
 				// this function is only supported on Windows Vista and up, so using this
 				// means dropping support for XP.
@@ -5382,6 +6323,7 @@ private class CoreEventLoopImplementation : ICoreEventLoop {
 		// on the global one directly.
 
 		RunOnceResult runOnce(Duration timeout = Duration.max) {
+			scope(exit) eventLoopRound++;
 			epoll_event[16] events;
 			auto ret = epoll_wait(epollfd, events.ptr, cast(int) events.length, -1); // FIXME: timeout
 			if(ret == -1) {
@@ -6460,6 +7402,287 @@ unittest {
 }
 
 /+
+	================
+	LOGGER FRAMEWORK
+	================
++/
+/++
+	The arsd.core logger works differently than many in that it works as a ring buffer of objects that are consumed (or missed; buffer overruns are possible) by a different thread instead of as strings written to some file.
+
+	A library (or an application) defines a log source. They write to this source.
+
+	Applications then define log sinks, zero or more, which reads from various sources and does something with them.
+
+	Log calls, in this sense, are quite similar to asynchronous events that can be subscribed to by event handlers. The difference is events are generally not dropped - they might coalesce but are usually not just plain dropped in a buffer overrun - whereas logs can be. If the log consumer can't keep up, the details are just lost. The log producer will not wait for the consumer to catch up.
+
+
+	An application can also set a default subscriber which applies to all log objects throughout.
+
+	All log message objects must be capable of being converted to strings and to json.
+
+	Ad-hoc messages can be done with interpolated sequences.
+
+	Messages automatically get a timestamp. They can also have file/line and maybe even a call stack.
+
+	Examples:
+	---
+		mixin LoggerOf!X mylogger;
+
+		mylogger.log(i"$this heartbeat"); // creates an ad-hoc log message
+	---
+
+	History:
+		Added May 27, 2024
++/
+mixin template LoggerOf(T) {
+	void log(LogLevel l, T message) {
+
+	}
+}
+
+enum LogLevel {
+	Info
+}
+
+/+
+	=====================
+	TRANSLATION FRAMEWORK
+	=====================
++/
+
+/++
+	Represents a translatable string.
+
+
+	This depends on interpolated expression sequences to be ergonomic to use and in most cases, a function that uses this should take it as `tstring name...`; a typesafe variadic (this is also why it is a class rather than a struct - D only supports this particular feature on classes).
+
+	You can use `null` as a tstring. You can also construct it with UFCS: `i"foo".tstring`.
+
+	The actual translation engine should be set on the application level.
+
+	It is possible to get all translatable string templates compiled into the application at runtime.
+
+	History:
+		Added June 23, 2024
++/
+class tstring {
+	private GenericEmbeddableInterpolatedSequence geis;
+
+	/++
+		For a case where there is no plural specialization.
+	+/
+	this(Args...)(InterpolationHeader hdr, Args args, InterpolationFooter ftr) {
+		geis = GenericEmbeddableInterpolatedSequence(hdr, args, ftr);
+		tstringTemplateProcessor!(Args.length, Args) tp;
+	}
+
+	/+
+	/++
+		When here is a plural specialization this passes the default one.
+	+/
+	this(SArgs..., Pargs...)(
+		InterpolationHeader shdr, SArgs singularArgs, InterpolationFooter sftr,
+		InterpolationHeader phdr, PArgs pluralArgs, InterpolationFooter pftr
+	)
+	{
+		geis = GenericEmbeddableInterpolatedSequence(shdr, singularArgs, sftr);
+		//geis = GenericEmbeddableInterpolatedSequence(phdr, pluralArgs, pftr);
+
+		tstringTemplateProcessor!(Args.length, Args) tp;
+	}
+	+/
+
+	final override string toString() {
+		if(this is null)
+			return null;
+		if(translationEngine !is null)
+			return translationEngine.translate(geis);
+		else
+			return geis.toString();
+	}
+
+	static tstring opCall(Args...)(InterpolationHeader hdr, Args args, InterpolationFooter ftr) {
+		return new tstring(hdr, args, ftr);
+	}
+
+	/+ +++ +/
+
+	private static shared(TranslationEngine) translationEngine_ = null;
+
+	static shared(TranslationEngine) translationEngine() {
+		return translationEngine_;
+	}
+
+	static void translationEngine(shared TranslationEngine e) {
+		translationEngine_ = e;
+		if(e !is null) {
+			auto item = first;
+			while(item) {
+				e.handleTemplate(*item);
+				item = item.next;
+			}
+		}
+	}
+
+	public struct TranslatableElement {
+		string templ;
+		string pluralTempl;
+
+		TranslatableElement* next;
+	}
+
+	static __gshared TranslatableElement* first;
+
+	// FIXME: the template should be identified to the engine somehow
+
+	private static enum templateStringFor(Args...) = () {
+		int count;
+		string templ;
+		foreach(arg; Args) {
+			static if(is(arg == InterpolatedLiteral!str, string str))
+				templ ~= str;
+			else static if(is(arg == InterpolatedExpression!code, string code))
+				templ ~= "{" ~ cast(char)(++count + '0') ~ "}";
+		}
+		return templ;
+	}();
+
+	// this is here to inject static ctors so we can build up a runtime list from ct data
+	private static struct tstringTemplateProcessor(size_t pluralBegins, Args...) {
+		static __gshared TranslatableElement e = TranslatableElement(
+			templateStringFor!(Args[0 .. pluralBegins]),
+			templateStringFor!(Args[pluralBegins .. $]),
+			null /* next, filled in by the static ctor below */);
+
+		@standalone @system
+		shared static this() {
+			e.next = first;
+			first = &e;
+		}
+	}
+}
+
+/// ditto
+class TranslationEngine {
+	string translate(GenericEmbeddableInterpolatedSequence geis) shared {
+		return geis.toString();
+	}
+
+	/++
+		If the translation engine has been set early in the module
+		construction process (which it should be!)
+	+/
+	void handleTemplate(tstring.TranslatableElement t) shared {
+	}
+}
+
+private static template WillFitInGeis(Args...) {
+	static int lengthRequired() {
+		int place;
+		foreach(arg; Args) {
+			static if(is(arg == InterpolatedLiteral!str, string str)) {
+				if(place & 1) // can't put string in the data slot
+					place++;
+				place++;
+			} else static if(is(arg == InterpolationHeader) || is(arg == InterpolationFooter) || is(arg == InterpolatedExpression!code, string code)) {
+				// no storage required
+			} else {
+				if((place & 1) == 0) // can't put data in the string slot
+					place++;
+				place++;
+			}
+		}
+
+		if(place & 1)
+			place++;
+		return place / 2;
+	}
+
+	enum WillFitInGeis = lengthRequired() <= GenericEmbeddableInterpolatedSequence.seq.length;
+}
+
+
+/+
+	For making an array of istrings basically; it moves their CT magic to RT dynamic type.
++/
+struct GenericEmbeddableInterpolatedSequence {
+	static struct Element {
+		string str; // these are pointers to string literals every time
+		LimitedVariant lv;
+	}
+
+	Element[8] seq;
+
+	this(Args...)(InterpolationHeader, Args args, InterpolationFooter) {
+		int place;
+		bool stringUsedInPlace;
+		bool overflowed;
+
+		static assert(WillFitInGeis!(Args), "Your interpolated elements will not fit in the generic buffer.");
+
+		foreach(arg; args) {
+			static if(is(typeof(arg) == InterpolatedLiteral!str, string str)) {
+				if(stringUsedInPlace) {
+					place++;
+					stringUsedInPlace = false;
+				}
+
+				if(place == seq.length) {
+					overflowed = true;
+					break;
+				}
+				seq[place].str = str;
+				stringUsedInPlace = true;
+			} else static if(is(typeof(arg) == InterpolationHeader) || is(typeof(arg) == InterpolationFooter)) {
+				static assert(0, "Cannot embed interpolated sequences");
+			} else static if(is(typeof(arg) == InterpolatedExpression!code, string code)) {
+				// irrelevant
+			} else {
+				if(place == seq.length) {
+					overflowed = true;
+					break;
+				}
+				seq[place].lv = LimitedVariant(arg);
+				place++;
+				stringUsedInPlace = false;
+			}
+		}
+	}
+
+	string toString() {
+		string s;
+		foreach(item; seq) {
+			if(item.str !is null)
+				s ~= item.str;
+			if(!item.lv.containsNull())
+				s ~= item.lv.toString();
+		}
+		return s;
+	}
+}
+
+private struct LoggedElement(T) {
+	LogLevel level; // ?
+	MonoTime timestamp;
+	void*[16] stack; // ?
+	string originComponent;
+	string originFile;
+	size_t originLine;
+
+	T message;
+}
+
+private class TypeErasedLogger {
+	ubyte[] buffer;
+
+	void*[] messagePointers;
+	size_t position;
+}
+
+
+
+
+/+
 	=================
 	STDIO REPLACEMENT
 	=================
@@ -6785,6 +8008,7 @@ struct Timeout {
 }
 
 Timeout setTimeout(void delegate() dg, int msecs, int permittedJitter = 20) {
+static assert(0);
 	return Timeout.init;
 }
 

@@ -132,8 +132,11 @@ the virtual functions remain as the default calculated values. then the reads go
 	layout engine tries to automatically fit things in, similar to a css flexbox.
 
 	FOR BEST RESULTS: be sure to link with the appropriate subsystem command
-	`-L/SUBSYSTEM:WINDOWS:5.0`, for example, because otherwise you'll get a
-	console and other visual bugs.
+	`-L/SUBSYSTEM:WINDOWS` and -L/entry:mainCRTStartup`. If using ldc instead
+	of dmd, use `-L/entry:wmainCRTStartup` instead of `mainCRTStartup`; note the "w".
+
+	Otherwise you'll get a console and possibly other visual bugs. But if you do use
+	the subsystem:windows, note that Phobos' writeln will crash the program!
 
 	HTML_To_Classes:
 	$(SMALL_TABLE
@@ -319,6 +322,7 @@ unittest {
 
 
 import arsd.core;
+alias Timer = arsd.simpledisplay.Timer;
 public import arsd.simpledisplay;
 /++
 	Convenience import to override the Windows GDI Rectangle function (you can still use it through fully-qualified imports)
@@ -1306,8 +1310,9 @@ class Widget : ReflectableProperties {
 	/// ditto
 	void defaultEventHandler_mousedown(MouseDownEvent event) {
 		if(event.button == MouseButton.left) {
-			if(this.tabStop)
+			if(this.tabStop) {
 				this.focus();
+			}
 		}
 	}
 	/// ditto
@@ -9395,7 +9400,7 @@ private class TableViewWidgetInner : Widget {
 
 	override void registerMovement() {
 		super.registerMovement();
-		// FIXME: actual column width. it might need to be done per-pixel instead of per-colum
+		// FIXME: actual column width. it might need to be done per-pixel instead of per-column
 		smw.setViewableArea(this.width, this.height / lh);
 	}
 
@@ -9424,7 +9429,7 @@ private class TableViewWidgetInner : Widget {
 					}
 					if(column.width != 0) // no point drawing an invisible column
 					tvw.getData(row, cast(int) columnNumber, (in char[] info) {
-						// auto clip = painter.setClipRectangle(
+						auto clip = painter.setClipRectangle(Rectangle(Point(startX - smw.position.x, y), Point(endX - smw.position.x, y + lh)));
 
 						void dotext(WidgetPainter painter) {
 							painter.drawText(Point(startX - smw.position.x, y), info, Point(endX - smw.position.x, y + lh), column.alignment);
@@ -9468,6 +9473,10 @@ private class TableViewWidgetInner : Widget {
 	mixin OverrideStyle!Style;
 
 	private static class HeaderWidget : Widget {
+		/+
+			maybe i should do a splitter thing on top of the other widgets
+			so the splitter itself isn't really drawn but still replies to mouse events?
+		+/
 		this(TableViewWidgetInner tvw, Widget parent) {
 			super(parent);
 			this.tvw = tvw;
@@ -12065,6 +12074,24 @@ class TextDisplayHelper : Widget {
 	private const(TextLayouter.State)*[] undoStack;
 	private const(TextLayouter.State)*[] redoStack;
 
+	private string preservedPrimaryText;
+	protected void selectionChanged() {
+		static if(UsingSimpledisplayX11)
+		with(l.selection()) {
+			if(!isEmpty()) {
+				getPrimarySelection(parentWindow.win, (in char[] txt) {
+					if(txt.length) {
+						preservedPrimaryText = txt.idup;
+						// writeln(preservedPrimaryText);
+					}
+
+					setPrimarySelection(parentWindow.win, getContentString());
+				});
+			}
+		}
+	}
+
+
 	bool readonly;
 	bool caretNavigation; // scroll lock can flip this
 	bool singleLine;
@@ -12186,6 +12213,8 @@ class TextDisplayHelper : Widget {
 			setAnchor();
 			moveToEndOfDocument();
 			setFocus();
+
+			selectionChanged();
 		}
 		redraw();
 	}
@@ -12261,6 +12290,7 @@ class TextDisplayHelper : Widget {
 		});
 
 		bool mouseDown;
+		bool mouseActuallyMoved;
 
 		this.addEventListener((scope ResizeEvent re) {
 			// FIXME: I should add a method to give this client area width thing
@@ -12293,6 +12323,9 @@ class TextDisplayHelper : Widget {
 						l.selection.setFocus();
 					else
 						l.selection.setAnchor();
+
+					selectionChanged();
+
 					if(setPosition)
 						l.selection.setUserXCoordinate();
 					scrollForCaret();
@@ -12377,9 +12410,30 @@ class TextDisplayHelper : Widget {
 		this.addEventListener((scope ClickEvent ce) {
 			if(ce.button == MouseButton.middle) {
 				parentWindow.win.getPrimarySelection((txt) {
-					l.selection.replaceContent(txt);
+					doStateCheckpoint();
+
+					if(txt == l.selection.getContentString && preservedPrimaryText.length)
+						l.selection.replaceContent(preservedPrimaryText);
+					else
+						l.selection.replaceContent(txt);
 					redraw();
 				});
+			}
+		});
+
+		this.addEventListener((scope DoubleClickEvent dce) {
+			if(dce.button == MouseButton.left) {
+				with(l.selection()) {
+					scope dg = delegate const(char)[] (scope return const(char)[] ch) {
+						if(ch == " " || ch == "\t" || ch == "\n" || ch == "\r")
+							return ch;
+						return null;
+					};
+					find(dg, 1, true).moveToEnd.setAnchor;
+					find(dg, 1, false).moveTo.setFocus;
+					selectionChanged();
+					redraw();
+				}
 			}
 		});
 
@@ -12389,6 +12443,7 @@ class TextDisplayHelper : Widget {
 				l.selection.moveTo(adjustForSingleLine(smw.position + downAt));
 				l.selection.setAnchor();
 				mouseDown = true;
+				mouseActuallyMoved = false;
 				parentWindow.captureMouse(this);
 				this.redraw();
 			} else if(ce.button == MouseButton.right) {
@@ -12457,6 +12512,7 @@ class TextDisplayHelper : Widget {
 
 				l.selection.moveTo(adjustForSingleLine(smw.position + movedTo));
 				l.selection.setFocus();
+				mouseActuallyMoved = true;
 				this.redraw();
 			}
 		});
@@ -12471,6 +12527,9 @@ class TextDisplayHelper : Widget {
 				parentWindow.releaseMouseCapture();
 				stopAutoscrollTimer();
 				this.redraw();
+
+				if(mouseActuallyMoved)
+					selectionChanged();
 			}
 			//writeln(ce.clientX, ", ", ce.clientY, " = ", l.offsetOfClick(Point(ce.clientX, ce.clientY)));
 		});
@@ -12819,6 +12878,7 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 
 			void setupCustomTextEditing() {
 				textLayout = new TextLayouter(defaultTextStyle());
+
 				auto smw = new ScrollMessageWidget(this);
 				if(!showingHorizontalScroll)
 					smw.horizontalScrollBar.hide();
@@ -14985,7 +15045,9 @@ class FilePicker : Dialog {
 			for(int i = 0; i < sa.length; i++) {
 				if(i == sb.length)
 					return 1;
-				return sa[i] - sb[i];
+				auto diff = sa[i] - sb[i];
+				if(diff)
+					return diff;
 			}
 
 			return 0;
@@ -15091,7 +15153,7 @@ class FilePicker : Dialog {
 				if(current.length >= 2 && current[0 ..2] == "./")
 					current = current[2 .. $];
 
-				auto commonPrefix = loadFiles(".", current ~ "*");
+				auto commonPrefix = loadFiles(currentDirectory, current ~ "*");
 
 				if(commonPrefix.length)
 					lineEdit.content = commonPrefix;
