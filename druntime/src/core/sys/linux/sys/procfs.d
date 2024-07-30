@@ -7,9 +7,8 @@
 
 module core.sys.linux.sys.procfs;
 
-import core.sys.posix.sys.types : pid_t;
-
 version (linux)
 {
+    import core.sys.posix.sys.types : pid_t;
     alias lwpid_t = pid_t;
 }
