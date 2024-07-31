@@ -61,7 +61,7 @@ bool checkUnsafeAccess(Scope* sc, Expression e, bool readonly, bool printmsg)
         import dmd.globals : global;
         if (v.isSystem())
         {
-            if (sc.setUnsafePreview(global.params.systemVariables, !printmsg, e.loc,
+            if (sc.setUnsafe(!printmsg, e.loc,
                 "cannot access `@system` field `%s.%s` in `@safe` code", ad, v))
                 return true;
         }

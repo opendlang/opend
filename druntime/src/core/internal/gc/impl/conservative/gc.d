@@ -1460,7 +1460,7 @@ short[PAGESIZE / 16][Bins.B_NUMSMALL + 1] calcBinBase()
     return bin;
 }
 
-size_t baseOffset(size_t offset, Bins bin) @nogc nothrow
+size_t baseOffset(size_t offset, Bins bin) @nogc nothrow @system
 {
     assert(bin <= Bins.B_PAGE);
     return (offset & ~(PAGESIZE - 1)) + binbase[bin][(offset & (PAGESIZE - 1)) >> 4];
@@ -1765,7 +1765,7 @@ struct Gcx
     /**
      *
      */
-    void runFinalizers(const scope void[] segment) nothrow
+    void runFinalizers(const scope void[] segment) nothrow @system
     {
         ConservativeGC._inFinalizer = true;
         scope (failure) ConservativeGC._inFinalizer = false;
@@ -1920,7 +1920,7 @@ struct Gcx
                                   : bigAlloc(size, alloc_size, bits, ti);
     }
 
-    void* smallAlloc(size_t size, ref size_t alloc_size, uint bits, const TypeInfo ti) nothrow
+    void* smallAlloc(size_t size, ref size_t alloc_size, uint bits, const TypeInfo ti) nothrow @system
     {
         immutable bin = binTable[size];
         alloc_size = binsize[bin];
@@ -3717,7 +3717,7 @@ struct Pool
     /**
     *
     */
-    uint getBits(size_t biti) nothrow
+    uint getBits(size_t biti) nothrow @system
     {
         uint bits;
 

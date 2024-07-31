@@ -1471,7 +1471,7 @@ Lagain:
         {
             if (sd.isSystem())
             {
-                if (sc.setUnsafePreview(global.params.systemVariables, false, loc,
+                if (sc.setUnsafe(false, loc,
                     "cannot access `@system` variable `%s` in @safe code", sd))
                 {
                     if (auto v = sd.isVarDeclaration())

@@ -265,7 +265,7 @@ private bool hasDtor(const TypeInfo ti) pure nothrow
     return false;
 }
 
-private immutable(void)* getRTInfo(const TypeInfo ti) pure nothrow
+private immutable(void)* getRTInfo(const TypeInfo ti) pure nothrow @system
 {
     // classes are references
     const isNoClass = ti && typeid(ti) !is typeid(TypeInfo_Class);
@@ -339,7 +339,7 @@ TypeInfo_Struct fakeEntryTI(ref Impl aa, const TypeInfo keyti, const TypeInfo va
 
 // build appropriate RTInfo at runtime
 immutable(void)* rtinfoEntry(ref Impl aa, immutable(size_t)* keyinfo,
-    immutable(size_t)* valinfo, size_t* rtinfoData, size_t rtinfoSize) pure nothrow
+    immutable(size_t)* valinfo, size_t* rtinfoData, size_t rtinfoSize) pure nothrow @system
 {
     enum bitsPerWord = 8 * size_t.sizeof;
 
