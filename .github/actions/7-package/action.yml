@@ -48,8 +48,8 @@ runs:
 
         mkdir bin
         $DMD -w -de -dip1000 ddemangle.d -of=bin/ddemangle
-        $DMD -w -de -dip1000 DustMite/dustmite.d DustMite/splitter.d DustMite/polyhash.d -of=bin/dustmite
-        cp bin/{ddemangle,dustmite} ../installed/bin/
+        # $DMD -w -de -dip1000 DustMite/dustmite.d DustMite/splitter.d DustMite/polyhash.d -of=bin/dustmite
+        cp bin/ddemangle ../installed/bin/
 
     - name: Pack installation dir
       shell: bash
