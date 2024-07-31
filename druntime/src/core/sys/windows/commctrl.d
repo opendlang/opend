@@ -5859,7 +5859,7 @@ BOOL TreeView_DeleteItem(HWND w, HTREEITEM i) {
     return cast(BOOL) SendMessage(w, TVM_DELETEITEM, 0, cast(LPARAM) i);
 }
 
-BOOL TreeView_DeleteAllItems(HWND w) {
+BOOL TreeView_DeleteAllItems(HWND w) @system {
     return cast(BOOL) SendMessage(w, TVM_DELETEITEM, 0, cast(LPARAM) TVI_ROOT);
 }
 
