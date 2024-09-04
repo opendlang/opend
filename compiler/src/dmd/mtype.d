@@ -4062,6 +4062,12 @@ extern (C++) final class TypeFunction : TypeNext
             if (!t)
                 continue;
 
+            if (fparam.unpack)
+            {
+                fparam.unpack.propagateStorageClasses();
+                fparam.storageClass |= fparam.unpack.storage_class;
+            }
+
             if (fparam.storageClass & (STC.lazy_ | STC.out_))
             {
                 purity = PURE.weak;

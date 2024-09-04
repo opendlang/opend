@@ -1850,6 +1850,11 @@ extern(C++) Type typeSemantic(Type type, const ref Loc loc, Scope* sc)
             for (size_t i = 0; i < dim; i++)
             {
                 Parameter fparam = tf.parameterList[i];
+                if (fparam.unpack)
+                {
+                    fparam.unpack.propagateStorageClasses();
+                    fparam.storageClass |= fparam.unpack.storage_class;
+                }
                 fparam.storageClass |= STC.parameter;
                 mtype.inuse++;
                 fparam.type = fparam.type.typeSemantic(loc, argsc);
