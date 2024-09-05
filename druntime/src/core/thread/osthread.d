@@ -2054,6 +2054,13 @@ private extern (D) bool suspend( Thread t ) nothrow @nogc
 }
 
 /**
+ * Runs the necessary operations required before stopping the world.
+ */
+extern (C) void thread_preStopTheWorld() nothrow {
+    Thread.slock.lock_nothrow();
+}
+
+/**
  * Suspend all threads but the calling thread for "stop the world" garbage
  * collection runs.  This function may be called multiple times, and must
  * be followed by a matching number of calls to thread_resumeAll before
@@ -2085,7 +2092,7 @@ extern (C) void thread_suspendAll() nothrow
         return;
     }
 
-    Thread.slock.lock_nothrow();
+    thread_preStopTheWorld();
     {
         if ( ++suspendDepth > 1 )
             return;
@@ -2569,7 +2576,7 @@ else version (Posix)
 
             if ( !obj.m_lock )
             {
-                obj.m_curr.tstack = getStackTop();
+                obj.m_curr.tstack = sp;
             }
         }
 
