@@ -275,6 +275,7 @@ struct Param
     DString resfile;
     DString exefile;
     DString mapfile;
+    bool fullyQualifiedObjectFiles;
 
 #if IN_LLVM
     // stuff which was extracted upstream into `driverParams` global:
@@ -294,7 +295,6 @@ struct Param
     OUTPUTFLAG output_o;
     bool useInlineAsm;
     bool verbose_cg;
-    bool fullyQualifiedObjectFiles;
     bool cleanupObjectFiles;
 
     // Profile-guided optimization:

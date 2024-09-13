@@ -346,9 +346,8 @@ extern (C++) final class Module : Package
     bool specifiedOnCmdLine = true;    // Was the module explicitly mentioned on the compiler invocation.
     ModuleDeclaration* md;      // if !=null, the contents of the ModuleDeclaration declaration
     const FileName srcfile;     // input source file
-    // IN_LLVM: keep both following file names mutable (for -oq)
-    /*const*/ FileName objfile; // output .obj file
-    /*const*/ FileName hdrfile; // 'header' file
+    FileName objfile;           // output .obj file
+    FileName hdrfile;           // 'header' file
     FileName docfile;           // output documentation file
     const(ubyte)[] src;         /// Raw content of the file
     uint errors;                // if any errors in file
@@ -640,8 +639,8 @@ else
                 argdoc = arg;
             else
                 argdoc = FileName.name(arg);
-	    version (IN_LLVM)
-            if (IN_LLVM && global.params.fullyQualifiedObjectFiles)
+
+            if (global.params.fullyQualifiedObjectFiles)
             {
                 const fqn = md ? md.toString() : toString();
                 argdoc = FileName.replaceName(argdoc, fqn);
@@ -655,6 +654,7 @@ else
                 s[$-1] = 0;
                 argdoc = s;
             }
+
             // If argdoc doesn't have an absolute path, make it relative to dir
             if (!FileName.absolute(argdoc))
             {

@@ -297,6 +297,7 @@ extern (C++) struct Param
     const(char)[] resfile;
     const(char)[] exefile;
     const(char)[] mapfile;
+    bool fullyQualifiedObjectFiles; // prepend module names to object files to prevent name conflicts with -od
 
 version (IN_LLVM)
 {
@@ -317,7 +318,6 @@ version (IN_LLVM)
     OUTPUTFLAG output_o;
     bool useInlineAsm;
     bool verbose_cg;
-    bool fullyQualifiedObjectFiles;
     bool cleanupObjectFiles;
 
     // Profile-guided optimization:

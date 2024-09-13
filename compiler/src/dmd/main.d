@@ -451,8 +451,6 @@ version (IN_LLVM) {} else
 
         m.parse();
 
-version (IN_LLVM)
-{
         // Finalize output filenames. Update if `-oq` was specified (only feasible after parsing).
         if (params.fullyQualifiedObjectFiles && m.md)
         {
@@ -463,6 +461,9 @@ version (IN_LLVM)
                 m.hdrfile = m.setOutfilename(params.dihdr.name, params.dihdr.dir, m.arg, hdr_ext);
         }
 
+
+version (IN_LLVM)
+{
         // Set object filename in params.objfiles.
         for (size_t j = 0; j < params.objfiles.length; j++)
         {
