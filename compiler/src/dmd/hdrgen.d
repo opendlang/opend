@@ -3119,8 +3119,15 @@ void toCBufferInstance(const TemplateInstance ti, ref OutBuffer buf, bool qualif
     HdrGenState hgs;
     hgs.fullQual = qualifyTypes;
 
-    buf.writestring(ti.name.toChars());
-    tiargsToBuffer(cast() ti, buf, hgs);
+    /+
+    if(auto udr = ti.userDefinedRepresentation)
+    {
+        buf.writestring(udr);
+    } else {
+    +/
+        buf.writestring(ti.name.toChars());
+        tiargsToBuffer(cast() ti, buf, hgs);
+    // }
 }
 
 void toCBuffer(const Initializer iz, ref OutBuffer buf, ref HdrGenState hgs)

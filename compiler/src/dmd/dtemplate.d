@@ -6115,6 +6115,21 @@ extern (C++) class TemplateInstance : ScopeDsymbol
         return buf.extractChars();
     }
 
+    /+
+    extern(D)
+    final string userDefinedRepresentation() const
+    {
+        string result = null;
+        foreach(member; *members)
+        {
+            if(member.ident == Id.stringof)
+                result = ctfeInterpret()
+
+        }
+        return result;
+    }
+    +/
+
     /**************************************
      * Given an error instantiating the TemplateInstance,
      * give the nested TemplateInstance instantiations that got
