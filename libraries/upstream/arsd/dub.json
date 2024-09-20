@@ -28,12 +28,12 @@
 			"configurations": [
 				{
 					"name": "normal",
-					"libs-windows": ["gdi32", "ole32"]
+					"libs-windows": ["dwmapi", "gdi32", "ole32"]
 				},
 				{
 					"name": "without-opengl",
 					"versions": ["without_opengl"],
-					"libs-windows": ["gdi32", "ole32"]
+					"libs-windows": ["dwmapi", "gdi32", "ole32"]
 				},
 				{
 					"name": "cocoa",
@@ -70,12 +70,12 @@
 
 				"bindbc-freetype": {
 					"version": "*",
-					"optional": true,
+					"optional": true
 				},
 				"bindbc-opengl": {
 					"version": "*",
-					"optional": true,
-				},
+					"optional": true
+				}
 			},
 			"libs-posix": ["freetype", "fontconfig"],
 			"sourceFiles": ["nanovega.d", "blendish.d"]
@@ -178,6 +178,7 @@
 				"arsd-official:core":"*",
 				"arsd-official:minigui":"*",
 				"arsd-official:joystick":"*",
+				"arsd-official:ttf":"*",
 				"arsd-official:simpleaudio":"*",
 				"arsd-official:gamehelpers":"*"
 			},
@@ -693,6 +694,18 @@
 			"dflags-dmd": ["-mv=arsd.pixmappaint=$PACKAGE_DIR/pixmappaint.d"],
 			"dflags-ldc": ["--mv=arsd.pixmappaint=$PACKAGE_DIR/pixmappaint.d"],
 			"dflags-gdc": ["-fmodule-file=arsd.pixmappaint=$PACKAGE_DIR/pixmappaint.d"]
+		},
+		{
+			"name": "pixmaprecorder",
+			"description": "Video rendering extension for Pixmap Paint. Fancy wrapper for piping frame data to FFmpeg.",
+			"targetType": "library",
+			"sourceFiles": ["pixmaprecorder.d"],
+			"dependencies": {
+				"arsd-official:pixmappaint":"*"
+			},
+			"dflags-dmd": ["-mv=arsd.pixmaprecorder=$PACKAGE_DIR/pixmaprecorder.d"],
+			"dflags-ldc": ["--mv=arsd.pixmaprecorder=$PACKAGE_DIR/pixmaprecorder.d"],
+			"dflags-gdc": ["-fmodule-file=arsd.pixmaprecorder=$PACKAGE_DIR/pixmaprecorder.d"]
 		},
 		{
 			"name": "pixmappresenter",

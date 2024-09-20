@@ -192,7 +192,12 @@ alias Pixmap = arsd.pixmappaint.Pixmap;
 alias WindowResizedCallback = void delegate(Size);
 
 // is the Timer class available on this platform?
-private enum hasTimer = is(Timer == class);
+private enum hasTimer = is(arsd.simpledisplay.Timer == class);
+
+// resolve symbol clash on “Timer” (arsd.core vs arsd.simpledisplay)
+static if (hasTimer) {
+	private alias Timer = arsd.simpledisplay.Timer;
+}
 
 // viewport math
 private @safe pure nothrow @nogc {
@@ -408,8 +413,26 @@ struct PresenterConfig {
 
 	///
 	static struct Window {
+		///
 		string title = "ARSD Pixmap Presenter";
+
+		///
 		Size size;
+
+		/++
+			Window corner style
+
+			$(NOTE
+				At the time of writing, this is only implemented on Windows.
+				It has no effect elsewhere for now but does no harm either.
+
+				Windows: Requires Windows 11 or later.
+			)
+
+			History:
+				Added September 10, 2024.
+		 +/
+		CornerStyle corners = CornerStyle.rectangular;
 	}
 }
 
@@ -512,6 +535,7 @@ final class OpenGl3PixmapRenderer : PixmapRenderer {
 
 	public void setup(PresenterObjectsContainer* pro) {
 		_poc = pro;
+		_poc.window.suppressAutoOpenglViewport = true;
 		_poc.window.visibleForTheFirstTime = &this.visibleForTheFirstTime;
 		_poc.window.redrawOpenGlScene = &this.redrawOpenGlScene;
 	}
@@ -703,6 +727,7 @@ final class OpenGl1PixmapRenderer : PixmapRenderer {
 
 	public void setup(PresenterObjectsContainer* poc) {
 		_poc = poc;
+		_poc.window.suppressAutoOpenglViewport = true;
 		_poc.window.visibleForTheFirstTime = &this.visibleForTheFirstTime;
 		_poc.window.redrawOpenGlScene = &this.redrawOpenGlScene;
 	}
@@ -911,6 +936,7 @@ final class PixmapPresenter {
 			);
 
 			window.windowResized = &this.windowResized;
+			window.cornerStyle = config.window.corners;
 
 			// alloc objects
 			_poc = new PresenterObjectsContainer(

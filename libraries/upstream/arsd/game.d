@@ -191,7 +191,7 @@
 
 		* [Nanovega|arsd.nanovega] 2d vector graphics. Nanovega supports its own text drawing functions.
 
-		* The `BasicDrawing` functions provided by `arsd.game`. To some extent, you'll be able to mix and match these with other drawing models. It is just bare minimum functionality you might find useful made in a more concise form than even old-style opengl.
+		* The `BasicDrawing` functions provided by `arsd.game`. To some extent, you'll be able to mix and match these with other drawing models. It is just bare minimum functionality you might find useful made in a more concise form than even old-style opengl or for porting something that uses a ScreenPainter. (not implemented)
 	)
 
 	Please note that the simpledisplay ScreenPainter will NOT work in a game `drawFrame` function.
@@ -224,7 +224,7 @@
 
 	$(H2 Random numbers)
 
-	std.random works but might want another thing so the seed is saved with the game.
+	std.random works but might want another thing so the seed is saved with the game. An old school trick is to seed it based on some user input, even just time it took then to go past the title screen.
 
 	$(H2 Screenshots)
 
@@ -285,7 +285,7 @@
 
 	Most computer programs are written either as batch processors or as event-driven applications. Batch processors do their work when requested, then exit. Event-driven applications, including many video games, wait for something to happen, like the user pressing a key or clicking the mouse, respond to it, then go back to waiting. These might do some animations, but this is the exception to its run time, not the rule. You are assumed to be waiting for events, but can `requestAnimationFrame` for the special occasions.
 
-	But this is the rule for the third category of programs: time-driven programs, and many video games fall into this category. This is what `arsd.game` tries to make easy. It assumes you want a timed `update` and a steady stream of animation frames, and if you want to make an exception, you can pause updates until an event comes in. FIXME: `pauseUntilNextInput`.
+	But this is the rule for the third category of programs: time-driven programs, and many video games fall into this category. This is what `arsd.game` tries to make easy. It assumes you want a timed `update` and a steady stream of animation frames, and if you want to make an exception, you can pause updates until an event comes in. FIXME: `pauseUntilNextInput`. `designFps` = 0, `requestAnimationFrame`, `requestAnimation(duration)`
 
 	$(H3 Webassembly implementation)
 
@@ -570,29 +570,33 @@ public import core.time;
 
 import arsd.core;
 
+import arsd.simpledisplay : Timer;
+
 public import arsd.joystick;
 
 /++
-	Creates a simple 2d opengl simpledisplay window. It sets the matrix for pixel coordinates and enables alpha blending and textures.
+	Creates a simple 2d (old-style) opengl simpledisplay window. It sets the matrix for pixel coordinates and enables alpha blending and textures.
 +/
 SimpleWindow create2dWindow(string title, int width = 512, int height = 512) {
 	auto window = new SimpleWindow(width, height, title, OpenGlOptions.yes);
 
-	window.setAsCurrentOpenGlContext();
+	//window.visibleForTheFirstTime = () {
+		window.setAsCurrentOpenGlContext();
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0,0,0,0);
-	glDepthFunc(GL_LEQUAL);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glClearColor(0,0,0,0);
+		glDepthFunc(GL_LEQUAL);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, width, height, 0, 0, 1);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, width, height, 0, 0, 1);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_TEXTURE_2D);
+	//};
 
 	window.windowResized = (newWidth, newHeight) {
 		int x, y, w, h;
@@ -610,6 +614,7 @@ SimpleWindow create2dWindow(string title, int width = 512, int height = 512) {
 			y = 0;
 		}
 
+		window.setAsCurrentOpenGlContext();
 		glViewport(x, y, w, h);
 		window.redrawOpenGlSceneSoon();
 	};
@@ -643,6 +648,7 @@ abstract class GameHelperBase {
 		currentScreen.drawFrame(interpolateToNextFrame);
 	}
 
+	// in frames
 	ushort snesRepeatRate() { return ushort.max; }
 	ushort snesRepeatDelay() { return snesRepeatRate(); }
 
@@ -1536,3 +1542,109 @@ void clearOpenGlScreen(SimpleWindow window) {
 }
 
 
+/++
+	History:
+		Added August 26, 2024
++/
+interface BasicDrawing {
+	void fillRectangle(Rectangle r, Color c);
+	void outlinePolygon(Point[] vertexes, Color c);
+	void drawText(Rectangle boundingBox, string text, Color c);
+}
+
+/++
+	NOT fully compatible with simpledisplay's screenpainter, but emulates some of its api.
+
+	I want it to be runtime swappable between the fancy opengl and a backup one for my remote X purposes.
++/
+class ScreenPainterImpl : BasicDrawing {
+	Color outlineColor;
+	Color fillColor;
+
+	import arsd.ttf;
+
+	SimpleWindow window;
+	OpenGlLimitedFontBase!() font;
+
+	this(SimpleWindow window, OpenGlLimitedFontBase!() font) {
+		this.window = window;
+		this.font = font;
+	}
+
+	void clear(Color c) {
+		fillRectangle(Rectangle(Point(0, 0), Size(window.width, window.height)), c);
+	}
+
+	void drawRectangle(Rectangle r) {
+		fillRectangle(r, fillColor);
+		Point[4] vertexes = [
+			r.upperLeft,
+			r.upperRight,
+			r.lowerRight,
+			r.lowerLeft
+		];
+		outlinePolygon(vertexes[], outlineColor);
+	}
+	void drawRectangle(Point ul, Size sz) {
+		drawRectangle(Rectangle(ul, sz));
+	}
+	void drawText(Point upperLeft, scope const char[] text) {
+		drawText(Rectangle(upperLeft, Size(4096, 4096)), text, outlineColor);
+	}
+
+
+	void fillRectangle(Rectangle r, Color c) {
+		glBegin(GL_QUADS);
+		glColor4f(c.r / 255.0, c.g / 255.0, c.b / 255.0, c.a / 255.0);
+
+		with(r) {
+			glVertex2i(upperLeft.x, upperLeft.y);
+			glVertex2i(upperRight.x, upperRight.y);
+			glVertex2i(lowerRight.x, lowerRight.y);
+			glVertex2i(lowerLeft.x, lowerLeft.y);
+		}
+
+		glEnd();
+	}
+	void outlinePolygon(Point[] vertexes, Color c) {
+		glBegin(GL_LINE_LOOP);
+		glColor4f(c.r / 255.0, c.g / 255.0, c.b / 255.0, c.a / 255.0);
+
+		foreach(vertex; vertexes) {
+			glVertex2i(vertex.x, vertex.y);
+		}
+
+		glEnd();
+	}
+	void drawText(Rectangle boundingBox, scope const char[] text, Color color) {
+		font.drawString(boundingBox.upperLeft.tupleof, text, color);
+	}
+
+	protected int refcount;
+
+	void flush() {
+
+	}
+}
+
+struct ScreenPainter {
+	ScreenPainterImpl impl;
+
+	this(ScreenPainterImpl impl) {
+		this.impl = impl;
+		impl.refcount++;
+	}
+
+	this(this) {
+		if(impl)
+			impl.refcount++;
+	}
+
+	~this() {
+		if(impl)
+			if(--impl.refcount == 0)
+				impl.flush();
+	}
+
+	alias impl this;
+}

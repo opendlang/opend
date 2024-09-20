@@ -1164,6 +1164,111 @@ version(Windows) {
 	// for AlphaBlend... a breaking change....
 	version(CRuntime_DigitalMars) { } else
 		pragma(lib, "msimg32");
+
+	// core.sys.windows.dwmapi
+	private {
+		/++
+			See_also:
+				https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute
+		 +/
+		extern extern(Windows) HRESULT DwmGetWindowAttribute(
+			HWND hwnd,
+			DWORD dwAttribute,
+			PVOID pvAttribute,
+			DWORD cbAttribute
+		) nothrow @nogc;
+
+		/++
+			See_also:
+				https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmsetwindowattribute
+		 +/
+		extern extern(Windows) HRESULT DwmSetWindowAttribute(
+			HWND hwnd,
+			DWORD dwAttribute,
+			LPCVOID pvAttribute,
+			DWORD cbAttribute
+		) nothrow @nogc;
+
+		/++
+			See_also:
+				https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+		 +/
+		enum DWMWINDOWATTRIBUTE {
+			// incomplete, only declare what we need
+
+			/++
+				Usage:
+					pvAttribute → `DWM_WINDOW_CORNER_PREFERENCE*`
+
+				$(NOTE
+					Requires Windows 11 or later.
+				)
+			 +/
+			DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+		}
+
+		/++
+			See_also:
+				https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_window_corner_preference
+		 +/
+		enum DWM_WINDOW_CORNER_PREFERENCE {
+			/// System decision
+			DWMWCP_DEFAULT = 0,
+
+			/// Never
+			DWMWCP_DONOTROUND = 1,
+
+			// If "appropriate"
+			DWMWCP_ROUND = 2,
+
+			// If "appropriate", but smaller radius
+			DWMWCP_ROUNDSMALL = 3
+		}
+
+		bool fromDWM(
+			DWM_WINDOW_CORNER_PREFERENCE value,
+			out CornerStyle result,
+		) @safe pure nothrow @nogc {
+			switch (value) with (DWM_WINDOW_CORNER_PREFERENCE) {
+				case DWMWCP_DEFAULT:
+					result = CornerStyle.automatic;
+					return true;
+				case DWMWCP_DONOTROUND:
+					result = CornerStyle.rectangular;
+					return true;
+				case DWMWCP_ROUND:
+					result = CornerStyle.rounded;
+					return true;
+				case DWMWCP_ROUNDSMALL:
+					result = CornerStyle.roundedSlightly;
+					return true;
+				default:
+					return false;
+			}
+		}
+
+		bool toDWM(
+			CornerStyle value,
+			out DWM_WINDOW_CORNER_PREFERENCE result,
+		) @safe pure nothrow @nogc {
+			final switch (value) with (DWM_WINDOW_CORNER_PREFERENCE) {
+				case CornerStyle.automatic:
+					result = DWMWCP_DEFAULT;
+					return true;
+				case CornerStyle.rectangular:
+					result = DWMWCP_DONOTROUND;
+					return true;
+				case CornerStyle.rounded:
+					result = DWMWCP_ROUND;
+					return true;
+				case CornerStyle.roundedSlightly:
+					result = DWMWCP_ROUNDSMALL;
+					return true;
+			}
+		}
+
+		pragma(lib, "dwmapi");
+	}
 } else version (linux) {
 	//k8: this is hack for rdmd. sorry.
 	static import core.sys.linux.epoll;
@@ -1788,6 +1893,31 @@ enum BlockingMode {
 		to trigger the event loop return.
 	+/
 	onlyIfNotNested       = 0x10,
+}
+
+/++
+	Window corner visuals preference
+ +/
+enum CornerStyle {
+	/++
+		Use the default style automatically applied by the system or its window manager/compositor.
+	 +/
+	automatic,
+
+	/++
+		Prefer rectangular window corners
+	 +/
+	rectangular,
+
+	/++
+		Prefer rounded window corners
+	 +/
+	rounded,
+
+	/++
+		Prefer slightly-rounded window corners
+	 +/
+	roundedSlightly,
 }
 
 /++
@@ -3835,6 +3965,84 @@ private:
 			glViewport(0, 0, width, height);
 		}
 	}
+
+	// TODO: Implement on non-Windows platforms (where available).
+	private CornerStyle _fauxCornerStyle = CornerStyle.automatic;
+
+	/++
+		Style of the window's corners
+
+		$(WARNING
+			Currently only implemented on Windows targets.
+			Has no visual effect elsewhere.
+
+			Windows: Requires Windows 11 or later.
+		)
+
+		History:
+			Added September 09, 2024.
+	 +/
+	public CornerStyle cornerStyle() @trusted {
+		version(Windows) {
+			DWM_WINDOW_CORNER_PREFERENCE dwmCorner;
+			const apiResult = DwmGetWindowAttribute(
+				this.hwnd,
+				DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE,
+				&dwmCorner,
+				typeof(dwmCorner).sizeof
+			);
+
+			if (apiResult != S_OK) {
+				// Unsupported?
+				if (apiResult == E_INVALIDARG) {
+					// Feature unsupported; Windows version probably too old.
+					// Requires Windows 11 (build 22000) or later.
+					return _fauxCornerStyle;
+				}
+
+				throw new WindowsApiException("DwmGetWindowAttribute", apiResult);
+			}
+
+			CornerStyle corner;
+			if (!dwmCorner.fromDWM(corner)) {
+				throw ArsdException!"DwmGetWindowAttribute unfamiliar corner preference"(dwmCorner);
+			}
+			return corner;
+		} else {
+			return _fauxCornerStyle;
+		}
+	}
+
+	/// ditto
+	public void cornerStyle(const CornerStyle corner) @trusted {
+		version(Windows) {
+			DWM_WINDOW_CORNER_PREFERENCE dwmCorner;
+			if (!corner.toDWM(dwmCorner)) {
+				assert(false, "This should have been impossible because of a final switch.");
+			}
+
+			const apiResult = DwmSetWindowAttribute(
+				this.hwnd,
+				DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE,
+				&dwmCorner,
+				typeof(dwmCorner).sizeof
+			);
+
+			if (apiResult != S_OK) {
+				// Unsupported?
+				if (apiResult == E_INVALIDARG) {
+					// Feature unsupported; Windows version probably too old.
+					// Requires Windows 11 (build 22000) or later.
+					_fauxCornerStyle = corner;
+					return;
+				}
+
+				throw new WindowsApiException("DwmSetWindowAttribute", apiResult);
+			}
+		} else {
+			_fauxCornerStyle = corner;
+		}
+	}
 }
 
 version(OSXCocoa)
@@ -4365,7 +4573,7 @@ struct EventLoopImpl {
 					el.addDelegateOnLoopIteration(&SimpleWindow.processAllCustomEvents, 0);
 
 					if(customSignalFD != -1)
-					el.addCallbackOnFdReadable(customSignalFD, new CallbackHelper(() {
+					cast(void) el.addCallbackOnFdReadable(customSignalFD, new CallbackHelper(() {
 						version(linux) {
 							import core.sys.linux.sys.signalfd;
 							import core.sys.posix.unistd : read;
@@ -4383,7 +4591,7 @@ struct EventLoopImpl {
 					}));
 
 					if(display.fd != -1)
-					el.addCallbackOnFdReadable(display.fd, new CallbackHelper(() {
+					cast(void) el.addCallbackOnFdReadable(display.fd, new CallbackHelper(() {
 						this.mtLock();
 						scope(exit) this.mtUnlock();
 						while(!done && XPending(display)) {
@@ -4392,7 +4600,7 @@ struct EventLoopImpl {
 					}));
 
 					if(pulseFd != -1)
-					el.addCallbackOnFdReadable(pulseFd, new CallbackHelper(() {
+					cast(void) el.addCallbackOnFdReadable(pulseFd, new CallbackHelper(() {
 						long expirationCount;
 						// if we go over the count, I ignore it because i don't want the pulse to go off more often and eat tons of cpu time...
 
@@ -4408,7 +4616,7 @@ struct EventLoopImpl {
 					}));
 
 					if(customEventFDRead != -1)
-					el.addCallbackOnFdReadable(customEventFDRead, new CallbackHelper(() {
+					cast(void) el.addCallbackOnFdReadable(customEventFDRead, new CallbackHelper(() {
 						// we have some custom events; process 'em
 						import core.sys.posix.unistd : read;
 						ulong n;
@@ -6080,7 +6288,7 @@ http://msdn.microsoft.com/en-us/library/windows/desktop/ms649016%28v=vs.85%29.as
 	the receiver may never be called if the clipboard is empty or unavailable
 	gets plain text from the clipboard.
 +/
-void getClipboardText(SimpleWindow clipboardOwner, void delegate(in char[]) receiver) {
+void getClipboardText(SimpleWindow clipboardOwner, void delegate(in char[]) receiver) @system {
 	version(Windows) {
 		HWND hwndOwner = clipboardOwner ? clipboardOwner.impl.hwnd : null;
 		if(OpenClipboard(hwndOwner) == 0)
@@ -6544,6 +6752,7 @@ version(X11) {
 			void delegate(in char[]) handler;
 
 			void handleData(Atom target, in ubyte[] data) {
+				// import std.stdio; writeln(target, " ", data);
 				if(target == GetAtom!"UTF8_STRING"(XDisplayConnection.get) || target == XA_STRING || target == GetAtom!"text/plain"(XDisplayConnection.get))
 					handler(cast(const char[]) data);
 				else if(target == None && data is null)
@@ -6900,7 +7109,7 @@ version(Windows) {
 	// global hotkey helper function
 
 	/// Platform-specific for Windows. Registers a global hotkey. Returns a registration ID. See [GlobalHotkeyManager] for Linux. Maybe some day I will merge these.
-	int registerHotKey(SimpleWindow window, UINT modifiers, UINT vk, void delegate() handler) {
+	int registerHotKey(SimpleWindow window, UINT modifiers, UINT vk, void delegate() handler) @system {
 		__gshared int hotkeyId = 0;
 		int id = ++hotkeyId;
 		if(!RegisterHotKey(window.impl.hwnd, id, modifiers, vk))
@@ -8507,12 +8716,19 @@ class OperatingSystemFont : MeasurableFont {
 			add(":size=");
 			add(toInternal!string(size));
 		}
-		if(weight != FontWeight.dontcare) {
+		if(weight != FontWeight.dontcare && weight != 400) {
+			if(weight < 400)
+				add(":style=Light");
+			else
+				add(":style=Bold");
 			add(":weight=");
 			add(weightToString(weight));
 		}
-		if(italic)
+		if(italic) {
+			if(weight == FontWeight.dontcare)
+				add(":style=Italic");
 			add(":slant=100");
+		}
 
 		nameBuffer[nbp] = 0;
 
@@ -9655,24 +9871,68 @@ struct ScreenPainter {
 	}
 
 	/++
-		start and finish are units of degrees * 64
+		Draws an arc inside the bounding box given by `upperLeft`, `width`, and `height`, from the angle (`start` / 64) degrees for (`length` / 64) degrees of rotation.
+
+
+		If `length` is positive, it travels counter-clockwise from `start`. If negative, it goes clockwise.  `start` == 0 at the three o'clock position of the bounding box - the center of the line at the right-hand side of the screen.
+
+		The arc is outlined with the current pen and filled with the current fill. On Windows, the line segments back to the middle are also drawn unless you have a full length ellipse.
+
+		Bugs:
+			They still don't exactly match in outlining the arc with straight lines (Windows does, Linux doesn't for now).
+
+			The arc outline on Linux sometimes goes over the target.
+
+			The fill on Windows sometimes stops short.
 
 		History:
-			The Windows implementation didn't match the Linux implementation until September 24, 2021.
+			This function was broken af, totally inconsistent on platforms until September 24, 2021.
 
-			They still don't exactly match in outlining the arc with straight lines (Windows does, Linux doesn't for now).
+			The interpretation of the final argument was incorrectly documented and implemented until August 2, 2024.
 	+/
-	void drawArc(Point upperLeft, int width, int height, int start, int finish) {
+	void drawArc(Point upperLeft, int width, int height, int start, int length) {
 		if(impl is null) return;
 		// FIXME: not actually implemented
 		if(isClipped(upperLeft, width, height)) return;
 		transform(upperLeft);
-		impl.drawArc(upperLeft.x, upperLeft.y, width, height, start, finish);
+		impl.drawArc(upperLeft.x, upperLeft.y, width, height, start, length);
 	}
 
 	/// this function draws a circle with the drawEllipse() function above, it requires the upper left point and the radius
 	void drawCircle(Point upperLeft, int diameter) {
 		drawEllipse(upperLeft, Point(upperLeft.x + diameter, upperLeft.y + diameter));
+	}
+
+	/++
+		Draws a rectangle with rounded corners. It is outlined with the current foreground pen and filled with the current background brush.
+
+
+		Bugs:
+			Not implemented on Mac; it will instead draw a non-rounded rectangle for now.
+
+		History:
+			Added August 3, 2024
+	+/
+	void drawRectangleRounded(Rectangle rect, int borderRadius) {
+		drawRectangleRounded(rect.upperLeft, rect.lowerRight, borderRadius);
+	}
+
+	/// ditto
+	void drawRectangleRounded(Point upperLeft, Size size, int borderRadius) {
+		drawRectangleRounded(upperLeft, upperLeft + Point(size.width, size.height), borderRadius);
+	}
+
+	/// ditto
+	void drawRectangleRounded(Point upperLeft, Point lowerRight, int borderRadius) {
+		if(borderRadius <= 0) {
+			drawRectangle(upperLeft, lowerRight);
+			return;
+		}
+
+		transform(upperLeft);
+		transform(lowerRight);
+
+		impl.drawRectangleRounded(upperLeft, lowerRight, borderRadius);
 	}
 
 	/// .
@@ -9997,7 +10257,7 @@ abstract class Gradient : Sprite {
 	}
 
 	version(Windows)
-	final void forEachPixel(scope Color delegate(int x, int y) dg) {
+	final void forEachPixel(scope Color delegate(int x, int y) dg) @system {
 		auto ptr = rawData;
 		foreach(j; 0 .. _height)
 		foreach(i; 0 .. _width) {
@@ -11748,28 +12008,57 @@ version(Windows) {
 			gdi.Rectangle(hdc, x, y, x + width, y + height);
 		}
 
+		void drawRectangleRounded(Point upperLeft, Point lowerRight, int borderRadius) {
+			RoundRect(
+				hdc,
+				upperLeft.x, upperLeft.y,
+				lowerRight.x, lowerRight.y,
+				borderRadius, borderRadius
+			);
+		}
+
 		/// Arguments are the points of the bounding rectangle
 		void drawEllipse(int x1, int y1, int x2, int y2) {
 			Ellipse(hdc, x1, y1, x2, y2);
 		}
 
-		void drawArc(int x1, int y1, int width, int height, int start, int finish) {
-			if((start % (360*64)) == (finish % (360*64)))
+		void drawArc(int x1, int y1, int width, int height, int start, int length) {
+			//if(length > 360*64)
+				//length = 360*64;
+
+			if((start == 0 && length == 360*64)) {
 				drawEllipse(x1, y1, x1 + width, y1 + height);
-			else {
+			} else {
 				import core.stdc.math;
-				float startAngle = cast(float) start / 64.0 / 180.0 * 3.14159265358979323;
-				float endAngle = cast(float) finish / 64.0 / 180.0 * 3.14159265358979323;
 
-				auto c1 = cast(int) roundf(cos(startAngle) * width / 2 + x1 + width / 2);
-				auto c2 = cast(int) roundf(-sin(startAngle) * height / 2 + y1 + height / 2);
-				auto c3 = cast(int) roundf(cos(endAngle) * width / 2 + x1 + width / 2);
-				auto c4 = cast(int) roundf(-sin(endAngle) * height / 2 + y1 + height / 2);
+				bool clockwise = false;
+				if(length < 0) {
+					clockwise = true;
+					length = -length;
+				}
 
-				if(_activePen.color.a)
-					Arc(hdc, x1, y1, x1 + width + 1, y1 + height + 1, c1, c2, c3, c4);
-				if(_fillColor.a)
-					Pie(hdc, x1, y1, x1 + width + 1, y1 + height + 1, c1, c2, c3, c4);
+				double startAngle = cast(double) start / 64.0 / 180.0 * 3.14159265358979323;
+				double endAngle = cast(double) (start + length) / 64.0 / 180.0 * 3.14159265358979323;
+
+				auto c1 = cast(int) (cos(startAngle) * width / 2.0 + double(x1) + double(width) / 2.0);
+				auto c2 = cast(int) (-sin(startAngle) * height / 2.0 + double(y1) + double(height) / 2.0);
+				auto c3 = cast(int) (cos(endAngle) * width / 2.0 + double(x1) + double(width) / 2.0);
+				auto c4 = cast(int) (-sin(endAngle) * height / 2.0 + double(y1) + double(height) / 2.0);
+
+				if(clockwise) {
+					auto t1 = c1;
+					auto t2 = c2;
+					c1 = c3;
+					c2 = c4;
+					c3 = t1;
+					c4 = t2;
+				}
+
+				//if(_activePen.color.a)
+					//Arc(hdc, x1, y1, x1 + width + 0, y1 + height + 0, c1, c2, c3, c4);
+				//if(_fillColor.a)
+
+				Pie(hdc, x1, y1, x1 + width + 0, y1 + height + 0, c1, c2, c3, c4);
 			}
 		}
 
@@ -11962,6 +12251,9 @@ version(Windows) {
 				CW_USEDEFAULT, CW_USEDEFAULT, width, height,
 				parent is null ? null : parent.impl.hwnd, null, hInstance, null);
 
+			if(!hwnd)
+				throw new WindowsApiException("CreateWindowEx", GetLastError());
+
 			if ((customizationFlags & WindowFlags.extraComposite) != 0)
 				setOpacity(255);
 
@@ -11973,6 +12265,8 @@ version(Windows) {
 
 			HDC hdc = GetDC(hwnd);
 
+			if(!hdc)
+				throw new WindowsApiException("GetDC", GetLastError());
 
 			version(without_opengl) {}
 			else {
@@ -12610,7 +12904,7 @@ version(Windows) {
 
 	final:
 
-		Color getPixel(int x, int y) {
+		Color getPixel(int x, int y) @system {
 			auto itemsPerLine = ((cast(int) width * 3 + 3) / 4) * 4;
 			// remember, bmps are upside down
 			auto offset = itemsPerLine * (height - y - 1) + x * 3;
@@ -12627,7 +12921,7 @@ version(Windows) {
 			return c;
 		}
 
-		void setPixel(int x, int y, Color c) {
+		void setPixel(int x, int y, Color c) @system {
 			auto itemsPerLine = ((cast(int) width * 3 + 3) / 4) * 4;
 			// remember, bmps are upside down
 			auto offset = itemsPerLine * (height - y - 1) + x * 3;
@@ -12642,7 +12936,7 @@ version(Windows) {
 				rawData[offset + 3] = c.a;
 		}
 
-		void convertToRgbaBytes(ubyte[] where) {
+		void convertToRgbaBytes(ubyte[] where) @system {
 			assert(where.length == this.width * this.height * 4);
 
 			auto itemsPerLine = ((cast(int) width * 3 + 3) / 4) * 4;
@@ -12669,7 +12963,7 @@ version(Windows) {
 			}
 		}
 
-		void setFromRgbaBytes(in ubyte[] what) {
+		void setFromRgbaBytes(in ubyte[] what) @system {
 			assert(what.length == this.width * this.height * 4);
 
 			auto itemsPerLine = enableAlpha ? (width * 4) : (((cast(int) width * 3 + 3) / 4) * 4);
@@ -13296,20 +13590,46 @@ version(X11) {
 				XDrawRectangle(display, d, gc, x + _activePen.width / 2, y + _activePen.width / 2, width - 1 - _activePen.width / 2, height - 1 - _activePen.width / 2);
 		}
 
+		void drawRectangleRounded(Point upperLeft, Point lowerRight, int borderRadius) {
+			int[4] radii = borderRadius;
+			auto r = Rectangle(upperLeft, lowerRight);
+
+			if(backgroundIsNotTransparent) {
+				swapColors();
+				// FIXME these overlap and thus draw the pixels multiple times
+				XFillRectangle(display, d, gc, r.left, r.top + borderRadius/2, r.width, r.height - borderRadius);
+				XFillRectangle(display, d, gc, r.left + borderRadius/2, r.top, r.width - borderRadius, r.height);
+				swapColors();
+			}
+
+			drawLine(r.left + borderRadius / 2, r.top, r.right - borderRadius / 2, r.top);
+			drawLine(r.left + borderRadius / 2, r.bottom-1, r.right - borderRadius / 2, r.bottom-1);
+			drawLine(r.left, r.top + borderRadius / 2, r.left, r.bottom - borderRadius / 2);
+			drawLine(r.right - 1, r.top + borderRadius / 2, r.right - 1, r.bottom - borderRadius / 2);
+
+			//drawRectangle(r.left + borderRadius/2, r.top, r.width - borderRadius, r.height);
+
+			drawArc(r.upperLeft.x, r.upperLeft.y, radii[0], radii[0], 90*64, 90*64);
+			drawArc(r.upperRight.x - radii[1], r.upperRight.y, radii[1] - 1, radii[1], 0*64, 90*64);
+			drawArc(r.lowerLeft.x, r.lowerLeft.y - radii[2], radii[2], radii[2] - 1, 180*64, 90*64);
+			drawArc(r.lowerRight.x - radii[3], r.lowerRight.y - radii[3], radii[3] - 1, radii[3] - 1, 270*64, 90*64);
+		}
+
+
 		/// Arguments are the points of the bounding rectangle
 		void drawEllipse(int x1, int y1, int x2, int y2) {
 			drawArc(x1, y1, x2 - x1, y2 - y1, 0, 360 * 64);
 		}
 
 		// NOTE: start and finish are in units of degrees * 64
-		void drawArc(int x1, int y1, int width, int height, int start, int finish) {
+		void drawArc(int x1, int y1, int width, int height, int start, int length) {
 			if(backgroundIsNotTransparent) {
 				swapColors();
-				XFillArc(display, d, gc, x1, y1, width, height, start, finish);
+				XFillArc(display, d, gc, x1, y1, width, height, start, length);
 				swapColors();
 			}
 			if(foregroundIsNotTransparent) {
-				XDrawArc(display, d, gc, x1, y1, width, height, start, finish);
+				XDrawArc(display, d, gc, x1, y1, width, height, start, length);
 
 				// Windows draws the straight lines on the edges too so FIXME sort of
 			}
@@ -15520,6 +15840,9 @@ version(X11) {
 					auto id = (cast(ubyte*) value)[0 .. length];
 
 					handler.handleIncrData(targetToKeep, id);
+					if(length == 0) {
+						win.getSelectionHandlers.remove(e.xproperty.atom);
+					}
 
 					XFree(value);
 				}
@@ -15532,6 +15855,7 @@ version(X11) {
 					XUnlockDisplay(display);
 					scope(exit) XLockDisplay(display);
 					handler.handleData(None, null);
+					win.getSelectionHandlers.remove(e.xproperty.atom);
 				} else {
 					Atom target;
 					int format;
@@ -15564,7 +15888,7 @@ version(X11) {
 							/+
 							writeln("got ", answer);
 							foreach(a; answer)
-								printf("%s\n", XGetAtomName(display, a));
+								writeln(XGetAtomName(display, a).stringz);
 							writeln("best ", best);
 							+/
 
@@ -15584,8 +15908,11 @@ version(X11) {
 								e.xselection.requestor,
 								e.xselection.property);
 						} else {
-							// unsupported type... maybe, forward
-							handler.handleData(target, cast(ubyte[]) value[0 .. length]);
+							// unsupported type... maybe, forward, then we done with it
+							if(target != None) {
+								handler.handleData(target, cast(ubyte[]) value[0 .. length]);
+								win.getSelectionHandlers.remove(e.xproperty.atom);
+							}
 						}
 					}
 					XFree(value);
@@ -18540,6 +18867,10 @@ version(OSXCocoa) {
 			CGContextStrokeLineSegments(context, linePoints.ptr, linePoints.length);
 		}
 
+		void drawRectangleRounded(Point upperLeft, Point lowerRight, int borderRadius) {
+			drawRectangle(upperLeft.x, upperLeft.y, lowerRight.x - upperLeft.x, lowerRight.y - upperLeft.y); // FIXME not rounded
+		}
+
 		void drawRectangle(int x, int y, int width, int height) {
 			CGContextBeginPath(context);
 			auto rect = CGRect(CGPoint(x, y), CGSize(width, height));
@@ -18554,11 +18885,16 @@ version(OSXCocoa) {
 			CGContextDrawPath(context, CGPathDrawingMode.kCGPathFillStroke);
 		}
 
-		void drawArc(int x1, int y1, int width, int height, int start, int finish) {
+		void drawArc(int x1, int y1, int width, int height, int start, int length) {
 			// @@@BUG@@@ Does not support elliptic arc (width != height).
 			CGContextBeginPath(context);
+			int clockwise = 0;
+			if(length < 0) {
+				clockwise = 1;
+				length = -length;
+			}
 			CGContextAddArc(context, x1+width*0.5f, y1+height*0.5f, width,
-							start*PI/(180*64), finish*PI/(180*64), 0);
+							start*PI/(180*64), (start+length)*PI/(180*64), clockwise);
 			CGContextDrawPath(context, CGPathDrawingMode.kCGPathFillStroke);
 		}
 
@@ -19230,54 +19566,14 @@ void glBufferDataSlice(GLenum target, const(void[]) data, GLenum usage) {
 	glBufferData(target, data.length, data.ptr, usage);
 }
 
-/+
 /++
-	A matrix for simple uses that easily integrates with [OpenGlShader].
-
-	Might not be useful to you since it only as some simple functions and
-	probably isn't that fast.
-
-	Note it uses an inline static array for its storage, so copying it
-	may be expensive.
+	History:
+		Added September 1, 2024
 +/
-struct BasicMatrix(int columns, int rows, T = float) {
-	import core.stdc.math;
-
-	T[columns * rows] data = 0.0;
-
-	/++
-		Basic operations that operate *in place*.
-	+/
-	void translate() {
-
-	}
-
-	/// ditto
-	void scale() {
-
-	}
-
-	/// ditto
-	void rotate() {
-
-	}
-
-	/++
-
-	+/
-	static if(columns == rows)
-	static BasicMatrix identity() {
-		BasicMatrix m;
-		foreach(i; 0 .. columns)
-			data[0 + i + i * columns] = 1.0;
-		return m;
-	}
-
-	static BasicMatrix ortho() {
-		return BasicMatrix.init;
-	}
+version(without_opengl) {} else
+void glBufferSubDataSlice(GLenum target, size_t offset, const(void[]) data, GLenum usage) {
+	glBufferSubData(target, offset, data.length, data.ptr);
 }
-+/
 
 /++
 	Convenience class for using opengl shaders.
@@ -19504,13 +19800,21 @@ final class OGL {
 		string helper() {
 			string s;
 			if(dim2) {
-				s ~= "type["~(dim + '0')~"]["~(dim2 + '0')~"] matrix;";
+				static if(__VERSION__ < 2102)
+					s ~= "type["~(dim + '0')~"]["~(dim2 + '0')~"] matrix = void;"; // stupid compiler bug
+				else
+					s ~= "type["~(dim + '0')~"]["~(dim2 + '0')~"] matrix = 0;";
 			} else {
 				if(dim > 0) s ~= "type x = 0;";
 				if(dim > 1) s ~= "type y = 0;";
 				if(dim > 2) s ~= "type z = 0;";
 				if(dim > 3) s ~= "type w = 0;";
 			}
+
+			s ~= "this(typeof(this.tupleof) args) { this.tupleof = args; }";
+			if(dim2)
+				s ~= "this(type["~(dim*dim2).stringof~"] t) { (cast(typeof(t)) this.matrix)[] = t[]; }";
+
 			return s;
 		}
 
@@ -19552,9 +19856,12 @@ final class OGL {
 			}
 			private void glUniform(int assignTo) {
 				static if(name[4] == 'x') {
-					// FIXME
-					pragma(msg, "This matrix uniform helper has never been tested!!!!");
-					mixin("glUniformMatrix" ~ name[3 .. $] ~ "v")(assignTo, dimX * dimY, false, this.matrix.ptr);
+					static if(name[3] == name[5]) {
+						// import std.stdio; writeln(name, " ", this.matrix, dimX, " ", dimY);
+						mixin("glUniformMatrix" ~ name[5 .. $] ~ "v")(assignTo, 1, true, &this.matrix[0][0]);
+					} else {
+						mixin("glUniformMatrix" ~ name[3 .. $] ~ "v")(assignTo, 1, false, this.matrix.ptr);
+					}
 				} else
 					mixin("glUniform" ~ name[3 .. $])(assignTo, this.tupleof);
 			}
@@ -19565,6 +19872,286 @@ final class OGL {
 		return typeof(this).opDispatch!("vec" ~ toInternal!string(cast(int) T.length)~ typesToSpecifier!T)(members);
 	}
 }
+
+void checkGlError() {
+	auto error = glGetError();
+	int[] errors;
+	string[] errorStrings;
+	while(error != GL_NO_ERROR) {
+		errors ~= error;
+		switch(error) {
+			case 0x0500: errorStrings ~= "GL_INVALID_ENUM"; break;
+			case 0x0501: errorStrings ~= "GL_INVALID_VALUE"; break;
+			case 0x0502: errorStrings ~= "GL_INVALID_OPERATION"; break;
+			case 0x0503: errorStrings ~= "GL_STACK_OVERFLOW"; break;
+			case 0x0504: errorStrings ~= "GL_STACK_UNDERFLOW"; break;
+			case 0x0505: errorStrings ~= "GL_OUT_OF_MEMORY"; break;
+			default: errorStrings ~= "idk";
+		}
+		error = glGetError();
+	}
+	if(errors.length)
+		throw ArsdException!"glGetError"(errors, errorStrings);
+}
+
+/++
+	A matrix for simple uses that easily integrates with [OpenGlShader].
+
+	Might not be useful to you since it only as some simple functions and
+	probably isn't that fast.
+
+	Note it uses an inline static array for its storage, so copying it
+	may be expensive.
++/
+struct BasicMatrix(int columns, int rows, T = float) {
+	static import core.stdc.math;
+	static if(is(T == float)) {
+		alias cos = core.stdc.math.cosf;
+		alias sin = core.stdc.math.sinf;
+	} else {
+		alias cos = core.stdc.math.cos;
+		alias sin = core.stdc.math.sin;
+	}
+
+	T[columns * rows] data = 0.0;
+
+	/++
+
+	+/
+	this(T[columns * rows] data) {
+		this.data = data;
+	}
+
+	/++
+		Basic operations that operate *in place*.
+	+/
+	static if(columns == 4 && rows == 4)
+	void translate(T x, T y, T z) {
+		BasicMatrix m = [
+			1, 0, 0, x,
+			0, 1, 0, y,
+			0, 0, 1, z,
+			0, 0, 0, 1
+		];
+
+		this *= m;
+	}
+
+	/// ditto
+	static if(columns == 4 && rows == 4)
+	void scale(T x, T y, T z) {
+		BasicMatrix m = [
+			x, 0, 0, 0,
+			0, y, 0, 0,
+			0, 0, z, 0,
+			0, 0, 0, 1
+		];
+
+		this *= m;
+	}
+
+	/// ditto
+	static if(columns == 4 && rows == 4)
+	void rotateX(T theta) {
+		BasicMatrix m = [
+			1,          0,           0, 0,
+			0, cos(theta), -sin(theta), 0,
+			0, sin(theta),  cos(theta), 0,
+			0,          0,           0, 1
+		];
+
+		this *= m;
+	}
+
+	/// ditto
+	static if(columns == 4 && rows == 4)
+	void rotateY(T theta) {
+		BasicMatrix m = [
+			 cos(theta), 0,  sin(theta), 0,
+			          0, 1,           0, 0,
+			-sin(theta), 0,  cos(theta), 0,
+			          0, 0,           0, 1
+		];
+
+		this *= m;
+	}
+
+	/// ditto
+	static if(columns == 4 && rows == 4)
+	void rotateZ(T theta) {
+		BasicMatrix m = [
+			cos(theta), -sin(theta), 0, 0,
+			sin(theta),  cos(theta), 0, 0,
+			         0,           0, 1, 0,
+				 0,           0, 0, 1
+		];
+
+		this *= m;
+	}
+
+	/++
+
+	+/
+	static if(columns == rows)
+	static BasicMatrix identity() {
+		BasicMatrix m;
+		foreach(i; 0 .. columns)
+			m.data[0 + i + i * columns] = 1.0;
+		return m;
+	}
+
+	static if(columns == rows)
+	void loadIdentity() {
+		this = identity();
+	}
+
+	static if(columns == 4 && rows == 4)
+	static BasicMatrix ortho(T l, T r, T b, T t, T n, T f) {
+		return BasicMatrix([
+			2/(r-l),       0,        0, -(r+l)/(r-l),
+			      0, 2/(t-b),        0, -(t+b)/(t-b),
+			      0,       0, -2/(f-n), -(f+n)/(f-n),
+			      0,       0,        0,            1
+		]);
+	}
+
+	static if(columns == 4 && rows == 4)
+	void loadOrtho(T l, T r, T b, T t, T n, T f) {
+		this = ortho(l, r, b, t, n, f);
+	}
+
+	void opOpAssign(string op : "+")(const BasicMatrix rhs) {
+		this.data[] += rhs.data;
+	}
+	void opOpAssign(string op : "-")(const BasicMatrix rhs) {
+		this.data[] -= rhs.data;
+	}
+	void opOpAssign(string op : "*")(const T rhs) {
+		this.data[] *= rhs;
+	}
+	void opOpAssign(string op : "/")(const T rhs) {
+		this.data[] /= rhs;
+	}
+	void opOpAssign(string op : "*", BM : BasicMatrix!(rhsColumns, rhsRows, rhsT), int rhsColumns, int rhsRows, rhsT)(const BM rhs) {
+		static assert(columns == rhsRows);
+		auto multiplySize = columns;
+
+		auto tmp = this.data; // copy cuz it is a value type
+
+		int idx = 0;
+		foreach(r; 0 .. rows)
+		foreach(c; 0 .. columns) {
+			T sum = 0.0;
+
+			foreach(i; 0 .. multiplySize)
+				sum += this.data[r * columns + i] * rhs.data[i * rhsColumns + c];
+
+			tmp[idx++] = sum;
+		}
+
+		this.data = tmp;
+	}
+}
+
+unittest {
+	auto m = BasicMatrix!(2, 2)([
+		1, 2,
+		3, 4
+	]);
+
+	auto m2 = BasicMatrix!(2, 2)([
+		5, 6,
+		7, 8
+	]);
+
+	import std.conv;
+	m *= m2;
+	assert(m.data == [
+		19, 22,
+		43, 50
+	], to!string(m.data));
+}
+
+
+
+class GlObjectBase {
+	protected uint _vao;
+	protected uint _elementsCount;
+
+	protected uint element_buffer;
+
+	void gen() {
+		glGenVertexArrays(1, &_vao);
+	}
+
+	void bind() {
+		glBindVertexArray(_vao);
+	}
+
+	void dispose() {
+		glDeleteVertexArrays(1, &_vao);
+	}
+
+	void draw() {
+		bind();
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
+		glDrawElements(GL_TRIANGLES, _elementsCount, GL_UNSIGNED_INT, null);
+	}
+}
+
+/++
+
++/
+class GlObject(T) : GlObjectBase {
+	protected uint VBO;
+
+	this(T[] arr, uint[] indices) {
+		gen();
+		bind();
+
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &element_buffer);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferDataSlice(GL_ARRAY_BUFFER, arr, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
+		glBufferDataSlice(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+		_elementsCount = cast(int) indices.length;
+
+		foreach(int idx, memberName; __traits(allMembers, T)) {
+			static if(memberName != "__ctor") {
+			static if(is(typeof(__traits(getMember, T, memberName)) == float[N], size_t N)) {
+				glVertexAttribPointer(idx, N, GL_FLOAT, GL_FALSE, T.sizeof, cast(void*) __traits(getMember, T, memberName).offsetof);
+				glEnableVertexAttribArray(idx);
+			} else static assert(0); }
+		}
+	}
+
+	static string generateShaderDefinitions() {
+		string code;
+
+		foreach(idx, memberName; __traits(allMembers, T)) {
+			// never use stringof ladies and gents it has a LU thing at the end of it
+			static if(memberName != "__ctor")
+			code ~= "layout (location = " ~ idx.stringof[0..$-2] ~ ") in " ~ typeToGl!(typeof(__traits(getMember, T, memberName))) ~ " " ~ memberName ~ ";\n";
+		}
+
+		return code;
+	}
+}
+
+private string typeToGl(T)() {
+	static if(is(T == float[4]))
+		return "vec4";
+	else static if(is(T == float[3]))
+		return "vec3";
+	else static if(is(T == float[2]))
+		return "vec2";
+	else static assert(0, T.stringof);
+}
+
+
 }
 
 version(linux) {
@@ -21327,7 +21914,7 @@ class FilesDropHandler : GenericDropHandlerBase {
 		else throw new NotYetImplementedException();
 	}
 
-	private void translator(scope ubyte[] data) {
+	private void translator(scope ubyte[] data) @system {
 		version(X11) {
 			char[] listString = cast(char[]) data;
 			char[][16] buffer;

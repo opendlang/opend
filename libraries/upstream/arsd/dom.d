@@ -548,7 +548,7 @@ class Document : FileResource, DomParent {
 		loose = !caseSensitive;
 
 		bool sawImproperNesting = false;
-		bool paragraphHackfixRequired = false;
+		bool nonNestableHackRequired = false;
 
 		int getLineNumber(sizediff_t p) {
 			int line = 1;
@@ -957,7 +957,7 @@ class Document : FileResource, DomParent {
 					}
 
 					string tagName = readTagName();
-					string[string] attributes;
+					AttributesHolder attributes;
 
 					Ele addTag(bool selfClosed) {
 						if(selfClosed)
@@ -1039,12 +1039,12 @@ class Document : FileResource, DomParent {
 
 						bool closed = selfClosed;
 
-						void considerHtmlParagraphHack(Element n) {
+						void considerHtmlNonNestableElementHack(Element n) {
 							assert(!strict);
-							if(e.tagName == "p" && e.tagName == n.tagName) {
+							if(!canNestElementsInHtml(e.tagName, n.tagName)) {
 								// html lets you write <p> para 1 <p> para 1
 								// but in the dom tree, they should be siblings, not children.
-								paragraphHackfixRequired = true;
+								nonNestableHackRequired = true;
 							}
 						}
 
@@ -1066,7 +1066,7 @@ class Document : FileResource, DomParent {
 									piecesBeforeRoot ~= n.element;
 							} else if(n.type == 0) {
 								if(!strict)
-									considerHtmlParagraphHack(n.element);
+									considerHtmlNonNestableElementHack(n.element);
 								processNodeWhileParsing(e, n.element);
 							} else if(n.type == 1) {
 								bool found = false;
@@ -1078,7 +1078,7 @@ class Document : FileResource, DomParent {
 										// this is so we don't drop several levels of awful markup
 										if(n.element) {
 											if(!strict)
-												considerHtmlParagraphHack(n.element);
+												considerHtmlNonNestableElementHack(n.element);
 											processNodeWhileParsing(e, n.element);
 											n.element = null;
 										}
@@ -1094,6 +1094,17 @@ class Document : FileResource, DomParent {
 												n.element = e;
 												return n;
 											}
+
+										/+
+											// COMMENTED OUT BLOCK
+											// dom.d used to replace improper close tags with their
+											// text so they'd be visible in the output. the html
+											// spec says to just ignore them, and browsers do indeed
+											// seem to jsut ignore them, even checking back on IE6.
+											// so i guess i was wrong to do this (tho tbh i find it kinda
+											// useful to call out an obvious mistake in the source...
+											// but for calling out obvious mistakes, just use strict
+											// mode.)
 
 										// if not, this is a text node; we can't fix it up...
 
@@ -1115,11 +1126,13 @@ class Document : FileResource, DomParent {
 
 										if(!found) // if not found in the tree though, it's probably just text
 										processNodeWhileParsing(e, TextNode.fromUndecodedString(this, "</"~n.payload~">"));
+
+										+/
 									}
 								} else {
 									if(n.element) {
 										if(!strict)
-											considerHtmlParagraphHack(n.element);
+											considerHtmlNonNestableElementHack(n.element);
 										processNodeWhileParsing(e, n.element);
 									}
 								}
@@ -1251,7 +1264,7 @@ class Document : FileResource, DomParent {
 				parseUtf8(`<html><head></head><body></body></html>`); // fill in a dummy document in loose mode since that's what browsers do
 		}
 
-		if(paragraphHackfixRequired) {
+		if(nonNestableHackRequired) {
 			assert(!strict); // this should never happen in strict mode; it ought to never set the hack flag...
 
 			// in loose mode, we can see some "bad" nesting (it's valid html, but poorly formed xml).
@@ -1265,7 +1278,7 @@ class Document : FileResource, DomParent {
 				if(ele.parentNode is null)
 					continue;
 
-				if(ele.tagName == "p" && ele.parentNode.tagName == ele.tagName) {
+				if(!canNestElementsInHtml(ele.parentNode.tagName, ele.tagName)) {
 					auto shouldBePreviousSibling = ele.parentNode;
 					auto holder = shouldBePreviousSibling.parentNode; // this is the two element's mutual holder...
 					if (auto p = holder in insertLocations) {
@@ -1774,6 +1787,26 @@ unittest {
 +/
 unittest {
 	auto xml = new XmlDocument(`<my-stuff>hello</my-stuff>`);
+}
+
+bool canNestElementsInHtml(string parentTagName, string childTagName) {
+	switch(parentTagName) {
+		case "p", "h1", "h2", "h3", "h4", "h5", "h6":
+			// only should include "phrasing content"
+			switch(childTagName) {
+				case "p", "dl", "dt", "dd", "h1", "h2", "h3", "h4", "h5", "h6":
+					return false;
+				default: return true;
+			}
+		case "dt", "dd":
+			switch(childTagName) {
+				case "dd", "dt":
+					return false;
+				default: return true;
+			}
+		default:
+			return true;
+	}
 }
 
 interface DomParent {
@@ -2299,8 +2332,13 @@ class Element : DomParent {
 	/// The name of the tag. Remember, changing this doesn't change the dynamic type of the object.
 	string tagName;
 
-	/// This is where the attributes are actually stored. You should use getAttribute, setAttribute, and hasAttribute instead.
-	string[string] attributes;
+	/++
+		This is where the attributes are actually stored. You should use getAttribute, setAttribute, and hasAttribute instead.
+
+		History:
+			`AttributesHolder` replaced `string[string]` on August 22, 2024
+	+/
+	AttributesHolder attributes;
 
 	/// In XML, it is valid to write <tag /> for all elements with no children, but that breaks HTML, so I don't do it here.
 	/// Instead, this flag tells if it should be. It is based on the source document's notation and a html element list.
@@ -2500,8 +2538,8 @@ class Element : DomParent {
 	/// Generally, you don't want to call this yourself - use Element.make or document.createElement instead.
 	this(Document _parentDocument, string _tagName, string[string] _attributes = null, bool _selfClosed = false) {
 		tagName = _tagName;
-		if(_attributes !is null)
-			attributes = _attributes;
+		foreach(k, v; _attributes)
+			attributes[k] = v;
 		selfClosed = _selfClosed;
 
 		version(dom_node_indexes)
@@ -2522,8 +2560,8 @@ class Element : DomParent {
 	+/
 	this(string _tagName, string[string] _attributes = null, const string[] selfClosedElements = htmlSelfClosedElements) {
 		tagName = _tagName;
-		if(_attributes !is null)
-			attributes = _attributes;
+		foreach(k, v; _attributes)
+			attributes[k] = v;
 		selfClosed = tagName.isInArray(selfClosedElements);
 
 		// this is meant to reserve some memory. It makes a small, but consistent improvement.
@@ -2848,11 +2886,7 @@ class Element : DomParent {
 	string getAttribute(string name) const {
 		if(parentDocument && parentDocument.loose)
 			name = name.toLower();
-		auto e = name in attributes;
-		if(e)
-			return *e;
-		else
-			return null;
+		return attributes.get(name, null);
 	}
 
 	/**
@@ -3058,7 +3092,7 @@ class Element : DomParent {
 		/* done */
 
 
-			_computedStyle = new CssStyle(null, style); // gives at least something to work with
+			_computedStyle = computedStyleFactory(this);
 		}
 		return _computedStyle;
 	}
@@ -3999,9 +4033,18 @@ class Element : DomParent {
 	string writeTagOnly(Appender!string where = appender!string()) const {
 	+/
 
-	/// This is the actual implementation used by toString. You can pass it a preallocated buffer to save some time.
-	/// Note: the ordering of attributes in the string is undefined.
-	/// Returns the string it creates.
+	/++
+		This is the actual implementation used by toString. You can pass it a preallocated buffer to save some time.
+		Note: the ordering of attributes in the string is undefined.
+		Returns the string it creates.
+
+		Implementation_Notes:
+			The order of attributes printed by this function is undefined, as permitted by the XML spec. You should NOT rely on any implementation detail noted here.
+
+			However, in practice, between June 14, 2019 and August 22, 2024, it actually did sort attributes by key name. After August 22, 2024, it changed to track attribute append order and will print them back out in the order in which the keys were first seen.
+
+			This is subject to change again at any time. Use [toPrettyString] if you want a defined output (toPrettyString always sorts by name for consistent diffing).
+	+/
 	string writeToAppender(Appender!string where = appender!string()) const {
 		assert(tagName !is null);
 
@@ -4012,10 +4055,13 @@ class Element : DomParent {
 		where.put("<");
 		where.put(tagName);
 
+		/+
 		import std.algorithm : sort;
 		auto keys = sort(attributes.keys);
 		foreach(n; keys) {
 			auto v = attributes[n]; // I am sorting these for convenience with another project. order of AAs is undefined, so I'm allowed to do it.... and it is still undefined, I might change it back later.
+		+/
+		foreach(n, v; attributes) {
 			//assert(v !is null);
 			where.put(" ");
 			where.put(n);
@@ -4134,6 +4180,7 @@ class Element : DomParent {
 	}
 
 }
+
 // computedStyle could argubaly be removed to bring size down
 //pragma(msg, __traits(classInstanceSize, Element));
 //pragma(msg, Element.tupleof);
@@ -4432,7 +4479,245 @@ struct AttributeSet {
 	mixin JavascriptStyleDispatch!();
 }
 
+private struct InternalAttribute {
+	// variable length structure
+	private InternalAttribute* next;
+	private uint totalLength;
+	private ushort keyLength;
+	private char[0] chars;
 
+	// this really should be immutable tbh
+	inout(char)[] key() inout return {
+		return chars.ptr[0 .. keyLength];
+	}
+
+	inout(char)[] value() inout return {
+		return chars.ptr[keyLength .. totalLength];
+	}
+
+	static InternalAttribute* make(in char[] key, in char[] value) {
+		// old code was
+		//auto data = new ubyte[](InternalAttribute.sizeof + key.length + value.length);
+		//GC.addRange(data.ptr, data.length); // MUST add the range to scan it!
+
+		import core.memory;
+		// but this code is a bit better, notice we did NOT set the NO_SCAN attribute because of the presence of the next pointer
+		// (this can sometimes be a pessimization over the separate strings but meh, most of these attributes are supposed to be small)
+		auto obj = cast(InternalAttribute*) GC.calloc(InternalAttribute.sizeof + key.length + value.length);
+
+		// assert(key.length > 0);
+
+		obj.totalLength = cast(uint) (key.length + value.length);
+		obj.keyLength = cast(ushort) key.length;
+		if(key.length != obj.keyLength)
+			throw new Exception("attribute key overflow");
+		if(key.length + value.length != obj.totalLength)
+			throw new Exception("attribute length overflow");
+
+		obj.key[] = key[];
+		obj.value[] = value[];
+
+		return obj;
+	}
+
+	// FIXME: disable default ctor and op new
+}
+
+import core.exception;
+
+struct AttributesHolder {
+	private @system InternalAttribute* attributes;
+
+	/+
+	invariant() {
+		const(InternalAttribute)* wtf = attributes;
+		while(wtf) {
+			assert(wtf != cast(void*) 1);
+			assert(wtf.keyLength != 0);
+			import std.stdio; writeln(wtf.key, "=", wtf.value);
+			wtf = wtf.next;
+		}
+	}
+	+/
+
+	/+
+		It is legal to do foo["key", "default"] to call it with no error...
+	+/
+	string opIndex(scope const char[] key) const {
+		auto found = find(key);
+		if(found is null)
+			throw new RangeError(key.idup); // FIXME
+		return cast(string) found.value;
+	}
+
+	string get(scope const char[] key, string returnedIfKeyNotFound = null) const {
+		auto attr = this.find(key);
+		if(attr is null)
+			return returnedIfKeyNotFound;
+		else
+			return cast(string) attr.value;
+	}
+
+	private string[] keys() const {
+		string[] ret;
+		foreach(k, v; this)
+			ret ~= k;
+		return ret;
+	}
+
+	/+
+		If this were to return a string* it'd be tricky cuz someone could try to rebind it, which is impossible.
+
+		This is a breaking change. You can get a similar result though with [get].
+	+/
+	bool opBinaryRight(string op : "in")(scope const char[] key) const {
+		return find(key) !is null;
+	}
+
+	private inout(InternalAttribute)* find(scope const char[] key) inout @trusted {
+		inout(InternalAttribute)* current = attributes;
+		while(current) {
+			// assert(current > cast(void*) 1);
+			if(current.key == key)
+				return current;
+			current = current.next;
+		}
+		return null;
+	}
+
+	void remove(scope const char[] key) @trusted {
+		if(attributes is null)
+			return;
+		auto current = attributes;
+		InternalAttribute* previous;
+		while(current) {
+			if(current.key == key)
+				break;
+			previous = current;
+			current = current.next;
+		}
+		if(current is null)
+			return;
+		if(previous is null)
+			attributes = current.next;
+		else
+			previous.next = current.next;
+		// assert(previous.next != cast(void*) 1);
+		// assert(attributes != cast(void*) 1);
+	}
+
+	void opIndexAssign(scope const char[] value, scope const char[] key) @trusted {
+		if(attributes is null) {
+			attributes = InternalAttribute.make(key, value);
+			return;
+		}
+		auto current = attributes;
+
+		if(current.key == key) {
+			if(current.value != value) {
+				auto replacement = InternalAttribute.make(key, value);
+				attributes = replacement;
+				replacement.next = current.next;
+		// assert(replacement.next != cast(void*) 1);
+		// assert(attributes != cast(void*) 1);
+			}
+			return;
+		}
+
+		while(current.next) {
+			if(current.next.key == key) {
+				if(current.next.value == value)
+					return; // replacing immutable value with self, no change
+				break;
+			}
+			current = current.next;
+		}
+		assert(current !is null);
+
+		auto replacement = InternalAttribute.make(key, value);
+		if(current.next !is null)
+			replacement.next = current.next.next;
+		current.next = replacement;
+		// assert(current.next != cast(void*) 1);
+		// assert(replacement.next != cast(void*) 1);
+	}
+
+	int opApply(int delegate(string key, string value) dg) const @trusted {
+		const(InternalAttribute)* current = attributes;
+		while(current !is null) {
+			if(auto res = dg(cast(string) current.key, cast(string) current.value))
+				return res;
+			current = current.next;
+		}
+		return 0;
+	}
+}
+
+unittest {
+	AttributesHolder holder;
+	holder["one"] = "1";
+	holder["two"] = "2";
+	holder["three"] = "3";
+
+	{
+		assert("one" in holder);
+		assert("two" in holder);
+		assert("three" in holder);
+		assert("four" !in holder);
+
+		int count;
+		foreach(k, v; holder) {
+			switch(count) {
+				case 0: assert(k == "one" && v == "1"); break;
+				case 1: assert(k == "two" && v == "2"); break;
+				case 2: assert(k == "three" && v == "3"); break;
+				default: assert(0);
+			}
+			count++;
+		}
+	}
+
+	holder["two"] = "dos";
+
+	{
+		assert("one" in holder);
+		assert("two" in holder);
+		assert("three" in holder);
+		assert("four" !in holder);
+
+		int count;
+		foreach(k, v; holder) {
+			switch(count) {
+				case 0: assert(k == "one" && v == "1"); break;
+				case 1: assert(k == "two" && v == "dos"); break;
+				case 2: assert(k == "three" && v == "3"); break;
+				default: assert(0);
+			}
+			count++;
+		}
+	}
+
+	holder["four"] = "4";
+
+	{
+		assert("one" in holder);
+		assert("two" in holder);
+		assert("three" in holder);
+		assert("four" in holder);
+
+		int count;
+		foreach(k, v; holder) {
+			switch(count) {
+				case 0: assert(k == "one" && v == "1"); break;
+				case 1: assert(k == "two" && v == "dos"); break;
+				case 2: assert(k == "three" && v == "3"); break;
+				case 3: assert(k == "four" && v == "4"); break;
+				default: assert(0);
+			}
+			count++;
+		}
+	}
+}
 
 /// for style, i want to be able to set it with a string like a plain attribute,
 /// but also be able to do properties Javascript style.
@@ -4441,10 +4726,20 @@ struct AttributeSet {
 struct ElementStyle {
 	this(Element parent) {
 		_element = parent;
+		_attribute = _element.getAttribute("style");
+		originalAttribute = _attribute;
+	}
+
+	~this() {
+		if(_attribute !is originalAttribute)
+			_element.setAttribute("style", _attribute);
 	}
 
 	Element _element;
+	string _attribute;
+	string originalAttribute;
 
+	/+
 	@property ref inout(string) _attribute() inout {
 		auto s = "style" in _element.attributes;
 		if(s is null) {
@@ -4456,6 +4751,7 @@ struct ElementStyle {
 		assert(s !is null);
 		return *s;
 	}
+	+/
 
 	alias _attribute this; // this is meant to allow element.style = element.style ~ " string "; to still work.
 
@@ -7358,6 +7654,24 @@ Element[] removeDuplicates(Element[] input) {
 
 // done with CSS selector handling
 
+/++
+	This delegate is called if you call [Element.computedStyle] to attach an object to the element
+	that holds stylesheet information. You can rebind it to something else to return a subclass
+	if you want to hold more per-element extension data than the normal computed style object holds
+	(e.g. layout info as well).
+
+	The default is `return new CssStyle(null, element.style);`
+
+	History:
+		Added September 13, 2024 (dub v11.6)
++/
+CssStyle function(Element e) computedStyleFactory = &defaultComputedStyleFactory;
+
+/// ditto
+CssStyle defaultComputedStyleFactory(Element e) {
+	return new CssStyle(null, e.style); // gives at least something to work with
+}
+
 
 // FIXME: use the better parser from html.d
 /// This is probably not useful to you unless you're writing a browser or something like that.
@@ -7444,7 +7758,7 @@ class CssStyle {
 		if(value is null)
 			return getValue(name);
 		else
-			return setValue(name, value, 0x02000000 /* inline specificity */);
+			return setValue(name, value, Specificity(0x02000000) /* inline specificity */);
 	}
 
 	/// takes dash style name
@@ -7519,7 +7833,7 @@ class CssStyle {
 				setValue(name ~"-left", parts[3], specificity, false);
 			break;
 			default:
-				assert(0, value);
+				// assert(0, value);
 		}
 	}
 
@@ -7841,6 +8155,13 @@ package bool isInArray(T)(T item, T[] arr) {
 
 private string[string] aadup(in string[string] arr) {
 	string[string] ret;
+	foreach(k, v; arr)
+		ret[k] = v;
+	return ret;
+}
+
+private AttributesHolder aadup(const AttributesHolder arr) {
+	AttributesHolder ret;
 	foreach(k, v; arr)
 		ret[k] = v;
 	return ret;
@@ -8420,11 +8741,13 @@ void fillForm(T)(Form form, T obj, string name) {
 
 	History:
 		Added March 25, 2022 (dub v10.8)
+
+		The `stripLeadingAndTrailing` argument was added September 13, 2024 (dub v11.6).
 +/
-string normalizeWhitespace(string text) {
+string normalizeWhitespace(string text, bool stripLeadingAndTrailing = true) {
 	string ret;
 	ret.reserve(text.length);
-	bool lastWasWhite = true;
+	bool lastWasWhite = stripLeadingAndTrailing;
 	foreach(char ch; text) {
 		if(ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
 			if(lastWasWhite)
@@ -8438,12 +8761,23 @@ string normalizeWhitespace(string text) {
 		ret ~= ch;
 	}
 
-	return ret.stripRight;
+	if(stripLeadingAndTrailing)
+		return ret.stripRight;
+	else {
+		/+
+		if(lastWasWhite && (ret.length == 0 || ret[$-1] != ' '))
+			ret ~= ' ';
+		+/
+		return ret;
+	}
 }
 
 unittest {
 	assert(normalizeWhitespace("    foo   ") == "foo");
 	assert(normalizeWhitespace("    f\n \t oo   ") == "f oo");
+	assert(normalizeWhitespace("    foo   ", false) == " foo ");
+	assert(normalizeWhitespace(" foo ", false) == " foo ");
+	assert(normalizeWhitespace("\nfoo", false) == " foo");
 }
 
 unittest {

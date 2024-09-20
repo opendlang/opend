@@ -1560,10 +1560,22 @@ class Widget : ReflectableProperties {
 	+/
 	final @property inout(Window) parentWindow() inout @nogc nothrow pure { return _parentWindow; }
 	private @property void parentWindow(Window parent) {
+		auto old = _parentWindow;
 		_parentWindow = parent;
+		newParentWindow(old, _parentWindow);
 		foreach(child; children)
 			child.parentWindow = parent; // please note that this is recursive
 	}
+
+	/++
+		Called when the widget has been added to or remove from a parent window.
+
+		Note that either oldParent and/or newParent may be null any time this is called.
+
+		History:
+			Added September 13, 2024
+	+/
+	protected void newParentWindow(Window oldParent, Window newParent) {}
 
 	/++
 		Returns the list of the widget's children.
@@ -2816,6 +2828,7 @@ enum FrameStyle {
 	solid, ///
 	dotted, ///
 	fantasy, /// a style based on a popular fantasy video game
+	rounded, /// a rounded rectangle
 }
 
 version(custom_widgets)
@@ -2847,6 +2860,8 @@ int getBorderWidth(FrameStyle style) {
 			return 1;
 		case FrameStyle.fantasy:
 			return 3;
+		case FrameStyle.rounded:
+			return 2;
 	}
 }
 
@@ -2861,6 +2876,7 @@ int draw3dFrame(int x, int y, int width, int height, ScreenPainter painter, Fram
 			painter.outlineColor = background;
 		break;
 		case FrameStyle.solid:
+		case FrameStyle.rounded:
 			painter.pen = Pen(border, 1);
 		break;
 		case FrameStyle.dotted:
@@ -2872,30 +2888,34 @@ int draw3dFrame(int x, int y, int width, int height, ScreenPainter painter, Fram
 	}
 
 	painter.fillColor = background;
-	painter.drawRectangle(Point(x + 0, y + 0), width, height);
 
+	if(style == FrameStyle.rounded) {
+		painter.drawRectangleRounded(Point(x, y), Size(width, height), 6);
+	} else {
+		painter.drawRectangle(Point(x + 0, y + 0), width, height);
 
-	if(style == FrameStyle.sunk || style == FrameStyle.risen) {
-		// 3d effect
-		auto vt = WidgetPainter.visualTheme;
+		if(style == FrameStyle.sunk || style == FrameStyle.risen) {
+			// 3d effect
+			auto vt = WidgetPainter.visualTheme;
 
-		painter.outlineColor = (style == FrameStyle.sunk) ? vt.darkAccentColor : vt.lightAccentColor;
-		painter.drawLine(Point(x + 0, y + 0), Point(x + width, y + 0));
-		painter.drawLine(Point(x + 0, y + 0), Point(x + 0, y + height - 1));
+			painter.outlineColor = (style == FrameStyle.sunk) ? vt.darkAccentColor : vt.lightAccentColor;
+			painter.drawLine(Point(x + 0, y + 0), Point(x + width, y + 0));
+			painter.drawLine(Point(x + 0, y + 0), Point(x + 0, y + height - 1));
 
-		// inner layer
-		//right, bottom
-		painter.outlineColor = (style == FrameStyle.sunk) ? vt.lightAccentColor : vt.darkAccentColor;
-		painter.drawLine(Point(x + width - 2, y + 2), Point(x + width - 2, y + height - 2));
-		painter.drawLine(Point(x + 2, y + height - 2), Point(x + width - 2, y + height - 2));
-		// left, top
-		painter.outlineColor = (style == FrameStyle.sunk) ? Color.black : Color.white;
-		painter.drawLine(Point(x + 1, y + 1), Point(x + width, y + 1));
-		painter.drawLine(Point(x + 1, y + 1), Point(x + 1, y + height - 2));
-	} else if(style == FrameStyle.fantasy) {
-		painter.pen = Pen(Color.white, 1, Pen.Style.Solid);
-		painter.fillColor = Color.transparent;
-		painter.drawRectangle(Point(x + 1, y + 1), Point(x + width - 1, y + height - 1));
+			// inner layer
+			//right, bottom
+			painter.outlineColor = (style == FrameStyle.sunk) ? vt.lightAccentColor : vt.darkAccentColor;
+			painter.drawLine(Point(x + width - 2, y + 2), Point(x + width - 2, y + height - 2));
+			painter.drawLine(Point(x + 2, y + height - 2), Point(x + width - 2, y + height - 2));
+			// left, top
+			painter.outlineColor = (style == FrameStyle.sunk) ? Color.black : Color.white;
+			painter.drawLine(Point(x + 1, y + 1), Point(x + width, y + 1));
+			painter.drawLine(Point(x + 1, y + 1), Point(x + 1, y + height - 2));
+		} else if(style == FrameStyle.fantasy) {
+			painter.pen = Pen(Color.white, 1, Pen.Style.Solid);
+			painter.fillColor = Color.transparent;
+			painter.drawRectangle(Point(x + 1, y + 1), Point(x + width - 1, y + height - 1));
+		}
 	}
 
 	return borderWidth;
@@ -3492,6 +3512,9 @@ version(win32_widgets) {
 				}
 
 
+				if(iMessage == WM_CTLCOLOREDIT) {
+
+				}
 				if(iMessage == WM_CTLCOLORBTN || iMessage == WM_CTLCOLORSTATIC) {
 					SetBkMode(cast(HDC) wParam, TRANSPARENT);
 					return cast(typeof(return)) GetSysColorBrush(COLOR_3DFACE); // this is the window background color...
@@ -12054,9 +12077,11 @@ version(custom_widgets)
 		mixin ExperimentalTextComponent;
 	}
 
-version(win32_widgets)
+version(win32_widgets) {
 	alias EditableTextWidgetParent = Widget; ///
-else version(custom_widgets) {
+	version=use_new_text_system;
+	import arsd.textlayouter;
+} else version(custom_widgets) {
 	version(trash_text) {
 		alias EditableTextWidgetParent = ScrollableWidget; ///
 	} else {
@@ -12080,6 +12105,7 @@ class TextDisplayHelper : Widget {
 		with(l.selection()) {
 			if(!isEmpty()) {
 				getPrimarySelection(parentWindow.win, (in char[] txt) {
+					// import std.stdio; writeln("txt: ", txt, " sel: ", getContentString);
 					if(txt.length) {
 						preservedPrimaryText = txt.idup;
 						// writeln(preservedPrimaryText);
@@ -12412,6 +12438,8 @@ class TextDisplayHelper : Widget {
 				parentWindow.win.getPrimarySelection((txt) {
 					doStateCheckpoint();
 
+					// import arsd.core; writeln(txt);writeln(l.selection.getContentString);writeln(preservedPrimaryText);
+
 					if(txt == l.selection.getContentString && preservedPrimaryText.length)
 						l.selection.replaceContent(preservedPrimaryText);
 					else
@@ -12558,24 +12586,14 @@ class TextDisplayHelper : Widget {
 		});
 	}
 
-	static class Style : Widget.Style {
-		override WidgetBackground background() {
-			return WidgetBackground(WidgetPainter.visualTheme.widgetBackgroundColor);
-		}
-
-		override Color foregroundColor() {
-			return WidgetPainter.visualTheme.foregroundColor;
-		}
-
-		override FrameStyle borderStyle() {
-			return FrameStyle.sunk;
-		}
-
-		override MouseCursor cursor() {
-			return GenericCursor.Text;
-		}
+	// we want to delegate all the Widget.Style stuff up to the other class that the user can see
+	override void useStyleProperties(scope void delegate(scope .Widget.Style props) dg) {
+		// this should be the upper container - first parent is a ScrollMessageWidget content area container, then ScrollMessageWidget itself, next parent is finally the EditableTextWidgetParent
+		if(parent && parent.parent && parent.parent.parent)
+			parent.parent.parent.useStyleProperties(dg);
+		else
+			super.useStyleProperties(dg);
 	}
-	mixin OverrideStyle!Style;
 
 	override int minHeight() { return borderBoxForContentBox(Rectangle(Point(0, 0), Size(0, defaultTextHeight))).height; }
 	override int maxHeight() {
@@ -12707,21 +12725,32 @@ class TextWidget : Widget {
 /// Contains the implementation of text editing
 abstract class EditableTextWidget : EditableTextWidgetParent {
 	this(Widget parent) {
+		version(custom_widgets)
+			this(true, parent);
+		else
+			this(false, parent);
+	}
+
+	private bool useCustomWidget;
+
+	this(bool useCustomWidget, Widget parent) {
+		this.useCustomWidget = useCustomWidget;
+
 		super(parent);
 
-		version(custom_widgets)
+		if(useCustomWidget)
 			setupCustomTextEditing();
 	}
 
 	private bool wordWrapEnabled_;
 	void wordWrapEnabled(bool enabled) {
-		version(win32_widgets) {
-			SendMessageW(hwnd, EM_FMTLINES, enabled ? 1 : 0, 0);
-		} else version(custom_widgets) {
+		if(useCustomWidget) {
 			wordWrapEnabled_ = enabled;
 			version(use_new_text_system)
-			textLayout.wordWrapWidth = enabled ? this.width : 0; // FIXME
-		} else static assert(false);
+				textLayout.wordWrapWidth = enabled ? this.width : 0; // FIXME
+		} else version(win32_widgets) {
+			SendMessageW(hwnd, EM_FMTLINES, enabled ? 1 : 0, 0);
+		}
 	}
 
 	override int minWidth() { return scaleWithDpi(16); }
@@ -12729,20 +12758,30 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 	override int widthShrinkiness() { return 1; }
 
 	version(use_new_text_system)
-	override int maxHeight() { return tdh.maxHeight; }
+	override int maxHeight() {
+		if(useCustomWidget)
+			return tdh.maxHeight;
+		else
+			return super.maxHeight();
+	}
 
 	version(use_new_text_system)
-	override void focus() { if(tdh) tdh.focus(); else super.focus(); }
+	override void focus() {
+		if(useCustomWidget && tdh)
+			tdh.focus();
+		else
+			super.focus();
+	}
 
 	void selectAll() {
-		version(win32_widgets)
-			SendMessage(hwnd, EM_SETSEL, 0, -1);
-		else version(custom_widgets) {
+		if(useCustomWidget) {
 			version(use_new_text_system)
 				tdh.selectAll();
-			else
+			else version(trash_text)
 				textLayout.selectAll();
 			redraw();
+		} else version(win32_widgets) {
+			SendMessage(hwnd, EM_SETSEL, 0, -1);
 		}
 	}
 
@@ -12750,7 +12789,13 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 		TextDisplayHelper tdh;
 
 	@property string content() {
-		version(win32_widgets) {
+		if(useCustomWidget) {
+			version(use_new_text_system) {
+				return textLayout.getTextString();
+			} else version(trash_text) {
+				return textLayout.getPlainText();
+			}
+		} else version(win32_widgets) {
 			wchar[4096] bufferstack;
 			wchar[] buffer;
 			auto len = GetWindowTextLength(hwnd);
@@ -12764,18 +12809,12 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 				return makeUtf8StringFromWindowsString(buffer[0 .. l]);
 			else
 				return null;
-		} else version(custom_widgets) {
-			version(use_new_text_system) {
-				return textLayout.getTextString();
-			} else
-				return textLayout.getPlainText();
-		} else static assert(false);
+		}
+
+		assert(0);
 	}
 	@property void content(string s) {
-		version(win32_widgets) {
-			WCharzBuffer bfr = WCharzBuffer(s, WindowsStringConversionFlags.convertNewLines);
-			SetWindowTextW(hwnd, bfr.ptr);
-		} else version(custom_widgets) {
+		if(useCustomWidget) {
 			version(use_new_text_system) {
 				selectAll();
 				textLayout.selection.replaceContent(s);
@@ -12786,7 +12825,7 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 				// tdh.scrollForCaret();
 
 				redraw();
-			} else {
+			} else version(trash_text) {
 				textLayout.clear();
 				textLayout.addText(s);
 
@@ -12804,17 +12843,19 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 				*/
 				redraw();
 			}
+		} else version(win32_widgets) {
+			WCharzBuffer bfr = WCharzBuffer(s, WindowsStringConversionFlags.convertNewLines);
+			SetWindowTextW(hwnd, bfr.ptr);
 		}
-		else static assert(false);
 	}
 
 	void addText(string txt) {
-		version(custom_widgets) {
+		if(useCustomWidget) {
 			version(use_new_text_system) {
 				textLayout.appendText(txt);
 				tdh.adjustScrollbarSizes();
 				redraw();
-			} else {
+			} else if(trash_text) {
 				textLayout.addText(txt);
 
 				{
@@ -12840,7 +12881,7 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 
 			// restore the previous selection
 			SendMessageW( hwnd, EM_SETSEL, StartPos, EndPos );
-		} else static assert(0);
+		}
 	}
 
 	version(custom_widgets)
@@ -12870,78 +12911,84 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 		return font;
 	}
 
-	version(win32_widgets) { /* will do it with Windows calls in the classes */ }
-	else version(custom_widgets) {
-		// FIXME
-		version(use_new_text_system) {
-			TextLayouter textLayout;
+	version(use_new_text_system) {
+		TextLayouter textLayout;
 
-			void setupCustomTextEditing() {
-				textLayout = new TextLayouter(defaultTextStyle());
+		void setupCustomTextEditing() {
+			textLayout = new TextLayouter(defaultTextStyle());
 
-				auto smw = new ScrollMessageWidget(this);
-				if(!showingHorizontalScroll)
-					smw.horizontalScrollBar.hide();
-				if(!showingVerticalScroll)
-					smw.verticalScrollBar.hide();
-				this.tabStop = false;
-				smw.tabStop = false;
-				tdh = textDisplayHelperFactory(textLayout, smw);
+			auto smw = new ScrollMessageWidget(this);
+			if(!showingHorizontalScroll)
+				smw.horizontalScrollBar.hide();
+			if(!showingVerticalScroll)
+				smw.verticalScrollBar.hide();
+			this.tabStop = false;
+			smw.tabStop = false;
+			tdh = textDisplayHelperFactory(textLayout, smw);
+		}
 
-				this.parentWindow.addEventListener((scope DpiChangedEvent dce) {
-					if(textLayout) {
-						if(auto style = cast(TextDisplayHelper.MyTextStyle) textLayout.defaultStyle()) {
-							// the dpi change can change the font, so this informs the layouter that it has changed too
-							style.font_ = getUsedFont();
+		override void newParentWindow(Window old, Window n) {
+			if(n is null) return;
+			this.parentWindow.addEventListener((scope DpiChangedEvent dce) {
+				if(textLayout) {
+					if(auto style = cast(TextDisplayHelper.MyTextStyle) textLayout.defaultStyle()) {
+						// the dpi change can change the font, so this informs the layouter that it has changed too
+						style.font_ = getUsedFont();
 
-							// arsd.core.writeln(this.parentWindow.win.actualDpi);
-						}
+						// arsd.core.writeln(this.parentWindow.win.actualDpi);
 					}
-				});
-			}
-
-		} else {
-
-			static if(SimpledisplayTimerAvailable)
-				Timer caretTimer;
-			etc.TextLayout textLayout;
-
-			void setupCustomTextEditing() {
-				textLayout = new etc.TextLayout(Rectangle(4, 2, width - 8, height - 4));
-				textLayout.selectionXorColor = getComputedStyle().activeListXorColor;
-			}
-
-			override void paint(WidgetPainter painter) {
-				if(parentWindow.win.closed) return;
-
-				textLayout.boundingBox = Rectangle(4, 2, width - 8, height - 4);
-
-				/*
-				painter.outlineColor = Color.white;
-				painter.fillColor = Color.white;
-				painter.drawRectangle(Point(4, 4), contentWidth, contentHeight);
-				*/
-
-				painter.outlineColor = Color.black;
-				// painter.drawText(Point(4, 4), content, Point(width - 4, height - 4));
-
-				textLayout.caretShowingOnScreen = false;
-
-				textLayout.drawInto(painter, !parentWindow.win.closed && isFocused());
-			}
+				}
+			});
 		}
 
-		static class Style : Widget.Style {
-			override FrameStyle borderStyle() {
-				return FrameStyle.sunk;
-			}
-			override MouseCursor cursor() {
-				return GenericCursor.Text;
-			}
+	} else version(trash_text) {
+		static if(SimpledisplayTimerAvailable)
+			Timer caretTimer;
+		etc.TextLayout textLayout;
+
+		void setupCustomTextEditing() {
+			textLayout = new etc.TextLayout(Rectangle(4, 2, width - 8, height - 4));
+			textLayout.selectionXorColor = getComputedStyle().activeListXorColor;
 		}
-		mixin OverrideStyle!Style;
+
+		override void paint(WidgetPainter painter) {
+			if(parentWindow.win.closed) return;
+
+			textLayout.boundingBox = Rectangle(4, 2, width - 8, height - 4);
+
+			/*
+			painter.outlineColor = Color.white;
+			painter.fillColor = Color.white;
+			painter.drawRectangle(Point(4, 4), contentWidth, contentHeight);
+			*/
+
+			painter.outlineColor = Color.black;
+			// painter.drawText(Point(4, 4), content, Point(width - 4, height - 4));
+
+			textLayout.caretShowingOnScreen = false;
+
+			textLayout.drawInto(painter, !parentWindow.win.closed && isFocused());
+		}
 	}
-	else static assert(false);
+
+	static class Style : Widget.Style {
+		override WidgetBackground background() {
+			return WidgetBackground(WidgetPainter.visualTheme.widgetBackgroundColor);
+		}
+
+		override Color foregroundColor() {
+			return WidgetPainter.visualTheme.foregroundColor;
+		}
+
+		override FrameStyle borderStyle() {
+			return FrameStyle.sunk;
+		}
+
+		override MouseCursor cursor() {
+			return GenericCursor.Text;
+		}
+	}
+	mixin OverrideStyle!Style;
 
 	version(trash_text)
 	version(custom_widgets)
@@ -13050,6 +13097,7 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 		override void defaultEventHandler_blur(Event ev) {
 			super.defaultEventHandler_blur(ev);
 
+			if(!useCustomWidget)
 			if(this.content != lastContentBlur) {
 				auto evt = new ChangeEvent!string(this, &this.content);
 				evt.dispatch();
@@ -13134,11 +13182,8 @@ abstract class EditableTextWidget : EditableTextWidgetParent {
 
 ///
 class LineEdit : EditableTextWidget {
-	// FIXME: hack
-	version(custom_widgets) {
 	override bool showingVerticalScroll() { return false; }
 	override bool showingHorizontalScroll() { return false; }
-	}
 
 	override int flexBasisWidth() { return 250; }
 
@@ -13157,6 +13202,13 @@ class LineEdit : EditableTextWidget {
 				});
 			}
 		} else static assert(false);
+	}
+
+	private this(bool useCustomWidget, Widget parent) {
+		if(!useCustomWidget)
+			this(parent);
+		else
+			super(true, parent);
 	}
 
 	version(use_new_text_system)
@@ -13179,6 +13231,13 @@ class LineEdit : EditableTextWidget {
 	+/
 }
 
+/// ditto
+class CustomLineEdit : LineEdit {
+	this(Widget parent) {
+		super(true, parent);
+	}
+}
+
 /++
 	A [LineEdit] that displays `*` in place of the actual characters.
 
@@ -13191,10 +13250,8 @@ class LineEdit : EditableTextWidget {
 		Added January 24, 2021
 +/
 class PasswordEdit : EditableTextWidget {
-	version(custom_widgets) {
 	override bool showingVerticalScroll() { return false; }
 	override bool showingHorizontalScroll() { return false; }
-	}
 
 	override int flexBasisWidth() { return 250; }
 
@@ -13244,20 +13301,39 @@ class PasswordEdit : EditableTextWidget {
 			createWin32Window(this, "edit"w, "",
 				ES_PASSWORD, WS_EX_CLIENTEDGE);//|WS_HSCROLL|ES_AUTOHSCROLL);
 		} else version(custom_widgets) {
-			version(trash_text)
-			setupCustomTextEditing();
-			addEventListener(delegate(CharEvent ev) {
-				if(ev.character == '\n')
-					ev.preventDefault();
-			});
+			version(trash_text) {
+				setupCustomTextEditing();
+
+				// should this be under trash text? i think so.
+				addEventListener(delegate(CharEvent ev) {
+					if(ev.character == '\n')
+						ev.preventDefault();
+				});
+			}
 		} else static assert(false);
 	}
+
+	private this(bool useCustomWidget, Widget parent) {
+		if(!useCustomWidget)
+			this(parent);
+		else
+			super(true, parent);
+	}
+
 	version(win32_widgets) {
 		mixin Padding!q{2};
 		override int minHeight() { return borderBoxForContentBox(Rectangle(Point(0, 0), Size(0, defaultLineHeight))).height; }
 		override int maxHeight() { return minHeight; }
 	}
 }
+
+/// ditto
+class CustomPasswordEdit : PasswordEdit {
+	this(Widget parent) {
+		super(true, parent);
+	}
+}
+
 
 ///
 class TextEdit : EditableTextWidget {
@@ -13272,6 +13348,14 @@ class TextEdit : EditableTextWidget {
 			setupCustomTextEditing();
 		} else static assert(false);
 	}
+
+	private this(bool useCustomWidget, Widget parent) {
+		if(!useCustomWidget)
+			this(parent);
+		else
+			super(true, parent);
+	}
+
 	override int maxHeight() { return int.max; }
 	override int heightStretchiness() { return 7; }
 
@@ -13279,6 +13363,12 @@ class TextEdit : EditableTextWidget {
 	override int flexBasisHeight() { return 25; }
 }
 
+/// ditto
+class CustomTextEdit : TextEdit {
+	this(Widget parent) {
+		super(true, parent);
+	}
+}
 
 /+
 /++
@@ -13341,14 +13431,264 @@ class TextDisplay : EditableTextWidget {
 
 			smw.verticalScrollBar.setPosition = 0;
 		}
+	}
 
-		class Style : Widget.Style {
-			// just want the generic look for these
-		}
+	class Style : Widget.Style {
+		// just want the generic look for these
+	}
 
-		mixin OverrideStyle!Style;
+	mixin OverrideStyle!Style;
+}
+
+// FIXME: if a item currently has keyboard focus, even if it is scrolled away, we could keep that item active
+/++
+	A scrollable viewer for an array of widgets. The widgets inside a list item can be whatever you want, and you can have any number of total items you want because only the visible widgets need to actually exist and load their data at a time, giving constantly predictable performance.
+
+
+	When you use this, you must subclass it and implement minimally `itemFactory` and `itemSize`, optionally also `layoutMode`.
+
+	Your `itemFactory` must return a subclass of `GenericListViewItem` that implements the abstract method to load item from your list on-demand.
+
+	Note that some state in reused widget objects may either be preserved or reset when the user isn't expecting it. It is your responsibility to handle this when you load an item (try to save it when it is unloaded, then set it when reloaded), but my recommendation would be to have minimal extra state. For example, avoid having a scrollable widget inside a list, since the scroll state might change as it goes out and into view. Instead, I'd suggest making the list be a loader for a details pane on the side.
+
+	History:
+		Added August 12, 2024 (dub v11.6)
++/
+abstract class GenericListViewWidget : Widget {
+	/++
+
+	+/
+	this(Widget parent) {
+		super(parent);
+
+		smw = new ScrollMessageWidget(this);
+		smw.addDefaultKeyboardListeners();
+		smw.addDefaultWheelListeners(itemSize.height, itemSize.width);
+
+		inner = new GenericListViewWidgetInner(this, smw);
+	}
+
+	private ScrollMessageWidget smw;
+	private GenericListViewWidgetInner inner;
+
+	/++
+
+	+/
+	abstract GenericListViewItem itemFactory(Widget parent);
+	// in device-dependent pixels
+	/++
+
+	+/
+	abstract Size itemSize(); // use 0 to indicate it can stretch?
+
+	enum LayoutMode {
+		rows,
+		columns,
+		gridRowsFirst,
+		gridColumnsFirst
+	}
+	LayoutMode layoutMode() {
+		return LayoutMode.rows;
+	}
+
+	private int itemCount_;
+
+	/++
+		Sets the count of available items in the list. This will not allocate any items, but it will adjust the scroll bars and try to load items up to this count on-demand as they appear visible.
+	+/
+	void setItemCount(int count) {
+		smw.setTotalArea(inner.width, count * itemSize().height);
+		smw.setViewableArea(inner.width, inner.height);
+		this.itemCount_ = count;
+	}
+
+	/++
+		Returns the current count of items expected to available in the list.
+	+/
+	int itemCount() {
+		return this.itemCount_;
+	}
+
+	/++
+		Call these when the watched data changes. It will cause any visible widgets affected by the change to reload and redraw their data.
+
+		Note you must $(I also) call [setItemCount] if the total item count has changed.
+	+/
+	void notifyItemsChanged(int index, int count = 1) {
+	}
+	/// ditto
+	void notifyItemsInserted(int index, int count = 1) {
+	}
+	/// ditto
+	void notifyItemsRemoved(int index, int count = 1) {
+	}
+	/// ditto
+	void notifyItemsMoved(int movedFromIndex, int movedToIndex, int count = 1) {
+	}
+
+	private GenericListViewItem[] items;
+}
+
+/// ditto
+abstract class GenericListViewItem : Widget {
+	/++
+	+/
+	this(Widget parent) {
+		super(parent);
+	}
+
+	private int _currentIndex = -1;
+
+	private void showItemPrivate(int idx) {
+		showItem(idx);
+		_currentIndex = idx;
+	}
+
+	/++
+		Implement this to show an item from your data backing to the list.
+
+		Note that even if you are showing the requested index already, you should still try to reload it because it is possible the index now points to a different item (e.g. an item was added so all the indexes have changed) or if data has changed in this index and it is requesting you to update it prior to a repaint.
+	+/
+	abstract void showItem(int idx);
+
+	/++
+		Maintained by the library after calling [showItem] so the object knows which data index it currently has.
+
+		It may be -1, indicating nothing is currently loaded (or a load failed, and the current data is potentially inconsistent).
+
+		Inside the call to `showItem`, `currentIndexLoaded` is the old index, and the argument to `showItem` is the new index. You might use that to save state to the right place as needed before you overwrite it with the new item.
+	+/
+	final int currentIndexLoaded() {
+		return _currentIndex;
 	}
 }
+
+///
+unittest {
+	import arsd.minigui;
+
+	import std.conv;
+
+	void main() {
+		auto mw = new MainWindow();
+
+		static class MyListViewItem : GenericListViewItem {
+			this(Widget parent) {
+				super(parent);
+
+				label = new TextLabel("unloaded", TextAlignment.Left, this);
+				button = new Button("Click", this);
+
+				button.addEventListener("triggered", (){
+					messageBox(text("clicked ", currentIndexLoaded()));
+				});
+			}
+			override void showItem(int idx) {
+				label.label = "Item " ~ to!string(idx);
+			}
+
+			TextLabel label;
+			Button button;
+		}
+
+		auto widget = new class GenericListViewWidget {
+			this() {
+				super(mw);
+			}
+			override GenericListViewItem itemFactory(Widget parent) {
+				return new MyListViewItem(parent);
+			}
+			override Size itemSize() {
+				return Size(0, scaleWithDpi(80));
+			}
+		};
+
+		widget.setItemCount(5000);
+
+		mw.loop();
+	}
+}
+
+private class GenericListViewWidgetInner : Widget {
+	this(GenericListViewWidget glvw, ScrollMessageWidget smw) {
+		super(smw);
+		this.glvw = glvw;
+		this.tabStop = false;
+
+		reloadVisible();
+
+		smw.addEventListener("scroll", () {
+			reloadVisible();
+		});
+	}
+
+	override void registerMovement() {
+		super.registerMovement();
+		if(glvw && glvw.smw)
+			glvw.smw.setViewableArea(this.width, this.height);
+	}
+
+	void reloadVisible() {
+		auto y = glvw.smw.position.y / glvw.itemSize.height;
+		int offset = glvw.smw.position.y % glvw.itemSize.height;
+
+		if(offset || y >= glvw.itemCount())
+			y--;
+		if(y < 0)
+			y = 0;
+
+		recomputeChildLayout();
+
+		foreach(item; glvw.items) {
+			if(y < glvw.itemCount()) {
+				item.showItemPrivate(y);
+				item.show();
+			} else {
+				item.hide();
+			}
+			y++;
+		}
+
+		this.redraw();
+	}
+
+	private GenericListViewWidget glvw;
+
+	private bool inRcl;
+	override void recomputeChildLayout() {
+		if(inRcl)
+			return;
+		inRcl = true;
+		scope(exit)
+			inRcl = false;
+
+		auto ih = glvw.itemSize().height;
+
+		auto itemCount = this.height / ih + 2; // extra for partial display before and after
+		bool hadNew;
+		while(glvw.items.length < itemCount) {
+			// FIXME: free the old items? maybe just set length
+			glvw.items ~= glvw.itemFactory(this);
+			hadNew = true;
+		}
+
+		if(hadNew)
+			reloadVisible();
+
+		int y = -(glvw.smw.position.y % ih);
+		foreach(child; children) {
+			child.x = 0;
+			child.y = y;
+			y += glvw.itemSize().height;
+			child.width = this.width;
+			child.height = ih;
+
+			child.recomputeChildLayout();
+		}
+	}
+}
+
+
 
 ///
 class MessageBox : Window {
