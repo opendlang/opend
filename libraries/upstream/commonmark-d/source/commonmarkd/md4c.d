@@ -31,6 +31,7 @@ import core.stdc.stdlib: malloc, free;
 
 nothrow:
 @nogc:
+@system:
 
 // Compatibility with older DMDFE
 static if (__VERSION__ < 2079)

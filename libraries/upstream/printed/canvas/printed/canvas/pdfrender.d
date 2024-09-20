@@ -517,7 +517,7 @@ private:
 
     bool _isSetDashPattern;
 
-    float[] _dashSegments = [];
+    float[] _dashSegments;
 
     float _dashOffset = 0f;
 
@@ -550,7 +550,7 @@ private:
     // </alpha support>
 
 
-    void finalizeOutput()
+    void finalizeOutput() @system
     {
         // Add every page object
         foreach(i; 0..numberOfPages())

@@ -343,7 +343,7 @@ private:
     float _pageHeightMm;
 
     string _currentPath;
-    float[] _dashSegments = [];
+    float[] _dashSegments;
     float _dashOffset = 0f;
 
     string _fontFace = "Helvetica";

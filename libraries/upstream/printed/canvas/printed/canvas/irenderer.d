@@ -249,7 +249,7 @@ struct Brush
 {
     ubyte[4] rgba;
 
-    this(int r, int g, int b)
+    this(int r, int g, int b) @safe
     {
         rgba[0] = cast(ubyte)r;
         rgba[1] = cast(ubyte)g;
@@ -257,7 +257,7 @@ struct Brush
         rgba[3] = 255;
     }
 
-    this(int r, int g, int b, int a)
+    this(int r, int g, int b, int a) @safe
     {
         rgba[0] = cast(ubyte)r;
         rgba[1] = cast(ubyte)g;
