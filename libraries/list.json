@@ -130,6 +130,14 @@
 		{
 			"repository": "https://github.com/DerelictOrg/DerelictFt",
 			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/FreeSlave/isfreedesktop",
+			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/FreeSlave/xdgpaths",
+			"sourceDirectory": "source"
 		}
 	]
 }
