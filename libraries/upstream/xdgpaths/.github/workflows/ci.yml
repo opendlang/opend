@@ -1,0 +1,38 @@
+name: build
+on:
+  pull_request:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  Build:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        dc:
+          - ldc-latest
+          - dmd-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup D
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.dc }}
+
+      - name: Build and run tests
+        run: |
+          dub test -b unittest-cov
+
+      - name: Install and run doveralls
+        if: ${{ startsWith(matrix.os, 'ubuntu') && startsWith(matrix.dc, 'dmd') && github.event_name == 'push' }}
+        run: |
+          sudo apt-get install -y libcurl4-openssl-dev
+          dub fetch doveralls
+          dub run doveralls -- -t ${{ secrets.CoverallsToken }}

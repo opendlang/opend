@@ -1,0 +1,13 @@
+{
+    "name": "xdgpaths",
+    "description": "XDG Base Directory Specification implementation",
+    "license" : "BSL-1.0",
+    "copyright": "Copyright © 2016, Roman Chistokhodov",
+    "authors": ["Roman Chistokhodov"],
+    "targetPath" : "lib",
+    "targetType" : "library",
+    "dependencies": {
+        "isfreedesktop" : "~>0.1.0"
+    },
+    "versions" : ["xdgpathsFileTest"]
+}
