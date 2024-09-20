@@ -62,7 +62,7 @@ bool checkUnsafeAccess(Scope* sc, Expression e, bool readonly, bool printmsg)
         if (v.isSystem())
         {
             if (sc.setUnsafe(!printmsg, e.loc,
-                "cannot access `@system` field `%s.%s` in `@safe` code", ad, v))
+                "cannot access `@system` field `%s.%s` in `@safe` code", ad, v, null, !v.systemInferred))
                 return true;
         }
 

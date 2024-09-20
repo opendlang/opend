@@ -1198,7 +1198,7 @@ class Lexer
         return t;
     }
 
-    private Identifier lexIdent(Token* t)
+    private Identifier lexIdent(Token* t) @system
     {
         while (1)
         {

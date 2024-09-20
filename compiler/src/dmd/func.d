@@ -1639,7 +1639,7 @@ version (IN_LLVM)
     extern (D) final bool setUnsafe(
         bool gag = false, Loc loc = Loc.init, const(char)* fmt = null,
         RootObject arg0 = null, RootObject arg1 = null, RootObject arg2 = null,
-        bool checkedByDefault = true)
+        bool checkedByDefault = true) @system
     {
         if (safetyInprocess)
         {
@@ -1670,7 +1670,34 @@ version (IN_LLVM)
         else if (checkedByDefault && !isSystem() && !isTrusted())
         {
             if (!gag && fmt)
+            {
+                char[128] refmt = 0;
+                auto it = strstr(fmt, "`@safe` code");
+                if(it !is null)
+                {
+                    auto before = fmt[0 .. it - fmt];
+                    auto after  = fmt[it - fmt + "`@safe` code".length .. strlen(fmt)];
+                    if(before.length + 1 > refmt.length)
+                        goto abandon;
+                    refmt[0 .. before.length] = before[];
+                    auto spot = before.length;
+                    enum replace = "non-`@system`/`@trusted` code";
+                    if(spot + replace.length + 1 > refmt.length)
+                        goto abandon;
+                    refmt[spot .. spot + replace.length] = replace[];
+                    spot += replace.length;
+                    if(spot + after.length + 1 > refmt.length)
+                        goto abandon;
+                    refmt[spot .. spot + after.length] = after[];
+                    spot += after.length;
+                    if(spot >= refmt.length)
+                        goto abandon;
+                    refmt[spot] = 0;
+                    fmt = refmt.ptr;
+                }
+                abandon:
                 .deprecation(loc, fmt, arg0 ? arg0.toChars() : "", arg1 ? arg1.toChars() : "", arg2 ? arg2.toChars() : "");
+            }
 
             return false;
         }
@@ -4670,8 +4697,11 @@ bool setUnsafe(Scope* sc,
             }
             else if (!(sc.varDecl.storage_class & STC.trusted))
             {
-                sc.varDecl.storage_class |= STC.system;
-                sc.varDecl.systemInferred = true;
+                if (!(sc.varDecl.storage_class & STC.system))
+                {
+                    sc.varDecl.storage_class |= STC.system;
+                    sc.varDecl.systemInferred = true;
+                }
             }
         }
         return false;

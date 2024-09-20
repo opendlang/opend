@@ -1471,12 +1471,18 @@ Lagain:
         {
             if (sd.isSystem())
             {
+                bool inferred = false;
+                VarDeclaration v = sd.isVarDeclaration();
+
+                if (v && v.systemInferred)
+                        inferred = true;
+
                 if (sc.setUnsafe(false, loc,
-                    "cannot access `@system` variable `%s` in @safe code", sd))
+                    "cannot access `@system` variable `%s` in `@safe` code", sd, null, null, !inferred))
                 {
-                    if (auto v = sd.isVarDeclaration())
+                    if (v)
                     {
-                        if (v.systemInferred)
+                        if (inferred)
                             errorSupplemental(v.loc, "`%s` is inferred to be `@system` from its initializer here", v.toChars());
                         else
                             errorSupplemental(v.loc, "`%s` is declared here", v.toChars());
@@ -2084,7 +2090,7 @@ private bool checkSafety(FuncDeclaration f, ref Loc loc, Scope* sc)
                     sc.varDecl.toChars(), f.toChars());
                 return true;
             }
-            else
+            else if(!(sc.varDecl.storage_class & (STC.system | STC.trusted)))
             {
                 sc.varDecl.storage_class |= STC.system;
                 sc.varDecl.systemInferred = true;
