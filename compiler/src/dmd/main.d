@@ -870,12 +870,7 @@ bool parseCommandlineAndConfig(size_t argc, const(char)** argv, ref Param params
     // Set default values
     params.argv0 = arguments[0].toDString;
 
-    version (Windows)
-        enum iniName = "sc.ini";
-    else version (Posix)
-        enum iniName = "dmd.conf";
-    else
-        static assert(0, "fix this");
+    enum iniName = "dmd.conf";
 
     global.inifilename = parse_conf_arg(&arguments);
     if (global.inifilename)

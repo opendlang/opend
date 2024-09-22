@@ -285,9 +285,9 @@ alias dmdConf = makeRule!((builder, rule) {
     version(OSX) {} else
         exportDynamic = " -L--export-dynamic";
 
+    enum confFile = "dmd.conf";
     version (Windows)
     {
-        enum confFile = "sc.ini";
         enum conf = `[Environment]
 DFLAGS="-I%@P%\..\..\..\..\druntime\import" "-I%@P%\..\..\..\..\phobos"
 LIB="%@P%\..\..\..\..\phobos"
@@ -304,7 +304,6 @@ DFLAGS=%DFLAGS% -L/OPT:NOICF
     }
     else
     {
-        enum confFile = "dmd.conf";
         enum conf = `[Environment32]
 DFLAGS=-I%@P%/../../../../druntime/import -I%@P%/../../../../phobos -L-L%@P%/../../../../phobos/generated/{OS}/{BUILD}/32{exportDynamic} -fPIC
 
