@@ -86,7 +86,7 @@ auto postab() { return cast(const longdouble *) _postab_bytes.ptr; }
  * Terminates on first unrecognized character.
  */
 
-longdouble_soft strtold_dm(const(char) *p, char **endp)
+longdouble_soft strtold_dm(const(char) *p, char **endp) @system
 {
     longdouble_soft ldval;
     int  exp;
