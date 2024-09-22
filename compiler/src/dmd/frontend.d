@@ -239,10 +239,7 @@ string findDMDConfig(const(char)[] dmdFilePath)
 {
     import dmd.dinifile : findConfFile;
 
-    version (Windows)
-        enum configFile = "sc.ini";
-    else
-        enum configFile = "dmd.conf";
+    enum configFile = "dmd.conf";
 
     return findConfFile(dmdFilePath, configFile).idup;
 }
