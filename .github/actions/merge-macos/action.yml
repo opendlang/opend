@@ -15,22 +15,22 @@ runs:
       run: |
         set -euxo pipefail
 
-        mkdir ldc2-{x86_64,arm64}
-        tar -xf artifacts/ldc2-*-x86_64.tar.xz --strip 1 -C ldc2-x86_64
-        tar -xf artifacts/ldc2-*-arm64.tar.xz  --strip 1 -C ldc2-arm64
+        mkdir opend-{x86_64,arm64}
+        tar -xf artifacts/opend-*-x86_64.tar.xz --strip 1 -C opend-x86_64
+        tar -xf artifacts/opend-*-arm64.tar.xz  --strip 1 -C opend-arm64
 
-        cp -R ldc2-x86_64 ldc2-universal
-        cd ldc2-universal
+        cp -R opend-x86_64 opend-universal
+        cd opend-universal
 
         # rename/copy lib dirs
         mv lib                            lib-x86_64
-        cp -R ../ldc2-arm64/lib           lib-arm64
-        cp -R ../ldc2-arm64/lib-ios-arm64 ./
+        cp -R ../opend-arm64/lib           lib-arm64
+        cp -R ../opend-arm64/lib-ios-arm64 ./
 
         # merge executables to universal ones
         for exe in bin/*; do
           rm $exe
-          lipo -create -output $exe ../ldc2-x86_64/$exe ../ldc2-arm64/$exe
+          lipo -create -output $exe ../opend-x86_64/$exe ../opend-arm64/$exe
         done
 
         # ldc2.conf: replace the default section and add extra sections
@@ -90,8 +90,8 @@ runs:
         set -eux
         echo 'void main() { import std.stdio; writefln("Hello world, %d bits", size_t.sizeof * 8); }' > hello.d
         for triple in x86_64-apple-macos11.0 arm64-apple-macos11.0 x86_64-apple-ios12.0-simulator arm64-apple-ios12.0; do
-          ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d
-          ldc2-universal/bin/ldc2 -mtriple="$triple" hello.d -link-defaultlib-shared
+          opend-universal/bin/ldc2 -mtriple="$triple" hello.d
+          opend-universal/bin/ldc2 -mtriple="$triple" hello.d -link-defaultlib-shared
         done
 
     - name: Pack universal package
@@ -108,8 +108,8 @@ runs:
           artifactID="${artifactID:0:8}"
         fi
 
-        artifactName="ldc2-$artifactID-osx-universal"
-        mv ldc2-universal $artifactName
+        artifactName="opend-$artifactID-osx-universal"
+        mv opend-universal $artifactName
         chmod -R go=rX $artifactName
         sudo chown -R root:wheel $artifactName
         tar -cf - $artifactName | 7za a newArtifacts/$artifactName.tar.xz -si -txz -mx9
