@@ -204,19 +204,6 @@ jobs:
           cross_target_triple: ${{ env.CROSS_TRIPLE }}
 
 
-  merge-macos:
-    name: macOS universal
-    runs-on: macos-latest
-    timeout-minutes: 30
-    needs:
-      - build-native
-      - build-cross
-    steps:
-      - uses: actions/checkout@v4
-      - name: Merge x86_64 & arm64 packages to universal one
-        uses: ./.github/actions/merge-macos
-
-
   upload-to-github:
     name: Upload to GitHub
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'
@@ -225,7 +212,6 @@ jobs:
     needs:
       - build-native
       - build-cross
-      - merge-macos
     permissions:
       contents: write
     steps:
