@@ -113,7 +113,7 @@ void finiTLSRanges(void[] rng) nothrow @nogc
 
 }
 
-void scanTLSRanges(void[] rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow
+void scanTLSRanges(void[] rng, scope void delegate(void* pbeg, void* pend) nothrow dg) nothrow @system
 {
     dg(rng.ptr, rng.ptr + rng.length);
 }
@@ -122,7 +122,7 @@ private:
 
 __gshared SectionGroup _sections;
 
-extern (C) void sections_osx_onAddImage(const scope mach_header* h, intptr_t slide)
+extern (C) void sections_osx_onAddImage(const scope mach_header* h, intptr_t slide) @system
 {
     foreachDataSection(h, slide, (sectionData) { _sections._gcRanges.insertBack(sectionData); });
 
