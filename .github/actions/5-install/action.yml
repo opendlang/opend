@@ -56,6 +56,9 @@ runs:
         if [[ '${{ runner.os }}' == Windows ]]; then
           echo -e '[Environment64]\nDFLAGS=-I%@P%/../import ucrtbase.lib\nLIB=%@P%/../lib;%@P%/../lib/mingw' > install/bin/dmd.conf
         fi
+        if [[ '${{ runner.os }}' == macOS ]]; then
+          echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib -fPIC' > install/bin/dmd.conf
+        fi
         cp opend/phobos/generated/*/release/64/*.a install/lib
         cp -a opend/phobos/generated/*/release/64/*.so* install/lib
         cp -a opend/phobos/generated/*/release/64/*.dylib* install/lib

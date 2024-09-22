@@ -7593,11 +7593,6 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         se = se.toUTF8(sc);
 
         auto namez = se.toStringz();
-        if (!global.filePath)
-        {
-            error(e.loc, "need `-J` switch to import text file `%s`", namez.ptr);
-            return setError();
-        }
 
         /* Be wary of CWE-22: Improper Limitation of a Pathname to a Restricted Directory
          * ('Path Traversal') attacks.
@@ -7624,19 +7619,34 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             return setError();
         }
 
-        auto resolvedNamez = FileName.searchPath(global.filePath, namez, false);
-        if (!resolvedNamez)
-        {
-            error(e.loc, "file `%s` cannot be found or not in a path specified with `-J`", se.toChars());
-            errorSupplemental(e.loc, "Path(s) searched (as provided by `-J`):");
-            foreach (idx, path; *global.filePath)
-            {
-                const attr = FileName.exists(path);
-                const(char)* err = attr == 2 ? "" :
-                    (attr == 1 ? " (not a directory)" : " (path not found)");
-                errorSupplemental(e.loc, "[%llu]: `%s`%s", cast(ulong)idx, path, err);
-            }
-            return setError();
+        const(char)[] resolvedNamez;
+
+        auto loc = e.loc;
+        auto p  = FileName.path(FileName.toAbsolute(loc.isValid() ? loc.filename : sc._module.srcfile.toChars()));
+
+        resolvedNamez = FileName.searchPath(p, namez, false);
+
+        if (!resolvedNamez) {
+                if (!global.filePath)
+                {
+                    error(e.loc, "need `-J` switch to import text file `%s`", namez.ptr);
+                    return setError();
+                }
+
+                resolvedNamez = FileName.searchPath(global.filePath, namez, false);
+                if (!resolvedNamez)
+                {
+                    error(e.loc, "file `%s` cannot be found or not in a path specified with `-J`", se.toChars());
+                    errorSupplemental(e.loc, "Path(s) searched (as provided by `-J`):");
+                    foreach (idx, path; *global.filePath)
+                    {
+                        const attr = FileName.exists(path);
+                        const(char)* err = attr == 2 ? "" :
+                            (attr == 1 ? " (not a directory)" : " (path not found)");
+                        errorSupplemental(e.loc, "[%llu]: `%s`%s", cast(ulong)idx, path, err);
+                    }
+                    return setError();
+                }
         }
 
         sc._module.contentImportedFiles.push(resolvedNamez.ptr);
