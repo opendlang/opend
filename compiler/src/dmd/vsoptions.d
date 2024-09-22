@@ -492,8 +492,6 @@ private:
         if (VSInstallDir is null)
             VSInstallDir = getenv("VSINSTALLDIR"w);
 
-version (IN_LLVM)
-{
         if (VSInstallDir is null)
         {
             VSInstallDir = getenv("LDC_VSDIR"w);
@@ -501,7 +499,6 @@ version (IN_LLVM)
             if (VSInstallDir && FileName.exists(VSInstallDir) != 2)
                 VSInstallDir = null;
         }
-}
 
         if (VSInstallDir is null)
             VSInstallDir = detectVSInstallDirViaCOM();

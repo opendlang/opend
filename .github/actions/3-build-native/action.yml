@@ -27,6 +27,7 @@ runs:
           ${{ inputs.cmake_flags }}
           ${{ inputs.with_pgo == 'true' && '-DDFLAGS_LDC=-fprofile-use=../pgo-ldc/merged.profdata' || '' }}
         build_targets: all
+        build_dmd: true
         arch: ${{ inputs.arch }}
 
     - run: ../build/bin/ldc2 --version

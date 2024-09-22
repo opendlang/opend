@@ -16,11 +16,25 @@ inputs:
   build_targets:
     required: false
     default: 'all'
+  build_dmd:
+    required: false
+    default: false
   arch:
     required: false # Windows only
 runs:
   using: composite
   steps:
+    - if: inputs.build_dmd == 'true' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        make HOST_DMD=${{ inputs.host_dc }} ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
+
+    - if: inputs.build_dmd == 'true' && runner.os == 'Windows'
+      shell: cmd
+      run: |
+        call "%LDC_VSDIR%\Common7\Tools\VsDevCmd.bat" -arch=${{ inputs.arch }} || exit /b
+        echo on
+        make HOST_DMD=${{ inputs.host_dc }}.exe ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
 
     - if: runner.os != 'Windows'
       shell: bash
