@@ -44,17 +44,17 @@ runs:
         fi
 
         set +eux
-        cp opend/generated/*/release/*/*.a install/lib
-        cp opend/generated/*/release/*/*.so* install/lib
-        cp opend/generated/*/release/*/*.lib install/lib
-        cp opend/generated/*/release/*/*.dll install/lib
-        cp opend/generated/*/release/*/dmd install/bin
-        cp opend/generated/*/release/*/dmd.exe install/bin
-        cp opend/generated/*/release/*/dmd.conf install/bin
-        cp opend/phobos/generated/*/release/*/*.a install/lib
-        cp opend/phobos/generated/*/release/*/*.so* install/lib
-        cp opend/phobos/generated/*/release/*/*.lib install/lib
-        cp opend/phobos/generated/*/release/*/*.dll install/lib
+        cp opend/generated/*/release/64/*.a install/lib
+        cp opend/generated/*/release/64/*.so* install/lib
+        cp opend/generated/*/release/64/*.lib install/lib
+        cp opend/generated/*/release/64/*.dll install/lib
+        cp opend/generated/*/release/64/dmd install/bin
+        cp opend/generated/*/release/64/dmd.exe install/bin
+        cp opend/generated/*/release/64/dmd.conf install/bin
+        cp opend/phobos/generated/*/release/64/*.a install/lib
+        cp opend/phobos/generated/*/release/64/*.so* install/lib
+        cp opend/phobos/generated/*/release/64/*.lib install/lib
+        cp opend/phobos/generated/*/release/64/*.dll install/lib
         echo done
 
     - name: Make portable
