@@ -24,7 +24,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: build_dmd == true
+    - if: inputs.build_dmd == true
       shell: bash
       run: |
         make HOST_DMD='${{ inputs.host_dc }}' ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
