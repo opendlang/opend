@@ -2176,13 +2176,15 @@ version (IN_LLVM)
         int length;
         if (IN_LLVM && global.params.hashThreshold && (slice.length > global.params.hashThreshold))
         {
-            import std.digest.md;
-            auto md5hash = md5Of(slice);
-            auto hashedname = toHexString(md5hash);
-            static assert(hashedname.length < namebuf.length-30);
-            name = namebuf.ptr;
-            length = snprintf(name, namebuf.length, "_D%lluTypeInfo_%.*s6__initZ",
-                9LU + hashedname.length, cast(int) hashedname.length, hashedname.ptr);
+            version(IN_LLVM) {
+                import std.digest.md;
+                auto md5hash = md5Of(slice);
+                auto hashedname = toHexString(md5hash);
+                static assert(hashedname.length < namebuf.length-30);
+                name = namebuf.ptr;
+                length = snprintf(name, namebuf.length, "_D%lluTypeInfo_%.*s6__initZ",
+                    9LU + hashedname.length, cast(int) hashedname.length, hashedname.ptr);
+            }
         }
         else
         {
