@@ -53,10 +53,14 @@ runs:
         cp opend/generated/*/release/64/dmd.exe install/bin
         cp c:/program\ files/llvm/bin/lld-link.exe install/bin
         echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib -L--export-dynamic -fPIC' > install/bin/dmd.conf
+        if [[ '${{ runner.os }}' == Windows ]]; then
+          echo -e '[Environment64]\nDFLAGS=-I%@P%/../import\nLIB=%@P%/../lib;%@P%/../lib/mingw' > install/bin/dmd.conf
+        fi
         cp opend/phobos/generated/*/release/64/*.a install/lib
         cp -a opend/phobos/generated/*/release/64/*.so* install/lib
         cp -a opend/phobos/generated/*/release/64/*.dylib* install/lib
         cp opend/phobos/generated/*/release/64/*.lib install/lib
+        cp opend/phobos/phobos64.lib install/lib
         cp opend/phobos/generated/*/release/64/*.dll install/lib
         echo done
 
