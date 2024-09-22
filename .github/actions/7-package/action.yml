@@ -62,8 +62,7 @@ runs:
           artifactID='${{ github.ref }}'
           artifactID="${artifactID:11}"
         else
-          artifactID='${{ github.sha }}'
-          artifactID="${artifactID:0:8}"
+          artifactID="latest"
         fi
 
         os='${{ inputs.os }}'
@@ -80,7 +79,7 @@ runs:
           fi
         fi
 
-        artifactName="ldc2-$artifactID-$os-${{ inputs.arch }}"
+        artifactName="opend-$artifactID-$os-${{ inputs.arch }}"
         mv installed $artifactName
         if [[ '${{ runner.os }}' == Windows ]]; then
           7z a -mx=9 artifacts/$artifactName.7z $artifactName >/dev/null
@@ -105,7 +104,7 @@ runs:
         set -eux
         git clean -dffx
         cd ..
-        artifactName="ldc-$ARTIFACT_ID-src"
+        artifactName="opend-$ARTIFACT_ID-src"
         chmod -R go=rX opend/ldc
         GZIP=-9 tar -czf artifacts/$artifactName.tar.gz --exclude-vcs --owner=0 --group=0 --transform="s,^opend/ldc,$artifactName," opend/ldc
         # unpack & create zip
