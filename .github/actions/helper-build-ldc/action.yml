@@ -27,7 +27,7 @@ runs:
     - if: inputs.build_dmd == 'true'
       shell: bash
       run: |
-        make HOST_DMD='${{ inputs.host_dc }}' ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
+        make HOST_DMD=${{ inputs.host_dc }} ENABLE_RELEASE=1 ENABLE_LTO=1 dmd druntime phobos
 
     - if: runner.os != 'Windows'
       shell: bash
