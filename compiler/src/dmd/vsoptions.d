@@ -353,7 +353,7 @@ version (IN_LLVM) { /* not needed */ } else
      * Returns:
      *   absolute path to link.exe, just "link.exe" if not found
      */
-    const(char)* linkerPath(bool x64)
+    const(char)* linkerPath(bool x64) @system
     {
         const(char)* addpath;
         if (auto p = getVCBinDir(x64, addpath))

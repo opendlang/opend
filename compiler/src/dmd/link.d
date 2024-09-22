@@ -174,7 +174,7 @@ version (Posix)
 
 version (Windows)
 {
-    private void writeQuotedArgIfNeeded(ref OutBuffer buffer, const(char)* arg)
+    private void writeQuotedArgIfNeeded(ref OutBuffer buffer, const(char)* arg) @system
     {
         bool quote = false;
         for (size_t i = 0; arg[i]; ++i)
@@ -1366,7 +1366,7 @@ public int runPreprocessor(const(char)[] cpp, const(char)[] filename, const(char
  *      https://github.com/dlang/visuald/blob/master/tools/pipedmd.d#L252
  */
 version (Windows)
-int runProcessCollectStdout(const(wchar)* szCommand, ubyte[] buffer, void delegate(ubyte[]) sink)
+int runProcessCollectStdout(const(wchar)* szCommand, ubyte[] buffer, void delegate(ubyte[]) sink) @system
 {
     import core.sys.windows.windows;
     import core.sys.windows.wtypes;
