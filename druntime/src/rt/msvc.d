@@ -12,6 +12,8 @@
  */
 module rt.msvc;
 
+version=UseLdcImpl;
+
 version (CRuntime_Microsoft):
 
 import core.stdc.stdarg : va_list;
@@ -21,7 +23,7 @@ extern(C):
 nothrow:
 @nogc:
 
-version (LDC)
+version (UseLdcImpl)
 {
     // LDC doesn't support MSVC versions before VS2015
     FILE* __acrt_iob_func(int hnd);
@@ -63,7 +65,7 @@ mixin template declareAlternateName(string name, string alternateName)
     mixin(`pragma(linkerDirective, "/alternatename:` ~ cPrefix~name ~ `=` ~ cPrefix~alternateName ~ `");`);
 }
 
-version (LDC)
+version (UseLdcImpl)
 {
     // dummy, used to link in this object file
     void init_msvc() {}
