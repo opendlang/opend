@@ -285,6 +285,7 @@ public:
     virtual BitFieldDeclaration *isBitFieldDeclaration() { return NULL; }
     virtual TypeInfoDeclaration *isTypeInfoDeclaration() { return NULL; }
     virtual TupleDeclaration *isTupleDeclaration() { return NULL; }
+    virtual UnpackDeclaration *isUnpackDeclaration() { return NULL; }
     virtual AliasDeclaration *isAliasDeclaration() { return NULL; }
     virtual AggregateDeclaration *isAggregateDeclaration() { return NULL; }
     virtual FuncDeclaration *isFuncDeclaration() { return NULL; }
