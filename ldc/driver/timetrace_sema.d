@@ -182,6 +182,7 @@ extern(C++) final class SemanticTimeTraceVisitor(SemaVisitor) : Visitor
     override void visit(InvariantDeclaration invd) { semavisitor.visit(invd); }
 
     override void visit(UnitTestDeclaration utd) { semavisitor.visit(utd); }
+    override void visit(UnpackDeclaration nd) { semavisitor.visit(nd); }
 
     override void visit(NewDeclaration nd) { semavisitor.visit(nd); }
 

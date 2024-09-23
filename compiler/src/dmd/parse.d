@@ -289,6 +289,29 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     }
 
     /************************************
+     * Determine if current token is a type constructor or a storage class.
+     * Assumes:
+     *  - `t` is on a `const`, `immutable`, `inout`, or `shared` token.
+     *  - Trying to parse a declaration or definition.
+     *  - Not parsing a parameter. (`void foo(const(int) = 2){ ... }` case not handled.)
+     * Returns:
+     *  `true` if token is a type constructor.
+     */
+    bool isTypeConstructor(Token* t)
+    {
+        auto next = peek(t);
+        if (next.value != TOK.leftParenthesis)
+            return false;
+        if (isTupleNotation(next))
+            return false;
+        return true;
+    }
+    bool isTypeConstructor()
+    {
+        return isTypeConstructor(&token);
+    }
+
+    /************************************
      * Parse declarations and definitions
      * Params:
      *  once = !=0 means parse exactly one decl or def
@@ -598,25 +621,25 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     break;
                 }
             case TOK.const_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     goto Ldeclaration;
                 stc = STC.const_;
                 goto Lstc;
 
             case TOK.immutable_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     goto Ldeclaration;
                 stc = STC.immutable_;
                 goto Lstc;
 
             case TOK.shared_:
                 {
-                    const next = peekNext();
-                    if (next == TOK.leftParenthesis)
+                    if (isTypeConstructor())
                         goto Ldeclaration;
-                    if (next == TOK.static_)
+                    auto next = peek(&token);
+                    if (next.value == TOK.static_)
                     {
-                        TOK next2 = peekNext2();
+                        TOK next2 = peek(next).value;
                         if (next2 == TOK.this_)
                         {
                             s = parseSharedStaticCtor(pAttrs);
@@ -632,7 +655,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     goto Lstc;
                 }
             case TOK.inout_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     goto Ldeclaration;
                 stc = STC.wild;
                 goto Lstc;
@@ -1056,6 +1079,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 nextToken();
                 continue;
 
+            case TOK.leftParenthesis:
+                goto Ldeclaration;
+
             default:
                 error("declaration expected, not `%s`", token.toChars());
             Lerror:
@@ -1085,11 +1111,132 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         return decldefs;
     }
 
+    static bool isVariableStorageClass(TOK tok)
+    {
+        switch (tok)
+        {
+            case TOK.const_:
+            case TOK.auto_:
+            case TOK.extern_:
+            case TOK.align_:
+            case TOK.immutable_:
+            case TOK.shared_:
+            case TOK.inout_:
+            case TOK.deprecated_:
+            case TOK.nothrow_:
+            case TOK.pure_:
+            case TOK.ref_:
+            case TOK.gshared:
+            case TOK.at:
+            case TOK.static_:
+            case TOK.enum_:
+                return true;
+            default:
+                return false;
+        }
+    }
+    AST.UnpackDeclaration parseUnpackDeclaration(StorageClass g_storage_class, bool parseInitializer = true, bool isParameter = false)
+    in
+    {
+        assert(token.value == TOK.leftParenthesis);
+    }
+    do
+    {
+        nextToken();
+        const unpackLoc = token.loc;
+        bool hasComma = false;
+        auto vars = new AST.Dsymbols();
+        while (token.value != TOK.rightParenthesis)
+        {
+            const loc = token.loc;
+            auto link = linkage; // (ignored)
+            auto setAlignment = false;
+            AST.Expression ealign = null;
+            AST.Expressions* udas = null;
+            Loc linkloc = this.linkLoc; // (ignored)
+            auto storage_class = g_storage_class;
+            parseStorageClasses(storage_class, link, setAlignment, ealign, udas, linkloc);
+
+            /+if (link)
+                error("linkage specification not allowed within unpack declarations");+/
+            if (udas) // TODO
+                error("user defined attributes not allowed within unpack declarations");
+            if (token.value == TOK.leftParenthesis)
+            {
+                vars.push(parseUnpackDeclaration(storage_class, false, isParameter));
+            }
+            else
+            {
+                TOK tkv;
+                AST.Type t = null;
+                Identifier i = null;
+                if (token.value == TOK.identifier && ((tkv = peek(&token).value) == TOK.comma || tkv == TOK.rightParenthesis))
+                {
+                    i = token.ident;
+                    nextToken();
+                }
+                else
+                {
+                    t = parseBasicType();
+                    t = parseTypeSuffixes(t);
+
+                    if (t == AST.Type.terror)
+                        break;
+
+                    if (token.value != TOK.identifier)
+                    {
+                        error("expected identifier in unpack declaration");
+                        break;
+                    }
+                    i = token.ident;
+                    nextToken();
+                }
+                if (storage_class & STC.autoref)
+                {
+                    error("`auto ref` unpacked variables are not supported");
+                }
+                if (storage_class == STC.undefined_)
+                {
+                    error("unpacked variables need at least one storage class, did you mean `auto %s`?", i.toChars());
+                }
+                vars.push(new AST.VarDeclaration(loc, t, i, null, storage_class)); // TODO: UDAs
+            }
+
+            if (token.value == TOK.rightParenthesis)
+            {
+                break;
+            }
+            hasComma = true;
+            if (token.value != TOK.comma)
+            {
+                error("expected comma to separate unpack declarators");
+                break;
+            }
+            nextToken();
+        }
+        if (!hasComma)
+        {
+            error("need a trailing comma to unpack a single variable");
+        }
+        if (token.value != TOK.rightParenthesis)
+        {
+            error("expected ')' to close unpack declarators");
+        }
+        nextToken();
+        AST.Expression _init = null;
+        if (parseInitializer)
+        {
+            check(TOK.assign);
+            _init = parseAssignExp();
+        }
+        return new AST.UnpackDeclaration(unpackLoc, vars, _init, g_storage_class);
+    }
+
     /*****************************************
      * Parse auto declarations of the form:
      *   storageClass ident = init, ident = init, ... ;
      * and return the array of them.
-     * Starts with token on the first ident.
+     * Starts with token on the first ident or '('.
      * Ends with scanner past closing ';'
      */
     private AST.Dsymbols* parseAutoDeclarations(StorageClass storageClass, const(char)* comment)
@@ -1100,25 +1247,34 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         while (1)
         {
             const loc = token.loc;
-            Identifier ident = token.ident;
-            nextToken(); // skip over ident
-
-            AST.TemplateParameters* tpl = null;
-            if (token.value == TOK.leftParenthesis)
-                tpl = parseTemplateParameterList();
-
-            check(TOK.assign);   // skip over '='
-            AST.Initializer _init = parseInitializer();
-            auto v = new AST.VarDeclaration(loc, null, ident, _init, storageClass);
-
-            AST.Dsymbol s = v;
-            if (tpl)
+            AST.Dsymbol s;
+            if (token.value == TOK.leftParenthesis && peekPastParen(&token).value == TOK.assign)
             {
-                auto a2 = new AST.Dsymbols();
-                a2.push(v);
-                auto tempdecl = new AST.TemplateDeclaration(loc, ident, tpl, null, a2, 0);
-                s = tempdecl;
+                s = parseUnpackDeclaration(storageClass);
             }
+            else
+            {
+                Identifier ident = token.ident;
+                nextToken(); // skip over ident
+
+                AST.TemplateParameters* tpl = null;
+                if (token.value == TOK.leftParenthesis)
+                    tpl = parseTemplateParameterList();
+
+                check(TOK.assign);   // skip over '='
+                AST.Initializer _init = parseInitializer();
+                auto v = new AST.VarDeclaration(loc, null, ident, _init, storageClass);
+
+                s = v;
+                if (tpl)
+                {
+                    auto a2 = new AST.Dsymbols();
+                    a2.push(v);
+                    auto tempdecl = new AST.TemplateDeclaration(loc, ident, tpl, null, a2, 0);
+                    s = tempdecl;
+                }
+            }
+
             a.push(s);
             switch (token.value)
             {
@@ -1129,7 +1285,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             case TOK.comma:
                 nextToken();
-                if (!(token.value == TOK.identifier && hasOptionalParensThen(peek(&token), TOK.assign)))
+                if (!(token.value == TOK.leftParenthesis || token.value == TOK.identifier && hasOptionalParensThen(peek(&token), TOK.assign)))
                 {
                     error("identifier expected following comma");
                     break;
@@ -2876,25 +3032,25 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     break;
 
                 case TOK.const_:
-                    if (peekNext() == TOK.leftParenthesis)
+                    if (isTypeConstructor())
                         goto default;
                     stc = STC.const_;
                     goto L2;
 
                 case TOK.immutable_:
-                    if (peekNext() == TOK.leftParenthesis)
+                    if (isTypeConstructor())
                         goto default;
                     stc = STC.immutable_;
                     goto L2;
 
                 case TOK.shared_:
-                    if (peekNext() == TOK.leftParenthesis)
+                    if (isTypeConstructor())
                         goto default;
                     stc = STC.shared_;
                     goto L2;
 
                 case TOK.inout_:
-                    if (peekNext() == TOK.leftParenthesis)
+                    if (isTypeConstructor())
                         goto default;
                     stc = STC.wild;
                     goto L2;
@@ -2969,8 +3125,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
                         const tv = peekNext();
                         Loc loc;
-                        if (tpl && token.value == TOK.identifier &&
-                            (tv == TOK.comma || tv == TOK.rightParenthesis || tv == TOK.dotDotDot))
+                        AST.UnpackDeclaration unpack = null;
+                        void makeTypeParameter()
                         {
                             Identifier id = Identifier.generateId("__T");
                             loc = token.loc;
@@ -2979,21 +3135,47 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                                 *tpl = new AST.TemplateParameters();
                             AST.TemplateParameter tp = new AST.TemplateTypeParameter(loc, id, null, null);
                             (*tpl).push(tp);
+                        }
 
+                        if (tpl && token.value == TOK.identifier &&
+                            (tv == TOK.comma || tv == TOK.rightParenthesis || tv == TOK.dotDotDot))
+                        {
+                            makeTypeParameter();
                             ai = token.ident;
                             nextToken();
+                            goto LskipType;
                         }
-                        else
+
+                        if (tpl && token.value == TOK.leftParenthesis)
                         {
-                            at = parseType(&ai, null, &loc);
+                            const tv2 = peekPastParen(&token).value;
+                            if (tv2 == TOK.comma || tv2 == TOK.rightParenthesis || tv2 == TOK.dotDotDot)
+                            {
+                                makeTypeParameter();
+                                if (storageClass & STC.lazy_)
+                                {
+                                    error("unpacking `lazy` parameters is not supported");
+                                }
+                                if (storageClass & STC.autoref)
+                                {
+                                    error("unpacking `auto ref` parameters is not supported");
+                                }
+                                unpack = parseUnpackDeclaration(storageClass & ~STC.lazy_ & ~STC.out_ | STC.temp | STC.ctfe, false, true);
+                                ai = Identifier.generateId("__unpack");
+                                goto LskipType;
+                            }
                         }
+
+                        at = parseType(&ai, null, &loc);
+
+                    LskipType:
                         ae = null;
                         if (token.value == TOK.assign) // = defaultArg
                         {
                             nextToken();
                             ae = parseDefaultInitExp();
                         }
-                        auto param = new AST.Parameter(loc, storageClass | STC.parameter, at, ai, ae, null);
+                        auto param = new AST.Parameter(loc, storageClass | STC.parameter, at, ai, ae, null, unpack);
                         if (udas)
                         {
                             auto a = new AST.Dsymbols();
@@ -4238,25 +4420,25 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             switch (token.value)
             {
             case TOK.const_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     break; // const as type constructor
                 stc = STC.const_; // const as storage class
                 goto L1;
 
             case TOK.immutable_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     break;
                 stc = STC.immutable_;
                 goto L1;
 
             case TOK.shared_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     break;
                 stc = STC.shared_;
                 goto L1;
 
             case TOK.inout_:
-                if (peekNext() == TOK.leftParenthesis)
+                if (isTypeConstructor())
                     break;
                 stc = STC.wild;
                 goto L1;
@@ -4479,10 +4661,27 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 return a;
             }
 
-            /* Look for auto initializers:
+            /* Look for unpack declarations:
+             *  (int x, auto y) = initializer;
+             *  storage_class (a, b, ...) = initializer;
+             */
+            if (token.value == TOK.leftParenthesis && isTupleNotation(&token))
+            {
+                // TODO: can we merge this with the branch below?
+                AST.Dsymbols* a = parseAutoDeclarations(storage_class | (pAttrs ? pAttrs.storageClass : 0), comment);
+                if (udas)
+                {
+                    AST.Dsymbol s = new AST.UserAttributeDeclaration(udas, a);
+                    a = new AST.Dsymbols();
+                    a.push(s);
+                }
+                return a;
+            }
+
+            /* Look for auto initializers and auto unpack declarations:
              *  storage_class identifier = initializer;
              *  storage_class identifier(...) = initializer;
-             */
+            */
             if ((storage_class || udas) && token.value == TOK.identifier && hasOptionalParensThen(peek(&token), TOK.assign))
             {
                 AST.Dsymbols* a = parseAutoDeclarations(storage_class, comment);
@@ -5177,7 +5376,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 parameterList.parameters = new AST.Parameters();
                 Identifier id = Identifier.generateId("__T");
                 AST.Type t = new AST.TypeIdentifier(loc, id);
-                parameterList.parameters.push(new AST.Parameter(loc, STC.parameter, t, token.ident, null, null));
+                parameterList.parameters.push(new AST.Parameter(loc, STC.parameter, t, token.ident, null, null, null));
 
                 tpl = new AST.TemplateParameters();
                 AST.TemplateParameter tp = new AST.TemplateTypeParameter(loc, id, null, null);
@@ -5496,6 +5695,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             StorageClass storageClass = 0;
             StorageClass stc = 0;
+
+            AST.UnpackDeclaration unpack = null;
         Lagain:
             if (stc)
             {
@@ -5532,36 +5733,28 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     break;
 
                 case TOK.const_:
-                    if (peekNext() != TOK.leftParenthesis)
-                    {
-                        stc = STC.const_;
-                        goto Lagain;
-                    }
-                    break;
+                    if (isTypeConstructor(&token))
+                        break;
+                    stc = STC.const_;
+                    goto Lagain;
 
                 case TOK.immutable_:
-                    if (peekNext() != TOK.leftParenthesis)
-                    {
-                        stc = STC.immutable_;
-                        goto Lagain;
-                    }
-                    break;
+                    if (isTypeConstructor(&token))
+                        break;
+                    stc = STC.immutable_;
+                    goto Lagain;
 
                 case TOK.shared_:
-                    if (peekNext() != TOK.leftParenthesis)
-                    {
-                        stc = STC.shared_;
-                        goto Lagain;
-                    }
-                    break;
+                    if (isTypeConstructor(&token))
+                        break;
+                    stc = STC.shared_;
+                    goto Lagain;
 
                 case TOK.inout_:
-                    if (peekNext() != TOK.leftParenthesis)
-                    {
-                        stc = STC.wild;
-                        goto Lagain;
-                    }
-                    break;
+                    if (isTypeConstructor(&token))
+                        break;
+                    stc = STC.wild;
+                    goto Lagain;
 
                 default:
                     break;
@@ -5579,11 +5772,21 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     goto Larg;
                 }
             }
+            else if (token.value == TOK.leftParenthesis)
+            {
+                TOK after = peekPastParen(&token).value;
+                if (after == TOK.comma || after == TOK.semicolon)
+                {
+                    unpack = parseUnpackDeclaration(storageClass | STC.temp | STC.ctfe, false, true);
+                    ai = Identifier.generateId("__unpack");
+                    goto Larg;
+                }
+            }
             at = parseType(&ai);
             if (!ai)
                 noIdentifierForDeclarator(at);
         Larg:
-            auto p = new AST.Parameter(aloc, storageClass, at, ai, null, null);
+            auto p = new AST.Parameter(aloc, storageClass, at, ai, null, null, unpack);
             parameters.push(p);
             if (token.value == TOK.comma)
             {
@@ -5738,7 +5941,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             const aloc = token.loc;
             nextToken();
             check(TOK.assign);
-            param = new AST.Parameter(aloc, storageClass, at, ai, null, null);
+            param = new AST.Parameter(aloc, storageClass, at, ai, null, null, null);
         }
         else if (isDeclaration(&token, NeedDeclaratorId.must, TOK.assign, null))
         {
@@ -5746,7 +5949,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             const aloc = token.loc;
             AST.Type at = parseType(&ai);
             check(TOK.assign);
-            param = new AST.Parameter(aloc, storageClass, at, ai, null, null);
+            param = new AST.Parameter(aloc, storageClass, at, ai, null, null, null);
         }
         else if (storageClass != 0)
             error("found `%s` while expecting `=` or identifier", n.toChars());
@@ -5812,12 +6015,29 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         case TOK.typeof_:
         case TOK.vector:
         case TOK.traits:
+        case TOK.leftParenthesis:
             /* https://issues.dlang.org/show_bug.cgi?id=15163
              * If tokens can be handled as
              * old C-style declaration or D expression, prefer the latter.
              */
             if (isDeclaration(&token, NeedDeclaratorId.mustIfDstyle, TOK.reserved, null))
                 goto Ldeclaration;
+
+            if (token.value != TOK.leftParenthesis)
+                goto Lexp;
+
+            /* This may be the start of an UnpackDeclaration.
+             */
+            auto next = peek(&token);
+            auto nonLeft = next;
+            while (nonLeft.value == TOK.leftParenthesis)
+                nonLeft = peek(nonLeft);
+            if ((isVariableStorageClass(nonLeft.value) ||
+                 isDeclaration(next, NeedDeclaratorId.mustIfDstyle, TOK.reserved, null) ||
+                 isDeclaration(nonLeft, NeedDeclaratorId.mustIfDstyle, TOK.reserved, null)) &&
+                peekPastParen(&token).value == TOK.assign)
+                goto Ldeclaration;
+
             goto Lexp;
 
         case TOK.assert_:
@@ -5844,7 +6064,6 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         case TOK.string_:
         case TOK.interpolated:
         case TOK.hexadecimalString:
-        case TOK.leftParenthesis:
         case TOK.cast_:
         case TOK.mul:
         case TOK.min:
@@ -7209,7 +7428,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
         while (1)
         {
-            if ((t.value == TOK.const_ || t.value == TOK.immutable_ || t.value == TOK.inout_ || t.value == TOK.shared_) && peek(t).value != TOK.leftParenthesis)
+            if ((t.value == TOK.const_ || t.value == TOK.immutable_ || t.value == TOK.inout_ || t.value == TOK.shared_) && !isTypeConstructor(t))
             {
                 /* const type
                  * immutable type

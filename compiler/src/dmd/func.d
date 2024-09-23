@@ -2778,7 +2778,7 @@ version (IN_LLVM)
             auto fparams = new Parameters();
             if (canBuildResultVar())
             {
-                Parameter p = new Parameter(loc, STC.ref_ | STC.const_, f.nextOf(), Id.result, null, null);
+                Parameter p = new Parameter(loc, STC.ref_ | STC.const_, f.nextOf(), Id.result, null, null, null);
                 fparams.push(p);
             }
             auto fo = cast(TypeFunction)(originalType ? originalType : f);
@@ -3164,6 +3164,32 @@ Expression addInvariant(AggregateDeclaration ad, VarDeclaration vthis)
     }
     return e;
 }
+
+/****************************************************
+ * Unpack parameters of function literal.
+ */
+void unpackFunctionParameters(FuncDeclaration thisfd)
+{
+    if (!thisfd.fbody || !thisfd.type || thisfd.type.ty != Tfunction)
+        return;
+    TypeFunction f = cast(TypeFunction)thisfd.type;
+    Statements* ups = null;
+    foreach (i, Parameter p; f.parameterList)
+    {
+        if (!p.unpack)
+            continue;
+        if (ups is null)
+            ups = new Statements();
+        p.unpack._init = new IdentifierExp(p.loc, p.ident);
+        ups.push(new ExpStatement(p.unpack.loc, p.unpack));
+    }
+    if (ups !is null)
+    {
+        ups.push(thisfd.fbody);
+        thisfd.fbody = new CompoundStatement(thisfd.fbody.loc, ups);
+    }
+}
+
 
 /***************************************************
  * Visit each overloaded function/template in turn, and call dg(s) on it.

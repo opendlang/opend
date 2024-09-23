@@ -78,6 +78,7 @@ public:
     void visit(AST.StorageClassDeclaration s) { visit(cast(AST.AttribDeclaration)s); }
     void visit(AST.ConditionalDeclaration s) { visit(cast(AST.AttribDeclaration)s); }
     void visit(AST.StaticForeachDeclaration s) { visit(cast(AST.AttribDeclaration)s); }
+    void visit(AST.UnpackDeclaration s) { visit(cast(AST.AttribDeclaration)s); }
 
     //==============================================================================================
     // Miscellaneous

@@ -18,6 +18,7 @@ import core.stdc.stdlib;
 import core.stdc.string;
 
 import dmd.aggregate;
+import dmd.attrib;
 import dmd.arraytypes;
 import dmd.astenums;
 import dmd.ast_node;
@@ -4061,6 +4062,12 @@ extern (C++) final class TypeFunction : TypeNext
             if (!t)
                 continue;
 
+            if (fparam.unpack)
+            {
+                fparam.unpack.propagateStorageClasses();
+                fparam.storageClass |= fparam.unpack.storage_class;
+            }
+
             if (fparam.storageClass & (STC.lazy_ | STC.out_))
             {
                 purity = PURE.weak;
@@ -4171,7 +4178,7 @@ extern (C++) final class TypeFunction : TypeNext
                 continue;
             if (params == parameterList.parameters)
                 params = parameterList.parameters.copy();
-            (*params)[i] = new Parameter(p.loc, p.storageClass, t, null, null, null);
+            (*params)[i] = new Parameter(p.loc, p.storageClass, t, null, null, null, null);
         }
         if (next == tret && params == parameterList.parameters)
             return this;
@@ -5616,7 +5623,7 @@ extern (C++) final class TypeTuple : Type
                 Expression e = (*exps)[i];
                 if (e.type.ty == Ttuple)
                     error(e.loc, "cannot form sequence of sequences");
-                auto arg = new Parameter(e.loc, STC.undefined_, e.type, null, null, null);
+                auto arg = new Parameter(e.loc, STC.undefined_, e.type, null, null, null, null);
                 (*arguments)[i] = arg;
             }
         }
@@ -5642,15 +5649,15 @@ extern (C++) final class TypeTuple : Type
     {
         super(Ttuple);
         arguments = new Parameters();
-        arguments.push(new Parameter(Loc.initial, 0, t1, null, null, null));
+        arguments.push(new Parameter(Loc.initial, 0, t1, null, null, null, null));
     }
 
     extern (D) this(Type t1, Type t2)
     {
         super(Ttuple);
         arguments = new Parameters();
-        arguments.push(new Parameter(Loc.initial, 0, t1, null, null, null));
-        arguments.push(new Parameter(Loc.initial, 0, t2, null, null, null));
+        arguments.push(new Parameter(Loc.initial, 0, t1, null, null, null, null));
+        arguments.push(new Parameter(Loc.initial, 0, t2, null, null, null, null));
     }
 
     static TypeTuple create() @safe
@@ -6057,8 +6064,9 @@ extern (C++) final class Parameter : ASTNode
     Identifier ident;
     Expression defaultArg;
     UserAttributeDeclaration userAttribDecl; // user defined attributes
+    UnpackDeclaration unpack;
 
-    extern (D) this(const ref Loc loc, StorageClass storageClass, Type type, Identifier ident, Expression defaultArg, UserAttributeDeclaration userAttribDecl) @safe
+    extern (D) this(const ref Loc loc, StorageClass storageClass, Type type, Identifier ident, Expression defaultArg, UserAttributeDeclaration userAttribDecl, UnpackDeclaration unpack) @safe
     {
         this.loc = loc;
         this.type = type;
@@ -6066,16 +6074,17 @@ extern (C++) final class Parameter : ASTNode
         this.storageClass = storageClass;
         this.defaultArg = defaultArg;
         this.userAttribDecl = userAttribDecl;
+        this.unpack = unpack;
     }
 
-    static Parameter create(const ref Loc loc, StorageClass storageClass, Type type, Identifier ident, Expression defaultArg, UserAttributeDeclaration userAttribDecl) @safe
+    static Parameter create(const ref Loc loc, StorageClass storageClass, Type type, Identifier ident, Expression defaultArg, UserAttributeDeclaration userAttribDecl, UnpackDeclaration unpack) @safe
     {
-        return new Parameter(loc, storageClass, type, ident, defaultArg, userAttribDecl);
+        return new Parameter(loc, storageClass, type, ident, defaultArg, userAttribDecl, unpack);
     }
 
     Parameter syntaxCopy()
     {
-        return new Parameter(loc, storageClass, type ? type.syntaxCopy() : null, ident, defaultArg ? defaultArg.syntaxCopy() : null, userAttribDecl ? userAttribDecl.syntaxCopy(null) : null);
+        return new Parameter(loc, storageClass, type ? type.syntaxCopy() : null, ident, defaultArg ? defaultArg.syntaxCopy() : null, userAttribDecl ? userAttribDecl.syntaxCopy(null) : null, unpack ? unpack.syntaxCopy(null) : null);
     }
 
     /****************************************************

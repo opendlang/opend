@@ -846,6 +846,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
 
         foreach (Parameter p; *fs.parameters)
         {
+            if (p.unpack)
+            {
+                p.unpack.propagateStorageClasses();
+                p.storageClass |= p.unpack.storage_class;
+            }
             if (p.storageClass & STC.manifest)
             {
                 error(fs.loc, "cannot declare `enum` loop variables for non-unrolled foreach");
@@ -875,6 +880,30 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             s = s.statementSemantic(sc2);
             sc2.pop();
             result = s;
+        }
+
+        Statement unpackVariables(Statement _body)
+        {
+            Statements* ups = null;
+            foreach (i; 0 .. dim)
+            {
+                Parameter p = (*fs.parameters)[i];
+                if (p.unpack)
+                {
+                    if (ups is null)
+                    {
+                        ups = new Statements();
+                    }
+                    p.unpack._init = new IdentifierExp(p.loc, p.ident);
+                    ups.push(new ExpStatement(p.unpack.loc, p.unpack));
+                }
+            }
+            if (ups !is null)
+            {
+                ups.push(_body);
+                return new CompoundStatement(loc, ups);
+            }
+            return _body;
         }
 
         Type tn = null;
@@ -911,6 +940,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 }
             }
 
+            fs._body = unpackVariables(fs._body); // TODO: translate to unpacked parameters instead
             FuncExp flde = foreachBodyToFunction(sc2, fs, tfld,
                 /*IN_LLVM: enforceSizeTIndex=*/ tab.ty == Tarray || tab.ty == Tsarray);
             if (!flde)
@@ -1179,6 +1209,8 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                 fs.value._init = new ExpInitializer(loc, indexExp);
                 Statement ds = new ExpStatement(loc, fs.value);
 
+                fs._body = unpackVariables(fs._body);
+
                 if (dim == 2)
                 {
                     Parameter p = (*fs.parameters)[0];
@@ -1397,6 +1429,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     }
                 }
 
+                fs._body = unpackVariables(fs._body);
                 forbody = new CompoundStatement(loc, makeargs, fs._body);
 
                 Statement s = new ForStatement(loc, _init, condition, increment, forbody, fs.endloc);
@@ -1576,6 +1609,13 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             //increment = new AddAssignExp(loc, new VarExp(loc, fs.key), IntegerExp.literal!1);
             increment = new PreExp(EXP.prePlusPlus, loc, new VarExp(loc, fs.key));
         }
+
+        if (fs.prm.unpack !is null)
+        {
+            fs.prm.unpack._init = new IdentifierExp(fs.prm.loc, fs.prm.ident);
+            fs._body = new CompoundStatement(loc, new ExpStatement(fs.prm.unpack.loc, fs.prm.unpack), fs._body);
+        }
+
         if ((fs.prm.storageClass & STC.ref_) && fs.prm.type.equals(fs.key.type))
         {
             fs.key.range = null;
@@ -1605,6 +1645,7 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         }
 
         auto s = new ForStatement(loc, forinit, cond, increment, fs._body, fs.endloc);
+
         if (LabelStatement ls = checkLabeledLoop(sc, fs))
             ls.gotoTarget = s;
         result = s.statementSemantic(sc);
@@ -3234,7 +3275,7 @@ version (IN_LLVM)
                 cs.push(new ExpStatement(ss.loc, tmp));
 
                 auto args = new Parameters();
-                args.push(new Parameter(Loc.initial, 0, ClassDeclaration.object.type, null, null, null));
+                args.push(new Parameter(Loc.initial, 0, ClassDeclaration.object.type, null, null, null, null));
 
                 FuncDeclaration fdenter = FuncDeclaration.genCfunc(args, Type.tvoid, Id.monitorenter);
                 Expression e = new CallExp(ss.loc, fdenter, new VarExp(ss.loc, tmp));
@@ -3276,7 +3317,7 @@ version (IN_LLVM)
             cs.push(new ExpStatement(ss.loc, v));
 
             auto enterArgs = new Parameters();
-            enterArgs.push(new Parameter(Loc.initial, 0, t.pointerTo(), null, null, null));
+            enterArgs.push(new Parameter(Loc.initial, 0, t.pointerTo(), null, null, null, null));
 
             FuncDeclaration fdenter = FuncDeclaration.genCfunc(enterArgs, Type.tvoid, Id.criticalenter, STC.nothrow_);
             Expression e = new AddrExp(ss.loc, tmpExp);
@@ -3286,7 +3327,7 @@ version (IN_LLVM)
             cs.push(new ExpStatement(ss.loc, e));
 
             auto exitArgs = new Parameters();
-            exitArgs.push(new Parameter(Loc.initial, 0, t, null, null, null));
+            exitArgs.push(new Parameter(Loc.initial, 0, t, null, null, null, null));
 
             FuncDeclaration fdexit = FuncDeclaration.genCfunc(exitArgs, Type.tvoid, Id.criticalexit, STC.nothrow_);
             e = new CallExp(ss.loc, fdexit, tmpExp);
@@ -3996,13 +4037,13 @@ private extern(D) Expression applyArray(ForeachStatement fs, Expression flde,
     FuncDeclaration fdapply;
     TypeDelegate dgty;
     auto params = new Parameters();
-    params.push(new Parameter(Loc.initial, STC.in_, tn.arrayOf(), null, null, null));
+    params.push(new Parameter(Loc.initial, STC.in_, tn.arrayOf(), null, null, null, null));
     auto dgparams = new Parameters();
-    dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null));
+    dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null, null));
     if (dim == 2)
-        dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null));
+        dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null, null));
     dgty = new TypeDelegate(new TypeFunction(ParameterList(dgparams), Type.tint32, LINK.d));
-    params.push(new Parameter(Loc.initial, 0, dgty, null, null, null));
+    params.push(new Parameter(Loc.initial, 0, dgty, null, null, null, null));
     fdapply = FuncDeclaration.genCfunc(params, Type.tint32, fdname.ptr);
 
     if (tab.isTypeSArray())
@@ -4063,14 +4104,14 @@ private extern(D) Expression applyAssocArray(ForeachStatement fs, Expression fld
     if (!fdapply[i])
     {
         auto params = new Parameters();
-        params.push(new Parameter(Loc.initial, 0, Type.tvoid.pointerTo(), null, null, null));
-        params.push(new Parameter(Loc.initial, STC.const_, Type.tsize_t, null, null, null));
+        params.push(new Parameter(Loc.initial, 0, Type.tvoid.pointerTo(), null, null, null, null));
+        params.push(new Parameter(Loc.initial, STC.const_, Type.tsize_t, null, null, null, null));
         auto dgparams = new Parameters();
-        dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null));
+        dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null, null));
         if (dim == 2)
-            dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null));
+            dgparams.push(new Parameter(Loc.initial, 0, Type.tvoidptr, null, null, null, null));
         fldeTy[i] = new TypeDelegate(new TypeFunction(ParameterList(dgparams), Type.tint32, LINK.d));
-        params.push(new Parameter(Loc.initial, 0, fldeTy[i], null, null, null));
+        params.push(new Parameter(Loc.initial, 0, fldeTy[i], null, null, null, null));
         fdapply[i] = FuncDeclaration.genCfunc(params, Type.tint32, i ? Id._aaApply2 : Id._aaApply);
     }
 
@@ -4212,9 +4253,9 @@ else
             fs._body = new CompoundStatement(fs.loc, s, fs._body);
         }
         version (IN_LLVM)
-            params.push(new Parameter(fs.loc, stc, IN_LLVM ? para_type : p.type, id, null, null));
+            params.push(new Parameter(fs.loc, stc, IN_LLVM ? para_type : p.type, id, null, null, null));
         else
-            params.push(new Parameter(fs.loc, stc, p.type, id, null, null));
+            params.push(new Parameter(fs.loc, stc, p.type, id, null, null, null));
     }
     // https://issues.dlang.org/show_bug.cgi?id=13840
     // Throwable nested function inside nothrow function is acceptable.
@@ -4598,6 +4639,12 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
                 return returnEarly();
             }
 
+            if (p.unpack)
+            {
+                error(fs.loc, "foreach: cannot unpack key");
+                return returnEarly();
+            }
+
             const length = te ? te.exps.length : tuple.arguments.length;
             IntRange dimrange = IntRange(SignExtendedNumber(length))._cast(Type.tsize_t);
             // https://issues.dlang.org/show_bug.cgi?id=12504
@@ -4628,12 +4675,14 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
          *     storageClass = The storage class of the variable.
          *     type = The declared type of the variable.
          *     ident = The name of the variable.
+         *     unpack = Associated unpack declaration.
          *     e = The initializer of the variable (i.e. the current element of the looped over aggregate).
          *     t = The type of the initializer.
          * Returns:
          *     `true` iff the declaration was successful.
          */
-        bool declareVariable(StorageClass storageClass, Type type, Identifier ident, Expression e, Type t)
+        import dmd.attrib: UnpackDeclaration;
+        bool declareVariable(StorageClass storageClass, Type type, Identifier ident, UnpackDeclaration unpack, Expression e, Type t)
         {
             if (storageClass & (STC.out_ | STC.lazy_) ||
                 storageClass & STC.ref_ && !te)
@@ -4749,13 +4798,25 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
                 decls.push(var);
             else
                 stmts.push(new ExpStatement(loc, var));
+
+            if (unpack)
+            {
+                auto _init = new IdentifierExp(var.loc, var.ident);
+                auto ndecls = Dsymbol.arraySyntaxCopy(unpack.decl);
+                auto nunpack = new UnpackDeclaration(var.loc, ndecls, _init, var.storage_class);
+                if (isDecl)
+                    decls.push(nunpack);
+                else
+                    stmts.push(new ExpStatement(loc, nunpack));
+            }
+
             return true;
         }
 
         if (!isStatic)
         {
             // Declare value
-            if (!declareVariable(p.storageClass, p.type, p.ident, e, t))
+            if (!declareVariable(p.storageClass, p.type, p.ident, p.unpack, e, t))
             {
                 return returnEarly();
             }
@@ -4765,7 +4826,7 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
             if (!needExpansion)
             {
                 // Declare value
-                if (!declareVariable(p.storageClass, p.type, p.ident, e, t))
+                if (!declareVariable(p.storageClass, p.type, p.ident, p.unpack, e, t))
                 {
                     return returnEarly();
                 }
@@ -4774,7 +4835,7 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
             {   // expand tuples into multiple `static foreach` variables.
                 assert(e && !t);
                 auto ident = Identifier.generateId("__value");
-                declareVariable(0, e.type, ident, e, null);
+                declareVariable(0, e.type, ident, null, e, null);
                 import dmd.cond: StaticForeach;
                 auto field = Identifier.idPool(StaticForeach.tupleFieldName.ptr,StaticForeach.tupleFieldName.length);
                 Expression access = new DotIdExp(loc, e, field);
@@ -4788,7 +4849,7 @@ public auto makeTupleForeach(Scope* sc, bool isStatic, bool isDecl, ForeachState
                     Expression init_ = new IndexExp(loc, access, new IntegerExp(loc, l, Type.tsize_t));
                     init_ = init_.expressionSemantic(sc);
                     assert(init_.type);
-                    declareVariable(p.storageClass, init_.type, cp.ident, init_, null);
+                    declareVariable(p.storageClass, init_.type, cp.ident, cp.unpack, init_, null);
                 }
             }
         }

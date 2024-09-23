@@ -3566,7 +3566,7 @@ private bool functionParameters(const ref Loc loc, Scope* sc,
         for (size_t i = 0; i < arguments.length - nparams; i++)
         {
             Expression earg = (*arguments)[nparams + i];
-            auto arg = new Parameter(earg.loc, STC.in_, earg.type, null, null, null);
+            auto arg = new Parameter(earg.loc, STC.in_, earg.type, null, null, null, null);
             (*args)[i] = arg;
         }
         auto tup = new TypeTuple(args);
@@ -6785,6 +6785,31 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
         uint olderrors = global.errors;
 
+        UnpackDeclaration u = e.declaration.isUnpackDeclaration();
+
+        if (u)
+        {
+            Expression c = null;
+            auto d = u.include(sc);
+            if (d)
+            {
+                foreach (var; *d)
+                {
+                    auto de = new DeclarationExp(var.loc, var);
+                    c = c ? new CommaExp(e.loc, c, de) : de;
+                }
+                if (c)
+                {
+                    result = c.expressionSemantic(sc);
+                }
+            }
+            else
+            {
+                result = ErrorExp.get();
+            }
+            return;
+        }
+
         /* This is here to support extern(linkage) declaration,
          * where the extern(linkage) winds up being an AttribDeclaration
          * wrapper.
@@ -7217,7 +7242,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                     for (size_t i = 0; i < cd.baseclasses.length; i++)
                     {
                         BaseClass* b = (*cd.baseclasses)[i];
-                        args.push(new Parameter(Loc.initial, STC.in_, b.type, null, null, null));
+                        args.push(new Parameter(Loc.initial, STC.in_, b.type, null, null, null, null));
                     }
                     tded = new TypeTuple(args);
                 }
@@ -7263,7 +7288,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                          */
                         if (e.tok2 == TOK.parameters && arg.defaultArg && arg.defaultArg.op == EXP.error)
                             return setError();
-                        args.push(new Parameter(arg.loc, arg.storageClass, arg.type, (e.tok2 == TOK.parameters) ? arg.ident : null, (e.tok2 == TOK.parameters) ? arg.defaultArg : null, arg.userAttribDecl));
+                        args.push(new Parameter(arg.loc, arg.storageClass, arg.type, (e.tok2 == TOK.parameters) ? arg.ident : null, (e.tok2 == TOK.parameters) ? arg.defaultArg : null, arg.userAttribDecl, (e.tok2 == TOK.parameters) ? arg.unpack : null));
                     }
                     tded = new TypeTuple(args);
                     break;
