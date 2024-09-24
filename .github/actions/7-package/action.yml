@@ -80,7 +80,7 @@ runs:
         fi
 
         artifactName="opend-$artifactID-$os-${{ inputs.arch }}"
-        mv installed $artifactName || (sleep 5 && (mv installed $artifactName || sleep 10 && mv installed $artifactName))
+        mv installed $artifactName || (sleep 5 && (mv installed $artifactName || (sleep 10 && mv installed $artifactName)))
         if [[ '${{ runner.os }}' == Windows ]]; then
           7z a -mx=9 artifacts/$artifactName.7z $artifactName >/dev/null
         else
