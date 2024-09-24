@@ -374,7 +374,10 @@ void setDefaultLibrary(ref Param params, const ref Target target)
         }
         else if (target.os & (Target.OS.linux | Target.OS.FreeBSD | Target.OS.OpenBSD | Target.OS.Solaris | Target.OS.DragonFlyBSD))
         {
-            driverParams.defaultlibname = "libphobos2.a";
+            version (IN_LLVM)
+                driverParams.defaultlibname = "libphobos2.a";
+            else
+                driverParams.defaultlibname = ":libphobos2.a";
         }
         else if (target.os == Target.OS.OSX)
         {
