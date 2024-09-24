@@ -54,7 +54,7 @@ runs:
         cp c:/program\ files/llvm/bin/lld-link.exe install/bin
         echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib -L--export-dynamic -fPIC' > install/bin/dmd.conf
         if [[ '${{ runner.os }}' == Windows ]]; then
-          echo -e '[Environment64]\nDFLAGS=-I%@P%/../import ucrtbase.lib\nLIB=%@P%/../lib;%@P%/../lib/mingw' > install/bin/dmd.conf
+          echo -e '[Environment64]\nDFLAGS=-I%@P%/../import\nLIB=%@P%/../lib;%@P%/../lib/mingw' > install/bin/dmd.conf
         fi
         if [[ '${{ runner.os }}' == macOS ]]; then
           echo -e '[Environment64]\nDFLAGS=-I%@P%/../import -L-L%@P%/../lib -fPIC' > install/bin/dmd.conf

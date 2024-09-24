@@ -289,15 +289,7 @@ version (IN_LLVM) { /* not needed */ } else
      */
     const(char)* defaultRuntimeLibrary(bool x64)
     {
-        if (VCInstallDir is null)
-        {
-            detectVCInstallDir();
-            detectVCToolsInstallDir();
-        }
-        if (getVCLibDir(x64))
-            return "libcmt";
-        else
-            return "msvcrt120"; // mingw replacement
+        return "ucrtbase";
     }
 
     /**
