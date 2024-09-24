@@ -1195,9 +1195,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 {
                     error("`auto ref` unpacked variables are not supported");
                 }
-                if (storage_class == STC.undefined_)
+                if (!t && storage_class == STC.undefined_)
                 {
-                    error("unpacked variables need at least one storage class, did you mean `auto %s`?", i.toChars());
+                    error("unpacked variable needs at least one storage class, did you mean `auto %s`?", i.toChars());
                 }
                 vars.push(new AST.VarDeclaration(loc, t, i, null, storage_class)); // TODO: UDAs
             }
