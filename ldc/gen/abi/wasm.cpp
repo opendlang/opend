@@ -13,8 +13,6 @@
 
 #include "gen/abi/generic.h"
 
-using namespace dmd;
-
 namespace {
 Type *getSingleWrappedScalarType(Type *t) {
   t = t->toBasetype();
@@ -48,7 +46,7 @@ struct WasmTargetABI : TargetABI {
       return false;
 
     // max scalar type size is 16 (`real`); return early if larger
-    if (size(t) > 16 || !isPOD(t))
+    if (t->size() > 16 || !isPOD(t))
       return false;
 
     Type *singleWrappedScalarType = getSingleWrappedScalarType(t);
