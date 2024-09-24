@@ -65,6 +65,7 @@ runs:
         cp opend/phobos/generated/*/release/64/*.lib install/lib
         cp opend/phobos/phobos64.lib install/lib
         cp opend/phobos/generated/*/release/64/*.dll install/lib
+        rm install/lib/libphobos2.so.0.107.o
         echo done
 
     - name: Make portable
