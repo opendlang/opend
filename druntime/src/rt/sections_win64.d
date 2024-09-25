@@ -255,8 +255,8 @@ do
     foreach (mi; m)
         if (mi !is null) ++count;
 
-    if (count == m.length)
-        return m;
+    //if (count == m.length)
+        //return m;
 
     auto result = (cast(immutable(ModuleInfo)**) malloc(count * size_t.sizeof))[0 .. count];
 
