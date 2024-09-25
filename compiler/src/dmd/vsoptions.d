@@ -289,7 +289,7 @@ version (IN_LLVM) { /* not needed */ } else
      */
     const(char)* defaultRuntimeLibrary(bool x64)
     {
-        return "ucrtbase";
+        return "vcruntime140";
     }
 
     /**
