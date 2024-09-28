@@ -318,10 +318,11 @@ private void createMatchNodes()
         }
 
         // Add the default 1 depth matchers
-        MatcherNode[10] defaultDepth1MatchNodes = [
+        MatcherNode[12] defaultDepth1MatchNodes = [
             MatcherNode(true, 1), MatcherNode(Id.std),
             MatcherNode(true, 1), MatcherNode(Id.core),
             MatcherNode(true, 1), MatcherNode(Id.etc),
+            MatcherNode(true, 1), MatcherNode(Id.rt),
             MatcherNode(true, 1), MatcherNode(Id.ldc), // IN_LLVM
             MatcherNode(true, 1), MatcherNode(Id.object),
         ];

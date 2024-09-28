@@ -460,8 +460,8 @@ dmd -cov -unittest myprog.d
              pattern completely, so the pattern `foo.bar` would not match a module named `foo.barx`.)
 
              $(P The default behavior of excluding druntime/phobos is accomplished by internally adding a
-             set of standard exclusions, namely, `-i=-std -i=-core -i=-etc -i=-object`. Note that these
-             can be overridden with `-i=std -i=core -i=etc -i=object`.)
+             set of standard exclusions, namely, `-i=-std -i=-core -i=-etc -i=-object -i=-ldc -i=-rt`. Note that these
+             can be overridden with `-i=std -i=core -i=etc -i=object -i=-ldc -i=-rt`.)
 
              $(P When a module matches multiple patterns, matches are prioritized by their component length, where
              a match with more components takes priority (i.e. pattern `foo.bar.baz` has priority over `foo.bar`).)
