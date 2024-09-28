@@ -9221,7 +9221,7 @@ version (IN_LLVM)
         // Check for unsafe casts
         if (!isSafeCast(ex, t1b, tob))
         {
-            if (sc.setUnsafe(false, exp.loc, "cast from `%s` to `%s` not allowed in safe code", exp.e1.type, exp.to, null, false))
+            if (sc.setUnsafe(false, exp.loc, "cast from `%s` to `%s` not allowed in `@safe` code", exp.e1.type, exp.to, null, false))
             {
                 return setError();
             }
@@ -9482,7 +9482,7 @@ version (IN_LLVM)
 
                 return setError();
             }
-            if (sc.setUnsafe(false, exp.loc, "pointer slicing not allowed in safe functions", false))
+            if (sc.setUnsafe(false, exp.loc, "pointer slicing not allowed in `@safe` code", false))
                 return setError();
         }
         else if (t1b.ty == Tarray)

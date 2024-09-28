@@ -726,7 +726,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         // Calculate type size + safety checks
         if (dsym.storage_class & STC.gshared && !dsym.isMember())
         {
-            sc.setUnsafe(false, dsym.loc, "__gshared not allowed in safe functions; use shared");
+            sc.setUnsafe(false, dsym.loc, "__gshared not allowed in `@safe` code; use shared");
         }
 
         Dsymbol parent = dsym.toParent();
@@ -1136,19 +1136,19 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
 
                 if (dsym.type.hasPointers()) // also computes type size
                     sc.setUnsafe(false, dsym.loc,
-                        "`void` initializers for pointers not allowed in safe functions");
+                        "`void` initializers for pointers not allowed in `@safe` code");
                 else if (dsym.type.hasInvariant())
                     sc.setUnsafe(false, dsym.loc,
-                        "`void` initializers for structs with invariants are not allowed in safe functions");
+                        "`void` initializers for structs with invariants are not allowed in `@safe` code");
                 else if (dsym.type.hasSystemFields())
                     sc.setUnsafePreview(global.params.systemVariables, false, dsym.loc,
-                        "`void` initializers for `@system` variables not allowed in safe functions");
+                        "`void` initializers for `@system` variables not allowed in `@safe` code");
             }
             else if (!dsym._init &&
                      !(dsym.storage_class & (STC.static_ | STC.extern_ | STC.gshared | STC.manifest | STC.field | STC.parameter)) &&
                      dsym.type.hasVoidInitPointers())
             {
-                sc.setUnsafe(false, dsym.loc, "`void` initializers for pointers not allowed in safe functions");
+                sc.setUnsafe(false, dsym.loc, "`void` initializers for pointers not allowed in `@safe` code");
             }
         }
 
