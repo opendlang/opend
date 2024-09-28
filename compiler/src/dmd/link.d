@@ -569,7 +569,7 @@ public int runLINK() @system
             if (const e = FileName.ext(n))
             {
                 if (driverParams.dll)
-                    ex = FileName.forceExt(ex, target.dll_ext);
+                    ex = FileName.forceExt(n, target.dll_ext);
                 else
                     ex = FileName.removeExt(n);
             }
