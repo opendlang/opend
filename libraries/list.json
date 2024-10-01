@@ -138,6 +138,11 @@
 		{
 			"repository": "https://github.com/FreeSlave/xdgpaths",
 			"sourceDirectory": "source"
+		},
+		{
+			"repository": "https://github.com/opendlang/d",
+			"branch": "main",
+			"sourceDirectory": "source"
 		}
 	]
 }

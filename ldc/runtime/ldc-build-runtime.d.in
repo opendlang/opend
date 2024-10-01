@@ -127,9 +127,9 @@ void prepareLdcSource() {
     removeVersionSuffix("-dirty");
 
     import std.format : format;
-    const localArchiveFile = "ldc-src.zip";
+    const localArchiveFile = "opend-src.zip";
     if (!localArchiveFile.exists) {
-        const url = "https://github.com/ldc-developers/ldc/releases/download/v%1$s/ldc-%1$s-src.zip".format(ldcVersion);
+        const url = "https://github.com/opendlang/opend/releases/download/CI/opend-latest-src.zip".format(ldcVersion);
         writefln(".: Downloading LDC source archive: %s", url);
         import std.net.curl : download;
         download(url, localArchiveFile);
