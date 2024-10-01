@@ -61,7 +61,7 @@ import std.conv : to;
 import std.exception : assertThrown, assertNotThrown;
 import std.json;
 
-import std.serialization;
+import d.serialization;
 
 /**
  * A UDA to mark a JSON field as required for deserialization
