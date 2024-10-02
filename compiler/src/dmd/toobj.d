@@ -819,21 +819,24 @@ void toObjFile(Dsymbol ds, bool multiobj)
             }
             else if (pd.ident == Id.linkerDirective)
             {
-                assert(pd.args && pd.args.length == 1);
+                assert(pd.args);
 
-                Expression e = (*pd.args)[0];
+                foreach(e; *pd.args)
+                {
+                    assert(e.op == EXP.string_);
 
-                assert(e.op == EXP.string_);
+                    StringExp se = e.isStringExp();
+                    size_t length = se.numberOfCodeUnits() + 1;
 
-                StringExp se = e.isStringExp();
-                size_t length = se.numberOfCodeUnits() + 1;
-                debug enum LEN = 2; else enum LEN = 20;
-                char[LEN] buffer = void;
-                SmallBuffer!char directive = SmallBuffer!char(length, buffer);
+                    char *directive = cast(char *)mem.xmalloc(se.numberOfCodeUnits() + 1);
+                    se.writeTo(directive, true);
 
-                se.writeTo(directive.ptr, true);
-
-                obj_linkerdirective(directive.ptr);
+                    if(!obj_linkerdirective(directive))
+                    {
+                        global.params.linkswitches.push(directive);
+                        global.params.linkswitchIsForCC.push(false);
+                    }
+                }
             }
 
             visit(cast(AttribDeclaration)pd);

@@ -1416,9 +1416,11 @@ else // !IN_LLVM
      * Returns:
      *      `false` if the target does not support `pragma(linkerDirective)`.
      */
+    // note: this is overridden by ldc in ldc/gen/target.cpp
     extern (C++) bool supportsLinkerDirective() const @safe
     {
-        return os == Target.OS.Windows && !omfobj;
+        return true; // if it isn't supported we can emulate it
+            // but it was (os == Target.OS.Windows && !omfobj) || macho;
     }
 
     ////////////////////////////////////////////////////////////////////////////

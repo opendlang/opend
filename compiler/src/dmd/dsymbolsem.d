@@ -1991,8 +1991,6 @@ version (IN_LLVM)
         {
             if (pd.ident == Id.linkerDirective)
             {
-version (IN_LLVM) // not restricted to a single string arg
-{
                 if (!pd.args || pd.args.length == 0)
                     error(pd.loc, "one or more string arguments expected for pragma(linkerDirective)");
                 else
@@ -2007,21 +2005,7 @@ version (IN_LLVM) // not restricted to a single string arg
                             message("linkopt   %.*s", cast(int)se.len, se.peekString().ptr);
                     }
                 }
-}
-else // !IN_LLVM
-{
-                if (!pd.args || pd.args.length != 1)
-                    .error(pd.loc, "%s `%s` one string argument expected for pragma(linkerDirective)", pd.kind, pd.toPrettyChars);
-                else
-                {
-                    auto se = semanticString(sc, (*pd.args)[0], "linker directive");
-                    if (!se)
-                        return noDeclarations();
-                    (*pd.args)[0] = se;
-                    if (global.params.v.verbose)
-                        message("linkopt   %.*s", cast(int)se.len, se.peekString().ptr);
-                }
-}
+
                 return noDeclarations();
             }
         }
