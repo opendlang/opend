@@ -240,6 +240,8 @@ public:
     IntRange *range;            // if !NULL, the variable is known to be within the range
     VarDeclarations *maybes;    // STCmaybescope variables that are assigned to this STCmaybescope variable
 
+    DString userDefinedSection;
+
     unsigned endlinnum;         // line number of end of scope that this var lives in
     unsigned offset;
     unsigned sequenceNumber;     // order the variables are declared

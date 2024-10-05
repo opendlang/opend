@@ -1136,6 +1136,8 @@ extern (C++) class VarDeclaration : Declaration
     IntRange* range;                // if !=null, the variable is known to be within the range
     VarDeclarations* maybes;        // maybeScope variables that are assigned to this maybeScope variable
 
+    string userDefinedSection;      // the @section("name"), if present, stored as a stringz
+
     uint endlinnum;                 // line number of end of scope that this var lives in
     uint offset;
     uint sequenceNumber;            // order the variables are declared

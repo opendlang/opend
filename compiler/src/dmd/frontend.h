@@ -6881,6 +6881,7 @@ public:
     Expression* edtor;
     IntRange* range;
     Array<VarDeclaration* >* maybes;
+    DString userDefinedSection;
     uint32_t endlinnum;
     uint32_t offset;
     uint32_t sequenceNumber;

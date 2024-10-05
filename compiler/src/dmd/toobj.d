@@ -611,6 +611,50 @@ void toObjFile(Dsymbol ds, bool multiobj)
             Dsymbol parent = vd.toParent();
             s.Sclass = SC.global;
 
+
+            if(auto sectionName = vd.userDefinedSection)
+            switch(config.objfmt) {
+                import dmd.backend.mach;
+                case OBJ_MACH:
+                    // FIXME: flags right?
+                    s.Sseg = Obj.getsegment(
+                        sectionName.ptr,
+                        "__DATA",
+                        8, // alignment
+                        S_REGULAR // flags
+                    );
+                break;
+                case OBJ_ELF:
+                    import dmd.backend.elfobj;
+                    import dmd.backend.melf;
+                    // FIXME: the args here are probably not always right
+                    // i just matched what ldc does for a basic example...
+                    s.Sseg = Obj.getsegment(
+                        sectionName.ptr,
+                        null, // suffix
+                        SHN_DATA, // type
+                        SHF_ALLOC | SHF_WRITE, // flags
+                        8 // align
+                    );
+                break;
+                case OBJ_MSCOFF:
+                    import dmd.backend.mscoff;
+                    // FIXME: flags right?
+                    s.Sseg = Obj.getsegment(
+                        sectionName.ptr,
+                        // flags
+                        0
+                        | IMAGE_SCN_ALIGN_8BYTES
+                        | IMAGE_SCN_LNK_COMDAT
+                        | IMAGE_SCN_MEM_READ
+                        | IMAGE_SCN_CNT_INITIALIZED_DATA
+                        // | IMAGE_SCN_MEM_SHARED
+                    );
+                break;
+                default:
+	    }
+
+
             /* Make C static functions SCstatic
              */
             if (vd.storage_class & STC.static_ && vd.isCsymbol())

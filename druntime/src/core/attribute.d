@@ -27,6 +27,9 @@ version (D_ObjectiveC)
     version = UdaSelector;
 }
 
+version (DigitalMars)
+	struct section { string name; }
+
 version (Posix)
     version = UdaGNUAbiTag;
 

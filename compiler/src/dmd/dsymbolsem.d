@@ -608,6 +608,34 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         if (dsym.semanticRun >= PASS.semanticdone)
             return;
 
+        // find the @section("name") uda
+        foreachUda(dsym, sc, (e) {
+            if (!e.isStructLiteralExp())
+                return 0;
+
+            auto literal = e.isStructLiteralExp();
+            assert(literal.sd);
+
+            if (!isCoreUda(literal.sd, Id.udaSection))
+                return 0;
+
+            if (dsym.userDefinedSection)
+            {
+                .error(dsym.loc, "%s `%s` can only have one section attribute", dsym.kind, dsym.toPrettyChars);
+                return 1;
+            }
+
+            assert(literal.elements.length == 1);
+            auto se = (*literal.elements)[0].toStringExp();
+            assert(se);
+
+            dsym.userDefinedSection = cast(string) se.toUTF8(sc).toStringz();
+
+            return 0;
+        });
+
+
+
         if (sc && sc.inunion && sc.inunion.isAnonDeclaration())
             dsym.overlapped = true;
 
