@@ -329,6 +329,12 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  void visit(ObjcClassReferenceExp *e) override {
+      auto loaded = DtoLoad(DtoType(e->type), gIR->objc.getClassReference(*e->classDeclaration));
+      result = new DImValue(e->type, loaded);
+
+  }
+
   void visit(VarExp *e) override {
     IF_LOG Logger::print("VarExp::toElem: %s @ %s\n", e->toChars(),
                          e->type->toChars());
@@ -746,6 +752,8 @@ public:
                 }
     }
 
+    bool isObjCDirectCall = false;
+
     // get the callee value
     DValue *fnval;
     if (e->directcall) {
@@ -753,6 +761,7 @@ public:
       auto dve = e->e1->isDotVarExp();
       assert(dve);
       FuncDeclaration *fdecl = dve->var->isFuncDeclaration();
+      isObjCDirectCall = fdecl->_linkage == LINK::objc;
       assert(fdecl);
       Expression *thisExp = dve->e1;
       LLValue *thisArg = thisExp->type->toBasetype()->ty == TY::Tclass
@@ -775,7 +784,7 @@ public:
     }
 
     DValue *result =
-        DtoCallFunction(e->loc, e->type, fnval, e->arguments, sretPointer);
+        DtoCallFunction(e->loc, e->type, fnval, e->arguments, sretPointer, isObjCDirectCall);
 
     if (delayedDtorVar) {
       delayedDtorVar->edtor = delayedDtorExp;

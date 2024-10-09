@@ -58,6 +58,11 @@ void AggrTypeBuilder::addAggregate(
   if (n == 0)
     return;
 
+  // extern(Objective-C) classes have members laid out at runtime, so we
+  // don't want to try to do anything here for those; their stuff is set up elsewhere
+  if (ad->classKind == ClassKind::objc)
+    return;
+
   // Unions may lead to overlapping fields, and we need to flatten them for LLVM
   // IR. We usually take the first field (in declaration order) of an
   // overlapping set, but a literal with an explicit initializer for a dominated

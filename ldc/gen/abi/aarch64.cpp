@@ -174,9 +174,10 @@ public:
     return TypeIdentifier::create(Loc(), Identifier::idPool("__va_list"));
   }
 
-  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty) override {
+  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) override {
     // see objc/message.h for objc_msgSend selection rules
-    return "objc_msgSend";
+
+      return directcall ? "objc_msgSendSuper" : "objc_msgSend";
   }
 };
 

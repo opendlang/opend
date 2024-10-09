@@ -846,6 +846,10 @@ static void buildRuntimeModule() {
                   {objectPtrTy, selectorPtrTy}, {},
                   AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
 
+    createFwdDecl(LINK::c, objectPtrTy, {"objc_msgSendSuper"},
+                  {objectPtrTy, selectorPtrTy}, {},
+                  AttrSet(NoAttrs, ~0U, llvm::Attribute::NonLazyBind));
+
     switch (global.params.targetTriple->getArch()) {
     case llvm::Triple::x86_64:
       // creal objc_msgSend_fp2ret(id self, SEL op, ...)
@@ -863,6 +867,8 @@ static void buildRuntimeModule() {
       // used when return value is aggregate via a hidden sret arg
       // void objc_msgSend_stret(T *sret_arg, id self, SEL op, ...)
       createFwdDecl(LINK::c, voidTy, {"objc_msgSend_stret"},
+                    {objectPtrTy, selectorPtrTy});
+      createFwdDecl(LINK::c, voidTy, {"objc_msgSendSuper_stret"},
                     {objectPtrTy, selectorPtrTy});
       break;
     default:
