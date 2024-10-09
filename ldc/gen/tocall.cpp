@@ -674,13 +674,13 @@ public:
         tf(DtoTypeFunction(fnval)),
         llArgTypesBegin(llCalleeType->param_begin()) {}
 
-  void addImplicitArgs() {
+  void addImplicitArgs(bool objcdirectcall) {
     if (gABI->passThisBeforeSret(tf)) {
-      addContext();
+      addContext(objcdirectcall);
       addSret();
     } else {
       addSret();
-      addContext();
+      addContext(objcdirectcall);
     }
 
     addArguments();
@@ -730,7 +730,7 @@ private:
   }
 
   // Adds an optional context/this pointer argument and sets hasContext.
-  void addContext() {
+  void addContext(bool objcdirectcall) {
     const bool thiscall = irFty.arg_this;
     const bool nestedcall = irFty.arg_nest;
 
@@ -763,8 +763,33 @@ private:
       args.push_back(contextptr);
     } else if (thiscall && dfnval && dfnval->vthis) {
       // ... or a normal 'this' argument
-      LLValue *thisarg = DtoBitCast(dfnval->vthis, llArgType);
-      args.push_back(thisarg);
+
+      if(objcdirectcall) {
+
+          bool isError = true;
+          if (auto parentfd = dfnval->func->isFuncDeclaration()) {
+            if (auto cls = parentfd->isThis()->isClassDeclaration()) {
+                LLValue *thisarg = DtoBitCast(dfnval->vthis, llArgType);
+                auto val = DtoAggrPair(
+                    thisarg,
+                    DtoLoad(getVoidPtrType(), gIR->objc.getClassReference(*cls)),
+                "super");
+                auto addr = DtoRawAlloca(val->getType(), 16, "super");
+                DtoStore(val, addr);
+                args.push_back(addr);
+                isError = false;
+            }
+        }
+
+        if(isError) {
+            error(loc, "This kind of super call for objc not yet implemented in ldc");
+            fatal();
+        }
+
+      } else {
+        LLValue *thisarg = DtoBitCast(dfnval->vthis, llArgType);
+        args.push_back(thisarg);
+      }
     } else if (isDelegateCall) {
       // ... or a delegate context arg
       LLValue *ctxarg;
@@ -798,6 +823,7 @@ private:
 
     if (irFty.arg_objcSelector) {
       assert(dfnval);
+
       const auto selector = dfnval->func->objc.selector;
       assert(selector);
       LLGlobalVariable *selptr = gIR->objc.getMethVarRef(*selector);
@@ -845,7 +871,7 @@ static LLValue *DtoCallableValue(DValue *fn) {
 
 // FIXME: this function is a mess !
 DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
-                        Expressions *arguments, LLValue *sretPointer) {
+                        Expressions *arguments, LLValue *sretPointer, bool objcdirectcall) {
   IF_LOG Logger::println("DtoCallFunction()");
   LOG_SCOPE
 
@@ -890,7 +916,7 @@ DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
   // handle implicit arguments (sret, context/this, _arguments)
   ImplicitArgumentsBuilder iab(args, attrs, loc, fnval, callableTy, arguments,
                                resulttype, sretPointer);
-  iab.addImplicitArgs();
+  iab.addImplicitArgs(objcdirectcall);
 
   // handle explicit arguments
 
@@ -913,7 +939,7 @@ DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
 
   if (irFty.arg_objcSelector) {
     // Use runtime msgSend function bitcasted as original call
-    const char *msgSend = gABI->objcMsgSendFunc(resulttype, irFty);
+    const char *msgSend = gABI->objcMsgSendFunc(resulttype, irFty, objcdirectcall);
     LLType *t = callable->getType();
     callable = getRuntimeFunction(loc, gIR->module, msgSend);
     callable = DtoBitCast(callable, t);

@@ -167,7 +167,7 @@ struct X86_64TargetABI : TargetABI {
 
   Type *vaListType() override;
 
-  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty) override;
+  const char *objcMsgSendFunc(Type *ret, IrFuncTy &fty, bool directcall) override;
 
 private:
   LLType *getValistType();
@@ -380,11 +380,16 @@ Type *X86_64TargetABI::vaListType() {
 }
 
 const char *X86_64TargetABI::objcMsgSendFunc(Type *ret,
-                                             IrFuncTy &fty) {
+                                             IrFuncTy &fty, bool directcall) {
   // see objc/message.h for objc_msgSend selection rules
+
   if (fty.arg_sret) {
-    return "objc_msgSend_stret";
+    return directcall ? "objc_msgSendSuper_stret" : "objc_msgSend_stret";
   }
+
+  if (directcall)
+   return "objc_msgSendSuper";
+
   if (ret) {
     // complex long double return
     if (ret->ty == TY::Tcomplex80) {

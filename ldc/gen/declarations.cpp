@@ -107,6 +107,11 @@ public:
       m->accept(this);
     }
 
+    // Objective-C protocols are only output if implemented as a class.
+    // If so, they're output via the class declaration
+    if(decl->classKind == ClassKind::objc)
+        return;
+
     // Emit TypeInfo.
     IrClass *ir = getIrAggr(decl);
     if (!ir->suppressTypeInfo()) {
@@ -202,6 +207,9 @@ public:
     for (auto m : *decl->members) {
       m->accept(this);
     }
+
+    if(decl->classKind == ClassKind::objc)
+        return;
 
     IrClass *ir = getIrAggr(decl);
 

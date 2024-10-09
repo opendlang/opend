@@ -755,6 +755,8 @@ static:
     }
     do
     {
+    	// FIXME: this is duplicated on ldc/gen/objcgen.cpp
+	// and they should be combined at some point
         enum assertMessage = "imaginary types are not supported by Objective-C";
 
         with (TY) switch (type.ty)
