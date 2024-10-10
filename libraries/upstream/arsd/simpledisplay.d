@@ -584,6 +584,44 @@ interface->SetProgressValue(hwnd, 40, 100);
 
 	On X11, if you set an environment variable, `ARSD_SCALING_FACTOR`, you can control the per-monitor DPI scaling returned to the application. The format is `ARSD_SCALING_FACTOR=2;1`, for example, to set 2x scaling on your first monitor and 1x scaling on your second monitor. Support for this was added on March 22, 2022, the dub 10.7 release.
 
+	$(H4 apitrace)
+
+	Out of the box, simpledisplay might not work as expected in combination with
+	[apitrace](https://apitrace.github.io).
+	However it can be instructed to specifically load the GL/GLX wrapper libraries provided by apitrace instead of
+	the system libraries. This should restore the lost functionality.
+
+	$(NUMBERED_LIST
+		* Compile with `-version=apitrace`.
+		* When launching such a simpledisplay app, it must be able to locate the apitrace wrapper libraries.
+		* Running the app will generate an apitrace trace file.
+		  It should print a log message similar to "apitrace: loaded into /directory" during startup.
+	)
+
+	There are multiple ways to enable a simpledisplay app to locate the wrapper libraries.
+
+	One way to achieved this is by pointing the `LD_LIBRARY_PATH` environment variable to the directory containing
+	those wrappers.
+
+	```sh
+	LD_LIBRARY_PATH=/path/to/apitrace/wrappers:$LD_LIBRARY_PATH ./myapp
+
+	# e.g.
+	LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/apitrace/wrappers:$LD_LIBRARY_PATH ./myapp
+	```
+
+	Alternatively, the simpledisplay app can also be launched via $(I apitrace).
+
+	```sh
+	apitrace trace -a gl ./myapp
+	```
+
+	Another way that seems to work is to preload `glxtrace.so` through `LD_PRELOAD`.
+
+	```sh
+	LD_PRELOAD=/path/to/apitrace/wrappers/glxtrace.so ./myapp
+	```
+
 	Windows_tips:
 
 	You can add icons or manifest files to your exe using a resource file.
@@ -770,6 +808,8 @@ interface->SetProgressValue(hwnd, 40, 100);
 		simpledisplay was stand alone until about 2015. It then added a dependency on [arsd.color] and changed its name to `arsd.simpledisplay`.
 
 		On March 4, 2023 (dub v11.0), it started importing [arsd.core] as well, making that a build-time requirement.
+
+		On October 5, 2024, apitrace support was added for Linux targets.
 +/
 module arsd.simpledisplay;
 
@@ -1583,9 +1623,10 @@ enum WindowTypes : int {
 	splashScreen, /// a loading splash screen for your application
 	tooltip, /// A tiny window showing temporary help text or something.
 	comboBoxDropdown,
-	dialog,
 	toolbar
 	*/
+	/// a dialog box of some sort
+	dialog,
 	/// a child nested inside the parent. You must pass a parent window to the ctor
 	nestedChild,
 
@@ -2096,9 +2137,8 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 		}
 
 		version(X11)
-		if(useFallbackDpi)
+		if(useFallbackDpi || actualDpi_ == 0) // FIXME: the actualDpi_ will be populated eventually when we get the first synthetic configure event from the window manager, but that might be a little while so actualDpi_ can be 0 until then...
 			actualDpi_ = cast(int) (getDpi()[0] * customScalingFactorForMonitor(0));
-
 		return actualDpi_;
 	}
 
@@ -2485,7 +2525,7 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 			case normal, undecorated, eventOnly:
 			case nestedChild, minimallyWrapped:
 				return (customizationFlags & WindowFlags.transient) ? true : false;
-			case dropdownMenu, popupMenu, notification:
+			case dropdownMenu, popupMenu, notification, dialog:
 				return true;
 		}
 	}
@@ -2652,23 +2692,23 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 				MONITORINFO mi;
 				mi.cbSize = MONITORINFO.sizeof;
 				if (GetWindowPlacement(hwnd, &g_wpPrev) &&
-				    GetMonitorInfo(MonitorFromWindow(hwnd,
-								     MONITOR_DEFAULTTOPRIMARY), &mi)) {
+					GetMonitorInfo(MonitorFromWindow(hwnd,
+					               MONITOR_DEFAULTTOPRIMARY), &mi)) {
 					SetWindowLong(hwnd, GWL_STYLE,
-						      dwStyle & ~WS_OVERLAPPEDWINDOW);
+					              dwStyle & ~WS_OVERLAPPEDWINDOW);
 					SetWindowPos(hwnd, HWND_TOP,
-						     mi.rcMonitor.left, mi.rcMonitor.top,
-						     mi.rcMonitor.right - mi.rcMonitor.left,
-						     mi.rcMonitor.bottom - mi.rcMonitor.top,
-						     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+					             mi.rcMonitor.left, mi.rcMonitor.top,
+					             mi.rcMonitor.right - mi.rcMonitor.left,
+					             mi.rcMonitor.bottom - mi.rcMonitor.top,
+					             SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				}
 			} else {
 				SetWindowLong(hwnd, GWL_STYLE,
-					      dwStyle | WS_OVERLAPPEDWINDOW);
+				              dwStyle | WS_OVERLAPPEDWINDOW);
 				SetWindowPlacement(hwnd, &g_wpPrev);
 				SetWindowPos(hwnd, null, 0, 0, 0, 0,
-					     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-					     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+				             SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 			}
 
 		} else version(X11) {
@@ -2986,8 +3026,8 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 			view.setNeedsDisplay(true);
 
 			NSApp.run();
-            		return 0;
-        	} else {
+			return 0;
+		} else {
 			EventLoop el = EventLoop(pulseTimeout, handlePulse);
 
 			if((blockingMode & BlockingMode.onlyIfNotNested) && el.impl.refcount > 1)
@@ -3136,14 +3176,14 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 
 		/// This will allow you to change OpenGL vsync state.
 		final @property void vsync (bool wait) {
-		  if (this._closed) return; // window may be closed, but timer is still firing; avoid GLXBadDrawable error
-		  version(X11) {
-		    setAsCurrentOpenGlContext();
-		    glxSetVSync(display, impl.window, wait);
-		  } else version(Windows) {
-		    setAsCurrentOpenGlContext();
-                    wglSetVSync(wait);
-		  }
+			if (this._closed) return; // window may be closed, but timer is still firing; avoid GLXBadDrawable error
+			version(X11) {
+				setAsCurrentOpenGlContext();
+				glxSetVSync(display, impl.window, wait);
+			} else version(Windows) {
+				setAsCurrentOpenGlContext();
+				wglSetVSync(wait);
+			}
 		}
 
 		/// Set this to `false` if you don't need to do `glFinish()` after `swapOpenGlBuffers()`.
@@ -3232,11 +3272,18 @@ class SimpleWindow : CapableOfHandlingNativeEvent, CapableOfBeingDrawnUpon {
 
 		/++
 			simpledisplay always uses double buffering, usually automatically. This
-			manually swaps the OpenGL buffers.
+			manually swaps the OpenGL buffers. You should only use this if you are NOT
+			using the [redrawOpenGlScene] delegate.
 
 
-			You should not need to call this yourself because simpledisplay will do it
-			for you after calling your `redrawOpenGlScene`.
+			You must not this yourself if you use [redrawOpenGlScene] because simpledisplay will do it
+			for you after calling your `redrawOpenGlScene`. Please note that once you swap
+			buffers, the contents become undefined - the implementation, in the OpenGL driver
+			or the desktop compositor, may not actually just swap two buffers. The back buffer's
+			contents are $(B undefined) after calling this function.
+
+			See: https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers
+			and https://linux.die.net/man/3/glxswapbuffers
 
 			Remember that this may throw an exception, which you can catch in a multithreaded
 			application to keep your thread from dying from an unhandled exception.
@@ -6681,6 +6728,8 @@ version(X11) {
 		setX11Selection!atomName(window, new X11SetSelectionHandler_Text(text), after);
 	}
 
+	private __gshared bool mightShortCircuitClipboard;
+
 	void setX11Selection(string atomName)(SimpleWindow window, X11SetSelectionHandler data, void delegate() after = null) {
 		assert(window !is null);
 
@@ -6689,17 +6738,21 @@ version(X11) {
 		else static if (atomName == "SECONDARY") Atom a = XA_SECONDARY;
 		else Atom a = GetAtom!atomName(display);
 
+		if(mightShortCircuitClipboard)
 		if(auto ptr = a in window.impl.setSelectionHandlers) {
 			// we already have it, don't even need to inform the X server
 			// sdpyPrintDebugString("short circuit in set");
 			*ptr = data;
-		} else {
-			// we don't have it, tell X we want it
-			XSetSelectionOwner(display, a, window.impl.window, 0 /* CurrentTime */);
-			window.impl.setSelectionHandlers[a] = data;
+			return;
 		}
+
+		// we don't have it, tell X we want it
+		XSetSelectionOwner(display, a, window.impl.window, 0 /* CurrentTime */);
+		window.impl.setSelectionHandlers[a] = data;
+		mightShortCircuitClipboard = true;
 	}
 
+	/+
 	/++
 		History:
 			Added September 28, 2024
@@ -6715,6 +6768,7 @@ version(X11) {
 		else
 			return false;
 	}
+	+/
 
 	///
 	void getPrimarySelection(SimpleWindow window, void delegate(in char[]) handler) {
@@ -6757,46 +6811,50 @@ version(X11) {
 		}
 	}
 
+	static class X11GetSelectionHandler_Text : X11GetSelectionHandler {
+		this(void delegate(in char[]) handler) {
+			this.handler = handler;
+		}
+
+		mixin X11GetSelectionHandler_Basics;
+
+		void delegate(in char[]) handler;
+
+		void handleData(Atom target, in ubyte[] data) {
+			// import std.stdio; writeln(target, " ", data);
+			if(target == GetAtom!"UTF8_STRING"(XDisplayConnection.get) || target == XA_STRING || target == GetAtom!"text/plain"(XDisplayConnection.get))
+				handler(cast(const char[]) data);
+			else if(target == None && data is null)
+				handler(null); // no suitable selection exists
+		}
+
+		Atom findBestFormat(Atom[] answer) {
+			Atom best = None;
+			foreach(option; answer) {
+				if(option == GetAtom!"UTF8_STRING"(XDisplayConnection.get)) {
+					best = option;
+					break;
+				} else if(option == XA_STRING) {
+					best = option;
+				} else if(option == GetAtom!"text/plain"(XDisplayConnection.get)) {
+					best = option;
+				}
+			}
+			return best;
+		}
+	}
+
 	///
 	void getX11Selection(string atomName)(SimpleWindow window, void delegate(in char[]) handler, Time timestamp = 0 /* CurrentTime */) {
 		assert(window !is null);
 
 		auto display = XDisplayConnection.get();
-		auto atom = GetAtom!atomName(display);
 
-		static class X11GetSelectionHandler_Text : X11GetSelectionHandler {
-			this(void delegate(in char[]) handler) {
-				this.handler = handler;
-			}
+		static if (atomName == "PRIMARY") Atom atom = XA_PRIMARY;
+		else static if (atomName == "SECONDARY") Atom atom = XA_SECONDARY;
+		else Atom atom = GetAtom!atomName(display);
 
-			mixin X11GetSelectionHandler_Basics;
-
-			void delegate(in char[]) handler;
-
-			void handleData(Atom target, in ubyte[] data) {
-				// import std.stdio; writeln(target, " ", data);
-				if(target == GetAtom!"UTF8_STRING"(XDisplayConnection.get) || target == XA_STRING || target == GetAtom!"text/plain"(XDisplayConnection.get))
-					handler(cast(const char[]) data);
-				else if(target == None && data is null)
-					handler(null); // no suitable selection exists
-			}
-
-			Atom findBestFormat(Atom[] answer) {
-				Atom best = None;
-				foreach(option; answer) {
-					if(option == GetAtom!"UTF8_STRING"(XDisplayConnection.get)) {
-						best = option;
-						break;
-					} else if(option == XA_STRING) {
-						best = option;
-					} else if(option == GetAtom!"text/plain"(XDisplayConnection.get)) {
-						best = option;
-					}
-				}
-				return best;
-			}
-		}
-
+		if(mightShortCircuitClipboard)
 		if(auto ptr = atom in window.impl.setSelectionHandlers) {
 			if(auto txt = (cast(X11SetSelectionHandler_Text) *ptr)) {
 				// we already have it! short circuit everything
@@ -6807,7 +6865,6 @@ version(X11) {
 			}
 		}
 
-
 		window.impl.getSelectionHandlers[atom] = new X11GetSelectionHandler_Text(handler);
 
 		auto target = GetAtom!"TARGETS"(display);
@@ -6817,6 +6874,7 @@ version(X11) {
 	}
 
 	/// Gets the image on the clipboard, if there is one. Added July 2020.
+	/// only supports bmps. using this function will import arsd.bmp.
 	void getX11Selection(string atomName)(SimpleWindow window, void delegate(MemoryImage) handler) {
 		assert(window !is null);
 
@@ -12270,6 +12328,9 @@ version(Windows) {
 					style = WS_POPUP;
 					flags |= WS_EX_NOACTIVATE;
 				break;
+				case WindowTypes.dialog:
+					style = WS_OVERLAPPEDWINDOW;
+				break;
 				case WindowTypes.nestedChild:
 					style = WS_CHILD;
 				break;
@@ -15039,7 +15100,7 @@ mixin DynamicLoad!(XRandr, "Xrandr", 2, XRandrLibrarySuccessfullyLoaded) XRandrL
 		int cursorSequenceNumber = 0;
 		int warpEventCount = 0; // number of mouse movement events to eat
 
-		__gshared X11SetSelectionHandler[Atom] setSelectionHandlers;
+		__gshared X11SetSelectionHandler[Atom] setSelectionHandlers; // FIXME: make sure this is not accessed from other threads. it might be ok to make it TLS
 		X11GetSelectionHandler[Atom] getSelectionHandlers;
 
 		version(without_opengl) {} else
@@ -15451,6 +15512,10 @@ mixin DynamicLoad!(XRandr, "Xrandr", 2, XRandrLibrarySuccessfullyLoaded) XRandrL
 				break;
 				case WindowTypes.minimallyWrapped:
 					assert(0, "don't create a minimallyWrapped thing explicitly!");
+
+				case WindowTypes.dialog:
+					setNetWMWindowType(GetAtom!"_NET_WM_WINDOW_TYPE_DIALOG"(display));
+				break;
 				/+
 				case WindowTypes.menu:
 					atoms[0] = GetAtom!"_NET_WM_WINDOW_TYPE_MENU"(display);
@@ -15473,9 +15538,6 @@ mixin DynamicLoad!(XRandr, "Xrandr", 2, XRandrLibrarySuccessfullyLoaded) XRandrL
 				break;
 				case WindowTypes.splash:
 					atoms[0] = GetAtom!"_NET_WM_WINDOW_TYPE_SPLASH"(display);
-				break;
-				case WindowTypes.dialog:
-					atoms[0] = GetAtom!"_NET_WM_WINDOW_TYPE_DIALOG"(display);
 				break;
 				case WindowTypes.tooltip:
 					atoms[0] = GetAtom!"_NET_WM_WINDOW_TYPE_TOOLTIP"(display);
@@ -15530,6 +15592,7 @@ mixin DynamicLoad!(XRandr, "Xrandr", 2, XRandrLibrarySuccessfullyLoaded) XRandrL
 
 			if(isTransient && parent) { // customizationFlags & WindowFlags.transient) {
 				if(parent is null) assert(0);
+				// sdpyPrintDebugString("transient");
 				XChangeProperty(
 					display,
 					impl.window,
@@ -15826,8 +15889,9 @@ version(X11) {
 		  	if(auto win = e.xselectionclear.window in SimpleWindow.nativeMapping) {
 				// FIXME so it is supposed to finish any in progress transfers... but idk...
 				// writeln("SelectionClear");
-				SimpleWindow.impl.setSelectionHandlers.remove(e.xselectionclear.selection);
 			}
+			SimpleWindow.impl.setSelectionHandlers.remove(e.xselectionclear.selection);
+			mightShortCircuitClipboard = false;
 		  break;
 		  case EventType.SelectionRequest:
 		  	if(auto win = e.xselectionrequest.owner in SimpleWindow.nativeMapping)
@@ -16020,6 +16084,7 @@ version(X11) {
 		  break;
 		  case EventType.FocusIn:
 		  case EventType.FocusOut:
+			mightShortCircuitClipboard = false; // if the focus has changed, good chance the clipboard cache is invalidated too, kinda hacky but always better to skip when unnecessary than use when we shouldn't have
 
 		  	if(auto win = e.xfocus.window in SimpleWindow.nativeMapping) {
 				/+
@@ -17897,7 +17962,7 @@ union XEvent{
 		static assert(XMappingEvent.sizeof == 56);
 		static assert(XEvent.sizeof == 192);
     	} else version (AArch64) {
-        	// omit check for aarch64
+		// omit check for aarch64
 	} else {
 		static assert(Display.sizeof == 176);
 		static assert(XPointer.sizeof == 4);
@@ -18381,6 +18446,7 @@ struct Visual
 			CGImageRelease(cgImage);
 		}
 
+		extern(D)
 		private void mouseHelper(NSEvent event, MouseEventType type, MouseButton button) {
 			MouseEvent me;
 			me.type = type;
@@ -18466,6 +18532,7 @@ struct Visual
 			keyHelper(event, false);
 		}
 
+		extern(D)
 		private void keyHelper(NSEvent event, bool pressed) {
 			if(simpleWindow.handleKeyEvent) {
 				KeyEvent ev;
@@ -19145,7 +19212,7 @@ extern(System) nothrow @nogc {
 
 
  	private __gshared extern(System) BOOL function(int) wglSwapIntervalEXT;
-        void wglSetVSync(bool wait) {
+	void wglSetVSync(bool wait) {
 		if(wglSwapIntervalEXT is null) {
 			wglSwapIntervalEXT = cast(typeof(wglSwapIntervalEXT)) wglGetProcAddress("wglSwapIntervalEXT");
 			if(wglSwapIntervalEXT is null)
@@ -23058,20 +23125,20 @@ __gshared bool openGlLibrariesSuccessfullyLoaded = true;
 
 private mixin template DynamicLoadSupplementalOpenGL(Iface) {
 	// mixin(staticForeachReplacement!Iface);
-        static foreach(name; __traits(derivedMembers, Iface))
-                mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
+	static foreach(name; __traits(derivedMembers, Iface))
+		mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
 
 	void loadDynamicLibrary() @nogc {
 		(cast(void function() @nogc) &loadDynamicLibraryForReal)();
 	}
 
-        void loadDynamicLibraryForReal() {
-                foreach(name; __traits(derivedMembers, Iface)) {
-                        mixin("alias tmp = " ~ name ~ ";");
-                        tmp = cast(typeof(tmp)) glbindGetProcAddress(name);
-                        if(tmp is null) throw new Exception("load failure of function " ~ name ~ " from supplemental OpenGL");
-                }
-        }
+	void loadDynamicLibraryForReal() {
+		foreach(name; __traits(derivedMembers, Iface)) {
+			mixin("alias tmp = " ~ name ~ ";");
+			tmp = cast(typeof(tmp)) glbindGetProcAddress(name);
+			if(tmp is null) throw new Exception("load failure of function " ~ name ~ " from supplemental OpenGL");
+		}
+	}
 }
 
 /+
@@ -23080,8 +23147,8 @@ private const(char)[] staticForeachReplacement(Iface)() pure {
 	// just this for gdc 9....
 	// when i drop support for it and switch to gdc10, we can put this original back for a slight compile time ram decrease
 
-        static foreach(name; __traits(derivedMembers, Iface))
-                mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
+	static foreach(name; __traits(derivedMembers, Iface))
+		mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
 */
 
 	char[] code = new char[](__traits(derivedMembers, Iface).length * 64);
@@ -23094,8 +23161,8 @@ private const(char)[] staticForeachReplacement(Iface)() pure {
 		pos += what.length;
 	}
 
-        foreach(name; __traits(derivedMembers, Iface)) {
-                append(`__gshared typeof(&__traits(getMember, Iface, "`);
+	foreach(name; __traits(derivedMembers, Iface)) {
+		append(`__gshared typeof(&__traits(getMember, Iface, "`);
 		append(name);
 		append(`")) `);
 		append(name);
@@ -23108,13 +23175,13 @@ private const(char)[] staticForeachReplacement(Iface)() pure {
 
 private mixin template DynamicLoad(Iface, string library, int majorVersion, alias success) {
 	//mixin(staticForeachReplacement!Iface);
-        static foreach(name; __traits(derivedMembers, Iface))
-                mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
+	static foreach(name; __traits(derivedMembers, Iface))
+		mixin("__gshared typeof(&__traits(getMember, Iface, name)) " ~ name ~ ";");
 
 	private __gshared void* libHandle;
 	private __gshared bool attempted;
 
-        void loadDynamicLibrary() @nogc {
+	void loadDynamicLibrary() @nogc {
 		(cast(void function() @nogc) &loadDynamicLibraryForReal)();
 	}
 
@@ -23125,19 +23192,33 @@ private mixin template DynamicLoad(Iface, string library, int majorVersion, alia
 		return libHandle !is null;
 	}
 
-        void loadDynamicLibraryForReal() {
+	void loadDynamicLibraryForReal() {
 		attempted = true;
-                version(Posix) {
-                        import core.sys.posix.dlfcn;
+		version(Posix) {
+			import core.sys.posix.dlfcn;
 			version(OSX) {
 				version(X11)
-                        		libHandle = dlopen("/usr/X11/lib/lib" ~ library ~ ".dylib", RTLD_NOW);
+					libHandle = dlopen("/usr/X11/lib/lib" ~ library ~ ".dylib", RTLD_NOW);
 				else
-                        		libHandle = dlopen(library ~ ".dylib", RTLD_NOW);
+					libHandle = dlopen(library ~ ".dylib", RTLD_NOW);
 			} else {
-                        	libHandle = dlopen("lib" ~ library ~ ".so", RTLD_NOW);
-				if(libHandle is null)
-                        		libHandle = dlopen(("lib" ~ library ~ ".so." ~ toInternal!string(majorVersion) ~ "\0").ptr, RTLD_NOW);
+				version(apitrace) {
+					if(library == "GL" || library == "GLX") {
+						libHandle = dlopen("glxtrace.so", RTLD_NOW);
+						if(libHandle is null) {
+							assert(false, "Failed to load `glxtrace.so`.");
+						}
+					}
+					else {
+						libHandle = dlopen("lib" ~ library ~ ".so", RTLD_NOW);
+					}
+				}
+				else {
+					libHandle = dlopen("lib" ~ library ~ ".so", RTLD_NOW);
+				}
+				if(libHandle is null) {
+					libHandle = dlopen(("lib" ~ library ~ ".so." ~ toInternal!string(majorVersion) ~ "\0").ptr, RTLD_NOW);
+				}
 			}
 
 			static void* loadsym(void* l, const char* name) {
@@ -23146,38 +23227,38 @@ private mixin template DynamicLoad(Iface, string library, int majorVersion, alia
 					return &abort;
 				return dlsym(l, name);
 			}
-                } else version(Windows) {
-                        import core.sys.windows.winbase;
-                        libHandle = LoadLibrary(library ~ ".dll");
+		} else version(Windows) {
+			import core.sys.windows.winbase;
+			libHandle = LoadLibrary(library ~ ".dll");
 			static void* loadsym(void* l, const char* name) {
 				import core.stdc.stdlib;
 				if(l is null)
 					return &abort;
 				return GetProcAddress(l, name);
 			}
-                }
-                if(libHandle is null) {
-			success = false;
-                        //throw new Exception("load failure of library " ~ library);
 		}
-                foreach(name; __traits(derivedMembers, Iface)) {
-                        mixin("alias tmp = " ~ name ~ ";");
-                        tmp = cast(typeof(tmp)) loadsym(libHandle, name);
-                        if(tmp is null) throw new Exception("load failure of function " ~ name ~ " from " ~ library);
-                }
-        }
+		if(libHandle is null) {
+			success = false;
+			//throw new Exception("load failure of library " ~ library);
+		}
+		foreach(name; __traits(derivedMembers, Iface)) {
+			mixin("alias tmp = " ~ name ~ ";");
+			tmp = cast(typeof(tmp)) loadsym(libHandle, name);
+			if(tmp is null) throw new Exception("load failure of function " ~ name ~ " from " ~ library);
+		}
+	}
 
-        void unloadDynamicLibrary() {
-                version(Posix) {
-                        import core.sys.posix.dlfcn;
-                        dlclose(libHandle);
-                } else version(Windows) {
-                        import core.sys.windows.winbase;
-                        FreeLibrary(libHandle);
-                }
-                foreach(name; __traits(derivedMembers, Iface))
-                        mixin(name ~ " = null;");
-        }
+	void unloadDynamicLibrary() {
+		version(Posix) {
+			import core.sys.posix.dlfcn;
+			dlclose(libHandle);
+		} else version(Windows) {
+			import core.sys.windows.winbase;
+			FreeLibrary(libHandle);
+		}
+		foreach(name; __traits(derivedMembers, Iface))
+			mixin(name ~ " = null;");
+	}
 }
 
 // version(X11)
