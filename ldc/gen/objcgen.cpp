@@ -45,7 +45,7 @@ llvm::GlobalVariable *getGlobal(
 	llvm::Type* type = nullptr
 ) {
 	if(type == nullptr)
-		type = llvm::PointerType::get(llvm::Type::getVoidTy(module.getContext()), 0);
+		type = llvm::PointerType::get(llvm::Type::getInt8Ty(module.getContext()), 0);
 	auto var = new LLGlobalVariable(
 		module,
 		type,
