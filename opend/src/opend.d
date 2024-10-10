@@ -1,175 +1,166 @@
-module opend;
-
-import std.algorithm;
-import std.array : array;
-import std.getopt;
+import std.process;
 import std.file;
-import std.string : endsWith;
-import std.path;
-import std.process : execute;
-import std.stdio : writeln;
 
-import util;
-import platform;
-import project;
-import commands;
-
-string compiler = `dmd`;
-string type = "executable";
-string buildType = "debug";
-
-string getExeFileName()
-{
-    immutable dname = getPackageNameFromPath(getcwd());
-    writeln(dname);
-    version(Windows)
-    {
-        immutable extension = ".exe";
-    }
-    else
-    {
-        immutable extension = "";
-    }
-
-    return dname ~ extension;
+int main(string[] args) {
+	// maybe override the normal config files
+	// --opend-config-file
+	// --opend-project-file
+	try {
+		if(args.length == 0) {
+			return 1; // should never happen...
+		} if(args.length == 1) {
+			return Commands.run(null);
+		} else switch(args[1]) {
+			foreach(memberName; __traits(allMembers, Commands))
+				case memberName:
+					return __traits(getMember, Commands, memberName)(args[2 .. $]);
+			case "--help":
+				import std.stdio, std.string;
+				foreach(memberName; __traits(allMembers, Commands))
+					writeln(memberName, "\n\t", strip(__traits(docComment, __traits(getMember, Commands, memberName))));
+				return 0;
+			default:
+				return Commands.build(args[1 .. $]);
+		}
+	} catch (Throwable e) {
+		import std.stdio;
+		stderr.writeln(e.msg);
+		return 1;
+	}
 }
 
-string getLibFileName()
-{
-    immutable dname = getPackageNameFromPath(getcwd());
-    version(Windows)
-    {
-        immutable extension = ".lib";
-    }
-    else
-    {
-        immutable extension = "";
-    }
+struct Commands {
+	static:
 
-    return dname ~ extension;
+	/// Does a debug build and immediately runs the program
+	int run(string[] args) {
+		if(args.length == 0)
+			return 1;
+		if(auto err = build(args))
+			return err;
+
+		auto oe = getOutputExecutable(args);
+
+		return spawnProcess([oe.exe] ~ oe.args, [
+			"LD_LIBRARY_PATH": getRuntimeLibPath()
+		]).wait;
+		return 0;
+	}
+
+	/// Builds the code and runs its unittests
+	int test(string[] args) {
+		return run(["-unittest", "-main"] ~ args);
+	}
+
+	/// Builds the code and runs unittests but only for files explicitly listed
+	int testOnly(string[] args) {
+		return run(["-unittest=explicit", "-main"] ~ args);
+	}
+
+	/// Performs quick syntax and semantic tests, without performing code generation
+	int check(string[] args) {
+		return build(args ~ ["-o-"]);
+	}
+
+	/// Does a debug build with the given arguments
+	int build(string[] args) {
+		// FIXME: pull info out of the cache to get the right libs and -i modifiers out
+		return dmd(["-i"] ~ args);
+	}
+
+	/// Does a release build with the given arguments
+	int publish(string[] args) {
+		return ldmd2(["-i", "-O2"] ~ args);
+	}
+
+	// publish-source which puts the dependencies together?
+	// locate-module which spits out the path to a particular module
+	// fetch-dependencies
+
+	// if i do a server thing i need to be able to migrate it between attached displays
+
+	/// Pre-compiles with the given arguments so future calls to `build` can use the cached library
+	int precompile(string[] args) {
+		// any modules present in the precompile need to be written to the cache, knowing which output file they went into
+		// FIXME
+		return 1;
+	}
+
+	/// Watches for changes to its source and attempts to automatically recompile and restart the application (if compatible)
+	int watch(string[] args) {
+		// FIXME
+		return 1;
+	}
+
+	/// Passes args to the compiler, then opens a debugger to run the generated file.
+	int dbg(string[] args) {
+		// FIXME
+		return 1;
+	}
+
+	/// Allows for updating the OpenD compiler or libraries
+	int update(string[] args) {
+		// FIXME
+		return 1;
+	}
+
+	/// Forwards arguments directly to the OpenD dmd driver
+	int dmd(string[] args) {
+		return spawnProcess([getCompilerPath("dmd")] ~  args, null).wait;
+	}
+
+	/// Forwards arguments directly to the OpenD ldmd2 driver
+	int ldmd2(string[] args) {
+		return spawnProcess([getCompilerPath("ldmd2")] ~  args, null).wait;
+	}
+
+	/// Forwards arguments directly to the OpenD ldc2 driver
+	int ldc2(string[] args) {
+		return spawnProcess([getCompilerPath("ldc2")] ~  args, null).wait;
+	}
 }
 
-string[] getDefaultFiles()
-{
-    if(exists("src") && isDir("src"))
-    {
-        return getFiles("src");
-    }
-    else if(exists("source") && isDir("source"))
-    {
-        return getFiles("source");
-    }
-    return [];
+string getCompilerPath(string compiler) {
+	import std.file, std.path;
+	version(Windows)
+		string exeExtension = ".exe";
+	else
+		string exeExtension = "";
+	return buildPath([dirName(thisExePath()), setExtension(compiler, exeExtension)]);
 }
 
-string[] extraSwitches = ["-od=build/"];
-
-string flattenCmd(string[] cmd)
-{
-    string ret;
-    foreach(str; cmd)
-    {
-        ret ~= str ~ " ";
-    }
-    return ret;
+string getRuntimeLibPath() {
+	import std.file, std.path;
+	return buildPath([dirName(thisExePath()), "../lib/"]);
 }
 
-string getOfFlag()
-{
-    // dmd with -lib puts the static library in the directory specified by -od. Doesn't happen with executables
-    if(type == "library")
-        return "-of=" ~ getLibFileName();
-    else
-        return "-of=build/" ~ getExeFileName();
+struct OutputExecutable {
+	string exe;
+	string[] args;
 }
 
-int main(string[] args)
-{
-    auto optionsResult = getopt(args,
-        "compiler", &compiler,
-        "output", &type,
-        "type", &buildType);
+OutputExecutable getOutputExecutable(string[] args) {
+	// FIXME: make sure we have the actual output name here... maybe should ask the compiler itself
+	size_t splitter = args.length;
+	string name;
+	foreach(idx, arg; args) {
+		if(arg == "--") {
+			splitter = idx + 1;
+			break;
+		}
+		if(arg.length > 1 && arg[0] == '-') {
+			if(arg.length > 3 && arg[0 .. 3] == "-of") {
+				name = arg[3 .. $];
+				break;
+			}
+			continue;
+		} else {
+			import std.path;
+			name = arg.stripExtension;
+			break;
+		}
+	}
 
-    static immutable availOutputs = ["executable", "library"];
-    static immutable availBuildTypes = ["debug", "release"];
-
-    Platform p = Platform.create();
-    p.compilerPath = compiler;
-
-    // Must be trying to run a single file
-    if(args.length > 1 && args[1].endsWith(".d"))
-    {
-        RunFileCommand cmd = new RunFileCommand(p);
-        cmd.run(args[1 .. $]);
-        return 0;
-    }
-
-    if(args.length > 1 && args[1] == "please")
-    { 
-        if(args[2] == "add-local-package")
-        {
-            AddLocalCommand cmd = new AddLocalCommand(p);
-            cmd.run(args[3 .. $]);
-            return 0;
-        }
-    }
-
-    if(availOutputs.all!(x => x != type))
-    {
-        writeln("Invalid output `", type, "` (provide `executable` or `library`)");
-        return -1;
-    }
-
-    if(availBuildTypes.all!(x => x != buildType))
-    {
-        writeln("Invalid build type `", buildType, "` (provide `debug` or `release`)");
-        return -1;
-    }
-
-    writeln("Using compiler " ~ compiler);
-    writeln("Target output is " ~ type);
-
-    string[] srcFiles;
-    if(args.length > 1)
-    {
-        srcFiles = getFiles(args[1]);
-    }
-    else
-    {
-        srcFiles = getDefaultFiles();
-    }
-
-    if(srcFiles.length == 0)
-    {
-        writeln("Could not find source code directory (tried `src` and `source`)");
-        return -1;
-    }
-
-    string dstFileName = type == "executable" ? getExeFileName() : getLibFileName();
-    writeln("Output file is " ~ dstFileName);
-    string[] cmd = [compiler] ~ srcFiles ~ extraSwitches ~ [getOfFlag()];
-    if(type == "library")
-    {
-        cmd ~= ["-lib"];
-    }
-    if(buildType == "release")
-    {
-        cmd ~= ["-release"];
-    }
-
-    OpenDProject prj = new OpenDProject(getcwd(), p);
-    auto flg = prj.getIs.map!(x => "-I=" ~ x).array;
-    cmd ~= flg;
-
-    writeln("Running " ~ flattenCmd(cmd));
-
-    auto result = execute(cmd);
-    if(result[0] != 0)
-    {
-        writeln(result[1]);
-        writeln("Error!");
-        return -1;
-    }
-    writeln("Build completed, output files written to ./build/");
-    return 0;
+	import std.path;
+	return OutputExecutable(buildPath(".", name), args[splitter .. $]);
 }
