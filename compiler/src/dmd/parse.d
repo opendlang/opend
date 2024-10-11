@@ -804,7 +804,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 }
             case TOK.extern_:
                 {
-                    if (peekNext() != TOK.leftParenthesis)
+                    Token* next = peek(&token);
+                    if (next.value != TOK.leftParenthesis || peekPastParen(next).value == TOK.assign)
                     {
                         stc = STC.extern_;
                         goto Lstc;
@@ -4520,7 +4521,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             case TOK.extern_:
                 {
-                    if (peekNext() != TOK.leftParenthesis)
+                    Token* next = peek(&token);
+                    if (next.value != TOK.leftParenthesis || peekPastParen(next).value == TOK.assign)
                     {
                         stc = STC.extern_;
                         goto L1;
@@ -6468,7 +6470,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             goto Lerror;
 
         case TOK.scope_:
-            if (peekNext() != TOK.leftParenthesis)
+            auto next = peek(&token);
+            if (next.value != TOK.leftParenthesis || peekPastParen(next).value == TOK.assign)
                 goto Ldeclaration; // scope used as storage class
             nextToken();
             check(TOK.leftParenthesis);
